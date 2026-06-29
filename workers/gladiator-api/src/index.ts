@@ -19,6 +19,7 @@ import {
   getHeroScrollPurchasePrice,
   isHeroConsumableItem,
   isHeroItemOwned,
+  resetHeroSkillPoints,
   sharpenHeroActiveWeapon,
   upgradeHeroBowShotCapacity,
   upgradeHeroScroll,
@@ -97,6 +98,12 @@ interface PlayerActorSaveHeroAttributesInput {
   nowIso: string;
 }
 
+interface PlayerActorResetHeroAttributesInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  nowIso: string;
+}
+
 interface PlayerActorSettleOfflineBattleInput {
   telegramUserId: string;
   telegramUsername?: string;
@@ -159,11 +166,34 @@ type BuyShopProductResult =
       hero?: HeroState;
     };
 
+interface HeroAttributesPatch {
+  baseStats: HeroBaseStats;
+  skillPoints: number;
+  gold?: number;
+  skillPointResetCount?: number;
+  updatedAt: string;
+}
+
 type SaveHeroAttributesResult =
-  | { ok: true; hero: HeroState }
+  | { ok: true; attributes: HeroAttributesPatch }
   | {
       ok: false;
       error: "invalid_attribute_allocation" | "invalid_attribute_payload" | "invalid_hero_payload" | "player_save_not_found";
+      hero?: HeroState;
+    };
+
+type HeroAttributeSnapshotResult =
+  | { ok: true; hero: HeroState }
+  | {
+      ok: false;
+      error: "invalid_attribute_allocation" | "invalid_hero_payload";
+    };
+
+type ResetHeroAttributesResult =
+  | { ok: true; attributes: HeroAttributesPatch }
+  | {
+      ok: false;
+      error: "attribute_reset_rejected" | "invalid_hero_payload" | "player_save_not_found";
       hero?: HeroState;
     };
 
@@ -247,6 +277,10 @@ export class PlayerActor extends DurableObject<Env> {
     return this.enqueue(() => this.saveHeroAttributesNow(input));
   }
 
+  async resetHeroAttributes(input: PlayerActorResetHeroAttributesInput): Promise<ResetHeroAttributesResult> {
+    return this.enqueue(() => this.resetHeroAttributesNow(input));
+  }
+
   async settleOfflineBattle(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
     return this.enqueue(() => this.settleOfflineBattleNow(input));
   }
@@ -317,20 +351,39 @@ export class PlayerActor extends DurableObject<Env> {
       return { ...nextHero, hero: savedHero };
     }
 
-    const heroJson = JSON.stringify(nextHero.hero);
+    const attributes = createHeroAttributesPatch(nextHero.hero);
 
-    if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
-      return { ok: false, error: "invalid_hero_payload", hero: savedHero };
-    }
-
-    await updatePlayerHero(this.env.GLADIATOR_SAVES_DB, {
+    await updatePlayerHeroAttributes(this.env.GLADIATOR_SAVES_DB, {
       telegramUserId: input.telegramUserId,
       telegramUsername: input.telegramUsername,
-      heroJson,
-      nowIso: input.nowIso,
+      attributes,
     });
 
-    return { ok: true, hero: nextHero.hero };
+    return { ok: true, attributes };
+  }
+
+  private async resetHeroAttributesNow(input: PlayerActorResetHeroAttributesInput): Promise<ResetHeroAttributesResult> {
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!savedHero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    const nextHero = resetHeroSkillPoints(savedHero, input.nowIso);
+
+    if (nextHero === savedHero) {
+      return { ok: false, error: "attribute_reset_rejected", hero: savedHero };
+    }
+
+    const attributes = createHeroAttributesPatch(nextHero, { includeResetFields: true });
+
+    await updatePlayerHeroAttributes(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      telegramUsername: input.telegramUsername,
+      attributes,
+    });
+
+    return { ok: true, attributes };
   }
 
   private async settleOfflineBattleNow(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
@@ -402,6 +455,10 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-attributes/save") {
         return handleSaveHeroAttributes(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/gladiator-attributes/reset") {
+        return handleResetHeroAttributes(request, env);
       }
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-battle/settle") {
@@ -501,10 +558,34 @@ async function handleSaveHeroAttributes(request: Request, env: Env): Promise<Res
   });
 
   if (result.ok) {
-    return json({ ok: true, hero: result.hero });
+    return json({ ok: true, attributes: result.attributes });
   }
 
   const status = result.error === "player_save_not_found" ? 404 : result.error === "invalid_attribute_payload" ? 400 : 409;
+
+  return json({ ok: false, error: result.error, hero: result.hero }, status);
+}
+
+async function handleResetHeroAttributes(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const result = await actor.resetHeroAttributes({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    nowIso: new Date().toISOString(),
+  });
+
+  if (result.ok) {
+    return json({ ok: true, attributes: result.attributes });
+  }
+
+  const status = result.error === "player_save_not_found" ? 404 : 409;
 
   return json({ ok: false, error: result.error, hero: result.hero }, status);
 }
@@ -653,12 +734,30 @@ function toShopMutationResult(nextHero: HeroState, previousHero: HeroState): Buy
     : { ok: true, hero: nextHero };
 }
 
+function createHeroAttributesPatch(hero: HeroState, options: { includeResetFields?: boolean } = {}): HeroAttributesPatch {
+  return {
+    baseStats: {
+      strength: hero.baseStats.strength,
+      agility: hero.baseStats.agility,
+      vitality: hero.baseStats.vitality,
+    },
+    skillPoints: hero.skillPoints,
+    ...(options.includeResetFields
+      ? {
+          gold: hero.gold,
+          skillPointResetCount: hero.skillPointResetCount ?? 0,
+        }
+      : {}),
+    updatedAt: hero.updatedAt,
+  };
+}
+
 function applyHeroAttributeSnapshot(
   hero: HeroState,
   baseStats: HeroBaseStats,
   skillPoints: number,
   nowIso: string,
-): SaveHeroAttributesResult {
+): HeroAttributeSnapshotResult {
   const currentBaseStats = readHeroBaseStats(hero.baseStats);
   const currentSkillPoints = readNonNegativeInteger(hero.skillPoints);
 
@@ -958,6 +1057,84 @@ function updatePlayerHero(
       `,
     )
     .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.nowIso, save.telegramUserId)
+    .run();
+}
+
+function updatePlayerHeroAttributes(
+  db: D1Database,
+  save: { telegramUserId: string; telegramUsername?: string; attributes: HeroAttributesPatch },
+): Promise<D1Result> {
+  const attributes = save.attributes;
+  const hasResetFields = attributes.gold !== undefined && attributes.skillPointResetCount !== undefined;
+
+  if (hasResetFields) {
+    return db
+      .prepare(
+        `
+          UPDATE player_saves SET
+            telegram_username = ?,
+            hero_json = json_set(
+              hero_json,
+              '$.baseStats.strength', ?,
+              '$.baseStats.agility', ?,
+              '$.baseStats.vitality', ?,
+              '$.skillPoints', ?,
+              '$.gold', ?,
+              '$.skillPointResetCount', ?,
+              '$.updatedAt', ?
+            ),
+            schema_version = ?,
+            revision = revision + 1,
+            updated_at = ?
+          WHERE telegram_user_id = ?
+        `,
+      )
+      .bind(
+        save.telegramUsername ?? null,
+        attributes.baseStats.strength,
+        attributes.baseStats.agility,
+        attributes.baseStats.vitality,
+        attributes.skillPoints,
+        attributes.gold,
+        attributes.skillPointResetCount,
+        attributes.updatedAt,
+        SAVE_SCHEMA_VERSION,
+        attributes.updatedAt,
+        save.telegramUserId,
+      )
+      .run();
+  }
+
+  return db
+    .prepare(
+      `
+        UPDATE player_saves SET
+          telegram_username = ?,
+          hero_json = json_set(
+            hero_json,
+            '$.baseStats.strength', ?,
+            '$.baseStats.agility', ?,
+            '$.baseStats.vitality', ?,
+            '$.skillPoints', ?,
+            '$.updatedAt', ?
+          ),
+          schema_version = ?,
+          revision = revision + 1,
+          updated_at = ?
+        WHERE telegram_user_id = ?
+      `,
+    )
+    .bind(
+      save.telegramUsername ?? null,
+      attributes.baseStats.strength,
+      attributes.baseStats.agility,
+      attributes.baseStats.vitality,
+      attributes.skillPoints,
+      attributes.updatedAt,
+      SAVE_SCHEMA_VERSION,
+      attributes.updatedAt,
+      save.telegramUserId,
+    )
     .run();
 }
 

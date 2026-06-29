@@ -60,11 +60,13 @@ import {
   deleteGladiatorCloudSave,
   GladiatorSaveError,
   loadGladiatorCloudSave,
+  resetGladiatorHeroAttributes,
   saveGladiatorHeroAttributes,
   saveGladiatorCloudHero,
   settleGladiatorOfflineBattleReward,
   spendGladiatorArenaEnergy,
   type GladiatorBattleSettlement,
+  type GladiatorHeroAttributesPatch,
   type GladiatorShopAction,
 } from "./gladiatorSaveClient";
 import {
@@ -5122,6 +5124,17 @@ function withCurrentArenaEnergy(nextHero: HeroState, currentHero: HeroState): He
   return currentHero.arenaEnergy ? { ...nextHero, arenaEnergy: currentHero.arenaEnergy } : nextHero;
 }
 
+function applyHeroAttributesPatch(sourceHero: HeroState, attributes: GladiatorHeroAttributesPatch): HeroState {
+  return {
+    ...sourceHero,
+    baseStats: attributes.baseStats,
+    skillPoints: attributes.skillPoints,
+    ...(attributes.gold !== undefined ? { gold: attributes.gold } : {}),
+    ...(attributes.skillPointResetCount !== undefined ? { skillPointResetCount: attributes.skillPointResetCount } : {}),
+    updatedAt: attributes.updatedAt,
+  };
+}
+
 function createEmptyHeroAttributeDraftAllocations(): HeroBaseStats {
   return {
     strength: 0,
@@ -5211,14 +5224,9 @@ async function handleHeroAttributesSave(): Promise<void> {
 
   try {
     if (canUseGladiatorCloudSave()) {
-      const serverHero = await saveGladiatorHeroAttributes(hero.baseStats, hero.skillPoints);
+      const attributes = await saveGladiatorHeroAttributes(hero.baseStats, hero.skillPoints);
 
-      hero = {
-        ...hero,
-        baseStats: serverHero.baseStats,
-        skillPoints: serverHero.skillPoints,
-        updatedAt: serverHero.updatedAt,
-      };
+      hero = applyHeroAttributesPatch(hero, attributes);
     }
 
     saveLocalHeroSave(hero);
@@ -5235,7 +5243,12 @@ async function handleHeroAttributesSave(): Promise<void> {
   }
 }
 
-function handleHeroAttributeReset(): void {
+async function handleHeroAttributeReset(): Promise<void> {
+  if (hasHeroAttributeDraftAllocations()) {
+    window.alert("Save attribute changes before resetting.");
+    return;
+  }
+
   if (!canResetHeroSkillPoints(hero)) {
     return;
   }
@@ -5245,6 +5258,30 @@ function handleHeroAttributeReset(): void {
   const pointLabel = allocatedSkillPoints === 1 ? "point" : "points";
 
   if (!window.confirm(`Reset ${allocatedSkillPoints} attribute ${pointLabel} for ${price} gold?`)) {
+    return;
+  }
+
+  if (canUseGladiatorCloudSave()) {
+    attributeSaveStatus = "saving";
+    renderCityHero();
+
+    try {
+      const attributes = await resetGladiatorHeroAttributes();
+
+      hero = applyHeroAttributesPatch(hero, attributes);
+      clearHeroAttributeDraft();
+      syncPlayerCityBodyScale();
+      renderCityHero();
+      syncCityShopHeroState();
+      cityHeroEquipmentMenu.render();
+      saveLocalHeroSave(hero);
+    } catch (error) {
+      console.error("Gladiator attribute reset failed", error);
+      attributeSaveStatus = "idle";
+      renderCityHero();
+      window.alert("Could not reset attributes. Try again.");
+    }
+
     return;
   }
 

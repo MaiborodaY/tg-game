@@ -29,6 +29,7 @@ interface GladiatorShopBuyResponse {
 
 interface GladiatorAttributesSaveResponse {
   ok: boolean;
+  attributes?: GladiatorHeroAttributesPatch;
   hero?: HeroState;
   error?: string;
 }
@@ -50,6 +51,14 @@ export interface GladiatorShopActionRequest {
   equipment?: HeroEquipment;
 }
 
+export interface GladiatorHeroAttributesPatch {
+  baseStats: HeroBaseStats;
+  skillPoints: number;
+  gold?: number;
+  skillPointResetCount?: number;
+  updatedAt: string;
+}
+
 export interface GladiatorBattleSettlement {
   reward: BattleReward;
   loot: ArenaLootDrop[];
@@ -63,6 +72,7 @@ const GLADIATOR_SAVE_ENDPOINT = "/api/gladiator-save";
 const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
 const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy";
 const GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT = "/api/gladiator-attributes/save";
+const GLADIATOR_ATTRIBUTES_RESET_ENDPOINT = "/api/gladiator-attributes/reset";
 const GLADIATOR_BATTLE_SETTLE_ENDPOINT = "/api/gladiator-battle/settle";
 const GLADIATOR_API_BASE_URL_STORAGE_KEY = "dust-arena-gladiator-api-base-url";
 const DEFAULT_GLADIATOR_API_BASE_URL = "https://gladiator-api.mr-maybik.workers.dev";
@@ -159,7 +169,7 @@ export async function applyGladiatorShopAction(actionRequest: GladiatorShopActio
   return data.hero;
 }
 
-export async function saveGladiatorHeroAttributes(baseStats: HeroBaseStats, skillPoints: number): Promise<HeroState> {
+export async function saveGladiatorHeroAttributes(baseStats: HeroBaseStats, skillPoints: number): Promise<GladiatorHeroAttributesPatch> {
   const initData = getTelegramInitData();
 
   if (!initData) {
@@ -180,11 +190,38 @@ export async function saveGladiatorHeroAttributes(baseStats: HeroBaseStats, skil
     throw new GladiatorSaveError(data.error || `Gladiator attributes save request failed: ${response.status}`, data.error, data.hero);
   }
 
-  if (!data.hero) {
-    throw new GladiatorSaveError("missing_hero_payload", "Attributes save response did not include hero.");
+  if (!data.attributes) {
+    throw new GladiatorSaveError("missing_attributes_payload", "Attributes save response did not include attributes.");
   }
 
-  return data.hero;
+  return data.attributes;
+}
+
+export async function resetGladiatorHeroAttributes(): Promise<GladiatorHeroAttributesPatch> {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
+  }
+
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_ATTRIBUTES_RESET_ENDPOINT), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+  });
+  const data = (await response.json()) as GladiatorAttributesSaveResponse;
+
+  if (!response.ok || !data.ok) {
+    throw new GladiatorSaveError(data.error || `Gladiator attributes reset request failed: ${response.status}`, data.error, data.hero);
+  }
+
+  if (!data.attributes) {
+    throw new GladiatorSaveError("missing_attributes_payload", "Attributes reset response did not include attributes.");
+  }
+
+  return data.attributes;
 }
 
 export async function settleGladiatorOfflineBattleReward(
