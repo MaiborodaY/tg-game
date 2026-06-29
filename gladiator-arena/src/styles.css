@@ -5077,11 +5077,11 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-height: 96px;
   --arena-card-padding-left: 76px;
   --arena-card-accent: rgba(255, 211, 132, 0.6);
-  --arena-card-accent-soft: rgba(255, 211, 132, 0.16);
-  --arena-card-glass-top: rgba(30, 13, 7, 0.48);
-  --arena-card-glass-bottom: rgba(8, 2, 1, 0.58);
-  --arena-card-edge: rgba(255, 211, 132, 0.18);
-  --arena-card-highlight: rgba(255, 229, 161, 0.18);
+  --arena-card-accent-soft: rgba(255, 211, 132, 0.22);
+  --arena-card-glass-top: rgba(46, 20, 9, 0.7);
+  --arena-card-glass-bottom: rgba(12, 4, 2, 0.78);
+  --arena-card-edge: rgba(255, 211, 132, 0.28);
+  --arena-card-highlight: rgba(255, 229, 161, 0.24);
   position: relative;
   z-index: 1;
   display: flex;
@@ -5110,10 +5110,10 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__auto-fight {
-  --arena-card-edge: rgba(255, 211, 132, 0.2);
-  --arena-card-highlight: rgba(255, 229, 161, 0.13);
-  --arena-card-glass-top: rgba(54, 25, 11, 0.48);
-  --arena-card-glass-bottom: rgba(18, 6, 3, 0.62);
+  --arena-card-edge: rgba(255, 211, 132, 0.28);
+  --arena-card-highlight: rgba(255, 229, 161, 0.2);
+  --arena-card-glass-top: rgba(72, 34, 15, 0.7);
+  --arena-card-glass-bottom: rgba(24, 8, 4, 0.8);
   position: relative;
   z-index: 1;
   display: grid;
@@ -5208,11 +5208,11 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-height: 78px;
   --arena-card-padding-left: 76px;
   --arena-card-accent: rgba(150, 204, 90, 0.72);
-  --arena-card-accent-soft: rgba(102, 160, 56, 0.24);
-  --arena-card-edge: rgba(154, 202, 92, 0.3);
-  --arena-card-highlight: rgba(216, 255, 148, 0.2);
-  --arena-card-glass-top: rgba(36, 62, 22, 0.48);
-  --arena-card-glass-bottom: rgba(9, 24, 8, 0.6);
+  --arena-card-accent-soft: rgba(102, 160, 56, 0.32);
+  --arena-card-edge: rgba(154, 202, 92, 0.4);
+  --arena-card-highlight: rgba(216, 255, 148, 0.28);
+  --arena-card-glass-top: rgba(43, 78, 25, 0.72);
+  --arena-card-glass-bottom: rgba(9, 28, 8, 0.82);
 }
 
 .city-arena-menu__fight--easy::before {
@@ -5229,11 +5229,11 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-height: 90px;
   --arena-card-padding-left: 76px;
   --arena-card-accent: rgba(224, 126, 38, 0.72);
-  --arena-card-accent-soft: rgba(178, 82, 22, 0.24);
-  --arena-card-edge: rgba(220, 123, 40, 0.3);
-  --arena-card-highlight: rgba(255, 205, 103, 0.2);
-  --arena-card-glass-top: rgba(73, 34, 12, 0.48);
-  --arena-card-glass-bottom: rgba(32, 10, 4, 0.62);
+  --arena-card-accent-soft: rgba(178, 82, 22, 0.32);
+  --arena-card-edge: rgba(220, 123, 40, 0.4);
+  --arena-card-highlight: rgba(255, 205, 103, 0.28);
+  --arena-card-glass-top: rgba(91, 42, 15, 0.72);
+  --arena-card-glass-bottom: rgba(38, 12, 5, 0.82);
 }
 
 .city-arena-menu__fight--hard {
@@ -5242,11 +5242,11 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-height: 102px;
   --arena-card-padding-left: 80px;
   --arena-card-accent: rgba(218, 71, 54, 0.74);
-  --arena-card-accent-soft: rgba(161, 38, 29, 0.25);
-  --arena-card-edge: rgba(220, 76, 58, 0.32);
-  --arena-card-highlight: rgba(255, 151, 115, 0.2);
-  --arena-card-glass-top: rgba(78, 24, 19, 0.5);
-  --arena-card-glass-bottom: rgba(38, 7, 5, 0.64);
+  --arena-card-accent-soft: rgba(161, 38, 29, 0.32);
+  --arena-card-edge: rgba(220, 76, 58, 0.42);
+  --arena-card-highlight: rgba(255, 151, 115, 0.28);
+  --arena-card-glass-top: rgba(95, 29, 23, 0.74);
+  --arena-card-glass-bottom: rgba(43, 8, 6, 0.84);
 }
 
 .city-arena-menu__fight--hard::before {
@@ -5327,8 +5327,8 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu__boss-duo:disabled,
 .city-arena-menu__auto-fight:disabled {
   cursor: not-allowed;
-  filter: saturate(0.68) brightness(0.76);
-  opacity: 0.72;
+  filter: saturate(0.58) brightness(0.7);
+  opacity: 0.66;
 }
 
 .city-arena-menu__bot-button--starting:disabled {
@@ -5417,11 +5417,11 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-height: 112px;
   --arena-card-padding-left: 86px;
   --arena-card-accent: rgba(71, 220, 207, 0.74);
-  --arena-card-accent-soft: rgba(28, 170, 158, 0.25);
-  --arena-card-edge: rgba(85, 224, 214, 0.34);
-  --arena-card-highlight: rgba(92, 255, 235, 0.18);
-  --arena-card-glass-top: rgba(12, 65, 61, 0.5);
-  --arena-card-glass-bottom: rgba(8, 27, 25, 0.64);
+  --arena-card-accent-soft: rgba(28, 170, 158, 0.34);
+  --arena-card-edge: rgba(85, 224, 214, 0.44);
+  --arena-card-highlight: rgba(92, 255, 235, 0.27);
+  --arena-card-glass-top: rgba(14, 80, 74, 0.74);
+  --arena-card-glass-bottom: rgba(8, 33, 31, 0.84);
   min-height: 98px;
 }
 
@@ -5430,11 +5430,11 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss-duo {
-  --arena-card-accent-soft: rgba(28, 170, 158, 0.24);
-  --arena-card-edge: rgba(85, 224, 214, 0.32);
-  --arena-card-highlight: rgba(168, 255, 244, 0.18);
-  --arena-card-glass-top: rgba(16, 76, 71, 0.48);
-  --arena-card-glass-bottom: rgba(8, 31, 29, 0.62);
+  --arena-card-accent-soft: rgba(28, 170, 158, 0.32);
+  --arena-card-edge: rgba(85, 224, 214, 0.42);
+  --arena-card-highlight: rgba(168, 255, 244, 0.27);
+  --arena-card-glass-top: rgba(19, 92, 86, 0.72);
+  --arena-card-glass-bottom: rgba(8, 38, 35, 0.82);
   display: flex;
   flex-direction: column;
   align-items: center;

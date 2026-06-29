@@ -258,6 +258,7 @@ const CITY_ARENA_TIER_ONE_DIFFICULTY_LEVEL_REQUIREMENTS: Partial<Record<ArenaDif
   [DEFAULT_ARENA_DIFFICULTY_ID]: 3,
   hard: 7,
 };
+const CITY_ARENA_TIER_ONE_BOSS_LEVEL_REQUIREMENT = 9;
 const MAGIC_SHOP_LEVEL_REQUIREMENT = 8;
 const PVP_RECONNECT_STORAGE_KEY = "dust-arena-pvp-reconnect-room";
 let hero: HeroState = createInitialHero();
@@ -2233,12 +2234,34 @@ function getLockedCityArenaDifficultyLevelRequirement(tierId: number, difficulty
   return requirement > 0 && hero.level < requirement ? requirement : 0;
 }
 
+function getCityArenaBossLevelRequirement(tierId: number): number {
+  return tierId === DEFAULT_ARENA_TIER_ID ? CITY_ARENA_TIER_ONE_BOSS_LEVEL_REQUIREMENT : 0;
+}
+
+function getLockedCityArenaBossLevelRequirement(tierId: number): number {
+  const requirement = getCityArenaBossLevelRequirement(tierId);
+
+  return requirement > 0 && hero.level < requirement ? requirement : 0;
+}
+
 function getArenaSelectionLevelRequirement(selection: ArenaMenuSelection): number {
-  return selection.kind === "random" ? getCityArenaDifficultyLevelRequirement(selection.tierId, selection.difficultyId) : 0;
+  return selection.kind === "random"
+    ? getCityArenaDifficultyLevelRequirement(selection.tierId, selection.difficultyId)
+    : getCityArenaBossLevelRequirement(createArenaBossEncounter(selection.bossId).tierId);
 }
 
 function getArenaSelectionLevelGateTitle(selection: ArenaMenuSelection): string {
   const requirement = getArenaSelectionLevelRequirement(selection);
+
+  if (requirement <= 0 || hero.level >= requirement) {
+    return "";
+  }
+
+  return `Requires LVL ${requirement}.`;
+}
+
+function getCityArenaBossLevelGateTitle(tierId: number): string {
+  const requirement = Number.isFinite(tierId) ? getCityArenaBossLevelRequirement(Math.floor(tierId)) : 0;
 
   if (requirement <= 0 || hero.level >= requirement) {
     return "";
@@ -2529,6 +2552,7 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   const rewardLine = document.createElement("span");
   const reward = document.createElement("span");
   const uniqueReward = document.createElement("span");
+  const levelRequirement = getLockedCityArenaBossLevelRequirement(boss.tierId);
   const bossDisabledTitle = getCityArenaBossDisabledTitle(boss, ARENA_BOSS_ENERGY_COST);
   const duoDisabledTitle = getCityArenaBossDisabledTitle(boss, ARENA_DUO_BOSS_ENERGY_COST);
 
@@ -2542,7 +2566,7 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   button.dataset.cityArenaBossMode = "solo";
   button.dataset.cityArenaBossTierId = `${boss.tierId}`;
   button.dataset.cityArenaEnergyCost = `${ARENA_BOSS_ENERGY_COST}`;
-  syncCityArenaBossTitle(name, "Boss", ARENA_BOSS_ENERGY_COST);
+  syncCityArenaBossTitle(name, "Boss", ARENA_BOSS_ENERGY_COST, levelRequirement);
   name.title = boss.name;
   rewardLine.className = "city-arena-menu__boss-reward-line";
   reward.className = "city-arena-menu__reward";
@@ -2606,15 +2630,28 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   return card;
 }
 
-function syncCityArenaBossTitle(title: HTMLElement, label: string, energyCost: number): void {
+function syncCityArenaBossTitle(title: HTMLElement, label: string, energyCost: number, levelRequirement = 0): void {
+  const button = title.closest<HTMLElement>(".city-arena-menu__boss");
   const text = document.createElement("span");
   const cost = createCityArenaEnergyCostItem(energyCost);
+  const existingRibbon = button?.querySelector<HTMLElement>("[data-city-level-ribbon='arena-boss']");
 
   title.classList.add("city-arena-menu__boss-title");
   text.className = "city-arena-menu__boss-title-text";
   text.textContent = label;
   cost.classList.add("city-arena-menu__boss-cost");
   title.replaceChildren(text, cost);
+  existingRibbon?.remove();
+
+  if (levelRequirement > 0) {
+    const levelRibbon = createCityLevelRibbon(levelRequirement, "city-arena-menu__fight-level", "arena-boss");
+
+    if (button) {
+      button.append(levelRibbon);
+    } else {
+      title.append(levelRibbon);
+    }
+  }
 }
 
 function createCityArenaDuoLabel(): HTMLElement {
@@ -2626,6 +2663,12 @@ function createCityArenaDuoLabel(): HTMLElement {
 }
 
 function getCityArenaBossDisabledTitle(boss: ArenaBossDefinition, energyCost: number): string {
+  const levelGateTitle = getArenaSelectionLevelGateTitle({ kind: "boss", bossId: boss.id });
+
+  if (levelGateTitle) {
+    return levelGateTitle;
+  }
+
   const botDisabledTitle = getCityArenaBotDisabledTitle(energyCost);
 
   if (botDisabledTitle) {
@@ -2764,8 +2807,10 @@ function syncCityArenaBotControls(): void {
     button.title = title || getCityArenaAutoFightTitle(button, typeof rate === "number" && Number.isFinite(rate) ? rate : undefined);
   });
   cityArenaBossList?.querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]").forEach((button) => {
-    const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
-    const bossTierLimitTitle = title ? "" : getCityArenaBossVictoryLimitTitle(Number(button.dataset.cityArenaBossTierId));
+    const bossTierId = Number(button.dataset.cityArenaBossTierId);
+    const levelGateTitle = getCityArenaBossLevelGateTitle(bossTierId);
+    const title = levelGateTitle || getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
+    const bossTierLimitTitle = title ? "" : getCityArenaBossVictoryLimitTitle(bossTierId);
     const buttonTitle = title || bossTierLimitTitle;
 
     button.disabled = Boolean(buttonTitle);
