@@ -66,7 +66,7 @@ export type {
   ArenaTierDefinition,
 } from "./arenaOpponents";
 
-export type HeroWeaponClass = "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken";
+export type HeroWeaponClass = "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken" | "staff";
 
 export interface HeroState {
   id: string;
@@ -2278,6 +2278,10 @@ export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): He
 
   if (haystack.includes("shuriken")) {
     return "shuriken";
+  }
+
+  if (haystack.includes("staff") || haystack.includes("wand")) {
+    return "staff";
   }
 
   if (haystack.includes("axe")) {

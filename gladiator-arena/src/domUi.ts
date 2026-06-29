@@ -315,6 +315,7 @@ const WEAPON_CLASS_LABELS: Record<HeroWeaponClass, string> = {
   mace: "MACE",
   spear: "SPEAR",
   shuriken: "SHURIKEN",
+  staff: "STAFF",
 };
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {

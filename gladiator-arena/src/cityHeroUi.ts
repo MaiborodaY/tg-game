@@ -10,6 +10,7 @@ import {
   SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
   SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
   SHOP_CATEGORY_MACE_ICON_ASSET_URL,
+  SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
   SHOP_CATEGORY_SPEAR_ICON_ASSET_URL,
   SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
@@ -78,6 +79,7 @@ export type CityEquipmentCategoryId =
   | "axes"
   | "maces"
   | "spears"
+  | "staves"
   | "head"
   | "body"
   | "shoulders"
@@ -209,6 +211,7 @@ const CITY_EQUIPMENT_WEAPON_CATEGORIES: readonly CityEquipmentCategory[] = [
   { id: "spears", label: "Spears", side: "weapon", iconUrl: SHOP_CATEGORY_SPEAR_ICON_ASSET_URL },
   { id: "bows", label: "Bows", side: "weapon", iconUrl: SHOP_CATEGORY_BOW_ICON_ASSET_URL },
   { id: "shurikens", label: "Shurikens", side: "weapon", iconUrl: SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL },
+  { id: "staves", label: "Staves", side: "weapon", iconUrl: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL },
 ];
 
 const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
@@ -2412,6 +2415,10 @@ function getCityWeaponCategoryId(item: (typeof HERO_ITEM_CATALOG)[HeroItemId]): 
     return "shurikens";
   }
 
+  if (weaponClass === "staff") {
+    return "staves";
+  }
+
   if (weaponClass === "axe") {
     return "axes";
   }
@@ -2527,6 +2534,10 @@ function getProfileEquipmentCategoryId(
 
   if (weaponClass === "shuriken") {
     return "shurikens";
+  }
+
+  if (weaponClass === "staff") {
+    return "staves";
   }
 
   if (weaponClass === "axe") {

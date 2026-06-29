@@ -120,7 +120,7 @@ export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 export const BODY_ANIMATION_DEFAULT_VARIANT_ID = "default";
 export const SPEAR_ATTACK_BODY_ANIMATION_VARIANT_ID = "spearattack";
 const SPEAR_ATTACK_BODY_ANIMATION_KEYS: BodyAnimationKey[] = ["light", "medium", "heavy"];
-export const BODY_ANIMATION_WEAPON_CLASSES = ["sword", "axe", "bow", "mace", "spear", "shuriken"] as const;
+export const BODY_ANIMATION_WEAPON_CLASSES = ["sword", "axe", "bow", "mace", "spear", "shuriken", "staff"] as const;
 export type BodyAnimationWeaponClass = (typeof BODY_ANIMATION_WEAPON_CLASSES)[number];
 
 interface SpearAttackBodyAnimationSyncOptions {

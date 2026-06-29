@@ -537,7 +537,7 @@ const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
   mythical: "Mythical",
   unique: "Unique",
 };
-const DEBUG_WEAPON_IMPORT_CLASSES: readonly HeroWeaponClass[] = ["sword", "axe", "bow", "mace", "spear", "shuriken"];
+const DEBUG_WEAPON_IMPORT_CLASSES: readonly HeroWeaponClass[] = ["sword", "axe", "bow", "mace", "spear", "shuriken", "staff"];
 const DEBUG_WEAPON_IMPORT_CLASS_LABELS: Record<HeroWeaponClass, string> = {
   sword: "Sword",
   axe: "Axe",
@@ -545,6 +545,7 @@ const DEBUG_WEAPON_IMPORT_CLASS_LABELS: Record<HeroWeaponClass, string> = {
   mace: "Mace",
   spear: "Spear",
   shuriken: "Shuriken",
+  staff: "Staff",
 };
 const DEBUG_ITEM_EQUIPMENT_ARMOR_CATEGORY_LABELS: Record<NonNullable<HeroItemDefinition["armorCategory"]>, string> = {
   cloth: "Cloth",
@@ -567,6 +568,7 @@ const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS: readonly DebugEquipmentSetImportS
   { id: "weaponMace", label: "Weapon mace", targetPrefix: "weapon-mace", kind: "weapon" },
   { id: "weaponSpear", label: "Weapon spear", targetPrefix: "weapon-spear", kind: "weapon" },
   { id: "weaponShuriken", label: "Weapon shuriken", targetPrefix: "weapon-shuriken", kind: "weapon" },
+  { id: "weaponStaff", label: "Weapon staff", targetPrefix: "weapon-staff", kind: "weapon" },
 ];
 const DEBUG_SHOP_ITEM_PAIR_CONFIGS: readonly DebugShopItemPairConfig[] = [
   { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", label: "Shoulderguard" },
@@ -7055,6 +7057,7 @@ function getExpectedDebugItemEquipmentType(definition: HeroItemDefinition): Debu
   const text = `${definition.id} ${definition.name}`.toLowerCase();
   const typeHints: readonly DebugItemEquipmentTypeFilter[] = [
     "shuriken",
+    "staff",
     "mace",
     "axe",
     "bow",
@@ -7096,7 +7099,7 @@ function formatDebugItemEquipmentType(type: DebugItemEquipmentTypeFilter): strin
 }
 
 function compareDebugItemEquipmentTypeFilters(left: DebugItemEquipmentTypeFilter, right: DebugItemEquipmentTypeFilter): number {
-  const order: readonly DebugItemEquipmentTypeFilter[] = ["sword", "axe", "mace", "spear", "bow", "shuriken", "cloth", "leather", "chain", "plate"];
+  const order: readonly DebugItemEquipmentTypeFilter[] = ["sword", "axe", "mace", "spear", "bow", "shuriken", "staff", "cloth", "leather", "chain", "plate"];
 
   return order.indexOf(left) - order.indexOf(right);
 }
@@ -9260,6 +9263,10 @@ function getDefaultWeaponImportClass(asset: EquipmentSetImportAsset): HeroWeapon
     return "shuriken";
   }
 
+  if (text.includes("staff") || text.includes("wand")) {
+    return "staff";
+  }
+
   if (text.includes("axe")) {
     return "axe";
   }
@@ -9278,7 +9285,7 @@ function getDefaultWeaponImportClass(asset: EquipmentSetImportAsset): HeroWeapon
 function formatWeaponImportDefaultName(asset: Pick<EquipmentSetImportAsset, "key" | "sourcePath">): string {
   const sourceKey = asset.key || asset.sourcePath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "") || "weapon";
   const normalized = sourceKey
-    .replace(/^weapon-(?:sword|axe|bow|mace|spear|shuriken)-?/i, "")
+    .replace(/^weapon-(?:sword|axe|bow|mace|spear|shuriken|staff)-?/i, "")
     .split(/[^a-z0-9]+/i)
     .filter(Boolean)
     .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)

@@ -347,7 +347,7 @@ function isMeleeWeaponShopItem(item: HeroItemDefinition | undefined): item is He
 
   const weaponClass = getHeroItemWeaponClass(item);
 
-  return weaponClass !== "bow" && weaponClass !== "shuriken";
+  return weaponClass !== "bow" && weaponClass !== "shuriken" && weaponClass !== "staff";
 }
 
 function isShopConsumableAtMax(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {

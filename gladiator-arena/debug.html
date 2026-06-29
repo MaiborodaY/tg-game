@@ -546,8 +546,11 @@
                     <div class="battle-result__level-badge" aria-hidden="true">
                       <strong id="resultXpLevel" class="battle-result__level-value" data-level-digits="1">1</strong>
                     </div>
-                    <div id="resultXpProgressText" class="battle-result__xp-text">
-                      0 / 10 <span class="battle-result__xp-progress-icon" aria-hidden="true"></span>
+                    <div class="battle-result__xp-text-row">
+                      <div id="resultXpProgressText" class="battle-result__xp-text">
+                        0 / 10 <span class="battle-result__xp-progress-icon" aria-hidden="true"></span>
+                      </div>
+                      <span id="resultLevelNotice" class="battle-result__level-notice" hidden>NEW LVL!</span>
                     </div>
                   </div>
                   <div class="battle-result__xp-track" aria-hidden="true">
@@ -557,6 +560,17 @@
                 <button id="cityButton" class="restart city-return battle-result__button" type="button" hidden>Return to City</button>
               </div>
             </div>
+            <section id="resultUnlockPanel" class="battle-result__unlock-panel" aria-label="New shop unlocks" hidden>
+              <strong id="resultUnlockLevel" class="battle-result__unlock-level">LVL 1 REACHED</strong>
+              <div id="resultUnlockEnergy" class="battle-result__unlock-energy" aria-label="Arena energy restored" hidden>
+                <img id="resultUnlockEnergyIcon" class="battle-result__unlock-energy-icon" alt="" decoding="async" draggable="false" />
+                <span id="resultUnlockEnergyValue" class="battle-result__unlock-energy-value">10/10</span>
+                <span id="resultUnlockEnergyStatus" class="battle-result__unlock-energy-status" hidden>ENERGY RESTORED</span>
+              </div>
+              <strong id="resultUnlockTitle" class="battle-result__unlock-title" hidden>NEW SHOP UNLOCKS</strong>
+              <div id="resultUnlockContent" class="battle-result__unlock-content"></div>
+              <button id="resultUnlockContinueButton" class="battle-result__unlock-continue" type="button">CONTINUE</button>
+            </section>
           </section>
 
           <section class="combat-toast" aria-label="Fight log">

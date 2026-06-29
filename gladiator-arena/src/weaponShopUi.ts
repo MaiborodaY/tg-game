@@ -187,6 +187,11 @@ const WEAPON_PERK_DEFINITIONS: Record<HeroWeaponClass, WeaponPerkDefinition> = {
     title: "Shuriken / Throwing",
     lines: ["Thrown consumable weapon.", "Uses carried shuriken charges."],
   },
+  staff: {
+    chipLabel: "Spellcraft",
+    title: "Staff / Spellcraft",
+    lines: ["Magic weapon.", "Unlocks mage actions when equipped."],
+  },
 };
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
