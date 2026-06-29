@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const saveClientSource = readFileSync(resolve(currentDir, "../src/gladiatorSaveClient.ts"), "utf8");
 const spendEndpointSource = readFileSync(resolve(currentDir, "../../functions/api/gladiator-energy/spend.ts"), "utf8");
+const apiWorkerSource = readFileSync(resolve(currentDir, "../../workers/gladiator-api/src/index.ts"), "utf8");
 
 test("cloud arena energy spend accepts variable amounts", () => {
   assert.equal(saveClientSource.includes("spendGladiatorArenaEnergy(hero: HeroState, amount = 1)"), true);
@@ -17,4 +18,11 @@ test("cloud arena energy spend accepts variable amounts", () => {
   assert.equal(spendEndpointSource.includes("current = current - ?"), true);
   assert.equal(spendEndpointSource.includes("AND current >= ?"), true);
   assert.equal(spendEndpointSource.includes(".bind(amount, HERO_ARENA_ENERGY_MAX"), true);
+});
+
+test("gladiator API worker batches arena energy preparation and returns updated energy", () => {
+  assert.equal(apiWorkerSource.includes("return db.batch(["), true);
+  assert.equal(apiWorkerSource.includes("RETURNING current, max, day_key"), true);
+  assert.equal(apiWorkerSource.includes("readPlayerSaveHero"), false);
+  assert.equal(apiWorkerSource.includes(".run();\n  const arenaEnergy = (await readPlayerDailyArenaEnergy"), false);
 });
