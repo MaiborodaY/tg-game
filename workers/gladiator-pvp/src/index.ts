@@ -579,7 +579,7 @@ export class PvpRoom extends DurableObject<Env> {
 
     server.serializeAttachment({ token, seat } satisfies SocketAttachment);
     this.ctx.acceptWebSocket(server);
-    this.sendSnapshot(server, liveRecord, seat);
+    this.sendSnapshot(server, (await this.readLiveRoom()) ?? liveRecord, seat);
 
     return new Response(null, { status: 101, webSocket: client });
   }
