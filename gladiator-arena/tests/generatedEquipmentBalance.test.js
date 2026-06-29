@@ -24,13 +24,13 @@ const WEAPON_RARITY_PRICE_TAX = new Map([
 ]);
 
 const ARMOR_EQUIPMENT_SET_EXPECTATIONS = new Map([
-  ["cloth", { name: "Cloth", rank: 0, grade: "starter", shopCount: 14, level: 1 }],
+  ["cloth", { name: "Cloth", rank: 0, grade: "starter", shopCount: 14, level: 3 }],
   ["sand", { name: "Sand", rank: 1, grade: "starter", shopCount: 14, level: 7 }],
-  ["leather", { name: "Leather", rank: 2, grade: "starter", shopCount: 14, level: 15 }],
-  ["chainmail", { name: "Chainmail", rank: 3, grade: "starter", shopCount: 14, level: 25 }],
-  ["rust_champion", { name: "Rust Champion", rank: 4, grade: "low", shopCount: 14, level: 30 }],
-  ["mercenary", { name: "Mercenary", rank: 5, grade: "mid", shopCount: 14, level: 35 }],
-  ["executioner", { name: "Executioner", rank: 6, grade: "high", shopCount: 14, level: 40 }],
+  ["leather", { name: "Leather", rank: 2, grade: "starter", shopCount: 14, level: 11 }],
+  ["chainmail", { name: "Chainmail", rank: 3, grade: "starter", shopCount: 14, level: 18 }],
+  ["rust_champion", { name: "Rust Champion", rank: 4, grade: "low", shopCount: 14, level: 25 }],
+  ["mercenary", { name: "Mercenary", rank: 5, grade: "mid", shopCount: 14, level: 32 }],
+  ["executioner", { name: "Executioner", rank: 6, grade: "high", shopCount: 14, level: 39 }],
   ["lazure", { name: "Lazure", rank: 7, grade: "low", shopCount: 14, level: 45 }],
   ["lion", { name: "Lion", rank: 8, grade: "mid", shopCount: 14, level: 50 }],
   ["stormguard", { name: "Stormguard", rank: 9, grade: "high", shopCount: 14, level: 60 }],
@@ -157,7 +157,7 @@ test("generated shop armor sets occupy their intended progression", () => {
     rarity: "common",
     armor: 11,
     price: 30,
-    level: 1,
+    level: 3,
   });
   assertGeneratedArmorSet("sand", {
     rarity: "common",
@@ -169,31 +169,31 @@ test("generated shop armor sets occupy their intended progression", () => {
     rarity: "uncommon",
     armor: 34,
     price: 80,
-    level: 15,
+    level: 11,
   });
   assertGeneratedArmorSet("chainmail", {
     rarity: "uncommon",
     armor: 54,
     price: 130,
-    level: 25,
+    level: 18,
   });
   assertGeneratedArmorSet("rust_champion", {
     rarity: "rare",
     armor: 80,
     price: 200,
-    level: 30,
+    level: 25,
   });
   assertGeneratedArmorSet("mercenary", {
     rarity: "rare",
     armor: 102,
     price: 260,
-    level: 35,
+    level: 32,
   });
   assertGeneratedArmorSet("executioner", {
     rarity: "rare",
     armor: 135,
     price: 340,
-    level: 40,
+    level: 39,
   });
   assertGeneratedArmorSet("lazure", {
     rarity: "epic",

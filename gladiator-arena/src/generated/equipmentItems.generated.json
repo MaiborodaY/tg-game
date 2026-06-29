@@ -187,7 +187,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-chainmail-01"
@@ -352,7 +352,7 @@
       "grade": "high"
     },
     "armorHp": 12,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-executioner-01"
@@ -562,7 +562,7 @@
       "grade": "mid"
     },
     "armorHp": 9,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-mercenary-01"
@@ -680,7 +680,7 @@
       "grade": "low"
     },
     "armorHp": 7,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-rust-champion-01"
@@ -1137,7 +1137,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-chainmail-03"
@@ -1302,7 +1302,7 @@
       "grade": "high"
     },
     "armorHp": 12,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-executioner-01"
@@ -1467,7 +1467,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-leather-03"
@@ -1559,7 +1559,7 @@
       "grade": "mid"
     },
     "armorHp": 9,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-mercenary-01"
@@ -1677,7 +1677,7 @@
       "grade": "low"
     },
     "armorHp": 7,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-rust-champion-01"
@@ -2134,7 +2134,7 @@
       "grade": "starter"
     },
     "armorHp": 6,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-chainmail-01"
@@ -2299,7 +2299,7 @@
       "grade": "high"
     },
     "armorHp": 15,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-executioner-01"
@@ -2464,7 +2464,7 @@
       "grade": "starter"
     },
     "armorHp": 4,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-leather-01"
@@ -2556,7 +2556,7 @@
       "grade": "mid"
     },
     "armorHp": 11,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-mercenary-01"
@@ -2674,7 +2674,7 @@
       "grade": "low"
     },
     "armorHp": 9,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-rust-champion-01"
@@ -3131,7 +3131,7 @@
       "grade": "starter"
     },
     "armorHp": 6,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-chainmail-01"
@@ -3296,7 +3296,7 @@
       "grade": "high"
     },
     "armorHp": 15,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-executioner-01"
@@ -3506,7 +3506,7 @@
       "grade": "mid"
     },
     "armorHp": 11,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-mercenary-01"
@@ -3624,7 +3624,7 @@
       "grade": "low"
     },
     "armorHp": 9,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-rust-champion-01"
@@ -4081,7 +4081,7 @@
       "grade": "starter"
     },
     "armorHp": 6,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-chainmail-01"
@@ -4246,7 +4246,7 @@
       "grade": "high"
     },
     "armorHp": 15,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-executioner-01"
@@ -4456,7 +4456,7 @@
       "grade": "mid"
     },
     "armorHp": 11,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-mercenary-01"
@@ -4574,7 +4574,7 @@
       "grade": "low"
     },
     "armorHp": 9,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-rust-champion-01"
@@ -5031,7 +5031,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-chainmail-01"
@@ -5196,7 +5196,7 @@
       "grade": "high"
     },
     "armorHp": 12,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-executioner-01"
@@ -5406,7 +5406,7 @@
       "grade": "mid"
     },
     "armorHp": 9,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-mercenary-01"
@@ -5524,7 +5524,7 @@
       "grade": "low"
     },
     "armorHp": 7,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-rust-champion-01"
@@ -5981,7 +5981,7 @@
       "grade": "starter"
     },
     "armorHp": 13,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-chainmail-01"
@@ -6099,7 +6099,7 @@
       "grade": "high"
     },
     "armorHp": 34,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-executioner-01"
@@ -6309,7 +6309,7 @@
       "grade": "mid"
     },
     "armorHp": 26,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-mercenary-01"
@@ -6427,7 +6427,7 @@
       "grade": "low"
     },
     "armorHp": 20,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-rust-champion-01"
@@ -6884,7 +6884,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-chainmail-01"
@@ -7049,7 +7049,7 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-executioner-01"
@@ -7259,7 +7259,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-mercenary-01"
@@ -7377,7 +7377,7 @@
       "grade": "low"
     },
     "armorHp": 0,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-rust-champion-01"
@@ -7834,7 +7834,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-chainmail-03"
@@ -7999,7 +7999,7 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-executioner-01"
@@ -8164,7 +8164,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-leather-03"
@@ -8256,7 +8256,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-mercenary-01"
@@ -8374,7 +8374,7 @@
       "grade": "low"
     },
     "armorHp": 0,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-rust-champion-01"
@@ -8831,7 +8831,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-chainmail-01"
@@ -8996,7 +8996,7 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-executioner-01"
@@ -9161,7 +9161,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-leather-01"
@@ -9253,7 +9253,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-mercenary-01"
@@ -9371,7 +9371,7 @@
       "grade": "low"
     },
     "armorHp": 0,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-rust-champion-01"
@@ -9828,7 +9828,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-chainmail-01"
@@ -9993,7 +9993,7 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-executioner-01"
@@ -10203,7 +10203,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-mercenary-01"
@@ -10321,7 +10321,7 @@
       "grade": "low"
     },
     "armorHp": 0,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-rust-champion-01"
@@ -10778,7 +10778,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-chainmail-01"
@@ -10943,7 +10943,7 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-executioner-01"
@@ -11153,7 +11153,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-mercenary-01"
@@ -11271,7 +11271,7 @@
       "grade": "low"
     },
     "armorHp": 0,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-rust-champion-01"
@@ -11728,7 +11728,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-chainmail-01"
@@ -11893,7 +11893,7 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-executioner-01"
@@ -12103,7 +12103,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-mercenary-01"
@@ -12221,7 +12221,7 @@
       "grade": "low"
     },
     "armorHp": 0,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-rust-champion-01"
@@ -12678,7 +12678,7 @@
       "grade": "starter"
     },
     "armorHp": 8,
-    "levelRequirement": 25,
+    "levelRequirement": 18,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-chainmail-01"
@@ -12880,7 +12880,7 @@
       "grade": "high"
     },
     "armorHp": 20,
-    "levelRequirement": 40,
+    "levelRequirement": 39,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-executioner-01"
@@ -13090,7 +13090,7 @@
       "grade": "mid"
     },
     "armorHp": 16,
-    "levelRequirement": 35,
+    "levelRequirement": 32,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-mercenary-01"
@@ -13208,7 +13208,7 @@
       "grade": "low"
     },
     "armorHp": 12,
-    "levelRequirement": 30,
+    "levelRequirement": 25,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-rust-champion-01"
@@ -18754,7 +18754,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-leather-01"
@@ -18801,7 +18801,7 @@
       "grade": "starter"
     },
     "armorHp": 4,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-leather-01"
@@ -18848,7 +18848,7 @@
       "grade": "starter"
     },
     "armorHp": 4,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-leather-01"
@@ -18895,7 +18895,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-leather-01"
@@ -18942,7 +18942,7 @@
       "grade": "starter"
     },
     "armorHp": 8,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-leather-01"
@@ -18989,7 +18989,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-leather-01"
@@ -19036,7 +19036,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-leather-01"
@@ -19083,7 +19083,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-leather-01"
@@ -19130,7 +19130,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-leather-01"
@@ -19177,7 +19177,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
-    "levelRequirement": 15,
+    "levelRequirement": 11,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-leather-01"
