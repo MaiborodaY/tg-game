@@ -122,6 +122,10 @@ export class PlayerActor extends DurableObject<Env> {
 
 export default {
   async fetch(request, env): Promise<Response> {
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders() });
+    }
+
     try {
       const url = new URL(request.url);
 
@@ -532,6 +536,15 @@ function json(payload: unknown, status = 200): Response {
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      ...corsHeaders(),
     },
   });
+}
+
+function corsHeaders(): HeadersInit {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-headers": "content-type, x-telegram-init-data",
+  };
 }

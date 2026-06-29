@@ -10,7 +10,8 @@ const spendEndpointSource = readFileSync(resolve(currentDir, "../../functions/ap
 
 test("cloud arena energy spend accepts variable amounts", () => {
   assert.equal(saveClientSource.includes("spendGladiatorArenaEnergy(hero: HeroState, amount = 1)"), true);
-  assert.equal(saveClientSource.includes("JSON.stringify({ hero, amount })"), true);
+  assert.equal(saveClientSource.includes('getGladiatorApiUrl(GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT)'), true);
+  assert.equal(saveClientSource.includes('JSON.stringify({ requestId: createGladiatorCommandRequestId("arena-energy"), hero, amount })'), true);
   assert.equal(spendEndpointSource.includes("amount?: unknown"), true);
   assert.equal(spendEndpointSource.includes("getArenaEnergySpendAmount(requestBody.amount)"), true);
   assert.equal(spendEndpointSource.includes("current = current - ?"), true);

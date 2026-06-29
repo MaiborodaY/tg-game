@@ -22,6 +22,8 @@ interface GladiatorArenaEnergySpendResponse {
 
 const GLADIATOR_SAVE_ENDPOINT = "/api/gladiator-save";
 const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
+const GLADIATOR_API_BASE_URL_STORAGE_KEY = "dust-arena-gladiator-api-base-url";
+const DEFAULT_GLADIATOR_API_BASE_URL = "https://gladiator-api.mr-maybik.workers.dev";
 
 export class GladiatorSaveError extends Error {
   readonly code: string;
@@ -62,13 +64,13 @@ export async function spendGladiatorArenaEnergy(hero: HeroState, amount = 1): Pr
     throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
   }
 
-  const response = await fetch(GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT, {
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-telegram-init-data": initData,
     },
-    body: JSON.stringify({ hero, amount }),
+    body: JSON.stringify({ requestId: createGladiatorCommandRequestId("arena-energy"), hero, amount }),
   });
   const data = (await response.json()) as GladiatorArenaEnergySpendResponse;
 
@@ -81,6 +83,33 @@ export async function spendGladiatorArenaEnergy(hero: HeroState, amount = 1): Pr
   }
 
   return data.arenaEnergy;
+}
+
+function getGladiatorApiUrl(path: string): string {
+  return new URL(joinUrlPath(getGladiatorApiBaseUrl(), path), window.location.href).toString();
+}
+
+function getGladiatorApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_GLADIATOR_API_BASE_URL as string | undefined;
+  const stored = window.localStorage.getItem(GLADIATOR_API_BASE_URL_STORAGE_KEY) ?? undefined;
+
+  return normalizeBaseUrl(configured || stored || DEFAULT_GLADIATOR_API_BASE_URL);
+}
+
+function createGladiatorCommandRequestId(prefix: string): string {
+  const randomId = typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return `${prefix}-${randomId}`;
+}
+
+function joinUrlPath(base: string, path: string): string {
+  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+}
+
+function normalizeBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, "") || DEFAULT_GLADIATOR_API_BASE_URL;
 }
 
 async function requestGladiatorSave(method: "GET" | "PUT" | "DELETE", payload?: unknown): Promise<GladiatorSaveResponse> {
