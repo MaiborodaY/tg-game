@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const saveClientSource = readFileSync(resolve(currentDir, "../src/gladiatorSaveClient.ts"), "utf8");
+const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
+const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 const spendEndpointSource = readFileSync(resolve(currentDir, "../../functions/api/gladiator-energy/spend.ts"), "utf8");
 const apiWorkerSource = readFileSync(resolve(currentDir, "../../workers/gladiator-api/src/index.ts"), "utf8");
 
@@ -25,4 +27,14 @@ test("gladiator API worker batches arena energy preparation and returns updated 
   assert.equal(apiWorkerSource.includes("RETURNING current, max, day_key"), true);
   assert.equal(apiWorkerSource.includes("readPlayerSaveHero"), false);
   assert.equal(apiWorkerSource.includes(".run();\n  const arenaEnergy = (await readPlayerDailyArenaEnergy"), false);
+});
+
+test("manual arena start paints the spending state before the energy request", () => {
+  assert.match(
+    mainSource,
+    /arenaEnergySpendPending = true;\s*syncCityArenaBotControls\(\);\s*await nextAnimationFrame\(\);[\s\S]*spendGladiatorArenaEnergy\(hero, energyCost\)/,
+  );
+  assert.match(stylesSource, /\.city-arena-menu__start-label \{[\s\S]*animation: city-arena-start-label-pulse/);
+  assert.match(stylesSource, /body\.arena-low-effects \.city-arena-menu__start-label \{[\s\S]*animation: none/);
+  assert.match(stylesSource, /@keyframes city-arena-start-label-pulse/);
 });

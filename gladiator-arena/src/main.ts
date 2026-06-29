@@ -4075,6 +4075,7 @@ async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection, o
 
   arenaEnergySpendPending = true;
   syncCityArenaBotControls();
+  await nextAnimationFrame();
 
   try {
     if (canUseGladiatorCloudSave()) {
