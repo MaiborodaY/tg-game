@@ -7421,6 +7421,18 @@ body.debug-active .city-menu__portrait-button:active {
   filter: saturate(0.7) brightness(0.86);
 }
 
+.equipment-item-card__confirm-action--buying {
+  color: #fff0bd;
+  border-color: rgba(255, 226, 142, 0.58);
+  background:
+    radial-gradient(circle at 50% 14%, rgba(255, 246, 210, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(142, 79, 31, 0.86), rgba(67, 23, 8, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.22),
+    0 1px 0 rgba(8, 2, 1, 0.72),
+    0 0 10px rgba(255, 193, 80, 0.18);
+}
+
 .equipment-item-card__confirm-label {
   font-size: clamp(0.58rem, 2vw, 0.68rem);
 }
@@ -12536,6 +12548,14 @@ body.debug-active .city-menu__portrait-button:active {
   justify-items: stretch;
 }
 
+.armory-shop--city-mode:not(.magic-shop) .armory-shop__option--product {
+  transition:
+    transform 130ms ease,
+    filter 130ms ease,
+    box-shadow 130ms ease,
+    opacity 130ms ease;
+}
+
 .armory-shop__option--selected {
   transform: translateY(-2px);
   filter: brightness(1.07);
@@ -12554,9 +12574,19 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__option--product.armory-shop__option--selected {
-  transform: none;
+  z-index: 8;
+  transform: scale(1.035);
   filter: brightness(1.08) saturate(1.08);
-  box-shadow: var(--equipment-card-selected-shadow);
+  box-shadow:
+    var(--equipment-card-selected-shadow),
+    0 0 0 1px rgba(255, 246, 210, 0.34),
+    0 0 16px var(--shop-rarity-soft, rgba(255, 211, 132, 0.22));
+}
+
+.armory-shop--city-mode:not(.magic-shop) .armory-shop__option--product:disabled:not(.armory-shop__option--pending):not(.armory-shop__option--sealed):not(.armory-shop__option--locked) {
+  cursor: default;
+  filter: saturate(0.72) brightness(0.74);
+  opacity: 0.68;
 }
 
 .armory-shop--city-mode .armory-shop__option:hover:not(:disabled),

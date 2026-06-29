@@ -1219,7 +1219,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const cardState = getArmoryProductCardState(hero, product);
     const actionState = getArmoryProductActionState(hero, product);
     const isPending = pendingProductId === product.id;
-    const inlineConfirmAction = isSelected && !isPending ? getProductInlineConfirmAction(actionState, product.price) : undefined;
+    const inlineConfirmAction = isSelected
+      ? isPending
+        ? getPendingProductInlineConfirmAction()
+        : getProductInlineConfirmAction(actionState, product.price)
+      : undefined;
     const displayName = getShopProductDisplayName(product.name);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
@@ -1236,7 +1240,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.classList.toggle("armory-shop__option--inline-confirm", Boolean(inlineConfirmAction));
     button.classList.toggle("armory-shop__option--pending", isPending);
     button.type = "button";
-    button.disabled = isPending || cardState === "sealed" || cardState === "locked";
+    button.disabled = Boolean(pendingProductId) || cardState === "sealed" || cardState === "locked";
     button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
@@ -1285,7 +1289,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
           target instanceof Element ? target.closest(".equipment-item-card__confirm-action") : undefined;
 
         if (confirmAction && button.contains(confirmAction) && inlineConfirmAction?.state === "buy") {
-          previewProduct = undefined;
           options.onBuy(product);
         }
 
@@ -1402,6 +1405,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   function refreshChangedProductButtons(hero: HeroState, syncOptions: ArmoryShopHeroSyncOptions): void {
     if (renderedProducts.some((product) => !isArmoryProductVisibleInShop(hero, product))) {
       render();
+      return;
+    }
+
+    if ("pendingProductId" in syncOptions) {
+      renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
       return;
     }
 
@@ -1876,6 +1884,10 @@ function getProductCardAction(actionState: ShopProductActionState, price: number
 
 function getPendingProductCardAction(): EquipmentCardAction {
   return { kind: "status", label: "BUYING", state: "buying" };
+}
+
+function getPendingProductInlineConfirmAction(): EquipmentCardInlineConfirmAction {
+  return { state: "buying" };
 }
 
 function getProductInlineConfirmAction(actionState: ShopProductActionState, price: number): EquipmentCardInlineConfirmAction | undefined {

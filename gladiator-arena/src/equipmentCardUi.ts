@@ -16,9 +16,9 @@ export type EquipmentCardAction =
     };
 
 export interface EquipmentCardInlineConfirmAction {
-  state: "buy" | "no-gold";
-  price: number;
-  iconUrl: string;
+  state: "buy" | "no-gold" | "buying";
+  price?: number;
+  iconUrl?: string;
 }
 
 export interface EquipmentItemCardContentOptions {
@@ -159,28 +159,43 @@ export function createEquipmentSlotCard(options: EquipmentSlotCardOptions): HTML
 export function createEquipmentInlineConfirmAction(action: EquipmentCardInlineConfirmAction): HTMLElement {
   const root = document.createElement("span");
   const label = document.createElement("span");
-  const price = document.createElement("span");
-  const icon = document.createElement("img");
-  const amount = document.createElement("span");
+  const isBuying = action.state === "buying";
 
   root.className = [
     "equipment-item-card__confirm-action",
     `equipment-item-card__confirm-action--${action.state}`,
   ].join(" ");
   root.dataset.cardConfirmAction = action.state;
-  root.setAttribute("aria-label", action.state === "buy" ? `Buy for ${action.price} gold` : `Not enough gold, ${action.price} gold`);
+  root.setAttribute(
+    "aria-label",
+    isBuying
+      ? "Buying"
+      : action.state === "buy"
+        ? `Buy for ${action.price} gold`
+        : `Not enough gold, ${action.price} gold`,
+  );
   label.className = "equipment-item-card__confirm-label";
-  label.textContent = action.state === "buy" ? "BUY" : "NO GOLD";
+  label.textContent = isBuying ? "BUYING" : action.state === "buy" ? "BUY" : "NO GOLD";
+  root.append(label);
+
+  if (isBuying) {
+    return root;
+  }
+
+  const price = document.createElement("span");
+  const icon = document.createElement("img");
+  const amount = document.createElement("span");
+
   price.className = "equipment-item-card__confirm-price";
   icon.className = "equipment-item-card__confirm-price-icon";
-  icon.src = action.iconUrl;
+  icon.src = action.iconUrl ?? "";
   icon.alt = "";
   icon.decoding = "async";
   icon.draggable = false;
   amount.className = "equipment-item-card__confirm-price-amount";
-  amount.textContent = String(action.price);
+  amount.textContent = String(action.price ?? 0);
   price.append(icon, amount);
-  root.append(label, price);
+  root.append(price);
 
   return root;
 }

@@ -880,7 +880,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const cardState = getWeaponProductCardState(hero, product);
     const actionState = getWeaponProductActionState(hero, product);
     const isPending = pendingProductId === product.id;
-    const inlineConfirmAction = isSelected && !isPending ? getProductInlineConfirmAction(actionState, product.price) : undefined;
+    const inlineConfirmAction = isSelected
+      ? isPending
+        ? getPendingProductInlineConfirmAction()
+        : getProductInlineConfirmAction(actionState, product.price)
+      : undefined;
     const displayName = getShopProductDisplayName(product.name);
     const isConsumable = areHeroItemsConsumable(product.itemIds);
     const currentDamage = isConsumable ? damage : getEquippedShopProductDisplayStat(hero, product.itemIds, "damage");
@@ -902,7 +906,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.classList.toggle("armory-shop__option--inline-confirm", Boolean(inlineConfirmAction));
     button.classList.toggle("armory-shop__option--pending", isPending);
     button.type = "button";
-    button.disabled = isPending || cardState === "sealed" || cardState === "locked";
+    button.disabled = Boolean(pendingProductId) || cardState === "sealed" || cardState === "locked";
     button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
@@ -955,7 +959,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
           target instanceof Element ? target.closest(".equipment-item-card__confirm-action") : undefined;
 
         if (confirmAction && button.contains(confirmAction) && inlineConfirmAction?.state === "buy") {
-          previewProduct = undefined;
           options.onBuy(product);
         }
 
@@ -1154,6 +1157,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function refreshChangedProductButtons(hero: HeroState, syncOptions: WeaponShopHeroSyncOptions): void {
     if (renderedProducts.some((product) => !isWeaponProductVisibleInShop(hero, product))) {
       render();
+      return;
+    }
+
+    if ("pendingProductId" in syncOptions) {
+      renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
       return;
     }
 
@@ -1685,6 +1693,10 @@ function getProductCardAction(actionState: ShopProductActionState, price: number
 
 function getPendingProductCardAction(): EquipmentCardAction {
   return { kind: "status", label: "BUYING", state: "buying" };
+}
+
+function getPendingProductInlineConfirmAction(): EquipmentCardInlineConfirmAction {
+  return { state: "buying" };
 }
 
 function getProductInlineConfirmAction(actionState: ShopProductActionState, price: number): EquipmentCardInlineConfirmAction | undefined {

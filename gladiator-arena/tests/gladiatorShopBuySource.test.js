@@ -49,11 +49,14 @@ test("frontend shop buy waits for the server hero before mutating visible hero s
   );
 });
 
-test("equipment shop cards show a per-product buying state while the server request is pending", () => {
+test("equipment shop cards keep the selected buy action in a buying state while the server request is pending", () => {
   for (const source of [armoryShopSource, weaponShopSource]) {
     assert.equal(source.includes("pendingProductId?: string | null"), true);
     assert.equal(source.includes('label: "BUYING"'), true);
+    assert.equal(source.includes('return { state: "buying" }'), true);
     assert.equal(source.includes('button.classList.toggle("armory-shop__option--pending", isPending)'), true);
-    assert.equal(source.includes('button.disabled = isPending ||'), true);
+    assert.equal(source.includes("button.disabled = Boolean(pendingProductId) ||"), true);
+    assert.equal(source.includes("previewProduct = undefined;\r\n          options.onBuy(product);"), false);
+    assert.equal(source.includes("previewProduct = undefined;\n          options.onBuy(product);"), false);
   }
 });
