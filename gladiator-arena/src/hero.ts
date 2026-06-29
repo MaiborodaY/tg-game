@@ -1072,17 +1072,22 @@ export function applyHeroEquipmentSnapshotToEquipment(
 
     const itemId = snapshot[slotKey];
 
+    if (itemId === undefined) {
+      continue;
+    }
+
     if (itemId === null) {
       equipment[slotKey] = null;
       continue;
     }
 
-    const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
-    const canApplyItem =
+    const item = HERO_ITEM_CATALOG[itemId];
+    const canApplyItem = Boolean(
       item &&
-      item.equipmentSlot === slotKey &&
-      isHeroEquippableItem(item) &&
-      (options.canApplyItem?.(slotKey, itemId, item) ?? true);
+        item.equipmentSlot === slotKey &&
+        isHeroEquippableItem(item) &&
+        (options.canApplyItem?.(slotKey, itemId, item) ?? true),
+    );
 
     if (!canApplyItem) {
       if (options.ignoreInvalidItems) {
