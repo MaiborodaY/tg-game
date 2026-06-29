@@ -10,7 +10,6 @@ import {
 } from "./actionArc";
 import {
   actionOrder,
-  actions,
   canUseAction,
   canFighterSwitchWeapon,
   distanceBand,
@@ -20,10 +19,12 @@ import {
   getFighterShurikenCount,
   getFighterClinchRange,
   getActionPreviewDamage,
+  getActionDetail,
   getActionTitle,
   isFighterInClinchRange,
   isPlayerExhausted,
   isRangedFighter,
+  isStaffFighter,
   type ActionId,
   type CombatActor,
   type CombatState,
@@ -300,7 +301,7 @@ export function mountClassicActionBar(
       const showSpellbook = isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state, controlledActor);
       const title = showSpellbook ? getSpellbookButtonTitle() : getActionTitle(actionId, controlledFighter);
       const detail =
-        showSpellbook ? getSpellbookButtonDetail() : actions[actionId].detail;
+        showSpellbook ? getSpellbookButtonDetail() : getActionDetail(actionId, controlledFighter);
 
       button.setAttribute(
         "aria-label",
@@ -431,7 +432,7 @@ function getClassicWheelMode(state: CombatState, actor: CombatActor, previewWhee
   const fighter = getClassicActorFighter(state, actor) ?? state.player;
   const isPlayerInClinch = isFighterInClinchRange(state, actor);
 
-  if (isRangedFighter(fighter) && !isPlayerInClinch) {
+  if ((isRangedFighter(fighter) || isStaffFighter(fighter)) && !isPlayerInClinch) {
     return "bow-distance";
   }
 

@@ -790,6 +790,12 @@ const SCROLL_CAST_ACTION_TIMINGS: Partial<Record<ActionId, ScrollCastActionTimin
   poison: { propAssetKey: "scroll-poison-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
   fireball: { propAssetKey: "scroll-fireball-01", doneDelayMs: 320, impactDelayMs: 170, impactProgress: 170 / 320 },
 };
+const STAFF_FIREBALL_CAST_ACTION_TIMING: ScrollCastActionTiming = {
+  propAssetKey: "scroll-fireball-01",
+  doneDelayMs: 320,
+  impactDelayMs: 170,
+  impactProgress: 170 / 320,
+};
 const LUNGE_ACTION_IMPACT_PROGRESS = 0.58;
 const DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE = 1.6;
 const MOVEMENT_START_DUST_COUNT = 8;
@@ -11866,7 +11872,9 @@ function animateAction(
     return { done: Promise.resolve() };
   }
 
-  const scrollCastTiming = SCROLL_CAST_ACTION_TIMINGS[actionId];
+  const scrollCastTiming = isStaffFireballAnimationAction(actionId, weaponClass)
+    ? STAFF_FIREBALL_CAST_ACTION_TIMING
+    : SCROLL_CAST_ACTION_TIMINGS[actionId];
   if (scrollCastTiming) {
     return animateScrollCastAction(target, actor, defender, direction, actionId, weaponClass, variantSeed, scrollCastTiming);
   }
@@ -11950,7 +11958,7 @@ function animateScrollCastAction(
   const impactDelayMs = getBodyAnimationImpactKeyframe(animation)
     ? getBodyAnimationImpactDelayMs(animation, timing.impactProgress)
     : timing.impactDelayMs;
-  const projectileAnimation = actionId === "fireball"
+  const projectileAnimation = actionId === "fireball" || isStaffFireballAnimationAction(actionId, weaponClass)
     ? playFireballProjectileFromScroll(target, actor, defender, direction, impactDelayMs)
     : undefined;
   const impact = projectileAnimation?.impact ?? createSceneDelay(target, impactDelayMs);
@@ -12046,6 +12054,10 @@ function createSceneDelay(target: Phaser.Scene, durationMs: number): Promise<voi
 
 function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAnimationKey {
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
+}
+
+function isStaffFireballAnimationAction(actionId: ActionId, weaponClass: HeroWeaponClass | undefined): boolean {
+  return weaponClass === "staff" && isAttackBodyAnimationKey(actionId);
 }
 
 function queueCombatResultAnimation(

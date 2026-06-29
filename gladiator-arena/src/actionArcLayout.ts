@@ -24,6 +24,7 @@ import {
   isBowFighter,
   isFighterInClinchRange,
   isRangedFighter,
+  isStaffFighter,
   type ActionId,
   type CombatState,
 } from "./combat";
@@ -123,6 +124,11 @@ const BOW_ACTION_LABELS: Partial<Record<ActionId, { label: string; detail: strin
   light: { label: "SHOT", detail: "Quick" },
   medium: { label: "AIM", detail: "Aimed" },
   heavy: { label: "POWER", detail: "Shot" },
+};
+const STAFF_ACTION_LABELS: Partial<Record<ActionId, { label: string; detail: string }>> = {
+  light: { label: "SPARK", detail: "2 sta" },
+  medium: { label: "FIRE", detail: "5 sta" },
+  heavy: { label: "BLAST", detail: "10 sta" },
 };
 
 function getSlotActionId(slot: ActionArcSlot, state: CombatState): ActionId {
@@ -236,7 +242,8 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
 
 function getActionArcSlots(state: CombatState): ActionArcSlot[] {
   const isPlayerInClinch = isFighterInClinchRange(state, "player");
-  const slots = !isPlayerInClinch && isRangedFighter(state.player) ? BOW_DISTANCE_SLOTS : isPlayerInClinch ? CLINCH_SLOTS : DISTANCE_SLOTS;
+  const usesDistanceAttacks = !isPlayerInClinch && (isRangedFighter(state.player) || isStaffFighter(state.player));
+  const slots = usesDistanceAttacks ? BOW_DISTANCE_SLOTS : isPlayerInClinch ? CLINCH_SLOTS : DISTANCE_SLOTS;
 
   return slots.filter((slot) => slot.actionId === "utility" || shouldShowActionArcSlot(state, slot.actionId));
 }
@@ -305,6 +312,10 @@ function getActionLabel(actionId: ActionId, state: CombatState): { label: string
 
   if (actionId === "poison") {
     return { label: "TOXIN", detail: `${getFighterPoisonDamage(state.player)}x2` };
+  }
+
+  if (isStaffFighter(state.player)) {
+    return STAFF_ACTION_LABELS[actionId] ?? ACTION_LABELS[actionId];
   }
 
   if (isRangedFighter(state.player) && !isFighterInClinchRange(state, "player")) {

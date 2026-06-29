@@ -21,6 +21,7 @@ import {
   GAME_WIDTH,
 } from "./arenaLayout";
 import {
+  FIREBALL_PROJECTILE_ASSET_URL,
   SHOP_CATEGORY_BOW_ICON_ASSET_URL,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
@@ -37,6 +38,7 @@ import {
   isActionTargetRestVulnerable,
   isBowFighter,
   isPlayerExhausted,
+  isStaffFighter,
   type ActionId,
   type CombatActor,
   type CombatState,
@@ -663,6 +665,10 @@ function isActionArcButtonEnabled(state: CombatState, actionId: ActionId): boole
 export function getActionTokenIconUrl(actionId: ActionId, state: CombatState, actor: CombatActor = "player"): string | undefined {
   const fighter = getActionBadgeFighter(state, actor) ?? state.player;
 
+  if (isStaffFighter(fighter) && isStaffFireballActionId(actionId)) {
+    return FIREBALL_PROJECTILE_ASSET_URL;
+  }
+
   if (actionId === "switchWeapon") {
     const targetItemId = isBowFighter(fighter) ? fighter.equipment?.weaponMain : fighter.equipment?.weaponBow;
 
@@ -702,6 +708,10 @@ export function getActionTokenIconUrl(actionId: ActionId, state: CombatState, ac
   return fighter.shurikenItemId
     ? getShopProductIconUrl([fighter.shurikenItemId]) ?? SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL
     : SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL;
+}
+
+function isStaffFireballActionId(actionId: ActionId): boolean {
+  return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
 function getActionArcViewport(host: HTMLElement): { width: number; height: number; safeBottom: number } {

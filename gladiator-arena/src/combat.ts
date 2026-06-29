@@ -48,6 +48,13 @@ export interface CombatMovementTuning {
   lungeMoveDistance: number;
 }
 
+interface StaffFireballActionConfig {
+  title: string;
+  detail: string;
+  cost: number;
+  damageMultiplier: number;
+}
+
 interface DamageApplication {
   armorAbsorbed: number;
   armorBroken: boolean;
@@ -242,6 +249,26 @@ const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
   light: 0.15,
   medium: 0.2,
   heavy: 0.25,
+};
+const STAFF_FIREBALL_ACTIONS: Partial<Record<ActionId, StaffFireballActionConfig>> = {
+  light: {
+    title: "Lesser Fireball",
+    detail: "Magic projectile - always hits",
+    cost: 2,
+    damageMultiplier: 1,
+  },
+  medium: {
+    title: "Fireball",
+    detail: "Magic projectile - always hits",
+    cost: 5,
+    damageMultiplier: 1.5,
+  },
+  heavy: {
+    title: "Greater Fireball",
+    detail: "Magic projectile - always hits",
+    cost: 10,
+    damageMultiplier: 2,
+  },
 };
 const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.25;
 export const SPEAR_CLINCH_RANGE_BONUS = 0.4;
@@ -452,6 +479,12 @@ export function getActionStaminaCost(actionId: ActionId, actor?: FighterState): 
     return Math.max(1, Math.round(roundStaminaCostRatio(actionMove / MOVE_DISTANCE_PER_STAMINA)));
   }
 
+  const staffFireballAction = getStaffFireballAction(actionId, actor);
+
+  if (staffFireballAction) {
+    return staffFireballAction.cost;
+  }
+
   return actions[actionId].cost;
 }
 
@@ -574,6 +607,10 @@ export function getFighterMaxStamina(fighter: FighterState): number {
 export function getActionBlockChance(action: ActionConfig, attacker?: FighterState, defender?: FighterState): number {
   void defender;
 
+  if (getStaffFireballAction(action.id, attacker)) {
+    return 0;
+  }
+
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), 0);
 }
 
@@ -581,11 +618,15 @@ export function getActionBlockChanceForState(state: CombatState, actionId: Actio
   const action = actions[actionId];
   const attacker = getCombatActorFighter(state, actor);
 
+  if (getStaffFireballAction(actionId, attacker)) {
+    return 0;
+  }
+
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestDefensePenalty(state, defenderActor));
 }
 
 export function isActionTargetRestVulnerable(state: CombatState, actionId: ActionId, actor: CombatActor = "player"): boolean {
-  return actions[actionId].blockChance !== undefined && getRestDefensePenalty(state, getDefaultDefenderActor(state, actor)) > 0;
+  return getActionBlockChanceForState(state, actionId, actor) > 0 && getRestDefensePenalty(state, getDefaultDefenderActor(state, actor)) > 0;
 }
 
 export function getActionPreviewDamage(
@@ -635,6 +676,10 @@ function getAdjustedActionBlockChance(action: ActionConfig, blockChanceModifier:
 
 export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
   return fighter.weaponClass ?? "sword";
+}
+
+export function isStaffFighter(fighter: FighterState | undefined): boolean {
+  return Boolean(fighter && getFighterWeaponClass(fighter) === "staff");
 }
 
 function isSpearFighter(fighter: FighterState | undefined): boolean {
@@ -938,6 +983,12 @@ export function getActionTitle(actionId: ActionId, actor?: FighterState): string
     return isBowFighter(actor) ? "Draw Steel" : "Draw Bow";
   }
 
+  const staffFireballAction = getStaffFireballAction(actionId, actor);
+
+  if (staffFireballAction) {
+    return staffFireballAction.title;
+  }
+
   if (actor && isRangedFighter(actor)) {
     if (actionId === "light") {
       return "Quick Shot";
@@ -953,6 +1004,10 @@ export function getActionTitle(actionId: ActionId, actor?: FighterState): string
   }
 
   return actions[actionId].title;
+}
+
+export function getActionDetail(actionId: ActionId, actor?: FighterState): string {
+  return getStaffFireballAction(actionId, actor)?.detail ?? actions[actionId].detail;
 }
 
 export function availableActionIds(state: CombatState, actor: CombatActor): ActionId[] {
@@ -1045,6 +1100,12 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Comb
     return false;
   }
 
+  const staffFireballAction = getStaffFireballAction(actionId, fighter);
+
+  if (staffFireballAction && fighter.stamina < staffFireballAction.cost) {
+    return false;
+  }
+
   if (actionId === "forward") {
     return !fighterInClinch && currentDistance > fighterClinchRange;
   }
@@ -1054,7 +1115,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Comb
   }
 
   if (actionId === "lunge") {
-    if (isRangedFighter(fighter)) {
+    if (isRangedFighter(fighter) || isStaffFighter(fighter)) {
       return false;
     }
 
@@ -1469,7 +1530,7 @@ export function choosePlayerAutoAction(current: CombatState, actor: "player" | "
 
   const lowStamina = fighter.stamina <= Math.max(1, Math.floor(getFighterMaxStamina(fighter) * 0.35));
   const enemyLowHp = current.enemy.hp <= Math.max(3, Math.ceil(getActionDamage("light", fighter) * 2));
-  const fighterHasRangedWeapon = isRangedFighter(fighter);
+  const fighterHasDistanceAttack = isRangedFighter(fighter) || isStaffFighter(fighter);
   const inClinch = isFighterInClinchRange(current, actor);
   const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, actor);
 
@@ -1481,7 +1542,7 @@ export function choosePlayerAutoAction(current: CombatState, actor: "player" | "
     return "rest";
   }
 
-  if (fighterHasRangedWeapon) {
+  if (fighterHasDistanceAttack) {
     if (available.includes("heavy") && enemyLowHp) {
       return "heavy";
     }
@@ -1542,6 +1603,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random, defenderA
   const defender = getDefenderForActor(current, "enemy", defenderActor) ?? current.player;
   const playerLowHp = defender.hp <= 9;
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
+  const enemyHasDistanceAttack = enemyHasRangedWeapon || isStaffFighter(current.enemy);
   const enemyCanSwitchWeapon = canFighterSwitchWeapon(current.enemy);
   const enemyInClinch = isEnemyInClinchWithAnyLivingAlly(current);
   const enemyLungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy", defenderActor);
@@ -1579,7 +1641,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random, defenderA
     }
 
     if (!enemyInClinch) {
-      if (enemyHasRangedWeapon) {
+      if (enemyHasDistanceAttack) {
         if (id === "heavy") {
           weighted.push(id, playerLowHp ? id : "medium");
         } else if (id === "medium") {
@@ -1693,9 +1755,11 @@ function chooseDuoBossHelperAction(state: CombatState, random: () => number): Ac
   if (!helperInClinch) {
     pushAvailableActions(weighted, available, "lunge", lungeReaches ? 7 : 2);
     pushAvailableActions(weighted, available, "forward", lungeReaches ? 1 : 6);
-    pushAvailableActions(weighted, available, "light", isRangedFighter(helper) ? 4 : 0);
-    pushAvailableActions(weighted, available, "medium", isRangedFighter(helper) ? 3 : 0);
-    pushAvailableActions(weighted, available, "heavy", isRangedFighter(helper) ? 2 : 0);
+    const helperHasDistanceAttack = isRangedFighter(helper) || isStaffFighter(helper);
+
+    pushAvailableActions(weighted, available, "light", helperHasDistanceAttack ? 4 : 0);
+    pushAvailableActions(weighted, available, "medium", helperHasDistanceAttack ? 3 : 0);
+    pushAvailableActions(weighted, available, "heavy", helperHasDistanceAttack ? 2 : 0);
     pushAvailableActions(weighted, available, "rest", helperLowStamina ? 2 : 0);
     return pickWeightedAction(weighted, random) ?? available[0] ?? "rest";
   }
@@ -2103,6 +2167,10 @@ function isActionBlocked(
 ): boolean {
   void defender;
 
+  if (getStaffFireballAction(action.id, attacker)) {
+    return false;
+  }
+
   const blockChance = getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestDefensePenalty(state, defenderOwner));
 
   return blockChance > 0 && random() < blockChance;
@@ -2214,6 +2282,12 @@ function getActionMeleeFlatDamageBonus(actionId: ActionId): number {
 function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   if (actionId === "shuriken") {
     return Math.max(0, Math.floor(attacker.shurikenDamage ?? 0));
+  }
+
+  const staffFireballAction = getStaffFireballAction(actionId, attacker);
+
+  if (staffFireballAction) {
+    return Math.max(1, Math.ceil(getMeleeWeaponDamage(attacker) * staffFireballAction.damageMultiplier));
   }
 
   const actionDamage = actions[actionId].damage ?? 0;
@@ -2545,6 +2619,10 @@ function addActionLog(
 }
 
 function getActionRangeMax(action: ActionConfig, attacker: FighterState): number | undefined {
+  if (getStaffFireballAction(action.id, attacker)) {
+    return MAX_DISTANCE;
+  }
+
   if (isRangedFighter(attacker) && isAttackAction(action.id)) {
     return MAX_DISTANCE;
   }
@@ -2558,6 +2636,10 @@ function getActionRangeMax(action: ActionConfig, attacker: FighterState): number
 
 function isAttackAction(actionId: ActionId): boolean {
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
+}
+
+function getStaffFireballAction(actionId: ActionId, actor?: FighterState): StaffFireballActionConfig | undefined {
+  return isStaffFighter(actor) ? STAFF_FIREBALL_ACTIONS[actionId] : undefined;
 }
 
 function isScrollAction(actionId: ActionId): boolean {
