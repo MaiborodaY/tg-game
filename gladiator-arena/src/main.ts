@@ -4678,7 +4678,7 @@ async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduc
   setPendingEquipmentShopBuyProduct(product);
 
   try {
-    const serverHero = await buyGladiatorShopProduct(getEquipmentShopProductKind(product), product.id);
+    const serverHero = await buyGladiatorShopProduct(getEquipmentShopProductKind(product), product.id, previousHero.equipment);
     const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
 
     hero = nextHero;

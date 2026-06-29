@@ -1,4 +1,4 @@
-import type { HeroArenaEnergy, HeroState } from "./hero";
+import type { HeroArenaEnergy, HeroEquipment, HeroState } from "./hero";
 import { getTelegramInitData } from "./telegram";
 
 interface GladiatorSaveResponse {
@@ -92,7 +92,7 @@ export async function spendGladiatorArenaEnergy(hero: HeroState, amount = 1): Pr
   return data.arenaEnergy;
 }
 
-export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon", productId: string): Promise<HeroState> {
+export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon", productId: string, equipment: HeroEquipment): Promise<HeroState> {
   const initData = getTelegramInitData();
 
   if (!initData) {
@@ -105,7 +105,7 @@ export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon", pro
       "content-type": "application/json",
       "x-telegram-init-data": initData,
     },
-    body: JSON.stringify({ shopKind, productId }),
+    body: JSON.stringify({ shopKind, productId, equipment }),
   });
   const data = (await response.json()) as GladiatorShopBuyResponse;
 

@@ -2,9 +2,13 @@ import { DurableObject } from "cloudflare:workers";
 
 import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "../../../gladiator-arena/src/generated/equipmentItems.generated";
 import {
+  HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  isHeroConsumableItem,
+  isHeroItemOwned,
+  type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
@@ -30,6 +34,7 @@ interface SpendArenaEnergyRequest {
 interface ShopBuyRequest {
   shopKind?: unknown;
   productId?: unknown;
+  equipment?: unknown;
 }
 
 interface PlayerActorSpendArenaEnergyInput {
@@ -45,6 +50,7 @@ interface PlayerActorBuyShopProductInput {
   telegramUsername?: string;
   shopKind: ShopKind;
   productId: string;
+  equipment?: HeroEquipmentSnapshot;
   nowIso: string;
 }
 
@@ -59,6 +65,7 @@ type SpendArenaEnergyResult =
   | { ok: false; error: "not_enough_arena_energy"; arenaEnergy: HeroArenaEnergy };
 
 type ShopKind = "armory" | "weapon";
+type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
 
 type BuyShopProductResult =
   | { ok: true; hero: HeroState }
@@ -155,11 +162,13 @@ export class PlayerActor extends DurableObject<Env> {
       return { ok: false, error: "shop_product_not_found" };
     }
 
-    const hero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
 
-    if (!hero) {
+    if (!savedHero) {
       return { ok: false, error: "player_save_not_found" };
     }
+
+    const hero = withValidatedEquipmentSnapshot(savedHero, input.equipment, input.nowIso);
 
     if (!areHeroItemsOwned(hero, product.itemIds) && isShopProductSealed(hero, product.itemIds, product.rarity)) {
       return { ok: false, error: "sealed_shop_product", hero };
@@ -277,6 +286,7 @@ async function handleBuyShopProduct(request: Request, env: Env): Promise<Respons
     telegramUsername: auth.user.username,
     shopKind,
     productId,
+    equipment: readHeroEquipmentSnapshot(body.equipment),
     nowIso: new Date().toISOString(),
   });
 
@@ -307,6 +317,75 @@ async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
   } catch {
     return {};
   }
+}
+
+function readHeroEquipmentSnapshot(value: unknown): HeroEquipmentSnapshot | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const snapshot: HeroEquipmentSnapshot = {};
+
+  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    if (!(slotKey in value)) {
+      return;
+    }
+
+    const itemId = value[slotKey];
+
+    if (itemId === null || typeof itemId === "string") {
+      snapshot[slotKey] = itemId;
+    }
+  });
+
+  return Object.keys(snapshot).length > 0 ? snapshot : undefined;
+}
+
+function withValidatedEquipmentSnapshot(hero: HeroState, snapshot: HeroEquipmentSnapshot | undefined, nowIso: string): HeroState {
+  if (!snapshot) {
+    return hero;
+  }
+
+  const equipment: HeroEquipment = { ...hero.equipment };
+  let changed = false;
+
+  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    if (!(slotKey in snapshot)) {
+      return;
+    }
+
+    const itemId = snapshot[slotKey];
+
+    if (itemId === null) {
+      if (equipment[slotKey] !== null) {
+        equipment[slotKey] = null;
+        changed = true;
+      }
+      return;
+    }
+
+    if (!itemId || !canApplyEquipmentSnapshotItem(hero, slotKey, itemId)) {
+      return;
+    }
+
+    if (equipment[slotKey] !== itemId) {
+      equipment[slotKey] = itemId;
+      changed = true;
+    }
+  });
+
+  return changed ? { ...hero, equipment, updatedAt: nowIso } : hero;
+}
+
+function canApplyEquipmentSnapshotItem(hero: HeroState, slotKey: HeroEquipmentSlotKey, itemId: HeroItemId): boolean {
+  const item = HERO_ITEM_CATALOG[itemId];
+
+  return Boolean(
+    item &&
+      item.equipmentSlot === slotKey &&
+      !isHeroConsumableItem(item) &&
+      isHeroItemOwned(hero, itemId),
+  );
 }
 
 async function readPlayerHero(db: D1Database, telegramUserId: string): Promise<HeroState | null> {

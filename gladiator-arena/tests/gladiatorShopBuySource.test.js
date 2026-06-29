@@ -19,12 +19,17 @@ test("gladiator shop buys are routed through the player actor and D1 save", () =
   assert.equal(apiWorkerSource.includes("buyAndEquipHeroItems(hero"), true);
   assert.equal(apiWorkerSource.includes("UPDATE player_saves SET"), true);
   assert.equal(apiWorkerSource.includes("revision = revision + 1"), true);
+  assert.equal(apiWorkerSource.includes("withValidatedEquipmentSnapshot(savedHero, input.equipment, input.nowIso)"), true);
+  assert.equal(apiWorkerSource.includes("isHeroItemOwned(hero, itemId)"), true);
+  assert.equal(apiWorkerSource.includes("item.equipmentSlot === slotKey"), true);
   assert.equal(apiWorkerSource.includes("player_commands"), false);
 });
 
 test("frontend shop buy waits for the server hero before mutating visible hero state", () => {
   assert.equal(saveClientSource.includes('const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy"'), true);
   assert.equal(saveClientSource.includes("export async function buyGladiatorShopProduct"), true);
+  assert.equal(saveClientSource.includes("JSON.stringify({ shopKind, productId, equipment })"), true);
+  assert.equal(mainSource.includes("previousHero.equipment"), true);
   assert.match(
     mainSource,
     /setPendingEquipmentShopBuyProduct\(product\);[\s\S]*const serverHero = await buyGladiatorShopProduct\([\s\S]*hero = nextHero;/,
