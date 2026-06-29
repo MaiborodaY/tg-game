@@ -3108,6 +3108,7 @@ export interface CitySceneApi {
   setProfilePreview: (layout?: CityProfilePreviewLayout) => void;
   setShopMenuTop: (menuTopY?: number) => void;
   previewEquipment: (equipment: HeroEquipment) => void;
+  confirmEquipmentPreview: (equipment: HeroEquipment) => boolean;
   prewarmEquipmentItem: (itemId: HeroItemId) => void;
   clearEquipmentPreview: () => void;
   focusArenaTransition: () => Promise<void>;
@@ -3293,6 +3294,16 @@ class CityHeroScene extends Phaser.Scene {
 
     this.previewEquipment = { ...equipment };
     this.syncPlayerEquipment(changedSlots);
+  }
+
+  confirmPlayerEquipmentPreview(equipment: HeroEquipment): boolean {
+    if (!this.previewEquipment || !areHeroEquipmentStatesEqual(this.previewEquipment, equipment)) {
+      return false;
+    }
+
+    activePlayerEquipment = { ...equipment };
+    this.previewEquipment = undefined;
+    return true;
   }
 
   prewarmPlayerEquipmentItem(itemId: HeroItemId): void {
@@ -4088,6 +4099,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     previewEquipment: (equipment: HeroEquipment) => {
       scene?.previewPlayerEquipment(equipment);
     },
+    confirmEquipmentPreview: (equipment: HeroEquipment) => scene?.confirmPlayerEquipmentPreview(equipment) ?? false,
     prewarmEquipmentItem: (itemId: HeroItemId) => {
       scene?.prewarmPlayerEquipmentItem(itemId);
     },

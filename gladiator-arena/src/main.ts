@@ -4566,6 +4566,27 @@ function scheduleShopEquipmentVisualSync(equipment: HeroEquipment, updatePortrai
   }, SHOP_EQUIPMENT_VISUAL_SYNC_DELAY_MS);
 }
 
+function applyShopEquipmentVisualSync(equipment: HeroEquipment, updatePortrait: boolean): void {
+  if (cityScene?.confirmEquipmentPreview(equipment)) {
+    clearScheduledShopEquipmentVisualSync();
+    if (updatePortrait) {
+      heroPortraitPreview?.setEquipment(equipment);
+    }
+    return;
+  }
+
+  scheduleShopEquipmentVisualSync(equipment, updatePortrait);
+  flushShopEquipmentVisualSync();
+}
+
+function clearScheduledShopEquipmentVisualSync(): void {
+  pendingShopEquipmentVisualSync = undefined;
+  if (shopEquipmentVisualSyncTimer !== undefined) {
+    window.clearTimeout(shopEquipmentVisualSyncTimer);
+    shopEquipmentVisualSyncTimer = undefined;
+  }
+}
+
 function flushShopEquipmentVisualSync(): void {
   const pendingSync = pendingShopEquipmentVisualSync;
 
@@ -4573,11 +4594,7 @@ function flushShopEquipmentVisualSync(): void {
     return;
   }
 
-  pendingShopEquipmentVisualSync = undefined;
-  if (shopEquipmentVisualSyncTimer !== undefined) {
-    window.clearTimeout(shopEquipmentVisualSyncTimer);
-    shopEquipmentVisualSyncTimer = undefined;
-  }
+  clearScheduledShopEquipmentVisualSync();
 
   setPlayerEquipment(pendingSync.equipment);
   if (pendingSync.updatePortrait) {
@@ -4659,7 +4676,7 @@ function handleLocalShopBuy(product: CityShopProduct): void {
 
   hero = nextHero;
   syncPlayerCityBodyScale();
-  scheduleShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
+  applyShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
   renderCityHero();
   syncShopHeroStateForProduct(product, previousHero);
   cityHeroEquipmentMenu.render();
@@ -4692,7 +4709,7 @@ async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduc
     hero = nextHero;
     saveLocalHeroSave(hero);
     syncPlayerCityBodyScale();
-    scheduleShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
+    applyShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
     renderCityHero();
     syncShopHeroStateForProduct(product, previousHero);
     cityHeroEquipmentMenu.render();

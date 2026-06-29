@@ -1161,7 +1161,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
 
     if ("pendingProductId" in syncOptions) {
-      renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
+      renderedProducts.forEach((product) => refreshProductButton(product.id, hero, true));
       return;
     }
 

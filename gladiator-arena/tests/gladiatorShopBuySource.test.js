@@ -9,6 +9,7 @@ const saveClientSource = readFileSync(resolve(currentDir, "../src/gladiatorSaveC
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const armoryShopSource = readFileSync(resolve(currentDir, "../src/armoryShopUi.ts"), "utf8");
 const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.ts"), "utf8");
+const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
 const apiWorkerSource = readFileSync(resolve(currentDir, "../../workers/gladiator-api/src/index.ts"), "utf8");
 
 test("gladiator shop buys are routed through the player actor and D1 save", () => {
@@ -41,8 +42,11 @@ test("frontend shop buy waits for the server hero before mutating visible hero s
   assert.equal(mainSource.includes('handleCloudMagicShopAction("upgrade_scroll_capacity")'), true);
   assert.match(
     mainSource,
-    /setPendingEquipmentShopBuyProduct\(product\);[\s\S]*const serverHero = await buyGladiatorShopProduct\([\s\S]*hero = nextHero;/,
+    /setPendingEquipmentShopBuyProduct\(product\);[\s\S]*const serverHero = await buyGladiatorShopProduct\([\s\S]*hero = nextHero;[\s\S]*applyShopEquipmentVisualSync\(hero\.equipment,/,
   );
+  assert.equal(mainSource.includes("cityScene?.confirmEquipmentPreview(equipment)"), true);
+  assert.equal(arenaSceneSource.includes("confirmEquipmentPreview: (equipment: HeroEquipment) => boolean"), true);
+  assert.equal(arenaSceneSource.includes("confirmPlayerEquipmentPreview(equipment: HeroEquipment): boolean"), true);
   assert.doesNotMatch(
     mainSource,
     /setPendingEquipmentShopBuyProduct\(product\);[\s\S]*buyAndEquipHeroItems\(previousHero/,
@@ -56,6 +60,7 @@ test("equipment shop cards keep the selected buy action in a buying state while 
     assert.equal(source.includes('return { state: "buying" }'), true);
     assert.equal(source.includes('button.classList.toggle("armory-shop__option--pending", isPending)'), true);
     assert.equal(source.includes("button.disabled = Boolean(pendingProductId) ||"), true);
+    assert.equal(source.includes("refreshProductButton(product.id, hero, true)"), true);
     assert.equal(source.includes("previewProduct = undefined;\r\n          options.onBuy(product);"), false);
     assert.equal(source.includes("previewProduct = undefined;\n          options.onBuy(product);"), false);
   }
