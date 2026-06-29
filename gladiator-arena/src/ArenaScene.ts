@@ -4156,6 +4156,7 @@ interface CanvasPortraitImageTuning extends CanvasPortraitTransform {
 type CanvasPortraitEquipmentLayer = "legs" | "torso" | "head" | "weapon" | "arms";
 
 const canvasPortraitImageCache = new Map<string, Promise<HTMLImageElement | undefined>>();
+const HERO_PORTRAIT_INITIAL_RETRY_DELAYS_MS = [160, 650] as const;
 const canvasPortraitDefaultImageTuning: CanvasPortraitImageTuning = {
   x: 0,
   y: 0,
@@ -4480,6 +4481,12 @@ function loadCanvasPortraitImage(assetKey: string, lowRes: boolean): Promise<HTM
   });
 
   canvasPortraitImageCache.set(cacheKey, promise);
+  void promise.then((image) => {
+    if (!image && canvasPortraitImageCache.get(cacheKey) === promise) {
+      canvasPortraitImageCache.delete(cacheKey);
+    }
+  });
+
   return promise;
 }
 
@@ -4756,6 +4763,11 @@ export function mountHeroPortraitPreview(
   });
 
   refreshSnapshot();
+  HERO_PORTRAIT_INITIAL_RETRY_DELAYS_MS.forEach((delayMs) => {
+    window.setTimeout(() => {
+      refreshSnapshot(pendingEquipment, pendingAppearance, true);
+    }, delayMs);
+  });
 
   return {
     setEquipment: (equipment) => {
