@@ -205,17 +205,18 @@ const arenaLeaveButton = document.querySelector<HTMLButtonElement>("[data-arena-
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
-const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityRenderDebugButton = document.querySelector<HTMLButtonElement>("#cityRenderDebugButton");
 const cityRenderDebugPanel = document.querySelector<HTMLElement>("#cityRenderDebugPanel");
 const cityRenderDebugOutput = document.querySelector<HTMLElement>("#cityRenderDebugOutput");
 const cityAdminButton = document.querySelector<HTMLButtonElement>("#cityAdminButton");
 const cityAdminPanel = document.querySelector<HTMLElement>("#cityAdminPanel");
 const cityAdminGoldButton = document.querySelector<HTMLButtonElement>("#cityAdminGoldButton");
+const cityAdminActionButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-action]")];
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId; duo?: boolean };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 type GameMode = "pve" | "pvp";
+type CityAdminAction = "level-up" | "unlock-shop" | "unlock-arena" | "restore-energy" | "reset-daily-arena";
 interface StartGameOptions {
   mode?: GameMode;
   initialState?: CombatState;
@@ -306,9 +307,8 @@ const CITY_RETURN_MIN_READY_MS = 1800;
 const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
 const CITY_RETURN_TRANSITION_IN_MS = 260;
 const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
-const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
-const ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
+const ARENA_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
 const RENDER_DEBUG_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const CITY_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const CITY_ADMIN_GOLD_GRANT_AMOUNT = 100;
@@ -431,7 +431,7 @@ function mountCityRenderDebugControls(): void {
   cityRenderDebugButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    setCityRenderDebugOpen(cityRenderDebugPanel.hidden);
+    setCityRenderDebugOpen(cityRenderDebugPanel.hidden !== false);
   });
 
   cityRenderDebugPanel.addEventListener("pointerdown", (event) => {
@@ -484,7 +484,7 @@ function mountCityAdminControls(): void {
   cityAdminButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    setCityAdminOpen(cityAdminPanel.hidden);
+    setCityAdminOpen(cityAdminPanel.hidden !== false);
   });
 
   cityAdminPanel.addEventListener("pointerdown", (event) => {
@@ -492,6 +492,15 @@ function mountCityAdminControls(): void {
   });
 
   cityAdminGoldButton.addEventListener("click", handleAdminGoldGrant);
+  cityAdminActionButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = parseCityAdminAction(button.dataset.adminAction);
+
+      if (action) {
+        handleCityAdminAction(action);
+      }
+    });
+  });
 }
 
 function setCityAdminOpen(open: boolean): void {
@@ -516,17 +525,57 @@ function handleAdminGoldGrant(): void {
     return;
   }
 
-  const currentGold = Number.isFinite(hero.gold) ? Math.max(0, Math.floor(hero.gold)) : 0;
+  applyCityAdminHeroState(grantHeroGold(hero, CITY_ADMIN_GOLD_GRANT_AMOUNT), "admin-gold-grant");
+}
 
-  hero = {
-    ...hero,
-    gold: currentGold + CITY_ADMIN_GOLD_GRANT_AMOUNT,
-    updatedAt: new Date().toISOString(),
-  };
+function parseCityAdminAction(action: string | undefined): CityAdminAction | undefined {
+  switch (action) {
+    case "level-up":
+    case "unlock-shop":
+    case "unlock-arena":
+    case "restore-energy":
+    case "reset-daily-arena":
+      return action;
+    default:
+      return undefined;
+  }
+}
+
+function handleCityAdminAction(action: CityAdminAction): void {
+  if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  applyCityAdminHeroState(applyCityAdminActionToHero(hero, action), `admin-${action}`);
+}
+
+function applyCityAdminActionToHero(sourceHero: HeroState, action: CityAdminAction): HeroState {
+  switch (action) {
+    case "level-up":
+      return grantHeroLevels(sourceHero, 1);
+    case "unlock-shop":
+      return unlockAllHeroShopRarities(sourceHero);
+    case "unlock-arena":
+      return unlockAllArenaBossTiers(sourceHero);
+    case "restore-energy":
+      return restoreHeroArenaEnergy(sourceHero);
+    case "reset-daily-arena":
+      return resetHeroArenaBossVictoryLedger(sourceHero);
+  }
+}
+
+function applyCityAdminHeroState(nextHero: HeroState, cloudSaveReason: string): void {
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
   saveLocalHeroSave(hero);
-  queueHeroCloudSave("admin-gold-grant");
+  queueHeroCloudSave(cloudSaveReason);
   renderCityHero();
+  renderCityArenaMenu();
   syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
 }
 
 function createCityRenderDebugReport(): string {
@@ -1166,25 +1215,6 @@ async function handleHeroProgressReset(): Promise<void> {
   } finally {
     cityHeroWidgetRefs.profileResetButton?.removeAttribute("disabled");
   }
-}
-
-function handleAdminArenaEnergyRestore(): void {
-  if (!canUseTelegramUserIdGatedAction(ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS)) {
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const nextHero = resetHeroArenaBossVictoryLedger(restoreHeroArenaEnergy(hero, now), now);
-
-  if (nextHero === hero) {
-    return;
-  }
-
-  hero = nextHero;
-  saveLocalHeroSave(hero);
-  queueHeroCloudSave("admin-arena-daily-reset");
-  renderCityHero();
-  renderCityArenaMenu();
 }
 
 function resetHeroProgressState(): void {
@@ -4774,28 +4804,6 @@ function handleProfileAppearanceChange(appearance: Partial<HeroAppearance>): voi
   cityHeroAppearanceMenu.render();
 }
 
-function handleTemporaryChurchSkillGrant(): void {
-  if (!canUseTelegramUserIdGatedAction(TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS)) {
-    return;
-  }
-
-  const now = new Date().toISOString();
-
-  hero = restoreHeroArenaEnergy(
-    unlockAllArenaBossTiers(
-      unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 20, now), 1000, now), now),
-      now,
-    ),
-    now,
-  );
-  saveLocalHeroSave(hero);
-  queueHeroCloudSave("church-cheat");
-  renderCityHero();
-  renderCityArenaMenu();
-  syncCityShopHeroState();
-  cityHeroEquipmentMenu.render();
-}
-
 function canUseTelegramUserIdGatedAction(allowedTelegramUserIds: ReadonlySet<string>): boolean {
   if (TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS.has(window.location.origin)) {
     return true;
@@ -4805,7 +4813,7 @@ function canUseTelegramUserIdGatedAction(allowedTelegramUserIds: ReadonlySet<str
 }
 
 function canUseArenaAdminControls(): boolean {
-  return canUseTelegramUserIdGatedAction(ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS);
+  return canUseTelegramUserIdGatedAction(ARENA_ADMIN_TELEGRAM_USER_IDS);
 }
 
 function syncShopHeroStateForProduct(product: CityShopProduct, previousHero: HeroState): void {
@@ -5075,7 +5083,6 @@ cityOnlinePvpTab?.addEventListener("click", () => setActiveOnlineRoomKind("pvp")
 cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
   void handleHeroProgressReset();
 });
-cityHeroWidgetRefs.arenaEnergy?.addEventListener("click", handleAdminArenaEnergyRestore);
 if (canShowLocalDebugRestartButton()) {
   dom.restartButton.addEventListener("click", () => restart());
 }
@@ -5123,7 +5130,6 @@ magicShopButton?.addEventListener("click", () => {
   flushRewardUiRenderIfDirty();
   magicShop?.open();
 });
-churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 window.setInterval(syncArenaEnergyTimerDisplays, ARENA_ENERGY_TIMER_REFRESH_MS);
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate, handleHeroAttributeReset);

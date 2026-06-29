@@ -46,11 +46,8 @@ import {
   createDefaultHero,
   createHeroPreviewEquipment,
   deriveHeroStats,
-  grantHeroGold,
-  grantHeroLevels,
   getBattleReward,
   sharpenHeroActiveWeapon,
-  unlockAllHeroShopRarities,
   upgradeHeroScroll,
   upgradeHeroScrollCapacity,
   type HeroEquipment,
@@ -76,7 +73,6 @@ const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggl
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
-const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
 let hero: HeroState = createDefaultHero();
@@ -545,16 +541,6 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
   restart();
 }
 
-function handleTemporaryChurchSkillGrant(): void {
-  const now = new Date().toISOString();
-
-  hero = unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 1, now), 1000, now), now);
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
-  weaponShop?.render();
-  armoryShop?.render();
-  magicShop?.render();
-}
-
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
   return createHeroPreviewEquipment(hero.equipment, itemIds);
 }
@@ -966,5 +952,4 @@ magicShopButton?.addEventListener("click", () => {
   flushRewardUiRenderIfDirty();
   magicShop?.open();
 });
-churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 startDebugApp();
