@@ -185,6 +185,8 @@ export function mountClassicActionBar(
   let wheelRotationAngle = 0;
   let isWheelTurning = false;
   let wheelTurnTimer: number | undefined;
+  let syncFrameId: number | undefined;
+  let pendingSyncState: CombatState | undefined;
   const syncWheelFitScale = () => syncClassicWheelFitScale(actionBarRoot);
 
   actionBarRoot.replaceChildren();
@@ -199,7 +201,7 @@ export function mountClassicActionBar(
     syncDamagePreviewToggle();
 
     if (lastState) {
-      sync(lastState);
+      scheduleSync(lastState);
     }
   });
 
@@ -368,7 +370,7 @@ export function mountClassicActionBar(
       clearButtonLayer(outgoingLayer);
 
       if (lastState) {
-        sync(lastState);
+        scheduleSync(lastState);
       }
     }, CLASSIC_WHEEL_TURN_MS);
   }
@@ -383,24 +385,43 @@ export function mountClassicActionBar(
 
   function syncFromDebugTuning(): void {
     if (lastState) {
-      sync(lastState);
+      scheduleSync(lastState);
     }
   }
 
-  const syncWithState = (state: CombatState): void => {
+  function scheduleSync(state: CombatState): void {
     lastState = state;
-    sync(state);
-  };
+    pendingSyncState = state;
+
+    if (syncFrameId !== undefined) {
+      return;
+    }
+
+    syncFrameId = window.requestAnimationFrame(() => {
+      syncFrameId = undefined;
+      const stateToSync = pendingSyncState;
+
+      pendingSyncState = undefined;
+
+      if (stateToSync) {
+        sync(stateToSync);
+      }
+    });
+  }
 
   if (getTuning) {
     window.addEventListener("arena-debug-tuning-change", syncFromDebugTuning);
   }
 
   return {
-    sync: syncWithState,
+    sync: scheduleSync,
     destroy() {
       if (wheelTurnTimer !== undefined) {
         window.clearTimeout(wheelTurnTimer);
+      }
+
+      if (syncFrameId !== undefined) {
+        window.cancelAnimationFrame(syncFrameId);
       }
 
       window.removeEventListener("arena-debug-tuning-change", syncFromDebugTuning);
