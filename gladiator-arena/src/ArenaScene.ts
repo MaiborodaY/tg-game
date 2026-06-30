@@ -2644,6 +2644,21 @@ export function subscribeCityTimeOfDayChanges(callback: (timeOfDay: CityTimeOfDa
   return () => window.removeEventListener(CITY_TIME_OF_DAY_CHANGE_EVENT, handler);
 }
 
+const ARENA_ENTRY_PROFILE_MARK_EVENT = "dust-arena-entry-profile-mark";
+type ArenaEntryProfileWindow = Window & { __dustArenaEntryProfileActive?: boolean };
+
+function emitArenaEntryProfileMark(label: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!(window as ArenaEntryProfileWindow).__dustArenaEntryProfileActive) {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(ARENA_ENTRY_PROFILE_MARK_EVENT, { detail: { label, time: performance.now() } }));
+}
+
 function waitForAnimationFrame(): Promise<void> {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => resolve());
@@ -2670,11 +2685,14 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   preload(): void {
+    emitArenaEntryProfileMark("scene preload start");
     preloadArenaAssets(this, this.initialEncounter);
     preloadPaperDollAssets(this);
+    emitArenaEntryProfileMark("scene preload end");
   }
 
   create(): void {
+    emitArenaEntryProfileMark("scene create start");
     this.isArenaCreateShutdown = false;
     const arenaReadyCallback = readyCallback;
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
@@ -2702,17 +2720,22 @@ export class ArenaScene extends Phaser.Scene {
       return;
     }
 
+    emitArenaEntryProfileMark("scene layers start");
     this.arenaLayers = createArenaLayers(this);
     drawArenaBackground(this, this.arenaLayers, this.initialEncounter);
+    emitArenaEntryProfileMark("scene layers end");
 
     await waitForAnimationFrame();
     if (this.isArenaCreateShutdown) {
       return;
     }
 
+    emitArenaEntryProfileMark("scene visuals start");
     this.visuals = buildVisuals(this);
+    emitArenaEntryProfileMark("scene visuals end");
     this.bindArenaSceneEvents();
     if (readyCallback === arenaReadyCallback) {
+      emitArenaEntryProfileMark("scene ready callback");
       arenaReadyCallback?.(this);
     }
   }

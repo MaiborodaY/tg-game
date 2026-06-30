@@ -228,6 +228,7 @@ const cityAdminButton = document.querySelector<HTMLButtonElement>("#cityAdminBut
 const cityAdminPanel = document.querySelector<HTMLElement>("#cityAdminPanel");
 const cityAdminGoldButton = document.querySelector<HTMLButtonElement>("#cityAdminGoldButton");
 const cityAdminPlayerViewButton = document.querySelector<HTMLButtonElement>("#cityAdminPlayerViewButton");
+const cityAdminArenaProfilerButton = document.querySelector<HTMLButtonElement>("#cityAdminArenaProfilerButton");
 const cityAdminLevelButton = document.querySelector<HTMLButtonElement>("[data-admin-action='level-up']");
 const cityAdminActionButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-action]")];
 const cityAdminGrantAdjustButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-grant-adjust]")];
@@ -237,6 +238,26 @@ type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 type GameMode = "pve" | "pvp";
 type CityAdminAction = "level-up" | "unlock-shop" | "unlock-arena" | "restore-energy" | "reset-daily-arena" | "reset-progress";
 type CityAdminGrantAdjustTarget = "gold" | "level";
+interface ArenaEntryProfilerMark {
+  label: string;
+  time: number;
+}
+interface ArenaEntryProfilerRun {
+  id: number;
+  selection: string;
+  startedAt: number;
+  marks: ArenaEntryProfilerMark[];
+  frameCount: number;
+  frameGapsOver32: number;
+  frameGapsOver50: number;
+  frameGapsOver100: number;
+  maxFrameGap: number;
+  lastFrameTime?: number;
+  rafId?: number;
+  finishing?: boolean;
+  finished?: boolean;
+}
+type ArenaEntryProfilerWindow = Window & { __dustArenaEntryProfileActive?: boolean };
 interface StartGameOptions {
   mode?: GameMode;
   initialState?: CombatState;
@@ -352,6 +373,7 @@ const BATTLE_REWARD_CLAIM_RETRY_LABEL = "Claim Reward";
 const AUTO_RESULT_RETURN_LABEL = "Return";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_ENTRY_FAILSAFE_TIMEOUT_MS = 5000;
+const ARENA_ENTRY_PROFILE_MARK_EVENT = "dust-arena-entry-profile-mark";
 const CITY_ARENA_PANEL_ENTRY_TRANSITION_MS = 1000;
 const ARENA_ENERGY_TIMER_REFRESH_MS = 30000;
 const ARENA_RANDOM_ENERGY_COST = 1;
@@ -374,6 +396,9 @@ const SHOP_PURCHASE_BURST_WINDOW_MS = 2500;
 let cityAdminGoldGrantAmount = CITY_ADMIN_GOLD_GRANT_AMOUNT;
 let cityAdminLevelGrantAmount = CITY_ADMIN_LEVEL_GRANT_AMOUNT;
 let cityAdminPlayerViewEnabled = false;
+let arenaEntryProfilerArmed = false;
+let arenaEntryProfilerRunId = 0;
+let activeArenaEntryProfilerRun: ArenaEntryProfilerRun | undefined;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -514,7 +539,7 @@ function refreshCityRenderDebugPanel(): void {
 }
 
 function mountCityAdminControls(): void {
-  if (!cityAdminButton || !cityAdminPanel || !cityAdminGoldButton || !cityAdminPlayerViewButton) {
+  if (!cityAdminButton || !cityAdminPanel || !cityAdminGoldButton || !cityAdminPlayerViewButton || !cityAdminArenaProfilerButton) {
     return;
   }
 
@@ -539,8 +564,11 @@ function mountCityAdminControls(): void {
 
   refreshCityAdminGrantControls();
   refreshCityAdminPlayerViewControl();
+  refreshCityAdminArenaProfilerControl();
   cityAdminPlayerViewButton.addEventListener("click", handleCityAdminPlayerViewToggle);
+  cityAdminArenaProfilerButton.addEventListener("click", handleCityAdminArenaProfilerToggle);
   cityAdminGoldButton.addEventListener("click", handleAdminGoldGrant);
+  window.addEventListener(ARENA_ENTRY_PROFILE_MARK_EVENT, handleArenaEntryProfileMark);
   cityAdminGrantAdjustButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const target = parseCityAdminGrantAdjustTarget(button.dataset.adminGrantAdjust);
@@ -607,6 +635,242 @@ function refreshAdminOnlyGameFeatureVisibility(): void {
   if (cityArenaMenu && !cityArenaMenu.hidden) {
     renderCityArenaMenu();
   }
+}
+
+function handleCityAdminArenaProfilerToggle(): void {
+  if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  if (activeArenaEntryProfilerRun) {
+    finishArenaEntryProfilerRun("cancelled");
+    return;
+  }
+
+  arenaEntryProfilerArmed = !arenaEntryProfilerArmed;
+  refreshCityAdminArenaProfilerControl();
+}
+
+function refreshCityAdminArenaProfilerControl(): void {
+  if (!cityAdminArenaProfilerButton) {
+    return;
+  }
+
+  const label = activeArenaEntryProfilerRun ? "Running" : arenaEntryProfilerArmed ? "Armed" : "Off";
+
+  cityAdminArenaProfilerButton.textContent = `Profile Arena: ${label}`;
+  cityAdminArenaProfilerButton.setAttribute("aria-pressed", String(arenaEntryProfilerArmed || Boolean(activeArenaEntryProfilerRun)));
+}
+
+function maybeBeginArenaEntryProfilerRun(selection: ArenaMenuSelection): void {
+  if (!arenaEntryProfilerArmed || !canShowCityAdminControls()) {
+    return;
+  }
+
+  if (activeArenaEntryProfilerRun) {
+    finishArenaEntryProfilerRun("restarted");
+  }
+
+  arenaEntryProfilerArmed = false;
+  activeArenaEntryProfilerRun = {
+    id: ++arenaEntryProfilerRunId,
+    selection: formatArenaEntryProfilerSelection(selection),
+    startedAt: performance.now(),
+    marks: [],
+    frameCount: 0,
+    frameGapsOver32: 0,
+    frameGapsOver50: 0,
+    frameGapsOver100: 0,
+    maxFrameGap: 0,
+  };
+  setArenaEntryProfilerSceneMarksEnabled(true);
+  markArenaEntryProfiler("tap accepted");
+  startArenaEntryProfilerFrameLoop(activeArenaEntryProfilerRun);
+  refreshCityAdminArenaProfilerControl();
+}
+
+function handleArenaEntryProfileMark(event: Event): void {
+  const detail = event instanceof CustomEvent ? (event.detail as Partial<ArenaEntryProfilerMark> | undefined) : undefined;
+
+  if (!detail?.label) {
+    return;
+  }
+
+  markArenaEntryProfiler(detail.label, typeof detail.time === "number" ? detail.time : undefined);
+}
+
+function markArenaEntryProfiler(label: string, time = performance.now()): void {
+  const profile = activeArenaEntryProfilerRun;
+
+  if (!profile || profile.finished) {
+    return;
+  }
+
+  profile.marks.push({ label, time });
+}
+
+function startArenaEntryProfilerFrameLoop(profile: ArenaEntryProfilerRun): void {
+  const tick = (time: number): void => {
+    if (activeArenaEntryProfilerRun !== profile || profile.finished) {
+      return;
+    }
+
+    recordArenaEntryProfilerFrame(profile, time);
+    profile.rafId = window.requestAnimationFrame(tick);
+  };
+
+  profile.rafId = window.requestAnimationFrame(tick);
+}
+
+function recordArenaEntryProfilerFrame(profile: ArenaEntryProfilerRun, time: number): void {
+  if (profile.lastFrameTime !== undefined) {
+    const gap = time - profile.lastFrameTime;
+
+    profile.maxFrameGap = Math.max(profile.maxFrameGap, gap);
+    if (gap > 32) {
+      profile.frameGapsOver32 += 1;
+    }
+    if (gap > 50) {
+      profile.frameGapsOver50 += 1;
+    }
+    if (gap > 100) {
+      profile.frameGapsOver100 += 1;
+    }
+  }
+
+  profile.frameCount += 1;
+  profile.lastFrameTime = time;
+}
+
+function finishArenaEntryProfilerRunAfterNextFrame(status: string): void {
+  const profile = activeArenaEntryProfilerRun;
+
+  if (!profile || profile.finishing || profile.finished) {
+    return;
+  }
+
+  profile.finishing = true;
+  markArenaEntryProfiler("finish scheduled");
+  window.requestAnimationFrame((time) => {
+    if (activeArenaEntryProfilerRun !== profile || profile.finished) {
+      return;
+    }
+
+    recordArenaEntryProfilerFrame(profile, time);
+    markArenaEntryProfiler("first post-ready frame", time);
+    finishArenaEntryProfilerRun(status);
+  });
+}
+
+function finishArenaEntryProfilerRun(status: string): void {
+  const profile = activeArenaEntryProfilerRun;
+
+  if (!profile || profile.finished) {
+    return;
+  }
+
+  markArenaEntryProfiler(`status: ${status}`);
+  profile.finished = true;
+  if (profile.rafId !== undefined) {
+    window.cancelAnimationFrame(profile.rafId);
+  }
+  activeArenaEntryProfilerRun = undefined;
+  setArenaEntryProfilerSceneMarksEnabled(false);
+  refreshCityAdminArenaProfilerControl();
+  showArenaEntryProfilerReport(profile, status);
+}
+
+function setArenaEntryProfilerSceneMarksEnabled(enabled: boolean): void {
+  (window as ArenaEntryProfilerWindow).__dustArenaEntryProfileActive = enabled;
+}
+
+function formatArenaEntryProfilerSelection(selection: ArenaMenuSelection): string {
+  if (selection.kind === "random") {
+    return `tier ${selection.tierId} ${selection.difficultyId}`;
+  }
+
+  return selection.duo ? `${selection.bossId} duo bot` : `${selection.bossId} solo`;
+}
+
+function showArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: string): void {
+  if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  const report = createArenaEntryProfilerReport(profile, status);
+  const existing = document.querySelector<HTMLElement>(".arena-entry-profiler");
+  const root = document.createElement("section");
+  const heading = document.createElement("h2");
+  const output = document.createElement("pre");
+  const actions = document.createElement("div");
+  const copyButton = document.createElement("button");
+  const closeButton = document.createElement("button");
+
+  existing?.remove();
+  console.info(report);
+
+  root.className = "arena-entry-profiler";
+  root.setAttribute("aria-label", "Arena entry profiler result");
+  heading.textContent = "Arena Entry Profile";
+  output.textContent = report;
+  copyButton.type = "button";
+  copyButton.textContent = "Copy";
+  copyButton.addEventListener("click", () => {
+    const copyPromise = navigator.clipboard?.writeText(report);
+
+    if (!copyPromise) {
+      return;
+    }
+
+    void copyPromise.then(() => {
+      copyButton.textContent = "Copied";
+      window.setTimeout(() => {
+        copyButton.textContent = "Copy";
+      }, 1200);
+    }).catch(() => undefined);
+  });
+  closeButton.type = "button";
+  closeButton.textContent = "Close";
+  closeButton.addEventListener("click", () => root.remove());
+  actions.className = "arena-entry-profiler__actions";
+  actions.append(copyButton, closeButton);
+  root.append(heading, output, actions);
+
+  document.body.append(root);
+}
+
+function createArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: string): string {
+  const lastMark = profile.marks[profile.marks.length - 1];
+  const totalMs = (lastMark?.time ?? performance.now()) - profile.startedAt;
+  const lines = profile.marks.map((mark, index) => {
+    const previousTime = index > 0 ? profile.marks[index - 1]?.time ?? profile.startedAt : profile.startedAt;
+    const total = mark.time - profile.startedAt;
+    const delta = mark.time - previousTime;
+
+    return `${formatArenaEntryProfilerDuration(total).padStart(7)} +${formatArenaEntryProfilerDuration(delta).padStart(6)} ${mark.label}`;
+  });
+
+  return [
+    `status: ${status}`,
+    `selection: ${profile.selection}`,
+    `total: ${formatArenaEntryProfilerDuration(totalMs)}`,
+    `frames: ${profile.frameCount}`,
+    `max frame gap: ${formatArenaEntryProfilerDuration(profile.maxFrameGap)}`,
+    `frame gaps >32ms: ${profile.frameGapsOver32}`,
+    `frame gaps >50ms: ${profile.frameGapsOver50}`,
+    `frame gaps >100ms: ${profile.frameGapsOver100}`,
+    "",
+    "timeline:",
+    ...lines,
+  ].join("\n");
+}
+
+function formatArenaEntryProfilerDuration(durationMs: number): string {
+  if (!Number.isFinite(durationMs)) {
+    return "0ms";
+  }
+
+  return `${Math.max(0, Math.round(durationMs))}ms`;
 }
 
 function parseCityAdminGrantAdjustTarget(target: string | undefined): CityAdminGrantAdjustTarget | undefined {
@@ -2010,18 +2274,24 @@ function isActiveArenaEntry(scene: ArenaScene, token: number): boolean {
 }
 
 async function runArenaEntry(scene: ArenaScene, entryToken: number): Promise<void> {
+  markArenaEntryProfiler("runArenaEntry start");
   isArenaEntryTransitionPlaying = true;
   syncAutoBattleToggle();
 
   try {
+    markArenaEntryProfiler("prepareEntry start");
     await scene.prepareEntry(state);
+    markArenaEntryProfiler("prepareEntry end");
 
     if (!isActiveArenaEntry(scene, entryToken)) {
+      finishArenaEntryProfilerRun("cancelled: inactive scene");
       return;
     }
 
     finishArenaEntryGate(entryToken);
+    markArenaEntryProfiler("entry transition start");
     await scene.playEntryTransition(state);
+    markArenaEntryProfiler("entry transition end");
   } finally {
     const stillActive = isActiveArenaEntry(scene, entryToken);
 
@@ -2032,6 +2302,7 @@ async function runArenaEntry(scene: ArenaScene, entryToken: number): Promise<voi
       finishArenaEntryGate(entryToken);
       refreshArenaLayout();
       scheduleAutoPlayerTurn();
+      finishArenaEntryProfilerRunAfterNextFrame("ready");
     }
   }
 }
@@ -4225,7 +4496,11 @@ async function playCityArenaPanelEntryTransition(): Promise<void> {
 }
 
 async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> {
+  maybeBeginArenaEntryProfilerRun(selection);
+  markArenaEntryProfiler("startSelectedArena");
+
   if (isPvpRoomBlockingArena()) {
+    finishArenaEntryProfilerRun("blocked: online room");
     setPvpStatus("Cancel online room before fighting bots.");
     syncPvpControls();
     return;
@@ -4234,6 +4509,7 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   const levelGateTitle = getArenaSelectionLevelGateTitle(selection);
 
   if (levelGateTitle) {
+    finishArenaEntryProfilerRun("blocked: level gate");
     renderCityArenaMenu();
     window.alert(levelGateTitle);
     return;
@@ -4243,6 +4519,7 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
     const limitTitle = getArenaSelectionBossVictoryLimitTitle(selection);
 
     if (limitTitle) {
+      finishArenaEntryProfilerRun("blocked: boss limit");
       renderCityArenaMenu();
       window.alert(limitTitle);
       return;
@@ -4251,9 +4528,12 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
 
   setPendingManualArenaStartSelection(selection);
   recordArenaEntryActivity("arena-entry-energy-spend");
+  markArenaEntryProfiler("energy spend start");
   const hasEnergy = await spendArenaEnergyForSelectedArena(selection, { renderMenuOnSuccess: false });
+  markArenaEntryProfiler("energy spend end");
 
   if (!hasEnergy) {
+    finishArenaEntryProfilerRun("blocked: no energy");
     setPendingManualArenaStartSelection();
     return;
   }
@@ -4262,9 +4542,12 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   gameMode = "pve";
   syncRestartButtonVisibility();
   activeArenaSelection = selection;
+  markArenaEntryProfiler("create combat state start");
   const initialState = createCombatStateForSelection(selection);
+  markArenaEntryProfiler("create combat state end");
 
   recordArenaEntryActivity("arena-entry-transition");
+  markArenaEntryProfiler("city transition start");
   void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel", prepareArenaEntry: true }).finally(() => {
     setPendingManualArenaStartSelection();
   });
@@ -4494,16 +4777,21 @@ async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection, o
 
   arenaEnergySpendPending = true;
   syncCityArenaBotControls();
+  markArenaEntryProfiler("energy pending UI sync");
   await nextAnimationFrame();
+  markArenaEntryProfiler("energy pending UI painted");
 
   try {
     if (canUseGladiatorCloudSave()) {
+      markArenaEntryProfiler("energy API start");
       hero = {
         ...hero,
         arenaEnergy: await spendGladiatorArenaEnergy(hero, energyCost),
       };
+      markArenaEntryProfiler("energy API end");
       saveLocalHeroSave(hero);
     } else {
+      markArenaEntryProfiler("local energy spend start");
       const localSpend = spendHeroArenaEnergy(hero, energyCost);
 
       if (!localSpend.ok) {
@@ -4514,9 +4802,11 @@ async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection, o
       }
 
       hero = localSpend.hero;
+      markArenaEntryProfiler("local energy spend end");
       saveLocalHeroSave(hero);
     }
 
+    markArenaEntryProfiler("energy state sync start");
     syncHeroRuntimeState();
     if (options.renderMenuOnSuccess ?? true) {
       renderCityArenaMenu();
@@ -4524,6 +4814,7 @@ async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection, o
       syncCityArenaMenuEnergy();
       syncCityArenaBotControls();
     }
+    markArenaEntryProfiler("energy state sync end");
     return true;
   } catch (error) {
     if (error instanceof GladiatorSaveError && error.arenaEnergy) {
@@ -4714,7 +5005,9 @@ function suspendCityScenePreview(): void {
 async function prepareCityScenePreviewForArenaEntry(encounter?: CombatState["encounter"]): Promise<void> {
   recordArenaEntryActivity("arena-entry-sleep-city");
   recordArenaEntryActivity("arena-entry-prewarm");
+  markArenaEntryProfiler("prewarm arena assets start");
   await prewarmArenaAssetsForBrowserCache(encounter).catch(() => undefined);
+  markArenaEntryProfiler("prewarm arena assets end");
   recordArenaEntryActivity("arena-entry-mount");
 }
 
@@ -4728,6 +5021,7 @@ function recordArenaEntryActivity(action: string): void {
 }
 
 function mountArena(): void {
+  markArenaEntryProfiler("mountArena start");
   unmountArena?.();
   unmountArena = undefined;
   arenaScene = undefined;
@@ -4738,14 +5032,17 @@ function mountArena(): void {
       return;
     }
 
+    markArenaEntryProfiler("launchArena start");
     unmountArena = launchArena((scene) => {
       if (arenaEntryToken !== entryToken) {
         return;
       }
 
+      markArenaEntryProfiler("launchArena ready");
       arenaScene = scene;
       void runArenaEntry(scene, entryToken);
     }, handleAction, hero.equipment, hero.appearance, state.encounter);
+    markArenaEntryProfiler("launchArena requested");
   });
 }
 
@@ -4757,6 +5054,7 @@ function unmountArenaScene(): void {
 }
 
 function startGame(options: StartGameOptions = {}): void {
+  markArenaEntryProfiler("startGame start");
   gameMode = options.mode ?? "pve";
   resetBattleInteractionLocksForArenaStart();
   flushShopEquipmentVisualSync();
@@ -4777,7 +5075,9 @@ function startGame(options: StartGameOptions = {}): void {
     dom.gameScreen.hidden = false;
     document.body.classList.add("arena-active");
     if (initialState) {
+      markArenaEntryProfiler("commit initial state start");
       void commitState(initialState, { syncArena: false });
+      markArenaEntryProfiler("commit initial state requested");
     } else {
       restart({ syncArena: false });
     }
@@ -4792,6 +5092,7 @@ function startGame(options: StartGameOptions = {}): void {
   dom.gameScreen.classList.add("battle-screen--arena-entry");
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
+  markArenaEntryProfiler("combat controls mount start");
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
   classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
     getControlledActor: getControlledActionActor,
@@ -4800,8 +5101,11 @@ function startGame(options: StartGameOptions = {}): void {
   autoBattleOffButton = mountAutoBattleOffButton(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
+  markArenaEntryProfiler("combat controls mount end");
   if (initialState) {
+    markArenaEntryProfiler("commit initial state start");
     void commitState(initialState, { syncArena: false });
+    markArenaEntryProfiler("commit initial state requested");
   } else {
     restart({ syncArena: false });
   }
@@ -4813,7 +5117,9 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
   const { cityTransition = "city", prepareArenaEntry = false, ...startOptions } = options;
   const shouldPrepareArenaEntry = prepareArenaEntry && cityTransition === "arenaPanel" && startOptions.mode !== "pvp";
 
+  markArenaEntryProfiler("startGameWithCityTransition");
   if (isArenaTransitionRunning) {
+    finishArenaEntryProfilerRun("blocked: transition already running");
     return;
   }
 
@@ -4836,20 +5142,28 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
 
   try {
     if (cityTransition === "arenaPanel") {
+      markArenaEntryProfiler("arena panel transition start");
       await playCityArenaPanelEntryTransition();
+      markArenaEntryProfiler("arena panel transition end");
     } else {
+      markArenaEntryProfiler("city focus transition start");
       await (cityScene?.focusArenaTransition() ?? Promise.resolve());
+      markArenaEntryProfiler("city focus transition end");
     }
 
     if (shouldPrepareArenaEntry) {
       showCityReturnTransition("Preparing Arena...");
+      markArenaEntryProfiler("prepare city preview start");
       await prepareCityScenePreviewForArenaEntry(startOptions.initialState?.encounter ?? state.encounter);
+      markArenaEntryProfiler("prepare city preview end");
     }
   } finally {
     if (shouldPrepareArenaEntry) {
       hideCityReturnTransition();
     }
+    markArenaEntryProfiler("startGame call");
     startGame(startOptions);
+    markArenaEntryProfiler("startGame returned");
     dom.startButton.disabled = false;
     isArenaTransitionRunning = false;
   }
