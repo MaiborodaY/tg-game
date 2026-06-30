@@ -37,6 +37,8 @@ import {
   DAMAGE_BLOCK_ICON_ASSET_URL,
   DAMAGE_HIT_ICON_ASSET_KEY,
   DAMAGE_HIT_ICON_ASSET_URL,
+  MAGIC_DAMAGE_ICON_ASSET_KEY,
+  MAGIC_DAMAGE_ICON_ASSET_URL,
   FIGHTER_BACK_BOOT_LEATHER_ASSET_KEY,
   FIGHTER_BACK_FOOT_DUMMY_ASSET_KEY,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
@@ -518,6 +520,8 @@ interface ArenaRestRecoveryPopupVisual {
   staminaLabel: Phaser.GameObjects.Text;
 }
 
+type DamagePopupKind = "physical" | "magic";
+
 interface ArenaEffectPools {
   floatingLabels: Phaser.GameObjects.Text[];
   slashArcs: Phaser.GameObjects.Graphics[];
@@ -525,6 +529,7 @@ interface ArenaEffectPools {
   armorAbsorbPopups: ArenaIconTextPopupVisual[];
   armorBreakPopups: ArenaIconTextPopupVisual[];
   damageIconPopups: ArenaIconTextPopupVisual[];
+  magicDamageIconPopups: ArenaIconTextPopupVisual[];
   poisonDamagePopups: ArenaIconTextPopupVisual[];
   damageBurstPopups: ArenaDamageBurstPopupVisual[];
   damageTextPopups: ArenaTextPopupVisual[];
@@ -1846,6 +1851,7 @@ function preloadArenaAssets(target: Phaser.Scene, encounter?: ArenaBackgroundPre
   getArenaBackgroundLayerConfigs(encounter).forEach((asset) => target.load.image(asset.key, asset.url));
   target.load.image(DAMAGE_BLOCK_ICON_ASSET_KEY, DAMAGE_BLOCK_ICON_ASSET_URL);
   target.load.image(DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL);
+  target.load.image(MAGIC_DAMAGE_ICON_ASSET_KEY, MAGIC_DAMAGE_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL);
   target.load.image(REST_ZZZ_ICON_ASSET_KEY, REST_ZZZ_ICON_ASSET_URL);
@@ -2115,6 +2121,10 @@ function ensurePaperDollItemAssetsLoaded(target: Phaser.Scene, itemIds: readonly
 }
 
 function ensurePaperDollAssetEntriesLoaded(target: Phaser.Scene, entries: readonly PaperDollAssetLoadEntry[]): Promise<void> {
+  if (!canUsePaperDollAssetLoader(target)) {
+    return Promise.resolve();
+  }
+
   const missingEntries = entries.filter((entry) => !target.textures.exists(entry.key));
 
   if (missingEntries.length === 0) {
@@ -2136,7 +2146,7 @@ function ensurePaperDollAssetEntriesLoaded(target: Phaser.Scene, entries: readon
     entriesToQueue.push(entry);
   });
 
-  if (entriesToQueue.length > 0) {
+  if (entriesToQueue.length > 0 && canUsePaperDollAssetLoader(target)) {
     const queuedLoad = new Promise<void>((resolve) => {
       const finish = () => {
         entriesToQueue.forEach((entry) => pendingLoads.delete(entry.key));
@@ -2157,6 +2167,10 @@ function ensurePaperDollAssetEntriesLoaded(target: Phaser.Scene, entries: readon
   return Promise.all(promises).then(() => undefined);
 }
 
+function canUsePaperDollAssetLoader(target: Phaser.Scene): boolean {
+  return Boolean(target.textures && target.load?.list && target.load.inflight && target.load.queue);
+}
+
 function getPendingPaperDollAssetLoads(target: Phaser.Scene): Map<string, Promise<void>> {
   let pendingLoads = paperDollAssetLoadPromisesByScene.get(target);
 
@@ -2173,6 +2187,7 @@ function getArenaAssetPrewarmUrls(encounter?: ArenaBackgroundPreloadEncounter): 
     ...getArenaBackgroundLayerConfigs(encounter).map((asset) => asset.url),
     DAMAGE_BLOCK_ICON_ASSET_URL,
     DAMAGE_HIT_ICON_ASSET_URL,
+    MAGIC_DAMAGE_ICON_ASSET_URL,
     DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
     DAMAGE_ARMOR_BREAK_ICON_ASSET_URL,
     REST_ZZZ_ICON_ASSET_URL,
@@ -2784,6 +2799,9 @@ export class ArenaScene extends Phaser.Scene {
     const playerResultDelays = playerActionAnimation?.impacts ?? (playerResultDelay ? [playerResultDelay] : undefined);
     const helperResultDelays = helperActionAnimation?.impacts ?? (helperResultDelay ? [helperResultDelay] : undefined);
     const enemyResultDelays = enemyActionAnimation?.impacts ?? (enemyResultDelay ? [enemyResultDelay] : undefined);
+    const playerDamagePopupKind = getDamagePopupKindForAction(lastPlayerAction, nextState.player.weaponClass);
+    const helperDamagePopupKind = getDamagePopupKindForAction(lastHelperAction, nextState.helper?.weaponClass);
+    const enemyDamagePopupKind = getDamagePopupKindForAction(lastEnemyAction, nextState.enemy.weaponClass);
     const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, helperResultDelay, enemyResultDelay);
 
     queueRemovedArmorSlotFlyOff(this, actionAnimations, playerRemovedArmorSprites, playerResultDelay, 1);
@@ -2824,6 +2842,7 @@ export class ArenaScene extends Phaser.Scene {
       nextState.lastPlayerHitResults,
       playerResultDelays,
       playerSettings,
+      playerDamagePopupKind,
     );
     if (!queuedPlayerHitResults && nextState.lastPlayerDamage > 0) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
@@ -2834,6 +2853,7 @@ export class ArenaScene extends Phaser.Scene {
           nextState.lastPlayerArmorAbsorbed,
           nextState.lastPlayerArmorBroken,
           playerSettings,
+          playerDamagePopupKind,
         );
 
         return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit", visuals.enemy.paperDollRig?.bodyPresetKey));
@@ -2859,6 +2879,7 @@ export class ArenaScene extends Phaser.Scene {
       nextState.lastHelperHitResults,
       helperResultDelays,
       playerSettings,
+      helperDamagePopupKind,
     );
     if (!queuedHelperHitResults && nextState.lastHelperDamage > 0) {
       queueCombatResultAnimation(actionAnimations, helperResultDelay, () => {
@@ -2869,6 +2890,7 @@ export class ArenaScene extends Phaser.Scene {
           nextState.lastHelperArmorAbsorbed,
           nextState.lastHelperArmorBroken,
           playerSettings,
+          helperDamagePopupKind,
         );
 
         return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit", visuals.enemy.paperDollRig?.bodyPresetKey));
@@ -2894,6 +2916,7 @@ export class ArenaScene extends Phaser.Scene {
       nextState.lastEnemyHitResults,
       enemyResultDelays,
       playerSettings,
+      enemyDamagePopupKind,
     );
     if (!queuedEnemyHitResults && nextState.lastEnemyDamage > 0) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
@@ -2904,6 +2927,7 @@ export class ArenaScene extends Phaser.Scene {
           nextState.lastEnemyArmorAbsorbed,
           nextState.lastEnemyArmorBroken,
           playerSettings,
+          enemyDamagePopupKind,
         );
 
         return playBodyAnimationOnce(this, enemyDefenderVisual, getActiveBodyAnimation("hit", enemyDefenderVisual.paperDollRig?.bodyPresetKey));
@@ -12088,6 +12112,10 @@ function isStaffFireballAnimationAction(actionId: ActionId, weaponClass: HeroWea
   return weaponClass === "staff" && isAttackBodyAnimationKey(actionId);
 }
 
+function getDamagePopupKindForAction(actionId: ActionId | undefined, weaponClass: HeroWeaponClass | undefined): DamagePopupKind {
+  return actionId && isStaffFireballAnimationAction(actionId, weaponClass) ? "magic" : "physical";
+}
+
 function queueCombatResultAnimation(
   actionAnimations: Promise<void>[],
   delay: Promise<void> | undefined,
@@ -12103,6 +12131,7 @@ function queueCombatHitResultAnimations(
   hitResults: readonly CombatHitResult[] | undefined,
   delays: readonly (Promise<void> | undefined)[] | undefined,
   playerSettings: PlayerSettings,
+  damagePopupKind: DamagePopupKind = "physical",
 ): boolean {
   if (!hitResults?.length) {
     return false;
@@ -12110,7 +12139,7 @@ function queueCombatHitResultAnimations(
 
   hitResults.forEach((hitResult, index) => {
     queueCombatResultAnimation(actionAnimations, getCombatHitResultDelay(delays, index), () =>
-      playCombatHitResultAnimation(target, defender, hitResult, playerSettings),
+      playCombatHitResultAnimation(target, defender, hitResult, playerSettings, damagePopupKind),
     );
   });
 
@@ -12133,6 +12162,7 @@ function playCombatHitResultAnimation(
   defender: FighterVisual,
   hitResult: CombatHitResult,
   playerSettings: PlayerSettings,
+  damagePopupKind: DamagePopupKind = "physical",
 ): Promise<void> {
   if (hitResult.damage > 0) {
     showDamageResultPopupFromFighter(
@@ -12142,6 +12172,7 @@ function playCombatHitResultAnimation(
       hitResult.armorAbsorbed,
       hitResult.armorBroken,
       playerSettings,
+      damagePopupKind,
     );
 
     return playBodyAnimationOnce(target, defender, getActiveBodyAnimation("hit", defender.paperDollRig?.bodyPresetKey));
@@ -12365,6 +12396,7 @@ function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
       armorAbsorbPopups: [],
       armorBreakPopups: [],
       damageIconPopups: [],
+      magicDamageIconPopups: [],
       poisonDamagePopups: [],
       damageBurstPopups: [],
       damageTextPopups: [],
@@ -12575,6 +12607,26 @@ function acquireDamageIconPopup(target: Phaser.Scene): ArenaIconTextPopupVisual 
 
 function releaseDamageIconPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
   releaseIconTextPopup(target, popup, getArenaEffectPools(target).damageIconPopups);
+}
+
+function acquireMagicDamageIconPopup(target: Phaser.Scene): ArenaIconTextPopupVisual {
+  const pool = getArenaEffectPools(target).magicDamageIconPopups;
+  const popup = pool.pop() ?? createIconTextPopup(target, MAGIC_DAMAGE_ICON_ASSET_KEY, -2, {
+    color: "#d7f6ff",
+    fontFamily: "Georgia",
+    fontSize: "30px",
+    fontStyle: "900",
+    stroke: "#102f5c",
+    strokeThickness: 5,
+  });
+
+  resetIconTextPopup(target, popup);
+
+  return popup;
+}
+
+function releaseMagicDamageIconPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
+  releaseIconTextPopup(target, popup, getArenaEffectPools(target).magicDamageIconPopups);
 }
 
 function acquirePoisonDamagePopup(target: Phaser.Scene): ArenaIconTextPopupVisual {
@@ -13012,6 +13064,7 @@ function showDamagePopupFromFighter(
   amount: number,
   screenOffsetX = 0,
   playerSettings = getPlayerSettings(),
+  kind: DamagePopupKind = "physical",
 ): void {
   if (amount <= 0) {
     return;
@@ -13019,7 +13072,7 @@ function showDamagePopupFromFighter(
 
   const point = getFighterHeadPopupPoint(target, fighter, getDamagePopupHeadOffsetY());
 
-  showDamagePopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y, amount, playerSettings);
+  showDamagePopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y, amount, playerSettings, kind);
 }
 
 function showDamageResultPopupFromFighter(
@@ -13029,6 +13082,7 @@ function showDamageResultPopupFromFighter(
   armorAbsorbed: number,
   armorBroken: boolean,
   playerSettings = getPlayerSettings(),
+  kind: DamagePopupKind = "physical",
 ): void {
   if (armorBroken) {
     showArmorBreakPopupFromFighter(target, fighter, totalDamage);
@@ -13040,7 +13094,7 @@ function showDamageResultPopupFromFighter(
     return;
   }
 
-  showDamagePopupFromFighter(target, fighter, getHealthPopupDamage(totalDamage, armorAbsorbed), 0, playerSettings);
+  showDamagePopupFromFighter(target, fighter, getHealthPopupDamage(totalDamage, armorAbsorbed), 0, playerSettings, kind);
 }
 
 function showArmorAbsorbPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual, amount: number, screenOffsetX = 0): void {
@@ -13422,7 +13476,14 @@ function setRestRecoveryPopupRow(
   setPhaserTextIfChanged(label, `+${amount}`);
 }
 
-function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number, playerSettings = getPlayerSettings()): void {
+function showDamagePopup(
+  target: Phaser.Scene,
+  x: number,
+  y: number,
+  amount: number,
+  playerSettings = getPlayerSettings(),
+  kind: DamagePopupKind = "physical",
+): void {
   const useBurst = areArenaVfxEnabled(playerSettings);
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = useBurst ? getArenaPopupFixedScreenScale(target) : 1 / layerScale;
@@ -13430,18 +13491,19 @@ function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: num
   const startScale = (useBurst ? 0.58 : 0.9) * fixedScreenScale * popupScale;
   const endScale = fixedScreenScale * popupScale;
   const liftY = 34 / layerScale;
+  const iconAssetKey = kind === "magic" ? MAGIC_DAMAGE_ICON_ASSET_KEY : DAMAGE_HIT_ICON_ASSET_KEY;
   let popupContainer: Phaser.GameObjects.Container;
   let releasePopup: () => void;
 
-  if (useBurst && target.textures.exists(DAMAGE_HIT_ICON_ASSET_KEY)) {
-    const source = target.textures.get(DAMAGE_HIT_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
+  if (useBurst && target.textures.exists(iconAssetKey)) {
+    const source = target.textures.get(iconAssetKey).getSourceImage() as { width?: number } | undefined;
     const sourceWidth = Math.max(1, source?.width ?? 256);
-    const popup = acquireDamageIconPopup(target);
+    const popup = kind === "magic" ? acquireMagicDamageIconPopup(target) : acquireDamageIconPopup(target);
 
     setPhaserTextIfChanged(popup.label, `${amount}`);
     popup.icon.setScale(DAMAGE_HIT_POPUP_SCREEN_SIZE / sourceWidth);
     popupContainer = popup.container;
-    releasePopup = () => releaseDamageIconPopup(target, popup);
+    releasePopup = () => (kind === "magic" ? releaseMagicDamageIconPopup(target, popup) : releaseDamageIconPopup(target, popup));
   } else if (useBurst) {
     const popup = acquireDamageBurstPopup(target);
 
