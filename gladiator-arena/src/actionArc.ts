@@ -121,6 +121,7 @@ const ACTION_UTILITY_ICON_URLS: Partial<Record<ActionId, string>> = {
 };
 const ACTION_BUTTON_PRESS_MS = 140;
 const pressedButtonTimers = new WeakMap<HTMLButtonElement, number>();
+const pressedButtonFrameIds = new WeakMap<HTMLButtonElement, number>();
 
 interface AttackIconStyleTuning {
   scale: number;
@@ -347,15 +348,25 @@ export function pressActionTokenButton(button: HTMLButtonElement): void {
     window.clearTimeout(currentTimer);
   }
 
+  const currentFrameId = pressedButtonFrameIds.get(button);
+
+  if (currentFrameId !== undefined) {
+    window.cancelAnimationFrame(currentFrameId);
+  }
+
   button.classList.remove("action-arc__button--pressed");
-  void button.offsetWidth;
-  button.classList.add("action-arc__button--pressed");
+  const frameId = window.requestAnimationFrame(() => {
+    pressedButtonFrameIds.delete(button);
+    button.classList.add("action-arc__button--pressed");
+  });
 
   const nextTimer = window.setTimeout(() => {
     button.classList.remove("action-arc__button--pressed");
     pressedButtonTimers.delete(button);
+    pressedButtonFrameIds.delete(button);
   }, ACTION_BUTTON_PRESS_MS);
 
+  pressedButtonFrameIds.set(button, frameId);
   pressedButtonTimers.set(button, nextTimer);
 }
 

@@ -508,6 +508,12 @@ cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) 
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
+subscribePlayerSettings(({ previousSettings, nextSettings }) => {
+  if (previousSettings.hudMode !== nextSettings.hudMode) {
+    renderCurrentDom();
+    syncActionArc();
+  }
+});
 mountArenaMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
 mountCityRenderDebugControls();
@@ -1504,6 +1510,7 @@ function renderCurrentDom(): void {
     hero,
     reward: gameMode === "pvp" || hasPendingBattleRewardRetry ? { gold: 0, xp: 0 } : getBattleReward(state),
     statsState: displayedStatsState,
+    hudMode: getPlayerSettings().hudMode,
     resultPresentation: battleResultPresentation,
     resultPresentationStage: battleResultPresentationStage,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation || pendingBattleRewardSettlement),
@@ -1893,9 +1900,6 @@ function commitState(nextState: CombatState, options: { syncArena?: boolean } = 
   state = committedState;
   displayedStatsState = shouldSyncArena ? getPreImpactStatsState(previousState, committedState) : committedState;
   renderCurrentDom();
-  if (!isBattleFinishing) {
-    renderCityHero();
-  }
   const actionAnimation = shouldSyncArena
     ? (arenaScene?.sync(state, {
       hudState: displayedStatsState,
@@ -2023,6 +2027,37 @@ function syncTurnProbe(): void {
   turnProbe?.sync(state, enemyTimerStatus, lastActionClick);
 }
 
+function isClassicCombatHudActive(): boolean {
+  return getPlayerSettings().hudMode === "classic";
+}
+
+function syncCombatActionControls(): void {
+  if (!hasStarted) {
+    return;
+  }
+
+  if (isClassicCombatHudActive()) {
+    destroyActionArc();
+    classicActionBar ??= mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
+      getControlledActor: getControlledActionActor,
+    });
+    return;
+  }
+
+  destroyClassicActionBar();
+  actionArc ??= mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
+}
+
+function destroyActionArc(): void {
+  actionArc?.destroy();
+  actionArc = undefined;
+}
+
+function destroyClassicActionBar(): void {
+  classicActionBar?.destroy();
+  classicActionBar = undefined;
+}
+
 function syncActionArc(): void {
   const controlledActor = getControlledActionActor();
   const lockedTurn: TurnOwner = controlledActor === "helper" ? "player" : "enemy";
@@ -2030,8 +2065,12 @@ function syncActionArc(): void {
     ? { ...state, activeTurn: lockedTurn }
     : state;
 
-  actionArc?.sync(visibleState);
-  classicActionBar?.sync(visibleState);
+  syncCombatActionControls();
+  if (isClassicCombatHudActive()) {
+    classicActionBar?.sync(visibleState);
+  } else {
+    actionArc?.sync(visibleState);
+  }
   syncAutoBattleToggle();
 }
 
@@ -5371,10 +5410,7 @@ function startGame(options: StartGameOptions = {}): void {
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
   markArenaEntryProfiler("combat controls mount start");
-  actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
-  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
-    getControlledActor: getControlledActionActor,
-  });
+  syncCombatActionControls();
   autoBattleButton = mountAutoBattleToggle(dom.gameScreen);
   autoBattleOffButton = mountAutoBattleOffButton(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);

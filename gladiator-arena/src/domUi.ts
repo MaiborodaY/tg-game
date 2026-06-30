@@ -57,7 +57,6 @@ export interface DomRefs {
   mainMenu: HTMLElement;
   gameScreen: HTMLElement;
   startButton: HTMLButtonElement;
-  log: HTMLElement;
   resultBanner: HTMLElement;
   resultEyebrow: HTMLElement;
   resultTitle: HTMLElement;
@@ -135,7 +134,6 @@ export function getDomRefs(): DomRefs {
     mainMenu: document.querySelector<HTMLElement>("#mainMenu"),
     gameScreen: document.querySelector<HTMLElement>("#gameScreen"),
     startButton: document.querySelector<HTMLButtonElement>("#startButton"),
-    log: document.querySelector<HTMLElement>("#log"),
     resultBanner: document.querySelector<HTMLElement>("#resultBanner"),
     resultEyebrow: document.querySelector<HTMLElement>("#resultEyebrow"),
     resultTitle: document.querySelector<HTMLElement>("#resultTitle"),
@@ -270,11 +268,13 @@ export interface BattleResultReturnState {
 }
 
 export type BattleResultPresentationStage = "loot" | "reward";
+export type CombatHudMode = "immersive" | "classic";
 
 export interface DomRenderContext {
   hero?: HeroState;
   reward?: BattleReward;
   statsState?: CombatState;
+  hudMode?: CombatHudMode;
   resultPresentation?: BattleResultPresentation;
   resultPresentationStage?: BattleResultPresentationStage;
   deferResultPresentation?: boolean;
@@ -322,17 +322,25 @@ const WEAPON_CLASS_LABELS: Record<HeroWeaponClass, string> = {
 };
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
+  const shouldRenderImmersiveHud = context.hudMode !== "classic";
+  const shouldRenderClassicHud = context.hudMode !== "immersive";
   const playerClinchRange = getFighterClinchRange(state.player);
   const distance = distanceLabel(state.distance, playerClinchRange);
   const band = distanceBand(state.distance, playerClinchRange);
 
-  setText(dom.distanceText, distance);
-  setText(dom.classicDistanceText, distance);
-  syncClassicDistanceBadge(dom.classicDistanceBadge, band);
-  syncClassicEncounterBanner(dom.classicEncounterBanner, getClassicEncounterDifficulty(state));
+  if (shouldRenderImmersiveHud) {
+    setText(dom.distanceText, distance);
+  }
+  if (shouldRenderClassicHud) {
+    setText(dom.classicDistanceText, distance);
+    syncClassicDistanceBadge(dom.classicDistanceBadge, band);
+    syncClassicEncounterBanner(dom.classicEncounterBanner, getClassicEncounterDifficulty(state));
+  }
   dom.gameScreen.classList.toggle("battle-screen--duo-boss", state.encounter?.mode === "duoBossAi" && Boolean(state.helper));
-  renderStats(dom, context.statsState ?? state);
-  renderLog(dom, state);
+  renderStats(dom, context.statsState ?? state, {
+    classic: shouldRenderClassicHud,
+    immersive: shouldRenderImmersiveHud,
+  });
   renderResult(dom, state, context);
 }
 
@@ -371,14 +379,11 @@ function syncClassicEncounterBanner(element: HTMLElement, difficulty: ClassicEnc
   });
 }
 
-function renderStats(dom: DomRefs, state: CombatState): void {
+function renderStats(dom: DomRefs, state: CombatState, hud: { classic: boolean; immersive: boolean }): void {
   const playerMaxHp = getFighterMaxHp(state.player);
   const playerMaxArmor = getFighterMaxArmor(state.player);
   const playerMaxStamina = getFighterMaxStamina(state.player);
   const helper = state.helper;
-  const helperMaxHp = helper ? getFighterMaxHp(helper) : 1;
-  const helperMaxArmor = helper ? getFighterMaxArmor(helper) : 0;
-  const helperMaxStamina = helper ? getFighterMaxStamina(helper) : 1;
   const enemyMaxHp = getFighterMaxHp(state.enemy);
   const enemyMaxArmor = getFighterMaxArmor(state.enemy);
   const enemyMaxStamina = getFighterMaxStamina(state.enemy);
@@ -386,57 +391,67 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   const playerHpText = `${state.player.hp}/${playerMaxHp}`;
   const playerArmorText = `${state.player.armor}/${playerMaxArmor}`;
   const playerStaminaText = `${state.player.stamina}/${playerMaxStamina}`;
-  const helperHpText = helper ? `${helper.hp}/${helperMaxHp}` : "0/0";
-  const helperArmorText = helper ? `${helper.armor}/${helperMaxArmor}` : "0/0";
-  const helperStaminaText = helper ? `${helper.stamina}/${helperMaxStamina}` : "0/0";
   const enemyHpText = `${state.enemy.hp}/${enemyMaxHp}`;
   const enemyArmorText = `${state.enemy.armor}/${enemyMaxArmor}`;
   const enemyStaminaText = `${state.enemy.stamina}/${enemyMaxStamina}`;
 
-  setText(dom.classicPlayerName, state.player.name);
-  syncHelperStats(dom, state);
-  setText(dom.classicEnemyName, state.enemy.name);
-  syncWardStatus(dom.playerWard, state.player.name, getFighterWardHits(state.player));
-  syncPreciseStrikeStatus(dom.playerPreciseStrike, state.player.name, getFighterPreciseStrikeHits(state.player));
-  syncDoubleStrikeStatus(dom.playerDoubleStrike, state.player.name, getFighterDoubleStrikeHits(state.player));
-  syncMaceArmorDamageStatus(dom.playerMaceArmorDamage, state.player.name, state.player.maceArmorDamagePercentBonus ?? 0);
-  syncStaffFireballDamageStatus(dom.playerStaffFireballDamage, state.player.name, state.player.staffFireballDamageBonus ?? 0);
-  syncPoisonStatus(dom.playerPoison, state.player.name, getFighterPoisonTurns(state.player));
-  syncWardStatus(dom.enemyWard, state.enemy.name, getFighterWardHits(state.enemy));
-  syncPreciseStrikeStatus(dom.enemyPreciseStrike, state.enemy.name, getFighterPreciseStrikeHits(state.enemy));
-  syncDoubleStrikeStatus(dom.enemyDoubleStrike, state.enemy.name, getFighterDoubleStrikeHits(state.enemy));
-  syncPoisonStatus(dom.enemyPoison, state.enemy.name, getFighterPoisonTurns(state.enemy));
-  setText(dom.playerHpText, playerHpText);
-  setText(dom.playerArmorText, playerArmorText);
-  setText(dom.playerStaText, playerStaminaText);
-  setText(dom.classicPlayerHpText, playerHpText);
-  setText(dom.classicPlayerArmorText, playerArmorText);
-  setText(dom.classicPlayerStaText, playerStaminaText);
-  setText(dom.classicHelperHpText, helperHpText);
-  setText(dom.classicHelperArmorText, helperArmorText);
-  setText(dom.classicHelperStaText, helperStaminaText);
-  setText(dom.enemyHpText, enemyHpText);
-  setText(dom.enemyArmorText, enemyArmorText);
-  setText(dom.enemyStaText, enemyStaminaText);
-  setText(dom.classicEnemyHpText, enemyHpText);
-  setText(dom.classicEnemyArmorText, enemyArmorText);
-  setText(dom.classicEnemyStaText, enemyStaminaText);
+  if (hud.immersive) {
+    setText(dom.playerHpText, playerHpText);
+    setText(dom.playerArmorText, playerArmorText);
+    setText(dom.playerStaText, playerStaminaText);
+    setText(dom.enemyHpText, enemyHpText);
+    setText(dom.enemyArmorText, enemyArmorText);
+    setText(dom.enemyStaText, enemyStaminaText);
 
-  setFlaskFill(dom.playerHpFill, state.player.hp / playerMaxHp);
-  setFlaskFill(dom.playerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
-  setFlaskFill(dom.playerStaFill, state.player.stamina / playerMaxStamina);
-  setFlaskFill(dom.enemyHpFill, state.enemy.hp / enemyMaxHp);
-  setFlaskFill(dom.enemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
-  setFlaskFill(dom.enemyStaFill, state.enemy.stamina / enemyMaxStamina);
-  setBarFill(dom.classicPlayerHpFill, state.player.hp / playerMaxHp);
-  setBarFill(dom.classicPlayerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
-  setBarFill(dom.classicPlayerStaFill, state.player.stamina / playerMaxStamina);
-  setBarFill(dom.classicHelperHpFill, helper ? helper.hp / helperMaxHp : 0);
-  setBarFill(dom.classicHelperArmorFill, helper && helperMaxArmor > 0 ? helper.armor / helperMaxArmor : 0);
-  setBarFill(dom.classicHelperStaFill, helper ? helper.stamina / helperMaxStamina : 0);
-  setBarFill(dom.classicEnemyHpFill, state.enemy.hp / enemyMaxHp);
-  setBarFill(dom.classicEnemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
-  setBarFill(dom.classicEnemyStaFill, state.enemy.stamina / enemyMaxStamina);
+    setFlaskFill(dom.playerHpFill, state.player.hp / playerMaxHp);
+    setFlaskFill(dom.playerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
+    setFlaskFill(dom.playerStaFill, state.player.stamina / playerMaxStamina);
+    setFlaskFill(dom.enemyHpFill, state.enemy.hp / enemyMaxHp);
+    setFlaskFill(dom.enemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
+    setFlaskFill(dom.enemyStaFill, state.enemy.stamina / enemyMaxStamina);
+  }
+
+  if (hud.classic) {
+    const helperMaxHp = helper ? getFighterMaxHp(helper) : 1;
+    const helperMaxArmor = helper ? getFighterMaxArmor(helper) : 0;
+    const helperMaxStamina = helper ? getFighterMaxStamina(helper) : 1;
+    const helperHpText = helper ? `${helper.hp}/${helperMaxHp}` : "0/0";
+    const helperArmorText = helper ? `${helper.armor}/${helperMaxArmor}` : "0/0";
+    const helperStaminaText = helper ? `${helper.stamina}/${helperMaxStamina}` : "0/0";
+
+    setText(dom.classicPlayerName, state.player.name);
+    syncHelperStats(dom, state);
+    setText(dom.classicEnemyName, state.enemy.name);
+    syncWardStatus(dom.playerWard, state.player.name, getFighterWardHits(state.player));
+    syncPreciseStrikeStatus(dom.playerPreciseStrike, state.player.name, getFighterPreciseStrikeHits(state.player));
+    syncDoubleStrikeStatus(dom.playerDoubleStrike, state.player.name, getFighterDoubleStrikeHits(state.player));
+    syncMaceArmorDamageStatus(dom.playerMaceArmorDamage, state.player.name, state.player.maceArmorDamagePercentBonus ?? 0);
+    syncStaffFireballDamageStatus(dom.playerStaffFireballDamage, state.player.name, state.player.staffFireballDamageBonus ?? 0);
+    syncPoisonStatus(dom.playerPoison, state.player.name, getFighterPoisonTurns(state.player));
+    syncWardStatus(dom.enemyWard, state.enemy.name, getFighterWardHits(state.enemy));
+    syncPreciseStrikeStatus(dom.enemyPreciseStrike, state.enemy.name, getFighterPreciseStrikeHits(state.enemy));
+    syncDoubleStrikeStatus(dom.enemyDoubleStrike, state.enemy.name, getFighterDoubleStrikeHits(state.enemy));
+    syncPoisonStatus(dom.enemyPoison, state.enemy.name, getFighterPoisonTurns(state.enemy));
+    setText(dom.classicPlayerHpText, playerHpText);
+    setText(dom.classicPlayerArmorText, playerArmorText);
+    setText(dom.classicPlayerStaText, playerStaminaText);
+    setText(dom.classicHelperHpText, helperHpText);
+    setText(dom.classicHelperArmorText, helperArmorText);
+    setText(dom.classicHelperStaText, helperStaminaText);
+    setText(dom.classicEnemyHpText, enemyHpText);
+    setText(dom.classicEnemyArmorText, enemyArmorText);
+    setText(dom.classicEnemyStaText, enemyStaminaText);
+
+    setBarFill(dom.classicPlayerHpFill, state.player.hp / playerMaxHp);
+    setBarFill(dom.classicPlayerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
+    setBarFill(dom.classicPlayerStaFill, state.player.stamina / playerMaxStamina);
+    setBarFill(dom.classicHelperHpFill, helper ? helper.hp / helperMaxHp : 0);
+    setBarFill(dom.classicHelperArmorFill, helper && helperMaxArmor > 0 ? helper.armor / helperMaxArmor : 0);
+    setBarFill(dom.classicHelperStaFill, helper ? helper.stamina / helperMaxStamina : 0);
+    setBarFill(dom.classicEnemyHpFill, state.enemy.hp / enemyMaxHp);
+    setBarFill(dom.classicEnemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
+    setBarFill(dom.classicEnemyStaFill, state.enemy.stamina / enemyMaxStamina);
+  }
 }
 
 function syncHelperStats(dom: DomRefs, state: CombatState): void {
@@ -606,18 +621,6 @@ function setText(element: HTMLElement, value: string): void {
 function setStyleTransform(element: HTMLElement, value: string): void {
   if (element.style.transform !== value) {
     element.style.transform = value;
-  }
-}
-
-function renderLog(dom: DomRefs, state: CombatState): void {
-  dom.log.innerHTML = "";
-
-  for (const entry of state.log) {
-    const item = document.createElement("div");
-    item.className = entry.important ? "log-entry important" : "log-entry";
-    item.textContent = entry.text;
-    dom.log.append(item);
-    break;
   }
 }
 

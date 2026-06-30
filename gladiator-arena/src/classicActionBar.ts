@@ -196,7 +196,6 @@ export function mountClassicActionBar(
     const hasPlayerControl = isBattleActive && isControlledActorTurn(state, controlledActor);
     const showDamagePreview = getPlayerSettings().showActionDamagePreview;
 
-    syncWheelFitScale();
     syncDamagePreviewToggle(isBattleActive, showDamagePreview);
 
     if (!activeLayer.mode) {
