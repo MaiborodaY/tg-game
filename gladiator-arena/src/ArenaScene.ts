@@ -8381,6 +8381,8 @@ function applyBodyAnimationKeyframeRange(
     return;
   }
 
+  const shadowRig = shouldAnimatePaperDollShadowRig(fighter) ? rig.shadow : undefined;
+
   if (!fighter.isShattered) {
     for (const key of RIG_PART_KEYS) {
       if (!animation.activeParts[key]) {
@@ -8394,7 +8396,7 @@ function applyBodyAnimationKeyframeRange(
 
       applyRigPartTransformKeyframeBlend(rig.parts[key], pivot, base, from, to, keyframeBlend, amount);
 
-      const shadowPart = rig.shadow?.parts[key];
+      const shadowPart = shadowRig?.parts[key];
 
       if (shadowPart) {
         applyRigPartTransformKeyframeBlend(shadowPart, pivot, base, from, to, keyframeBlend, amount);
@@ -8402,8 +8404,8 @@ function applyBodyAnimationKeyframeRange(
     }
 
     syncPaperDollEquipmentAnchors(rig);
-    if (rig.shadow) {
-      syncPaperDollEquipmentAnchors(rig.shadow);
+    if (shadowRig) {
+      syncPaperDollEquipmentAnchors(shadowRig);
     }
 
     applyFacePartTransformKeyframeBlend(
@@ -8427,7 +8429,7 @@ function applyBodyAnimationKeyframeRange(
       amount,
     );
     applyFacePartTransformKeyframeBlend(
-      rig.shadow?.faceParts.eyeLeft,
+      shadowRig?.faceParts.eyeLeft,
       HEAD_FACE_LEFT_EYE_X,
       HEAD_FACE_EYE_Y,
       baseKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
@@ -8437,7 +8439,7 @@ function applyBodyAnimationKeyframeRange(
       amount,
     );
     applyFacePartTransformKeyframeBlend(
-      rig.shadow?.faceParts.eyeRight,
+      shadowRig?.faceParts.eyeRight,
       HEAD_FACE_RIGHT_EYE_X,
       HEAD_FACE_EYE_Y,
       baseKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
@@ -8639,13 +8641,15 @@ function applyBodyAnimationPoseBlend(
     return;
   }
 
+  const shadowRig = shouldAnimatePaperDollShadowRig(fighter) ? rig.shadow : undefined;
+
   for (const key of RIG_PART_KEYS) {
     if (!animation.activeParts[key]) {
       continue;
     }
 
     const part = rig.parts[key];
-    const shadowPart = rig.shadow?.parts[key];
+    const shadowPart = shadowRig?.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const base = fromRigParts[key] ?? defaultRigPartTuning;
     const breath = toRigParts[key] ?? defaultRigPartTuning;
@@ -8657,8 +8661,8 @@ function applyBodyAnimationPoseBlend(
   }
 
   syncPaperDollEquipmentAnchors(rig);
-  if (rig.shadow) {
-    syncPaperDollEquipmentAnchors(rig.shadow);
+  if (shadowRig) {
+    syncPaperDollEquipmentAnchors(shadowRig);
   }
 
   applyFacePartTransformBlend(
@@ -8678,7 +8682,7 @@ function applyBodyAnimationPoseBlend(
     blend,
   );
   applyFacePartTransformBlend(
-    rig.shadow?.faceParts.eyeLeft,
+    shadowRig?.faceParts.eyeLeft,
     HEAD_FACE_LEFT_EYE_X,
     HEAD_FACE_EYE_Y,
     fromFaceParts.eyeLeft,
@@ -8686,7 +8690,7 @@ function applyBodyAnimationPoseBlend(
     blend,
   );
   applyFacePartTransformBlend(
-    rig.shadow?.faceParts.eyeRight,
+    shadowRig?.faceParts.eyeRight,
     HEAD_FACE_RIGHT_EYE_X,
     HEAD_FACE_EYE_Y,
     fromFaceParts.eyeRight,
@@ -9060,9 +9064,12 @@ function applyBodyAnimationWeaponMirrors(fighter: FighterVisual, mirrorX: boolea
 
   applyPaperDollWeaponMirror(rig.equipment.weaponMain, mirrorX, mirrorY);
   applyPaperDollWeaponMirror(rig.equipment.weaponBow, mirrorX, mirrorY);
-  if (rig.shadow) {
-    applyPaperDollWeaponMirror(rig.shadow.equipment.weaponMain, mirrorX, mirrorY);
-    applyPaperDollWeaponMirror(rig.shadow.equipment.weaponBow, mirrorX, mirrorY);
+
+  const shadowRig = shouldAnimatePaperDollShadowRig(fighter) ? rig.shadow : undefined;
+
+  if (shadowRig) {
+    applyPaperDollWeaponMirror(shadowRig.equipment.weaponMain, mirrorX, mirrorY);
+    applyPaperDollWeaponMirror(shadowRig.equipment.weaponBow, mirrorX, mirrorY);
   }
 }
 
@@ -14301,6 +14308,10 @@ function getEffectiveArenaShadowMode(playerSettings = getPlayerSettings()): Play
 
 function getArenaShadowMode(): PlayerSettings["shadowMode"] {
   return getEffectiveArenaShadowMode();
+}
+
+function shouldAnimatePaperDollShadowRig(fighter: FighterVisual): boolean {
+  return Boolean(fighter.castsShadow && !fighter.isShattered && fighter.paperDollRig?.shadow && getArenaShadowMode() === "high");
 }
 
 function syncFighterShadowVisibility(fighter: FighterVisual, alpha: number): void {
