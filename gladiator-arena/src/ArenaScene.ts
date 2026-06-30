@@ -2644,6 +2644,12 @@ export function subscribeCityTimeOfDayChanges(callback: (timeOfDay: CityTimeOfDa
   return () => window.removeEventListener(CITY_TIME_OF_DAY_CHANGE_EVENT, handler);
 }
 
+function waitForAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
 export class ArenaScene extends Phaser.Scene {
   visuals?: ArenaVisuals;
   arenaLayers?: ArenaLayers;
@@ -2657,6 +2663,7 @@ export class ArenaScene extends Phaser.Scene {
   private unsubscribePlayerAppearance?: () => void;
   private unsubscribePlayerSettings?: () => void;
   private arenaBackgroundLayerDragState?: ArenaBackgroundLayerDragState;
+  private isArenaCreateShutdown = false;
 
   constructor(private readonly initialEncounter?: ArenaBackgroundPreloadEncounter) {
     super("ArenaScene");
@@ -2668,11 +2675,49 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.isArenaCreateShutdown = false;
+    const arenaReadyCallback = readyCallback;
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
     syncArenaMainCamera(this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.isArenaCreateShutdown = true;
+      this.unsubscribeDebugTuning?.();
+      this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerAppearance?.();
+      this.unsubscribePlayerSettings?.();
+      this.input.off("pointerdown");
+      this.input.off("pointermove");
+      this.input.off("pointerup");
+      this.input.off("pointerupoutside");
+    });
+
+    void this.finishCreateOverFrames(arenaReadyCallback).catch((error) => {
+      console.error("ArenaScene create failed", error);
+    });
+  }
+
+  private async finishCreateOverFrames(arenaReadyCallback: ((scene: ArenaScene) => void) | undefined): Promise<void> {
+    await waitForAnimationFrame();
+    if (this.isArenaCreateShutdown) {
+      return;
+    }
+
     this.arenaLayers = createArenaLayers(this);
     drawArenaBackground(this, this.arenaLayers, this.initialEncounter);
+
+    await waitForAnimationFrame();
+    if (this.isArenaCreateShutdown) {
+      return;
+    }
+
     this.visuals = buildVisuals(this);
+    this.bindArenaSceneEvents();
+    if (readyCallback === arenaReadyCallback) {
+      arenaReadyCallback?.(this);
+    }
+  }
+
+  private bindArenaSceneEvents(): void {
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
       syncFighterBodyPreset(this.visuals?.player);
       syncFighterBodyPreset(this.visuals?.helper);
@@ -2702,17 +2747,6 @@ export class ArenaScene extends Phaser.Scene {
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.dragArenaBackgroundLayer(pointer));
     this.input.on("pointerup", () => this.endArenaBackgroundLayerDrag());
     this.input.on("pointerupoutside", () => this.endArenaBackgroundLayerDrag());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.unsubscribeDebugTuning?.();
-      this.unsubscribePlayerEquipment?.();
-      this.unsubscribePlayerAppearance?.();
-      this.unsubscribePlayerSettings?.();
-      this.input.off("pointerdown");
-      this.input.off("pointermove");
-      this.input.off("pointerup");
-      this.input.off("pointerupoutside");
-    });
-    readyCallback?.(this);
   }
 
   update(time: number): void {
