@@ -1336,6 +1336,7 @@ let activePlayerBodyScaleBonus = 0;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
 const arenaAssetPrewarmPromises = new Map<string, Promise<void>>();
+const arenaAssetPrewarmCompletedKeys = new Set<string>();
 let cityAssetPrewarmPromise: Promise<void> | undefined;
 const assetPrewarmImages = new Set<HTMLImageElement>();
 const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();
@@ -1956,21 +1957,48 @@ function getArenaBackgroundLayerConfigs(encounter?: ArenaBackgroundPreloadEncoun
   return getArenaBackgroundAssetSetForEncounter(encounter).layers;
 }
 
-function preloadArenaAssets(target: Phaser.Scene, encounter?: ArenaBackgroundPreloadEncounter): void {
-  getArenaBackgroundLayerConfigs(encounter).forEach((asset) => target.load.image(asset.key, asset.url));
-  target.load.image(DAMAGE_BLOCK_ICON_ASSET_KEY, DAMAGE_BLOCK_ICON_ASSET_URL);
-  target.load.image(DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL);
-  target.load.image(MAGIC_DAMAGE_ICON_ASSET_KEY, MAGIC_DAMAGE_ICON_ASSET_URL);
-  target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
-  target.load.image(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL);
-  target.load.image(REST_ZZZ_ICON_ASSET_KEY, REST_ZZZ_ICON_ASSET_URL);
-  target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);
-  target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);
-  target.load.image(FIREBALL_PROJECTILE_ASSET_KEY, FIREBALL_PROJECTILE_ASSET_URL);
-  target.load.image(WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL);
-  target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);
-  target.load.image(REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL);
-  preloadScrollCastPropAssets(target);
+interface PhaserPreloadQueueSummary {
+  total: number;
+  missing: number;
+}
+
+function createPhaserPreloadQueueSummary(): PhaserPreloadQueueSummary {
+  return { total: 0, missing: 0 };
+}
+
+function queueProfiledImageLoad(target: Phaser.Scene, key: string, url: string, summary: PhaserPreloadQueueSummary): void {
+  summary.total += 1;
+  if (!target.textures.exists(key)) {
+    summary.missing += 1;
+  }
+  target.load.image(key, url);
+}
+
+function addPhaserPreloadQueueSummary(target: PhaserPreloadQueueSummary, source: PhaserPreloadQueueSummary): PhaserPreloadQueueSummary {
+  target.total += source.total;
+  target.missing += source.missing;
+
+  return target;
+}
+
+function preloadArenaAssets(target: Phaser.Scene, encounter?: ArenaBackgroundPreloadEncounter): PhaserPreloadQueueSummary {
+  const summary = createPhaserPreloadQueueSummary();
+
+  getArenaBackgroundLayerConfigs(encounter).forEach((asset) => queueProfiledImageLoad(target, asset.key, asset.url, summary));
+  queueProfiledImageLoad(target, DAMAGE_BLOCK_ICON_ASSET_KEY, DAMAGE_BLOCK_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, MAGIC_DAMAGE_ICON_ASSET_KEY, MAGIC_DAMAGE_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, REST_ZZZ_ICON_ASSET_KEY, REST_ZZZ_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL, summary);
+  queueProfiledImageLoad(target, FIREBALL_PROJECTILE_ASSET_KEY, FIREBALL_PROJECTILE_ASSET_URL, summary);
+  queueProfiledImageLoad(target, WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL, summary);
+  queueProfiledImageLoad(target, REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL, summary);
+  queueProfiledImageLoad(target, REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL, summary);
+
+  return addPhaserPreloadQueueSummary(summary, preloadScrollCastPropAssets(target));
 }
 
 function getArenaAssetPrewarmKey(encounter?: ArenaBackgroundPreloadEncounter): string {
@@ -1986,12 +2014,31 @@ function getArenaAssetPrewarmKey(encounter?: ArenaBackgroundPreloadEncounter): s
 export function prewarmArenaAssetsForBrowserCache(encounter?: ArenaBackgroundPreloadEncounter): Promise<void> {
   const prewarmKey = getArenaAssetPrewarmKey(encounter);
   const existingPromise = arenaAssetPrewarmPromises.get(prewarmKey);
+  const urls = [...new Set(getArenaAssetPrewarmUrls(encounter))];
+  const group = `arena browser prewarm:${prewarmKey}`;
 
   if (existingPromise) {
-    return existingPromise;
+    emitArenaEntryProfileMark("browser prewarm reused", {
+      group,
+      total: urls.length,
+      cached: arenaAssetPrewarmCompletedKeys.has(prewarmKey),
+      reused: true,
+    });
+
+    return existingPromise.then(() => {
+      emitArenaEntryProfileMark("browser prewarm reused complete", {
+        group,
+        total: urls.length,
+        cached: true,
+        reused: true,
+      });
+    });
   }
 
-  const prewarmPromise = Promise.all([...new Set(getArenaAssetPrewarmUrls(encounter))].map(prewarmImageUrl)).then(() => undefined);
+  emitArenaEntryProfileMark("browser prewarm start", { group, total: urls.length });
+  const prewarmPromise = prewarmProfiledImageUrls(group, urls).then(() => {
+    arenaAssetPrewarmCompletedKeys.add(prewarmKey);
+  });
 
   arenaAssetPrewarmPromises.set(prewarmKey, prewarmPromise);
 
@@ -2014,11 +2061,12 @@ function preloadCityAssets(target: Phaser.Scene): void {
   CITY_CLOUD_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
 }
 
-function preloadPaperDollAssets(target: Phaser.Scene, equipmentStates: readonly (HeroEquipment | undefined)[] = [activePlayerEquipment]): void {
+function preloadPaperDollAssets(target: Phaser.Scene, equipmentStates: readonly (HeroEquipment | undefined)[] = [activePlayerEquipment]): PhaserPreloadQueueSummary {
   activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
   const loadedAssetKeys = new Set<string>();
+  const summary = createPhaserPreloadQueueSummary();
 
-  preloadScrollCastPropAssets(target);
+  addPhaserPreloadQueueSummary(summary, preloadScrollCastPropAssets(target));
 
   getSyncPaperDollAssetLoadEntriesForEquipmentStates(activePaperDollAssetsUseLowRes, equipmentStates, [activePlayerAppearance]).forEach((asset) => {
     const textureKey = asset.key;
@@ -2028,8 +2076,10 @@ function preloadPaperDollAssets(target: Phaser.Scene, equipmentStates: readonly 
     }
 
     loadedAssetKeys.add(textureKey);
-    target.load.image(textureKey, asset.url);
+    queueProfiledImageLoad(target, textureKey, asset.url, summary);
   });
+
+  return summary;
 }
 
 function ensurePaperDollAssetResolution(
@@ -2235,6 +2285,11 @@ function ensurePaperDollAssetEntriesLoaded(target: Phaser.Scene, entries: readon
   }
 
   const missingEntries = entries.filter((entry) => !target.textures.exists(entry.key));
+  emitArenaEntryProfileMark(missingEntries.length === 0 ? "paper doll assets cached" : "paper doll assets missing", {
+    group: "paper doll dynamic assets",
+    total: entries.length,
+    missing: missingEntries.length,
+  });
 
   if (missingEntries.length === 0) {
     return Promise.resolve();
@@ -2256,9 +2311,24 @@ function ensurePaperDollAssetEntriesLoaded(target: Phaser.Scene, entries: readon
   });
 
   if (entriesToQueue.length > 0 && canUsePaperDollAssetLoader(target)) {
+    const startedAt = performance.now();
+    emitArenaEntryProfileMark("paper doll dynamic load queued", {
+      group: "paper doll dynamic assets",
+      total: entries.length,
+      missing: missingEntries.length,
+      queued: entriesToQueue.length,
+    });
     const queuedLoad = new Promise<void>((resolve) => {
       const finish = () => {
         entriesToQueue.forEach((entry) => pendingLoads.delete(entry.key));
+        emitArenaEntryProfileMark("paper doll dynamic load complete", {
+          group: "paper doll dynamic assets",
+          total: entries.length,
+          missing: missingEntries.length,
+          queued: entriesToQueue.length,
+          completed: entriesToQueue.length,
+          durationMs: performance.now() - startedAt,
+        });
         resolve();
       };
 
@@ -2321,6 +2391,43 @@ async function getCityAssetPrewarmUrls(): Promise<string[]> {
     ...CITY_CLOUD_ASSETS.map((asset) => asset.url),
     ...paperDollUrls.map((asset) => asset.url),
   ];
+}
+
+async function prewarmProfiledImageUrls(group: string, urls: readonly string[]): Promise<void> {
+  const startedAt = performance.now();
+  let slowestMs = 0;
+  let slowestUrl = "";
+
+  await Promise.all(urls.map(async (url) => {
+    const startedAt = performance.now();
+
+    await prewarmImageUrl(url);
+
+    const durationMs = performance.now() - startedAt;
+    if (durationMs > slowestMs) {
+      slowestMs = durationMs;
+      slowestUrl = url;
+    }
+  }));
+
+  emitArenaEntryProfileMark("browser prewarm complete", {
+    group,
+    total: urls.length,
+    durationMs: performance.now() - startedAt,
+    slowestMs,
+    slowestUrl: getArenaEntryProfileAssetName(slowestUrl),
+  });
+}
+
+function getArenaEntryProfileAssetName(url: string): string {
+  if (!url) {
+    return "";
+  }
+
+  const cleanUrl = url.split("?")[0] ?? url;
+  const parts = cleanUrl.split("/");
+
+  return parts[parts.length - 1] ?? cleanUrl;
 }
 
 function prewarmImageUrl(url: string): Promise<void> {
@@ -2646,8 +2753,21 @@ export function subscribeCityTimeOfDayChanges(callback: (timeOfDay: CityTimeOfDa
 
 const ARENA_ENTRY_PROFILE_MARK_EVENT = "dust-arena-entry-profile-mark";
 type ArenaEntryProfileWindow = Window & { __dustArenaEntryProfileActive?: boolean };
+interface ArenaEntryProfileAssetDetail {
+  group?: string;
+  total?: number;
+  missing?: number;
+  queued?: number;
+  completed?: number;
+  failed?: number;
+  durationMs?: number;
+  slowestMs?: number;
+  slowestUrl?: string;
+  cached?: boolean;
+  reused?: boolean;
+}
 
-function emitArenaEntryProfileMark(label: string): void {
+function emitArenaEntryProfileMark(label: string, asset?: ArenaEntryProfileAssetDetail): void {
   if (typeof window === "undefined") {
     return;
   }
@@ -2656,12 +2776,60 @@ function emitArenaEntryProfileMark(label: string): void {
     return;
   }
 
-  window.dispatchEvent(new CustomEvent(ARENA_ENTRY_PROFILE_MARK_EVENT, { detail: { label, time: performance.now() } }));
+  window.dispatchEvent(new CustomEvent(ARENA_ENTRY_PROFILE_MARK_EVENT, { detail: { label, time: performance.now(), asset } }));
 }
 
 function waitForAnimationFrame(): Promise<void> {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => resolve());
+  });
+}
+
+function attachArenaEntryPhaserLoaderProfile(target: Phaser.Scene, summary: PhaserPreloadQueueSummary): void {
+  if (typeof window === "undefined" || !(window as ArenaEntryProfileWindow).__dustArenaEntryProfileActive) {
+    return;
+  }
+
+  if (summary.missing <= 0) {
+    emitArenaEntryProfileMark("phaser loader cached", {
+      group: "phaser loader",
+      total: summary.total,
+      missing: summary.missing,
+      cached: true,
+    });
+    return;
+  }
+
+  const startedAt = performance.now();
+  let completed = 0;
+  let failed = 0;
+
+  const handleFileComplete = () => {
+    completed += 1;
+  };
+  const handleLoadError = () => {
+    failed += 1;
+  };
+  const handleComplete = () => {
+    target.load.off("filecomplete", handleFileComplete);
+    target.load.off("loaderror", handleLoadError);
+    emitArenaEntryProfileMark("phaser loader complete", {
+      group: "phaser loader",
+      total: summary.total,
+      missing: summary.missing,
+      completed,
+      failed,
+      durationMs: performance.now() - startedAt,
+    });
+  };
+
+  target.load.on("filecomplete", handleFileComplete);
+  target.load.on("loaderror", handleLoadError);
+  target.load.once(Phaser.Loader.Events.COMPLETE, handleComplete);
+  emitArenaEntryProfileMark("phaser loader watch", {
+    group: "phaser loader",
+    total: summary.total,
+    missing: summary.missing,
   });
 }
 
@@ -2686,8 +2854,22 @@ export class ArenaScene extends Phaser.Scene {
 
   preload(): void {
     emitArenaEntryProfileMark("scene preload start");
-    preloadArenaAssets(this, this.initialEncounter);
-    preloadPaperDollAssets(this);
+    const arenaAssetSummary = preloadArenaAssets(this, this.initialEncounter);
+    emitArenaEntryProfileMark("scene preload arena queued", {
+      group: "scene arena assets",
+      total: arenaAssetSummary.total,
+      missing: arenaAssetSummary.missing,
+    });
+    const paperDollAssetSummary = preloadPaperDollAssets(this);
+    emitArenaEntryProfileMark("scene preload paper doll queued", {
+      group: "scene paper doll assets",
+      total: paperDollAssetSummary.total,
+      missing: paperDollAssetSummary.missing,
+    });
+    attachArenaEntryPhaserLoaderProfile(
+      this,
+      addPhaserPreloadQueueSummary({ ...arenaAssetSummary }, paperDollAssetSummary),
+    );
     emitArenaEntryProfileMark("scene preload end");
   }
 
@@ -6247,8 +6429,12 @@ function getArenaBackgroundLayerLayoutForTier(
   });
 }
 
-function preloadScrollCastPropAssets(target: Phaser.Scene): void {
-  SCROLL_CAST_PROP_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
+function preloadScrollCastPropAssets(target: Phaser.Scene): PhaserPreloadQueueSummary {
+  const summary = createPhaserPreloadQueueSummary();
+
+  SCROLL_CAST_PROP_ASSETS.forEach((asset) => queueProfiledImageLoad(target, asset.key, asset.url, summary));
+
+  return summary;
 }
 
 function getEditableArenaBackgroundLayer(

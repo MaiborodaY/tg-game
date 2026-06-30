@@ -242,11 +242,28 @@ interface ArenaEntryProfilerMark {
   label: string;
   time: number;
 }
+interface ArenaEntryProfilerAssetEvent extends ArenaEntryProfilerMark {
+  group?: string;
+  total?: number;
+  missing?: number;
+  queued?: number;
+  completed?: number;
+  failed?: number;
+  durationMs?: number;
+  slowestMs?: number;
+  slowestUrl?: string;
+  cached?: boolean;
+  reused?: boolean;
+}
+interface ArenaEntryProfilerMarkDetail extends Partial<ArenaEntryProfilerMark> {
+  asset?: Omit<ArenaEntryProfilerAssetEvent, "label" | "time">;
+}
 interface ArenaEntryProfilerRun {
   id: number;
   selection: string;
   startedAt: number;
   marks: ArenaEntryProfilerMark[];
+  assetEvents: ArenaEntryProfilerAssetEvent[];
   frameCount: number;
   frameGapsOver32: number;
   frameGapsOver50: number;
@@ -677,6 +694,7 @@ function maybeBeginArenaEntryProfilerRun(selection: ArenaMenuSelection): void {
     selection: formatArenaEntryProfilerSelection(selection),
     startedAt: performance.now(),
     marks: [],
+    assetEvents: [],
     frameCount: 0,
     frameGapsOver32: 0,
     frameGapsOver50: 0,
@@ -690,13 +708,16 @@ function maybeBeginArenaEntryProfilerRun(selection: ArenaMenuSelection): void {
 }
 
 function handleArenaEntryProfileMark(event: Event): void {
-  const detail = event instanceof CustomEvent ? (event.detail as Partial<ArenaEntryProfilerMark> | undefined) : undefined;
+  const detail = event instanceof CustomEvent ? (event.detail as ArenaEntryProfilerMarkDetail | undefined) : undefined;
 
   if (!detail?.label) {
     return;
   }
 
   markArenaEntryProfiler(detail.label, typeof detail.time === "number" ? detail.time : undefined);
+  if (detail.asset) {
+    recordArenaEntryProfilerAssetEvent(detail.label, detail.asset, typeof detail.time === "number" ? detail.time : undefined);
+  }
 }
 
 function markArenaEntryProfiler(label: string, time = performance.now()): void {
@@ -707,6 +728,20 @@ function markArenaEntryProfiler(label: string, time = performance.now()): void {
   }
 
   profile.marks.push({ label, time });
+}
+
+function recordArenaEntryProfilerAssetEvent(
+  label: string,
+  asset: Omit<ArenaEntryProfilerAssetEvent, "label" | "time">,
+  time = performance.now(),
+): void {
+  const profile = activeArenaEntryProfilerRun;
+
+  if (!profile || profile.finished) {
+    return;
+  }
+
+  profile.assetEvents.push({ label, time, ...asset });
 }
 
 function startArenaEntryProfilerFrameLoop(profile: ArenaEntryProfilerRun): void {
@@ -849,6 +884,7 @@ function createArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: 
 
     return `${formatArenaEntryProfilerDuration(total).padStart(7)} +${formatArenaEntryProfilerDuration(delta).padStart(6)} ${mark.label}`;
   });
+  const assetLines = profile.assetEvents.map((event) => formatArenaEntryProfilerAssetEvent(profile, event));
 
   return [
     `status: ${status}`,
@@ -859,10 +895,33 @@ function createArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: 
     `frame gaps >32ms: ${profile.frameGapsOver32}`,
     `frame gaps >50ms: ${profile.frameGapsOver50}`,
     `frame gaps >100ms: ${profile.frameGapsOver100}`,
+    ...(assetLines.length > 0 ? ["", "assets:", ...assetLines] : []),
     "",
     "timeline:",
     ...lines,
   ].join("\n");
+}
+
+function formatArenaEntryProfilerAssetEvent(profile: ArenaEntryProfilerRun, event: ArenaEntryProfilerAssetEvent): string {
+  const parts = [
+    event.group ? `[${event.group}]` : "",
+    formatArenaEntryProfilerAssetMetric("total", event.total),
+    formatArenaEntryProfilerAssetMetric("missing", event.missing),
+    formatArenaEntryProfilerAssetMetric("queued", event.queued),
+    formatArenaEntryProfilerAssetMetric("completed", event.completed),
+    formatArenaEntryProfilerAssetMetric("failed", event.failed),
+    event.durationMs !== undefined ? `duration=${formatArenaEntryProfilerDuration(event.durationMs)}` : "",
+    event.slowestMs !== undefined ? `slowest=${formatArenaEntryProfilerDuration(event.slowestMs)}` : "",
+    event.slowestUrl ? `file=${event.slowestUrl}` : "",
+    event.cached !== undefined ? `cached=${event.cached ? "yes" : "no"}` : "",
+    event.reused ? "reused=yes" : "",
+  ].filter(Boolean);
+
+  return `${formatArenaEntryProfilerDuration(event.time - profile.startedAt).padStart(7)} ${event.label}${parts.length > 0 ? ` ${parts.join(" ")}` : ""}`;
+}
+
+function formatArenaEntryProfilerAssetMetric(label: string, value: number | undefined): string {
+  return value === undefined ? "" : `${label}=${value}`;
 }
 
 function formatArenaEntryProfilerDuration(durationMs: number): string {
