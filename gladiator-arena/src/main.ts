@@ -258,12 +258,26 @@ interface ArenaEntryProfilerAssetEvent extends ArenaEntryProfilerMark {
 interface ArenaEntryProfilerMarkDetail extends Partial<ArenaEntryProfilerMark> {
   asset?: Omit<ArenaEntryProfilerAssetEvent, "label" | "time">;
 }
+interface ArenaEntryProfilerPhaseStats {
+  label: string;
+  endLabel: string;
+  startedAt: number;
+  endedAt?: number;
+  frames: number;
+  gapsOver32: number;
+  gapsOver50: number;
+  gapsOver100: number;
+  maxFrameGap: number;
+  totalGapMs: number;
+}
 interface ArenaEntryProfilerRun {
   id: number;
   selection: string;
   startedAt: number;
   marks: ArenaEntryProfilerMark[];
   assetEvents: ArenaEntryProfilerAssetEvent[];
+  phases: ArenaEntryProfilerPhaseStats[];
+  phaseStack: ArenaEntryProfilerPhaseStats[];
   frameCount: number;
   frameGapsOver32: number;
   frameGapsOver50: number;
@@ -695,6 +709,8 @@ function maybeBeginArenaEntryProfilerRun(selection: ArenaMenuSelection): void {
     startedAt: performance.now(),
     marks: [],
     assetEvents: [],
+    phases: [],
+    phaseStack: [],
     frameCount: 0,
     frameGapsOver32: 0,
     frameGapsOver50: 0,
@@ -728,6 +744,94 @@ function markArenaEntryProfiler(label: string, time = performance.now()): void {
   }
 
   profile.marks.push({ label, time });
+  syncArenaEntryProfilerPhase(profile, label, time);
+}
+
+function syncArenaEntryProfilerPhase(profile: ArenaEntryProfilerRun, label: string, time: number): void {
+  const phase = getArenaEntryProfilerPhaseForStartLabel(label);
+
+  if (phase) {
+    beginArenaEntryProfilerPhase(profile, phase.label, phase.endLabel, time);
+    return;
+  }
+
+  endArenaEntryProfilerPhase(profile, label, time);
+}
+
+function getArenaEntryProfilerPhaseForStartLabel(label: string): { label: string; endLabel: string } | undefined {
+  switch (label) {
+    case "energy spend start":
+      return { label: "energy spend", endLabel: "energy spend end" };
+    case "energy API start":
+      return { label: "energy API", endLabel: "energy API end" };
+    case "local energy spend start":
+      return { label: "local energy spend", endLabel: "local energy spend end" };
+    case "energy state sync start":
+      return { label: "energy state sync", endLabel: "energy state sync end" };
+    case "create combat state start":
+      return { label: "create combat state", endLabel: "create combat state end" };
+    case "arena panel transition start":
+      return { label: "arena panel transition", endLabel: "arena panel transition end" };
+    case "city focus transition start":
+      return { label: "city focus transition", endLabel: "city focus transition end" };
+    case "prepare city preview start":
+      return { label: "prepare city preview", endLabel: "prepare city preview end" };
+    case "prewarm arena assets start":
+      return { label: "prewarm arena assets", endLabel: "prewarm arena assets end" };
+    case "combat controls mount start":
+      return { label: "combat controls mount", endLabel: "combat controls mount end" };
+    case "commit initial state start":
+      return { label: "commit initial state", endLabel: "commit initial state requested" };
+    case "scene preload start":
+      return { label: "scene preload", endLabel: "scene preload end" };
+    case "phaser loader watch":
+      return { label: "phaser loader", endLabel: "phaser loader complete" };
+    case "paper doll dynamic load queued":
+      return { label: "paper doll dynamic load", endLabel: "paper doll dynamic load complete" };
+    case "scene layers start":
+      return { label: "scene layers", endLabel: "scene layers end" };
+    case "scene visuals start":
+      return { label: "scene visuals", endLabel: "scene visuals end" };
+    case "prepareEntry start":
+      return { label: "prepareEntry", endLabel: "prepareEntry end" };
+    case "entry transition start":
+      return { label: "entry transition", endLabel: "entry transition end" };
+    case "finish scheduled":
+      return { label: "post-ready frame", endLabel: "first post-ready frame" };
+    default:
+      return undefined;
+  }
+}
+
+function beginArenaEntryProfilerPhase(profile: ArenaEntryProfilerRun, label: string, endLabel: string, time: number): void {
+  const phase: ArenaEntryProfilerPhaseStats = {
+    label,
+    endLabel,
+    startedAt: time,
+    frames: 0,
+    gapsOver32: 0,
+    gapsOver50: 0,
+    gapsOver100: 0,
+    maxFrameGap: 0,
+    totalGapMs: 0,
+  };
+
+  profile.phases.push(phase);
+  profile.phaseStack.push(phase);
+}
+
+function endArenaEntryProfilerPhase(profile: ArenaEntryProfilerRun, endLabel: string, time: number): void {
+  for (let index = profile.phaseStack.length - 1; index >= 0; index -= 1) {
+    const phase = profile.phaseStack[index];
+
+    if (phase.endLabel !== endLabel) {
+      continue;
+    }
+
+    phase.endedAt = time;
+    profile.phaseStack.splice(index, 1);
+    return;
+  }
 }
 
 function recordArenaEntryProfilerAssetEvent(
@@ -771,10 +875,32 @@ function recordArenaEntryProfilerFrame(profile: ArenaEntryProfilerRun, time: num
     if (gap > 100) {
       profile.frameGapsOver100 += 1;
     }
+    recordArenaEntryProfilerPhaseFrame(profile, gap);
   }
 
   profile.frameCount += 1;
   profile.lastFrameTime = time;
+}
+
+function recordArenaEntryProfilerPhaseFrame(profile: ArenaEntryProfilerRun, gap: number): void {
+  const phase = profile.phaseStack[profile.phaseStack.length - 1];
+
+  if (!phase) {
+    return;
+  }
+
+  phase.frames += 1;
+  phase.totalGapMs += gap;
+  phase.maxFrameGap = Math.max(phase.maxFrameGap, gap);
+  if (gap > 32) {
+    phase.gapsOver32 += 1;
+  }
+  if (gap > 50) {
+    phase.gapsOver50 += 1;
+  }
+  if (gap > 100) {
+    phase.gapsOver100 += 1;
+  }
 }
 
 function finishArenaEntryProfilerRunAfterNextFrame(status: string): void {
@@ -805,6 +931,7 @@ function finishArenaEntryProfilerRun(status: string): void {
   }
 
   markArenaEntryProfiler(`status: ${status}`);
+  closeArenaEntryProfilerOpenPhases(profile, performance.now());
   profile.finished = true;
   if (profile.rafId !== undefined) {
     window.cancelAnimationFrame(profile.rafId);
@@ -813,6 +940,13 @@ function finishArenaEntryProfilerRun(status: string): void {
   setArenaEntryProfilerSceneMarksEnabled(false);
   refreshCityAdminArenaProfilerControl();
   showArenaEntryProfilerReport(profile, status);
+}
+
+function closeArenaEntryProfilerOpenPhases(profile: ArenaEntryProfilerRun, time: number): void {
+  profile.phaseStack.forEach((phase) => {
+    phase.endedAt ??= time;
+  });
+  profile.phaseStack = [];
 }
 
 function setArenaEntryProfilerSceneMarksEnabled(enabled: boolean): void {
@@ -885,6 +1019,11 @@ function createArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: 
     return `${formatArenaEntryProfilerDuration(total).padStart(7)} +${formatArenaEntryProfilerDuration(delta).padStart(6)} ${mark.label}`;
   });
   const assetLines = profile.assetEvents.map((event) => formatArenaEntryProfilerAssetEvent(profile, event));
+  const phaseLines = profile.phases
+    .filter((phase) => phase.frames > 0 || phase.endedAt !== undefined)
+    .slice()
+    .sort((left, right) => right.maxFrameGap - left.maxFrameGap || getArenaEntryProfilerPhaseDuration(right) - getArenaEntryProfilerPhaseDuration(left))
+    .map((phase) => formatArenaEntryProfilerPhase(profile, phase));
 
   return [
     `status: ${status}`,
@@ -895,11 +1034,31 @@ function createArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: 
     `frame gaps >32ms: ${profile.frameGapsOver32}`,
     `frame gaps >50ms: ${profile.frameGapsOver50}`,
     `frame gaps >100ms: ${profile.frameGapsOver100}`,
+    ...(phaseLines.length > 0 ? ["", "phases by max frame gap:", ...phaseLines] : []),
     ...(assetLines.length > 0 ? ["", "assets:", ...assetLines] : []),
     "",
     "timeline:",
     ...lines,
   ].join("\n");
+}
+
+function formatArenaEntryProfilerPhase(profile: ArenaEntryProfilerRun, phase: ArenaEntryProfilerPhaseStats): string {
+  const startMs = phase.startedAt - profile.startedAt;
+  const durationMs = getArenaEntryProfilerPhaseDuration(phase);
+
+  return [
+    `${formatArenaEntryProfilerDuration(startMs).padStart(7)} ${phase.label}`,
+    `duration=${formatArenaEntryProfilerDuration(durationMs)}`,
+    `frames=${phase.frames}`,
+    `maxGap=${formatArenaEntryProfilerDuration(phase.maxFrameGap)}`,
+    `>32=${phase.gapsOver32}`,
+    `>50=${phase.gapsOver50}`,
+    `>100=${phase.gapsOver100}`,
+  ].join(" ");
+}
+
+function getArenaEntryProfilerPhaseDuration(phase: ArenaEntryProfilerPhaseStats): number {
+  return (phase.endedAt ?? phase.startedAt) - phase.startedAt;
 }
 
 function formatArenaEntryProfilerAssetEvent(profile: ArenaEntryProfilerRun, event: ArenaEntryProfilerAssetEvent): string {
