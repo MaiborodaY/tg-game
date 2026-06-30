@@ -288,6 +288,23 @@ interface ArenaEntryProfilerRun {
   finishing?: boolean;
   finished?: boolean;
 }
+interface CombatActionProfilerRun {
+  id: number;
+  action: string;
+  startedAt: number;
+  marks: ArenaEntryProfilerMark[];
+  phases: ArenaEntryProfilerPhaseStats[];
+  phaseStack: ArenaEntryProfilerPhaseStats[];
+  frameCount: number;
+  frameGapsOver32: number;
+  frameGapsOver50: number;
+  frameGapsOver100: number;
+  maxFrameGap: number;
+  lastFrameTime?: number;
+  rafId?: number;
+  finishing?: boolean;
+  finished?: boolean;
+}
 type ArenaEntryProfilerWindow = Window & { __dustArenaEntryProfileActive?: boolean };
 interface StartGameOptions {
   mode?: GameMode;
@@ -431,6 +448,9 @@ let cityAdminPlayerViewEnabled = false;
 let arenaEntryProfilerArmed = false;
 let arenaEntryProfilerRunId = 0;
 let activeArenaEntryProfilerRun: ArenaEntryProfilerRun | undefined;
+let combatActionProfilerArmed = false;
+let combatActionProfilerRunId = 0;
+let activeCombatActionProfilerRun: CombatActionProfilerRun | undefined;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -974,6 +994,11 @@ function showArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: st
   }
 
   const report = createArenaEntryProfilerReport(profile, status);
+
+  showProfilerReport("Arena Entry Profile", report);
+}
+
+function showProfilerReport(title: string, report: string): void {
   const existing = document.querySelector<HTMLElement>(".arena-entry-profiler");
   const root = document.createElement("section");
   const heading = document.createElement("h2");
@@ -986,8 +1011,8 @@ function showArenaEntryProfilerReport(profile: ArenaEntryProfilerRun, status: st
   console.info(report);
 
   root.className = "arena-entry-profiler";
-  root.setAttribute("aria-label", "Arena entry profiler result");
-  heading.textContent = "Arena Entry Profile";
+  root.setAttribute("aria-label", `${title} result`);
+  heading.textContent = title;
   output.textContent = report;
   copyButton.type = "button";
   copyButton.textContent = "Copy";
@@ -1096,6 +1121,313 @@ function formatArenaEntryProfilerDuration(durationMs: number): string {
   }
 
   return `${Math.max(0, Math.round(durationMs))}ms`;
+}
+
+function mountCombatActionProfilerTriggers(): void {
+  getCombatActionProfilerTriggers().forEach((trigger) => {
+    trigger.dataset.combatProfilerTrigger = "true";
+    trigger.setAttribute("role", "button");
+    trigger.tabIndex = 0;
+    trigger.addEventListener("click", handleCombatActionProfilerTrigger);
+    trigger.addEventListener("keydown", handleCombatActionProfilerTriggerKeydown);
+  });
+  syncCombatActionProfilerTriggers();
+}
+
+function getCombatActionProfilerTriggers(): HTMLElement[] {
+  const distanceRibbon = dom.distanceText.closest<HTMLElement>(".distance-ribbon");
+  const triggers = [dom.classicDistanceBadge, distanceRibbon].filter((trigger): trigger is HTMLElement => Boolean(trigger));
+
+  return [...new Set(triggers)];
+}
+
+function handleCombatActionProfilerTrigger(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (isInCity) {
+    return;
+  }
+
+  if (activeCombatActionProfilerRun) {
+    finishCombatActionProfilerRun("cancelled");
+    return;
+  }
+
+  combatActionProfilerArmed = !combatActionProfilerArmed;
+  syncCombatActionProfilerTriggers();
+}
+
+function handleCombatActionProfilerTriggerKeydown(event: KeyboardEvent): void {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  handleCombatActionProfilerTrigger(event);
+}
+
+function syncCombatActionProfilerTriggers(): void {
+  const running = Boolean(activeCombatActionProfilerRun);
+  const title = running
+    ? "Profiling combat action..."
+    : combatActionProfilerArmed
+      ? "Combat profiler armed. Use the next action."
+      : "Profile next combat action";
+
+  getCombatActionProfilerTriggers().forEach((trigger) => {
+    trigger.classList.toggle("combat-action-profiler-trigger--armed", combatActionProfilerArmed);
+    trigger.classList.toggle("combat-action-profiler-trigger--running", running);
+    trigger.setAttribute("aria-pressed", String(combatActionProfilerArmed || running));
+    trigger.setAttribute("aria-label", title);
+    trigger.title = title;
+  });
+}
+
+function maybeBeginCombatActionProfilerRun(actionId: ActionId | undefined, disabled: boolean | undefined): void {
+  if (!combatActionProfilerArmed || !actionId || disabled || isInCity || activeCombatActionProfilerRun) {
+    return;
+  }
+
+  combatActionProfilerArmed = false;
+  activeCombatActionProfilerRun = {
+    id: ++combatActionProfilerRunId,
+    action: actionId,
+    startedAt: performance.now(),
+    marks: [],
+    phases: [],
+    phaseStack: [],
+    frameCount: 0,
+    frameGapsOver32: 0,
+    frameGapsOver50: 0,
+    frameGapsOver100: 0,
+    maxFrameGap: 0,
+  };
+  markCombatActionProfiler("tap accepted");
+  startCombatActionProfilerFrameLoop(activeCombatActionProfilerRun);
+  syncCombatActionProfilerTriggers();
+}
+
+function markCombatActionProfiler(label: string, time = performance.now()): void {
+  const profile = activeCombatActionProfilerRun;
+
+  if (!profile || profile.finished) {
+    return;
+  }
+
+  profile.marks.push({ label, time });
+  syncCombatActionProfilerPhase(profile, label, time);
+}
+
+function syncCombatActionProfilerPhase(profile: CombatActionProfilerRun, label: string, time: number): void {
+  const phase = getCombatActionProfilerPhaseForStartLabel(label);
+
+  if (phase) {
+    beginCombatActionProfilerPhase(profile, phase.label, phase.endLabel, time);
+    return;
+  }
+
+  endCombatActionProfilerPhase(profile, label, time);
+}
+
+function getCombatActionProfilerPhaseForStartLabel(label: string): { label: string; endLabel: string } | undefined {
+  switch (label) {
+    case "resolve action start":
+      return { label: "resolve action", endLabel: "resolve action end" };
+    case "pvp action send start":
+      return { label: "pvp action send", endLabel: "pvp action send end" };
+    case "commitState start":
+      return { label: "commitState", endLabel: "commitState end" };
+    case "render before impact start":
+      return { label: "render before impact", endLabel: "render before impact end" };
+    case "arena scene sync call start":
+      return { label: "arena scene sync call", endLabel: "arena scene sync call end" };
+    case "sync action controls start":
+      return { label: "sync action controls", endLabel: "sync action controls end" };
+    case "render after impact start":
+      return { label: "render after impact", endLabel: "render after impact end" };
+    case "player action animation start":
+      return { label: "player action animation", endLabel: "player action animation end" };
+    default:
+      return undefined;
+  }
+}
+
+function beginCombatActionProfilerPhase(profile: CombatActionProfilerRun, label: string, endLabel: string, time: number): void {
+  const phase: ArenaEntryProfilerPhaseStats = {
+    label,
+    endLabel,
+    startedAt: time,
+    frames: 0,
+    gapsOver32: 0,
+    gapsOver50: 0,
+    gapsOver100: 0,
+    maxFrameGap: 0,
+    totalGapMs: 0,
+  };
+
+  profile.phases.push(phase);
+  profile.phaseStack.push(phase);
+}
+
+function endCombatActionProfilerPhase(profile: CombatActionProfilerRun, endLabel: string, time: number): void {
+  for (let index = profile.phaseStack.length - 1; index >= 0; index -= 1) {
+    const phase = profile.phaseStack[index];
+
+    if (phase.endLabel !== endLabel) {
+      continue;
+    }
+
+    phase.endedAt = time;
+    profile.phaseStack.splice(index, 1);
+    return;
+  }
+}
+
+function startCombatActionProfilerFrameLoop(profile: CombatActionProfilerRun): void {
+  const tick = (time: number): void => {
+    if (activeCombatActionProfilerRun !== profile || profile.finished) {
+      return;
+    }
+
+    recordCombatActionProfilerFrame(profile, time);
+    profile.rafId = window.requestAnimationFrame(tick);
+  };
+
+  profile.rafId = window.requestAnimationFrame(tick);
+}
+
+function recordCombatActionProfilerFrame(profile: CombatActionProfilerRun, time: number): void {
+  if (profile.lastFrameTime !== undefined) {
+    const gap = time - profile.lastFrameTime;
+
+    profile.maxFrameGap = Math.max(profile.maxFrameGap, gap);
+    if (gap > 32) {
+      profile.frameGapsOver32 += 1;
+    }
+    if (gap > 50) {
+      profile.frameGapsOver50 += 1;
+    }
+    if (gap > 100) {
+      profile.frameGapsOver100 += 1;
+    }
+    recordCombatActionProfilerPhaseFrame(profile, gap);
+  }
+
+  profile.frameCount += 1;
+  profile.lastFrameTime = time;
+}
+
+function recordCombatActionProfilerPhaseFrame(profile: CombatActionProfilerRun, gap: number): void {
+  const phase = profile.phaseStack[profile.phaseStack.length - 1];
+
+  if (!phase) {
+    return;
+  }
+
+  phase.frames += 1;
+  phase.totalGapMs += gap;
+  phase.maxFrameGap = Math.max(phase.maxFrameGap, gap);
+  if (gap > 32) {
+    phase.gapsOver32 += 1;
+  }
+  if (gap > 50) {
+    phase.gapsOver50 += 1;
+  }
+  if (gap > 100) {
+    phase.gapsOver100 += 1;
+  }
+}
+
+function finishCombatActionProfilerRunAfterNextFrame(status: string): void {
+  const profile = activeCombatActionProfilerRun;
+
+  if (!profile || profile.finishing || profile.finished) {
+    return;
+  }
+
+  profile.finishing = true;
+  markCombatActionProfiler("finish scheduled");
+  window.requestAnimationFrame((time) => {
+    if (activeCombatActionProfilerRun !== profile || profile.finished) {
+      return;
+    }
+
+    recordCombatActionProfilerFrame(profile, time);
+    markCombatActionProfiler("first post-action frame", time);
+    finishCombatActionProfilerRun(status);
+  });
+}
+
+function finishCombatActionProfilerRun(status: string): void {
+  const profile = activeCombatActionProfilerRun;
+
+  if (!profile || profile.finished) {
+    return;
+  }
+
+  markCombatActionProfiler(`status: ${status}`);
+  closeCombatActionProfilerOpenPhases(profile, performance.now());
+  profile.finished = true;
+  if (profile.rafId !== undefined) {
+    window.cancelAnimationFrame(profile.rafId);
+  }
+  activeCombatActionProfilerRun = undefined;
+  syncCombatActionProfilerTriggers();
+  showProfilerReport("Combat Action Profile", createCombatActionProfilerReport(profile, status));
+}
+
+function closeCombatActionProfilerOpenPhases(profile: CombatActionProfilerRun, time: number): void {
+  profile.phaseStack.forEach((phase) => {
+    phase.endedAt ??= time;
+  });
+  profile.phaseStack = [];
+}
+
+function createCombatActionProfilerReport(profile: CombatActionProfilerRun, status: string): string {
+  const lastMark = profile.marks[profile.marks.length - 1];
+  const totalMs = (lastMark?.time ?? performance.now()) - profile.startedAt;
+  const lines = profile.marks.map((mark, index) => {
+    const previousTime = index > 0 ? profile.marks[index - 1]?.time ?? profile.startedAt : profile.startedAt;
+    const total = mark.time - profile.startedAt;
+    const delta = mark.time - previousTime;
+
+    return `${formatArenaEntryProfilerDuration(total).padStart(7)} +${formatArenaEntryProfilerDuration(delta).padStart(6)} ${mark.label}`;
+  });
+  const phaseLines = profile.phases
+    .filter((phase) => phase.frames > 0 || phase.endedAt !== undefined)
+    .slice()
+    .sort((left, right) => right.maxFrameGap - left.maxFrameGap || getArenaEntryProfilerPhaseDuration(right) - getArenaEntryProfilerPhaseDuration(left))
+    .map((phase) => formatCombatActionProfilerPhase(profile, phase));
+
+  return [
+    `status: ${status}`,
+    `action: ${profile.action}`,
+    `total: ${formatArenaEntryProfilerDuration(totalMs)}`,
+    `frames: ${profile.frameCount}`,
+    `max frame gap: ${formatArenaEntryProfilerDuration(profile.maxFrameGap)}`,
+    `frame gaps >32ms: ${profile.frameGapsOver32}`,
+    `frame gaps >50ms: ${profile.frameGapsOver50}`,
+    `frame gaps >100ms: ${profile.frameGapsOver100}`,
+    ...(phaseLines.length > 0 ? ["", "phases by max frame gap:", ...phaseLines] : []),
+    "",
+    "timeline:",
+    ...lines,
+  ].join("\n");
+}
+
+function formatCombatActionProfilerPhase(profile: CombatActionProfilerRun, phase: ArenaEntryProfilerPhaseStats): string {
+  const startMs = phase.startedAt - profile.startedAt;
+  const durationMs = getArenaEntryProfilerPhaseDuration(phase);
+
+  return [
+    `${formatArenaEntryProfilerDuration(startMs).padStart(7)} ${phase.label}`,
+    `duration=${formatArenaEntryProfilerDuration(durationMs)}`,
+    `frames=${phase.frames}`,
+    `maxGap=${formatArenaEntryProfilerDuration(phase.maxFrameGap)}`,
+    `>32=${phase.gapsOver32}`,
+    `>50=${phase.gapsOver50}`,
+    `>100=${phase.gapsOver100}`,
+  ].join(" ");
 }
 
 function parseCityAdminGrantAdjustTarget(target: string | undefined): CityAdminGrantAdjustTarget | undefined {
@@ -1890,6 +2222,7 @@ function resetHeroProgressState(): void {
 }
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
+  markCombatActionProfiler("commitState start");
   const syncArena = options.syncArena ?? true;
   const previousState = state;
   const isBattleFinishing = state.result === "playing" && nextState.result !== "playing";
@@ -1899,13 +2232,17 @@ function commitState(nextState: CombatState, options: { syncArena?: boolean } = 
 
   state = committedState;
   displayedStatsState = shouldSyncArena ? getPreImpactStatsState(previousState, committedState) : committedState;
+  markCombatActionProfiler("render before impact start");
   renderCurrentDom();
+  markCombatActionProfiler("render before impact end");
+  markCombatActionProfiler("arena scene sync call start");
   const actionAnimation = shouldSyncArena
     ? (arenaScene?.sync(state, {
       hudState: displayedStatsState,
       onImpact: () => revealStatsAfterImpact(statsToken, committedState),
     }) ?? Promise.resolve())
     : Promise.resolve();
+  markCombatActionProfiler("arena scene sync call end");
 
   if (displayedStatsState === committedState) {
     revealStatsAfterImpact(statsToken, committedState);
@@ -1918,6 +2255,7 @@ function commitState(nextState: CombatState, options: { syncArena?: boolean } = 
   }
   syncActionArc();
   syncTurnProbe();
+  markCombatActionProfiler("commitState end");
 
   return actionAnimation;
 }
@@ -1932,7 +2270,9 @@ function revealStatsAfterImpact(token: number, targetState: CombatState): void {
   }
 
   displayedStatsState = targetState;
+  markCombatActionProfiler("render after impact start");
   renderCurrentDom();
+  markCombatActionProfiler("render after impact end");
 }
 
 function getPreImpactStatsState(previous: CombatState, current: CombatState): CombatState {
@@ -2059,6 +2399,7 @@ function destroyClassicActionBar(): void {
 }
 
 function syncActionArc(): void {
+  markCombatActionProfiler("sync action controls start");
   const controlledActor = getControlledActionActor();
   const lockedTurn: TurnOwner = controlledActor === "helper" ? "player" : "enemy";
   const visibleState = isTurnAnimationLocked || isArenaEntryLoading || isArenaEntryTransitionPlaying
@@ -2072,6 +2413,7 @@ function syncActionArc(): void {
     actionArc?.sync(visibleState);
   }
   syncAutoBattleToggle();
+  markCombatActionProfiler("sync action controls end");
 }
 
 function getControlledActionActor(): CombatActor {
@@ -2374,9 +2716,11 @@ function handleAutoBattleAction(): void {
 
 function handleAction(actionId: ActionId): void {
   if (!hasStarted || isInCity || isTurnAnimationLocked || isArenaEntryLoading || isArenaEntryTransitionPlaying) {
+    finishCombatActionProfilerRunAfterNextFrame("ignored: action locked");
     return;
   }
 
+  markCombatActionProfiler("handleAction start");
   logTurnProbe("player-action", state, enemyTimerStatus, actionId);
 
   if (gameMode === "pvp") {
@@ -2384,9 +2728,17 @@ function handleAction(actionId: ActionId): void {
     return;
   }
 
+  markCombatActionProfiler("resolve action start");
   const nextState = resolvePlayerTurn(state, actionId);
+  markCombatActionProfiler("resolve action end");
 
   const actionAnimation = commitState(nextState);
+
+  markCombatActionProfiler("player action animation start");
+  void actionAnimation.finally(() => {
+    markCombatActionProfiler("player action animation end");
+    finishCombatActionProfilerRunAfterNextFrame("ready");
+  });
 
   if (isDuoBossAiCombat(nextState)) {
     void scheduleDuoBossTurns(nextState, actionAnimation);
@@ -2568,6 +2920,7 @@ async function runArenaEntry(scene: ArenaScene, entryToken: number): Promise<voi
 function handleActionArcClick(event: Event): void {
   const { actionId, disabled } = (event as CustomEvent<{ actionId?: ActionId; disabled?: boolean }>).detail ?? {};
 
+  maybeBeginCombatActionProfilerRun(actionId, disabled);
   lastActionClick = actionId ? `${actionId}${disabled ? ":disabled" : ""}` : "unknown";
   syncTurnProbe();
   logTurnProbe("button-click", state, enemyTimerStatus, actionId);
@@ -4366,16 +4719,21 @@ function formatPvpRoomStatus(snapshot: PvpRoomSnapshot): string {
 
 function handlePvpAction(actionId: ActionId): void {
   if (!pvpConnection || !pvpSnapshot || !pvpSession || pvpActionPending) {
+    finishCombatActionProfilerRunAfterNextFrame("ignored: pvp busy");
     return;
   }
 
   if (pvpSnapshot.activeSeat !== pvpSession.seat || pvpSnapshot.status !== "playing") {
+    finishCombatActionProfilerRunAfterNextFrame("ignored: pvp inactive turn");
     return;
   }
 
   pvpActionPending = true;
   setTurnAnimationLocked(true);
+  markCombatActionProfiler("pvp action send start");
   pvpConnection.sendAction(actionId, pvpSnapshot.turnVersion);
+  markCombatActionProfiler("pvp action send end");
+  finishCombatActionProfilerRunAfterNextFrame("pvp action sent");
 }
 
 function applyOnlineDuoHostStartCostIfNeeded(snapshot: PvpRoomSnapshot): void {
@@ -6553,6 +6911,7 @@ function restart(options: { syncArena?: boolean } = {}): void {
 dom.startButton.addEventListener("click", () => {
   openCityArenaMenu();
 });
+mountCombatActionProfilerTriggers();
 cityArenaCloseButton?.addEventListener("click", closeCityArenaMenu);
 cityArenaOnlineButton?.addEventListener("click", () => {
   void openCityArenaOnlineViewWithRoomCheck();
