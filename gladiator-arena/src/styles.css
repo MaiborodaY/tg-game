@@ -15132,8 +15132,12 @@ body.arena-low-effects .classic-distance-badge {
 }
 
 .battle-screen .game-frame canvas {
+  display: block;
   width: 100%;
   height: 100%;
+  margin-left: 50%;
+  transform: translateX(-50%) scaleX(1.08);
+  transform-origin: center center;
 }
 
 .battle-screen .battle-ui {

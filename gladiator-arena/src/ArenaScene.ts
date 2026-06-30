@@ -1446,7 +1446,8 @@ class SharedPhaserHost {
   private readonly game: Phaser.Game;
   private readonly unbindWebglRecoveryOverlay: () => void;
 
-  constructor(parent: HTMLElement, size: PhaserGameSize) {
+  constructor(parent: HTMLElement) {
+    const size = getSharedPhaserGameSize();
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       parent,
@@ -1467,14 +1468,14 @@ class SharedPhaserHost {
     this.unbindWebglRecoveryOverlay = bindWebglRecoveryOverlay(this.game, "shared");
   }
 
-  startArena(parent: HTMLElement, size: PhaserGameSize, scene: ArenaScene): void {
-    this.attach(parent, size);
+  startArena(parent: HTMLElement, scene: ArenaScene): void {
+    this.attach(parent);
     this.removeScene("ArenaScene");
     this.game.scene.add("ArenaScene", scene, true);
   }
 
-  startCity(parent: HTMLElement, size: PhaserGameSize): void {
-    this.attach(parent, size);
+  startCity(parent: HTMLElement): void {
+    this.attach(parent);
     const existingScene = this.getScene<CityHeroScene>("CityHeroScene");
 
     if (existingScene) {
@@ -1492,8 +1493,8 @@ class SharedPhaserHost {
     }
   }
 
-  wakeCity(parent: HTMLElement, size: PhaserGameSize): void {
-    this.attach(parent, size);
+  wakeCity(parent: HTMLElement): void {
+    this.attach(parent);
     if (this.getScene("CityHeroScene")) {
       this.game.scene.wake("CityHeroScene");
     }
@@ -1512,7 +1513,7 @@ class SharedPhaserHost {
     this.game.destroy(true);
   }
 
-  private attach(parent: HTMLElement, size: PhaserGameSize): void {
+  private attach(parent: HTMLElement): void {
     if (this.game.canvas.parentElement !== parent) {
       parent.appendChild(this.game.canvas);
     }
@@ -1521,7 +1522,6 @@ class SharedPhaserHost {
 
     scale.parent = parent;
     scale.parentIsWindow = false;
-    scale.setGameSize(size.width, size.height);
     scale.getParentBounds();
     scale.refresh();
     this.game.loop.wake();
@@ -1543,9 +1543,9 @@ class SharedPhaserHost {
 
 let sharedPhaserHost: SharedPhaserHost | undefined;
 
-function getSharedPhaserHost(parent: HTMLElement, size: PhaserGameSize): SharedPhaserHost {
+function getSharedPhaserHost(parent: HTMLElement): SharedPhaserHost {
   if (!sharedPhaserHost) {
-    sharedPhaserHost = new SharedPhaserHost(parent, size);
+    sharedPhaserHost = new SharedPhaserHost(parent);
   }
 
   return sharedPhaserHost;
@@ -1795,18 +1795,6 @@ export function getCityEffectivePhaserDevicePixelRatio(): number {
   return getPhaserDevicePixelRatio(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
-function getPhaserGameSize(parent: HTMLElement | null, maxDevicePixelRatio: number): PhaserGameSize {
-  const pixelRatio = getPhaserDevicePixelRatio(maxDevicePixelRatio);
-  const logicalWidth = Math.max(1, parent?.clientWidth || GAME_WIDTH);
-  const logicalHeight = Math.max(1, parent?.clientHeight || GAME_HEIGHT);
-
-  return {
-    width: Math.max(1, Math.round(logicalWidth * pixelRatio)),
-    height: Math.max(1, Math.round(logicalHeight * pixelRatio)),
-    pixelRatio,
-  };
-}
-
 function getFixedPhaserGameSize(logicalWidth: number, logicalHeight: number, maxDevicePixelRatio: number): PhaserGameSize {
   const pixelRatio = getPhaserDevicePixelRatio(maxDevicePixelRatio);
 
@@ -1815,6 +1803,14 @@ function getFixedPhaserGameSize(logicalWidth: number, logicalHeight: number, max
     height: Math.max(1, Math.round(logicalHeight * pixelRatio)),
     pixelRatio,
   };
+}
+
+function getSharedPhaserGameSize(): PhaserGameSize {
+  return getFixedPhaserGameSize(
+    GAME_WIDTH,
+    GAME_HEIGHT,
+    Math.max(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO, ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO),
+  );
 }
 
 function getPhaserScenePixelRatio(scene: Phaser.Scene, maxDevicePixelRatio: number): number {
@@ -1846,10 +1842,6 @@ function getPhaserScenePixelRatio(scene: Phaser.Scene, maxDevicePixelRatio: numb
 
 function getPositivePhaserDimension(value: number | undefined, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function getArenaPhaserGameSize(parent: HTMLElement | null): PhaserGameSize {
-  return getPhaserGameSize(parent, ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
 function getArenaScenePixelRatio(scene: Phaser.Scene): number {
@@ -3190,10 +3182,9 @@ export function launchArena(
   readyCallback = arenaReadyCallback;
 
   const parent = document.getElementById("game") ?? document.body;
-  const arenaGameSize = getArenaPhaserGameSize(parent);
-  const host = getSharedPhaserHost(parent, arenaGameSize);
+  const host = getSharedPhaserHost(parent);
 
-  host.startArena(parent, arenaGameSize, new ArenaScene(initialEncounter));
+  host.startArena(parent, new ArenaScene(initialEncounter));
 
   return () => {
     if (readyCallback === arenaReadyCallback) {
@@ -4175,7 +4166,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   let isDestroyed = false;
   let resolveReady: () => void = () => undefined;
   let isReady = false;
-  const host = getSharedPhaserHost(parent, cityGameSize);
+  const host = getSharedPhaserHost(parent);
   const ready = new Promise<void>((resolve) => {
     resolveReady = resolve;
   });
@@ -4216,7 +4207,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   };
   cityReadyCallback = readyCallbackForGame;
 
-  host.startCity(parent, cityGameSize);
+  host.startCity(parent);
 
   return {
     ready,
@@ -4270,7 +4261,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
 
       isSuspended = false;
       pendingCameraMode = "default";
-      host.wakeCity(parent, cityGameSize);
+      host.wakeCity(parent);
       scene?.clearPlayerEquipmentPreview();
       scene?.focusDefault(true);
       scene?.scale.refresh();
