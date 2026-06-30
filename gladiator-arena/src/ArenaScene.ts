@@ -1434,6 +1434,123 @@ interface PhaserGameSize {
   pixelRatio: number;
 }
 
+type SharedPhaserSceneKey = "ArenaScene" | "CityHeroScene";
+
+interface SharedPhaserScaleManager extends Phaser.Scale.ScaleManager {
+  parent: HTMLElement | Window | null;
+  parentIsWindow: boolean;
+  getParentBounds: () => boolean;
+}
+
+class SharedPhaserHost {
+  private readonly game: Phaser.Game;
+  private readonly unbindWebglRecoveryOverlay: () => void;
+
+  constructor(parent: HTMLElement, size: PhaserGameSize) {
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      parent,
+      width: size.width,
+      height: size.height,
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      transparent: true,
+      fps: getPlayerPhaserFpsConfig(),
+      render: getPlayerPhaserRenderConfig(),
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.NO_CENTER,
+      },
+      scene: [],
+    };
+
+    this.game = new Phaser.Game(config);
+    this.unbindWebglRecoveryOverlay = bindWebglRecoveryOverlay(this.game, "shared");
+  }
+
+  startArena(parent: HTMLElement, size: PhaserGameSize, scene: ArenaScene): void {
+    this.attach(parent, size);
+    this.removeScene("ArenaScene");
+    this.game.scene.add("ArenaScene", scene, true);
+  }
+
+  startCity(parent: HTMLElement, size: PhaserGameSize): void {
+    this.attach(parent, size);
+    const existingScene = this.getScene<CityHeroScene>("CityHeroScene");
+
+    if (existingScene) {
+      this.game.scene.wake("CityHeroScene");
+      existingScene.scale.refresh();
+      return;
+    }
+
+    this.game.scene.add("CityHeroScene", CityHeroScene, true);
+  }
+
+  sleepCity(): void {
+    if (this.getScene("CityHeroScene")) {
+      this.game.scene.sleep("CityHeroScene");
+    }
+  }
+
+  wakeCity(parent: HTMLElement, size: PhaserGameSize): void {
+    this.attach(parent, size);
+    if (this.getScene("CityHeroScene")) {
+      this.game.scene.wake("CityHeroScene");
+    }
+  }
+
+  removeArena(): void {
+    this.removeScene("ArenaScene");
+  }
+
+  removeCity(): void {
+    this.removeScene("CityHeroScene");
+  }
+
+  destroy(): void {
+    this.unbindWebglRecoveryOverlay();
+    this.game.destroy(true);
+  }
+
+  private attach(parent: HTMLElement, size: PhaserGameSize): void {
+    if (this.game.canvas.parentElement !== parent) {
+      parent.appendChild(this.game.canvas);
+    }
+
+    const scale = this.game.scale as SharedPhaserScaleManager;
+
+    scale.parent = parent;
+    scale.parentIsWindow = false;
+    scale.setGameSize(size.width, size.height);
+    scale.getParentBounds();
+    scale.refresh();
+    this.game.loop.wake();
+  }
+
+  private removeScene(key: SharedPhaserSceneKey): void {
+    if (!this.getScene(key)) {
+      return;
+    }
+
+    this.game.scene.stop(key);
+    this.game.scene.remove(key);
+  }
+
+  private getScene<T extends Phaser.Scene = Phaser.Scene>(key: SharedPhaserSceneKey): T | undefined {
+    return (this.game.scene.getScene(key) as T | null | undefined) ?? undefined;
+  }
+}
+
+let sharedPhaserHost: SharedPhaserHost | undefined;
+
+function getSharedPhaserHost(parent: HTMLElement, size: PhaserGameSize): SharedPhaserHost {
+  if (!sharedPhaserHost) {
+    sharedPhaserHost = new SharedPhaserHost(parent, size);
+  }
+
+  return sharedPhaserHost;
+}
+
 function bindWebglRecoveryOverlay(game: Phaser.Game, source: string): () => void {
   let isDisposed = false;
   let boundCanvas: HTMLCanvasElement | undefined;
@@ -3069,33 +3186,20 @@ export function launchArena(
   void _onAction;
   usePlayerEquipment(playerEquipment);
   usePlayerAppearance(playerAppearance);
-  readyCallback = onReady;
+  const arenaReadyCallback = (scene: ArenaScene) => onReady(scene);
+  readyCallback = arenaReadyCallback;
 
-  const parent = document.getElementById("game");
+  const parent = document.getElementById("game") ?? document.body;
   const arenaGameSize = getArenaPhaserGameSize(parent);
-  const config: Phaser.Types.Core.GameConfig = {
-    type: Phaser.AUTO,
-    parent: parent ?? "game",
-    width: arenaGameSize.width,
-    height: arenaGameSize.height,
-    backgroundColor: "rgba(0, 0, 0, 0)",
-    transparent: true,
-    fps: getPlayerPhaserFpsConfig(),
-    render: getPlayerPhaserRenderConfig(),
-    scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.NO_CENTER,
-    },
-    scene: new ArenaScene(initialEncounter),
-  };
+  const host = getSharedPhaserHost(parent, arenaGameSize);
 
-  const game = new Phaser.Game(config);
-  const unbindWebglRecoveryOverlay = bindWebglRecoveryOverlay(game, "arena");
+  host.startArena(parent, arenaGameSize, new ArenaScene(initialEncounter));
 
   return () => {
-    unbindWebglRecoveryOverlay();
-    readyCallback = undefined;
-    game.destroy(true);
+    if (readyCallback === arenaReadyCallback) {
+      readyCallback = undefined;
+    }
+    host.removeArena();
   };
 }
 
@@ -4071,6 +4175,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   let isDestroyed = false;
   let resolveReady: () => void = () => undefined;
   let isReady = false;
+  const host = getSharedPhaserHost(parent, cityGameSize);
   const ready = new Promise<void>((resolve) => {
     resolveReady = resolve;
   });
@@ -4088,7 +4193,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     readyScene.setShopMenuTop(scaleCityDomY(pendingShopMenuTopY, parent, cityGameSize.pixelRatio));
     resolveReadyOnce();
     if (isSuspended) {
-      game.loop.sleep();
+      host.sleepCity();
       return;
     }
     if (pendingCameraMode === "armory") {
@@ -4111,22 +4216,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   };
   cityReadyCallback = readyCallbackForGame;
 
-  const game = new Phaser.Game({
-    type: Phaser.AUTO,
-    parent,
-    width: cityGameSize.width,
-    height: cityGameSize.height,
-    backgroundColor: "rgba(0, 0, 0, 0)",
-    transparent: true,
-    fps: getPlayerPhaserFpsConfig(),
-    render: getPlayerPhaserRenderConfig(),
-    scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.NO_CENTER,
-    },
-    scene: CityHeroScene,
-  });
-  const unbindWebglRecoveryOverlay = bindWebglRecoveryOverlay(game, "city");
+  host.startCity(parent, cityGameSize);
 
   return {
     ready,
@@ -4171,7 +4261,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       }
 
       isSuspended = true;
-      game.loop.sleep();
+      host.sleepCity();
     },
     resume: () => {
       if (isDestroyed) {
@@ -4180,20 +4270,19 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
 
       isSuspended = false;
       pendingCameraMode = "default";
-      game.loop.wake();
+      host.wakeCity(parent, cityGameSize);
       scene?.clearPlayerEquipmentPreview();
       scene?.focusDefault(true);
       scene?.scale.refresh();
     },
     destroy: () => {
       isDestroyed = true;
-      unbindWebglRecoveryOverlay();
       if (cityReadyCallback === readyCallbackForGame) {
         cityReadyCallback = undefined;
       }
       scene = undefined;
       resolveReadyOnce();
-      game.destroy(true);
+      host.removeCity();
     },
   };
 }
