@@ -443,6 +443,7 @@ interface DebugShieldImportEntry {
   rarity: HeroItemRarity;
   armorHp: number;
   price: number;
+  magicShop: boolean;
   availability: {
     shop: boolean;
     enemyPool: boolean;
@@ -1277,6 +1278,10 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
             <span>Shop</span>
             <input class="debug-auto-equipment__set-shop" type="checkbox" checked />
+          </label>
+          <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+            <span>Magic</span>
+            <input class="debug-auto-equipment__set-magic-shop" type="checkbox" />
           </label>
           <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
             <span>Enemy pool</span>
@@ -3014,6 +3019,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const setVariantInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-variant");
   const setRaritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-rarity");
   const setShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-shop");
+  const setMagicShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-magic-shop");
   const setEnemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-enemy-pool");
   const setBossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-boss-unique");
   const setAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__set-assets");
@@ -3048,6 +3054,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !setVariantInput ||
     !setRaritySelect ||
     !setShop ||
+    !setMagicShop ||
     !setEnemyPool ||
     !setBossUnique ||
     !setAssets ||
@@ -3126,6 +3133,10 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   });
 
   setShop.addEventListener("change", () => {
+    syncEquipmentSetImportAvailabilityControls(editor);
+  });
+
+  setMagicShop.addEventListener("change", () => {
     syncEquipmentSetImportAvailabilityControls(editor);
   });
 
@@ -3275,6 +3286,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
         setName: setNameInput.value.trim(),
         variant: setVariantInput.value.trim() || "01",
         rarity: setBossUnique.checked ? "unique" : getDebugItemRarity(setRaritySelect.value, "common"),
+        magicShop: setMagicShop.checked && setShop.checked && !setBossUnique.checked,
         availability: {
           shop: setShop.checked && !setBossUnique.checked,
           enemyPool: setEnemyPool.checked && !setBossUnique.checked,
@@ -7968,10 +7980,12 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
 function syncEquipmentSetImportAvailabilityControls(editor: HTMLElement): void {
   const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-rarity");
   const setShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-shop");
+  const setMagicShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-magic-shop");
   const setEnemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-enemy-pool");
   const setBossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-boss-unique");
   const hasRawAssets = getEquipmentSetImportAssets().length > 0;
   const isBossUnique = setBossUnique?.checked === true;
+  const isShopItem = setShop?.checked === true && !isBossUnique;
 
   if (isBossUnique && raritySelect) {
     raritySelect.value = "unique";
@@ -7986,6 +8000,14 @@ function syncEquipmentSetImportAvailabilityControls(editor: HTMLElement): void {
 
   if (setShop) {
     setShop.disabled = !hasRawAssets || isBossUnique;
+  }
+
+  if (setMagicShop) {
+    setMagicShop.disabled = !hasRawAssets || !isShopItem;
+
+    if (!isShopItem) {
+      setMagicShop.checked = false;
+    }
   }
 
   if (setEnemyPool) {
@@ -9083,6 +9105,7 @@ function createShieldImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement
   const armorInput = document.createElement("input");
   const priceInput = document.createElement("input");
   const shopInput = document.createElement("input");
+  const magicShopInput = document.createElement("input");
   const enemyPoolInput = document.createElement("input");
   const bossUniqueInput = document.createElement("input");
 
@@ -9133,6 +9156,9 @@ function createShieldImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement
   shopInput.className = "debug-auto-equipment__shield-shop";
   shopInput.checked = true;
 
+  magicShopInput.type = "checkbox";
+  magicShopInput.className = "debug-auto-equipment__shield-magic-shop";
+
   enemyPoolInput.type = "checkbox";
   enemyPoolInput.className = "debug-auto-equipment__shield-enemy-pool";
 
@@ -9147,6 +9173,7 @@ function createShieldImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement
     createWeaponImportField("Armor", armorInput),
     createWeaponImportField("Price", priceInput),
     createWeaponImportCheckboxField("Shop", shopInput),
+    createWeaponImportCheckboxField("Magic", magicShopInput),
     createWeaponImportCheckboxField("Enemy", enemyPoolInput),
     createWeaponImportCheckboxField("Boss", bossUniqueInput),
   );
@@ -9158,6 +9185,7 @@ function createShieldImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement
   selected.addEventListener("change", syncRow);
   raritySelect.addEventListener("change", syncRow);
   shopInput.addEventListener("change", syncRow);
+  magicShopInput.addEventListener("change", syncRow);
   bossUniqueInput.addEventListener("change", syncRow);
   syncRow();
 
@@ -9170,6 +9198,7 @@ function syncShieldImportRowAvailability(row: HTMLElement): void {
   const raritySelect = row.querySelector<HTMLSelectElement>(".debug-auto-equipment__shield-rarity");
   const priceInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-price");
   const shopInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-shop");
+  const magicShopInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-magic-shop");
   const enemyPoolInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-enemy-pool");
   const bossUniqueInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-boss-unique");
   const isSelected = selected?.checked === true;
@@ -9189,6 +9218,14 @@ function syncShieldImportRowAvailability(row: HTMLElement): void {
 
   if (shopInput) {
     shopInput.disabled = !isSelected || isBossUnique;
+  }
+
+  if (magicShopInput) {
+    magicShopInput.disabled = !isSelected || !isShopItem;
+
+    if (!isShopItem) {
+      magicShopInput.checked = false;
+    }
   }
 
   if (enemyPoolInput) {
@@ -9222,6 +9259,7 @@ function getSelectedShieldImportEntries(host: HTMLElement): DebugShieldImportEnt
     const armorHp = getWeaponImportInteger(row, ".debug-auto-equipment__shield-armor", AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
     const bossUnique = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-boss-unique")?.checked === true;
     const shop = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-shop")?.checked === true && !bossUnique;
+    const magicShop = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-magic-shop")?.checked === true && shop;
     const price = shop ? getWeaponImportInteger(row, ".debug-auto-equipment__shield-price", 0, AUTO_EQUIPMENT_PRICE_MAX) : 0;
 
     return [
@@ -9231,6 +9269,7 @@ function getSelectedShieldImportEntries(host: HTMLElement): DebugShieldImportEnt
         rarity: bossUnique ? "unique" : rarity,
         armorHp,
         price,
+        magicShop,
         availability: {
           shop,
           enemyPool: row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-enemy-pool")?.checked === true && !bossUnique,

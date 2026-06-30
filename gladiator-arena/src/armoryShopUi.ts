@@ -50,6 +50,7 @@ export interface ArmoryProduct {
   price: number;
   itemIds: HeroItemId[];
   rarity?: ShopItemRarity;
+  magicShop?: boolean;
 }
 
 export interface ArmoryShopApi {
@@ -345,7 +346,7 @@ export function getGeneratedArmoryProductsForSlots(slotKeys: readonly HeroEquipm
   const products = GENERATED_ARMORY_PRODUCTS.flatMap((product) => {
     const item = product.itemIds[0] ? HERO_ITEM_CATALOG[product.itemIds[0]] : undefined;
 
-    if (!item || !slotKeys.some((slotKey) => slotKey === item.equipmentSlot)) {
+    if (product.magicShop || !item || !slotKeys.some((slotKey) => slotKey === item.equipmentSlot)) {
       return [];
     }
 
@@ -604,6 +605,7 @@ function createPairedArmoryProduct(
     name: getPairedArmoryProductName(backProduct, pairConfig),
     price: getPairedArmoryProductPrice(backProduct, frontProduct),
     itemIds: [backItemId, frontItemId],
+    ...(backProduct.magicShop || frontProduct.magicShop ? { magicShop: true } : {}),
   };
 }
 

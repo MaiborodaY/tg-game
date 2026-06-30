@@ -47,6 +47,51 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_apprentice_01",
+    "name": "Apprentice 01 Back Boot",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": -26.969325450750205,
+      "y": -1.4793064881488363,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 0.81,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-apprentice-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_apprentice_01",
+      "name": "Apprentice 01 Back Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_apprentice_01"
+      ],
+      "categoryId": "legs",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_boar_boss_01",
     "name": "Blacktusk Sabatons",
     "kind": "armor",
@@ -994,6 +1039,51 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_apprentice_01",
+    "name": "Apprentice 01 Back Glove",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": -1.1294027947577483,
+      "y": 14.679972118039018,
+      "angle": -3,
+      "scaleX": 0.64,
+      "scaleY": 0.7,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-apprentice-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_apprentice_01",
+      "name": "Apprentice 01 Back Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_apprentice_01"
+      ],
+      "categoryId": "arms",
+      "magicShop": true
     }
   },
   {
@@ -1994,6 +2084,51 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_apprentice_01",
+    "name": "Apprentice 01 Back Greave",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 34.188416949936595,
+      "angle": -9,
+      "scaleX": 1.09,
+      "scaleY": 0.86,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-apprentice-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_apprentice_01",
+      "name": "Apprentice 01 Back Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_apprentice_01"
+      ],
+      "categoryId": "legs",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_boar_boss_01",
     "name": "Blacktusk Greaves",
     "kind": "armor",
@@ -2991,6 +3126,51 @@
     }
   },
   {
+    "id": "generated_equipment_back_shinguard_apprentice_01",
+    "name": "Apprentice 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 0.09475784128454734,
+      "y": 14.557199205419977,
+      "angle": 0,
+      "scaleX": 1.47,
+      "scaleY": 0.82,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-apprentice-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_apprentice_01",
+      "name": "Apprentice 01 Back Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_apprentice_01"
+      ],
+      "categoryId": "legs",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_boar_boss_01",
     "name": "Blacktusk Legguards",
     "kind": "armor",
@@ -3938,6 +4118,51 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_apprentice_01",
+    "name": "Apprentice 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": -4.057884720788877,
+      "y": 15.935489305790384,
+      "angle": 0,
+      "scaleX": 1.37,
+      "scaleY": 1.47,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-apprentice-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_apprentice_01",
+      "name": "Apprentice 01 Back Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_apprentice_01"
+      ],
+      "categoryId": "shoulders",
+      "magicShop": true
     }
   },
   {
@@ -4891,6 +5116,51 @@
     }
   },
   {
+    "id": "generated_equipment_back_wrist_apprentice_01",
+    "name": "Apprentice 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 0.1305215808711182,
+      "y": 7.4775768227898425,
+      "angle": 0,
+      "scaleX": 1.83,
+      "scaleY": 1.42,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-apprentice-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_apprentice_01",
+      "name": "Apprentice 01 Back Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_apprentice_01"
+      ],
+      "categoryId": "arms",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_boar_boss_01",
     "name": "Blacktusk Bracers",
     "kind": "armor",
@@ -5841,6 +6111,51 @@
     }
   },
   {
+    "id": "generated_equipment_breastplate_apprentice_01",
+    "name": "Apprentice 01 Breastplate",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": -4,
+      "y": 64,
+      "angle": 0,
+      "scaleX": 1.79,
+      "scaleY": 1.63,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-apprentice-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_apprentice_01",
+      "name": "Apprentice 01 Breastplate",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_apprentice_01"
+      ],
+      "categoryId": "chest",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_breastplate_boar_boss_01",
     "name": "Blacktusk Cuirass",
     "kind": "armor",
@@ -6741,6 +7056,51 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_apprentice_01",
+    "name": "Apprentice 01 Front Boot",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 2,
+      "y": -1.4793064881488363,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 0.81,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-apprentice-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_apprentice_01",
+      "name": "Apprentice 01 Front Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_apprentice_01"
+      ],
+      "categoryId": "legs",
+      "magicShop": true
     }
   },
   {
@@ -7691,6 +8051,51 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_apprentice_01",
+    "name": "Apprentice 01 Front Glove",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": -1.1294027947577483,
+      "y": 14.679972118039018,
+      "angle": -3,
+      "scaleX": 0.64,
+      "scaleY": 0.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-apprentice-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_apprentice_01",
+      "name": "Apprentice 01 Front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_apprentice_01"
+      ],
+      "categoryId": "arms",
+      "magicShop": true
     }
   },
   {
@@ -8691,6 +9096,51 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_apprentice_01",
+    "name": "Apprentice 01 Front Greave",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 4.32841029993304,
+      "y": 34.18841694993648,
+      "angle": -3,
+      "scaleX": 1.05,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-apprentice-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_apprentice_01",
+      "name": "Apprentice 01 Front Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_apprentice_01"
+      ],
+      "categoryId": "legs",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_boar_boss_01",
     "name": "Blacktusk Greaves",
     "kind": "armor",
@@ -9688,6 +10138,51 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_apprentice_01",
+    "name": "Apprentice 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 1,
+      "y": 14,
+      "angle": 0,
+      "scaleX": 1.49,
+      "scaleY": 0.82,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-apprentice-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_apprentice_01",
+      "name": "Apprentice 01 Front Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_apprentice_01"
+      ],
+      "categoryId": "legs",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_boar_boss_01",
     "name": "Blacktusk Legguards",
     "kind": "armor",
@@ -10635,6 +11130,51 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_apprentice_01",
+    "name": "Apprentice 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": -4.057884720788877,
+      "y": 15.935489305790384,
+      "angle": 0,
+      "scaleX": 1.37,
+      "scaleY": 1.47,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-apprentice-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_apprentice_01",
+      "name": "Apprentice 01 Front Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_apprentice_01"
+      ],
+      "categoryId": "shoulders",
+      "magicShop": true
     }
   },
   {
@@ -11588,6 +12128,51 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_apprentice_01",
+    "name": "Apprentice 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 0.1305215808711182,
+      "y": 7.4775768227898425,
+      "angle": 0,
+      "scaleX": 1.83,
+      "scaleY": 1.42,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-apprentice-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_apprentice_01",
+      "name": "Apprentice 01 Front Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_apprentice_01"
+      ],
+      "categoryId": "arms",
+      "magicShop": true
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_boar_boss_01",
     "name": "Blacktusk Bracers",
     "kind": "armor",
@@ -12535,6 +13120,51 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_apprentice_01",
+    "name": "Apprentice 01 Helmet",
+    "kind": "armor",
+    "rarity": "common",
+    "equipmentSet": {
+      "id": "apprentice",
+      "name": "apprentice",
+      "rank": 24
+    },
+    "armorHp": 0,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-apprentice-01"
+    },
+    "equipmentTuning": {
+      "x": 0.7644366651873611,
+      "y": 22.455742595119574,
+      "angle": 0,
+      "scaleX": 0.96,
+      "scaleY": 1.22,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-apprentice-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-apprentice-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-apprentice-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_apprentice_01",
+      "name": "Apprentice 01 Helmet",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_apprentice_01"
+      ],
+      "categoryId": "head",
+      "magicShop": true
     }
   },
   {

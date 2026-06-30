@@ -342,8 +342,14 @@ const PAIRED_ARMORY_SLOT_CONFIGS: readonly PairedArmorySlotConfig[] = [
   { backSlot: "backShinguard", frontSlot: "frontShinguard", token: "shinguard", singularLabel: "Shinguard", pluralLabel: "Shinguards" },
   { backSlot: "backBoot", frontSlot: "frontBoot", token: "boot", singularLabel: "Boot", pluralLabel: "Boots" },
 ];
-const SERVER_ARMORY_PRODUCTS = pairGeneratedServerArmoryProducts(GENERATED_ARMORY_PRODUCTS.map(toServerShopProduct));
+const SERVER_ARMORY_PRODUCTS = pairGeneratedServerArmoryProducts(
+  GENERATED_ARMORY_PRODUCTS.filter((product) => product.magicShop !== true).map(toServerShopProduct),
+);
 const SERVER_WEAPON_PRODUCTS = GENERATED_WEAPON_PRODUCTS.map(toServerShopProduct);
+const SERVER_MAGIC_EQUIPMENT_PRODUCTS = [
+  ...GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === "staves").map(toServerShopProduct),
+  ...pairGeneratedServerArmoryProducts(GENERATED_ARMORY_PRODUCTS.filter((product) => product.magicShop === true).map(toServerShopProduct)),
+];
 const SERVER_MAGIC_PRODUCTS: readonly ShopProduct[] = [
   { id: "crack_armor_scroll", name: "Crack Armor Scroll", price: 30, itemIds: [HERO_CRACK_ARMOR_SCROLL_ITEM_ID], rarity: "common" },
   { id: "fireball_scroll", name: "Fireball Scroll", price: 50, itemIds: [HERO_FIREBALL_SCROLL_ITEM_ID], rarity: "common" },
@@ -351,6 +357,7 @@ const SERVER_MAGIC_PRODUCTS: readonly ShopProduct[] = [
   { id: "precise_strike_scroll", name: "Precise Strike Scroll", price: 30, itemIds: [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID], rarity: "common" },
   { id: "double_strike_scroll", name: "Double Strike Scroll", price: 30, itemIds: [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID], rarity: "common" },
   { id: "poison_scroll", name: "Poison Scroll", price: 35, itemIds: [HERO_POISON_SCROLL_ITEM_ID], rarity: "common" },
+  ...SERVER_MAGIC_EQUIPMENT_PRODUCTS,
 ];
 
 export class PlayerActor extends DurableObject<Env> {
@@ -1064,7 +1071,8 @@ function applyMagicShopAction(hero: HeroState, input: PlayerActorBuyShopProductI
   }
 
   const itemId = product.itemIds[0];
-  const price = getHeroScrollPurchasePrice(hero, itemId, product.price);
+  const primaryItem = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+  const price = primaryItem?.kind === "scroll" ? getHeroScrollPurchasePrice(hero, itemId, product.price) : product.price;
 
   return toShopMutationResult(buyAndEquipHeroItems(hero, {
     itemIds: product.itemIds,

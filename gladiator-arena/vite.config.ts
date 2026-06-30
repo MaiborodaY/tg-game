@@ -369,6 +369,7 @@ interface PromotedEquipmentSet {
   name: string;
   entries: EquipmentSetImportEntry[];
   rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
+  magicShop: boolean;
   availability: GeneratedEquipmentAvailability;
 }
 
@@ -394,6 +395,7 @@ interface PromotedShieldImportEntry {
   rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
   armorHp: number;
   price: number;
+  magicShop: boolean;
   availability: GeneratedEquipmentAvailability;
 }
 
@@ -872,6 +874,7 @@ interface RenameEquipmentSetAssetsPayload {
 
 interface PromoteEquipmentSetPayload extends RenameEquipmentSetAssetsPayload {
   rarity?: unknown;
+  magicShop?: unknown;
   availability?: unknown;
 }
 
@@ -899,6 +902,7 @@ interface PromoteShieldImportEntryPayload {
   rarity?: unknown;
   armorHp?: unknown;
   price?: unknown;
+  magicShop?: unknown;
   availability?: unknown;
 }
 
@@ -936,6 +940,7 @@ interface GeneratedEquipmentJsonRecord {
     price: number;
     itemIds: string[];
     categoryId: string;
+    magicShop?: boolean;
   };
   weaponProduct?: {
     id: string;
@@ -2795,6 +2800,7 @@ async function pickPromotedEquipmentSet(payload: unknown): Promise<PromotedEquip
     name,
     entries,
     rarity,
+    magicShop: readBooleanWithFallback(input.magicShop, false) && availability.shop && !availability.bossUnique,
     availability,
   };
 }
@@ -2918,6 +2924,7 @@ async function pickPromotedShieldImportEntries(payload: unknown): Promise<Promot
     const rarity = availability.bossUnique ? "unique" : readItemRarity(raw.rarity, getDefaultGeneratedItemRarity("armor", getArmorCategoryFromAssetKey(assetKey), undefined));
     const armorHp = Math.max(0, Math.min(promotedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(raw.armorHp, "shield import armorHp"))));
     const price = availability.shop ? Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(raw.price, "shield import price")))) : 0;
+    const magicShop = readBooleanWithFallback(raw.magicShop, false) && availability.shop && !availability.bossUnique;
 
     if (sourcePaths.has(sourcePath)) {
       throw new Error(`Duplicate shield import source asset: ${sourcePath}.`);
@@ -2945,6 +2952,7 @@ async function pickPromotedShieldImportEntries(payload: unknown): Promise<Promot
       rarity,
       armorHp,
       price,
+      magicShop,
       availability,
     });
   }
@@ -2983,6 +2991,7 @@ function createPromotedShieldImportRecord(entry: PromotedShieldImportEntry): Gen
             price: entry.price,
             itemIds: [id],
             categoryId,
+            ...(entry.magicShop ? { magicShop: true } : {}),
           },
         }
       : {}),
@@ -3141,6 +3150,7 @@ async function createPromotedEquipmentSetRecord(
             price: 0,
             itemIds: [id],
             categoryId,
+            ...(promotion.magicShop ? { magicShop: true } : {}),
           },
         }
       : {}),
@@ -3229,6 +3239,7 @@ async function createMirroredPromotedEquipmentRecord(
             price: promotedItem.armoryProduct.price,
             itemIds: [mirrorId],
             categoryId,
+            ...(promotedItem.armoryProduct.magicShop ? { magicShop: true } : {}),
           },
         }
       : {}),
@@ -4591,6 +4602,7 @@ export interface GeneratedArmoryProduct {
   price: number;
   itemIds: HeroItemId[];
   categoryId: string;
+  magicShop?: boolean;
 }
 
 export interface GeneratedWeaponProduct {
@@ -5048,6 +5060,7 @@ function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName
     price,
     itemIds: [itemId],
     categoryId,
+    ...(product.magicShop === true ? { magicShop: true } : {}),
   };
 }
 

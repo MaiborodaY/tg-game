@@ -64,6 +64,7 @@ export interface RenameEquipmentSetAssetsPayload {
 
 export interface PromoteEquipmentSetPayload extends RenameEquipmentSetAssetsPayload {
   rarity: HeroItemRarity;
+  magicShop?: boolean;
   availability: {
     shop: boolean;
     enemyPool: boolean;
@@ -95,6 +96,7 @@ export interface PromoteShieldImportEntryPayload {
   rarity: HeroItemRarity;
   armorHp: number;
   price: number;
+  magicShop?: boolean;
   availability: {
     shop: boolean;
     enemyPool: boolean;

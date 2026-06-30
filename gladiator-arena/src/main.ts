@@ -5128,7 +5128,7 @@ function getNextShopPurchaseBurstCount(): number {
 }
 
 function getCityShopProductKind(product: CityShopProduct): "armory" | "weapon" | "magic" {
-  if (isMagicShopProduct(product)) {
+  if (isMagicShopProduct(product) || isMagicEquipmentShopProduct(product)) {
     return "magic";
   }
 
@@ -5376,19 +5376,23 @@ function isMagicShopProduct(product: CityShopProduct): product is MagicProduct {
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "scroll");
 }
 
-function isMagicEquipmentShopProduct(product: CityShopProduct): product is WeaponProduct {
+function isMagicEquipmentShopProduct(product: CityShopProduct): product is ArmoryProduct | WeaponProduct {
   return product.itemIds.some((itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
 
     return item?.kind === "weapon" && getHeroItemWeaponClass(item) === "staff";
-  });
+  }) || (isArmoryShopProduct(product) && product.magicShop === true);
 }
 
 function isEquipmentShopProduct(product: CityShopProduct): product is ArmoryProduct | WeaponProduct {
   return !isMagicShopProduct(product);
 }
 
-function getEquipmentShopProductKind(product: ArmoryProduct | WeaponProduct): "armory" | "weapon" {
+function getEquipmentShopProductKind(product: ArmoryProduct | WeaponProduct): "armory" | "weapon" | "magic" {
+  if (isMagicEquipmentShopProduct(product)) {
+    return "magic";
+  }
+
   return isWeaponShopProduct(product) ? "weapon" : "armory";
 }
 
