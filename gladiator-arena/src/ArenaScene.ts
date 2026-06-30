@@ -818,6 +818,7 @@ const paperDollLinkedEquipmentSlots = new WeakMap<FighterPart, FighterPart[]>();
 const paperDollWeaponOverlayCrops = new WeakMap<FighterPart, PaperDollWeaponOverlayCrop>();
 const paperDollEquipmentSlotImageStates = new WeakMap<FighterPart, PaperDollEquipmentSlotImageState>();
 const paperDollEquipmentTransformStates = new WeakMap<FighterPart, PaperDollEquipmentTransformState>();
+const paperDollWeaponMirrorStates = new WeakMap<FighterPart, PaperDollWeaponMirrorState>();
 const paperDollWeaponGlowImages = new WeakMap<FighterPart, Phaser.GameObjects.Image>();
 const paperDollWeaponGlowBlurFilters = new WeakMap<Phaser.GameObjects.Image, Phaser.Filters.Blur>();
 const paperDollAnimationRootBases = new WeakMap<FighterVisual, PaperDollAnimationRootBase>();
@@ -993,6 +994,13 @@ interface PaperDollEquipmentTransformState {
   x: number;
   y: number;
   angle: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+interface PaperDollWeaponMirrorState {
+  x: number;
+  y: number;
   scaleX: number;
   scaleY: number;
 }
@@ -8382,13 +8390,10 @@ function applyBodyAnimationKeyframeRange(
   }
 
   const shadowRig = shouldAnimatePaperDollShadowRig(fighter) ? rig.shadow : undefined;
+  const activePartKeys = getBodyAnimationActivePartKeys(animation);
 
   if (!fighter.isShattered) {
-    for (const key of RIG_PART_KEYS) {
-      if (!animation.activeParts[key]) {
-        continue;
-      }
-
+    for (const key of activePartKeys) {
       const pivot = PAPER_DOLL_PART_PIVOTS[key];
       const base = baseKeyframe.rigParts[key] ?? defaultRigPartTuning;
       const from = fromKeyframe.rigParts[key] ?? defaultRigPartTuning;
@@ -8403,9 +8408,9 @@ function applyBodyAnimationKeyframeRange(
       }
     }
 
-    syncPaperDollEquipmentAnchors(rig);
+    syncPaperDollEquipmentAnchorsForActiveParts(rig, animation.activeParts);
     if (shadowRig) {
-      syncPaperDollEquipmentAnchors(shadowRig);
+      syncPaperDollEquipmentAnchorsForActiveParts(shadowRig, animation.activeParts);
     }
 
     applyFacePartTransformKeyframeBlend(
@@ -8459,6 +8464,21 @@ function applyBodyAnimationKeyframeRange(
 }
 
 const bodyAnimationTimelineKeyframesCache = new WeakMap<BodyAnimationTuning, BodyAnimationKeyframe[] | undefined>();
+const bodyAnimationActivePartKeysCache = new WeakMap<BodyAnimationTuning, RigPartKey[]>();
+
+function getBodyAnimationActivePartKeys(animation: BodyAnimationTuning): readonly RigPartKey[] {
+  const cached = bodyAnimationActivePartKeysCache.get(animation);
+
+  if (cached) {
+    return cached;
+  }
+
+  const activePartKeys = RIG_PART_KEYS.filter((key) => animation.activeParts[key]);
+
+  bodyAnimationActivePartKeysCache.set(animation, activePartKeys);
+
+  return activePartKeys;
+}
 
 function getBodyAnimationTimelineKeyframes(animation: BodyAnimationTuning): BodyAnimationKeyframe[] | undefined {
   if (bodyAnimationTimelineKeyframesCache.has(animation)) {
@@ -8642,12 +8662,9 @@ function applyBodyAnimationPoseBlend(
   }
 
   const shadowRig = shouldAnimatePaperDollShadowRig(fighter) ? rig.shadow : undefined;
+  const activePartKeys = getBodyAnimationActivePartKeys(animation);
 
-  for (const key of RIG_PART_KEYS) {
-    if (!animation.activeParts[key]) {
-      continue;
-    }
-
+  for (const key of activePartKeys) {
     const part = rig.parts[key];
     const shadowPart = shadowRig?.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
@@ -8660,9 +8677,9 @@ function applyBodyAnimationPoseBlend(
     }
   }
 
-  syncPaperDollEquipmentAnchors(rig);
+  syncPaperDollEquipmentAnchorsForActiveParts(rig, animation.activeParts);
   if (shadowRig) {
-    syncPaperDollEquipmentAnchors(shadowRig);
+    syncPaperDollEquipmentAnchorsForActiveParts(shadowRig, animation.activeParts);
   }
 
   applyFacePartTransformBlend(
@@ -8948,6 +8965,39 @@ function syncPaperDollEquipmentAnchors(rig: Pick<PaperDollRig, "parts" | "equipm
   }
 }
 
+function syncPaperDollEquipmentAnchorsForActiveParts(
+  rig: Pick<PaperDollRig, "parts" | "equipmentAnchors">,
+  activeParts: Record<RigPartKey, boolean>,
+): void {
+  for (const slotKey of PAPER_DOLL_EQUIPMENT_SLOT_KEYS) {
+    const anchorPartKey = PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey];
+
+    if (!activeParts[anchorPartKey]) {
+      continue;
+    }
+
+    const anchor = rig.equipmentAnchors[slotKey];
+
+    if (!anchor) {
+      continue;
+    }
+
+    const sourcePart = rig.parts[anchorPartKey];
+
+    syncPaperDollEquipmentAnchor(anchor, sourcePart);
+
+    const linkedAnchors = paperDollLinkedEquipmentAnchors.get(anchor);
+
+    if (!linkedAnchors) {
+      continue;
+    }
+
+    for (const linkedAnchor of linkedAnchors) {
+      syncPaperDollEquipmentAnchor(linkedAnchor, sourcePart);
+    }
+  }
+}
+
 function syncPaperDollEquipmentAnchor(anchor: FighterPart, sourcePart: FighterPart): void {
   anchor.x = sourcePart.x;
   anchor.y = sourcePart.y;
@@ -9090,14 +9140,33 @@ function applyPaperDollWeaponImageMirror(slot: FighterPart, mirrorX: boolean, mi
   }
 
   const config = paperDollEquipmentSlotConfigs.get(slot);
+  const nextState: PaperDollWeaponMirrorState = {
+    x: config?.localX ?? image.x,
+    y: config?.localY ?? image.y,
+    scaleX: Math.abs(image.scaleX) * (mirrorX ? -1 : 1),
+    scaleY: Math.abs(image.scaleY) * (mirrorY ? -1 : 1),
+  };
+  const previousState = paperDollWeaponMirrorStates.get(slot);
 
-  if (config) {
-    image.x = config.localX;
-    image.y = config.localY;
+  if (
+    previousState
+    && previousState.x === nextState.x
+    && previousState.y === nextState.y
+    && previousState.scaleX === nextState.scaleX
+    && previousState.scaleY === nextState.scaleY
+    && image.x === nextState.x
+    && image.y === nextState.y
+    && image.scaleX === nextState.scaleX
+    && image.scaleY === nextState.scaleY
+  ) {
+    return;
   }
 
-  image.scaleX = Math.abs(image.scaleX) * (mirrorX ? -1 : 1);
-  image.scaleY = Math.abs(image.scaleY) * (mirrorY ? -1 : 1);
+  image.x = nextState.x;
+  image.y = nextState.y;
+  image.scaleX = nextState.scaleX;
+  image.scaleY = nextState.scaleY;
+  paperDollWeaponMirrorStates.set(slot, nextState);
 }
 
 function createPaperDollEquipmentTransformState(tuning: EquipmentTuning): PaperDollEquipmentTransformState {
