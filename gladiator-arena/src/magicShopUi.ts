@@ -36,11 +36,11 @@ import {
 } from "./hero";
 import {
   CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
-  DAMAGE_BLOCK_ICON_ASSET_URL,
   MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL,
   MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL,
   MAGIC_SHOP_TITLE_FRAME_ASSET_URL,
   MAGIC_DAMAGE_ICON_ASSET_URL,
+  REST_STAMINA_ICON_ASSET_URL,
   SHOP_CATEGORY_BODY_ICON_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
@@ -415,7 +415,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     return [category.id, button] as const;
   });
   const equipmentCategoryButtonsById = new Map(equipmentCategoryButtons);
-  equipmentCategoryBar.append(...equipmentCategoryButtons.map(([, button]) => button));
+  equipmentCategoryBar.append(...equipmentCategoryButtons.map(([, button]) => button), equipmentViewToggle);
 
   const previewElements = createMagicProductPreview();
   const scrollUpgradeElements = createMagicScrollCapacityUpgrade();
@@ -427,11 +427,11 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   preview.append(previewElements.card);
   productList.append(...productListItems.map(([, elements]) => elements.item));
   equipmentList.append(...equipmentListItems.map(([, elements]) => elements.item));
-  content.append(home, productList, equipmentList, wallet);
+  content.append(home, productList, equipmentCategoryBar, equipmentList, wallet);
   header.append(title);
   tray.append(header, content);
   menu.append(tray);
-  panel.append(preview, equipmentViewToggle, equipmentCategoryBar, menu, scrollUpgradeElements.root);
+  panel.append(preview, menu, scrollUpgradeElements.root);
   shop.append(panel);
   root.append(shop);
 
@@ -664,6 +664,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     equipmentViewToggle.hidden = mode !== "equipment";
     equipmentCategoryBar.hidden = mode !== "equipment";
     previewElements.buyButton.hidden = mode === "equipment";
+    previewElements.effect.hidden = mode === "equipment";
     equipmentViewToggle.setAttribute("aria-pressed", String(equipmentViewMode === "hero"));
     equipmentViewToggle.setAttribute(
       "aria-label",
@@ -957,6 +958,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
     selectedEquipmentCategoryId = categoryId;
     selectedEquipmentProductId = "";
+    equipmentList.scrollTop = 0;
     refreshHeroState(options.getHero());
     scheduleLayoutSync();
   }
@@ -1240,7 +1242,7 @@ function getMagicEquipmentProductEffect(product: MagicEquipmentProduct): string 
   const stat = getMagicEquipmentProductStat(product);
 
   if (getMagicEquipmentProductKind(product) === "robe") {
-    return `Robe armor ${stat.value}. Built for magic equipment sets.`;
+    return `Robe stamina ${stat.value}. Built for magic equipment sets.`;
   }
 
   return `Staff damage ${stat.value}. Replaces attacks with 100% hit fireballs.`;
@@ -1273,9 +1275,9 @@ function getMagicEquipmentProductStat(product: MagicEquipmentProduct): {
   if (getMagicEquipmentProductKind(product) === "robe") {
     return {
       typeLabel: "Robe",
-      label: "armor",
-      value: getShopProductStat(product.itemIds, "armor"),
-      iconUrl: DAMAGE_BLOCK_ICON_ASSET_URL,
+      label: "stamina",
+      value: getMagicEquipmentProductMaxStaminaBonus(product),
+      iconUrl: REST_STAMINA_ICON_ASSET_URL,
     };
   }
 
@@ -1285,6 +1287,14 @@ function getMagicEquipmentProductStat(product: MagicEquipmentProduct): {
     value: getShopProductStat(product.itemIds, "damage"),
     iconUrl: MAGIC_DAMAGE_ICON_ASSET_URL,
   };
+}
+
+function getMagicEquipmentProductMaxStaminaBonus(product: MagicEquipmentProduct): number {
+  return product.itemIds.reduce((total, itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    return total + Math.max(0, Math.floor(item?.maxStaminaBonus ?? 0));
+  }, 0);
 }
 
 function getMagicEquipmentCardAction(actionState: ShopProductActionState, price: number): EquipmentCardAction {

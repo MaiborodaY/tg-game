@@ -51,7 +51,6 @@ export interface CombatMovementTuning {
 interface StaffFireballActionConfig {
   title: string;
   detail: string;
-  cost: number;
   damageMultiplier: number;
 }
 
@@ -96,6 +95,7 @@ export interface FighterState {
   weaponDamageBonus?: number;
   meleeDamagePercentBonus?: number;
   maceArmorDamagePercentBonus?: number;
+  staffFireballDamageBonus?: number;
   spearMeleeDamagePercentBonus?: number;
   spearLungeDamagePercentBonus?: number;
   spearClinchRangeBonus?: number;
@@ -254,20 +254,17 @@ const STAFF_FIREBALL_ACTIONS: Partial<Record<ActionId, StaffFireballActionConfig
   light: {
     title: "Lesser Fireball",
     detail: "Magic projectile - always hits",
-    cost: 2,
     damageMultiplier: 1,
   },
   medium: {
     title: "Fireball",
     detail: "Magic projectile - always hits",
-    cost: 5,
-    damageMultiplier: 1.5,
+    damageMultiplier: 2,
   },
   heavy: {
     title: "Greater Fireball",
     detail: "Magic projectile - always hits",
-    cost: 10,
-    damageMultiplier: 2,
+    damageMultiplier: 3,
   },
 };
 const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.25;
@@ -482,10 +479,18 @@ export function getActionStaminaCost(actionId: ActionId, actor?: FighterState): 
   const staffFireballAction = getStaffFireballAction(actionId, actor);
 
   if (staffFireballAction) {
-    return staffFireballAction.cost;
+    return getStaffFireballStaminaCost(actionId, actor);
   }
 
   return actions[actionId].cost;
+}
+
+function getStaffFireballStaminaCost(actionId: ActionId, actor: FighterState | undefined): number {
+  if (!actor) {
+    return actions[actionId].cost;
+  }
+
+  return Math.max(1, getActionDamage(actionId, actor) * 3);
 }
 
 export function getActionStaminaRestore(actionId: ActionId, actor?: FighterState): number {
@@ -514,6 +519,7 @@ export function freshState(): CombatState {
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
       maceArmorDamagePercentBonus: 0,
+      staffFireballDamageBonus: 0,
       spearMeleeDamagePercentBonus: 0,
       spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
@@ -535,6 +541,7 @@ export function freshState(): CombatState {
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
       maceArmorDamagePercentBonus: 0,
+      staffFireballDamageBonus: 0,
       spearMeleeDamagePercentBonus: 0,
       spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
@@ -1102,7 +1109,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Comb
 
   const staffFireballAction = getStaffFireballAction(actionId, fighter);
 
-  if (staffFireballAction && fighter.stamina < staffFireballAction.cost) {
+  if (staffFireballAction && fighter.stamina < getActionStaminaCost(actionId, fighter)) {
     return false;
   }
 
@@ -2287,7 +2294,9 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   const staffFireballAction = getStaffFireballAction(actionId, attacker);
 
   if (staffFireballAction) {
-    return Math.max(1, Math.ceil(getMeleeWeaponDamage(attacker) * staffFireballAction.damageMultiplier));
+    const baseFireballDamage = getMeleeWeaponDamage(attacker) + getFighterStaffFireballDamageBonus(attacker);
+
+    return Math.max(1, Math.ceil(baseFireballDamage * staffFireballAction.damageMultiplier));
   }
 
   const actionDamage = actions[actionId].damage ?? 0;
@@ -2312,6 +2321,10 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   }
 
   return isRangedFighter(attacker) ? baseDamage : Math.ceil(baseDamage * getActionMeleeDamageMultiplier(attacker) * spearLungeDamageMultiplier);
+}
+
+function getFighterStaffFireballDamageBonus(fighter?: FighterState): number {
+  return Math.max(0, Math.floor(fighter?.staffFireballDamageBonus ?? 0));
 }
 
 function applyWeaponArmorDamageBonus(actionId: ActionId, attacker: FighterState, defender: FighterState, damage: number): number {

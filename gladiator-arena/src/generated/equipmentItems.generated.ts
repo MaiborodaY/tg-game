@@ -49,7 +49,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"cloth_breastplate_01","name":"Cloth Breastplate 01","price":11,"itemIds":["cloth_breastplate_01"],"categoryId":"body"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_apprentice_01","name":"Apprentice 01 Back Boot","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_apprentice_01","name":"Apprentice 01 Back Boot","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backBoot","armorHp":1,"maxStaminaBonus":1},
     assetKeys: {"backBootAssetKey":"back-boot-apprentice-01"},
     equipmentTuning: {"x":-26.969325450750205,"y":-1.4793064881488363,"angle":0,"scaleX":1,"scaleY":0.81,"flipX":true,"flipY":false},
     asset: {
@@ -326,7 +326,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_glove_apprentice_01","name":"Apprentice 01 Back Glove","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backGlove","armorHp":0},
+    item: {"id":"generated_equipment_back_glove_apprentice_01","name":"Apprentice 01 Back Glove","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backGlove","armorHp":0,"maxStaminaBonus":1},
     assetKeys: {"backGloveAssetKey":"back-glove-apprentice-01"},
     equipmentTuning: {"x":-1.1294027947577483,"y":14.679972118039018,"angle":-3,"scaleX":0.64,"scaleY":0.7,"flipX":true,"flipY":false},
     asset: {
@@ -615,7 +615,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_greave_apprentice_01","name":"Apprentice 01 Back Greave","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backGreave","armorHp":0},
+    item: {"id":"generated_equipment_back_greave_apprentice_01","name":"Apprentice 01 Back Greave","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backGreave","armorHp":0,"maxStaminaBonus":1},
     assetKeys: {"backGreaveAssetKey":"back-greave-apprentice-01"},
     equipmentTuning: {"x":0,"y":34.188416949936595,"angle":-9,"scaleX":1.09,"scaleY":0.86,"flipX":true,"flipY":false},
     asset: {
@@ -904,7 +904,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_apprentice_01","name":"Apprentice 01 Back Shinguard","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backShinguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shinguard_apprentice_01","name":"Apprentice 01 Back Shinguard","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backShinguard","armorHp":0,"maxStaminaBonus":1},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-apprentice-01"},
     equipmentTuning: {"x":0.09475784128454734,"y":14.557199205419977,"angle":0,"scaleX":1.47,"scaleY":0.82,"flipX":false,"flipY":false},
     asset: {
@@ -1181,7 +1181,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_apprentice_01","name":"Apprentice 01 Back Shoulderguard","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backShoulderguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shoulderguard_apprentice_01","name":"Apprentice 01 Back Shoulderguard","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backShoulderguard","armorHp":0,"maxStaminaBonus":1},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-apprentice-01"},
     equipmentTuning: {"x":-4.057884720788877,"y":15.935489305790384,"angle":0,"scaleX":1.37,"scaleY":1.47,"flipX":false,"flipY":false},
     asset: {
@@ -1458,7 +1458,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_apprentice_01","name":"Apprentice 01 Back Wrist","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backWrist","armorHp":0},
+    item: {"id":"generated_equipment_back_wrist_apprentice_01","name":"Apprentice 01 Back Wrist","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"backWrist","armorHp":0,"maxStaminaBonus":1},
     assetKeys: {"backWristAssetKey":"back-wrist-apprentice-01"},
     equipmentTuning: {"x":0.1305215808711182,"y":7.4775768227898425,"angle":0,"scaleX":1.83,"scaleY":1.42,"flipX":false,"flipY":false},
     asset: {
@@ -1735,7 +1735,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_breastplate_apprentice_01","name":"Apprentice 01 Breastplate","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"breastplate","armorHp":0},
+    item: {"id":"generated_equipment_breastplate_apprentice_01","name":"Apprentice 01 Breastplate","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"breastplate","armorHp":0,"maxStaminaBonus":3},
     assetKeys: {"breastplateAssetKey":"breastplate-apprentice-01"},
     equipmentTuning: {"x":-4,"y":64,"angle":0,"scaleX":1.79,"scaleY":1.63,"flipX":false,"flipY":false},
     asset: {
@@ -3686,7 +3686,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_helmet_apprentice_01","name":"Apprentice 01 Helmet","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"helmet","armorHp":0},
+    item: {"id":"generated_equipment_helmet_apprentice_01","name":"Apprentice 01 Helmet","kind":"armor","rarity":"common","equipmentSet":{"id":"apprentice","name":"apprentice","rank":24},"equipmentSlot":"helmet","armorHp":0,"maxStaminaBonus":2},
     assetKeys: {"helmetAssetKey":"helmet-apprentice-01"},
     equipmentTuning: {"x":0.7644366651873611,"y":22.455742595119574,"angle":0,"scaleX":0.96,"scaleY":1.22,"flipX":false,"flipY":false},
     asset: {
@@ -5220,7 +5220,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_worn_militia_spear","name":"Worn Militia Spear","price":25,"itemIds":["generated_equipment_weapon_spear_worn_militia_spear"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_staff_common_staff_01","name":"Common staff 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":7,"weaponClass":"staff"},
+    item: {"id":"generated_equipment_weapon_staff_common_staff_01","name":"Common staff 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"staff"},
     assetKeys: {"weaponMainAssetKey":"weapon-staff-common-staff-01"},
     equipmentTuning: {"x":0,"y":61,"angle":16,"scaleX":1.34,"scaleY":1.42,"flipX":false,"flipY":false},
     asset: {
@@ -5232,7 +5232,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_staff_common_staff_01","name":"Common staff 01","price":0,"itemIds":["generated_equipment_weapon_staff_common_staff_01"],"categoryId":"staves"},
   },
   {
-    item: {"id":"generated_equipment_weapon_staff_common_staff_02","name":"Common staff 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"staff"},
+    item: {"id":"generated_equipment_weapon_staff_common_staff_02","name":"Common staff 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"staff"},
     assetKeys: {"weaponMainAssetKey":"weapon-staff-common-staff-02"},
     equipmentTuning: {"x":-38,"y":75,"angle":33,"scaleX":1.39,"scaleY":1.25,"flipX":false,"flipY":false},
     asset: {
@@ -5244,7 +5244,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_staff_common_staff_02","name":"Common staff 02","price":0,"itemIds":["generated_equipment_weapon_staff_common_staff_02"],"categoryId":"staves"},
   },
   {
-    item: {"id":"generated_equipment_weapon_staff_common_staff_03","name":"Common staff 03","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"staff"},
+    item: {"id":"generated_equipment_weapon_staff_common_staff_03","name":"Common staff 03","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"staff"},
     assetKeys: {"weaponMainAssetKey":"weapon-staff-common-staff-03"},
     equipmentTuning: {"x":-55,"y":78,"angle":39,"scaleX":1.46,"scaleY":1.52,"flipX":false,"flipY":false},
     asset: {

@@ -168,6 +168,7 @@ export interface HeroStats {
   weaponDamageBonus: number;
   meleeDamagePercentBonus: number;
   maceArmorDamagePercentBonus: number;
+  staffFireballDamageBonus: number;
   spearMeleeDamagePercentBonus: number;
   spearLungeDamagePercentBonus: number;
   spearClinchRangeBonus: number;
@@ -309,6 +310,7 @@ export interface HeroEquipmentSetBonusDefinition {
   label: string;
   statBonuses?: Partial<HeroBaseStats>;
   maceArmorDamagePercentBonus?: number;
+  staffFireballDamageBonus?: number;
 }
 
 export interface HeroEquipmentSetBonusGroup {
@@ -334,6 +336,7 @@ export interface HeroItemDefinition {
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  maxStaminaBonus?: number;
   spearClinchRangeBonus?: number;
   spearLungeMoveBonus?: number;
   scrollEffect?: HeroScrollEffect;
@@ -554,6 +557,13 @@ export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_EQUIPMENT_SET_BONUSES: Readonly<Record<string, HeroEquipmentSetBonusGroup>> = {
+  apprentice: {
+    id: "apprentice",
+    label: "Apprentice Robe Set",
+    bonuses: [
+      { pieces: 8, label: "Staff fireball base damage +1", staffFireballDamageBonus: 1 },
+    ],
+  },
   wood_boss: {
     id: "wood_boss",
     label: "Oakhide Set",
@@ -1498,6 +1508,7 @@ function deriveFighterStats(
   const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
   const equipmentSetBonuses = includeEquipmentSetBonuses ? getHeroEquipmentSetStatBonuses(equipment) : { strength: 0, agility: 0, vitality: 0 };
   const armorBonus = armorOverride ?? getHeroEquipmentArmor(equipment);
+  const maxStaminaBonus = getHeroEquipmentMaxStaminaBonus(equipment);
   const mainWeaponItem = getHeroEquipmentSlotItem(equipment, "weaponMain");
   const mainWeaponDamageBonus = Math.max(0, mainWeaponItem?.damageBonus ?? 0) + getHeroWeaponSharpeningDamageBonus(weaponSharpenings, equipment.weaponMain);
   const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength + equipmentSetBonuses.strength);
@@ -1510,11 +1521,12 @@ function deriveFighterStats(
   return {
     maxHp: MAX_HP + vitalityBonus * HERO_VITALITY_HP_BONUS,
     maxArmor: armorBonus,
-    maxStamina: MAX_STAMINA + vitalityBonus * HERO_VITALITY_STAMINA_BONUS,
+    maxStamina: MAX_STAMINA + vitalityBonus * HERO_VITALITY_STAMINA_BONUS + maxStaminaBonus,
     damageBonus: mainWeaponDamageBonus,
     weaponDamageBonus: bowWeaponDamageBonus,
     meleeDamagePercentBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS),
     maceArmorDamagePercentBonus: includeEquipmentSetBonuses ? getHeroEquipmentSetMaceArmorDamagePercentBonus(equipment) : 0,
+    staffFireballDamageBonus: includeEquipmentSetBonuses ? getHeroEquipmentSetStaffFireballDamageBonus(equipment) : 0,
     spearMeleeDamagePercentBonus: roundStatBonus(agilityBonus * HERO_AGILITY_SPEAR_MELEE_DAMAGE_PERCENT_BONUS),
     spearLungeDamagePercentBonus: roundStatBonus(agilityBonus * HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS),
     spearClinchRangeBonus: getHeroItemSpearClinchRangeBonus(mainWeaponItem),
@@ -1730,6 +1742,12 @@ function getHeroEquipmentSetMaceArmorDamagePercentBonus(equipment: HeroEquipment
   return getActiveHeroEquipmentSetBonuses(equipment).reduce((total, bonus) => total + (bonus.maceArmorDamagePercentBonus ?? 0), 0);
 }
 
+function getHeroEquipmentSetStaffFireballDamageBonus(equipment: HeroEquipment): number {
+  return getActiveHeroEquipmentSetBonuses(equipment).reduce((total, bonus) => {
+    return total + Math.max(0, Math.floor(bonus.staffFireballDamageBonus ?? 0));
+  }, 0);
+}
+
 function getActiveHeroEquipmentSetBonuses(equipment: HeroEquipment): HeroEquipmentSetBonusDefinition[] {
   return Object.values(HERO_EQUIPMENT_SET_BONUSES).flatMap((bonusGroup) => {
     const equippedPieces = getHeroEquipmentSetEquippedPieceCount(equipment, bonusGroup.id);
@@ -1746,6 +1764,12 @@ function getHeroEquipmentSetPieceKey(slotKey: HeroEquipmentSlotKey): string {
 
 export function getHeroEquipmentArmor(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((armor, item) => armor + (item.armorHp ?? 0), 0);
+}
+
+export function getHeroEquipmentMaxStaminaBonus(equipment: HeroEquipment): number {
+  return getEquippedHeroItems(equipment).reduce((stamina, item) => {
+    return stamina + Math.max(0, Math.floor(item.maxStaminaBonus ?? 0));
+  }, 0);
 }
 
 export function getHeroEquipmentArmorSlots(equipment: HeroEquipment): CombatArmorSlotState[] {
@@ -2443,6 +2467,7 @@ function createCombatFighterStateFromHero(hero: HeroState, base: FighterState): 
     weaponDamageBonus: stats.weaponDamageBonus,
     meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
     maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
+    staffFireballDamageBonus: stats.staffFireballDamageBonus,
     spearMeleeDamagePercentBonus: stats.spearMeleeDamagePercentBonus,
     spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
     spearClinchRangeBonus: stats.spearClinchRangeBonus,
@@ -2549,6 +2574,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       weaponDamageBonus: stats.weaponDamageBonus,
       meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
       maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
+      staffFireballDamageBonus: stats.staffFireballDamageBonus,
       spearMeleeDamagePercentBonus: stats.spearMeleeDamagePercentBonus,
       spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
       spearClinchRangeBonus: stats.spearClinchRangeBonus,
@@ -2605,6 +2631,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       weaponDamageBonus: enemyStats.weaponDamageBonus,
       meleeDamagePercentBonus: enemyStats.meleeDamagePercentBonus,
       maceArmorDamagePercentBonus: enemyStats.maceArmorDamagePercentBonus,
+      staffFireballDamageBonus: enemyStats.staffFireballDamageBonus,
       spearMeleeDamagePercentBonus: enemyStats.spearMeleeDamagePercentBonus,
       spearLungeDamagePercentBonus: enemyStats.spearLungeDamagePercentBonus,
       spearClinchRangeBonus: enemyStats.spearClinchRangeBonus,
@@ -2750,6 +2777,7 @@ function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: En
     weaponDamageBonus: stats.weaponDamageBonus,
     meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
     maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
+    staffFireballDamageBonus: stats.staffFireballDamageBonus,
     spearMeleeDamagePercentBonus: stats.spearMeleeDamagePercentBonus,
     spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
     spearClinchRangeBonus: stats.spearClinchRangeBonus,

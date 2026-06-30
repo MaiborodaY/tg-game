@@ -426,6 +426,21 @@ const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[]
   },
 ] as const;
 
+const magicShopArmorMaxStaminaBonusBySlot: Partial<Record<EquipmentSlotKey, number>> = {
+  helmet: 2,
+  breastplate: 3,
+  backShoulderguard: 1,
+  backWrist: 1,
+  backGlove: 1,
+  backGreave: 1,
+  backShinguard: 1,
+  backBoot: 1,
+};
+
+function getMagicShopArmorMaxStaminaBonus(slotKey: EquipmentSlotKey): number {
+  return magicShopArmorMaxStaminaBonusBySlot[slotKey] ?? 0;
+}
+
 const equipmentSetImportTargetConfigs: readonly EquipmentSetImportTargetConfig[] = [
   { targetPrefix: "helmet", kind: "armor", folder: "assets/fighters/armor/helmet", slot: "helmet", assetKeyName: "helmetAssetKey", label: "Helmet" },
   {
@@ -921,6 +936,7 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  maxStaminaBonus?: number;
   spearClinchRangeBonus?: number;
   spearLungeMoveBonus?: number;
   levelRequirement?: number;
@@ -3121,6 +3137,7 @@ async function createPromotedEquipmentSetRecord(
   const categoryId = getArmoryCategoryId(config.slot);
   const armorCategory = config.kind === "armor" ? getArmorCategoryFromAssetKey(assetKey) : undefined;
   const weaponClass = config.kind === "weapon" ? getWeaponClassFromText(`${assetKey} ${config.label}`) : undefined;
+  const maxStaminaBonus = config.kind === "armor" && promotion.magicShop ? getMagicShopArmorMaxStaminaBonus(config.slot) : 0;
 
   validateGeneratedEquipmentSlot(config.kind, config.slot);
 
@@ -3132,6 +3149,7 @@ async function createPromotedEquipmentSetRecord(
     ...(armorCategory ? { armorCategory } : {}),
     ...(config.kind === "armor" && equipmentSet ? { equipmentSet } : {}),
     ...(config.kind === "armor" ? { armorHp: 1 } : { damageBonus: 1 }),
+    ...(maxStaminaBonus > 0 ? { maxStaminaBonus } : {}),
     ...(weaponClass ? { weaponClass } : {}),
     equipmentSlot: config.slot,
     assetKeys,
@@ -3214,6 +3232,7 @@ async function createMirroredPromotedEquipmentRecord(
 
   const mirrorName = formatPromotedEquipmentMirrorName(promotedItem.name, mirrorConfig);
   const categoryId = getArmoryCategoryId(mirrorConfig.target.slot) ?? promotedItem.armoryProduct?.categoryId;
+  const maxStaminaBonus = promotedItem.armoryProduct?.magicShop ? getMagicShopArmorMaxStaminaBonus(mirrorConfig.target.slot) : 0;
   const mirroredItem: GeneratedEquipmentJsonRecord = {
     id: mirrorId,
     name: mirrorName,
@@ -3222,6 +3241,7 @@ async function createMirroredPromotedEquipmentRecord(
     ...(promotedItem.armorCategory ? { armorCategory: promotedItem.armorCategory } : {}),
     ...(promotedItem.equipmentSet ? { equipmentSet: promotedItem.equipmentSet } : {}),
     ...(promotedItem.armorHp !== undefined ? { armorHp: 0 } : {}),
+    ...(maxStaminaBonus > 0 ? { maxStaminaBonus } : {}),
     equipmentSlot: mirrorConfig.target.slot,
     assetKeys: { [mirrorConfig.target.assetKeyName]: mirrorAssetKey },
     equipmentTuning: mirrorPromotedEquipmentTuning(promotedItem.equipmentTuning),
@@ -4668,6 +4688,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     equipmentSlot: record.equipmentSlot,
     ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
     ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
+    ...(record.maxStaminaBonus !== undefined ? { maxStaminaBonus: record.maxStaminaBonus } : {}),
     ...(record.spearClinchRangeBonus !== undefined ? { spearClinchRangeBonus: record.spearClinchRangeBonus } : {}),
     ...(record.spearLungeMoveBonus !== undefined ? { spearLungeMoveBonus: record.spearLungeMoveBonus } : {}),
     ...(record.requirements ? { requirements: record.requirements } : {}),
@@ -4917,6 +4938,8 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     kind === "armor"
       ? Math.max(0, Math.min(generatedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))))
       : undefined;
+  const maxStaminaBonus =
+    kind === "armor" ? readOptionalGeneratedEquipmentMaxStaminaBonus(record.maxStaminaBonus, "generated equipment maxStaminaBonus") : undefined;
   const damageBonus =
     kind === "weapon"
       ? Math.max(
@@ -4965,6 +4988,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(armorCategory ? { armorCategory } : {}),
     ...(equipmentSet ? { equipmentSet } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
+    ...(maxStaminaBonus !== undefined ? { maxStaminaBonus } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
     ...(requirements ? { requirements } : {}),
     ...(weaponClass ? { weaponClass } : {}),
@@ -4991,6 +5015,14 @@ function validateGeneratedEquipmentLevelRequirement(input: unknown): number | un
   }
 
   return readClampedInteger(input, "generated equipment levelRequirement", 1, 100);
+}
+
+function readOptionalGeneratedEquipmentMaxStaminaBonus(input: unknown, label: string): number | undefined {
+  if (input === undefined || input === null || input === "") {
+    return undefined;
+  }
+
+  return readClampedInteger(input, label, 0, 100);
 }
 
 function readOptionalGeneratedEquipmentSpearBonus(input: unknown, label: string): number | undefined {

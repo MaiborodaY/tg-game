@@ -89,7 +89,8 @@
       ],
       "categoryId": "legs",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 1
   },
   {
     "id": "generated_equipment_back_boot_boar_boss_01",
@@ -1084,7 +1085,8 @@
       ],
       "categoryId": "arms",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 1
   },
   {
     "id": "generated_equipment_back_glove_boar_boss_01",
@@ -2126,7 +2128,8 @@
       ],
       "categoryId": "legs",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 1
   },
   {
     "id": "generated_equipment_back_greave_boar_boss_01",
@@ -3168,7 +3171,8 @@
       ],
       "categoryId": "legs",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 1
   },
   {
     "id": "generated_equipment_back_shinguard_boar_boss_01",
@@ -4163,7 +4167,8 @@
       ],
       "categoryId": "shoulders",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 1
   },
   {
     "id": "generated_equipment_back_shoulderguard_boar_boss_01",
@@ -5158,7 +5163,8 @@
       ],
       "categoryId": "arms",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 1
   },
   {
     "id": "generated_equipment_back_wrist_boar_boss_01",
@@ -6153,7 +6159,8 @@
       ],
       "categoryId": "chest",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 3
   },
   {
     "id": "generated_equipment_breastplate_boar_boss_01",
@@ -13165,7 +13172,8 @@
       ],
       "categoryId": "head",
       "magicShop": true
-    }
+    },
+    "maxStaminaBonus": 2
   },
   {
     "id": "generated_equipment_helmet_boar_boss_01",
@@ -18255,7 +18263,7 @@
     "name": "Common staff 01",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 7,
+    "damageBonus": 1,
     "weaponClass": "staff",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18295,7 +18303,7 @@
     "name": "Common staff 02",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 1,
+    "damageBonus": 2,
     "weaponClass": "staff",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18335,7 +18343,7 @@
     "name": "Common staff 03",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 1,
+    "damageBonus": 3,
     "weaponClass": "staff",
     "equipmentSlot": "weaponMain",
     "assetKeys": {

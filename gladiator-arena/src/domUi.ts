@@ -17,6 +17,7 @@ import {
   DAILY_ARENA_ENERGY_ICON_ASSET_URL,
   DAMAGE_BLOCK_ICON_ASSET_URL,
   DAMAGE_HIT_ICON_ASSET_URL,
+  SHOP_CATEGORY_BODY_ICON_ASSET_URL,
   SHOP_CATEGORY_MACE_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
@@ -115,6 +116,7 @@ export interface DomRefs {
   playerPreciseStrike: HTMLElement;
   playerDoubleStrike: HTMLElement;
   playerMaceArmorDamage: HTMLElement;
+  playerStaffFireballDamage: HTMLElement;
   playerPoison: HTMLElement;
   enemyWard: HTMLElement;
   enemyPreciseStrike: HTMLElement;
@@ -192,6 +194,7 @@ export function getDomRefs(): DomRefs {
     playerPreciseStrike: document.querySelector<HTMLElement>("#playerPreciseStrike"),
     playerDoubleStrike: document.querySelector<HTMLElement>("#playerDoubleStrike"),
     playerMaceArmorDamage: document.querySelector<HTMLElement>("#playerMaceArmorDamage"),
+    playerStaffFireballDamage: document.querySelector<HTMLElement>("#playerStaffFireballDamage"),
     playerPoison: document.querySelector<HTMLElement>("#playerPoison"),
     enemyWard: document.querySelector<HTMLElement>("#enemyWard"),
     enemyPreciseStrike: document.querySelector<HTMLElement>("#enemyPreciseStrike"),
@@ -397,6 +400,7 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   syncPreciseStrikeStatus(dom.playerPreciseStrike, state.player.name, getFighterPreciseStrikeHits(state.player));
   syncDoubleStrikeStatus(dom.playerDoubleStrike, state.player.name, getFighterDoubleStrikeHits(state.player));
   syncMaceArmorDamageStatus(dom.playerMaceArmorDamage, state.player.name, state.player.maceArmorDamagePercentBonus ?? 0);
+  syncStaffFireballDamageStatus(dom.playerStaffFireballDamage, state.player.name, state.player.staffFireballDamageBonus ?? 0);
   syncPoisonStatus(dom.playerPoison, state.player.name, getFighterPoisonTurns(state.player));
   syncWardStatus(dom.enemyWard, state.enemy.name, getFighterWardHits(state.enemy));
   syncPreciseStrikeStatus(dom.enemyPreciseStrike, state.enemy.name, getFighterPreciseStrikeHits(state.enemy));
@@ -542,6 +546,24 @@ function syncMaceArmorDamageStatus(element: HTMLElement, fighterName: string, pe
 
   element.setAttribute("aria-label", `${fighterName} mace armor damage +${percentLabel}%`);
   element.title = `Mace armor damage +${percentLabel}%`;
+}
+
+function syncStaffFireballDamageStatus(element: HTMLElement, fighterName: string, damageBonus: number): void {
+  const safeDamageBonus = Math.max(0, Math.floor(damageBonus));
+  element.hidden = safeDamageBonus <= 0;
+
+  if (safeDamageBonus <= 0) {
+    return;
+  }
+
+  const icon = element.querySelector<HTMLImageElement>("img");
+
+  if (icon && icon.src !== SHOP_CATEGORY_BODY_ICON_ASSET_URL) {
+    icon.src = SHOP_CATEGORY_BODY_ICON_ASSET_URL;
+  }
+
+  element.setAttribute("aria-label", `${fighterName} staff fireball base damage +${safeDamageBonus}`);
+  element.title = `Staff fireball base damage +${safeDamageBonus}`;
 }
 
 function syncIconCountStatus(element: HTMLElement, count: number, iconUrl: string | undefined, ariaLabel: string): void {
