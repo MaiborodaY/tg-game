@@ -8315,34 +8315,173 @@ function applyBodyAnimationKeyframesAtProgress(fighter: FighterVisual, animation
   }
 
   const baseKeyframe = keyframes[0];
-  const sampledPose = sampleBodyAnimationKeyframePose(keyframes, Math.max(1, animation.duration), progress);
 
-  if (!baseKeyframe || !sampledPose) {
+  if (!baseKeyframe) {
     return false;
   }
 
-  applyBodyAnimationPoseBlend(fighter, animation, baseKeyframe.rigParts, sampledPose.rigParts, baseKeyframe.faceParts, sampledPose.faceParts, amount);
-  applyBodyAnimationRootOffsetBlend(fighter, baseKeyframe.rootOffset, sampledPose.rootOffset, amount);
-  applyBodyAnimationWeaponMirrors(fighter, sampledPose.weaponMirrorX ?? false, sampledPose.weaponMirrorY ?? false);
-  applyBodyAnimationCastProp(fighter, sampledPose.castProp);
+  const duration = Math.max(1, animation.duration);
+  const timelineTime = (((progress % 1) + 1) % 1) * duration;
+
+  for (let index = 0; index < keyframes.length - 1; index += 1) {
+    const from = keyframes[index];
+    const to = keyframes[index + 1];
+
+    if (!from || !to || timelineTime < from.time || timelineTime > to.time) {
+      continue;
+    }
+
+    applyBodyAnimationKeyframeRange(
+      fighter,
+      animation,
+      baseKeyframe,
+      from,
+      to,
+      getBodyAnimationKeyframeSegmentBlend(from, timelineTime - from.time, to.time - from.time),
+      amount,
+    );
+
+    return true;
+  }
+
+  const lastKeyframe = keyframes[keyframes.length - 1];
+
+  if (!lastKeyframe) {
+    return false;
+  }
+
+  const wrappedTimelineTime = timelineTime < baseKeyframe.time ? timelineTime + duration : timelineTime;
+  const wrappedDuration = baseKeyframe.time + duration - lastKeyframe.time;
+
+  applyBodyAnimationKeyframeRange(
+    fighter,
+    animation,
+    baseKeyframe,
+    lastKeyframe,
+    baseKeyframe,
+    getBodyAnimationKeyframeSegmentBlend(lastKeyframe, wrappedTimelineTime - lastKeyframe.time, wrappedDuration),
+    amount,
+  );
 
   return true;
 }
 
+function applyBodyAnimationKeyframeRange(
+  fighter: FighterVisual,
+  animation: BodyAnimationTuning,
+  baseKeyframe: BodyAnimationKeyframe,
+  fromKeyframe: BodyAnimationKeyframe,
+  toKeyframe: BodyAnimationKeyframe,
+  keyframeBlend: number,
+  amount: number,
+): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  if (!fighter.isShattered) {
+    for (const key of RIG_PART_KEYS) {
+      if (!animation.activeParts[key]) {
+        continue;
+      }
+
+      const pivot = PAPER_DOLL_PART_PIVOTS[key];
+      const base = baseKeyframe.rigParts[key] ?? defaultRigPartTuning;
+      const from = fromKeyframe.rigParts[key] ?? defaultRigPartTuning;
+      const to = toKeyframe.rigParts[key] ?? defaultRigPartTuning;
+
+      applyRigPartTransformKeyframeBlend(rig.parts[key], pivot, base, from, to, keyframeBlend, amount);
+
+      const shadowPart = rig.shadow?.parts[key];
+
+      if (shadowPart) {
+        applyRigPartTransformKeyframeBlend(shadowPart, pivot, base, from, to, keyframeBlend, amount);
+      }
+    }
+
+    syncPaperDollEquipmentAnchors(rig);
+    if (rig.shadow) {
+      syncPaperDollEquipmentAnchors(rig.shadow);
+    }
+
+    applyFacePartTransformKeyframeBlend(
+      rig.faceParts.eyeLeft,
+      HEAD_FACE_LEFT_EYE_X,
+      HEAD_FACE_EYE_Y,
+      baseKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
+      fromKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
+      toKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
+      keyframeBlend,
+      amount,
+    );
+    applyFacePartTransformKeyframeBlend(
+      rig.faceParts.eyeRight,
+      HEAD_FACE_RIGHT_EYE_X,
+      HEAD_FACE_EYE_Y,
+      baseKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
+      fromKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
+      toKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
+      keyframeBlend,
+      amount,
+    );
+    applyFacePartTransformKeyframeBlend(
+      rig.shadow?.faceParts.eyeLeft,
+      HEAD_FACE_LEFT_EYE_X,
+      HEAD_FACE_EYE_Y,
+      baseKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
+      fromKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
+      toKeyframe.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft,
+      keyframeBlend,
+      amount,
+    );
+    applyFacePartTransformKeyframeBlend(
+      rig.shadow?.faceParts.eyeRight,
+      HEAD_FACE_RIGHT_EYE_X,
+      HEAD_FACE_EYE_Y,
+      baseKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
+      fromKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
+      toKeyframe.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight,
+      keyframeBlend,
+      amount,
+    );
+  }
+
+  applyBodyAnimationRootOffsetKeyframeBlend(fighter, baseKeyframe.rootOffset, fromKeyframe.rootOffset, toKeyframe.rootOffset, keyframeBlend, amount);
+
+  const mirrorKeyframe = keyframeBlend < 0.5 ? fromKeyframe : toKeyframe;
+
+  applyBodyAnimationWeaponMirrors(fighter, mirrorKeyframe.weaponMirrorX ?? false, mirrorKeyframe.weaponMirrorY ?? false);
+  applyBodyAnimationCastPropKeyframeBlend(fighter, fromKeyframe.castProp, toKeyframe.castProp, keyframeBlend);
+}
+
+const bodyAnimationTimelineKeyframesCache = new WeakMap<BodyAnimationTuning, BodyAnimationKeyframe[] | undefined>();
+
 function getBodyAnimationTimelineKeyframes(animation: BodyAnimationTuning): BodyAnimationKeyframe[] | undefined {
+  if (bodyAnimationTimelineKeyframesCache.has(animation)) {
+    return bodyAnimationTimelineKeyframesCache.get(animation);
+  }
+
   const duration = Math.max(1, animation.duration);
   const keyframes = animation.keyframes;
 
   if (!keyframes || keyframes.length < 2) {
+    bodyAnimationTimelineKeyframesCache.set(animation, undefined);
+
     return undefined;
   }
 
-  return keyframes
+  const preparedKeyframes = keyframes
     .map((keyframe) => ({
       ...keyframe,
       time: clampNumber(Number.isFinite(keyframe.time) ? keyframe.time : 0, 0, duration),
     }))
     .sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+
+  bodyAnimationTimelineKeyframesCache.set(animation, preparedKeyframes);
+
+  return preparedKeyframes;
 }
 
 interface SampledBodyAnimationPose {
@@ -8600,13 +8739,34 @@ function applyBodyAnimationRootOffsetBlend(
   to: BodyAnimationRootOffset | undefined,
   blend: number,
 ): void {
-  applyBodyAnimationRootOffset(
-    fighter,
-    interpolateBodyAnimationRootOffset(from ?? defaultBodyAnimationRootOffset, to ?? defaultBodyAnimationRootOffset, blend),
-  );
+  const fromOffset = from ?? defaultBodyAnimationRootOffset;
+  const toOffset = to ?? defaultBodyAnimationRootOffset;
+
+  applyBodyAnimationRootOffsetValues(fighter, lerp(fromOffset.x, toOffset.x, blend), lerp(fromOffset.y, toOffset.y, blend));
+}
+
+function applyBodyAnimationRootOffsetKeyframeBlend(
+  fighter: FighterVisual,
+  base: BodyAnimationRootOffset | undefined,
+  from: BodyAnimationRootOffset | undefined,
+  to: BodyAnimationRootOffset | undefined,
+  keyframeBlend: number,
+  amount: number,
+): void {
+  const baseOffset = base ?? defaultBodyAnimationRootOffset;
+  const fromOffset = from ?? defaultBodyAnimationRootOffset;
+  const toOffset = to ?? defaultBodyAnimationRootOffset;
+  const sampledX = lerp(fromOffset.x, toOffset.x, keyframeBlend);
+  const sampledY = lerp(fromOffset.y, toOffset.y, keyframeBlend);
+
+  applyBodyAnimationRootOffsetValues(fighter, lerp(baseOffset.x, sampledX, amount), lerp(baseOffset.y, sampledY, amount));
 }
 
 function applyBodyAnimationRootOffset(fighter: FighterVisual, rootOffset: BodyAnimationRootOffset): void {
+  applyBodyAnimationRootOffsetValues(fighter, rootOffset.x, rootOffset.y);
+}
+
+function applyBodyAnimationRootOffsetValues(fighter: FighterVisual, rootOffsetX: number, rootOffsetY: number): void {
   const rig = fighter.paperDollRig;
 
   if (!rig) {
@@ -8616,8 +8776,8 @@ function applyBodyAnimationRootOffset(fighter: FighterVisual, rootOffset: BodyAn
   const base = getPaperDollAnimationRootBase(fighter);
   const scaleX = rig.root.scaleX === 0 ? 1 : rig.root.scaleX;
   const scaleY = rig.root.scaleY === 0 ? 1 : rig.root.scaleY;
-  const worldOffsetX = rootOffset.x * scaleX;
-  const worldOffsetY = rootOffset.y * scaleY;
+  const worldOffsetX = rootOffsetX * scaleX;
+  const worldOffsetY = rootOffsetY * scaleY;
 
   base.rootX = fighter.body.x - base.worldOffsetX;
   base.rootY = fighter.body.y - base.worldOffsetY;
@@ -8671,6 +8831,51 @@ function applyBodyAnimationCastProp(fighter: FighterVisual, tuning?: BodyAnimati
   setFighterPartVisible(prop, true);
 }
 
+function applyBodyAnimationCastPropKeyframeBlend(
+  fighter: FighterVisual,
+  from: BodyAnimationCastPropTuning | undefined,
+  to: BodyAnimationCastPropTuning | undefined,
+  blend: number,
+): void {
+  const prop = fighter.paperDollRig?.castProp;
+
+  if (!prop) {
+    return;
+  }
+
+  if (!from && !to) {
+    setFighterPartVisible(prop, false);
+    return;
+  }
+
+  const fromProp = from ?? defaultBodyAnimationCastProp;
+  const toProp = to ?? defaultBodyAnimationCastProp;
+  const pickedProp = blend < 0.5 ? fromProp : toProp;
+
+  if (!pickedProp.visible) {
+    setFighterPartVisible(prop, false);
+    return;
+  }
+
+  const textureKey = fighter.scrollCastPropAssetKey ?? pickedProp.assetKey ?? DEFAULT_SCROLL_CAST_PROP_ASSET_KEY;
+
+  if (!prop.scene.textures.exists(textureKey)) {
+    setFighterPartVisible(prop, false);
+    return;
+  }
+
+  if (prop instanceof Phaser.GameObjects.Image && prop.texture.key !== textureKey) {
+    prop.setTexture(textureKey);
+  }
+
+  prop.x = lerp(fromProp.x, toProp.x, blend);
+  prop.y = lerp(fromProp.y, toProp.y, blend);
+  prop.angle = lerp(fromProp.angle, toProp.angle, blend);
+  prop.scaleX = lerp(fromProp.scaleX, toProp.scaleX, blend) * (pickedProp.flipX ? -1 : 1);
+  prop.scaleY = lerp(fromProp.scaleY, toProp.scaleY, blend) * (pickedProp.flipY ? -1 : 1);
+  setFighterPartVisible(prop, true);
+}
+
 function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number }, tuning: RigPartTuning): void {
   part.x = pivot.x + tuning.x;
   part.y = pivot.y + tuning.y;
@@ -8688,6 +8893,32 @@ function applyRigPartTransformBlend(part: FighterPart, pivot: { x: number; y: nu
   part.angle = lerp(from.angle, to.angle, blend);
   part.scaleX = lerp(from.scaleX, to.scaleX, blend) * (flipX ? -1 : 1);
   part.scaleY = lerp(from.scaleY, to.scaleY, blend) * (flipY ? -1 : 1);
+}
+
+function applyRigPartTransformKeyframeBlend(
+  part: FighterPart,
+  pivot: { x: number; y: number },
+  base: RigPartTuning,
+  from: RigPartTuning,
+  to: RigPartTuning,
+  keyframeBlend: number,
+  amount: number,
+): void {
+  const sampledFlipX = keyframeBlend < 0.5 ? from.flipX : to.flipX;
+  const sampledFlipY = keyframeBlend < 0.5 ? from.flipY : to.flipY;
+  const flipX = amount < 0.5 ? base.flipX : sampledFlipX;
+  const flipY = amount < 0.5 ? base.flipY : sampledFlipY;
+  const sampledX = lerp(from.x, to.x, keyframeBlend);
+  const sampledY = lerp(from.y, to.y, keyframeBlend);
+  const sampledAngle = lerp(from.angle, to.angle, keyframeBlend);
+  const sampledScaleX = lerp(from.scaleX, to.scaleX, keyframeBlend);
+  const sampledScaleY = lerp(from.scaleY, to.scaleY, keyframeBlend);
+
+  part.x = pivot.x + lerp(base.x, sampledX, amount);
+  part.y = pivot.y + lerp(base.y, sampledY, amount);
+  part.angle = lerp(base.angle, sampledAngle, amount);
+  part.scaleX = lerp(base.scaleX, sampledScaleX, amount) * (flipX ? -1 : 1);
+  part.scaleY = lerp(base.scaleY, sampledScaleY, amount) * (flipY ? -1 : 1);
 }
 
 function syncPaperDollEquipmentAnchors(rig: Pick<PaperDollRig, "parts" | "equipmentAnchors">): void {
@@ -8760,6 +8991,31 @@ function applyFacePartTransformBlend(
   part.y = baseY + lerp(from.y, to.y, blend);
   part.scaleX = lerp(from.scaleX, to.scaleX, blend);
   part.scaleY = lerp(from.scaleY, to.scaleY, blend);
+}
+
+function applyFacePartTransformKeyframeBlend(
+  part: FighterPart | undefined,
+  baseX: number,
+  baseY: number,
+  base: FacePartTuning,
+  from: FacePartTuning,
+  to: FacePartTuning,
+  keyframeBlend: number,
+  amount: number,
+): void {
+  if (!part) {
+    return;
+  }
+
+  const sampledX = lerp(from.x, to.x, keyframeBlend);
+  const sampledY = lerp(from.y, to.y, keyframeBlend);
+  const sampledScaleX = lerp(from.scaleX, to.scaleX, keyframeBlend);
+  const sampledScaleY = lerp(from.scaleY, to.scaleY, keyframeBlend);
+
+  part.x = baseX + lerp(base.x, sampledX, amount);
+  part.y = baseY + lerp(base.y, sampledY, amount);
+  part.scaleX = lerp(base.scaleX, sampledScaleX, amount);
+  part.scaleY = lerp(base.scaleY, sampledScaleY, amount);
 }
 
 function applyEquipmentTransform(part: FighterPart | undefined, tuning: EquipmentTuning): void {
