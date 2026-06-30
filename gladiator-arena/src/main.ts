@@ -406,6 +406,7 @@ const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_ENTRY_FAILSAFE_TIMEOUT_MS = 5000;
 const ARENA_ENTRY_PROFILE_MARK_EVENT = "dust-arena-entry-profile-mark";
 const CITY_ARENA_PANEL_ENTRY_TRANSITION_MS = 1000;
+const CITY_ARENA_PANEL_SIMPLE_ENTRY_TRANSITION_MS = 300;
 const ARENA_ENERGY_TIMER_REFRESH_MS = 30000;
 const ARENA_RANDOM_ENERGY_COST = 1;
 const ARENA_BOSS_ENERGY_COST = 2;
@@ -3420,10 +3421,11 @@ function syncCityArenaBotControls(): void {
   });
   cityArenaBossList?.querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]").forEach((button) => {
     const bossTierId = Number(button.dataset.cityArenaBossTierId);
+    const busyTitle = pvpControlsBusy && button.dataset.cityArenaBossMode === "duo-online" ? "Checking online rooms." : "";
     const levelGateTitle = getCityArenaBossLevelGateTitle(bossTierId);
     const title = levelGateTitle || getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
     const bossTierLimitTitle = title ? "" : getCityArenaBossVictoryLimitTitle(bossTierId);
-    const buttonTitle = title || bossTierLimitTitle;
+    const buttonTitle = busyTitle || title || bossTierLimitTitle;
 
     button.disabled = Boolean(buttonTitle);
     button.title = buttonTitle || button.dataset.defaultTitle || "";
@@ -3653,7 +3655,30 @@ function setCityArenaOnlineViewOpen(open: boolean): void {
   if (open) {
     setCityArenaQuestPanelOpen(false);
     syncPvpControls();
-    void refreshPvpReconnectRoom({ silent: true });
+  }
+}
+
+async function openCityArenaOnlineViewWithRoomCheck(roomKind = activeOnlineRoomKind): Promise<void> {
+  if (pvpControlsBusy) {
+    return;
+  }
+
+  if (activeOnlineRoomKind !== roomKind) {
+    setActiveOnlineRoomKind(roomKind);
+  }
+
+  setCityArenaOnlineViewOpen(true);
+  await refreshPvpRoomList();
+}
+
+async function handleSelectOnlineRoomKind(roomKind: PvpRoomKind): Promise<void> {
+  if (pvpControlsBusy) {
+    return;
+  }
+
+  setActiveOnlineRoomKind(roomKind);
+  if (isCityArenaOnlineViewOpen) {
+    await refreshPvpRoomList();
   }
 }
 
@@ -3663,6 +3688,10 @@ function syncPvpControls(): void {
 
   syncOnlineTabs();
 
+  if (cityArenaOnlineButton) {
+    cityArenaOnlineButton.disabled = pvpControlsBusy;
+    cityArenaOnlineButton.title = pvpControlsBusy ? "Checking online rooms." : "";
+  }
   if (cityPvpCreateButton) {
     cityPvpCreateButton.hidden = isPveTab;
     cityPvpCreateButton.textContent = "CREATE";
@@ -3690,6 +3719,8 @@ function syncOnlineTab(button: HTMLButtonElement | null, isActive: boolean): voi
 
   button.classList.toggle("city-arena-menu__online-tab--active", isActive);
   button.setAttribute("aria-selected", isActive ? "true" : "false");
+  button.disabled = pvpControlsBusy;
+  button.title = pvpControlsBusy ? "Checking online rooms." : "";
 }
 
 function renderPvpRoomList(): void {
@@ -3914,9 +3945,17 @@ async function handleCreatePvpRoom(): Promise<void> {
   }
 
   setPvpControlsBusy(true);
-  setPvpStatus("Creating room...");
+  setPvpStatus("Checking rooms...");
 
   try {
+    await refreshPvpReconnectRoom({ silent: true });
+    if (pvpReconnectRoom || locallyLeftPvpRoom) {
+      setPvpStatus("Reconnect current fight first.");
+      setPvpControlsBusy(false);
+      return;
+    }
+
+    setPvpStatus("Creating room...");
     beginPvpRoom(await createPvpRoom(hero));
     await refreshPvpRoomList({ silent: true });
   } catch (error) {
@@ -3940,11 +3979,20 @@ async function handleCreateOnlineDuoBossRoom(boss: ArenaBossDefinition): Promise
 
   activeOnlineRoomKind = "duoBoss";
   pvpRoomsVisible = true;
+  pvpRoomList = [];
   setCityArenaOnlineViewOpen(true);
   setPvpControlsBusy(true);
-  setPvpStatus("Creating help request...");
+  setPvpStatus("Checking rooms...");
 
   try {
+    await refreshPvpReconnectRoom({ silent: true });
+    if (pvpReconnectRoom || locallyLeftPvpRoom) {
+      setPvpStatus("Reconnect current fight first.");
+      setPvpControlsBusy(false);
+      return;
+    }
+
+    setPvpStatus("Creating help request...");
     beginPvpRoom(await createDuoBossRoom(hero, boss.id));
     await refreshPvpRoomList({ silent: true });
   } catch (error) {
@@ -4678,15 +4726,6 @@ function openCityArenaMenu(): void {
     pvpRoomsVisible = true;
   }
   setCityArenaOnlineViewOpen(Boolean(pvpSession || locallyLeftPvpRoom || pvpReconnectRoom));
-  if (!pvpSession && !locallyLeftPvpRoom && !pvpReconnectRoom) {
-    void refreshPvpReconnectRoom({ silent: true }).then(() => {
-      if (!pvpSession && pvpReconnectRoom && cityArenaMenu && !cityArenaMenu.hidden) {
-        pvpRoomsVisible = true;
-        setCityArenaOnlineViewOpen(true);
-        syncPvpControls();
-      }
-    });
-  }
   syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
@@ -4695,7 +4734,7 @@ function openCityArenaMenu(): void {
 function closeCityArenaMenu(): void {
   setPendingManualArenaStartSelection();
   cityArenaMenu?.setAttribute("hidden", "");
-  cityArenaMenu?.classList.remove("city-arena-menu--battle-transition");
+  cityArenaMenu?.classList.remove("city-arena-menu--battle-transition", "city-arena-menu--battle-transition-simple");
   setCityArenaQuestPanelOpen(false);
   setCityArenaOnlineViewOpen(false);
   cityMenu?.classList.remove("city-menu--arena-select-open");
@@ -4707,10 +4746,31 @@ async function playCityArenaPanelEntryTransition(): Promise<void> {
   }
 
   setCityArenaQuestPanelOpen(false);
-  cityArenaMenu.classList.remove("city-arena-menu--battle-transition");
+  const useSimpleTransition = shouldUseSimpleCityArenaPanelEntryTransition();
+
+  cityArenaMenu.classList.remove("city-arena-menu--battle-transition", "city-arena-menu--battle-transition-simple");
   void cityArenaMenu.offsetWidth;
+  cityArenaMenu.classList.toggle("city-arena-menu--battle-transition-simple", useSimpleTransition);
   cityArenaMenu.classList.add("city-arena-menu--battle-transition");
-  await delay(CITY_ARENA_PANEL_ENTRY_TRANSITION_MS);
+  await delay(useSimpleTransition ? CITY_ARENA_PANEL_SIMPLE_ENTRY_TRANSITION_MS : CITY_ARENA_PANEL_ENTRY_TRANSITION_MS);
+}
+
+function shouldUseSimpleCityArenaPanelEntryTransition(): boolean {
+  return getPlayerSettings().lowEffects || isMobileCityArenaPanelEntryRuntime();
+}
+
+function isMobileCityArenaPanelEntryRuntime(): boolean {
+  const telegramPlatform = getTelegramWebAppPlatform().toLowerCase();
+
+  if (telegramPlatform) {
+    return MOBILE_RENDER_DEBUG_PLATFORM_PATTERN.test(telegramPlatform);
+  }
+
+  if (MOBILE_RENDER_DEBUG_USER_AGENT_PATTERN.test(navigator.userAgent)) {
+    return true;
+  }
+
+  return window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
 }
 
 async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> {
@@ -6458,7 +6518,9 @@ dom.startButton.addEventListener("click", () => {
   openCityArenaMenu();
 });
 cityArenaCloseButton?.addEventListener("click", closeCityArenaMenu);
-cityArenaOnlineButton?.addEventListener("click", () => setCityArenaOnlineViewOpen(true));
+cityArenaOnlineButton?.addEventListener("click", () => {
+  void openCityArenaOnlineViewWithRoomCheck();
+});
 cityArenaOnlineBackButton?.addEventListener("click", () => setCityArenaOnlineViewOpen(false));
 cityArenaQuestButton?.addEventListener("click", toggleCityArenaQuestPanel);
 cityArenaQuestBackdrop?.addEventListener("pointerdown", (event) => {
@@ -6503,8 +6565,12 @@ cityPvpCreateButton?.addEventListener("click", () => {
 cityPvpJoinButton?.addEventListener("click", () => {
   void handleSearchPvpRooms();
 });
-cityOnlinePveTab?.addEventListener("click", () => setActiveOnlineRoomKind("duoBoss"));
-cityOnlinePvpTab?.addEventListener("click", () => setActiveOnlineRoomKind("pvp"));
+cityOnlinePveTab?.addEventListener("click", () => {
+  void handleSelectOnlineRoomKind("duoBoss");
+});
+cityOnlinePvpTab?.addEventListener("click", () => {
+  void handleSelectOnlineRoomKind("pvp");
+});
 if (canShowLocalDebugRestartButton()) {
   dom.restartButton.addEventListener("click", () => restart());
 }

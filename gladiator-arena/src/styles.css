@@ -4500,6 +4500,11 @@ body.debug-active .city-menu__portrait-button:active {
   animation: city-arena-menu-entry-backdrop var(--city-arena-panel-entry-duration) cubic-bezier(0.2, 0.84, 0.18, 1) both;
 }
 
+.city-arena-menu--battle-transition-simple {
+  --city-arena-panel-entry-duration: 300ms;
+  animation: city-arena-menu-entry-simple-backdrop var(--city-arena-panel-entry-duration) ease-out both;
+}
+
 .city-arena-menu--battle-transition::after {
   content: "";
   position: absolute;
@@ -4509,6 +4514,10 @@ body.debug-active .city-menu__portrait-button:active {
   opacity: 0;
   pointer-events: none;
   animation: city-arena-menu-entry-fade var(--city-arena-panel-entry-duration) cubic-bezier(0.22, 0.9, 0.26, 1) both;
+}
+
+.city-arena-menu--battle-transition-simple::after {
+  animation: city-arena-menu-entry-simple-fade var(--city-arena-panel-entry-duration) ease-out both;
 }
 
 .city-arena-menu__panel {
@@ -4545,6 +4554,10 @@ body.debug-active .city-menu__portrait-button:active {
   animation: city-arena-panel-entry-zoom var(--city-arena-panel-entry-duration) cubic-bezier(0.22, 0.72, 0.2, 1) both;
 }
 
+.city-arena-menu--battle-transition-simple .city-arena-menu__panel {
+  animation: city-arena-panel-entry-simple-out var(--city-arena-panel-entry-duration) ease-out both;
+}
+
 .city-arena-menu--tier-bg .city-arena-menu__panel {
   background-color: #160603;
   background-image:
@@ -4569,6 +4582,10 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu--battle-transition .city-arena-menu__panel::before {
   animation: city-arena-panel-frame-out 390ms ease-out both;
+}
+
+.city-arena-menu--battle-transition-simple .city-arena-menu__panel::before {
+  animation: none;
 }
 
 .city-arena-menu__title {
@@ -4602,6 +4619,15 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu--battle-transition .city-arena-menu__pvp {
   pointer-events: none;
   animation: city-arena-panel-content-out 380ms ease-out both;
+}
+
+.city-arena-menu--battle-transition-simple .city-arena-menu__close,
+.city-arena-menu--battle-transition-simple .city-arena-menu__tier,
+.city-arena-menu--battle-transition-simple .city-arena-menu__quest-backdrop,
+.city-arena-menu--battle-transition-simple .city-arena-menu__quest-panel,
+.city-arena-menu--battle-transition-simple .city-arena-menu__online-entry,
+.city-arena-menu--battle-transition-simple .city-arena-menu__pvp {
+  animation: none;
 }
 
 .city-arena-menu__main {
@@ -4841,6 +4867,16 @@ body.debug-active .city-menu__portrait-button:active {
   }
 }
 
+@keyframes city-arena-menu-entry-simple-backdrop {
+  from {
+    background: rgba(11, 3, 1, 0.42);
+  }
+
+  to {
+    background: rgba(5, 1, 0, 0.18);
+  }
+}
+
 @keyframes city-arena-menu-entry-fade {
   0%,
   30% {
@@ -4848,6 +4884,16 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   100% {
+    opacity: 1;
+  }
+}
+
+@keyframes city-arena-menu-entry-simple-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
     opacity: 1;
   }
 }
@@ -4868,6 +4914,18 @@ body.debug-active .city-menu__portrait-button:active {
     border-color: rgba(26, 8, 3, 0);
     box-shadow: none;
     transform: scale(2.85);
+  }
+}
+
+@keyframes city-arena-panel-entry-simple-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
   }
 }
 
@@ -5104,6 +5162,13 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu--battle-transition .city-arena-menu__fight-row:nth-child(2),
 .city-arena-menu--battle-transition .city-arena-menu__boss-card {
   animation: city-arena-choice-exit-right 1400ms cubic-bezier(0.2, 0.78, 0.18, 1) both;
+}
+
+.city-arena-menu--battle-transition-simple .city-arena-menu__fight-row:nth-child(1),
+.city-arena-menu--battle-transition-simple .city-arena-menu__fight-row:nth-child(2),
+.city-arena-menu--battle-transition-simple .city-arena-menu__fight-row:nth-child(3),
+.city-arena-menu--battle-transition-simple .city-arena-menu__boss-card {
+  animation: none;
 }
 
 .city-arena-menu__fight-row--auto-hidden {
@@ -5703,6 +5768,11 @@ body.debug-active .city-menu__portrait-button:active {
   cursor: pointer;
 }
 
+.city-arena-menu__online-entry:disabled {
+  cursor: wait;
+  filter: grayscale(0.55) brightness(0.74);
+}
+
 .city-arena-menu__online-header {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 34px;
@@ -5768,6 +5838,11 @@ body.debug-active .city-menu__portrait-button:active {
   box-shadow:
     inset 0 1px 0 rgba(255, 229, 161, 0.18),
     0 1px 0 rgba(8, 2, 1, 0.62);
+}
+
+.city-arena-menu__online-tab:disabled {
+  cursor: wait;
+  filter: grayscale(0.55) brightness(0.74);
 }
 
 .city-arena-menu__pvp-actions {
