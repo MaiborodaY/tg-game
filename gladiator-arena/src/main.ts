@@ -243,7 +243,7 @@ interface StartGameOptions {
 }
 interface StartGameWithCityTransitionOptions extends StartGameOptions {
   cityTransition?: "city" | "arenaPanel";
-  releaseCityPreview?: boolean;
+  prepareArenaEntry?: boolean;
 }
 interface ArenaEnergySpendOptions {
   renderMenuOnSuccess?: boolean;
@@ -4265,7 +4265,7 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   const initialState = createCombatStateForSelection(selection);
 
   recordArenaEntryActivity("arena-entry-transition");
-  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel", releaseCityPreview: true }).finally(() => {
+  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel", prepareArenaEntry: true }).finally(() => {
     setPendingManualArenaStartSelection();
   });
 }
@@ -4711,16 +4711,8 @@ function suspendCityScenePreview(): void {
   cityScene?.suspend();
 }
 
-async function releaseCityScenePreviewForArenaEntry(encounter?: CombatState["encounter"]): Promise<void> {
-  recordArenaEntryActivity("arena-entry-destroy-city");
-  if (cityScene) {
-    cityScene.destroy();
-    cityScene = undefined;
-  }
-
-  await nextAnimationFrame();
-  await nextAnimationFrame();
-
+async function prepareCityScenePreviewForArenaEntry(encounter?: CombatState["encounter"]): Promise<void> {
+  recordArenaEntryActivity("arena-entry-sleep-city");
   recordArenaEntryActivity("arena-entry-prewarm");
   await prewarmArenaAssetsForBrowserCache(encounter).catch(() => undefined);
   recordArenaEntryActivity("arena-entry-mount");
@@ -4818,8 +4810,8 @@ function startGame(options: StartGameOptions = {}): void {
 }
 
 async function startGameWithCityTransition(options: StartGameWithCityTransitionOptions = {}): Promise<void> {
-  const { cityTransition = "city", releaseCityPreview = false, ...startOptions } = options;
-  const shouldReleaseCityPreview = releaseCityPreview && cityTransition === "arenaPanel" && startOptions.mode !== "pvp";
+  const { cityTransition = "city", prepareArenaEntry = false, ...startOptions } = options;
+  const shouldPrepareArenaEntry = prepareArenaEntry && cityTransition === "arenaPanel" && startOptions.mode !== "pvp";
 
   if (isArenaTransitionRunning) {
     return;
@@ -4834,7 +4826,7 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
   dom.startButton.disabled = true;
   flushShopEquipmentVisualSync();
   clearShopPreview();
-  if (!shouldReleaseCityPreview) {
+  if (!shouldPrepareArenaEntry) {
     void prewarmArenaAssetsForBrowserCache(startOptions.initialState?.encounter ?? state.encounter);
   }
 
@@ -4849,12 +4841,12 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
       await (cityScene?.focusArenaTransition() ?? Promise.resolve());
     }
 
-    if (shouldReleaseCityPreview) {
+    if (shouldPrepareArenaEntry) {
       showCityReturnTransition("Preparing Arena...");
-      await releaseCityScenePreviewForArenaEntry(startOptions.initialState?.encounter ?? state.encounter);
+      await prepareCityScenePreviewForArenaEntry(startOptions.initialState?.encounter ?? state.encounter);
     }
   } finally {
-    if (shouldReleaseCityPreview) {
+    if (shouldPrepareArenaEntry) {
       hideCityReturnTransition();
     }
     startGame(startOptions);
