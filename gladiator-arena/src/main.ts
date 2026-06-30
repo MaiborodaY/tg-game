@@ -537,6 +537,7 @@ subscribePlayerSettings(({ previousSettings, nextSettings }) => {
 mountArenaMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
 mountCityRenderDebugControls();
+window.addEventListener(ARENA_ENTRY_PROFILE_MARK_EVENT, handleArenaEntryProfileMark);
 mountCityAdminControls();
 
 function canShowLocalDebugRestartButton(): boolean {
@@ -626,7 +627,6 @@ function mountCityAdminControls(): void {
   cityAdminPlayerViewButton.addEventListener("click", handleCityAdminPlayerViewToggle);
   cityAdminArenaProfilerButton.addEventListener("click", handleCityAdminArenaProfilerToggle);
   cityAdminGoldButton.addEventListener("click", handleAdminGoldGrant);
-  window.addEventListener(ARENA_ENTRY_PROFILE_MARK_EVENT, handleArenaEntryProfileMark);
   cityAdminGrantAdjustButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const target = parseCityAdminGrantAdjustTarget(button.dataset.adminGrantAdjust);
@@ -744,7 +744,7 @@ function maybeBeginArenaEntryProfilerRun(selection: ArenaMenuSelection): void {
     frameGapsOver100: 0,
     maxFrameGap: 0,
   };
-  setArenaEntryProfilerSceneMarksEnabled(true);
+  syncArenaProfilerSceneMarksEnabled();
   markArenaEntryProfiler("tap accepted");
   startArenaEntryProfilerFrameLoop(activeArenaEntryProfilerRun);
   refreshCityAdminArenaProfilerControl();
@@ -757,6 +757,7 @@ function handleArenaEntryProfileMark(event: Event): void {
     return;
   }
 
+  markCombatActionProfiler(detail.label, typeof detail.time === "number" ? detail.time : undefined);
   markArenaEntryProfiler(detail.label, typeof detail.time === "number" ? detail.time : undefined);
   if (detail.asset) {
     recordArenaEntryProfilerAssetEvent(detail.label, detail.asset, typeof detail.time === "number" ? detail.time : undefined);
@@ -964,7 +965,7 @@ function finishArenaEntryProfilerRun(status: string): void {
     window.cancelAnimationFrame(profile.rafId);
   }
   activeArenaEntryProfilerRun = undefined;
-  setArenaEntryProfilerSceneMarksEnabled(false);
+  syncArenaProfilerSceneMarksEnabled();
   refreshCityAdminArenaProfilerControl();
   showArenaEntryProfilerReport(profile, status);
 }
@@ -976,8 +977,8 @@ function closeArenaEntryProfilerOpenPhases(profile: ArenaEntryProfilerRun, time:
   profile.phaseStack = [];
 }
 
-function setArenaEntryProfilerSceneMarksEnabled(enabled: boolean): void {
-  (window as ArenaEntryProfilerWindow).__dustArenaEntryProfileActive = enabled;
+function syncArenaProfilerSceneMarksEnabled(): void {
+  (window as ArenaEntryProfilerWindow).__dustArenaEntryProfileActive = Boolean(activeArenaEntryProfilerRun || activeCombatActionProfilerRun);
 }
 
 function formatArenaEntryProfilerSelection(selection: ArenaMenuSelection): string {
@@ -1202,6 +1203,7 @@ function maybeBeginCombatActionProfilerRun(actionId: ActionId | undefined, disab
     frameGapsOver100: 0,
     maxFrameGap: 0,
   };
+  syncArenaProfilerSceneMarksEnabled();
   markCombatActionProfiler("tap accepted");
   startCombatActionProfilerFrameLoop(activeCombatActionProfilerRun);
   syncCombatActionProfilerTriggers();
@@ -1248,8 +1250,20 @@ function getCombatActionProfilerPhaseForStartLabel(label: string): { label: stri
     case "player action animation start":
       return { label: "player action animation", endLabel: "player action animation end" };
     default:
-      return undefined;
+      return getProfilerPhaseFromStartEndLabel(label);
   }
+}
+
+function getProfilerPhaseFromStartEndLabel(label: string): { label: string; endLabel: string } | undefined {
+  const startSuffix = " start";
+
+  if (!label.endsWith(startSuffix)) {
+    return undefined;
+  }
+
+  const phaseLabel = label.slice(0, -startSuffix.length);
+
+  return { label: phaseLabel, endLabel: `${phaseLabel} end` };
 }
 
 function beginCombatActionProfilerPhase(profile: CombatActionProfilerRun, label: string, endLabel: string, time: number): void {
@@ -1372,6 +1386,7 @@ function finishCombatActionProfilerRun(status: string): void {
     window.cancelAnimationFrame(profile.rafId);
   }
   activeCombatActionProfilerRun = undefined;
+  syncArenaProfilerSceneMarksEnabled();
   syncCombatActionProfilerTriggers();
   showProfilerReport("Combat Action Profile", createCombatActionProfilerReport(profile, status));
 }

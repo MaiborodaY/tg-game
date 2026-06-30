@@ -562,6 +562,7 @@ interface ScrollCastActionTiming {
 
 interface ActionAnimationOptions {
   loopRestAfterComplete?: boolean;
+  profileLabel?: string;
   variantSeed?: string;
 }
 
@@ -3078,6 +3079,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   async sync(nextState: CombatState, options: ArenaSyncOptions = {}): Promise<void> {
+    emitArenaEntryProfileMark("scene sync start");
     const playerRemovedArmorSprites = this.visuals
       ? createRemovedArmorSlotSprites(this, this.visuals.enemy, nextState.lastPlayerRemovedArmorSlots)
       : [];
@@ -3094,6 +3096,7 @@ export class ArenaScene extends Phaser.Scene {
       playerRemovedArmorSprites.forEach((sprite) => sprite.destroy());
       helperRemovedArmorSprites.forEach((sprite) => sprite.destroy());
       enemyRemovedArmorSprites.forEach((sprite) => sprite.destroy());
+      emitArenaEntryProfileMark("scene sync end");
       return;
     }
 
@@ -3110,6 +3113,7 @@ export class ArenaScene extends Phaser.Scene {
     let helperActionAnimation: ActionAnimationHandle | undefined;
     let enemyActionAnimation: ActionAnimationHandle | undefined;
 
+    emitArenaEntryProfileMark("scene action setup start");
     if (lastPlayerAction && playerActionSequence.length > 0) {
       playerActionAnimation = animateCombatActionSequence(
         this,
@@ -3119,12 +3123,14 @@ export class ArenaScene extends Phaser.Scene {
         "right",
         getFighterBodyAnimationWeaponClass(nextState.player),
         playerSettings,
-        { loopRestAfterComplete: false, variantSeed: getBodyAnimationVariantSeed(nextState, "player") },
+        { loopRestAfterComplete: false, profileLabel: "scene player", variantSeed: getBodyAnimationVariantSeed(nextState, "player") },
         nextState.lastPlayerDoubleStrikeRepeat,
       );
       actionAnimations.push(playerActionAnimation.done);
       if (lastPlayerAction === "rest") {
+        emitArenaEntryProfileMark("scene player rest popup start");
         showRestRecoveryPopupFromFighter(this, visuals.player, previousState?.player, nextState.player);
+        emitArenaEntryProfileMark("scene player rest popup end");
       }
     }
 
@@ -3137,12 +3143,14 @@ export class ArenaScene extends Phaser.Scene {
         "right",
         getFighterBodyAnimationWeaponClass(nextState.helper),
         playerSettings,
-        { loopRestAfterComplete: false, variantSeed: getBodyAnimationVariantSeed(nextState, "helper") },
+        { loopRestAfterComplete: false, profileLabel: "scene helper", variantSeed: getBodyAnimationVariantSeed(nextState, "helper") },
         nextState.lastHelperDoubleStrikeRepeat,
       );
       actionAnimations.push(helperActionAnimation.done);
       if (lastHelperAction === "rest") {
+        emitArenaEntryProfileMark("scene helper rest popup start");
         showRestRecoveryPopupFromFighter(this, visuals.helper, previousState?.helper, nextState.helper);
+        emitArenaEntryProfileMark("scene helper rest popup end");
       }
     }
 
@@ -3155,14 +3163,17 @@ export class ArenaScene extends Phaser.Scene {
         "left",
         getFighterBodyAnimationWeaponClass(nextState.enemy),
         playerSettings,
-        { variantSeed: getBodyAnimationVariantSeed(nextState, "enemy") },
+        { profileLabel: "scene enemy", variantSeed: getBodyAnimationVariantSeed(nextState, "enemy") },
         nextState.lastEnemyDoubleStrikeRepeat,
       );
       actionAnimations.push(enemyActionAnimation.done);
       if (lastEnemyAction === "rest") {
+        emitArenaEntryProfileMark("scene enemy rest popup start");
         showRestRecoveryPopupFromFighter(this, visuals.enemy, previousState?.enemy, nextState.enemy);
+        emitArenaEntryProfileMark("scene enemy rest popup end");
       }
     }
+    emitArenaEntryProfileMark("scene action setup end");
 
     const playerResultDelay = playerActionAnimation?.impact;
     const helperResultDelay = helperActionAnimation?.impact;
@@ -3190,6 +3201,7 @@ export class ArenaScene extends Phaser.Scene {
       });
     }
 
+    emitArenaEntryProfileMark("scene result queue start");
     speedUpDamagingLungeAfterImpact(playerActionAnimation, lastPlayerAction, nextState.lastPlayerDamage);
     speedUpDamagingLungeAfterImpact(helperActionAnimation, lastHelperAction, nextState.lastHelperDamage);
     speedUpDamagingLungeAfterImpact(enemyActionAnimation, lastEnemyAction, nextState.lastEnemyDamage);
@@ -3318,7 +3330,9 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     queueDeathEffects(this, actionAnimations, nextState, playerResultDelay, helperResultDelay, enemyResultDelay);
+    emitArenaEntryProfileMark("scene result queue end");
 
+    emitArenaEntryProfileMark("scene sync end");
     return Promise.all(actionAnimations).then(() => {
       resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);
     });
@@ -3336,37 +3350,52 @@ export class ArenaScene extends Phaser.Scene {
     nextState: CombatState,
     options: { animateActions: boolean; hudState?: CombatState },
   ): Promise<ArenaPreparedVisualState | undefined> {
+    emitArenaEntryProfileMark("scene prepare visuals start");
     const previousState = this.currentState;
     const syncToken = options.animateActions ? this.syncToken + 1 : this.syncToken;
     const renderOnlyToken = this.renderOnlyToken + 1;
 
-    if (options.animateActions) {
-      this.syncToken = syncToken;
+    try {
+      if (options.animateActions) {
+        this.syncToken = syncToken;
+      }
+      this.renderOnlyToken = renderOnlyToken;
+      this.currentState = nextState;
+
+      if (!this.visuals) {
+        return;
+      }
+
+      emitArenaEntryProfileMark("scene asset ensure start");
+      try {
+        await Promise.all([
+          ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.helper?.equipment, nextState.enemy.equipment]),
+          ensurePaperDollAppearanceAssetsLoaded(this, [nextState.player.appearance, nextState.helper?.appearance, nextState.enemy.appearance]),
+        ]);
+      } finally {
+        emitArenaEntryProfileMark("scene asset ensure end");
+      }
+      if (options.animateActions ? syncToken !== this.syncToken : renderOnlyToken !== this.renderOnlyToken) {
+        return;
+      }
+
+      const playerSettings = getPlayerSettings();
+      const visuals = this.visuals;
+
+      emitArenaEntryProfileMark("scene render visuals start");
+      try {
+        syncHelperVisualForState(this, visuals, previousState, nextState);
+        syncEnemyVisualForState(this, visuals, previousState, nextState);
+        resetDeathEffectsForLiveFighters(this, visuals, nextState);
+        renderScene(this, nextState, playerSettings, options.hudState);
+      } finally {
+        emitArenaEntryProfileMark("scene render visuals end");
+      }
+
+      return { previousState, playerSettings, visuals };
+    } finally {
+      emitArenaEntryProfileMark("scene prepare visuals end");
     }
-    this.renderOnlyToken = renderOnlyToken;
-    this.currentState = nextState;
-
-    if (!this.visuals) {
-      return;
-    }
-
-    await Promise.all([
-      ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.helper?.equipment, nextState.enemy.equipment]),
-      ensurePaperDollAppearanceAssetsLoaded(this, [nextState.player.appearance, nextState.helper?.appearance, nextState.enemy.appearance]),
-    ]);
-    if (options.animateActions ? syncToken !== this.syncToken : renderOnlyToken !== this.renderOnlyToken) {
-      return;
-    }
-
-    const playerSettings = getPlayerSettings();
-    const visuals = this.visuals;
-
-    syncHelperVisualForState(this, visuals, previousState, nextState);
-    syncEnemyVisualForState(this, visuals, previousState, nextState);
-    resetDeathEffectsForLiveFighters(this, visuals, nextState);
-    renderScene(this, nextState, playerSettings, options.hudState);
-
-    return { previousState, playerSettings, visuals };
   }
 
   private startArenaEntryTransition(current: CombatState): Promise<void> | undefined {
@@ -12216,6 +12245,20 @@ function isDoubleStrikeAnimationAction(actionId: ActionId): boolean {
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
+function profileArenaActionPromise(profileLabel: string | undefined, phase: string, promise: Promise<void>): Promise<void> {
+  if (!profileLabel) {
+    return promise;
+  }
+
+  const label = `${profileLabel} ${phase}`;
+
+  emitArenaEntryProfileMark(`${label} start`);
+
+  return promise.finally(() => {
+    emitArenaEntryProfileMark(`${label} end`);
+  });
+}
+
 function animateAction(
   target: Phaser.Scene,
   actor: FighterVisual,
@@ -12237,7 +12280,7 @@ function animateAction(
       pickActiveBodyAnimationVariant("walkCycle", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed),
     );
 
-    return { done: actionAnimation };
+    return { done: profileArenaActionPromise(options.profileLabel, `${actionId} body animation`, actionAnimation) };
   }
 
   if (actionId === "lunge") {
@@ -12245,22 +12288,26 @@ function animateAction(
     const bodyAnimation = playBodyAnimationOnceHandle(target, actor, animation);
 
     return {
-      done: bodyAnimation.done,
+      done: profileArenaActionPromise(options.profileLabel, "lunge body animation", bodyAnimation.done),
       impact: createSceneDelay(target, getBodyAnimationImpactDelayMs(animation, LUNGE_ACTION_IMPACT_PROGRESS)),
       speedUp: bodyAnimation.speedUp,
     };
   }
 
   if (actionId === "taunt") {
-    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt", actor.paperDollRig?.bodyPresetKey)) };
+    return { done: profileArenaActionPromise(options.profileLabel, "taunt body animation", playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt", actor.paperDollRig?.bodyPresetKey))) };
   }
 
   if (actionId === "rest") {
     return {
-      done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest", actor.paperDollRig?.bodyPresetKey), {
-        ...((options.loopRestAfterComplete ?? true) ? { loopAfterComplete: "rest" } : {}),
-        speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER,
-      }),
+      done: profileArenaActionPromise(
+        options.profileLabel,
+        "rest body animation",
+        playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest", actor.paperDollRig?.bodyPresetKey), {
+          ...((options.loopRestAfterComplete ?? true) ? { loopAfterComplete: "rest" } : {}),
+          speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER,
+        }),
+      ),
     };
   }
 
@@ -12274,7 +12321,7 @@ function animateAction(
     ? STAFF_FIREBALL_CAST_ACTION_TIMING
     : SCROLL_CAST_ACTION_TIMINGS[actionId];
   if (scrollCastTiming) {
-    return animateScrollCastAction(target, actor, defender, direction, actionId, weaponClass, variantSeed, scrollCastTiming);
+    return animateScrollCastAction(target, actor, defender, direction, actionId, weaponClass, variantSeed, scrollCastTiming, options.profileLabel);
   }
 
   if (actionId === "shuriken") {
@@ -12286,7 +12333,10 @@ function animateAction(
     const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
     return {
-      done: Promise.all([bodyAnimation, projectileAnimation.done]).then(() => undefined),
+      done: Promise.all([
+        profileArenaActionPromise(options.profileLabel, "shuriken body animation", bodyAnimation),
+        projectileAnimation.done,
+      ]).then(() => undefined),
       impact: projectileAnimation.impact,
     };
   }
@@ -12299,7 +12349,7 @@ function animateAction(
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
     const bodyAnimation = pickActiveBodyAnimationVariant(bodyAnimationKey, actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
 
-    actionAnimations.push(playBodyAnimationOnce(target, actor, bodyAnimation));
+    actionAnimations.push(profileArenaActionPromise(options.profileLabel, `${actionId} body animation`, playBodyAnimationOnce(target, actor, bodyAnimation)));
     if (isRangedWeapon) {
       const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
@@ -12332,6 +12382,7 @@ function animateScrollCastAction(
   weaponClass: HeroWeaponClass | undefined,
   variantSeed: string,
   timing: ScrollCastActionTiming,
+  profileLabel?: string,
 ): ActionAnimationHandle {
   const animation = pickActiveBodyAnimationVariant("scrollCast", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
 
@@ -12365,7 +12416,10 @@ function animateScrollCastAction(
   }
 
   return {
-    done: Promise.all([bodyAnimation.done, projectileAnimation?.done ?? Promise.resolve()]).then(() => undefined),
+    done: Promise.all([
+      profileArenaActionPromise(profileLabel, `${actionId} body animation`, bodyAnimation.done),
+      projectileAnimation?.done ?? Promise.resolve(),
+    ]).then(() => undefined),
     impact,
     speedUp: bodyAnimation.speedUp,
   };
