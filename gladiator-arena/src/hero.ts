@@ -79,6 +79,8 @@ export interface HeroState {
   totalWins?: number;
   arenaWinQuest?: HeroArenaWinQuest;
   arenaEnergy?: HeroArenaEnergy;
+  energyPacks?: number;
+  onboardingRewardClaimed?: boolean;
   arenaBossVictoryLedger?: HeroArenaBossVictoryLedger;
   bowShotCapacity?: number;
   scrollCapacity?: number;
@@ -236,6 +238,7 @@ export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
 export const HERO_ARENA_ENERGY_MAX = 10;
+export const HERO_ONBOARDING_REWARD_ENERGY_PACKS = 1;
 export const HERO_ARENA_WIN_QUEST_GOAL = 5;
 export const HERO_ARENA_WIN_QUEST_ENERGY_REWARD = 5;
 export const HERO_ARENA_WIN_QUEST_GOLD_REWARD = 20;
@@ -1188,6 +1191,8 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     totalWins: 0,
     arenaWinQuest: createHeroArenaWinQuest(),
     arenaEnergy,
+    energyPacks: 0,
+    onboardingRewardClaimed: false,
     arenaBossVictoryLedger: createHeroArenaBossVictoryLedger(now),
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
     scrollCapacity: HERO_SCROLL_CAPACITY_BASE,
@@ -1317,6 +1322,57 @@ export function getHeroArenaEnergy(hero: HeroState, now: string | Date = new Dat
     current: clampHeroArenaEnergyValue(source.current),
     max: HERO_ARENA_ENERGY_MAX,
     dayKey,
+  };
+}
+
+function clampHeroEnergyPackCount(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor(value));
+}
+
+export function getHeroEnergyPackCount(hero: HeroState): number {
+  return clampHeroEnergyPackCount(hero.energyPacks);
+}
+
+export function hasHeroClaimedOnboardingReward(hero: HeroState): boolean {
+  return hero.onboardingRewardClaimed === true;
+}
+
+export function claimHeroOnboardingReward(hero: HeroState, now = new Date().toISOString()): HeroState {
+  if (hasHeroClaimedOnboardingReward(hero)) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    energyPacks: getHeroEnergyPackCount(hero) + HERO_ONBOARDING_REWARD_ENERGY_PACKS,
+    onboardingRewardClaimed: true,
+    updatedAt: now,
+  };
+}
+
+export function canUseHeroEnergyPack(hero: HeroState, now: string | Date = new Date()): boolean {
+  const arenaEnergy = getHeroArenaEnergy(hero, now);
+
+  return getHeroEnergyPackCount(hero) > 0 && arenaEnergy.current < arenaEnergy.max;
+}
+
+export function useHeroEnergyPack(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const energyPackCount = getHeroEnergyPackCount(hero);
+  const arenaEnergy = getHeroArenaEnergy(hero, now);
+
+  if (energyPackCount <= 0 || arenaEnergy.current >= arenaEnergy.max) {
+    return refreshHeroArenaEnergy(hero, now);
+  }
+
+  return {
+    ...hero,
+    arenaEnergy: createHeroArenaEnergy(now),
+    energyPacks: energyPackCount - 1,
+    updatedAt: now,
   };
 }
 

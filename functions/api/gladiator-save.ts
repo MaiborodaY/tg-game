@@ -468,7 +468,7 @@ function createDefaultBootstrapHero(nowIso: string): Record<string, unknown> {
     xp: 0,
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
     skillPoints: HERO_STARTING_SKILL_POINTS,
-    gold: 0,
+    gold: 3,
     totalWins: 0,
     arenaWinQuest: {
       wins: 0,
@@ -479,6 +479,8 @@ function createDefaultBootstrapHero(nowIso: string): Record<string, unknown> {
       max: HERO_ARENA_ENERGY_MAX,
       dayKey,
     },
+    energyPacks: 0,
+    onboardingRewardClaimed: false,
     arenaBossVictoryLedger: {
       dayKey,
       tierIds: [],

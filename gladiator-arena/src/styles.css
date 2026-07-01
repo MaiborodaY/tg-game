@@ -9036,6 +9036,65 @@ body.debug-active .city-menu__portrait-button:active {
   opacity: 0.78;
 }
 
+.city-energy-pack-entry {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+
+.city-energy-pack-entry:focus-visible .city-arena-energy-badge {
+  border-color: rgba(255, 237, 168, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.18),
+    0 0 0 2px rgba(104, 46, 14, 0.74),
+    0 0 18px rgba(255, 211, 92, 0.56);
+}
+
+.city-energy-pack-prompt {
+  opacity: 1;
+}
+
+.city-energy-pack-prompt .city-arena-energy-badge {
+  border-color: rgba(255, 231, 137, 0.94);
+  animation: city-energy-pack-prompt-pulse 1.2s ease-in-out infinite;
+}
+
+.city-energy-pack-prompt::after {
+  content: "USE PACK";
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  margin-left: 3px;
+  padding: 1px 5px 2px;
+  border: 1px solid rgba(255, 221, 132, 0.78);
+  border-radius: 999px;
+  color: #fff7ca;
+  background: linear-gradient(180deg, rgba(123, 52, 16, 0.96), rgba(61, 20, 7, 0.96));
+  box-shadow: 0 0 12px rgba(255, 201, 76, 0.36), inset 0 1px 0 rgba(255, 235, 171, 0.2);
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.82);
+  white-space: nowrap;
+}
+
+@keyframes city-energy-pack-prompt-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 229, 161, 0.14),
+      0 0 10px rgba(255, 201, 76, 0.38);
+    transform: translateY(0);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 229, 161, 0.22),
+      0 0 22px rgba(255, 224, 112, 0.76);
+    transform: translateY(-1px);
+  }
+}
+
 .city-menu__hero-gold {
   display: inline-flex;
   align-items: center;
@@ -17862,6 +17921,143 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   transform: none;
 }
 
+.hero-energy-pack-panel,
+.onboarding-reward {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 520;
+}
+
+.onboarding-reward {
+  z-index: 540;
+}
+
+.hero-energy-pack-panel[hidden],
+.onboarding-reward[hidden] {
+  display: none;
+}
+
+.hero-energy-pack-panel__backdrop,
+.onboarding-reward__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(7, 3, 1, 0.7);
+}
+
+.hero-energy-pack-panel__dialog,
+.onboarding-reward__dialog {
+  position: relative;
+  width: min(280px, calc(100vw - 32px));
+  border: 2px solid rgba(255, 213, 125, 0.72);
+  border-radius: 8px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 215, 126, 0.16), transparent 58%),
+    linear-gradient(180deg, rgba(78, 34, 13, 0.98), rgba(26, 8, 4, 0.98));
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 238, 176, 0.18);
+  padding: 14px;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.82);
+}
+
+.hero-energy-pack-panel__title,
+.onboarding-reward__title {
+  margin: 0 0 12px;
+  color: #ffe59d;
+  font-size: 0.9rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.hero-energy-pack-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 211, 132, 0.22);
+  border-radius: 6px;
+  background: rgba(18, 6, 3, 0.56);
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hero-energy-pack-panel__value,
+.onboarding-reward__item {
+  color: #fff7ca;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-energy-pack-panel__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hero-energy-pack-panel__use,
+.hero-energy-pack-panel__close,
+.onboarding-reward__claim {
+  min-height: 36px;
+  border: 1px solid rgba(104, 46, 14, 0.88);
+  border-radius: 6px;
+  color: #35180d;
+  background: linear-gradient(180deg, #fff2ad, #f2a83f 58%, #9b4317);
+  box-shadow:
+    0 2px 0 rgba(42, 15, 6, 0.82),
+    inset 0 1px 0 rgba(255, 255, 210, 0.64);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.hero-energy-pack-panel__close {
+  color: #fff0bd;
+  background: linear-gradient(180deg, rgba(86, 37, 14, 0.98), rgba(42, 14, 6, 0.98));
+}
+
+.hero-energy-pack-panel__use:disabled,
+.onboarding-reward__claim:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+.onboarding-reward__dialog {
+  width: min(300px, calc(100vw - 32px));
+  padding: 16px;
+}
+
+.onboarding-reward__item {
+  display: block;
+  margin: 4px 0 8px;
+  font-size: 1.02rem;
+}
+
+.onboarding-reward__text {
+  margin: 0 0 14px;
+  color: #e6c47c;
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.onboarding-reward__claim {
+  width: 100%;
+}
+
 .onboarding-spotlight {
   --onboarding-spotlight-x: 0px;
   --onboarding-spotlight-y: 0px;
@@ -17990,6 +18186,7 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .city-energy-pack-prompt .city-arena-energy-badge,
   .onboarding-spotlight__ring {
     animation: none;
   }
