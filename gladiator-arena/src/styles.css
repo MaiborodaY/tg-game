@@ -8988,6 +8988,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-energy-badge {
   display: inline-flex;
+  position: relative;
   align-items: center;
   justify-content: center;
   gap: 3px;
@@ -9061,31 +9062,39 @@ body.debug-active .city-menu__portrait-button:active {
     0 0 10px rgba(255, 209, 89, 0.46);
 }
 
-.city-energy-booster-prompt::after {
-  content: "USE BOOSTER";
+.city-energy-booster-prompt .city-arena-energy-badge::before {
+  content: "BOOST";
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 2px);
+  bottom: calc(100% + 6px);
   z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 13px;
-  padding: 1px 4px 2px;
-  border: 1px solid rgba(255, 221, 132, 0.54);
-  border-radius: 999px;
-  color: #fff1b6;
-  background: linear-gradient(180deg, rgba(93, 38, 13, 0.96), rgba(37, 11, 5, 0.96));
-  box-shadow:
-    0 2px 5px rgba(8, 2, 1, 0.42),
-    inset 0 1px 0 rgba(255, 235, 171, 0.14);
-  font-size: 0.42rem;
+  color: #ffe48f;
+  font-size: 0.52rem;
   font-weight: 900;
+  letter-spacing: 0.05em;
   line-height: 1;
   pointer-events: none;
-  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.82);
+  text-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.92),
+    0 0 7px rgba(255, 201, 76, 0.68);
   transform: translateX(-50%);
   white-space: nowrap;
+}
+
+.city-energy-booster-prompt .city-arena-energy-badge::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 1px);
+  z-index: 2;
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid rgba(255, 228, 143, 0.88);
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.74));
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .city-menu__hero-gold {
