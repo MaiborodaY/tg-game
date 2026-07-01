@@ -23,6 +23,7 @@ const resizeRules = [
   { maxSide: 1672, pattern: /^menu\/main-city(?:-day)?\.png$/ },
   { maxSide: 320, pattern: /^ui\/effects\/ward\.png$/ },
   { maxSide: 128, pattern: /^ui\/projectiles\/fireball\.png$/ },
+  { maxSide: 160, pattern: /^ui\/profile\/energy-booster\.png$/ },
   { maxSide: 160, pattern: /^shop-icons\/scroll-.+\.png$/ },
 ];
 const originalSizeRules = [
@@ -48,6 +49,11 @@ const smallerAssetRules = [
     maximumAlphaQuality: 76,
     maximumQuality: 68,
     pattern: /^ui\/projectiles\/fireball\.png$/,
+  },
+  {
+    maximumAlphaQuality: 84,
+    maximumQuality: 72,
+    pattern: /^ui\/profile\/energy-booster\.png$/,
   },
   {
     maximumAlphaQuality: 74,

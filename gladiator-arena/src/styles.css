@@ -9036,13 +9036,13 @@ body.debug-active .city-menu__portrait-button:active {
   opacity: 0.78;
 }
 
-.city-energy-pack-entry {
+.city-energy-booster-entry {
   position: relative;
   cursor: pointer;
   outline: none;
 }
 
-.city-energy-pack-entry:focus-visible .city-arena-energy-badge {
+.city-energy-booster-entry:focus-visible .city-arena-energy-badge {
   border-color: rgba(255, 237, 168, 0.96);
   box-shadow:
     inset 0 1px 0 rgba(255, 229, 161, 0.18),
@@ -9050,17 +9050,17 @@ body.debug-active .city-menu__portrait-button:active {
     0 0 18px rgba(255, 211, 92, 0.56);
 }
 
-.city-energy-pack-prompt {
+.city-energy-booster-prompt {
   opacity: 1;
 }
 
-.city-energy-pack-prompt .city-arena-energy-badge {
+.city-energy-booster-prompt .city-arena-energy-badge {
   border-color: rgba(255, 231, 137, 0.94);
-  animation: city-energy-pack-prompt-pulse 1.2s ease-in-out infinite;
+  animation: city-energy-booster-prompt-pulse 1.2s ease-in-out infinite;
 }
 
-.city-energy-pack-prompt::after {
-  content: "USE PACK";
+.city-energy-booster-prompt::after {
+  content: "USE BOOSTER";
   display: inline-flex;
   align-items: center;
   min-height: 18px;
@@ -9078,7 +9078,7 @@ body.debug-active .city-menu__portrait-button:active {
   white-space: nowrap;
 }
 
-@keyframes city-energy-pack-prompt-pulse {
+@keyframes city-energy-booster-prompt-pulse {
   0%,
   100% {
     box-shadow:
@@ -17921,7 +17921,7 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   transform: none;
 }
 
-.hero-energy-pack-panel,
+.hero-energy-booster-panel,
 .onboarding-reward {
   position: fixed;
   inset: 0;
@@ -17934,12 +17934,12 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   z-index: 540;
 }
 
-.hero-energy-pack-panel[hidden],
+.hero-energy-booster-panel[hidden],
 .onboarding-reward[hidden] {
   display: none;
 }
 
-.hero-energy-pack-panel__backdrop,
+.hero-energy-booster-panel__backdrop,
 .onboarding-reward__backdrop {
   position: absolute;
   inset: 0;
@@ -17948,7 +17948,14 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   background: rgba(7, 3, 1, 0.7);
 }
 
-.hero-energy-pack-panel__dialog,
+.onboarding-reward__backdrop {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(255, 190, 72, 0.12), transparent 30%),
+    rgba(7, 3, 1, 0.72);
+  animation: onboarding-reward-backdrop-in 160ms ease-out both;
+}
+
+.hero-energy-booster-panel__dialog,
 .onboarding-reward__dialog {
   position: relative;
   width: min(280px, calc(100vw - 32px));
@@ -17966,7 +17973,7 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-shadow: 0 1px 0 rgba(8, 2, 1, 0.82);
 }
 
-.hero-energy-pack-panel__title,
+.hero-energy-booster-panel__title,
 .onboarding-reward__title {
   margin: 0 0 12px;
   color: #ffe59d;
@@ -17975,7 +17982,7 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-transform: uppercase;
 }
 
-.hero-energy-pack-panel__row {
+.hero-energy-booster-panel__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17990,22 +17997,31 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-transform: uppercase;
 }
 
-.hero-energy-pack-panel__value,
+.hero-energy-booster-panel__icon {
+  display: block;
+  width: 24px;
+  height: 32px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(8, 2, 1, 0.58));
+}
+
+.hero-energy-booster-panel__value,
 .onboarding-reward__item {
   color: #fff7ca;
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
 
-.hero-energy-pack-panel__actions {
+.hero-energy-booster-panel__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 12px;
 }
 
-.hero-energy-pack-panel__use,
-.hero-energy-pack-panel__close,
+.hero-energy-booster-panel__use,
+.hero-energy-booster-panel__close,
 .onboarding-reward__claim {
   min-height: 36px;
   border: 1px solid rgba(104, 46, 14, 0.88);
@@ -18022,12 +18038,12 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-transform: uppercase;
 }
 
-.hero-energy-pack-panel__close {
+.hero-energy-booster-panel__close {
   color: #fff0bd;
   background: linear-gradient(180deg, rgba(86, 37, 14, 0.98), rgba(42, 14, 6, 0.98));
 }
 
-.hero-energy-pack-panel__use:disabled,
+.hero-energy-booster-panel__use:disabled,
 .onboarding-reward__claim:disabled {
   opacity: 0.55;
   cursor: default;
@@ -18035,27 +18051,182 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
 }
 
 .onboarding-reward__dialog {
-  width: min(300px, calc(100vw - 32px));
-  padding: 16px;
+  width: min(280px, calc(100vw - 32px));
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.onboarding-reward__title {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 13px;
+  color: #ffe6a8;
+  font-size: 0.88rem;
+  animation: onboarding-reward-rise-in 220ms ease-out 80ms both;
+  text-shadow:
+    0 2px 0 rgba(8, 2, 1, 0.72),
+    0 0 12px rgba(255, 193, 76, 0.22);
 }
 
 .onboarding-reward__item {
-  display: block;
-  margin: 4px 0 8px;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0 0 4px;
+  color: #fff7cf;
   font-size: 1.02rem;
+  animation: onboarding-reward-rise-in 220ms ease-out 300ms both;
+  text-shadow:
+    0 2px 0 rgba(8, 2, 1, 0.84),
+    0 0 10px rgba(255, 202, 85, 0.18);
+}
+
+.onboarding-reward__amount {
+  color: #ffd87a;
+  font-size: 1.12rem;
+}
+
+.onboarding-reward__name {
+  min-width: 0;
+}
+
+.onboarding-reward__slot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 124px;
+  margin: 0 auto 4px;
+  animation: onboarding-reward-booster-in 360ms cubic-bezier(0.2, 0.9, 0.22, 1.12) 150ms both;
+  transform-origin: 50% 62%;
+}
+
+.onboarding-reward__slot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 118px;
+  height: 118px;
+  border: 0;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 222, 103, 0.34) 0%, rgba(255, 164, 42, 0.16) 38%, transparent 70%);
+  box-shadow:
+    0 0 30px rgba(255, 198, 70, 0.32),
+    0 0 64px rgba(255, 151, 31, 0.16);
+  transform: translate(-50%, -50%);
+}
+
+.onboarding-reward__icon {
+  position: relative;
+  display: block;
+  width: 76px;
+  height: 102px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 8px 7px rgba(8, 2, 1, 0.58))
+    drop-shadow(0 0 10px rgba(255, 206, 83, 0.36));
 }
 
 .onboarding-reward__text {
-  margin: 0 0 14px;
-  color: #e6c47c;
+  position: relative;
+  z-index: 1;
+  margin: 0 0 17px;
+  color: #e7c985;
   font-size: 0.6rem;
   font-weight: 900;
   line-height: 1.2;
   text-transform: uppercase;
+  animation: onboarding-reward-rise-in 220ms ease-out 340ms both;
+  text-shadow: 0 2px 0 rgba(8, 2, 1, 0.7);
 }
 
 .onboarding-reward__claim {
-  width: 100%;
+  position: relative;
+  z-index: 1;
+  width: min(236px, 100%);
+  min-height: 40px;
+  border-color: rgba(73, 24, 8, 0.94);
+  border-radius: 8px;
+  color: #2a1007;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 207, 0.92), rgba(255, 229, 151, 0.42) 34%, transparent 36%),
+    linear-gradient(180deg, #f1bd62 0%, #c36f29 58%, #763011 100%);
+  box-shadow:
+    0 3px 0 rgba(42, 15, 6, 0.92),
+    0 8px 14px rgba(8, 2, 1, 0.32),
+    inset 0 1px 0 rgba(255, 255, 215, 0.56),
+    inset 0 -3px 0 rgba(91, 31, 11, 0.28);
+  animation: onboarding-reward-button-in 220ms ease-out 430ms both;
+  text-shadow: 0 1px 0 rgba(255, 232, 166, 0.34);
+}
+
+.onboarding-reward__claim:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 0 rgba(42, 15, 6, 0.86),
+    0 3px 7px rgba(8, 2, 1, 0.2),
+    inset 0 1px 0 rgba(255, 255, 215, 0.42),
+    inset 0 -2px 0 rgba(91, 31, 11, 0.2);
+}
+
+@keyframes onboarding-reward-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes onboarding-reward-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes onboarding-reward-booster-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.82) rotate(-4deg);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(0) scale(1.04) rotate(1deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes onboarding-reward-button-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .onboarding-spotlight {
@@ -18186,9 +18357,24 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .city-energy-pack-prompt .city-arena-energy-badge,
+  .city-energy-booster-prompt .city-arena-energy-badge,
+  .onboarding-reward__backdrop,
+  .onboarding-reward__claim,
+  .onboarding-reward__item,
+  .onboarding-reward__slot,
+  .onboarding-reward__text,
+  .onboarding-reward__title,
   .onboarding-spotlight__ring {
     animation: none;
+  }
+
+  .onboarding-reward__claim,
+  .onboarding-reward__item,
+  .onboarding-reward__slot,
+  .onboarding-reward__text,
+  .onboarding-reward__title {
+    opacity: 1;
+    transform: none;
   }
 }
 

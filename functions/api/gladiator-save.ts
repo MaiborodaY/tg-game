@@ -479,7 +479,7 @@ function createDefaultBootstrapHero(nowIso: string): Record<string, unknown> {
       max: HERO_ARENA_ENERGY_MAX,
       dayKey,
     },
-    energyPacks: 0,
+    energyBoosters: 0,
     onboardingRewardClaimed: false,
     arenaBossVictoryLedger: {
       dayKey,

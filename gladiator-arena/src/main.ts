@@ -52,6 +52,7 @@ import {
   getArenaBackgroundVariantIdsForTier,
   getArenaMenuBackgroundAssetUrlForTier,
   DAILY_ARENA_ENERGY_ICON_ASSET_URL,
+  ENERGY_BOOSTER_ICON_ASSET_URL,
   pickArenaBackgroundVariantIdForTier,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
@@ -94,7 +95,7 @@ import {
   DEFAULT_ARENA_TIER_ID,
   DEFAULT_HERO_NAME,
   HERO_EQUIPMENT_SLOT_KEYS,
-  HERO_ONBOARDING_REWARD_ENERGY_PACKS,
+  HERO_ONBOARDING_REWARD_ENERGY_BOOSTERS,
   HERO_SCROLL_CAPACITY_BASE,
   HERO_SCROLL_CAPACITY_MAX,
   HERO_SCROLL_UPGRADE_RARITIES,
@@ -103,7 +104,7 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
-  canUseHeroEnergyPack,
+  canUseHeroEnergyBooster,
   claimHeroOnboardingReward,
   canResetHeroSkillPoints,
   claimHeroArenaWinQuestReward,
@@ -124,7 +125,7 @@ import {
   getHeroArenaEnergy,
   getHeroArenaWinQuestStatus,
   getHeroAllocatedSkillPoints,
-  getHeroEnergyPackCount,
+  getHeroEnergyBoosterCount,
   getHeroItemWeaponClass,
   getHeroSkillPointResetPrice,
   getHeroScrollCapacityUpgradeUnlockBossTier,
@@ -148,7 +149,7 @@ import {
   upgradeHeroBowShotCapacity,
   upgradeHeroScroll,
   upgradeHeroScrollCapacity,
-  useHeroEnergyPack,
+  useHeroEnergyBooster,
   type ArenaBossDefinition,
   type ArenaBossId,
   type ArenaDifficultyId,
@@ -357,7 +358,7 @@ interface ArenaEnergySpendOptions {
 interface ReturnToCityOptions {
   requireResultGate?: boolean;
 }
-interface HeroEnergyPackPanelApi {
+interface HeroEnergyBoosterPanelApi {
   open: () => void;
   close: () => void;
   sync: () => void;
@@ -415,7 +416,7 @@ const completedOnboardingStepIds = new Set<OnboardingStepId>();
 let onboardingSpotlightSyncFrameId: number | undefined;
 let onboardingSpotlightRetryTimer: number | undefined;
 let hero: HeroState = createInitialHero();
-const heroEnergyPackPanel: HeroEnergyPackPanelApi = mountHeroEnergyPackPanel();
+const heroEnergyBoosterPanel: HeroEnergyBoosterPanelApi = mountHeroEnergyBoosterPanel();
 const onboardingRewardModal: OnboardingRewardModalApi = mountOnboardingRewardModal();
 let pendingEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -1985,8 +1986,8 @@ function renderCityHero(): void {
     attributeSaveStatus,
     attributeControlsDisabled: attributeSaveStatus === "saving",
   });
-  syncHeroEnergyPackBadgeState();
-  heroEnergyPackPanel.sync();
+  syncHeroEnergyBoosterBadgeState();
+  heroEnergyBoosterPanel.sync();
   onboardingRewardModal.sync();
   syncMagicShopButtonLock();
   syncOnboardingSpotlight();
@@ -2387,23 +2388,23 @@ function syncArenaEnergyTimerDisplays(): void {
   if (cityHeroWidgetRefs.profileArenaEnergy) {
     renderCityArenaEnergyBadge(cityHeroWidgetRefs.profileArenaEnergy, arenaEnergy, "city-profile__arena-energy--empty");
   }
-  syncHeroEnergyPackBadgeState();
-  heroEnergyPackPanel.sync();
+  syncHeroEnergyBoosterBadgeState();
+  heroEnergyBoosterPanel.sync();
   if (cityArenaEnergy && cityArenaMenu && !cityArenaMenu.hidden) {
     renderCityArenaEnergyBadge(cityArenaEnergy, arenaEnergy, "city-arena-menu__energy--empty");
     syncCityArenaBotControls();
   }
 }
 
-function shouldPromptHeroEnergyPackUse(): boolean {
+function shouldPromptHeroEnergyBoosterUse(): boolean {
   const arenaEnergy = getHeroArenaEnergy(hero);
 
-  return arenaEnergy.current <= 0 && getHeroEnergyPackCount(hero) > 0;
+  return arenaEnergy.current <= 0 && getHeroEnergyBoosterCount(hero) > 0;
 }
 
-function syncHeroEnergyPackBadgeState(): void {
-  const promptUse = shouldPromptHeroEnergyPackUse();
-  const energyPackCount = getHeroEnergyPackCount(hero);
+function syncHeroEnergyBoosterBadgeState(): void {
+  const promptUse = shouldPromptHeroEnergyBoosterUse();
+  const energyBoosterCount = getHeroEnergyBoosterCount(hero);
 
   [cityHeroWidgetRefs.arenaEnergy, cityHeroWidgetRefs.profileArenaEnergy].forEach((element) => {
     if (!element) {
@@ -2411,47 +2412,47 @@ function syncHeroEnergyPackBadgeState(): void {
     }
 
     const baseTitle = element.title || "Arena energy";
-    const packLabel = energyPackCount === 1 ? "1 Energy Pack" : `${energyPackCount} Energy Packs`;
+    const boosterLabel = energyBoosterCount === 1 ? "1 Energy Booster" : `${energyBoosterCount} Energy Boosters`;
 
-    element.classList.add("city-energy-pack-entry");
-    element.classList.toggle("city-energy-pack-prompt", promptUse);
+    element.classList.add("city-energy-booster-entry");
+    element.classList.toggle("city-energy-booster-prompt", promptUse);
     element.setAttribute("role", "button");
     element.setAttribute("tabindex", "0");
-    element.title = `${baseTitle}. ${packLabel}.`;
+    element.title = `${baseTitle}. ${boosterLabel}.`;
   });
 }
 
-function openHeroEnergyPackPanel(): void {
-  heroEnergyPackPanel.open();
+function openHeroEnergyBoosterPanel(): void {
+  heroEnergyBoosterPanel.open();
 }
 
-function handleHeroEnergyPackBadgeKeyDown(event: KeyboardEvent): void {
+function handleHeroEnergyBoosterBadgeKeyDown(event: KeyboardEvent): void {
   if (event.key !== "Enter" && event.key !== " ") {
     return;
   }
 
   event.preventDefault();
-  openHeroEnergyPackPanel();
+  openHeroEnergyBoosterPanel();
 }
 
-function handleHeroEnergyPackUse(): void {
-  const nextHero = useHeroEnergyPack(hero);
+function handleHeroEnergyBoosterUse(): void {
+  const nextHero = useHeroEnergyBooster(hero);
 
   if (nextHero === hero) {
-    heroEnergyPackPanel.sync();
+    heroEnergyBoosterPanel.sync();
     return;
   }
 
   hero = nextHero;
   saveLocalHeroSave(hero);
-  queueHeroCloudSave("energy-pack-use");
+  queueHeroCloudSave("energy-booster-use");
   renderCityHero();
   renderCityArenaMenu();
   syncArenaEnergyTimerDisplays();
-  heroEnergyPackPanel.sync();
+  heroEnergyBoosterPanel.sync();
 }
 
-function mountHeroEnergyPackPanel(): HeroEnergyPackPanelApi {
+function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   const root = document.createElement("div");
   const backdrop = document.createElement("button");
   const dialog = document.createElement("section");
@@ -2459,56 +2460,62 @@ function mountHeroEnergyPackPanel(): HeroEnergyPackPanelApi {
   const energyRow = document.createElement("div");
   const energyLabel = document.createElement("span");
   const energyValue = document.createElement("strong");
-  const packRow = document.createElement("div");
-  const packLabel = document.createElement("span");
-  const packValue = document.createElement("strong");
+  const boosterRow = document.createElement("div");
+  const boosterLabel = document.createElement("span");
+  const boosterIcon = document.createElement("img");
+  const boosterValue = document.createElement("strong");
   const actions = document.createElement("div");
   const useButton = document.createElement("button");
   const closeButton = document.createElement("button");
 
-  root.className = "hero-energy-pack-panel";
+  root.className = "hero-energy-booster-panel";
   root.hidden = true;
-  backdrop.className = "hero-energy-pack-panel__backdrop";
+  backdrop.className = "hero-energy-booster-panel__backdrop";
   backdrop.type = "button";
   backdrop.setAttribute("aria-label", "Close energy panel");
-  dialog.className = "hero-energy-pack-panel__dialog";
+  dialog.className = "hero-energy-booster-panel__dialog";
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-modal", "true");
   dialog.setAttribute("aria-label", "Energy");
-  title.className = "hero-energy-pack-panel__title";
+  title.className = "hero-energy-booster-panel__title";
   title.textContent = "ENERGY";
-  energyRow.className = "hero-energy-pack-panel__row";
+  energyRow.className = "hero-energy-booster-panel__row";
   energyLabel.textContent = "ARENA ENERGY";
-  energyValue.className = "hero-energy-pack-panel__value";
-  packRow.className = "hero-energy-pack-panel__row";
-  packLabel.textContent = "ENERGY PACK";
-  packValue.className = "hero-energy-pack-panel__value";
-  actions.className = "hero-energy-pack-panel__actions";
-  useButton.className = "hero-energy-pack-panel__use";
+  energyValue.className = "hero-energy-booster-panel__value";
+  boosterRow.className = "hero-energy-booster-panel__row";
+  boosterLabel.textContent = "ENERGY BOOSTER";
+  boosterIcon.className = "hero-energy-booster-panel__icon";
+  boosterIcon.src = ENERGY_BOOSTER_ICON_ASSET_URL;
+  boosterIcon.alt = "";
+  boosterIcon.decoding = "async";
+  boosterIcon.draggable = false;
+  boosterValue.className = "hero-energy-booster-panel__value";
+  actions.className = "hero-energy-booster-panel__actions";
+  useButton.className = "hero-energy-booster-panel__use";
   useButton.type = "button";
   useButton.textContent = "USE";
-  closeButton.className = "hero-energy-pack-panel__close";
+  closeButton.className = "hero-energy-booster-panel__close";
   closeButton.type = "button";
   closeButton.textContent = "CLOSE";
 
   energyRow.append(energyLabel, energyValue);
-  packRow.append(packLabel, packValue);
+  boosterRow.append(boosterLabel, boosterIcon, boosterValue);
   actions.append(useButton, closeButton);
-  dialog.append(title, energyRow, packRow, actions);
+  dialog.append(title, energyRow, boosterRow, actions);
   root.append(backdrop, dialog);
   document.body.append(root);
 
   const sync = () => {
     const arenaEnergy = getHeroArenaEnergy(hero);
-    const energyPackCount = getHeroEnergyPackCount(hero);
-    const canUsePack = canUseHeroEnergyPack(hero);
+    const energyBoosterCount = getHeroEnergyBoosterCount(hero);
+    const canUseBooster = canUseHeroEnergyBooster(hero);
 
     energyValue.textContent = `${arenaEnergy.current}/${arenaEnergy.max}`;
-    packValue.textContent = `x${energyPackCount}`;
-    useButton.disabled = !canUsePack;
+    boosterValue.textContent = `x${energyBoosterCount}`;
+    useButton.disabled = !canUseBooster;
     useButton.title =
-      energyPackCount <= 0
-        ? "No Energy Packs."
+      energyBoosterCount <= 0
+        ? "No Energy Boosters."
         : arenaEnergy.current >= arenaEnergy.max
           ? "Energy is already full."
           : "Restore energy to full.";
@@ -2525,7 +2532,7 @@ function mountHeroEnergyPackPanel(): HeroEnergyPackPanelApi {
 
   backdrop.addEventListener("click", close);
   closeButton.addEventListener("click", close);
-  useButton.addEventListener("click", handleHeroEnergyPackUse);
+  useButton.addEventListener("click", handleHeroEnergyBoosterUse);
 
   return {
     open,
@@ -2565,7 +2572,11 @@ function mountOnboardingRewardModal(): OnboardingRewardModalApi {
   const backdrop = document.createElement("div");
   const dialog = document.createElement("section");
   const title = document.createElement("h2");
+  const iconSlot = document.createElement("div");
+  const icon = document.createElement("img");
   const reward = document.createElement("strong");
+  const rewardAmount = document.createElement("span");
+  const rewardName = document.createElement("span");
   const text = document.createElement("p");
   const claimButton = document.createElement("button");
 
@@ -2578,19 +2589,30 @@ function mountOnboardingRewardModal(): OnboardingRewardModalApi {
   dialog.setAttribute("aria-label", "Training complete");
   title.className = "onboarding-reward__title";
   title.textContent = "TRAINING COMPLETE";
+  iconSlot.className = "onboarding-reward__slot";
+  icon.className = "onboarding-reward__icon";
+  icon.src = ENERGY_BOOSTER_ICON_ASSET_URL;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
   reward.className = "onboarding-reward__item";
+  rewardAmount.className = "onboarding-reward__amount";
+  rewardName.className = "onboarding-reward__name";
   text.className = "onboarding-reward__text";
-  text.textContent = "RESTORES ENERGY TO FULL";
+  text.textContent = "FULL ENERGY RESTORE";
   claimButton.className = "onboarding-reward__claim";
   claimButton.type = "button";
-  claimButton.textContent = "CLAIM";
+  claimButton.textContent = "CLAIM REWARD";
 
-  dialog.append(title, reward, text, claimButton);
+  iconSlot.append(icon);
+  reward.append(rewardAmount, rewardName);
+  dialog.append(title, iconSlot, reward, text, claimButton);
   root.append(backdrop, dialog);
   document.body.append(root);
 
   const sync = () => {
-    reward.textContent = `+${HERO_ONBOARDING_REWARD_ENERGY_PACKS} ENERGY PACK`;
+    rewardAmount.textContent = `+${HERO_ONBOARDING_REWARD_ENERGY_BOOSTERS}`;
+    rewardName.textContent = HERO_ONBOARDING_REWARD_ENERGY_BOOSTERS === 1 ? "ENERGY BOOSTER" : "ENERGY BOOSTERS";
     claimButton.disabled = hasHeroClaimedOnboardingReward(hero);
   };
 
@@ -7689,10 +7711,10 @@ cityArenaQuestCloseButton?.addEventListener("click", () => setCityArenaQuestPane
 cityArenaQuestClaimButton?.addEventListener("click", () => {
   void claimCityArenaQuestReward();
 });
-cityHeroWidgetRefs.arenaEnergy?.addEventListener("click", openHeroEnergyPackPanel);
-cityHeroWidgetRefs.arenaEnergy?.addEventListener("keydown", handleHeroEnergyPackBadgeKeyDown);
-cityHeroWidgetRefs.profileArenaEnergy?.addEventListener("click", openHeroEnergyPackPanel);
-cityHeroWidgetRefs.profileArenaEnergy?.addEventListener("keydown", handleHeroEnergyPackBadgeKeyDown);
+cityHeroWidgetRefs.arenaEnergy?.addEventListener("click", openHeroEnergyBoosterPanel);
+cityHeroWidgetRefs.arenaEnergy?.addEventListener("keydown", handleHeroEnergyBoosterBadgeKeyDown);
+cityHeroWidgetRefs.profileArenaEnergy?.addEventListener("click", openHeroEnergyBoosterPanel);
+cityHeroWidgetRefs.profileArenaEnergy?.addEventListener("keydown", handleHeroEnergyBoosterBadgeKeyDown);
 cityArenaTierSelect?.addEventListener("change", () => {
   activeArenaTierId = Number(cityArenaTierSelect.value) || DEFAULT_ARENA_TIER_ID;
   setCityArenaQuestPanelOpen(false);
