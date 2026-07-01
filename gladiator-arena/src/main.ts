@@ -32,7 +32,22 @@ import {
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatActor, type CombatState, type TurnOwner } from "./combat";
+import {
+  canUseAction,
+  doesLungeReachTarget,
+  getFighterMaxStamina,
+  isDuoBossAiCombat,
+  isFighterInClinchRange,
+  resolveAutoCombat,
+  resolveAutoPlayerTurn,
+  resolveDuoBossHelperTurn,
+  resolveEnemyTurn,
+  resolvePlayerTurn,
+  type ActionId,
+  type CombatActor,
+  type CombatState,
+  type TurnOwner,
+} from "./combat";
 import {
   getArenaBackgroundVariantIdsForTier,
   getArenaMenuBackgroundAssetUrlForTier,
@@ -145,6 +160,7 @@ import { syncHudTuning } from "./hudTuning";
 import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
+import { mountOnboardingSpotlight, type OnboardingSpotlightApi, type OnboardingSpotlightStep } from "./onboardingSpotlight";
 import { ackPvpRoomResult, cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, leavePvpRoomSession, listPvpRooms, reconnectPvpRoomSession, type PvpConnection } from "./pvpClient";
 import { getPvpActorForSeat, type PvpRoomKind, type PvpRoomListEntry, type PvpRoomResponse, type PvpRoomSession, type PvpRoomSnapshot, type PvpServerMessage } from "./pvpProtocol";
 import { getPlayerSettings, mountSettingsMenu, subscribePlayerSettings } from "./settingsMenu";
@@ -238,6 +254,21 @@ type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 type GameMode = "pve" | "pvp";
 type CityAdminAction = "level-up" | "unlock-shop" | "unlock-arena" | "restore-energy" | "reset-daily-arena" | "reset-progress";
 type CityAdminGrantAdjustTarget = "gold" | "level";
+type OnboardingStepId =
+  | "profile-open"
+  | "profile-attributes"
+  | "profile-attributes-save"
+  | "profile-close"
+  | "city-arena"
+  | "arena-easy"
+  | "combat-forward"
+  | "combat-lunge"
+  | "combat-rest"
+  | "combat-light"
+  | "weapon-shop-open"
+  | "weapon-shop-common-sword"
+  | "weapon-shop-common-sword-buy"
+  | "weapon-shop-back";
 interface ArenaEntryProfilerMark {
   label: string;
   time: number;
@@ -339,6 +370,32 @@ const CITY_ARENA_TIER_ONE_DIFFICULTY_LEVEL_REQUIREMENTS: Partial<Record<ArenaDif
 const CITY_ARENA_TIER_ONE_BOSS_LEVEL_REQUIREMENT = 9;
 const MAGIC_SHOP_LEVEL_REQUIREMENT = 8;
 const PVP_RECONNECT_STORAGE_KEY = "dust-arena-pvp-reconnect-room";
+const ONBOARDING_COMMON_SWORD_PRODUCT_ID = "generated_equipment_weapon_sword_rusty_sword";
+const ONBOARDING_CITY_SHOP_OPEN_RESYNC_MS = 160;
+const ONBOARDING_LOW_STAMINA_RATIO = 0.3;
+const ONBOARDING_PROFILE_CLOSE_RESYNC_MS = 260;
+const ONBOARDING_SPOTLIGHT_WHEEL_RETRY_MS = 560;
+const ONBOARDING_STEP_IDS: readonly OnboardingStepId[] = [
+  "profile-open",
+  "profile-attributes",
+  "profile-attributes-save",
+  "profile-close",
+  "city-arena",
+  "arena-easy",
+  "combat-forward",
+  "combat-lunge",
+  "combat-rest",
+  "combat-light",
+  "weapon-shop-open",
+  "weapon-shop-common-sword",
+  "weapon-shop-common-sword-buy",
+  "weapon-shop-back",
+];
+const ONBOARDING_STEP_ID_SET = new Set<OnboardingStepId>(ONBOARDING_STEP_IDS);
+const onboardingSpotlight: OnboardingSpotlightApi = mountOnboardingSpotlight();
+const completedOnboardingStepIds = new Set<OnboardingStepId>();
+let onboardingSpotlightSyncFrameId: number | undefined;
+let onboardingSpotlightRetryTimer: number | undefined;
 let hero: HeroState = createInitialHero();
 let pendingEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -512,16 +569,25 @@ const cityHeroAppearanceMenu = mountCityHeroAppearanceMenu(cityHeroWidgetRefs, {
 });
 cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) => {
   const profileOpen = Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open);
+  const shouldCompleteProfileClose =
+    !profileOpen
+    && completedOnboardingStepIds.has("profile-attributes-save")
+    && !completedOnboardingStepIds.has("profile-close");
 
   if (!profileOpen) {
     cityScene?.setProfilePreview();
     void flushHeroEquipmentSync("profile-close");
+    if (shouldCompleteProfileClose) {
+      completeHeroOnboardingStep("profile-close");
+      scheduleOnboardingSpotlightAfterProfileClose();
+    }
     if (attributeSaveStatus === "saved") {
       attributeSaveStatus = "idle";
       renderCityHero();
     }
   }
   if (profileOpen) {
+    completeHeroOnboardingStep("profile-open");
     closeCityArenaMenu();
   }
 });
@@ -1876,6 +1942,7 @@ function renderCurrentDom(): void {
     onResultSequenceLockChange: setBattleResultSequenceLocked,
   });
   dom.gameScreen.classList.toggle("battle-screen--online-duo-boss", gameMode === "pvp" && pvpSnapshot?.roomKind === "duoBoss");
+  syncOnboardingSpotlight();
 }
 
 function setBattleResultSequenceLocked(locked: boolean): void {
@@ -1899,6 +1966,386 @@ function renderCityHero(): void {
     attributeControlsDisabled: attributeSaveStatus === "saving",
   });
   syncMagicShopButtonLock();
+  syncOnboardingSpotlight();
+}
+
+function syncOnboardingSpotlight(): void {
+  if (onboardingSpotlightSyncFrameId !== undefined) {
+    return;
+  }
+
+  onboardingSpotlightSyncFrameId = window.requestAnimationFrame(() => {
+    onboardingSpotlightSyncFrameId = undefined;
+    const step = getOnboardingSpotlightStep();
+
+    onboardingSpotlight.sync(step);
+    scheduleOnboardingSpotlightRetryIfNeeded(step);
+  });
+}
+
+function scheduleOnboardingSpotlightRetryIfNeeded(step?: OnboardingSpotlightStep): void {
+  if (step || onboardingSpotlightRetryTimer !== undefined || !shouldRetryOnboardingSpotlightAfterWheelTurn()) {
+    return;
+  }
+
+  onboardingSpotlightRetryTimer = window.setTimeout(() => {
+    onboardingSpotlightRetryTimer = undefined;
+    syncOnboardingSpotlight();
+  }, ONBOARDING_SPOTLIGHT_WHEEL_RETRY_MS);
+}
+
+function shouldRetryOnboardingSpotlightAfterWheelTurn(): boolean {
+  return shouldShowOnboardingSpotlight()
+    && !isInCity
+    && state.result === "playing"
+    && state.activeTurn === "player"
+    && Boolean(dom.gameScreen.querySelector(".classic-action-bar--turning"));
+}
+
+function scheduleOnboardingSpotlightAfterProfileClose(): void {
+  window.setTimeout(() => syncOnboardingSpotlight(), ONBOARDING_PROFILE_CLOSE_RESYNC_MS);
+}
+
+function scheduleOnboardingSpotlightAfterCityShopOpen(): void {
+  window.setTimeout(() => syncOnboardingSpotlight(), ONBOARDING_CITY_SHOP_OPEN_RESYNC_MS);
+}
+
+function getOnboardingSpotlightStep(): OnboardingSpotlightStep | undefined {
+  if (!shouldShowOnboardingSpotlight()) {
+    return undefined;
+  }
+
+  if (isInCity) {
+    return getCityOnboardingSpotlightStep(completedOnboardingStepIds);
+  }
+
+  return getCombatOnboardingSpotlightStep(completedOnboardingStepIds);
+}
+
+function shouldShowOnboardingSpotlight(): boolean {
+  return shouldShowFirstArenaOnboarding()
+    || shouldRunPostFirstArenaWeaponShopOnboarding(completedOnboardingStepIds);
+}
+
+function shouldShowFirstArenaOnboarding(): boolean {
+  return hero.level <= 1 && !completedOnboardingStepIds.has("combat-light");
+}
+
+function getCityOnboardingSpotlightStep(completedStepIds: ReadonlySet<OnboardingStepId>): OnboardingSpotlightStep | undefined {
+  if (shouldRunHeroProfileOnboarding(completedStepIds)) {
+    return getHeroProfileOnboardingSpotlightStep(completedStepIds);
+  }
+
+  if (shouldRunPostFirstArenaWeaponShopOnboarding(completedStepIds)) {
+    return getPostFirstArenaWeaponShopOnboardingStep(completedStepIds);
+  }
+
+  if (cityHeroProfile.isOpen()) {
+    return undefined;
+  }
+
+  if (!completedStepIds.has("city-arena") && !dom.mainMenu.hidden && isSpotlightElementUsable(dom.startButton)) {
+    return {
+      id: "city-arena",
+      label: "Arena",
+      target: dom.startButton,
+    };
+  }
+
+  if (
+    completedStepIds.has("city-arena")
+    && !completedStepIds.has("arena-easy")
+    && cityArenaMenu
+    && !cityArenaMenu.hidden
+    && isSpotlightElementUsable(cityArenaEasyButton)
+  ) {
+    return {
+      id: "arena-easy",
+      label: "Easy fight",
+      target: cityArenaEasyButton,
+    };
+  }
+
+  return undefined;
+}
+
+function getHeroProfileOnboardingSpotlightStep(completedStepIds: ReadonlySet<OnboardingStepId>): OnboardingSpotlightStep | undefined {
+  if (!cityHeroProfile.isOpen()) {
+    return isSpotlightElementUsable(cityHeroWidgetRefs.portraitButton)
+      ? {
+          id: "profile-open",
+          label: "Profile",
+          target: cityHeroWidgetRefs.portraitButton,
+        }
+      : undefined;
+  }
+
+  if (hero.skillPoints > 0 && !completedStepIds.has("profile-attributes")) {
+    const target = getHeroProfileAttributesOnboardingTarget();
+
+    return isSpotlightElementUsable(target)
+      ? {
+          id: "profile-attributes",
+          label: "Spend points",
+          target,
+          clickMode: "point",
+        }
+      : undefined;
+  }
+
+  if (hasHeroAttributeDraftAllocations() && !completedStepIds.has("profile-attributes-save")) {
+    return isSpotlightElementVisible(cityHeroWidgetRefs.profileSaveAttributesButton)
+      ? {
+          id: "profile-attributes-save",
+          label: attributeSaveStatus === "saving" ? "Saving" : "Save",
+          target: cityHeroWidgetRefs.profileSaveAttributesButton,
+        }
+      : undefined;
+  }
+
+  if ((attributeSaveStatus === "saved" || completedStepIds.has("profile-attributes-save")) && !completedStepIds.has("profile-close")) {
+    const target = getHeroProfileCloseOnboardingTarget();
+
+    return isSpotlightElementUsable(target)
+      ? {
+          id: "profile-close",
+          label: "Close",
+          target,
+        }
+      : undefined;
+  }
+
+  return undefined;
+}
+
+function shouldRunHeroProfileOnboarding(completedStepIds: ReadonlySet<OnboardingStepId>): boolean {
+  return !completedStepIds.has("profile-close")
+    && (hero.skillPoints > 0
+      || hasHeroAttributeDraftAllocations()
+      || attributeSaveStatus === "saved"
+      || completedStepIds.has("profile-attributes-save"));
+}
+
+function getHeroProfileAttributesOnboardingTarget(): HTMLElement | null {
+  return cityHeroWidgetRefs.profile?.querySelector<HTMLElement>(".city-profile__attributes") ?? null;
+}
+
+function getHeroProfileCloseOnboardingTarget(): HTMLButtonElement | null {
+  return cityHeroWidgetRefs.profile?.querySelector<HTMLButtonElement>("[data-hero-profile-close]") ?? null;
+}
+
+function getPostFirstArenaWeaponShopOnboardingStep(completedStepIds: ReadonlySet<OnboardingStepId>): OnboardingSpotlightStep | undefined {
+  if (!weaponShop || !weaponShop.isOpen()) {
+    return isSpotlightElementUsable(weaponShopButton)
+      ? {
+          id: "weapon-shop-open",
+          label: "Smith",
+          target: weaponShopButton,
+        }
+      : undefined;
+  }
+
+  if (!completedStepIds.has("weapon-shop-common-sword-buy")) {
+    const shouldShowBuyTarget = completedStepIds.has("weapon-shop-common-sword");
+    const buyTarget = shouldShowBuyTarget ? weaponShop.getProductBuyButton(ONBOARDING_COMMON_SWORD_PRODUCT_ID) : null;
+
+    if (isSpotlightElementUsable(buyTarget)) {
+      return {
+        id: "weapon-shop-common-sword-buy",
+        label: "Buy",
+        target: buyTarget,
+        onActivate: activateCommonSwordOnboardingBuy,
+      };
+    }
+
+    if (shouldShowBuyTarget) {
+      return undefined;
+    }
+
+    const productTarget = weaponShop.getProductButton(ONBOARDING_COMMON_SWORD_PRODUCT_ID);
+
+    return isSpotlightElementUsable(productTarget)
+      ? {
+          id: "weapon-shop-common-sword",
+          label: "Common sword",
+          target: productTarget,
+          clickMode: "point",
+        }
+      : undefined;
+  }
+
+  const backTarget = weaponShop.getBackButton();
+
+  return isSpotlightElementUsable(backTarget)
+    ? {
+        id: "weapon-shop-back",
+        label: "Back",
+        target: backTarget,
+      }
+    : undefined;
+}
+
+function shouldRunPostFirstArenaWeaponShopOnboarding(completedStepIds: ReadonlySet<OnboardingStepId>): boolean {
+  const product = getOnboardingCommonSwordProduct();
+
+  if (!product || completedStepIds.has("weapon-shop-back") || hero.totalWins <= 0 || hero.level < 2) {
+    return false;
+  }
+
+  return !areHeroItemsOwned(hero, product.itemIds)
+    || completedStepIds.has("weapon-shop-common-sword")
+    || completedStepIds.has("weapon-shop-common-sword-buy");
+}
+
+function getOnboardingCommonSwordProduct(): WeaponProduct | undefined {
+  const product = GENERATED_WEAPON_PRODUCTS.find((candidate) => candidate.id === ONBOARDING_COMMON_SWORD_PRODUCT_ID);
+
+  return product
+    ? {
+        id: product.id,
+        categoryId: product.categoryId,
+        name: product.name,
+        price: product.price,
+        itemIds: [...product.itemIds],
+        rarity: product.rarity,
+      }
+    : undefined;
+}
+
+function activateCommonSwordOnboardingBuy(): void {
+  const product = getOnboardingCommonSwordProduct();
+
+  if (product) {
+    handleShopBuy(product);
+  }
+}
+
+function getCombatOnboardingSpotlightStep(completedStepIds: ReadonlySet<OnboardingStepId>): OnboardingSpotlightStep | undefined {
+  if (
+    isInCity
+    || gameMode !== "pve"
+    || state.result !== "playing"
+    || state.activeTurn !== "player"
+    || isTurnAnimationLocked
+    || isArenaEntryLoading
+    || isArenaEntryTransitionPlaying
+    || autoBattleEnabled
+  ) {
+    return undefined;
+  }
+
+  const lowStamina = isPlayerOnboardingLowStamina();
+  const inClinch = isFighterInClinchRange(state, "player");
+
+  if (lowStamina && !completedStepIds.has("combat-rest")) {
+    return createCombatActionOnboardingStep("combat-rest", "Rest", "rest");
+  }
+
+  if (!completedStepIds.has("combat-forward")) {
+    return createCombatActionOnboardingStep("combat-forward", "Move closer", "forward");
+  }
+
+  if (inClinch && !completedStepIds.has("combat-rest")) {
+    return createCombatActionOnboardingStep("combat-rest", "Rest", "rest")
+      ?? createCombatActionOnboardingStep("combat-light", "Light attack", "light");
+  }
+
+  if (inClinch && !completedStepIds.has("combat-light")) {
+    return createCombatActionOnboardingStep("combat-light", "Light attack", "light");
+  }
+
+  if (!completedStepIds.has("combat-lunge")) {
+    if (canUseAction(state, "lunge") || doesLungeReachTarget(state)) {
+      return createCombatActionOnboardingStep("combat-lunge", "Dash in", "lunge");
+    }
+
+    return undefined;
+  }
+
+  if (!inClinch && !completedStepIds.has("combat-light")) {
+    return undefined;
+  }
+
+  if (!completedStepIds.has("combat-light")) {
+    return createCombatActionOnboardingStep("combat-light", "Light attack", "light");
+  }
+
+  return undefined;
+}
+
+function createCombatActionOnboardingStep(id: OnboardingStepId, label: string, actionId: ActionId): OnboardingSpotlightStep | undefined {
+  const target = getCombatActionOnboardingTarget(actionId);
+
+  return target ? { id, label, target } : undefined;
+}
+
+function getCombatActionOnboardingTarget(actionId: ActionId): HTMLButtonElement | undefined {
+  return Array.from(dom.gameScreen.querySelectorAll<HTMLButtonElement>(`.action-arc__button[data-action="${actionId}"]`))
+    .find((button) => isSpotlightElementUsable(button));
+}
+
+function isPlayerOnboardingLowStamina(): boolean {
+  return state.player.stamina <= Math.max(1, Math.floor(getFighterMaxStamina(state.player) * ONBOARDING_LOW_STAMINA_RATIO));
+}
+
+function isSpotlightElementUsable(element: HTMLElement | null | undefined): element is HTMLElement {
+  if (!isSpotlightElementVisible(element)) {
+    return false;
+  }
+
+  return !(element instanceof HTMLButtonElement && element.disabled);
+}
+
+function isSpotlightElementVisible(element: HTMLElement | null | undefined): element is HTMLElement {
+  if (!element || element.hidden || element.getAttribute("aria-hidden") === "true") {
+    return false;
+  }
+
+  const rect = element.getBoundingClientRect();
+
+  return element.isConnected
+    && rect.width > 0
+    && rect.height > 0
+    && rect.bottom > 0
+    && rect.right > 0
+    && rect.top < window.innerHeight
+    && rect.left < window.innerWidth;
+}
+
+function completeHeroOnboardingStep(stepId: OnboardingStepId): void {
+  if (!ONBOARDING_STEP_ID_SET.has(stepId) || !shouldShowOnboardingSpotlight()) {
+    return;
+  }
+
+  if (completedOnboardingStepIds.has(stepId)) {
+    return;
+  }
+
+  completedOnboardingStepIds.add(stepId);
+  syncOnboardingSpotlight();
+}
+
+function completeHeroOnboardingCombatAction(actionId: ActionId): void {
+  switch (actionId) {
+    case "forward":
+      completeHeroOnboardingStep("combat-forward");
+      return;
+    case "lunge":
+      completeHeroOnboardingStep("combat-lunge");
+      return;
+    case "rest":
+      completeHeroOnboardingStep("combat-rest");
+      return;
+    case "light":
+      completeHeroOnboardingStep("combat-light");
+      return;
+    default:
+      return;
+  }
+}
+
+function isOnboardingEasyArenaSelection(selection: ArenaMenuSelection): boolean {
+  return selection.kind === "random" && selection.tierId === DEFAULT_ARENA_TIER_ID && selection.difficultyId === "easy";
 }
 
 function syncArenaEnergyTimerDisplays(): void {
@@ -2220,6 +2667,8 @@ async function handleHeroProgressReset(sourceButton?: HTMLButtonElement): Promis
 
 function resetHeroProgressState(): void {
   pendingEquipmentHintItemIds = [];
+  completedOnboardingStepIds.clear();
+  clearOnboardingSpotlightRetry();
   activeArenaTierId = DEFAULT_ARENA_TIER_ID;
   activeArenaSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
   clearShopPreview();
@@ -2234,6 +2683,15 @@ function resetHeroProgressState(): void {
   syncHeroRuntimeState();
   renderCityArenaMenu();
   renderPvpRoomList();
+}
+
+function clearOnboardingSpotlightRetry(): void {
+  if (onboardingSpotlightRetryTimer === undefined) {
+    return;
+  }
+
+  window.clearTimeout(onboardingSpotlightRetryTimer);
+  onboardingSpotlightRetryTimer = undefined;
 }
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
@@ -2428,6 +2886,7 @@ function syncActionArc(): void {
     actionArc?.sync(visibleState);
   }
   syncAutoBattleToggle();
+  syncOnboardingSpotlight();
   markCombatActionProfiler("sync action controls end");
 }
 
@@ -2743,6 +3202,7 @@ function handleAction(actionId: ActionId): void {
     return;
   }
 
+  completeHeroOnboardingCombatAction(actionId);
   markCombatActionProfiler("resolve action start");
   const nextState = resolvePlayerTurn(state, actionId);
   markCombatActionProfiler("resolve action end");
@@ -3047,6 +3507,7 @@ function renderCityArenaMenu(): void {
   }
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
   syncCityArenaBotControls();
+  syncOnboardingSpotlight();
 }
 
 function syncCityArenaMenuBackground(tierId: number): void {
@@ -5141,6 +5602,8 @@ function openCityArenaMenu(): void {
   syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
+  completeHeroOnboardingStep("city-arena");
+  syncOnboardingSpotlight();
 }
 
 function closeCityArenaMenu(): void {
@@ -5150,6 +5613,7 @@ function closeCityArenaMenu(): void {
   setCityArenaQuestPanelOpen(false);
   setCityArenaOnlineViewOpen(false);
   cityMenu?.classList.remove("city-menu--arena-select-open");
+  syncOnboardingSpotlight();
 }
 
 async function playCityArenaPanelEntryTransition(): Promise<void> {
@@ -5226,6 +5690,10 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
     finishArenaEntryProfilerRun("blocked: no energy");
     setPendingManualArenaStartSelection();
     return;
+  }
+
+  if (isOnboardingEasyArenaSelection(selection)) {
+    completeHeroOnboardingStep("arena-easy");
   }
 
   leavePvpRoom();
@@ -6173,6 +6641,7 @@ function handleLocalShopBuy(product: CityShopProduct): void {
   renderCityHero();
   syncShopHeroStateForProduct(product, previousHero);
   cityHeroEquipmentMenu.render();
+  completeCommonSwordPurchaseOnboarding(product);
 }
 
 async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduct): Promise<void> {
@@ -6207,6 +6676,7 @@ async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduc
     renderCityHero();
     syncShopHeroStateForProduct(product, previousHero);
     cityHeroEquipmentMenu.render();
+    completeCommonSwordPurchaseOnboarding(product);
   } catch (error) {
     console.error("Gladiator shop buy failed", error);
     window.alert("Could not buy item. Try again.");
@@ -6381,6 +6851,16 @@ function isEquipmentShopProduct(product: CityShopProduct): product is ArmoryProd
   return !isMagicShopProduct(product);
 }
 
+function isOnboardingCommonSwordProduct(product: Pick<CityShopProduct, "id">): boolean {
+  return product.id === ONBOARDING_COMMON_SWORD_PRODUCT_ID;
+}
+
+function completeCommonSwordPurchaseOnboarding(product: CityShopProduct): void {
+  if (isOnboardingCommonSwordProduct(product)) {
+    completeHeroOnboardingStep("weapon-shop-common-sword-buy");
+  }
+}
+
 function getEquipmentShopProductKind(product: ArmoryProduct | WeaponProduct): "armory" | "weapon" | "magic" {
   if (isMagicEquipmentShopProduct(product)) {
     return "magic";
@@ -6517,6 +6997,9 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
   attributeSaveStatus = "idle";
   syncPlayerCityBodyScale();
   renderCityHero();
+  if (hero.skillPoints <= 0 && hasHeroAttributeDraftAllocations()) {
+    completeHeroOnboardingStep("profile-attributes");
+  }
   syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
 }
@@ -6572,6 +7055,7 @@ async function handleHeroAttributesSave(): Promise<void> {
     clearHeroAttributeDraft("saved");
     syncPlayerCityBodyScale();
     renderCityHero();
+    completeHeroOnboardingStep("profile-attributes-save");
     syncCityShopHeroState();
     cityHeroEquipmentMenu.render();
   } catch (error) {
@@ -6739,11 +7223,19 @@ function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
 
   recordCityShopProductActivity("shop-preview", product);
   previewShopEquipment(createShopPreviewEquipment(product.itemIds));
+  if (isOnboardingCommonSwordProduct(product)) {
+    completeHeroOnboardingStep("weapon-shop-common-sword");
+  }
 }
 
 function clearShopPreview(): void {
   cancelShopPreviewPrewarm();
   cityScene?.clearEquipmentPreview();
+}
+
+function handleWeaponShopPreviewClear(): void {
+  clearShopPreview();
+  syncOnboardingSpotlight();
 }
 
 function handleShopProductPrewarm(products: readonly (ArmoryProduct | WeaponProduct)[]): void {
@@ -6898,6 +7390,7 @@ async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
 
   hideCityReturnTransition();
   isCityReturnTransitionRunning = false;
+  syncOnboardingSpotlight();
   syncTurnProbe();
 }
 
@@ -7002,12 +7495,22 @@ dom.cityButton.addEventListener("click", () => {
   void returnToCity();
 });
 weaponShopButton?.addEventListener("click", () => {
+  const shouldRunWeaponShopOnboarding = shouldRunPostFirstArenaWeaponShopOnboarding(completedOnboardingStepIds);
+
+  if (shouldRunWeaponShopOnboarding) {
+    weaponShop?.showProduct(ONBOARDING_COMMON_SWORD_PRODUCT_ID);
+  }
+
   cityHeroProfile?.close();
   closeCityArenaMenu();
   armoryShop?.close();
   magicShop?.close();
   flushRewardUiRenderIfDirty();
   weaponShop?.open();
+  if (shouldRunWeaponShopOnboarding) {
+    completeHeroOnboardingStep("weapon-shop-open");
+    scheduleOnboardingSpotlightAfterCityShopOpen();
+  }
 });
 armoryButton?.addEventListener("click", () => {
   cityHeroProfile?.close();
@@ -7049,13 +7552,16 @@ if (cityMenu) {
     onBuy: handleShopBuy,
     onBowCapacityUpgrade: handleBowCapacityUpgrade,
     onPreview: handleShopPreview,
-    onPreviewClear: clearShopPreview,
+    onPreviewClear: handleWeaponShopPreviewClear,
     onPrewarmProducts: handleShopProductPrewarm,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("weaponShop"));
     },
     onClose: () => {
+      if (completedOnboardingStepIds.has("weapon-shop-common-sword-buy")) {
+        completeHeroOnboardingStep("weapon-shop-back");
+      }
       playCityCurtainTransition(focusCityDefaultFromShop);
     },
     onLayoutChange: syncCityShopLayout,

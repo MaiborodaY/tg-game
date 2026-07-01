@@ -1184,7 +1184,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     xp: 0,
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
     skillPoints: HERO_STARTING_SKILL_POINTS,
-    gold: 0,
+    gold: 3,
     totalWins: 0,
     arenaWinQuest: createHeroArenaWinQuest(),
     arenaEnergy,

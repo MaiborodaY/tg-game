@@ -72,6 +72,11 @@ export interface WeaponShopApi {
   open: () => void;
   close: () => void;
   render: () => void;
+  isOpen: () => boolean;
+  showProduct: (productId: string) => void;
+  getProductButton: (productId: string) => HTMLButtonElement | null;
+  getProductBuyButton: (productId: string) => HTMLElement | null;
+  getBackButton: () => HTMLButtonElement;
   syncHeroState: (options?: WeaponShopHeroSyncOptions) => void;
 }
 
@@ -376,6 +381,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   let productPrewarmTimer: number | undefined;
   let pendingProductId: string | undefined;
   let productButtons = new Map<string, HTMLButtonElement>();
+  let productBuyButtons = new Map<string, HTMLElement>();
   let productButtonVisualStates = new Map<string, string>();
   let productIdsByItemId = new Map<HeroItemId, Set<string>>();
   let renderedProductsById = new Map<string, WeaponProduct>();
@@ -616,6 +622,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     selected.replaceChildren();
     bowUpgrade.replaceChildren();
     productButtons = new Map();
+    productBuyButtons = new Map();
     productButtonVisualStates = new Map();
     productIdsByItemId = new Map();
     renderedProductsById = new Map(selectedProducts.map((product) => [product.id, product]));
@@ -938,8 +945,13 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     });
 
     if (inlineConfirmAction) {
+      const confirmAction = createEquipmentInlineConfirmAction(inlineConfirmAction);
+
       cardContent.classList.add("equipment-item-card__content--with-inline-confirm");
-      cardContent.append(createEquipmentInlineConfirmAction(inlineConfirmAction));
+      productBuyButtons.set(product.id, confirmAction);
+      cardContent.append(confirmAction);
+    } else {
+      productBuyButtons.delete(product.id);
     }
 
     button.append(cardContent);
@@ -1115,6 +1127,23 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     scheduleLayoutSync();
   }
 
+  function showProduct(productId: string): void {
+    const product = getWeaponShopProductById(productId);
+
+    if (!product) {
+      return;
+    }
+
+    selectedWeaponTypeIds = new Set([product.categoryId]);
+    selectedRarityIds = new Set([getShopProductRarity(product.itemIds, product.rarity)]);
+    persistWeaponShopFilterPreferences();
+
+    if (!shop.hidden) {
+      clearProductPreview();
+      render();
+    }
+  }
+
   function updateShopHeroMeta(hero: HeroState): void {
     goldAmount.textContent = String(hero.gold);
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
@@ -1203,6 +1232,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function removeRenderedProduct(product: WeaponProduct): void {
     productButtons.get(product.id)?.remove();
     productButtons.delete(product.id);
+    productBuyButtons.delete(product.id);
     productButtonVisualStates.delete(product.id);
     renderedProductsById.delete(product.id);
     renderedProducts = renderedProducts.filter((renderedProduct) => renderedProduct.id !== product.id);
@@ -1676,7 +1706,21 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     tray.classList.remove("armory-shop__tray--scrolling");
   }
 
-  return { open, close, render, syncHeroState };
+  return {
+    open,
+    close,
+    render,
+    isOpen: () => !shop.hidden,
+    showProduct,
+    getProductButton: (productId: string) => productButtons.get(productId) ?? null,
+    getProductBuyButton: (productId: string) => productBuyButtons.get(productId) ?? null,
+    getBackButton: () => back,
+    syncHeroState,
+  };
+}
+
+function getWeaponShopProductById(productId: string): WeaponProduct | undefined {
+  return WEAPON_CATEGORIES.flatMap((category) => category.products).find((product) => product.id === productId);
 }
 
 function createProductIcon(iconUrl: string | undefined, className: string): HTMLElement {
