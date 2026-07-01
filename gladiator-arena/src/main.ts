@@ -2457,11 +2457,20 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   const backdrop = document.createElement("button");
   const dialog = document.createElement("section");
   const title = document.createElement("h2");
+  const titleIcon = document.createElement("img");
+  const titleText = document.createElement("span");
   const energyRow = document.createElement("div");
+  const energyIcon = document.createElement("img");
+  const energyContent = document.createElement("div");
+  const energyTopline = document.createElement("div");
   const energyLabel = document.createElement("span");
   const energyValue = document.createElement("strong");
+  const energyBar = document.createElement("div");
+  const energyFill = document.createElement("span");
   const boosterRow = document.createElement("div");
+  const boosterContent = document.createElement("div");
   const boosterLabel = document.createElement("span");
+  const boosterCaption = document.createElement("span");
   const boosterIcon = document.createElement("img");
   const boosterValue = document.createElement("strong");
   const actions = document.createElement("div");
@@ -2478,12 +2487,29 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   dialog.setAttribute("aria-modal", "true");
   dialog.setAttribute("aria-label", "Energy");
   title.className = "hero-energy-booster-panel__title";
-  title.textContent = "ENERGY";
-  energyRow.className = "hero-energy-booster-panel__row";
+  titleIcon.className = "hero-energy-booster-panel__title-icon";
+  titleIcon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
+  titleIcon.alt = "";
+  titleIcon.decoding = "async";
+  titleIcon.draggable = false;
+  titleText.textContent = "ENERGY";
+  energyRow.className = "hero-energy-booster-panel__row hero-energy-booster-panel__row--energy";
+  energyIcon.className = "hero-energy-booster-panel__resource-icon";
+  energyIcon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
+  energyIcon.alt = "";
+  energyIcon.decoding = "async";
+  energyIcon.draggable = false;
+  energyContent.className = "hero-energy-booster-panel__row-content";
+  energyTopline.className = "hero-energy-booster-panel__row-topline";
   energyLabel.textContent = "ARENA ENERGY";
   energyValue.className = "hero-energy-booster-panel__value";
-  boosterRow.className = "hero-energy-booster-panel__row";
+  energyBar.className = "hero-energy-booster-panel__energy-bar";
+  energyFill.className = "hero-energy-booster-panel__energy-fill";
+  boosterRow.className = "hero-energy-booster-panel__row hero-energy-booster-panel__row--booster";
+  boosterContent.className = "hero-energy-booster-panel__row-content";
   boosterLabel.textContent = "ENERGY BOOSTER";
+  boosterCaption.className = "hero-energy-booster-panel__caption";
+  boosterCaption.textContent = "FULL RESTORE";
   boosterIcon.className = "hero-energy-booster-panel__icon";
   boosterIcon.src = ENERGY_BOOSTER_ICON_ASSET_URL;
   boosterIcon.alt = "";
@@ -2498,8 +2524,13 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   closeButton.type = "button";
   closeButton.textContent = "CLOSE";
 
-  energyRow.append(energyLabel, energyValue);
-  boosterRow.append(boosterLabel, boosterIcon, boosterValue);
+  title.append(titleIcon, titleText);
+  energyTopline.append(energyLabel, energyValue);
+  energyBar.append(energyFill);
+  energyContent.append(energyTopline, energyBar);
+  energyRow.append(energyIcon, energyContent);
+  boosterContent.append(boosterLabel, boosterCaption);
+  boosterRow.append(boosterIcon, boosterContent, boosterValue);
   actions.append(useButton, closeButton);
   dialog.append(title, energyRow, boosterRow, actions);
   root.append(backdrop, dialog);
@@ -2509,10 +2540,18 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
     const arenaEnergy = getHeroArenaEnergy(hero);
     const energyBoosterCount = getHeroEnergyBoosterCount(hero);
     const canUseBooster = canUseHeroEnergyBooster(hero);
+    const energyRatio = arenaEnergy.max > 0 ? Math.max(0, Math.min(1, arenaEnergy.current / arenaEnergy.max)) : 0;
 
     energyValue.textContent = `${arenaEnergy.current}/${arenaEnergy.max}`;
+    energyFill.style.width = `${energyRatio * 100}%`;
     boosterValue.textContent = `x${energyBoosterCount}`;
     useButton.disabled = !canUseBooster;
+    useButton.textContent =
+      canUseBooster
+        ? "USE BOOSTER"
+        : energyBoosterCount <= 0
+          ? "NO BOOSTER"
+          : "ENERGY FULL";
     useButton.title =
       energyBoosterCount <= 0
         ? "No Energy Boosters."

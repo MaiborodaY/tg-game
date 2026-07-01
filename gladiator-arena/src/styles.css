@@ -9056,43 +9056,36 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-energy-booster-prompt .city-arena-energy-badge {
   border-color: rgba(255, 231, 137, 0.94);
-  animation: city-energy-booster-prompt-pulse 1.2s ease-in-out infinite;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.18),
+    0 0 10px rgba(255, 209, 89, 0.46);
 }
 
 .city-energy-booster-prompt::after {
   content: "USE BOOSTER";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  min-height: 18px;
-  margin-left: 3px;
-  padding: 1px 5px 2px;
-  border: 1px solid rgba(255, 221, 132, 0.78);
+  justify-content: center;
+  min-height: 13px;
+  padding: 1px 4px 2px;
+  border: 1px solid rgba(255, 221, 132, 0.54);
   border-radius: 999px;
-  color: #fff7ca;
-  background: linear-gradient(180deg, rgba(123, 52, 16, 0.96), rgba(61, 20, 7, 0.96));
-  box-shadow: 0 0 12px rgba(255, 201, 76, 0.36), inset 0 1px 0 rgba(255, 235, 171, 0.2);
-  font-size: 0.48rem;
+  color: #fff1b6;
+  background: linear-gradient(180deg, rgba(93, 38, 13, 0.96), rgba(37, 11, 5, 0.96));
+  box-shadow:
+    0 2px 5px rgba(8, 2, 1, 0.42),
+    inset 0 1px 0 rgba(255, 235, 171, 0.14);
+  font-size: 0.42rem;
   font-weight: 900;
   line-height: 1;
+  pointer-events: none;
   text-shadow: 0 1px 0 rgba(8, 2, 1, 0.82);
+  transform: translateX(-50%);
   white-space: nowrap;
-}
-
-@keyframes city-energy-booster-prompt-pulse {
-  0%,
-  100% {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 229, 161, 0.14),
-      0 0 10px rgba(255, 201, 76, 0.38);
-    transform: translateY(0);
-  }
-
-  50% {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 229, 161, 0.22),
-      0 0 22px rgba(255, 224, 112, 0.76);
-    transform: translateY(-1px);
-  }
 }
 
 .city-menu__hero-gold {
@@ -17973,6 +17966,20 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-shadow: 0 1px 0 rgba(8, 2, 1, 0.82);
 }
 
+.hero-energy-booster-panel__dialog {
+  width: min(304px, calc(100vw - 32px));
+  border-color: rgba(255, 213, 125, 0.82);
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(255, 205, 96, 0.14), transparent 54%),
+    linear-gradient(180deg, rgba(76, 32, 12, 0.98), rgba(31, 9, 4, 0.99));
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.54),
+    0 0 0 1px rgba(42, 14, 5, 0.82),
+    inset 0 1px 0 rgba(255, 238, 176, 0.18),
+    inset 0 -18px 34px rgba(9, 3, 1, 0.2);
+  padding: 15px;
+}
+
 .hero-energy-booster-panel__title,
 .onboarding-reward__title {
   margin: 0 0 12px;
@@ -17982,28 +17989,111 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-transform: uppercase;
 }
 
-.hero-energy-booster-panel__row {
-  display: flex;
+.hero-energy-booster-panel__title {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 34px;
-  margin-top: 6px;
-  padding: 8px 10px;
-  border: 1px solid rgba(255, 211, 132, 0.22);
-  border-radius: 6px;
-  background: rgba(18, 6, 3, 0.56);
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 13px;
+  color: #ffe7a8;
+  font-size: 0.88rem;
+}
+
+.hero-energy-booster-panel__title-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(8, 2, 1, 0.58));
+}
+
+.hero-energy-booster-panel__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 211, 132, 0.24);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(48, 16, 7, 0.62), rgba(19, 6, 3, 0.62));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 232, 166, 0.08),
+    0 1px 0 rgba(8, 2, 1, 0.44);
   font-size: 0.64rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.hero-energy-booster-panel__icon {
+.hero-energy-booster-panel__row--energy {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.hero-energy-booster-panel__row--booster {
+  background:
+    radial-gradient(ellipse at 18% 50%, rgba(255, 197, 69, 0.12), transparent 48%),
+    linear-gradient(180deg, rgba(56, 20, 8, 0.72), rgba(20, 6, 3, 0.68));
+}
+
+.hero-energy-booster-panel__resource-icon {
   display: block;
   width: 24px;
-  height: 32px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(8, 2, 1, 0.58));
+}
+
+.hero-energy-booster-panel__icon {
+  display: block;
+  width: 34px;
+  height: 46px;
   flex: 0 0 auto;
   object-fit: contain;
-  filter: drop-shadow(0 2px 2px rgba(8, 2, 1, 0.58));
+  filter:
+    drop-shadow(0 3px 3px rgba(8, 2, 1, 0.58))
+    drop-shadow(0 0 6px rgba(255, 198, 70, 0.18));
+}
+
+.hero-energy-booster-panel__row-content {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  text-align: left;
+}
+
+.hero-energy-booster-panel__row-topline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hero-energy-booster-panel__caption {
+  color: #dcb875;
+  font-size: 0.52rem;
+  line-height: 1;
+}
+
+.hero-energy-booster-panel__energy-bar {
+  height: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(99, 41, 12, 0.82);
+  border-radius: 999px;
+  background: rgba(12, 4, 2, 0.62);
+  box-shadow: inset 0 1px 2px rgba(8, 2, 1, 0.58);
+}
+
+.hero-energy-booster-panel__energy-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, #9d6524, #ffe46f);
+  box-shadow: 0 0 8px rgba(255, 216, 86, 0.38);
 }
 
 .hero-energy-booster-panel__value,
@@ -18013,11 +18103,24 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   font-variant-numeric: tabular-nums;
 }
 
+.hero-energy-booster-panel__row--booster .hero-energy-booster-panel__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 211, 132, 0.22);
+  border-radius: 999px;
+  background: rgba(12, 4, 2, 0.44);
+  color: #fff0bd;
+}
+
 .hero-energy-booster-panel__actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 13px;
 }
 
 .hero-energy-booster-panel__use,
@@ -18038,9 +18141,32 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
   text-transform: uppercase;
 }
 
+.hero-energy-booster-panel__use {
+  min-height: 38px;
+  border-color: rgba(82, 30, 10, 0.92);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 207, 0.88), rgba(255, 226, 148, 0.38) 36%, transparent 38%),
+    linear-gradient(180deg, #edb95d, #bd6728 58%, #783013);
+  box-shadow:
+    0 3px 0 rgba(42, 15, 6, 0.82),
+    inset 0 1px 0 rgba(255, 255, 215, 0.52),
+    inset 0 -3px 0 rgba(91, 31, 11, 0.24);
+}
+
 .hero-energy-booster-panel__close {
   color: #fff0bd;
-  background: linear-gradient(180deg, rgba(86, 37, 14, 0.98), rgba(42, 14, 6, 0.98));
+  border-color: rgba(255, 211, 132, 0.28);
+  background: linear-gradient(180deg, rgba(76, 31, 12, 0.96), rgba(30, 9, 4, 0.98));
+}
+
+.hero-energy-booster-panel__use:disabled {
+  color: #c59a66;
+  background:
+    linear-gradient(180deg, rgba(89, 42, 18, 0.96), rgba(39, 13, 6, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 170, 0.08),
+    0 1px 0 rgba(8, 2, 1, 0.62);
 }
 
 .hero-energy-booster-panel__use:disabled,
@@ -18357,7 +18483,6 @@ body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport="compact"]) .debug
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .city-energy-booster-prompt .city-arena-energy-badge,
   .onboarding-reward__backdrop,
   .onboarding-reward__claim,
   .onboarding-reward__item,
