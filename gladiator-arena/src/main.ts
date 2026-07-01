@@ -53,6 +53,7 @@ import {
   getArenaMenuBackgroundAssetUrlForTier,
   DAILY_ARENA_ENERGY_ICON_ASSET_URL,
   ENERGY_BOOSTER_ICON_ASSET_URL,
+  ENERGY_PACK_ICON_ASSET_URL,
   pickArenaBackgroundVariantIdForTier,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
@@ -2476,6 +2477,12 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   const actions = document.createElement("div");
   const useButton = document.createElement("button");
   const closeButton = document.createElement("button");
+  const packOffer = document.createElement("div");
+  const packIcon = document.createElement("img");
+  const packContent = document.createElement("div");
+  const packTitle = document.createElement("strong");
+  const packCaption = document.createElement("span");
+  const packButton = document.createElement("button");
 
   root.className = "hero-energy-booster-panel";
   root.hidden = true;
@@ -2523,6 +2530,22 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   closeButton.className = "hero-energy-booster-panel__close";
   closeButton.type = "button";
   closeButton.textContent = "CLOSE";
+  packOffer.className = "hero-energy-booster-panel__pack-offer";
+  packIcon.className = "hero-energy-booster-panel__pack-icon";
+  packIcon.src = ENERGY_PACK_ICON_ASSET_URL;
+  packIcon.alt = "";
+  packIcon.decoding = "async";
+  packIcon.draggable = false;
+  packContent.className = "hero-energy-booster-panel__pack-content";
+  packTitle.className = "hero-energy-booster-panel__pack-title";
+  packTitle.textContent = "ENERGY PACK";
+  packCaption.className = "hero-energy-booster-panel__pack-caption";
+  packCaption.textContent = "BOOSTER BUNDLE";
+  packButton.className = "hero-energy-booster-panel__pack-button";
+  packButton.type = "button";
+  packButton.textContent = "GET PACK";
+  packButton.disabled = true;
+  packButton.title = "Coming soon.";
 
   title.append(titleIcon, titleText);
   energyTopline.append(energyLabel, energyValue);
@@ -2532,7 +2555,9 @@ function mountHeroEnergyBoosterPanel(): HeroEnergyBoosterPanelApi {
   boosterContent.append(boosterLabel, boosterCaption);
   boosterRow.append(boosterIcon, boosterContent, boosterValue);
   actions.append(useButton, closeButton);
-  dialog.append(title, energyRow, boosterRow, actions);
+  packContent.append(packTitle, packCaption);
+  packOffer.append(packIcon, packContent, packButton);
+  dialog.append(title, energyRow, boosterRow, actions, packOffer);
   root.append(backdrop, dialog);
   document.body.append(root);
 

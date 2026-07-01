@@ -23,6 +23,7 @@ export const ARENA_TIER_2_BACKGROUND_AMBIENT_LAYER_ASSET_KEY = "arena-tier-2-bg-
 export const ARENA_TIER_2_BACKGROUND_AMBIENT_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-tier-2-ambient-particles.webp", import.meta.url).href;
 export const SHOP_CATEGORY_SCROLL_ICON_ASSET_URL = new URL("./assets/ui/city-buttons/city-magic-shop-icon.webp", import.meta.url).href;
 export const ENERGY_BOOSTER_ICON_ASSET_URL = new URL("./assets/ui/profile/energy-booster.webp", import.meta.url).href;
+export const ENERGY_PACK_ICON_ASSET_URL = new URL("./assets/ui/profile/energy-pack.webp", import.meta.url).href;
 
 export const ARENA_BACKGROUND_LAYER_ORDER = ["back", "mid", "ground", "front", "ambient"] as const;
 export type ArenaBackgroundLayerRole = (typeof ARENA_BACKGROUND_LAYER_ORDER)[number];
