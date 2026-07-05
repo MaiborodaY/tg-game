@@ -1261,7 +1261,7 @@ function createActionBar(): HTMLElement {
     const nextButton = document.createElement("button");
     nextButton.className = "primary-button";
     nextButton.type = "button";
-    nextButton.textContent = "Next Round";
+    nextButton.textContent = getBattleActionLabel();
     nextButton.addEventListener("click", goToNextRound);
     actions.append(nextButton);
   } else {
@@ -1292,8 +1292,19 @@ function getDraftActionLabel(): string {
   return "Lock";
 }
 
+function getBattleActionLabel(): string {
+  return isPvpMatchFinished() ? "Menu" : "Next Round";
+}
+
 function goToNextRound(): void {
   if (uiState.playMode === "online") {
+    if (isPvpMatchFinished()) {
+      closePvpSocket();
+      uiState = createInitialUiState();
+      render();
+      return;
+    }
+
     sendPvpNextRound();
     return;
   }
@@ -2301,12 +2312,13 @@ function handlePvpSocketMessage(event: MessageEvent): void {
 
   const snapshot = readPvpRoomSnapshot(message.payload);
   const nextState: Partial<PvpState> = {};
+  const isIdentityMessage = message.type === "connected" || message.type === "pong";
 
-  if (typeof message.peerId === "string") {
+  if (isIdentityMessage && typeof message.peerId === "string") {
     nextState.peerId = message.peerId;
   }
 
-  if (isPvpPeerRole(message.role)) {
+  if (isIdentityMessage && isPvpPeerRole(message.role)) {
     nextState.role = message.role;
   }
 
@@ -2473,6 +2485,15 @@ function getPvpPlayerHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined):
   }
 
   return match.hostHp;
+}
+
+function isPvpMatchFinished(): boolean {
+  const match = uiState.pvp.match;
+  if (uiState.playMode !== "online" || !match) {
+    return false;
+  }
+
+  return match.hostHp <= 0 || match.guestHp <= 0;
 }
 
 function getPvpDraftBoardSlotsForRound(state: UiState, match: PvpMatchSnapshot): BoardSlot[] {

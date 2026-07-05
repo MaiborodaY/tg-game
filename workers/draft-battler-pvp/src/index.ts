@@ -211,7 +211,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
     }
 
     if (data.type === "next_round") {
-      await this.handleNextRound(ws, attachment, room);
+      await this.handleNextRound(ws, attachment, room, data.payload);
       return;
     }
 
@@ -419,7 +419,12 @@ export class DraftPvpRoom extends DurableObject<Env> {
     await this.broadcastRoomState(this.touchRoom(room), attachment);
   }
 
-  private async handleNextRound(ws: WebSocket, attachment: SocketAttachment, room: RoomRecord): Promise<void> {
+  private async handleNextRound(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    room: RoomRecord,
+    payload: unknown,
+  ): Promise<void> {
     if (attachment.role === "spectator") {
       sendRoomError(ws, room.roomId, "Spectators cannot advance rounds.");
       return;
@@ -428,6 +433,16 @@ export class DraftPvpRoom extends DurableObject<Env> {
     const match = await this.readMatch();
     if (!match || match.phase !== "battle") {
       sendRoomError(ws, room.roomId, "Match is not ready for the next round.");
+      return;
+    }
+
+    if (!readNextRoundPayload(payload, match)) {
+      sendRoomError(ws, room.roomId, "Bad next round request.");
+      return;
+    }
+
+    if (isMatchFinished(match)) {
+      sendRoomError(ws, room.roomId, "Match is finished.");
       return;
     }
 
@@ -584,6 +599,15 @@ function readReadyPayload(payload: unknown): boolean {
   return (payload as { ready?: unknown }).ready === true;
 }
 
+function readNextRoundPayload(payload: unknown, match: MatchRecord): boolean {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const request = payload as { matchId?: unknown; round?: unknown };
+  return request.matchId === match.matchId && request.round === match.round;
+}
+
 function readSubmitBoardPayload(payload: unknown, match: MatchRecord): BoardSlot[] | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
@@ -709,6 +733,10 @@ function getMatchHostHp(match: Pick<MatchRecord, "hostHp" | "combat">): number {
 
 function getMatchGuestHp(match: Pick<MatchRecord, "guestHp" | "combat">): number {
   return match.guestHp ?? match.combat?.guestHpAfter ?? PLAYER_STARTING_HP;
+}
+
+function isMatchFinished(match: Pick<MatchRecord, "hostHp" | "guestHp" | "combat">): boolean {
+  return getMatchHostHp(match) <= 0 || getMatchGuestHp(match) <= 0;
 }
 
 function getHostHpLoss(combat: CombatResult): number {
