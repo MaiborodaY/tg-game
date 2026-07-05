@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-backstab" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#e2b77b"/>
+      <stop offset="1" stop-color="#4f2c24"/>
+    </radialGradient>
+    <filter id="ability-glow-backstab" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.878 0 0 0 0 0.514 0 0 0 0 0.302 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M80 13L96 29L51 80L28 98L41 73Z" fill="url(#ability-fill-backstab)" stroke="#fff0cf" stroke-width="5" stroke-linejoin="round" filter="url(#ability-glow-backstab)"/>
+  <path d="M38 100L23 115M72 36L88 52" stroke="#fff0cf" stroke-width="6" stroke-linecap="round"/>
+</svg>

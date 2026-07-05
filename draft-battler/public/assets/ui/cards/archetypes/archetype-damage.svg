@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="icon-fill-damage" cx="50%" cy="22%" r="72%">
+      <stop offset="0" stop-color="#fff7d7"/>
+      <stop offset="0.42" stop-color="#ff7768"/>
+      <stop offset="1" stop-color="#6a1913"/>
+    </radialGradient>
+    <filter id="icon-glow-damage" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 1.000 0 0 0 0 0.298 0 0 0 0 0.231 0 0 0 0.62 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#icon-glow-damage)">
+    <path d="M30 19L45 16L72 58L61 69L20 36Z" fill="url(#icon-fill-damage)" stroke="#ffe1cf" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M98 19L83 16L56 58L67 69L108 36Z" fill="url(#icon-fill-damage)" stroke="#ffe1cf" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M60 70L31 111L18 98L51 62Z" fill="url(#icon-fill-damage)" stroke="#ffe1cf" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M68 70L97 111L110 98L77 62Z" fill="url(#icon-fill-damage)" stroke="#ffe1cf" stroke-width="4.5" stroke-linejoin="round"/>
+  </g>
+  <path d="M42 86L27 72M86 86L101 72" stroke="#ffe1cf" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="8" fill="#fff1d8" fill-opacity="0.42" stroke="#ffe1cf" stroke-width="3"/>
+</svg>

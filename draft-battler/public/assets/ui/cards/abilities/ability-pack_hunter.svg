@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-pack_hunter" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#c7b38a"/>
+      <stop offset="1" stop-color="#503a25"/>
+    </radialGradient>
+    <filter id="ability-glow-pack_hunter" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.788 0 0 0 0 0.584 0 0 0 0 0.345 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="44" cy="50" r="10" fill="url(#ability-fill-pack_hunter)" stroke="#f2dfb9" stroke-width="4" filter="url(#ability-glow-pack_hunter)"/>
+  <circle cx="64" cy="40" r="10" fill="url(#ability-fill-pack_hunter)" stroke="#f2dfb9" stroke-width="4"/>
+  <circle cx="84" cy="50" r="10" fill="url(#ability-fill-pack_hunter)" stroke="#f2dfb9" stroke-width="4"/>
+  <path d="M34 88C40 68 54 62 64 62C74 62 88 68 94 88C88 103 77 109 64 109C51 109 40 103 34 88Z" fill="url(#ability-fill-pack_hunter)" stroke="#f2dfb9" stroke-width="5" stroke-linejoin="round"/>
+</svg>

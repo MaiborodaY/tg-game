@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-heal_ally" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#9bef7d"/>
+      <stop offset="1" stop-color="#24542c"/>
+    </radialGradient>
+    <filter id="ability-glow-heal_ally" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.396 0 0 0 0 0.902 0 0 0 0 0.420 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M55 18H73V55H110V73H73V110H55V73H18V55H55Z" fill="url(#ability-fill-heal_ally)" stroke="#f3ffd9" stroke-width="5" stroke-linejoin="round" filter="url(#ability-glow-heal_ally)"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="#f3ffd9" stroke-opacity="0.28" stroke-width="4"/>
+</svg>

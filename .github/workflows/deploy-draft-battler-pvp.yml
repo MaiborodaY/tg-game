@@ -1,0 +1,46 @@
+name: Deploy Draft Battler PvP Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-draft-battler-pvp.yml"
+      - "workers/draft-battler-pvp/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+  workflow_dispatch:
+
+concurrency:
+  group: draft-battler-pvp-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy Worker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck Draft Battler PvP Worker
+        run: npx tsc --noEmit --project workers/draft-battler-pvp/tsconfig.json
+
+      - name: Deploy Draft Battler PvP Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --config workers/draft-battler-pvp/wrangler.jsonc

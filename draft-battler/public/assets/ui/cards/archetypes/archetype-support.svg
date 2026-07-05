@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="icon-fill-support" cx="50%" cy="22%" r="72%">
+      <stop offset="0" stop-color="#fff7d7"/>
+      <stop offset="0.42" stop-color="#9cff72"/>
+      <stop offset="1" stop-color="#1f5226"/>
+    </radialGradient>
+    <filter id="icon-glow-support" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.431 0 0 0 0 1.000 0 0 0 0 0.404 0 0 0 0.62 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M64 12L75 48L112 36L88 64L112 92L75 80L64 116L53 80L16 92L40 64L16 36L53 48Z" fill="url(#icon-fill-support)" stroke="#f4ffe4" stroke-width="4.5" stroke-linejoin="round" filter="url(#icon-glow-support)"/>
+  <circle cx="64" cy="64" r="17" fill="#f4ffe4" fill-opacity="0.24" stroke="#f4ffe4" stroke-width="3.5"/>
+  <path d="M64 37V91M37 64H91" stroke="#f4ffe4" stroke-width="8" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-battle_banner" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#e3c46a"/>
+      <stop offset="1" stop-color="#5c4320"/>
+    </radialGradient>
+    <filter id="ability-glow-battle_banner" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.878 0 0 0 0 0.675 0 0 0 0 0.239 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M42 18V112" stroke="#ffe5a3" stroke-width="7" stroke-linecap="round" filter="url(#ability-glow-battle_banner)"/>
+  <path d="M45 23H96L85 47L99 72H45Z" fill="url(#ability-fill-battle_banner)" stroke="#ffe5a3" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M57 36H79" stroke="#fff4c8" stroke-width="4" stroke-linecap="round"/>
+</svg>

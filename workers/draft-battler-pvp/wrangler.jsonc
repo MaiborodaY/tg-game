@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "account_id": "49cdef49a797b94dda3328ef3c4b2d6e",
+  "name": "draft-battler-pvp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-05",
+  "observability": {
+    "enabled": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DRAFT_PVP_ROOM",
+        "class_name": "DraftPvpRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DraftPvpRoom"]
+    }
+  ]
+}

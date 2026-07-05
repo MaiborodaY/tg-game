@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="medallion-fill-rare" cx="50%" cy="28%" r="72%">
+      <stop offset="0" stop-color="#293229"/>
+      <stop offset="0.52" stop-color="#111611"/>
+      <stop offset="1" stop-color="#060806"/>
+    </radialGradient>
+    <linearGradient id="medallion-rim-rare" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8dbfff"/>
+      <stop offset="0.38" stop-color="#3578c8"/>
+      <stop offset="0.72" stop-color="#173a66"/>
+      <stop offset="1" stop-color="#8dbfff"/>
+    </linearGradient>
+    <filter id="medallion-glow-rare" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="3.2" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.310 0 0 0 0 0.612 0 0 0 0 1.000 0 0 0 0.55 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="55" fill="#070907" fill-opacity="0.78"/>
+  <circle cx="64" cy="64" r="47" fill="url(#medallion-fill-rare)" stroke="url(#medallion-rim-rare)" stroke-width="8" filter="url(#medallion-glow-rare)"/>
+  <circle cx="64" cy="64" r="34" fill="none" stroke="#f5edc9" stroke-opacity="0.15" stroke-width="1.6"/>
+  <path d="M30 64H18M110 64H98M64 30V18M64 110V98" stroke="#8dbfff" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round"/>
+</svg>

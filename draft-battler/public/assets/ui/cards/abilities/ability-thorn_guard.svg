@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-thorn_guard" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#8edb75"/>
+      <stop offset="1" stop-color="#264f2a"/>
+    </radialGradient>
+    <filter id="ability-glow-thorn_guard" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.416 0 0 0 0 0.820 0 0 0 0 0.369 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M65 16C89 35 99 60 88 84C77 108 51 113 31 93C55 88 69 70 65 16Z" fill="url(#ability-fill-thorn_guard)" stroke="#eaffd6" stroke-width="5" stroke-linejoin="round" filter="url(#ability-glow-thorn_guard)"/>
+  <path d="M31 96C49 79 67 56 91 34M36 77L20 67M54 57L40 44M72 40L66 24" stroke="#eaffd6" stroke-width="4" stroke-linecap="round"/>
+</svg>

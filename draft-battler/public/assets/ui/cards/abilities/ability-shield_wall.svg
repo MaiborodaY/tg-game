@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-shield_wall" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#c7d3d8"/>
+      <stop offset="1" stop-color="#39484d"/>
+    </radialGradient>
+    <filter id="ability-glow-shield_wall" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.616 0 0 0 0 0.737 0 0 0 0 0.784 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M64 15L101 29V61C101 88 86 106 64 115C42 106 27 88 27 61V29Z" fill="url(#ability-fill-shield_wall)" stroke="#f2f7ed" stroke-width="5" stroke-linejoin="round" filter="url(#ability-glow-shield_wall)"/>
+  <path d="M64 24V104M39 43H89M38 63H90" stroke="#f2f7ed" stroke-opacity="0.72" stroke-width="4" stroke-linecap="round"/>
+</svg>

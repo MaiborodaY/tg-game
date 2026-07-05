@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-riposte" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#e5c48a"/>
+      <stop offset="1" stop-color="#573628"/>
+    </radialGradient>
+    <filter id="ability-glow-riposte" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.875 0 0 0 0 0.573 0 0 0 0 0.314 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M33 19L93 105M95 19L35 105" stroke="#fff0cf" stroke-width="8" stroke-linecap="round" filter="url(#ability-glow-riposte)"/>
+  <path d="M29 15L40 26M88 26L99 15M27 112L40 99M88 99L101 112" stroke="#fff0cf" stroke-width="5" stroke-linecap="round"/>
+</svg>

@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "./draft-battler/tsconfig.json" },
     { "path": "./gladiator-arena/tsconfig.json" },
     { "path": "./farm-paws/tsconfig.json" },
     { "path": "./functions/tsconfig.json" }

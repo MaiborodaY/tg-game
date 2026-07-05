@@ -1,0 +1,1692 @@
+import "./styles.css";
+import type { BattlefieldController } from "./rendering/phaserBattleScene";
+import {
+  BOARD_SLOT_COUNT,
+  cloneBoardSlots,
+  createBattleTimeline,
+  getBoardCapacityForRound,
+  getCardDefinition,
+  getCardStatsForUpgrade,
+  chooseDraftCards,
+  createRun,
+  rerollDraftCards,
+  resolveRound,
+  isCardAllowedInSlot,
+  type AbilityId,
+  type BoardSlot,
+  type CardDefinition,
+  type CardId,
+  type BattleTimeline,
+  type CombatResult,
+  type DraftOption,
+  type RoundRecord,
+  type RunState,
+} from "./game";
+import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
+
+type ScreenMode = "draft" | "battle" | "finished";
+type CardArchetype = "tank" | "damage" | "support";
+type CardRarity = "common" | "uncommon" | "rare";
+type BattlefieldCommand =
+  | { type: "draft"; key: string; playerCastleHp: number }
+  | { type: "battle"; key: string; timeline: BattleTimeline };
+
+interface CardDisplayMeta {
+  archetype: CardArchetype;
+  archetypeIconPath: string;
+  archetypeLabel: string;
+  rarity: CardRarity;
+  rarityLabel: string;
+}
+
+interface UiState {
+  run: RunState;
+  mode: ScreenMode;
+  draftBoardSlots: BoardSlot[];
+  cardPickedThisRound: boolean;
+  selectedCardInfoId?: CardId;
+  battleFinished: boolean;
+  logsOpen: boolean;
+  selectedLogRound?: number;
+  lastRound: number;
+  lastBattleTimeline?: BattleTimeline;
+}
+
+const app = document.querySelector<HTMLDivElement>("#app");
+
+if (!app) {
+  throw new Error("Missing app root.");
+}
+
+const appRoot = app;
+
+let uiState: UiState = createInitialUiState();
+let shellElement: HTMLElement | undefined;
+let stageElement: HTMLElement | undefined;
+let sceneHostElement: HTMLElement | undefined;
+let battlefieldController: BattlefieldController | undefined;
+let battlefieldMountRequested = false;
+let latestBattlefieldCommand: BattlefieldCommand | undefined;
+let appliedBattlefieldCommandKey: string | undefined;
+const SCENE_FALLBACK_WIDTH = 390;
+const SCENE_FALLBACK_HEIGHT = 720;
+const SCENE_DRAFT_CAMERA_ZOOM = 0.86;
+const SCENE_SLOT_LANE_FRACTIONS = [0.28, 0.5, 0.72] as const;
+const POINTER_DRAG_START_DISTANCE = 8;
+const FIELD_SLOT_HIT_PADDING = 12;
+const FIELD_SLOT_TOUCH_HIT_PADDING = 30;
+const DRAG_GHOST_FOOT_HIT_INSET = 12;
+
+interface ActivePointerDrag {
+  cleanup: () => void;
+}
+
+interface ClientPoint {
+  clientX: number;
+  clientY: number;
+}
+
+interface OverlaySceneLayout {
+  width: number;
+  height: number;
+  centerY: number;
+  fieldTopY: number;
+  fieldBottomY: number;
+  fieldTopLeftX: number;
+  fieldTopRightX: number;
+  fieldBottomLeftX: number;
+  fieldBottomRightX: number;
+}
+
+interface FieldSlotPosition {
+  xPercent: number;
+  yFromBottom: number;
+  scale: number;
+  depth: number;
+}
+
+let activePointerDrag: ActivePointerDrag | undefined;
+let suppressNextCardClick = false;
+
+render();
+
+function createInitialUiState(seed = createSeed()): UiState {
+  const run = createRun(seed);
+
+  return {
+    run,
+    mode: "draft",
+    draftBoardSlots: cloneBoardSlots(run.boardSlots),
+    cardPickedThisRound: false,
+    battleFinished: false,
+    logsOpen: false,
+    lastRound: 1,
+  };
+}
+
+function render(): void {
+  const stage = getStageElement();
+  stage.className = `stage stage--${uiState.mode}`;
+  stage.replaceChildren(getSceneCanvasHost());
+
+  if (uiState.mode === "draft") {
+    stage.append(createDraftHud(), createDraftOverlay());
+  } else {
+    stage.append(createBattleOverlay());
+  }
+
+  stage.append(createLogsOverlay());
+
+  syncBattlefield();
+}
+
+function getShellElement(): HTMLElement {
+  if (!shellElement) {
+    shellElement = document.createElement("main");
+    shellElement.className = "app-shell";
+    appRoot.replaceChildren(shellElement);
+  }
+
+  return shellElement;
+}
+
+function getStageElement(): HTMLElement {
+  if (!stageElement) {
+    stageElement = document.createElement("section");
+    getShellElement().append(stageElement);
+  }
+
+  return stageElement;
+}
+
+function createMetric(label: string, value: string): HTMLElement {
+  const metric = document.createElement("div");
+  const metricKey = label.toLowerCase();
+  metric.className = `metric metric--${metricKey}`;
+
+  const icon = document.createElement("span");
+  icon.className = "metric__icon";
+  icon.setAttribute("aria-hidden", "true");
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "metric__label";
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement("strong");
+  valueEl.className = "metric__value";
+  valueEl.textContent = value;
+
+  metric.append(icon, labelEl, valueEl);
+
+  return metric;
+}
+
+function createDraftHud(): HTMLElement {
+  const hud = document.createElement("div");
+  hud.className = "draft-hud";
+  hud.append(
+    createMetric("HP", String(uiState.run.playerHp)),
+    createMetric("Round", String(uiState.run.round)),
+    createMetric("Seed", uiState.run.seed.slice(-6)),
+  );
+
+  return hud;
+}
+
+function createDraftOverlay(): HTMLElement {
+  const overlay = document.createElement("div");
+  overlay.className = "draft-overlay";
+
+  overlay.append(createFieldSlotsLayer(), createFieldActionBar());
+
+  if (!uiState.cardPickedThisRound) {
+    overlay.append(createDraftPanel());
+  }
+
+  if (uiState.selectedCardInfoId) {
+    overlay.append(createCardInfoPanel(uiState.selectedCardInfoId));
+  }
+
+  return overlay;
+}
+
+function createBattleOverlay(): HTMLElement {
+  const overlay = document.createElement("div");
+  overlay.className = "battle-overlay";
+
+  if (uiState.battleFinished) {
+    overlay.append(createBattleActionPanel());
+  }
+
+  return overlay;
+}
+
+function createBattleActionPanel(): HTMLElement {
+  const panel = document.createElement("div");
+  panel.className = "battle-action-panel";
+  panel.append(createActionBar());
+
+  return panel;
+}
+
+function createLogsOverlay(): HTMLElement {
+  const overlay = document.createElement("div");
+  overlay.className = "logs-overlay";
+
+  const visibleLogs = getVisibleRoundLogs();
+  if (visibleLogs.length === 0) {
+    return overlay;
+  }
+
+  if (uiState.logsOpen) {
+    overlay.append(createLogsPanel(visibleLogs));
+  }
+
+  const button = document.createElement("button");
+  button.className = uiState.logsOpen ? "logs-button logs-button--active" : "logs-button";
+  button.type = "button";
+  button.textContent = "Logs";
+  button.addEventListener("click", () => {
+    const nextOpen = !uiState.logsOpen;
+    const selectedLog = getSelectedRoundLog(visibleLogs);
+
+    uiState = {
+      ...uiState,
+      logsOpen: nextOpen,
+      selectedLogRound: nextOpen ? selectedLog?.round : uiState.selectedLogRound,
+    };
+    render();
+  });
+
+  overlay.append(button);
+
+  return overlay;
+}
+
+function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
+  const panel = document.createElement("section");
+  panel.className = "logs-panel";
+
+  const header = document.createElement("div");
+  header.className = "logs-panel__header";
+
+  const title = document.createElement("h2");
+  title.textContent = "Logs";
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "logs-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = "x";
+  closeButton.setAttribute("aria-label", "Close logs");
+  closeButton.addEventListener("click", () => {
+    uiState = {
+      ...uiState,
+      logsOpen: false,
+    };
+    render();
+  });
+
+  header.append(title, closeButton);
+
+  const tabs = document.createElement("div");
+  tabs.className = "logs-round-tabs";
+
+  logs.forEach((log) => {
+    const roundButton = document.createElement("button");
+    roundButton.className =
+      log.round === getSelectedRoundLog(logs)?.round
+        ? "logs-round-button logs-round-button--selected"
+        : "logs-round-button";
+    roundButton.type = "button";
+    roundButton.textContent = `Round ${log.round}`;
+    roundButton.addEventListener("click", () => {
+      uiState = {
+        ...uiState,
+        selectedLogRound: log.round,
+      };
+      render();
+    });
+
+    tabs.append(roundButton);
+  });
+
+  const body = document.createElement("div");
+  body.className = "logs-panel__body";
+
+  const selectedLog = getSelectedRoundLog(logs);
+  if (selectedLog) {
+    body.append(createRoundLogReport(selectedLog));
+  }
+
+  panel.append(header, tabs, body);
+
+  return panel;
+}
+
+function createRoundLogReport(log: RoundRecord): HTMLElement {
+  const report = document.createElement("div");
+  report.className = "report report--log";
+
+  const title = document.createElement("h2");
+  title.textContent = `Round ${log.round}`;
+
+  report.append(title, createBattleSummary(log.combatResult), createMatchupList(log.playerSlots, log.enemySlots));
+
+  return report;
+}
+
+function getVisibleRoundLogs(): RoundRecord[] {
+  return uiState.run.roundHistory.filter((log) => {
+    if (uiState.mode !== "battle" && uiState.mode !== "finished") {
+      return true;
+    }
+
+    return log.round !== uiState.lastRound || uiState.battleFinished;
+  });
+}
+
+function getSelectedRoundLog(logs: readonly RoundRecord[]): RoundRecord | undefined {
+  const selected = logs.find((log) => log.round === uiState.selectedLogRound);
+
+  return selected ?? logs[logs.length - 1];
+}
+
+function createDraftPanel(): HTMLElement {
+  const draftPanel = document.createElement("section");
+  draftPanel.className = "draft-panel";
+  draftPanel.append(createDraftHeader(), createDraftGrid());
+
+  return draftPanel;
+}
+
+function createDraftHeader(): HTMLElement {
+  const header = document.createElement("div");
+  header.className = "panel-header";
+
+  const title = document.createElement("h1");
+  title.textContent = "Pick one card or upgrade existing";
+
+  const caption = document.createElement("span");
+  caption.className = "panel-caption";
+  caption.textContent = `Slots ${getFilledSlotCount()}/${getBoardCapacity()}`;
+
+  header.append(title, caption);
+
+  return header;
+}
+
+function createDraftGrid(): HTMLElement {
+  const grid = document.createElement("div");
+  grid.className = "draft-grid";
+
+  getCurrentDraftOptions().forEach((option) => {
+    grid.append(createDraftCard(option));
+  });
+  grid.append(createRerollButton());
+
+  return grid;
+}
+
+function createDraftCard(option: DraftOption): HTMLButtonElement {
+  const card = getCardDefinition(option.cardId);
+  const meta = getCardDisplayMeta(card);
+  const placeable = canPlaceDraftCard(option.cardId);
+  const button = document.createElement("button");
+  const cardClasses = ["unit-card", `unit-card--${meta.archetype}`, `unit-card--${meta.rarity}`];
+  if (uiState.selectedCardInfoId === option.cardId) {
+    cardClasses.push("unit-card--inspected");
+  }
+
+  button.className = cardClasses.join(" ");
+  button.type = "button";
+  button.disabled = uiState.mode !== "draft" || !placeable;
+  button.draggable = false;
+  button.title = card.summary;
+  button.dataset.cardId = option.cardId;
+
+  button.append(
+    createCardFrame(),
+    createCardArchetypeBadge(meta),
+    createCardBody(card, meta),
+  );
+
+  button.addEventListener("click", () => handleDraftCardInfoClick(option.cardId));
+    button.addEventListener("pointerdown", (event) => startPointerDraftDrag(option.cardId, event));
+
+  return button;
+}
+
+function createCardFrame(): HTMLElement {
+  const frame = document.createElement("span");
+  frame.className = "unit-card__frame";
+  frame.setAttribute("aria-hidden", "true");
+
+  return frame;
+}
+
+function createCardInfoPanel(cardId: CardId): HTMLElement {
+  const card = getCardDefinition(cardId);
+  const meta = getCardDisplayMeta(card);
+  const panel = document.createElement("aside");
+  panel.className = `card-info-panel unit-card--${meta.archetype} unit-card--${meta.rarity}`;
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "card-info-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = "x";
+  closeButton.setAttribute("aria-label", "Close card info");
+  closeButton.addEventListener("click", closeCardInfo);
+
+  const title = document.createElement("strong");
+  title.className = "card-info-panel__title";
+  title.textContent = card.name;
+
+  const type = createCardMetaRow(meta);
+  type.classList.add("card-info-panel__type");
+
+  const stats = createCardStats(card);
+  stats.classList.add("card-info-panel__stats");
+
+  const tags = document.createElement("div");
+  tags.className = "card-info-panel__tags";
+  card.tags.forEach((tag) => {
+    const tagEl = document.createElement("span");
+    tagEl.textContent = tag;
+    tags.append(tagEl);
+  });
+
+  const summary = document.createElement("p");
+  summary.className = "card-info-panel__summary";
+  summary.textContent = card.summary;
+
+  panel.append(closeButton, title, type, createCardArt(card, meta), stats, tags, summary);
+
+  return panel;
+}
+
+function createRerollButton(): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = "reroll-button";
+  button.type = "button";
+  button.textContent = uiState.run.draftRerollCount > 0 ? `Reroll ${uiState.run.draftRerollCount}` : "Reroll";
+  button.addEventListener("click", rerollCurrentDraftCards);
+
+  return button;
+}
+
+function createCardName(card: CardDefinition): HTMLElement {
+  const name = document.createElement("strong");
+  name.className = "unit-card__name";
+  name.textContent = card.name;
+
+  return name;
+}
+
+function createCardBody(card: CardDefinition, meta: CardDisplayMeta): HTMLElement {
+  const body = document.createElement("div");
+  body.className = "unit-card__body";
+
+  const footer = document.createElement("div");
+  footer.className = "unit-card__footer";
+  footer.append(createCardStats(card), createCardAbility(card));
+
+  body.append(
+    createCardArt(card, meta),
+    createCardHeader(card, meta),
+    footer,
+  );
+
+  return body;
+}
+
+function createCardArchetypeBadge(meta: CardDisplayMeta): HTMLElement {
+  const badge = document.createElement("div");
+  badge.className = `unit-card__archetype unit-card__archetype--${meta.archetype}`;
+  badge.title = meta.archetypeLabel;
+  badge.setAttribute("aria-label", meta.archetypeLabel);
+
+  const icon = document.createElement("img");
+  icon.className = "unit-card__archetype-icon";
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  icon.src = meta.archetypeIconPath;
+
+  badge.append(icon);
+
+  return badge;
+}
+
+function createCardHeader(card: CardDefinition, meta: CardDisplayMeta): HTMLElement {
+  const header = document.createElement("div");
+  header.className = "unit-card__header";
+
+  header.append(createCardName(card), createCardRarity(meta));
+
+  return header;
+}
+
+function createCardRarity(meta: CardDisplayMeta): HTMLElement {
+  const rarity = document.createElement("span");
+  rarity.className = `unit-card__rarity unit-card__rarity--${meta.rarity}`;
+  rarity.textContent = meta.rarityLabel;
+
+  return rarity;
+}
+
+function createCardMetaRow(meta: CardDisplayMeta): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "unit-card__meta-row";
+
+  const archetype = document.createElement("span");
+  archetype.className = `unit-card__meta-pill unit-card__meta-pill--${meta.archetype}`;
+  archetype.textContent = meta.archetypeLabel;
+
+  const rarity = createCardRarity(meta);
+
+  row.append(archetype, rarity);
+
+  return row;
+}
+
+function createCardArt(card: CardDefinition, meta: CardDisplayMeta): HTMLElement {
+  const art = document.createElement("div");
+  art.className = `unit-card__art unit-card__art--${meta.archetype} unit-card__art--${meta.rarity}`;
+
+  const assetPath = getUnitCardAssetPath(card.id) ?? getUnitAssetPath(card.id);
+  if (assetPath) {
+    const sprite = document.createElement("img");
+    sprite.className = "unit-card__sprite";
+    sprite.alt = card.name;
+    sprite.decoding = "async";
+    sprite.src = assetPath;
+    art.append(sprite);
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "unit-card__image-placeholder";
+    placeholder.textContent = createCardInitials(card.name);
+    art.append(placeholder);
+  }
+
+  return art;
+}
+
+function createDraftUnitDragGhost(cardId: CardId): HTMLElement {
+  const card = getCardDefinition(cardId);
+  const assetPath = getUnitAssetPath(card.id);
+  const ghost = document.createElement("div");
+  ghost.className = assetPath ? "draft-unit-drag-ghost draft-unit-drag-ghost--sprite" : "draft-unit-drag-ghost";
+  ghost.setAttribute("aria-hidden", "true");
+
+  if (assetPath) {
+    const sprite = document.createElement("img");
+    sprite.className = "draft-unit-drag-ghost__sprite";
+    sprite.alt = "";
+    sprite.decoding = "async";
+    sprite.draggable = false;
+    sprite.src = assetPath;
+    ghost.append(sprite);
+  } else {
+    const avatar = document.createElement("span");
+    avatar.className = `draft-unit-drag-ghost__avatar field-unit__avatar field-unit__avatar--${card.role}`;
+    avatar.textContent = createCardInitials(card.name);
+    ghost.append(avatar);
+  }
+
+  return ghost;
+}
+
+function getUnitAssetPath(cardId: CardId): string | undefined {
+  return getUnitAsset(cardId)?.path;
+}
+
+function createCardInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function createCardStats(card: CardDefinition): HTMLElement {
+  const stats = document.createElement("div");
+  stats.className = "unit-card__stats";
+
+  stats.append(
+    createStat("ATK", card.stats.attack),
+    createStat("HP", card.stats.hp),
+    createStat("SPD", card.stats.speed),
+  );
+
+  return stats;
+}
+
+function createCardAbility(card: CardDefinition): HTMLElement {
+  const ability = document.createElement("p");
+  ability.className = "unit-card__ability";
+
+  const icon = document.createElement("img");
+  icon.className = "unit-card__ability-icon";
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  icon.src = getAbilityIconPath(card.abilityId);
+  ability.append(icon);
+
+  const text = document.createElement("span");
+  text.className = "unit-card__ability-text";
+  text.textContent = card.cardText ?? card.summary;
+  ability.append(text);
+
+  return ability;
+}
+
+function getAbilityIconPath(abilityId: AbilityId): string {
+  return `assets/ui/cards/abilities/ability-${abilityId}.svg`;
+}
+
+function createStat(label: string, value: number): HTMLElement {
+  const stat = document.createElement("span");
+  stat.className = "unit-card__stat";
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "unit-card__stat-label";
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement("strong");
+  valueEl.className = "unit-card__stat-value";
+  valueEl.textContent = String(value);
+
+  stat.append(labelEl, valueEl);
+
+  return stat;
+}
+
+function getCardDisplayMeta(card: CardDefinition): CardDisplayMeta {
+  const archetype = getCardArchetype(card);
+  const rarity = getCardRarity(card);
+
+  return {
+    archetype,
+    archetypeIconPath: getCardArchetypeIconPath(archetype),
+    archetypeLabel: getCardArchetypeLabel(archetype),
+    rarity,
+    rarityLabel: getCardRarityLabel(rarity),
+  };
+}
+
+function getCardArchetype(card: CardDefinition): CardArchetype {
+  if (card.role === "tank") {
+    return "tank";
+  }
+
+  if (card.role === "support") {
+    return "support";
+  }
+
+  return "damage";
+}
+
+function getCardRarity(card: CardDefinition): CardRarity {
+  if (card.tier === 1) {
+    return "common";
+  }
+
+  if (card.tier === 2) {
+    return "uncommon";
+  }
+
+  return "rare";
+}
+
+function getCardArchetypeIconPath(archetype: CardArchetype): string {
+  return `assets/ui/cards/archetypes/archetype-${archetype}.svg`;
+}
+
+function getCardArchetypeLabel(archetype: CardArchetype): string {
+  if (archetype === "tank") {
+    return "Tank";
+  }
+
+  if (archetype === "support") {
+    return "Support";
+  }
+
+  return "Damage";
+}
+
+function getCardRarityLabel(rarity: CardRarity): string {
+  if (rarity === "uncommon") {
+    return "Uncommon";
+  }
+
+  if (rarity === "rare") {
+    return "Rare";
+  }
+
+  return "Common";
+}
+
+function createFieldSlotsLayer(): HTMLElement {
+  const slots = document.createElement("div");
+  slots.className = "field-slots";
+
+  for (let slotIndex = 0; slotIndex < BOARD_SLOT_COUNT; slotIndex += 1) {
+    slots.append(createFieldSlot(slotIndex));
+  }
+
+  return slots;
+}
+
+function getPlayerFieldSlotPosition(slotIndex: number): FieldSlotPosition {
+  const layout = createOverlaySceneLayout();
+  const row = slotIndex >= 3 ? 1 : 0;
+  const column = slotIndex % 3;
+  const y = row === 0 ? layout.height * 0.67 : layout.height * 0.78;
+  const x = getOverlaySlotLaneX(layout, column, y);
+  const screen = projectDraftPoint(layout, x, y);
+  const scale = SCENE_DRAFT_CAMERA_ZOOM * getOverlayPerspectiveScale(layout, y);
+
+  return {
+    xPercent: (screen.x / layout.width) * 100,
+    yFromBottom: layout.height - screen.y,
+    scale,
+    depth: row + 1,
+  };
+}
+
+function createOverlaySceneLayout(): OverlaySceneLayout {
+  const rect = stageElement?.getBoundingClientRect();
+  const width = rect?.width && rect.width > 0 ? rect.width : SCENE_FALLBACK_WIDTH;
+  const height = rect?.height && rect.height > 0 ? rect.height : SCENE_FALLBACK_HEIGHT;
+
+  return {
+    width,
+    height,
+    centerY: height / 2,
+    fieldTopY: 104,
+    fieldBottomY: height - 52,
+    fieldTopLeftX: width * 0.42,
+    fieldTopRightX: width * 0.58,
+    fieldBottomLeftX: width * -0.2,
+    fieldBottomRightX: width * 1.2,
+  };
+}
+
+function projectDraftPoint(layout: OverlaySceneLayout, x: number, y: number): { x: number; y: number } {
+  return {
+    x: (x - layout.width / 2) * SCENE_DRAFT_CAMERA_ZOOM + layout.width / 2,
+    y: (y - layout.centerY) * SCENE_DRAFT_CAMERA_ZOOM + layout.centerY,
+  };
+}
+
+function getOverlaySlotLaneX(layout: OverlaySceneLayout, column: number, y: number): number {
+  const fraction = SCENE_SLOT_LANE_FRACTIONS[column] ?? 0.5;
+
+  return getOverlayFieldLeftX(layout, y) + (getOverlayFieldRightX(layout, y) - getOverlayFieldLeftX(layout, y)) * fraction;
+}
+
+function getOverlayFieldLeftX(layout: OverlaySceneLayout, y: number): number {
+  return linear(layout.fieldTopLeftX, layout.fieldBottomLeftX, getOverlayFieldRatio(layout, y));
+}
+
+function getOverlayFieldRightX(layout: OverlaySceneLayout, y: number): number {
+  return linear(layout.fieldTopRightX, layout.fieldBottomRightX, getOverlayFieldRatio(layout, y));
+}
+
+function getOverlayFieldRatio(layout: OverlaySceneLayout, y: number): number {
+  return clamp((y - layout.fieldTopY) / (layout.fieldBottomY - layout.fieldTopY), 0, 1);
+}
+
+function getOverlayPerspectiveScale(layout: OverlaySceneLayout, y: number): number {
+  return linear(0.68, 1.18, getOverlayFieldRatio(layout, y));
+}
+
+function linear(start: number, end: number, amount: number): number {
+  return start + (end - start) * amount;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function createFieldActionBar(): HTMLElement {
+  const actionBar = document.createElement("div");
+  actionBar.className = "field-action-bar";
+  actionBar.append(createActionBar());
+
+  return actionBar;
+}
+
+function createFieldSlot(slotIndex: number): HTMLButtonElement {
+  const slotState = getDraftBoardSlot(slotIndex);
+  const cardId = slotState?.cardId ?? null;
+  const card = cardId ? getCardDefinition(cardId) : undefined;
+  const slot = document.createElement("button");
+  const classes = ["field-slot"];
+  if (card) {
+    classes.push("field-slot--filled");
+    classes.push(`field-slot--${getCardArchetype(card)}`);
+  }
+  if (slotState?.upgradeLevel) {
+    classes.push("field-slot--upgraded");
+  }
+  slot.className = classes.join(" ");
+  slot.type = "button";
+  slot.disabled = false;
+  slot.dataset.fieldSlotIndex = String(slotIndex);
+  const slotPosition = getPlayerFieldSlotPosition(slotIndex);
+  slot.style.setProperty("--slot-x", `${slotPosition.xPercent}%`);
+  slot.style.setProperty("--slot-y", `${slotPosition.yFromBottom}px`);
+  slot.style.setProperty("--slot-scale", `${slotPosition.scale}`);
+  slot.style.setProperty("--slot-depth", `${slotPosition.depth}`);
+
+  if (card) {
+    const unit = createFieldSlotUnit(card, slotState ?? createEmptyDraftBoardSlot(slotIndex));
+    slot.title = slotState?.upgradeLevel ? `${card.name} upgraded` : `${card.name}`;
+    slot.setAttribute("aria-label", slot.title);
+    slot.append(unit);
+    slot.addEventListener("click", () => handleFieldSlotInfoClick(card.id));
+    slot.addEventListener("pointerdown", (event) => startPointerFieldUnitDrag(slotIndex, unit, event));
+  } else {
+    slot.title = `Empty slot ${slotIndex + 1}`;
+    slot.setAttribute("aria-label", slot.title);
+  }
+
+  return slot;
+}
+
+function createFieldSlotUnit(card: CardDefinition, slot: BoardSlot): HTMLElement {
+  const assetPath = getUnitAssetPath(card.id);
+  const unit = document.createElement("div");
+  unit.className = assetPath ? "field-unit field-unit--sprite" : "field-unit";
+  unit.title = slot.upgradeLevel ? `${card.name} upgraded` : card.name;
+
+  let marker: HTMLElement;
+  if (assetPath) {
+    const sprite = document.createElement("img");
+    sprite.className = "field-unit__sprite";
+    sprite.alt = card.name;
+    sprite.decoding = "async";
+    sprite.draggable = false;
+    sprite.src = assetPath;
+    marker = sprite;
+  } else {
+    marker = document.createElement("span");
+    marker.className = `field-unit__avatar field-unit__avatar--${card.role}`;
+    marker.textContent = createCardInitials(card.name);
+  }
+
+  unit.append(marker);
+  if (slot.upgradeLevel) {
+    const upgradeBadge = document.createElement("small");
+    upgradeBadge.className = "field-unit__upgrade";
+    upgradeBadge.textContent = "*";
+    unit.append(upgradeBadge);
+  }
+
+  return unit;
+}
+
+function createActionBar(): HTMLElement {
+  const actions = document.createElement("div");
+  actions.className = "action-bar";
+
+  if (uiState.mode === "draft") {
+    const fightButton = document.createElement("button");
+    fightButton.className = "primary-button";
+    fightButton.type = "button";
+    fightButton.disabled = !canFightRound();
+    fightButton.textContent = "Fight";
+    fightButton.addEventListener("click", fightRound);
+    actions.append(fightButton);
+  } else if (uiState.mode === "battle") {
+    const nextButton = document.createElement("button");
+    nextButton.className = "primary-button";
+    nextButton.type = "button";
+    nextButton.textContent = "Next Round";
+    nextButton.addEventListener("click", () => {
+      uiState = {
+        ...uiState,
+        mode: "draft",
+        draftBoardSlots: cloneBoardSlots(uiState.run.boardSlots),
+        cardPickedThisRound: false,
+        selectedCardInfoId: undefined,
+        battleFinished: false,
+        logsOpen: false,
+      };
+      render();
+    });
+    actions.append(nextButton);
+  } else {
+    const newRunButton = document.createElement("button");
+    newRunButton.className = "primary-button";
+    newRunButton.type = "button";
+    newRunButton.textContent = "New Run";
+    newRunButton.addEventListener("click", () => {
+      uiState = createInitialUiState();
+      render();
+    });
+    actions.append(newRunButton);
+  }
+
+  return actions;
+}
+
+function getSceneCanvasHost(): HTMLElement {
+  if (!sceneHostElement) {
+    sceneHostElement = document.createElement("div");
+    sceneHostElement.className = "scene-canvas-host";
+    sceneHostElement.append(createSceneCanvasMessage("Loading scene..."));
+  }
+
+  return sceneHostElement;
+}
+
+function createSceneCanvasMessage(message: string): HTMLElement {
+  const messageEl = document.createElement("div");
+  messageEl.className = "scene-canvas-message";
+  messageEl.textContent = message;
+
+  return messageEl;
+}
+
+function syncBattlefield(): void {
+  const command = createBattlefieldCommand();
+  latestBattlefieldCommand = command;
+
+  if (!command) {
+    return;
+  }
+
+  if (battlefieldController) {
+    applyBattlefieldCommand(command);
+    return;
+  }
+
+  mountBattlefield();
+}
+
+function createBattlefieldCommand(): BattlefieldCommand | undefined {
+  if (uiState.mode === "draft") {
+    return {
+      type: "draft",
+      key: `draft:${uiState.run.seed}:${uiState.run.round}:${uiState.run.playerHp}`,
+      playerCastleHp: uiState.run.playerHp,
+    };
+  }
+
+  if (!uiState.lastBattleTimeline) {
+    return undefined;
+  }
+
+  return {
+    type: "battle",
+    key: `battle:${uiState.run.seed}:${uiState.lastRound}:${uiState.lastBattleTimeline.events.length}:${uiState.lastBattleTimeline.winner}`,
+    timeline: uiState.lastBattleTimeline,
+  };
+}
+
+function mountBattlefield(): void {
+  if (battlefieldMountRequested) {
+    return;
+  }
+
+  battlefieldMountRequested = true;
+
+  requestAnimationFrame(() => {
+    const host = getSceneCanvasHost();
+    if (!host.isConnected) {
+      battlefieldMountRequested = false;
+      return;
+    }
+
+    void import("./rendering/phaserBattleScene")
+      .then(({ mountBattlefield }) => {
+        battlefieldMountRequested = false;
+
+        if (!host.isConnected) {
+          return;
+        }
+
+        battlefieldController = mountBattlefield(host);
+
+        if (latestBattlefieldCommand) {
+          applyBattlefieldCommand(latestBattlefieldCommand);
+        }
+      })
+      .catch((error: unknown) => {
+        battlefieldMountRequested = false;
+        console.error("Failed to mount Phaser battlefield", error);
+
+        if (host.isConnected) {
+          host.replaceChildren(createSceneCanvasMessage("Scene renderer failed."));
+        }
+      });
+  });
+}
+
+function applyBattlefieldCommand(command: BattlefieldCommand): void {
+  if (appliedBattlefieldCommandKey === command.key) {
+    return;
+  }
+
+  appliedBattlefieldCommandKey = command.key;
+
+  if (command.type === "draft") {
+    battlefieldController?.showDraft({ playerCastleHp: command.playerCastleHp });
+    return;
+  }
+
+  battlefieldController?.playBattle({ timeline: command.timeline, onFinished: handleBattlefieldFinished });
+}
+
+function handleBattlefieldFinished(): void {
+  if (uiState.mode !== "battle" && uiState.mode !== "finished") {
+    return;
+  }
+
+  if (uiState.battleFinished) {
+    return;
+  }
+
+  uiState = {
+    ...uiState,
+    battleFinished: true,
+    selectedLogRound: uiState.lastRound,
+  };
+  render();
+}
+
+function createBattleSummary(combat: CombatResult): HTMLElement {
+  const summary = document.createElement("div");
+  summary.className = `battle-summary battle-summary--${combat.winner}`;
+
+  const winner = document.createElement("strong");
+  winner.textContent = combat.winner === "player" ? "Victory" : combat.winner === "enemy" ? "Defeat" : "Draw";
+
+  const detail = document.createElement("span");
+  detail.textContent = `HP loss ${combat.hpLoss} | ${combat.actions} actions`;
+
+  summary.append(winner, detail, createEventPills(combat));
+
+  return summary;
+}
+
+function createEventPills(combat: CombatResult): HTMLElement {
+  const pills = document.createElement("div");
+  pills.className = "event-pills";
+
+  const counts = countEvents(combat);
+  Object.entries(counts).forEach(([type, count]) => {
+    const pill = document.createElement("span");
+    pill.textContent = `${type.replace("unit_", "")} ${count}`;
+    pills.append(pill);
+  });
+
+  return pills;
+}
+
+function createMatchupList(playerSlots: readonly BoardSlot[], enemySlots: readonly BoardSlot[]): HTMLElement {
+  const matchup = document.createElement("div");
+  matchup.className = "matchup";
+
+  const player = document.createElement("div");
+  player.className = "matchup__side";
+  player.append(createMatchupTitle("You"), createCompactCards(playerSlots));
+
+  const enemy = document.createElement("div");
+  enemy.className = "matchup__side";
+  enemy.append(createMatchupTitle("Bot"), createCompactCards(enemySlots));
+
+  matchup.append(player, enemy);
+
+  return matchup;
+}
+
+function createMatchupTitle(title: string): HTMLElement {
+  const titleEl = document.createElement("h3");
+  titleEl.textContent = title;
+
+  return titleEl;
+}
+
+function createCompactCards(slots: readonly BoardSlot[]): HTMLElement {
+  const list = document.createElement("div");
+  list.className = "compact-cards";
+
+  slots.forEach((slot) => {
+    if (!slot.cardId) {
+      return;
+    }
+
+    const card = getCardDefinition(slot.cardId);
+    const stats = getCardStatsForUpgrade(card, slot.upgradeLevel);
+    const item = document.createElement("div");
+    item.className = "compact-card";
+    item.textContent = `${card.name}${slot.upgradeLevel ? " ★" : ""} ${stats.attack}/${stats.hp}`;
+    list.append(item);
+  });
+
+  return list;
+}
+
+function getBoardCapacity(): number {
+  return getBoardCapacityForRound(uiState.run.round);
+}
+
+function getFilledSlotCount(slots = uiState.draftBoardSlots): number {
+  return slots.filter((slot) => slot.cardId !== null).length;
+}
+
+function getDraftBoardSlot(slotIndex: number): BoardSlot | undefined {
+  return uiState.draftBoardSlots.find((slot) => slot.slotIndex === slotIndex);
+}
+
+function createEmptyDraftBoardSlot(slotIndex: number): BoardSlot {
+  return { slotIndex, cardId: null, upgradeLevel: 0 };
+}
+
+function canFightRound(): boolean {
+  return uiState.mode === "draft" && getFilledSlotCount() > 0;
+}
+
+function getCurrentDraftOption(cardId: CardId): DraftOption | undefined {
+  return getCurrentDraftOptions().find((option) => option.cardId === cardId);
+}
+
+function applyDraftCardToSlot(
+  slots: readonly BoardSlot[],
+  cardId: CardId,
+  slotIndex: number,
+): BoardSlot[] | undefined {
+  if (!canDropCardIntoSlot(cardId, slotIndex)) {
+    return undefined;
+  }
+
+  let changed = false;
+  const nextSlots = cloneBoardSlots(slots).map((slot) => {
+    if (slot.slotIndex !== slotIndex) {
+      return slot;
+    }
+
+    if (slot.cardId === cardId) {
+      if (slot.upgradeLevel >= 1) {
+        return slot;
+      }
+
+      changed = true;
+      return { ...slot, upgradeLevel: 1 as const };
+    }
+
+    changed = true;
+    return { ...slot, cardId, upgradeLevel: 0 as const };
+  });
+
+  return changed ? nextSlots : undefined;
+}
+
+function getCurrentDraftOptions(): DraftOption[] {
+  if (uiState.cardPickedThisRound) {
+    return [];
+  }
+
+  return uiState.run.draftOptions;
+}
+
+function canPlaceDraftCard(cardId: CardId): boolean {
+  if (uiState.mode !== "draft" || uiState.cardPickedThisRound) {
+    return false;
+  }
+
+  return getCurrentDraftOptions().some((option) => option.cardId === cardId);
+}
+
+function placeDraftCardInSlot(cardId: CardId, slotIndex: number): void {
+  if (uiState.mode !== "draft") {
+    return;
+  }
+
+  const draftOption = getCurrentDraftOption(cardId);
+  if (!draftOption || !canDropCardIntoSlot(cardId, slotIndex)) {
+    return;
+  }
+
+  const draftBoardSlots = applyDraftCardToSlot(uiState.draftBoardSlots, cardId, slotIndex);
+  if (!draftBoardSlots) {
+    return;
+  }
+
+  uiState = {
+    ...uiState,
+    draftBoardSlots,
+    cardPickedThisRound: true,
+    selectedCardInfoId: undefined,
+  };
+  render();
+}
+
+function handleDraftCardInfoClick(cardId: CardId): void {
+  if (suppressNextCardClick) {
+    suppressNextCardClick = false;
+    return;
+  }
+
+  openCardInfo(cardId);
+}
+
+function handleFieldSlotInfoClick(cardId: CardId): void {
+  if (suppressNextCardClick) {
+    suppressNextCardClick = false;
+    return;
+  }
+
+  openCardInfo(cardId);
+}
+
+function openCardInfo(cardId: CardId): void {
+  if (!getCurrentDraftOption(cardId) && !hasBoardCard(cardId)) {
+    return;
+  }
+
+  uiState = {
+    ...uiState,
+    selectedCardInfoId: cardId,
+  };
+  render();
+}
+
+function closeCardInfo(): void {
+  uiState = {
+    ...uiState,
+    selectedCardInfoId: undefined,
+  };
+  render();
+}
+
+function hasBoardCard(cardId: CardId): boolean {
+  return uiState.draftBoardSlots.some((slot) => slot.cardId === cardId);
+}
+
+function rerollCurrentDraftCards(): void {
+  if (uiState.mode !== "draft" || uiState.cardPickedThisRound) {
+    return;
+  }
+
+  uiState = {
+    ...uiState,
+    run: rerollDraftCards(uiState.run),
+    selectedCardInfoId: undefined,
+  };
+  render();
+}
+
+function getPointerDragGhostTransform(clientX: number, clientY: number, isTouchDrag: boolean): string {
+  const anchorTransform = isTouchDrag ? "translate(-50%, 0)" : "translate(-50%, -50%)";
+  return `translate(${clientX}px, ${clientY}px) ${anchorTransform}`;
+}
+
+function getPointerDragDropPoint(
+  ghost: HTMLElement | undefined,
+  clientX: number,
+  clientY: number,
+  isTouchDrag: boolean,
+): ClientPoint {
+  if (!isTouchDrag || !ghost) {
+    return { clientX, clientY };
+  }
+
+  const rect = ghost.getBoundingClientRect();
+  return {
+    clientX: rect.left + rect.width / 2,
+    clientY: rect.bottom - DRAG_GHOST_FOOT_HIT_INSET,
+  };
+}
+
+function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
+  if (event.pointerType === "mouse" && event.button !== 0) {
+    return;
+  }
+
+  if (!canPlaceDraftCard(cardId)) {
+    return;
+  }
+
+  activePointerDrag?.cleanup();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const isTouchDrag = event.pointerType === "touch";
+  let dragging = false;
+  let ghost: HTMLElement | undefined;
+
+  const moveGhost = (clientX: number, clientY: number): void => {
+    ghost?.style.setProperty("transform", getPointerDragGhostTransform(clientX, clientY, isTouchDrag));
+  };
+
+  const startDragging = (clientX: number, clientY: number): void => {
+    if (dragging) {
+      return;
+    }
+
+    dragging = true;
+    suppressNextCardClick = true;
+    ghost = createDraftUnitDragGhost(cardId);
+    document.body.append(ghost);
+    setDraftDragging(true);
+    moveGhost(clientX, clientY);
+  };
+
+  let handleMove = (_moveEvent: PointerEvent): void => undefined;
+  let handleUp = (_upEvent: PointerEvent): void => undefined;
+  let handleCancel = (_cancelEvent: PointerEvent): void => undefined;
+
+  const cleanup = (): void => {
+    document.removeEventListener("pointermove", handleMove);
+    document.removeEventListener("pointerup", handleUp);
+    document.removeEventListener("pointercancel", handleCancel);
+    if (dragging) {
+      window.setTimeout(() => {
+        suppressNextCardClick = false;
+      }, 150);
+    }
+    setDraftDragging(false);
+    setFieldSlotDropTarget(undefined);
+    ghost?.remove();
+    activePointerDrag = undefined;
+  };
+
+  handleMove = (moveEvent: PointerEvent): void => {
+    if (moveEvent.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const distance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+    if (!dragging && distance < POINTER_DRAG_START_DISTANCE) {
+      return;
+    }
+
+    moveEvent.preventDefault();
+    startDragging(moveEvent.clientX, moveEvent.clientY);
+    moveGhost(moveEvent.clientX, moveEvent.clientY);
+    const dropPoint = getPointerDragDropPoint(ghost, moveEvent.clientX, moveEvent.clientY, isTouchDrag);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
+    setFieldSlotDropTarget(slotIndex, canDropCardIntoSlot(cardId, slotIndex));
+  };
+
+  handleUp = (upEvent: PointerEvent): void => {
+    if (upEvent.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (!dragging) {
+      cleanup();
+      return;
+    }
+
+    upEvent.preventDefault();
+    moveGhost(upEvent.clientX, upEvent.clientY);
+    const dropPoint = getPointerDragDropPoint(ghost, upEvent.clientX, upEvent.clientY, isTouchDrag);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
+    cleanup();
+
+    if (slotIndex !== undefined) {
+      placeDraftCardInSlot(cardId, slotIndex);
+    }
+  };
+
+  handleCancel = (cancelEvent: PointerEvent): void => {
+    if (cancelEvent.pointerId === event.pointerId) {
+      cleanup();
+    }
+  };
+
+  activePointerDrag = { cleanup };
+  document.addEventListener("pointermove", handleMove, { passive: false });
+  document.addEventListener("pointerup", handleUp, { passive: false });
+  document.addEventListener("pointercancel", handleCancel);
+}
+
+function moveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number): void {
+  if (uiState.mode !== "draft" || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
+    return;
+  }
+
+  const sourceSlot = getDraftBoardSlot(fromSlotIndex);
+  if (!sourceSlot?.cardId) {
+    return;
+  }
+
+  const draftBoardSlots = cloneBoardSlots(uiState.draftBoardSlots);
+  const source = draftBoardSlots.find((slot) => slot.slotIndex === fromSlotIndex);
+  const target = draftBoardSlots.find((slot) => slot.slotIndex === toSlotIndex);
+  if (!source || !target || !source.cardId) {
+    return;
+  }
+
+  if (!canSwapBoardSlots(source, target)) {
+    return;
+  }
+
+  const sourceCardId = source.cardId;
+  const sourceUpgradeLevel = source.upgradeLevel;
+  source.cardId = target.cardId;
+  source.upgradeLevel = target.cardId ? target.upgradeLevel : 0;
+  target.cardId = sourceCardId;
+  target.upgradeLevel = sourceUpgradeLevel;
+
+  uiState = {
+    ...uiState,
+    draftBoardSlots,
+    selectedCardInfoId: undefined,
+  };
+  render();
+}
+
+function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, event: PointerEvent): void {
+  if (event.pointerType === "mouse" && event.button !== 0) {
+    return;
+  }
+
+  if (uiState.mode !== "draft" || !getDraftBoardSlot(fromSlotIndex)?.cardId) {
+    return;
+  }
+
+  activePointerDrag?.cleanup();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const isTouchDrag = event.pointerType === "touch";
+  let dragging = false;
+  let ghost: HTMLElement | undefined;
+
+  const moveGhost = (clientX: number, clientY: number): void => {
+    ghost?.style.setProperty("transform", getPointerDragGhostTransform(clientX, clientY, isTouchDrag));
+  };
+
+  const startDragging = (clientX: number, clientY: number): void => {
+    if (dragging) {
+      return;
+    }
+
+    dragging = true;
+    suppressNextCardClick = true;
+    ghost = source.cloneNode(true) as HTMLElement;
+    ghost.classList.add("field-unit--drag-ghost");
+    document.body.append(ghost);
+    setDraftDragging(true);
+    moveGhost(clientX, clientY);
+  };
+
+  let handleMove = (_moveEvent: PointerEvent): void => undefined;
+  let handleUp = (_upEvent: PointerEvent): void => undefined;
+  let handleCancel = (_cancelEvent: PointerEvent): void => undefined;
+
+  const cleanup = (): void => {
+    document.removeEventListener("pointermove", handleMove);
+    document.removeEventListener("pointerup", handleUp);
+    document.removeEventListener("pointercancel", handleCancel);
+    if (dragging) {
+      window.setTimeout(() => {
+        suppressNextCardClick = false;
+      }, 150);
+    }
+    setDraftDragging(false);
+    setFieldSlotDropTarget(undefined);
+    ghost?.remove();
+    activePointerDrag = undefined;
+  };
+
+  handleMove = (moveEvent: PointerEvent): void => {
+    if (moveEvent.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const distance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+    if (!dragging && distance < POINTER_DRAG_START_DISTANCE) {
+      return;
+    }
+
+    moveEvent.preventDefault();
+    startDragging(moveEvent.clientX, moveEvent.clientY);
+    moveGhost(moveEvent.clientX, moveEvent.clientY);
+    const dropPoint = getPointerDragDropPoint(ghost, moveEvent.clientX, moveEvent.clientY, isTouchDrag);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
+    setFieldSlotDropTarget(slotIndex, canMoveBoardSlotUnit(fromSlotIndex, slotIndex));
+  };
+
+  handleUp = (upEvent: PointerEvent): void => {
+    if (upEvent.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (!dragging) {
+      cleanup();
+      return;
+    }
+
+    upEvent.preventDefault();
+    moveGhost(upEvent.clientX, upEvent.clientY);
+    const dropPoint = getPointerDragDropPoint(ghost, upEvent.clientX, upEvent.clientY, isTouchDrag);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
+    cleanup();
+
+    if (slotIndex !== undefined) {
+      moveBoardSlotUnit(fromSlotIndex, slotIndex);
+    }
+  };
+
+  handleCancel = (cancelEvent: PointerEvent): void => {
+    if (cancelEvent.pointerId === event.pointerId) {
+      cleanup();
+    }
+  };
+
+  activePointerDrag = { cleanup };
+  document.addEventListener("pointermove", handleMove, { passive: false });
+  document.addEventListener("pointerup", handleUp, { passive: false });
+  document.addEventListener("pointercancel", handleCancel);
+}
+
+function getFieldSlotIndexAtPoint(clientX: number, clientY: number, isTouchDrag = false): number | undefined {
+  const element = document.elementFromPoint(clientX, clientY);
+  const slot = element?.closest<HTMLElement>("[data-field-slot-index]");
+
+  if (slot) {
+    const slotIndex = Number(slot.dataset.fieldSlotIndex);
+
+    if (canDropIntoSlot(slotIndex)) {
+      return slotIndex;
+    }
+  }
+
+  const hitPadding = isTouchDrag ? FIELD_SLOT_TOUCH_HIT_PADDING : FIELD_SLOT_HIT_PADDING;
+  const slots = [...document.querySelectorAll<HTMLElement>("[data-field-slot-index]")];
+  for (const fieldSlot of slots) {
+    const rect = fieldSlot.getBoundingClientRect();
+    if (
+      clientX >= rect.left - hitPadding &&
+      clientX <= rect.right + hitPadding &&
+      clientY >= rect.top - hitPadding &&
+      clientY <= rect.bottom + hitPadding
+    ) {
+      const slotIndex = Number(fieldSlot.dataset.fieldSlotIndex);
+      return canDropIntoSlot(slotIndex) ? slotIndex : undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function canDropIntoSlot(slotIndex: number): boolean {
+  return Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < BOARD_SLOT_COUNT;
+}
+
+function canDropCardIntoSlot(cardId: CardId, slotIndex: number | undefined): boolean {
+  return slotIndex !== undefined && canDropIntoSlot(slotIndex) && isCardAllowedInSlot(cardId, slotIndex);
+}
+
+function canMoveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number | undefined): boolean {
+  if (toSlotIndex === undefined || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
+    return false;
+  }
+
+  const source = getDraftBoardSlot(fromSlotIndex);
+  if (!source?.cardId) {
+    return false;
+  }
+
+  const target = getDraftBoardSlot(toSlotIndex) ?? createEmptyDraftBoardSlot(toSlotIndex);
+
+  return canSwapBoardSlots(source, target);
+}
+
+function canSwapBoardSlots(source: BoardSlot, target: BoardSlot): boolean {
+  if (!source.cardId || !isCardAllowedInSlot(source.cardId, target.slotIndex)) {
+    return false;
+  }
+
+  return !target.cardId || isCardAllowedInSlot(target.cardId, source.slotIndex);
+}
+
+function setFieldSlotDropTarget(slotIndex: number | undefined, isValid = true): void {
+  document.querySelectorAll(".field-slot--drop-target, .field-slot--drop-invalid").forEach((slot) => {
+    slot.classList.remove("field-slot--drop-target");
+    slot.classList.remove("field-slot--drop-invalid");
+  });
+
+  if (slotIndex === undefined || !canDropIntoSlot(slotIndex)) {
+    return;
+  }
+
+  document
+    .querySelector(`[data-field-slot-index="${slotIndex}"]`)
+    ?.classList.add(isValid ? "field-slot--drop-target" : "field-slot--drop-invalid");
+}
+
+function setDraftDragging(isDragging: boolean): void {
+  stageElement?.classList.toggle("stage--draft-dragging", isDragging);
+}
+
+function fightRound(): void {
+  if (!canFightRound()) {
+    return;
+  }
+
+  if (!uiState.cardPickedThisRound && !window.confirm("You can still pick one card this round. Fight anyway?")) {
+    return;
+  }
+
+  const playedRound = uiState.run.round;
+  const combatReadyRun = chooseDraftCards(uiState.run, uiState.draftBoardSlots);
+  const nextRun = resolveRound(combatReadyRun);
+  const lastRoundRecord = getLastRoundRecord(nextRun);
+  const lastBattleTimeline = lastRoundRecord
+    ? createBattleTimeline({
+        playerSlots: lastRoundRecord.playerSlots,
+        enemySlots: lastRoundRecord.enemySlots,
+        combat: lastRoundRecord.combatResult,
+        playerCastleHpBefore: lastRoundRecord.playerHpBefore,
+        playerCastleHpAfter: lastRoundRecord.playerHpAfter,
+      })
+    : undefined;
+
+  uiState = {
+    ...uiState,
+    run: nextRun,
+    mode: nextRun.status === "finished" ? "finished" : "battle",
+    draftBoardSlots: cloneBoardSlots(nextRun.boardSlots),
+    cardPickedThisRound: false,
+    selectedCardInfoId: undefined,
+    battleFinished: false,
+    logsOpen: false,
+    lastRound: playedRound,
+    lastBattleTimeline,
+  };
+  render();
+}
+
+function getLastRoundRecord(run: RunState): RoundRecord | undefined {
+  return run.roundHistory[run.roundHistory.length - 1];
+}
+
+function countEvents(combat: CombatResult): Record<string, number> {
+  const counts: Record<string, number> = {};
+
+  combat.events.forEach((event) => {
+    if (
+      !["unit_attacked", "unit_blocked", "unit_damaged", "unit_healed", "unit_died", "synergy_applied"].includes(
+        event.type,
+      )
+    ) {
+      return;
+    }
+
+    counts[event.type] = (counts[event.type] ?? 0) + 1;
+  });
+
+  return counts;
+}
+
+function createSeed(): string {
+  return `local-${Date.now().toString(36).slice(-6)}`;
+}
