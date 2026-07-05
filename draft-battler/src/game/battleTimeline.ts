@@ -64,6 +64,8 @@ interface CreateBattleTimelineInput {
   combat: CombatResult;
   playerCastleHpBefore: number;
   playerCastleHpAfter: number;
+  enemyCastleHpBefore?: number;
+  enemyCastleHpAfter?: number;
 }
 
 interface MutableTimelineUnit extends BattleTimelineUnit {
@@ -74,7 +76,11 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
   const units = new Map<string, MutableTimelineUnit>();
   const events: BattleTimelineEvent[] = [{ type: "teams_enter", time: 0 }];
   const playerCastle = createCastle("player", input.playerCastleHpBefore, input.playerCastleHpAfter);
-  const enemyCastle = createCastle("enemy", ENEMY_CASTLE_MAX_HP, ENEMY_CASTLE_MAX_HP);
+  const enemyCastle = createCastle(
+    "enemy",
+    input.enemyCastleHpBefore ?? ENEMY_CASTLE_MAX_HP,
+    input.enemyCastleHpAfter ?? ENEMY_CASTLE_MAX_HP,
+  );
 
   createUnitsFromSlots("player", input.playerSlots).forEach((unit) => units.set(unit.unitId, unit));
   createUnitsFromSlots("enemy", input.enemySlots).forEach((unit) => units.set(unit.unitId, unit));

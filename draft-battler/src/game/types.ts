@@ -129,6 +129,8 @@ export interface RoundRecord {
   round: number;
   playerHpBefore: number;
   playerHpAfter: number;
+  enemyHpBefore?: number;
+  enemyHpAfter?: number;
   draftOptions: DraftOption[];
   draftRerollCount: number;
   playerSlots: BoardSlot[];

@@ -94,6 +94,8 @@ interface PvpMatchSnapshot {
   seed: string;
   round: number;
   phase: PvpMatchPhase;
+  hostHp: number;
+  guestHp: number;
   submissions: PvpSubmissionSnapshot[];
   combat?: PvpCombatSnapshot;
   updatedAt: number;
@@ -500,7 +502,7 @@ function createRoundLogReport(log: RoundRecord): HTMLElement {
   const title = document.createElement("h2");
   title.textContent = `Round ${log.round}`;
 
-  report.append(title, createBattleSummary(log.combatResult), createMatchupList(log.playerSlots, log.enemySlots));
+  report.append(title, createBattleSummary(log), createMatchupList(log.playerSlots, log.enemySlots));
 
   return report;
 }
@@ -1433,7 +1435,8 @@ function handleBattlefieldFinished(): void {
   render();
 }
 
-function createBattleSummary(combat: CombatResult): HTMLElement {
+function createBattleSummary(log: RoundRecord): HTMLElement {
+  const combat = log.combatResult;
   const summary = document.createElement("div");
   summary.className = `battle-summary battle-summary--${combat.winner}`;
 
@@ -1441,11 +1444,22 @@ function createBattleSummary(combat: CombatResult): HTMLElement {
   winner.textContent = combat.winner === "player" ? "Victory" : combat.winner === "enemy" ? "Defeat" : "Draw";
 
   const detail = document.createElement("span");
-  detail.textContent = `HP loss ${combat.hpLoss} | ${combat.actions} actions`;
+  detail.textContent = getBattleSummaryDetail(log);
 
   summary.append(winner, detail, createEventPills(combat));
 
   return summary;
+}
+
+function getBattleSummaryDetail(log: RoundRecord): string {
+  const playerHpLoss = Math.max(0, log.playerHpBefore - log.playerHpAfter);
+  if (typeof log.enemyHpBefore === "number" && typeof log.enemyHpAfter === "number") {
+    const enemyHpLoss = Math.max(0, log.enemyHpBefore - log.enemyHpAfter);
+
+    return `Your HP -${playerHpLoss} | Enemy HP -${enemyHpLoss} | ${log.combatResult.actions} actions`;
+  }
+
+  return `HP loss ${log.combatResult.hpLoss} | ${log.combatResult.actions} actions`;
 }
 
 function createEventPills(combat: CombatResult): HTMLElement {
@@ -2392,6 +2406,8 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
     combat: perspective.combat,
     playerCastleHpBefore: perspective.playerCastleHpBefore,
     playerCastleHpAfter: perspective.playerCastleHpAfter,
+    enemyCastleHpBefore: perspective.enemyCastleHpBefore,
+    enemyCastleHpAfter: perspective.enemyCastleHpAfter,
   });
   const roundRecord = createPvpRoundRecord(state, match, perspective);
   const nextRun = {
@@ -2430,6 +2446,8 @@ interface PvpBattlePerspective {
   combat: CombatResult;
   playerCastleHpBefore: number;
   playerCastleHpAfter: number;
+  enemyCastleHpBefore: number;
+  enemyCastleHpAfter: number;
 }
 
 function createPvpDraftRun(state: UiState, match: PvpMatchSnapshot, boardSlots: readonly BoardSlot[]): RunState {
@@ -2439,7 +2457,7 @@ function createPvpDraftRun(state: UiState, match: PvpMatchSnapshot, boardSlots: 
   return {
     ...createRun(match.seed),
     round: match.round,
-    playerHp: PLAYER_STARTING_HP,
+    playerHp: getPvpPlayerHp(match, state.pvp.role),
     status: "draft",
     draftOptions: createDraftOptions(match.seed, match.round, draftRerollCount),
     draftRerollCount,
@@ -2447,6 +2465,14 @@ function createPvpDraftRun(state: UiState, match: PvpMatchSnapshot, boardSlots: 
     enemyBoardSlots: createEmptyBoardSlots(),
     roundHistory: state.run.seed === match.seed ? state.run.roundHistory : [],
   };
+}
+
+function getPvpPlayerHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined): number {
+  if (role === "guest") {
+    return match.guestHp;
+  }
+
+  return match.hostHp;
 }
 
 function getPvpDraftBoardSlotsForRound(state: UiState, match: PvpMatchSnapshot): BoardSlot[] {
@@ -2470,6 +2496,8 @@ function createPvpBattlePerspective(
       combat: mirrorCombatResult(combatSnapshot.combat, hpLoss),
       playerCastleHpBefore: combatSnapshot.guestHpBefore,
       playerCastleHpAfter: combatSnapshot.guestHpAfter,
+      enemyCastleHpBefore: combatSnapshot.hostHpBefore,
+      enemyCastleHpAfter: combatSnapshot.hostHpAfter,
     };
   }
 
@@ -2479,6 +2507,8 @@ function createPvpBattlePerspective(
     combat: combatSnapshot.combat,
     playerCastleHpBefore: combatSnapshot.hostHpBefore,
     playerCastleHpAfter: combatSnapshot.hostHpAfter,
+    enemyCastleHpBefore: combatSnapshot.guestHpBefore,
+    enemyCastleHpAfter: combatSnapshot.guestHpAfter,
   };
 }
 
@@ -2491,6 +2521,8 @@ function createPvpRoundRecord(
     round: match.round,
     playerHpBefore: perspective.playerCastleHpBefore,
     playerHpAfter: perspective.playerCastleHpAfter,
+    enemyHpBefore: perspective.enemyCastleHpBefore,
+    enemyHpAfter: perspective.enemyCastleHpAfter,
     draftOptions: state.run.draftOptions.map((option) => ({ ...option })),
     draftRerollCount: state.run.draftRerollCount,
     playerSlots: cloneBoardSlots(perspective.playerSlots),
@@ -2703,10 +2735,18 @@ function readPvpMatchSnapshot(match: unknown): PvpMatchSnapshot | undefined {
     seed: snapshot.seed,
     round: snapshot.round,
     phase: snapshot.phase,
+    hostHp: readPvpHp(snapshot.hostHp),
+    guestHp: readPvpHp(snapshot.guestHp),
     submissions: readPvpSubmissionSnapshots(snapshot.submissions),
     combat,
     updatedAt: typeof snapshot.updatedAt === "number" ? snapshot.updatedAt : Date.now(),
   };
+}
+
+function readPvpHp(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.min(PLAYER_STARTING_HP, value))
+    : PLAYER_STARTING_HP;
 }
 
 function readPvpSubmissionSnapshots(value: unknown): PvpSubmissionSnapshot[] {

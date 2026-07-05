@@ -51,6 +51,8 @@ interface MatchSnapshot {
   seed: string;
   round: number;
   phase: MatchPhase;
+  hostHp: number;
+  guestHp: number;
   submissions: MatchSubmissionSnapshot[];
   combat?: MatchCombatSnapshot;
   updatedAt: number;
@@ -61,6 +63,8 @@ interface MatchRecord {
   seed: string;
   round: number;
   phase: MatchPhase;
+  hostHp: number;
+  guestHp: number;
   createdAt: number;
   updatedAt: number;
   submissions: Partial<Record<PlayerRole, MatchSubmissionRecord>>;
@@ -346,6 +350,8 @@ export class DraftPvpRoom extends DurableObject<Env> {
       seed: createMatchSeed(record.roomId, now),
       round: 1,
       phase: "draft",
+      hostHp: PLAYER_STARTING_HP,
+      guestHp: PLAYER_STARTING_HP,
       createdAt: now,
       updatedAt: now,
       submissions: {},
@@ -392,10 +398,20 @@ export class DraftPvpRoom extends DurableObject<Env> {
 
     if (submissions.host && submissions.guest) {
       const combat = resolveCombat(submissions.host.slots, submissions.guest.slots, match.round);
+      const combatSnapshot = createMatchCombatSnapshot(
+        match.round,
+        submissions.host.slots,
+        submissions.guest.slots,
+        combat,
+        getMatchHostHp(match),
+        getMatchGuestHp(match),
+      );
       nextMatch = {
         ...nextMatch,
         phase: "battle",
-        combat: createMatchCombatSnapshot(match.round, submissions.host.slots, submissions.guest.slots, combat),
+        hostHp: combatSnapshot.hostHpAfter,
+        guestHp: combatSnapshot.guestHpAfter,
+        combat: combatSnapshot,
       };
     }
 
@@ -421,6 +437,8 @@ export class DraftPvpRoom extends DurableObject<Env> {
       seed: match.seed,
       round: match.round + 1,
       phase: "draft",
+      hostHp: getMatchHostHp(match),
+      guestHp: getMatchGuestHp(match),
       createdAt: match.createdAt,
       updatedAt: now,
       submissions: {},
@@ -644,6 +662,8 @@ function createMatchSnapshot(match: MatchRecord): MatchSnapshot {
     seed: match.seed,
     round: match.round,
     phase: match.phase,
+    hostHp: getMatchHostHp(match),
+    guestHp: getMatchGuestHp(match),
     submissions: createSubmissionSnapshots(match.submissions),
     combat: match.combat,
     updatedAt: match.updatedAt,
@@ -665,17 +685,30 @@ function createMatchCombatSnapshot(
   hostSlots: BoardSlot[],
   guestSlots: BoardSlot[],
   combat: CombatResult,
+  hostHpBefore: number,
+  guestHpBefore: number,
 ): MatchCombatSnapshot {
+  const hostHpAfter = Math.max(0, hostHpBefore - getHostHpLoss(combat));
+  const guestHpAfter = Math.max(0, guestHpBefore - getGuestHpLoss(combat));
+
   return {
     round,
     hostSlots,
     guestSlots,
     combat,
-    hostHpBefore: PLAYER_STARTING_HP,
-    hostHpAfter: PLAYER_STARTING_HP - getHostHpLoss(combat),
-    guestHpBefore: PLAYER_STARTING_HP,
-    guestHpAfter: PLAYER_STARTING_HP - getGuestHpLoss(combat),
+    hostHpBefore,
+    hostHpAfter,
+    guestHpBefore,
+    guestHpAfter,
   };
+}
+
+function getMatchHostHp(match: Pick<MatchRecord, "hostHp" | "combat">): number {
+  return match.hostHp ?? match.combat?.hostHpAfter ?? PLAYER_STARTING_HP;
+}
+
+function getMatchGuestHp(match: Pick<MatchRecord, "guestHp" | "combat">): number {
+  return match.guestHp ?? match.combat?.guestHpAfter ?? PLAYER_STARTING_HP;
 }
 
 function getHostHpLoss(combat: CombatResult): number {
