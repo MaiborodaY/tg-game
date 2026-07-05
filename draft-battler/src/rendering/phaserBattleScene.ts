@@ -32,15 +32,21 @@ const BATTLE_CAMERA_CLOSE_ZOOM = 1.32;
 const BATTLE_CASTLE_CAMERA_ZOOM = 1.28;
 const ENEMY_CASTLE_APPROACH_CAMERA_ZOOM = 1.14;
 const PLAYER_KEEP_TEXTURE_KEY = "environment:player-keep";
-const PLAYER_KEEP_ASSET_PATH = "assets/environment/player_keep/keep.png";
+const PLAYER_KEEP_ASSET_URL = new URL("../assets/environment/player_keep/keep.webp", import.meta.url).href;
 const PLAYER_KEEP_DISPLAY_WIDTH = 292;
 const ENEMY_KEEP_DISPLAY_WIDTH = 112;
 const ENEMY_CASTLE_HP_BAR_WIDTH = 106;
 const KEEP_ASSET_HEIGHT_RATIO = 113 / 190;
 const BATTLEFIELD_BASE_TEXTURE_KEY = "environment:battlefield:common-forest:base";
-const BATTLEFIELD_BASE_ASSET_PATH = "assets/environment/battlefield/common_forest/battlefield_base.png";
+const BATTLEFIELD_BASE_ASSET_URL = new URL(
+  "../assets/environment/battlefield/common_forest/battlefield_base.webp",
+  import.meta.url,
+).href;
 const BATTLEFIELD_SIDE_PROPS_TEXTURE_KEY = "environment:battlefield:common-forest:side-props";
-const BATTLEFIELD_SIDE_PROPS_ASSET_PATH = "assets/environment/battlefield/common_forest/side_props.png";
+const BATTLEFIELD_SIDE_PROPS_ASSET_URL = new URL(
+  "../assets/environment/battlefield/common_forest/side_props.webp",
+  import.meta.url,
+).href;
 const BATTLEFIELD_BASE_OVERSCAN_Y = 120;
 const BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y = 54;
 const BATTLEFIELD_SIDE_PROPS_ALPHA = 0.56;
@@ -155,8 +161,8 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(PLAYER_KEEP_TEXTURE_KEY, PLAYER_KEEP_ASSET_PATH);
-    this.load.image(BATTLEFIELD_BASE_TEXTURE_KEY, BATTLEFIELD_BASE_ASSET_PATH);
+    this.load.image(PLAYER_KEEP_TEXTURE_KEY, PLAYER_KEEP_ASSET_URL);
+    this.load.image(BATTLEFIELD_BASE_TEXTURE_KEY, BATTLEFIELD_BASE_ASSET_URL);
     getUnitAssets().forEach((asset) => {
       this.load.image(asset.key, asset.path);
       if (asset.spriteSheet) {
@@ -167,7 +173,7 @@ class CastleBattleScene extends Phaser.Scene {
       }
     });
     if (ENABLE_BATTLEFIELD_SIDE_PROPS) {
-      this.load.image(BATTLEFIELD_SIDE_PROPS_TEXTURE_KEY, BATTLEFIELD_SIDE_PROPS_ASSET_PATH);
+      this.load.image(BATTLEFIELD_SIDE_PROPS_TEXTURE_KEY, BATTLEFIELD_SIDE_PROPS_ASSET_URL);
     }
   }
 
@@ -486,16 +492,6 @@ class CastleBattleScene extends Phaser.Scene {
       ? this.createKeepAssetArt(castle.owner)
       : this.createProceduralCastleArt(color, darkColor);
     const castlePlatform = this.createCastlePlatform(castle.owner);
-    const label = this.add
-      .text(0, useKeepAsset ? (castle.owner === "player" ? 2 : 0) : -3, castle.owner === "player" ? "YOUR KEEP" : "ENEMY KEEP", {
-        color: "#f3f0dd",
-        fontFamily: "Arial",
-        fontSize: castle.owner === "player" ? "12px" : "11px",
-        fontStyle: "bold",
-        stroke: "#10130f",
-        strokeThickness: useKeepAsset ? 4 : 0,
-      })
-      .setOrigin(0.5);
 
     const hpBarWidth = castle.owner === "enemy" ? ENEMY_CASTLE_HP_BAR_WIDTH : CASTLE_HP_BAR_WIDTH;
     const hpBarHeight = castle.owner === "enemy" ? 6 : 8;
@@ -513,7 +509,7 @@ class CastleBattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    container.add([...castlePlatform, ...castleArt, label, hpBack, hpFill, hpLabel]);
+    container.add([...castlePlatform, ...castleArt, hpBack, hpFill, hpLabel]);
     container.setDepth(castle.owner === "player" ? 30 : 5);
 
     this.castleViews.set(castle.owner, { castle, container, hpFill, hpLabel, hpBarWidth });

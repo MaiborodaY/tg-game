@@ -3,6 +3,7 @@ import type { CardId } from "./game";
 export interface UnitAsset {
   key: string;
   path: string;
+  cardPath: string;
   spriteSheet?: {
     key: string;
     path: string;
@@ -11,125 +12,139 @@ export interface UnitAsset {
   };
 }
 
+const UNIT_SPRITE_FRAME_SIZE = 128;
+
 const UNIT_ASSETS: Partial<Record<CardId, UnitAsset>> = {
   iron_guard: {
     key: "unit:iron_guard",
-    path: "assets/units/iron_guard/unit.png",
+    path: new URL("./assets/units/iron_guard/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/iron_guard/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:iron_guard:poses",
-      path: "assets/units/iron_guard/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/iron_guard/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   shieldbearer: {
     key: "unit:shieldbearer",
-    path: "assets/units/shieldbearer/unit.png",
+    path: new URL("./assets/units/shieldbearer/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/shieldbearer/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:shieldbearer:poses",
-      path: "assets/units/shieldbearer/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/shieldbearer/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   boar_rider: {
     key: "unit:boar_rider",
-    path: "assets/units/boar_rider/unit.png",
+    path: new URL("./assets/units/boar_rider/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/boar_rider/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:boar_rider:poses",
-      path: "assets/units/boar_rider/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/boar_rider/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   sneakblade: {
     key: "unit:sneakblade",
-    path: "assets/units/sneakblade/unit.png",
+    path: new URL("./assets/units/sneakblade/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/sneakblade/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:sneakblade:poses",
-      path: "assets/units/sneakblade/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/sneakblade/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   spear_recruit: {
     key: "unit:spear_recruit",
-    path: "assets/units/spear_recruit/unit.png",
+    path: new URL("./assets/units/spear_recruit/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/spear_recruit/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:spear_recruit:poses",
-      path: "assets/units/spear_recruit/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/spear_recruit/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   longbow_hunter: {
     key: "unit:longbow_hunter",
-    path: "assets/units/longbow_hunter/unit.png",
+    path: new URL("./assets/units/longbow_hunter/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/longbow_hunter/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:longbow_hunter:poses",
-      path: "assets/units/longbow_hunter/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/longbow_hunter/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   ember_mage: {
     key: "unit:ember_mage",
-    path: "assets/units/ember_mage/unit.png",
+    path: new URL("./assets/units/ember_mage/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/ember_mage/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:ember_mage:poses",
-      path: "assets/units/ember_mage/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/ember_mage/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   grave_binder: {
     key: "unit:grave_binder",
-    path: "assets/units/grave_binder/unit.png",
+    path: new URL("./assets/units/grave_binder/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/grave_binder/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:grave_binder:poses",
-      path: "assets/units/grave_binder/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/grave_binder/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   duelist: {
     key: "unit:duelist",
-    path: "assets/units/duelist/unit.png",
+    path: new URL("./assets/units/duelist/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/duelist/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:duelist:poses",
-      path: "assets/units/duelist/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/duelist/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   bone_soldier: {
     key: "unit:bone_soldier",
-    path: "assets/units/bone_soldier/unit.png",
+    path: new URL("./assets/units/bone_soldier/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/bone_soldier/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:bone_soldier:poses",
-      path: "assets/units/bone_soldier/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/bone_soldier/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   field_cleric: {
     key: "unit:field_cleric",
-    path: "assets/units/field_cleric/unit.png",
+    path: new URL("./assets/units/field_cleric/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/field_cleric/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:field_cleric:poses",
-      path: "assets/units/field_cleric/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/field_cleric/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
   wolfhound: {
     key: "unit:wolfhound",
-    path: "assets/units/wolfhound/unit.png",
+    path: new URL("./assets/units/wolfhound/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/wolfhound/card.webp", import.meta.url).href,
     spriteSheet: {
       key: "unit:wolfhound:poses",
-      path: "assets/units/wolfhound/sprite-sheet.png",
-      frameWidth: 256,
-      frameHeight: 256,
+      path: new URL("./assets/units/wolfhound/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
 };
@@ -139,7 +154,7 @@ export function getUnitAsset(cardId: CardId): UnitAsset | undefined {
 }
 
 export function getUnitCardAssetPath(cardId: CardId): string | undefined {
-  return getUnitAsset(cardId)?.path.replace(/\/unit\.png$/, "/card.png");
+  return getUnitAsset(cardId)?.cardPath;
 }
 
 export function getUnitAssets(): UnitAsset[] {

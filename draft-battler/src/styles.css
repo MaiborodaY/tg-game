@@ -433,7 +433,7 @@ h3 {
   --card-accent: #d8bd68;
   --card-border: rgba(228, 193, 94, 0.34);
   --card-glow: rgba(228, 193, 94, 0.18);
-  --card-template-image: url("/assets/ui/cards/templates/card-template-common.png?v=1");
+  --card-template-image: url("./assets/ui/cards/templates/card-template-common.webp");
   --card-frame-image: url("/assets/ui/cards/frames/card-frame-common.svg?v=7");
   --card-medallion-image: url("/assets/ui/cards/medallions/card-medallion-common.svg?v=7");
   --rarity-color: #c9c3a7;
@@ -502,21 +502,21 @@ h3 {
 }
 
 .unit-card--common {
-  --card-template-image: url("/assets/ui/cards/templates/card-template-common.png?v=1");
+  --card-template-image: url("./assets/ui/cards/templates/card-template-common.webp");
   --card-frame-image: url("/assets/ui/cards/frames/card-frame-common.svg?v=7");
   --card-medallion-image: url("/assets/ui/cards/medallions/card-medallion-common.svg?v=7");
   --rarity-color: #c9c3a7;
 }
 
 .unit-card--uncommon {
-  --card-template-image: url("/assets/ui/cards/templates/card-template-uncommon.png?v=1");
+  --card-template-image: url("./assets/ui/cards/templates/card-template-uncommon.webp");
   --card-frame-image: url("/assets/ui/cards/frames/card-frame-uncommon.svg?v=7");
   --card-medallion-image: url("/assets/ui/cards/medallions/card-medallion-uncommon.svg?v=7");
   --rarity-color: #8fdb8f;
 }
 
 .unit-card--rare {
-  --card-template-image: url("/assets/ui/cards/templates/card-template-rare.png?v=1");
+  --card-template-image: url("./assets/ui/cards/templates/card-template-rare.webp");
   --card-frame-image: url("/assets/ui/cards/frames/card-frame-rare.svg?v=7");
   --card-medallion-image: url("/assets/ui/cards/medallions/card-medallion-rare.svg?v=7");
   --rarity-color: #7daaf0;
