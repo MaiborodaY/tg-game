@@ -27,6 +27,9 @@ import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
 type ScreenMode = "draft" | "battle" | "finished";
 type CardArchetype = "tank" | "damage" | "support";
 type CardRarity = "common" | "uncommon" | "rare";
+type PvpConnectionStatus = "idle" | "connecting" | "connected" | "error";
+type PvpPlayerRole = "host" | "guest";
+type PvpPeerRole = PvpPlayerRole | "spectator";
 type BattlefieldCommand =
   | { type: "draft"; key: string; playerCastleHp: number }
   | { type: "battle"; key: string; timeline: BattleTimeline };
@@ -50,6 +53,45 @@ interface UiState {
   selectedLogRound?: number;
   lastRound: number;
   lastBattleTimeline?: BattleTimeline;
+  pvp: PvpState;
+}
+
+interface PvpState {
+  panelOpen: boolean;
+  status: PvpConnectionStatus;
+  roomId: string;
+  roomInput: string;
+  peerId?: string;
+  role?: PvpPeerRole;
+  connectedPeers: number;
+  players: PvpPlayerSlot[];
+  error?: string;
+}
+
+interface PvpRoomSnapshot {
+  roomId: string;
+  status: "waiting" | "ready";
+  connectedPeers: number;
+  players: PvpPlayerSlot[];
+  serverNow: number;
+}
+
+interface PvpPlayerSlot {
+  role: PvpPlayerRole;
+  peerId: string | null;
+  connected: boolean;
+  ready: boolean;
+  joinedAt: number | null;
+}
+
+interface PvpServerMessage {
+  type?: string;
+  roomId?: string;
+  peerId?: string;
+  role?: PvpPeerRole;
+  connectedPeers?: number;
+  payload?: unknown;
+  serverNow?: number;
 }
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -76,6 +118,10 @@ const POINTER_DRAG_START_DISTANCE = 8;
 const FIELD_SLOT_HIT_PADDING = 12;
 const FIELD_SLOT_TOUCH_HIT_PADDING = 30;
 const DRAG_GHOST_FOOT_HIT_INSET = 12;
+const PVP_WORKER_ORIGIN = "https://draft-battler-pvp.mr-maybik.workers.dev";
+const PVP_ROOM_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{2,47}$/;
+const PVP_ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const PVP_ROOM_CODE_LENGTH = 6;
 
 interface ActivePointerDrag {
   cleanup: () => void;
@@ -107,8 +153,11 @@ interface FieldSlotPosition {
 
 let activePointerDrag: ActivePointerDrag | undefined;
 let suppressNextCardClick = false;
+let pvpSocket: WebSocket | undefined;
+let pvpSocketCloseExpected = false;
 
 render();
+window.addEventListener("beforeunload", () => closePvpSocket());
 
 function createInitialUiState(seed = createSeed()): UiState {
   const run = createRun(seed);
@@ -121,7 +170,26 @@ function createInitialUiState(seed = createSeed()): UiState {
     battleFinished: false,
     logsOpen: false,
     lastRound: 1,
+    pvp: createInitialPvpState(),
   };
+}
+
+function createInitialPvpState(panelOpen = false): PvpState {
+  return {
+    panelOpen,
+    status: "idle",
+    roomId: "",
+    roomInput: "",
+    connectedPeers: 0,
+    players: createEmptyPvpPlayerSlots(),
+  };
+}
+
+function createEmptyPvpPlayerSlots(): PvpPlayerSlot[] {
+  return [
+    { role: "host", peerId: null, connected: false, ready: false, joinedAt: null },
+    { role: "guest", peerId: null, connected: false, ready: false, joinedAt: null },
+  ];
 }
 
 function render(): void {
@@ -198,6 +266,10 @@ function createDraftOverlay(): HTMLElement {
   overlay.className = "draft-overlay";
 
   overlay.append(createFieldSlotsLayer(), createFieldActionBar());
+
+  if (uiState.pvp.panelOpen) {
+    overlay.append(createPvpPanel());
+  }
 
   if (!uiState.cardPickedThisRound) {
     overlay.append(createDraftPanel());
@@ -472,6 +544,183 @@ function createRerollButton(): HTMLButtonElement {
   button.addEventListener("click", rerollCurrentDraftCards);
 
   return button;
+}
+
+function createPvpPanel(): HTMLElement {
+  const panel = document.createElement("section");
+  panel.className = `pvp-panel pvp-panel--${uiState.pvp.status}`;
+
+  const header = document.createElement("div");
+  header.className = "pvp-panel__header";
+
+  const title = document.createElement("h2");
+  title.textContent = "PvP Room";
+
+  const status = document.createElement("span");
+  status.className = `pvp-status pvp-status--${uiState.pvp.status}`;
+  status.textContent = getPvpStatusLabel();
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "pvp-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = "x";
+  closeButton.setAttribute("aria-label", "Close PvP room");
+  closeButton.addEventListener("click", () => setPvpPanelOpen(false));
+
+  header.append(title, status, closeButton);
+  panel.append(header);
+
+  if (uiState.pvp.status === "connected") {
+    panel.append(createPvpConnectedView());
+  } else if (uiState.pvp.status === "connecting") {
+    panel.append(createPvpConnectingView());
+  } else {
+    panel.append(createPvpJoinView());
+  }
+
+  return panel;
+}
+
+function createPvpJoinView(): HTMLElement {
+  const body = document.createElement("div");
+  body.className = "pvp-panel__body";
+
+  if (uiState.pvp.error) {
+    const error = document.createElement("p");
+    error.className = "pvp-panel__error";
+    error.textContent = uiState.pvp.error;
+    body.append(error);
+  }
+
+  const controls = document.createElement("div");
+  controls.className = "pvp-room-controls";
+
+  const input = document.createElement("input");
+  input.className = "pvp-room-input";
+  input.type = "text";
+  input.inputMode = "text";
+  input.autocomplete = "off";
+  input.spellcheck = false;
+  input.maxLength = 48;
+  input.placeholder = "Room code";
+  input.value = uiState.pvp.roomInput;
+  input.addEventListener("input", () => {
+    uiState = {
+      ...uiState,
+      pvp: {
+        ...uiState.pvp,
+        roomInput: input.value,
+        error: undefined,
+      },
+    };
+  });
+
+  const joinButton = document.createElement("button");
+  joinButton.className = "pvp-panel__button";
+  joinButton.type = "button";
+  joinButton.textContent = "Join";
+  joinButton.addEventListener("click", () => connectPvpRoom(input.value));
+
+  const createButton = document.createElement("button");
+  createButton.className = "pvp-panel__button pvp-panel__button--primary";
+  createButton.type = "button";
+  createButton.textContent = "Create";
+  createButton.addEventListener("click", () => connectPvpRoom(createPvpRoomCode()));
+
+  controls.append(input, joinButton, createButton);
+  body.append(controls);
+
+  return body;
+}
+
+function createPvpConnectingView(): HTMLElement {
+  const body = document.createElement("div");
+  body.className = "pvp-panel__body";
+
+  const room = document.createElement("div");
+  room.className = "pvp-room-summary";
+  room.append(createPvpRoomCodeElement(uiState.pvp.roomId), createPvpPeerCount());
+
+  const leaveButton = document.createElement("button");
+  leaveButton.className = "pvp-panel__button";
+  leaveButton.type = "button";
+  leaveButton.textContent = "Cancel";
+  leaveButton.addEventListener("click", disconnectPvpRoom);
+
+  body.append(room, leaveButton);
+
+  return body;
+}
+
+function createPvpConnectedView(): HTMLElement {
+  const body = document.createElement("div");
+  body.className = "pvp-panel__body";
+
+  const room = document.createElement("div");
+  room.className = "pvp-room-summary";
+  room.append(createPvpRoomCodeElement(uiState.pvp.roomId), createPvpPeerCount());
+
+  const players = document.createElement("div");
+  players.className = "pvp-player-slots";
+  uiState.pvp.players.forEach((player) => {
+    players.append(createPvpPlayerSlot(player));
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "pvp-panel__actions";
+
+  const readyButton = document.createElement("button");
+  readyButton.className = getCurrentPvpPlayer()?.ready
+    ? "pvp-panel__button pvp-panel__button--ready"
+    : "pvp-panel__button pvp-panel__button--primary";
+  readyButton.type = "button";
+  readyButton.disabled = uiState.pvp.role === "spectator";
+  readyButton.textContent = getCurrentPvpPlayer()?.ready ? "Ready" : "Set Ready";
+  readyButton.addEventListener("click", () => setPvpReady(!(getCurrentPvpPlayer()?.ready ?? false)));
+
+  const leaveButton = document.createElement("button");
+  leaveButton.className = "pvp-panel__button";
+  leaveButton.type = "button";
+  leaveButton.textContent = "Leave";
+  leaveButton.addEventListener("click", disconnectPvpRoom);
+
+  actions.append(readyButton, leaveButton);
+  body.append(room, players, actions);
+
+  return body;
+}
+
+function createPvpRoomCodeElement(roomId: string): HTMLElement {
+  const code = document.createElement("strong");
+  code.className = "pvp-room-code";
+  code.textContent = roomId ? roomId.toUpperCase() : "------";
+
+  return code;
+}
+
+function createPvpPeerCount(): HTMLElement {
+  const count = document.createElement("span");
+  count.className = "pvp-peer-count";
+  count.textContent = `${uiState.pvp.connectedPeers}/2`;
+
+  return count;
+}
+
+function createPvpPlayerSlot(player: PvpPlayerSlot): HTMLElement {
+  const slot = document.createElement("div");
+  slot.className = player.connected ? "pvp-player-slot pvp-player-slot--connected" : "pvp-player-slot";
+
+  const role = document.createElement("span");
+  role.className = "pvp-player-slot__role";
+  role.textContent = player.role;
+
+  const state = document.createElement("strong");
+  state.className = "pvp-player-slot__state";
+  state.textContent = player.connected ? (player.ready ? "Ready" : "Joined") : "Open";
+
+  slot.append(role, state);
+
+  return slot;
 }
 
 function createCardName(card: CardDefinition): HTMLElement {
@@ -891,7 +1140,7 @@ function createFieldSlotUnit(card: CardDefinition, slot: BoardSlot): HTMLElement
 
 function createActionBar(): HTMLElement {
   const actions = document.createElement("div");
-  actions.className = "action-bar";
+  actions.className = uiState.mode === "draft" ? "action-bar action-bar--draft" : "action-bar";
 
   if (uiState.mode === "draft") {
     const fightButton = document.createElement("button");
@@ -900,7 +1149,7 @@ function createActionBar(): HTMLElement {
     fightButton.disabled = !canFightRound();
     fightButton.textContent = "Fight";
     fightButton.addEventListener("click", fightRound);
-    actions.append(fightButton);
+    actions.append(fightButton, createPvpToggleButton());
   } else if (uiState.mode === "battle") {
     const nextButton = document.createElement("button");
     nextButton.className = "primary-button";
@@ -925,6 +1174,7 @@ function createActionBar(): HTMLElement {
     newRunButton.type = "button";
     newRunButton.textContent = "New Run";
     newRunButton.addEventListener("click", () => {
+      closePvpSocket();
       uiState = createInitialUiState();
       render();
     });
@@ -932,6 +1182,24 @@ function createActionBar(): HTMLElement {
   }
 
   return actions;
+}
+
+function createPvpToggleButton(): HTMLButtonElement {
+  const button = document.createElement("button");
+  const classes = ["pvp-toggle-button"];
+  if (uiState.pvp.panelOpen) {
+    classes.push("pvp-toggle-button--open");
+  }
+  if (uiState.pvp.status === "connected") {
+    classes.push("pvp-toggle-button--connected");
+  }
+  button.className = classes.join(" ");
+  button.type = "button";
+  button.textContent = "PvP";
+  button.title = uiState.pvp.roomId ? `PvP ${uiState.pvp.roomId.toUpperCase()}` : "PvP room";
+  button.addEventListener("click", () => setPvpPanelOpen(!uiState.pvp.panelOpen));
+
+  return button;
 }
 
 function getSceneCanvasHost(): HTMLElement {
@@ -1685,6 +1953,258 @@ function countEvents(combat: CombatResult): Record<string, number> {
   });
 
   return counts;
+}
+
+function setPvpPanelOpen(panelOpen: boolean): void {
+  uiState = {
+    ...uiState,
+    pvp: {
+      ...uiState.pvp,
+      panelOpen,
+    },
+  };
+  render();
+}
+
+function updatePvpState(pvp: Partial<PvpState>): void {
+  uiState = {
+    ...uiState,
+    pvp: {
+      ...uiState.pvp,
+      ...pvp,
+    },
+  };
+  render();
+}
+
+function connectPvpRoom(rawRoomId: string): void {
+  const roomId = normalizePvpRoomId(rawRoomId);
+  if (!roomId) {
+    updatePvpState({
+      panelOpen: true,
+      status: "error",
+      error: "Use 3-48 letters or numbers.",
+    });
+    return;
+  }
+
+  closePvpSocket();
+  updatePvpState({
+    panelOpen: true,
+    status: "connecting",
+    roomId,
+    roomInput: roomId.toUpperCase(),
+    peerId: undefined,
+    role: undefined,
+    connectedPeers: 0,
+    players: createEmptyPvpPlayerSlots(),
+    error: undefined,
+  });
+
+  const socket = new WebSocket(getPvpSocketUrl(roomId));
+  pvpSocket = socket;
+  pvpSocketCloseExpected = false;
+
+  socket.addEventListener("message", handlePvpSocketMessage);
+  socket.addEventListener("open", () => {
+    if (pvpSocket === socket) {
+      socket.send(JSON.stringify({ type: "ping" }));
+    }
+  });
+  socket.addEventListener("close", () => {
+    if (pvpSocket !== socket) {
+      return;
+    }
+
+    pvpSocket = undefined;
+    if (pvpSocketCloseExpected) {
+      pvpSocketCloseExpected = false;
+      return;
+    }
+
+    updatePvpState({
+      status: "error",
+      connectedPeers: 0,
+      players: createEmptyPvpPlayerSlots(),
+      error: "Connection closed.",
+    });
+  });
+  socket.addEventListener("error", () => {
+    if (pvpSocket === socket) {
+      updatePvpState({
+        status: "error",
+        error: "Could not connect.",
+      });
+    }
+  });
+}
+
+function disconnectPvpRoom(): void {
+  closePvpSocket();
+  updatePvpState(createInitialPvpState(true));
+}
+
+function closePvpSocket(): void {
+  if (!pvpSocket) {
+    return;
+  }
+
+  pvpSocketCloseExpected = true;
+  pvpSocket.close(1000, "client_disconnect");
+  pvpSocket = undefined;
+}
+
+function setPvpReady(ready: boolean): void {
+  if (!pvpSocket || pvpSocket.readyState !== WebSocket.OPEN || uiState.pvp.role === "spectator") {
+    return;
+  }
+
+  pvpSocket.send(JSON.stringify({ type: "set_ready", payload: { ready } }));
+}
+
+function handlePvpSocketMessage(event: MessageEvent): void {
+  if (typeof event.data !== "string") {
+    return;
+  }
+
+  let message: PvpServerMessage;
+  try {
+    message = JSON.parse(event.data) as PvpServerMessage;
+  } catch {
+    updatePvpState({ status: "error", error: "Bad server message." });
+    return;
+  }
+
+  if (message.type === "error") {
+    updatePvpState({ status: "error", error: "Room error." });
+    return;
+  }
+
+  const snapshot = readPvpRoomSnapshot(message.payload);
+  const nextState: Partial<PvpState> = {};
+
+  if (typeof message.peerId === "string") {
+    nextState.peerId = message.peerId;
+  }
+
+  if (isPvpPeerRole(message.role)) {
+    nextState.role = message.role;
+  }
+
+  if (snapshot) {
+    nextState.status = "connected";
+    nextState.roomId = snapshot.roomId;
+    nextState.roomInput = snapshot.roomId.toUpperCase();
+    nextState.connectedPeers = snapshot.connectedPeers;
+    nextState.players = snapshot.players;
+    nextState.error = undefined;
+  } else if (message.type === "pong" && uiState.pvp.status === "connecting") {
+    nextState.status = "connected";
+    nextState.error = undefined;
+  }
+
+  if (Object.keys(nextState).length > 0) {
+    updatePvpState(nextState);
+  }
+}
+
+function getPvpSocketUrl(roomId: string): string {
+  return `${PVP_WORKER_ORIGIN.replace(/^http/, "ws")}/api/pvp/rooms/${roomId}/socket`;
+}
+
+function normalizePvpRoomId(roomId: string): string | undefined {
+  const normalized = roomId.trim().toLowerCase();
+  return PVP_ROOM_ID_PATTERN.test(normalized) ? normalized : undefined;
+}
+
+function createPvpRoomCode(): string {
+  const bytes = new Uint8Array(PVP_ROOM_CODE_LENGTH);
+  crypto.getRandomValues(bytes);
+
+  return [...bytes]
+    .map((byte) => PVP_ROOM_CODE_ALPHABET[byte % PVP_ROOM_CODE_ALPHABET.length])
+    .join("")
+    .toLowerCase();
+}
+
+function readPvpRoomSnapshot(payload: unknown): PvpRoomSnapshot | undefined {
+  if (!payload || typeof payload !== "object") {
+    return undefined;
+  }
+
+  const snapshot = payload as Partial<PvpRoomSnapshot>;
+  if (
+    typeof snapshot.roomId !== "string" ||
+    typeof snapshot.connectedPeers !== "number" ||
+    !Array.isArray(snapshot.players)
+  ) {
+    return undefined;
+  }
+
+  const players = snapshot.players.map(readPvpPlayerSlot).filter((player): player is PvpPlayerSlot => Boolean(player));
+
+  return {
+    roomId: snapshot.roomId,
+    status: snapshot.status === "ready" ? "ready" : "waiting",
+    connectedPeers: snapshot.connectedPeers,
+    players: mergePvpPlayerSlots(players),
+    serverNow: typeof snapshot.serverNow === "number" ? snapshot.serverNow : Date.now(),
+  };
+}
+
+function readPvpPlayerSlot(player: unknown): PvpPlayerSlot | undefined {
+  if (!player || typeof player !== "object") {
+    return undefined;
+  }
+
+  const slot = player as Partial<PvpPlayerSlot>;
+  if (!isPvpPlayerRole(slot.role)) {
+    return undefined;
+  }
+
+  return {
+    role: slot.role,
+    peerId: typeof slot.peerId === "string" ? slot.peerId : null,
+    connected: slot.connected === true,
+    ready: slot.ready === true,
+    joinedAt: typeof slot.joinedAt === "number" ? slot.joinedAt : null,
+  };
+}
+
+function mergePvpPlayerSlots(players: PvpPlayerSlot[]): PvpPlayerSlot[] {
+  return createEmptyPvpPlayerSlots().map((emptySlot) => players.find((player) => player.role === emptySlot.role) ?? emptySlot);
+}
+
+function isPvpPlayerRole(role: unknown): role is PvpPlayerRole {
+  return role === "host" || role === "guest";
+}
+
+function isPvpPeerRole(role: unknown): role is PvpPeerRole {
+  return isPvpPlayerRole(role) || role === "spectator";
+}
+
+function getCurrentPvpPlayer(): PvpPlayerSlot | undefined {
+  if (!uiState.pvp.peerId) {
+    return undefined;
+  }
+
+  return uiState.pvp.players.find((player) => player.peerId === uiState.pvp.peerId);
+}
+
+function getPvpStatusLabel(): string {
+  if (uiState.pvp.status === "connecting") {
+    return "Connecting";
+  }
+
+  if (uiState.pvp.status === "connected") {
+    return uiState.pvp.role === "spectator" ? "Spectator" : "Online";
+  }
+
+  if (uiState.pvp.status === "error") {
+    return "Offline";
+  }
+
+  return "Idle";
 }
 
 function createSeed(): string {
