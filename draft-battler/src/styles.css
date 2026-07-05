@@ -199,11 +199,12 @@ button {
 }
 
 .scene-canvas-host {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   display: grid;
   place-items: center;
+  contain: strict;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(218, 107, 88, 0.12) 0%, transparent 31%),

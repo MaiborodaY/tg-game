@@ -54,6 +54,11 @@ const ENABLE_BATTLEFIELD_SIDE_PROPS = false;
 const SHOW_FIELD_DEBUG_GUIDES = false;
 const BOARD_STAGE_TOP_OFFSET = 12;
 const BOARD_STAGE_BOTTOM_OFFSET = 54;
+const LOW_POWER_FPS_LIMIT = 30;
+const DEFAULT_FPS_TARGET = 60;
+const LOW_POWER_CPU_CORES = 4;
+const LOW_POWER_DEVICE_MEMORY_GB = 4;
+const COMPACT_TOUCH_VIEWPORT_WIDTH = 520;
 
 export interface PlayBattleInput {
   timeline: BattleTimeline;
@@ -120,20 +125,70 @@ interface CastleView {
   hpBarWidth: number;
 }
 
+interface NavigatorPerformanceHints extends Navigator {
+  connection?: {
+    saveData?: boolean;
+  };
+  deviceMemory?: number;
+}
+
+interface RenderPerformanceProfile {
+  fpsLimit: number;
+  fpsTarget: number;
+  lowPower: boolean;
+}
+
+function getRenderPerformanceProfile(): RenderPerformanceProfile {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return { fpsLimit: 0, fpsTarget: DEFAULT_FPS_TARGET, lowPower: false };
+  }
+
+  const nav = navigator as NavigatorPerformanceHints;
+  const minViewportSide = Math.min(window.innerWidth, window.innerHeight);
+  const compactTouchViewport = navigator.maxTouchPoints > 0 && minViewportSide <= COMPACT_TOUCH_VIEWPORT_WIDTH;
+  const lowCpu = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= LOW_POWER_CPU_CORES;
+  const lowMemory = typeof nav.deviceMemory === "number" && nav.deviceMemory <= LOW_POWER_DEVICE_MEMORY_GB;
+  const saveData = nav.connection?.saveData === true;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const slowUpdate = window.matchMedia("(update: slow)").matches;
+  const lowPower = compactTouchViewport || lowCpu || lowMemory || saveData || reducedMotion || slowUpdate;
+
+  return {
+    fpsLimit: lowPower ? LOW_POWER_FPS_LIMIT : 0,
+    fpsTarget: lowPower ? LOW_POWER_FPS_LIMIT : DEFAULT_FPS_TARGET,
+    lowPower,
+  };
+}
+
 export function mountBattlefield(parent: HTMLElement): BattlefieldController {
   parent.replaceChildren();
 
   const scene = new CastleBattleScene();
+  const renderProfile = getRenderPerformanceProfile();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     backgroundColor: "#10150f",
-    transparent: true,
+    fps: {
+      target: renderProfile.fpsTarget,
+      limit: renderProfile.fpsLimit,
+      min: 20,
+      smoothStep: true,
+    },
+    render: {
+      antialias: !renderProfile.lowPower,
+      antialiasGL: !renderProfile.lowPower,
+      desynchronized: renderProfile.lowPower,
+      powerPreference: renderProfile.lowPower ? "low-power" : "high-performance",
+      roundPixels: renderProfile.lowPower,
+      transparent: false,
+    },
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.NO_CENTER,
+      autoRound: renderProfile.lowPower,
     },
     scene,
   });
