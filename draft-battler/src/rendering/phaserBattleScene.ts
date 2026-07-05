@@ -62,6 +62,7 @@ const BATTLEFIELD_SIDE_PROPS_ASSET_URL = new URL(
   "../assets/environment/battlefield/common_forest/side_props.webp",
   import.meta.url,
 ).href;
+const BATTLEFIELD_LOW_POWER_OVERSCAN_Y = 36;
 const BATTLEFIELD_BASE_OVERSCAN_Y = 120;
 const BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y = 54;
 const BATTLEFIELD_SIDE_PROPS_ALPHA = 0.56;
@@ -173,8 +174,8 @@ function getRenderPerformanceProfile(): RenderPerformanceProfile {
 export function mountBattlefield(parent: HTMLElement): BattlefieldController {
   parent.replaceChildren();
 
-  const scene = new CastleBattleScene();
   const renderProfile = getRenderPerformanceProfile();
+  const scene = new CastleBattleScene(renderProfile);
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
@@ -224,7 +225,7 @@ class CastleBattleScene extends Phaser.Scene {
   private playToken = 0;
   private destroyed = false;
 
-  constructor() {
+  constructor(private readonly renderProfile: RenderPerformanceProfile) {
     super("CastleBattleScene");
   }
 
@@ -232,12 +233,13 @@ class CastleBattleScene extends Phaser.Scene {
     this.load.image(PLAYER_KEEP_TEXTURE_KEY, PLAYER_KEEP_ASSET_URL);
     this.load.image(BATTLEFIELD_BASE_TEXTURE_KEY, BATTLEFIELD_BASE_ASSET_URL);
     getUnitAssets().forEach((asset) => {
-      this.load.image(asset.key, asset.path);
       if (asset.spriteSheet) {
         this.load.spritesheet(asset.spriteSheet.key, asset.spriteSheet.path, {
           frameWidth: asset.spriteSheet.frameWidth,
           frameHeight: asset.spriteSheet.frameHeight,
         });
+      } else {
+        this.load.image(asset.key, asset.path);
       }
     });
     if (ENABLE_BATTLEFIELD_SIDE_PROPS) {
@@ -328,7 +330,7 @@ class CastleBattleScene extends Phaser.Scene {
       this.drawBoardStageOverlay();
     }
 
-    if (hasBattlefieldBase) {
+    if (hasBattlefieldBase && !this.renderProfile.lowPower) {
       this.drawFieldGuideRunes();
 
       if (mode === "battle") {
@@ -370,7 +372,9 @@ class CastleBattleScene extends Phaser.Scene {
       .setDepth(-5)
       .setAlpha(0.82);
 
-    this.drawForegroundAtmosphere();
+    if (!this.renderProfile.lowPower) {
+      this.drawForegroundAtmosphere();
+    }
   }
 
   private drawFieldGuideRunes(): void {
@@ -443,7 +447,8 @@ class CastleBattleScene extends Phaser.Scene {
     const backgroundPad = 260;
 
     const hasBattlefieldBase = this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
-    const baseSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_BASE_OVERSCAN_Y);
+    const baseOverscanY = this.renderProfile.lowPower ? BATTLEFIELD_LOW_POWER_OVERSCAN_Y : BATTLEFIELD_BASE_OVERSCAN_Y;
+    const baseSize = getBackdropDisplaySize(this.layout, baseOverscanY);
     const sidePropsSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y);
 
     if (hasBattlefieldBase) {
@@ -563,7 +568,7 @@ class CastleBattleScene extends Phaser.Scene {
     const castleArt = useKeepAsset
       ? this.createKeepAssetArt(castle.owner)
       : this.createProceduralCastleArt(color, darkColor);
-    const castlePlatform = this.createCastlePlatform(castle.owner);
+    const castlePlatform = this.renderProfile.lowPower ? [] : this.createCastlePlatform(castle.owner);
 
     const hpBarWidth = castle.owner === "enemy" ? ENEMY_CASTLE_HP_BAR_WIDTH : CASTLE_HP_BAR_WIDTH;
     const hpBarHeight = castle.owner === "enemy" ? 6 : 8;
@@ -592,13 +597,18 @@ class CastleBattleScene extends Phaser.Scene {
     const isPlayer = owner === "player";
     const displayWidth = isPlayer ? PLAYER_KEEP_DISPLAY_WIDTH : ENEMY_KEEP_DISPLAY_WIDTH;
     const displayHeight = displayWidth * KEEP_ASSET_HEIGHT_RATIO;
-    const glowColor = isPlayer ? 0x79c77a : 0xd87458;
     const image = this.add.image(0, isPlayer ? -7 : -8, PLAYER_KEEP_TEXTURE_KEY).setDisplaySize(displayWidth, displayHeight);
-    const glow = this.add.ellipse(0, isPlayer ? 58 : 34, displayWidth * 0.78, displayHeight * 0.24, glowColor, isPlayer ? 0.15 : 0.1);
 
     if (!isPlayer) {
       image.setTint(0xd88a68).setAlpha(0.86);
     }
+
+    if (this.renderProfile.lowPower) {
+      return [image];
+    }
+
+    const glowColor = isPlayer ? 0x79c77a : 0xd87458;
+    const glow = this.add.ellipse(0, isPlayer ? 58 : 34, displayWidth * 0.78, displayHeight * 0.24, glowColor, isPlayer ? 0.15 : 0.1);
 
     return [glow, image];
   }
@@ -683,19 +693,21 @@ class CastleBattleScene extends Phaser.Scene {
     const sideDarkColor = unit.owner === "player" ? 0x407b45 : 0x804433;
     const strokeColor = unit.upgradeLevel ? 0xe4c15e : sideColor;
     const container = this.add.container(position.x, position.y);
-    const groundShadow = this.add.ellipse(0, 28, 76, 19, 0x000000, 0.34);
+    const objects: Phaser.GameObjects.GameObject[] = [];
     const contactShadow = this.add.ellipse(0, 25, 48, 10, 0x000000, 0.58);
     const unitArt = this.createUnitArt(unit, sideColor, sideDarkColor, strokeColor);
-    const upgradeBadge = this.add
-      .text(21, -49, unit.upgradeLevel ? "★" : "", {
-        color: "#e4c15e",
-        fontFamily: "Arial",
-        fontSize: "13px",
-        fontStyle: "bold",
-        stroke: "#10130f",
-        strokeThickness: 3,
-      })
-      .setOrigin(0.5);
+    const upgradeBadge = unit.upgradeLevel
+      ? this.add
+          .text(21, -49, "★", {
+            color: "#e4c15e",
+            fontFamily: "Arial",
+            fontSize: "13px",
+            fontStyle: "bold",
+            stroke: "#10130f",
+            strokeThickness: 3,
+          })
+          .setOrigin(0.5)
+      : undefined;
     const hpBack = this.add.rectangle(-UNIT_HP_BAR_WIDTH / 2, 31, UNIT_HP_BAR_WIDTH, 6, 0x3b1f1b, 0.92).setOrigin(0, 0.5);
     const hpFill = this.add.rectangle(-UNIT_HP_BAR_WIDTH / 2, 31, UNIT_HP_BAR_WIDTH, 6, 0x79c77a, 1).setOrigin(0, 0.5);
     const hpLabel = this.add
@@ -705,7 +717,15 @@ class CastleBattleScene extends Phaser.Scene {
         fontSize: "10px",
       })
       .setOrigin(0.5);
-    container.add([groundShadow, contactShadow, ...unitArt.objects, upgradeBadge, hpBack, hpFill, hpLabel]);
+    if (!this.renderProfile.lowPower) {
+      objects.push(this.add.ellipse(0, 28, 76, 19, 0x000000, 0.34));
+    }
+    objects.push(contactShadow, ...unitArt.objects);
+    if (upgradeBadge) {
+      objects.push(upgradeBadge);
+    }
+    objects.push(hpBack, hpFill, hpLabel);
+    container.add(objects);
 
     if (unit.summonedBy) {
       container.setAlpha(0);
@@ -737,28 +757,38 @@ class CastleBattleScene extends Phaser.Scene {
 
     if (asset?.spriteSheet && this.textures.exists(asset.spriteSheet.key)) {
       const frame = getUnitFrame(getDefaultUnitFacing(unit.owner), "idle");
+      const sprite = this.add
+        .sprite(0, UNIT_SPRITE_SHEET_Y, asset.spriteSheet.key, frame)
+        .setDisplaySize(UNIT_SPRITE_SHEET_DISPLAY_SIZE, UNIT_SPRITE_SHEET_DISPLAY_SIZE);
+
+      if (this.renderProfile.lowPower) {
+        return { objects: [sprite], sprite };
+      }
+
       const shade = this.add
         .sprite(2, UNIT_SPRITE_SHEET_SHADE_Y, asset.spriteSheet.key, frame)
         .setDisplaySize(UNIT_SPRITE_SHEET_SHADE_DISPLAY_SIZE, UNIT_SPRITE_SHEET_SHADE_DISPLAY_SIZE)
         .setTint(0x050805)
         .setAlpha(0.42);
-      const sprite = this.add
-        .sprite(0, UNIT_SPRITE_SHEET_Y, asset.spriteSheet.key, frame)
-        .setDisplaySize(UNIT_SPRITE_SHEET_DISPLAY_SIZE, UNIT_SPRITE_SHEET_DISPLAY_SIZE);
 
       return { objects: [shade, sprite], sprite, shadeSprite: shade };
     }
 
     if (asset && this.textures.exists(asset.key)) {
+      const sprite = this.add.image(0, -12, asset.key).setDisplaySize(UNIT_SPRITE_DISPLAY_WIDTH, UNIT_SPRITE_DISPLAY_HEIGHT);
+      if (unit.owner === "enemy") {
+        sprite.setTint(0xf0a27c);
+      }
+
+      if (this.renderProfile.lowPower) {
+        return { objects: [sprite] };
+      }
+
       const shade = this.add
         .image(2, -9, asset.key)
         .setDisplaySize(UNIT_SPRITE_DISPLAY_WIDTH + 5, UNIT_SPRITE_DISPLAY_HEIGHT + 5)
         .setTint(0x050805)
         .setAlpha(0.42);
-      const sprite = this.add.image(0, -12, asset.key).setDisplaySize(UNIT_SPRITE_DISPLAY_WIDTH, UNIT_SPRITE_DISPLAY_HEIGHT);
-      if (unit.owner === "enemy") {
-        sprite.setTint(0xf0a27c);
-      }
 
       return { objects: [shade, sprite] };
     }
@@ -1209,13 +1239,15 @@ class CastleBattleScene extends Phaser.Scene {
     strike.setTo(startX, startY, endX, endY);
     ember.setTo(startX, startY + 2, endX, endY + 2);
     impact.setPosition(endX, endY + 8);
+    ember.setVisible(!this.renderProfile.lowPower);
+    impact.setVisible(!this.renderProfile.lowPower);
 
     shadow.setDepth(899);
     strike.setDepth(900);
     ember.setDepth(901);
     impact.setDepth(898);
     this.tweens.add({
-      targets: [shadow, strike, ember, impact],
+      targets: this.renderProfile.lowPower ? [shadow, strike] : [shadow, strike, ember, impact],
       alpha: 0,
       scaleX: 1.18,
       duration: scaleBattleDuration(140),
