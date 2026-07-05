@@ -229,6 +229,77 @@ button {
   pointer-events: none;
 }
 
+.main-menu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 92px max(18px, env(safe-area-inset-right)) 118px max(18px, env(safe-area-inset-left));
+  pointer-events: none;
+}
+
+.main-menu {
+  width: min(330px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 18px 16px 16px;
+  border: 1px solid rgba(184, 139, 66, 0.62);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(239, 207, 128, 0.12), transparent 38%),
+    rgba(8, 10, 8, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
+    0 24px 58px rgba(0, 0, 0, 0.54);
+  pointer-events: auto;
+  backdrop-filter: blur(2px);
+}
+
+.main-menu__title {
+  color: #f2ead0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 0.94;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.88),
+    0 0 18px rgba(228, 193, 94, 0.18);
+}
+
+.main-menu__actions {
+  display: grid;
+  gap: 9px;
+}
+
+.main-menu__button {
+  min-height: 48px;
+  border: 1px solid rgba(184, 139, 66, 0.58);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(239, 207, 128, 0.1), transparent 46%),
+    rgba(10, 12, 9, 0.9);
+  color: #f3f0dd;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.68),
+    0 10px 22px rgba(0, 0, 0, 0.34);
+}
+
+.main-menu__button--primary {
+  border-color: rgba(248, 218, 124, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 246, 183, 0.42), rgba(255, 246, 183, 0.05) 38%, transparent 48%),
+    linear-gradient(180deg, #e8c963 0%, #a97029 68%, #5c3c16 100%);
+  color: #20180b;
+  text-shadow: 0 1px 0 rgba(255, 240, 176, 0.44);
+}
+
 .draft-overlay {
   --draft-side-gap: clamp(4px, 1.2cqw, 8px);
   display: grid;
@@ -914,8 +985,7 @@ h3 {
 
 .action-bar--draft {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 58px;
-  gap: 7px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
 
