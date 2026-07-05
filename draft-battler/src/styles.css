@@ -195,12 +195,13 @@ button {
   overflow: hidden;
   border: 0;
   border-radius: 0;
-  background: var(--bg);
+  background: transparent;
 }
 
 .scene-canvas-host {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -208,6 +209,7 @@ button {
     linear-gradient(180deg, rgba(218, 107, 88, 0.12) 0%, transparent 31%),
     linear-gradient(0deg, rgba(121, 199, 122, 0.13) 0%, transparent 31%),
     linear-gradient(180deg, #20271c 0%, #151b14 48%, #1e261b 100%);
+  pointer-events: none;
 }
 
 .scene-canvas-host canvas {
