@@ -29,6 +29,18 @@ import {
   type RoundRecord,
   type RunState,
 } from "./game";
+import {
+  DRAFT_CAMERA_ZOOM,
+  FIELD_FALLBACK_HEIGHT,
+  FIELD_FALLBACK_WIDTH,
+  createFieldLayout,
+  getDraftSlotPerspectiveScale,
+  getFieldSlotColumn,
+  getFieldSlotRow,
+  getSlotLaneX,
+  projectDraftPoint,
+  type FieldLayout,
+} from "./fieldLayout";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
 
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
@@ -152,10 +164,6 @@ let battlefieldController: BattlefieldController | undefined;
 let battlefieldMountRequested = false;
 let latestBattlefieldCommand: BattlefieldCommand | undefined;
 let appliedBattlefieldCommandKey: string | undefined;
-const SCENE_FALLBACK_WIDTH = 390;
-const SCENE_FALLBACK_HEIGHT = 720;
-const SCENE_DRAFT_CAMERA_ZOOM = 0.86;
-const SCENE_SLOT_LANE_FRACTIONS = [0.28, 0.5, 0.72] as const;
 const POINTER_DRAG_START_DISTANCE = 8;
 const FIELD_SLOT_HIT_PADDING = 12;
 const FIELD_SLOT_TOUCH_HIT_PADDING = 30;
@@ -174,18 +182,6 @@ interface ClientPoint {
   clientY: number;
 }
 
-interface OverlaySceneLayout {
-  width: number;
-  height: number;
-  centerY: number;
-  fieldTopY: number;
-  fieldBottomY: number;
-  fieldTopLeftX: number;
-  fieldTopRightX: number;
-  fieldBottomLeftX: number;
-  fieldBottomRightX: number;
-}
-
 interface FieldSlotPosition {
   xPercent: number;
   yFromBottom: number;
@@ -193,7 +189,27 @@ interface FieldSlotPosition {
   depth: number;
 }
 
+interface FieldSlotHitTarget {
+  slotIndex: number;
+  element: HTMLElement;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  hitLeft: number;
+  hitTop: number;
+  hitRight: number;
+  hitBottom: number;
+}
+
+interface FieldSlotDropTargetState {
+  slotIndex?: number;
+  isValid: boolean;
+  element?: HTMLElement;
+}
+
 let activePointerDrag: ActivePointerDrag | undefined;
+let activeFieldSlotDropTarget: FieldSlotDropTargetState = { isValid: true };
 let suppressNextCardClick = false;
 let pvpSocket: WebSocket | undefined;
 let pvpSocketCloseExpected = false;
@@ -1089,13 +1105,13 @@ function createFieldSlotsLayer(): HTMLElement {
 }
 
 function getPlayerFieldSlotPosition(slotIndex: number): FieldSlotPosition {
-  const layout = createOverlaySceneLayout();
-  const row = slotIndex >= 3 ? 1 : 0;
-  const column = slotIndex % 3;
-  const y = row === 0 ? layout.height * 0.67 : layout.height * 0.78;
-  const x = getOverlaySlotLaneX(layout, column, y);
-  const screen = projectDraftPoint(layout, x, y);
-  const scale = SCENE_DRAFT_CAMERA_ZOOM * getOverlayPerspectiveScale(layout, y);
+  const layout = createCurrentFieldLayout();
+  const row = getFieldSlotRow(slotIndex);
+  const column = getFieldSlotColumn(slotIndex);
+  const y = layout.homeRowsY.player[row] ?? layout.homeRowsY.player[0];
+  const x = getSlotLaneX(layout, column, y);
+  const screen = projectDraftPoint(layout, { x, y });
+  const scale = DRAFT_CAMERA_ZOOM * getDraftSlotPerspectiveScale(layout, y);
 
   return {
     xPercent: (screen.x / layout.width) * 100,
@@ -1105,59 +1121,12 @@ function getPlayerFieldSlotPosition(slotIndex: number): FieldSlotPosition {
   };
 }
 
-function createOverlaySceneLayout(): OverlaySceneLayout {
+function createCurrentFieldLayout(): FieldLayout {
   const rect = stageElement?.getBoundingClientRect();
-  const width = rect?.width && rect.width > 0 ? rect.width : SCENE_FALLBACK_WIDTH;
-  const height = rect?.height && rect.height > 0 ? rect.height : SCENE_FALLBACK_HEIGHT;
+  const width = rect?.width && rect.width > 0 ? rect.width : FIELD_FALLBACK_WIDTH;
+  const height = rect?.height && rect.height > 0 ? rect.height : FIELD_FALLBACK_HEIGHT;
 
-  return {
-    width,
-    height,
-    centerY: height / 2,
-    fieldTopY: 104,
-    fieldBottomY: height - 52,
-    fieldTopLeftX: width * 0.42,
-    fieldTopRightX: width * 0.58,
-    fieldBottomLeftX: width * -0.2,
-    fieldBottomRightX: width * 1.2,
-  };
-}
-
-function projectDraftPoint(layout: OverlaySceneLayout, x: number, y: number): { x: number; y: number } {
-  return {
-    x: (x - layout.width / 2) * SCENE_DRAFT_CAMERA_ZOOM + layout.width / 2,
-    y: (y - layout.centerY) * SCENE_DRAFT_CAMERA_ZOOM + layout.centerY,
-  };
-}
-
-function getOverlaySlotLaneX(layout: OverlaySceneLayout, column: number, y: number): number {
-  const fraction = SCENE_SLOT_LANE_FRACTIONS[column] ?? 0.5;
-
-  return getOverlayFieldLeftX(layout, y) + (getOverlayFieldRightX(layout, y) - getOverlayFieldLeftX(layout, y)) * fraction;
-}
-
-function getOverlayFieldLeftX(layout: OverlaySceneLayout, y: number): number {
-  return linear(layout.fieldTopLeftX, layout.fieldBottomLeftX, getOverlayFieldRatio(layout, y));
-}
-
-function getOverlayFieldRightX(layout: OverlaySceneLayout, y: number): number {
-  return linear(layout.fieldTopRightX, layout.fieldBottomRightX, getOverlayFieldRatio(layout, y));
-}
-
-function getOverlayFieldRatio(layout: OverlaySceneLayout, y: number): number {
-  return clamp((y - layout.fieldTopY) / (layout.fieldBottomY - layout.fieldTopY), 0, 1);
-}
-
-function getOverlayPerspectiveScale(layout: OverlaySceneLayout, y: number): number {
-  return linear(0.68, 1.18, getOverlayFieldRatio(layout, y));
-}
-
-function linear(start: number, end: number, amount: number): number {
-  return start + (end - start) * amount;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
+  return createFieldLayout(width, height);
 }
 
 function createFieldActionBar(): HTMLElement {
@@ -1698,19 +1667,18 @@ function getPointerDragGhostTransform(clientX: number, clientY: number, isTouchD
 }
 
 function getPointerDragDropPoint(
-  ghost: HTMLElement | undefined,
   clientX: number,
   clientY: number,
   isTouchDrag: boolean,
+  touchFootOffsetY = 0,
 ): ClientPoint {
-  if (!isTouchDrag || !ghost) {
+  if (!isTouchDrag) {
     return { clientX, clientY };
   }
 
-  const rect = ghost.getBoundingClientRect();
   return {
-    clientX: rect.left + rect.width / 2,
-    clientY: rect.bottom - DRAG_GHOST_FOOT_HIT_INSET,
+    clientX,
+    clientY: clientY + touchFootOffsetY,
   };
 }
 
@@ -1729,6 +1697,8 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
   const isTouchDrag = event.pointerType === "touch";
   let dragging = false;
   let ghost: HTMLElement | undefined;
+  let slotHitTargets: FieldSlotHitTarget[] = [];
+  let touchFootOffsetY = 0;
 
   const moveGhost = (clientX: number, clientY: number): void => {
     ghost?.style.setProperty("transform", getPointerDragGhostTransform(clientX, clientY, isTouchDrag));
@@ -1743,7 +1713,9 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
     suppressNextCardClick = true;
     ghost = createDraftUnitDragGhost(cardId);
     document.body.append(ghost);
+    touchFootOffsetY = getTouchDragFootOffsetY(ghost, isTouchDrag);
     setDraftDragging(true);
+    slotHitTargets = createFieldSlotHitTargets(isTouchDrag);
     moveGhost(clientX, clientY);
   };
 
@@ -1762,6 +1734,7 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
     }
     setDraftDragging(false);
     setFieldSlotDropTarget(undefined);
+    slotHitTargets = [];
     ghost?.remove();
     activePointerDrag = undefined;
   };
@@ -1779,9 +1752,9 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
     moveEvent.preventDefault();
     startDragging(moveEvent.clientX, moveEvent.clientY);
     moveGhost(moveEvent.clientX, moveEvent.clientY);
-    const dropPoint = getPointerDragDropPoint(ghost, moveEvent.clientX, moveEvent.clientY, isTouchDrag);
-    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
-    setFieldSlotDropTarget(slotIndex, canDropCardIntoSlot(cardId, slotIndex));
+    const dropPoint = getPointerDragDropPoint(moveEvent.clientX, moveEvent.clientY, isTouchDrag, touchFootOffsetY);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
+    setFieldSlotDropTarget(slotIndex, canDropCardIntoSlot(cardId, slotIndex), slotHitTargets);
   };
 
   handleUp = (upEvent: PointerEvent): void => {
@@ -1796,8 +1769,8 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
 
     upEvent.preventDefault();
     moveGhost(upEvent.clientX, upEvent.clientY);
-    const dropPoint = getPointerDragDropPoint(ghost, upEvent.clientX, upEvent.clientY, isTouchDrag);
-    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
+    const dropPoint = getPointerDragDropPoint(upEvent.clientX, upEvent.clientY, isTouchDrag, touchFootOffsetY);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
     cleanup();
 
     if (slotIndex !== undefined) {
@@ -1868,6 +1841,8 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
   const isTouchDrag = event.pointerType === "touch";
   let dragging = false;
   let ghost: HTMLElement | undefined;
+  let slotHitTargets: FieldSlotHitTarget[] = [];
+  let touchFootOffsetY = 0;
 
   const moveGhost = (clientX: number, clientY: number): void => {
     ghost?.style.setProperty("transform", getPointerDragGhostTransform(clientX, clientY, isTouchDrag));
@@ -1883,7 +1858,9 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
     ghost = source.cloneNode(true) as HTMLElement;
     ghost.classList.add("field-unit--drag-ghost");
     document.body.append(ghost);
+    touchFootOffsetY = getTouchDragFootOffsetY(ghost, isTouchDrag);
     setDraftDragging(true);
+    slotHitTargets = createFieldSlotHitTargets(isTouchDrag);
     moveGhost(clientX, clientY);
   };
 
@@ -1902,6 +1879,7 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
     }
     setDraftDragging(false);
     setFieldSlotDropTarget(undefined);
+    slotHitTargets = [];
     ghost?.remove();
     activePointerDrag = undefined;
   };
@@ -1919,9 +1897,9 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
     moveEvent.preventDefault();
     startDragging(moveEvent.clientX, moveEvent.clientY);
     moveGhost(moveEvent.clientX, moveEvent.clientY);
-    const dropPoint = getPointerDragDropPoint(ghost, moveEvent.clientX, moveEvent.clientY, isTouchDrag);
-    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
-    setFieldSlotDropTarget(slotIndex, canMoveBoardSlotUnit(fromSlotIndex, slotIndex));
+    const dropPoint = getPointerDragDropPoint(moveEvent.clientX, moveEvent.clientY, isTouchDrag, touchFootOffsetY);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
+    setFieldSlotDropTarget(slotIndex, canMoveBoardSlotUnit(fromSlotIndex, slotIndex), slotHitTargets);
   };
 
   handleUp = (upEvent: PointerEvent): void => {
@@ -1936,8 +1914,8 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
 
     upEvent.preventDefault();
     moveGhost(upEvent.clientX, upEvent.clientY);
-    const dropPoint = getPointerDragDropPoint(ghost, upEvent.clientX, upEvent.clientY, isTouchDrag);
-    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, isTouchDrag);
+    const dropPoint = getPointerDragDropPoint(upEvent.clientX, upEvent.clientY, isTouchDrag, touchFootOffsetY);
+    const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
     cleanup();
 
     if (slotIndex !== undefined) {
@@ -1957,34 +1935,67 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
   document.addEventListener("pointercancel", handleCancel);
 }
 
-function getFieldSlotIndexAtPoint(clientX: number, clientY: number, isTouchDrag = false): number | undefined {
-  const element = document.elementFromPoint(clientX, clientY);
-  const slot = element?.closest<HTMLElement>("[data-field-slot-index]");
-
-  if (slot) {
-    const slotIndex = Number(slot.dataset.fieldSlotIndex);
-
-    if (canDropIntoSlot(slotIndex)) {
-      return slotIndex;
-    }
+function getTouchDragFootOffsetY(ghost: HTMLElement, isTouchDrag: boolean): number {
+  if (!isTouchDrag) {
+    return 0;
   }
 
+  return Math.max(0, ghost.getBoundingClientRect().height - DRAG_GHOST_FOOT_HIT_INSET);
+}
+
+function createFieldSlotHitTargets(isTouchDrag = false): FieldSlotHitTarget[] {
   const hitPadding = isTouchDrag ? FIELD_SLOT_TOUCH_HIT_PADDING : FIELD_SLOT_HIT_PADDING;
-  const slots = [...document.querySelectorAll<HTMLElement>("[data-field-slot-index]")];
-  for (const fieldSlot of slots) {
-    const rect = fieldSlot.getBoundingClientRect();
-    if (
-      clientX >= rect.left - hitPadding &&
-      clientX <= rect.right + hitPadding &&
-      clientY >= rect.top - hitPadding &&
-      clientY <= rect.bottom + hitPadding
-    ) {
-      const slotIndex = Number(fieldSlot.dataset.fieldSlotIndex);
-      return canDropIntoSlot(slotIndex) ? slotIndex : undefined;
+  const targets: FieldSlotHitTarget[] = [];
+
+  document.querySelectorAll<HTMLElement>("[data-field-slot-index]").forEach((fieldSlot) => {
+    const slotIndex = Number(fieldSlot.dataset.fieldSlotIndex);
+    if (!canDropIntoSlot(slotIndex)) {
+      return;
     }
+
+    const rect = fieldSlot.getBoundingClientRect();
+    targets.push({
+      slotIndex,
+      element: fieldSlot,
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      hitLeft: rect.left - hitPadding,
+      hitTop: rect.top - hitPadding,
+      hitRight: rect.right + hitPadding,
+      hitBottom: rect.bottom + hitPadding,
+    });
+  });
+
+  return targets;
+}
+
+function getFieldSlotIndexAtPoint(
+  clientX: number,
+  clientY: number,
+  targets: readonly FieldSlotHitTarget[],
+): number | undefined {
+  const exactTarget = targets.find((target) => isPointInsideFieldSlotHitTarget(clientX, clientY, target, false));
+  if (exactTarget) {
+    return exactTarget.slotIndex;
   }
 
-  return undefined;
+  return targets.find((target) => isPointInsideFieldSlotHitTarget(clientX, clientY, target, true))?.slotIndex;
+}
+
+function isPointInsideFieldSlotHitTarget(
+  clientX: number,
+  clientY: number,
+  target: FieldSlotHitTarget,
+  useHitPadding: boolean,
+): boolean {
+  const left = useHitPadding ? target.hitLeft : target.left;
+  const top = useHitPadding ? target.hitTop : target.top;
+  const right = useHitPadding ? target.hitRight : target.right;
+  const bottom = useHitPadding ? target.hitBottom : target.bottom;
+
+  return clientX >= left && clientX <= right && clientY >= top && clientY <= bottom;
 }
 
 function canDropIntoSlot(slotIndex: number): boolean {
@@ -2018,19 +2029,35 @@ function canSwapBoardSlots(source: BoardSlot, target: BoardSlot): boolean {
   return !target.cardId || isCardAllowedInSlot(target.cardId, source.slotIndex);
 }
 
-function setFieldSlotDropTarget(slotIndex: number | undefined, isValid = true): void {
-  document.querySelectorAll(".field-slot--drop-target, .field-slot--drop-invalid").forEach((slot) => {
-    slot.classList.remove("field-slot--drop-target");
-    slot.classList.remove("field-slot--drop-invalid");
-  });
-
-  if (slotIndex === undefined || !canDropIntoSlot(slotIndex)) {
+function setFieldSlotDropTarget(
+  slotIndex: number | undefined,
+  isValid = true,
+  targets: readonly FieldSlotHitTarget[] = [],
+): void {
+  const nextSlotIndex = slotIndex !== undefined && canDropIntoSlot(slotIndex) ? slotIndex : undefined;
+  const nextIsValid = nextSlotIndex === undefined ? true : isValid;
+  if (activeFieldSlotDropTarget.slotIndex === nextSlotIndex && activeFieldSlotDropTarget.isValid === nextIsValid) {
     return;
   }
 
-  document
-    .querySelector(`[data-field-slot-index="${slotIndex}"]`)
-    ?.classList.add(isValid ? "field-slot--drop-target" : "field-slot--drop-invalid");
+  activeFieldSlotDropTarget.element?.classList.remove("field-slot--drop-target", "field-slot--drop-invalid");
+  activeFieldSlotDropTarget = { isValid: true };
+
+  if (nextSlotIndex === undefined) {
+    return;
+  }
+
+  const element =
+    targets.find((target) => target.slotIndex === nextSlotIndex)?.element ??
+    document.querySelector<HTMLElement>(`[data-field-slot-index="${nextSlotIndex}"]`) ??
+    undefined;
+
+  if (!element) {
+    return;
+  }
+
+  element.classList.add(nextIsValid ? "field-slot--drop-target" : "field-slot--drop-invalid");
+  activeFieldSlotDropTarget = { slotIndex: nextSlotIndex, isValid: nextIsValid, element };
 }
 
 function setDraftDragging(isDragging: boolean): void {

@@ -8,6 +8,19 @@ import {
   type BattleTimelineUnit,
   type Owner,
 } from "../game";
+import {
+  DRAFT_CAMERA_ZOOM,
+  createFieldLayout,
+  getFieldLeftX,
+  getFieldRatio,
+  getFieldRightX,
+  getFieldSlotColumn,
+  getFieldSlotRow,
+  getLaneX,
+  getSlotLaneX,
+  getUnitPerspectiveScale,
+  type FieldLayout,
+} from "../fieldLayout";
 import { getUnitAsset, getUnitAssets } from "../unitAssets";
 
 const GAME_WIDTH = 390;
@@ -24,9 +37,11 @@ const UNIT_SPRITE_SHEET_SHADE_DISPLAY_SIZE = 101;
 const UNIT_SPRITE_SHEET_Y = -16;
 const UNIT_SPRITE_SHEET_SHADE_Y = -13;
 const UNIT_SPRITE_SHEET_COLUMNS = 5;
+const UNIT_DEPTH_BUCKET_SIZE = 8;
+const UNIT_SCALE_EPSILON = 0.01;
+const UNIT_HP_WIDTH_EPSILON = 0.25;
 const BATTLE_PRESENTATION_TIME_SCALE = 2;
 const COMBAT_TICK_DURATION_MS = 30;
-const DRAFT_CAMERA_ZOOM = 0.86;
 const BATTLE_CAMERA_ZOOM = 1.18;
 const BATTLE_CAMERA_CLOSE_ZOOM = 1.32;
 const BATTLE_CASTLE_CAMERA_ZOOM = 1.28;
@@ -79,33 +94,19 @@ export interface BattlefieldController {
   destroy: () => void;
 }
 
-interface SceneLayout {
-  width: number;
-  height: number;
-  centerY: number;
-  fieldTopY: number;
-  fieldBottomY: number;
-  fieldTopLeftX: number;
-  fieldTopRightX: number;
-  fieldBottomLeftX: number;
-  fieldBottomRightX: number;
-  laneFractions: readonly [number, number, number];
-  slotLaneFractions: readonly [number, number, number];
-  castleY: Record<Owner, number>;
-  homeRowsY: Record<Owner, readonly [number, number]>;
-  clashRowsY: Record<Owner, readonly [number, number]>;
-  castleApproachY: Record<Owner, number>;
-}
-
 interface UnitView {
   unit: BattleTimelineUnit;
   container: Phaser.GameObjects.Container;
   hpFill: Phaser.GameObjects.Rectangle;
   hpLabel: Phaser.GameObjects.Text;
-  nameLabel: Phaser.GameObjects.Text;
   sprite?: Phaser.GameObjects.Sprite;
   shadeSprite?: Phaser.GameObjects.Sprite;
   facing: UnitFacing;
+  currentFrame?: number;
+  depthBucket?: number;
+  presentationScale?: number;
+  hpFillWidth?: number;
+  hpLabelText?: string;
 }
 
 type UnitFacing = "south" | "north";
@@ -123,6 +124,15 @@ interface CastleView {
   hpFill: Phaser.GameObjects.Rectangle;
   hpLabel: Phaser.GameObjects.Text;
   hpBarWidth: number;
+  hpFillWidth?: number;
+  hpLabelText?: string;
+}
+
+interface StrikeEffect {
+  shadow: Phaser.GameObjects.Line;
+  strike: Phaser.GameObjects.Line;
+  ember: Phaser.GameObjects.Line;
+  impact: Phaser.GameObjects.Ellipse;
 }
 
 interface NavigatorPerformanceHints extends Navigator {
@@ -205,8 +215,11 @@ class CastleBattleScene extends Phaser.Scene {
   private readonly castleViews = new Map<Owner, CastleView>();
   private readonly activeCombatPresentation = new Set<Promise<void>>();
   private readonly activeWalkTimers = new Set<Phaser.Time.TimerEvent>();
+  private readonly strikePool: StrikeEffect[] = [];
+  private readonly floatTextPool: Phaser.GameObjects.Text[] = [];
+  private readonly glowPool: Phaser.GameObjects.Ellipse[] = [];
   private command: SceneCommand = { type: "draft", playerCastleHp: PLAYER_CASTLE_MAX_HP };
-  private layout!: SceneLayout;
+  private layout!: FieldLayout;
   private ready = false;
   private playToken = 0;
   private destroyed = false;
@@ -264,7 +277,7 @@ class CastleBattleScene extends Phaser.Scene {
   private applyCommand(command: SceneCommand): void {
     this.playToken += 1;
     this.clearScene();
-    this.layout = createLayout(this.scale.width, this.scale.height);
+    this.layout = createFieldLayout(this.scale.width, this.scale.height);
     this.drawField(command.type);
 
     if (command.type === "draft") {
@@ -286,6 +299,9 @@ class CastleBattleScene extends Phaser.Scene {
     this.unitViews.clear();
     this.castleViews.clear();
     this.activeCombatPresentation.clear();
+    this.strikePool.length = 0;
+    this.floatTextPool.length = 0;
+    this.glowPool.length = 0;
   }
 
   private drawField(mode: SceneCommand["type"]): void {
@@ -425,6 +441,7 @@ class CastleBattleScene extends Phaser.Scene {
   private drawParallaxBackdrop(): void {
     const { width, height, fieldTopY } = this.layout;
     const backgroundPad = 260;
+
     const hasBattlefieldBase = this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
     const baseSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_BASE_OVERSCAN_Y);
     const sidePropsSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y);
@@ -688,19 +705,7 @@ class CastleBattleScene extends Phaser.Scene {
         fontSize: "10px",
       })
       .setOrigin(0.5);
-    const nameLabel = this.add
-      .text(0, 53, unit.name, {
-        align: "center",
-        color: "#d8d0b6",
-        fixedWidth: 72,
-        fontFamily: "Arial",
-        fontSize: "10px",
-        wordWrap: { width: 72, useAdvancedWrap: true },
-      })
-      .setOrigin(0.5, 0);
-
-    container.add([groundShadow, contactShadow, ...unitArt.objects, upgradeBadge, hpBack, hpFill, hpLabel, nameLabel]);
-    this.updateUnitSpatialStyle(container);
+    container.add([groundShadow, contactShadow, ...unitArt.objects, upgradeBadge, hpBack, hpFill, hpLabel]);
 
     if (unit.summonedBy) {
       container.setAlpha(0);
@@ -712,12 +717,13 @@ class CastleBattleScene extends Phaser.Scene {
       container,
       hpFill,
       hpLabel,
-      nameLabel,
       sprite: unitArt.sprite,
       shadeSprite: unitArt.shadeSprite,
       facing: getDefaultUnitFacing(unit.owner),
+      currentFrame: unitArt.sprite ? getUnitFrame(getDefaultUnitFacing(unit.owner), "idle") : undefined,
     };
     this.unitViews.set(unit.unitId, view);
+    this.updateUnitSpatialStyle(view, true);
     this.updateUnitHp(view, unit.startHp);
   }
 
@@ -857,7 +863,7 @@ class CastleBattleScene extends Phaser.Scene {
 
       const homePosition = this.getHomePosition(view.unit.owner, view.unit.slotIndex);
       view.container.setPosition(homePosition.x, homePosition.y);
-      this.updateUnitSpatialStyle(view.container);
+      this.updateUnitSpatialStyle(view, true);
       view.container.setAlpha(0);
       view.container.setVisible(true);
       const clashPosition = this.getClashPosition(view.unit.owner, view.unit.slotIndex);
@@ -873,9 +879,10 @@ class CastleBattleScene extends Phaser.Scene {
           y: clashPosition.y,
           duration: 360,
           ease: "Sine.easeOut",
-          onUpdate: () => this.updateUnitSpatialStyle(view.container),
+          onUpdate: () => this.updateUnitSpatialStyle(view),
         });
       } finally {
+        this.updateUnitSpatialStyle(view, true);
         stopWalking();
       }
       return;
@@ -1038,8 +1045,9 @@ class CastleBattleScene extends Phaser.Scene {
       y: strike.y,
       duration: 115,
       ease: "Sine.easeOut",
-      onUpdate: () => this.updateUnitSpatialStyle(attacker.container),
+      onUpdate: () => this.updateUnitSpatialStyle(attacker),
     });
+    this.updateUnitSpatialStyle(attacker, true);
     this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
     await this.tween({
       targets: attacker.container,
@@ -1047,8 +1055,9 @@ class CastleBattleScene extends Phaser.Scene {
       y: start.y,
       duration: 130,
       ease: "Sine.easeIn",
-      onUpdate: () => this.updateUnitSpatialStyle(attacker.container),
+      onUpdate: () => this.updateUnitSpatialStyle(attacker),
     });
+    this.updateUnitSpatialStyle(attacker, true);
     this.setUnitPose(attacker, "idle", attackFacing);
   }
 
@@ -1080,8 +1089,9 @@ class CastleBattleScene extends Phaser.Scene {
       duration: 85,
       yoyo: true,
       ease: "Sine.easeOut",
-      onUpdate: () => this.updateUnitSpatialStyle(defender.container),
+      onUpdate: () => this.updateUnitSpatialStyle(defender),
     });
+    this.updateUnitSpatialStyle(defender, true);
 
     this.floatText(defender.container.x, defender.container.y - 54, "block", "#86a8ff");
     await this.flash(defender.container, 0x86a8ff);
@@ -1128,16 +1138,18 @@ class CastleBattleScene extends Phaser.Scene {
         y: startY - 4,
         duration: 90,
         ease: "Sine.easeOut",
-        onUpdate: () => this.updateUnitSpatialStyle(attacker.container),
+        onUpdate: () => this.updateUnitSpatialStyle(attacker),
       });
+      this.updateUnitSpatialStyle(attacker, true);
       this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
       await this.tween({
         targets: attacker.container,
         y: startY,
         duration: 90,
         ease: "Sine.easeIn",
-        onUpdate: () => this.updateUnitSpatialStyle(attacker.container),
+        onUpdate: () => this.updateUnitSpatialStyle(attacker),
       });
+      this.updateUnitSpatialStyle(attacker, true);
     }
 
     this.setUnitPose(attacker, "idle", attackFacing);
@@ -1160,8 +1172,9 @@ class CastleBattleScene extends Phaser.Scene {
       duration: 105,
       yoyo: true,
       ease: "Sine.easeOut",
-      onUpdate: () => this.updateUnitSpatialStyle(attacker.container),
+      onUpdate: () => this.updateUnitSpatialStyle(attacker),
     });
+    this.updateUnitSpatialStyle(attacker, true);
 
     this.updateCastleHp(owner, remainingHp);
     this.cameras.main.shake(scaleBattleDuration(120), 0.006, true);
@@ -1189,12 +1202,14 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private drawStrike(startX: number, startY: number, endX: number, endY: number): void {
-    const shadow = this.add.line(0, 0, startX + 2, startY + 4, endX + 2, endY + 4, 0x090604, 0.58).setOrigin(0);
-    const strike = this.add.line(0, 0, startX, startY, endX, endY, 0xf3f0dd, 0.88).setOrigin(0);
-    const ember = this.add.line(0, 0, startX, startY + 2, endX, endY + 2, 0xf08a5f, 0.52).setOrigin(0);
-    const impact = this.add
-      .ellipse(endX, endY + 8, 34, 12, 0xe4a94f, 0.18)
-      .setBlendMode(Phaser.BlendModes.ADD);
+    const effect = this.acquireStrikeEffect();
+    const { shadow, strike, ember, impact } = effect;
+
+    shadow.setTo(startX + 2, startY + 4, endX + 2, endY + 4);
+    strike.setTo(startX, startY, endX, endY);
+    ember.setTo(startX, startY + 2, endX, endY + 2);
+    impact.setPosition(endX, endY + 8);
+
     shadow.setDepth(899);
     strike.setDepth(900);
     ember.setDepth(901);
@@ -1204,13 +1219,41 @@ class CastleBattleScene extends Phaser.Scene {
       alpha: 0,
       scaleX: 1.18,
       duration: scaleBattleDuration(140),
-      onComplete: () => {
-        shadow.destroy();
-        strike.destroy();
-        ember.destroy();
-        impact.destroy();
-      },
+      onComplete: () => this.releaseStrikeEffect(effect),
     });
+  }
+
+  private acquireStrikeEffect(): StrikeEffect {
+    const effect = this.strikePool.pop() ?? this.createStrikeEffect();
+    const objects = [effect.shadow, effect.strike, effect.ember, effect.impact];
+
+    this.tweens.killTweensOf(objects);
+    objects.forEach((object) => {
+      object.setActive(true).setVisible(true).setAlpha(1).setScale(1);
+    });
+    effect.impact.setBlendMode(Phaser.BlendModes.ADD);
+
+    return effect;
+  }
+
+  private createStrikeEffect(): StrikeEffect {
+    return {
+      shadow: this.add.line(0, 0, 0, 0, 0, 0, 0x090604, 0.58).setOrigin(0).setActive(false).setVisible(false),
+      strike: this.add.line(0, 0, 0, 0, 0, 0, 0xf3f0dd, 0.88).setOrigin(0).setActive(false).setVisible(false),
+      ember: this.add.line(0, 0, 0, 0, 0, 0, 0xf08a5f, 0.52).setOrigin(0).setActive(false).setVisible(false),
+      impact: this.add
+        .ellipse(0, 0, 34, 12, 0xe4a94f, 0.18)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setActive(false)
+        .setVisible(false),
+    };
+  }
+
+  private releaseStrikeEffect(effect: StrikeEffect): void {
+    [effect.shadow, effect.strike, effect.ember, effect.impact].forEach((object) => {
+      object.setActive(false).setVisible(false).setAlpha(1).setScale(1);
+    });
+    this.strikePool.push(effect);
   }
 
   private showResult(winner: string): void {
@@ -1247,10 +1290,11 @@ class CastleBattleScene extends Phaser.Scene {
         duration,
         ease: "Sine.easeInOut",
         onUpdate: () => {
-          this.updateUnitSpatialStyle(view.container);
+          this.updateUnitSpatialStyle(view);
         },
       });
     } finally {
+      this.updateUnitSpatialStyle(view, true);
       stopWalking();
     }
   }
@@ -1291,19 +1335,41 @@ class CastleBattleScene extends Phaser.Scene {
 
     const frame = getUnitFrame(facing, pose);
 
-    view.sprite.setFrame(frame);
-    view.sprite.setFlipX(false);
+    if (view.currentFrame !== frame) {
+      view.sprite.setFrame(frame);
+      view.currentFrame = frame;
+
+      if (view.shadeSprite) {
+        view.shadeSprite.setFrame(frame);
+      }
+    }
+
+    if (view.sprite.flipX) {
+      view.sprite.setFlipX(false);
+    }
 
     if (view.shadeSprite) {
-      view.shadeSprite.setFrame(frame);
       view.shadeSprite.setFlipX(false);
-      view.shadeSprite.setX(2);
+      if (view.shadeSprite.x !== 2) {
+        view.shadeSprite.setX(2);
+      }
     }
   }
 
-  private updateUnitSpatialStyle(container: Phaser.GameObjects.Container): void {
-    container.setDepth(Math.round(container.y));
-    container.setScale(getPerspectiveScale(this.layout, container.y) * UNIT_PRESENTATION_SCALE);
+  private updateUnitSpatialStyle(view: UnitView, force = false): void {
+    const { container } = view;
+    const nextDepthBucket = Math.round(container.y / UNIT_DEPTH_BUCKET_SIZE) * UNIT_DEPTH_BUCKET_SIZE;
+    const nextScale = getUnitPerspectiveScale(this.layout, container.y) * UNIT_PRESENTATION_SCALE;
+
+    if (force || view.depthBucket !== nextDepthBucket) {
+      container.setDepth(nextDepthBucket);
+      view.depthBucket = nextDepthBucket;
+    }
+
+    if (force || view.presentationScale === undefined || Math.abs(view.presentationScale - nextScale) >= UNIT_SCALE_EPSILON) {
+      container.setScale(nextScale);
+      view.presentationScale = nextScale;
+    }
   }
 
   private setDraftCamera(): void {
@@ -1337,8 +1403,18 @@ class CastleBattleScene extends Phaser.Scene {
 
   private updateUnitHp(view: UnitView, hp: number): void {
     const ratio = view.unit.maxHp > 0 ? clamp(hp / view.unit.maxHp, 0, 1) : 0;
-    view.hpFill.setDisplaySize(Math.max(1, UNIT_HP_BAR_WIDTH * ratio), 6);
-    view.hpLabel.setText(`${Math.max(0, hp)}/${view.unit.maxHp}`);
+    const fillWidth = Math.max(1, UNIT_HP_BAR_WIDTH * ratio);
+    const hpLabelText = `${Math.max(0, hp)}/${view.unit.maxHp}`;
+
+    if (view.hpFillWidth === undefined || Math.abs(view.hpFillWidth - fillWidth) >= UNIT_HP_WIDTH_EPSILON) {
+      view.hpFill.setDisplaySize(fillWidth, 6);
+      view.hpFillWidth = fillWidth;
+    }
+
+    if (view.hpLabelText !== hpLabelText) {
+      view.hpLabel.setText(hpLabelText);
+      view.hpLabelText = hpLabelText;
+    }
   }
 
   private updateCastleHp(owner: Owner, hp: number): void {
@@ -1348,22 +1424,24 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     const ratio = view.castle.maxHp > 0 ? clamp(hp / view.castle.maxHp, 0, 1) : 0;
-    view.hpFill.setDisplaySize(Math.max(1, view.hpBarWidth * ratio), view.hpFill.displayHeight);
-    view.hpLabel.setText(`${Math.max(0, hp)}/${view.castle.maxHp}`);
+    const fillWidth = Math.max(1, view.hpBarWidth * ratio);
+    const hpLabelText = `${Math.max(0, hp)}/${view.castle.maxHp}`;
+
+    if (view.hpFillWidth === undefined || Math.abs(view.hpFillWidth - fillWidth) >= UNIT_HP_WIDTH_EPSILON) {
+      view.hpFill.setDisplaySize(fillWidth, view.hpFill.displayHeight);
+      view.hpFillWidth = fillWidth;
+    }
+
+    if (view.hpLabelText !== hpLabelText) {
+      view.hpLabel.setText(hpLabelText);
+      view.hpLabelText = hpLabelText;
+    }
   }
 
   private floatText(x: number, y: number, label: string, color: string): void {
-    const text = this.add
-      .text(x, y, label, {
-        color,
-        fontFamily: "Arial",
-        fontSize: "13px",
-        fontStyle: "bold",
-        stroke: "#10130f",
-        strokeThickness: 3,
-      })
-      .setOrigin(0.5)
-      .setDepth(980);
+    const text = this.acquireFloatText();
+
+    text.setPosition(x, y).setText(label).setColor(color).setDepth(980);
 
     this.tweens.add({
       targets: text,
@@ -1371,12 +1449,41 @@ class CastleBattleScene extends Phaser.Scene {
       alpha: 0,
       duration: scaleBattleDuration(520),
       ease: "Sine.easeOut",
-      onComplete: () => text.destroy(),
+      onComplete: () => this.releaseFloatText(text),
     });
   }
 
+  private acquireFloatText(): Phaser.GameObjects.Text {
+    const text = this.floatTextPool.pop() ?? this.createFloatText();
+
+    this.tweens.killTweensOf(text);
+    text.setActive(true).setVisible(true).setAlpha(1).setScale(1);
+
+    return text;
+  }
+
+  private createFloatText(): Phaser.GameObjects.Text {
+    return this.add
+      .text(0, 0, "", {
+        color: "#f3f0dd",
+        fontFamily: "Arial",
+        fontSize: "13px",
+        fontStyle: "bold",
+        stroke: "#10130f",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setActive(false)
+      .setVisible(false);
+  }
+
+  private releaseFloatText(text: Phaser.GameObjects.Text): void {
+    text.setActive(false).setVisible(false).setAlpha(1).setText("");
+    this.floatTextPool.push(text);
+  }
+
   private async flash(target: Phaser.GameObjects.Container, color: number): Promise<void> {
-    const glow = this.add.ellipse(target.x, target.y - 8, 74, 74, color, 0.32).setDepth(target.depth + 1);
+    const glow = this.acquireGlow(target.x, target.y - 8, 74, 74, color, 0.32).setDepth(target.depth + 1);
 
     await this.tween({
       targets: glow,
@@ -1386,11 +1493,11 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeOut",
     });
 
-    glow.destroy();
+    this.releaseGlow(glow);
   }
 
   private async pulse(target: Phaser.GameObjects.Container, color: number): Promise<void> {
-    const glow = this.add.ellipse(target.x, target.y - 8, 68, 68, color, 0.22).setDepth(target.depth + 1);
+    const glow = this.acquireGlow(target.x, target.y - 8, 68, 68, color, 0.22).setDepth(target.depth + 1);
 
     await this.tween({
       targets: glow,
@@ -1400,28 +1507,53 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeOut",
     });
 
-    glow.destroy();
+    this.releaseGlow(glow);
+  }
+
+  private acquireGlow(x: number, y: number, width: number, height: number, color: number, alpha: number): Phaser.GameObjects.Ellipse {
+    const glow = this.glowPool.pop() ?? this.createGlow();
+
+    this.tweens.killTweensOf(glow);
+    glow
+      .setPosition(x, y)
+      .setSize(width, height)
+      .setFillStyle(color, alpha)
+      .setActive(true)
+      .setVisible(true)
+      .setAlpha(1)
+      .setScale(1);
+
+    return glow;
+  }
+
+  private createGlow(): Phaser.GameObjects.Ellipse {
+    return this.add.ellipse(0, 0, 1, 1, 0xffffff, 0).setActive(false).setVisible(false);
+  }
+
+  private releaseGlow(glow: Phaser.GameObjects.Ellipse): void {
+    glow.setActive(false).setVisible(false).setAlpha(1).setScale(1);
+    this.glowPool.push(glow);
   }
 
   private getHomePosition(owner: Owner, slotIndex: number): { x: number; y: number } {
-    const row = getSlotRow(slotIndex);
+    const row = getFieldSlotRow(slotIndex);
     const y = this.layout.homeRowsY[owner][row] ?? this.layout.homeRowsY[owner][0];
 
     return {
       x:
         owner === "player"
-          ? getSlotLaneX(this.layout, getSlotColumn(slotIndex), y)
-          : getLaneX(this.layout, getSlotColumn(slotIndex), y),
+          ? getSlotLaneX(this.layout, getFieldSlotColumn(slotIndex), y)
+          : getLaneX(this.layout, getFieldSlotColumn(slotIndex), y),
       y,
     };
   }
 
   private getClashPosition(owner: Owner, slotIndex: number): { x: number; y: number } {
-    const row = getSlotRow(slotIndex);
+    const row = getFieldSlotRow(slotIndex);
     const y = this.layout.clashRowsY[owner][row] ?? this.layout.clashRowsY[owner][0];
 
     return {
-      x: getLaneX(this.layout, getSlotColumn(slotIndex), y),
+      x: getLaneX(this.layout, getFieldSlotColumn(slotIndex), y),
       y,
     };
   }
@@ -1430,7 +1562,7 @@ class CastleBattleScene extends Phaser.Scene {
     const y = this.layout.castleApproachY[owner];
 
     return {
-      x: getLaneX(this.layout, getSlotColumn(slotIndex), y),
+      x: getLaneX(this.layout, getFieldSlotColumn(slotIndex), y),
       y,
     };
   }
@@ -1522,78 +1654,14 @@ function isConcurrentCombatEvent(event: BattleTimelineEvent): boolean {
   );
 }
 
-function createLayout(width: number, height: number): SceneLayout {
-  const centerY = height / 2;
-  const fieldTopY = 104;
-  const fieldBottomY = height - 52;
-
-  return {
-    width,
-    height,
-    centerY,
-    fieldTopY,
-    fieldBottomY,
-    fieldTopLeftX: width * 0.42,
-    fieldTopRightX: width * 0.58,
-    fieldBottomLeftX: width * -0.2,
-    fieldBottomRightX: width * 1.2,
-    laneFractions: [0.12, 0.5, 0.88],
-    slotLaneFractions: [0.28, 0.5, 0.72],
-    castleY: {
-      enemy: 50,
-      player: height - 4,
-    },
-    homeRowsY: {
-      enemy: [height * 0.28, height * 0.2],
-      player: [height * 0.67, height * 0.78],
-    },
-    clashRowsY: {
-      enemy: [centerY - 68, centerY - 108],
-      player: [centerY + 38, centerY + 74],
-    },
-    castleApproachY: {
-      enemy: 106,
-      player: height - 78,
-    },
-  };
-}
-
-function getBackdropDisplaySize(layout: SceneLayout, overscanY: number): { width: number; height: number } {
+function getBackdropDisplaySize(layout: FieldLayout, overscanY: number): { width: number; height: number } {
   return {
     width: layout.width + overscanY * (layout.width / layout.height),
     height: layout.height + overscanY,
   };
 }
 
-function getFieldRatio(layout: SceneLayout, y: number): number {
-  return clamp((y - layout.fieldTopY) / (layout.fieldBottomY - layout.fieldTopY), 0, 1);
-}
-
-function getFieldLeftX(layout: SceneLayout, y: number): number {
-  return Phaser.Math.Linear(layout.fieldTopLeftX, layout.fieldBottomLeftX, getFieldRatio(layout, y));
-}
-
-function getFieldRightX(layout: SceneLayout, y: number): number {
-  return Phaser.Math.Linear(layout.fieldTopRightX, layout.fieldBottomRightX, getFieldRatio(layout, y));
-}
-
-function getLaneX(layout: SceneLayout, column: number, y: number): number {
-  const fraction = layout.laneFractions[column] ?? 0.5;
-
-  return Phaser.Math.Linear(getFieldLeftX(layout, y), getFieldRightX(layout, y), fraction);
-}
-
-function getSlotLaneX(layout: SceneLayout, column: number, y: number): number {
-  const fraction = layout.slotLaneFractions[column] ?? 0.5;
-
-  return Phaser.Math.Linear(getFieldLeftX(layout, y), getFieldRightX(layout, y), fraction);
-}
-
-function getPerspectiveScale(layout: SceneLayout, y: number): number {
-  return Phaser.Math.Linear(0.6, 1.16, getFieldRatio(layout, y));
-}
-
-function getCameraFocusPoint(layout: SceneLayout, x: number, y: number, zoom: number): { x: number; y: number } {
+function getCameraFocusPoint(layout: FieldLayout, x: number, y: number, zoom: number): { x: number; y: number } {
   const horizontalInset = layout.width * 0.12;
   const verticalInset = Math.max(82, 108 / zoom);
 
@@ -1674,7 +1742,7 @@ function strokeLocalTrapezoid(
 
 function drawFieldBand(
   graphics: Phaser.GameObjects.Graphics,
-  layout: SceneLayout,
+  layout: FieldLayout,
   topY: number,
   bottomY: number,
   color: number,
@@ -1692,7 +1760,7 @@ function drawFieldBand(
 
 function drawBoardPlane(
   graphics: Phaser.GameObjects.Graphics,
-  layout: SceneLayout,
+  layout: FieldLayout,
   topY: number,
   bottomY: number,
   color: number,
@@ -1753,7 +1821,7 @@ function drawTreeline(
   }
 }
 
-function drawSideForest(graphics: Phaser.GameObjects.Graphics, layout: SceneLayout): void {
+function drawSideForest(graphics: Phaser.GameObjects.Graphics, layout: FieldLayout): void {
   const treeCount = 18;
 
   for (let index = 0; index < treeCount; index += 1) {
@@ -1772,7 +1840,7 @@ function drawSideForest(graphics: Phaser.GameObjects.Graphics, layout: SceneLayo
   }
 }
 
-function drawSideProps(graphics: Phaser.GameObjects.Graphics, layout: SceneLayout): void {
+function drawSideProps(graphics: Phaser.GameObjects.Graphics, layout: FieldLayout): void {
   const propCount = 12;
 
   graphics.lineStyle(1, 0xe4c15e, 0.1);
@@ -1813,14 +1881,6 @@ function getPatternValue(index: number, salt: number): number {
   const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
 
   return value - Math.floor(value);
-}
-
-function getSlotColumn(slotIndex: number): number {
-  return slotIndex % 3;
-}
-
-function getSlotRow(slotIndex: number): number {
-  return slotIndex < 3 ? 0 : 1;
 }
 
 function createInitials(name: string): string {
