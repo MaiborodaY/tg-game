@@ -66,6 +66,7 @@ const BATTLEFIELD_LOW_POWER_OVERSCAN_Y = 36;
 const BATTLEFIELD_BASE_OVERSCAN_Y = 120;
 const BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y = 54;
 const BATTLEFIELD_SIDE_PROPS_ALPHA = 0.56;
+const USE_DOM_BATTLEFIELD_ENVIRONMENT = true;
 const ENABLE_BATTLEFIELD_SIDE_PROPS = false;
 const SHOW_FIELD_DEBUG_GUIDES = false;
 const BOARD_STAGE_TOP_OFFSET = 12;
@@ -181,7 +182,7 @@ export function mountBattlefield(parent: HTMLElement): BattlefieldController {
     parent,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    backgroundColor: "#10150f",
+    backgroundColor: "rgba(0, 0, 0, 0)",
     fps: {
       target: renderProfile.fpsTarget,
       limit: renderProfile.fpsLimit,
@@ -194,7 +195,7 @@ export function mountBattlefield(parent: HTMLElement): BattlefieldController {
       desynchronized: renderProfile.lowPower,
       powerPreference: renderProfile.lowPower ? "low-power" : "high-performance",
       roundPixels: renderProfile.lowPower,
-      transparent: false,
+      transparent: true,
     },
     scale: {
       mode: Phaser.Scale.RESIZE,
@@ -230,8 +231,12 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(PLAYER_KEEP_TEXTURE_KEY, PLAYER_KEEP_ASSET_URL);
-    this.load.image(BATTLEFIELD_BASE_TEXTURE_KEY, BATTLEFIELD_BASE_ASSET_URL);
+    if (!USE_DOM_BATTLEFIELD_ENVIRONMENT) {
+      this.load.image(PLAYER_KEEP_TEXTURE_KEY, PLAYER_KEEP_ASSET_URL);
+    }
+    if (!USE_DOM_BATTLEFIELD_ENVIRONMENT) {
+      this.load.image(BATTLEFIELD_BASE_TEXTURE_KEY, BATTLEFIELD_BASE_ASSET_URL);
+    }
     getUnitAssets().forEach((asset) => {
       if (asset.spriteSheet) {
         this.load.spritesheet(asset.spriteSheet.key, asset.spriteSheet.path, {
@@ -242,7 +247,7 @@ class CastleBattleScene extends Phaser.Scene {
         this.load.image(asset.key, asset.path);
       }
     });
-    if (ENABLE_BATTLEFIELD_SIDE_PROPS) {
+    if (!USE_DOM_BATTLEFIELD_ENVIRONMENT && ENABLE_BATTLEFIELD_SIDE_PROPS) {
       this.load.image(BATTLEFIELD_SIDE_PROPS_TEXTURE_KEY, BATTLEFIELD_SIDE_PROPS_ASSET_URL);
     }
   }
@@ -308,11 +313,14 @@ class CastleBattleScene extends Phaser.Scene {
 
   private drawField(mode: SceneCommand["type"]): void {
     const { width, centerY, fieldTopY, fieldBottomY, laneFractions } = this.layout;
-    const hasBattlefieldBase = this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
+    const hasDomEnvironment = USE_DOM_BATTLEFIELD_ENVIRONMENT;
+    const hasBattlefieldBase = !hasDomEnvironment && this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
 
-    this.drawParallaxBackdrop();
+    if (!hasDomEnvironment) {
+      this.drawParallaxBackdrop();
+    }
 
-    if (!hasBattlefieldBase) {
+    if (!hasBattlefieldBase && !hasDomEnvironment) {
       const field = this.add.graphics().setDepth(-30);
       field.fillStyle(0x141c12, 0.9);
       field.beginPath();
@@ -330,7 +338,7 @@ class CastleBattleScene extends Phaser.Scene {
       this.drawBoardStageOverlay();
     }
 
-    if (hasBattlefieldBase && !this.renderProfile.lowPower) {
+    if ((hasBattlefieldBase || hasDomEnvironment) && !this.renderProfile.lowPower) {
       this.drawFieldGuideRunes();
 
       if (mode === "battle") {
@@ -564,16 +572,19 @@ class CastleBattleScene extends Phaser.Scene {
     const color = castle.owner === "player" ? 0x6fbf73 : 0xd87458;
     const darkColor = castle.owner === "player" ? 0x315f36 : 0x743322;
     const container = this.add.container(x, y);
-    const useKeepAsset = this.textures.exists(PLAYER_KEEP_TEXTURE_KEY);
-    const castleArt = useKeepAsset
-      ? this.createKeepAssetArt(castle.owner)
-      : this.createProceduralCastleArt(color, darkColor);
-    const castlePlatform = this.renderProfile.lowPower ? [] : this.createCastlePlatform(castle.owner);
+    const hasDomCastleArt = USE_DOM_BATTLEFIELD_ENVIRONMENT;
+    const useKeepAsset = !hasDomCastleArt && this.textures.exists(PLAYER_KEEP_TEXTURE_KEY);
+    const useKeepLayout = hasDomCastleArt || useKeepAsset;
+    let castleArt: Phaser.GameObjects.GameObject[] = [];
+    if (!hasDomCastleArt) {
+      castleArt = useKeepAsset ? this.createKeepAssetArt(castle.owner) : this.createProceduralCastleArt(color, darkColor);
+    }
+    const castlePlatform = hasDomCastleArt || this.renderProfile.lowPower ? [] : this.createCastlePlatform(castle.owner);
 
     const hpBarWidth = castle.owner === "enemy" ? ENEMY_CASTLE_HP_BAR_WIDTH : CASTLE_HP_BAR_WIDTH;
     const hpBarHeight = castle.owner === "enemy" ? 6 : 8;
-    const hpBarY = useKeepAsset ? (castle.owner === "player" ? 58 : 49) : 43;
-    const hpLabelY = useKeepAsset ? (castle.owner === "player" ? 70 : 60) : 57;
+    const hpBarY = useKeepLayout ? (castle.owner === "player" ? 58 : 49) : 43;
+    const hpLabelY = useKeepLayout ? (castle.owner === "player" ? 70 : 60) : 57;
     const hpBack = this.add.rectangle(-hpBarWidth / 2, hpBarY, hpBarWidth, hpBarHeight, 0x3b1f1b, 0.9).setOrigin(0, 0.5);
     const hpFill = this.add.rectangle(-hpBarWidth / 2, hpBarY, hpBarWidth, hpBarHeight, color, 1).setOrigin(0, 0.5);
     const hpLabel = this.add
@@ -582,7 +593,7 @@ class CastleBattleScene extends Phaser.Scene {
         fontFamily: "Arial",
         fontSize: castle.owner === "enemy" ? "10px" : "11px",
         stroke: "#10130f",
-        strokeThickness: useKeepAsset ? 3 : 0,
+        strokeThickness: useKeepLayout ? 3 : 0,
       })
       .setOrigin(0.5);
 

@@ -43,6 +43,12 @@ import {
 } from "./fieldLayout";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
 
+const BATTLEFIELD_BASE_IMAGE_URL = new URL(
+  "./assets/environment/battlefield/common_forest/battlefield_base.webp",
+  import.meta.url,
+).href;
+const KEEP_IMAGE_URL = new URL("./assets/environment/player_keep/keep.webp", import.meta.url).href;
+
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
 type PlayMode = "solo" | "online";
 type CardArchetype = "tank" | "damage" | "support";
@@ -160,6 +166,7 @@ let uiState: UiState = createInitialUiState();
 let shellElement: HTMLElement | undefined;
 let stageElement: HTMLElement | undefined;
 let sceneHostElement: HTMLElement | undefined;
+let scenePhaserHostElement: HTMLElement | undefined;
 let battlefieldController: BattlefieldController | undefined;
 let battlefieldMountRequested = false;
 let latestBattlefieldCommand: BattlefieldCommand | undefined;
@@ -1294,10 +1301,50 @@ function getSceneCanvasHost(): HTMLElement {
   if (!sceneHostElement) {
     sceneHostElement = document.createElement("div");
     sceneHostElement.className = "scene-canvas-host";
-    sceneHostElement.append(createSceneCanvasMessage("Loading scene..."));
+    sceneHostElement.append(createSceneEnvironment(), getScenePhaserHost());
   }
 
   return sceneHostElement;
+}
+
+function getScenePhaserHost(): HTMLElement {
+  if (!scenePhaserHostElement) {
+    scenePhaserHostElement = document.createElement("div");
+    scenePhaserHostElement.className = "scene-phaser-host";
+    scenePhaserHostElement.append(createSceneCanvasMessage("Loading scene..."));
+  }
+
+  return scenePhaserHostElement;
+}
+
+function createSceneEnvironment(): HTMLElement {
+  const environment = document.createElement("div");
+  environment.className = "scene-environment";
+
+  const battlefield = document.createElement("img");
+  battlefield.className = "scene-environment__battlefield";
+  battlefield.src = BATTLEFIELD_BASE_IMAGE_URL;
+  battlefield.alt = "";
+  battlefield.decoding = "async";
+  battlefield.draggable = false;
+
+  const enemyKeep = createSceneKeep("enemy");
+  const playerKeep = createSceneKeep("player");
+
+  environment.append(battlefield, enemyKeep, playerKeep);
+
+  return environment;
+}
+
+function createSceneKeep(owner: Owner): HTMLImageElement {
+  const keep = document.createElement("img");
+  keep.className = `scene-environment__keep scene-environment__keep--${owner}`;
+  keep.src = KEEP_IMAGE_URL;
+  keep.alt = "";
+  keep.decoding = "async";
+  keep.draggable = false;
+
+  return keep;
 }
 
 function createSceneCanvasMessage(message: string): HTMLElement {
@@ -1352,8 +1399,8 @@ function mountBattlefield(): void {
   battlefieldMountRequested = true;
 
   requestAnimationFrame(() => {
-    const host = getSceneCanvasHost();
-    if (!host.isConnected) {
+    const phaserHost = getScenePhaserHost();
+    if (!phaserHost.isConnected) {
       battlefieldMountRequested = false;
       return;
     }
@@ -1362,11 +1409,11 @@ function mountBattlefield(): void {
       .then(({ mountBattlefield }) => {
         battlefieldMountRequested = false;
 
-        if (!host.isConnected) {
+        if (!phaserHost.isConnected) {
           return;
         }
 
-        battlefieldController = mountBattlefield(host);
+        battlefieldController = mountBattlefield(phaserHost);
 
         if (latestBattlefieldCommand) {
           applyBattlefieldCommand(latestBattlefieldCommand);
@@ -1376,8 +1423,8 @@ function mountBattlefield(): void {
         battlefieldMountRequested = false;
         console.error("Failed to mount Phaser battlefield", error);
 
-        if (host.isConnected) {
-          host.replaceChildren(createSceneCanvasMessage("Scene renderer failed."));
+        if (phaserHost.isConnected) {
+          phaserHost.replaceChildren(createSceneCanvasMessage("Scene renderer failed."));
         }
       });
   });
