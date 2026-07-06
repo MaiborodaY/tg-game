@@ -1,4 +1,5 @@
 node_modules/
 .tmp/
 workers/**/.wrangler/
+workers/draft-battler-pvp/dist/
 

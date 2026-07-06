@@ -1,4 +1,4 @@
-name: Deploy Draft Battler PvP Worker
+name: Deploy Draft Battler App Worker
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - ".github/workflows/deploy-draft-battler-pvp.yml"
+      - "draft-battler/**"
       - "workers/draft-battler-pvp/**"
       - "package.json"
       - "package-lock.json"
@@ -13,12 +14,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: draft-battler-pvp-worker-${{ github.ref }}
+  group: draft-battler-app-worker-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Deploy Worker
+    name: Deploy App Worker
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,10 +37,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck Draft Battler PvP Worker
-        run: npx tsc --noEmit --project workers/draft-battler-pvp/tsconfig.json
+      - name: Typecheck Draft Battler frontend
+        run: npm run draft-battler:typecheck
 
-      - name: Deploy Draft Battler PvP Worker
+      - name: Build Draft Battler frontend
+        run: npm run draft-battler:build
+
+      - name: Typecheck Draft Battler PvP Worker
+        run: npm run draft-battler:pvp:typecheck
+
+      - name: Deploy Draft Battler App Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
