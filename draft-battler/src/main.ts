@@ -43,12 +43,6 @@ import {
 } from "./fieldLayout";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
 
-const BATTLEFIELD_BASE_IMAGE_URL = new URL(
-  "./assets/environment/battlefield/common_forest/battlefield_base.webp",
-  import.meta.url,
-).href;
-const KEEP_IMAGE_URL = new URL("./assets/environment/player_keep/keep.webp", import.meta.url).href;
-
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
 type PlayMode = "solo" | "online";
 type CardArchetype = "tank" | "damage" | "support";
@@ -1301,7 +1295,7 @@ function getSceneCanvasHost(): HTMLElement {
   if (!sceneHostElement) {
     sceneHostElement = document.createElement("div");
     sceneHostElement.className = "scene-canvas-host";
-    sceneHostElement.append(createSceneEnvironment(), getScenePhaserHost());
+    sceneHostElement.append(getScenePhaserHost());
   }
 
   return sceneHostElement;
@@ -1315,36 +1309,6 @@ function getScenePhaserHost(): HTMLElement {
   }
 
   return scenePhaserHostElement;
-}
-
-function createSceneEnvironment(): HTMLElement {
-  const environment = document.createElement("div");
-  environment.className = "scene-environment";
-
-  const battlefield = document.createElement("img");
-  battlefield.className = "scene-environment__battlefield";
-  battlefield.src = BATTLEFIELD_BASE_IMAGE_URL;
-  battlefield.alt = "";
-  battlefield.decoding = "async";
-  battlefield.draggable = false;
-
-  const enemyKeep = createSceneKeep("enemy");
-  const playerKeep = createSceneKeep("player");
-
-  environment.append(battlefield, enemyKeep, playerKeep);
-
-  return environment;
-}
-
-function createSceneKeep(owner: Owner): HTMLImageElement {
-  const keep = document.createElement("img");
-  keep.className = `scene-environment__keep scene-environment__keep--${owner}`;
-  keep.src = KEEP_IMAGE_URL;
-  keep.alt = "";
-  keep.decoding = "async";
-  keep.draggable = false;
-
-  return keep;
 }
 
 function createSceneCanvasMessage(message: string): HTMLElement {

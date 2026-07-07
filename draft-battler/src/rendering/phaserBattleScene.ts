@@ -6,6 +6,7 @@ import {
   type BattleTimelineCastle,
   type BattleTimelineEvent,
   type BattleTimelineUnit,
+  type CombatStepEvent,
   type Owner,
 } from "../game";
 import {
@@ -33,15 +34,15 @@ const UNIT_PRESENTATION_SCALE = 0.86;
 const UNIT_SPRITE_DISPLAY_WIDTH = 56;
 const UNIT_SPRITE_DISPLAY_HEIGHT = 68;
 const UNIT_SPRITE_SHEET_DISPLAY_SIZE = 96;
-const UNIT_SPRITE_SHEET_SHADE_DISPLAY_SIZE = 101;
 const UNIT_SPRITE_SHEET_Y = -16;
-const UNIT_SPRITE_SHEET_SHADE_Y = -13;
 const UNIT_SPRITE_SHEET_COLUMNS = 5;
 const UNIT_DEPTH_BUCKET_SIZE = 8;
 const UNIT_SCALE_EPSILON = 0.01;
 const UNIT_HP_WIDTH_EPSILON = 0.25;
 const BATTLE_PRESENTATION_TIME_SCALE = 2;
 const COMBAT_TICK_DURATION_MS = 30;
+const COMBAT_STEP_RESULT_DELAY_MS = 110;
+const COMBAT_STEP_FLOAT_TEXT_LIMIT = 1;
 const BATTLE_CAMERA_ZOOM = 1.18;
 const BATTLE_CAMERA_CLOSE_ZOOM = 1.32;
 const BATTLE_CASTLE_CAMERA_ZOOM = 1.28;
@@ -62,20 +63,15 @@ const BATTLEFIELD_SIDE_PROPS_ASSET_URL = new URL(
   "../assets/environment/battlefield/common_forest/side_props.webp",
   import.meta.url,
 ).href;
-const BATTLEFIELD_LOW_POWER_OVERSCAN_Y = 36;
-const BATTLEFIELD_BASE_OVERSCAN_Y = 120;
+const BATTLEFIELD_BASE_OVERSCAN_Y = 36;
 const BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y = 54;
 const BATTLEFIELD_SIDE_PROPS_ALPHA = 0.56;
-const USE_DOM_BATTLEFIELD_ENVIRONMENT = true;
+const USE_DOM_BATTLEFIELD_ENVIRONMENT = false;
 const ENABLE_BATTLEFIELD_SIDE_PROPS = false;
 const SHOW_FIELD_DEBUG_GUIDES = false;
 const BOARD_STAGE_TOP_OFFSET = 12;
 const BOARD_STAGE_BOTTOM_OFFSET = 54;
-const LOW_POWER_FPS_LIMIT = 30;
-const DEFAULT_FPS_TARGET = 60;
-const LOW_POWER_CPU_CORES = 4;
-const LOW_POWER_DEVICE_MEMORY_GB = 4;
-const COMPACT_TOUCH_VIEWPORT_WIDTH = 520;
+const FPS_TARGET = 60;
 
 export interface PlayBattleInput {
   timeline: BattleTimeline;
@@ -102,7 +98,6 @@ interface UnitView {
   hpFill: Phaser.GameObjects.Rectangle;
   hpLabel: Phaser.GameObjects.Text;
   sprite?: Phaser.GameObjects.Sprite;
-  shadeSprite?: Phaser.GameObjects.Sprite;
   facing: UnitFacing;
   currentFrame?: number;
   depthBucket?: number;
@@ -117,7 +112,6 @@ type UnitPose = "idle" | "walkA" | "walkB" | "attack" | "dead";
 interface UnitArtResult {
   objects: Phaser.GameObjects.GameObject[];
   sprite?: Phaser.GameObjects.Sprite;
-  shadeSprite?: Phaser.GameObjects.Sprite;
 }
 
 interface CastleView {
@@ -133,74 +127,36 @@ interface CastleView {
 interface StrikeEffect {
   shadow: Phaser.GameObjects.Line;
   strike: Phaser.GameObjects.Line;
-  ember: Phaser.GameObjects.Line;
-  impact: Phaser.GameObjects.Ellipse;
-}
-
-interface NavigatorPerformanceHints extends Navigator {
-  connection?: {
-    saveData?: boolean;
-  };
-  deviceMemory?: number;
-}
-
-interface RenderPerformanceProfile {
-  fpsLimit: number;
-  fpsTarget: number;
-  lowPower: boolean;
-}
-
-function getRenderPerformanceProfile(): RenderPerformanceProfile {
-  if (typeof window === "undefined" || typeof navigator === "undefined") {
-    return { fpsLimit: 0, fpsTarget: DEFAULT_FPS_TARGET, lowPower: false };
-  }
-
-  const nav = navigator as NavigatorPerformanceHints;
-  const minViewportSide = Math.min(window.innerWidth, window.innerHeight);
-  const compactTouchViewport = navigator.maxTouchPoints > 0 && minViewportSide <= COMPACT_TOUCH_VIEWPORT_WIDTH;
-  const lowCpu = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= LOW_POWER_CPU_CORES;
-  const lowMemory = typeof nav.deviceMemory === "number" && nav.deviceMemory <= LOW_POWER_DEVICE_MEMORY_GB;
-  const saveData = nav.connection?.saveData === true;
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const slowUpdate = window.matchMedia("(update: slow)").matches;
-  const lowPower = compactTouchViewport || lowCpu || lowMemory || saveData || reducedMotion || slowUpdate;
-
-  return {
-    fpsLimit: lowPower ? LOW_POWER_FPS_LIMIT : 0,
-    fpsTarget: lowPower ? LOW_POWER_FPS_LIMIT : DEFAULT_FPS_TARGET,
-    lowPower,
-  };
 }
 
 export function mountBattlefield(parent: HTMLElement): BattlefieldController {
   parent.replaceChildren();
 
-  const renderProfile = getRenderPerformanceProfile();
-  const scene = new CastleBattleScene(renderProfile);
+  const scene = new CastleBattleScene();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    backgroundColor: "rgba(0, 0, 0, 0)",
+    backgroundColor: "#10150f",
     fps: {
-      target: renderProfile.fpsTarget,
-      limit: renderProfile.fpsLimit,
+      target: FPS_TARGET,
+      limit: 0,
       min: 20,
       smoothStep: true,
     },
     render: {
-      antialias: !renderProfile.lowPower,
-      antialiasGL: !renderProfile.lowPower,
-      desynchronized: renderProfile.lowPower,
-      powerPreference: renderProfile.lowPower ? "low-power" : "high-performance",
-      roundPixels: renderProfile.lowPower,
-      transparent: true,
+      antialias: false,
+      antialiasGL: false,
+      desynchronized: true,
+      powerPreference: "high-performance",
+      roundPixels: true,
+      transparent: false,
     },
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.NO_CENTER,
-      autoRound: renderProfile.lowPower,
+      autoRound: true,
     },
     scene,
   });
@@ -220,13 +176,14 @@ class CastleBattleScene extends Phaser.Scene {
   private readonly strikePool: StrikeEffect[] = [];
   private readonly floatTextPool: Phaser.GameObjects.Text[] = [];
   private readonly glowPool: Phaser.GameObjects.Ellipse[] = [];
+  private presentationLayer?: Phaser.GameObjects.Container;
   private command: SceneCommand = { type: "draft", playerCastleHp: PLAYER_CASTLE_MAX_HP };
   private layout!: FieldLayout;
   private ready = false;
   private playToken = 0;
   private destroyed = false;
 
-  constructor(private readonly renderProfile: RenderPerformanceProfile) {
+  constructor() {
     super("CastleBattleScene");
   }
 
@@ -289,12 +246,14 @@ class CastleBattleScene extends Phaser.Scene {
 
     if (command.type === "draft") {
       this.getDraftCastles(command.playerCastleHp).forEach((castle) => this.createCastle(castle));
+      this.wrapSceneInPresentationLayer();
       this.setDraftCamera();
       return;
     }
 
     command.timeline.castles.forEach((castle) => this.createCastle(castle));
     command.timeline.units.forEach((unit) => this.createUnit(unit));
+    this.wrapSceneInPresentationLayer();
     void this.playTimeline(command.timeline, this.playToken, command.onFinished);
   }
 
@@ -303,12 +262,39 @@ class CastleBattleScene extends Phaser.Scene {
     this.activeWalkTimers.forEach((timer) => timer.remove(false));
     this.activeWalkTimers.clear();
     [...this.children.list].forEach((child) => child.destroy());
+    this.presentationLayer = undefined;
     this.unitViews.clear();
     this.castleViews.clear();
     this.activeCombatPresentation.clear();
     this.strikePool.length = 0;
     this.floatTextPool.length = 0;
     this.glowPool.length = 0;
+  }
+
+  private wrapSceneInPresentationLayer(): void {
+    const children = [...this.children.list];
+    const layer = this.add.container(0, 0);
+
+    if (children.length > 0) {
+      layer.add(children);
+    }
+
+    this.presentationLayer = layer;
+    this.resetPhaserCamera();
+  }
+
+  private addToPresentationLayer<T extends Phaser.GameObjects.GameObject>(object: T): T {
+    this.presentationLayer?.add(object);
+
+    return object;
+  }
+
+  private resetPhaserCamera(): void {
+    const camera = this.cameras.main;
+
+    camera.resetFX();
+    camera.setZoom(1);
+    camera.centerOn(this.layout.width / 2, this.layout.height / 2);
   }
 
   private drawField(mode: SceneCommand["type"]): void {
@@ -336,14 +322,6 @@ class CastleBattleScene extends Phaser.Scene {
       drawFieldBand(field, this.layout, centerY + 78, fieldBottomY - 22, 0x182718, 0.2);
       this.drawGroundTexture(field);
       this.drawBoardStageOverlay();
-    }
-
-    if ((hasBattlefieldBase || hasDomEnvironment) && !this.renderProfile.lowPower) {
-      this.drawFieldGuideRunes();
-
-      if (mode === "battle") {
-        this.drawBattleScreenAtmosphere();
-      }
     }
 
     if (SHOW_FIELD_DEBUG_GUIDES) {
@@ -380,74 +358,6 @@ class CastleBattleScene extends Phaser.Scene {
       .setDepth(-5)
       .setAlpha(0.82);
 
-    if (!this.renderProfile.lowPower) {
-      this.drawForegroundAtmosphere();
-    }
-  }
-
-  private drawFieldGuideRunes(): void {
-    const { centerY, fieldBottomY, width } = this.layout;
-    const topY = this.layout.castleY.enemy + 54;
-    const bottomY = fieldBottomY - 118;
-    const clashY = centerY - 52;
-    const topHalfWidth = 78;
-    const guides = this.add.graphics().setDepth(-18).setScrollFactor(1);
-
-    guides.lineStyle(1, 0xd8bf73, 0.16);
-    drawPerspectiveLine(
-      guides,
-      width / 2 - topHalfWidth,
-      topY,
-      getFieldLeftX(this.layout, bottomY) + 30,
-      bottomY,
-    );
-    drawPerspectiveLine(
-      guides,
-      width / 2 + topHalfWidth,
-      topY,
-      getFieldRightX(this.layout, bottomY) - 30,
-      bottomY,
-    );
-
-    guides.lineStyle(1, 0xd8bf73, 0.06);
-    drawPerspectiveLine(guides, width / 2, topY + 6, width / 2, bottomY - 4);
-
-    guides.lineStyle(1, 0xe4c15e, 0.18);
-    drawPerspectiveLine(
-      guides,
-      getFieldLeftX(this.layout, clashY) + 24,
-      clashY,
-      getFieldRightX(this.layout, clashY) - 24,
-      clashY,
-    );
-    drawRuneDiamond(guides, width / 2, clashY, 9, 5);
-  }
-
-  private drawBattleScreenAtmosphere(): void {
-    const { width, height } = this.layout;
-    const atmosphere = this.add.graphics().setDepth(-16).setScrollFactor(0);
-    const bandCount = 5;
-
-    for (let index = 0; index < bandCount; index += 1) {
-      const amount = index / (bandCount - 1);
-      const alpha = Phaser.Math.Linear(0.18, 0.028, amount);
-      atmosphere.fillStyle(0x050807, alpha);
-      atmosphere.fillRect(0, index * 28, width, 30);
-    }
-
-    atmosphere.fillStyle(0x030503, 0.16);
-    atmosphere.fillRect(0, height - 118, width, 118);
-
-    for (let index = 0; index < 4; index += 1) {
-      const stripWidth = 26 + index * 18;
-      const alpha = Phaser.Math.Linear(0.15, 0.035, index / 3);
-      atmosphere.fillStyle(0x010302, alpha);
-      atmosphere.fillRect(0, 0, stripWidth, height);
-      atmosphere.fillRect(width - stripWidth, 0, stripWidth, height);
-    }
-
-    atmosphere.fillStyle(0x010302, 0.08);
-    atmosphere.fillRect(0, 0, width, height);
   }
 
   private drawParallaxBackdrop(): void {
@@ -455,8 +365,7 @@ class CastleBattleScene extends Phaser.Scene {
     const backgroundPad = 260;
 
     const hasBattlefieldBase = this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
-    const baseOverscanY = this.renderProfile.lowPower ? BATTLEFIELD_LOW_POWER_OVERSCAN_Y : BATTLEFIELD_BASE_OVERSCAN_Y;
-    const baseSize = getBackdropDisplaySize(this.layout, baseOverscanY);
+    const baseSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_BASE_OVERSCAN_Y);
     const sidePropsSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y);
 
     if (hasBattlefieldBase) {
@@ -523,15 +432,6 @@ class CastleBattleScene extends Phaser.Scene {
     }
   }
 
-  private drawForegroundAtmosphere(): void {
-    const { width, height } = this.layout;
-    const atmosphere = this.add.graphics().setDepth(2).setScrollFactor(0.18);
-
-    atmosphere.fillStyle(0x071007, 0.28);
-    atmosphere.fillRect(-160, -120, width + 320, 150);
-    atmosphere.fillRect(-160, height - 48, width + 320, 168);
-  }
-
   private drawBoardStageOverlay(): void {
     const { width, height, fieldTopY, fieldBottomY, centerY } = this.layout;
     const topY = fieldTopY + BOARD_STAGE_TOP_OFFSET;
@@ -579,8 +479,6 @@ class CastleBattleScene extends Phaser.Scene {
     if (!hasDomCastleArt) {
       castleArt = useKeepAsset ? this.createKeepAssetArt(castle.owner) : this.createProceduralCastleArt(color, darkColor);
     }
-    const castlePlatform = hasDomCastleArt || this.renderProfile.lowPower ? [] : this.createCastlePlatform(castle.owner);
-
     const hpBarWidth = castle.owner === "enemy" ? ENEMY_CASTLE_HP_BAR_WIDTH : CASTLE_HP_BAR_WIDTH;
     const hpBarHeight = castle.owner === "enemy" ? 6 : 8;
     const hpBarY = useKeepLayout ? (castle.owner === "player" ? 58 : 49) : 43;
@@ -597,7 +495,7 @@ class CastleBattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    container.add([...castlePlatform, ...castleArt, hpBack, hpFill, hpLabel]);
+    container.add([...castleArt, hpBack, hpFill, hpLabel]);
     container.setDepth(castle.owner === "player" ? 30 : 5);
 
     this.castleViews.set(castle.owner, { castle, container, hpFill, hpLabel, hpBarWidth });
@@ -614,79 +512,7 @@ class CastleBattleScene extends Phaser.Scene {
       image.setTint(0xd88a68).setAlpha(0.86);
     }
 
-    if (this.renderProfile.lowPower) {
-      return [image];
-    }
-
-    const glowColor = isPlayer ? 0x79c77a : 0xd87458;
-    const glow = this.add.ellipse(0, isPlayer ? 58 : 34, displayWidth * 0.78, displayHeight * 0.24, glowColor, isPlayer ? 0.15 : 0.1);
-
-    return [glow, image];
-  }
-
-  private createCastlePlatform(owner: Owner): Phaser.GameObjects.GameObject[] {
-    const isPlayer = owner === "player";
-    const color = isPlayer ? 0x79c77a : 0xd87458;
-
-    if (!isPlayer) {
-      return this.createEnemyCastlePlatform(color);
-    }
-
-    const y = 58;
-    const width = 304;
-    const height = 44;
-    const shadow = this.add.ellipse(0, y + 4, width * 1.04, height, 0x020402, 0.34);
-    const pad = this.add.ellipse(0, y, width, height, color, 0.16);
-    const rim = this.add.ellipse(0, y - 1, width * 0.86, height * 0.58).setStrokeStyle(1, color, 0.22);
-
-    return [shadow, pad, rim];
-  }
-
-  private createEnemyCastlePlatform(color: number): Phaser.GameObjects.GameObject[] {
-    const platform = this.add.graphics();
-    const topY = 28;
-    const bottomY = 48;
-    const topHalfWidth = 48;
-    const bottomHalfWidth = 70;
-
-    platform.fillStyle(0x020402, 0.24);
-    drawLocalTrapezoid(
-      platform,
-      -bottomHalfWidth - 7,
-      topY + 3,
-      bottomHalfWidth + 7,
-      topY + 3,
-      bottomHalfWidth + 13,
-      bottomY + 5,
-      -bottomHalfWidth - 13,
-      bottomY + 5,
-    );
-    platform.fillStyle(color, 0.09);
-    drawLocalTrapezoid(
-      platform,
-      -topHalfWidth,
-      topY,
-      topHalfWidth,
-      topY,
-      bottomHalfWidth,
-      bottomY,
-      -bottomHalfWidth,
-      bottomY,
-    );
-    platform.lineStyle(1, color, 0.18);
-    strokeLocalTrapezoid(
-      platform,
-      -topHalfWidth,
-      topY,
-      topHalfWidth,
-      topY,
-      bottomHalfWidth,
-      bottomY,
-      -bottomHalfWidth,
-      bottomY,
-    );
-
-    return [platform];
+    return [image];
   }
 
   private createProceduralCastleArt(color: number, darkColor: number): Phaser.GameObjects.GameObject[] {
@@ -728,9 +554,6 @@ class CastleBattleScene extends Phaser.Scene {
         fontSize: "10px",
       })
       .setOrigin(0.5);
-    if (!this.renderProfile.lowPower) {
-      objects.push(this.add.ellipse(0, 28, 76, 19, 0x000000, 0.34));
-    }
     objects.push(contactShadow, ...unitArt.objects);
     if (upgradeBadge) {
       objects.push(upgradeBadge);
@@ -749,7 +572,6 @@ class CastleBattleScene extends Phaser.Scene {
       hpFill,
       hpLabel,
       sprite: unitArt.sprite,
-      shadeSprite: unitArt.shadeSprite,
       facing: getDefaultUnitFacing(unit.owner),
       currentFrame: unitArt.sprite ? getUnitFrame(getDefaultUnitFacing(unit.owner), "idle") : undefined,
     };
@@ -758,12 +580,7 @@ class CastleBattleScene extends Phaser.Scene {
     this.updateUnitHp(view, unit.startHp);
   }
 
-  private createUnitArt(
-    unit: BattleTimelineUnit,
-    sideColor: number,
-    sideDarkColor: number,
-    strokeColor: number,
-  ): UnitArtResult {
+  private createUnitArt(unit: BattleTimelineUnit, sideColor: number, sideDarkColor: number, strokeColor: number): UnitArtResult {
     const asset = getUnitAsset(unit.cardId);
 
     if (asset?.spriteSheet && this.textures.exists(asset.spriteSheet.key)) {
@@ -772,17 +589,7 @@ class CastleBattleScene extends Phaser.Scene {
         .sprite(0, UNIT_SPRITE_SHEET_Y, asset.spriteSheet.key, frame)
         .setDisplaySize(UNIT_SPRITE_SHEET_DISPLAY_SIZE, UNIT_SPRITE_SHEET_DISPLAY_SIZE);
 
-      if (this.renderProfile.lowPower) {
-        return { objects: [sprite], sprite };
-      }
-
-      const shade = this.add
-        .sprite(2, UNIT_SPRITE_SHEET_SHADE_Y, asset.spriteSheet.key, frame)
-        .setDisplaySize(UNIT_SPRITE_SHEET_SHADE_DISPLAY_SIZE, UNIT_SPRITE_SHEET_SHADE_DISPLAY_SIZE)
-        .setTint(0x050805)
-        .setAlpha(0.42);
-
-      return { objects: [shade, sprite], sprite, shadeSprite: shade };
+      return { objects: [sprite], sprite };
     }
 
     if (asset && this.textures.exists(asset.key)) {
@@ -791,17 +598,7 @@ class CastleBattleScene extends Phaser.Scene {
         sprite.setTint(0xf0a27c);
       }
 
-      if (this.renderProfile.lowPower) {
-        return { objects: [sprite] };
-      }
-
-      const shade = this.add
-        .image(2, -9, asset.key)
-        .setDisplaySize(UNIT_SPRITE_DISPLAY_WIDTH + 5, UNIT_SPRITE_DISPLAY_HEIGHT + 5)
-        .setTint(0x050805)
-        .setAlpha(0.42);
-
-      return { objects: [shade, sprite] };
+      return { objects: [sprite] };
     }
 
     const shade = this.add.rectangle(2, -1, 42, 50, 0x050805, 0.28);
@@ -861,6 +658,11 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private async playConcurrentCombatEvent(event: BattleTimelineEvent, playToken: number): Promise<void> {
+    if (event.type === "combat_step") {
+      await this.playCombatStep(event.events, event.time, playToken);
+      return;
+    }
+
     if (event.type === "unit_block" || event.type === "unit_damage" || event.type === "unit_die" || event.type === "unit_buff") {
       await this.delayRaw(scaleBattleDuration(event.time > 0 ? 110 : 0));
     }
@@ -885,6 +687,11 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     const focusCamera = options.focusCamera ?? true;
+
+    if (event.type === "combat_step") {
+      await this.playCombatStep(event.events, event.time, playToken);
+      return;
+    }
 
     if (event.type === "teams_enter") {
       this.focusCameraOnPoint(this.layout.width / 2, this.layout.centerY + 12, 360, BATTLE_CAMERA_ZOOM);
@@ -954,9 +761,6 @@ class CastleBattleScene extends Phaser.Scene {
       }
 
       this.updateUnitHp(view, event.remainingHp);
-      if (event.amount > 0) {
-        this.cameras.main.shake(scaleBattleDuration(80), 0.004, true);
-      }
       this.floatText(view.container.x, view.container.y - 54, event.amount > 0 ? `-${event.amount}` : "shield", "#da6b58");
       await this.flash(view.container, event.amount > 0 ? 0xda6b58 : 0x86a8ff);
       return;
@@ -1033,6 +837,141 @@ class CastleBattleScene extends Phaser.Scene {
         onFinished?.();
       }
     }
+  }
+
+  private async playCombatStep(events: readonly CombatStepEvent[], time: number, playToken: number): Promise<void> {
+    if (this.destroyed || playToken !== this.playToken) {
+      return;
+    }
+
+    const spawnEvents = events.filter((event) => event.type === "unit_spawn");
+    const attackEvents = events.filter((event) => event.type === "unit_attack");
+    const healEvents = events.filter((event) => event.type === "unit_heal");
+
+    const spawnTask = Promise.all(spawnEvents.map((event) => this.playCombatStepSpawn(event)));
+    const actionTask = Promise.all([
+      ...attackEvents.map((event) => this.playUnitAttack(event.attackerId, event.targetId, false)),
+      ...healEvents.map((event) => this.playCombatStepHealCast(event)),
+    ]);
+    const resultTask = this.playCombatStepResults(events, time, playToken);
+
+    await Promise.all([spawnTask, actionTask, resultTask]);
+  }
+
+  private async playCombatStepSpawn(event: Extract<CombatStepEvent, { type: "unit_spawn" }>): Promise<void> {
+    const view = this.unitViews.get(event.unitId);
+    if (!view) {
+      return;
+    }
+
+    const homePosition = this.getHomePosition(view.unit.owner, view.unit.slotIndex);
+    view.container.setPosition(homePosition.x, homePosition.y);
+    this.updateUnitSpatialStyle(view, true);
+    view.container.setAlpha(0);
+    view.container.setVisible(true);
+
+    const clashPosition = this.getClashPosition(view.unit.owner, view.unit.slotIndex);
+    const stopWalking = this.startUnitWalkCycle(view);
+    try {
+      await this.tween({
+        targets: view.container,
+        alpha: 1,
+        x: clashPosition.x,
+        y: clashPosition.y,
+        duration: 360,
+        ease: "Sine.easeOut",
+        onUpdate: () => this.updateUnitSpatialStyle(view),
+      });
+    } finally {
+      this.updateUnitSpatialStyle(view, true);
+      stopWalking();
+    }
+  }
+
+  private async playCombatStepHealCast(event: Extract<CombatStepEvent, { type: "unit_heal" }>): Promise<void> {
+    const view = this.unitViews.get(event.unitId);
+    const source = this.unitViews.get(event.sourceUnitId);
+    if (!view || !source || getCardDefinition(source.unit.cardId).abilityId !== "heal_only") {
+      return;
+    }
+
+    await this.playRangedUnitAttack(source, view, false);
+  }
+
+  private async playCombatStepResults(events: readonly CombatStepEvent[], time: number, playToken: number): Promise<void> {
+    const resultEvents = events.filter((event) => event.type !== "unit_spawn" && event.type !== "unit_attack");
+    if (resultEvents.length === 0) {
+      return;
+    }
+
+    await this.delayRaw(scaleBattleDuration(time > 0 ? COMBAT_STEP_RESULT_DELAY_MS : 0));
+    if (this.destroyed || playToken !== this.playToken) {
+      return;
+    }
+
+    const deathEvents = resultEvents.filter((event) => event.type === "unit_die");
+    const visibleResultEvents = resultEvents.filter((event) => event.type !== "unit_die");
+    const textLimit = COMBAT_STEP_FLOAT_TEXT_LIMIT;
+    let emittedTextCount = 0;
+
+    const emitText = (view: UnitView, label: string, color: string) => {
+      if (emittedTextCount >= textLimit) {
+        return;
+      }
+
+      this.floatText(view.container.x, view.container.y - 54, label, color);
+      emittedTextCount += 1;
+    };
+
+    visibleResultEvents.forEach((event) => {
+      if (event.type === "unit_buff") {
+        return;
+      }
+
+      if (event.type === "unit_block") {
+        const view = this.unitViews.get(event.unitId);
+        if (view) {
+          emitText(view, "block", "#86a8ff");
+        }
+        return;
+      }
+
+      if (event.type === "unit_damage") {
+        const view = this.unitViews.get(event.unitId);
+        if (view) {
+          this.updateUnitHp(view, event.remainingHp);
+          emitText(view, event.amount > 0 ? `-${event.amount}` : "shield", "#da6b58");
+        }
+        return;
+      }
+
+      if (event.type === "unit_heal") {
+        const view = this.unitViews.get(event.unitId);
+        if (view) {
+          this.updateUnitHp(view, event.remainingHp);
+          emitText(view, `+${event.amount}`, "#79c77a");
+        }
+      }
+    });
+
+    await Promise.all(deathEvents.map((event) => this.playCombatStepDeath(event)));
+  }
+
+  private async playCombatStepDeath(event: Extract<CombatStepEvent, { type: "unit_die" }>): Promise<void> {
+    const view = this.unitViews.get(event.unitId);
+    if (!view || !view.container.visible) {
+      return;
+    }
+
+    this.updateUnitHp(view, 0);
+    this.setUnitPose(view, "dead", view.facing);
+    await this.tween({
+      targets: view.container,
+      alpha: 0.34,
+      angle: view.sprite ? 0 : view.unit.owner === "player" ? -9 : 9,
+      duration: 190,
+      ease: "Sine.easeOut",
+    });
   }
 
   private getDraftCastles(playerCastleHp: number): BattleTimelineCastle[] {
@@ -1218,7 +1157,6 @@ class CastleBattleScene extends Phaser.Scene {
     this.updateUnitSpatialStyle(attacker, true);
 
     this.updateCastleHp(owner, remainingHp);
-    this.cameras.main.shake(scaleBattleDuration(120), 0.006, true);
     this.floatText(castle.container.x, castle.container.y + (owner === "player" ? -72 : 82), `-${damage}`, "#da6b58");
     await this.flash(castle.container, 0xda6b58);
     this.setUnitPose(attacker, "idle", attackFacing);
@@ -1244,21 +1182,15 @@ class CastleBattleScene extends Phaser.Scene {
 
   private drawStrike(startX: number, startY: number, endX: number, endY: number): void {
     const effect = this.acquireStrikeEffect();
-    const { shadow, strike, ember, impact } = effect;
+    const { shadow, strike } = effect;
 
     shadow.setTo(startX + 2, startY + 4, endX + 2, endY + 4);
     strike.setTo(startX, startY, endX, endY);
-    ember.setTo(startX, startY + 2, endX, endY + 2);
-    impact.setPosition(endX, endY + 8);
-    ember.setVisible(!this.renderProfile.lowPower);
-    impact.setVisible(!this.renderProfile.lowPower);
 
     shadow.setDepth(899);
     strike.setDepth(900);
-    ember.setDepth(901);
-    impact.setDepth(898);
     this.tweens.add({
-      targets: this.renderProfile.lowPower ? [shadow, strike] : [shadow, strike, ember, impact],
+      targets: [shadow, strike],
       alpha: 0,
       scaleX: 1.18,
       duration: scaleBattleDuration(140),
@@ -1268,32 +1200,29 @@ class CastleBattleScene extends Phaser.Scene {
 
   private acquireStrikeEffect(): StrikeEffect {
     const effect = this.strikePool.pop() ?? this.createStrikeEffect();
-    const objects = [effect.shadow, effect.strike, effect.ember, effect.impact];
+    const objects = [effect.shadow, effect.strike];
 
     this.tweens.killTweensOf(objects);
     objects.forEach((object) => {
       object.setActive(true).setVisible(true).setAlpha(1).setScale(1);
     });
-    effect.impact.setBlendMode(Phaser.BlendModes.ADD);
 
     return effect;
   }
 
   private createStrikeEffect(): StrikeEffect {
-    return {
+    const effect = {
       shadow: this.add.line(0, 0, 0, 0, 0, 0, 0x090604, 0.58).setOrigin(0).setActive(false).setVisible(false),
       strike: this.add.line(0, 0, 0, 0, 0, 0, 0xf3f0dd, 0.88).setOrigin(0).setActive(false).setVisible(false),
-      ember: this.add.line(0, 0, 0, 0, 0, 0, 0xf08a5f, 0.52).setOrigin(0).setActive(false).setVisible(false),
-      impact: this.add
-        .ellipse(0, 0, 34, 12, 0xe4a94f, 0.18)
-        .setBlendMode(Phaser.BlendModes.ADD)
-        .setActive(false)
-        .setVisible(false),
     };
+
+    [effect.shadow, effect.strike].forEach((object) => this.addToPresentationLayer(object));
+
+    return effect;
   }
 
   private releaseStrikeEffect(effect: StrikeEffect): void {
-    [effect.shadow, effect.strike, effect.ember, effect.impact].forEach((object) => {
+    [effect.shadow, effect.strike].forEach((object) => {
       object.setActive(false).setVisible(false).setAlpha(1).setScale(1);
     });
     this.strikePool.push(effect);
@@ -1381,21 +1310,10 @@ class CastleBattleScene extends Phaser.Scene {
     if (view.currentFrame !== frame) {
       view.sprite.setFrame(frame);
       view.currentFrame = frame;
-
-      if (view.shadeSprite) {
-        view.shadeSprite.setFrame(frame);
-      }
     }
 
     if (view.sprite.flipX) {
       view.sprite.setFlipX(false);
-    }
-
-    if (view.shadeSprite) {
-      view.shadeSprite.setFlipX(false);
-      if (view.shadeSprite.x !== 2) {
-        view.shadeSprite.setX(2);
-      }
     }
   }
 
@@ -1416,17 +1334,11 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private setDraftCamera(): void {
-    const camera = this.cameras.main;
-    camera.resetFX();
-    camera.setZoom(DRAFT_CAMERA_ZOOM);
-    camera.centerOn(this.layout.width / 2, this.layout.height / 2);
+    this.setPresentationCamera(this.layout.width / 2, this.layout.height / 2, DRAFT_CAMERA_ZOOM);
   }
 
   private startBattleCamera(): void {
-    const camera = this.cameras.main;
-    camera.resetFX();
-    camera.setZoom(DRAFT_CAMERA_ZOOM);
-    camera.centerOn(this.layout.width / 2, this.layout.height / 2);
+    this.setPresentationCamera(this.layout.width / 2, this.layout.height / 2, DRAFT_CAMERA_ZOOM);
     this.focusCameraOnPoint(this.layout.width / 2, this.layout.centerY + 14, 520, BATTLE_CAMERA_ZOOM);
   }
 
@@ -1437,11 +1349,34 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private focusCameraOnPoint(x: number, y: number, duration: number, zoom: number): void {
-    const camera = this.cameras.main;
     const focus = getCameraFocusPoint(this.layout, x, y, zoom);
+    const target = getPresentationCameraLayerTransform(this.layout, focus.x, focus.y, zoom);
     const scaledDuration = scaleBattleDuration(duration);
-    camera.pan(focus.x, focus.y, scaledDuration, "Sine.easeInOut", true);
-    camera.zoomTo(zoom, scaledDuration, "Sine.easeInOut", true);
+    const layer = this.presentationLayer;
+
+    if (!layer) {
+      return;
+    }
+
+    this.resetPhaserCamera();
+    this.tweens.killTweensOf(layer);
+    this.tweens.add({
+      targets: layer,
+      x: target.x,
+      y: target.y,
+      scaleX: target.scale,
+      scaleY: target.scale,
+      duration: scaledDuration,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private setPresentationCamera(focusX: number, focusY: number, zoom: number): void {
+    const layer = this.presentationLayer;
+    const target = getPresentationCameraLayerTransform(this.layout, focusX, focusY, zoom);
+
+    this.resetPhaserCamera();
+    layer?.setPosition(target.x, target.y).setScale(target.scale);
   }
 
   private updateUnitHp(view: UnitView, hp: number): void {
@@ -1506,18 +1441,20 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private createFloatText(): Phaser.GameObjects.Text {
-    return this.add
-      .text(0, 0, "", {
-        color: "#f3f0dd",
-        fontFamily: "Arial",
-        fontSize: "13px",
-        fontStyle: "bold",
-        stroke: "#10130f",
-        strokeThickness: 3,
-      })
-      .setOrigin(0.5)
-      .setActive(false)
-      .setVisible(false);
+    return this.addToPresentationLayer(
+      this.add
+        .text(0, 0, "", {
+          color: "#f3f0dd",
+          fontFamily: "Arial",
+          fontSize: "13px",
+          fontStyle: "bold",
+          stroke: "#10130f",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5)
+        .setActive(false)
+        .setVisible(false),
+    );
   }
 
   private releaseFloatText(text: Phaser.GameObjects.Text): void {
@@ -1570,7 +1507,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private createGlow(): Phaser.GameObjects.Ellipse {
-    return this.add.ellipse(0, 0, 1, 1, 0xffffff, 0).setActive(false).setVisible(false);
+    return this.addToPresentationLayer(this.add.ellipse(0, 0, 1, 1, 0xffffff, 0).setActive(false).setVisible(false));
   }
 
   private releaseGlow(glow: Phaser.GameObjects.Ellipse): void {
@@ -1687,6 +1624,7 @@ function getUnitPoseColumn(pose: UnitPose): number {
 
 function isConcurrentCombatEvent(event: BattleTimelineEvent): boolean {
   return (
+    event.type === "combat_step" ||
     event.type === "unit_spawn" ||
     event.type === "unit_buff" ||
     event.type === "unit_attack" ||
@@ -1714,6 +1652,19 @@ function getCameraFocusPoint(layout: FieldLayout, x: number, y: number, zoom: nu
   };
 }
 
+function getPresentationCameraLayerTransform(
+  layout: FieldLayout,
+  focusX: number,
+  focusY: number,
+  zoom: number,
+): { x: number; y: number; scale: number } {
+  return {
+    x: layout.width / 2 - focusX * zoom,
+    y: layout.height / 2 - focusY * zoom,
+    scale: zoom,
+  };
+}
+
 function drawPerspectiveLine(
   graphics: Phaser.GameObjects.Graphics,
   startX: number,
@@ -1724,62 +1675,6 @@ function drawPerspectiveLine(
   graphics.beginPath();
   graphics.moveTo(startX, startY);
   graphics.lineTo(endX, endY);
-  graphics.strokePath();
-}
-
-function drawRuneDiamond(
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  halfWidth: number,
-  halfHeight: number,
-): void {
-  graphics.beginPath();
-  graphics.moveTo(x, y - halfHeight);
-  graphics.lineTo(x + halfWidth, y);
-  graphics.lineTo(x, y + halfHeight);
-  graphics.lineTo(x - halfWidth, y);
-  graphics.closePath();
-  graphics.strokePath();
-}
-
-function drawLocalTrapezoid(
-  graphics: Phaser.GameObjects.Graphics,
-  topLeftX: number,
-  topY: number,
-  topRightX: number,
-  rightY: number,
-  bottomRightX: number,
-  bottomY: number,
-  bottomLeftX: number,
-  leftY: number,
-): void {
-  graphics.beginPath();
-  graphics.moveTo(topLeftX, topY);
-  graphics.lineTo(topRightX, rightY);
-  graphics.lineTo(bottomRightX, bottomY);
-  graphics.lineTo(bottomLeftX, leftY);
-  graphics.closePath();
-  graphics.fillPath();
-}
-
-function strokeLocalTrapezoid(
-  graphics: Phaser.GameObjects.Graphics,
-  topLeftX: number,
-  topY: number,
-  topRightX: number,
-  rightY: number,
-  bottomRightX: number,
-  bottomY: number,
-  bottomLeftX: number,
-  leftY: number,
-): void {
-  graphics.beginPath();
-  graphics.moveTo(topLeftX, topY);
-  graphics.lineTo(topRightX, rightY);
-  graphics.lineTo(bottomRightX, bottomY);
-  graphics.lineTo(bottomLeftX, leftY);
-  graphics.closePath();
   graphics.strokePath();
 }
 

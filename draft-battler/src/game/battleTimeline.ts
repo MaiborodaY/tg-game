@@ -35,15 +35,21 @@ export interface BattleTimelineCastle {
   finalHp: number;
 }
 
-type BattleTimelineEventPayload =
-  | { type: "teams_enter" }
+type CombatStepEventPayload =
   | { type: "unit_spawn"; unitId: string }
   | { type: "unit_buff"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number }
   | { type: "unit_attack"; attackerId: string; targetId: string; damage: number }
   | { type: "unit_block"; unitId: string; attackerId: string; amount: number }
   | { type: "unit_damage"; unitId: string; amount: number; remainingHp: number; shieldAbsorbed: number }
   | { type: "unit_heal"; unitId: string; sourceUnitId: string; amount: number; remainingHp: number }
-  | { type: "unit_die"; unitId: string }
+  | { type: "unit_die"; unitId: string };
+
+export type CombatStepEvent = CombatStepEventPayload & { time: number };
+
+type BattleTimelineEventPayload =
+  | { type: "teams_enter" }
+  | CombatStepEventPayload
+  | { type: "combat_step"; events: CombatStepEvent[] }
   | { type: "unit_move_to_castle"; unitId: string; targetOwner: Owner }
   | { type: "castle_hit"; owner: Owner; attackerId: string; damage: number; remainingHp: number }
   | { type: "unit_sacrifice"; unitId: string }
@@ -211,7 +217,7 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
   return {
     units: [...units.values()].map(finalizeUnit),
     castles: [enemyCastle, playerCastle],
-    events,
+    events: coalesceCombatStepEvents(events),
     winner: input.combat.winner,
   };
 }
@@ -334,6 +340,57 @@ function applyCastleDamage(
 
 function getCombatEndTime(combat: CombatResult): number {
   return combat.events.reduce((maxTime, event) => Math.max(maxTime, event.time), 0);
+}
+
+function coalesceCombatStepEvents(events: readonly BattleTimelineEvent[]): BattleTimelineEvent[] {
+  const coalesced: BattleTimelineEvent[] = [];
+  let combatStepEvents: CombatStepEvent[] = [];
+  let combatStepTime: number | undefined;
+
+  const flushCombatStep = () => {
+    if (combatStepEvents.length === 0 || combatStepTime === undefined) {
+      return;
+    }
+
+    coalesced.push({
+      type: "combat_step",
+      time: combatStepTime,
+      events: combatStepEvents,
+    });
+    combatStepEvents = [];
+    combatStepTime = undefined;
+  };
+
+  events.forEach((event) => {
+    if (!isCombatStepEvent(event)) {
+      flushCombatStep();
+      coalesced.push(event);
+      return;
+    }
+
+    if (combatStepTime !== event.time) {
+      flushCombatStep();
+      combatStepTime = event.time;
+    }
+
+    combatStepEvents.push(event);
+  });
+
+  flushCombatStep();
+
+  return coalesced;
+}
+
+function isCombatStepEvent(event: BattleTimelineEvent): event is CombatStepEvent {
+  return (
+    event.type === "unit_spawn" ||
+    event.type === "unit_buff" ||
+    event.type === "unit_attack" ||
+    event.type === "unit_block" ||
+    event.type === "unit_damage" ||
+    event.type === "unit_heal" ||
+    event.type === "unit_die"
+  );
 }
 
 function getLivingUnits(units: Map<string, MutableTimelineUnit>, owner: Owner): MutableTimelineUnit[] {
