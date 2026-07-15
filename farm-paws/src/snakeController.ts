@@ -40,6 +40,8 @@ type PointerStart = {
   y: number;
 } | null;
 
+type SnakeLayout = "lobby" | "game";
+
 const KEY_DIRECTIONS: Record<string, SnakeDirection | undefined> = {
   arrowup: "up",
   w: "up",
@@ -70,19 +72,30 @@ export function mountSnakeController(
   let finishPending = false;
   let finishResult: FarmPawsFinishResult | null = null;
   let startBlockMessage: string | null = null;
+  let layout: SnakeLayout = "lobby";
 
   root.innerHTML = `
-    <div class="snake-screen">
-      <header class="snake-header">
-        <div>
-          <button class="back-button" data-snake-action="back" type="button">${escapeHtml(tr("back_to_games"))}</button>
-          <p class="eyebrow" data-snake-eyebrow>🐍 ${escapeHtml(tr("games_eyebrow"))}</p>
+    <div class="snake-screen" data-snake-screen data-layout="lobby">
+      <section class="snake-lobby-header">
+        <button class="back-button snake-lobby-back" data-snake-action="back" type="button">
+          <span data-snake-back-copy>${escapeHtml(tr("back_to_games"))}</span>
+        </button>
+        <div class="snake-lobby-hero">
+          <div class="snake-lobby-icon" aria-hidden="true">🐍</div>
+          <p class="eyebrow" data-snake-eyebrow>${escapeHtml(tr("games_eyebrow"))}</p>
           <h1 data-snake-title>${escapeHtml(tr("snake_title"))}</h1>
+          <p class="snake-lobby-description" data-snake-description>${escapeHtml(tr("snake_description"))}</p>
         </div>
-        <div class="score-pill snake-score-pill" aria-label="${escapeHtml(tr("score_label"))}">
-          <span data-snake-score>0</span>
-          <small data-snake-score-label>${escapeHtml(tr("score_label"))}</small>
+      </section>
+
+      <header class="snake-game-hud" aria-label="${escapeHtml(tr("stats_label"))}">
+        <button class="snake-hud-button snake-hud-back" data-snake-action="back" type="button" aria-label="${escapeHtml(tr("back_to_games"))}">←</button>
+        <strong class="snake-hud-title"><span aria-hidden="true">🐍</span> <span data-snake-title>${escapeHtml(tr("snake_title"))}</span></strong>
+        <div class="snake-hud-stats">
+          <span class="snake-hud-stat" data-snake-record-stat aria-label="${escapeHtml(tr("record_label"))}">🏆 <strong data-snake-best>${state.bestScore}</strong></span>
+          <span class="snake-hud-stat is-score" data-snake-score-stat aria-label="${escapeHtml(tr("score_label"))}">🍎 <strong data-snake-score>0</strong></span>
         </div>
+        <button class="snake-hud-button snake-hud-pause" data-snake-action="pause" type="button" aria-label="${escapeHtml(tr("snake_pause"))}">⏸</button>
       </header>
 
       <section class="snake-meta" aria-label="${escapeHtml(tr("stats_label"))}">
@@ -103,8 +116,18 @@ export function mountSnakeController(
           role="img"
           aria-label="${escapeHtml(tr("snake_board_label"))}"
         ></canvas>
+        <div class="snake-board-overlay" data-snake-overlay hidden>
+          <strong class="snake-overlay-title" data-snake-overlay-title></strong>
+          <span class="snake-overlay-score" data-snake-overlay-score></span>
+          <p class="snake-overlay-message" data-snake-overlay-message></p>
+          <div class="snake-overlay-actions">
+            <button class="primary-button snake-overlay-primary" data-snake-action="overlay-primary" type="button"></button>
+            <button class="secondary-button snake-overlay-back" data-snake-action="overlay-back" type="button"></button>
+          </div>
+        </div>
       </div>
 
+      <p class="snake-controls-hint" data-snake-controls-hint>${escapeHtml(tr("snake_controls_hint"))}</p>
       <div class="snake-controls" role="group" aria-label="${escapeHtml(tr("snake_controls_label"))}">
         <button class="snake-control is-up" data-snake-direction="up" type="button" aria-label="${escapeHtml(tr("move_up"))}">▲</button>
         <button class="snake-control is-left" data-snake-direction="left" type="button" aria-label="${escapeHtml(tr("move_left"))}">◀</button>
@@ -116,20 +139,37 @@ export function mountSnakeController(
     </div>
   `;
 
+  const screenElement = requireElement<HTMLElement>(root, "[data-snake-screen]");
   const canvas = requireElement<HTMLCanvasElement>(root, "[data-snake-board]");
-  const scoreElement = requireElement<HTMLElement>(root, "[data-snake-score]");
-  const bestElement = requireElement<HTMLElement>(root, "[data-snake-best]");
+  const scoreElements = requireElements<HTMLElement>(root, "[data-snake-score]");
+  const bestElements = requireElements<HTMLElement>(root, "[data-snake-best]");
   const statusElement = requireElement<HTMLElement>(root, "[data-snake-status]");
   const runNoteElement = requireElement<HTMLElement>(root, "[data-snake-run-note]");
   const runMessageElement = requireElement<HTMLElement>(root, "[data-snake-run-message]");
   const primaryButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='primary']");
-  const backButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='back']");
+  const pauseButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='pause']");
+  const overlayElement = requireElement<HTMLElement>(root, "[data-snake-overlay]");
+  const overlayTitleElement = requireElement<HTMLElement>(root, "[data-snake-overlay-title]");
+  const overlayScoreElement = requireElement<HTMLElement>(root, "[data-snake-overlay-score]");
+  const overlayMessageElement = requireElement<HTMLElement>(root, "[data-snake-overlay-message]");
+  const overlayPrimaryButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='overlay-primary']");
+  const overlayBackButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='overlay-back']");
+  const backButtons = requireElements<HTMLButtonElement>(root, "[data-snake-action='back']");
   const directionButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-snake-direction]"));
 
-  backButton.addEventListener("click", handleBack, listenerOptions);
+  backButtons.forEach((button) => button.addEventListener("click", handleBack, listenerOptions));
   primaryButton.addEventListener("click", handlePrimaryAction, listenerOptions);
+  pauseButton.addEventListener("click", handlePrimaryAction, listenerOptions);
+  overlayPrimaryButton.addEventListener("click", handlePrimaryAction, listenerOptions);
+  overlayBackButton.addEventListener("click", handleBack, listenerOptions);
   directionButtons.forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      const direction = button.dataset.snakeDirection as SnakeDirection | undefined;
+      if (direction) handleDirection(direction);
+    }, listenerOptions);
+    button.addEventListener("click", (event) => {
+      if (event.detail !== 0) return;
       const direction = button.dataset.snakeDirection as SnakeDirection | undefined;
       if (direction) handleDirection(direction);
     }, listenerOptions);
@@ -179,7 +219,7 @@ export function mountSnakeController(
     void startNewGame();
   }
 
-  async function startNewGame(initialDirection?: SnakeDirection): Promise<void> {
+  async function startNewGame(): Promise<void> {
     if (isStartingRun || finishPending || hasHardStartBlock()) return;
     lifecycleToken += 1;
     const token = lifecycleToken;
@@ -199,26 +239,32 @@ export function mountSnakeController(
     if (destroyed || token !== lifecycleToken) return;
 
     options.onLanguageChange(run.lang);
+    const localBestScore = loadSnakeBestScore();
+    const syncedBestScore = Math.max(localBestScore, run.bestScore);
+    if (syncedBestScore > localBestScore) saveSnakeBestScore(syncedBestScore);
     if (run.mode === "blocked") {
       isStartingRun = false;
+      layout = "lobby";
       currentRun = run;
       startBlockMessage = options.startBlockedText(run);
+      state = createSnakeInitialState(syncedBestScore);
       updateView();
       return;
     }
 
     currentRun = run;
-    state = createSnakeInitialState(loadSnakeBestScore());
+    layout = "game";
+    state = createSnakeInitialState(syncedBestScore);
     updateView();
     await wait(650);
     if (destroyed || token !== lifecycleToken) return;
 
     isStartingRun = false;
     runStartedAt = Date.now();
-    state = startSnakeGame(loadSnakeBestScore());
-    if (initialDirection) state = queueSnakeDirection(state, initialDirection);
+    state = startSnakeGame(syncedBestScore);
+    if (document.hidden) state = pauseSnakeGame(state);
     updateView();
-    scheduleTick();
+    if (state.phase === "playing") scheduleTick();
   }
 
   function handleDirection(direction: SnakeDirection): void {
@@ -227,6 +273,7 @@ export function mountSnakeController(
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     const key = event.key.toLowerCase();
     const direction = KEY_DIRECTIONS[key];
     if (direction) {
@@ -235,6 +282,7 @@ export function mountSnakeController(
       return;
     }
     if (event.code === "Space") {
+      if (event.repeat || (state.phase !== "playing" && state.phase !== "paused")) return;
       if (event.target instanceof HTMLElement && event.target.closest("button")) return;
       event.preventDefault();
       handlePrimaryAction();
@@ -315,15 +363,26 @@ export function mountSnakeController(
 
     finishPending = false;
     finishResult = result;
+    if (typeof result.bestScore === "number" && result.bestScore > state.bestScore) {
+      state = {
+        ...state,
+        bestScore: result.bestScore
+      };
+      saveSnakeBestScore(result.bestScore);
+    }
     updateView();
-    if (!result.ok) primaryButton.focus();
+    if (!result.ok) overlayPrimaryButton.focus();
   }
 
   function handleBack(): void {
     if (isStartingRun || finishPending) return;
     const activeServerRun = currentRun?.mode === "server"
       && (state.phase === "playing" || state.phase === "paused");
-    if (activeServerRun && !window.confirm(tr("snake_leave_confirm"))) return;
+    const unsavedServerResult = currentRun?.mode === "server"
+      && (state.phase === "gameover" || state.phase === "won")
+      && Boolean(finishResult && !finishResult.ok);
+    if (activeServerRun && !window.confirm(tr("leave_run_confirm"))) return;
+    if (unsavedServerResult && !window.confirm(tr("leave_unsaved_confirm"))) return;
     lifecycleToken += 1;
     stopLoop();
     options.onBack();
@@ -337,9 +396,22 @@ export function mountSnakeController(
 
   function updateView(): void {
     const hardStartBlock = hasHardStartBlock();
+    const terminal = state.phase === "gameover" || state.phase === "won";
+    const runMessage = snakeRunMessage({
+      startBlockMessage,
+      finishPending,
+      finishResult,
+      tr
+    });
     updateStaticTranslations();
-    scoreElement.textContent = String(state.score);
-    bestElement.textContent = String(state.bestScore);
+    screenElement.dataset.layout = layout;
+    screenElement.dataset.phase = isStartingRun ? "starting" : state.phase;
+    scoreElements.forEach((element) => {
+      element.textContent = String(state.score);
+    });
+    bestElements.forEach((element) => {
+      element.textContent = String(state.bestScore);
+    });
     statusElement.textContent = hardStartBlock
       ? tr("snake_unavailable")
       : isStartingRun
@@ -351,12 +423,7 @@ export function mountSnakeController(
       Boolean(window.Telegram?.WebApp?.initData),
       tr
     );
-    runMessageElement.textContent = snakeRunMessage({
-      startBlockMessage,
-      finishPending,
-      finishResult,
-      tr
-    });
+    runMessageElement.textContent = runMessage;
     runMessageElement.dataset.tone = snakeRunMessageTone({ startBlockMessage, finishPending, finishResult });
     primaryButton.textContent = hardStartBlock
       ? tr("snake_unavailable")
@@ -366,7 +433,39 @@ export function mountSnakeController(
           ? tr("retry_start")
           : snakePrimaryText(state.phase, finishPending, finishResult, tr);
     primaryButton.disabled = isStartingRun || finishPending || hardStartBlock;
-    backButton.disabled = isStartingRun || finishPending;
+    backButtons.forEach((button) => {
+      button.disabled = isStartingRun || finishPending;
+    });
+    pauseButton.textContent = state.phase === "paused" ? "▶" : "⏸";
+    pauseButton.setAttribute("aria-label", tr(state.phase === "paused" ? "snake_resume" : "snake_pause"));
+    pauseButton.hidden = layout !== "game" || isStartingRun || terminal;
+    pauseButton.disabled = state.phase !== "playing" && state.phase !== "paused";
+
+    const overlayVisible = layout === "game"
+      && (isStartingRun || state.phase === "paused" || terminal);
+    overlayElement.hidden = !overlayVisible;
+    overlayElement.dataset.tone = terminal
+      ? finishResult?.ok ? "success" : finishResult ? "error" : "pending"
+      : state.phase === "paused" ? "paused" : "starting";
+    overlayTitleElement.textContent = isStartingRun
+      ? tr(currentRun?.mode === "server" ? "snake_get_ready" : "start_busy")
+      : state.phase === "paused"
+        ? tr("snake_paused")
+        : tr(state.phase === "won" ? "snake_won" : "snake_game_over");
+    overlayScoreElement.textContent = terminal ? tr("snake_result_score", { score: state.score }) : "";
+    overlayScoreElement.hidden = !terminal;
+    overlayMessageElement.textContent = terminal ? runMessage : "";
+    overlayMessageElement.hidden = !terminal || !runMessage;
+
+    const showOverlayPrimary = state.phase === "paused" || (terminal && !finishPending);
+    overlayPrimaryButton.hidden = !showOverlayPrimary;
+    overlayPrimaryButton.disabled = finishPending;
+    overlayPrimaryButton.textContent = state.phase === "paused"
+      ? tr("snake_resume")
+      : snakePrimaryText(state.phase, finishPending, finishResult, tr);
+    overlayBackButton.hidden = !terminal || finishPending;
+    overlayBackButton.disabled = finishPending;
+    overlayBackButton.textContent = tr("back_to_games");
     canvas.setAttribute(
       "aria-label",
       `${tr("snake_board_label")}. ${tr("score_label")}: ${state.score}. ${tr("record_label")}: ${state.bestScore}.`
@@ -382,12 +481,20 @@ export function mountSnakeController(
   }
 
   function updateStaticTranslations(): void {
-    backButton.textContent = tr("back_to_games");
-    requireElement<HTMLElement>(root, "[data-snake-eyebrow]").textContent = `🐍 ${tr("games_eyebrow")}`;
-    requireElement<HTMLElement>(root, "[data-snake-title]").textContent = tr("snake_title");
-    requireElement<HTMLElement>(root, "[data-snake-score-label]").textContent = tr("score_label");
-    requireElement<HTMLElement>(root, "[data-snake-record-label]").textContent = tr("record_label");
-    requireElement<HTMLElement>(root, ".snake-score-pill").setAttribute("aria-label", tr("score_label"));
+    backButtons.forEach((button) => button.setAttribute("aria-label", tr("back_to_games")));
+    requireElement<HTMLElement>(root, "[data-snake-back-copy]").textContent = tr("back_to_games");
+    requireElement<HTMLElement>(root, "[data-snake-eyebrow]").textContent = tr("games_eyebrow");
+    requireElements<HTMLElement>(root, "[data-snake-title]").forEach((element) => {
+      element.textContent = tr("snake_title");
+    });
+    requireElement<HTMLElement>(root, "[data-snake-description]").textContent = tr("snake_description");
+    requireElements<HTMLElement>(root, "[data-snake-record-label]").forEach((element) => {
+      element.textContent = tr("record_label");
+    });
+    requireElement<HTMLElement>(root, "[data-snake-controls-hint]").textContent = tr("snake_controls_hint");
+    requireElement<HTMLElement>(root, "[data-snake-record-stat]").setAttribute("aria-label", tr("record_label"));
+    requireElement<HTMLElement>(root, "[data-snake-score-stat]").setAttribute("aria-label", tr("score_label"));
+    requireElement<HTMLElement>(root, ".snake-game-hud").setAttribute("aria-label", tr("stats_label"));
     requireElement<HTMLElement>(root, ".snake-meta").setAttribute("aria-label", tr("stats_label"));
     requireElement<HTMLElement>(root, ".snake-controls").setAttribute("aria-label", tr("snake_controls_label"));
     directionButtons.forEach((button) => {
@@ -620,6 +727,12 @@ function requireElement<T extends Element>(root: ParentNode, selector: string): 
   const element = root.querySelector<T>(selector);
   if (!element) throw new Error(`Snake element was not found: ${selector}`);
   return element;
+}
+
+function requireElements<T extends Element>(root: ParentNode, selector: string): T[] {
+  const elements = Array.from(root.querySelectorAll<T>(selector));
+  if (!elements.length) throw new Error(`Snake elements were not found: ${selector}`);
+  return elements;
 }
 
 function escapeHtml(value: string): string {

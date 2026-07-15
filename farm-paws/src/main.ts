@@ -19,6 +19,7 @@ import {
   startGame,
   startNextRound
 } from "./gameState";
+import { farmBackDecision } from "./farmNavigation";
 import {
   type FarmPawsLang,
   type FarmPawsTextKey,
@@ -172,7 +173,7 @@ function render(): void {
   appRoot.querySelector<HTMLButtonElement>("[data-action='open-snake']")
     ?.addEventListener("click", openSnake);
   appRoot.querySelector<HTMLButtonElement>("[data-action='games']")
-    ?.addEventListener("click", showGamePicker);
+    ?.addEventListener("click", handleFarmBackToGames);
   appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry-finish']")
@@ -244,6 +245,7 @@ function renderStartScreen(): string {
 function renderGameScreen(): string {
   const failed = state.phase === "failed";
   return `
+    <button class="back-button farm-run-back" data-action="games" type="button" ${isStartingRun || finishPending ? "disabled" : ""}>${escapeHtml(tr("back_to_games"))}</button>
     <header class="top-panel">
       <div>
         <p class="eyebrow">🐾 ${escapeHtml(tr("app_title"))}</p>
@@ -365,6 +367,7 @@ async function beginGame(): Promise<void> {
   runStartedAt = Date.now();
   state = startGame(run.bestScore);
   render();
+  window.scrollTo(0, 0);
 
   if (run.mode === "local" && run.error) {
     showToast(tr("local_run_toast"));
@@ -428,6 +431,7 @@ function onCellClick(cellIndex: number): void {
   }
 
   if (result.result === "failed") {
+    window.scrollTo(0, 0);
     runFinishedAt = Date.now();
     void finishCurrentRun(token);
   }
@@ -575,18 +579,37 @@ function openFarmPaws(): void {
     bestScore: Math.max(state.bestScore, loadBestScore())
   };
   render();
+  window.scrollTo(0, 0);
 }
 
 function openSnake(): void {
   stopCurrentScreen();
   appScreen = "snake";
   render();
+  window.scrollTo(0, 0);
 }
 
 function showGamePicker(): void {
   stopCurrentScreen();
   appScreen = "games";
   render();
+  window.scrollTo(0, 0);
+}
+
+function handleFarmBackToGames(): void {
+  const decision = farmBackDecision({
+    mode: currentRun.mode,
+    phase: state.phase,
+    isStartingRun,
+    finishPending,
+    hasUnsavedServerResult: currentRun.mode === "server"
+      && state.phase === "failed"
+      && Boolean(finishResult && !finishResult.ok)
+  });
+  if (decision === "blocked") return;
+  if (decision === "confirm-run" && !window.confirm(tr("leave_run_confirm"))) return;
+  if (decision === "confirm-unsaved" && !window.confirm(tr("leave_unsaved_confirm"))) return;
+  showGamePicker();
 }
 
 function stopCurrentScreen(): void {
