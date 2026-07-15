@@ -1,4 +1,9 @@
 :root {
+  --farm-paws-visible-height: min(
+    var(--tg-viewport-height, 100dvh),
+    var(--tg-viewport-stable-height, 100dvh),
+    100dvh
+  );
   color: #263322;
   background: #d7ecdb;
   font-family:
@@ -201,7 +206,7 @@ button {
 }
 
 .game-card.is-snake {
-  min-height: min(760px, var(--tg-viewport-stable-height, 100dvh));
+  min-height: min(760px, var(--farm-paws-visible-height));
   padding: 12px;
   overflow: hidden;
 }
@@ -629,7 +634,7 @@ button {
 }
 
 .snake-screen[data-layout="game"] .snake-board-wrap {
-  width: min(100%, 380px, calc(var(--tg-viewport-stable-height, 100dvh) - 250px));
+  width: min(100%, 380px, calc(var(--farm-paws-visible-height) - 250px));
   border-radius: 24px;
 }
 
@@ -641,7 +646,7 @@ button {
 }
 
 .game-card.is-tetris {
-  min-height: min(760px, var(--tg-viewport-stable-height, 100dvh));
+  min-height: min(760px, var(--farm-paws-visible-height));
   padding: 12px;
   overflow: hidden;
 }
@@ -911,6 +916,7 @@ button {
   min-height: 0;
   display: grid;
   place-items: center;
+  overflow: hidden;
 }
 
 .tetris-stage {
@@ -1174,7 +1180,6 @@ button {
 }
 
 .tetris-screen[data-layout="game"] .tetris-stage-slot {
-  height: 100%;
   align-self: stretch;
 }
 
@@ -1190,9 +1195,10 @@ button {
 }
 
 .tetris-screen[data-layout="game"] .tetris-stage {
+  max-height: calc(var(--farm-paws-visible-height) - 146px);
   height: min(
-    100%,
     600px,
+    calc(var(--farm-paws-visible-height) - 146px),
     calc(200vw - 96px - var(--tetris-rail-double-width))
   );
 }
@@ -1826,9 +1832,9 @@ h2 {
 
   .game-card.is-snake {
     width: 100%;
-    height: var(--tg-viewport-stable-height, 100dvh);
-    min-height: var(--tg-viewport-stable-height, 100dvh);
-    max-height: var(--tg-viewport-stable-height, 100dvh);
+    height: var(--farm-paws-visible-height);
+    min-height: var(--farm-paws-visible-height);
+    max-height: var(--farm-paws-visible-height);
     padding: 10px;
     border: 0;
     border-radius: 0;
@@ -1840,7 +1846,7 @@ h2 {
   }
 
   .snake-screen[data-layout="game"] .snake-board-wrap {
-    width: min(100%, 380px, calc(var(--tg-viewport-stable-height, 100dvh) - 238px));
+    width: min(100%, 380px, calc(var(--farm-paws-visible-height) - 238px));
   }
 
   .game-picker {
@@ -2406,9 +2412,9 @@ h2 {
 
   .game-card.is-snake {
     width: 100%;
-    height: var(--tg-viewport-stable-height, 100dvh);
-    min-height: var(--tg-viewport-stable-height, 100dvh);
-    max-height: var(--tg-viewport-stable-height, 100dvh);
+    height: var(--farm-paws-visible-height);
+    min-height: var(--farm-paws-visible-height);
+    max-height: var(--farm-paws-visible-height);
     padding: 8px 10px;
     border: 0;
     border-radius: 0;
@@ -2436,7 +2442,7 @@ h2 {
 
   .snake-screen[data-layout="game"] .snake-board-wrap {
     grid-area: board;
-    width: min(46vw, 300px, calc(var(--tg-viewport-stable-height, 100dvh) - 74px));
+    width: min(46vw, 300px, calc(var(--farm-paws-visible-height) - 74px));
   }
 
   .snake-screen[data-layout="game"] .snake-controls {
@@ -2453,9 +2459,9 @@ h2 {
   .game-card.is-game-picker,
   .game-card.is-tetris {
     width: 100%;
-    height: var(--tg-viewport-stable-height, 100dvh);
-    min-height: var(--tg-viewport-stable-height, 100dvh);
-    max-height: var(--tg-viewport-stable-height, 100dvh);
+    height: var(--farm-paws-visible-height);
+    min-height: var(--farm-paws-visible-height);
+    max-height: var(--farm-paws-visible-height);
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -2509,9 +2515,9 @@ h2 {
 
 @media (max-height: 620px) {
   .game-card.is-game-picker {
-    height: calc(var(--tg-viewport-stable-height, 100dvh) - 16px);
-    min-height: calc(var(--tg-viewport-stable-height, 100dvh) - 16px);
-    max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 16px);
+    height: calc(var(--farm-paws-visible-height) - 16px);
+    min-height: calc(var(--farm-paws-visible-height) - 16px);
+    max-height: calc(var(--farm-paws-visible-height) - 16px);
     padding: 10px 14px;
     overflow: hidden;
   }
@@ -2584,9 +2590,9 @@ h2 {
   }
 
   .game-card.is-tetris {
-    height: calc(var(--tg-viewport-stable-height, 100dvh) - 16px);
-    min-height: calc(var(--tg-viewport-stable-height, 100dvh) - 16px);
-    max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 16px);
+    height: calc(var(--farm-paws-visible-height) - 16px);
+    min-height: calc(var(--farm-paws-visible-height) - 16px);
+    max-height: calc(var(--farm-paws-visible-height) - 16px);
     padding: 8px 10px;
   }
 
@@ -2600,9 +2606,10 @@ h2 {
   }
 
   .tetris-screen[data-layout="game"] .tetris-stage {
+    max-height: calc(var(--farm-paws-visible-height) - 138px);
     height: min(
-      100%,
       600px,
+      calc(var(--farm-paws-visible-height) - 138px),
       calc(200vw - 112px - var(--tetris-rail-double-width))
     );
   }
@@ -2720,9 +2727,9 @@ h2 {
   .game-card.is-game-picker,
   .game-card.is-tetris {
     width: 100%;
-    height: var(--tg-viewport-stable-height, 100dvh);
-    min-height: var(--tg-viewport-stable-height, 100dvh);
-    max-height: var(--tg-viewport-stable-height, 100dvh);
+    height: var(--farm-paws-visible-height);
+    min-height: var(--farm-paws-visible-height);
+    max-height: var(--farm-paws-visible-height);
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -2810,7 +2817,11 @@ h2 {
   }
 
   .tetris-screen[data-layout="game"] .tetris-stage {
-    height: min(100%, calc(116vw - 40px - var(--tetris-rail-double-width)));
+    max-height: calc(var(--farm-paws-visible-height) - 62px);
+    height: min(
+      calc(var(--farm-paws-visible-height) - 62px),
+      calc(116vw - 40px - var(--tetris-rail-double-width))
+    );
   }
 
   .tetris-screen[data-layout="game"] .tetris-controls {

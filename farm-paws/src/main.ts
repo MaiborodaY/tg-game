@@ -39,6 +39,8 @@ type AppScreen = "games" | "farm-paws" | "snake" | "tetris";
 
 type TelegramWebApp = {
   initData?: string;
+  viewportHeight?: number;
+  viewportStableHeight?: number;
   ready?: () => void;
   expand?: () => void;
   setHeaderColor?: (color: string) => void;
@@ -46,6 +48,7 @@ type TelegramWebApp = {
   disableVerticalSwipes?: () => void;
   enableClosingConfirmation?: () => void;
   disableClosingConfirmation?: () => void;
+  onEvent?: (eventType: "viewportChanged", handler: () => void) => void;
   close?: () => void;
 };
 
@@ -107,6 +110,7 @@ render();
 
 function initTelegramWebApp(): void {
   const webApp = window.Telegram?.WebApp;
+  initVisibleViewportHeight(webApp);
   if (!webApp) return;
 
   try {
@@ -117,6 +121,41 @@ function initTelegramWebApp(): void {
     webApp.disableVerticalSwipes?.();
   } catch {
     // Telegram WebApp methods can vary by client version.
+  }
+}
+
+function initVisibleViewportHeight(webApp?: TelegramWebApp): void {
+  let syncFrame: number | null = null;
+
+  const applyHeight = (): void => {
+    syncFrame = null;
+    const heights = [
+      webApp?.viewportHeight,
+      webApp?.viewportStableHeight,
+      window.visualViewport?.height,
+      window.innerHeight
+    ].filter((value): value is number => (
+      typeof value === "number" && Number.isFinite(value) && value > 0
+    ));
+    if (!heights.length) return;
+    document.documentElement.style.setProperty(
+      "--farm-paws-visible-height",
+      `${Math.floor(Math.min(...heights))}px`
+    );
+  };
+
+  const scheduleHeightSync = (): void => {
+    if (syncFrame !== null) window.cancelAnimationFrame(syncFrame);
+    syncFrame = window.requestAnimationFrame(applyHeight);
+  };
+
+  applyHeight();
+  window.addEventListener("resize", scheduleHeightSync);
+  window.visualViewport?.addEventListener("resize", scheduleHeightSync);
+  try {
+    webApp?.onEvent?.("viewportChanged", scheduleHeightSync);
+  } catch {
+    // Older Telegram clients may expose an incomplete event API.
   }
 }
 

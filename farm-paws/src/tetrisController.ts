@@ -203,6 +203,12 @@ export function mountTetrisController(
   const overlayBackButton = requireElement<HTMLButtonElement>(root, "[data-tetris-action='overlay-back']");
   const backButtons = requireElements<HTMLButtonElement>(root, "[data-tetris-action='back']");
   const controlButtons = requireElements<HTMLButtonElement>(root, "[data-tetris-control]");
+  const boardResizeObserver = typeof ResizeObserver === "undefined"
+    ? null
+    : new ResizeObserver(() => drawGame());
+
+  boardResizeObserver?.observe(canvas);
+  boardResizeObserver?.observe(nextCanvas);
 
   backButtons.forEach((button) => button.addEventListener("click", handleBack, listenerOptions));
   primaryButton.addEventListener("click", handlePrimaryAction, listenerOptions);
@@ -241,6 +247,7 @@ export function mountTetrisController(
       lifecycleToken += 1;
       stopLoop();
       stopActionRepeat();
+      boardResizeObserver?.disconnect();
       setTelegramClosingConfirmation(false);
       eventController.abort();
       root.replaceChildren();
