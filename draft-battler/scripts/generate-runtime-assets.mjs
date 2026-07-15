@@ -182,6 +182,11 @@ async function writeReadme(results) {
     "These files are optimized runtime WebP assets derived from `draft-battler/public/assets`.",
     "Do not edit generated WebP files by hand; update the source PNGs or generator profile instead.",
     "",
+    "The repository keeps only the PNG inputs consumed by the current generators (`unit.png`,",
+    "`card.png`, `sprite-sheet.png`, environment images, and card templates). Intermediate",
+    "authoring exports such as raw pose sheets, previews, and individual animation frames are",
+    "intentionally excluded from the working tree.",
+    "",
     "Current profiles:",
     ...Object.values(profiles).map((profile) => (
       `- ${profile.label}: max ${profile.maxWidth}x${profile.maxHeight}, quality ${profile.quality}, alpha ${profile.alphaQuality}`
