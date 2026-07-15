@@ -1,8 +1,8 @@
 import "./styles.css";
-import catGuideUrl from "./assets/cat-guide.png";
-import catGuideSadUrl from "./assets/cat-guide-sad.png";
-import dogGuideUrl from "./assets/dog-guide.png";
-import dogGuideSadUrl from "./assets/dog-guide-sad.png";
+import catGuideUrl from "./assets/cat-guide.webp";
+import catGuideSadUrl from "./assets/cat-guide-sad.webp";
+import dogGuideUrl from "./assets/dog-guide.webp";
+import dogGuideSadUrl from "./assets/dog-guide-sad.webp";
 import {
   FarmPawsFinishResult,
   FarmPawsRunSession,
@@ -313,11 +313,12 @@ async function playSequence(token: number): Promise<void> {
 
 function onCellClick(cellIndex: number): void {
   const token = runToken;
+  const previousBestScore = state.bestScore;
   const result = handleCellInput(state, cellIndex);
   state = result.state;
   activeStep = null;
 
-  if (state.bestScore >= state.score) {
+  if (state.bestScore > previousBestScore) {
     saveBestScore(state.bestScore);
   }
 
