@@ -1,7 +1,10 @@
 import { type FarmPawsLang, initialFarmPawsLang, normalizeFarmPawsLang } from "./i18n";
 
+export type FarmPawsGame = "farm_paws" | "snake";
+
 export type FarmPawsRunSession = {
   mode: "local" | "server" | "blocked";
+  game: FarmPawsGame;
   runId: string | null;
   bestScore: number;
   error: string | null;
@@ -23,6 +26,7 @@ export type FarmPawsFinishPayload = {
 export type FarmPawsFinishResult = {
   mode: "local" | "server";
   ok: boolean;
+  duplicate: boolean;
   xpReward: number | null;
   bestScore: number | null;
   petXp: number | null;
@@ -51,6 +55,7 @@ type ApiStartResponse = {
 
 type ApiFinishResponse = {
   ok?: boolean;
+  duplicate?: boolean;
   xpReward?: number;
   xp_reward?: number;
   bestScore?: number;
@@ -60,7 +65,8 @@ type ApiFinishResponse = {
   error?: string;
 };
 
-const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_FARM_PAWS_API_BASE_URL || "");
+const API_BASE_URL = normalizeBaseUrl(import.meta.env?.VITE_FARM_PAWS_API_BASE_URL || "");
+const API_TIMEOUT_MS = 15_000;
 const BLOCKING_START_CODES = new Set([
   "daily_limit",
   "no_pet",
@@ -70,25 +76,35 @@ const BLOCKING_START_CODES = new Set([
   "forbidden"
 ]);
 
-export async function startFarmPawsRun(localBestScore: number): Promise<FarmPawsRunSession> {
+export async function startFarmPawsRun(
+  localBestScore: number,
+  game: FarmPawsGame = "farm_paws"
+): Promise<FarmPawsRunSession> {
   const initData = telegramInitData();
   if (!initData) {
-    return localSession(localBestScore, null);
+    return localSession(localBestScore, game, null);
   }
 
   try {
-    const response = await postJson<ApiStartResponse>("/api/farm-paws/start", { initData });
+    const response = await postJson<ApiStartResponse>("/api/farm-paws/start", { initData, game });
     const runId = response.runId || response.run_id || null;
     if (!response.ok || !runId) {
       const code = normalizeCode(response.code);
       if (isBlockingStartCode(code)) {
-        return blockedSession(localBestScore, response.error || code || "start_blocked", code, response);
+        return blockedSession(localBestScore, game, response.error || code || "start_blocked", code, response);
       }
-      return localSession(localBestScore, response.error || "start_failed", responseLang(response));
+      return blockedSession(
+        localBestScore,
+        game,
+        response.error || code || "start_failed",
+        "start_unavailable",
+        response
+      );
     }
 
     return {
       mode: "server",
+      game,
       runId,
       bestScore: normalizedScore(response.bestScore ?? response.best_score ?? localBestScore),
       error: null,
@@ -96,18 +112,30 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
       petType: normalizedText(response.petType ?? response.pet_type),
       lang: responseLang(response),
       code: null,
-      dailyLimit: null,
-      dailyStarts: null
+      dailyLimit: normalizedNullableScore(response.dailyLimit ?? response.daily_limit),
+      dailyStarts: normalizedNullableScore(response.dailyStarts ?? response.daily_starts)
     };
   } catch (error) {
     if (error instanceof ApiError && isBlockingStartCode(error.code)) {
       const payload = error.payload as ApiStartResponse;
-      return blockedSession(localBestScore, error.message, error.code, payload);
+      return blockedSession(localBestScore, game, error.message, error.code, payload);
     }
     if (error instanceof ApiError) {
-      return localSession(localBestScore, error.message, responseLang(error.payload as ApiStartResponse));
+      return blockedSession(
+        localBestScore,
+        game,
+        error.message,
+        "start_unavailable",
+        error.payload as ApiStartResponse
+      );
     }
-    return localSession(localBestScore, error instanceof Error ? error.message : "network_error");
+    return blockedSession(
+      localBestScore,
+      game,
+      error instanceof Error ? error.message : "network_error",
+      "start_unavailable",
+      null
+    );
   }
 }
 
@@ -116,20 +144,25 @@ export async function finishFarmPawsRun(
   payload: FarmPawsFinishPayload
 ): Promise<FarmPawsFinishResult> {
   const initData = telegramInitData();
-  if (session.mode !== "server" || !session.runId || !initData) {
+  if (session.mode !== "server") {
     return {
       mode: "local",
       ok: true,
+      duplicate: false,
       xpReward: null,
       bestScore: null,
       petXp: null,
       error: null
     };
   }
+  if (!session.runId || !initData) {
+    return serverFinishError("missing_run_session");
+  }
 
   try {
     const response = await postJson<ApiFinishResponse>("/api/farm-paws/finish", {
       initData,
+      game: session.game,
       runId: session.runId,
       score: payload.score,
       round: payload.round,
@@ -144,6 +177,7 @@ export async function finishFarmPawsRun(
     return {
       mode: "server",
       ok: true,
+      duplicate: response.duplicate === true,
       xpReward: normalizedNullableScore(response.xpReward ?? response.xp_reward),
       bestScore: normalizedNullableScore(response.bestScore ?? response.best_score),
       petXp: normalizedNullableScore(response.petXp ?? response.pet_xp),
@@ -160,19 +194,29 @@ function telegramInitData(): string {
 
 async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const initData = typeof body.initData === "string" ? body.initData : telegramInitData();
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Telegram-Init-Data": initData
-    },
-    body: JSON.stringify(body)
-  });
-  const parsed = await response.json().catch(() => ({})) as Record<string, unknown>;
-  if (!response.ok) {
-    throw new ApiError(response.status, parsed);
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const parsed = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      throw new ApiError(response.status, parsed);
+    }
+    return parsed as T;
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("request_timeout", { cause: error });
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
   }
-  return parsed as T;
 }
 
 function normalizeBaseUrl(value: string): string {
@@ -181,11 +225,13 @@ function normalizeBaseUrl(value: string): string {
 
 function localSession(
   bestScore: number,
+  game: FarmPawsGame,
   error: string | null,
   lang: FarmPawsLang = initialFarmPawsLang()
 ): FarmPawsRunSession {
   return {
     mode: "local",
+    game,
     runId: null,
     bestScore: normalizedScore(bestScore),
     error,
@@ -200,12 +246,14 @@ function localSession(
 
 function blockedSession(
   bestScore: number,
+  game: FarmPawsGame,
   error: string | null,
   code: string | null,
   response: ApiStartResponse | null
 ): FarmPawsRunSession {
   return {
     mode: "blocked",
+    game,
     runId: null,
     bestScore: normalizedScore(bestScore),
     error,
@@ -230,6 +278,7 @@ function serverFinishError(error: string): FarmPawsFinishResult {
   return {
     mode: "server",
     ok: false,
+    duplicate: false,
     xpReward: null,
     bestScore: null,
     petXp: null,

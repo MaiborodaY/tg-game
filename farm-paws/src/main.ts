@@ -76,6 +76,7 @@ let activeStep: ActiveStep = null;
 let runToken = 0;
 let currentRun: FarmPawsRunSession = {
   mode: "local",
+  game: "farm_paws",
   runId: null,
   bestScore: state.bestScore,
   error: null,
@@ -84,6 +85,7 @@ let currentRun: FarmPawsRunSession = {
   lang: activeLang
 };
 let runStartedAt = 0;
+let runFinishedAt = 0;
 let isStartingRun = false;
 let finishPending = false;
 let finishResult: FarmPawsFinishResult | null = null;
@@ -154,7 +156,13 @@ function render(): void {
     if (!snakeRoot) throw new Error("Snake root was not found.");
     snakeController = mountSnakeController(snakeRoot, {
       tr,
-      onBack: showGamePicker
+      onBack: showGamePicker,
+      onLanguageChange: (lang) => {
+        activeLang = lang;
+        document.documentElement.lang = lang;
+        document.title = tr("snake_title");
+      },
+      startBlockedText
     });
     return;
   }
@@ -167,6 +175,8 @@ function render(): void {
     ?.addEventListener("click", showGamePicker);
   appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='retry-finish']")
+    ?.addEventListener("click", () => void finishCurrentRun(runToken));
   appRoot.querySelector<HTMLButtonElement>("[data-action='home']")?.addEventListener("click", exitMiniApp);
 
   appRoot.querySelectorAll<HTMLButtonElement>("[data-cell]").forEach((button) => {
@@ -226,7 +236,7 @@ function renderStartScreen(): string {
       <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${escapeHtml(isStartingRun ? tr("start_busy") : tr("start_play"))}</button>
       ${startBlockMessage ? `<p class="start-warning">${escapeHtml(startBlockMessage)}</p>` : ""}
       <p class="best-note">${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
-      <button class="back-button farm-picker-button" data-action="games" type="button">${escapeHtml(tr("back_to_games"))}</button>
+      <button class="back-button farm-picker-button" data-action="games" type="button" ${isStartingRun ? "disabled" : ""}>${escapeHtml(tr("back_to_games"))}</button>
     </div>
   `;
 }
@@ -271,16 +281,23 @@ function renderPlayPanel(): string {
 }
 
 function renderResultPanel(): string {
+  const shouldRetryFinish = currentRun.mode === "server"
+    && finishResult?.mode === "server"
+    && !finishResult.ok;
+  const primaryAction = shouldRetryFinish ? "retry-finish" : "retry";
+  const primaryText = finishPending
+    ? tr("reward_saving")
+    : tr(shouldRetryFinish ? "retry_save" : "retry_button");
   return `
     <div class="result-panel">
       <img class="result-cat-image ${petTypeClass()}" src="${petGuideImageUrl(true)}" alt="" />
       <h2>${escapeHtml(tr("result_title", { score: state.score }))}</h2>
       <p>${escapeHtml(tr("hearts_ended"))}</p>
       <p>${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
-      <p class="reward-line">${escapeHtml(rewardText())}</p>
+      <p class="reward-line" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(rewardText())}</p>
       <div class="result-actions">
-        <button class="primary-button" data-action="retry">${escapeHtml(tr("retry_button"))}</button>
-        <button class="secondary-button" data-action="home">${escapeHtml(tr("home_button"))}</button>
+        <button class="primary-button" data-action="${primaryAction}" ${finishPending ? "disabled" : ""}>${escapeHtml(primaryText)}</button>
+        <button class="secondary-button" data-action="home" ${finishPending ? "disabled" : ""}>${escapeHtml(tr("home_button"))}</button>
       </div>
     </div>
   `;
@@ -307,7 +324,7 @@ function renderCell(index: number): string {
 }
 
 async function beginGame(): Promise<void> {
-  if (appScreen !== "farm-paws" || isStartingRun) return;
+  if (appScreen !== "farm-paws" || isStartingRun || finishPending) return;
 
   runToken += 1;
   const token = runToken;
@@ -317,6 +334,7 @@ async function beginGame(): Promise<void> {
   finishResult = null;
   finishError = null;
   startBlockMessage = null;
+  runFinishedAt = 0;
   isStartingRun = true;
   state = {
     ...state,
@@ -410,6 +428,7 @@ function onCellClick(cellIndex: number): void {
   }
 
   if (result.result === "failed") {
+    runFinishedAt = Date.now();
     void finishCurrentRun(token);
   }
 
@@ -424,9 +443,10 @@ function onCellClick(cellIndex: number): void {
 }
 
 async function finishCurrentRun(token: number): Promise<void> {
-  if (finishPending || finishResult) return;
+  if (finishPending || finishResult?.ok) return;
 
   finishPending = true;
+  finishResult = null;
   finishError = null;
   render();
 
@@ -434,7 +454,7 @@ async function finishCurrentRun(token: number): Promise<void> {
     score: state.score,
     round: state.round,
     hpLeft: state.hp,
-    durationMs: Math.max(0, Date.now() - runStartedAt)
+    durationMs: Math.max(0, (runFinishedAt || Date.now()) - runStartedAt)
   });
   if (token !== runToken || appScreen !== "farm-paws") return;
 
@@ -451,6 +471,9 @@ async function finishCurrentRun(token: number): Promise<void> {
   }
 
   render();
+  if (!result.ok) {
+    appRoot.querySelector<HTMLButtonElement>("[data-action='retry-finish']")?.focus();
+  }
 }
 
 function statusText(): string {
@@ -486,6 +509,7 @@ function rewardText(): string {
     return tr("reward_saving");
   }
   if (finishResult?.mode === "server" && finishResult.ok) {
+    if (finishResult.duplicate) return tr("reward_already_saved");
     return tr("reward_ok", { xp: finishResult.xpReward || 0 });
   }
   if (currentRun.mode === "server" && finishError) {
@@ -584,6 +608,7 @@ function startBlockedText(run: FarmPawsRunSession): string {
   if (run.code === "pet_dead") return tr("blocked_pet_dead");
   if (run.code === "pet_changed") return tr("blocked_pet_changed");
   if (run.code === "not_enough_energy") return tr("blocked_not_enough_energy");
+  if (run.code === "start_unavailable") return tr("blocked_unavailable");
   return tr("blocked_default");
 }
 
