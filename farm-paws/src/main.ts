@@ -25,7 +25,10 @@ import {
   initialFarmPawsLang,
   tfp
 } from "./i18n";
-import { loadBestScore, saveBestScore } from "./storage";
+import { type SnakeController, mountSnakeController } from "./snakeController";
+import { loadBestScore, loadSnakeBestScore, saveBestScore } from "./storage";
+
+type AppScreen = "games" | "farm-paws" | "snake";
 
 type TelegramWebApp = {
   initData?: string;
@@ -53,6 +56,8 @@ declare global {
 
 const appRoot = requireAppRoot();
 let activeLang: FarmPawsLang = initialFarmPawsLang();
+let appScreen: AppScreen = "games";
+let snakeController: SnakeController | null = null;
 
 let state: GameState = {
   phase: "idle",
@@ -116,15 +121,50 @@ function tr(key: FarmPawsTextKey, vars: Record<string, string | number> = {}): s
 }
 
 function render(): void {
-  document.title = tr("app_title");
+  snakeController?.destroy();
+  snakeController = null;
+  document.documentElement.lang = activeLang;
+  document.title = appScreen === "games"
+    ? tr("games_app_title")
+    : tr(appScreen === "snake" ? "snake_title" : "app_title");
+  const cardClasses = [
+    "game-card",
+    appScreen === "games" ? "is-game-picker" : "",
+    appScreen === "snake" ? "is-snake" : "",
+    appScreen === "farm-paws" && state.phase === "failed" ? "is-failed" : ""
+  ].filter(Boolean).join(" ");
+  const screenContent = appScreen === "games"
+    ? renderGamePicker()
+    : appScreen === "snake"
+      ? '<div class="snake-mount" data-snake-root></div>'
+      : state.phase === "idle"
+        ? renderStartScreen()
+        : renderGameScreen();
+
   appRoot.innerHTML = `
     <main class="phone-shell">
-      <section class="game-card ${state.phase === "failed" ? "is-failed" : ""}">
-        ${state.phase === "idle" ? renderStartScreen() : renderGameScreen()}
+      <section class="${cardClasses}">
+        ${screenContent}
       </section>
     </main>
   `;
 
+  if (appScreen === "snake") {
+    const snakeRoot = appRoot.querySelector<HTMLElement>("[data-snake-root]");
+    if (!snakeRoot) throw new Error("Snake root was not found.");
+    snakeController = mountSnakeController(snakeRoot, {
+      tr,
+      onBack: showGamePicker
+    });
+    return;
+  }
+
+  appRoot.querySelector<HTMLButtonElement>("[data-action='open-farm-paws']")
+    ?.addEventListener("click", openFarmPaws);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='open-snake']")
+    ?.addEventListener("click", openSnake);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='games']")
+    ?.addEventListener("click", showGamePicker);
   appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='home']")?.addEventListener("click", exitMiniApp);
@@ -135,6 +175,37 @@ function render(): void {
       onCellClick(cellIndex);
     });
   });
+}
+
+function renderGamePicker(): string {
+  return `
+    <div class="game-picker">
+      <div class="game-picker-badge" aria-hidden="true">🎮</div>
+      <p class="eyebrow">${escapeHtml(tr("games_eyebrow"))}</p>
+      <h1>${escapeHtml(tr("games_title"))}</h1>
+      <p class="lead">${escapeHtml(tr("games_lead"))}</p>
+      <div class="game-choice-list">
+        <button class="game-choice-card is-farm" data-action="open-farm-paws" type="button">
+          <span class="game-choice-icon" aria-hidden="true">🐾</span>
+          <span class="game-choice-copy">
+            <strong>${escapeHtml(tr("app_title"))}</strong>
+            <small>${escapeHtml(tr("farm_card_description"))}</small>
+            <span class="game-choice-meta">${escapeHtml(tr("open_game"))} · ${escapeHtml(tr("best_result", { score: state.bestScore }))}</span>
+          </span>
+          <span class="game-choice-arrow" aria-hidden="true">›</span>
+        </button>
+        <button class="game-choice-card is-snake" data-action="open-snake" type="button">
+          <span class="game-choice-icon" aria-hidden="true">🐍</span>
+          <span class="game-choice-copy">
+            <strong>${escapeHtml(tr("snake_title"))}</strong>
+            <small>${escapeHtml(tr("snake_description"))}</small>
+            <span class="game-choice-meta">${escapeHtml(tr("open_game"))} · ${escapeHtml(tr("best_result", { score: loadSnakeBestScore() }))}</span>
+          </span>
+          <span class="game-choice-arrow" aria-hidden="true">›</span>
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 function renderStartScreen(): string {
@@ -155,6 +226,7 @@ function renderStartScreen(): string {
       <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${escapeHtml(isStartingRun ? tr("start_busy") : tr("start_play"))}</button>
       ${startBlockMessage ? `<p class="start-warning">${escapeHtml(startBlockMessage)}</p>` : ""}
       <p class="best-note">${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
+      <button class="back-button farm-picker-button" data-action="games" type="button">${escapeHtml(tr("back_to_games"))}</button>
     </div>
   `;
 }
@@ -235,7 +307,7 @@ function renderCell(index: number): string {
 }
 
 async function beginGame(): Promise<void> {
-  if (isStartingRun) return;
+  if (appScreen !== "farm-paws" || isStartingRun) return;
 
   runToken += 1;
   const token = runToken;
@@ -254,7 +326,7 @@ async function beginGame(): Promise<void> {
   render();
 
   const run = await startFarmPawsRun(localBestScore);
-  if (token !== runToken) return;
+  if (token !== runToken || appScreen !== "farm-paws") return;
 
   isStartingRun = false;
   activeLang = run.lang;
@@ -288,7 +360,7 @@ async function playSequence(token: number): Promise<void> {
   const gapMs = Math.max(110, Math.floor(showMs * 0.28));
 
   for (const [index, step] of state.sequence.entries()) {
-    if (token !== runToken) return;
+    if (token !== runToken || appScreen !== "farm-paws") return;
     activeStep = {
       cellIndex: step.cellIndex,
       stepNumber: index + 1,
@@ -296,7 +368,7 @@ async function playSequence(token: number): Promise<void> {
     };
     render();
     await sleep(showMs);
-    if (token !== runToken) return;
+    if (token !== runToken || appScreen !== "farm-paws") return;
     activeStep = {
       cellIndex: -1,
       stepNumber: index + 1,
@@ -306,12 +378,13 @@ async function playSequence(token: number): Promise<void> {
     await sleep(gapMs);
   }
 
-  if (token !== runToken) return;
+  if (token !== runToken || appScreen !== "farm-paws") return;
   state = markReadyForInput(state);
   render();
 }
 
 function onCellClick(cellIndex: number): void {
+  if (appScreen !== "farm-paws") return;
   const token = runToken;
   const previousBestScore = state.bestScore;
   const result = handleCellInput(state, cellIndex);
@@ -363,7 +436,7 @@ async function finishCurrentRun(token: number): Promise<void> {
     hpLeft: state.hp,
     durationMs: Math.max(0, Date.now() - runStartedAt)
   });
-  if (token !== runToken) return;
+  if (token !== runToken || appScreen !== "farm-paws") return;
 
   finishPending = false;
   finishResult = result;
@@ -467,6 +540,37 @@ function exitMiniApp(): void {
   }
 
   showToast(tr("close_hint"));
+}
+
+function openFarmPaws(): void {
+  stopCurrentScreen();
+  appScreen = "farm-paws";
+  state = {
+    ...state,
+    phase: "idle",
+    bestScore: Math.max(state.bestScore, loadBestScore())
+  };
+  render();
+}
+
+function openSnake(): void {
+  stopCurrentScreen();
+  appScreen = "snake";
+  render();
+}
+
+function showGamePicker(): void {
+  stopCurrentScreen();
+  appScreen = "games";
+  render();
+}
+
+function stopCurrentScreen(): void {
+  runToken += 1;
+  activeStep = null;
+  isStartingRun = false;
+  snakeController?.destroy();
+  snakeController = null;
 }
 
 function startBlockedText(run: FarmPawsRunSession): string {
