@@ -1,5 +1,6 @@
 const BEST_SCORE_KEY = "farm-paws-best-score-v1";
 const SNAKE_BEST_SCORE_KEY = "farm-paws-snake-best-score-v1";
+const TETRIS_BEST_SCORE_KEY = "farm-paws-tetris-best-score-v1";
 
 export function loadBestScore(): number {
   return loadScore(BEST_SCORE_KEY);
@@ -15,6 +16,14 @@ export function loadSnakeBestScore(): number {
 
 export function saveSnakeBestScore(score: number): void {
   saveScore(SNAKE_BEST_SCORE_KEY, score);
+}
+
+export function loadTetrisBestScore(): number {
+  return loadScore(TETRIS_BEST_SCORE_KEY);
+}
+
+export function saveTetrisBestScore(score: number): void {
+  saveScore(TETRIS_BEST_SCORE_KEY, score);
 }
 
 function loadScore(key: string): number {

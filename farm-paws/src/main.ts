@@ -27,9 +27,15 @@ import {
   tfp
 } from "./i18n";
 import { type SnakeController, mountSnakeController } from "./snakeController";
-import { loadBestScore, loadSnakeBestScore, saveBestScore } from "./storage";
+import { type TetrisController, mountTetrisController } from "./tetrisController";
+import {
+  loadBestScore,
+  loadSnakeBestScore,
+  loadTetrisBestScore,
+  saveBestScore
+} from "./storage";
 
-type AppScreen = "games" | "farm-paws" | "snake";
+type AppScreen = "games" | "farm-paws" | "snake" | "tetris";
 
 type TelegramWebApp = {
   initData?: string;
@@ -38,6 +44,8 @@ type TelegramWebApp = {
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   disableVerticalSwipes?: () => void;
+  enableClosingConfirmation?: () => void;
+  disableClosingConfirmation?: () => void;
   close?: () => void;
 };
 
@@ -59,6 +67,7 @@ const appRoot = requireAppRoot();
 let activeLang: FarmPawsLang = initialFarmPawsLang();
 let appScreen: AppScreen = "games";
 let snakeController: SnakeController | null = null;
+let tetrisController: TetrisController | null = null;
 
 let state: GameState = {
   phase: "idle",
@@ -126,20 +135,29 @@ function tr(key: FarmPawsTextKey, vars: Record<string, string | number> = {}): s
 function render(): void {
   snakeController?.destroy();
   snakeController = null;
+  tetrisController?.destroy();
+  tetrisController = null;
   document.documentElement.lang = activeLang;
   document.title = appScreen === "games"
     ? tr("games_app_title")
-    : tr(appScreen === "snake" ? "snake_title" : "app_title");
+    : tr(appScreen === "snake"
+      ? "snake_title"
+      : appScreen === "tetris"
+        ? "tetris_title"
+        : "app_title");
   const cardClasses = [
     "game-card",
     appScreen === "games" ? "is-game-picker" : "",
     appScreen === "snake" ? "is-snake" : "",
+    appScreen === "tetris" ? "is-tetris" : "",
     appScreen === "farm-paws" && state.phase === "failed" ? "is-failed" : ""
   ].filter(Boolean).join(" ");
   const screenContent = appScreen === "games"
     ? renderGamePicker()
     : appScreen === "snake"
       ? '<div class="snake-mount" data-snake-root></div>'
+      : appScreen === "tetris"
+        ? '<div class="tetris-mount" data-tetris-root></div>'
       : state.phase === "idle"
         ? renderStartScreen()
         : renderGameScreen();
@@ -168,10 +186,28 @@ function render(): void {
     return;
   }
 
+  if (appScreen === "tetris") {
+    const tetrisRoot = appRoot.querySelector<HTMLElement>("[data-tetris-root]");
+    if (!tetrisRoot) throw new Error("Tetris root was not found.");
+    tetrisController = mountTetrisController(tetrisRoot, {
+      tr,
+      onBack: showGamePicker,
+      onLanguageChange: (lang) => {
+        activeLang = lang;
+        document.documentElement.lang = lang;
+        document.title = tr("tetris_title");
+      },
+      startBlockedText
+    });
+    return;
+  }
+
   appRoot.querySelector<HTMLButtonElement>("[data-action='open-farm-paws']")
     ?.addEventListener("click", openFarmPaws);
   appRoot.querySelector<HTMLButtonElement>("[data-action='open-snake']")
     ?.addEventListener("click", openSnake);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='open-tetris']")
+    ?.addEventListener("click", openTetris);
   appRoot.querySelector<HTMLButtonElement>("[data-action='games']")
     ?.addEventListener("click", handleFarmBackToGames);
   appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
@@ -211,6 +247,15 @@ function renderGamePicker(): string {
             <strong>${escapeHtml(tr("snake_title"))}</strong>
             <small>${escapeHtml(tr("snake_description"))}</small>
             <span class="game-choice-meta">${escapeHtml(tr("open_game"))} · ${escapeHtml(tr("best_result", { score: loadSnakeBestScore() }))}</span>
+          </span>
+          <span class="game-choice-arrow" aria-hidden="true">›</span>
+        </button>
+        <button class="game-choice-card is-tetris" data-action="open-tetris" type="button">
+          <span class="game-choice-icon" aria-hidden="true">🧱</span>
+          <span class="game-choice-copy">
+            <strong>${escapeHtml(tr("tetris_title"))}</strong>
+            <small>${escapeHtml(tr("tetris_description"))}</small>
+            <span class="game-choice-meta">${escapeHtml(tr("open_game"))} · ${escapeHtml(tr("best_result", { score: loadTetrisBestScore() }))}</span>
           </span>
           <span class="game-choice-arrow" aria-hidden="true">›</span>
         </button>
@@ -589,6 +634,13 @@ function openSnake(): void {
   window.scrollTo(0, 0);
 }
 
+function openTetris(): void {
+  stopCurrentScreen();
+  appScreen = "tetris";
+  render();
+  window.scrollTo(0, 0);
+}
+
 function showGamePicker(): void {
   stopCurrentScreen();
   appScreen = "games";
@@ -618,6 +670,8 @@ function stopCurrentScreen(): void {
   isStartingRun = false;
   snakeController?.destroy();
   snakeController = null;
+  tetrisController?.destroy();
+  tetrisController = null;
 }
 
 function startBlockedText(run: FarmPawsRunSession): string {

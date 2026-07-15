@@ -96,6 +96,71 @@ test("Snake uses the shared start/finish endpoints with its game discriminator",
   });
 });
 
+test("Tetris uses the shared start/finish endpoints with its game discriminator", async () => {
+  setTelegramInitData("signed-tetris-init-data");
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url).endsWith("/api/farm-paws/start")) {
+      return jsonResponse({
+        ok: true,
+        runId: "tetris-run-1",
+        bestScore: 18,
+        dailyLimit: 5,
+        dailyStarts: 3
+      });
+    }
+    return jsonResponse({
+      ok: true,
+      duplicate: false,
+      xpReward: 7,
+      bestScore: 21,
+      petXp: 49
+    });
+  };
+
+  const session = await api.startFarmPawsRun(16, "tetris");
+  const finish = await api.finishFarmPawsRun(session, {
+    score: 20,
+    round: 3,
+    hpLeft: 0,
+    durationMs: 42_000
+  });
+
+  assert.equal(session.mode, "server");
+  assert.equal(session.game, "tetris");
+  assert.equal(session.runId, "tetris-run-1");
+  assert.equal(session.bestScore, 18);
+  assert.equal(session.dailyStarts, 3);
+  assert.equal(session.dailyLimit, 5);
+  assert.deepEqual(finish, {
+    mode: "server",
+    ok: true,
+    duplicate: false,
+    xpReward: 7,
+    bestScore: 21,
+    petXp: 49,
+    error: null
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, "/api/farm-paws/start");
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    initData: "signed-tetris-init-data",
+    game: "tetris"
+  });
+  assert.equal(calls[1].url, "/api/farm-paws/finish");
+  assert.deepEqual(JSON.parse(calls[1].init.body), {
+    initData: "signed-tetris-init-data",
+    game: "tetris",
+    runId: "tetris-run-1",
+    score: 20,
+    round: 3,
+    hpLeft: 0,
+    durationMs: 42_000
+  });
+});
+
 test("without Telegram initData Snake stays local and never calls the API", async () => {
   setTelegramInitData("");
   let fetchCalls = 0;

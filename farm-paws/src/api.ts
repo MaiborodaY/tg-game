@@ -1,6 +1,6 @@
 import { type FarmPawsLang, initialFarmPawsLang, normalizeFarmPawsLang } from "./i18n";
 
-export type FarmPawsGame = "farm_paws" | "snake";
+export type FarmPawsGame = "farm_paws" | "snake" | "tetris";
 
 export type FarmPawsRunSession = {
   mode: "local" | "server" | "blocked";

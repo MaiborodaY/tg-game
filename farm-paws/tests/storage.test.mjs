@@ -3,11 +3,13 @@ import test from "node:test";
 import {
   loadBestScore,
   loadSnakeBestScore,
+  loadTetrisBestScore,
   saveBestScore,
-  saveSnakeBestScore
+  saveSnakeBestScore,
+  saveTetrisBestScore
 } from "../src/storage.ts";
 
-test("keeps Farm Paws and Snake records in separate storage keys", () => {
+test("keeps Farm Paws, Snake, and Tetris records in separate storage keys", () => {
   const values = new Map();
   globalThis.window = {
     localStorage: {
@@ -18,10 +20,12 @@ test("keeps Farm Paws and Snake records in separate storage keys", () => {
 
   saveBestScore(12);
   saveSnakeBestScore(5);
+  saveTetrisBestScore(8);
 
   assert.equal(loadBestScore(), 12);
   assert.equal(loadSnakeBestScore(), 5);
-  assert.equal(values.size, 2);
+  assert.equal(loadTetrisBestScore(), 8);
+  assert.equal(values.size, 3);
 
   delete globalThis.window;
 });
