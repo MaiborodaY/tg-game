@@ -29,7 +29,7 @@ test("starts Tetris through the shared run starter with a normalized local recor
   assert.equal(result.dailyLimit, 5);
 });
 
-test("maps Tetris lines, level, and duration to the shared finish payload", async () => {
+test("maps Tetris bonus score, level, and duration to the shared finish payload", async () => {
   const calls = [];
   const expectedResult = {
     mode: "server",
@@ -45,7 +45,7 @@ test("maps Tetris lines, level, and duration to the shared finish payload", asyn
     calls.push({ session, payload });
     return expectedResult;
   }, serverSession, {
-    lines: 12.8,
+    score: 18.8,
     level: 3.9,
     startedAt: 1_000.8,
     finishedAt: 8_250.4
@@ -55,7 +55,7 @@ test("maps Tetris lines, level, and duration to the shared finish payload", asyn
   assert.deepEqual(calls, [{
     session: serverSession,
     payload: {
-      score: 12,
+      score: 18,
       round: 3,
       hpLeft: 0,
       durationMs: 7_250
@@ -77,7 +77,7 @@ test("never submits negative or non-finite Tetris values", async () => {
       error: null
     };
   }, serverSession, {
-    lines: Number.NaN,
+    score: Number.NaN,
     level: -2,
     startedAt: 5_000,
     finishedAt: Number.POSITIVE_INFINITY

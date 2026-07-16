@@ -5,6 +5,7 @@ import {
   startFarmPawsRun
 } from "./api";
 import { type FarmPawsLang, type FarmPawsTextKey } from "./i18n";
+import { createTetrisAudioController, tetrisAudioForTransition } from "./tetrisAudio";
 import { finishTetrisAttempt, startTetrisAttempt } from "./tetrisRunFlow";
 import {
   TETRIS_BOARD_HEIGHT,
@@ -22,6 +23,7 @@ import {
   rotateTetris,
   softDropTetris,
   startTetrisGame,
+  tetrisLineClearScore,
   tetrisPieceCells,
   tetrisTickDuration
 } from "./tetrisState";
@@ -88,6 +90,7 @@ export function mountTetrisController(
   const { tr } = options;
   const eventController = new AbortController();
   const listenerOptions = { signal: eventController.signal };
+  const audio = createTetrisAudioController();
   let state = createTetrisInitialState(loadTetrisBestScore());
   let layout: TetrisLayout = "lobby";
   let tickTimer: number | null = null;
@@ -107,9 +110,12 @@ export function mountTetrisController(
   root.innerHTML = `
     <div class="tetris-screen" data-tetris-screen data-layout="lobby">
       <section class="tetris-lobby-header">
-        <button class="back-button tetris-lobby-back" data-tetris-action="back" type="button">
-          <span data-tetris-back-copy>${escapeHtml(tr("back_to_games"))}</span>
-        </button>
+        <div class="tetris-lobby-toolbar">
+          <button class="back-button tetris-lobby-back" data-tetris-action="back" type="button">
+            <span data-tetris-back-copy>${escapeHtml(tr("back_to_games"))}</span>
+          </button>
+          <button class="tetris-hud-button tetris-sound-button" data-tetris-action="sound" type="button"></button>
+        </div>
         <div class="tetris-lobby-hero">
           <div class="tetris-lobby-icon" aria-hidden="true">🧱</div>
           <p class="eyebrow" data-tetris-eyebrow>${escapeHtml(tr("games_eyebrow"))}</p>
@@ -123,8 +129,9 @@ export function mountTetrisController(
         <strong class="tetris-hud-title"><span aria-hidden="true">🧱</span> <span data-tetris-title>${escapeHtml(tr("tetris_title"))}</span></strong>
         <div class="tetris-hud-stats">
           <span class="tetris-hud-stat" data-tetris-record-stat aria-label="${escapeHtml(tr("record_label"))}">🏆 <strong data-tetris-best>${state.bestScore}</strong></span>
-          <span class="tetris-hud-stat is-score" data-tetris-score-stat aria-label="${escapeHtml(tr("tetris_lines"))}">▤ <strong data-tetris-score>0</strong></span>
+          <span class="tetris-hud-stat is-score" data-tetris-score-stat aria-label="${escapeHtml(tr("score_label"))}">⭐ <strong data-tetris-score>0</strong></span>
         </div>
+        <button class="tetris-hud-button tetris-sound-button" data-tetris-action="sound" type="button"></button>
         <button class="tetris-hud-button tetris-hud-pause" data-tetris-action="pause" type="button" aria-label="${escapeHtml(tr("tetris_pause"))}">⏸</button>
       </header>
 
@@ -165,6 +172,7 @@ export function mountTetrisController(
             <div class="tetris-overlay-actions">
               <button class="primary-button tetris-overlay-primary" data-tetris-action="overlay-primary" type="button"></button>
               <button class="secondary-button tetris-overlay-back" data-tetris-action="overlay-back" type="button"></button>
+              <button class="tetris-hud-button tetris-sound-button tetris-overlay-sound" data-tetris-action="sound" type="button"></button>
             </div>
           </div>
         </div>
@@ -201,7 +209,9 @@ export function mountTetrisController(
   const overlayMessageElement = requireElement<HTMLElement>(root, "[data-tetris-overlay-message]");
   const overlayPrimaryButton = requireElement<HTMLButtonElement>(root, "[data-tetris-action='overlay-primary']");
   const overlayBackButton = requireElement<HTMLButtonElement>(root, "[data-tetris-action='overlay-back']");
+  const overlaySoundButton = requireElement<HTMLButtonElement>(root, ".tetris-overlay-sound");
   const backButtons = requireElements<HTMLButtonElement>(root, "[data-tetris-action='back']");
+  const soundButtons = requireElements<HTMLButtonElement>(root, "[data-tetris-action='sound']");
   const controlButtons = requireElements<HTMLButtonElement>(root, "[data-tetris-control]");
   const boardResizeObserver = typeof ResizeObserver === "undefined"
     ? null
@@ -211,6 +221,7 @@ export function mountTetrisController(
   boardResizeObserver?.observe(nextCanvas);
 
   backButtons.forEach((button) => button.addEventListener("click", handleBack, listenerOptions));
+  soundButtons.forEach((button) => button.addEventListener("click", handleSoundToggle, listenerOptions));
   primaryButton.addEventListener("click", handlePrimaryAction, listenerOptions);
   pauseButton.addEventListener("click", handlePrimaryAction, listenerOptions);
   overlayPrimaryButton.addEventListener("click", handlePrimaryAction, listenerOptions);
@@ -247,6 +258,7 @@ export function mountTetrisController(
       lifecycleToken += 1;
       stopLoop();
       stopActionRepeat();
+      audio.destroy();
       boardResizeObserver?.disconnect();
       setTelegramClosingConfirmation(false);
       eventController.abort();
@@ -254,13 +266,25 @@ export function mountTetrisController(
     }
   };
 
+  function handleSoundToggle(): void {
+    audio.setEnabled(!audio.enabled);
+    if (audio.enabled) {
+      audio.play("resume");
+      if (state.phase === "playing") audio.startMusic(state.level);
+    }
+    updateSoundButtons();
+  }
+
   function handlePrimaryAction(): void {
+    audio.unlock();
     if (isStartingRun || finishPending || hasHardStartBlock()) return;
     if (state.phase === "playing") {
       pauseActiveTiming();
       state = pauseTetrisGame(state);
       stopLoop();
       stopActionRepeat();
+      audio.pauseMusic();
+      audio.play("pause");
       updateView();
       overlayPrimaryButton.focus({ preventScroll: true });
       return;
@@ -268,6 +292,8 @@ export function mountTetrisController(
     if (state.phase === "paused") {
       state = resumeTetrisGame(state);
       beginActiveTiming();
+      audio.play("resume");
+      audio.startMusic(state.level);
       updateView();
       scheduleTick();
       canvas.focus({ preventScroll: true });
@@ -290,6 +316,7 @@ export function mountTetrisController(
     const token = lifecycleToken;
     stopLoop();
     stopActionRepeat();
+    audio.stopMusic();
     currentRun = null;
     finishResult = null;
     startBlockMessage = null;
@@ -333,6 +360,10 @@ export function mountTetrisController(
     state = startTetrisGame(syncedBestScore);
     if (document.hidden) state = pauseTetrisGame(state);
     if (state.phase === "playing") beginActiveTiming();
+    if (state.phase === "playing") {
+      audio.play("start");
+      audio.startMusic(state.level);
+    }
     updateView();
     if (state.phase === "playing") {
       scheduleTick();
@@ -352,6 +383,7 @@ export function mountTetrisController(
     if (state === previousState) return;
 
     if (state.bestScore > previousBestScore) saveTetrisBestScore(state.bestScore);
+    playTransitionAudio(previousState, state, action);
     updateView();
     if (state.phase === "gameover") {
       stopLoop();
@@ -362,6 +394,24 @@ export function mountTetrisController(
       return;
     }
     if (action === "down" || action === "drop") scheduleTick();
+  }
+
+  function playTransitionAudio(
+    previousState: TetrisState,
+    nextState: TetrisState,
+    action: TetrisAction | null
+  ): void {
+    const transition = tetrisAudioForTransition(previousState, nextState, action);
+    if (!transition) return;
+    if (transition.kind === "line-clear") {
+      audio.playLineClear(transition.count, transition.levelUp);
+      audio.startMusic(nextState.level);
+      return;
+    }
+    if (transition.cue === "game-over") {
+      audio.stopMusic();
+    }
+    audio.play(transition.cue);
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
@@ -424,7 +474,7 @@ export function mountTetrisController(
   }
 
   function trapOverlayFocus(event: KeyboardEvent): void {
-    const focusable = [overlayPrimaryButton, overlayBackButton].filter(
+    const focusable = [overlayPrimaryButton, overlayBackButton, overlaySoundButton].filter(
       (button) => !button.hidden && !button.disabled
     );
     event.preventDefault();
@@ -469,6 +519,7 @@ export function mountTetrisController(
   }
 
   function pauseForBackground(): void {
+    audio.suspend();
     if (state.phase !== "playing") return;
     pauseActiveTiming();
     state = pauseTetrisGame(state);
@@ -487,8 +538,10 @@ export function mountTetrisController(
     tickTimer = null;
     if (destroyed || state.phase !== "playing") return;
     const previousBestScore = state.bestScore;
+    const previousState = state;
     state = advanceTetris(state);
     if (state.bestScore > previousBestScore) saveTetrisBestScore(state.bestScore);
+    playTransitionAudio(previousState, state, null);
     updateView();
     if (state.phase === "playing") {
       scheduleTick();
@@ -509,7 +562,7 @@ export function mountTetrisController(
     updateView();
 
     const result = await finishTetrisAttempt(finishFarmPawsRun, currentRun, {
-      lines: state.lines,
+      score: state.score,
       level: state.level,
       startedAt: 0,
       finishedAt: activeRunDurationMs
@@ -542,6 +595,7 @@ export function mountTetrisController(
     lifecycleToken += 1;
     stopLoop();
     stopActionRepeat();
+    audio.stopMusic();
     setTelegramClosingConfirmation(false);
     options.onBack();
   }
@@ -628,7 +682,7 @@ export function mountTetrisController(
     overlayBackButton.textContent = tr("back_to_games");
     canvas.setAttribute(
       "aria-label",
-      `${tr("tetris_board_label")}. ${tr("tetris_lines")}: ${state.lines}. ${tr("tetris_level")}: ${state.level}. ${tr("record_label")}: ${state.bestScore}.`
+      `${tr("tetris_board_label")}. ${tr("score_label")}: ${state.score}. ${tr("tetris_lines")}: ${state.lines}. ${tr("tetris_level")}: ${state.level}. ${tr("record_label")}: ${state.bestScore}.`
     );
     controlButtons.forEach((button) => {
       button.disabled = isStartingRun || state.phase !== "playing";
@@ -640,7 +694,18 @@ export function mountTetrisController(
     return currentRun?.mode === "blocked" && currentRun.code !== "start_unavailable";
   }
 
+  function updateSoundButtons(): void {
+    const actionLabel = tr(audio.enabled ? "tetris_audio_disable" : "tetris_audio_enable");
+    soundButtons.forEach((button) => {
+      button.textContent = audio.enabled ? "🔊" : "🔇";
+      button.setAttribute("aria-label", tr("tetris_audio_label"));
+      button.setAttribute("title", actionLabel);
+      button.setAttribute("aria-pressed", String(audio.enabled));
+    });
+  }
+
   function updateStaticTranslations(): void {
+    updateSoundButtons();
     backButtons.forEach((button) => button.setAttribute("aria-label", tr("back_to_games")));
     requireElement<HTMLElement>(root, "[data-tetris-back-copy]").textContent = tr("back_to_games");
     requireElement<HTMLElement>(root, "[data-tetris-eyebrow]").textContent = tr("games_eyebrow");
@@ -656,7 +721,7 @@ export function mountTetrisController(
     requireElement<HTMLElement>(root, "[data-tetris-lines-label]").textContent = tr("tetris_lines");
     requireElement<HTMLElement>(root, "[data-tetris-level-label]").textContent = tr("tetris_level");
     requireElement<HTMLElement>(root, "[data-tetris-record-stat]").setAttribute("aria-label", tr("record_label"));
-    requireElement<HTMLElement>(root, "[data-tetris-score-stat]").setAttribute("aria-label", tr("tetris_lines"));
+    requireElement<HTMLElement>(root, "[data-tetris-score-stat]").setAttribute("aria-label", tr("score_label"));
     requireElement<HTMLElement>(root, ".tetris-game-hud").setAttribute("aria-label", tr("stats_label"));
     requireElement<HTMLElement>(root, ".tetris-meta").setAttribute("aria-label", tr("stats_label"));
     requireElement<HTMLElement>(root, ".tetris-controls").setAttribute("aria-label", tr("tetris_controls_label"));
@@ -823,7 +888,10 @@ function resizeCanvas(
 
 function tetrisStatusText(state: TetrisState, tr: Translate): string {
   if (state.phase === "playing" && state.lastClear > 0) {
-    return tr("tetris_line_clear", { count: state.lastClear });
+    return tr("tetris_line_clear", {
+      count: state.lastClear,
+      points: tetrisLineClearScore(state.lastClear)
+    });
   }
   if (state.phase === "playing") return tr("tetris_running");
   if (state.phase === "paused") return tr("tetris_paused");

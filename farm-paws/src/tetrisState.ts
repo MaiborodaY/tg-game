@@ -3,6 +3,8 @@ export const TETRIS_BOARD_HEIGHT = 20;
 export const TETRIS_BASE_TICK_MS = 800;
 export const TETRIS_MIN_TICK_MS = 90;
 
+const TETRIS_LINE_CLEAR_SCORES = [0, 1, 3, 5, 8] as const;
+
 export const TETROMINO_TYPES = ["I", "J", "L", "O", "S", "T", "Z"] as const;
 
 export type TetrominoType = typeof TETROMINO_TYPES[number];
@@ -231,6 +233,13 @@ export function tetrisTickDuration(level: number): number {
   );
 }
 
+export function tetrisLineClearScore(cleared: number): number {
+  const safeCleared = Number.isFinite(cleared)
+    ? Math.max(0, Math.min(4, Math.floor(cleared)))
+    : 0;
+  return TETRIS_LINE_CLEAR_SCORES[safeCleared];
+}
+
 function lockActivePiece(state: TetrisState, random: () => number): TetrisState {
   const cells = tetrisPieceCells(state.active);
   if (!canPlaceTetrisPiece(state.board, state.active) || cells.some(({ y }) => y < 0)) {
@@ -244,7 +253,7 @@ function lockActivePiece(state: TetrisState, random: () => number): TetrisState 
 
   const { board, cleared } = clearCompletedLines(lockedBoard);
   const lines = state.lines + cleared;
-  const score = lines;
+  const score = state.score + tetrisLineClearScore(cleared);
   const drawn = drawTetromino(state.bag, random);
   const active = spawnPiece(state.next);
 

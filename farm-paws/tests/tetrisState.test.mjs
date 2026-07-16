@@ -17,6 +17,7 @@ import {
   rotateTetris,
   softDropTetris,
   startTetrisGame,
+  tetrisLineClearScore,
   tetrisPieceCells,
   tetrisTickDuration
 } from "../src/tetrisState.ts";
@@ -150,8 +151,9 @@ test("hard drop locks a piece, spawns the preview and gives no drop points", () 
   assert.equal(countLockedCells(next.board), 4);
 });
 
-test("score always equals total cleared lines for one through four line clears", () => {
-  for (const expectedClears of [1, 2, 3, 4]) {
+test("awards an increasing bonus for clearing several lines at once", () => {
+  const expectedScores = new Map([[1, 1], [2, 3], [3, 5], [4, 8]]);
+  for (const [expectedClears, expectedScore] of expectedScores) {
     const board = createEmptyTetrisBoard();
     for (let y = TETRIS_BOARD_HEIGHT - expectedClears; y < TETRIS_BOARD_HEIGHT; y += 1) {
       for (let x = 0; x < TETRIS_BOARD_WIDTH - 1; x += 1) board[y][x] = "J";
@@ -169,9 +171,38 @@ test("score always equals total cleared lines for one through four line clears",
 
     assert.equal(next.lastClear, expectedClears);
     assert.equal(next.lines, expectedClears);
-    assert.equal(next.score, expectedClears);
-    assert.equal(next.bestScore, expectedClears);
+    assert.equal(next.score, expectedScore);
+    assert.equal(next.bestScore, expectedScore);
+    assert.equal(tetrisLineClearScore(expectedClears), expectedScore);
   }
+  assert.equal(tetrisLineClearScore(Number.NaN), 0);
+  assert.equal(tetrisLineClearScore(-1), 0);
+  assert.equal(tetrisLineClearScore(99), 8);
+});
+
+test("adds a multi-line bonus to the score already earned", () => {
+  const board = createEmptyTetrisBoard();
+  for (let y = TETRIS_BOARD_HEIGHT - 2; y < TETRIS_BOARD_HEIGHT; y += 1) {
+    for (let x = 0; x < TETRIS_BOARD_WIDTH - 1; x += 1) board[y][x] = "J";
+  }
+  const state = {
+    ...withActive(startTetrisGame(10, () => 0), {
+      type: "I",
+      rotation: 1,
+      x: 7,
+      y: 0
+    }),
+    board,
+    score: 10,
+    lines: 7
+  };
+
+  const next = hardDropTetris(state, () => 0);
+
+  assert.equal(next.lastClear, 2);
+  assert.equal(next.lines, 9);
+  assert.equal(next.score, 13);
+  assert.equal(next.bestScore, 13);
 });
 
 test("preserves the order of non-cleared rows", () => {
@@ -196,7 +227,7 @@ test("preserves the order of non-cleared rows", () => {
   assert.equal(next.board[19][1], "L");
 });
 
-test("changes level every ten lines while keeping score equal to lines", () => {
+test("changes level every ten lines independently of the bonus score", () => {
   const board = createEmptyTetrisBoard();
   for (let x = 0; x < 6; x += 1) board[19][x] = "Z";
   const state = {
@@ -208,14 +239,15 @@ test("changes level every ten lines while keeping score equal to lines", () => {
     }),
     board,
     lines: 9,
-    score: 9,
+    score: 12,
+    bestScore: 12,
     level: 1
   };
   const next = hardDropTetris(state, () => 0);
 
   assert.equal(next.lines, 10);
-  assert.equal(next.score, 10);
-  assert.equal(next.bestScore, 10);
+  assert.equal(next.score, 13);
+  assert.equal(next.bestScore, 13);
   assert.equal(next.level, 2);
 });
 

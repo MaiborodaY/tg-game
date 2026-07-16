@@ -1,6 +1,7 @@
 const BEST_SCORE_KEY = "farm-paws-best-score-v1";
 const SNAKE_BEST_SCORE_KEY = "farm-paws-snake-best-score-v1";
 const TETRIS_BEST_SCORE_KEY = "farm-paws-tetris-best-score-v1";
+const TETRIS_AUDIO_ENABLED_KEY = "farm-paws-tetris-audio-enabled-v1";
 
 export function loadBestScore(): number {
   return loadScore(BEST_SCORE_KEY);
@@ -24,6 +25,24 @@ export function loadTetrisBestScore(): number {
 
 export function saveTetrisBestScore(score: number): void {
   saveScore(TETRIS_BEST_SCORE_KEY, score);
+}
+
+export function loadTetrisAudioEnabled(): boolean {
+  try {
+    const stored = window.localStorage.getItem(TETRIS_AUDIO_ENABLED_KEY);
+    if (stored === "0") return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+export function saveTetrisAudioEnabled(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(TETRIS_AUDIO_ENABLED_KEY, enabled ? "1" : "0");
+  } catch {
+    // Sound preference persistence is optional in restricted WebViews.
+  }
 }
 
 function loadScore(key: string): number {

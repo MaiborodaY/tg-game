@@ -21,19 +21,19 @@ export async function finishTetrisAttempt(
   finishRun: FinishTetrisAttempt,
   session: FarmPawsRunSession,
   {
-    lines,
+    score,
     level,
     startedAt,
     finishedAt = Date.now()
   }: {
-    lines: number;
+    score: number;
     level: number;
     startedAt: number;
     finishedAt?: number;
   }
 ): Promise<FarmPawsFinishResult> {
   return finishRun(session, {
-    score: normalizeNonNegativeInteger(lines),
+    score: normalizeNonNegativeInteger(score),
     round: normalizeNonNegativeInteger(level),
     hpLeft: 0,
     durationMs: Math.max(
