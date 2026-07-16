@@ -11,15 +11,20 @@ import {
 } from "./api";
 import {
   GameState,
+  TOTAL_ROUNDS,
+  createInitialState,
   defaultPlotEmojis,
   handleCellInput,
   markReadyForInput,
   mockPetXpForScore,
+  requiresRoundBriefing,
   showDurationForRound,
   startGame,
-  startNextRound
+  startNextRound,
+  useScentHint
 } from "./gameState";
 import { farmBackDecision } from "./farmNavigation";
+import { finishFarmAttempt, isTerminalFarmResult } from "./farmRunFlow";
 import {
   type FarmPawsLang,
   type FarmPawsTextKey,
@@ -72,20 +77,9 @@ let appScreen: AppScreen = "games";
 let snakeController: SnakeController | null = null;
 let tetrisController: TetrisController | null = null;
 
-let state: GameState = {
-  phase: "idle",
-  round: 1,
-  score: 0,
-  bestScore: loadBestScore(),
-  hp: 3,
-  maxHp: 3,
-  plotEmojis: defaultPlotEmojis(),
-  sequence: [],
-  inputIndex: 0,
-  lastInputCell: null,
-  lastInputStatus: null
-};
+let state: GameState = createInitialState(loadBestScore());
 let activeStep: ActiveStep = null;
+let roundBriefingPending = false;
 let runToken = 0;
 let currentRun: FarmPawsRunSession = {
   mode: "local",
@@ -189,7 +183,8 @@ function render(): void {
     appScreen === "games" ? "is-game-picker" : "",
     appScreen === "snake" ? "is-snake" : "",
     appScreen === "tetris" ? "is-tetris" : "",
-    appScreen === "farm-paws" && state.phase === "failed" ? "is-failed" : ""
+    appScreen === "farm-paws" && state.phase === "failed" ? "is-failed" : "",
+    appScreen === "farm-paws" && state.phase === "won" ? "is-victory" : ""
   ].filter(Boolean).join(" ");
   const screenContent = appScreen === "games"
     ? renderGamePicker()
@@ -251,6 +246,9 @@ function render(): void {
     ?.addEventListener("click", handleFarmBackToGames);
   appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='scent']")?.addEventListener("click", replayWithScent);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='start-briefed-round']")
+    ?.addEventListener("click", beginBriefedRound);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry-finish']")
     ?.addEventListener("click", () => void finishCurrentRun(runToken));
   appRoot.querySelector<HTMLButtonElement>("[data-action='home']")?.addEventListener("click", exitMiniApp);
@@ -313,10 +311,9 @@ function renderStartScreen(): string {
       <div class="preview-grid" aria-hidden="true">
         ${Array.from({ length: 9 }, (_, index) => `<span class="preview-plot">${previewEmoji(index)}</span>`).join("")}
       </div>
-      <div class="mini-sequence" aria-hidden="true">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
+      <div class="run-goal-card">
+        <strong>🌾 ${escapeHtml(tr("start_goal"))}</strong>
+        <small><span aria-hidden="true">❤️❤️❤️</span> · ${escapeHtml(tr("scent_button"))}</small>
       </div>
       <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${escapeHtml(isStartingRun ? tr("start_busy") : tr("start_play"))}</button>
       ${startBlockMessage ? `<p class="start-warning">${escapeHtml(startBlockMessage)}</p>` : ""}
@@ -328,12 +325,16 @@ function renderStartScreen(): string {
 
 function renderGameScreen(): string {
   const failed = state.phase === "failed";
+  const won = state.phase === "won";
+  const terminal = failed || won;
   return `
     <button class="back-button farm-run-back" data-action="games" type="button" ${isStartingRun || finishPending ? "disabled" : ""}>${escapeHtml(tr("back_to_games"))}</button>
     <header class="top-panel">
       <div>
         <p class="eyebrow">🐾 ${escapeHtml(tr("app_title"))}</p>
-        <h1>${escapeHtml(failed ? tr("run_finished") : tr("round_title", { round: state.round }))}</h1>
+        <h1>${escapeHtml(terminal
+          ? tr(won ? "run_victory" : "run_finished")
+          : tr("field_progress", { field: state.round, total: TOTAL_ROUNDS }))}</h1>
       </div>
       <div class="score-pill">
         <span>${state.score}</span>
@@ -341,32 +342,74 @@ function renderGameScreen(): string {
       </div>
     </header>
 
-    <section class="stats-row" aria-label="${escapeHtml(tr("stats_label"))}">
-      <span>${escapeHtml(tr("round_label"))}: <strong>${state.round}</strong></span>
-      <span>${escapeHtml(tr("record_label"))}: <strong>${state.bestScore}</strong></span>
-    </section>
-    <section class="heart-row" aria-label="${escapeHtml(tr("lives_label"))}">
-      <span>${escapeHtml(currentRun.petName || tr("default_pet"))}</span>
-      <strong>${renderHearts()}</strong>
-    </section>
+    ${terminal ? "" : `
+      <section class="stats-row" aria-label="${escapeHtml(tr("stats_label"))}">
+        <span class="field-mode-chip" data-mode="${state.roundMode}">${modeIcon()} ${escapeHtml(modeText())}</span>
+        <span>${escapeHtml(tr("record_label"))}: <strong>${state.bestScore}</strong></span>
+      </section>
+    `}
+    ${renderFarmProgress()}
+    ${terminal ? "" : `
+      <section class="heart-row" aria-label="${escapeHtml(tr("lives_label"))}">
+        <span>${escapeHtml(currentRun.petName || tr("default_pet"))}</span>
+        <strong>${renderHearts()}</strong>
+      </section>
+    `}
 
-    ${failed ? renderResultPanel() : renderPlayPanel()}
+    ${terminal ? renderResultPanel() : renderPlayPanel()}
   `;
 }
 
 function renderPlayPanel(): string {
+  if (roundBriefingPending) return renderRoundBriefing();
+
+  const canUseScent = state.phase === "input" && state.scentAvailable;
   return `
     <div class="status-line ${statusClass()}">${escapeHtml(statusText())}</div>
     <div class="farm-grid" aria-label="${escapeHtml(tr("grid_label"))}">
       ${Array.from({ length: 9 }, (_, index) => renderCell(index)).join("")}
     </div>
     <div class="cat-guide-panel" aria-label="${escapeHtml(tr("pet_guide_label"))}">
+      <button class="scent-button" data-action="scent" type="button" ${canUseScent ? "" : "disabled"}>
+        ${escapeHtml(state.scentAvailable ? tr("scent_button") : tr("scent_used"))}
+      </button>
       <img class="cat-guide-image ${petGuideClassName()}" src="${petGuideImageUrl(false)}" alt="" />
     </div>
   `;
 }
 
+function renderRoundBriefing(): string {
+  const reverse = state.roundMode === "reverse";
+  const sprint = state.roundMode === "sprint";
+  const title = reverse
+    ? tr("briefing_reverse_title")
+    : tr(sprint ? "briefing_sprint_title" : "briefing_finale_title");
+  const body = reverse
+    ? tr("briefing_reverse_body")
+    : tr(sprint ? "briefing_sprint_body" : "briefing_finale_body");
+  const icon = reverse ? "↩️" : sprint ? "⚡" : "🏆";
+
+  return `
+    <section class="round-briefing" data-mode="${state.roundMode}" aria-labelledby="round-briefing-title">
+      <span class="round-briefing-badge">${escapeHtml(tr("briefing_badge"))}</span>
+      <span class="round-briefing-icon" aria-hidden="true">${icon}</span>
+      <h2 id="round-briefing-title">${escapeHtml(title)}</h2>
+      <p>${escapeHtml(body)}</p>
+      ${reverse ? `
+        <div class="reverse-example">
+          <span><small>${escapeHtml(tr("briefing_pet_route"))}</small><strong>1 → 2 → 3 → 4</strong></span>
+          <span><small>${escapeHtml(tr("briefing_player_route"))}</small><strong>4 → 3 → 2 → 1</strong></span>
+        </div>
+      ` : ""}
+      <button class="primary-button round-briefing-start" data-action="start-briefed-round" type="button">
+        ${escapeHtml(tr("briefing_start"))}
+      </button>
+    </section>
+  `;
+}
+
 function renderResultPanel(): string {
+  const won = state.phase === "won";
   const shouldRetryFinish = currentRun.mode === "server"
     && finishResult?.mode === "server"
     && !finishResult.ok;
@@ -375,10 +418,10 @@ function renderResultPanel(): string {
     ? tr("reward_saving")
     : tr(shouldRetryFinish ? "retry_save" : "retry_button");
   return `
-    <div class="result-panel">
-      <img class="result-cat-image ${petTypeClass()}" src="${petGuideImageUrl(true)}" alt="" />
-      <h2>${escapeHtml(tr("result_title", { score: state.score }))}</h2>
-      <p>${escapeHtml(tr("hearts_ended"))}</p>
+    <div class="result-panel ${won ? "is-victory" : "is-defeat"}">
+      <img class="result-cat-image ${won ? "is-victory" : ""} ${petTypeClass()}" src="${petGuideImageUrl(!won)}" alt="" />
+      <h2>${escapeHtml(tr(won ? "victory_title" : "defeat_title", { score: state.score }))}</h2>
+      <p>${escapeHtml(tr(won ? "victory_body" : "defeat_body", { field: state.round, total: TOTAL_ROUNDS }))}</p>
       <p>${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
       <p class="reward-line" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(rewardText())}</p>
       <div class="result-actions">
@@ -387,6 +430,53 @@ function renderResultPanel(): string {
       </div>
     </div>
   `;
+}
+
+function renderFarmProgress(): string {
+  const completedFields = state.phase === "success" || state.phase === "won"
+    ? state.round
+    : Math.max(0, state.round - 1);
+  const currentField = state.phase === "failed" || state.phase === "won" ? null : state.round;
+  const progressLabel = state.phase === "won"
+    ? tr("run_victory")
+    : tr("field_progress", { field: state.round, total: TOTAL_ROUNDS });
+
+  return `
+    <div class="farm-progress" aria-label="${escapeHtml(progressLabel)}">
+      ${Array.from({ length: TOTAL_ROUNDS }, (_, index) => {
+        const field = index + 1;
+        const completed = field <= completedFields;
+        const current = field === currentField;
+        const className = [
+          "farm-progress-node",
+          completed ? "is-complete" : "",
+          current ? "is-current" : ""
+        ].filter(Boolean).join(" ");
+        return `<span class="${className}" ${current ? 'aria-current="step"' : ""} aria-hidden="true">${completed ? "🌻" : current ? "🐾" : "🌱"}</span>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function modeText(): string {
+  if (state.roundMode === "reverse") return tr("field_mode_reverse");
+  if (state.roundMode === "sprint") return tr("field_mode_sprint");
+  if (state.roundMode === "finale") return tr("field_mode_finale");
+  return tr("field_mode_normal");
+}
+
+function modeIcon(): string {
+  if (state.roundMode === "reverse") return "↩️";
+  if (state.roundMode === "sprint") return "⚡";
+  if (state.roundMode === "finale") return "🏆";
+  return "🐾";
+}
+
+function roundIntroText(): string {
+  if (state.roundMode === "reverse") return tr("field_intro_reverse");
+  if (state.roundMode === "sprint") return tr("field_intro_sprint");
+  if (state.roundMode === "finale") return tr("field_intro_finale");
+  return tr("field_intro_normal");
 }
 
 function renderCell(index: number): string {
@@ -404,6 +494,7 @@ function renderCell(index: number): string {
   return `
     <button class="${className}" data-cell="${index}" ${state.phase !== "input" ? "disabled" : ""} aria-label="${escapeHtml(tr("plot_label", { number: index + 1 }))}">
       <span class="plot-content">${content}</span>
+      ${isActive ? `<span class="plot-step-number" aria-hidden="true">${activeStep?.stepNumber || ""}</span>` : ""}
       ${isActive ? `<span class="plot-pet" aria-hidden="true">🐕</span>` : ""}
     </button>
   `;
@@ -416,6 +507,7 @@ async function beginGame(): Promise<void> {
   const token = runToken;
   const localBestScore = loadBestScore();
   activeStep = null;
+  roundBriefingPending = false;
   finishPending = false;
   finishResult = null;
   finishError = null;
@@ -463,6 +555,11 @@ async function beginGame(): Promise<void> {
 async function playSequence(token: number): Promise<void> {
   const showMs = showDurationForRound(state.round);
   const gapMs = Math.max(110, Math.floor(showMs * 0.28));
+
+  activeStep = null;
+  render();
+  await sleep(480);
+  if (token !== runToken || appScreen !== "farm-paws" || state.phase !== "showing") return;
 
   for (const [index, step] of state.sequence.entries()) {
     if (token !== runToken || appScreen !== "farm-paws") return;
@@ -514,20 +611,48 @@ function onCellClick(cellIndex: number): void {
     }, 520);
   }
 
-  if (result.result === "failed") {
+  if (isTerminalFarmResult(result.result)) {
     window.scrollTo(0, 0);
     runFinishedAt = Date.now();
     void finishCurrentRun(token);
+    return;
   }
 
   if (result.result === "roundComplete") {
+    const completedRound = state.round;
     window.setTimeout(() => {
-      if (token !== runToken) return;
+      if (token !== runToken || state.phase !== "success" || state.round !== completedRound) return;
       state = startNextRound(state);
+      roundBriefingPending = requiresRoundBriefing(state.roundMode);
       render();
-      void playSequence(token);
-    }, 700);
+      if (!roundBriefingPending) void playSequence(token);
+    }, 900);
   }
+}
+
+function beginBriefedRound(): void {
+  if (
+    appScreen !== "farm-paws"
+    || !roundBriefingPending
+    || state.phase !== "showing"
+  ) return;
+
+  roundBriefingPending = false;
+  activeStep = null;
+  render();
+  void playSequence(runToken);
+}
+
+function replayWithScent(): void {
+  if (appScreen !== "farm-paws") return;
+  const hintedState = useScentHint(state);
+  if (hintedState === state) return;
+
+  state = hintedState;
+  roundBriefingPending = false;
+  activeStep = null;
+  render();
+  void playSequence(runToken);
 }
 
 async function finishCurrentRun(token: number): Promise<void> {
@@ -538,11 +663,12 @@ async function finishCurrentRun(token: number): Promise<void> {
   finishError = null;
   render();
 
-  const result = await finishFarmPawsRun(currentRun, {
+  const result = await finishFarmAttempt(finishFarmPawsRun, currentRun, {
     score: state.score,
     round: state.round,
     hpLeft: state.hp,
-    durationMs: Math.max(0, (runFinishedAt || Date.now()) - runStartedAt)
+    startedAt: runStartedAt,
+    finishedAt: runFinishedAt || Date.now()
   });
   if (token !== runToken || appScreen !== "farm-paws") return;
 
@@ -566,13 +692,27 @@ async function finishCurrentRun(token: number): Promise<void> {
 
 function statusText(): string {
   if (state.phase === "showing") {
+    if (!activeStep) return roundIntroText();
     const stepNumber = activeStep?.stepNumber || 1;
     const totalSteps = activeStep?.totalSteps || state.sequence.length;
+    if (state.roundMode === "reverse") {
+      return tr("status_watch_reverse", { step: stepNumber, total: totalSteps });
+    }
     return tr("status_watch", { step: stepNumber, total: totalSteps });
   }
-  if (state.phase === "success") return tr("status_correct");
+  if (state.phase === "success") {
+    if (state.heartRestored) return tr("heart_restored");
+    if (state.roundWasPerfect) return tr("perfect_complete");
+    return tr("field_complete", { field: state.round });
+  }
   if (state.phase === "failed") return tr("status_error");
   if (state.lastInputStatus === "wrong") return tr("status_minus_heart", { hp: state.hp, maxHp: state.maxHp });
+  if (state.roundMode === "reverse") {
+    return tr("status_reverse", {
+      step: Math.min(state.inputIndex + 1, state.sequence.length),
+      total: state.sequence.length
+    });
+  }
   return tr("status_repeat", {
     step: Math.min(state.inputIndex + 1, state.sequence.length),
     total: state.sequence.length
@@ -580,7 +720,7 @@ function statusText(): string {
 }
 
 function statusClass(): string {
-  if (state.phase === "showing") return "is-watch";
+  if (state.phase === "showing") return activeStep ? "is-watch" : "is-intro";
   if (state.phase === "success") return "is-success";
   if (state.phase === "failed") return "is-error";
   if (state.lastInputStatus === "wrong") return "is-error";
@@ -694,7 +834,7 @@ function handleFarmBackToGames(): void {
     isStartingRun,
     finishPending,
     hasUnsavedServerResult: currentRun.mode === "server"
-      && state.phase === "failed"
+      && (state.phase === "failed" || state.phase === "won")
       && Boolean(finishResult && !finishResult.ok)
   });
   if (decision === "blocked") return;
@@ -706,6 +846,7 @@ function handleFarmBackToGames(): void {
 function stopCurrentScreen(): void {
   runToken += 1;
   activeStep = null;
+  roundBriefingPending = false;
   isStartingRun = false;
   snakeController?.destroy();
   snakeController = null;

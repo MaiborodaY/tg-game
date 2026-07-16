@@ -55,6 +55,13 @@ button {
   box-shadow: 0 24px 80px rgba(58, 86, 44, 0.28);
 }
 
+.game-card.is-victory {
+  background:
+    radial-gradient(circle at 50% 7%, rgba(255, 213, 92, 0.28), transparent 31%),
+    linear-gradient(180deg, rgba(255, 253, 239, 0.98), rgba(239, 247, 213, 0.98)),
+    #fff8df;
+}
+
 .game-picker {
   flex: 1;
   min-height: 0;
@@ -1380,6 +1387,27 @@ h2 {
   line-height: 1.35;
 }
 
+.run-goal-card {
+  width: min(100%, 288px);
+  display: grid;
+  gap: 5px;
+  padding: 10px 14px;
+  border: 1px solid rgba(92, 126, 63, 0.16);
+  border-radius: 16px;
+  color: #3e5d34;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.run-goal-card strong {
+  font-size: 0.92rem;
+}
+
+.run-goal-card small {
+  color: #68775b;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
 .top-panel {
   display: flex;
   align-items: center;
@@ -1425,6 +1453,77 @@ h2 {
   font-size: 0.93rem;
 }
 
+.field-mode-chip {
+  min-height: 28px;
+  max-width: 48%;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #35502e;
+  background: #dcebc7;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-mode-chip[data-mode="reverse"] {
+  color: #4d3f73;
+  background: #e2d9f4;
+}
+
+.field-mode-chip[data-mode="sprint"] {
+  color: #714d18;
+  background: #ffe0a0;
+}
+
+.field-mode-chip[data-mode="finale"] {
+  color: #694510;
+  background: #ffd269;
+}
+
+.farm-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0 0 9px;
+  padding: 6px 8px;
+  border-radius: 16px;
+  background: rgba(110, 143, 79, 0.1);
+}
+
+.farm-progress-node {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  flex: 0 1 29px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 -3px 0 rgba(76, 95, 61, 0.08);
+  font-size: 0.92rem;
+  filter: grayscale(0.35);
+  opacity: 0.72;
+}
+
+.farm-progress-node.is-complete {
+  background: #ffe8a8;
+  filter: none;
+  opacity: 1;
+}
+
+.farm-progress-node.is-current {
+  color: #ffffff;
+  background: #7aa05a;
+  box-shadow: 0 0 0 3px rgba(103, 147, 74, 0.18), inset 0 -4px 0 rgba(48, 84, 32, 0.16);
+  filter: none;
+  opacity: 1;
+  animation: fieldProgressPulse 900ms ease-in-out infinite alternate;
+}
+
 .heart-row {
   min-height: 34px;
   display: flex;
@@ -1459,6 +1558,10 @@ h2 {
   background: #527ec0;
 }
 
+.status-line.is-intro {
+  background: #a4722e;
+}
+
 .status-line.is-repeat {
   background: #7762a7;
 }
@@ -1469,6 +1572,94 @@ h2 {
 
 .status-line.is-error {
   background: #be5151;
+}
+
+.round-briefing {
+  flex: 1;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 22px 18px;
+  border: 2px solid rgba(108, 81, 157, 0.18);
+  border-radius: 24px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(230, 218, 255, 0.92), transparent 38%),
+    linear-gradient(180deg, #faf7ff, #eee7fa);
+}
+
+.round-briefing-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #765ca9;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.round-briefing-icon {
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(76, 54, 117, 0.14);
+  font-size: 2.2rem;
+}
+
+.round-briefing h2,
+.round-briefing p {
+  margin: 0;
+}
+
+.round-briefing h2 {
+  color: #49386c;
+  font-size: 1.65rem;
+}
+
+.round-briefing p {
+  max-width: 320px;
+  color: #5f5570;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.reverse-example {
+  width: min(100%, 310px);
+  display: grid;
+  gap: 8px;
+}
+
+.reverse-example span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 13px;
+  color: #4d3e6d;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.reverse-example small {
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.reverse-example strong {
+  white-space: nowrap;
+  font-size: 1.02rem;
+}
+
+.round-briefing-start {
+  width: min(100%, 250px);
+  margin-top: 2px;
 }
 
 .farm-grid {
@@ -1537,6 +1728,23 @@ h2 {
   pointer-events: none;
   transform-origin: 50% 78%;
   animation: plotPetRun 480ms ease-in-out infinite alternate;
+}
+
+.plot-step-number {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 4;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #695094;
+  box-shadow: 0 4px 0 rgba(57, 38, 91, 0.24);
+  font-size: 0.76rem;
+  font-weight: 950;
 }
 
 .plot-pet::before,
@@ -1622,6 +1830,37 @@ h2 {
   overflow: hidden;
 }
 
+.scent-button {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  z-index: 4;
+  min-height: 42px;
+  max-width: 126px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 11px;
+  color: #3f4f30;
+  background: #f4d98e;
+  box-shadow: 0 6px 0 #c59b45;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.12;
+  cursor: pointer;
+}
+
+.scent-button:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 #c59b45;
+}
+
+.scent-button:disabled {
+  cursor: default;
+  box-shadow: 0 4px 0 rgba(119, 104, 69, 0.2);
+  filter: saturate(0.55);
+  opacity: 0.64;
+}
+
 .cat-guide-panel::before {
   content: "";
   position: absolute;
@@ -1687,6 +1926,10 @@ h2 {
   padding: 20px 0;
 }
 
+.result-panel > p {
+  margin: 0;
+}
+
 .result-cat-image {
   width: 176px;
   height: 142px;
@@ -1702,6 +1945,15 @@ h2 {
   max-width: 70%;
   object-fit: contain;
   object-position: bottom center;
+}
+
+.result-cat-image.is-victory {
+  width: auto;
+  height: 150px;
+  max-width: 78%;
+  object-fit: contain;
+  object-position: bottom center;
+  animation: catGuideHappy 560ms ease-in-out infinite alternate;
 }
 
 .reward-line {
@@ -1816,6 +2068,16 @@ h2 {
   }
 }
 
+@keyframes fieldProgressPulse {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.08);
+  }
+}
+
 @media (max-width: 430px) {
   .phone-shell {
     place-items: start center;
@@ -1823,8 +2085,7 @@ h2 {
   }
 
   .game-card {
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: var(--farm-paws-visible-height);
     border-radius: 0;
     border: 0;
     box-shadow: none;
@@ -1855,6 +2116,13 @@ h2 {
 
   .farm-grid {
     gap: 8px;
+  }
+
+  .farm-progress-node {
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
+    font-size: 0.86rem;
   }
 
   .cat-guide-panel {
@@ -1963,6 +2231,81 @@ h2 {
     gap: 9px;
   }
 
+  .farm-run-back {
+    min-height: 34px;
+    margin-bottom: 4px;
+  }
+
+  .game-card:is(.is-victory, .is-failed) .top-panel,
+  .game-card:is(.is-victory, .is-failed) .result-cat-image {
+    display: none;
+  }
+
+  .game-card:is(.is-victory, .is-failed) {
+    min-height: calc(var(--farm-paws-visible-height) - 16px);
+  }
+
+  .result-panel {
+    justify-content: center;
+    gap: 9px;
+    padding: 4px 0;
+  }
+
+  .result-panel h2 {
+    font-size: 1.45rem;
+  }
+
+  .result-actions {
+    gap: 8px;
+  }
+
+  .round-briefing {
+    min-height: 0;
+    gap: 7px;
+    padding: 10px 12px;
+    border-radius: 18px;
+  }
+
+  .round-briefing-badge {
+    padding: 4px 8px;
+    font-size: 0.62rem;
+  }
+
+  .round-briefing-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 1.45rem;
+  }
+
+  .round-briefing h2 {
+    font-size: 1.3rem;
+  }
+
+  .round-briefing p {
+    font-size: 0.79rem;
+    line-height: 1.25;
+  }
+
+  .reverse-example {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .reverse-example span {
+    display: grid;
+    gap: 3px;
+    padding: 6px 7px;
+  }
+
+  .reverse-example strong {
+    font-size: 0.82rem;
+  }
+
+  .round-briefing-start {
+    min-height: 42px;
+  }
+
   .top-panel {
     gap: 10px;
   }
@@ -1987,8 +2330,7 @@ h2 {
   }
 
   .stats-row {
-    margin: 10px 0 6px;
-    font-size: 0.84rem;
+    display: none;
   }
 
   .heart-row {
@@ -2002,6 +2344,19 @@ h2 {
     min-height: 30px;
     margin-bottom: 8px;
     border-radius: 12px;
+  }
+
+  .farm-progress {
+    gap: 4px;
+    margin-bottom: 6px;
+    padding: 4px 7px;
+  }
+
+  .farm-progress-node {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+    font-size: 0.76rem;
   }
 
   .farm-grid {
@@ -2028,27 +2383,25 @@ h2 {
   }
 
   .cat-guide-panel {
-    min-height: 92px;
-    margin-top: 6px;
+    min-height: 44px;
+    margin-top: 4px;
   }
 
-  .cat-guide-panel::before {
-    width: 96px;
-    height: 18px;
-  }
-
+  .cat-guide-panel::before,
   .cat-guide-image {
-    height: 92px;
+    display: none;
   }
 
-  .cat-guide-image.is-hurt {
-    width: 138px;
-    height: 92px;
-  }
-
-  .cat-guide-image.is-dog.is-hurt {
-    height: 84px;
-    max-width: 64%;
+  .scent-button {
+    position: relative;
+    top: auto;
+    left: auto;
+    min-height: 38px;
+    max-width: 180px;
+    padding: 0 12px;
+    border-radius: 11px;
+    font-size: 0.68rem;
+    box-shadow: 0 4px 0 #c59b45;
   }
 
   .pet-badge {
@@ -2065,6 +2418,10 @@ h2 {
     max-width: 250px;
     font-size: 0.9rem;
     line-height: 1.3;
+  }
+
+  .run-goal-card {
+    padding: 7px 11px;
   }
 
   .preview-grid {

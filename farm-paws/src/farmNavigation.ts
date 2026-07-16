@@ -13,7 +13,10 @@ type FarmBackContext = {
 
 export function farmBackDecision(context: FarmBackContext): FarmBackDecision {
   if (context.isStartingRun || context.finishPending) return "blocked";
-  if (context.mode === "server" && context.hasUnsavedServerResult) return "confirm-unsaved";
+
+  const terminalServerResult = context.mode === "server"
+    && (context.phase === "won" || context.phase === "failed");
+  if (terminalServerResult && context.hasUnsavedServerResult) return "confirm-unsaved";
 
   const activeServerRun = context.mode === "server"
     && (context.phase === "showing" || context.phase === "input" || context.phase === "success");
