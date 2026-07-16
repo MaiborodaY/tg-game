@@ -317,7 +317,7 @@ function renderPreview(): void {
       </section>
     </main>`;
 
-  app.querySelector<HTMLButtonElement>("[data-action='games']")?.addEventListener("click", navigateToGames);
+  app.querySelector<HTMLButtonElement>("[data-action='games']")?.addEventListener("click", leaveStandaloneRunner);
   app.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", startNewRun);
 }
 
@@ -392,7 +392,7 @@ function renderGame(): void {
     message: requiredElement<HTMLElement>(".stage-message"),
   };
 
-  requiredElement<HTMLButtonElement>("[data-action='games']").addEventListener("click", navigateToGames);
+  requiredElement<HTMLButtonElement>("[data-action='games']").addEventListener("click", leaveStandaloneRunner);
   gameDom.pauseButton.addEventListener("click", togglePause);
   canvas.addEventListener("pointerdown", () => {
     if (state.phase === "paused") togglePause();
@@ -651,7 +651,7 @@ function renderResult(focusTarget: "result" | "reward" | null = null): void {
   });
   app.querySelector<HTMLButtonElement>("[data-action='replay']")?.addEventListener("click", startNewRun);
   app.querySelector<HTMLButtonElement>("[data-action='share']")?.addEventListener("click", shareScore);
-  app.querySelector<HTMLButtonElement>("[data-action='games']")?.addEventListener("click", navigateToGames);
+  app.querySelector<HTMLButtonElement>("[data-action='games']")?.addEventListener("click", leaveStandaloneRunner);
   if (focusTarget) {
     requestAnimationFrame(() => {
       const selector = focusTarget === "reward" ? ".reward-line" : ".runner-card";
@@ -700,31 +700,32 @@ function enableShareAction(): void {
   actions.insertBefore(shareButton, gamesButton || null);
 }
 
-function navigateToGames(): void {
+function leaveStandaloneRunner(): void {
   if (shouldProtectCurrentRun() && !window.confirm(tr("leave_confirm"))) return;
   intentionalNavigation = true;
   disableClosingConfirmation();
-  try {
-    window.location.assign(resolveGamesUrl());
-  } catch {
-    intentionalNavigation = false;
-    syncClosingConfirmation();
-  }
-}
 
-function resolveGamesUrl(): string {
-  const requested = query.get("hub_url");
-  if (requested) {
-    try {
-      const target = new URL(requested, window.location.href);
-      if (target.origin === window.location.origin && ["http:", "https:"].includes(target.protocol)) {
-        return target.toString();
-      }
-    } catch {
-      // Fall back to the known same-origin games hub.
+  let closeRequested = false;
+  try {
+    if (typeof telegram?.close === "function") {
+      telegram.close();
+      closeRequested = true;
     }
+  } catch {
+    closeRequested = false;
   }
-  return new URL("/farm-paws/", window.location.origin).toString();
+
+  // In a normal browser the Telegram close bridge is absent (or a no-op), so
+  // return to Runner's own preview instead of navigating to another game hub.
+  window.setTimeout(() => {
+    intentionalNavigation = false;
+    if (document.visibilityState === "visible") {
+      renderPreview();
+      app.querySelector<HTMLButtonElement>("[data-action='start']")?.focus({ preventScroll: true });
+    } else if (!closeRequested) {
+      syncClosingConfirmation();
+    }
+  }, closeRequested ? 250 : 0);
 }
 
 function shouldProtectCurrentRun(): boolean {
