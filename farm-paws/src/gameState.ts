@@ -1,11 +1,11 @@
-export type GamePhase = "idle" | "showing" | "input" | "success" | "won" | "failed";
+export type GamePhase = "idle" | "showing" | "input" | "success" | "choice" | "won" | "failed";
 export type RoundMode = "normal" | "reverse" | "sprint" | "finale";
 
 export type SequenceStep = {
   cellIndex: number;
 };
 
-export type InputResult = "ignored" | "correct" | "mistake" | "roundComplete" | "won" | "failed";
+export type InputResult = "ignored" | "correct" | "mistake" | "roundComplete" | "choice" | "won" | "failed";
 export type InputStatus = "correct" | "wrong" | null;
 
 export type GameState = {
@@ -13,6 +13,7 @@ export type GameState = {
   round: number;
   roundMode: RoundMode;
   score: number;
+  securedScore: number;
   bestScore: number;
   hp: number;
   maxHp: number;
@@ -38,6 +39,14 @@ type RoundConfig = {
 const CELL_COUNT = 9;
 const START_HP = 3;
 export const TOTAL_ROUNDS = 7;
+const BONUS_FIRST_LENGTH = 7;
+const BONUS_MAX_LENGTH = 9;
+const BONUS_BASE_SHOW_MS = 500;
+const BONUS_SPEEDUP_PER_ROUND_MS = 25;
+const BONUS_STANDARD_MIN_SHOW_MS = 400;
+const BONUS_SPRINT_MIN_SHOW_MS = 300;
+const BONUS_SPRINT_DISCOUNT_MS = 90;
+const BONUS_MODES: readonly RoundMode[] = ["normal", "reverse", "sprint"];
 const ROUND_CONFIGS: readonly RoundConfig[] = [
   { length: 3, showMs: 820, mode: "normal" },
   { length: 4, showMs: 760, mode: "normal" },
@@ -72,6 +81,7 @@ export function createInitialState(bestScore = 0): GameState {
     round: 1,
     roundMode: "normal",
     score: 0,
+    securedScore: 0,
     bestScore: normalizedNonNegativeInteger(bestScore),
     hp: START_HP,
     maxHp: START_HP,
@@ -163,6 +173,24 @@ export function startNextRound(state: GameState, random: () => number = Math.ran
   return startRound(state, state.round + 1, random);
 }
 
+export function startBonusRound(
+  state: GameState,
+  random: () => number = Math.random
+): GameState {
+  if (state.phase !== "choice") return state;
+  return startRound(state, state.round + 1, random);
+}
+
+export function cashOutRun(state: GameState): GameState {
+  if (state.phase !== "choice") return state;
+  return {
+    ...state,
+    phase: "won",
+    securedScore: state.score,
+    bestScore: Math.max(state.bestScore, state.score)
+  };
+}
+
 export function markReadyForInput(state: GameState): GameState {
   if (state.phase !== "showing") return state;
   return {
@@ -197,11 +225,17 @@ export function handleCellInput(state: GameState, cellIndex: number): { state: G
   const expected = state.sequence[expectedIndex];
   if (!expected || expected.cellIndex !== cellIndex) {
     const hp = Math.max(0, state.hp - 1);
+    const failed = hp <= 0;
+    const bonusRound = state.round > TOTAL_ROUNDS;
+    const score = failed && bonusRound ? state.securedScore : state.score;
     const mistakeState = {
       ...state,
-      phase: hp <= 0 ? "failed" as const : "input" as const,
+      phase: failed ? "failed" as const : "input" as const,
       hp,
-      bestScore: Math.max(state.bestScore, state.score),
+      score,
+      bestScore: bonusRound
+        ? state.bestScore
+        : Math.max(state.bestScore, score),
       lastInputCell: cellIndex,
       lastInputStatus: "wrong" as const,
       mistakesThisRound: state.mistakesThisRound + 1,
@@ -209,9 +243,10 @@ export function handleCellInput(state: GameState, cellIndex: number): { state: G
       roundWasPerfect: false,
       heartRestored: false
     };
-    return { state: mistakeState, result: hp <= 0 ? "failed" : "mistake" };
+    return { state: mistakeState, result: failed ? "failed" : "mistake" };
   }
 
+  const bonusRound = state.round > TOTAL_ROUNDS;
   const nextInputIndex = state.inputIndex + 1;
   const stepAwardsScore = nextInputIndex > state.creditedStepsThisRound;
   const nextScore = state.score + (stepAwardsScore ? 1 : 0);
@@ -222,7 +257,9 @@ export function handleCellInput(state: GameState, cellIndex: number): { state: G
       state: {
         ...state,
         score: nextScore,
-        bestScore: Math.max(state.bestScore, nextScore),
+        bestScore: bonusRound
+          ? state.bestScore
+          : Math.max(state.bestScore, nextScore),
         inputIndex: nextInputIndex,
         creditedStepsThisRound,
         lastInputCell: cellIndex,
@@ -238,12 +275,15 @@ export function handleCellInput(state: GameState, cellIndex: number): { state: G
   const heartRestored = earnedHeart;
   const hp = earnedHeart ? Math.min(state.maxHp, state.hp + 1) : state.hp;
   const perfectStreak = completedPerfectStreak >= 2 ? 0 : completedPerfectStreak;
-  const won = state.round >= TOTAL_ROUNDS;
+  const choice = state.round >= TOTAL_ROUNDS;
   const nextState: GameState = {
     ...state,
-    phase: won ? "won" : "success",
+    phase: choice ? "choice" : "success",
     score: nextScore,
-    bestScore: Math.max(state.bestScore, nextScore),
+    securedScore: state.round === TOTAL_ROUNDS ? nextScore : state.securedScore,
+    bestScore: bonusRound
+      ? state.bestScore
+      : Math.max(state.bestScore, nextScore),
     hp,
     inputIndex: nextInputIndex,
     creditedStepsThisRound,
@@ -254,11 +294,11 @@ export function handleCellInput(state: GameState, cellIndex: number): { state: G
     heartRestored
   };
 
-  return { state: nextState, result: won ? "won" : "roundComplete" };
+  return { state: nextState, result: choice ? "choice" : "roundComplete" };
 }
 
 function startRound(state: GameState, round: number, random: () => number): GameState {
-  const normalizedRound = Math.max(1, Math.min(TOTAL_ROUNDS, Math.floor(round)));
+  const normalizedRound = normalizedRoundNumber(round);
   return {
     ...state,
     phase: "showing",
@@ -277,9 +317,22 @@ function startRound(state: GameState, round: number, random: () => number): Game
 }
 
 function roundConfigForRound(round: number): RoundConfig {
-  const safeRound = Number.isFinite(round) ? Math.floor(round) : 1;
-  const index = Math.max(0, Math.min(TOTAL_ROUNDS - 1, safeRound - 1));
-  return ROUND_CONFIGS[index] || ROUND_CONFIGS[0];
+  const safeRound = normalizedRoundNumber(round);
+  if (safeRound <= TOTAL_ROUNDS) {
+    return ROUND_CONFIGS[safeRound - 1] || ROUND_CONFIGS[0];
+  }
+
+  const bonusOffset = safeRound - TOTAL_ROUNDS - 1;
+  const mode = BONUS_MODES[bonusOffset % BONUS_MODES.length] || BONUS_MODES[0];
+  const unboundedShowMs = BONUS_BASE_SHOW_MS - bonusOffset * BONUS_SPEEDUP_PER_ROUND_MS;
+  const showMs = mode === "sprint"
+    ? Math.max(BONUS_SPRINT_MIN_SHOW_MS, unboundedShowMs - BONUS_SPRINT_DISCOUNT_MS)
+    : Math.max(BONUS_STANDARD_MIN_SHOW_MS, unboundedShowMs);
+  return {
+    length: Math.min(BONUS_MAX_LENGTH, BONUS_FIRST_LENGTH + bonusOffset),
+    showMs,
+    mode
+  };
 }
 
 function randomIndex(length: number, random: () => number): number {
@@ -291,6 +344,10 @@ function randomIndex(length: number, random: () => number): number {
 
 function normalizedNonNegativeInteger(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function normalizedRoundNumber(value: number): number {
+  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1;
 }
 
 function isCellIndex(value: number): boolean {

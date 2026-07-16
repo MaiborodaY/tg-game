@@ -16,7 +16,7 @@ const serverSession = {
 test("both victory and defeat finish the Farm Paws attempt", () => {
   assert.equal(isTerminalFarmResult("won"), true);
   assert.equal(isTerminalFarmResult("failed"), true);
-  for (const result of ["ignored", "correct", "mistake", "roundComplete"]) {
+  for (const result of ["ignored", "correct", "mistake", "roundComplete", "choice"]) {
     assert.equal(isTerminalFarmResult(result), false);
   }
 });

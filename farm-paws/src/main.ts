@@ -12,6 +12,7 @@ import {
 import {
   GameState,
   TOTAL_ROUNDS,
+  cashOutRun,
   createInitialState,
   defaultPlotEmojis,
   handleCellInput,
@@ -19,11 +20,12 @@ import {
   mockPetXpForScore,
   requiresRoundBriefing,
   showDurationForRound,
+  startBonusRound,
   startGame,
   startNextRound,
   useScentHint
 } from "./gameState";
-import { farmBackDecision } from "./farmNavigation";
+import { farmBackDecision, shouldEnableFarmClosingConfirmation } from "./farmNavigation";
 import { finishFarmAttempt, isTerminalFarmResult } from "./farmRunFlow";
 import {
   type FarmPawsLang,
@@ -80,6 +82,7 @@ let tetrisController: TetrisController | null = null;
 let state: GameState = createInitialState(loadBestScore());
 let activeStep: ActiveStep = null;
 let roundBriefingPending = false;
+let closingConfirmationEnabled = false;
 let runToken = 0;
 let currentRun: FarmPawsRunSession = {
   mode: "local",
@@ -166,6 +169,7 @@ function tr(key: FarmPawsTextKey, vars: Record<string, string | number> = {}): s
 }
 
 function render(): void {
+  syncClosingConfirmation();
   snakeController?.destroy();
   snakeController = null;
   tetrisController?.destroy();
@@ -184,7 +188,8 @@ function render(): void {
     appScreen === "snake" ? "is-snake" : "",
     appScreen === "tetris" ? "is-tetris" : "",
     appScreen === "farm-paws" && state.phase === "failed" ? "is-failed" : "",
-    appScreen === "farm-paws" && state.phase === "won" ? "is-victory" : ""
+    appScreen === "farm-paws" && state.phase === "won" ? "is-victory" : "",
+    appScreen === "farm-paws" && state.phase === "choice" ? "is-choice" : ""
   ].filter(Boolean).join(" ");
   const screenContent = appScreen === "games"
     ? renderGamePicker()
@@ -249,6 +254,8 @@ function render(): void {
   appRoot.querySelector<HTMLButtonElement>("[data-action='scent']")?.addEventListener("click", replayWithScent);
   appRoot.querySelector<HTMLButtonElement>("[data-action='start-briefed-round']")
     ?.addEventListener("click", beginBriefedRound);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='risk']")?.addEventListener("click", continueBonusRun);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='cashout']")?.addEventListener("click", cashOutCurrentRun);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry-finish']")
     ?.addEventListener("click", () => void finishCurrentRun(runToken));
   appRoot.querySelector<HTMLButtonElement>("[data-action='home']")?.addEventListener("click", exitMiniApp);
@@ -259,6 +266,29 @@ function render(): void {
       onCellClick(cellIndex);
     });
   });
+}
+
+function syncClosingConfirmation(): void {
+  const unsettledServerRun = appScreen === "farm-paws"
+    && shouldEnableFarmClosingConfirmation({
+      mode: currentRun.mode,
+      phase: state.phase,
+      finishSucceeded: finishResult?.ok === true,
+      isStartingRun,
+      hasTelegramInitData: Boolean(window.Telegram?.WebApp?.initData)
+    });
+  if (unsettledServerRun === closingConfirmationEnabled) return;
+
+  try {
+    if (unsettledServerRun) {
+      window.Telegram?.WebApp?.enableClosingConfirmation?.();
+    } else {
+      window.Telegram?.WebApp?.disableClosingConfirmation?.();
+    }
+    closingConfirmationEnabled = unsettledServerRun;
+  } catch {
+    // Closing confirmation is unavailable in some older Telegram clients.
+  }
 }
 
 function renderGamePicker(): string {
@@ -326,15 +356,14 @@ function renderStartScreen(): string {
 function renderGameScreen(): string {
   const failed = state.phase === "failed";
   const won = state.phase === "won";
+  const choice = state.phase === "choice";
   const terminal = failed || won;
   return `
     <button class="back-button farm-run-back" data-action="games" type="button" ${isStartingRun || finishPending ? "disabled" : ""}>${escapeHtml(tr("back_to_games"))}</button>
     <header class="top-panel">
       <div>
         <p class="eyebrow">🐾 ${escapeHtml(tr("app_title"))}</p>
-        <h1>${escapeHtml(terminal
-          ? tr(won ? "run_victory" : "run_finished")
-          : tr("field_progress", { field: state.round, total: TOTAL_ROUNDS }))}</h1>
+        <h1>${escapeHtml(runHeading())}</h1>
       </div>
       <div class="score-pill">
         <span>${state.score}</span>
@@ -342,13 +371,13 @@ function renderGameScreen(): string {
       </div>
     </header>
 
-    ${terminal ? "" : `
+    ${terminal || choice ? "" : `
       <section class="stats-row" aria-label="${escapeHtml(tr("stats_label"))}">
         <span class="field-mode-chip" data-mode="${state.roundMode}">${modeIcon()} ${escapeHtml(modeText())}</span>
         <span>${escapeHtml(tr("record_label"))}: <strong>${state.bestScore}</strong></span>
       </section>
     `}
-    ${renderFarmProgress()}
+    ${renderRunProgress()}
     ${terminal ? "" : `
       <section class="heart-row" aria-label="${escapeHtml(tr("lives_label"))}">
         <span>${escapeHtml(currentRun.petName || tr("default_pet"))}</span>
@@ -356,7 +385,44 @@ function renderGameScreen(): string {
       </section>
     `}
 
-    ${terminal ? renderResultPanel() : renderPlayPanel()}
+    ${choice ? renderRiskPanel() : terminal ? renderResultPanel() : renderPlayPanel()}
+  `;
+}
+
+function renderRiskPanel(): string {
+  const firstChoice = state.round === TOTAL_ROUNDS;
+  const bonusFields = Math.max(0, state.round - TOTAL_ROUNDS);
+  const pointsAtRisk = bonusPointsAtRisk();
+  const title = firstChoice
+    ? tr("base_victory_title", { score: state.securedScore })
+    : tr("bonus_choice_title", { field: bonusFields });
+  const body = firstChoice
+    ? tr("base_victory_body", { score: state.securedScore })
+    : tr("bonus_choice_body", { points: pointsAtRisk, secured: state.securedScore });
+
+  return `
+    <section class="risk-panel">
+      <img class="risk-pet-image ${petTypeClass()}" src="${petGuideImageUrl(false)}" alt="" />
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(body)}</p>
+      <div class="risk-score-card">
+        <span>${state.score}</span>
+        <small>${escapeHtml(firstChoice
+          ? tr("score_unit")
+          : tr("bonus_at_risk", { points: pointsAtRisk }))}</small>
+      </div>
+      <p class="bonus-record-note">${escapeHtml(tr(
+        currentRun.mode === "server" ? "cashout_server_note" : "bonus_record_note"
+      ))}</p>
+      <div class="risk-actions">
+        <button class="primary-button" data-action="risk" type="button">
+          ${escapeHtml(tr(firstChoice ? "risk_button" : "risk_again_button"))}
+        </button>
+        <button class="secondary-button" data-action="cashout" type="button">
+          ${escapeHtml(tr("cashout_button", { score: state.score }))}
+        </button>
+      </div>
+    </section>
   `;
 }
 
@@ -410,6 +476,8 @@ function renderRoundBriefing(): string {
 
 function renderResultPanel(): string {
   const won = state.phase === "won";
+  const bonusRun = state.round > TOTAL_ROUNDS;
+  const bonusFields = Math.max(0, state.round - TOTAL_ROUNDS);
   const shouldRetryFinish = currentRun.mode === "server"
     && finishResult?.mode === "server"
     && !finishResult.ok;
@@ -417,11 +485,19 @@ function renderResultPanel(): string {
   const primaryText = finishPending
     ? tr("reward_saving")
     : tr(shouldRetryFinish ? "retry_save" : "retry_button");
+  const title = !won && bonusRun
+    ? tr("bonus_lost_title", { score: state.securedScore })
+    : tr(won ? "victory_title" : "defeat_title", { score: state.score });
+  const body = won && bonusRun
+    ? tr("bonus_cashout_body", { fields: bonusFields })
+    : !won && bonusRun
+      ? tr("bonus_lost_body", { score: state.score, secured: state.securedScore })
+      : tr(won ? "victory_body" : "defeat_body", { field: state.round, total: TOTAL_ROUNDS });
   return `
     <div class="result-panel ${won ? "is-victory" : "is-defeat"}">
       <img class="result-cat-image ${won ? "is-victory" : ""} ${petTypeClass()}" src="${petGuideImageUrl(!won)}" alt="" />
-      <h2>${escapeHtml(tr(won ? "victory_title" : "defeat_title", { score: state.score }))}</h2>
-      <p>${escapeHtml(tr(won ? "victory_body" : "defeat_body", { field: state.round, total: TOTAL_ROUNDS }))}</p>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(body)}</p>
       <p>${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
       <p class="reward-line" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(rewardText())}</p>
       <div class="result-actions">
@@ -432,12 +508,27 @@ function renderResultPanel(): string {
   `;
 }
 
+function renderRunProgress(): string {
+  if (state.round <= TOTAL_ROUNDS || state.phase === "won" || state.phase === "failed") {
+    return renderFarmProgress();
+  }
+
+  return `
+    <div class="bonus-progress" aria-label="${escapeHtml(tr("bonus_field_title", { field: bonusFieldNumber() }))}">
+      <span>🔥 ${escapeHtml(tr("bonus_field_title", { field: bonusFieldNumber() }))}</span>
+      <strong>${escapeHtml(tr("bonus_at_risk", { points: bonusPointsAtRisk() }))}</strong>
+    </div>
+  `;
+}
+
 function renderFarmProgress(): string {
-  const completedFields = state.phase === "success" || state.phase === "won"
+  const completedFields = state.phase === "success" || state.phase === "choice" || state.phase === "won"
     ? state.round
     : Math.max(0, state.round - 1);
-  const currentField = state.phase === "failed" || state.phase === "won" ? null : state.round;
-  const progressLabel = state.phase === "won"
+  const currentField = state.phase === "failed" || state.phase === "choice" || state.phase === "won"
+    ? null
+    : state.round;
+  const progressLabel = state.round >= TOTAL_ROUNDS
     ? tr("run_victory")
     : tr("field_progress", { field: state.round, total: TOTAL_ROUNDS });
 
@@ -456,6 +547,32 @@ function renderFarmProgress(): string {
       }).join("")}
     </div>
   `;
+}
+
+function runHeading(): string {
+  const bonusRun = state.round > TOTAL_ROUNDS;
+  if (state.phase === "choice") {
+    return bonusRun
+      ? tr("bonus_field_title", { field: bonusFieldNumber() })
+      : tr("base_victory_heading", { total: TOTAL_ROUNDS });
+  }
+  if (state.phase === "won") {
+    return bonusRun ? tr("bonus_cashout_heading") : tr("run_victory");
+  }
+  if (state.phase === "failed") {
+    return bonusRun ? tr("bonus_lost_heading") : tr("run_finished");
+  }
+  return bonusRun
+    ? tr("bonus_field_title", { field: bonusFieldNumber() })
+    : tr("field_progress", { field: state.round, total: TOTAL_ROUNDS });
+}
+
+function bonusFieldNumber(): number {
+  return Math.max(1, state.round - TOTAL_ROUNDS);
+}
+
+function bonusPointsAtRisk(): number {
+  return Math.max(0, state.score - state.securedScore);
 }
 
 function modeText(): string {
@@ -618,6 +735,12 @@ function onCellClick(cellIndex: number): void {
     return;
   }
 
+  if (result.result === "choice") {
+    roundBriefingPending = false;
+    window.scrollTo(0, 0);
+    return;
+  }
+
   if (result.result === "roundComplete") {
     const completedRound = state.round;
     window.setTimeout(() => {
@@ -628,6 +751,36 @@ function onCellClick(cellIndex: number): void {
       if (!roundBriefingPending) void playSequence(token);
     }, 900);
   }
+}
+
+function continueBonusRun(): void {
+  if (appScreen !== "farm-paws" || finishPending) return;
+  const nextState = startBonusRound(state);
+  if (nextState === state) return;
+
+  state = nextState;
+  activeStep = null;
+  roundBriefingPending = requiresRoundBriefing(state.roundMode);
+  render();
+  window.scrollTo(0, 0);
+  if (!roundBriefingPending) void playSequence(runToken);
+}
+
+function cashOutCurrentRun(): void {
+  if (appScreen !== "farm-paws" || finishPending) return;
+  const previousBestScore = state.bestScore;
+  const nextState = cashOutRun(state);
+  if (nextState === state) return;
+
+  state = nextState;
+  activeStep = null;
+  roundBriefingPending = false;
+  runFinishedAt = Date.now();
+  if (state.bestScore > previousBestScore) {
+    saveBestScore(state.bestScore);
+  }
+  window.scrollTo(0, 0);
+  void finishCurrentRun(runToken);
 }
 
 function beginBriefedRound(): void {

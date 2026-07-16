@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { farmBackDecision } from "../src/farmNavigation.ts";
+import {
+  farmBackDecision,
+  shouldEnableFarmClosingConfirmation
+} from "../src/farmNavigation.ts";
 
 const baseContext = {
   mode: "server",
@@ -16,7 +19,7 @@ test("blocks navigation while an attempt starts or a result is saved", () => {
 });
 
 test("asks before abandoning every active server phase", () => {
-  for (const phase of ["showing", "input", "success"]) {
+  for (const phase of ["showing", "input", "success", "choice"]) {
     assert.equal(farmBackDecision({ ...baseContext, phase }), "confirm-run");
     assert.equal(farmBackDecision({
       ...baseContext,
@@ -53,4 +56,55 @@ test("leaves local, idle, blocked and completed games without confirmation", () 
   for (const phase of ["won", "failed"]) {
     assert.equal(farmBackDecision({ ...baseContext, phase }), "leave");
   }
+});
+
+test("keeps Telegram closing confirmation until a server result is saved", () => {
+  for (const phase of ["showing", "input", "success", "choice", "won", "failed"]) {
+    assert.equal(shouldEnableFarmClosingConfirmation({
+      mode: "server",
+      phase,
+      finishSucceeded: false,
+      isStartingRun: false,
+      hasTelegramInitData: true
+    }), true);
+  }
+
+  assert.equal(shouldEnableFarmClosingConfirmation({
+    mode: "server",
+    phase: "won",
+    finishSucceeded: true,
+    isStartingRun: false,
+    hasTelegramInitData: true
+  }), false);
+  assert.equal(shouldEnableFarmClosingConfirmation({
+    mode: "server",
+    phase: "idle",
+    finishSucceeded: false,
+    isStartingRun: false,
+    hasTelegramInitData: true
+  }), false);
+  assert.equal(shouldEnableFarmClosingConfirmation({
+    mode: "local",
+    phase: "choice",
+    finishSucceeded: false,
+    isStartingRun: false,
+    hasTelegramInitData: false
+  }), false);
+});
+
+test("protects the Telegram start request before the server session arrives", () => {
+  assert.equal(shouldEnableFarmClosingConfirmation({
+    mode: "local",
+    phase: "idle",
+    finishSucceeded: false,
+    isStartingRun: true,
+    hasTelegramInitData: true
+  }), true);
+  assert.equal(shouldEnableFarmClosingConfirmation({
+    mode: "local",
+    phase: "idle",
+    finishSucceeded: false,
+    isStartingRun: true,
+    hasTelegramInitData: false
+  }), false);
 });

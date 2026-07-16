@@ -14,7 +14,7 @@ const ROUND_MODES = [
   "finale"
 ];
 
-test("uses the finite seven-round length curve", () => {
+test("uses the configured seven-round base curve", () => {
   assert.deepEqual(
     ROUND_LENGTHS.map((_, index) => gameState.sequenceLengthForRound(index + 1)),
     ROUND_LENGTHS
@@ -97,17 +97,22 @@ test("mistakes remove one heart without awarding score or skipping progress", ()
   assert.equal(state.bestScore, 10);
 });
 
-test("the last heart ends the run and a failed input never increases score", () => {
-  const ready = gameState.markReadyForInput(gameState.startGame(0, seededRandom(11)));
-  const state = { ...ready, hp: 1 };
-  const expectedCell = state.sequence[0].cellIndex;
+test("base failure preserves earned score but a failed input adds nothing", () => {
+  let state = gameState.markReadyForInput(gameState.startGame(0, seededRandom(11)));
+  state = gameState.handleCellInput(state, state.sequence[0].cellIndex).state;
+  assert.equal(state.score, 1);
+
+  state = { ...state, hp: 1 };
+  const expectedCell = state.sequence[state.inputIndex].cellIndex;
   const response = gameState.handleCellInput(state, (expectedCell + 1) % 9);
 
   assert.equal(response.result, "failed");
   assert.equal(response.state.phase, "failed");
   assert.equal(response.state.hp, 0);
-  assert.equal(response.state.score, 0);
-  assert.equal(response.state.inputIndex, 0);
+  assert.equal(response.state.score, 1);
+  assert.equal(response.state.bestScore, 1);
+  assert.equal(response.state.securedScore, 0);
+  assert.equal(response.state.inputIndex, 1);
 });
 
 test("the one-use scent replay never awards the same route steps twice", () => {
@@ -146,10 +151,11 @@ test("two perfect fields restore one heart without exceeding the maximum", () =>
   assert.equal(state.roundWasPerfect, true);
 });
 
-test("a perfect run wins after round seven with 31 score and cannot enter round eight", () => {
+test("a perfect base run reaches a secured choice at 31 score", () => {
   const random = seededRandom(23);
   let state = gameState.startGame(4, random);
   let expectedScore = 0;
+  let lastResult = null;
 
   for (let roundIndex = 0; roundIndex < ROUND_LENGTHS.length; roundIndex += 1) {
     assert.equal(state.round, roundIndex + 1);
@@ -170,8 +176,9 @@ test("a perfect run wins after round seven with 31 score and cannot enter round 
       const finalRound = roundIndex === ROUND_LENGTHS.length - 1;
       assert.equal(
         response.result,
-        finalStep ? (finalRound ? "won" : "roundComplete") : "correct"
+        finalStep ? (finalRound ? "choice" : "roundComplete") : "correct"
       );
+      lastResult = response.result;
       state = response.state;
     }
 
@@ -186,22 +193,138 @@ test("a perfect run wins after round seven with 31 score and cannot enter round 
   assert.equal(state.bestScore, 31);
   assert.equal(state.hp, 3);
   assert.equal(state.round, 7);
-  assert.equal(state.phase, "won");
+  assert.equal(state.phase, "choice");
+  assert.equal(state.securedScore, 31);
+  assert.equal(lastResult, "choice");
 
-  const afterWin = gameState.startNextRound(state, random);
-  assert.equal(afterWin, state);
-  assert.equal(afterWin.round, 7);
-  assert.equal(afterWin.phase, "won");
+  assert.equal(gameState.startNextRound(state, random), state);
+
+  const cashedOut = gameState.cashOutRun(state);
+  assert.equal(cashedOut.phase, "won");
+  assert.equal(cashedOut.score, 31);
+  assert.equal(cashedOut.securedScore, 31);
+  assert.equal(cashedOut.bestScore, 31);
+  assert.equal(gameState.cashOutRun(cashedOut), cashedOut);
+});
+
+test("bonus curve caps its length, cycles modes, and keeps sprint visibly faster", () => {
+  const expected = [
+    { round: 8, length: 7, mode: "normal", showMs: 500 },
+    { round: 9, length: 8, mode: "reverse", showMs: 475 },
+    { round: 10, length: 9, mode: "sprint", showMs: 360 },
+    { round: 11, length: 9, mode: "normal", showMs: 425 },
+    { round: 12, length: 9, mode: "reverse", showMs: 400 },
+    { round: 13, length: 9, mode: "sprint", showMs: 300 },
+    { round: 50, length: 9, mode: "normal", showMs: 400 }
+  ];
+
+  for (const config of expected) {
+    assert.equal(gameState.sequenceLengthForRound(config.round), config.length);
+    assert.equal(gameState.roundModeForRound(config.round), config.mode);
+    assert.equal(gameState.showDurationForRound(config.round), config.showMs);
+  }
+});
+
+test("all completed bonus fields remain provisional until cash out", () => {
+  const random = seededRandom(31);
+  let state = reachBaseChoice(0, random);
+  assert.equal(state.score, 31);
+  assert.equal(state.bestScore, 31);
+
+  state = gameState.startBonusRound(state, random);
+  assert.equal(state.round, 8);
+  assert.equal(state.phase, "showing");
+  assert.equal(state.securedScore, 31);
+
+  ({ state } = completeRound(state));
+  assert.equal(state.phase, "choice");
+  assert.equal(state.score, 38);
+  assert.equal(state.securedScore, 31);
+  assert.equal(state.bestScore, 31);
+  assert.equal(gameState.startNextRound(state, random), state);
+
+  const cashedOut = gameState.cashOutRun(state);
+  assert.equal(cashedOut.phase, "won");
+  assert.equal(cashedOut.score, 38);
+  assert.equal(cashedOut.securedScore, 38);
+  assert.equal(cashedOut.bestScore, 38);
+});
+
+test("losing any bonus field burns the entire provisional bonus", () => {
+  const random = seededRandom(37);
+  let state = reachBaseChoice(0, random);
+  state = gameState.startBonusRound(state, random);
+  ({ state } = completeRound(state));
+  assert.equal(state.score, 38);
+  assert.equal(state.bestScore, 31);
+
+  state = gameState.startBonusRound(state, random);
+  state = gameState.markReadyForInput(state);
+  const firstExpected = inputStepsForState(state)[0].cellIndex;
+  state = gameState.handleCellInput(state, firstExpected).state;
+  assert.equal(state.score, 39);
+  assert.equal(state.bestScore, 31);
+
+  state = { ...state, hp: 1 };
+  const nextExpected = inputStepsForState(state)[state.inputIndex].cellIndex;
+  const failure = gameState.handleCellInput(state, (nextExpected + 1) % 9);
+  assert.equal(failure.result, "failed");
+  assert.equal(failure.state.phase, "failed");
+  assert.equal(failure.state.hp, 0);
+  assert.equal(failure.state.score, 31);
+  assert.equal(failure.state.securedScore, 31);
+  assert.equal(failure.state.bestScore, 31);
+});
+
+test("bonus mode can continue through round 50 without raising best before cash out", () => {
+  const random = seededRandom(41);
+  let state = reachBaseChoice(0, random);
+
+  for (let round = 8; round <= 50; round += 1) {
+    state = gameState.startBonusRound(state, random);
+    assert.equal(state.round, round);
+    assert.equal(state.phase, "showing");
+    const completed = completeRound(state);
+    assert.equal(completed.result, "choice");
+    state = completed.state;
+    assert.equal(state.phase, "choice");
+    assert.equal(state.securedScore, 31);
+    assert.equal(state.bestScore, 31);
+  }
+
+  assert.equal(state.round, 50);
+  assert.equal(state.sequence.length, 9);
+  assert.equal(state.roundMode, "normal");
+  assert.equal(state.score, 415);
+
+  const cashedOut = gameState.cashOutRun(state);
+  assert.equal(cashedOut.phase, "won");
+  assert.equal(cashedOut.score, 415);
+  assert.equal(cashedOut.bestScore, 415);
+});
+
+test("cash out never lowers an existing best score", () => {
+  const random = seededRandom(43);
+  let state = reachBaseChoice(500, random);
+  state = gameState.startBonusRound(state, random);
+  ({ state } = completeRound(state));
+
+  assert.equal(state.score, 38);
+  assert.equal(state.bestScore, 500);
+  assert.equal(gameState.cashOutRun(state).bestScore, 500);
 });
 
 test("constant RNG terminates and returns valid sequences for every round", () => {
   const moduleUrl = new URL("../src/gameState.ts", import.meta.url).href;
   const script = `
     import { createRoundSequence } from ${JSON.stringify(moduleUrl)};
-    const lengths = ${JSON.stringify(ROUND_LENGTHS)};
-    for (let round = 1; round <= lengths.length; round += 1) {
+    const baseLengths = ${JSON.stringify(ROUND_LENGTHS)};
+    for (let round = 1; round <= 50; round += 1) {
       const sequence = createRoundSequence(round, () => 0);
-      if (sequence.length !== lengths[round - 1]) process.exit(2);
+      const expectedLength = round <= baseLengths.length
+        ? baseLengths[round - 1]
+        : Math.min(9, round - 1);
+      if (sequence.length !== expectedLength) process.exit(2);
       if (sequence.some(({ cellIndex }) => !Number.isInteger(cellIndex) || cellIndex < 0 || cellIndex > 8)) {
         process.exit(3);
       }
@@ -229,4 +352,32 @@ function seededRandom(initialSeed) {
     seed = (Math.imul(1_664_525, seed) + 1_013_904_223) >>> 0;
     return seed / 4_294_967_296;
   };
+}
+
+function inputStepsForState(state) {
+  return state.roundMode === "reverse"
+    ? [...state.sequence].reverse()
+    : state.sequence;
+}
+
+function completeRound(initialState) {
+  let state = gameState.markReadyForInput(initialState);
+  let result = "ignored";
+  for (const step of inputStepsForState(state)) {
+    const response = gameState.handleCellInput(state, step.cellIndex);
+    state = response.state;
+    result = response.result;
+  }
+  return { state, result };
+}
+
+function reachBaseChoice(bestScore, random) {
+  let state = gameState.startGame(bestScore, random);
+  for (let round = 1; round <= ROUND_LENGTHS.length; round += 1) {
+    ({ state } = completeRound(state));
+    if (round < ROUND_LENGTHS.length) {
+      state = gameState.startNextRound(state, random);
+    }
+  }
+  return state;
 }
