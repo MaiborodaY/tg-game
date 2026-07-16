@@ -34,12 +34,16 @@
         "draft-battler:pvp:dev": "npx wrangler dev --config workers/draft-battler-pvp/wrangler.jsonc",
         "draft-battler:pvp:deploy": "npx wrangler deploy --config workers/draft-battler-pvp/wrangler.jsonc",
         "draft-battler:pvp:typecheck": "tsc --noEmit --project workers/draft-battler-pvp/tsconfig.json",
+        "runner:dev": "vite runner --host 0.0.0.0",
+        "runner:build": "vite build runner --base=./ --outDir ../public",
+        "runner:test": "node --experimental-strip-types --test runner/tests/*.test.mjs",
+        "runner:typecheck": "tsc --noEmit --project runner/tsconfig.json",
         "farm-paws:dev": "vite farm-paws --open",
         "farm-paws:build": "vite build farm-paws --base=./ --outDir ../public/farm-paws --emptyOutDir",
         "farm-paws:test": "node --experimental-strip-types --test farm-paws/tests/*.test.mjs",
         "farm-paws:typecheck": "tsc --noEmit --project farm-paws/tsconfig.json",
         "functions:typecheck": "tsc --noEmit --project functions/tsconfig.json",
-        "typecheck": "npm run draft-battler:typecheck && npm run draft-battler:pvp:typecheck && npm run gladiator:typecheck && npm run farm-paws:typecheck && npm run functions:typecheck"
+        "typecheck": "npm run draft-battler:typecheck && npm run draft-battler:pvp:typecheck && npm run gladiator:typecheck && npm run runner:typecheck && npm run farm-paws:typecheck && npm run functions:typecheck"
     },
     "dependencies": {
         "phaser": "^4.1.0"
