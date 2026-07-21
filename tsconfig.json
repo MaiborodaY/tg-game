@@ -3,6 +3,7 @@
   "references": [
     { "path": "./draft-battler/tsconfig.json" },
     { "path": "./gladiator-arena/tsconfig.json" },
+    { "path": "./tower-defense/tsconfig.json" },
     { "path": "./farm-paws/tsconfig.json" },
     { "path": "./functions/tsconfig.json" }
   ]
