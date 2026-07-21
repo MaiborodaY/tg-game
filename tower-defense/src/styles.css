@@ -229,7 +229,9 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .pulse-icon { font-size: 18px; color: #a9ffe5; }
 
 .command-panel {
+  --tower-controls-height: 139px;
   display: grid;
+  grid-template-rows: minmax(var(--tower-controls-height), auto) auto;
   gap: 7px;
   padding: 9px;
   border: 1px solid var(--line);
@@ -415,7 +417,7 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
   .hud { padding-top: 5px; padding-bottom: 8px; }
   .hud-icon { width: 21px; height: 21px; }
   .hud-stat strong { font-size: 14px; }
-  .command-panel { padding: 7px; gap: 5px; }
+  .command-panel { --tower-controls-height: 129px; padding: 7px; gap: 5px; }
   .tower-card { min-height: 46px; }
   .tower-emblem { flex-basis: 32px; width: 32px; height: 32px; transform: scale(0.92); }
   .wave-command { min-height: 42px; }

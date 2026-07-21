@@ -23,3 +23,11 @@ test("the Phaser canvas preserves aspect ratio and late-wave previews can scroll
   assert.match(css, /\.game-root canvas \{[^}]*max-width:\s*100%;[^}]*max-height:\s*100%;/s);
   assert.match(css, /\.enemy-list \{[^}]*overflow-x:\s*auto;/s);
 });
+
+test("tower selection keeps the battlefield grid row stable", () => {
+  assert.match(css, /\.command-panel \{[^}]*--tower-controls-height:\s*139px;/s);
+  assert.match(css, /\.command-panel \{[^}]*grid-template-rows:\s*minmax\(var\(--tower-controls-height\), auto\) auto;/s);
+
+  const compactViewport = css.match(/@media \(max-height: 700px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(compactViewport, /\.command-panel \{ --tower-controls-height:\s*129px;/);
+});
