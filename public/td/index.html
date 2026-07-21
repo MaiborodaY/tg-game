@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/game.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index.css">
+    <script type="module" crossorigin src="./assets/index-8vnTL0zw.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CCSxhOVB.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -27,13 +27,17 @@
       <section id="hud-region" class="hud" aria-label="Состояние защиты">
         <div class="hud-stat"><span class="hud-icon heart">♥</span><span><small id="lives-label">Жизни</small><strong id="lives-value">20</strong></span></div>
         <div class="hud-stat"><span class="hud-icon coin">●</span><span><small id="gold-label">Золото</small><strong id="gold-value">190</strong></span></div>
-        <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 12</strong></span></div>
+        <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 24</strong></span></div>
         <div class="hud-progress" aria-hidden="true"><span id="wave-progress"></span></div>
       </section>
 
       <main class="battle-shell">
         <div id="game-root" class="game-root" aria-label="Игровое поле"></div>
         <div id="phase-badge" class="phase-badge">Подготовка</div>
+        <div id="boss-hud" class="boss-hud" hidden>
+          <div><span id="boss-icon" aria-hidden="true">♛</span><strong id="boss-name">Владыка чащи</strong><small id="boss-state">Босс</small></div>
+          <div class="boss-bars" aria-hidden="true"><span class="boss-health"><i id="boss-health-fill"></i></span><span class="boss-shield"><i id="boss-shield-fill"></i></span></div>
+        </div>
         <div id="countdown" class="countdown" hidden>3</div>
         <button id="pulse-button" class="pulse-button" type="button">
           <span class="pulse-icon" aria-hidden="true">✺</span>
@@ -60,6 +64,10 @@
               <span class="tower-emblem ember" aria-hidden="true"><i></i></span>
               <span><strong id="ember-name">Искромант</strong><small><b>125</b> ●</small></span>
             </button>
+            <button class="tower-card" type="button" data-tower="storm">
+              <span class="tower-emblem storm" aria-hidden="true"><i></i></span>
+              <span><strong id="storm-name">Грозовой шпиль</strong><small><b>145</b> ●</small></span>
+            </button>
           </div>
         </div>
 
@@ -76,7 +84,7 @@
         </div>
 
         <div class="wave-command">
-          <div class="wave-preview"><small id="next-wave-label">Следующая волна</small><div id="wave-enemies" class="enemy-list"></div></div>
+          <div class="wave-preview"><div class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></div><div id="wave-enemies" class="enemy-list"></div></div>
           <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
         </div>
       </section>
@@ -89,8 +97,8 @@
         <h1 id="intro-title">Защити Сердце леса</h1>
         <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
         <div class="intro-features">
-          <span><i class="feature-icon">⌁</i><b id="intro-waves">12 волн</b></span>
-          <span><i class="feature-icon">♜</i><b id="intro-towers">3 башни</b></span>
+          <span><i class="feature-icon">⌁</i><b id="intro-waves">24 волны</b></span>
+          <span><i class="feature-icon">♜</i><b id="intro-towers">4 башни</b></span>
           <span><i class="feature-icon">✺</i><b id="intro-bosses">Боссы</b></span>
         </div>
         <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
@@ -102,7 +110,7 @@
         <div id="result-sigil" class="result-sigil" aria-hidden="true">✦</div>
         <small id="result-eyebrow" class="modal-eyebrow">ИТОГ ЗАЩИТЫ</small>
         <h2 id="result-title">Лес спасён!</h2>
-        <p id="result-score">Отбито волн: 12</p>
+        <p id="result-score">Отбито волн: 24</p>
         <div id="reward-status" class="reward-status">Сохраняем результат…</div>
         <button id="reward-retry" class="secondary-action wide" type="button" hidden>Повторить отправку</button>
         <button id="restart-button" class="modal-primary" type="button" hidden>Начать заново</button>

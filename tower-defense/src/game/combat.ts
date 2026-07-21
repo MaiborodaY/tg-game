@@ -20,17 +20,54 @@ export function chooseTowerTarget(
   const inRange = candidates.filter((candidate) => squaredDistance(origin, candidate) <= range * range);
   if (inRange.length === 0) return null;
 
-  if (towerType === "ember") {
-    return inRange.reduce((best, candidate) => {
-      const density = candidates.filter((other) => squaredDistance(candidate, other) <= splashRadius * splashRadius).length;
-      const bestDensity = candidates.filter((other) => squaredDistance(best, other) <= splashRadius * splashRadius).length;
-      return density > bestDensity || (density === bestDensity && candidate.progress > best.progress) ? candidate : best;
-    });
+  if (towerType === "ember" || towerType === "storm") {
+    let best = inRange[0];
+    let bestDensity = -1;
+    for (const candidate of inRange) {
+      let density = 0;
+      for (const other of candidates) {
+        if (squaredDistance(candidate, other) <= splashRadius * splashRadius) density += 1;
+      }
+      if (density > bestDensity || (density === bestDensity && candidate.progress > best.progress)) {
+        best = candidate;
+        bestDensity = density;
+      }
+    }
+    return best;
   }
 
   const preferred = towerType === "frost" ? inRange.filter((candidate) => !candidate.slowed) : inRange;
   const pool = preferred.length > 0 ? preferred : inRange;
   return pool.reduce((best, candidate) => candidate.progress > best.progress ? candidate : best);
+}
+
+export function chooseChainTargets(
+  primary: TargetCandidate,
+  candidates: readonly TargetCandidate[],
+  maxTargets: number,
+  chainRange: number,
+): TargetCandidate[] {
+  const selected: TargetCandidate[] = [primary];
+  const used = new Set([primary.id]);
+  const rangeSquared = Math.max(0, chainRange) ** 2;
+  let current = primary;
+  while (selected.length < Math.max(1, Math.floor(maxTargets))) {
+    let next: TargetCandidate | null = null;
+    let nextDistance = Number.POSITIVE_INFINITY;
+    for (const candidate of candidates) {
+      if (used.has(candidate.id)) continue;
+      const distance = squaredDistance(current, candidate);
+      if (distance <= rangeSquared && (distance < nextDistance || (distance === nextDistance && candidate.progress > (next?.progress ?? -1)))) {
+        next = candidate;
+        nextDistance = distance;
+      }
+    }
+    if (!next) break;
+    selected.push(next);
+    used.add(next.id);
+    current = next;
+  }
+  return selected;
 }
 
 export function calculateDamage(

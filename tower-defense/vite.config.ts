@@ -8,9 +8,9 @@ export default defineConfig({
     target: "es2020",
     rollupOptions: {
       output: {
-        entryFileNames: "assets/game.js",
-        chunkFileNames: "assets/[name].js",
-        assetFileNames: "assets/[name][extname]",
+        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
   },

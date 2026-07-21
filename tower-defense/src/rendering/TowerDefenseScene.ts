@@ -1,22 +1,34 @@
 import Phaser from "phaser";
 import {
   BUILD_PADS,
+  BUILD_PAD_HIT_SIZE,
   ENEMY_DEFINITIONS,
   FINAL_WAVE,
   GAME_HEIGHT,
   GAME_WIDTH,
+  MAX_TOWER_LEVEL,
+  MASTERY_UNLOCK_WAVE,
   ROUTE_POINTS,
   TOWER_DEFINITIONS,
   getTowerStats,
   getTowerTotalInvestment,
 } from "../game/config.ts";
-import { calculateDamage, chooseTowerTarget, type TargetCandidate } from "../game/combat.ts";
+import { calculateDamage, chooseChainTargets, chooseTowerTarget, type TargetCandidate } from "../game/combat.ts";
+import {
+  applyControlResistance,
+  crossedSummonThresholds,
+  isEnemyAbilityReady,
+  mergeBurnEffect,
+  mergeSlowEffect,
+  selectHealingTargets,
+} from "../game/enemyAbilities.ts";
 import { createPathMetrics, getPointAtDistance, getRouteAngleAtDistance } from "../game/pathing.ts";
 import {
   applyLeakDamage,
   awardEnemyKill,
   buildTower,
   completeWave,
+  createWaveCheckpoint,
   getTower,
   recordActiveDuration,
   repairLives,
@@ -26,6 +38,7 @@ import {
 import type {
   CampaignError,
   CampaignState,
+  CampaignAct,
   DamageKind,
   EnemyType,
   TowerPlacement,
@@ -34,15 +47,21 @@ import type {
   WavePlan,
   WaveSpawn,
 } from "../game/types.ts";
-import { createWavePlan } from "../game/waves.ts";
+import { createWavePlan, getBossRepair, getWaveAct, getWaveHealthMultiplier } from "../game/waves.ts";
 import {
   createEnemyArt,
   createFloatingText,
+  createGateHitEffect,
+  createHealPulse,
   createHitBurst,
+  createLightningArc,
+  createSummonBurst,
   createTowerArt,
   drawWorld,
+  setWorldAct,
   type EnemyArt,
   type TowerArt,
+  type WorldArt,
 } from "./art.ts";
 
 export type GamePhase = "setup" | "countdown" | "wave" | "gameover" | "victory";
@@ -62,13 +81,22 @@ export type TowerDefenseUiState = Readonly<{
   totalEnemies: number;
   countdown: number;
   pulseAvailable: boolean;
+  act: CampaignAct;
+  threat: 1 | 2 | 3 | 4 | 5;
+  boss: Readonly<{
+    type: "boss" | "titan";
+    tier: CampaignAct;
+    hpRatio: number;
+    shieldRatio: number;
+    enraged: boolean;
+  }> | null;
 }>;
 
 export type TowerDefenseCallbacks = Readonly<{
   onUiChange(state: TowerDefenseUiState): void;
   onPersist(state: CampaignState): void;
   onNotice(code: NoticeCode): void;
-  onWaveClear(wave: number, bonus: number): void;
+  onWaveClear(wave: number, bonus: number, repairedLives: number): void;
   onTerminal(outcome: TerminalOutcome, state: CampaignState): void;
   onHaptic(kind: "light" | "medium" | "heavy" | "success" | "error"): void;
 }>;
@@ -91,6 +119,8 @@ type EnemyRuntime = TargetCandidate & {
   art: EnemyArt;
   hp: number;
   maxHp: number;
+  shield: number;
+  maxShield: number;
   speed: number;
   reward: number;
   leakDamage: number;
@@ -99,6 +129,16 @@ type EnemyRuntime = TargetCandidate & {
   burnUntilMs: number;
   burnDamagePerSecond: number;
   stunUntilMs: number;
+  controlResistance: number;
+  healingRadius: number;
+  healingRatio: number;
+  lastHealAtMs: number;
+  lastDamageTextAtMs: number;
+  elite: boolean;
+  bossTier: CampaignAct;
+  summonThresholds: readonly number[];
+  summonCount: number;
+  triggeredSummonThresholds: Set<number>;
   dead: boolean;
 };
 
@@ -123,6 +163,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private readonly padViews = new Map<number, PadView>();
   private readonly towerViews = new Map<number, TowerRuntime>();
   private enemies: EnemyRuntime[] = [];
+  private readonly enemiesById = new Map<number, EnemyRuntime>();
   private projectiles: ProjectileRuntime[] = [];
   private wavePlan: WavePlan | null = null;
   private waveElapsedMs = 0;
@@ -135,29 +176,40 @@ export class TowerDefenseScene extends Phaser.Scene {
   private lastUiEmitAt = -1_000;
   private waveCheckpoint: CampaignState | null = null;
   private lastCheckpointDurationMs = 0;
+  private activeDurationMs: number;
+  private waveResolvedCount = 0;
+  private waveTotalCount = 0;
+  private nextDynamicEnemyId = 1;
+  private lastKillHapticAtMs = -1_000;
+  private lastBurnVfxAtMs = -1_000;
+  private lastHitBurstAtMs = -1_000;
+  private worldArt?: WorldArt;
 
   constructor(campaign: CampaignState, callbacks: TowerDefenseCallbacks) {
     super({ key: "tower-defense" });
     this.campaign = campaign;
+    this.activeDurationMs = campaign.activeDurationMs;
     this.callbacks = callbacks;
-    this.phase = campaign.completedWave >= FINAL_WAVE ? "victory" : "setup";
+    this.phase = campaign.lives <= 0 ? "gameover" : campaign.completedWave >= FINAL_WAVE ? "victory" : "setup";
   }
 
   create(): void {
-    drawWorld(this);
+    this.worldArt = drawWorld(this);
+    setWorldAct(this, this.worldArt, getWaveAct(Math.min(FINAL_WAVE, this.campaign.completedWave + 1)));
     this.createBuildPads();
     this.syncTowerViews();
     this.updatePadVisuals();
     this.emitUi(true);
-    if (this.phase === "victory") {
-      this.time.delayedCall(0, () => this.callbacks.onTerminal("victory", this.campaign));
+    if (this.phase === "victory" || this.phase === "gameover") {
+      const outcome = this.phase;
+      this.time.delayedCall(0, () => this.callbacks.onTerminal(outcome, this.campaign));
     }
   }
 
   update(_time: number, delta: number): void {
     if (this.paused || this.phase === "setup" || this.phase === "gameover" || this.phase === "victory") return;
     const realDelta = Math.min(100, Math.max(0, delta));
-    this.campaign = recordActiveDuration(this.campaign, this.campaign.activeDurationMs + realDelta);
+    this.activeDurationMs += realDelta;
     this.persistWaveDurationCheckpoint();
     const step = realDelta * this.speed;
     this.simulationTimeMs += step;
@@ -180,6 +232,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   getCampaign(): CampaignState {
+    this.syncCampaignDuration();
     return this.campaign;
   }
 
@@ -201,19 +254,23 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   startWave(): boolean {
     if (this.phase !== "setup" || this.campaign.completedWave >= FINAL_WAVE) return false;
-    this.campaign = recordActiveDuration(this.campaign, this.campaign.activeDurationMs);
+    this.syncCampaignDuration();
     this.callbacks.onPersist(this.campaign);
     this.waveCheckpoint = this.campaign;
-    this.lastCheckpointDurationMs = this.campaign.activeDurationMs;
+    this.lastCheckpointDurationMs = this.activeDurationMs;
     this.wavePlan = createWavePlan(this.campaign.completedWave + 1);
     this.waveElapsedMs = 0;
     this.countdownRemainingMs = COUNTDOWN_MS;
     this.nextSpawnIndex = 0;
+    this.waveResolvedCount = 0;
+    this.waveTotalCount = this.wavePlan.spawns.length;
+    this.nextDynamicEnemyId = this.wavePlan.wave * 10_000 + this.wavePlan.spawns.length + 100;
     this.waveStartLives = this.campaign.lives;
     this.pulseAvailable = true;
     this.selectedPadId = null;
     this.selectedBuildType = null;
     this.phase = "countdown";
+    if (this.worldArt) setWorldAct(this, this.worldArt, this.wavePlan.act);
     this.updatePadVisuals();
     this.updateRangePreview();
     if (this.wavePlan.hasBoss) this.callbacks.onHaptic("heavy");
@@ -247,7 +304,8 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.pulseAvailable = false;
     const damage = 7 + (this.wavePlan?.wave || 1) * 1.5;
     for (const enemy of [...this.enemies]) {
-      enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + 1_500);
+      const control = applyControlResistance(0.1, 1_500, enemy.controlResistance);
+      enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
       enemy.art.statusRing.setAlpha(0.78).setStrokeStyle(2, 0x78f0dc, 0.9);
       this.damageEnemy(enemy, damage, "arcane");
     }
@@ -326,7 +384,9 @@ export class TowerDefenseScene extends Phaser.Scene {
         fontFamily: "Georgia, serif",
         fontSize: "14px",
       }).setOrigin(0.5).setAlpha(0.58).setDepth(point.y + 7);
-      const zone = this.add.zone(point.x, point.y, 52, 52).setInteractive({ useHandCursor: true }).setDepth(2_000);
+      const zone = this.add.zone(point.x, point.y, BUILD_PAD_HIT_SIZE, BUILD_PAD_HIT_SIZE)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(2_000);
       zone.on("pointerdown", () => this.handlePadClick(padId));
       this.padViews.set(padId, { ring, core, rune, zone });
     });
@@ -387,8 +447,10 @@ export class TowerDefenseScene extends Phaser.Scene {
       view.ring.setStrokeStyle(selected ? 3 : 2, selected ? 0xf0d77d : buildable ? 0x75e3bd : 0x5f8b77, selected ? 1 : 0.64);
       view.core.setAlpha(tower ? 0.1 : buildable ? 0.72 : 0.42);
       view.rune.setAlpha(tower ? 0 : buildable ? 0.92 : 0.48);
+      this.tweens.killTweensOf(view.rune);
+      view.rune.setScale(1);
       if (buildable) {
-        this.tweens.add({ targets: view.rune, scale: 1.22, duration: 450, yoyo: true, repeat: 1 });
+        this.tweens.add({ targets: view.rune, scale: 1.16, duration: 520, yoyo: true, repeat: 1 });
       }
     }
   }
@@ -424,18 +486,25 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
   }
 
-  private spawnEnemy(spawn: WaveSpawn): void {
-    const point = getPointAtDistance(path, 0);
-    const art = createEnemyArt(this, spawn.type, point);
+  private spawnEnemy(spawn: WaveSpawn, progress = 0, dynamic = false): void {
+    const point = getPointAtDistance(path, progress);
+    const art = createEnemyArt(this, spawn.type, point, {
+      elite: spawn.elite,
+      bossTier: spawn.bossTier,
+      shielded: spawn.shieldRatio > 0,
+    });
+    const maxShield = Math.round(spawn.maxHp * spawn.shieldRatio);
     const runtime: EnemyRuntime = {
       id: spawn.id,
       type: spawn.type,
       art,
       x: point.x,
       y: point.y,
-      progress: 0,
+      progress,
       hp: spawn.maxHp,
       maxHp: spawn.maxHp,
+      shield: maxShield,
+      maxShield,
       speed: spawn.speed,
       reward: spawn.reward,
       leakDamage: spawn.leakDamage,
@@ -447,10 +516,22 @@ export class TowerDefenseScene extends Phaser.Scene {
       burnUntilMs: 0,
       burnDamagePerSecond: 0,
       stunUntilMs: 0,
+      controlResistance: spawn.controlResistance,
+      healingRadius: spawn.healingRadius,
+      healingRatio: spawn.healingRatio,
+      lastHealAtMs: this.simulationTimeMs + 900 + (spawn.id % 7) * 170,
+      lastDamageTextAtMs: -1_000,
+      elite: spawn.elite,
+      bossTier: spawn.bossTier,
+      summonThresholds: spawn.summonThresholds,
+      summonCount: spawn.summonCount,
+      triggeredSummonThresholds: new Set<number>(),
       dead: false,
     };
     this.enemies.push(runtime);
-    if (spawn.type === "boss") {
+    this.enemiesById.set(runtime.id, runtime);
+    if (dynamic) this.waveTotalCount += 1;
+    if (spawn.type === "boss" || spawn.type === "titan") {
       this.cameras.main.shake(320, 0.008);
       this.callbacks.onHaptic("heavy");
     }
@@ -462,11 +543,27 @@ export class TowerDefenseScene extends Phaser.Scene {
       const burning = enemy.burnUntilMs > this.simulationTimeMs;
       if (burning) this.damageEnemy(enemy, enemy.burnDamagePerSecond * (deltaMs / 1_000), "fire", false);
       if (enemy.dead) continue;
+      const stunned = enemy.stunUntilMs > this.simulationTimeMs;
+
+      if (enemy.healingRadius > 0 && isEnemyAbilityReady(this.simulationTimeMs, enemy.stunUntilMs, enemy.lastHealAtMs)) {
+        enemy.lastHealAtMs = this.simulationTimeMs + 2_800;
+        const targets = selectHealingTargets(enemy, this.enemies, enemy.healingRadius, 2);
+        if (targets.length > 0) {
+          createHealPulse(this, enemy);
+          for (const candidate of targets) {
+            const target = this.enemiesById.get(candidate.id);
+            if (!target || target.dead) continue;
+            const healed = Math.min(target.maxHp - target.hp, Math.max(1, target.maxHp * enemy.healingRatio));
+            target.hp += healed;
+            createFloatingText(this, target.x, target.y - 18, `+${Math.ceil(healed)}`, "#9effbc");
+          }
+        }
+      }
 
       enemy.slowed = enemy.slowUntilMs > this.simulationTimeMs;
       enemy.slowFactor = enemy.slowed ? enemy.slowFactor : 1;
-      const stunned = enemy.stunUntilMs > this.simulationTimeMs;
-      if (!stunned) enemy.progress += enemy.speed * enemy.slowFactor * (deltaMs / 1_000);
+      const enraged = (enemy.type === "boss" || enemy.type === "titan") && enemy.hp / enemy.maxHp <= 0.4;
+      if (!stunned) enemy.progress += enemy.speed * (enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
       if (enemy.progress >= path.totalLength) {
         this.leakEnemy(enemy);
         if (this.phase !== "wave") return;
@@ -480,9 +577,16 @@ export class TowerDefenseScene extends Phaser.Scene {
       enemy.art.container.setRotation(getRouteAngleAtDistance(path, enemy.progress) * 0.03);
       enemy.art.body.y = Math.sin(this.simulationTimeMs * 0.009 + enemy.id) * 1.8;
       enemy.art.healthFill.scaleX = Math.max(0, enemy.hp / enemy.maxHp);
+      const damaged = enemy.hp < enemy.maxHp || enemy.shield < enemy.maxShield;
+      const major = enemy.type === "boss" || enemy.type === "titan";
+      enemy.art.healthBack.setAlpha(major || damaged ? 1 : 0);
+      enemy.art.healthFill.setAlpha(major || damaged ? 1 : 0);
+      enemy.art.shieldFill.scaleX = enemy.maxShield > 0 ? Math.max(0, enemy.shield / enemy.maxShield) : 0;
+      enemy.art.shieldFill.setAlpha(enemy.shield > 0 ? 0.95 : 0);
       const statusActive = stunned || enemy.slowed;
       enemy.art.statusRing.setAlpha(statusActive ? 0.78 : 0).setStrokeStyle(2, stunned ? 0x77f3d5 : 0x78dff6, statusActive ? 0.9 : 0);
-      if (burning && Math.random() < deltaMs / 180) {
+      if (burning && this.simulationTimeMs - this.lastBurnVfxAtMs >= 85 && Math.random() < deltaMs / 90) {
+        this.lastBurnVfxAtMs = this.simulationTimeMs;
         const ember = this.add.circle(point.x + (Math.random() * 8 - 4), point.y - 7, 2, 0xff9e5c, 0.88).setDepth(1_000);
         this.tweens.add({ targets: ember, y: ember.y - 11, alpha: 0, duration: 310, onComplete: () => ember.destroy() });
       }
@@ -496,7 +600,8 @@ export class TowerDefenseScene extends Phaser.Scene {
       if (runtime.cooldownMs > 0) continue;
       const point = BUILD_PADS[runtime.placement.padId];
       const stats = getTowerStats(runtime.placement.type, runtime.placement.level);
-      const target = chooseTowerTarget(runtime.placement.type, point, stats.range, candidates, stats.splashRadius);
+      const clusterRadius = runtime.placement.type === "storm" ? stats.chainRange : stats.splashRadius;
+      const target = chooseTowerTarget(runtime.placement.type, point, stats.range, candidates, clusterRadius);
       if (!target) {
         runtime.cooldownMs = 80;
         continue;
@@ -521,15 +626,21 @@ export class TowerDefenseScene extends Phaser.Scene {
       object = this.add.rectangle(x, y, 15, 3, 0xf6dfa0).setRotation(angle).setDepth(1_000);
     } else if (towerType === "frost") {
       object = this.add.circle(x, y, 5, 0x8cecf4, 0.95).setStrokeStyle(2, 0xe2ffff, 0.82).setDepth(1_000);
-    } else {
+    } else if (towerType === "ember") {
       object = this.add.circle(x, y, 7, 0xff7545, 0.96).setStrokeStyle(2, 0xffd36f, 0.9).setDepth(1_000);
+    } else {
+      object = this.add.rectangle(x, y, 9, 9, 0xc9f8ff, 0.96)
+        .setRotation(angle + Math.PI / 4)
+        .setStrokeStyle(2, 0x66d8ed, 0.9)
+        .setDepth(1_000);
     }
     this.projectiles.push({ object, targetId, towerType, stats });
   }
 
   private updateProjectiles(deltaMs: number): void {
     for (const projectile of [...this.projectiles]) {
-      const target = this.enemies.find((enemy) => enemy.id === projectile.targetId && !enemy.dead);
+      const candidate = this.enemiesById.get(projectile.targetId);
+      const target = candidate && !candidate.dead ? candidate : null;
       if (!target) {
         this.removeProjectile(projectile);
         continue;
@@ -550,22 +661,65 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   private resolveProjectileHit(projectile: ProjectileRuntime, target: EnemyRuntime): void {
-    const color = projectile.towerType === "ranger" ? 0xf5d887 : projectile.towerType === "frost" ? 0x7ceaf2 : 0xff8050;
-    createHitBurst(this, target.x, target.y, color, projectile.stats.splashRadius || 14);
+    const color = projectile.towerType === "ranger"
+      ? 0xf5d887
+      : projectile.towerType === "frost"
+        ? 0x7ceaf2
+        : projectile.towerType === "storm"
+          ? 0xbcefff
+          : 0xff8050;
+    const majorTarget = target.type === "boss" || target.type === "titan";
+    const burstCooldownMs = majorTarget ? 30 : projectile.towerType === "ranger" ? 70 : 50;
+    if (this.time.now - this.lastHitBurstAtMs >= burstCooldownMs) {
+      this.lastHitBurstAtMs = this.time.now;
+      createHitBurst(
+        this,
+        target.x,
+        target.y,
+        color,
+        projectile.stats.splashRadius || 14,
+        projectile.towerType === "ranger" ? 0 : majorTarget ? 3 : 2,
+      );
+    }
+    if (projectile.towerType === "storm") {
+      const victims = chooseChainTargets(target, this.enemies.filter((enemy) => !enemy.dead), projectile.stats.chainTargets, projectile.stats.chainRange)
+        .map((candidate) => this.enemiesById.get(candidate.id))
+        .filter((enemy): enemy is EnemyRuntime => Boolean(enemy && !enemy.dead));
+      let previous: EnemyRuntime = target;
+      victims.forEach((victim, index) => {
+        if (index > 0) createLightningArc(this, previous, victim, victims.length - index);
+        const bossMultiplier = victim.type === "boss" || victim.type === "titan" ? projectile.stats.bossDamageMultiplier : 1;
+        this.damageEnemy(victim, projectile.stats.damage * Math.pow(0.72, index) * bossMultiplier, projectile.stats.damageKind);
+        previous = victim;
+      });
+      return;
+    }
     const victims = projectile.stats.splashRadius > 0
       ? this.enemies.filter((enemy) => Math.hypot(enemy.x - target.x, enemy.y - target.y) <= projectile.stats.splashRadius)
       : [target];
     for (const victim of victims) {
       const falloff = victim.id === target.id ? 1 : projectile.towerType === "ember" ? 0.68 : 0.5;
-      this.damageEnemy(victim, projectile.stats.damage * falloff, projectile.stats.damageKind);
+      const bossMultiplier = victim.type === "boss" || victim.type === "titan" ? projectile.stats.bossDamageMultiplier : 1;
+      this.damageEnemy(victim, projectile.stats.damage * falloff * bossMultiplier, projectile.stats.damageKind);
       if (victim.dead) continue;
       if (projectile.stats.slowDurationMs > 0) {
-        victim.slowUntilMs = Math.max(victim.slowUntilMs, this.simulationTimeMs + projectile.stats.slowDurationMs);
-        victim.slowFactor = Math.min(victim.slowFactor, projectile.stats.slowFactor);
+        const control = applyControlResistance(projectile.stats.slowFactor, projectile.stats.slowDurationMs, victim.controlResistance);
+        const slow = mergeSlowEffect(
+          { factor: victim.slowFactor, untilMs: victim.slowUntilMs },
+          { factor: control.slowFactor, durationMs: control.durationMs },
+          this.simulationTimeMs,
+        );
+        victim.slowUntilMs = slow.untilMs;
+        victim.slowFactor = slow.factor;
       }
       if (projectile.stats.burnDurationMs > 0) {
-        victim.burnUntilMs = Math.max(victim.burnUntilMs, this.simulationTimeMs + projectile.stats.burnDurationMs);
-        victim.burnDamagePerSecond = Math.max(victim.burnDamagePerSecond, projectile.stats.burnDamagePerSecond);
+        const burn = mergeBurnEffect(
+          { damagePerSecond: victim.burnDamagePerSecond, untilMs: victim.burnUntilMs },
+          { damagePerSecond: projectile.stats.burnDamagePerSecond, durationMs: projectile.stats.burnDurationMs },
+          this.simulationTimeMs,
+        );
+        victim.burnUntilMs = burn.untilMs;
+        victim.burnDamagePerSecond = burn.damagePerSecond;
       }
     }
   }
@@ -573,17 +727,74 @@ export class TowerDefenseScene extends Phaser.Scene {
   private damageEnemy(enemy: EnemyRuntime, amount: number, kind: DamageKind, showText = true): void {
     if (enemy.dead) return;
     const damage = calculateDamage(amount, kind, enemy);
-    enemy.hp -= damage;
-    if (showText && damage >= 1) createFloatingText(this, enemy.x, enemy.y - 15, `${Math.round(damage)}`, "#fff1bd");
+    const previousHpRatio = enemy.hp / enemy.maxHp;
+    const absorbed = Math.min(enemy.shield, damage);
+    enemy.shield -= absorbed;
+    const coreDamage = Math.max(0, damage - absorbed);
+    enemy.hp -= coreDamage;
+    if (
+      showText
+      && damage >= 1
+      && (damage >= 8 || enemy.type === "boss" || enemy.type === "titan")
+      && this.simulationTimeMs - enemy.lastDamageTextAtMs >= 160
+    ) {
+      enemy.lastDamageTextAtMs = this.simulationTimeMs;
+      createFloatingText(this, enemy.x, enemy.y - 15, `${Math.round(damage)}`, absorbed > 0 ? "#bcefff" : "#fff1bd");
+    }
+    if (enemy.type === "titan" && coreDamage > 0 && enemy.hp > 0) {
+      const crossed = crossedSummonThresholds(
+        previousHpRatio,
+        enemy.hp / enemy.maxHp,
+        enemy.summonThresholds,
+        enemy.triggeredSummonThresholds,
+      );
+      for (const threshold of crossed) {
+        enemy.triggeredSummonThresholds.add(threshold);
+        this.summonTitanShades(enemy);
+      }
+    }
     if (enemy.hp <= 0) this.killEnemy(enemy);
+  }
+
+  private summonTitanShades(titan: EnemyRuntime): void {
+    if (!this.wavePlan || titan.summonCount <= 0) return;
+    const definition = ENEMY_DEFINITIONS.shade;
+    const hpMultiplier = getWaveHealthMultiplier(this.wavePlan.wave) * 0.78;
+    createSummonBurst(this, titan);
+    for (let index = 0; index < titan.summonCount; index += 1) {
+      const spawn: WaveSpawn = Object.freeze({
+        id: this.nextDynamicEnemyId,
+        type: "shade",
+        atMs: this.waveElapsedMs,
+        maxHp: Math.round(definition.baseHp * hpMultiplier),
+        speed: definition.speed * Math.min(1.4, 1 + (this.wavePlan.wave - 1) * 0.01),
+        reward: 0,
+        leakDamage: definition.leakDamage,
+        physicalResistance: definition.physicalResistance,
+        magicResistance: definition.magicResistance,
+        shieldRatio: 0,
+        controlResistance: definition.controlResistance,
+        healingRadius: 0,
+        healingRatio: 0,
+        elite: false,
+        bossTier: this.wavePlan.act,
+        summonThresholds: Object.freeze([]),
+        summonCount: 0,
+      });
+      this.nextDynamicEnemyId += 1;
+      this.spawnEnemy(spawn, Math.max(0, titan.progress - 10 - index * 9), true);
+    }
+    this.callbacks.onHaptic("medium");
   }
 
   private killEnemy(enemy: EnemyRuntime): void {
     if (enemy.dead) return;
     enemy.dead = true;
     this.enemies = this.enemies.filter((candidate) => candidate.id !== enemy.id);
+    this.enemiesById.delete(enemy.id);
+    this.waveResolvedCount += 1;
     this.campaign = awardEnemyKill(this.campaign, enemy.reward);
-    createFloatingText(this, enemy.x, enemy.y - 2, `+${enemy.reward}`, "#ffd86c");
+    if (enemy.reward > 0) createFloatingText(this, enemy.x, enemy.y - 2, `+${enemy.reward}`, "#ffd86c");
     this.tweens.add({
       targets: enemy.art.container,
       alpha: 0,
@@ -591,17 +802,27 @@ export class TowerDefenseScene extends Phaser.Scene {
       duration: 230,
       onComplete: () => enemy.art.container.destroy(true),
     });
-    this.callbacks.onHaptic(enemy.type === "boss" ? "heavy" : "light");
-    this.emitUi(true);
+    if (enemy.type === "boss" || enemy.type === "titan") {
+      this.callbacks.onHaptic("heavy");
+      this.lastKillHapticAtMs = this.simulationTimeMs;
+    } else if (this.simulationTimeMs - this.lastKillHapticAtMs >= 300) {
+      this.callbacks.onHaptic(enemy.elite ? "medium" : "light");
+      this.lastKillHapticAtMs = this.simulationTimeMs;
+    }
+    this.emitUi();
   }
 
   private leakEnemy(enemy: EnemyRuntime): void {
     enemy.dead = true;
     this.enemies = this.enemies.filter((candidate) => candidate.id !== enemy.id);
+    this.enemiesById.delete(enemy.id);
+    this.waveResolvedCount += 1;
     this.campaign = applyLeakDamage(this.campaign, enemy.leakDamage);
     enemy.art.container.destroy(true);
+    if (this.worldArt) createGateHitEffect(this, this.worldArt, enemy.leakDamage);
     this.cameras.main.shake(170, 0.006);
     this.callbacks.onHaptic("heavy");
+    this.persistWaveDurationCheckpoint(true);
     if (this.campaign.lives <= 0) {
       this.endRun("gameover");
     } else {
@@ -625,12 +846,15 @@ export class TowerDefenseScene extends Phaser.Scene {
     for (const projectile of [...this.projectiles]) this.removeProjectile(projectile);
     const flawlessBonus = this.campaign.lives === this.waveStartLives ? 10 : 0;
     const totalBonus = this.wavePlan.clearBonus + flawlessBonus;
+    this.syncCampaignDuration();
     const result = completeWave(this.campaign, this.wavePlan.wave, totalBonus);
     if (!result.ok) return;
     this.campaign = result.state;
-    if (this.wavePlan.hasBoss && this.campaign.completedWave < FINAL_WAVE) this.campaign = repairLives(this.campaign, 2);
-    this.campaign = recordActiveDuration(this.campaign, this.campaign.activeDurationMs);
-    this.callbacks.onWaveClear(this.wavePlan.wave, totalBonus);
+    const repairAmount = getBossRepair(this.wavePlan.wave);
+    const livesBeforeRepair = this.campaign.lives;
+    if (repairAmount > 0) this.campaign = repairLives(this.campaign, repairAmount);
+    const repairedLives = this.campaign.lives - livesBeforeRepair;
+    this.callbacks.onWaveClear(this.wavePlan.wave, totalBonus, repairedLives);
     this.callbacks.onPersist(this.campaign);
     this.callbacks.onHaptic("success");
     this.wavePlan = null;
@@ -638,6 +862,9 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.phase = this.campaign.completedWave >= FINAL_WAVE ? "victory" : "setup";
     this.selectedBuildType = this.phase === "setup" ? "ranger" : null;
     this.pulseAvailable = true;
+    if (this.worldArt && this.phase === "setup") {
+      setWorldAct(this, this.worldArt, getWaveAct(Math.min(FINAL_WAVE, this.campaign.completedWave + 1)));
+    }
     this.updatePadVisuals();
     this.emitUi(true);
     if (this.phase === "victory") this.endRun("victory");
@@ -646,6 +873,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private endRun(outcome: TerminalOutcome): void {
     if (this.phase === "gameover" || (this.phase === "victory" && outcome !== "victory")) return;
     this.phase = outcome;
+    this.syncCampaignDuration();
     this.paused = false;
     this.tweens.timeScale = 1;
     this.wavePlan = null;
@@ -654,6 +882,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     if (outcome === "gameover") {
       for (const enemy of this.enemies) enemy.art.container.destroy(true);
       this.enemies = [];
+      this.enemiesById.clear();
       this.cameras.main.fade(480, 17, 16, 22, false);
       this.callbacks.onHaptic("error");
     } else {
@@ -664,11 +893,16 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.callbacks.onTerminal(outcome, this.campaign);
   }
 
-  private persistWaveDurationCheckpoint(): void {
-    if (!this.waveCheckpoint || this.campaign.activeDurationMs - this.lastCheckpointDurationMs < 1_000) return;
-    this.waveCheckpoint = recordActiveDuration(this.waveCheckpoint, this.campaign.activeDurationMs);
-    this.lastCheckpointDurationMs = this.campaign.activeDurationMs;
+  private persistWaveDurationCheckpoint(force = false): void {
+    if (!this.waveCheckpoint || (!force && this.activeDurationMs - this.lastCheckpointDurationMs < 1_000)) return;
+    this.waveCheckpoint = createWaveCheckpoint(this.waveCheckpoint, this.campaign, this.activeDurationMs);
+    this.lastCheckpointDurationMs = this.activeDurationMs;
     this.callbacks.onPersist(this.waveCheckpoint);
+  }
+
+  private syncCampaignDuration(): void {
+    const duration = Math.round(this.activeDurationMs);
+    if (duration !== this.campaign.activeDurationMs) this.campaign = recordActiveDuration(this.campaign, duration);
   }
 
   private emitUi(force = false): void {
@@ -676,9 +910,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     if (!force && now - this.lastUiEmitAt < 100) return;
     this.lastUiEmitAt = now;
     const plan = this.wavePlan || this.getCurrentWavePlan();
-    const resolved = this.phase === "setup"
-      ? 0
-      : Math.max(0, this.nextSpawnIndex - this.enemies.length);
+    const boss = this.enemies.find((enemy) => !enemy.dead && (enemy.type === "boss" || enemy.type === "titan"));
     this.callbacks.onUiChange(Object.freeze({
       campaign: this.campaign,
       phase: this.phase,
@@ -687,11 +919,26 @@ export class TowerDefenseScene extends Phaser.Scene {
       selectedBuildType: this.selectedBuildType,
       selectedPadId: this.selectedPadId,
       currentWave: Math.min(FINAL_WAVE, this.campaign.completedWave + 1),
-      waveProgress: plan.spawns.length > 0 ? Math.min(1, resolved / plan.spawns.length) : 0,
+      waveProgress: this.phase === "setup"
+        ? 0
+        : this.waveTotalCount > 0
+          ? Math.min(1, this.waveResolvedCount / this.waveTotalCount)
+          : 0,
       enemiesAlive: this.enemies.length,
-      totalEnemies: plan.spawns.length,
+      totalEnemies: this.phase === "setup" ? plan.spawns.length : this.waveTotalCount,
       countdown: Math.ceil(this.countdownRemainingMs / 1_000),
       pulseAvailable: this.pulseAvailable,
+      act: plan.act,
+      threat: plan.threat,
+      boss: boss && (boss.type === "boss" || boss.type === "titan")
+        ? Object.freeze({
+            type: boss.type,
+            tier: boss.bossTier,
+            hpRatio: Math.max(0, boss.hp / boss.maxHp),
+            shieldRatio: boss.maxShield > 0 ? Math.max(0, boss.shield / boss.maxShield) : 0,
+            enraged: boss.hp / boss.maxHp <= 0.4,
+          })
+        : null,
     }));
   }
 }
@@ -701,6 +948,7 @@ export function getSelectedTowerDetails(state: TowerDefenseUiState): Readonly<{
   stats: TowerStats;
   upgradeCost: number | null;
   sellValue: number;
+  masteryLocked: boolean;
 }> | null {
   if (state.selectedPadId === null) return null;
   const tower = getTower(state.campaign, state.selectedPadId);
@@ -708,8 +956,9 @@ export function getSelectedTowerDetails(state: TowerDefenseUiState): Readonly<{
   return Object.freeze({
     tower,
     stats: getTowerStats(tower.type, tower.level),
-    upgradeCost: tower.level < 3 ? TOWER_DEFINITIONS[tower.type].upgradeCosts[tower.level - 1] : null,
+    upgradeCost: tower.level < MAX_TOWER_LEVEL ? TOWER_DEFINITIONS[tower.type].upgradeCosts[tower.level - 1] : null,
     sellValue: Math.floor(getTowerTotalInvestment(tower.type, tower.level) * 0.65),
+    masteryLocked: tower.level === 3 && state.campaign.completedWave < MASTERY_UNLOCK_WAVE,
   });
 }
 

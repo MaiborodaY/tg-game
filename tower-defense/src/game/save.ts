@@ -103,7 +103,7 @@ export function sanitizeCampaign(value: unknown): CampaignState | null {
     const type = sanitizeTowerType(candidate.type);
     const level = finiteInteger(candidate.level);
     if (padId === null || padId < 0 || padId >= BUILD_PADS.length || usedPads.has(padId) || !type) continue;
-    if (level !== 1 && level !== 2 && level !== 3) continue;
+    if (level !== 1 && level !== 2 && level !== 3 && level !== 4) continue;
     usedPads.add(padId);
     towers.push(Object.freeze({ padId, type, level }));
   }
@@ -134,7 +134,7 @@ function nearestUnusedPad(x: number, y: number, usedPads: ReadonlySet<number>): 
 }
 
 function sanitizeTowerType(value: unknown): TowerType | null {
-  return value === "ranger" || value === "frost" || value === "ember" ? value : null;
+  return value === "ranger" || value === "frost" || value === "ember" || value === "storm" ? value : null;
 }
 
 function finiteInteger(value: unknown): number | null {

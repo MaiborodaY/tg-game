@@ -38,10 +38,14 @@ test("corrupted saves are rejected and tower coordinates are strictly sanitized"
       { padId: 1, type: "ember", level: 3 },
       { padId: 999, type: "frost", level: 1 },
       { padId: 2, type: "invalid", level: 1 },
+      { padId: 3, type: "storm", level: 4 },
     ],
   });
   assert.equal(value.lives, 20);
-  assert.deepEqual(value.towers, [{ padId: 1, type: "ranger", level: 2 }]);
+  assert.deepEqual(value.towers, [
+    { padId: 1, type: "ranger", level: 2 },
+    { padId: 3, type: "storm", level: 4 },
+  ]);
 });
 
 test("saved progress can never exceed the finite campaign score", () => {
@@ -54,7 +58,7 @@ test("saved progress can never exceed the finite campaign score", () => {
     activeDurationMs: 0,
     towers: [],
   });
-  assert.equal(value.completedWave, 12);
+  assert.equal(value.completedWave, 24);
 });
 
 test("legacy practice progress migrates but reward callers choose whether to use it", () => {
@@ -77,13 +81,13 @@ test("a pending finish is scoped by run and survives a reload without storing a 
   const storage = memoryStorage();
   const result = captureFinalResult(6, 80_000);
   assert.equal(savePendingResult(storage, "run-a", "gameover", result), true);
-  assert.deepEqual(loadPendingResult(storage, "run-a", 12), {
+  assert.deepEqual(loadPendingResult(storage, "run-a", 24), {
     version: 1,
     outcome: "gameover",
     score: 6,
     durationMs: 80_000,
   });
-  assert.equal(loadPendingResult(storage, "run-b", 12), null);
+  assert.equal(loadPendingResult(storage, "run-b", 24), null);
   assert.equal(storage.getItem(pendingKey("run-a")).includes("token"), false);
 });
 

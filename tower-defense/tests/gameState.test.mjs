@@ -7,6 +7,7 @@ import {
   buildTower,
   completeWave,
   createCampaignState,
+  createWaveCheckpoint,
   recordActiveDuration,
   sellTower,
   upgradeTower,
@@ -59,10 +60,25 @@ test("lives and active duration are normalized without mutating other progress",
 test("a mid-wave duration checkpoint keeps pre-wave economy and damage", () => {
   const waveStart = buildTower(createCampaignState(), 0, "ranger").state;
   const liveState = recordActiveDuration(applyLeakDamage(awardEnemyKill(waveStart, 8), 4), 4_500);
-  const checkpoint = recordActiveDuration(waveStart, liveState.activeDurationMs);
+  const checkpoint = createWaveCheckpoint(waveStart, liveState, liveState.activeDurationMs);
 
   assert.equal(checkpoint.activeDurationMs, 4_500);
   assert.equal(checkpoint.gold, waveStart.gold);
-  assert.equal(checkpoint.lives, waveStart.lives);
+  assert.equal(checkpoint.lives, 16, "lost lives remain lost after a reload");
   assert.equal(checkpoint.totalKills, waveStart.totalKills);
+});
+
+test("level-four tower mastery unlocks only after wave twelve", () => {
+  const base = createCampaignState();
+  const levelThree = {
+    ...base,
+    gold: 2_000,
+    completedWave: 11,
+    towers: [{ padId: 0, type: "storm", level: 3 }],
+  };
+  assert.equal(upgradeTower(levelThree, 0).error, "mastery_locked");
+  const mastered = upgradeTower({ ...levelThree, completedWave: 12 }, 0);
+  assert.equal(mastered.ok, true);
+  assert.equal(mastered.state.towers[0].level, 4);
+  assert.equal(mastered.state.gold, 1_380);
 });

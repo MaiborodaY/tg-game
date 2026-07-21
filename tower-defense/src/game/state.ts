@@ -1,12 +1,13 @@
 import {
   BUILD_PADS,
+  MASTERY_UNLOCK_WAVE,
   MAX_TOWER_LEVEL,
   STARTING_GOLD,
   STARTING_LIVES,
   TOWER_DEFINITIONS,
   getTowerTotalInvestment,
 } from "./config.ts";
-import type { CampaignError, CampaignResult, CampaignState, TowerPlacement, TowerType } from "./types.ts";
+import type { CampaignError, CampaignResult, CampaignState, TowerLevel, TowerPlacement, TowerType } from "./types.ts";
 
 export function createCampaignState(): CampaignState {
   return freezeState({
@@ -35,10 +36,11 @@ export function upgradeTower(state: CampaignState, padId: number): CampaignResul
   const tower = state.towers.find((candidate) => candidate.padId === padId);
   if (!tower) return failure(state, isValidPad(padId) ? "pad_empty" : "invalid_pad");
   if (tower.level >= MAX_TOWER_LEVEL) return failure(state, "max_level");
+  if (tower.level === 3 && state.completedWave < MASTERY_UNLOCK_WAVE) return failure(state, "mastery_locked");
   const cost = TOWER_DEFINITIONS[tower.type].upgradeCosts[tower.level - 1];
   if (state.gold < cost) return failure(state, "insufficient_gold");
   const towers = state.towers.map((candidate): TowerPlacement => candidate.padId === padId
-    ? Object.freeze({ ...candidate, level: (candidate.level + 1) as 2 | 3 })
+    ? Object.freeze({ ...candidate, level: (candidate.level + 1) as TowerLevel })
     : candidate);
   return success(state, { gold: state.gold - cost, towers }, -cost);
 }
@@ -72,6 +74,18 @@ export function repairLives(state: CampaignState, amount: number): CampaignState
 
 export function recordActiveDuration(state: CampaignState, durationMs: number): CampaignState {
   return freezeState({ ...state, activeDurationMs: clampInteger(durationMs, 0, Number.MAX_SAFE_INTEGER) });
+}
+
+export function createWaveCheckpoint(
+  waveStart: CampaignState,
+  liveState: CampaignState,
+  activeDurationMs: number,
+): CampaignState {
+  return freezeState({
+    ...waveStart,
+    lives: Math.min(waveStart.lives, liveState.lives),
+    activeDurationMs: clampInteger(activeDurationMs, 0, Number.MAX_SAFE_INTEGER),
+  });
 }
 
 export function completeWave(state: CampaignState, wave: number, clearBonus: number): CampaignResult {

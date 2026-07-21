@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import "./styles.css";
-import { FINAL_WAVE, TOWER_DEFINITIONS } from "./game/config.ts";
+import { ENEMY_DEFINITIONS, ENEMY_PREVIEW_ORDER, FINAL_WAVE, TOWER_DEFINITIONS } from "./game/config.ts";
 import {
   clearCampaign,
   getCampaignSaveKey,
@@ -11,7 +11,7 @@ import {
   type StorageLike,
 } from "./game/save.ts";
 import { createCampaignState } from "./game/state.ts";
-import type { EnemyType, TowerType } from "./game/types.ts";
+import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
 import { createWavePlan } from "./game/waves.ts";
 import { detectLocale, tr, type Locale, type TranslationKey } from "./i18n.ts";
 import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
@@ -59,6 +59,8 @@ let rewardFinisher: RewardFinisher | null = null;
 let finishSettled = reward.mode === "local";
 let terminalResult: FinalResult | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let renderedPreviewWave = -1;
+let cachedPreviewPlan: WavePlan | null = null;
 
 const elements = {
   appTitle: byId("app-title"),
@@ -76,6 +78,12 @@ const elements = {
   pulseButton: button("pulse-button"),
   pulseLabel: byId("pulse-label"),
   phaseBadge: byId("phase-badge"),
+  bossHud: byId("boss-hud"),
+  bossIcon: byId("boss-icon"),
+  bossName: byId("boss-name"),
+  bossState: byId("boss-state"),
+  bossHealthFill: byId("boss-health-fill"),
+  bossShieldFill: byId("boss-shield-fill"),
   countdown: byId("countdown"),
   buildPanel: byId("build-panel"),
   towerPanel: byId("tower-panel"),
@@ -85,6 +93,7 @@ const elements = {
   rangerName: byId("ranger-name"),
   frostName: byId("frost-name"),
   emberName: byId("ember-name"),
+  stormName: byId("storm-name"),
   selectedEmblem: byId("selected-emblem"),
   selectedLevel: byId("selected-level"),
   selectedName: byId("selected-name"),
@@ -94,6 +103,7 @@ const elements = {
   closeTowerPanel: button("close-tower-panel"),
   nextWaveLabel: byId("next-wave-label"),
   waveEnemies: byId("wave-enemies"),
+  threatMeter: byId("threat-meter"),
   startWaveButton: button("start-wave-button"),
   introOverlay: byId("intro-overlay"),
   introTitle: byId("intro-title"),
@@ -135,9 +145,9 @@ const mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, {
     saveCampaign(storage, saveKey, campaign);
   },
   onNotice: showNotice,
-  onWaveClear: (wave, bonus) => {
+  onWaveClear: (_wave, bonus, repairedLives) => {
     showToast(`${text("wave_clear")} · ${text("clear_bonus", { amount: bonus })}`);
-    if (wave === 4 || wave === 8) showToast(`♥ +2 · ${text("wave_clear")}`);
+    if (repairedLives > 0) window.setTimeout(() => showToast(`♥ +${repairedLives} · ${text("boss_repair")}`), 750);
   },
   onTerminal: handleTerminal,
   onHaptic: telegram.haptic,
@@ -184,11 +194,22 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.pauseButton.disabled = ui.phase === "gameover" || ui.phase === "victory";
   elements.speedButton.textContent = `×${ui.speed}`;
   elements.speedButton.classList.toggle("is-active", ui.speed === 2);
-  elements.phaseBadge.textContent = phaseLabel(ui);
+  elements.phaseBadge.textContent = `${phaseLabel(ui)} · ${text("act", { count: ui.act })}`;
   elements.countdown.hidden = ui.phase !== "countdown" || ui.paused;
   elements.countdown.textContent = String(Math.max(1, ui.countdown));
   elements.pulseButton.disabled = ui.phase !== "wave" || !ui.pulseAvailable || ui.enemiesAlive === 0 || ui.paused;
   elements.pulseButton.classList.toggle("is-used", !ui.pulseAvailable);
+  elements.bossHud.hidden = !ui.boss;
+  if (ui.boss) {
+    elements.bossIcon.textContent = ui.boss.type === "titan" ? "♜" : "♛";
+    elements.bossName.textContent = ui.boss.type === "titan"
+      ? text("enemy_titan")
+      : text(`boss_act_${ui.boss.tier}` as TranslationKey);
+    elements.bossState.textContent = text(ui.boss.enraged ? "boss_enraged" : "boss_state");
+    elements.bossHealthFill.style.width = `${Math.round(ui.boss.hpRatio * 100)}%`;
+    elements.bossShieldFill.style.width = `${Math.round(ui.boss.shieldRatio * 100)}%`;
+    elements.bossShieldFill.parentElement?.toggleAttribute("hidden", ui.boss.shieldRatio <= 0);
+  }
 
   const editing = ui.phase === "setup" && !ui.paused;
   elements.towerCards.forEach((card) => {
@@ -206,35 +227,44 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.selectedLevel.textContent = `${text("level")} ${selected.tower.level}`;
     elements.selectedName.textContent = towerName(selected.tower.type);
     elements.selectedStats.textContent = `${text("damage")} ${selected.stats.damage} · ${text("range")} ${Math.round(selected.stats.range)}`;
-    elements.upgradeButton.textContent = selected.upgradeCost === null
+    elements.upgradeButton.textContent = selected.masteryLocked
+      ? text("mastery_locked")
+      : selected.upgradeCost === null
       ? text("max_level")
       : `${text("upgrade")} · ${selected.upgradeCost} ●`;
-    elements.upgradeButton.disabled = !editing || selected.upgradeCost === null || ui.campaign.gold < selected.upgradeCost;
+    elements.upgradeButton.disabled = !editing || selected.masteryLocked || selected.upgradeCost === null || ui.campaign.gold < selected.upgradeCost;
     elements.sellButton.textContent = `${text("sell")} · ${selected.sellValue} ●`;
     elements.sellButton.disabled = !editing;
   }
 
-  const plan = createWavePlan(Math.min(FINAL_WAVE, ui.campaign.completedWave + 1));
-  renderWavePreview(plan.spawns.map((spawn) => spawn.type));
+  const previewWave = Math.min(FINAL_WAVE, ui.campaign.completedWave + 1);
+  if (!cachedPreviewPlan || cachedPreviewPlan.wave !== previewWave) cachedPreviewPlan = createWavePlan(previewWave);
+  const plan = cachedPreviewPlan;
+  if (renderedPreviewWave !== plan.wave) {
+    renderWavePreview(plan.wave, plan.spawns.map((spawn) => spawn.type));
+    renderedPreviewWave = plan.wave;
+  }
+  elements.threatMeter.textContent = `${"◆".repeat(plan.threat)}${"◇".repeat(5 - plan.threat)}`;
+  elements.threatMeter.setAttribute("aria-label", text("threat", { count: plan.threat }));
   elements.startWaveButton.disabled = !editing || ui.campaign.completedWave >= FINAL_WAVE;
   elements.startWaveButton.classList.toggle("is-boss", plan.hasBoss);
   elements.startWaveButton.textContent = plan.hasBoss ? text("boss_wave") : text("start_wave");
   elements.practiceBadge.hidden = reward.mode === "server";
 }
 
-function renderWavePreview(types: readonly EnemyType[]): void {
-  const order: EnemyType[] = ["raider", "swift", "brute", "warden", "boss"];
+function renderWavePreview(_wave: number, types: readonly EnemyType[]): void {
   const counts = new Map<EnemyType, number>();
   for (const type of types) counts.set(type, (counts.get(type) || 0) + 1);
-  elements.waveEnemies.replaceChildren(...order.flatMap((type) => {
+  elements.waveEnemies.replaceChildren(...ENEMY_PREVIEW_ORDER.flatMap((type) => {
     const count = counts.get(type);
     if (!count) return [];
     const chip = document.createElement("span");
     chip.className = "enemy-chip";
     chip.title = enemyName(type);
-    const dot = document.createElement("i");
-    dot.className = `enemy-dot ${type}`;
-    chip.append(dot, document.createTextNode(`${count}`));
+    const glyph = document.createElement("i");
+    glyph.className = `enemy-glyph ${type}`;
+    glyph.textContent = ENEMY_DEFINITIONS[type].glyph;
+    chip.append(glyph, document.createTextNode(`${count}`));
     return [chip];
   }));
 }
@@ -252,6 +282,8 @@ function showNotice(code: NoticeCode): void {
     ? "insufficient_gold"
     : code === "max_level"
       ? "max_level"
+      : code === "mastery_locked"
+        ? "mastery_locked"
       : code === "pulse_used"
         ? "pulse_used"
         : code === "build_locked"
@@ -271,8 +303,8 @@ function showToast(message: string, isError = false): void {
 function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
   const result = captureFinalResult(Math.min(FINAL_WAVE, campaign.completedWave), campaign.activeDurationMs);
   terminalResult = result;
-  clearCampaign(storage, saveKey);
-  if (reward.mode === "server") savePendingResult(storage, reward.runId, outcome, result);
+  const pendingSaved = reward.mode === "server" && savePendingResult(storage, reward.runId, outcome, result);
+  if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
   showResult(outcome, result);
   rewardFinisher = createRewardFinisher(reward, result);
   void finishReward();
@@ -303,6 +335,7 @@ async function finishReward(): Promise<void> {
     elements.closeHint.textContent = text("close_hint");
     telegram.setClosingConfirmation(false);
     if (rewardUsedKey) writeFlag(storage, rewardUsedKey);
+    clearCampaign(storage, saveKey);
     removePendingResult(storage, reward.runId);
     return;
   }
@@ -373,12 +406,13 @@ function applyStaticTranslations(): void {
   elements.rangerName.textContent = text("tower_ranger");
   elements.frostName.textContent = text("tower_frost");
   elements.emberName.textContent = text("tower_ember");
+  elements.stormName.textContent = text("tower_storm");
   elements.nextWaveLabel.textContent = text("next_wave");
   elements.introTitle.textContent = text("intro_title");
   elements.introBody.textContent = text("intro_body");
   elements.introStart.textContent = text("intro_start");
   elements.introWaves.textContent = text("intro_waves", { count: FINAL_WAVE });
-  elements.introTowers.textContent = text("intro_towers", { count: 3 });
+  elements.introTowers.textContent = text("intro_towers", { count: 4 });
   elements.introBosses.textContent = text("intro_bosses");
   elements.resultEyebrow.textContent = text("result_eyebrow");
   elements.closeTowerPanel.setAttribute("aria-label", text("close"));

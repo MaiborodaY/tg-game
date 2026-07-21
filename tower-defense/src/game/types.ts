@@ -1,13 +1,15 @@
-export type TowerType = "ranger" | "frost" | "ember";
+export type TowerType = "ranger" | "frost" | "ember" | "storm";
+export type TowerLevel = 1 | 2 | 3 | 4;
 export type DamageKind = "physical" | "frost" | "fire" | "arcane";
-export type EnemyType = "raider" | "swift" | "brute" | "warden" | "boss";
+export type EnemyType = "raider" | "swift" | "brute" | "warden" | "shade" | "bulwark" | "shaman" | "boss" | "titan";
+export type CampaignAct = 1 | 2 | 3;
 
 export type Point = Readonly<{ x: number; y: number }>;
 
 export type TowerPlacement = Readonly<{
   padId: number;
   type: TowerType;
-  level: 1 | 2 | 3;
+  level: TowerLevel;
 }>;
 
 export type CampaignState = Readonly<{
@@ -22,7 +24,7 @@ export type CampaignState = Readonly<{
 
 export type TowerStats = Readonly<{
   type: TowerType;
-  level: 1 | 2 | 3;
+  level: TowerLevel;
   damageKind: DamageKind;
   damage: number;
   range: number;
@@ -33,6 +35,9 @@ export type TowerStats = Readonly<{
   slowDurationMs: number;
   burnDamagePerSecond: number;
   burnDurationMs: number;
+  chainTargets: number;
+  chainRange: number;
+  bossDamageMultiplier: number;
 }>;
 
 export type EnemyDefinition = Readonly<{
@@ -44,6 +49,11 @@ export type EnemyDefinition = Readonly<{
   size: number;
   physicalResistance: number;
   magicResistance: number;
+  shieldRatio: number;
+  controlResistance: number;
+  healingRadius: number;
+  healingRatio: number;
+  glyph: string;
 }>;
 
 export type WaveSpawn = Readonly<{
@@ -56,6 +66,14 @@ export type WaveSpawn = Readonly<{
   leakDamage: number;
   physicalResistance: number;
   magicResistance: number;
+  shieldRatio: number;
+  controlResistance: number;
+  healingRadius: number;
+  healingRatio: number;
+  elite: boolean;
+  bossTier: CampaignAct;
+  summonThresholds: readonly number[];
+  summonCount: number;
 }>;
 
 export type WavePlan = Readonly<{
@@ -63,6 +81,8 @@ export type WavePlan = Readonly<{
   spawns: readonly WaveSpawn[];
   clearBonus: number;
   hasBoss: boolean;
+  act: CampaignAct;
+  threat: 1 | 2 | 3 | 4 | 5;
 }>;
 
 export type CampaignError =
@@ -71,6 +91,7 @@ export type CampaignError =
   | "pad_empty"
   | "insufficient_gold"
   | "max_level"
+  | "mastery_locked"
   | "invalid_wave";
 
 export type CampaignResult = Readonly<{
