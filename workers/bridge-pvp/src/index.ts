@@ -1,20 +1,17 @@
 import { DurableObject } from "cloudflare:workers";
 
 import {
-  applyCall,
-  createGame,
-  createViewerSnapshot,
-  getLegalCalls,
-  getLegalCardIds,
-  getTurnController,
-  playCard,
-  type BridgeGameState,
-  type Call,
-  type CardId,
-  type Seat,
-  type ViewerSnapshot,
-} from "../../../bridge/src/game";
-import { chooseBotAction } from "../../../bridge/src/ai";
+  applySheddingAction,
+  chooseSheddingBotAction,
+  createSheddingGame,
+  createSheddingViewerSnapshot,
+  getLegalSheddingCardIds,
+  getSheddingTurnController,
+  type SheddingAction,
+  type SheddingGameState,
+  type SheddingSeat,
+  type SheddingViewerSnapshot,
+} from "../../../bridge/src/shedding";
 import {
   MAX_SOCKET_MESSAGE_BYTES,
   appendProcessedCommand,
@@ -66,11 +63,11 @@ interface RoomTicketRecord {
 }
 
 interface BridgeRoomRecord {
-  schemaVersion: 1;
+  schemaVersion: 2;
   roomCode: string;
   status: BridgeRoomStatus;
   humans: Partial<Record<HumanBridgeSeat, HumanPlayerRecord>>;
-  game?: BridgeGameState;
+  game?: SheddingGameState;
   processedCommands: ProcessedCommand[];
   tickets: RoomTicketRecord[];
   humanDeadlineAt?: number;
@@ -97,9 +94,9 @@ export interface BridgeRoomSnapshot {
   seat: HumanBridgeSeat;
   status: BridgeRoomStatus;
   revision: number;
-  players: Record<Seat, BridgePlayerSnapshot>;
-  bots: Seat[];
-  view?: ViewerSnapshot;
+  players: Record<SheddingSeat, BridgePlayerSnapshot>;
+  bots: SheddingSeat[];
+  view?: SheddingViewerSnapshot;
   deadlineAt?: number;
   createdAt: number;
   updatedAt: number;
@@ -134,7 +131,8 @@ type BridgeRpcResult<T> =
   | { ok: false; error: { code: string; message: string } };
 
 const API_PREFIX = "/api/bridge";
-const ROOM_STORAGE_KEY = "room:v1";
+const ROOM_STORAGE_KEY = "room:v2";
+const LEGACY_ROOM_STORAGE_KEY = "room:v1";
 const WAITING_ROOM_TTL_MS = 10 * 60_000;
 const FINISHED_ROOM_TTL_MS = 15 * 60_000;
 const ACTIVE_ROOM_TTL_MS = 2 * 60 * 60_000;
@@ -164,7 +162,7 @@ export class BridgeRoom extends DurableObject<Env> {
 
     const now = Date.now();
     const record: BridgeRoomRecord = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       roomCode,
       status: "waiting",
       humans: {
@@ -209,7 +207,7 @@ export class BridgeRoom extends DurableObject<Env> {
     }
 
     const now = Date.now();
-    const game = createGame({ boardNumber: createBoardNumber() });
+    const game = createSheddingGame();
     let nextRecord: BridgeRoomRecord = {
       ...record,
       status: "playing",
@@ -406,7 +404,7 @@ export class BridgeRoom extends DurableObject<Env> {
       return;
     }
 
-    const controller = getTurnController(record.game);
+    const controller = getSheddingTurnController(record.game);
     const forcedSeat = isHumanBridgeSeat(controller) ? controller : undefined;
     const nextRecord = this.advanceAutomatedSeats(record, now, forcedSeat);
 
@@ -439,12 +437,12 @@ export class BridgeRoom extends DurableObject<Env> {
       return;
     }
 
-    if (getTurnController(record.game) !== attachment.seat) {
+    if (getSheddingTurnController(record.game) !== attachment.seat) {
       this.sendError(ws, "not_controller", "It is not your decision.", revision);
       return;
     }
 
-    let game: BridgeGameState;
+    let game: SheddingGameState;
     try {
       game = applyClientCommand(record.game, command);
     } catch {
@@ -478,15 +476,15 @@ export class BridgeRoom extends DurableObject<Env> {
     let record = source;
     let forcedSeat = forcedHumanSeat;
     const previousRevision = source.game?.revision;
-    const previousController = source.game ? getTurnController(source.game) : null;
+    const previousController = source.game ? getSheddingTurnController(source.game) : null;
 
     for (let step = 0; step < MAX_AUTOMATED_ACTIONS; step += 1) {
       const game = record.game;
-      if (!game || game.phase === "complete") {
+      if (!game || game.phase === "match_complete") {
         break;
       }
 
-      const controller = getTurnController(game);
+      const controller = getSheddingTurnController(game);
       if (!controller) {
         break;
       }
@@ -497,14 +495,12 @@ export class BridgeRoom extends DurableObject<Env> {
         break;
       }
 
-      const action = chooseBotAction(createViewerSnapshot(game, controller)) ?? createSafeFallbackAction(game);
+      const action = chooseSheddingBotAction(createSheddingViewerSnapshot(game, controller)) ?? createSafeFallbackAction(game);
       if (!action) {
         throw new BridgeRoomError("automation_failed", "Bridge automation could not find a legal action.");
       }
 
-      const nextGame = action.type === "call"
-        ? applyCall(game, action.call)
-        : playCard(game, action.cardId);
+      const nextGame = applySheddingAction(game, action);
       record = { ...record, game: nextGame, updatedAt: now };
       forcedSeat = undefined;
     }
@@ -513,7 +509,7 @@ export class BridgeRoom extends DurableObject<Env> {
     if (!game) {
       return record;
     }
-    if (game.phase === "complete") {
+    if (game.phase === "match_complete") {
       return {
         ...record,
         status: "finished",
@@ -523,7 +519,7 @@ export class BridgeRoom extends DurableObject<Env> {
       };
     }
 
-    const controller = getTurnController(game);
+    const controller = getSheddingTurnController(game);
     const stateDidNotAdvance = previousRevision === game.revision && previousController === controller;
     return {
       ...record,
@@ -557,8 +553,6 @@ export class BridgeRoom extends DurableObject<Env> {
       status: record.status,
       revision: record.game?.revision ?? 0,
       players: {
-        north: createBotPlayerSnapshot("North Bot"),
-        east: createBotPlayerSnapshot("East Bot"),
         south: south
           ? createHumanPlayerSnapshot(south, connectedSeats.has("south"))
           : createOpenPlayerSnapshot(),
@@ -566,8 +560,8 @@ export class BridgeRoom extends DurableObject<Env> {
           ? createHumanPlayerSnapshot(west, connectedSeats.has("west"))
           : createOpenPlayerSnapshot(),
       },
-      bots: ["north", "east"],
-      view: record.game ? createViewerSnapshot(record.game, seat) : undefined,
+      bots: (["south", "west"] as const).filter((candidate) => Boolean(record.game && record.humans[candidate]?.leftAt)),
+      view: record.game ? createSheddingViewerSnapshot(record.game, seat) : undefined,
       deadlineAt: record.humanDeadlineAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -652,8 +646,15 @@ export class BridgeRoom extends DurableObject<Env> {
     return undefined;
   }
 
-  private readRoom(): Promise<BridgeRoomRecord | undefined> {
-    return this.ctx.storage.get<BridgeRoomRecord>(ROOM_STORAGE_KEY);
+  private async readRoom(): Promise<BridgeRoomRecord | undefined> {
+    const record = await this.ctx.storage.get<BridgeRoomRecord>(ROOM_STORAGE_KEY);
+    if (record) return record;
+
+    // Contract-Bridge rooms are incompatible with the two-player shedding engine.
+    // They were short-lived, so clear the legacy payload instead of attempting a lossy migration.
+    const legacy = await this.ctx.storage.get(LEGACY_ROOM_STORAGE_KEY);
+    if (legacy !== undefined) await this.ctx.storage.delete(LEGACY_ROOM_STORAGE_KEY);
+    return undefined;
   }
 
   private writeRoom(record: BridgeRoomRecord): Promise<void> {
@@ -869,23 +870,27 @@ function unwrapBridgeRpcResult<T>(result: BridgeRpcResult<T>): T {
   throw new BridgeRoomError(result.error.code, result.error.message);
 }
 
-function applyClientCommand(game: BridgeGameState, command: BridgeClientCommand): BridgeGameState {
-  return command.type === "call"
-    ? applyCall(game, command.call as Call)
-    : playCard(game, command.cardId as CardId);
+function applyClientCommand(game: SheddingGameState, command: BridgeClientCommand): SheddingGameState {
+  const action: SheddingAction = command.type === "play_cards"
+    ? {
+        type: "play_cards",
+        cardIds: command.cardIds,
+        ...(command.declaredSuit ? { declaredSuit: command.declaredSuit } : {}),
+      }
+    : { type: command.type };
+  return applySheddingAction(game, action);
 }
 
-function createSafeFallbackAction(game: BridgeGameState): ReturnType<typeof chooseBotAction> {
-  if (game.phase === "auction") {
-    const legalCalls = getLegalCalls(game);
-    const pass = legalCalls.find((call) => call.type === "pass");
-    const call = pass ?? legalCalls[0];
-    return call ? { type: "call", call } : null;
+function createSafeFallbackAction(game: SheddingGameState): SheddingAction | null {
+  if (game.phase === "round_complete") {
+    return { type: "next_round" };
   }
 
-  if (game.phase === "play") {
-    const cardId = getLegalCardIds(game)[0];
-    return cardId ? { type: "play_card", cardId } : null;
+  if (game.phase === "playing") {
+    const cardId = getLegalSheddingCardIds(game)[0];
+    if (!cardId) return { type: "draw_card" };
+    const declaredSuit = cardId.endsWith("J") ? "clubs" : undefined;
+    return { type: "play_cards", cardIds: [cardId], ...(declaredSuit ? { declaredSuit } : {}) };
   }
 
   return null;
@@ -908,10 +913,6 @@ function createHumanPlayerSnapshot(player: HumanPlayerRecord, connected: boolean
   };
 }
 
-function createBotPlayerSnapshot(displayName: string): BridgePlayerSnapshot {
-  return { kind: "bot", displayName, connected: true, left: false };
-}
-
 function createOpenPlayerSnapshot(): BridgePlayerSnapshot {
   return { kind: "open", displayName: "Waiting for player", connected: false, left: false };
 }
@@ -920,11 +921,6 @@ function getHumanPlayers(record: BridgeRoomRecord): HumanPlayerRecord[] {
   return [record.humans.south, record.humans.west].filter(
     (player): player is HumanPlayerRecord => Boolean(player),
   );
-}
-
-function createBoardNumber(): number {
-  const bytes = crypto.getRandomValues(new Uint8Array(1));
-  return (bytes[0] % 16) + 1;
 }
 
 function requireRoomCode(value: string | undefined): string {

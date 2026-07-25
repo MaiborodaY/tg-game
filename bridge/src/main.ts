@@ -1,25 +1,5 @@
 import "./styles.css";
 
-import { chooseAiCall, chooseBotAction, highCardPoints } from "./ai/index.ts";
-import {
-  BID_LEVELS,
-  SEATS,
-  STRAINS,
-  applyCall,
-  createGame,
-  createViewerSnapshot,
-  getTurnController,
-  partnershipOf,
-  playCard,
-  type BidLevel,
-  type BridgeGameState,
-  type BridgeResult,
-  type Call,
-  type CardId,
-  type Seat,
-  type Strain,
-  type ViewerSnapshot,
-} from "./game/index.ts";
 import { parseBridgeLaunch } from "./launch.ts";
 import {
   createBridgeNetworkClient,
@@ -28,70 +8,72 @@ import {
 } from "./network/client.ts";
 import {
   createBridgeCommandId,
-  type BridgeRoomPlayerSummary,
   type BridgeRoomSession,
   type BridgeRoomSnapshot,
 } from "./network/protocol.ts";
-import { setupTelegramBridge } from "./telegram.ts";
 import {
-  SEAT_LABELS,
-  STRAIN_LABELS,
-  SUIT_SYMBOLS,
-  callKey,
-  callsEqual,
-  deterministicBotDelay,
-  escapeHtml,
-  formatCall,
-  formatCard,
-  formatContract,
-  formatResultTitle,
-  formatSignedScore,
-  formatVulnerability,
-  getSeatsByPosition,
-  groupCardsBySuit,
-  isRedStrain,
-} from "./ui/format.ts";
+  SHEDDING_SUITS,
+  applySheddingAction,
+  chooseSheddingBotAction,
+  createSheddingGame,
+  createSheddingViewerSnapshot,
+  getSheddingCard,
+  getSheddingTurnController,
+  otherSheddingSeat,
+  type SheddingAction,
+  type SheddingCardId,
+  type SheddingGameState,
+  type SheddingSeat,
+  type SheddingSuit,
+  type SheddingViewerSnapshot,
+} from "./shedding/index.ts";
+import { setupTelegramBridge } from "./telegram.ts";
 import { activateModalFocusTrap } from "./ui/modal.ts";
 
 type Screen = "home" | "solo" | "pvp";
-type ModalKind = "help" | "auction" | "result" | null;
+type ModalKind = "help" | "match" | null;
 type NetworkStatus = "idle" | "connecting" | "online" | "offline";
+
+const SUIT_META: Readonly<Record<SheddingSuit, { symbol: string; label: string }>> = Object.freeze({
+  clubs: { symbol: "♣", label: "трефы" },
+  diamonds: { symbol: "♦", label: "бубны" },
+  hearts: { symbol: "♥", label: "червы" },
+  spades: { symbol: "♠", label: "пики" },
+});
 
 const appRoot = document.querySelector<HTMLElement>("#app");
 if (!appRoot) throw new Error("Bridge root element is missing.");
-const app: HTMLElement = appRoot;
+const app = appRoot;
 
 const telegram = setupTelegramBridge();
 const launch = parseBridgeLaunch(window.location.href, telegram.startParam);
 const developmentIdentity = getDevelopmentIdentity();
-const network = createBridgeNetworkClient<ViewerSnapshot>({
+const network = createBridgeNetworkClient<SheddingViewerSnapshot>({
   initData: () => telegram.initData,
   developmentIdentity,
 });
 
 let screen: Screen = "home";
-let soloGame: BridgeGameState | null = null;
-let soloBoardNumber = randomBoardNumber();
-let soloFastForward = false;
+let soloGame: SheddingGameState | null = null;
 let roomInput = launch.roomCode ?? "";
-let pvpRoom: BridgeRoomSession<ViewerSnapshot> | null = null;
-let pvpSnapshot: BridgeRoomSnapshot<ViewerSnapshot> | null = null;
+let pvpRoom: BridgeRoomSession<SheddingViewerSnapshot> | null = null;
+let pvpSnapshot: BridgeRoomSnapshot<SheddingViewerSnapshot> | null = null;
 let pvpConnection: BridgeRoomConnection | null = null;
 let pvpReconnectTimer: number | null = null;
 let reconnectAttempt = 0;
 let intentionalSocketClose = false;
 let networkStatus: NetworkStatus = "idle";
 let busy = false;
+let commandPending = false;
 let modal: ModalKind = null;
 let modalCleanup: (() => void) | null = null;
-let selectedLevel: BidLevel = 1;
-let selectedStrain: Strain = "clubs";
-let selectedCall: Call | null = null;
-let selectedCard: CardId | null = null;
+let selectedCards: SheddingCardId[] = [];
+let selectedSuit: SheddingSuit = "hearts";
 let botTimer: number | null = null;
 let toastTimer: number | null = null;
 let toastMessage = "";
 let deadlineTicker: number | null = null;
+let presentedMatchRevision = -1;
 
 app.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action]") : null;
@@ -104,6 +86,16 @@ app.addEventListener("input", (event) => {
   if (target instanceof HTMLInputElement && target.dataset.role === "room-code") {
     roomInput = target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     target.value = roomInput;
+    const joinButton = app.querySelector<HTMLButtonElement>("[data-action='join-room']");
+    if (joinButton) joinButton.disabled = busy || !network.authenticated || roomInput.length !== 6;
+  }
+});
+
+app.addEventListener("keydown", (event) => {
+  const target = event.target;
+  if (event.key === "Enter" && target instanceof HTMLInputElement && target.dataset.role === "room-code" && roomInput.length === 6) {
+    event.preventDefault();
+    void joinPvpRoom();
   }
 });
 
@@ -131,7 +123,7 @@ async function handleAction(action: string, target: HTMLElement): Promise<void> 
     return;
   }
   if (action === "start-solo") {
-    startSoloBoard();
+    startSoloMatch();
     return;
   }
   if (action === "create-room") {
@@ -151,13 +143,8 @@ async function handleAction(action: string, target: HTMLElement): Promise<void> 
     render();
     return;
   }
-  if (action === "open-auction") {
-    modal = "auction";
-    render();
-    return;
-  }
-  if (action === "open-result") {
-    modal = "result";
+  if (action === "open-match") {
+    modal = "match";
     render();
     return;
   }
@@ -166,33 +153,24 @@ async function handleAction(action: string, target: HTMLElement): Promise<void> 
     render();
     return;
   }
-  if (action === "select-level") {
-    selectBidLevel(Number(target.dataset.level));
+  if (action === "toggle-card") {
+    toggleCard(target.dataset.card ?? "");
     return;
   }
-  if (action === "select-strain") {
-    selectBidStrain(target.dataset.strain);
+  if (action === "select-suit") {
+    selectSuit(target.dataset.suit);
     return;
   }
-  if (action === "select-call") {
-    selectSpecialCall(target.dataset.call);
+  if (action === "play-selected") {
+    await submitPlay();
     return;
   }
-  if (action === "confirm-call") {
-    await submitSelectedCall();
+  if (action === "draw-card") {
+    await submitSimpleAction({ type: "draw_card" });
     return;
   }
-  if (action === "select-card") {
-    selectCard(target.dataset.card ?? "");
-    return;
-  }
-  if (action === "clear-card") {
-    selectedCard = null;
-    render();
-    return;
-  }
-  if (action === "confirm-card") {
-    await submitSelectedCard();
+  if (action === "next-round") {
+    await submitSimpleAction({ type: "next_round" });
     return;
   }
   if (action === "copy-code") {
@@ -209,38 +187,31 @@ async function handleAction(action: string, target: HTMLElement): Promise<void> 
   }
   if (action === "new-solo") {
     modal = null;
-    startSoloBoard(soloBoardNumber + 1);
+    startSoloMatch();
     return;
   }
   if (action === "new-pvp") {
     modal = null;
     await leavePvpRoom(false);
     await createPvpRoom();
-    return;
-  }
-  if (action === "fast-forward") {
-    soloFastForward = true;
-    clearBotTimer();
-    scheduleSoloBots();
-    render();
   }
 }
 
-function startSoloBoard(boardNumber = soloBoardNumber): void {
+function startSoloMatch(): void {
   clearBotTimer();
-  soloBoardNumber = ((Math.max(1, boardNumber) - 1) % 16) + 1;
-  soloGame = createGame({
+  soloGame = createSheddingGame({
     seed: createLocalSeed(),
-    boardNumber: soloBoardNumber,
+    dealer: Math.random() < 0.5 ? "south" : "west",
+    targetScore: 125,
   });
   screen = "solo";
-  soloFastForward = false;
   modal = null;
+  presentedMatchRevision = -1;
   resetSelection();
   telegram.setGameInProgress(true);
   telegram.haptic("medium");
   render();
-  scheduleSoloBots();
+  scheduleSoloBot();
 }
 
 async function createPvpRoom(): Promise<void> {
@@ -281,22 +252,24 @@ async function joinPvpRoom(): Promise<void> {
 }
 
 async function restoreCurrentRoom(): Promise<void> {
-  if (!network.authenticated || import.meta.env.DEV) return;
+  if (!network.authenticated || import.meta.env.DEV || screen !== "home") return;
   try {
     const room = await network.getCurrentRoom();
     if (room) await enterPvpRoom(room);
   } catch {
-    // A stale Telegram session must not prevent local solo play.
+    // A stale Telegram session must not prevent solo play.
   }
 }
 
-async function enterPvpRoom(room: BridgeRoomSession<ViewerSnapshot>): Promise<void> {
+async function enterPvpRoom(room: BridgeRoomSession<SheddingViewerSnapshot>): Promise<void> {
   clearBotTimer();
   screen = "pvp";
   pvpRoom = room;
   pvpSnapshot = room.snapshot;
   roomInput = room.roomCode;
   modal = null;
+  commandPending = false;
+  presentedMatchRevision = -1;
   resetSelection();
   telegram.setGameInProgress(room.snapshot.status !== "finished");
   render();
@@ -317,28 +290,24 @@ async function connectPvpSocket(): Promise<void> {
         render();
       },
       onMessage: (message) => {
+        commandPending = false;
         if (message.type === "error") {
-          if (message.code !== "stale_revision") showToast(message.message);
+          if (message.code !== "stale_revision") showToast(getServerErrorMessage(message.code, message.message));
+          render();
           return;
         }
+        const previousPhase = pvpSnapshot?.view?.phase;
         pvpSnapshot = message.snapshot;
         if (pvpRoom) pvpRoom = { ...pvpRoom, snapshot: message.snapshot };
         resetSelection();
         telegram.setGameInProgress(message.snapshot.status !== "finished");
         networkStatus = "online";
+        presentPhaseChange(previousPhase, message.snapshot.view);
         render();
-        if (message.snapshot.status === "finished") {
-          telegram.haptic("success");
-          window.setTimeout(() => {
-            if (screen === "pvp" && pvpSnapshot?.status === "finished") {
-              modal = "result";
-              render();
-            }
-          }, 500);
-        }
       },
       onClose: () => {
         pvpConnection = null;
+        commandPending = false;
         if (intentionalSocketClose || screen !== "pvp") return;
         networkStatus = "offline";
         render();
@@ -346,6 +315,7 @@ async function connectPvpSocket(): Promise<void> {
       },
       onError: (error) => {
         networkStatus = "offline";
+        commandPending = false;
         showToast(getBridgeNetworkErrorMessage(error));
         render();
       },
@@ -357,6 +327,7 @@ async function connectPvpSocket(): Promise<void> {
     pvpConnection = connection;
   } catch (error) {
     networkStatus = "offline";
+    commandPending = false;
     showToast(getBridgeNetworkErrorMessage(error));
     render();
     schedulePvpReconnect();
@@ -381,6 +352,7 @@ function closePvpSocket(intentional: boolean): void {
   }
   pvpConnection?.close();
   pvpConnection = null;
+  commandPending = false;
   if (intentional) networkStatus = "idle";
 }
 
@@ -404,8 +376,8 @@ async function leavePvpRoom(goHome = true): Promise<void> {
 }
 
 async function returnHome(): Promise<void> {
-  if (screen === "solo" && soloGame?.phase !== "complete") {
-    if (!window.confirm("Покинуть незавершённую сдачу?")) return;
+  if (screen === "solo" && soloGame?.phase !== "match_complete") {
+    if (!window.confirm("Покинуть незавершённый матч?")) return;
   }
   if (screen === "pvp") {
     if (pvpSnapshot?.status === "playing" && !window.confirm("Покинуть сетевой стол? ИИ продолжит игру за вас.")) return;
@@ -420,129 +392,130 @@ async function returnHome(): Promise<void> {
   render();
 }
 
-function scheduleSoloBots(): void {
+function scheduleSoloBot(): void {
   clearBotTimer();
-  if (screen !== "solo" || !soloGame || soloGame.phase === "complete") {
-    if (soloGame?.phase === "complete") {
-      window.setTimeout(() => {
-        if (screen === "solo" && soloGame?.phase === "complete") {
-          modal = "result";
-          render();
-        }
-      }, 450);
-    }
+  if (screen !== "solo" || !soloGame || soloGame.phase === "match_complete") {
+    if (soloGame?.phase === "match_complete") presentMatchResult(soloGame.revision);
     return;
   }
 
-  const controller = getTurnController(soloGame);
-  if (controller === "south") return;
+  const controller = getSheddingTurnController(soloGame);
+  if (controller !== "west") return;
   const revision = soloGame.revision;
-  const delay = soloFastForward ? 35 : deterministicBotDelay(revision);
+  const delay = soloGame.phase === "round_complete" ? 1_500 : deterministicBotDelay(revision);
   botTimer = window.setTimeout(() => {
     botTimer = null;
     if (!soloGame || soloGame.revision !== revision || screen !== "solo") return;
-    const activeController = getTurnController(soloGame);
+    const activeController = getSheddingTurnController(soloGame);
     if (!activeController) return;
-    const action = chooseBotAction(createViewerSnapshot(soloGame, activeController));
+    const action = chooseSheddingBotAction(createSheddingViewerSnapshot(soloGame, activeController));
     if (!action) {
-      showToast("ИИ не смог выбрать легальное действие.");
+      showToast("Крупье задумался и не смог выбрать ход.");
       return;
     }
-    soloGame = action.type === "call"
-      ? applyCall(soloGame, action.call)
-      : playCard(soloGame, action.cardId);
+    const previousPhase = soloGame.phase;
+    soloGame = applySheddingAction(soloGame, action);
     resetSelection();
+    presentPhaseChange(previousPhase, createSheddingViewerSnapshot(soloGame, "south"));
     render();
-    scheduleSoloBots();
+    scheduleSoloBot();
   }, delay);
 }
 
-function selectBidLevel(value: number): void {
-  if (!BID_LEVELS.includes(value as BidLevel)) return;
-  selectedLevel = value as BidLevel;
-  selectCurrentBidIfLegal();
-}
-
-function selectBidStrain(value: string | undefined): void {
-  if (!STRAINS.includes(value as Strain)) return;
-  selectedStrain = value as Strain;
-  selectCurrentBidIfLegal();
-}
-
-function selectCurrentBidIfLegal(): void {
+function toggleCard(cardId: string): void {
   const view = getCurrentView();
-  if (!view) return;
-  const desired: Call = { type: "bid", level: selectedLevel, strain: selectedStrain };
-  selectedCall = view.legalCalls.find((call) => callsEqual(call, desired)) ?? null;
+  if (!view || view.phase !== "playing" || view.controller !== view.viewerSeat || commandPending) return;
+  let normalized: SheddingCardId;
+  try {
+    normalized = getSheddingCard(cardId).id;
+  } catch {
+    return;
+  }
+  const hand = view.hands[view.viewerSeat] ?? [];
+  if (!hand.includes(normalized)) return;
+
+  if (selectedCards.includes(normalized)) {
+    const next = selectedCards.filter((candidate) => candidate !== normalized);
+    selectedCards = orderSelectionWithLegalLead(next, view.legalCardIds);
+    if (next.length > 0 && selectedCards.length === 0) showToast("Оставьте первой карту, которой можно сходить.");
+    telegram.haptic("light");
+    render();
+    return;
+  }
+
+  if (selectedCards.length === 0) {
+    if (!view.legalCardIds.includes(normalized)) return;
+    selectedCards = [normalized];
+  } else {
+    const selectedRank = getSheddingCard(selectedCards[0]).rank;
+    if (getSheddingCard(normalized).rank !== selectedRank) {
+      showToast("За один ход можно положить только карты одного достоинства.");
+      return;
+    }
+    selectedCards = orderSelectionWithLegalLead([...selectedCards, normalized], view.legalCardIds);
+  }
+
+  if (getSelectedRank() === 11) selectedSuit = choosePreferredSuit(hand, selectedCards);
   telegram.haptic("light");
   render();
 }
 
-function selectSpecialCall(type: string | undefined): void {
-  const view = getCurrentView();
-  if (!view || (type !== "pass" && type !== "double" && type !== "redouble")) return;
-  selectedCall = view.legalCalls.find((call) => call.type === type) ?? null;
+function selectSuit(value: string | undefined): void {
+  if (!SHEDDING_SUITS.includes(value as SheddingSuit) || getSelectedRank() !== 11) return;
+  selectedSuit = value as SheddingSuit;
   telegram.haptic("light");
   render();
 }
 
-async function submitSelectedCall(): Promise<void> {
-  if (!selectedCall || busy) return;
-  const call = selectedCall;
-  selectedCall = null;
+async function submitPlay(): Promise<void> {
+  if (selectedCards.length === 0 || commandPending) return;
+  const action: SheddingAction = {
+    type: "play_cards",
+    cardIds: [...selectedCards],
+    ...(getSelectedRank() === 11 ? { declaredSuit: selectedSuit } : {}),
+  };
+  await submitAction(action);
+}
+
+async function submitSimpleAction(action: Extract<SheddingAction, { type: "draw_card" | "next_round" }>): Promise<void> {
+  if (commandPending) return;
+  await submitAction(action);
+}
+
+async function submitAction(action: SheddingAction): Promise<void> {
+  const view = getCurrentView();
+  if (!view || view.controller !== view.viewerSeat) return;
   telegram.haptic("medium");
+
   if (screen === "solo" && soloGame) {
     try {
-      soloGame = applyCall(soloGame, call);
+      const previousPhase = soloGame.phase;
+      soloGame = applySheddingAction(soloGame, action);
       resetSelection();
+      presentPhaseChange(previousPhase, createSheddingViewerSnapshot(soloGame, "south"));
       render();
-      scheduleSoloBots();
+      scheduleSoloBot();
     } catch {
-      showToast("Эта заявка уже недоступна.");
+      showToast("Этот ход уже недоступен.");
     }
     return;
   }
-  if (screen === "pvp" && pvpSnapshot) {
-    sendPvpCommand({
-      commandId: createBridgeCommandId(),
-      expectedRevision: pvpSnapshot.revision,
-      type: "call",
-      call,
-    });
-  }
-}
 
-function selectCard(cardId: CardId): void {
-  const view = getCurrentView();
-  if (!view?.legalCardIds.includes(cardId)) return;
-  selectedCard = selectedCard === cardId ? null : cardId;
-  telegram.haptic("light");
-  render();
-}
-
-async function submitSelectedCard(): Promise<void> {
-  if (!selectedCard || busy) return;
-  const cardId = selectedCard;
-  selectedCard = null;
-  telegram.haptic("medium");
-  if (screen === "solo" && soloGame) {
-    try {
-      soloGame = playCard(soloGame, cardId);
-      resetSelection();
-      render();
-      scheduleSoloBots();
-    } catch {
-      showToast("Эту карту сейчас нельзя сыграть.");
-    }
-    return;
-  }
   if (screen === "pvp" && pvpSnapshot) {
-    sendPvpCommand({
-      commandId: createBridgeCommandId(),
-      expectedRevision: pvpSnapshot.revision,
-      type: "play_card",
-      cardId,
-    });
+    const command = action.type === "play_cards"
+      ? {
+          commandId: createBridgeCommandId(),
+          expectedRevision: pvpSnapshot.revision,
+          type: "play_cards" as const,
+          cardIds: [...action.cardIds],
+          ...(action.declaredSuit ? { declaredSuit: action.declaredSuit } : {}),
+        }
+      : {
+          commandId: createBridgeCommandId(),
+          expectedRevision: pvpSnapshot.revision,
+          type: action.type,
+        };
+    sendPvpCommand(command);
   }
 }
 
@@ -550,565 +523,541 @@ function sendPvpCommand(command: Parameters<BridgeRoomConnection["send"]>[0]): v
   if (!pvpConnection?.send(command)) {
     showToast("Соединение восстанавливается. Ход не отправлен.");
     schedulePvpReconnect();
+    return;
   }
+  commandPending = true;
+  resetSelection();
   render();
 }
 
 function resetSelection(): void {
-  selectedCall = null;
-  selectedCard = null;
-  const view = getCurrentView();
-  const firstBid = view?.legalCalls.find((call): call is Extract<Call, { type: "bid" }> => call.type === "bid");
-  if (firstBid) {
-    selectedLevel = firstBid.level;
-    selectedStrain = firstBid.strain;
-  }
+  selectedCards = [];
+  selectedSuit = "hearts";
 }
 
-function getCurrentView(): ViewerSnapshot | null {
-  if (screen === "solo" && soloGame) return createViewerSnapshot(soloGame, "south");
+function getCurrentView(): SheddingViewerSnapshot | null {
+  if (screen === "solo" && soloGame) return createSheddingViewerSnapshot(soloGame, "south");
   return pvpSnapshot?.view ?? null;
 }
 
 function render(): void {
   modalCleanup?.();
   modalCleanup = null;
-  updateDeadlineTicker();
-  app.innerHTML = screen === "home" ? renderHome() : renderGameShell();
+  app.innerHTML = `${screen === "home" ? renderHome() : renderGameShell()}${renderModal()}${renderToast()}`;
   if (modal) {
     modalCleanup = activateModalFocusTrap(app, () => {
       modal = null;
       render();
     });
   }
+  updateDeadlineTicker();
 }
 
 function renderHome(): string {
+  const pvpAvailable = network.authenticated;
+  const returnButton = launch.returnTo
+    ? `<button class="home-return-button" type="button" data-action="back-to-games">← Застольные игры</button>`
+    : "";
   return `
-    <main class="bridge-app home-screen">
-      <div class="home-content">
-        <div class="home-toolbar">
-          ${launch.returnTo === "tower-defense" ? `
-            <button class="home-return-button" type="button" data-action="back-to-games">
-              <span aria-hidden="true">‹</span> К выбору игр
-            </button>
-          ` : ""}
-          <button class="round-button" type="button" data-action="open-help" aria-label="Правила бриджа">?</button>
+    <main class="home-screen">
+      <header class="home-topbar">
+        ${returnButton}
+        <button class="icon-button" type="button" data-action="open-help" aria-label="Правила игры">?</button>
+      </header>
+
+      <section class="hero-card" aria-labelledby="game-title">
+        <div class="hero-card__glow" aria-hidden="true"></div>
+        <div class="hero-emblem" aria-hidden="true">
+          <span class="hero-emblem__card hero-emblem__card--left">7<span>♥</span></span>
+          <span class="hero-emblem__card hero-emblem__card--center">J<span>♠</span></span>
+          <span class="hero-emblem__card hero-emblem__card--right">8<span>♦</span></span>
         </div>
-        <header class="brand-card">
-          <div class="brand-emblem" aria-hidden="true">
-            <div class="brand-emblem__cards">
-              <span class="brand-emblem__card"></span>
-              <span class="brand-emblem__card"></span>
-              <span class="brand-emblem__suit">♣</span>
-            </div>
+        <p class="eyebrow">Таверна «Крысиная нора»</p>
+        <h1 id="game-title">Дворовый Бридж</h1>
+        <p class="hero-copy">Сбрасывай карты, устраивай серии и первым набери <strong>125 очков</strong>.</p>
+        <div class="rule-ribbon" aria-label="Краткие правила">
+          <span><b>5</b> карт</span>
+          <span><b>36</b> в колоде</span>
+          <span><b>2</b> игрока</span>
+        </div>
+      </section>
+
+      <section class="mode-grid" aria-label="Выбор режима">
+        <button class="mode-card mode-card--solo" type="button" data-action="start-solo">
+          <span class="mode-card__icon" aria-hidden="true">🐀</span>
+          <span class="mode-card__body"><b>Против крупье</b><small>Быстрый матч с умным ИИ</small></span>
+          <span class="mode-card__arrow" aria-hidden="true">›</span>
+        </button>
+
+        <div class="pvp-card ${pvpAvailable ? "" : "pvp-card--locked"}">
+          <div class="pvp-card__heading">
+            <span class="mode-card__icon" aria-hidden="true">⚔</span>
+            <span><b>Стол на двоих</b><small>${pvpAvailable ? "Позовите друга по коду" : "Откройте игру внутри Telegram"}</small></span>
           </div>
-          <p class="brand-kicker">Таверна · Крысиная нора</p>
-          <h1 class="brand-title">Бридж</h1>
-          <p class="brand-subtitle">Классическая карточная игра на четыре места. Торгуйтесь, назначайте контракт и берите взятки.</p>
-        </header>
-        <section class="mode-grid" aria-label="Режимы игры">
-          <button class="mode-card mode-card--primary" type="button" data-action="start-solo">
-            <span class="mode-card__icon" aria-hidden="true">♠</span>
-            <span class="mode-card__copy">
-              <span class="mode-card__title">Против компьютера</span>
-              <span class="mode-card__description">Полная сдача · ИИ клубного новичка</span>
-            </span>
-            <span class="mode-card__arrow" aria-hidden="true">›</span>
+          <button class="primary-button" type="button" data-action="create-room" ${busy || !pvpAvailable ? "disabled" : ""}>
+            ${busy ? "Открываем стол…" : "Создать стол"}
           </button>
-          <button class="mode-card" type="button" data-action="create-room" ${busy ? "disabled" : ""}>
-            <span class="mode-card__icon" aria-hidden="true">♦</span>
-            <span class="mode-card__copy">
-              <span class="mode-card__title">${busy ? "Создаём стол…" : "Создать приватный стол"}</span>
-              <span class="mode-card__description">Вы и соперник · у каждого ИИ-партнёр</span>
-            </span>
-            <span class="mode-card__arrow" aria-hidden="true">›</span>
-          </button>
-        </section>
-        <div class="join-panel">
-          <label class="sr-only" for="room-code">Код приватного стола</label>
-          <input
-            id="room-code"
-            class="room-input"
-            data-role="room-code"
-            inputmode="text"
-            autocomplete="off"
-            maxlength="6"
-            placeholder="Код стола"
-            value="${escapeHtml(roomInput)}"
-          />
-          <button class="primary-button" type="button" data-action="join-room" ${busy ? "disabled" : ""}>Войти</button>
+          <div class="join-row">
+            <label class="room-code-field">
+              <span class="sr-only">Код стола</span>
+              <input data-role="room-code" inputmode="text" autocomplete="off" maxlength="6" value="${escapeHtml(roomInput)}" placeholder="КОД СТОЛА" ${busy || !pvpAvailable ? "disabled" : ""} />
+            </label>
+            <button class="secondary-button" type="button" data-action="join-room" ${busy || !pvpAvailable || roomInput.length !== 6 ? "disabled" : ""}>Войти</button>
+          </div>
         </div>
-        <p class="brand-subtitle" style="margin:0 auto;text-align:center">
-          Solo работает в обычном браузере. Сетевой режим использует вход Telegram.
-        </p>
-      </div>
-      ${renderToast()}
-      ${modal === "help" ? renderHelpModal() : ""}
-    </main>
-  `;
+      </section>
+
+      <button class="rules-link" type="button" data-action="open-help"><span>ⓘ</span> Как играть и что делают карты</button>
+      <p class="home-footnote">Это народный вариант Бриджа на сброс карт, а не спортивный контрактный бридж.</p>
+    </main>`;
 }
 
 function renderGameShell(): string {
   const view = getCurrentView();
-  const viewerSeat = view?.viewerSeat ?? pvpRoom?.seat ?? "south";
-  const waiting = screen === "pvp" && (!view || pvpSnapshot?.status === "waiting");
-  const topPrimary = waiting
-    ? `Стол ${escapeHtml(pvpRoom?.roomCode ?? "—")}`
-    : view
-      ? formatContract(view.contract)
-      : "Бридж";
-  const topSecondary = waiting
-    ? "Ожидаем соперника"
-    : view
-      ? `Сдача ${view.boardNumber} · ${formatVulnerability(view.vulnerability)}`
-      : "Приватная игра";
-
+  const roomCode = pvpRoom?.roomCode;
   return `
-    <main class="bridge-app game-shell">
+    <main class="game-shell">
       <header class="game-topbar">
-        <button class="round-button" type="button" data-action="back-home" aria-label="На главную">‹</button>
-        <div class="game-summary">
-          <span class="game-summary__primary">${escapeHtml(topPrimary)}</span>
-          <span class="game-summary__secondary">${escapeHtml(topSecondary)}</span>
+        <button class="icon-button icon-button--back" type="button" data-action="back-home" aria-label="Назад">←</button>
+        <div class="game-title-block">
+          <b>Дворовый Бридж</b>
+          <span>${screen === "solo" ? "Против крупье" : roomCode ? `Стол ${escapeHtml(roomCode)}` : "Сетевой стол"}</span>
         </div>
-        <button class="round-button" type="button" data-action="${view ? "open-auction" : "open-help"}" aria-label="${view ? "История торговли" : "Правила"}">${view ? "☷" : "?"}</button>
+        ${screen === "pvp" ? renderNetworkBadge() : `<span class="mode-badge">ИИ</span>`}
+        <button class="icon-button" type="button" data-action="open-help" aria-label="Правила игры">?</button>
       </header>
-      <section class="table-stage" aria-label="Карточный стол">
-        ${waiting ? renderWaitingTable(viewerSeat) : view ? renderTable(view) : renderWaitingTable(viewerSeat)}
-      </section>
-      <section class="control-dock" aria-live="polite">
-        ${waiting ? renderRoomWaitingDock() : view ? renderControlDock(view) : renderRoomWaitingDock()}
-      </section>
-      ${networkStatus === "offline" && screen === "pvp" ? `<div class="network-banner">Связь потеряна — переподключаемся к столу…</div>` : ""}
-      ${renderToast()}
-      ${modal === "help" ? renderHelpModal() : ""}
-      ${modal === "auction" && view ? renderAuctionModal(view) : ""}
-      ${modal === "result" && view?.result ? renderResultModal(view) : ""}
-    </main>
-  `;
+      ${view ? renderScoreboard(view) : renderWaitingScoreboard()}
+      ${view ? renderTable(view) : renderWaitingTable()}
+      ${view ? renderControlDock(view) : renderWaitingDock()}
+    </main>`;
 }
 
-function renderWaitingTable(viewerSeat: Seat): string {
-  const players = getPlayerSummaries(viewerSeat);
-  const positions = getSeatsByPosition(viewerSeat);
+function renderScoreboard(view: SheddingViewerSnapshot): string {
+  const viewer = view.viewerSeat;
+  const opponent = otherSheddingSeat(viewer);
+  const viewerScore = view.scores[viewer];
+  const opponentScore = view.scores[opponent];
   return `
-    <div class="felt-table">
-      <div class="felt-watermark" aria-hidden="true">♣</div>
-      ${(["top", "left", "right", "bottom"] as const).map((position) => (
-        renderSeat(positions[position], position, null, players[positions[position]], 13)
-      )).join("")}
-      <div class="trick-center" aria-hidden="true"></div>
-      <div class="table-status">Код стола уже можно отправить сопернику</div>
-    </div>
-  `;
+    <section class="scoreboard" aria-label="Счёт матча">
+      ${renderScorePlayer(opponent, opponentScore, view.targetScore, false, view)}
+      <div class="round-medallion"><small>раунд</small><b>${view.round}</b><span>до ${view.targetScore}</span></div>
+      ${renderScorePlayer(viewer, viewerScore, view.targetScore, true, view)}
+    </section>`;
 }
 
-function renderTable(view: ViewerSnapshot): string {
-  const positions = getSeatsByPosition(view.viewerSeat);
-  const players = getPlayerSummaries(view.viewerSeat);
-  const activeHandSeat = getDisplayedHandSeat(view);
-  const hand = view.hands[activeHandSeat] ?? [];
-  const legalCards = new Set(view.legalCardIds);
-  const tableStatus = getTableStatus(view);
-  return `
-    <div class="felt-table">
-      <div class="felt-watermark" aria-hidden="true">♣</div>
-      ${(["top", "left", "right", "bottom"] as const).map((position) => {
-        const seat = positions[position];
-        return renderSeat(seat, position, view, players[seat], view.handCounts[seat]);
-      }).join("")}
-      <div class="table-status">${escapeHtml(tableStatus)}</div>
-      ${renderTrick(view)}
-      ${renderDummy(view)}
-      <div class="hand-zone">
-        <div class="player-hand" style="--hand-count:${Math.max(1, hand.length)}">
-          ${hand.map((cardId, index) => renderHandCard(
-            cardId,
-            index,
-            hand.length,
-            legalCards.has(cardId),
-            selectedCard === cardId,
-          )).join("")}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderSeat(
-  seat: Seat,
-  position: "top" | "left" | "right" | "bottom",
-  view: ViewerSnapshot | null,
-  player: BridgeRoomPlayerSummary,
-  cardCount: number,
+function renderScorePlayer(
+  seat: SheddingSeat,
+  score: number,
+  target: number,
+  isViewer: boolean,
+  view: SheddingViewerSnapshot,
 ): string {
-  const active = view?.currentSeat === seat;
-  const initials = player.displayName.trim().slice(0, 1).toUpperCase() || SEAT_LABELS[seat].slice(0, 1);
-  const botBadge = player.kind === "bot" ? `<span class="seat__bot" aria-label="Компьютер">AI</span>` : "";
-  const meta = `${SEAT_LABELS[seat]} · ${cardCount} карт`;
+  const percent = Math.min(100, Math.round(score / target * 100));
+  const isActive = view.controller === seat;
   return `
-    <div class="seat seat--${position}${active ? " seat--active" : ""}${!player.connected ? " seat--offline" : ""}">
-      <span class="seat__avatar">${escapeHtml(initials)}${botBadge}</span>
-      <span class="seat__copy">
-        <span class="seat__name">${escapeHtml(player.displayName)}</span>
-        <span class="seat__meta">${escapeHtml(meta)}</span>
-      </span>
-    </div>
-  `;
+    <div class="score-player ${isViewer ? "score-player--you" : ""} ${isActive ? "score-player--active" : ""}">
+      <div class="score-player__line"><span>${escapeHtml(getPlayerName(seat))}</span><b>${score}</b></div>
+      <div class="score-track"><i style="width:${percent}%"></i></div>
+    </div>`;
 }
 
-function renderTrick(view: ViewerSnapshot): string {
-  const positions = getSeatsByPosition(view.viewerSeat);
-  const positionBySeat = Object.fromEntries(
-    Object.entries(positions).map(([position, seat]) => [seat, position]),
-  ) as Record<Seat, "top" | "left" | "right" | "bottom">;
+function renderWaitingScoreboard(): string {
   return `
-    <div class="trick-center" aria-label="Текущая взятка">
-      ${(view.currentTrick?.plays ?? []).map((play) => `
-        <div class="trick-card trick-card--${positionBySeat[play.seat]}">
-          ${renderCardFace(play.cardId)}
+    <section class="scoreboard scoreboard--waiting" aria-label="Ожидание соперника">
+      <div class="score-player"><div class="score-player__line"><span>Соперник</span><b>—</b></div><div class="score-track"></div></div>
+      <div class="round-medallion"><small>матч</small><b>125</b><span>очков</span></div>
+      <div class="score-player score-player--you"><div class="score-player__line"><span>${escapeHtml(getPlayerName(pvpRoom?.seat ?? "south"))}</span><b>0</b></div><div class="score-track"></div></div>
+    </section>`;
+}
+
+function renderTable(view: SheddingViewerSnapshot): string {
+  const opponent = otherSheddingSeat(view.viewerSeat);
+  const opponentActive = view.controller === opponent;
+  const viewerActive = view.controller === view.viewerSeat;
+  const opponentCards = view.hands[opponent] ?? [];
+  return `
+    <section class="card-table ${viewerActive ? "card-table--your-turn" : ""}" aria-label="Карточный стол">
+      <div class="table-vignette" aria-hidden="true"></div>
+      <div class="opponent-zone ${opponentActive ? "player-zone--active" : ""}">
+        <div class="player-plaque">
+          <span class="player-avatar" aria-hidden="true">${screen === "solo" ? "🐀" : "♟"}</span>
+          <span><b>${escapeHtml(getPlayerName(opponent))}</b><small>${getSeatCaption(opponent, view)}</small></span>
+          <em>${view.handCounts[opponent]} ${pluralizeCards(view.handCounts[opponent])}</em>
         </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-function renderDummy(view: ViewerSnapshot): string {
-  const dummy = view.contract?.dummy;
-  if (!dummy || !view.openingLeadPlayed || !view.hands[dummy] || view.phase === "complete") return "";
-  const groups = groupCardsBySuit(view.hands[dummy] ?? []);
-  return `
-    <div class="dummy-layout" aria-label="Открытая рука dummy">
-      ${(["spades", "hearts", "diamonds", "clubs"] as const).map((suit) => `
-        <div class="dummy-suit">
-          <span class="dummy-suit__symbol${suit === "hearts" || suit === "diamonds" ? " dummy-suit__symbol--red" : ""}">${SUIT_SYMBOLS[suit]}</span>
-          <span class="dummy-suit__ranks">${escapeHtml(groups[suit].join(" ") || "—")}</span>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-function renderHandCard(
-  cardId: CardId,
-  index: number,
-  count: number,
-  legal: boolean,
-  selected: boolean,
-): string {
-  const rotation = (index - (count - 1) / 2) * Math.min(1.25, 13 / Math.max(1, count));
-  const zIndex = index + 1;
-  return `
-    <button
-      class="hand-card${legal ? " hand-card--legal" : ""}${selected ? " hand-card--selected" : ""}"
-      type="button"
-      data-action="select-card"
-      data-card="${escapeHtml(cardId)}"
-      style="--card-rotation:${rotation.toFixed(2)}deg;z-index:${zIndex}"
-      ${legal ? "" : "disabled"}
-      aria-pressed="${selected}"
-      aria-label="${escapeHtml(formatCard(cardId).spoken)}"
-    >${renderCardFace(cardId)}</button>
-  `;
-}
-
-function renderCardFace(cardId: CardId): string {
-  const card = formatCard(cardId);
-  return `
-    <span class="card-face${card.red ? " card-face--red" : ""}">
-      <span class="card-corner">${escapeHtml(card.rank)}<span>${card.suit}</span></span>
-      <span class="card-center-suit">${card.suit}</span>
-    </span>
-  `;
-}
-
-function renderControlDock(view: ViewerSnapshot): string {
-  if (view.phase === "complete") {
-    return `
-      <div class="dock-header">
-        <div class="dock-title">
-          <span class="dock-title__primary">${escapeHtml(view.result ? formatResultTitle(view.result) : "Сдача завершена")}</span>
-          <span class="dock-title__secondary">Официальный счёт одной сдачи</span>
+        <div class="opponent-hand" aria-label="У соперника ${view.handCounts[opponent]} ${pluralizeCards(view.handCounts[opponent])}">
+          ${view.phase === "match_complete" && opponentCards.length > 0
+            ? opponentCards.map((cardId) => renderCard(cardId, { mini: true })).join("")
+            : renderCardBacks(view.handCounts[opponent])}
         </div>
       </div>
-      <div class="result-controls">
-        <button class="primary-button" type="button" data-action="open-result">Посмотреть результат</button>
-      </div>
-    `;
-  }
 
+      <div class="table-center">
+        <div class="pile-wrap">
+          <button class="card card--back draw-pile" type="button" data-action="draw-card" ${canViewerDraw(view) ? "" : "disabled"} aria-label="Взять карту">
+            <span class="card-back-pattern" aria-hidden="true">♣</span>
+            <small>${view.drawCount}</small>
+          </button>
+          <span class="pile-label">колода</span>
+        </div>
+        <div class="discard-wrap">
+          ${renderCard(view.topCard, { table: true })}
+          <span class="pile-label">сброс</span>
+        </div>
+        ${view.declaredSuit ? `<div class="declared-suit ${isRedSuit(view.declaredSuit) ? "declared-suit--red" : ""}"><small>заказана масть</small><b>${SUIT_META[view.declaredSuit].symbol}</b></div>` : ""}
+      </div>
+
+      <div class="table-message" aria-live="polite">${renderTableMessage(view)}</div>
+
+      <div class="player-zone ${viewerActive ? "player-zone--active" : ""}">
+        <div class="player-plaque player-plaque--you">
+          <span class="player-avatar" aria-hidden="true">♛</span>
+          <span><b>${escapeHtml(getPlayerName(view.viewerSeat))}</b><small>${getSeatCaption(view.viewerSeat, view)}</small></span>
+          <em>${view.handCounts[view.viewerSeat]} ${pluralizeCards(view.handCounts[view.viewerSeat])}</em>
+        </div>
+        <div class="player-hand" aria-label="Ваши карты">
+          ${(view.hands[view.viewerSeat] ?? []).map((cardId) => renderHandCard(cardId, view)).join("")}
+        </div>
+      </div>
+    </section>`;
+}
+
+function renderWaitingTable(): string {
+  return `
+    <section class="card-table card-table--waiting" aria-label="Ожидание соперника">
+      <div class="waiting-table-art" aria-hidden="true"><span class="empty-chair">♙</span><span class="waiting-rings"></span></div>
+      <div class="waiting-copy"><p class="eyebrow">Стол открыт</p><h2>Ждём второго игрока</h2><p>Отправьте код другу. Матч начнётся автоматически, когда он сядет за стол.</p></div>
+    </section>`;
+}
+
+function renderControlDock(view: SheddingViewerSnapshot): string {
+  if (view.phase === "match_complete") return renderMatchDock(view);
+  if (view.phase === "round_complete") return renderRoundDock(view);
   if (view.controller !== view.viewerSeat) {
-    return renderWaitingForTurn(view);
+    return `
+      <section class="control-dock control-dock--waiting">
+        <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><b>Ход соперника</b><small data-role="deadline">${getDeadlineText() || "Следим за столом…"}</small></div>
+      </section>`;
   }
 
-  return view.phase === "auction" ? renderAuctionControls(view) : renderPlayControls(view);
-}
+  if (view.legalCardIds.length === 0) {
+    return `
+      <section class="control-dock control-dock--action">
+        <div class="dock-copy"><b>Подходящей карты нет</b><small>Возьмите одну карту — после этого ход перейдёт сопернику.</small>${renderDeadlineLabel()}</div>
+        <button class="primary-button primary-button--draw" type="button" data-action="draw-card" ${commandPending ? "disabled" : ""}>${commandPending ? "Ждём стол…" : "Взять карту"}</button>
+      </section>`;
+  }
 
-function renderAuctionControls(view: ViewerSnapshot): string {
-  const recommendation = screen === "solo" ? chooseAiCall(view) : null;
-  const legalKeys = new Set(view.legalCalls.map(callKey));
-  const selectedLabel = selectedCall ? formatCall(selectedCall) : "Выберите заявку";
+  const selectedRank = getSelectedRank();
+  const effect = selectedRank ? getEffectPreview(selectedRank, selectedCards.length) : "Можно выбрать несколько карт одного достоинства";
   return `
-    <div class="dock-header">
-      <div class="dock-title">
-        <span class="dock-title__primary">Ваш ход в торговле</span>
-        <span class="dock-title__secondary">HCP: ${highCardPoints(view.hands[view.viewerSeat] ?? [])} · выбрано: ${escapeHtml(selectedLabel)}</span>
+    <section class="control-dock control-dock--action">
+      <div class="dock-selection">
+        <div class="dock-copy"><b>${selectedCards.length > 0 ? `Выбрано: ${selectedCards.length}` : "Ваш ход"}</b><small>${escapeHtml(effect)}</small>${renderDeadlineLabel()}</div>
+        ${selectedRank === 11 ? renderSuitPicker() : ""}
       </div>
-      ${recommendation ? `<span class="recommendation">Совет: ${escapeHtml(formatCall(recommendation))}</span>` : ""}
-    </div>
-    <div class="auction-controls">
-      <div class="level-row">
-        ${BID_LEVELS.map((level) => {
-          const hasLegal = STRAINS.some((strain) => legalKeys.has(callKey({ type: "bid", level, strain })));
-          return `<button class="call-button${selectedLevel === level ? " call-button--selected" : ""}" type="button" data-action="select-level" data-level="${level}" ${hasLegal ? "" : "disabled"}>${level}</button>`;
-        }).join("")}
-      </div>
-      <div class="strain-row">
-        ${STRAINS.map((strain) => {
-          const legal = legalKeys.has(callKey({ type: "bid", level: selectedLevel, strain }));
-          return `<button class="call-button call-button--strain${isRedStrain(strain) ? " call-button--red" : ""}${selectedStrain === strain ? " call-button--selected" : ""}" type="button" data-action="select-strain" data-strain="${strain}" ${legal ? "" : "disabled"}>${STRAIN_LABELS[strain]}</button>`;
-        }).join("")}
-      </div>
-      <div class="special-call-row">
-        ${renderSpecialCallButton("pass", "Пас", legalKeys)}
-        ${renderSpecialCallButton("double", "X", legalKeys)}
-        ${renderSpecialCallButton("redouble", "XX", legalKeys)}
-        <button class="call-button call-button--confirm" type="button" data-action="confirm-call" ${selectedCall ? "" : "disabled"}>Заявить</button>
-      </div>
-    </div>
-  `;
+      <button class="primary-button primary-button--play" type="button" data-action="play-selected" ${selectedCards.length === 0 || commandPending ? "disabled" : ""}>
+        ${commandPending ? "Ждём стол…" : selectedCards.length > 1 ? `Сыграть ${selectedCards.length} карты` : "Сыграть карту"}
+      </button>
+    </section>`;
 }
 
-function renderSpecialCallButton(type: "pass" | "double" | "redouble", label: string, legalKeys: Set<string>): string {
-  const legal = legalKeys.has(type);
-  return `<button class="call-button${selectedCall?.type === type ? " call-button--selected" : ""}" type="button" data-action="select-call" data-call="${type}" ${legal ? "" : "disabled"}>${label}</button>`;
-}
-
-function renderPlayControls(view: ViewerSnapshot): string {
-  const playingDummy = view.currentSeat === view.contract?.dummy;
-  const handSeat = getDisplayedHandSeat(view);
-  const title = playingDummy
-    ? `Вы разыгрываете dummy (${SEAT_LABELS[handSeat]})`
-    : "Выберите карту";
+function renderRoundDock(view: SheddingViewerSnapshot): string {
+  const result = view.roundResult;
+  if (!result) return `<section class="control-dock"></section>`;
+  const viewerWon = result.winner === view.viewerSeat;
   return `
-    <div class="dock-header">
-      <div class="dock-title">
-        <span class="dock-title__primary">${escapeHtml(title)}</span>
-        <span class="dock-title__secondary">Сначала коснитесь карты, затем подтвердите ход</span>
+    <section class="control-dock control-dock--round">
+      <div class="round-summary-icon" aria-hidden="true">${viewerWon ? "★" : "◇"}</div>
+      <div class="dock-copy">
+        <b>${viewerWon ? `Раунд ваш: +${result.points}` : `${escapeHtml(getPlayerName(result.winner))} берёт +${result.points}`}</b>
+        <small>У проигравшего осталось: ${result.loserCards.map(formatCardShort).join(" · ") || "нет карт"}</small>${renderDeadlineLabel()}
       </div>
-    </div>
-    <div class="play-controls">
-      <div class="play-actions">
-        <button class="secondary-button" type="button" data-action="clear-card" ${selectedCard ? "" : "disabled"}>Снять выбор</button>
-        <button class="primary-button" type="button" data-action="confirm-card" ${selectedCard ? "" : "disabled"}>Сыграть</button>
-      </div>
-    </div>
-  `;
+      ${view.canStartNextRound
+        ? `<button class="primary-button" type="button" data-action="next-round" ${commandPending ? "disabled" : ""}>Следующий раунд</button>`
+        : `<span class="dock-wait">Победитель начинает…</span>`}
+    </section>`;
 }
 
-function renderWaitingForTurn(view: ViewerSnapshot): string {
-  const humanIsDummy = view.contract?.dummy === view.viewerSeat && view.phase === "play";
-  const controller = view.controller;
-  const label = humanIsDummy
-    ? "Вы dummy — партнёр разыгрывает контракт"
-    : controller
-      ? `Ход: ${SEAT_LABELS[controller]}`
-      : "Ожидаем следующий ход";
-  const player = controller ? getPlayerSummaries(view.viewerSeat)[controller] : null;
+function renderMatchDock(view: SheddingViewerSnapshot): string {
+  const won = view.matchWinner === view.viewerSeat;
   return `
-    <div class="dock-header">
-      <div class="dock-title">
-        <span class="dock-title__primary">${escapeHtml(label)}</span>
-        <span class="dock-title__secondary">${player?.kind === "bot" ? "ИИ клубного новичка думает…" : "Ожидаем решение соперника…"}</span>
-      </div>
-    </div>
-    <div class="waiting-controls">
-      <span class="waiting-spinner" aria-hidden="true"></span>
-      ${screen === "solo" && humanIsDummy && !soloFastForward
-        ? `<button class="secondary-button" type="button" data-action="fast-forward">Быстро доиграть</button>`
-        : `<p class="waiting-copy">${escapeHtml(getDeadlineText())}</p>`}
-    </div>
-  `;
+    <section class="control-dock control-dock--match">
+      <div class="round-summary-icon" aria-hidden="true">${won ? "🏆" : "♜"}</div>
+      <div class="dock-copy"><b>${won ? "Вы выиграли матч!" : "Матч завершён"}</b><small>Итоговый счёт: ${view.scores[view.viewerSeat]} : ${view.scores[otherSheddingSeat(view.viewerSeat)]}</small></div>
+      <button class="primary-button" type="button" data-action="open-match">Итоги</button>
+    </section>`;
 }
 
-function renderRoomWaitingDock(): string {
-  const code = pvpRoom?.roomCode ?? roomInput;
+function renderWaitingDock(): string {
+  const code = pvpRoom?.roomCode ?? "";
   return `
-    <div class="dock-header">
-      <div class="dock-title">
-        <span class="dock-title__primary">Приватный стол создан</span>
-        <span class="dock-title__secondary">${networkStatus === "online" ? "Подключение активно" : "Подключаемся к комнате…"}</span>
-      </div>
-    </div>
-    <div class="waiting-controls">
-      <strong class="room-code-large">${escapeHtml(code || "------")}</strong>
-      <div class="play-actions">
+    <section class="control-dock control-dock--invite">
+      <button class="room-code-display" type="button" data-action="copy-code"><small>код стола</small><b>${escapeHtml(code)}</b></button>
+      <div class="invite-actions">
         <button class="secondary-button" type="button" data-action="copy-code">Копировать</button>
         <button class="primary-button" type="button" data-action="share-code">Пригласить</button>
       </div>
-      <button class="danger-button" type="button" data-action="leave-room">Закрыть стол</button>
-    </div>
-  `;
+      <button class="text-button" type="button" data-action="leave-room">Закрыть стол</button>
+    </section>`;
+}
+
+function renderSuitPicker(): string {
+  return `
+    <div class="suit-picker" aria-label="Заказать масть">
+      ${SHEDDING_SUITS.map((suit) => `
+        <button class="suit-button ${selectedSuit === suit ? "suit-button--selected" : ""} ${isRedSuit(suit) ? "suit-button--red" : ""}" type="button" data-action="select-suit" data-suit="${suit}" aria-label="${SUIT_META[suit].label}">${SUIT_META[suit].symbol}</button>
+      `).join("")}
+    </div>`;
+}
+
+function renderHandCard(cardId: SheddingCardId, view: SheddingViewerSnapshot): string {
+  const selected = selectedCards.includes(cardId);
+  const selectable = canSelectHandCard(cardId, view);
+  return renderCard(cardId, {
+    interactive: true,
+    selected,
+    disabled: !selectable && !selected,
+    action: "toggle-card",
+  });
+}
+
+function renderCard(
+  cardId: SheddingCardId,
+  options: { interactive?: boolean; selected?: boolean; disabled?: boolean; action?: string; mini?: boolean; table?: boolean } = {},
+): string {
+  const card = getSheddingCard(cardId);
+  const rank = formatRank(card.rank);
+  const suit = SUIT_META[card.suit];
+  const special = getSpecialMark(card.rank);
+  const tag = options.interactive ? "button" : "div";
+  const attrs = options.interactive
+    ? `type="button" data-action="${options.action ?? ""}" data-card="${card.id}" ${options.disabled ? "disabled" : ""}`
+    : "";
+  return `
+    <${tag} class="card card--face ${isRedSuit(card.suit) ? "card--red" : ""} ${options.selected ? "card--selected" : ""} ${options.mini ? "card--mini" : ""} ${options.table ? "card--table" : ""}" ${attrs} aria-label="${rank} ${suit.label}${special ? `, ${special.label}` : ""}">
+      <span class="card-corner"><b>${rank}</b><i>${suit.symbol}</i></span>
+      <span class="card-suit">${suit.symbol}</span>
+      ${special ? `<span class="card-power">${special.mark}</span>` : ""}
+      <span class="card-corner card-corner--bottom"><b>${rank}</b><i>${suit.symbol}</i></span>
+    </${tag}>`;
+}
+
+function renderCardBacks(count: number): string {
+  const visible = Math.min(10, count);
+  if (visible === 0) return `<span class="empty-hand">рука пуста</span>`;
+  return Array.from({ length: visible }, (_, index) => `
+    <span class="card card--back card--opponent" style="--card-index:${index};--card-total:${visible}" aria-hidden="true"><span class="card-back-pattern">♣</span></span>
+  `).join("");
+}
+
+function renderTableMessage(view: SheddingViewerSnapshot): string {
+  if (view.phase === "match_complete") return `<b>Матч завершён</b><span>Первый до ${view.targetScore}</span>`;
+  if (view.phase === "round_complete") return `<b>Раунд ${view.round} завершён</b><span>Считаем оставшиеся карты</span>`;
+  if (view.controller === view.viewerSeat) return `<b>Ваш ход</b><span>${view.legalCardIds.length > 0 ? "Выберите карту" : "Нужно взять карту"}</span>`;
+  const action = view.lastAction;
+  if (action?.type === "play_cards" && action.skippedOpponent && action.seat === view.viewerSeat) {
+    return `<b>Снова ваш ход</b><span>Спецкарта пропустила соперника</span>`;
+  }
+  return `<b>${escapeHtml(getPlayerName(view.controller ?? otherSheddingSeat(view.viewerSeat)))} думает</b><span>${getLastActionText(view)}</span>`;
+}
+
+function renderNetworkBadge(): string {
+  const labels: Record<NetworkStatus, string> = {
+    idle: "Стол",
+    connecting: "Связь…",
+    online: "Онлайн",
+    offline: "Нет связи",
+  };
+  return `<span class="network-badge network-badge--${networkStatus}"><i></i>${labels[networkStatus]}</span>`;
+}
+
+function renderModal(): string {
+  if (modal === "help") return renderHelpModal();
+  if (modal === "match") return renderMatchModal();
+  return "";
 }
 
 function renderHelpModal(): string {
   return `
     <div class="modal-backdrop" data-modal-backdrop>
-      <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
-        <button class="round-button modal-close" type="button" data-action="close-modal" aria-label="Закрыть">×</button>
-        <p class="modal-kicker">Краткие правила</p>
-        <h2 class="modal-title" id="help-title">Как играть в бридж</h2>
-        <div class="modal-copy">
-          <p>За столом четыре места и две пары: Север—Юг против Восток—Запад. В дуэли у каждого человека есть ИИ-партнёр.</p>
-          <h3>1. Торговля</h3>
-          <p>Заявка обещает взять указанное число взяток сверх шести. Например, 4♥ означает контракт на 10 взяток с червами как козырем. БК — игра без козыря.</p>
-          <ul>
-            <li>Следующая заявка должна быть выше предыдущей: ♣, ♦, ♥, ♠, БК.</li>
-            <li>Пас пропускает ход. Три паса после заявки завершают торговлю.</li>
-            <li>Контра X и реконтра XX увеличивают риск и счёт.</li>
-          </ul>
-          <h3>2. Розыгрыш</h3>
-          <p>Первый игрок масти задаёт её для взятки. Если такая масть у вас есть, нужно сыграть именно её. Старший козырь побеждает; без козыря берёт старшая карта начальной масти.</p>
-          <h3>3. Declarer и dummy</h3>
-          <p>Declarer разыгрывает контракт и управляет открытой рукой партнёра — dummy. Если вы сами стали dummy, по классическим правилам решения принимает партнёр.</p>
-          <h3>Этот прототип</h3>
-          <p>Правила сдачи и duplicate scoring полноценные. ИИ играет на уровне клубного новичка; рейтинга и наград World of Life пока нет.</p>
+      <section class="modal-card rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+        <button class="modal-close" type="button" data-action="close-modal" aria-label="Закрыть">×</button>
+        <p class="eyebrow">Народные правила</p>
+        <h2 id="rules-title">Как играть</h2>
+        <p>Колода — 36 карт. Каждый получает по пять, но пятая карта сдающего сразу открывает стол: у него на руке остаётся четыре. Первым ходит соперник сдающего.</p>
+        <div class="rules-steps">
+          <div><b>1</b><span>Кладите карту той же <strong>масти</strong> или того же <strong>достоинства</strong>.</span></div>
+          <div><b>2</b><span>За один ход можно сбросить сразу несколько карт одного достоинства.</span></div>
+          <div><b>3</b><span>Нет подходящей карты — возьмите одну. Ход перейдёт сопернику.</span></div>
+          <div><b>4</b><span>Кто первым опустошил руку, получает очки за карты соперника.</span></div>
         </div>
-        <button class="primary-button" type="button" data-action="close-modal">Понятно</button>
-      </article>
-    </div>
-  `;
+        <h3>Карты с характером</h3>
+        <div class="power-grid">
+          <div><span class="power-card">6</span><b>Пропуск</b><small>Соперник пропускает ход</small></div>
+          <div><span class="power-card">7</span><b>+1 карта</b><small>Соперник берёт одну и ходит</small></div>
+          <div><span class="power-card">8</span><b>+2 и пропуск</b><small>За каждую восьмёрку</small></div>
+          <div><span class="power-card">A</span><b>Пропуск</b><small>Вы ходите ещё раз</small></div>
+          <div class="power-grid__wide"><span class="power-card">J</span><b>Заказ масти</b><small>Валет кладётся на любую карту; выберите масть следующего хода</small></div>
+        </div>
+        <h3>Очки до 125</h3>
+        <p class="score-rules"><span>6–9 — по номиналу</span><span>10, Q, K — 10</span><span>J — 20</span><span>A — 15</span></p>
+        <p class="rules-note">Победитель раунда прибавляет сумму оставшихся карт соперника. Первый, кто набрал 125 или больше, выигрывает весь матч.</p>
+        <button class="primary-button modal-primary" type="button" data-action="close-modal">Понятно, играем</button>
+      </section>
+    </div>`;
 }
 
-function renderAuctionModal(view: ViewerSnapshot): string {
-  const rows: string[] = [];
-  const startIndex = SEATS.indexOf(view.dealer);
-  const leadingEmpty = startIndex;
-  const cells: Array<{ seat: Seat; call: Call } | null> = [
-    ...Array.from({ length: leadingEmpty }, () => null),
-    ...view.auction.map((entry) => ({ seat: entry.seat, call: entry.call })),
-  ];
-  while (cells.length % 4 !== 0) cells.push(null);
-  for (let index = 0; index < cells.length; index += 4) {
-    rows.push(cells.slice(index, index + 4).map((cell) => {
-      if (!cell) return `<span class="auction-sheet__cell">—</span>`;
-      const red = cell.call.type === "bid" && isRedStrain(cell.call.strain);
-      return `<span class="auction-sheet__cell${red ? " auction-sheet__cell--red" : ""}">${escapeHtml(formatCall(cell.call))}</span>`;
-    }).join(""));
-  }
+function renderMatchModal(): string {
+  const view = getCurrentView();
+  if (!view?.matchWinner) return "";
+  const won = view.matchWinner === view.viewerSeat;
+  const opponent = otherSheddingSeat(view.viewerSeat);
   return `
     <div class="modal-backdrop" data-modal-backdrop>
-      <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="auction-title">
-        <button class="round-button modal-close" type="button" data-action="close-modal" aria-label="Закрыть">×</button>
-        <p class="modal-kicker">Сдача ${view.boardNumber}</p>
-        <h2 class="modal-title" id="auction-title">История торговли</h2>
-        <div class="auction-sheet">
-          ${SEATS.map((seat) => `<span class="auction-sheet__cell auction-sheet__cell--heading">${SEAT_LABELS[seat].slice(0, 1)}</span>`).join("")}
-          ${rows.join("")}
+      <section class="modal-card result-modal" role="dialog" aria-modal="true" aria-labelledby="result-title">
+        <div class="result-crown" aria-hidden="true">${won ? "🏆" : "♜"}</div>
+        <p class="eyebrow">Матч до ${view.targetScore}</p>
+        <h2 id="result-title">${won ? "Стол ваш!" : `${escapeHtml(getPlayerName(view.matchWinner))} победил`}</h2>
+        <p>${won ? "Вы первым набрали нужные очки и забираете победу." : "Реванш — лучший способ вернуть карточный долг."}</p>
+        <div class="final-score"><span><small>${escapeHtml(getPlayerName(view.viewerSeat))}</small><b>${view.scores[view.viewerSeat]}</b></span><i>:</i><span><small>${escapeHtml(getPlayerName(opponent))}</small><b>${view.scores[opponent]}</b></span></div>
+        <div class="result-actions">
+          <button class="secondary-button" type="button" data-action="back-home">В меню</button>
+          <button class="primary-button" type="button" data-action="${screen === "solo" ? "new-solo" : "new-pvp"}">Новый матч</button>
         </div>
-        <div class="modal-copy">
-          <p><strong>${escapeHtml(formatContract(view.contract))}</strong></p>
-          <p>${escapeHtml(formatVulnerability(view.vulnerability))}</p>
-        </div>
-        <button class="primary-button" type="button" data-action="close-modal">Вернуться к столу</button>
-      </article>
-    </div>
-  `;
-}
-
-function renderResultModal(view: ViewerSnapshot): string {
-  const result = view.result as BridgeResult;
-  const viewerSide = partnershipOf(view.viewerSeat);
-  const scoreNS = result.scoreNS;
-  const viewerScore = viewerSide === "ns" ? scoreNS : -scoreNS;
-  const outcome = viewerScore > 0 ? "Победа вашей пары" : viewerScore < 0 ? "Поражение вашей пары" : "Ничья";
-  const breakdown = result.type === "contract" ? result.breakdown : null;
-  return `
-    <div class="modal-backdrop" data-modal-backdrop>
-      <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
-        <button class="round-button modal-close" type="button" data-action="close-modal" aria-label="Закрыть">×</button>
-        <p class="modal-kicker">${escapeHtml(formatResultTitle(result))}</p>
-        <h2 class="modal-title" id="result-title">${escapeHtml(outcome)}</h2>
-        <div class="result-score">
-          <strong class="result-score__value">${escapeHtml(formatSignedScore(viewerScore))}</strong>
-          <span class="result-score__label">очков вашей пары за сдачу</span>
-        </div>
-        ${breakdown ? `
-          <div class="score-breakdown">
-            ${scoreRow("Контрактные очки", breakdown.contractPoints)}
-            ${scoreRow("Лишние взятки", breakdown.overtrickPoints)}
-            ${scoreRow("Бонус game / partscore", breakdown.gameOrPartscoreBonus)}
-            ${scoreRow("Бонус slam", breakdown.slamBonus)}
-            ${scoreRow("Контра / реконтра", breakdown.insultBonus)}
-            ${breakdown.undertrickPenalty ? scoreRow("Штраф за недобор", -breakdown.undertrickPenalty) : ""}
-          </div>
-        ` : `<div class="modal-copy"><p>Все четыре игрока спасовали. Счёт сдачи — 0.</p></div>`}
-        <div class="modal-actions">
-          <button class="secondary-button" type="button" data-action="back-home">На главную</button>
-          <button class="primary-button" type="button" data-action="${screen === "solo" ? "new-solo" : "new-pvp"}">${screen === "solo" ? "Ещё сдача" : "Новый стол"}</button>
-        </div>
-      </article>
-    </div>
-  `;
-}
-
-function scoreRow(label: string, value: number): string {
-  return `<div class="score-breakdown__row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(formatSignedScore(value))}</strong></div>`;
+      </section>
+    </div>`;
 }
 
 function renderToast(): string {
   return toastMessage ? `<div class="toast" role="status">${escapeHtml(toastMessage)}</div>` : "";
 }
 
-function getPlayerSummaries(viewerSeat: Seat): Record<Seat, BridgeRoomPlayerSummary> {
-  if (screen === "pvp" && pvpSnapshot) return pvpSnapshot.players;
-  return {
-    north: { kind: "bot", displayName: "Марта · ИИ", connected: true, left: false },
-    east: { kind: "bot", displayName: "Грегор · ИИ", connected: true, left: false },
-    south: {
-      kind: viewerSeat === "south" ? "human" : "bot",
-      displayName: viewerSeat === "south" ? telegram.displayName : "Игрок",
-      connected: true,
-      left: false,
-    },
-    west: { kind: "bot", displayName: "Руди · ИИ", connected: true, left: false },
-  };
+function canSelectHandCard(cardId: SheddingCardId, view: SheddingViewerSnapshot): boolean {
+  if (view.phase !== "playing" || view.controller !== view.viewerSeat || commandPending) return false;
+  if (selectedCards.length === 0) return view.legalCardIds.includes(cardId);
+  return getSheddingCard(cardId).rank === getSelectedRank();
 }
 
-function getDisplayedHandSeat(view: ViewerSnapshot): Seat {
-  return view.controller === view.viewerSeat && view.currentSeat && view.currentSeat !== view.viewerSeat
-    ? view.currentSeat
-    : view.viewerSeat;
+function canViewerDraw(view: SheddingViewerSnapshot): boolean {
+  return view.canDraw && view.legalCardIds.length === 0 && !commandPending;
 }
 
-function getTableStatus(view: ViewerSnapshot): string {
-  if (view.phase === "auction") {
-    return view.currentSeat ? `Торговля · ход: ${SEAT_LABELS[view.currentSeat]}` : "Торговля завершена";
+function getSelectedRank(): number | null {
+  return selectedCards[0] ? getSheddingCard(selectedCards[0]).rank : null;
+}
+
+function orderSelectionWithLegalLead(
+  cards: readonly SheddingCardId[],
+  legalCardIds: readonly SheddingCardId[],
+): SheddingCardId[] {
+  const legalLead = cards.find((cardId) => legalCardIds.includes(cardId));
+  return legalLead ? [legalLead, ...cards.filter((cardId) => cardId !== legalLead)] : [];
+}
+
+function choosePreferredSuit(hand: readonly SheddingCardId[], excluded: readonly SheddingCardId[]): SheddingSuit {
+  const counts = Object.fromEntries(SHEDDING_SUITS.map((suit) => [suit, 0])) as Record<SheddingSuit, number>;
+  hand.filter((cardId) => !excluded.includes(cardId)).forEach((cardId) => {
+    const card = getSheddingCard(cardId);
+    if (card.rank !== 11) counts[card.suit] += 1;
+  });
+  return [...SHEDDING_SUITS].sort((left, right) => counts[right] - counts[left])[0];
+}
+
+function getEffectPreview(rank: number, count: number): string {
+  if (rank === 6 || rank === 14) return "Соперник пропустит ход";
+  if (rank === 7) return `Соперник возьмёт ${count} ${pluralizeCards(count)} и сможет ходить`;
+  if (rank === 8) return `Соперник возьмёт ${count * 2} ${pluralizeCards(count * 2)} и пропустит ход`;
+  if (rank === 11) return "Выберите масть следующего хода";
+  return count > 1 ? `Сбросить серию из ${count} карт` : "Можно выбрать несколько карт одного достоинства";
+}
+
+function getSpecialMark(rank: number): { mark: string; label: string } | null {
+  if (rank === 6 || rank === 14) return { mark: "↻", label: "пропуск хода" };
+  if (rank === 7) return { mark: "+1", label: "добор одной карты" };
+  if (rank === 8) return { mark: "+2", label: "добор двух карт и пропуск" };
+  if (rank === 11) return { mark: "✦", label: "заказ масти" };
+  return null;
+}
+
+function getLastActionText(view: SheddingViewerSnapshot): string {
+  const action = view.lastAction;
+  if (!action) return "Первый ход раунда";
+  if (action.type === "draw_card") return action.count > 0 ? "Взята одна карта" : "Колода пуста, ход передан";
+  if (action.penaltyCards > 0) return `Штраф: +${action.penaltyCards} ${pluralizeCards(action.penaltyCards)}`;
+  if (action.declaredSuit) return `Заказаны ${SUIT_META[action.declaredSuit].label}`;
+  return `Сыграно ${action.cardIds.length} ${pluralizeCards(action.cardIds.length)}`;
+}
+
+function getSeatCaption(seat: SheddingSeat, view: SheddingViewerSnapshot): string {
+  const parts: string[] = [];
+  if (view.dealer === seat) parts.push("сдаёт");
+  if (view.controller === seat) parts.push("ходит");
+  if (screen === "pvp" && pvpSnapshot?.bots.includes(seat)) parts.push("автоигра");
+  return parts.join(" · ") || (seat === view.viewerSeat ? "ваша рука" : "соперник");
+}
+
+function getPlayerName(seat: SheddingSeat): string {
+  if (screen === "solo") return seat === "south" ? "Вы" : "Крупье Крыс";
+  const player = pvpSnapshot?.players[seat];
+  if (!player) return seat === pvpRoom?.seat ? telegram.displayName : "Соперник";
+  if (player.kind === "open") return "Свободное место";
+  return player.displayName || (seat === pvpRoom?.seat ? telegram.displayName : "Соперник");
+}
+
+function presentPhaseChange(previousPhase: string | undefined, view: SheddingViewerSnapshot | undefined): void {
+  if (!view || previousPhase === view.phase) return;
+  if (view.phase === "round_complete") {
+    telegram.haptic(view.roundResult?.winner === view.viewerSeat ? "success" : "medium");
   }
-  if (view.phase === "complete") return "Сдача завершена";
-  const trick = Math.min(13, view.completedTricks.length + 1);
-  return `Взятка ${trick}/13 · С—Ю ${view.tricksWon.ns} : ${view.tricksWon.ew} В—З`;
+  if (view.phase === "match_complete") presentMatchResult(view.revision);
+}
+
+function presentMatchResult(revision: number): void {
+  if (presentedMatchRevision === revision) return;
+  presentedMatchRevision = revision;
+  telegram.setGameInProgress(false);
+  telegram.haptic("success");
+  window.setTimeout(() => {
+    const view = getCurrentView();
+    if (view?.phase === "match_complete" && view.revision === revision) {
+      modal = "match";
+      render();
+    }
+  }, 550);
 }
 
 function getDeadlineText(): string {
-  if (screen !== "pvp" || !pvpSnapshot?.deadlineAt) return "Ход продолжится автоматически.";
-  const remaining = Math.max(0, Math.ceil((pvpSnapshot.deadlineAt - Date.now()) / 1_000));
-  return `До автоматического хода: ${remaining} сек.`;
+  const deadline = pvpSnapshot?.deadlineAt;
+  if (!deadline) return "";
+  const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1_000));
+  return `На ход: ${seconds} сек.`;
+}
+
+function renderDeadlineLabel(): string {
+  return screen === "pvp" && pvpSnapshot?.deadlineAt
+    ? `<span class="dock-timer" data-role="deadline">${getDeadlineText()}</span>`
+    : "";
+}
+
+function refreshDeadlineLabels(): void {
+  const text = getDeadlineText() || "Следим за столом…";
+  app.querySelectorAll<HTMLElement>("[data-role='deadline']").forEach((element) => {
+    element.textContent = text;
+  });
 }
 
 function updateDeadlineTicker(): void {
-  const shouldTick = screen === "pvp"
-    && Boolean(pvpSnapshot?.deadlineAt)
-    && pvpSnapshot?.status === "playing";
+  const shouldTick = screen === "pvp" && Boolean(pvpSnapshot?.deadlineAt) && pvpSnapshot?.status === "playing";
   if (shouldTick && deadlineTicker === null) {
     deadlineTicker = window.setInterval(() => {
-      if (screen === "pvp" && pvpSnapshot?.deadlineAt) render();
+      if (screen === "pvp" && pvpSnapshot?.deadlineAt) refreshDeadlineLabels();
     }, 1_000);
   } else if (!shouldTick && deadlineTicker !== null) {
     window.clearInterval(deadlineTicker);
     deadlineTicker = null;
   }
+  if (shouldTick) refreshDeadlineLabels();
 }
 
 async function copyRoomCode(): Promise<void> {
@@ -1130,10 +1079,10 @@ async function shareRoomCode(): Promise<void> {
   shareUrl.search = "";
   shareUrl.hash = "";
   shareUrl.searchParams.set("room", code);
-  const text = `Присоединяйся к моему столу в Bridge. Код: ${code}`;
+  const text = `Садись за мой стол в Дворовом Бридже. Код: ${code}`;
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Bridge · Крысиная нора", text, url: shareUrl.toString() });
+      await navigator.share({ title: "Дворовый Бридж · Крысиная нора", text, url: shareUrl.toString() });
       return;
     } catch {
       return;
@@ -1165,12 +1114,41 @@ function clearBotTimer(): void {
   }
 }
 
-function randomBoardNumber(): number {
-  if (typeof crypto?.getRandomValues === "function") {
-    const value = crypto.getRandomValues(new Uint8Array(1))[0];
-    return (value % 16) + 1;
-  }
-  return Math.floor(Math.random() * 16) + 1;
+function formatCardShort(cardId: SheddingCardId): string {
+  const card = getSheddingCard(cardId);
+  return `${formatRank(card.rank)}${SUIT_META[card.suit].symbol}`;
+}
+
+function formatRank(rank: number): string {
+  if (rank === 10) return "10";
+  if (rank === 11) return "J";
+  if (rank === 12) return "Q";
+  if (rank === 13) return "K";
+  if (rank === 14) return "A";
+  return String(rank);
+}
+
+function isRedSuit(suit: SheddingSuit): boolean {
+  return suit === "diamonds" || suit === "hearts";
+}
+
+function pluralizeCards(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return "карту";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "карты";
+  return "карт";
+}
+
+function deterministicBotDelay(revision: number): number {
+  return 520 + Math.abs((revision * 73) % 230);
+}
+
+function getServerErrorMessage(code: string, fallback: string): string {
+  if (code === "illegal_action") return "Этот ход нельзя сделать по правилам.";
+  if (code === "not_controller") return "Сейчас ход соперника.";
+  if (code === "room_not_playing") return "Стол уже закрыт или матч завершён.";
+  return fallback || "Стол не принял действие.";
 }
 
 function createLocalSeed(): string {
@@ -1187,10 +1165,19 @@ function getDevelopmentIdentity(): { userId: string; displayName: string } | nul
 }
 
 function getSessionDevelopmentId(): string {
-  const key = "bridge-development-player-v1";
+  const key = "bridge-development-player-v2";
   const existing = window.sessionStorage.getItem(key);
   if (existing) return existing;
   const value = Math.random().toString(36).slice(2, 8);
   window.sessionStorage.setItem(key, value);
   return value;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

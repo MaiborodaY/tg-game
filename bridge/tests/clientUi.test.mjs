@@ -1,15 +1,12 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
-  callKey,
-  deterministicBotDelay,
-  formatCall,
-  formatCard,
-  getSeatPosition,
-  getSeatsByPosition,
-  groupCardsBySuit,
-} from "../src/ui/format.ts";
+  SHEDDING_DECK,
+  getSheddingCard,
+  getSheddingCardPoints,
+} from "../src/shedding/index.ts";
 import {
   createBridgeCommandId,
   normalizeBridgeRoomCode,
@@ -17,43 +14,49 @@ import {
 } from "../src/network/protocol.ts";
 import { createBridgeNetworkClient } from "../src/network/client.ts";
 
-test("table rotation always places the viewer at the bottom", () => {
-  assert.equal(getSeatPosition("south", "south"), "bottom");
-  assert.equal(getSeatPosition("south", "west"), "left");
-  assert.equal(getSeatPosition("south", "north"), "top");
-  assert.equal(getSeatPosition("south", "east"), "right");
+const mainSource = await readFile(new globalThis.URL("../src/main.ts", import.meta.url), "utf8");
 
-  assert.deepEqual(getSeatsByPosition("west"), {
-    bottom: "west",
-    left: "north",
-    top: "east",
-    right: "south",
-  });
+test("the client renders the requested shedding-Bridge rules instead of contract bidding", () => {
+  assert.match(mainSource, /Дворовый Бридж/);
+  assert.match(mainSource, /Первый, кто набрал 125 или больше/);
+  assert.match(mainSource, /data-action="draw-card"/);
+  assert.match(mainSource, /data-action="play-selected"/);
+  assert.match(mainSource, /data-action="select-suit"/);
+  assert.match(mainSource, /joinButton\.disabled = busy \|\| !network\.authenticated \|\| roomInput\.length !== 6/);
+  assert.match(mainSource, /event\.key === "Enter"[\s\S]*joinPvpRoom/);
+  assert.match(mainSource, /setInterval\([\s\S]*refreshDeadlineLabels\(\)/);
+  assert.doesNotMatch(mainSource, /setInterval\([\s\S]{0,180}\brender\(\)/);
+  assert.doesNotMatch(mainSource, /data-action="select-call"|data-action="open-auction"/);
 });
 
-test("calls and cards use compact Russian table notation", () => {
-  assert.equal(formatCall({ type: "pass" }), "Пас");
-  assert.equal(formatCall({ type: "bid", level: 3, strain: "notrump" }), "3БК");
-  assert.equal(callKey({ type: "bid", level: 4, strain: "hearts" }), "bid:4:hearts");
-  assert.deepEqual(formatCard("HA"), { rank: "A", suit: "♥", red: true, spoken: "A червей" });
-  assert.deepEqual(groupCardsBySuit(["SA", "ST", "H2", "C7"]), {
-    clubs: ["7"],
-    diamonds: [],
-    hearts: ["2"],
-    spades: ["A", "10"],
-  });
+test("card presentation uses the 36-card deck and the agreed point values", () => {
+  assert.equal(SHEDDING_DECK.length, 36);
+  assert.deepEqual(getSheddingCard("hj"), { id: "HJ", suit: "hearts", rank: 11 });
+  assert.equal(getSheddingCardPoints("C7"), 7);
+  assert.equal(getSheddingCardPoints("SQ"), 10);
+  assert.equal(getSheddingCardPoints("DJ"), 20);
+  assert.equal(getSheddingCardPoints("HA"), 15);
 });
 
-test("bot delay is deterministic and remains short enough for mobile play", () => {
-  assert.equal(deterministicBotDelay(12), deterministicBotDelay(12));
-  assert.ok(deterministicBotDelay(0) >= 400);
-  assert.ok(deterministicBotDelay(999) < 700);
-});
-
-test("room protocol rejects ambiguous or malformed codes and messages", () => {
+test("room protocol accepts two-player snapshots and rejects malformed messages", () => {
   assert.equal(normalizeBridgeRoomCode(" ab-cd23 "), "ABCD23");
   assert.equal(normalizeBridgeRoomCode("ABCI23"), null);
   assert.match(createBridgeCommandId(), /^bridge_/);
+
+  const player = { kind: "human", displayName: "Player", connected: true, left: false };
+  const message = parseBridgeServerMessage({
+    type: "snapshot",
+    snapshot: {
+      roomCode: "ABCD23",
+      seat: "south",
+      status: "playing",
+      revision: 4,
+      players: { south: player, west: player },
+      bots: [],
+      serverNow: 123,
+    },
+  });
+  assert.equal(message?.type, "snapshot");
   assert.equal(parseBridgeServerMessage({ type: "snapshot", snapshot: {} }), null);
   assert.deepEqual(parseBridgeServerMessage({ type: "error", code: "stale", message: "Old", revision: 8 }), {
     type: "error",

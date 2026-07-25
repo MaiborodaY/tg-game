@@ -1,16 +1,17 @@
-export type BridgeSeat = "north" | "east" | "south" | "west";
-export type HumanBridgeSeat = "south" | "west";
-export type BridgeStrain = "clubs" | "diamonds" | "hearts" | "spades" | "notrump";
-
-export type BridgeCallWire =
-  | { type: "pass" }
-  | { type: "double" }
-  | { type: "redouble" }
-  | { type: "bid"; level: number; strain: BridgeStrain };
+export type BridgeSeat = "south" | "west";
+export type HumanBridgeSeat = BridgeSeat;
+export type BridgeSuitWire = "clubs" | "diamonds" | "hearts" | "spades";
 
 export type BridgeClientCommand =
-  | { commandId: string; expectedRevision: number; type: "call"; call: BridgeCallWire }
-  | { commandId: string; expectedRevision: number; type: "play_card"; cardId: string };
+  | {
+      commandId: string;
+      expectedRevision: number;
+      type: "play_cards";
+      cardIds: string[];
+      declaredSuit?: BridgeSuitWire;
+    }
+  | { commandId: string; expectedRevision: number; type: "draw_card" }
+  | { commandId: string; expectedRevision: number; type: "next_round" };
 
 export interface ProcessedCommand {
   commandId: string;
@@ -42,20 +43,15 @@ export const MAX_PROCESSED_COMMANDS = 128;
 
 const ROOM_CODE_PATTERN = new RegExp(`^[${ROOM_CODE_ALPHABET}]{${ROOM_CODE_LENGTH}}$`);
 const COMMAND_ID_PATTERN = /^[A-Za-z0-9_-]{8,80}$/;
-const CARD_ID_PATTERN = /^[A-Za-z0-9:_-]{1,64}$/;
-const BRIDGE_STRAINS = new Set<BridgeStrain>(["clubs", "diamonds", "hearts", "spades", "notrump"]);
+const CARD_ID_PATTERN = /^[CDHS][6789TJQKA]$/;
+const BRIDGE_SUITS = new Set<BridgeSuitWire>(["clubs", "diamonds", "hearts", "spades"]);
 
 export function createRoomCode(randomBytes?: Uint8Array): string {
   const bytes = randomBytes ?? crypto.getRandomValues(new Uint8Array(ROOM_CODE_LENGTH));
-  if (bytes.length < ROOM_CODE_LENGTH) {
-    throw new Error("Not enough random bytes for a room code.");
-  }
-
-  let code = "";
-  for (let index = 0; index < ROOM_CODE_LENGTH; index += 1) {
-    code += ROOM_CODE_ALPHABET[bytes[index] % ROOM_CODE_ALPHABET.length];
-  }
-  return code;
+  if (bytes.length < ROOM_CODE_LENGTH) throw new Error("Room-code entropy is too short.");
+  return Array.from(bytes.slice(0, ROOM_CODE_LENGTH), (value) => (
+    ROOM_CODE_ALPHABET[value % ROOM_CODE_ALPHABET.length]
+  )).join("");
 }
 
 export function normalizeRoomCode(value: string | undefined): string | undefined {
@@ -64,50 +60,29 @@ export function normalizeRoomCode(value: string | undefined): string | undefined
 }
 
 export function parseBridgeClientCommand(value: unknown): BridgeClientCommand | undefined {
-  if (!isRecord(value) || !isCommandId(value.commandId) || !isRevision(value.expectedRevision)) {
+  if (!isRecord(value) || !isCommandId(value.commandId) || !isRevision(value.expectedRevision)) return undefined;
+  const base = { commandId: value.commandId, expectedRevision: value.expectedRevision };
+
+  if (value.type === "draw_card" || value.type === "next_round") {
+    return { ...base, type: value.type };
+  }
+
+  if (value.type !== "play_cards" || !Array.isArray(value.cardIds)) return undefined;
+  if (value.cardIds.length < 1 || value.cardIds.length > 4) return undefined;
+  if (!value.cardIds.every((cardId) => typeof cardId === "string" && CARD_ID_PATTERN.test(cardId.toUpperCase()))) {
     return undefined;
   }
+  const cardIds = value.cardIds.map((cardId) => cardId.toUpperCase());
+  if (new Set(cardIds).size !== cardIds.length) return undefined;
 
-  if (value.type === "call") {
-    const call = parseBridgeCall(value.call);
-    return call
-      ? { commandId: value.commandId, expectedRevision: value.expectedRevision, type: "call", call }
-      : undefined;
-  }
-
-  if (value.type === "play_card" && typeof value.cardId === "string" && CARD_ID_PATTERN.test(value.cardId)) {
-    return {
-      commandId: value.commandId,
-      expectedRevision: value.expectedRevision,
-      type: "play_card",
-      cardId: value.cardId,
-    };
-  }
-
-  return undefined;
-}
-
-export function parseBridgeCall(value: unknown): BridgeCallWire | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  if (value.type === "pass" || value.type === "double" || value.type === "redouble") {
-    return { type: value.type };
-  }
-
-  if (
-    value.type === "bid"
-    && Number.isInteger(value.level)
-    && Number(value.level) >= 1
-    && Number(value.level) <= 7
-    && typeof value.strain === "string"
-    && BRIDGE_STRAINS.has(value.strain as BridgeStrain)
-  ) {
-    return { type: "bid", level: Number(value.level), strain: value.strain as BridgeStrain };
-  }
-
-  return undefined;
+  const declaredSuit = value.declaredSuit;
+  if (declaredSuit !== undefined && !BRIDGE_SUITS.has(declaredSuit as BridgeSuitWire)) return undefined;
+  return {
+    ...base,
+    type: "play_cards",
+    cardIds,
+    ...(declaredSuit ? { declaredSuit: declaredSuit as BridgeSuitWire } : {}),
+  };
 }
 
 export function hasProcessedCommand(commands: readonly ProcessedCommand[], commandId: string): boolean {
@@ -118,10 +93,7 @@ export function appendProcessedCommand(
   commands: readonly ProcessedCommand[],
   command: ProcessedCommand,
 ): ProcessedCommand[] {
-  if (hasProcessedCommand(commands, command.commandId)) {
-    return [...commands];
-  }
-
+  if (hasProcessedCommand(commands, command.commandId)) return [...commands];
   return [...commands, command].slice(-MAX_PROCESSED_COMMANDS);
 }
 
@@ -130,9 +102,7 @@ export function getCommandDisposition(
   command: Pick<BridgeClientCommand, "commandId" | "expectedRevision">,
   currentRevision: number,
 ): CommandDisposition {
-  if (hasProcessedCommand(commands, command.commandId)) {
-    return "duplicate";
-  }
+  if (hasProcessedCommand(commands, command.commandId)) return "duplicate";
   return command.expectedRevision === currentRevision ? "accept" : "stale";
 }
 
@@ -143,18 +113,16 @@ export async function hashOpaqueToken(token: string): Promise<string> {
 
 export function createOpaqueToken(randomBytes?: Uint8Array): string {
   const bytes = randomBytes ?? crypto.getRandomValues(new Uint8Array(32));
-  if (bytes.length < 16) {
-    throw new Error("Opaque tokens require at least 128 bits of randomness.");
-  }
+  if (bytes.length < 24) throw new Error("Socket-ticket entropy is too short.");
   return bytesToBase64Url(bytes);
 }
 
 export function isBridgeSeat(value: unknown): value is BridgeSeat {
-  return value === "north" || value === "east" || value === "south" || value === "west";
+  return value === "south" || value === "west";
 }
 
 export function isHumanBridgeSeat(value: unknown): value is HumanBridgeSeat {
-  return value === "south" || value === "west";
+  return isBridgeSeat(value);
 }
 
 function isCommandId(value: unknown): value is string {
@@ -171,9 +139,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }

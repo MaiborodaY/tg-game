@@ -23,42 +23,57 @@ test("room codes are six unambiguous server-generated characters", () => {
   assert.equal(normalizeRoomCode("IO10AA"), undefined);
 });
 
-test("protocol accepts strict versioned calls and card plays", () => {
+test("protocol accepts strict versioned shedding actions", () => {
   assert.deepEqual(parseBridgeClientCommand({
     commandId: "command_0001",
     expectedRevision: 8,
-    type: "call",
-    call: { type: "bid", level: 3, strain: "notrump" },
+    type: "play_cards",
+    cardIds: ["hj", "sj"],
+    declaredSuit: "hearts",
   }), {
     commandId: "command_0001",
     expectedRevision: 8,
-    type: "call",
-    call: { type: "bid", level: 3, strain: "notrump" },
+    type: "play_cards",
+    cardIds: ["HJ", "SJ"],
+    declaredSuit: "hearts",
   });
 
   assert.deepEqual(parseBridgeClientCommand({
     commandId: "command_0002",
     expectedRevision: 9,
-    type: "play_card",
-    cardId: "spades:A",
+    type: "draw_card",
   }), {
     commandId: "command_0002",
     expectedRevision: 9,
-    type: "play_card",
-    cardId: "spades:A",
+    type: "draw_card",
+  });
+
+  assert.deepEqual(parseBridgeClientCommand({
+    commandId: "command_0003",
+    expectedRevision: 10,
+    type: "next_round",
+  }), {
+    commandId: "command_0003",
+    expectedRevision: 10,
+    type: "next_round",
   });
 
   assert.equal(parseBridgeClientCommand({
     commandId: "short",
     expectedRevision: 0,
-    type: "call",
-    call: { type: "pass" },
+    type: "draw_card",
   }), undefined);
   assert.equal(parseBridgeClientCommand({
-    commandId: "command_0003",
+    commandId: "command_0004",
     expectedRevision: -1,
-    type: "call",
-    call: { type: "bid", level: 8, strain: "spades" },
+    type: "play_cards",
+    cardIds: ["H2"],
+  }), undefined);
+  assert.equal(parseBridgeClientCommand({
+    commandId: "command_0005",
+    expectedRevision: 1,
+    type: "play_cards",
+    cardIds: ["H8", "H8"],
   }), undefined);
 });
 

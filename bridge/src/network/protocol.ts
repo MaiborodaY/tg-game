@@ -1,16 +1,18 @@
-export type BridgeRoomSeat = "north" | "east" | "south" | "west";
-export type BridgeHumanSeat = "south" | "west";
-export type BridgeWireStrain = "clubs" | "diamonds" | "hearts" | "spades" | "notrump";
+import type { SheddingSuit } from "../shedding/index.ts";
 
-export type BridgeCallWire =
-  | { type: "pass" }
-  | { type: "double" }
-  | { type: "redouble" }
-  | { type: "bid"; level: number; strain: BridgeWireStrain };
+export type BridgeRoomSeat = "south" | "west";
+export type BridgeHumanSeat = BridgeRoomSeat;
 
 export type BridgeClientCommand =
-  | { commandId: string; expectedRevision: number; type: "call"; call: BridgeCallWire }
-  | { commandId: string; expectedRevision: number; type: "play_card"; cardId: string };
+  | {
+      commandId: string;
+      expectedRevision: number;
+      type: "play_cards";
+      cardIds: string[];
+      declaredSuit?: SheddingSuit;
+    }
+  | { commandId: string; expectedRevision: number; type: "draw_card" }
+  | { commandId: string; expectedRevision: number; type: "next_round" };
 
 export type BridgeRoomStatus = "waiting" | "playing" | "finished";
 
@@ -109,7 +111,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isPlayerRecord(value: unknown): value is BridgeRoomSnapshot["players"] {
   if (!isRecord(value)) return false;
-  return (["north", "east", "south", "west"] as const).every((seat) => {
+  return (["south", "west"] as const).every((seat) => {
     const player = value[seat];
     return isRecord(player)
       && (player.kind === "human" || player.kind === "bot" || player.kind === "open")

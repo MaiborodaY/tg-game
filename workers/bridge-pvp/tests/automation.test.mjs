@@ -2,35 +2,32 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  applyCall,
-  createGame,
-  createViewerSnapshot,
-  getTurnController,
-  playCard,
-} from "../../../bridge/src/game/index.ts";
-import { chooseBotAction } from "../../../bridge/src/ai/index.ts";
+  applySheddingAction,
+  chooseSheddingBotAction,
+  createSheddingGame,
+  createSheddingViewerSnapshot,
+  getSheddingTurnController,
+} from "../../../bridge/src/shedding/index.ts";
 
-test("server-side bots complete deals using only personalized legal views", () => {
-  for (let boardNumber = 1; boardNumber <= 16; boardNumber += 1) {
-    let state = createGame({ seed: `worker-ai-${boardNumber}`, boardNumber });
+test("server-side bots complete matches using only personalized legal views", () => {
+  for (let index = 0; index < 16; index += 1) {
+    let state = createSheddingGame({ seed: `worker-ai-${index}`, targetScore: 60 });
     let actions = 0;
 
-    while (state.phase !== "complete" && actions < 160) {
-      const controller = getTurnController(state);
+    while (state.phase !== "match_complete" && actions < 2_000) {
+      const controller = getSheddingTurnController(state);
       assert.ok(controller);
-      const view = createViewerSnapshot(state, controller);
-      const action = chooseBotAction(view);
+      const view = createSheddingViewerSnapshot(state, controller);
+      const action = chooseSheddingBotAction(view);
 
-      assert.ok(action, `AI returned no action on board ${boardNumber}, revision ${state.revision}`);
-      assert.equal(Object.hasOwn(view, "seed"), false);
-      assert.equal(Object.hasOwn(view, "deckOrder"), false);
-      state = action.type === "call"
-        ? applyCall(state, action.call)
-        : playCard(state, action.cardId);
+      assert.ok(action, `AI returned no action at revision ${state.revision}`);
+      assert.equal(Object.hasOwn(view, "matchSeed"), false);
+      assert.equal(Object.hasOwn(view, "drawPile"), false);
+      state = applySheddingAction(state, action);
       actions += 1;
     }
 
-    assert.equal(state.phase, "complete", `board ${boardNumber} did not complete`);
+    assert.equal(state.phase, "match_complete", `seed ${index} did not complete`);
     assert.equal(state.revision, actions);
   }
 });
