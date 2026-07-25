@@ -34,6 +34,15 @@
         "draft-battler:pvp:dev": "npx wrangler dev --config workers/draft-battler-pvp/wrangler.jsonc",
         "draft-battler:pvp:deploy": "npx wrangler deploy --config workers/draft-battler-pvp/wrangler.jsonc",
         "draft-battler:pvp:typecheck": "tsc --noEmit --project workers/draft-battler-pvp/tsconfig.json",
+        "bridge:dev": "vite bridge --config bridge/vite.config.ts --host 0.0.0.0",
+        "bridge:build": "vite build bridge --config bridge/vite.config.ts && npm run bridge:verify-build",
+        "bridge:verify-build": "node bridge/scripts/verify-build.mjs",
+        "bridge:test": "node --experimental-strip-types --test bridge/tests/*.test.mjs",
+        "bridge:typecheck": "tsc --noEmit --project bridge/tsconfig.json",
+        "bridge:pvp:dev": "npm run bridge:build && npx wrangler dev --config workers/bridge-pvp/wrangler.jsonc --var ENVIRONMENT:development",
+        "bridge:pvp:deploy": "npm run bridge:build && npx wrangler deploy --config workers/bridge-pvp/wrangler.jsonc",
+        "bridge:pvp:test": "node --experimental-strip-types --test workers/bridge-pvp/tests/*.test.mjs",
+        "bridge:pvp:typecheck": "tsc --noEmit --project workers/bridge-pvp/tsconfig.json",
         "runner:dev": "vite runner --host 0.0.0.0",
         "runner:build": "vite build runner --base=./ --outDir ../public",
         "runner:test": "node --experimental-strip-types --test runner/tests/*.test.mjs",
@@ -48,7 +57,7 @@
         "farm-paws:test": "node --experimental-strip-types --test farm-paws/tests/*.test.mjs",
         "farm-paws:typecheck": "tsc --noEmit --project farm-paws/tsconfig.json",
         "functions:typecheck": "tsc --noEmit --project functions/tsconfig.json",
-        "typecheck": "npm run draft-battler:typecheck && npm run draft-battler:pvp:typecheck && npm run gladiator:typecheck && npm run runner:typecheck && npm run tower-defense:typecheck && npm run farm-paws:typecheck && npm run functions:typecheck"
+        "typecheck": "npm run draft-battler:typecheck && npm run draft-battler:pvp:typecheck && npm run bridge:typecheck && npm run bridge:pvp:typecheck && npm run gladiator:typecheck && npm run runner:typecheck && npm run tower-defense:typecheck && npm run farm-paws:typecheck && npm run functions:typecheck"
     },
     "dependencies": {
         "phaser": "^4.1.0"
