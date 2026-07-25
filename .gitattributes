@@ -1,0 +1,5 @@
+.gitattributes text eol=lf
+tower-defense/index.html text eol=lf
+public/td/index.html text eol=lf
+public/td/assets/*.css text eol=lf
+public/td/assets/*.js text eol=lf

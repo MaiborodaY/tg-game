@@ -17,7 +17,5 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("uk", "tower_guide_button"), "Довідка про вежі");
   assert.equal(tr("ru", "tower_storm"), "Грозовой шпиль");
   assert.equal(tr("uk", "enemy_titan"), "Титан розлому");
-  assert.equal(tr("ru", "game_choice_bridge_title"), "Бридж");
-  assert.equal(tr("en", "game_choice_bridge_meta"), "Solo · private table · unranked");
   assert.equal(detectLocale("uk-UA"), "uk");
 });

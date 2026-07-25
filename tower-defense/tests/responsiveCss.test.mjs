@@ -37,10 +37,3 @@ test("tower guide stays scrollable without increasing the reserved build control
   assert.match(css, /\.guide-card \{[^}]*max-height:\s*calc\(var\(--tg-viewport-height\) - 32px\);/s);
   assert.match(css, /\.guide-card \{[^}]*overflow-y:\s*auto;/s);
 });
-
-test("game choice remains scrollable on compact Telegram viewports", () => {
-  assert.match(css, /\.game-choice-card \{[^}]*max-height:\s*calc\(var\(--tg-viewport-height\) - 32px\);/s);
-  assert.match(css, /\.game-choice-card \{[^}]*overflow-y:\s*auto;/s);
-  assert.match(css, /\.game-choice-option \{[^}]*grid-template-columns:\s*52px minmax\(0, 1fr\) auto;/s);
-  assert.match(css, /\.modal-back \{[^}]*min-height:\s*44px;/s);
-});

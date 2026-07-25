@@ -14,12 +14,6 @@ import { createCampaignState } from "./game/state.ts";
 import { calculateRatingScore, MAX_RATING_SCORE } from "./game/scoring.ts";
 import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
 import { createWavePlan } from "./game/waves.ts";
-import {
-  DEFAULT_BRIDGE_APP_URL,
-  buildBridgeLaunchUrl,
-  shouldProtectRewardNavigation,
-  shouldShowTowerDefenseIntro,
-} from "./gameChoice.ts";
 import { detectLocale, tr, type Locale, type TranslationKey } from "./i18n.ts";
 import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
 import {
@@ -60,7 +54,6 @@ const initialCampaign = pendingAtLaunch
   ? createCampaignState()
   : savedCampaign || migrated || createCampaignState();
 const telegram = setupTelegramBridge();
-const bridgeAppUrl = import.meta.env.VITE_BRIDGE_APP_URL?.trim() || DEFAULT_BRIDGE_APP_URL;
 
 let latestUi: TowerDefenseUiState | null = null;
 let rewardFinisher: RewardFinisher | null = null;
@@ -71,8 +64,6 @@ let renderedPreviewWave = -1;
 let cachedPreviewPlan: WavePlan | null = null;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
-let leavingForBridge = false;
-let bridgeNavigationRecoveryTimer: number | null = null;
 
 const elements = {
   appShell: byId("app"),
@@ -127,18 +118,6 @@ const elements = {
   waveEnemies: byId("wave-enemies"),
   threatMeter: byId("threat-meter"),
   startWaveButton: button("start-wave-button"),
-  gameChoiceOverlay: byId("game-choice-overlay"),
-  gameChoiceEyebrow: byId("game-choice-eyebrow"),
-  gameChoiceTitle: byId("game-choice-title"),
-  gameChoiceBody: byId("game-choice-body"),
-  gameChoiceTdTitle: byId("game-choice-td-title"),
-  gameChoiceTdBody: byId("game-choice-td-body"),
-  gameChoiceTdMeta: byId("game-choice-td-meta"),
-  gameChoiceBridgeTitle: byId("game-choice-bridge-title"),
-  gameChoiceBridgeBody: byId("game-choice-bridge-body"),
-  gameChoiceBridgeMeta: byId("game-choice-bridge-meta"),
-  chooseTowerDefense: button("choose-tower-defense"),
-  chooseBridge: button("choose-bridge"),
   introOverlay: byId("intro-overlay"),
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
@@ -146,7 +125,6 @@ const elements = {
   introWaves: byId("intro-waves"),
   introTowers: byId("intro-towers"),
   introBosses: byId("intro-bosses"),
-  introBackToGames: button("intro-back-to-games"),
   resultOverlay: byId("result-overlay"),
   resultCard: document.querySelector<HTMLElement>(".result-card")!,
   resultSigil: byId("result-sigil"),
@@ -170,7 +148,7 @@ if (launch.rewardError) {
   elements.introStart.textContent = text("launch_error_action");
   elements.introStart.disabled = true;
 }
-syncClosingConfirmation();
+telegram.setClosingConfirmation(reward.mode === "server" && !finishSettled);
 
 const mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, {
   onUiChange: (ui) => {
@@ -192,7 +170,8 @@ const scene: TowerDefenseScene = mounted.scene;
 
 bindInteractions();
 restorePendingFinish();
-if (!elements.gameChoiceOverlay.hidden) elements.chooseTowerDefense.focus();
+if (!elements.introOverlay.hidden) elements.introStart.focus();
+else if (elements.resultOverlay.hidden) elements.appShell.inert = false;
 
 function bindInteractions(): void {
   elements.towerCards.forEach((card) => {
@@ -211,10 +190,7 @@ function bindInteractions(): void {
   elements.towerGuideOverlay.addEventListener("click", (event) => {
     if (event.target === elements.towerGuideOverlay) closeTowerGuide();
   });
-  elements.chooseTowerDefense.addEventListener("click", chooseTowerDefense);
-  elements.chooseBridge.addEventListener("click", openBridge);
   elements.introStart.addEventListener("click", dismissIntro);
-  elements.introBackToGames.addEventListener("click", showGameChoice);
   elements.rewardRetry.addEventListener("click", () => void finishReward());
   elements.restartButton.addEventListener("click", restartGame);
 
@@ -222,15 +198,11 @@ function bindInteractions(): void {
     if (document.hidden && latestUi && (latestUi.phase === "wave" || latestUi.phase === "countdown")) scene.setPaused(true);
   });
   window.addEventListener("beforeunload", (event) => {
-    if (shouldProtectRewardNavigation(reward.mode === "server", finishSettled, leavingForBridge)) {
+    if (reward.mode === "server" && !finishSettled) {
       event.preventDefault();
       event.returnValue = "";
     }
   });
-  window.addEventListener("pageshow", () => {
-    restoreRewardNavigationProtection();
-  });
-  window.addEventListener("pagehide", clearBridgeNavigationRecovery);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !elements.towerGuideOverlay.hidden) closeTowerGuide();
   });
@@ -401,7 +373,6 @@ async function finishReward(): Promise<void> {
 }
 
 function showResult(outcome: TerminalOutcome, result: FinalResult, completedWaves: number): void {
-  elements.gameChoiceOverlay.hidden = true;
   elements.resultOverlay.hidden = false;
   elements.appShell.inert = true;
   elements.resultCard.classList.toggle("is-victory", outcome === "victory");
@@ -443,63 +414,6 @@ function dismissIntro(): void {
   telegram.haptic("light");
 }
 
-function chooseTowerDefense(): void {
-  elements.gameChoiceOverlay.hidden = true;
-  const introSeen = readFlag(session, "td-intro-seen-v1");
-  const showIntro = shouldShowTowerDefenseIntro(
-    Boolean(launch.rewardError),
-    initialCampaign.completedWave,
-    introSeen,
-  );
-  elements.introOverlay.hidden = !showIntro;
-  elements.appShell.inert = showIntro;
-  if (showIntro) elements.introStart.focus();
-  else elements.startWaveButton.focus();
-  telegram.haptic("light");
-}
-
-function showGameChoice(): void {
-  elements.introOverlay.hidden = true;
-  elements.gameChoiceOverlay.hidden = false;
-  elements.appShell.inert = true;
-  elements.chooseTowerDefense.focus();
-  telegram.haptic("light");
-}
-
-function openBridge(): void {
-  leavingForBridge = true;
-  telegram.setClosingConfirmation(false);
-  telegram.haptic("medium");
-  clearBridgeNavigationRecovery();
-  // Some WebViews can silently ignore navigation; never leave reward protection disabled.
-  bridgeNavigationRecoveryTimer = window.setTimeout(restoreRewardNavigationProtection, 3_000);
-  try {
-    window.location.assign(buildBridgeLaunchUrl(window.location.href, bridgeAppUrl));
-  } catch {
-    restoreRewardNavigationProtection();
-    showToast(text("game_choice_bridge_error"), true);
-  }
-}
-
-function restoreRewardNavigationProtection(): void {
-  clearBridgeNavigationRecovery();
-  if (!leavingForBridge) return;
-  leavingForBridge = false;
-  syncClosingConfirmation();
-}
-
-function clearBridgeNavigationRecovery(): void {
-  if (bridgeNavigationRecoveryTimer === null) return;
-  window.clearTimeout(bridgeNavigationRecoveryTimer);
-  bridgeNavigationRecoveryTimer = null;
-}
-
-function syncClosingConfirmation(): void {
-  telegram.setClosingConfirmation(
-    shouldProtectRewardNavigation(reward.mode === "server", finishSettled, leavingForBridge),
-  );
-}
-
 function openTowerGuide(): void {
   if (!elements.towerGuideOverlay.hidden) return;
   guideReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : elements.towerGuideButton;
@@ -535,18 +449,6 @@ function applyStaticTranslations(): void {
   document.title = text("app_title");
   elements.appTitle.textContent = text("app_title");
   elements.appSubtitle.textContent = text("app_subtitle");
-  elements.gameChoiceEyebrow.textContent = text("game_choice_eyebrow");
-  elements.gameChoiceTitle.textContent = text("game_choice_title");
-  elements.gameChoiceBody.textContent = text("game_choice_body");
-  elements.gameChoiceTdTitle.textContent = text("game_choice_td_title");
-  elements.gameChoiceTdBody.textContent = text("game_choice_td_body");
-  elements.gameChoiceTdMeta.textContent = text(
-    reward.mode === "server" ? "game_choice_td_meta" : "game_choice_td_practice_meta",
-  );
-  elements.gameChoiceBridgeTitle.textContent = text("game_choice_bridge_title");
-  elements.gameChoiceBridgeBody.textContent = text("game_choice_bridge_body");
-  elements.gameChoiceBridgeMeta.textContent = text("game_choice_bridge_meta");
-  elements.introBackToGames.textContent = text("game_choice_back");
   elements.hudRegion.setAttribute("aria-label", text("defense_status"));
   elements.gameRoot.setAttribute("aria-label", text("game_field"));
   elements.livesLabel.textContent = text("lives");

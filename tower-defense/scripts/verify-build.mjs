@@ -12,9 +12,9 @@ const html = readFileSync(htmlPath, "utf8");
 assert.ok(!html.includes("/src/main.ts"), "Production HTML still references /src/main.ts");
 assert.ok(!/localhost|127\.0\.0\.1/i.test(html), "Production HTML contains a local development address");
 assert.ok(!/(?:src|href)=["']\/assets\//i.test(html), "Production assets must use relative URLs");
-assert.ok(html.includes('id="game-choice-overlay"'), "Production HTML is missing the game chooser");
-assert.ok(html.includes('id="choose-tower-defense"'), "Production HTML is missing the Tower Defense choice");
-assert.ok(html.includes('id="choose-bridge"'), "Production HTML is missing the Bridge choice");
+assert.ok(html.includes('id="intro-overlay"'), "Production HTML is missing the Tower Defense intro");
+assert.ok(!html.includes('id="game-choice-overlay"'), "Production HTML still contains the removed game chooser");
+assert.ok(!html.includes('id="choose-bridge"'), "Production HTML still contains a Bridge launch action");
 
 const localReferences = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/gi)]
   .map((match) => match[1])
