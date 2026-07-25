@@ -241,12 +241,29 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 }
 
 .panel-heading { min-height: 29px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.panel-heading > div { display: grid; min-width: 0; }
+.panel-copy { display: grid; min-width: 0; }
+.panel-heading-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .panel-heading small,
 .wave-preview > small,
 .selected-tower small { color: #84b49d; font-size: 8px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .panel-heading strong { font-size: 11px; color: #d5e8dc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .practice-badge { padding: 4px 7px; border-radius: 999px; background: rgba(240, 200, 106, 0.12); color: #f0cd79; font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.tower-guide-button {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(130, 221, 184, 0.36);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(45, 103, 82, 0.96), rgba(22, 63, 52, 0.96));
+  color: var(--mint-light);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: inset 0 1px rgba(255,255,255,0.1);
+}
+.tower-guide-button::after { content: ""; position: absolute; inset: -6px; }
+.tower-guide-button:active { transform: scale(0.94); }
 
 .tower-deck { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .tower-card {
@@ -382,6 +399,63 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .secondary-action.wide { width: 100%; margin-bottom: 7px; }
 .close-hint { display: block; margin-top: 12px; color: #718f7f; font-size: 9px; }
 
+.guide-card {
+  width: min(100%, 420px);
+  max-height: calc(var(--tg-viewport-height) - 32px);
+  padding: 24px 20px 19px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(117, 227, 189, 0.38) transparent;
+}
+.guide-card > * { position: relative; z-index: 1; }
+.guide-card h2 { margin: 7px 42px 7px 0; font-size: clamp(23px, 7vw, 30px); }
+.guide-card .guide-intro { max-width: none; margin: 0 34px 15px 0; font-size: 11px; line-height: 1.45; }
+.guide-close {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  color: #b8cfc1;
+  font-size: 24px;
+  cursor: pointer;
+}
+.guide-grid { display: grid; gap: 8px; }
+.guide-tower {
+  padding: 10px;
+  border: 1px solid rgba(145, 203, 169, 0.15);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(31, 67, 57, 0.9), rgba(15, 42, 37, 0.9));
+  box-shadow: inset 0 1px rgba(255,255,255,0.035);
+}
+.guide-tower-header { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+.guide-tower-header > div { min-width: 0; }
+.guide-tower-header .tower-emblem { flex-basis: 36px; width: 36px; height: 36px; border-radius: 12px; }
+.guide-tower h3 { margin: 0 0 2px; font-family: Georgia, serif; font-size: 14px; }
+.guide-tower-header p { max-width: none; margin: 0; color: #a9c0b3; font-size: 9px; line-height: 1.35; }
+.guide-matchup { max-width: none !important; margin: 4px 0 0 !important; color: #b9cdc1 !important; font-size: 9px !important; line-height: 1.4 !important; }
+.guide-matchup strong { color: #9de9c6; }
+.guide-matchup.is-weak strong { color: #f2c875; }
+.guide-combo {
+  max-width: none !important;
+  margin: 10px 0 8px !important;
+  padding: 9px 11px;
+  border: 1px solid rgba(117, 227, 189, 0.16);
+  border-radius: 12px;
+  background: rgba(117, 227, 189, 0.07);
+  color: #c9dfd2 !important;
+  font-size: 9px !important;
+  line-height: 1.4 !important;
+}
+.guide-card .modal-primary { position: sticky; bottom: 0; margin-top: 2px; }
+
 .toast {
   position: fixed;
   z-index: 200;
@@ -422,6 +496,8 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
   .tower-emblem { flex-basis: 32px; width: 32px; height: 32px; transform: scale(0.92); }
   .wave-command { min-height: 42px; }
   .start-wave-button { min-height: 44px; }
+  .guide-card { padding-top: 19px; padding-bottom: 15px; }
+  .guide-grid { gap: 6px; }
 }
 
 @media (max-height: 519px) {
@@ -444,6 +520,9 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
   .tower-emblem { flex-basis: 30px; width: 30px; height: 30px; }
   .start-wave-button { min-width: 116px; padding-left: 8px; padding-right: 8px; font-size: 10px; }
   .enemy-chip { padding: 2px 4px; }
+  .panel-heading-actions { gap: 3px; }
+  .practice-badge { max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .guide-card { padding-left: 14px; padding-right: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

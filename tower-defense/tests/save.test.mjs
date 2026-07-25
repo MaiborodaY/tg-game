@@ -79,16 +79,35 @@ test("legacy practice progress migrates but reward callers choose whether to use
 
 test("a pending finish is scoped by run and survives a reload without storing a token", () => {
   const storage = memoryStorage();
-  const result = captureFinalResult(6, 80_000);
-  assert.equal(savePendingResult(storage, "run-a", "gameover", result), true);
-  assert.deepEqual(loadPendingResult(storage, "run-a", 24), {
-    version: 1,
+  const result = captureFinalResult(31, 80_000);
+  assert.equal(savePendingResult(storage, "run-a", "gameover", result, 13), true);
+  assert.deepEqual(loadPendingResult(storage, "run-a", 72, 24), {
+    version: 2,
     outcome: "gameover",
-    score: 6,
+    score: 31,
+    waves: 13,
     durationMs: 80_000,
   });
-  assert.equal(loadPendingResult(storage, "run-b", 24), null);
+  assert.equal(loadPendingResult(storage, "run-b", 72, 24), null);
   assert.equal(storage.getItem(pendingKey("run-a")).includes("token"), false);
+});
+
+test("legacy pending wave scores remain retryable after the rating change", () => {
+  const storage = memoryStorage();
+  storage.setItem(pendingKey("legacy-run"), JSON.stringify({
+    version: 1,
+    outcome: "victory",
+    score: 24,
+    durationMs: 90_000,
+  }));
+
+  assert.deepEqual(loadPendingResult(storage, "legacy-run", 72, 24), {
+    version: 2,
+    outcome: "victory",
+    score: 24,
+    waves: 24,
+    durationMs: 90_000,
+  });
 });
 
 function memoryStorage() {

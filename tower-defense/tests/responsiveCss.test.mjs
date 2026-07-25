@@ -31,3 +31,9 @@ test("tower selection keeps the battlefield grid row stable", () => {
   const compactViewport = css.match(/@media \(max-height: 700px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.match(compactViewport, /\.command-panel \{ --tower-controls-height:\s*129px;/);
 });
+
+test("tower guide stays scrollable without increasing the reserved build controls", () => {
+  assert.match(css, /\.tower-guide-button \{[^}]*width:\s*28px;[^}]*height:\s*28px;/s);
+  assert.match(css, /\.guide-card \{[^}]*max-height:\s*calc\(var\(--tg-viewport-height\) - 32px\);/s);
+  assert.match(css, /\.guide-card \{[^}]*overflow-y:\s*auto;/s);
+});

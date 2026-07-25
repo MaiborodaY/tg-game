@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-CvWE97sY.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BP_42R87.css">
+    <script type="module" crossorigin src="./assets/index-u-npZkbR.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bqqnxms_.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -48,8 +48,11 @@
       <section class="command-panel">
         <div id="build-panel" class="build-panel">
           <div class="panel-heading">
-            <div><small id="build-eyebrow">Арсенал</small><strong id="build-hint">Выберите башню и площадку</strong></div>
-            <span id="practice-badge" class="practice-badge" hidden>Тренировка</span>
+            <div class="panel-copy"><small id="build-eyebrow">Арсенал</small><strong id="build-hint">Выберите башню и площадку</strong></div>
+            <div class="panel-heading-actions">
+              <span id="practice-badge" class="practice-badge" hidden>Тренировка</span>
+              <button id="tower-guide-button" class="tower-guide-button" type="button" aria-controls="tower-guide-overlay" aria-expanded="false" aria-label="Справка по башням" title="Справка по башням">?</button>
+            </div>
           </div>
           <div class="tower-deck">
             <button class="tower-card is-selected" type="button" data-tower="ranger">
@@ -105,12 +108,24 @@
       </section>
     </div>
 
+    <div id="tower-guide-overlay" class="modal-layer" hidden>
+      <section class="modal-card guide-card" role="dialog" aria-modal="true" aria-labelledby="tower-guide-title">
+        <button id="tower-guide-close" class="guide-close" type="button" aria-label="Закрыть">×</button>
+        <small id="tower-guide-eyebrow" class="modal-eyebrow">СПРАВОЧНИК ЗАЩИТНИКА</small>
+        <h2 id="tower-guide-title">Какая башня лучше?</h2>
+        <p id="tower-guide-intro" class="guide-intro">Смотри на состав следующей волны и сочетай разные типы урона.</p>
+        <div id="tower-guide-grid" class="guide-grid"></div>
+        <p id="tower-guide-combo" class="guide-combo">Надёжная основа: замедление удерживает врагов внутри огня и цепной молнии.</p>
+        <button id="tower-guide-done" class="modal-primary" type="button">Понятно</button>
+      </section>
+    </div>
+
     <div id="result-overlay" class="modal-layer" hidden>
       <section class="modal-card result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
         <div id="result-sigil" class="result-sigil" aria-hidden="true">✦</div>
         <small id="result-eyebrow" class="modal-eyebrow">ИТОГ ЗАЩИТЫ</small>
         <h2 id="result-title">Лес спасён!</h2>
-        <p id="result-score">Отбито волн: 24</p>
+        <p id="result-score">Волны: 24 / 24 · Очки рейтинга: 72</p>
         <div id="reward-status" class="reward-status">Сохраняем результат…</div>
         <button id="reward-retry" class="secondary-action wide" type="button" hidden>Повторить отправку</button>
         <button id="restart-button" class="modal-primary" type="button" hidden>Начать заново</button>

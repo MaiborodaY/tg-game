@@ -11,6 +11,7 @@ import {
   type StorageLike,
 } from "./game/save.ts";
 import { createCampaignState } from "./game/state.ts";
+import { calculateRatingScore, MAX_RATING_SCORE } from "./game/scoring.ts";
 import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
 import { createWavePlan } from "./game/waves.ts";
 import { detectLocale, tr, type Locale, type TranslationKey } from "./i18n.ts";
@@ -32,6 +33,7 @@ import {
   type TowerDefenseUiState,
 } from "./rendering/TowerDefenseScene.ts";
 import { setupTelegramBridge } from "./telegram.ts";
+import { TOWER_GUIDE_ENTRIES } from "./towerGuide.ts";
 
 const launch = parseLaunchParams(window.location.href);
 const locale = detectLocale(launch.payload?.lang, launch.payload?.language);
@@ -46,7 +48,7 @@ const saveKey = getCampaignSaveKey(reward.mode === "server" ? reward.runId : nul
 const savedCampaign = loadCampaign(storage, saveKey);
 const migrated = reward.mode === "local" && !savedCampaign ? migrateLegacyCampaign(storage) : null;
 const pendingAtLaunch = reward.mode === "server" && reward.runId
-  ? loadPendingResult(storage, reward.runId, FINAL_WAVE)
+  ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE)
   : null;
 const initialCampaign = pendingAtLaunch
   ? createCampaignState()
@@ -61,8 +63,11 @@ let terminalResult: FinalResult | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let renderedPreviewWave = -1;
 let cachedPreviewPlan: WavePlan | null = null;
+let resumeAfterGuide = false;
+let guideReturnFocus: HTMLElement | null = null;
 
 const elements = {
+  appShell: byId("app"),
   appTitle: byId("app-title"),
   appSubtitle: byId("app-subtitle"),
   hudRegion: byId("hud-region"),
@@ -90,6 +95,15 @@ const elements = {
   buildEyebrow: byId("build-eyebrow"),
   buildHint: byId("build-hint"),
   practiceBadge: byId("practice-badge"),
+  towerGuideButton: button("tower-guide-button"),
+  towerGuideOverlay: byId("tower-guide-overlay"),
+  towerGuideClose: button("tower-guide-close"),
+  towerGuideEyebrow: byId("tower-guide-eyebrow"),
+  towerGuideTitle: byId("tower-guide-title"),
+  towerGuideIntro: byId("tower-guide-intro"),
+  towerGuideGrid: byId("tower-guide-grid"),
+  towerGuideCombo: byId("tower-guide-combo"),
+  towerGuideDone: button("tower-guide-done"),
   rangerName: byId("ranger-name"),
   frostName: byId("frost-name"),
   emberName: byId("ember-name"),
@@ -168,6 +182,12 @@ function bindInteractions(): void {
   elements.upgradeButton.addEventListener("click", () => scene.upgradeSelectedTower());
   elements.sellButton.addEventListener("click", () => scene.sellSelectedTower());
   elements.closeTowerPanel.addEventListener("click", () => scene.clearSelection());
+  elements.towerGuideButton.addEventListener("click", openTowerGuide);
+  elements.towerGuideClose.addEventListener("click", closeTowerGuide);
+  elements.towerGuideDone.addEventListener("click", closeTowerGuide);
+  elements.towerGuideOverlay.addEventListener("click", (event) => {
+    if (event.target === elements.towerGuideOverlay) closeTowerGuide();
+  });
   elements.introStart.addEventListener("click", dismissIntro);
   elements.rewardRetry.addEventListener("click", () => void finishReward());
   elements.restartButton.addEventListener("click", restartGame);
@@ -180,6 +200,9 @@ function bindInteractions(): void {
       event.preventDefault();
       event.returnValue = "";
     }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.towerGuideOverlay.hidden) closeTowerGuide();
   });
 }
 
@@ -301,11 +324,12 @@ function showToast(message: string, isError = false): void {
 }
 
 function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
-  const result = captureFinalResult(Math.min(FINAL_WAVE, campaign.completedWave), campaign.activeDurationMs);
+  const completedWaves = Math.min(FINAL_WAVE, campaign.completedWave);
+  const result = captureFinalResult(calculateRatingScore(completedWaves), campaign.activeDurationMs);
   terminalResult = result;
-  const pendingSaved = reward.mode === "server" && savePendingResult(storage, reward.runId, outcome, result);
+  const pendingSaved = reward.mode === "server" && savePendingResult(storage, reward.runId, outcome, result, completedWaves);
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
-  showResult(outcome, result);
+  showResult(outcome, result, completedWaves);
   rewardFinisher = createRewardFinisher(reward, result);
   void finishReward();
 }
@@ -346,13 +370,17 @@ async function finishReward(): Promise<void> {
   telegram.setClosingConfirmation(true);
 }
 
-function showResult(outcome: TerminalOutcome, result: FinalResult): void {
+function showResult(outcome: TerminalOutcome, result: FinalResult, completedWaves: number): void {
   elements.resultOverlay.hidden = false;
   elements.resultCard.classList.toggle("is-victory", outcome === "victory");
   elements.resultCard.classList.toggle("is-defeat", outcome === "gameover");
   elements.resultSigil.textContent = outcome === "victory" ? "✦" : "◆";
   elements.resultTitle.textContent = text(outcome === "victory" ? "victory" : "game_over");
-  elements.resultScore.textContent = text("result_waves", { count: result.score });
+  elements.resultScore.textContent = text("result_summary", {
+    waves: completedWaves,
+    total: FINAL_WAVE,
+    score: result.score,
+  });
   elements.rewardRetry.textContent = text("reward_retry");
   elements.restartButton.textContent = text("restart");
   elements.closeHint.textContent = text(reward.mode === "server" ? "finish_pending_hint" : "close_hint");
@@ -365,14 +393,14 @@ function restorePendingFinish(): void {
     if (initialCampaign.completedWave > 0 || readFlag(session, "td-intro-seen-v1")) elements.introOverlay.hidden = true;
     return;
   }
-  const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, FINAL_WAVE);
+  const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE);
   if (!pending) {
     if (initialCampaign.completedWave > 0 || readFlag(session, "td-intro-seen-v1")) elements.introOverlay.hidden = true;
     return;
   }
   terminalResult = captureFinalResult(pending.score, pending.durationMs);
   rewardFinisher = createRewardFinisher(reward, terminalResult);
-  showResult(pending.outcome, terminalResult);
+  showResult(pending.outcome, terminalResult, pending.waves);
   void finishReward();
 }
 
@@ -380,6 +408,29 @@ function dismissIntro(): void {
   elements.introOverlay.hidden = true;
   writeFlag(session, "td-intro-seen-v1");
   telegram.haptic("light");
+}
+
+function openTowerGuide(): void {
+  if (!elements.towerGuideOverlay.hidden) return;
+  guideReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : elements.towerGuideButton;
+  resumeAfterGuide = Boolean(latestUi && !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown"));
+  if (resumeAfterGuide) scene.setPaused(true);
+  elements.appShell.inert = true;
+  elements.towerGuideOverlay.hidden = false;
+  elements.towerGuideButton.setAttribute("aria-expanded", "true");
+  elements.towerGuideClose.focus();
+  telegram.haptic("light");
+}
+
+function closeTowerGuide(): void {
+  if (elements.towerGuideOverlay.hidden) return;
+  elements.towerGuideOverlay.hidden = true;
+  elements.appShell.inert = false;
+  elements.towerGuideButton.setAttribute("aria-expanded", "false");
+  if (resumeAfterGuide) scene.setPaused(false);
+  resumeAfterGuide = false;
+  if (guideReturnFocus?.isConnected) guideReturnFocus.focus();
+  guideReturnFocus = null;
 }
 
 function restartGame(): void {
@@ -403,6 +454,16 @@ function applyStaticTranslations(): void {
   elements.buildEyebrow.textContent = text("arsenal");
   elements.buildHint.textContent = text("build_hint");
   elements.practiceBadge.textContent = text("practice");
+  const guideButtonLabel = text("tower_guide_button");
+  elements.towerGuideButton.setAttribute("aria-label", guideButtonLabel);
+  elements.towerGuideButton.title = guideButtonLabel;
+  elements.towerGuideClose.setAttribute("aria-label", text("close"));
+  elements.towerGuideEyebrow.textContent = text("guide_eyebrow");
+  elements.towerGuideTitle.textContent = text("guide_title");
+  elements.towerGuideIntro.textContent = text("guide_intro");
+  elements.towerGuideCombo.textContent = text("guide_combo");
+  elements.towerGuideDone.textContent = text("guide_done");
+  renderTowerGuide();
   elements.rangerName.textContent = text("tower_ranger");
   elements.frostName.textContent = text("tower_frost");
   elements.emberName.textContent = text("tower_ember");
@@ -419,6 +480,43 @@ function applyStaticTranslations(): void {
   elements.pauseButton.setAttribute("aria-label", text("pause"));
   elements.speedButton.setAttribute("aria-label", text("speed"));
   elements.pulseButton.setAttribute("aria-label", text("pulse_ready"));
+}
+
+function renderTowerGuide(): void {
+  elements.towerGuideGrid.replaceChildren(...TOWER_GUIDE_ENTRIES.map((entry) => {
+    const card = document.createElement("article");
+    card.className = `guide-tower ${entry.type}`;
+
+    const header = document.createElement("div");
+    header.className = "guide-tower-header";
+    const emblem = document.createElement("span");
+    emblem.className = `tower-emblem ${entry.type}`;
+    emblem.setAttribute("aria-hidden", "true");
+    emblem.append(document.createElement("i"));
+    const copy = document.createElement("div");
+    const name = document.createElement("h3");
+    name.textContent = towerName(entry.type);
+    const description = document.createElement("p");
+    description.textContent = text(entry.descriptionKey);
+    copy.append(name, description);
+    header.append(emblem, copy);
+
+    card.append(
+      header,
+      guideMatchup("strong", "guide_strong", entry.strongKey),
+      guideMatchup("weak", "guide_weak", entry.weakKey),
+    );
+    return card;
+  }));
+}
+
+function guideMatchup(kind: "strong" | "weak", labelKey: TranslationKey, valueKey: TranslationKey): HTMLElement {
+  const row = document.createElement("p");
+  row.className = `guide-matchup is-${kind}`;
+  const label = document.createElement("strong");
+  label.textContent = `${kind === "strong" ? "✓" : "!"} ${text(labelKey)}:`;
+  row.append(label, document.createTextNode(` ${text(valueKey)}`));
+  return row;
 }
 
 function towerName(type: TowerType): string {
