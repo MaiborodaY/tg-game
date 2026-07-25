@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { BUILD_PAD_HIT_SIZE } from "../src/game/config.ts";
 
-const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const css = readFileSync(new globalThis.URL("../src/styles.css", import.meta.url), "utf8");
 
 test("short Telegram viewports keep controls and modals vertically reachable", () => {
   const shortViewport = css.match(/@media \(max-height: 519px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
@@ -36,4 +36,11 @@ test("tower guide stays scrollable without increasing the reserved build control
   assert.match(css, /\.tower-guide-button \{[^}]*width:\s*28px;[^}]*height:\s*28px;/s);
   assert.match(css, /\.guide-card \{[^}]*max-height:\s*calc\(var\(--tg-viewport-height\) - 32px\);/s);
   assert.match(css, /\.guide-card \{[^}]*overflow-y:\s*auto;/s);
+});
+
+test("game choice remains scrollable on compact Telegram viewports", () => {
+  assert.match(css, /\.game-choice-card \{[^}]*max-height:\s*calc\(var\(--tg-viewport-height\) - 32px\);/s);
+  assert.match(css, /\.game-choice-card \{[^}]*overflow-y:\s*auto;/s);
+  assert.match(css, /\.game-choice-option \{[^}]*grid-template-columns:\s*52px minmax\(0, 1fr\) auto;/s);
+  assert.match(css, /\.modal-back \{[^}]*min-height:\s*44px;/s);
 });

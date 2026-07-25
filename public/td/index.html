@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-u-npZkbR.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Bqqnxms_.css">
+    <script type="module" crossorigin src="./assets/index-By1k1y7N.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CH8y_HSB.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -93,7 +93,35 @@
       </section>
     </div>
 
-    <div id="intro-overlay" class="modal-layer">
+    <div id="game-choice-overlay" class="modal-layer">
+      <section class="modal-card game-choice-card" role="dialog" aria-modal="true" aria-labelledby="game-choice-title">
+        <small id="game-choice-eyebrow" class="modal-eyebrow">ИГРЫ ТАВЕРНЫ</small>
+        <h1 id="game-choice-title">Во что сыграем?</h1>
+        <p id="game-choice-body">Выберите приключение. К этому экрану можно вернуться до начала защиты.</p>
+        <div class="game-choice-options">
+          <button id="choose-tower-defense" class="game-choice-option is-tower-defense" type="button">
+            <span class="game-choice-icon" aria-hidden="true">♜</span>
+            <span class="game-choice-copy">
+              <strong id="game-choice-td-title">Защита башнями</strong>
+              <span id="game-choice-td-body">Стройте башни и удержите 24 волны врагов.</span>
+              <small id="game-choice-td-meta">24 волны · рейтинг</small>
+            </span>
+            <span class="game-choice-arrow" aria-hidden="true">›</span>
+          </button>
+          <button id="choose-bridge" class="game-choice-option is-bridge" type="button">
+            <span class="game-choice-icon" aria-hidden="true">♣</span>
+            <span class="game-choice-copy">
+              <strong id="game-choice-bridge-title">Бридж</strong>
+              <span id="game-choice-bridge-body">Торгуйтесь и разыгрывайте контракт против ИИ или игрока.</span>
+              <small id="game-choice-bridge-meta">Solo · приватный стол · без рейтинга</small>
+            </span>
+            <span class="game-choice-arrow" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div id="intro-overlay" class="modal-layer" hidden>
       <section class="modal-card intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
         <div class="intro-sigil" aria-hidden="true"><span>✦</span></div>
         <small class="modal-eyebrow">TOWER DEFENSE</small>
@@ -105,6 +133,7 @@
           <span><i class="feature-icon">✺</i><b id="intro-bosses">Боссы</b></span>
         </div>
         <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
+        <button id="intro-back-to-games" class="modal-back" type="button">К выбору игр</button>
       </section>
     </div>
 

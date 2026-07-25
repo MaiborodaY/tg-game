@@ -12,6 +12,9 @@ const html = readFileSync(htmlPath, "utf8");
 assert.ok(!html.includes("/src/main.ts"), "Production HTML still references /src/main.ts");
 assert.ok(!/localhost|127\.0\.0\.1/i.test(html), "Production HTML contains a local development address");
 assert.ok(!/(?:src|href)=["']\/assets\//i.test(html), "Production assets must use relative URLs");
+assert.ok(html.includes('id="game-choice-overlay"'), "Production HTML is missing the game chooser");
+assert.ok(html.includes('id="choose-tower-defense"'), "Production HTML is missing the Tower Defense choice");
+assert.ok(html.includes('id="choose-bridge"'), "Production HTML is missing the Bridge choice");
 
 const localReferences = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/gi)]
   .map((match) => match[1])
@@ -25,4 +28,4 @@ for (const reference of localReferences) {
 
 assert.ok(localReferences.some((value) => value.endsWith(".js")), "Production HTML has no JavaScript bundle");
 assert.ok(localReferences.some((value) => value.endsWith(".css")), "Production HTML has no CSS bundle");
-console.log(`Tower Defense build verified (${localReferences.length} local assets).`);
+globalThis.console.log(`Tower Defense build verified (${localReferences.length} local assets).`);
