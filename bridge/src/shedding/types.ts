@@ -14,6 +14,7 @@ export interface SheddingCard {
 }
 
 export type SheddingPhase = "playing" | "round_complete" | "match_complete";
+export type SheddingRoundFinish = "empty_hand" | "jack_finish" | "four_of_a_kind";
 
 export type SheddingAction =
   | Readonly<{
@@ -43,13 +44,16 @@ export interface SheddingRoundResult {
   readonly round: number;
   readonly winner: SheddingSeat;
   readonly loser: SheddingSeat;
+  readonly finish: SheddingRoundFinish;
+  readonly basePoints: number;
+  readonly scoreMultiplier: 1 | 2;
   readonly points: number;
   readonly loserCards: readonly SheddingCardId[];
   readonly scores: Readonly<Record<SheddingSeat, number>>;
 }
 
 export interface SheddingGameState {
-  readonly version: 2;
+  readonly version: 3;
   readonly revision: number;
   readonly round: number;
   readonly targetScore: number;
@@ -61,6 +65,7 @@ export interface SheddingGameState {
   readonly drawPile: readonly SheddingCardId[];
   readonly discardPile: readonly SheddingCardId[];
   readonly declaredSuit: SheddingSuit | null;
+  readonly sixCoverSeat: SheddingSeat | null;
   readonly recycleCount: number;
   readonly lastAction: SheddingLastAction | null;
   readonly roundResult: SheddingRoundResult | null;
@@ -77,7 +82,7 @@ export interface CreateSheddingGameOptions {
 }
 
 export interface SheddingViewerSnapshot {
-  readonly version: 2;
+  readonly version: 3;
   readonly revision: number;
   readonly round: number;
   readonly targetScore: number;
@@ -90,6 +95,8 @@ export interface SheddingViewerSnapshot {
   readonly hands: Readonly<Partial<Record<SheddingSeat, readonly SheddingCardId[]>>>;
   readonly handCounts: Readonly<Record<SheddingSeat, number>>;
   readonly topCard: SheddingCardId;
+  readonly topRankCount: number;
+  readonly mustCoverSix: boolean;
   readonly declaredSuit: SheddingSuit | null;
   readonly drawCount: number;
   readonly discardCount: number;

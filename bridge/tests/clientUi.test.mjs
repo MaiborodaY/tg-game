@@ -19,6 +19,9 @@ const mainSource = await readFile(new globalThis.URL("../src/main.ts", import.me
 test("the client renders the requested shedding-Bridge rules instead of contract bidding", () => {
   assert.match(mainSource, /Дворовый Бридж/);
   assert.match(mainSource, /Первый, кто набрал 125 или больше/);
+  assert.match(mainSource, /Накройте шестёрку/);
+  assert.match(mainSource, /Четыре одинаковые — очки удвоены/);
+  assert.match(mainSource, /Финиш валетом, очки ×2/);
   assert.match(mainSource, /data-action="draw-card"/);
   assert.match(mainSource, /data-action="play-selected"/);
   assert.match(mainSource, /data-action="select-suit"/);
@@ -32,7 +35,7 @@ test("the client renders the requested shedding-Bridge rules instead of contract
 test("card presentation uses the 36-card deck and the agreed point values", () => {
   assert.equal(SHEDDING_DECK.length, 36);
   assert.deepEqual(getSheddingCard("hj"), { id: "HJ", suit: "hearts", rank: 11 });
-  assert.equal(getSheddingCardPoints("C7"), 7);
+  assert.equal(getSheddingCardPoints("C7"), 0);
   assert.equal(getSheddingCardPoints("SQ"), 10);
   assert.equal(getSheddingCardPoints("DJ"), 20);
   assert.equal(getSheddingCardPoints("HA"), 15);

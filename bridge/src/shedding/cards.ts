@@ -92,7 +92,7 @@ export function getSheddingCardPoints(cardId: SheddingCardId): number {
   if (rank === 14) return 15;
   if (rank === 11) return 20;
   if (rank >= 10) return 10;
-  return rank;
+  return 0;
 }
 
 export function scoreSheddingHand(cardIds: readonly SheddingCardId[]): number {

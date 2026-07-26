@@ -16,6 +16,7 @@ import {
   type SheddingCardId,
   type SheddingGameState,
   type SheddingLastAction,
+  type SheddingRoundFinish,
   type SheddingRoundResult,
   type SheddingSeat,
   type SheddingSuit,
@@ -88,16 +89,40 @@ export function playSheddingCards(
 
   let drawPile = [...state.drawPile];
   let discardPile = [...state.discardPile, ...normalized];
+  const madeFourOfAKind = getTopRankCount(discardPile) === 4;
   let recycleCount = state.recycleCount;
   let penaltyCards = 0;
   let skippedOpponent = false;
+  const nextDeclaredSuit = rank === 11 ? declaredSuit ?? null : null;
+
+  if (madeFourOfAKind) {
+    const lastAction: SheddingLastAction = Object.freeze({
+      type: "play_cards",
+      seat,
+      cardIds: Object.freeze([...normalized]),
+      declaredSuit: nextDeclaredSuit,
+      penaltyCards: 0,
+      skippedOpponent: false,
+    });
+    return completeRound(
+      state,
+      seat,
+      hands,
+      drawPile,
+      discardPile,
+      recycleCount,
+      nextDeclaredSuit,
+      lastAction,
+      "four_of_a_kind",
+    );
+  }
 
   if (rank === 7) {
     penaltyCards = normalized.length;
   } else if (rank === 8) {
     penaltyCards = normalized.length * 2;
     skippedOpponent = true;
-  } else if (rank === 6 || rank === 14) {
+  } else if (rank === 14) {
     skippedOpponent = true;
   }
 
@@ -110,7 +135,6 @@ export function playSheddingCards(
     penaltyCards = drawResult.cards.length;
   }
 
-  const nextDeclaredSuit = rank === 11 ? declaredSuit ?? null : null;
   const lastAction: SheddingLastAction = Object.freeze({
     type: "play_cards",
     seat,
@@ -120,18 +144,30 @@ export function playSheddingCards(
     skippedOpponent,
   });
 
-  if (hands[seat].length === 0) {
-    return completeRound(state, seat, hands, drawPile, discardPile, recycleCount, nextDeclaredSuit, lastAction);
+  // A six never ends a turn by itself: the same player must cover it first.
+  if (rank !== 6 && hands[seat].length === 0) {
+    return completeRound(
+      state,
+      seat,
+      hands,
+      drawPile,
+      discardPile,
+      recycleCount,
+      nextDeclaredSuit,
+      lastAction,
+      rank === 11 ? "jack_finish" : "empty_hand",
+    );
   }
 
   return freezeState({
     ...state,
     revision: state.revision + 1,
-    currentSeat: skippedOpponent ? seat : opponent,
+    currentSeat: rank === 6 || skippedOpponent ? seat : opponent,
     hands,
     drawPile,
     discardPile,
     declaredSuit: nextDeclaredSuit,
+    sixCoverSeat: rank === 6 ? seat : null,
     recycleCount,
     lastAction,
   });
@@ -142,22 +178,38 @@ export function drawSheddingCard(state: SheddingGameState): SheddingGameState {
   if (getLegalSheddingCardIds(state).length > 0) throw new SheddingRuleError("play_available");
 
   const seat = state.currentSeat;
-  const drawResult = drawFromPiles(state.drawPile, state.discardPile, 1, state.recycleCount);
+  const coveringSix = mustCoverSheddingSix(state);
+  let drawPile = [...state.drawPile];
+  let discardPile = [...state.discardPile];
+  let recycleCount = state.recycleCount;
+  const drawnCards: SheddingCardId[] = [];
+
+  do {
+    const drawResult = drawFromPiles(drawPile, discardPile, 1, recycleCount);
+    drawPile = drawResult.drawPile;
+    discardPile = drawResult.discardPile;
+    recycleCount = drawResult.recycleCount;
+    drawnCards.push(...drawResult.cards);
+    if (drawResult.cards.length === 0 || !coveringSix) break;
+  } while (!drawnCards.some((cardId) => isLegalSheddingCard(state, cardId)));
+
   const hands = {
     south: [...state.hands.south],
     west: [...state.hands.west],
   };
-  hands[seat].push(...drawResult.cards);
+  hands[seat].push(...drawnCards);
+  const canNowCoverSix = coveringSix && hands[seat].some((cardId) => isLegalSheddingCard(state, cardId));
 
   return freezeState({
     ...state,
     revision: state.revision + 1,
-    currentSeat: otherSheddingSeat(seat),
+    currentSeat: canNowCoverSix ? seat : otherSheddingSeat(seat),
     hands,
-    drawPile: drawResult.drawPile,
-    discardPile: drawResult.discardPile,
-    recycleCount: drawResult.recycleCount,
-    lastAction: Object.freeze({ type: "draw_card", seat, count: drawResult.cards.length }),
+    drawPile,
+    discardPile,
+    sixCoverSeat: canNowCoverSix ? seat : null,
+    recycleCount,
+    lastAction: Object.freeze({ type: "draw_card", seat, count: drawnCards.length }),
   });
 }
 
@@ -179,20 +231,19 @@ export function startNextSheddingRound(state: SheddingGameState): SheddingGameSt
 
 export function getLegalSheddingCardIds(state: SheddingGameState): readonly SheddingCardId[] {
   if (state.phase !== "playing" || !state.currentSeat) return Object.freeze([]);
-  const topCard = getSheddingCard(getTopDiscard(state));
-  const requiredSuit = state.declaredSuit ?? topCard.suit;
-  return Object.freeze(state.hands[state.currentSeat].filter((cardId) => {
-    const card = getSheddingCard(cardId);
-    if (card.rank === 11) return true;
-    if (state.declaredSuit) return card.suit === requiredSuit;
-    return card.suit === requiredSuit || card.rank === topCard.rank;
-  }));
+  return Object.freeze(state.hands[state.currentSeat].filter((cardId) => isLegalSheddingCard(state, cardId)));
 }
 
 export function getSheddingTurnController(state: SheddingGameState): SheddingSeat | null {
   if (state.phase === "playing") return state.currentSeat;
   if (state.phase === "round_complete") return state.roundResult?.winner ?? null;
   return null;
+}
+
+export function mustCoverSheddingSix(state: SheddingGameState): boolean {
+  return state.phase === "playing"
+    && state.currentSeat !== null
+    && state.sixCoverSeat === state.currentSeat;
 }
 
 export function createSheddingViewerSnapshot(
@@ -210,7 +261,7 @@ export function createSheddingViewerSnapshot(
     : Object.freeze({ [viewerSeat]: Object.freeze([...state.hands[viewerSeat]].sort(compareSheddingCards)) });
 
   return Object.freeze({
-    version: 2,
+    version: 3,
     revision: state.revision,
     round: state.round,
     targetScore: state.targetScore,
@@ -223,6 +274,8 @@ export function createSheddingViewerSnapshot(
     hands,
     handCounts: Object.freeze({ south: state.hands.south.length, west: state.hands.west.length }),
     topCard: getTopDiscard(state),
+    topRankCount: getTopRankCount(state.discardPile),
+    mustCoverSix: mustCoverSheddingSix(state),
     declaredSuit: state.declaredSuit,
     drawCount: state.drawPile.length,
     discardCount: state.discardPile.length,
@@ -249,9 +302,12 @@ function completeRound(
   recycleCount: number,
   declaredSuit: SheddingSuit | null,
   lastAction: SheddingLastAction,
+  finish: SheddingRoundFinish,
 ): SheddingGameState {
   const loser = otherSheddingSeat(winner);
-  const points = scoreSheddingHand(hands[loser]);
+  const basePoints = scoreSheddingHand(hands[loser]);
+  const scoreMultiplier = finish === "empty_hand" ? 1 : 2;
+  const points = basePoints * scoreMultiplier;
   const scores = Object.freeze({
     ...state.scores,
     [winner]: state.scores[winner] + points,
@@ -261,6 +317,9 @@ function completeRound(
     round: state.round,
     winner,
     loser,
+    finish,
+    basePoints,
+    scoreMultiplier,
     points,
     loserCards: Object.freeze([...hands[loser]].sort(compareSheddingCards)),
     scores,
@@ -276,6 +335,7 @@ function completeRound(
     drawPile,
     discardPile,
     declaredSuit,
+    sixCoverSeat: null,
     recycleCount,
     lastAction,
     roundResult,
@@ -306,18 +366,19 @@ function createRoundState(options: {
   if (!openingCard) throw new Error("Could not create the opening discard.");
 
   return freezeState({
-    version: 2,
+    version: 3,
     revision: options.revision,
     round: options.round,
     targetScore: options.targetScore,
     phase: "playing",
     dealer: options.dealer,
-    currentSeat: nonDealer,
+    currentSeat: options.dealer,
     scores: options.scores,
     hands,
     drawPile: deck.slice(cursor),
     discardPile: [openingCard],
     declaredSuit: null,
+    sixCoverSeat: getSheddingCard(openingCard).rank === 6 ? options.dealer : null,
     recycleCount: 0,
     lastAction: null,
     roundResult: null,
@@ -361,6 +422,29 @@ function getTopDiscard(state: Pick<SheddingGameState, "discardPile">): SheddingC
   const cardId = state.discardPile[state.discardPile.length - 1];
   if (!cardId) throw new Error("A shedding Bridge state must have an open card.");
   return cardId;
+}
+
+function getTopRankCount(discardPile: readonly SheddingCardId[]): number {
+  const topCardId = discardPile[discardPile.length - 1];
+  if (!topCardId) return 0;
+  const topRank = getSheddingCard(topCardId).rank;
+  let count = 0;
+  for (let index = discardPile.length - 1; index >= 0; index -= 1) {
+    if (getSheddingCard(discardPile[index]).rank !== topRank) break;
+    count += 1;
+  }
+  return count;
+}
+
+function isLegalSheddingCard(
+  state: Pick<SheddingGameState, "discardPile" | "declaredSuit">,
+  cardId: SheddingCardId,
+): boolean {
+  const topCard = getSheddingCard(getTopDiscard(state));
+  const card = getSheddingCard(cardId);
+  if (card.rank === 11) return true;
+  if (state.declaredSuit) return card.suit === state.declaredSuit;
+  return card.suit === topCard.suit || card.rank === topCard.rank;
 }
 
 function freezeState(state: SheddingGameState | (Omit<SheddingGameState, "hands" | "drawPile" | "discardPile"> & {

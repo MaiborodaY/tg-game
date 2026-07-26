@@ -131,8 +131,8 @@ type BridgeRpcResult<T> =
   | { ok: false; error: { code: string; message: string } };
 
 const API_PREFIX = "/api/bridge";
-const ROOM_STORAGE_KEY = "room:v2";
-const LEGACY_ROOM_STORAGE_KEY = "room:v1";
+const ROOM_STORAGE_KEY = "room:v3";
+const LEGACY_ROOM_STORAGE_KEYS = ["room:v2", "room:v1"] as const;
 const WAITING_ROOM_TTL_MS = 10 * 60_000;
 const FINISHED_ROOM_TTL_MS = 15 * 60_000;
 const ACTIVE_ROOM_TTL_MS = 2 * 60 * 60_000;
@@ -650,10 +650,11 @@ export class BridgeRoom extends DurableObject<Env> {
     const record = await this.ctx.storage.get<BridgeRoomRecord>(ROOM_STORAGE_KEY);
     if (record) return record;
 
-    // Contract-Bridge rooms are incompatible with the two-player shedding engine.
-    // They were short-lived, so clear the legacy payload instead of attempting a lossy migration.
-    const legacy = await this.ctx.storage.get(LEGACY_ROOM_STORAGE_KEY);
-    if (legacy !== undefined) await this.ctx.storage.delete(LEGACY_ROOM_STORAGE_KEY);
+    // Active rooms are short-lived; discard older rule versions instead of mixing turn invariants.
+    for (const legacyKey of LEGACY_ROOM_STORAGE_KEYS) {
+      const legacy = await this.ctx.storage.get(legacyKey);
+      if (legacy !== undefined) await this.ctx.storage.delete(legacyKey);
+    }
     return undefined;
   }
 

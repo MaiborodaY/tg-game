@@ -10,6 +10,7 @@ import {
   getLegalSheddingCardIds,
   getSheddingCardPoints,
   getSheddingTurnController,
+  mustCoverSheddingSix,
   playSheddingCards,
   scoreSheddingHand,
   startNextSheddingRound,
@@ -42,13 +43,21 @@ test("a round uses a 36-card deck and the dealer opens their fifth card", () => 
   assert.deepEqual(state.hands.west, ["C6", "C7", "C8", "C9", "CT"]);
   assert.deepEqual(state.hands.south, ["D6", "D7", "D8", "D9"]);
   assert.deepEqual(state.discardPile, ["DT"]);
-  assert.equal(state.currentSeat, "west");
+  assert.equal(state.currentSeat, "south");
   assert.equal(state.drawPile.length, 26);
+});
+
+test("the dealer with four cards opens and may cover the table by suit or rank", () => {
+  const deck = deckWithPrefix(["H6", "CT", "H7", "D7", "H8", "D8", "H9", "D9", "HK", "DT"]);
+  const state = createSheddingGame({ deck, dealer: "south" });
+
+  assert.equal(state.currentSeat, "south");
+  assert.deepEqual(new Set(getLegalSheddingCardIds(state)), new Set(["CT", "D7", "D8", "D9"]));
 });
 
 test("cards match the open suit or rank, while a jack is always wild", () => {
   const deck = deckWithPrefix(["H6", "C7", "C9", "D7", "SJ", "S7", "D8", "H8", "HK", "H9"]);
-  const state = createSheddingGame({ deck, dealer: "south" });
+  const state = replaceState(createSheddingGame({ deck, dealer: "south" }), { currentSeat: "west" });
 
   assert.deepEqual(new Set(getLegalSheddingCardIds(state)), new Set(["H6", "C9", "SJ", "HK"]));
   assert.throws(() => playSheddingCards(state, ["D8"]), { code: "illegal_card" });
@@ -60,25 +69,75 @@ test("cards match the open suit or rank, while a jack is always wild", () => {
   assert.deepEqual(getLegalSheddingCardIds(afterJack), ["D7"]);
 });
 
-test("equal ranks can be discarded together and special cards resolve immediately", () => {
+test("equal ranks can be discarded together and eights resolve immediately", () => {
   const state = replaceState(createSheddingGame({ seed: "effects" }), {
     currentSeat: "west",
     hands: {
       west: ["H8", "S8", "S6"],
       south: ["C7", "D9"],
     },
-    drawPile: ["CQ", "DK", "HA", "S6", "C9"],
+    drawPile: ["CQ", "DK", "HA", "C9", "H7"],
     discardPile: ["H9"],
   });
 
   const afterEights = playSheddingCards(state, ["H8", "S8"]);
   assert.equal(afterEights.currentSeat, "west", "an eight skips the opponent");
-  assert.deepEqual(afterEights.hands.south, ["C7", "D9", "CQ", "DK", "HA", "S6"]);
+  assert.deepEqual(afterEights.hands.south, ["C7", "D9", "CQ", "DK", "HA", "C9"]);
   assert.equal(afterEights.lastAction?.penaltyCards, 4);
 
-  const afterSix = playSheddingCards(afterEights, ["S6"]);
-  assert.equal(afterSix.phase, "round_complete");
-  assert.equal(afterSix.roundResult?.winner, "west");
+});
+
+test("the player who lays a six must cover it and draws until a cover is available", () => {
+  const state = replaceState(createSheddingGame({ seed: "six-cover" }), {
+    currentSeat: "south",
+    hands: { south: ["H6"], west: ["DT"] },
+    drawPile: ["C7", "H7", "C9"],
+    discardPile: ["H9"],
+    sixCoverSeat: null,
+  });
+
+  const afterSix = playSheddingCards(state, ["H6"]);
+  assert.equal(afterSix.phase, "playing", "a final six cannot end the round");
+  assert.equal(afterSix.currentSeat, "south");
+  assert.equal(mustCoverSheddingSix(afterSix), true);
+  assert.deepEqual(afterSix.hands.south, []);
+
+  const afterDraw = applySheddingAction(afterSix, { type: "draw_card" });
+  assert.equal(afterDraw.currentSeat, "south", "the turn stays until the six can be covered");
+  assert.equal(afterDraw.lastAction?.type, "draw_card");
+  assert.equal(afterDraw.lastAction?.count, 2);
+  assert.deepEqual(afterDraw.hands.south, ["C7", "H7"]);
+  assert.deepEqual(getLegalSheddingCardIds(afterDraw), ["H7"]);
+
+  const afterCover = playSheddingCards(afterDraw, ["H7"]);
+  assert.equal(mustCoverSheddingSix(afterCover), false);
+  assert.equal(afterCover.currentSeat, "west");
+});
+
+test("an opening six must be covered by the dealer", () => {
+  const deck = deckWithPrefix(["C6", "C7", "D7", "H8", "S7", "S9", "C8", "CK", "D8", "D6"]);
+  const state = createSheddingGame({ deck, dealer: "south" });
+
+  assert.equal(state.currentSeat, "south");
+  assert.equal(state.sixCoverSeat, "south");
+  assert.equal(mustCoverSheddingSix(state), true);
+  assert.deepEqual(getLegalSheddingCardIds(state), []);
+});
+
+test("an exhausted deck releases an impossible six cover instead of deadlocking", () => {
+  const state = replaceState(createSheddingGame({ seed: "empty-six-cover" }), {
+    currentSeat: "south",
+    hands: { south: ["C7"], west: ["H7"] },
+    drawPile: [],
+    discardPile: ["H6"],
+    sixCoverSeat: "south",
+  });
+
+  const next = applySheddingAction(state, { type: "draw_card" });
+  assert.equal(next.currentSeat, "west");
+  assert.equal(next.sixCoverSeat, null);
+  assert.equal(mustCoverSheddingSix(next), false);
+  assert.deepEqual(getLegalSheddingCardIds(next), ["H7"]);
 });
 
 test("a seven gives cards but does not skip the opponent", () => {
@@ -111,11 +170,12 @@ test("a player draws one card only when no legal play is available", () => {
 });
 
 test("round points go to the player who emptied their hand and 125 wins the match", () => {
-  assert.equal(getSheddingCardPoints("C6"), 6);
+  assert.equal(getSheddingCardPoints("C6"), 0);
+  assert.equal(getSheddingCardPoints("S9"), 0);
   assert.equal(getSheddingCardPoints("DT"), 10);
   assert.equal(getSheddingCardPoints("HJ"), 20);
   assert.equal(getSheddingCardPoints("SA"), 15);
-  assert.equal(scoreSheddingHand(["C6", "DT", "HJ", "SA"]), 51);
+  assert.equal(scoreSheddingHand(["C6", "DT", "HJ", "SJ", "SA"]), 65);
 
   const state = replaceState(createSheddingGame({ seed: "score", targetScore: 125 }), {
     currentSeat: "west",
@@ -127,14 +187,75 @@ test("round points go to the player who emptied their hand and 125 wins the matc
 
   assert.equal(complete.phase, "match_complete");
   assert.equal(complete.matchWinner, "west");
-  assert.equal(complete.scores.west, 131);
-  assert.equal(complete.roundResult?.points, 51);
+  assert.equal(complete.scores.west, 125);
+  assert.equal(complete.roundResult?.finish, "empty_hand");
+  assert.equal(complete.roundResult?.basePoints, 45);
+  assert.equal(complete.roundResult?.scoreMultiplier, 1);
+  assert.equal(complete.roundResult?.points, 45);
+});
+
+test("finishing with one or more jacks doubles the round points once", () => {
+  const state = replaceState(createSheddingGame({ seed: "jack-finish" }), {
+    currentSeat: "west",
+    hands: { west: ["CJ"], south: ["DT", "HJ"] },
+    discardPile: ["S9"],
+    scores: { south: 0, west: 60 },
+  });
+  const complete = playSheddingCards(state, ["CJ"], "clubs");
+
+  assert.equal(complete.phase, "round_complete");
+  assert.equal(complete.scores.west, 120);
+  assert.equal(complete.roundResult?.finish, "jack_finish");
+  assert.equal(complete.roundResult?.basePoints, 30);
+  assert.equal(complete.roundResult?.scoreMultiplier, 2);
+  assert.equal(complete.roundResult?.points, 60);
+});
+
+test("four matching cards on top end the round immediately with double points", () => {
+  const state = replaceState(createSheddingGame({ seed: "four-sevens" }), {
+    currentSeat: "west",
+    hands: { west: ["S7", "C9"], south: ["DT", "HA"] },
+    drawPile: ["C6"],
+    discardPile: ["H7", "D7", "C7"],
+  });
+  const complete = playSheddingCards(state, ["S7"]);
+
+  assert.equal(complete.phase, "round_complete");
+  assert.deepEqual(complete.hands.south, ["DT", "HA"], "the fourth seven ends before its draw effect");
+  assert.deepEqual(complete.drawPile, ["C6"]);
+  assert.equal(complete.roundResult?.winner, "west");
+  assert.equal(complete.roundResult?.finish, "four_of_a_kind");
+  assert.equal(complete.roundResult?.basePoints, 25);
+  assert.equal(complete.roundResult?.scoreMultiplier, 2);
+  assert.equal(complete.roundResult?.points, 50);
+  assert.equal(complete.lastAction?.type, "play_cards");
+  assert.equal(complete.lastAction?.penaltyCards, 0);
+});
+
+test("matching ranks must be consecutive and four jacks never stack into a x4 bonus", () => {
+  const nonConsecutive = replaceState(createSheddingGame({ seed: "broken-chain" }), {
+    currentSeat: "west",
+    hands: { west: ["S7", "C9"], south: ["DT"] },
+    drawPile: ["C6"],
+    discardPile: ["H7", "D7", "C9", "C7"],
+  });
+  assert.equal(playSheddingCards(nonConsecutive, ["S7"]).phase, "playing");
+
+  const fourJacks = replaceState(createSheddingGame({ seed: "four-jacks" }), {
+    currentSeat: "west",
+    hands: { west: ["SJ"], south: ["DT"] },
+    discardPile: ["HJ", "DJ", "CJ"],
+  });
+  const complete = playSheddingCards(fourJacks, ["SJ"], "hearts");
+  assert.equal(complete.roundResult?.finish, "four_of_a_kind");
+  assert.equal(complete.roundResult?.scoreMultiplier, 2);
+  assert.equal(complete.roundResult?.points, 20);
 });
 
 test("the dealer alternates and score survives across rounds", () => {
   const state = replaceState(createSheddingGame({ seed: "rounds", dealer: "south" }), {
     currentSeat: "west",
-    hands: { west: ["H9"], south: ["C6"] },
+    hands: { west: ["H9"], south: ["CT"] },
     discardPile: ["S9"],
   });
   const complete = playSheddingCards(state, ["H9"]);
@@ -142,8 +263,8 @@ test("the dealer alternates and score survives across rounds", () => {
 
   assert.equal(next.round, 2);
   assert.equal(next.dealer, "west");
-  assert.equal(next.currentSeat, "south");
-  assert.equal(next.scores.west, 6);
+  assert.equal(next.currentSeat, "west");
+  assert.equal(next.scores.west, 10);
   assert.equal(next.hands.west.length, 4);
   assert.equal(next.hands.south.length, 5);
 });
@@ -154,6 +275,9 @@ test("viewer snapshots hide the opponent hand and private shuffle seed", () => {
   const serialized = JSON.stringify(view);
 
   assert.deepEqual(Object.keys(view.hands), ["south"]);
+  assert.equal(view.version, 3);
+  assert.equal(view.topRankCount, 1);
+  assert.equal(typeof view.mustCoverSix, "boolean");
   assert.equal(view.hands.west, undefined);
   assert.equal(Object.hasOwn(view, "matchSeed"), false);
   state.hands.west.forEach((cardId) => assert.equal(serialized.includes(`"${cardId}"`), false));

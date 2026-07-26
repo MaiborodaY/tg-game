@@ -701,7 +701,7 @@ function renderTable(view: SheddingViewerSnapshot): string {
         </div>
         <div class="discard-wrap">
           ${renderCard(view.topCard, { table: true })}
-          <span class="pile-label">сброс</span>
+          <span class="pile-label">сброс${view.topRankCount > 1 ? ` · серия ${view.topRankCount}/4` : ""}</span>
         </div>
         ${view.declaredSuit ? `<div class="declared-suit ${isRedSuit(view.declaredSuit) ? "declared-suit--red" : ""}"><small>заказана масть</small><b>${SUIT_META[view.declaredSuit].symbol}</b></div>` : ""}
       </div>
@@ -741,15 +741,20 @@ function renderControlDock(view: SheddingViewerSnapshot): string {
   }
 
   if (view.legalCardIds.length === 0) {
+    const coveringSix = view.mustCoverSix;
     return `
       <section class="control-dock control-dock--action">
-        <div class="dock-copy"><b>Подходящей карты нет</b><small>Возьмите одну карту — после этого ход перейдёт сопернику.</small>${renderDeadlineLabel()}</div>
-        <button class="primary-button primary-button--draw" type="button" data-action="draw-card" ${commandPending ? "disabled" : ""}>${commandPending ? "Ждём стол…" : "Взять карту"}</button>
+        <div class="dock-copy"><b>${coveringSix ? "Шестёрку нужно накрыть" : "Подходящей карты нет"}</b><small>${coveringSix ? "Доберите из колоды до первой подходящей карты." : "Возьмите одну карту — после этого ход перейдёт сопернику."}</small>${renderDeadlineLabel()}</div>
+        <button class="primary-button primary-button--draw" type="button" data-action="draw-card" ${commandPending ? "disabled" : ""}>${commandPending ? "Ждём стол…" : coveringSix ? "Добрать карту" : "Взять карту"}</button>
       </section>`;
   }
 
   const selectedRank = getSelectedRank();
-  const effect = selectedRank ? getEffectPreview(selectedRank, selectedCards.length) : "Можно выбрать несколько карт одного достоинства";
+  const effect = selectedRank
+    ? getEffectPreview(selectedRank, selectedCards.length)
+    : view.mustCoverSix
+      ? "Выберите карту, которой можно накрыть шестёрку"
+      : "Можно выбрать несколько карт одного достоинства";
   return `
     <section class="control-dock control-dock--action">
       <div class="dock-selection">
@@ -766,16 +771,21 @@ function renderRoundDock(view: SheddingViewerSnapshot): string {
   const result = view.roundResult;
   if (!result) return `<section class="control-dock"></section>`;
   const viewerWon = result.winner === view.viewerSeat;
+  const bonus = result.finish === "four_of_a_kind"
+    ? "Бридж: четыре одинаковые, очки ×2"
+    : result.finish === "jack_finish"
+      ? "Финиш валетом, очки ×2"
+      : "Обычный финиш";
   return `
     <section class="control-dock control-dock--round">
       <div class="round-summary-icon" aria-hidden="true">${viewerWon ? "★" : "◇"}</div>
       <div class="dock-copy">
         <b>${viewerWon ? `Раунд ваш: +${result.points}` : `${escapeHtml(getPlayerName(result.winner))} берёт +${result.points}`}</b>
-        <small>У проигравшего осталось: ${result.loserCards.map(formatCardShort).join(" · ") || "нет карт"}</small>${renderDeadlineLabel()}
+        <small>${bonus}${result.scoreMultiplier === 2 ? ` · ${result.basePoints} × 2` : ""}. Осталось: ${result.loserCards.map(formatCardShort).join(" · ") || "нет карт"}</small>${renderDeadlineLabel()}
       </div>
       ${view.canStartNextRound
         ? `<button class="primary-button" type="button" data-action="next-round" ${commandPending ? "disabled" : ""}>Следующий раунд</button>`
-        : `<span class="dock-wait">Победитель начинает…</span>`}
+        : `<span class="dock-wait">Ждём следующий раунд…</span>`}
     </section>`;
 }
 
@@ -853,8 +863,18 @@ function renderCardBacks(count: number): string {
 
 function renderTableMessage(view: SheddingViewerSnapshot): string {
   if (view.phase === "match_complete") return `<b>Матч завершён</b><span>Первый до ${view.targetScore}</span>`;
-  if (view.phase === "round_complete") return `<b>Раунд ${view.round} завершён</b><span>Считаем оставшиеся карты</span>`;
-  if (view.controller === view.viewerSeat) return `<b>Ваш ход</b><span>${view.legalCardIds.length > 0 ? "Выберите карту" : "Нужно взять карту"}</span>`;
+  if (view.phase === "round_complete") {
+    const finish = view.roundResult?.finish;
+    return finish === "four_of_a_kind"
+      ? `<b>Бридж!</b><span>Четыре одинаковые — очки удвоены</span>`
+      : finish === "jack_finish"
+        ? `<b>Финиш валетом</b><span>Очки за раунд удвоены</span>`
+        : `<b>Раунд ${view.round} завершён</b><span>Считаем оставшиеся карты</span>`;
+  }
+  if (view.controller === view.viewerSeat) {
+    if (view.mustCoverSix) return `<b>Накройте шестёрку</b><span>${view.legalCardIds.length > 0 ? "Выберите подходящую карту" : "Добирайте до подходящей карты"}</span>`;
+    return `<b>Ваш ход</b><span>${view.legalCardIds.length > 0 ? "Выберите карту" : "Нужно взять карту"}</span>`;
+  }
   const action = view.lastAction;
   if (action?.type === "play_cards" && action.skippedOpponent && action.seat === view.viewerSeat) {
     return `<b>Снова ваш ход</b><span>Спецкарта пропустила соперника</span>`;
@@ -885,23 +905,23 @@ function renderHelpModal(): string {
         <button class="modal-close" type="button" data-action="close-modal" aria-label="Закрыть">×</button>
         <p class="eyebrow">Народные правила</p>
         <h2 id="rules-title">Как играть</h2>
-        <p>Колода — 36 карт. Каждый получает по пять, но пятая карта сдающего сразу открывает стол: у него на руке остаётся четыре. Первым ходит соперник сдающего.</p>
+        <p>Колода — 36 карт. Каждый получает по пять, но пятая карта сдающего сразу открывает стол: у него на руке остаётся четыре. Он же ходит первым и может накрыть открытую карту по масти или достоинству.</p>
         <div class="rules-steps">
           <div><b>1</b><span>Кладите карту той же <strong>масти</strong> или того же <strong>достоинства</strong>.</span></div>
           <div><b>2</b><span>За один ход можно сбросить сразу несколько карт одного достоинства.</span></div>
           <div><b>3</b><span>Нет подходящей карты — возьмите одну. Ход перейдёт сопернику.</span></div>
-          <div><b>4</b><span>Кто первым опустошил руку, получает очки за карты соперника.</span></div>
+          <div><b>4</b><span>Кто первым опустошил руку, получает очки за карты соперника. Четыре одинаковые карты подряд тоже завершают раунд и удваивают очки.</span></div>
         </div>
         <h3>Карты с характером</h3>
         <div class="power-grid">
-          <div><span class="power-card">6</span><b>Пропуск</b><small>Соперник пропускает ход</small></div>
+          <div><span class="power-card">6</span><b>Накрыть самому</b><small>Положивший шестёрку ходит снова; если нечем — добирает до подходящей карты</small></div>
           <div><span class="power-card">7</span><b>+1 карта</b><small>Соперник берёт одну и ходит</small></div>
           <div><span class="power-card">8</span><b>+2 и пропуск</b><small>За каждую восьмёрку</small></div>
           <div><span class="power-card">A</span><b>Пропуск</b><small>Вы ходите ещё раз</small></div>
-          <div class="power-grid__wide"><span class="power-card">J</span><b>Заказ масти</b><small>Валет кладётся на любую карту; выберите масть следующего хода</small></div>
+          <div class="power-grid__wide"><span class="power-card">J</span><b>Заказ масти и финиш ×2</b><small>Валет кладётся на любую карту; завершение валетом удваивает очки раунда</small></div>
         </div>
         <h3>Очки до 125</h3>
-        <p class="score-rules"><span>6–9 — по номиналу</span><span>10, Q, K — 10</span><span>J — 20</span><span>A — 15</span></p>
+        <p class="score-rules"><span>6–9 — 0</span><span>10, Q, K — 10</span><span>J — по 20 каждый</span><span>A — 15</span></p>
         <p class="rules-note">Победитель раунда прибавляет сумму оставшихся карт соперника. Первый, кто набрал 125 или больше, выигрывает весь матч.</p>
         <button class="primary-button modal-primary" type="button" data-action="close-modal">Понятно, играем</button>
       </section>
@@ -965,7 +985,8 @@ function choosePreferredSuit(hand: readonly SheddingCardId[], excluded: readonly
 }
 
 function getEffectPreview(rank: number, count: number): string {
-  if (rank === 6 || rank === 14) return "Соперник пропустит ход";
+  if (rank === 6) return "После шестёрки её нужно накрыть самому";
+  if (rank === 14) return "Соперник пропустит ход";
   if (rank === 7) return `Соперник возьмёт ${count} ${pluralizeCards(count)} и сможет ходить`;
   if (rank === 8) return `Соперник возьмёт ${count * 2} ${pluralizeCards(count * 2)} и пропустит ход`;
   if (rank === 11) return "Выберите масть следующего хода";
@@ -973,7 +994,8 @@ function getEffectPreview(rank: number, count: number): string {
 }
 
 function getSpecialMark(rank: number): { mark: string; label: string } | null {
-  if (rank === 6 || rank === 14) return { mark: "↻", label: "пропуск хода" };
+  if (rank === 6) return { mark: "↻", label: "накрыть самому" };
+  if (rank === 14) return { mark: "↻", label: "пропуск хода" };
   if (rank === 7) return { mark: "+1", label: "добор одной карты" };
   if (rank === 8) return { mark: "+2", label: "добор двух карт и пропуск" };
   if (rank === 11) return { mark: "✦", label: "заказ масти" };
@@ -983,7 +1005,8 @@ function getSpecialMark(rank: number): { mark: string; label: string } | null {
 function getLastActionText(view: SheddingViewerSnapshot): string {
   const action = view.lastAction;
   if (!action) return "Первый ход раунда";
-  if (action.type === "draw_card") return action.count > 0 ? "Взята одна карта" : "Колода пуста, ход передан";
+  if (view.mustCoverSix) return "Нужно накрыть шестёрку";
+  if (action.type === "draw_card") return action.count > 0 ? `Взято ${action.count} ${pluralizeCards(action.count)}` : "Колода пуста, ход передан";
   if (action.penaltyCards > 0) return `Штраф: +${action.penaltyCards} ${pluralizeCards(action.penaltyCards)}`;
   if (action.declaredSuit) return `Заказаны ${SUIT_META[action.declaredSuit].label}`;
   return `Сыграно ${action.cardIds.length} ${pluralizeCards(action.cardIds.length)}`;

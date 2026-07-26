@@ -12,7 +12,11 @@ export function chooseSheddingBotAction(view: SheddingViewerSnapshot): SheddingA
   const groups = groupPlayableRanks(hand, legal);
   if (groups.length === 0) return Object.freeze({ type: "draw_card" });
 
-  groups.sort((left, right) => scoreGroup(right, hand.length) - scoreGroup(left, hand.length));
+  const topRank = getSheddingCard(view.topCard).rank;
+  groups.sort((left, right) => (
+    scoreGroup(right, hand.length, topRank, view.topRankCount)
+    - scoreGroup(left, hand.length, topRank, view.topRankCount)
+  ));
   const cardIds = groups[0];
   const rank = getSheddingCard(cardIds[0]).rank;
   const remaining = hand.filter((cardId) => !cardIds.includes(cardId));
@@ -41,11 +45,18 @@ function groupPlayableRanks(hand: readonly SheddingCardId[], legal: ReadonlySet<
     });
 }
 
-function scoreGroup(cardIds: readonly SheddingCardId[], handSize: number): number {
+function scoreGroup(
+  cardIds: readonly SheddingCardId[],
+  handSize: number,
+  topRank: number,
+  topRankCount: number,
+): number {
   const rank = getSheddingCard(cardIds[0]).rank;
-  const emptiesHand = cardIds.length === handSize;
+  const emptiesHand = cardIds.length === handSize && rank !== 6;
+  const makesFourOfAKind = rank === topRank && topRankCount + cardIds.length >= 4;
   const effect = rank === 8 ? 42 : rank === 6 || rank === 14 ? 30 : rank === 7 ? 22 : rank === 11 ? 14 : 0;
-  return (emptiesHand ? 10_000 : 0)
+  return (makesFourOfAKind ? 20_000 : 0)
+    + (emptiesHand ? 10_000 : 0)
     + cardIds.length * 120
     + cardIds.reduce((total, cardId) => total + getSheddingCardPoints(cardId), 0)
     + effect;
