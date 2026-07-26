@@ -37,3 +37,14 @@ test("tower guide stays scrollable without increasing the reserved build control
   assert.match(css, /\.guide-card \{[^}]*max-height:\s*calc\(var\(--tg-viewport-height\) - 32px\);/s);
   assert.match(css, /\.guide-card \{[^}]*overflow-y:\s*auto;/s);
 });
+
+test('boss health HUD stays compact and out of the battlefield center', () => {
+  const bossHud = css.match(/\.boss-hud \{([^}]*)\}/s)?.[1] ?? '';
+
+  assert.match(bossHud, /left:\s*9px;/);
+  assert.match(bossHud, /width:\s*min\(42%, 176px\);/);
+  assert.match(bossHud, /min-width:\s*120px;/);
+  assert.doesNotMatch(bossHud, /translateX\(-50%\)/);
+  assert.doesNotMatch(bossHud, /width:\s*min\(76%, 286px\);/);
+  assert.match(css, /\.boss-bars > span \{[^}]*height:\s*3px;/s);
+});
