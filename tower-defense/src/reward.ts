@@ -3,12 +3,19 @@ const MAX_TIMEOUT_MS = 60_000;
 const MAX_PAYLOAD_LENGTH = 32_768;
 const MAX_SCORE = 2_147_483_647;
 
+export const TOWER_DEFENSE_START_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/start";
+export const TOWER_DEFENSE_FINISH_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/finish";
+export const MINIAPP_REWARD_SESSION_KEY = "td-miniapp-reward-v1";
+// The server keeps a run for 120 minutes; the client stops reusing it well before that boundary.
+export const MINIAPP_REWARD_TTL_MS = 90 * 60_000;
+
 export type TelegramPayload = Record<string, unknown>;
 
 export type RewardLaunch = Readonly<{
   mode: "local" | "server";
   runId: string | null;
   token: string | null;
+  runNumber: number | null;
   finishUrl: string | null;
 }>;
 
@@ -34,12 +41,29 @@ export type RewardFetch = (input: string, init: {
   signal: AbortSignal;
 }) => Promise<FetchResponseLike>;
 
+export type RewardSessionStorage = Readonly<{
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}>;
+
 export type RewardFinisher = Readonly<{
   finalResult: FinalResult;
   readonly status: "local" | "idle" | "pending" | "succeeded";
   readonly attempts: number;
   finish(): Promise<FinishResult>;
 }>;
+export type RewardLaunchDecision = Readonly<
+  | { kind: "legacy"; reward: RewardLaunch }
+  | { kind: "practice"; reward: RewardLaunch }
+  | { kind: "miniapp"; initData: string }
+  | { kind: "error"; error: "invalid_launch" }
+>;
+
+export type MiniAppStartResult = Readonly<
+  | { ok: true; reward: RewardLaunch }
+  | { ok: false; error: string }
+>;
 
 type RequestOptions = { fetch?: RewardFetch; timeoutMs?: number };
 
@@ -48,6 +72,7 @@ export function parseLaunchParams(source: string | URLSearchParams, baseUrl?: st
   const payload = decodePayload(params.get("p"));
   const runId = boundedText(params.get("run_id"), 256);
   const token = boundedText(params.get("token"), 4_096);
+  const runNumber = positiveInteger(params.get("run_number"));
   const finishUrl = safeHttpUrl(params.get("finish_url"), effectiveBaseUrl);
   const complete = Boolean(runId && token && finishUrl);
   const hasRewardParameters = ["run_id", "token", "finish_url"].some((key) => params.has(key));
@@ -55,9 +80,110 @@ export function parseLaunchParams(source: string | URLSearchParams, baseUrl?: st
     payload,
     rewardError: hasRewardParameters && !complete ? "invalid_launch" : null,
     reward: Object.freeze(complete
-      ? { mode: "server" as const, runId, token, finishUrl }
-      : { mode: "local" as const, runId: null, token: null, finishUrl: null }),
+      ? { mode: "server" as const, runId, token, runNumber, finishUrl }
+      : { mode: "local" as const, runId: null, token: null, runNumber: null, finishUrl: null }),
   });
+}
+
+export function decideRewardLaunch(
+  launch: LaunchParams,
+  rawInitData: unknown,
+): RewardLaunchDecision {
+  if (launch.rewardError) return Object.freeze({ kind: "error", error: launch.rewardError });
+  if (launch.reward.mode === "server") return Object.freeze({ kind: "legacy", reward: launch.reward });
+
+  const initData = typeof rawInitData === "string" ? boundedText(rawInitData, MAX_PAYLOAD_LENGTH) : null;
+  if (!initData) return Object.freeze({ kind: "practice", reward: launch.reward });
+  return Object.freeze({ kind: "miniapp", initData });
+}
+
+export async function startMiniAppReward(
+  initData: string,
+  options: RequestOptions = {},
+): Promise<MiniAppStartResult> {
+  const boundedInitData = boundedText(initData, MAX_PAYLOAD_LENGTH);
+  if (!boundedInitData) {
+    return Object.freeze({ ok: false, error: "invalid_start_request" });
+  }
+
+  try {
+    const body = JSON.stringify({ init_data: boundedInitData, game_id: "td" });
+    const { response, data } = await postJson(TOWER_DEFENSE_START_URL, body, options);
+    if (!response.ok) {
+      return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
+    }
+    const reward = parseMiniAppStartResponse(data);
+    return reward
+      ? Object.freeze({ ok: true, reward })
+      : Object.freeze({ ok: false, error: responseError(data, "start_rejected") });
+  } catch (error: unknown) {
+    return Object.freeze({ ok: false, error: errorMessage(error) });
+  }
+}
+
+export function loadMiniAppReward(
+  storage: RewardSessionStorage | null | undefined,
+  now = Date.now(),
+): RewardLaunch | null {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(MINIAPP_REWARD_SESSION_KEY);
+    if (!raw || raw.length > 8_192) {
+      if (raw) storage.removeItem(MINIAPP_REWARD_SESSION_KEY);
+      return null;
+    }
+    const value = JSON.parse(raw) as unknown;
+    if (!isRecord(value)) {
+      storage.removeItem(MINIAPP_REWARD_SESSION_KEY);
+      return null;
+    }
+    const savedAt = positiveInteger(value.saved_at);
+    const age = savedAt === null ? Number.POSITIVE_INFINITY : now - savedAt;
+    const reward = parseMiniAppStartResponse({ ...value, ok: true });
+    if (!reward || age < 0 || age >= MINIAPP_REWARD_TTL_MS) {
+      storage.removeItem(MINIAPP_REWARD_SESSION_KEY);
+      return null;
+    }
+    return reward;
+  } catch {
+    try { storage.removeItem(MINIAPP_REWARD_SESSION_KEY); } catch { /* session storage is optional */ }
+    return null;
+  }
+}
+
+export function saveMiniAppReward(
+  storage: RewardSessionStorage | null | undefined,
+  reward: RewardLaunch,
+  now = Date.now(),
+): boolean {
+  const validated = reward.mode === "server"
+    ? parseMiniAppStartResponse({
+      ok: true,
+      game_id: "td",
+      run_id: reward.runId,
+      token: reward.token,
+      run_number: reward.runNumber,
+      finish_url: reward.finishUrl,
+    })
+    : null;
+  if (!storage || !validated) return false;
+  try {
+    storage.setItem(MINIAPP_REWARD_SESSION_KEY, JSON.stringify({
+      saved_at: Math.max(1, Math.floor(now)),
+      game_id: "td",
+      run_id: validated.runId,
+      token: validated.token,
+      run_number: validated.runNumber,
+      finish_url: validated.finishUrl,
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearMiniAppReward(storage: RewardSessionStorage | null | undefined): void {
+  try { storage?.removeItem(MINIAPP_REWARD_SESSION_KEY); } catch { /* session storage is optional */ }
 }
 
 export function decodePayload(encoded: string | null | undefined): TelegramPayload | null {
@@ -164,6 +290,17 @@ function readSearchParams(source: string | URLSearchParams, baseUrl?: string): {
   };
 }
 
+function parseMiniAppStartResponse(value: unknown): RewardLaunch | null {
+  if (!isRecord(value) || value.ok !== true || value.game_id !== "td") return null;
+  const runId = boundedUnknownText(value.run_id, 256);
+  const token = boundedUnknownText(value.token, 4_096);
+  const runNumber = positiveInteger(value.run_number);
+  const finishUrl = safeHttpUrl(typeof value.finish_url === "string" ? value.finish_url : null);
+  return runId && token && runNumber !== null && finishUrl === TOWER_DEFENSE_FINISH_URL
+    ? Object.freeze({ mode: "server", runId, token, runNumber, finishUrl: TOWER_DEFENSE_FINISH_URL })
+    : null;
+}
+
 function normalizeBase64(value: string): string | null {
   const compact = value.trim().replace(/ /g, "+").replace(/-/g, "+").replace(/_/g, "/");
   if (!compact || !/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) return null;
@@ -188,6 +325,19 @@ function safeHttpUrl(value: string | null, baseUrl?: string): string | null {
 function boundedText(value: string | null, maxLength: number): string | null {
   const text = value?.trim() || "";
   return text && text.length <= maxLength ? text : null;
+}
+
+function boundedUnknownText(value: unknown, maxLength: number): string | null {
+  return typeof value === "string" ? boundedText(value, maxLength) : null;
+}
+
+function positiveInteger(value: unknown): number | null {
+  const parsed = typeof value === "number"
+    ? value
+    : typeof value === "string" && /^\d+$/.test(value.trim())
+      ? Number(value)
+      : Number.NaN;
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 async function postJson(url: string, body: string, options: RequestOptions): Promise<{

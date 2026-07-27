@@ -1,6 +1,7 @@
 type HapticKind = "light" | "medium" | "heavy" | "success" | "error";
 
 type TelegramWebApp = {
+  initData?: string;
   viewportHeight?: number;
   viewportStableHeight?: number;
   isVersionAtLeast?: (version: string) => boolean;
@@ -28,6 +29,7 @@ declare global {
 export type TelegramBridge = Readonly<{
   refresh(): void;
   setClosingConfirmation(enabled: boolean): void;
+  readonly initData: string;
   haptic(kind: HapticKind): void;
   destroy(): void;
 }>;
@@ -100,7 +102,13 @@ export function setupTelegramBridge(): TelegramBridge {
   refresh();
   window.addEventListener("load", refresh, { once: true });
 
-  return Object.freeze({ refresh, setClosingConfirmation, haptic, destroy });
+  return Object.freeze({
+    get initData() { return webApp?.initData ?? ""; },
+    refresh,
+    setClosingConfirmation,
+    haptic,
+    destroy,
+  });
 }
 
 function positiveHeight(value: unknown): number | null {

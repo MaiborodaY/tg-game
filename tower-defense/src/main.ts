@@ -26,8 +26,13 @@ import {
 import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
 import {
   captureFinalResult,
+  clearMiniAppReward,
   createRewardFinisher,
+  decideRewardLaunch,
+  loadMiniAppReward,
   parseLaunchParams,
+  saveMiniAppReward,
+  startMiniAppReward,
   type FinalResult,
   type RewardFinisher,
   type RewardLaunch,
@@ -43,14 +48,45 @@ import {
 import { setupTelegramBridge } from "./telegram.ts";
 import { TOWER_GUIDE_ENTRIES } from "./towerGuide.ts";
 
-const launch = parseLaunchParams(window.location.href);
+void bootstrap();
+
+async function bootstrap(): Promise<void> {
+const legacyLaunch = parseLaunchParams(window.location.href);
 const storage = safeStorage("localStorage");
 const session = safeStorage("sessionStorage");
-let locale = readStoredLocale(storage) ?? detectLocale(launch.payload?.lang, launch.payload?.language);
-const rewardUsedKey = launch.reward.runId ? `td-reward-used-v1:${launch.reward.runId}` : null;
+const telegram = setupTelegramBridge();
+let locale = readStoredLocale(storage) ?? detectLocale(legacyLaunch.payload?.lang, legacyLaunch.payload?.language);
+const pendingStartButton = document.getElementById("intro-start");
+if (pendingStartButton instanceof HTMLButtonElement) pendingStartButton.disabled = true;
+
+const launchDecision = decideRewardLaunch(legacyLaunch, telegram.initData);
+const isMiniAppLaunch = launchDecision.kind === "miniapp";
+let launch = legacyLaunch;
+let launchError: "invalid_launch" | "miniapp_start_failed" | null = legacyLaunch.rewardError;
+if (launchDecision.kind === "miniapp") {
+  const cachedReward = loadMiniAppReward(session);
+  if (cachedReward) {
+    launch = Object.freeze({ ...legacyLaunch, reward: cachedReward, rewardError: null });
+    launchError = null;
+  } else {
+    const started = await startMiniAppReward(launchDecision.initData);
+    if (started.ok) {
+      saveMiniAppReward(session, started.reward);
+      launch = Object.freeze({ ...legacyLaunch, reward: started.reward, rewardError: null });
+      launchError = null;
+    } else {
+      launchError = "miniapp_start_failed";
+    }
+  }
+} else if (launchDecision.kind === "error") {
+  launchError = launchDecision.error;
+}
+
+const rewardUsedKey = launch.reward.runId ? "td-reward-used-v1:" + launch.reward.runId : null;
 const rewardAlreadyUsed = rewardUsedKey ? readFlag(storage, rewardUsedKey) : false;
+if (isMiniAppLaunch && rewardAlreadyUsed) clearMiniAppReward(session);
 const reward: RewardLaunch = rewardAlreadyUsed
-  ? Object.freeze({ mode: "local", runId: null, token: null, finishUrl: null })
+  ? Object.freeze({ mode: "local", runId: null, token: null, runNumber: null, finishUrl: null })
   : launch.reward;
 const saveKey = getCampaignSaveKey(reward.mode === "server" ? reward.runId : null);
 const savedCampaign = loadCampaign(storage, saveKey);
@@ -61,7 +97,6 @@ const pendingAtLaunch = reward.mode === "server" && reward.runId
 const initialCampaign = pendingAtLaunch
   ? createCampaignState()
   : savedCampaign || migrated || createCampaignState();
-const telegram = setupTelegramBridge();
 
 let latestUi: TowerDefenseUiState | null = null;
 let rewardFinisher: RewardFinisher | null = null;
@@ -198,7 +233,10 @@ function bindInteractions(): void {
   elements.towerGuideOverlay.addEventListener("click", (event) => {
     if (event.target === elements.towerGuideOverlay) closeTowerGuide();
   });
-  elements.introStart.addEventListener("click", dismissIntro);
+  elements.introStart.addEventListener("click", () => {
+    if (launchError === "miniapp_start_failed") window.location.reload();
+    else dismissIntro();
+  });
   elements.rewardRetry.addEventListener("click", () => void finishReward());
   elements.restartButton.addEventListener("click", restartGame);
 
@@ -369,6 +407,7 @@ async function finishReward(): Promise<void> {
     elements.closeHint.textContent = text("close_hint");
     telegram.setClosingConfirmation(false);
     if (rewardUsedKey) writeFlag(storage, rewardUsedKey);
+    if (isMiniAppLaunch) clearMiniAppReward(session);
     clearCampaign(storage, saveKey);
     removePendingResult(storage, reward.runId);
     return;
@@ -399,7 +438,7 @@ function showResult(outcome: TerminalOutcome, result: FinalResult, completedWave
 }
 
 function restorePendingFinish(): void {
-  if (launch.rewardError) return;
+  if (launchError) return;
   if (reward.mode !== "server" || !reward.runId) {
     if (initialCampaign.completedWave > 0 || readFlag(session, "td-intro-seen-v1")) elements.introOverlay.hidden = true;
     return;
@@ -517,8 +556,14 @@ function applyStaticTranslations(): void {
 }
 
 function applyLaunchErrorTranslations(): void {
-  if (!launch.rewardError) return;
+  elements.introStart.disabled = false;
+  if (!launchError) return;
   elements.introTitle.textContent = text("launch_error_title");
+  if (launchError === "miniapp_start_failed") {
+    elements.introBody.textContent = text("miniapp_launch_error_body");
+    elements.introStart.textContent = text("miniapp_launch_retry");
+    return;
+  }
   elements.introBody.textContent = text("launch_error_body");
   elements.introStart.textContent = text("launch_error_action");
   elements.introStart.disabled = true;
@@ -600,3 +645,4 @@ function button(id: string): HTMLButtonElement {
 }
 
 void Phaser;
+}
