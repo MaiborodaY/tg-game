@@ -16,6 +16,11 @@
           <span class="brand-mark" aria-hidden="true">✦</span>
           <span><strong id="app-title">Стражи тропы</strong><small id="app-subtitle">Защита Сердца леса</small></span>
         </div>
+        <section id="hud-region" class="hud" aria-label="Состояние защиты">
+          <div class="hud-stat"><span class="hud-icon heart">♥</span><span><small id="lives-label">Жизни</small><strong id="lives-value">20</strong></span></div>
+          <div class="hud-stat"><span class="hud-icon coin">●</span><span><small id="gold-label">Золото</small><strong id="gold-value">190</strong></span></div>
+          <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 24</strong></span></div>
+        </section>
         <div class="top-actions">
           <label class="language-control">
             <span class="visually-hidden" data-language-label>Язык игры</span>
@@ -28,27 +33,20 @@
           <button id="speed-button" class="icon-button" type="button" aria-label="Скорость">×1</button>
           <button id="pause-button" class="icon-button" type="button" aria-label="Пауза">Ⅱ</button>
         </div>
+        <div class="encounter-strip">
+          <div id="phase-badge" class="phase-badge">Подготовка</div>
+          <span id="practice-badge" class="practice-badge" hidden>Тренировка</span>
+          <div id="boss-hud" class="boss-hud" hidden>
+            <div><span id="boss-icon" aria-hidden="true">♛</span><strong id="boss-name">Владыка чащи</strong><small id="boss-state">Босс</small></div>
+            <div class="boss-bars" aria-hidden="true"><span class="boss-health"><i id="boss-health-fill"></i></span><span class="boss-shield"><i id="boss-shield-fill"></i></span></div>
+          </div>
+          <div class="hud-progress" aria-hidden="true"><span id="wave-progress"></span></div>
+        </div>
       </header>
-
-      <section id="hud-region" class="hud" aria-label="Состояние защиты">
-        <div class="hud-stat"><span class="hud-icon heart">♥</span><span><small id="lives-label">Жизни</small><strong id="lives-value">20</strong></span></div>
-        <div class="hud-stat"><span class="hud-icon coin">●</span><span><small id="gold-label">Золото</small><strong id="gold-value">190</strong></span></div>
-        <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 24</strong></span></div>
-        <div class="hud-progress" aria-hidden="true"><span id="wave-progress"></span></div>
-      </section>
 
       <main class="battle-shell">
         <div id="game-root" class="game-root" aria-label="Игровое поле"></div>
-        <div id="phase-badge" class="phase-badge">Подготовка</div>
-        <div id="boss-hud" class="boss-hud" hidden>
-          <div><span id="boss-icon" aria-hidden="true">♛</span><strong id="boss-name">Владыка чащи</strong><small id="boss-state">Босс</small></div>
-          <div class="boss-bars" aria-hidden="true"><span class="boss-health"><i id="boss-health-fill"></i></span><span class="boss-shield"><i id="boss-shield-fill"></i></span></div>
-        </div>
         <div id="countdown" class="countdown" hidden>3</div>
-        <button id="pulse-button" class="pulse-button" type="button">
-          <span class="pulse-icon" aria-hidden="true">✺</span>
-          <span id="pulse-label">Импульс</span>
-        </button>
       </main>
 
       <section class="command-panel">
@@ -56,7 +54,6 @@
           <div class="panel-heading">
             <div class="panel-copy"><small id="build-eyebrow">Арсенал</small><strong id="build-hint">Выберите башню и площадку</strong></div>
             <div class="panel-heading-actions">
-              <span id="practice-badge" class="practice-badge" hidden>Тренировка</span>
               <button id="tower-guide-button" class="tower-guide-button" type="button" aria-controls="tower-guide-overlay" aria-expanded="false" aria-label="Справка по башням" title="Справка по башням">?</button>
             </div>
           </div>
@@ -93,6 +90,10 @@
         </div>
 
         <div class="wave-command">
+          <button id="pulse-button" class="pulse-button" type="button">
+            <span class="pulse-icon" aria-hidden="true">✺</span>
+            <span id="pulse-label">Импульс</span>
+          </button>
           <div class="wave-preview"><div class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></div><div id="wave-enemies" class="enemy-list"></div></div>
           <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
         </div>

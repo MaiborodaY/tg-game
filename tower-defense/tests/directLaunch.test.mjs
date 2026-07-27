@@ -28,3 +28,8 @@ test("manual language controls are available before and during a match", () => {
   assert.match(mainSource, /renderedPreviewWave = -1;/);
   assert.match(mainSource, /if \(latestUi\) renderUi\(latestUi\);/);
 });
+
+test("new and returning matches request fullscreen through the guarded Telegram bridge", () => {
+  assert.match(mainSource, /restorePendingFinish\(\);\s*if \(elements\.introOverlay\.hidden\) telegram\.requestFullscreen\(\);/);
+  assert.match(mainSource, /function dismissIntro\(\): void \{[\s\S]*telegram\.requestFullscreen\(\);[\s\S]*telegram\.haptic\("light"\);/);
+});

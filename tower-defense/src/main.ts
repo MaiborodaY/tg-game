@@ -210,6 +210,7 @@ const scene: TowerDefenseScene = mounted.scene;
 
 bindInteractions();
 restorePendingFinish();
+if (elements.introOverlay.hidden) telegram.requestFullscreen();
 if (!elements.introOverlay.hidden) elements.introStart.focus();
 else if (elements.resultOverlay.hidden) elements.appShell.inert = false;
 
@@ -458,6 +459,7 @@ function dismissIntro(): void {
   elements.introOverlay.hidden = true;
   elements.appShell.inert = false;
   writeFlag(session, "td-intro-seen-v1");
+  telegram.requestFullscreen();
   telegram.haptic("light");
 }
 

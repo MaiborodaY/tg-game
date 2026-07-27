@@ -1,12 +1,23 @@
 type HapticKind = "light" | "medium" | "heavy" | "success" | "error";
 
+type TelegramSafeAreaInset = Readonly<{
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+}>;
+
 type TelegramWebApp = {
   initData?: string;
   viewportHeight?: number;
   viewportStableHeight?: number;
+  isFullscreen?: boolean;
+  safeAreaInset?: TelegramSafeAreaInset;
+  contentSafeAreaInset?: TelegramSafeAreaInset;
   isVersionAtLeast?: (version: string) => boolean;
   ready?: () => void;
   expand?: () => void;
+  requestFullscreen?: () => void;
   disableVerticalSwipes?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
@@ -28,6 +39,7 @@ declare global {
 
 export type TelegramBridge = Readonly<{
   refresh(): void;
+  requestFullscreen(): boolean;
   setClosingConfirmation(enabled: boolean): void;
   readonly initData: string;
   haptic(kind: HapticKind): void;
@@ -45,6 +57,28 @@ export function setupTelegramBridge(): TelegramBridge {
     document.documentElement.style.setProperty("--tg-viewport-stable-height", `${Math.round(stable)}px`);
   };
 
+  const updateSafeArea = () => {
+    if (!supportsApiVersion(webApp, "8.0")) {
+      clearSafeAreaCssVariables();
+      return;
+    }
+    applySafeAreaCssVariables("--td-safe-area-inset", webApp?.safeAreaInset);
+    applySafeAreaCssVariables("--td-content-safe-area-inset", webApp?.contentSafeAreaInset);
+  };
+
+  const bindEvents = (target: TelegramWebApp | undefined) => {
+    try { target?.onEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
+    if (!supportsApiVersion(target, "8.0")) return;
+    try { target?.onEvent?.("safeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
+    try { target?.onEvent?.("contentSafeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
+  };
+
+  const unbindEvents = (target: TelegramWebApp | undefined) => {
+    try { target?.offEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
+    try { target?.offEvent?.("safeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
+    try { target?.offEvent?.("contentSafeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
+  };
+
   const applyClosingConfirmation = () => {
     try {
       if (!supportsApiVersion(webApp, "6.2")) return;
@@ -58,9 +92,9 @@ export function setupTelegramBridge(): TelegramBridge {
   const refresh = () => {
     const next = window.Telegram?.WebApp;
     if (next && next !== webApp) {
-      try { webApp?.offEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
+      unbindEvents(webApp);
       webApp = next;
-      try { webApp.onEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
+      bindEvents(webApp);
     }
     try {
       webApp?.ready?.();
@@ -75,6 +109,20 @@ export function setupTelegramBridge(): TelegramBridge {
     }
     applyClosingConfirmation();
     updateViewport();
+    updateSafeArea();
+  };
+
+  const requestFullscreen = () => {
+    try {
+      if (supportsApiVersion(webApp, "8.0") && typeof webApp?.requestFullscreen === "function") {
+        if (!webApp.isFullscreen) webApp.requestFullscreen();
+        return true;
+      }
+    } catch {
+      // Fall through to the older expand API when fullscreen is rejected by the host.
+    }
+    try { webApp?.expand?.(); } catch { /* optional Telegram API */ }
+    return false;
   };
 
   const setClosingConfirmation = (enabled: boolean) => {
@@ -93,26 +141,49 @@ export function setupTelegramBridge(): TelegramBridge {
   };
 
   const destroy = () => {
-    try { webApp?.offEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
+    unbindEvents(webApp);
     window.removeEventListener("resize", updateViewport);
   };
 
   window.addEventListener("resize", updateViewport, { passive: true });
-  try { webApp?.onEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
+  bindEvents(webApp);
   refresh();
   window.addEventListener("load", refresh, { once: true });
 
   return Object.freeze({
     get initData() { return webApp?.initData ?? ""; },
     refresh,
+    requestFullscreen,
     setClosingConfirmation,
     haptic,
     destroy,
   });
 }
 
+const SAFE_AREA_SIDES = ["top", "right", "bottom", "left"] as const;
+
+function applySafeAreaCssVariables(prefix: string, inset: TelegramSafeAreaInset | undefined): void {
+  const style = document.documentElement.style;
+  for (const side of SAFE_AREA_SIDES) {
+    const property = `${prefix}-${side}`;
+    const value = nonNegativeInset(inset?.[side]);
+    if (value === null) style.removeProperty(property);
+    else style.setProperty(property, `${Math.round(value)}px`);
+  }
+}
+
+function clearSafeAreaCssVariables(): void {
+  for (const prefix of ["--td-safe-area-inset", "--td-content-safe-area-inset"]) {
+    applySafeAreaCssVariables(prefix, undefined);
+  }
+}
+
 function positiveHeight(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function nonNegativeInset(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 export function supportsApiVersion(
