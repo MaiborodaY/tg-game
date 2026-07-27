@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { detectLocale, normalizeLocale, tr } from "../src/i18n.ts";
+import {
+  LOCALE_LABELS,
+  LOCALE_STORAGE_KEY,
+  detectLocale,
+  normalizeLocale,
+  readStoredLocale,
+  tr,
+  writeStoredLocale,
+} from "../src/i18n.ts";
 
 test("locale normalization supports Telegram language variants and Russian fallback", () => {
   assert.equal(normalizeLocale("uk-UA"), "uk");
@@ -18,4 +26,24 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("ru", "tower_storm"), "Грозовой шпиль");
   assert.equal(tr("uk", "enemy_titan"), "Титан розлому");
   assert.equal(detectLocale("uk-UA"), "uk");
+});
+
+test("manual locale storage is persistent and fails closed", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  assert.deepEqual(LOCALE_LABELS, { ru: "RU", uk: "UA", en: "EN" });
+  assert.equal(readStoredLocale(storage), null);
+  assert.equal(writeStoredLocale(storage, "en"), true);
+  assert.equal(values.get(LOCALE_STORAGE_KEY), "en");
+  assert.equal(readStoredLocale(storage), "en");
+
+  const blockedStorage = {
+    getItem() { throw new Error("blocked"); },
+    setItem() { throw new Error("blocked"); },
+  };
+  assert.equal(readStoredLocale(blockedStorage), null);
+  assert.equal(writeStoredLocale(blockedStorage, "uk"), false);
 });

@@ -14,7 +14,15 @@ import { createCampaignState } from "./game/state.ts";
 import { calculateRatingScore, MAX_RATING_SCORE } from "./game/scoring.ts";
 import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
 import { createWavePlan } from "./game/waves.ts";
-import { detectLocale, tr, type Locale, type TranslationKey } from "./i18n.ts";
+import {
+  detectLocale,
+  normalizeLocale,
+  readStoredLocale,
+  tr,
+  writeStoredLocale,
+  type Locale,
+  type TranslationKey,
+} from "./i18n.ts";
 import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
 import {
   captureFinalResult,
@@ -36,9 +44,9 @@ import { setupTelegramBridge } from "./telegram.ts";
 import { TOWER_GUIDE_ENTRIES } from "./towerGuide.ts";
 
 const launch = parseLaunchParams(window.location.href);
-const locale = detectLocale(launch.payload?.lang, launch.payload?.language);
 const storage = safeStorage("localStorage");
 const session = safeStorage("sessionStorage");
+let locale = readStoredLocale(storage) ?? detectLocale(launch.payload?.lang, launch.payload?.language);
 const rewardUsedKey = launch.reward.runId ? `td-reward-used-v1:${launch.reward.runId}` : null;
 const rewardAlreadyUsed = rewardUsedKey ? readFlag(storage, rewardUsedKey) : false;
 const reward: RewardLaunch = rewardAlreadyUsed
@@ -138,16 +146,13 @@ const elements = {
   toast: byId("toast"),
   gameRoot: byId("game-root"),
   towerCards: [...document.querySelectorAll<HTMLButtonElement>("[data-tower]")],
+  languageSelects: [...document.querySelectorAll<HTMLSelectElement>('[data-role="language"]')],
+  languageLabels: [...document.querySelectorAll<HTMLElement>("[data-language-label]")],
 };
 
 elements.appShell.inert = true;
 applyStaticTranslations();
-if (launch.rewardError) {
-  elements.introTitle.textContent = text("launch_error_title");
-  elements.introBody.textContent = text("launch_error_body");
-  elements.introStart.textContent = text("launch_error_action");
-  elements.introStart.disabled = true;
-}
+applyLaunchErrorTranslations();
 telegram.setClosingConfirmation(reward.mode === "server" && !finishSettled);
 
 const mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, {
@@ -174,6 +179,9 @@ if (!elements.introOverlay.hidden) elements.introStart.focus();
 else if (elements.resultOverlay.hidden) elements.appShell.inert = false;
 
 function bindInteractions(): void {
+  elements.languageSelects.forEach((select) => {
+    select.addEventListener("change", () => setLocale(select.value));
+  });
   elements.towerCards.forEach((card) => {
     card.addEventListener("click", () => scene.setBuildType(card.dataset.tower as TowerType));
   });
@@ -444,9 +452,31 @@ function restartGame(): void {
   window.location.reload();
 }
 
+function setLocale(value: string): void {
+  const selectedLocale = normalizeLocale(value);
+  if (!selectedLocale || selectedLocale === locale) return;
+  locale = selectedLocale;
+  writeStoredLocale(storage, locale);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = null;
+  elements.toast.classList.remove("is-visible");
+  applyStaticTranslations();
+  applyLaunchErrorTranslations();
+  renderedPreviewWave = -1;
+  if (latestUi) renderUi(latestUi);
+  telegram.haptic("light");
+}
+
 function applyStaticTranslations(): void {
   document.documentElement.lang = locale;
   document.title = text("app_title");
+  elements.languageSelects.forEach((select) => {
+    select.value = locale;
+    select.setAttribute("aria-label", text("language"));
+  });
+  elements.languageLabels.forEach((label) => {
+    label.textContent = text("language");
+  });
   elements.appTitle.textContent = text("app_title");
   elements.appSubtitle.textContent = text("app_subtitle");
   elements.hudRegion.setAttribute("aria-label", text("defense_status"));
@@ -484,6 +514,14 @@ function applyStaticTranslations(): void {
   elements.pauseButton.setAttribute("aria-label", text("pause"));
   elements.speedButton.setAttribute("aria-label", text("speed"));
   elements.pulseButton.setAttribute("aria-label", text("pulse_ready"));
+}
+
+function applyLaunchErrorTranslations(): void {
+  if (!launch.rewardError) return;
+  elements.introTitle.textContent = text("launch_error_title");
+  elements.introBody.textContent = text("launch_error_body");
+  elements.introStart.textContent = text("launch_error_action");
+  elements.introStart.disabled = true;
 }
 
 function renderTowerGuide(): void {

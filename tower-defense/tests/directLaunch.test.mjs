@@ -20,3 +20,11 @@ test("removing Bridge navigation keeps unfinished reward protection", () => {
   assert.match(mainSource, /reward\.mode === "server" && !finishSettled/);
   assert.match(mainSource, /telegram\.setClosingConfirmation\(reward\.mode === "server" && !finishSettled\)/);
 });
+
+test("manual language controls are available before and during a match", () => {
+  assert.equal(html.match(/data-role="language"/g)?.length, 2);
+  assert.match(mainSource, /readStoredLocale\(storage\) \?\? detectLocale/);
+  assert.match(mainSource, /writeStoredLocale\(storage, locale\)/);
+  assert.match(mainSource, /renderedPreviewWave = -1;/);
+  assert.match(mainSource, /if \(latestUi\) renderUi\(latestUi\);/);
+});

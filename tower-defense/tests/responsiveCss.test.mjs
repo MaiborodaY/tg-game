@@ -18,6 +18,12 @@ test("canvas build pads retain generous touch hit slop after scaling", () => {
   assert.ok(BUILD_PAD_HIT_SIZE >= 84);
 });
 
+test("manual language controls remain touch friendly on the HUD and intro", () => {
+  assert.match(css, /\.language-control \{[^}]*width:\s*52px;[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.language-control--modal \{[^}]*position:\s*absolute;[^}]*top:\s*10px;[^}]*left:\s*10px;/s);
+  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*\.language-control \{ width:\s*48px;/);
+});
+
 test("the Phaser canvas preserves aspect ratio and late-wave previews can scroll", () => {
   assert.doesNotMatch(css, /\.game-root canvas \{[^}]*width:\s*100%\s*!important[^}]*height:\s*100%\s*!important/s);
   assert.match(css, /\.game-root canvas \{[^}]*max-width:\s*100%;[^}]*max-height:\s*100%;/s);

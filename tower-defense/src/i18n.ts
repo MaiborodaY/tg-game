@@ -1,10 +1,17 @@
 export const SUPPORTED_LOCALES = ["ru", "uk", "en"] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
+export const LOCALE_STORAGE_KEY = "wol.tower-defense.locale.v1";
+export const LOCALE_LABELS: Readonly<Record<Locale, string>> = Object.freeze({
+  ru: "RU",
+  uk: "UA",
+  en: "EN",
+});
 
 const ru = {
   app_title: "Стражи тропы",
   app_subtitle: "Тактическая защита Сердца леса",
+  language: "Язык игры",
   intro_title: "Защити Сердце леса",
   intro_body: "Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.",
   intro_start: "Встать на защиту",
@@ -113,6 +120,7 @@ export type TranslationParams = Readonly<Record<string, string | number>>;
 const uk = {
   app_title: "Вартові стежки",
   app_subtitle: "Тактичний захист Серця лісу",
+  language: "Мова гри",
   intro_title: "Захисти Серце лісу",
   intro_body: "Будуй вежі, поєднуй їхні сили й зупини ворогів, перш ніж вони дістануться Серця.",
   intro_start: "Стати на захист",
@@ -218,6 +226,7 @@ const uk = {
 const en = {
   app_title: "Path Guardians",
   app_subtitle: "A tactical defense of the Heart of the Forest",
+  language: "Game language",
   intro_title: "Defend the Heart of the Forest",
   intro_body: "Build towers, combine their strengths, and stop the enemies before they reach the Heart.",
   intro_start: "Stand guard",
@@ -345,6 +354,30 @@ export function normalizeLocale(value: unknown): Locale | null {
   if (language === "uk" || language === "ua") return "uk";
   if (language === "en") return "en";
   return null;
+}
+
+type LocaleStorage = Readonly<{
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}>;
+
+export function readStoredLocale(storage: LocaleStorage | null | undefined): Locale | null {
+  if (!storage) return null;
+  try {
+    return normalizeLocale(storage.getItem(LOCALE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredLocale(storage: LocaleStorage | null | undefined, locale: Locale): boolean {
+  if (!storage) return false;
+  try {
+    storage.setItem(LOCALE_STORAGE_KEY, locale);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function detectLocale(...launchLanguages: readonly unknown[]): Locale {
