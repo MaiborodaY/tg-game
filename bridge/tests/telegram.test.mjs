@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { supportsTelegramVersion } from "../src/telegram.ts";
+import { getTelegramLanguageCode, supportsTelegramVersion } from "../src/telegram.ts";
 
 test("Telegram capabilities are enabled only after an explicit version check", () => {
   assert.equal(supportsTelegramVersion(undefined, "6.1"), false);
@@ -24,4 +24,10 @@ test("a broken Telegram version probe fails closed", () => {
     }, "6.1"),
     false,
   );
+});
+
+test("Telegram language is read defensively from the signed user payload", () => {
+  assert.equal(getTelegramLanguageCode(undefined), null);
+  assert.equal(getTelegramLanguageCode({ initDataUnsafe: { user: { language_code: " uk-UA " } } }), "uk-UA");
+  assert.equal(getTelegramLanguageCode({ initDataUnsafe: { user: {} } }), null);
 });

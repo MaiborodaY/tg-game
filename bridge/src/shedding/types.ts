@@ -48,12 +48,13 @@ export interface SheddingRoundResult {
   readonly basePoints: number;
   readonly scoreMultiplier: 1 | 2;
   readonly points: number;
+  readonly penaltyReset: boolean;
   readonly loserCards: readonly SheddingCardId[];
   readonly scores: Readonly<Record<SheddingSeat, number>>;
 }
 
 export interface SheddingGameState {
-  readonly version: 3;
+  readonly version: 4;
   readonly revision: number;
   readonly round: number;
   readonly targetScore: number;
@@ -70,6 +71,7 @@ export interface SheddingGameState {
   readonly lastAction: SheddingLastAction | null;
   readonly roundResult: SheddingRoundResult | null;
   readonly matchWinner: SheddingSeat | null;
+  readonly matchLoser: SheddingSeat | null;
   /** Private deterministic shuffle material. Never expose it in a viewer snapshot. */
   readonly matchSeed: string;
 }
@@ -82,7 +84,7 @@ export interface CreateSheddingGameOptions {
 }
 
 export interface SheddingViewerSnapshot {
-  readonly version: 3;
+  readonly version: 4;
   readonly revision: number;
   readonly round: number;
   readonly targetScore: number;
@@ -104,6 +106,7 @@ export interface SheddingViewerSnapshot {
   readonly lastAction: SheddingLastAction | null;
   readonly roundResult: SheddingRoundResult | null;
   readonly matchWinner: SheddingSeat | null;
+  readonly matchLoser: SheddingSeat | null;
   readonly legalCardIds: readonly SheddingCardId[];
   readonly canDraw: boolean;
   readonly canStartNextRound: boolean;

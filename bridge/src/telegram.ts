@@ -9,6 +9,7 @@ interface TelegramWebApp {
       first_name?: string;
       last_name?: string;
       username?: string;
+      language_code?: string;
     };
   };
   viewportHeight?: number;
@@ -39,6 +40,7 @@ export type TelegramBridge = Readonly<{
   initData: string;
   startParam: string | null;
   displayName: string;
+  languageCode: string | null;
   refresh(): void;
   setGameInProgress(active: boolean): void;
   haptic(kind: BridgeHaptic): void;
@@ -122,6 +124,7 @@ export function setupTelegramBridge(): TelegramBridge {
     get initData() { return webApp?.initData ?? ""; },
     get startParam() { return webApp?.initDataUnsafe?.start_param?.trim() || null; },
     get displayName() { return getTelegramDisplayName(webApp); },
+    get languageCode() { return getTelegramLanguageCode(webApp); },
     refresh,
     setGameInProgress,
     haptic,
@@ -132,8 +135,15 @@ export function setupTelegramBridge(): TelegramBridge {
 function getTelegramDisplayName(webApp: TelegramWebApp | undefined): string {
   const user = webApp?.initDataUnsafe?.user;
   const personalName = [user?.first_name, user?.last_name].filter(Boolean).join(" ");
-  const name = personalName || user?.username || "Игрок";
-  return name.trim().replace(/\s+/g, " ").slice(0, 24) || "Игрок";
+  const name = personalName || user?.username || "";
+  return name.trim().replace(/\s+/g, " ").slice(0, 24);
+}
+
+export function getTelegramLanguageCode(
+  webApp: Pick<TelegramWebApp, "initDataUnsafe"> | undefined,
+): string | null {
+  const languageCode = webApp?.initDataUnsafe?.user?.language_code;
+  return typeof languageCode === "string" ? languageCode.trim().slice(0, 32) || null : null;
 }
 
 function positiveHeight(value: unknown): number | null {

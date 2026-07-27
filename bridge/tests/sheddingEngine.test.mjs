@@ -169,29 +169,73 @@ test("a player draws one card only when no legal play is available", () => {
   assert.throws(() => applySheddingAction(playable, { type: "draw_card" }), { code: "play_available" });
 });
 
-test("round points go to the player who emptied their hand and 125 wins the match", () => {
+test("hand penalties use contextual jack values and ignore cards below ten", () => {
   assert.equal(getSheddingCardPoints("C6"), 0);
   assert.equal(getSheddingCardPoints("S9"), 0);
   assert.equal(getSheddingCardPoints("DT"), 10);
-  assert.equal(getSheddingCardPoints("HJ"), 20);
+  assert.equal(getSheddingCardPoints("HJ"), 10);
   assert.equal(getSheddingCardPoints("SA"), 15);
-  assert.equal(scoreSheddingHand(["C6", "DT", "HJ", "SJ", "SA"]), 65);
+  assert.equal(scoreSheddingHand(["C6", "D7", "H8", "S9"]), 0);
+  assert.equal(scoreSheddingHand(["HJ"]), 20);
+  assert.equal(scoreSheddingHand(["HJ", "SJ"]), 40);
+  assert.equal(scoreSheddingHand(["HJ", "SJ", "C6"]), 20);
+  assert.equal(scoreSheddingHand(["C6", "DT", "HJ", "SJ", "SA"]), 45);
+});
 
+test("the round loser receives penalties and loses the match only above 125", () => {
   const state = replaceState(createSheddingGame({ seed: "score", targetScore: 125 }), {
     currentSeat: "west",
     hands: { west: ["H9"], south: ["C6", "DT", "HJ", "SA"] },
     discardPile: ["S9"],
-    scores: { south: 0, west: 80 },
+    scores: { south: 100, west: 80 },
   });
   const complete = playSheddingCards(state, ["H9"]);
 
   assert.equal(complete.phase, "match_complete");
   assert.equal(complete.matchWinner, "west");
-  assert.equal(complete.scores.west, 125);
+  assert.equal(complete.matchLoser, "south");
+  assert.equal(complete.scores.south, 135);
+  assert.equal(complete.scores.west, 80);
   assert.equal(complete.roundResult?.finish, "empty_hand");
-  assert.equal(complete.roundResult?.basePoints, 45);
+  assert.equal(complete.roundResult?.basePoints, 35);
   assert.equal(complete.roundResult?.scoreMultiplier, 1);
-  assert.equal(complete.roundResult?.points, 45);
+  assert.equal(complete.roundResult?.points, 35);
+  assert.equal(complete.roundResult?.penaltyReset, false);
+});
+
+test("exactly 125 resets the loser's penalties to zero and continues the match", () => {
+  const state = replaceState(createSheddingGame({ seed: "exact-reset", targetScore: 125 }), {
+    currentSeat: "west",
+    hands: { west: ["CJ"], south: ["DT"] },
+    discardPile: ["S9"],
+    scores: { south: 105, west: 40 },
+  });
+  const complete = playSheddingCards(state, ["CJ"], "clubs");
+
+  assert.equal(complete.phase, "round_complete");
+  assert.equal(complete.matchWinner, null);
+  assert.equal(complete.matchLoser, null);
+  assert.equal(complete.scores.south, 0);
+  assert.equal(complete.scores.west, 40);
+  assert.equal(complete.roundResult?.basePoints, 10);
+  assert.equal(complete.roundResult?.scoreMultiplier, 2);
+  assert.equal(complete.roundResult?.points, 20);
+  assert.equal(complete.roundResult?.penaltyReset, true);
+});
+
+test("a losing hand below ten adds no penalty and cannot end the match", () => {
+  const state = replaceState(createSheddingGame({ seed: "zero-penalty", targetScore: 125 }), {
+    currentSeat: "west",
+    hands: { west: ["H9"], south: ["C6", "D7", "H8", "C9"] },
+    discardPile: ["S9"],
+    scores: { south: 124, west: 90 },
+  });
+  const complete = playSheddingCards(state, ["H9"]);
+
+  assert.equal(complete.phase, "round_complete");
+  assert.equal(complete.scores.south, 124);
+  assert.equal(complete.roundResult?.points, 0);
+  assert.equal(complete.roundResult?.penaltyReset, false);
 });
 
 test("finishing with one or more jacks doubles the round points once", () => {
@@ -199,16 +243,17 @@ test("finishing with one or more jacks doubles the round points once", () => {
     currentSeat: "west",
     hands: { west: ["CJ"], south: ["DT", "HJ"] },
     discardPile: ["S9"],
-    scores: { south: 0, west: 60 },
+    scores: { south: 60, west: 0 },
   });
   const complete = playSheddingCards(state, ["CJ"], "clubs");
 
   assert.equal(complete.phase, "round_complete");
-  assert.equal(complete.scores.west, 120);
+  assert.equal(complete.scores.south, 100);
+  assert.equal(complete.scores.west, 0);
   assert.equal(complete.roundResult?.finish, "jack_finish");
-  assert.equal(complete.roundResult?.basePoints, 30);
+  assert.equal(complete.roundResult?.basePoints, 20);
   assert.equal(complete.roundResult?.scoreMultiplier, 2);
-  assert.equal(complete.roundResult?.points, 60);
+  assert.equal(complete.roundResult?.points, 40);
 });
 
 test("four matching cards on top end the round immediately with double points", () => {
@@ -228,6 +273,8 @@ test("four matching cards on top end the round immediately with double points", 
   assert.equal(complete.roundResult?.basePoints, 25);
   assert.equal(complete.roundResult?.scoreMultiplier, 2);
   assert.equal(complete.roundResult?.points, 50);
+  assert.equal(complete.scores.south, 50);
+  assert.equal(complete.scores.west, 0);
   assert.equal(complete.lastAction?.type, "play_cards");
   assert.equal(complete.lastAction?.penaltyCards, 0);
 });
@@ -264,7 +311,8 @@ test("the dealer alternates and score survives across rounds", () => {
   assert.equal(next.round, 2);
   assert.equal(next.dealer, "west");
   assert.equal(next.currentSeat, "west");
-  assert.equal(next.scores.west, 10);
+  assert.equal(next.scores.south, 10);
+  assert.equal(next.scores.west, 0);
   assert.equal(next.hands.west.length, 4);
   assert.equal(next.hands.south.length, 5);
 });
@@ -275,9 +323,10 @@ test("viewer snapshots hide the opponent hand and private shuffle seed", () => {
   const serialized = JSON.stringify(view);
 
   assert.deepEqual(Object.keys(view.hands), ["south"]);
-  assert.equal(view.version, 3);
+  assert.equal(view.version, 4);
   assert.equal(view.topRankCount, 1);
   assert.equal(typeof view.mustCoverSix, "boolean");
+  assert.equal(view.matchLoser, null);
   assert.equal(view.hands.west, undefined);
   assert.equal(Object.hasOwn(view, "matchSeed"), false);
   state.hands.west.forEach((cardId) => assert.equal(serialized.includes(`"${cardId}"`), false));
@@ -303,5 +352,7 @@ test("the AI returns only legal actions and completes seeded matches", () => {
 
     assert.equal(state.phase, "match_complete", `seed ${index} stalled after ${actions} actions`);
     assert.ok(state.matchWinner);
+    assert.ok(state.matchLoser);
+    assert.ok(state.scores[state.matchLoser] > state.targetScore);
   }
 });

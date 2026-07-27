@@ -261,7 +261,7 @@ export function createSheddingViewerSnapshot(
     : Object.freeze({ [viewerSeat]: Object.freeze([...state.hands[viewerSeat]].sort(compareSheddingCards)) });
 
   return Object.freeze({
-    version: 3,
+    version: 4,
     revision: state.revision,
     round: state.round,
     targetScore: state.targetScore,
@@ -283,6 +283,7 @@ export function createSheddingViewerSnapshot(
     lastAction: state.lastAction,
     roundResult: state.roundResult,
     matchWinner: state.matchWinner,
+    matchLoser: state.matchLoser,
     legalCardIds: canAct && state.phase === "playing" ? getLegalSheddingCardIds(state) : Object.freeze([]),
     canDraw: canAct && state.phase === "playing",
     canStartNextRound: canAct && state.phase === "round_complete",
@@ -308,11 +309,14 @@ function completeRound(
   const basePoints = scoreSheddingHand(hands[loser]);
   const scoreMultiplier = finish === "empty_hand" ? 1 : 2;
   const points = basePoints * scoreMultiplier;
+  const accumulatedPenalty = state.scores[loser] + points;
+  const penaltyReset = accumulatedPenalty === state.targetScore;
+  const matchLoser = accumulatedPenalty > state.targetScore ? loser : null;
   const scores = Object.freeze({
     ...state.scores,
-    [winner]: state.scores[winner] + points,
+    [loser]: penaltyReset ? 0 : accumulatedPenalty,
   });
-  const matchWinner = scores[winner] >= state.targetScore ? winner : null;
+  const matchWinner = matchLoser ? winner : null;
   const roundResult: SheddingRoundResult = Object.freeze({
     round: state.round,
     winner,
@@ -321,6 +325,7 @@ function completeRound(
     basePoints,
     scoreMultiplier,
     points,
+    penaltyReset,
     loserCards: Object.freeze([...hands[loser]].sort(compareSheddingCards)),
     scores,
   });
@@ -340,6 +345,7 @@ function completeRound(
     lastAction,
     roundResult,
     matchWinner,
+    matchLoser,
   });
 }
 
@@ -366,7 +372,7 @@ function createRoundState(options: {
   if (!openingCard) throw new Error("Could not create the opening discard.");
 
   return freezeState({
-    version: 3,
+    version: 4,
     revision: options.revision,
     round: options.round,
     targetScore: options.targetScore,
@@ -383,6 +389,7 @@ function createRoundState(options: {
     lastAction: null,
     roundResult: null,
     matchWinner: null,
+    matchLoser: null,
     matchSeed: options.matchSeed,
   });
 }

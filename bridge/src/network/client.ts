@@ -7,6 +7,7 @@ import {
   type BridgeServerMessage,
   type BridgeSocketTicketResponse,
 } from "./protocol.ts";
+import { translateBridge, type BridgeLocale } from "../i18n.ts";
 
 const REQUEST_TIMEOUT_MS = 12_000;
 
@@ -79,7 +80,7 @@ export function createBridgeNetworkClient<TView = unknown>(options: BridgeNetwor
 
   const joinRoom = (roomCode: string): Promise<BridgeRoomSession<TView>> => {
     const normalized = normalizeBridgeRoomCode(roomCode);
-    if (!normalized) throw new BridgeNetworkError("Введите корректный шестизначный код.", "bad_room_code", 400);
+    if (!normalized) throw new BridgeNetworkError("Invalid room code.", "bad_room_code", 400);
     return request(`rooms/${normalized}/join`, { method: "POST", body: "{}" });
   };
 
@@ -94,7 +95,7 @@ export function createBridgeNetworkClient<TView = unknown>(options: BridgeNetwor
     handlers: BridgeConnectionHandlers<TView>,
   ): Promise<BridgeRoomConnection> => {
     const normalized = normalizeBridgeRoomCode(room.roomCode);
-    if (!normalized) throw new BridgeNetworkError("Некорректный код комнаты.", "bad_room_code", 400);
+    if (!normalized) throw new BridgeNetworkError("Invalid room code.", "bad_room_code", 400);
     const ticket = await request<BridgeSocketTicketResponse>(`rooms/${normalized}/ticket`, {
       method: "POST",
       body: "{}",
@@ -103,16 +104,16 @@ export function createBridgeNetworkClient<TView = unknown>(options: BridgeNetwor
     socket.addEventListener("open", () => handlers.onOpen?.());
     socket.addEventListener("close", (event) => handlers.onClose?.(event));
     socket.addEventListener("error", () => handlers.onError?.(
-      new BridgeNetworkError("Соединение со столом прервано.", "socket_error"),
+      new BridgeNetworkError("Table connection interrupted.", "socket_error"),
     ));
     socket.addEventListener("message", (event) => {
       if (typeof event.data !== "string") return;
       try {
         const message = parseBridgeServerMessage<TView>(JSON.parse(event.data));
         if (message) handlers.onMessage(message);
-        else handlers.onError?.(new BridgeNetworkError("Сервер прислал неизвестный ответ.", "bad_server_message"));
+        else handlers.onError?.(new BridgeNetworkError("Unknown server response.", "bad_server_message"));
       } catch {
-        handlers.onError?.(new BridgeNetworkError("Не удалось прочитать ответ сервера.", "bad_server_message"));
+        handlers.onError?.(new BridgeNetworkError("Unreadable server response.", "bad_server_message"));
       }
     });
 
@@ -140,15 +141,25 @@ export function createBridgeNetworkClient<TView = unknown>(options: BridgeNetwor
   });
 }
 
-export function getBridgeNetworkErrorMessage(error: unknown): string {
-  if (!(error instanceof BridgeNetworkError)) return "Не удалось связаться с сервером Bridge.";
-  if (error.code === "missing_init_data") return "PvP доступен внутри Telegram. Локально нужен worker в development-режиме.";
-  if (error.code === "missing_development_identity") return "Для локального PvP настройте development identity.";
-  if (error.code === "expired_init_data") return "Сессия Telegram устарела. Закройте Mini App и откройте игру снова.";
-  if (error.code === "room_not_found") return "Комната не найдена или уже закрыта.";
-  if (error.code === "room_unavailable" || error.code === "room_full") return "За этот стол уже сел другой игрок.";
-  if (error.status === 401) return "Telegram не подтвердил вход. Откройте игру заново из бота.";
-  return error.message || "Ошибка сети.";
+export function getBridgeNetworkErrorMessage(error: unknown, locale: BridgeLocale = "ru"): string {
+  if (!(error instanceof BridgeNetworkError)) return translateBridge(locale, "networkUnavailable");
+  if (error.code === "bad_room_code") return translateBridge(locale, "badRoomCode");
+  if (error.code === "socket_error") return translateBridge(locale, "socketError");
+  if (error.code === "bad_server_message") return translateBridge(locale, "badServerMessage");
+  if (error.code === "missing_init_data") return translateBridge(locale, "pvpTelegramOnly");
+  if (error.code === "missing_development_identity") return translateBridge(locale, "missingDevelopmentIdentity");
+  if (error.code === "expired_init_data") return translateBridge(locale, "telegramExpired");
+  if (error.code === "room_not_found") return translateBridge(locale, "roomNotFound");
+  if (error.code === "room_unavailable" || error.code === "room_full") {
+    return translateBridge(locale, "roomUnavailable");
+  }
+  if (error.code === "active_room_conflict") return translateBridge(locale, "activeRoomConflict");
+  if (error.code === "not_room_member") return translateBridge(locale, "notRoomMember");
+  if (error.code === "room_code_exhausted") return translateBridge(locale, "roomCodeExhausted");
+  if (error.code === "request_timeout") return translateBridge(locale, "requestTimeout");
+  if (error.code === "request_failed") return translateBridge(locale, "requestFailed");
+  if (error.status === 401) return translateBridge(locale, "telegramAuthFailed");
+  return translateBridge(locale, "networkError");
 }
 
 function getAuthHeaders(options: BridgeNetworkOptions): Record<string, string> {
@@ -193,9 +204,9 @@ async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
   } catch (error) {
     if (error instanceof BridgeNetworkError) throw error;
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new BridgeNetworkError("Сервер не ответил вовремя.", "request_timeout");
+      throw new BridgeNetworkError("Request timed out.", "request_timeout");
     }
-    throw new BridgeNetworkError("Сервер Bridge недоступен.", "request_failed");
+    throw new BridgeNetworkError("Bridge server unavailable.", "request_failed");
   } finally {
     globalThis.clearTimeout(timeout);
   }

@@ -13,10 +13,12 @@ test("viewer snapshots never expose the shuffle seed or the opponent hand", () =
   const serialized = JSON.stringify(southView);
 
   assert.deepEqual(Object.keys(southView.hands), ["south"]);
+  assert.equal(southView.version, 4);
   assert.equal(Object.hasOwn(southView, "matchSeed"), false);
   assert.equal(Object.hasOwn(southView, "drawPile"), false);
   assert.equal(typeof southView.topRankCount, "number");
   assert.equal(typeof southView.mustCoverSix, "boolean");
+  assert.equal(southView.matchLoser, null);
   assert.equal(Object.hasOwn(southView, "discardPile"), false);
   foreignCards.forEach((cardId) => assert.equal(serialized.includes(`"${cardId}"`), false));
 });

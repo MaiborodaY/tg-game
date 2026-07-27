@@ -6,25 +6,35 @@ import {
   SHEDDING_DECK,
   getSheddingCard,
   getSheddingCardPoints,
+  scoreSheddingHand,
 } from "../src/shedding/index.ts";
+import { translateBridge } from "../src/i18n.ts";
 import {
   createBridgeCommandId,
   normalizeBridgeRoomCode,
   parseBridgeServerMessage,
 } from "../src/network/protocol.ts";
-import { createBridgeNetworkClient } from "../src/network/client.ts";
+import {
+  BridgeNetworkError,
+  createBridgeNetworkClient,
+  getBridgeNetworkErrorMessage,
+} from "../src/network/client.ts";
 
 const mainSource = await readFile(new globalThis.URL("../src/main.ts", import.meta.url), "utf8");
+const indexSource = await readFile(new globalThis.URL("../index.html", import.meta.url), "utf8");
 
 test("the client renders the requested shedding-Bridge rules instead of contract bidding", () => {
-  assert.match(mainSource, /Дворовый Бридж/);
-  assert.match(mainSource, /Первый, кто набрал 125 или больше/);
-  assert.match(mainSource, /Накройте шестёрку/);
-  assert.match(mainSource, /Четыре одинаковые — очки удвоены/);
-  assert.match(mainSource, /Финиш валетом, очки ×2/);
+  assert.match(translateBridge("ru", "penaltyRuleNote"), /Ровно 125 сбрасывается до 0/);
+  assert.match(translateBridge("ru", "penaltyRuleNote"), /больше 125 означает поражение/);
+  assert.match(translateBridge("ru", "scoreJacks"), /20 только в руке из одних валетов, иначе 10/);
+  assert.match(indexSource, /со штрафным счётом/);
+  assert.doesNotMatch(indexSource, /до 125 очков/);
   assert.match(mainSource, /data-action="draw-card"/);
   assert.match(mainSource, /data-action="play-selected"/);
   assert.match(mainSource, /data-action="select-suit"/);
+  assert.match(mainSource, /data-role="language"/);
+  assert.equal(mainSource.includes("view.roundResult?.winner === view.viewerSeat"), true);
+  assert.equal(mainSource.includes("view?.matchWinner === view?.viewerSeat"), true);
   assert.match(mainSource, /joinButton\.disabled = busy \|\| !network\.authenticated \|\| roomInput\.length !== 6/);
   assert.match(mainSource, /event\.key === "Enter"[\s\S]*joinPvpRoom/);
   assert.match(mainSource, /setInterval\([\s\S]*refreshDeadlineLabels\(\)/);
@@ -37,8 +47,10 @@ test("card presentation uses the 36-card deck and the agreed point values", () =
   assert.deepEqual(getSheddingCard("hj"), { id: "HJ", suit: "hearts", rank: 11 });
   assert.equal(getSheddingCardPoints("C7"), 0);
   assert.equal(getSheddingCardPoints("SQ"), 10);
-  assert.equal(getSheddingCardPoints("DJ"), 20);
+  assert.equal(getSheddingCardPoints("DJ"), 10);
   assert.equal(getSheddingCardPoints("HA"), 15);
+  assert.equal(scoreSheddingHand(["DJ", "HJ"]), 40);
+  assert.equal(scoreSheddingHand(["DJ", "HT", "C6"]), 20);
 });
 
 test("room protocol accepts two-player snapshots and rejects malformed messages", () => {
@@ -79,4 +91,12 @@ test("network authentication observes Telegram initData that arrives after start
   assert.equal(client.authenticated, false);
   initData = "query_id=late-telegram-session";
   assert.equal(client.authenticated, true);
+});
+
+test("network errors follow the selected Bridge locale", () => {
+  const missingRoom = new BridgeNetworkError("Room missing.", "room_not_found", 404);
+  const unauthorized = new BridgeNetworkError("Unauthorized.", "unauthorized", 401);
+  assert.equal(getBridgeNetworkErrorMessage(missingRoom, "uk"), translateBridge("uk", "roomNotFound"));
+  assert.equal(getBridgeNetworkErrorMessage(missingRoom, "en"), translateBridge("en", "roomNotFound"));
+  assert.equal(getBridgeNetworkErrorMessage(unauthorized, "ru"), translateBridge("ru", "telegramAuthFailed"));
 });

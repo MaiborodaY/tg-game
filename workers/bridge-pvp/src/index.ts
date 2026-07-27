@@ -63,7 +63,7 @@ interface RoomTicketRecord {
 }
 
 interface BridgeRoomRecord {
-  schemaVersion: 2;
+  schemaVersion: 3;
   roomCode: string;
   status: BridgeRoomStatus;
   humans: Partial<Record<HumanBridgeSeat, HumanPlayerRecord>>;
@@ -131,8 +131,8 @@ type BridgeRpcResult<T> =
   | { ok: false; error: { code: string; message: string } };
 
 const API_PREFIX = "/api/bridge";
-const ROOM_STORAGE_KEY = "room:v3";
-const LEGACY_ROOM_STORAGE_KEYS = ["room:v2", "room:v1"] as const;
+const ROOM_STORAGE_KEY = "room:v4";
+const LEGACY_ROOM_STORAGE_KEYS = ["room:v3", "room:v2", "room:v1"] as const;
 const WAITING_ROOM_TTL_MS = 10 * 60_000;
 const FINISHED_ROOM_TTL_MS = 15 * 60_000;
 const ACTIVE_ROOM_TTL_MS = 2 * 60 * 60_000;
@@ -162,7 +162,7 @@ export class BridgeRoom extends DurableObject<Env> {
 
     const now = Date.now();
     const record: BridgeRoomRecord = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       roomCode,
       status: "waiting",
       humans: {

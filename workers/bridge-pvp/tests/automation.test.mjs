@@ -29,5 +29,8 @@ test("server-side bots complete matches using only personalized legal views", ()
 
     assert.equal(state.phase, "match_complete", `seed ${index} did not complete`);
     assert.equal(state.revision, actions);
+    assert.ok(state.matchWinner);
+    assert.ok(state.matchLoser);
+    assert.ok(state.scores[state.matchLoser] > state.targetScore);
   }
 });

@@ -111,6 +111,42 @@ button:disabled {
   font-size: 1.25rem;
 }
 
+.language-control {
+  display: inline-flex;
+  min-height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--muted);
+}
+
+.language-control select {
+  width: 34px;
+  min-height: 38px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.language-control select option {
+  background: #21130f;
+  color: var(--ink);
+}
+
+.language-control:focus-within {
+  border-color: rgba(242, 193, 91, 0.72);
+  box-shadow: 0 0 0 2px rgba(242, 193, 91, 0.12);
+}
+
 .primary-button,
 .secondary-button {
   min-height: 46px;
@@ -175,6 +211,10 @@ button:disabled {
   align-items: center;
   justify-content: flex-end;
   margin-bottom: 9px;
+}
+
+.home-topbar .language-control {
+  margin: 0 8px;
 }
 
 .home-return-button {
@@ -1612,6 +1652,23 @@ button.card {
   .game-shell {
     padding-right: 6px;
     padding-left: 6px;
+  }
+
+  .game-topbar {
+    gap: 6px;
+  }
+
+  .language-control--game {
+    padding: 0 5px;
+  }
+
+  .language-control--game > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .mode-badge,
+  .network-badge {
+    padding: 0 7px;
   }
 
   .scoreboard {

@@ -24,6 +24,12 @@ test("touch controls and the Tower Defense return stay finger friendly", () => {
   assert.match(css, /\.home-return-button\s*\{[\s\S]*min-height:\s*44px/);
   assert.match(css, /\.primary-button,[\s\S]*\.secondary-button\s*\{[\s\S]*min-height:\s*46px/);
   assert.match(css, /\.icon-button\s*\{[\s\S]*width:\s*42px[\s\S]*height:\s*42px/);
+  assert.match(css, /\.language-control\s*\{[\s\S]*min-height:\s*42px/);
+});
+
+test("the language control remains compact on narrow Telegram screens", () => {
+  assert.match(css, /@media\s*\(max-width:\s*430px\)[\s\S]*\.language-control--game/);
+  assert.match(css, /\.language-control--game\s*>\s*span\[aria-hidden="true"\][\s\S]*display:\s*none/);
 });
 
 test("compact Telegram heights retain explicit dock reservations", () => {

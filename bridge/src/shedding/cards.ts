@@ -90,12 +90,15 @@ export function shuffleSheddingDeck(
 export function getSheddingCardPoints(cardId: SheddingCardId): number {
   const { rank } = getSheddingCard(cardId);
   if (rank === 14) return 15;
-  if (rank === 11) return 20;
   if (rank >= 10) return 10;
   return 0;
 }
 
 export function scoreSheddingHand(cardIds: readonly SheddingCardId[]): number {
+  // Jacks are worth 20 only when no other rank remains in the losing hand.
+  if (cardIds.length > 0 && cardIds.every((cardId) => getSheddingCard(cardId).rank === 11)) {
+    return cardIds.length * 20;
+  }
   return cardIds.reduce((total, cardId) => total + getSheddingCardPoints(cardId), 0);
 }
 
