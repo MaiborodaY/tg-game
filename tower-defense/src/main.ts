@@ -338,9 +338,10 @@ function renderWavePreview(_wave: number, types: readonly EnemyType[]): void {
     const chip = document.createElement("span");
     chip.className = "enemy-chip";
     chip.title = enemyName(type);
+    chip.setAttribute("aria-label", `${enemyName(type)}: ${count}`);
     const glyph = document.createElement("i");
     glyph.className = `enemy-glyph ${type}`;
-    glyph.textContent = ENEMY_DEFINITIONS[type].glyph;
+    glyph.setAttribute("aria-hidden", "true");
     chip.append(glyph, document.createTextNode(`${count}`));
     return [chip];
   }));

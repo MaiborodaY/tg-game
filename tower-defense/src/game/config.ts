@@ -148,7 +148,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "◆",
   },
   swift: {
     type: "swift",
@@ -163,7 +162,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.08,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "➤",
   },
   brute: {
     type: "brute",
@@ -178,7 +176,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.16,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "⬢",
   },
   warden: {
     type: "warden",
@@ -193,7 +190,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.12,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "◇",
   },
   shade: {
     type: "shade",
@@ -208,7 +204,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.7,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "◈",
   },
   bulwark: {
     type: "bulwark",
@@ -223,7 +218,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.2,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "⬟",
   },
   shaman: {
     type: "shaman",
@@ -238,7 +232,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.18,
     healingRadius: 92,
     healingRatio: 0.035,
-    glyph: "✣",
   },
   boss: {
     type: "boss",
@@ -253,7 +246,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.42,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "♛",
   },
   titan: {
     type: "titan",
@@ -268,7 +260,6 @@ export const ENEMY_DEFINITIONS = Object.freeze({
     controlResistance: 0.7,
     healingRadius: 0,
     healingRatio: 0,
-    glyph: "♜",
   },
 } satisfies Readonly<Record<string, EnemyDefinition>>);
 

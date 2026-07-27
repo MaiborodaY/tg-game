@@ -445,14 +445,26 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .enemy-list { min-width: 0; display: flex; align-items: center; gap: 3px; overflow-x: auto; scrollbar-width: none; }
 .enemy-list::-webkit-scrollbar { display: none; }
 .enemy-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.09); border-radius: 6px; background: rgba(255,255,255,0.05); color: #d9e8df; font-size: 7px; white-space: nowrap; }
-.enemy-glyph { color: #8fbb6b; font-size: 9px; font-style: normal; line-height: 1; }
-.enemy-glyph.swift { color: #c28add; }
-.enemy-glyph.brute { color: #bd8b5f; }
-.enemy-glyph.warden { color: #6ccccc; }
-.enemy-glyph.shade { color: #bd8bf0; }
-.enemy-glyph.bulwark { color: #9ccbd0; }
-.enemy-glyph.shaman { color: #7fe3a2; }
-.enemy-glyph.boss, .enemy-glyph.titan { color: #efc45e; filter: drop-shadow(0 0 4px rgba(240, 194, 87, 0.6)); }
+.enemy-glyph { position: relative; width: 14px; height: 14px; flex: 0 0 14px; display: inline-block; font-size: 0; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.45)); }
+.enemy-glyph::before, .enemy-glyph::after { content: ""; position: absolute; display: block; }
+.enemy-glyph.raider::before { inset: 1px; border: 1px solid #172e22; background: #77a957; clip-path: polygon(0 34%, 24% 29%, 28% 2%, 45% 25%, 55% 25%, 72% 2%, 76% 29%, 100% 34%, 84% 100%, 16% 100%); }
+.enemy-glyph.raider::after { top: 6px; left: 4px; width: 2px; height: 2px; border-radius: 50%; background: #ffe578; box-shadow: 4px 0 #ffe578; }
+.enemy-glyph.swift::before { inset: 1px 3px; border: 1px solid #301d3b; border-radius: 48% 48% 38% 38%; background: #8f55ad; transform: rotate(-9deg); }
+.enemy-glyph.swift::after { inset: 0; background: linear-gradient(38deg, transparent 43%, #d8f3ee 44% 53%, transparent 54%), linear-gradient(-38deg, transparent 43%, #d8f3ee 44% 53%, transparent 54%); }
+.enemy-glyph.brute::before { inset: 3px 1px 1px; border: 1px solid #2d2019; border-radius: 48% 48% 40% 40%; background: #78563b; }
+.enemy-glyph.brute::after { top: 0; left: 1px; width: 12px; height: 7px; background: #d2c08b; clip-path: polygon(0 0, 38% 62%, 50% 100%, 62% 62%, 100% 0, 82% 78%, 18% 78%); }
+.enemy-glyph.warden::before { inset: 1px 2px; border: 1px solid #173b42; background: #4a9293; clip-path: polygon(50% 0, 100% 32%, 84% 100%, 16% 100%, 0 32%); }
+.enemy-glyph.warden::after { right: 0; bottom: 0; width: 5px; height: 5px; border: 1px solid #e7ffff; border-radius: 50%; background: #8df7dc; box-shadow: 0 0 3px #8df7dc; }
+.enemy-glyph.shade::before { inset: 1px 2px; border: 1px solid #21132f; border-radius: 50% 50% 26% 26%; background: #68428b; clip-path: polygon(12% 0, 88% 0, 100% 62%, 72% 100%, 51% 75%, 28% 100%, 0 62%); }
+.enemy-glyph.shade::after { top: 5px; left: 4px; width: 2px; height: 2px; border-radius: 50%; background: #e4c4ff; box-shadow: 4px 0 #e4c4ff; }
+.enemy-glyph.bulwark::before { inset: 0 1px; border: 1px solid #b6d6d6; border-radius: 4px 4px 6px 6px; background: #507e88; clip-path: polygon(8% 4%, 92% 4%, 100% 62%, 50% 100%, 0 62%); }
+.enemy-glyph.bulwark::after { top: 5px; left: 5px; width: 4px; height: 4px; border: 1px solid #eaffff; background: #9eeaf1; transform: rotate(45deg); }
+.enemy-glyph.shaman::before { inset: 1px 3px; border: 1px solid #163728; border-radius: 48% 48% 42% 42%; background: #67a779; clip-path: polygon(50% 0, 100% 30%, 78% 100%, 22% 100%, 0 30%); }
+.enemy-glyph.shaman::after { top: 0; right: 0; width: 6px; height: 14px; background: radial-gradient(circle at 50% 20%, #d6ffe1 0 19%, #8af0ad 20% 38%, transparent 39%), linear-gradient(90deg, transparent 40%, #6b4c31 41% 60%, transparent 61%); }
+.enemy-glyph.boss::before { inset: 0 1px; border: 1px solid #391d26; background: #9a4f54; clip-path: polygon(0 30%, 16% 28%, 22% 0, 42% 24%, 52% 0, 69% 24%, 84% 0, 88% 29%, 100% 33%, 88% 100%, 12% 100%); }
+.enemy-glyph.boss::after { top: 6px; left: 5px; width: 4px; height: 4px; border-radius: 50%; background: #ffe9a3; box-shadow: 0 0 4px rgba(255, 220, 135, 0.8); }
+.enemy-glyph.titan::before { inset: 1px 0 0; border: 1px solid #292936; border-radius: 3px; background: #697b80; clip-path: polygon(0 24%, 18% 10%, 36% 18%, 50% 0, 64% 18%, 82% 10%, 100% 24%, 90% 100%, 10% 100%); }
+.enemy-glyph.titan::after { top: 5px; left: 5px; width: 4px; height: 4px; border: 1px solid #eaffff; background: #8fe8ef; transform: rotate(45deg); box-shadow: 0 0 4px rgba(143, 232, 239, 0.8); }
 .start-wave-button { min-width: 118px; padding: 5px 9px; border: 1px solid rgba(239, 208, 126, 0.52); background: linear-gradient(145deg, #c99348, #906331); color: #fff8dd; font-size: 10px; box-shadow: inset 0 1px rgba(255,255,255,0.16), 0 6px 14px rgba(0,0,0,0.2); }
 .start-wave-button.is-boss { border-color: rgba(255, 127, 98, 0.66); background: linear-gradient(145deg, #b85e43, #7f3d35); }
 

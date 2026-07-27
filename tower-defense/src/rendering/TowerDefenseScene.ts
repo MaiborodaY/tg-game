@@ -58,6 +58,7 @@ import {
   createSummonBurst,
   createTowerArt,
   drawWorld,
+  updateEnemyArtPose,
   setWorldAct,
   type EnemyArt,
   type TowerArt,
@@ -575,7 +576,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       enemy.y = point.y;
       enemy.art.container.setPosition(point.x, point.y).setDepth(point.y + 30);
       enemy.art.container.setRotation(getRouteAngleAtDistance(path, enemy.progress) * 0.03);
-      enemy.art.body.y = Math.sin(this.simulationTimeMs * 0.009 + enemy.id) * 1.8;
+      updateEnemyArtPose(enemy.art, enemy.type, this.simulationTimeMs, enemy.progress, enemy.id, !stunned, enraged);
       enemy.art.healthFill.scaleX = Math.max(0, enemy.hp / enemy.maxHp);
       const damaged = enemy.hp < enemy.maxHp || enemy.shield < enemy.maxShield;
       const major = enemy.type === "boss" || enemy.type === "titan";

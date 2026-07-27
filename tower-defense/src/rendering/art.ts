@@ -1,6 +1,12 @@
 import Phaser from "phaser";
 import { GAME_HEIGHT, GAME_WIDTH, ROUTE_POINTS } from "../game/config.ts";
 import type { CampaignAct, EnemyType, Point, TowerLevel, TowerType } from "../game/types.ts";
+import {
+  createEnemyMotionPose,
+  ENEMY_VISUAL_PROFILES,
+  sampleEnemyMotion,
+  type EnemyMotionPose,
+} from "./enemyVisuals.ts";
 
 export type WorldArt = Readonly<{
   actVeil: Phaser.GameObjects.Rectangle;
@@ -23,6 +29,51 @@ export type EnemyArt = Readonly<{
   shieldFill: Phaser.GameObjects.Rectangle;
   statusRing: Phaser.GameObjects.Arc;
 }>;
+
+type AnimatedShape = Phaser.GameObjects.Shape;
+type EnemyDrawOptions = Readonly<{ elite?: boolean; bossTier?: CampaignAct; shielded?: boolean }>;
+type EnemyRigSpec = Readonly<{
+  feet?: readonly [AnimatedShape, AnimatedShape];
+  arms?: readonly [AnimatedShape, AnimatedShape];
+  weapons?: readonly AnimatedShape[];
+  cloth?: AnimatedShape;
+  glow?: readonly AnimatedShape[];
+}>;
+type RigPart = Readonly<{
+  target: AnimatedShape;
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+  alpha: number;
+}>;
+type EnemyRig = Readonly<{
+  type: EnemyType;
+  pose: EnemyMotionPose;
+  feet: readonly RigPart[];
+  arms: readonly RigPart[];
+  weapons: readonly RigPart[];
+  cloth: RigPart | null;
+  glow: readonly RigPart[];
+  eliteAura: RigPart | null;
+}>;
+
+type EnemyBuilder = (scene: Phaser.Scene, body: Phaser.GameObjects.Container, options: EnemyDrawOptions) => EnemyRigSpec;
+
+const ENEMY_BUILDERS = {
+  raider: (scene, body) => drawRaider(scene, body),
+  swift: (scene, body) => drawSwift(scene, body),
+  brute: (scene, body) => drawBrute(scene, body),
+  warden: (scene, body) => drawWarden(scene, body),
+  shade: (scene, body) => drawShade(scene, body),
+  bulwark: (scene, body) => drawBulwark(scene, body),
+  shaman: (scene, body) => drawShaman(scene, body),
+  boss: (scene, body, options) => drawBoss(scene, body, options.bossTier ?? 1),
+  titan: (scene, body, options) => drawTitan(scene, body, options.bossTier ?? 2),
+} satisfies Readonly<Record<EnemyType, EnemyBuilder>>;
+
+const enemyRigs = new WeakMap<Phaser.GameObjects.Container, EnemyRig>();
 
 export function drawWorld(scene: Phaser.Scene): WorldArt {
   const background = scene.add.graphics().setDepth(-30);
@@ -77,38 +128,68 @@ export function createEnemyArt(
   scene: Phaser.Scene,
   type: EnemyType,
   point: Point,
-  options: Readonly<{ elite?: boolean; bossTier?: CampaignAct; shielded?: boolean }> = {},
+  options: EnemyDrawOptions = {},
 ): EnemyArt {
   const container = scene.add.container(point.x, point.y).setDepth(point.y + 30);
   const body = scene.add.container(0, 0);
   const major = type === "boss" || type === "titan";
-  const shadow = scene.add.ellipse(0, 8, major ? 48 : 28, major ? 17 : 11, 0x06100e, 0.42);
-  if (type === "raider") drawRaider(scene, body);
-  if (type === "swift") drawSwift(scene, body);
-  if (type === "brute") drawBrute(scene, body);
-  if (type === "warden") drawWarden(scene, body);
-  if (type === "shade") drawShade(scene, body);
-  if (type === "bulwark") drawBulwark(scene, body);
-  if (type === "shaman") drawShaman(scene, body);
-  if (type === "boss") drawBoss(scene, body, options.bossTier ?? 1);
-  if (type === "titan") drawTitan(scene, body, options.bossTier ?? 2);
+  const visual = ENEMY_VISUAL_PROFILES[type];
+  const shadow = scene.add.ellipse(0, 9, visual.shadowWidth, visual.shadowHeight, 0x06100e, 0.42);
+  const rigSpec = ENEMY_BUILDERS[type](scene, body, options);
 
-  const barWidth = major ? 56 : 30;
-  const barY = major ? -39 : -27;
+  const barWidth = visual.healthBarWidth;
+  const barY = visual.healthBarY;
   const healthBack = scene.add.rectangle(0, barY, barWidth + 4, 6, 0x07110f, 0.9).setOrigin(0.5).setAlpha(major ? 1 : 0);
   const healthFill = scene.add.rectangle(-barWidth / 2, barY, barWidth, 3, major ? 0xf4bf56 : 0x77e6a5)
     .setOrigin(0, 0.5).setAlpha(major ? 1 : 0);
   const shieldFill = scene.add.rectangle(-barWidth / 2, barY - 5, barWidth, 2, 0x77dff2, 0.95)
     .setOrigin(0, 0.5).setAlpha(options.shielded ? 1 : 0);
-  const statusRing = scene.add.circle(0, 1, major ? 29 : 19, 0x74dff2, 0)
+  const statusRing = scene.add.circle(0, 1, visual.statusRadius, 0x74dff2, 0)
     .setStrokeStyle(2, 0x74dff2, 0)
     .setDepth(-1);
-  const eliteAura = scene.add.circle(0, 1, major ? 32 : 21, 0xf3c967, 0)
+  const eliteAura = scene.add.circle(0, 1, visual.statusRadius + 3, 0xf3c967, 0)
     .setStrokeStyle(2, 0xf3c967, options.elite ? 0.72 : 0)
     .setDepth(-2);
   container.add([eliteAura, statusRing, shadow, body, healthBack, healthFill, shieldFill]);
-  if (options.elite) scene.tweens.add({ targets: eliteAura, alpha: 0.6, scale: 1.12, duration: 760, yoyo: true, repeat: -1 });
-  return Object.freeze({ container, body, healthBack, healthFill, shieldFill, statusRing });
+  const art = Object.freeze({ container, body, healthBack, healthFill, shieldFill, statusRing });
+  enemyRigs.set(body, createEnemyRig(type, rigSpec, options.elite ? eliteAura : null));
+  return art;
+}
+
+export function updateEnemyArtPose(
+  art: EnemyArt,
+  type: EnemyType,
+  elapsedMs: number,
+  progress: number,
+  instanceSeed: number,
+  moving: boolean,
+  enraged: boolean,
+): void {
+  const rig = enemyRigs.get(art.body);
+  if (!rig || rig.type !== type) return;
+  const pose = sampleEnemyMotion(type, elapsedMs, progress, instanceSeed, moving, enraged, rig.pose);
+  art.body.y = pose.bodyY;
+  art.body.rotation = pose.bodyRotation;
+  art.body.setScale(pose.bodyScaleX, pose.bodyScaleY);
+  applyFootPose(rig.feet[0], pose.leftFootLift, pose.limbSwing);
+  applyFootPose(rig.feet[1], pose.rightFootLift, -pose.limbSwing);
+  applySwingPose(rig.arms[0], -pose.limbSwing);
+  applySwingPose(rig.arms[1], pose.limbSwing);
+  for (let index = 0; index < rig.weapons.length; index += 1) {
+    applySwingPose(rig.weapons[index], index % 2 === 0 ? pose.limbSwing : -pose.limbSwing);
+  }
+  if (rig.cloth) {
+    rig.cloth.target.rotation = rig.cloth.rotation + pose.clothSway;
+    rig.cloth.target.scaleX = rig.cloth.scaleX * (1 + Math.abs(pose.clothSway) * 0.12);
+  }
+  for (const part of rig.glow) {
+    part.target.setAlpha(part.alpha * pose.glowAlpha);
+    part.target.setScale(part.scaleX * pose.glowScale, part.scaleY * pose.glowScale);
+  }
+  if (rig.eliteAura) {
+    rig.eliteAura.target.setAlpha(rig.eliteAura.alpha * pose.auraAlpha);
+    rig.eliteAura.target.setScale(pose.auraScale);
+  }
 }
 
 export function createHitBurst(
@@ -380,113 +461,215 @@ function drawStorm(scene: Phaser.Scene, head: Phaser.GameObjects.Container, leve
   return aura;
 }
 
-function drawRaider(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const cloak = scene.add.triangle(0, 0, -13, 14, 0, -17, 13, 14, 0x659a52).setStrokeStyle(2, 0x183927);
-  const head = scene.add.circle(0, -10, 7, 0xa8c76b).setStrokeStyle(2, 0x233b27);
-  const eyes = scene.add.rectangle(2, -11, 5, 2, 0x18231c);
-  body.add([cloak, head, eyes]);
+function drawRaider(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const leftFoot = scene.add.ellipse(-6, 10, 9, 6, 0x263326).setStrokeStyle(2, 0x14231a);
+  const rightFoot = scene.add.ellipse(6, 10, 9, 6, 0x263326).setStrokeStyle(2, 0x14231a);
+  const cloak = scene.add.ellipse(0, 1, 25, 27, 0x5f9951).setStrokeStyle(2, 0x172e22);
+  const leftArm = scene.add.ellipse(-11, 0, 7, 17, 0x76aa55).setRotation(0.22).setStrokeStyle(2, 0x172e22);
+  const rightArm = scene.add.ellipse(10, -1, 7, 16, 0x76aa55).setRotation(-0.24).setStrokeStyle(2, 0x172e22);
+  const sword = scene.add.polygon(14, -1, [-3, 9, -2, -6, 1, -14, 4, -6, 4, 9], 0xd8eee5)
+    .setRotation(0.32)
+    .setStrokeStyle(2, 0x49625c);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x304a2d, 1).lineStyle(2, 0x172e22, 1).fillCircle(0, -10, 11).strokeCircle(0, -10, 11);
+  portrait.fillStyle(0xa2c76c, 1).fillTriangle(-7, -11, -15, -14, -7, -5).fillTriangle(7, -11, 15, -14, 7, -5);
+  portrait.fillEllipse(0, -10, 15, 12);
+  portrait.fillStyle(0xffe578, 1).fillRect(-5, -12, 3, 2).fillRect(2, -12, 3, 2);
+  portrait.fillStyle(0x815b36, 1).fillRect(-5, 4, 10, 3);
+  body.add([leftFoot, rightFoot, cloak, leftArm, rightArm, sword, portrait]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm], weapons: [sword], cloth: cloak };
 }
 
-function drawSwift(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const cape = scene.add.triangle(-3, 2, -15, 11, 5, -16, 13, 13, 0x9c62bd).setStrokeStyle(2, 0x352040);
-  const face = scene.add.circle(2, -8, 6, 0xd6b1df);
-  const blade = scene.add.rectangle(11, -1, 16, 2, 0xcce8e3).setRotation(-0.65);
-  body.add([cape, face, blade]);
+function drawSwift(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const cape = scene.add.polygon(-4, 1, [-13, -9, 5, -12, 13, 3, 4, 13, -4, 8, -14, 14], 0x754595, 0.92)
+    .setStrokeStyle(2, 0x301d3b);
+  const leftFoot = scene.add.ellipse(-5, 10, 7, 6, 0x27243a).setRotation(-0.2).setStrokeStyle(2, 0x161422);
+  const rightFoot = scene.add.ellipse(5, 9, 7, 6, 0x27243a).setRotation(0.2).setStrokeStyle(2, 0x161422);
+  const torso = scene.add.ellipse(0, 0, 19, 27, 0x8f55ad).setStrokeStyle(2, 0x301d3b);
+  const leftArm = scene.add.ellipse(-9, -1, 6, 17, 0x6d438a).setRotation(-0.45).setStrokeStyle(2, 0x301d3b);
+  const rightArm = scene.add.ellipse(9, -1, 6, 17, 0x6d438a).setRotation(0.45).setStrokeStyle(2, 0x301d3b);
+  const leftBlade = scene.add.polygon(-13, 2, [-8, 1, 3, -3, 9, -1, 3, 2], 0xd8f3ee).setRotation(-0.4).setStrokeStyle(1, 0x607a78);
+  const rightBlade = scene.add.polygon(13, 2, [-9, -1, -3, -3, 8, 1, -3, 2], 0xd8f3ee).setRotation(0.4).setStrokeStyle(1, 0x607a78);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x3b274d, 1).lineStyle(2, 0x22152d, 1).fillCircle(0, -10, 9).strokeCircle(0, -10, 9);
+  portrait.fillStyle(0x17131f, 1).fillEllipse(0, -9, 12, 8);
+  portrait.fillStyle(0xe6c7ff, 1).fillRect(-5, -11, 3, 2).fillRect(2, -11, 3, 2);
+  body.add([cape, leftFoot, rightFoot, torso, leftArm, rightArm, leftBlade, rightBlade, portrait]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm], weapons: [rightBlade, leftBlade], cloth: cape };
 }
 
-function drawBrute(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const shell = scene.add.ellipse(0, -1, 35, 29, 0x7e5a3c).setStrokeStyle(3, 0x2d2019);
-  const ridge = scene.add.rectangle(0, -3, 4, 22, 0xb48152);
-  const hornLeft = scene.add.triangle(-10, -11, -7, 0, 0, -11, 4, 0, 0xd0bd8a);
-  const hornRight = scene.add.triangle(10, -11, -4, 0, 0, -11, 7, 0, 0xd0bd8a);
-  body.add([shell, ridge, hornLeft, hornRight]);
+function drawBrute(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const leftFoot = scene.add.ellipse(-8, 11, 13, 7, 0x3d2d23).setStrokeStyle(2, 0x201812);
+  const rightFoot = scene.add.ellipse(8, 11, 13, 7, 0x3d2d23).setStrokeStyle(2, 0x201812);
+  const torso = scene.add.ellipse(0, 0, 38, 31, 0x78563b).setStrokeStyle(3, 0x2d2019);
+  const leftArm = scene.add.ellipse(-17, 2, 12, 24, 0x6b4c35).setRotation(0.18).setStrokeStyle(2, 0x2d2019);
+  const rightArm = scene.add.ellipse(17, 2, 12, 24, 0x6b4c35).setRotation(-0.18).setStrokeStyle(2, 0x2d2019);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x2d2019, 1).fillCircle(-11, -8, 8).fillCircle(11, -8, 8);
+  portrait.fillStyle(0xa97749, 1).lineStyle(2, 0x2d2019, 1).fillEllipse(0, -9, 24, 18).strokeEllipse(0, -9, 24, 18);
+  portrait.fillStyle(0xd2c08b, 1).fillTriangle(-8, -15, -17, -24, -13, -8).fillTriangle(8, -15, 17, -24, 13, -8);
+  portrait.fillStyle(0xffcf6b, 1).fillRect(-7, -11, 4, 3).fillRect(3, -11, 4, 3);
+  portrait.fillStyle(0x9d7048, 1).fillRoundedRect(-5, -1, 10, 16, 3);
+  body.add([leftFoot, rightFoot, torso, leftArm, rightArm, portrait]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm] };
 }
 
-function drawWarden(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const robe = scene.add.triangle(0, 1, -14, 15, 0, -17, 14, 15, 0x397f82).setStrokeStyle(2, 0x163b42);
-  const mask = scene.add.rectangle(0, -10, 12, 12, 0xc0f1e8).setRotation(Math.PI / 4).setScale(0.8, 1.1).setStrokeStyle(2, 0x2a6268);
-  const orb = scene.add.circle(11, -1, 4, 0x8df7dc).setStrokeStyle(1, 0xffffff);
-  body.add([robe, mask, orb]);
-  scene.tweens.add({ targets: orb, alpha: 0.35, duration: 550, yoyo: true, repeat: -1 });
+function drawWarden(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const leftFoot = scene.add.ellipse(-6, 11, 10, 6, 0x24474b).setStrokeStyle(2, 0x173b42);
+  const rightFoot = scene.add.ellipse(6, 11, 10, 6, 0x24474b).setStrokeStyle(2, 0x173b42);
+  const torso = scene.add.ellipse(0, 1, 28, 30, 0x397f82).setStrokeStyle(2, 0x173b42);
+  const leftArm = scene.add.ellipse(-12, 0, 8, 20, 0x316d71).setRotation(0.18).setStrokeStyle(2, 0x173b42);
+  const rightArm = scene.add.ellipse(12, 0, 8, 20, 0x316d71).setRotation(-0.18).setStrokeStyle(2, 0x173b42);
+  const ward = scene.add.circle(14, -3, 6, 0x8df7dc, 0.78).setStrokeStyle(2, 0xd9ffff, 0.9);
+  const wardCore = scene.add.circle(14, -3, 2.5, 0xf4ffff, 0.96);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x2c656a, 1).lineStyle(2, 0x173b42, 1).fillCircle(0, -10, 10).strokeCircle(0, -10, 10);
+  portrait.fillStyle(0x4d999b, 1).fillCircle(-12, -5, 5).fillCircle(12, -5, 5);
+  portrait.fillStyle(0xbff1e8, 1).lineStyle(1, 0x2a6268, 1);
+  portrait.beginPath().moveTo(0, -18).lineTo(7, -10).lineTo(0, -2).lineTo(-7, -10).closePath().fillPath().strokePath();
+  portrait.fillStyle(0x18393c, 1).fillRect(-4, -11, 8, 2);
+  body.add([leftFoot, rightFoot, torso, leftArm, rightArm, ward, wardCore, portrait]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm], glow: [ward, wardCore] };
 }
 
-function drawShade(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const mist = scene.add.ellipse(0, 4, 30, 19, 0x4b306b, 0.5);
-  const cloak = scene.add.triangle(0, 0, -13, 15, 0, -19, 13, 15, 0x68428b, 0.88)
-    .setStrokeStyle(2, 0x21132f, 0.85);
-  const face = scene.add.ellipse(1, -10, 12, 9, 0x25182f, 0.95);
-  const eyes = scene.add.rectangle(2, -11, 7, 2, 0xd3a8ff, 0.95);
-  body.add([mist, cloak, face, eyes]);
-  scene.tweens.add({ targets: mist, alpha: 0.12, scaleX: 1.35, duration: 620, yoyo: true, repeat: -1 });
+function drawShade(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const mist = scene.add.ellipse(0, 5, 33, 19, 0x8055a2, 0.28);
+  const tail = scene.add.polygon(0, 3, [-13, -11, 13, -11, 11, 3, 5, 14, 0, 9, -6, 15, -11, 3], 0x563474, 0.9)
+    .setStrokeStyle(2, 0x21132f, 0.9);
+  const leftArm = scene.add.polygon(-11, -1, [-5, -6, 4, -3, 10, 7, 4, 6, 0, 11, -4, 5], 0x6f4590, 0.88)
+    .setStrokeStyle(2, 0x21132f, 0.8);
+  const rightArm = scene.add.polygon(11, -1, [5, -6, -4, -3, -10, 7, -4, 6, 0, 11, 4, 5], 0x6f4590, 0.88)
+    .setStrokeStyle(2, 0x21132f, 0.8);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x563474, 1).lineStyle(2, 0x21132f, 1).fillCircle(0, -10, 11).strokeCircle(0, -10, 11);
+  portrait.fillStyle(0x17101f, 1).fillEllipse(0, -9, 14, 11);
+  portrait.fillStyle(0xd3a8ff, 1).fillEllipse(-4, -10, 4, 3).fillEllipse(4, -10, 4, 3);
+  body.add([mist, tail, leftArm, rightArm, portrait]);
+  return { arms: [leftArm, rightArm], cloth: tail, glow: [mist] };
 }
 
-function drawBulwark(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const torso = scene.add.ellipse(2, -1, 34, 30, 0x59666a).setStrokeStyle(3, 0x20292b);
-  const shield = scene.add.polygon(-7, 0, [-11, -16, 8, -14, 12, 5, 0, 17, -12, 7], 0x507e88)
+function drawBulwark(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const leftFoot = scene.add.ellipse(-7, 11, 12, 7, 0x354247).setStrokeStyle(2, 0x20292b);
+  const rightFoot = scene.add.ellipse(8, 11, 12, 7, 0x354247).setStrokeStyle(2, 0x20292b);
+  const torso = scene.add.ellipse(4, 0, 34, 31, 0x59666a).setStrokeStyle(3, 0x20292b);
+  const leftArm = scene.add.ellipse(-12, 0, 9, 21, 0x4b585c).setRotation(0.18).setStrokeStyle(2, 0x20292b);
+  const rightArm = scene.add.ellipse(15, 0, 9, 21, 0x4b585c).setRotation(-0.14).setStrokeStyle(2, 0x20292b);
+  const shield = scene.add.polygon(-7, 1, [-13, -17, 10, -15, 14, 5, 0, 18, -14, 7], 0x507e88)
     .setStrokeStyle(3, 0xb6d6d6);
-  const boss = scene.add.rectangle(0, -1, 7, 7, 0x9eeaf1).setRotation(Math.PI / 4).setStrokeStyle(1, 0xeaffff);
-  const helm = scene.add.rectangle(8, -13, 17, 10, 0x869397).setStrokeStyle(2, 0x30393a);
-  body.add([torso, helm, shield, boss]);
+  const core = scene.add.rectangle(-7, 0, 8, 8, 0x9eeaf1).setRotation(Math.PI / 4).setStrokeStyle(1, 0xeaffff);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x87969a, 1).lineStyle(2, 0x30393a, 1).fillRoundedRect(0, -18, 18, 14, 5).strokeRoundedRect(0, -18, 18, 14, 5);
+  portrait.fillStyle(0x182326, 1).fillRect(3, -13, 12, 3);
+  body.add([leftFoot, rightFoot, torso, leftArm, rightArm, portrait, shield, core]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm], glow: [core] };
 }
 
-function drawShaman(scene: Phaser.Scene, body: Phaser.GameObjects.Container): void {
-  const robe = scene.add.triangle(-2, 1, -14, 15, -2, -17, 14, 15, 0x3d8461).setStrokeStyle(2, 0x163728);
-  const hood = scene.add.circle(-2, -10, 8, 0x67a779).setStrokeStyle(2, 0x214e38);
-  const mask = scene.add.rectangle(-1, -10, 9, 8, 0xd7e8b8).setRotation(Math.PI / 4).setScale(0.75, 1);
-  const staff = scene.add.rectangle(12, -1, 3, 31, 0x6b4c31).setRotation(0.08);
-  const bloom = scene.add.circle(13, -17, 5, 0x8af0ad, 0.85).setStrokeStyle(2, 0xd6ffe1);
-  body.add([robe, hood, mask, staff, bloom]);
-  scene.tweens.add({ targets: bloom, alpha: 0.35, scale: 1.35, duration: 690, yoyo: true, repeat: -1 });
+function drawShaman(scene: Phaser.Scene, body: Phaser.GameObjects.Container): EnemyRigSpec {
+  const leftFoot = scene.add.ellipse(-6, 11, 9, 6, 0x284b34).setStrokeStyle(2, 0x163728);
+  const rightFoot = scene.add.ellipse(6, 11, 9, 6, 0x284b34).setStrokeStyle(2, 0x163728);
+  const cloak = scene.add.ellipse(-1, 1, 27, 30, 0x3d8461).setStrokeStyle(2, 0x163728);
+  const leftArm = scene.add.ellipse(-11, 0, 7, 19, 0x397557).setRotation(0.2).setStrokeStyle(2, 0x163728);
+  const rightArm = scene.add.ellipse(10, -1, 7, 19, 0x397557).setRotation(-0.2).setStrokeStyle(2, 0x163728);
+  const staff = scene.add.rectangle(14, 0, 3, 34, 0x6b4c31).setRotation(0.08).setStrokeStyle(1, 0x362519);
+  const bloom = scene.add.circle(15, -18, 6, 0x8af0ad, 0.82).setStrokeStyle(2, 0xd6ffe1, 0.9);
+  const bloomCore = scene.add.circle(15, -18, 2.5, 0xe8fff0, 0.95);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x67a779, 1).lineStyle(2, 0x214e38, 1).fillCircle(-1, -10, 10).strokeCircle(-1, -10, 10);
+  portrait.fillStyle(0xd7e8b8, 1).lineStyle(1, 0x56634a, 1);
+  portrait.beginPath().moveTo(-1, -18).lineTo(7, -10).lineTo(3, -2).lineTo(-5, -2).lineTo(-9, -10).closePath().fillPath().strokePath();
+  portrait.fillStyle(0x183025, 1).fillCircle(-4, -10, 1.5).fillCircle(3, -10, 1.5);
+  body.add([leftFoot, rightFoot, cloak, leftArm, rightArm, staff, bloom, bloomCore, portrait]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm], weapons: [staff], cloth: cloak, glow: [bloom, bloomCore] };
 }
 
-function drawTitan(scene: Phaser.Scene, body: Phaser.GameObjects.Container, tier: CampaignAct): void {
+function drawTitan(scene: Phaser.Scene, body: Phaser.GameObjects.Container, tier: CampaignAct): EnemyRigSpec {
   const colors: Record<CampaignAct, readonly [number, number, number]> = {
-    1: [0x4e5d63, 0x86a5a9, 0x8fe8ef],
-    2: [0x54476c, 0x8871a6, 0xc7a2f5],
-    3: [0x6b3d4b, 0xa45a65, 0xffa0a4],
+    1: [0x3e4b50, 0x789196, 0x8fe8ef],
+    2: [0x493e5e, 0x806c9c, 0xc7a2f5],
+    3: [0x5e3542, 0x98525d, 0xffa0a4],
   };
   const [dark, mid, glow] = colors[tier];
-  const legs = scene.add.rectangle(0, 10, 28, 18, dark).setStrokeStyle(3, 0x201c26);
-  const torso = scene.add.polygon(0, -6, [-22, 13, -18, -15, 0, -27, 18, -15, 22, 13], mid)
+  const leftFoot = scene.add.ellipse(-12, 15, 20, 11, dark).setStrokeStyle(3, 0x201c26);
+  const rightFoot = scene.add.ellipse(12, 15, 20, 11, dark).setStrokeStyle(3, 0x201c26);
+  const torso = scene.add.polygon(0, -3, [-22, 13, -19, -14, -9, -22, 9, -22, 19, -14, 22, 13], mid)
     .setStrokeStyle(3, dark);
-  const shoulders = scene.add.rectangle(0, -10, 48, 10, dark).setStrokeStyle(2, mid);
-  const core = scene.add.rectangle(0, -8, 12, 12, glow).setRotation(Math.PI / 4).setStrokeStyle(2, 0xffffff, 0.8);
-  const horns = scene.add.graphics();
-  horns.lineStyle(5, dark, 1).beginPath().moveTo(-11, -22).lineTo(-19, -35).lineTo(-10, -31).strokePath();
-  horns.beginPath().moveTo(11, -22).lineTo(19, -35).lineTo(10, -31).strokePath();
-  body.add([legs, torso, shoulders, horns, core]);
-  scene.tweens.add({ targets: core, scale: 1.32, alpha: 0.55, duration: 560, yoyo: true, repeat: -1 });
+  const leftArm = scene.add.ellipse(-23, 0, 17, 32, dark).setRotation(0.12).setStrokeStyle(3, 0x201c26);
+  const rightArm = scene.add.ellipse(23, 0, 17, 32, dark).setRotation(-0.12).setStrokeStyle(3, 0x201c26);
+  const core = scene.add.rectangle(0, -5, 13, 13, glow).setRotation(Math.PI / 4).setStrokeStyle(2, 0xffffff, 0.82);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(dark, 1).lineStyle(3, 0x201c26, 1).fillRoundedRect(-22, -18, 44, 12, 4).strokeRoundedRect(-22, -18, 44, 12, 4);
+  portrait.fillStyle(mid, 1).fillRoundedRect(-10, -28, 20, 17, 5);
+  portrait.fillStyle(dark, 1).fillTriangle(-9, -24, -21, -38, -14, -17).fillTriangle(9, -24, 21, -38, 14, -17);
+  portrait.fillStyle(glow, 1).fillRect(-6, -23, 12, 3);
+  body.add([leftFoot, rightFoot, torso, leftArm, rightArm, portrait, core]);
+  return { feet: [leftFoot, rightFoot], arms: [leftArm, rightArm], glow: [core] };
 }
 
-function drawBoss(scene: Phaser.Scene, body: Phaser.GameObjects.Container, tier: CampaignAct): void {
-  if (tier === 2) {
-    const mantle = scene.add.triangle(0, 3, -25, 21, 0, -29, 25, 21, 0x4e547f).setStrokeStyle(3, 0x20203d);
-    const mask = scene.add.rectangle(0, -14, 19, 19, 0x81c8d1).setRotation(Math.PI / 4).setScale(0.78, 1.12).setStrokeStyle(2, 0xd9ffff);
-    const crown = scene.add.polygon(0, -31, [-15, 4, -10, -12, -3, -4, 2, -17, 7, -4, 14, -12, 15, 4], 0x9ae7ef)
-      .setStrokeStyle(2, 0xe4ffff);
-    const core = scene.add.circle(0, -13, 4, 0xf5ffff, 0.96);
-    body.add([mantle, mask, crown, core]);
-    scene.tweens.add({ targets: core, alpha: 0.35, scale: 1.5, duration: 500, yoyo: true, repeat: -1 });
-    return;
-  }
-  if (tier === 3) {
-    const wings = scene.add.ellipse(0, -2, 54, 31, 0x5f294d, 0.8).setStrokeStyle(3, 0x271326);
-    const cloak = scene.add.triangle(0, 3, -23, 22, 0, -30, 23, 22, 0x8d344d).setStrokeStyle(3, 0x351523);
-    const face = scene.add.circle(0, -15, 11, 0x35223b).setStrokeStyle(2, 0xc15974);
-    const crown = scene.add.polygon(0, -31, [-15, 3, -11, -14, -4, -5, 1, -19, 6, -5, 13, -15, 15, 3], 0xdd536c)
-      .setStrokeStyle(2, 0xffb0b6);
-    const eyes = scene.add.rectangle(1, -15, 9, 3, 0xffc1b8);
-    body.add([wings, cloak, face, crown, eyes]);
-    scene.tweens.add({ targets: wings, scaleX: 1.08, alpha: 0.45, duration: 740, yoyo: true, repeat: -1 });
-    return;
-  }
-  const cloak = scene.add.triangle(0, 3, -24, 21, 0, -27, 24, 21, 0x9a4f54).setStrokeStyle(3, 0x391d26);
-  const face = scene.add.circle(0, -14, 11, 0xd6a36f).setStrokeStyle(2, 0x4d2924);
-  const crown = scene.add.graphics();
-  crown.fillStyle(0xf1c85a, 1).lineStyle(2, 0x6d4821, 1);
-  crown.beginPath().moveTo(-13, -26).lineTo(-8, -40).lineTo(-2, -30).lineTo(4, -42).lineTo(10, -29).lineTo(13, -26).closePath().fillPath().strokePath();
-  const eyes = scene.add.rectangle(1, -15, 8, 3, 0xffe9a3);
-  body.add([cloak, face, crown, eyes]);
+function drawBoss(scene: Phaser.Scene, body: Phaser.GameObjects.Container, tier: CampaignAct): EnemyRigSpec {
+  const palettes: Record<CampaignAct, readonly [number, number, number, number]> = {
+    1: [0x391d26, 0x873f4a, 0xf1c85a, 0xffe9a3],
+    2: [0x20203d, 0x4e547f, 0x9ae7ef, 0xf5ffff],
+    3: [0x351523, 0x812f48, 0xdd536c, 0xffc1b8],
+  };
+  const [dark, mid, accent, glow] = palettes[tier];
+  const leftFoot = scene.add.ellipse(-9, 14, 14, 8, dark).setStrokeStyle(3, 0x1d151b);
+  const rightFoot = scene.add.ellipse(9, 14, 14, 8, dark).setStrokeStyle(3, 0x1d151b);
+  const mantle = scene.add.ellipse(0, 1, 51, 38, mid, 0.94).setStrokeStyle(3, dark);
+  const robe = scene.add.ellipse(0, 5, 34, 35, dark, 0.96).setStrokeStyle(2, 0x1d151b);
+  const leftArm = scene.add.ellipse(-20, 1, 10, 26, mid).setRotation(0.16).setStrokeStyle(3, dark);
+  const rightArm = scene.add.ellipse(20, 1, 10, 26, mid).setRotation(-0.16).setStrokeStyle(3, dark);
+  const staff = scene.add.rectangle(23, -1, 4, 39, dark).setRotation(0.04).setStrokeStyle(1, accent);
+  const staffCore = scene.add.circle(23, -22, 7, accent, 0.82).setStrokeStyle(2, glow, 0.92);
+  const chestCore = scene.add.circle(0, -2, 4.5, glow, 0.92).setStrokeStyle(2, accent, 0.9);
+  const portrait = scene.add.graphics();
+  portrait.fillStyle(0x211923, 1).lineStyle(2, dark, 1).fillCircle(0, -14, 11).strokeCircle(0, -14, 11);
+  portrait.fillStyle(glow, 1).fillRect(-6, -16, 4, 3).fillRect(2, -16, 4, 3);
+  portrait.fillStyle(accent, 1).lineStyle(2, dark, 1);
+  portrait.beginPath().moveTo(-13, -23).lineTo(-9, -36).lineTo(-3, -28).lineTo(1, -39).lineTo(6, -28).lineTo(12, -36).lineTo(13, -23).closePath().fillPath().strokePath();
+  body.add([leftFoot, rightFoot, mantle, robe, leftArm, rightArm, staff, staffCore, chestCore, portrait]);
+  return {
+    feet: [leftFoot, rightFoot],
+    arms: [leftArm, rightArm],
+    weapons: [staff],
+    cloth: mantle,
+    glow: [staffCore, chestCore],
+  };
+}
+
+function createEnemyRig(type: EnemyType, spec: EnemyRigSpec, eliteAura: AnimatedShape | null): EnemyRig {
+  return Object.freeze({
+    type,
+    pose: createEnemyMotionPose(),
+    feet: (spec.feet ?? []).map(captureRigPart),
+    arms: (spec.arms ?? []).map(captureRigPart),
+    weapons: (spec.weapons ?? []).map(captureRigPart),
+    cloth: spec.cloth ? captureRigPart(spec.cloth) : null,
+    glow: (spec.glow ?? []).map(captureRigPart),
+    eliteAura: eliteAura ? captureRigPart(eliteAura) : null,
+  });
+}
+
+function captureRigPart(target: AnimatedShape): RigPart {
+  return Object.freeze({
+    target,
+    x: target.x,
+    y: target.y,
+    rotation: target.rotation,
+    scaleX: target.scaleX,
+    scaleY: target.scaleY,
+    alpha: target.alpha,
+  });
+}
+
+function applyFootPose(part: RigPart | undefined, lift: number, swing: number): void {
+  if (!part) return;
+  part.target.y = part.y - lift;
+  part.target.rotation = part.rotation + swing * 0.28;
+}
+
+function applySwingPose(part: RigPart | undefined, swing: number): void {
+  if (!part) return;
+  part.target.rotation = part.rotation + swing;
 }
 
 function distanceToRoute(x: number, y: number): number {

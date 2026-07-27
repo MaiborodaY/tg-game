@@ -53,7 +53,6 @@ export type EnemyDefinition = Readonly<{
   controlResistance: number;
   healingRadius: number;
   healingRatio: number;
-  glyph: string;
 }>;
 
 export type WaveSpawn = Readonly<{
