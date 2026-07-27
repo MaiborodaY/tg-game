@@ -3,19 +3,24 @@ import test from "node:test";
 
 import { setupTelegramBridge, supportsApiVersion } from "../src/telegram.ts";
 
+function attachTelegramEventApi(webApp) {
+  const events = new Map();
+  webApp.onEvent = (name, callback) => events.set(name, callback);
+  webApp.offEvent = (name, callback) => {
+    if (events.get(name) === callback) events.delete(name);
+  };
+  return events;
+}
+
 function withTelegramEnvironment(webApp, run) {
   const hadWindow = Object.hasOwn(globalThis, "window");
   const hadDocument = Object.hasOwn(globalThis, "document");
   const previousWindow = globalThis.window;
   const previousDocument = globalThis.document;
   const cssValues = new Map();
-  const appEvents = new Map();
+  const appEvents = attachTelegramEventApi(webApp);
   const windowEvents = new Map();
 
-  webApp.onEvent = (name, callback) => appEvents.set(name, callback);
-  webApp.offEvent = (name, callback) => {
-    if (appEvents.get(name) === callback) appEvents.delete(name);
-  };
   globalThis.window = {
     Telegram: { WebApp: webApp },
     innerHeight: 720,
@@ -92,11 +97,38 @@ test("Telegram bridge mirrors safe-area values and refreshes them from API 8.0 e
     assert.equal(appEvents.has("viewportChanged"), false);
     assert.equal(appEvents.has("safeAreaChanged"), false);
     assert.equal(appEvents.has("contentSafeAreaChanged"), false);
+    assert.equal(appEvents.has("fullscreenChanged"), false);
+    assert.equal(appEvents.has("fullscreenFailed"), false);
     assert.equal(windowEvents.has("resize"), false);
+    assert.equal(windowEvents.has("load"), false);
   });
 });
 
-test("Telegram bridge requests fullscreen only through API 8.0 and avoids duplicate requests", () => {
+test("Telegram bridge bootstrap expands the Mini App without entering or exiting fullscreen", () => {
+  let readyCalls = 0;
+  let expandCalls = 0;
+  let fullscreenCalls = 0;
+  let exitCalls = 0;
+  const webApp = {
+    isFullscreen: false,
+    isVersionAtLeast: () => true,
+    ready: () => { readyCalls += 1; },
+    expand: () => { expandCalls += 1; },
+    requestFullscreen: () => { fullscreenCalls += 1; },
+    exitFullscreen: () => { exitCalls += 1; },
+  };
+
+  withTelegramEnvironment(webApp, () => {
+    const bridge = setupTelegramBridge();
+    assert.equal(readyCalls, 1);
+    assert.equal(expandCalls, 1);
+    assert.equal(fullscreenCalls, 0);
+    assert.equal(exitCalls, 0);
+    bridge.destroy();
+  });
+});
+
+test("Telegram bridge enters fullscreen only after an explicit request", () => {
   let expandCalls = 0;
   let fullscreenCalls = 0;
   const webApp = {
@@ -104,38 +136,181 @@ test("Telegram bridge requests fullscreen only through API 8.0 and avoids duplic
     isVersionAtLeast: (version) => version === "8.0",
     expand: () => { expandCalls += 1; },
     requestFullscreen: () => { fullscreenCalls += 1; },
+    exitFullscreen: () => {},
   };
 
   withTelegramEnvironment(webApp, () => {
     const bridge = setupTelegramBridge();
-    assert.equal(expandCalls, 1);
+    assert.equal(bridge.supportsFullscreen, true);
+    assert.equal(bridge.isFullscreen, false);
     assert.equal(bridge.requestFullscreen(), true);
     assert.equal(fullscreenCalls, 1);
     assert.equal(expandCalls, 1);
 
     webApp.isFullscreen = true;
+    assert.equal(bridge.isFullscreen, true);
     assert.equal(bridge.requestFullscreen(), true);
     assert.equal(fullscreenCalls, 1);
     bridge.destroy();
   });
 });
 
-test("Telegram bridge falls back to expand when fullscreen is unavailable or rejected", () => {
-  for (const webApp of [
-    { isVersionAtLeast: () => false },
+test("Telegram bridge exits fullscreen only after an explicit request", () => {
+  let exitCalls = 0;
+  const webApp = {
+    isFullscreen: true,
+    isVersionAtLeast: (version) => version === "8.0",
+    requestFullscreen: () => {},
+    exitFullscreen: () => { exitCalls += 1; },
+  };
+
+  withTelegramEnvironment(webApp, () => {
+    const bridge = setupTelegramBridge();
+    assert.equal(bridge.exitFullscreen(), true);
+    assert.equal(exitCalls, 1);
+
+    webApp.isFullscreen = false;
+    assert.equal(bridge.isFullscreen, false);
+    assert.equal(bridge.exitFullscreen(), true);
+    assert.equal(exitCalls, 1);
+    bridge.destroy();
+  });
+});
+
+test("fullscreen host events refresh viewport and safe area before notifying listeners", () => {
+  const webApp = {
+    isFullscreen: false,
+    viewportHeight: 700,
+    viewportStableHeight: 680,
+    safeAreaInset: { top: 12 },
+    contentSafeAreaInset: { top: 58 },
+    isVersionAtLeast: () => true,
+    requestFullscreen: () => {},
+    exitFullscreen: () => {},
+  };
+
+  withTelegramEnvironment(webApp, ({ appEvents, cssValues }) => {
+    const bridge = setupTelegramBridge();
+    const notifications = [];
+    const unsubscribe = bridge.onFullscreenChange((isFullscreen) => {
+      notifications.push({
+        isFullscreen,
+        viewport: cssValues.get("--tg-viewport-height"),
+        safeTop: cssValues.get("--td-content-safe-area-inset-top"),
+      });
+    });
+
+    webApp.isFullscreen = true;
+    webApp.viewportHeight = 820;
+    webApp.contentSafeAreaInset.top = 72;
+    appEvents.get("fullscreenChanged")();
+    assert.equal(bridge.isFullscreen, true);
+    assert.deepEqual(notifications, [{ isFullscreen: true, viewport: "820px", safeTop: "72px" }]);
+
+    webApp.isFullscreen = false;
+    webApp.viewportHeight = 760;
+    webApp.contentSafeAreaInset.top = 64;
+    appEvents.get("fullscreenFailed")();
+    assert.deepEqual(notifications.at(-1), { isFullscreen: false, viewport: "760px", safeTop: "64px" });
+
+    unsubscribe();
+    appEvents.get("fullscreenChanged")();
+    assert.equal(notifications.length, 2);
+    bridge.destroy();
+  });
+});
+
+test("unsupported and rejected fullscreen operations never fall back to expand", () => {
+  const cases = [
     {
-      isVersionAtLeast: (version) => version === "8.0",
-      requestFullscreen: () => { throw new Error("fullscreen rejected"); },
+      webApp: {
+        isFullscreen: false,
+        isVersionAtLeast: () => false,
+        requestFullscreen: () => assert.fail("unsupported request must not run"),
+        exitFullscreen: () => assert.fail("unsupported exit must not run"),
+      },
+      operation: (bridge) => bridge.requestFullscreen(),
     },
-  ]) {
+    {
+      webApp: {
+        isFullscreen: false,
+        isVersionAtLeast: (version) => version === "8.0",
+        requestFullscreen: () => assert.fail("incomplete fullscreen API must not run"),
+      },
+      operation: (bridge) => bridge.requestFullscreen(),
+    },
+    {
+      webApp: {
+        isFullscreen: false,
+        isVersionAtLeast: (version) => version === "8.0",
+        requestFullscreen: () => { throw new Error("fullscreen rejected"); },
+        exitFullscreen: () => {},
+      },
+      operation: (bridge) => bridge.requestFullscreen(),
+    },
+    {
+      webApp: {
+        isFullscreen: true,
+        isVersionAtLeast: (version) => version === "8.0",
+        requestFullscreen: () => {},
+        exitFullscreen: () => { throw new Error("fullscreen exit rejected"); },
+      },
+      operation: (bridge) => bridge.exitFullscreen(),
+    },
+  ];
+
+  for (const { webApp, operation } of cases) {
     let expandCalls = 0;
     webApp.expand = () => { expandCalls += 1; };
     withTelegramEnvironment(webApp, () => {
       const bridge = setupTelegramBridge();
       assert.equal(expandCalls, 1);
-      assert.equal(bridge.requestFullscreen(), false);
-      assert.equal(expandCalls, 2);
+      assert.equal(operation(bridge), false);
+      assert.equal(expandCalls, 1);
       bridge.destroy();
     });
   }
+});
+
+test("load refresh moves bindings to a late WebApp, notifies UI, and destroy removes listeners", () => {
+  const originalWebApp = {
+    isFullscreen: false,
+    isVersionAtLeast: () => true,
+    requestFullscreen: () => {},
+    exitFullscreen: () => {},
+  };
+
+  withTelegramEnvironment(originalWebApp, ({ appEvents: originalEvents, windowEvents }) => {
+    const bridge = setupTelegramBridge();
+    let notifications = 0;
+    bridge.onFullscreenChange(() => { notifications += 1; });
+
+    const replacementWebApp = {
+      isFullscreen: true,
+      isVersionAtLeast: () => true,
+      requestFullscreen: () => {},
+      exitFullscreen: () => {},
+    };
+    const replacementEvents = attachTelegramEventApi(replacementWebApp);
+    globalThis.window.Telegram.WebApp = replacementWebApp;
+    windowEvents.get("load")();
+
+    assert.equal(originalEvents.size, 0);
+    assert.equal(typeof replacementEvents.get("fullscreenChanged"), "function");
+    assert.equal(bridge.isFullscreen, true);
+    assert.equal(notifications, 1);
+
+    replacementEvents.get("fullscreenChanged")();
+    assert.equal(notifications, 2);
+
+    const detachedCallback = replacementEvents.get("fullscreenChanged");
+    bridge.destroy();
+    assert.equal(replacementEvents.size, 0);
+    assert.equal(windowEvents.has("resize"), false);
+    assert.equal(windowEvents.has("load"), false);
+    detachedCallback();
+    assert.equal(notifications, 2);
+    assert.equal(bridge.requestFullscreen(), false);
+    assert.equal(bridge.exitFullscreen(), false);
+  });
 });

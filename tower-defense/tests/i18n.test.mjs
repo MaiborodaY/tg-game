@@ -23,6 +23,9 @@ test("locale normalization supports Telegram language variants and Russian fallb
     "Волны: 13 / 24 · Очки рейтинга: 31",
   );
   assert.equal(tr("uk", "tower_guide_button"), "Довідка про вежі");
+  assert.equal(tr("ru", "fullscreen_enter"), "Развернуть на весь экран");
+  assert.equal(tr("uk", "fullscreen_exit"), "Вийти з повноекранного режиму");
+  assert.equal(tr("en", "fullscreen_exit"), "Exit fullscreen");
   assert.equal(tr("ru", "tower_storm"), "Грозовой шпиль");
   assert.equal(tr("uk", "enemy_titan"), "Титан розлому");
   assert.equal(detectLocale("uk-UA"), "uk");

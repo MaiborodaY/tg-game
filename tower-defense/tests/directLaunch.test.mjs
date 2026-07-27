@@ -29,7 +29,21 @@ test("manual language controls are available before and during a match", () => {
   assert.match(mainSource, /if \(latestUi\) renderUi\(latestUi\);/);
 });
 
-test("new and returning matches request fullscreen through the guarded Telegram bridge", () => {
-  assert.match(mainSource, /restorePendingFinish\(\);\s*if \(elements\.introOverlay\.hidden\) telegram\.requestFullscreen\(\);/);
-  assert.match(mainSource, /function dismissIntro\(\): void \{[\s\S]*telegram\.requestFullscreen\(\);[\s\S]*telegram\.haptic\("light"\);/);
+test("fullscreen remains an explicit player choice", () => {
+  assert.match(html, /id="fullscreen-button" class="fullscreen-button"[^>]*aria-pressed="false"[^>]*hidden/);
+  assert.equal(mainSource.match(/telegram\.requestFullscreen\(\)/g)?.length, 1);
+  assert.equal(mainSource.match(/telegram\.exitFullscreen\(\)/g)?.length, 1);
+  assert.doesNotMatch(mainSource, /restorePendingFinish\(\);\s*if \(elements\.introOverlay\.hidden\) telegram\.requestFullscreen\(\);/);
+  assert.doesNotMatch(mainSource, /function dismissIntro\(\): void \{[\s\S]*telegram\.requestFullscreen\(\);/);
+  assert.match(mainSource, /elements\.fullscreenButton\.addEventListener\("click", \(\) => \{\s*if \(telegram\.isFullscreen\) telegram\.exitFullscreen\(\);\s*else telegram\.requestFullscreen\(\);/);
+});
+
+test("fullscreen control follows Telegram support and confirmed state", () => {
+  assert.match(mainSource, /telegram\.onFullscreenChange\(syncFullscreenUi\);/);
+  assert.match(mainSource, /document\.documentElement\.classList\.toggle\("is-telegram-fullscreen", isFullscreen\);/);
+  assert.match(mainSource, /elements\.buildPanel\.classList\.toggle\("has-fullscreen-control", supportsFullscreen\);/);
+  assert.match(mainSource, /elements\.fullscreenButton\.hidden = !supportsFullscreen;/);
+  assert.match(mainSource, /elements\.fullscreenButton\.setAttribute\("aria-pressed", String\(isFullscreen\)\);/);
+  assert.match(mainSource, /text\(isFullscreen \? "fullscreen_exit" : "fullscreen_enter"\)/);
+  assert.match(mainSource, /function applyStaticTranslations\(\): void \{[\s\S]*syncFullscreenUi\(telegram\.isFullscreen\);/);
 });

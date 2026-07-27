@@ -137,6 +137,7 @@ const elements = {
   buildEyebrow: byId("build-eyebrow"),
   buildHint: byId("build-hint"),
   practiceBadge: byId("practice-badge"),
+  fullscreenButton: button("fullscreen-button"),
   towerGuideButton: button("tower-guide-button"),
   towerGuideOverlay: byId("tower-guide-overlay"),
   towerGuideClose: button("tower-guide-close"),
@@ -210,7 +211,6 @@ const scene: TowerDefenseScene = mounted.scene;
 
 bindInteractions();
 restorePendingFinish();
-if (elements.introOverlay.hidden) telegram.requestFullscreen();
 if (!elements.introOverlay.hidden) elements.introStart.focus();
 else if (elements.resultOverlay.hidden) elements.appShell.inert = false;
 
@@ -228,6 +228,11 @@ function bindInteractions(): void {
   elements.upgradeButton.addEventListener("click", () => scene.upgradeSelectedTower());
   elements.sellButton.addEventListener("click", () => scene.sellSelectedTower());
   elements.closeTowerPanel.addEventListener("click", () => scene.clearSelection());
+  elements.fullscreenButton.addEventListener("click", () => {
+    if (telegram.isFullscreen) telegram.exitFullscreen();
+    else telegram.requestFullscreen();
+  });
+  telegram.onFullscreenChange(syncFullscreenUi);
   elements.towerGuideButton.addEventListener("click", openTowerGuide);
   elements.towerGuideClose.addEventListener("click", closeTowerGuide);
   elements.towerGuideDone.addEventListener("click", closeTowerGuide);
@@ -459,7 +464,6 @@ function dismissIntro(): void {
   elements.introOverlay.hidden = true;
   elements.appShell.inert = false;
   writeFlag(session, "td-intro-seen-v1");
-  telegram.requestFullscreen();
   telegram.haptic("light");
 }
 
@@ -529,6 +533,7 @@ function applyStaticTranslations(): void {
   elements.buildEyebrow.textContent = text("arsenal");
   elements.buildHint.textContent = text("build_hint");
   elements.practiceBadge.textContent = text("practice");
+  syncFullscreenUi(telegram.isFullscreen);
   const guideButtonLabel = text("tower_guide_button");
   elements.towerGuideButton.setAttribute("aria-label", guideButtonLabel);
   elements.towerGuideButton.title = guideButtonLabel;
@@ -555,6 +560,17 @@ function applyStaticTranslations(): void {
   elements.pauseButton.setAttribute("aria-label", text("pause"));
   elements.speedButton.setAttribute("aria-label", text("speed"));
   elements.pulseButton.setAttribute("aria-label", text("pulse_ready"));
+}
+
+function syncFullscreenUi(isFullscreen: boolean): void {
+  const supportsFullscreen = telegram.supportsFullscreen;
+  document.documentElement.classList.toggle("is-telegram-fullscreen", isFullscreen);
+  elements.buildPanel.classList.toggle("has-fullscreen-control", supportsFullscreen);
+  elements.fullscreenButton.hidden = !supportsFullscreen;
+  elements.fullscreenButton.setAttribute("aria-pressed", String(isFullscreen));
+  const label = text(isFullscreen ? "fullscreen_exit" : "fullscreen_enter");
+  elements.fullscreenButton.setAttribute("aria-label", label);
+  elements.fullscreenButton.title = label;
 }
 
 function applyLaunchErrorTranslations(): void {

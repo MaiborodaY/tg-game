@@ -18,6 +18,7 @@ type TelegramWebApp = {
   ready?: () => void;
   expand?: () => void;
   requestFullscreen?: () => void;
+  exitFullscreen?: () => void;
   disableVerticalSwipes?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
@@ -39,7 +40,11 @@ declare global {
 
 export type TelegramBridge = Readonly<{
   refresh(): void;
+  readonly supportsFullscreen: boolean;
+  readonly isFullscreen: boolean;
   requestFullscreen(): boolean;
+  exitFullscreen(): boolean;
+  onFullscreenChange(listener: (isFullscreen: boolean) => void): () => void;
   setClosingConfirmation(enabled: boolean): void;
   readonly initData: string;
   haptic(kind: HapticKind): void;
@@ -49,6 +54,8 @@ export type TelegramBridge = Readonly<{
 export function setupTelegramBridge(): TelegramBridge {
   let webApp = window.Telegram?.WebApp;
   let closingConfirmationRequested = false;
+  let destroyed = false;
+  const fullscreenListeners = new Set<(isFullscreen: boolean) => void>();
 
   const updateViewport = () => {
     const current = positiveHeight(webApp?.viewportHeight) || window.innerHeight;
@@ -66,17 +73,36 @@ export function setupTelegramBridge(): TelegramBridge {
     applySafeAreaCssVariables("--td-content-safe-area-inset", webApp?.contentSafeAreaInset);
   };
 
+  const emitFullscreenChange = () => {
+    if (destroyed) return;
+    const isFullscreen = webApp?.isFullscreen === true;
+    for (const listener of [...fullscreenListeners]) {
+      try { listener(isFullscreen); } catch { /* UI listeners must not break the bridge. */ }
+    }
+  };
+
+  const handleFullscreenEvent = () => {
+    if (destroyed) return;
+    updateViewport();
+    updateSafeArea();
+    emitFullscreenChange();
+  };
+
   const bindEvents = (target: TelegramWebApp | undefined) => {
     try { target?.onEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
     if (!supportsApiVersion(target, "8.0")) return;
     try { target?.onEvent?.("safeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
     try { target?.onEvent?.("contentSafeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
+    try { target?.onEvent?.("fullscreenChanged", handleFullscreenEvent); } catch { /* optional Telegram API */ }
+    try { target?.onEvent?.("fullscreenFailed", handleFullscreenEvent); } catch { /* optional Telegram API */ }
   };
 
   const unbindEvents = (target: TelegramWebApp | undefined) => {
     try { target?.offEvent?.("viewportChanged", updateViewport); } catch { /* optional Telegram API */ }
     try { target?.offEvent?.("safeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
     try { target?.offEvent?.("contentSafeAreaChanged", updateSafeArea); } catch { /* optional Telegram API */ }
+    try { target?.offEvent?.("fullscreenChanged", handleFullscreenEvent); } catch { /* optional Telegram API */ }
+    try { target?.offEvent?.("fullscreenFailed", handleFullscreenEvent); } catch { /* optional Telegram API */ }
   };
 
   const applyClosingConfirmation = () => {
@@ -90,8 +116,9 @@ export function setupTelegramBridge(): TelegramBridge {
   };
 
   const refresh = () => {
+    if (destroyed) return;
     const next = window.Telegram?.WebApp;
-    if (next && next !== webApp) {
+    if (next !== webApp) {
       unbindEvents(webApp);
       webApp = next;
       bindEvents(webApp);
@@ -110,19 +137,35 @@ export function setupTelegramBridge(): TelegramBridge {
     applyClosingConfirmation();
     updateViewport();
     updateSafeArea();
+    emitFullscreenChange();
   };
 
   const requestFullscreen = () => {
+    if (destroyed || !supportsFullscreen(webApp)) return false;
+    if (webApp?.isFullscreen) return true;
     try {
-      if (supportsApiVersion(webApp, "8.0") && typeof webApp?.requestFullscreen === "function") {
-        if (!webApp.isFullscreen) webApp.requestFullscreen();
-        return true;
-      }
+      webApp?.requestFullscreen?.();
+      return true;
     } catch {
-      // Fall through to the older expand API when fullscreen is rejected by the host.
+      return false;
     }
-    try { webApp?.expand?.(); } catch { /* optional Telegram API */ }
-    return false;
+  };
+
+  const exitFullscreen = () => {
+    if (destroyed || !supportsFullscreen(webApp)) return false;
+    if (!webApp?.isFullscreen) return true;
+    try {
+      webApp?.exitFullscreen?.();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const onFullscreenChange = (listener: (isFullscreen: boolean) => void) => {
+    if (destroyed) return () => {};
+    fullscreenListeners.add(listener);
+    return () => fullscreenListeners.delete(listener);
   };
 
   const setClosingConfirmation = (enabled: boolean) => {
@@ -141,8 +184,12 @@ export function setupTelegramBridge(): TelegramBridge {
   };
 
   const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
     unbindEvents(webApp);
+    fullscreenListeners.clear();
     window.removeEventListener("resize", updateViewport);
+    window.removeEventListener("load", refresh);
   };
 
   window.addEventListener("resize", updateViewport, { passive: true });
@@ -152,12 +199,22 @@ export function setupTelegramBridge(): TelegramBridge {
 
   return Object.freeze({
     get initData() { return webApp?.initData ?? ""; },
+    get supportsFullscreen() { return supportsFullscreen(webApp); },
+    get isFullscreen() { return webApp?.isFullscreen === true; },
     refresh,
     requestFullscreen,
+    exitFullscreen,
+    onFullscreenChange,
     setClosingConfirmation,
     haptic,
     destroy,
   });
+}
+
+function supportsFullscreen(webApp: TelegramWebApp | undefined): boolean {
+  return supportsApiVersion(webApp, "8.0")
+    && typeof webApp?.requestFullscreen === "function"
+    && typeof webApp?.exitFullscreen === "function";
 }
 
 const SAFE_AREA_SIDES = ["top", "right", "bottom", "left"] as const;
