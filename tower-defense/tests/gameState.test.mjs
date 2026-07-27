@@ -9,9 +9,26 @@ import {
   createCampaignState,
   createWaveCheckpoint,
   recordActiveDuration,
+  repairLives,
   sellTower,
   upgradeTower,
 } from "../src/game/state.ts";
+import { CAMPAIGN_RULESET, NORTHERN_PASS_LEVEL } from "../src/game/content.ts";
+
+test("new runs bind transient state to a versioned level and mode", () => {
+  const classic = createCampaignState();
+  assert.deepEqual(
+    { version: classic.version, contentVersion: classic.contentVersion, levelId: classic.levelId, modeId: classic.modeId },
+    { version: 4, contentVersion: 2, levelId: "forest-gate", modeId: "campaign" },
+  );
+
+  const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET });
+  assert.equal(northern.gold, 220);
+  assert.equal(northern.lives, 15);
+  assert.equal(buildTower(northern, 12, "ranger").ok, true);
+  assert.equal(buildTower(northern, 13, "ranger").error, "invalid_pad");
+  assert.equal(repairLives({ ...northern, lives: 10 }, 99).lives, 15);
+});
 
 test("tower economy builds, upgrades and sells from immutable campaign states", () => {
   const initial = createCampaignState();

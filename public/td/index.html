@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-CrLjRh_1.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Vy0cUEeA.css">
+    <script type="module" crossorigin src="./assets/index-B_xEPoLQ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-j3SOzFWv.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -24,6 +24,7 @@
           <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 24</strong></span></div>
         </section>
         <div class="top-actions">
+          <button id="session-menu-button" class="icon-button" type="button" aria-label="Уровни и режимы" title="Уровни и режимы" hidden>⌂</button>
           <label class="language-control">
             <span class="visually-hidden" data-language-label>Язык игры</span>
             <select data-role="language" aria-label="Язык игры">
@@ -117,6 +118,23 @@
         <small class="modal-eyebrow">TOWER DEFENSE</small>
         <h1 id="intro-title">Защити Сердце леса</h1>
         <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
+        <div id="session-picker" class="session-picker">
+          <label>
+            <span id="level-choice-label">Уровень</span>
+            <select id="level-select">
+              <option value="forest-gate">Лесные врата</option>
+              <option value="northern-pass">Северный перевал</option>
+            </select>
+          </label>
+          <label>
+            <span id="mode-choice-label">Режим</span>
+            <select id="mode-select">
+              <option value="campaign">Кампания</option>
+              <option value="endless">Бесконечный</option>
+            </select>
+          </label>
+          <small id="session-choice-hint">Выбор сохраняется для тренировочных запусков.</small>
+        </div>
         <div class="intro-features">
           <span><i class="feature-icon">⌁</i><b id="intro-waves">24 волны</b></span>
           <span><i class="feature-icon">♜</i><b id="intro-towers">4 башни</b></span>

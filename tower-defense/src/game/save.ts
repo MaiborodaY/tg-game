@@ -1,22 +1,57 @@
-import { BUILD_PADS, FINAL_WAVE, STARTING_LIVES } from "./config.ts";
+import {
+  CAMPAIGN_MODE_ID,
+  CAMPAIGN_RULESET,
+  CLASSIC_CAMPAIGN_LEVEL,
+  CLASSIC_CAMPAIGN_LEVEL_ID,
+  CONTENT_VERSION,
+  MAX_ENDLESS_WAVE,
+  getLevelDefinition,
+  getModeRuleset,
+} from "./content.ts";
 import { createCampaignState } from "./state.ts";
-import type { CampaignState, TowerPlacement, TowerType } from "./types.ts";
+import type { CampaignState, Point, TowerPlacement, TowerType } from "./types.ts";
 
-export const LOCAL_SAVE_KEY = "td-save-v3:local";
+export const LOCAL_SAVE_KEY = createLocalCampaignSaveKey(CLASSIC_CAMPAIGN_LEVEL_ID, CAMPAIGN_MODE_ID);
+export const LEGACY_V3_LOCAL_SAVE_KEY = "td-save-v3:local";
 export const LEGACY_SAVE_KEY = "td_save_v2";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
-export function getCampaignSaveKey(runId: string | null): string {
-  return runId ? `td-save-v3:run:${runId}` : LOCAL_SAVE_KEY;
+export type RunContentBinding = Readonly<{
+  levelId: string;
+  modeId: string;
+}>;
+
+export function createLocalCampaignSaveKey(levelId: string, modeId: string): string {
+  return `td-save-v4:local:${levelId}:${modeId}`;
 }
 
-export function loadCampaign(storage: StorageLike | null, key: string): CampaignState | null {
+export function getCampaignSaveKey(
+  runId: string | null,
+  levelId = CLASSIC_CAMPAIGN_LEVEL_ID,
+  modeId = CAMPAIGN_MODE_ID,
+): string {
+  return runId ? `td-save-v4:run:${runId}` : createLocalCampaignSaveKey(levelId, modeId);
+}
+
+export function loadCampaign(
+  storage: StorageLike | null,
+  key: string,
+  expectedBinding?: RunContentBinding,
+): CampaignState | null {
   if (!storage) return null;
   try {
     const raw = storage.getItem(key);
     if (!raw) return null;
-    return sanitizeCampaign(JSON.parse(raw) as unknown);
+    const campaign = sanitizeCampaign(JSON.parse(raw) as unknown);
+    if (
+      !campaign
+      || (expectedBinding && (
+        campaign.levelId !== expectedBinding.levelId
+        || campaign.modeId !== expectedBinding.modeId
+      ))
+    ) return null;
+    return campaign;
   } catch {
     return null;
   }
@@ -41,9 +76,20 @@ export function clearCampaign(storage: StorageLike | null, key: string): void {
   }
 }
 
-export function migrateLegacyCampaign(storage: StorageLike | null): CampaignState | null {
+export function migrateLegacyCampaign(storage: StorageLike | null, runId: string | null = null): CampaignState | null {
   if (!storage) return null;
+  const legacyV3Key = runId ? `td-save-v3:run:${runId}` : LEGACY_V3_LOCAL_SAVE_KEY;
   try {
+    const v3Raw = storage.getItem(legacyV3Key);
+    if (v3Raw) {
+      const migrated = sanitizeLegacyV3Campaign(JSON.parse(v3Raw) as unknown);
+      if (migrated) {
+        persistMigration(storage, getCampaignSaveKey(runId), legacyV3Key, migrated);
+        return migrated;
+      }
+    }
+
+    if (runId !== null) return null;
     const raw = storage.getItem(LEGACY_SAVE_KEY);
     if (!raw) return null;
     const value = JSON.parse(raw) as unknown;
@@ -57,7 +103,12 @@ export function migrateLegacyCampaign(storage: StorageLike | null): CampaignStat
         const row = finiteInteger(candidate.r);
         const column = finiteInteger(candidate.c);
         if (row === null || column === null) continue;
-        const padId = nearestUnusedPad(column * 40 + 20, row * 40 + 20, usedPads);
+        const padId = nearestUnusedPad(
+          column * 40 + 20,
+          row * 40 + 20,
+          CLASSIC_CAMPAIGN_LEVEL.buildPads,
+          usedPads,
+        );
         if (padId === null) continue;
         usedPads.add(padId);
         towers.push(Object.freeze({
@@ -68,23 +119,17 @@ export function migrateLegacyCampaign(storage: StorageLike | null): CampaignStat
       }
     }
 
+    const initial = createCampaignState();
     const resumeWave = clampInteger(value.resumeWave, 1, 10_000, 1);
     const migrated = sanitizeCampaign({
-      version: 3,
-      gold: clampInteger(value.gold, 0, 10_000_000, createCampaignState().gold),
-      lives: clampInteger(value.hp, 1, STARTING_LIVES, STARTING_LIVES),
+      ...initial,
+      gold: clampInteger(value.gold, 0, 10_000_000, initial.gold),
+      lives: clampInteger(value.hp, 1, CLASSIC_CAMPAIGN_LEVEL.startingLives, CLASSIC_CAMPAIGN_LEVEL.startingLives),
       completedWave: Math.max(0, resumeWave - 1),
-      totalKills: 0,
-      activeDurationMs: 0,
       towers,
     });
     if (!migrated) return null;
-    try {
-      storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(migrated));
-      storage.removeItem(LEGACY_SAVE_KEY);
-    } catch {
-      // The in-memory migration is still playable when WebView storage is blocked.
-    }
+    persistMigration(storage, LOCAL_SAVE_KEY, LEGACY_SAVE_KEY, migrated);
     return migrated;
   } catch {
     return null;
@@ -92,37 +137,77 @@ export function migrateLegacyCampaign(storage: StorageLike | null): CampaignStat
 }
 
 export function sanitizeCampaign(value: unknown): CampaignState | null {
-  if (!isRecord(value) || value.version !== 3) return null;
+  if (!isRecord(value) || value.version !== 4 || value.contentVersion !== CONTENT_VERSION) return null;
+  const level = typeof value.levelId === "string" ? getLevelDefinition(value.levelId) : null;
+  const mode = typeof value.modeId === "string" ? getModeRuleset(value.modeId) : null;
+  if (!level || !mode) return null;
+
   const usedPads = new Set<number>();
   const towers: TowerPlacement[] = [];
   if (!Array.isArray(value.towers)) return null;
-
   for (const candidate of value.towers) {
     if (!isRecord(candidate)) continue;
     const padId = finiteInteger(candidate.padId);
     const type = sanitizeTowerType(candidate.type);
-    const level = finiteInteger(candidate.level);
-    if (padId === null || padId < 0 || padId >= BUILD_PADS.length || usedPads.has(padId) || !type) continue;
-    if (level !== 1 && level !== 2 && level !== 3 && level !== 4) continue;
+    const levelValue = finiteInteger(candidate.level);
+    if (padId === null || padId < 0 || padId >= level.buildPads.length || usedPads.has(padId) || !type) continue;
+    if (levelValue !== 1 && levelValue !== 2 && levelValue !== 3 && levelValue !== 4) continue;
     usedPads.add(padId);
-    towers.push(Object.freeze({ padId, type, level }));
+    towers.push(Object.freeze({ padId, type, level: levelValue }));
   }
 
+  const finalWave = mode.getFinalWave(level);
   return Object.freeze({
-    version: 3,
+    version: 4,
+    contentVersion: CONTENT_VERSION,
+    levelId: level.id,
+    modeId: mode.id,
     gold: clampInteger(value.gold, 0, 10_000_000, 0),
-    lives: clampInteger(value.lives, 0, STARTING_LIVES, STARTING_LIVES),
-    completedWave: clampInteger(value.completedWave, 0, FINAL_WAVE, 0),
+    lives: clampInteger(value.lives, 0, level.startingLives, level.startingLives),
+    completedWave: clampInteger(value.completedWave, 0, finalWave ?? MAX_ENDLESS_WAVE, 0),
     totalKills: clampInteger(value.totalKills, 0, 100_000_000, 0),
     activeDurationMs: clampInteger(value.activeDurationMs, 0, Number.MAX_SAFE_INTEGER, 0),
     towers: Object.freeze(towers),
   });
 }
 
-function nearestUnusedPad(x: number, y: number, usedPads: ReadonlySet<number>): number | null {
+function sanitizeLegacyV3Campaign(value: unknown): CampaignState | null {
+  if (!isRecord(value) || value.version !== 3 || !Array.isArray(value.towers)) return null;
+  const initial = createCampaignState({ level: CLASSIC_CAMPAIGN_LEVEL, mode: CAMPAIGN_RULESET });
+  return sanitizeCampaign({
+    ...initial,
+    gold: value.gold,
+    lives: value.lives,
+    completedWave: value.completedWave,
+    totalKills: value.totalKills,
+    activeDurationMs: value.activeDurationMs,
+    towers: value.towers,
+  });
+}
+
+function persistMigration(
+  storage: StorageLike,
+  destinationKey: string,
+  legacyKey: string,
+  state: CampaignState,
+): void {
+  try {
+    storage.setItem(destinationKey, JSON.stringify(state));
+    storage.removeItem(legacyKey);
+  } catch {
+    // The in-memory migration is still playable when WebView storage is blocked.
+  }
+}
+
+function nearestUnusedPad(
+  x: number,
+  y: number,
+  pads: readonly Point[],
+  usedPads: ReadonlySet<number>,
+): number | null {
   let bestPad: number | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
-  BUILD_PADS.forEach((pad, index) => {
+  pads.forEach((pad, index) => {
     if (usedPads.has(index)) return;
     const distance = Math.pow(pad.x - x, 2) + Math.pow(pad.y - y, 2);
     if (distance < bestDistance) {

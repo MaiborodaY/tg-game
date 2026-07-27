@@ -47,3 +47,14 @@ test("fullscreen control follows Telegram support and confirmed state", () => {
   assert.match(mainSource, /text\(isFullscreen \? "fullscreen_exit" : "fullscreen_enter"\)/);
   assert.match(mainSource, /function applyStaticTranslations\(\): void \{[\s\S]*syncFullscreenUi\(telegram\.isFullscreen\);/);
 });
+
+test("practice exposes content selection while rewarded runs stay pinned", () => {
+  assert.match(html, /id="session-picker"/);
+  assert.match(html, /id="level-select"/);
+  assert.match(html, /id="mode-select"/);
+  assert.match(mainSource, /readSessionSelection\(storage, reward\.mode\)/);
+  assert.match(mainSource, /loadCampaign\(storage, saveKey, selectedSession\.selection\)/);
+  assert.match(mainSource, /elements\.sessionPicker\.hidden = selectedSession\.locked/);
+  assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching\) return/);
+  assert.match(mainSource, /elements\.sessionMenuButton\.addEventListener\("click", openSessionMenu\)/);
+});

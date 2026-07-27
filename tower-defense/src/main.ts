@@ -2,6 +2,11 @@ import Phaser from "phaser";
 import "./styles.css";
 import { ENEMY_DEFINITIONS, ENEMY_PREVIEW_ORDER, FINAL_WAVE, TOWER_DEFINITIONS } from "./game/config.ts";
 import {
+  CAMPAIGN_MODE_ID,
+  CLASSIC_CAMPAIGN_LEVEL_ID,
+  CONTENT_CATALOG,
+} from "./game/content.ts";
+import {
   clearCampaign,
   getCampaignSaveKey,
   LEGACY_SAVE_KEY,
@@ -10,10 +15,14 @@ import {
   saveCampaign,
   type StorageLike,
 } from "./game/save.ts";
+import {
+  readSessionSelection,
+  resolveSessionSelection,
+  writeSessionSelection,
+} from "./game/sessionSelection.ts";
 import { createCampaignState } from "./game/state.ts";
-import { calculateRatingScore, MAX_RATING_SCORE } from "./game/scoring.ts";
+import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
-import { createWavePlan } from "./game/waves.ts";
 import {
   detectLocale,
   normalizeLocale,
@@ -42,6 +51,7 @@ import {
   getSelectedTowerDetails,
   type NoticeCode,
   type TerminalOutcome,
+  type TowerDefenseCallbacks,
   type TowerDefenseScene,
   type TowerDefenseUiState,
 } from "./rendering/TowerDefenseScene.ts";
@@ -88,15 +98,24 @@ if (isMiniAppLaunch && rewardAlreadyUsed) clearMiniAppReward(session);
 const reward: RewardLaunch = rewardAlreadyUsed
   ? Object.freeze({ mode: "local", runId: null, token: null, runNumber: null, finishUrl: null })
   : launch.reward;
-const saveKey = getCampaignSaveKey(reward.mode === "server" ? reward.runId : null);
-const savedCampaign = loadCampaign(storage, saveKey);
-const migrated = reward.mode === "local" && !savedCampaign ? migrateLegacyCampaign(storage) : null;
+let selectedSession = readSessionSelection(storage, reward.mode);
+let saveKey = getCampaignSaveKey(
+  reward.mode === "server" ? reward.runId : null,
+  selectedSession.level.id,
+  selectedSession.mode.id,
+);
+const savedCampaign = loadCampaign(storage, saveKey, selectedSession.selection);
+const canMigrateLegacy = selectedSession.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
+  && selectedSession.mode.id === CAMPAIGN_MODE_ID;
+const migrated = !savedCampaign && canMigrateLegacy
+  ? migrateLegacyCampaign(storage, reward.mode === "server" ? reward.runId : null)
+  : null;
 const pendingAtLaunch = reward.mode === "server" && reward.runId
   ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE)
   : null;
-const initialCampaign = pendingAtLaunch
-  ? createCampaignState()
-  : savedCampaign || migrated || createCampaignState();
+let initialCampaign = pendingAtLaunch
+  ? createCampaignState({ level: selectedSession.level, mode: selectedSession.mode })
+  : savedCampaign || migrated || createCampaignState({ level: selectedSession.level, mode: selectedSession.mode });
 
 let latestUi: TowerDefenseUiState | null = null;
 let rewardFinisher: RewardFinisher | null = null;
@@ -107,6 +126,8 @@ let renderedPreviewWave = -1;
 let cachedPreviewPlan: WavePlan | null = null;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
+let introReturnsToRun = false;
+let sessionSwitching = false;
 
 const elements = {
   appShell: byId("app"),
@@ -120,6 +141,7 @@ const elements = {
   waveLabel: byId("wave-label"),
   waveValue: byId("wave-value"),
   waveProgress: byId("wave-progress"),
+  sessionMenuButton: button("session-menu-button"),
   pauseButton: button("pause-button"),
   speedButton: button("speed-button"),
   pulseButton: button("pulse-button"),
@@ -166,6 +188,12 @@ const elements = {
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
   introStart: button("intro-start"),
+  sessionPicker: byId("session-picker"),
+  levelChoiceLabel: byId("level-choice-label"),
+  levelSelect: select("level-select"),
+  modeChoiceLabel: byId("mode-choice-label"),
+  modeSelect: select("mode-select"),
+  sessionChoiceHint: byId("session-choice-hint"),
   introWaves: byId("intro-waves"),
   introTowers: byId("intro-towers"),
   introBosses: byId("intro-bosses"),
@@ -191,7 +219,7 @@ applyStaticTranslations();
 applyLaunchErrorTranslations();
 telegram.setClosingConfirmation(reward.mode === "server" && !finishSettled);
 
-const mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, {
+const gameCallbacks: TowerDefenseCallbacks = {
   onUiChange: (ui) => {
     latestUi = ui;
     renderUi(ui);
@@ -206,8 +234,9 @@ const mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, {
   },
   onTerminal: handleTerminal,
   onHaptic: telegram.haptic,
-});
-const scene: TowerDefenseScene = mounted.scene;
+};
+let mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, gameCallbacks);
+let scene: TowerDefenseScene = mounted.scene;
 
 bindInteractions();
 restorePendingFinish();
@@ -232,6 +261,7 @@ function bindInteractions(): void {
     if (telegram.isFullscreen) telegram.exitFullscreen();
     else telegram.requestFullscreen();
   });
+  elements.sessionMenuButton.addEventListener("click", openSessionMenu);
   telegram.onFullscreenChange(syncFullscreenUi);
   elements.towerGuideButton.addEventListener("click", openTowerGuide);
   elements.towerGuideClose.addEventListener("click", closeTowerGuide);
@@ -239,6 +269,14 @@ function bindInteractions(): void {
   elements.towerGuideOverlay.addEventListener("click", (event) => {
     if (event.target === elements.towerGuideOverlay) closeTowerGuide();
   });
+  elements.levelSelect.addEventListener("change", () => void switchPracticeSession(
+    elements.levelSelect.value,
+    elements.modeSelect.value,
+  ));
+  elements.modeSelect.addEventListener("change", () => void switchPracticeSession(
+    elements.levelSelect.value,
+    elements.modeSelect.value,
+  ));
   elements.introStart.addEventListener("click", () => {
     if (launchError === "miniapp_start_failed") window.location.reload();
     else dismissIntro();
@@ -263,7 +301,7 @@ function bindInteractions(): void {
 function renderUi(ui: TowerDefenseUiState): void {
   elements.livesValue.textContent = String(ui.campaign.lives);
   elements.goldValue.textContent = String(ui.campaign.gold);
-  elements.waveValue.textContent = `${Math.min(FINAL_WAVE, ui.currentWave)} / ${FINAL_WAVE}`;
+  elements.waveValue.textContent = `${ui.currentWave} / ${ui.finalWave ?? "∞"}`;
   elements.waveProgress.style.width = `${Math.round(ui.waveProgress * 100)}%`;
   elements.pauseButton.textContent = ui.paused ? "▶" : "Ⅱ";
   elements.pauseButton.classList.toggle("is-active", ui.paused);
@@ -314,8 +352,10 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.sellButton.disabled = !editing;
   }
 
-  const previewWave = Math.min(FINAL_WAVE, ui.campaign.completedWave + 1);
-  if (!cachedPreviewPlan || cachedPreviewPlan.wave !== previewWave) cachedPreviewPlan = createWavePlan(previewWave);
+  const previewWave = ui.finalWave === null
+    ? ui.campaign.completedWave + 1
+    : Math.min(ui.finalWave, ui.campaign.completedWave + 1);
+  if (!cachedPreviewPlan || cachedPreviewPlan.wave !== previewWave) cachedPreviewPlan = scene.getCurrentWavePlan();
   const plan = cachedPreviewPlan;
   if (renderedPreviewWave !== plan.wave) {
     renderWavePreview(plan.wave, plan.spawns.map((spawn) => spawn.type));
@@ -323,10 +363,12 @@ function renderUi(ui: TowerDefenseUiState): void {
   }
   elements.threatMeter.textContent = `${"◆".repeat(plan.threat)}${"◇".repeat(5 - plan.threat)}`;
   elements.threatMeter.setAttribute("aria-label", text("threat", { count: plan.threat }));
-  elements.startWaveButton.disabled = !editing || ui.campaign.completedWave >= FINAL_WAVE;
+  elements.startWaveButton.disabled = !editing || (ui.finalWave !== null && ui.campaign.completedWave >= ui.finalWave);
   elements.startWaveButton.classList.toggle("is-boss", plan.hasBoss);
   elements.startWaveButton.textContent = plan.hasBoss ? text("boss_wave") : text("start_wave");
   elements.practiceBadge.hidden = reward.mode === "server";
+  elements.sessionMenuButton.hidden = reward.mode === "server";
+  elements.sessionMenuButton.disabled = ui.phase !== "setup";
 }
 
 function renderWavePreview(_wave: number, types: readonly EnemyType[]): void {
@@ -379,12 +421,14 @@ function showToast(message: string, isError = false): void {
 }
 
 function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
-  const completedWaves = Math.min(FINAL_WAVE, campaign.completedWave);
-  const result = captureFinalResult(calculateRatingScore(completedWaves), campaign.activeDurationMs);
+  const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
+  const completedWaves = finalWave === null ? campaign.completedWave : Math.min(finalWave, campaign.completedWave);
+  const score = selectedSession.mode.calculateScore(completedWaves);
+  const result = captureFinalResult(score, campaign.activeDurationMs);
   terminalResult = result;
   const pendingSaved = reward.mode === "server" && savePendingResult(storage, reward.runId, outcome, result, completedWaves);
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
-  showResult(outcome, result, completedWaves);
+  showResult(outcome, result, completedWaves, finalWave);
   rewardFinisher = createRewardFinisher(reward, result);
   void finishReward();
 }
@@ -426,16 +470,21 @@ async function finishReward(): Promise<void> {
   telegram.setClosingConfirmation(true);
 }
 
-function showResult(outcome: TerminalOutcome, result: FinalResult, completedWaves: number): void {
+function showResult(
+  outcome: TerminalOutcome,
+  result: FinalResult,
+  completedWaves: number,
+  finalWave: number | null,
+): void {
   elements.resultOverlay.hidden = false;
   elements.appShell.inert = true;
   elements.resultCard.classList.toggle("is-victory", outcome === "victory");
   elements.resultCard.classList.toggle("is-defeat", outcome === "gameover");
   elements.resultSigil.textContent = outcome === "victory" ? "✦" : "◆";
   elements.resultTitle.textContent = text(outcome === "victory" ? "victory" : "game_over");
-  elements.resultScore.textContent = text("result_summary", {
+  elements.resultScore.textContent = text(selectedSession.mode.resultSummaryKey, {
     waves: completedWaves,
-    total: FINAL_WAVE,
+    total: finalWave ?? "∞",
     score: result.score,
   });
   elements.rewardRetry.textContent = text("reward_retry");
@@ -447,7 +496,7 @@ function showResult(outcome: TerminalOutcome, result: FinalResult, completedWave
 function restorePendingFinish(): void {
   if (launchError) return;
   if (reward.mode !== "server" || !reward.runId) {
-    if (initialCampaign.completedWave > 0 || readFlag(session, "td-intro-seen-v1")) elements.introOverlay.hidden = true;
+    if (initialCampaign.completedWave > 0 || initialCampaign.towers.length > 0) elements.introOverlay.hidden = true;
     return;
   }
   const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE);
@@ -457,13 +506,67 @@ function restorePendingFinish(): void {
   }
   terminalResult = captureFinalResult(pending.score, pending.durationMs);
   rewardFinisher = createRewardFinisher(reward, terminalResult);
-  showResult(pending.outcome, terminalResult, pending.waves);
+  showResult(pending.outcome, terminalResult, pending.waves, FINAL_WAVE);
   void finishReward();
+}
+
+async function switchPracticeSession(levelId: string, modeId: string): Promise<void> {
+  if (reward.mode === "server" || elements.introOverlay.hidden || sessionSwitching) return;
+  const next = resolveSessionSelection("local", { levelId, modeId });
+  if (
+    next.selection.levelId === selectedSession.selection.levelId
+    && next.selection.modeId === selectedSession.selection.modeId
+  ) return;
+
+  selectedSession = next;
+  sessionSwitching = true;
+  writeSessionSelection(storage, next.selection);
+  saveKey = getCampaignSaveKey(null, next.level.id, next.mode.id);
+  const saved = loadCampaign(storage, saveKey, next.selection);
+  const mayMigrate = next.level.id === CLASSIC_CAMPAIGN_LEVEL_ID && next.mode.id === CAMPAIGN_MODE_ID;
+  initialCampaign = saved
+    || (mayMigrate ? migrateLegacyCampaign(storage) : null)
+    || createCampaignState({ level: next.level, mode: next.mode });
+
+  latestUi = null;
+  cachedPreviewPlan = null;
+  renderedPreviewWave = -1;
+  mounted.game.destroy(true);
+  syncSessionControls();
+  await waitForRendererCleanup();
+  elements.gameRoot.replaceChildren();
+  mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, gameCallbacks);
+  scene = mounted.scene;
+  sessionSwitching = false;
+  introReturnsToRun = hasRunProgress(initialCampaign);
+  elements.introStart.textContent = text(introReturnsToRun ? "intro_continue" : "intro_start");
+  syncSessionControls();
+  telegram.haptic("light");
+}
+
+function openSessionMenu(): void {
+  if (
+    reward.mode === "server"
+    || launchError
+    || !latestUi
+    || latestUi.phase !== "setup"
+    || !elements.resultOverlay.hidden
+    || !elements.introOverlay.hidden
+    || sessionSwitching
+  ) return;
+  introReturnsToRun = true;
+  elements.appShell.inert = true;
+  elements.introOverlay.hidden = false;
+  elements.introStart.textContent = text("intro_continue");
+  syncSessionControls();
+  elements.levelSelect.focus();
+  telegram.haptic("light");
 }
 
 function dismissIntro(): void {
   elements.introOverlay.hidden = true;
   elements.appShell.inert = false;
+  introReturnsToRun = false;
   writeFlag(session, "td-intro-seen-v1");
   telegram.haptic("light");
 }
@@ -493,7 +596,7 @@ function closeTowerGuide(): void {
 
 function restartGame(): void {
   if (reward.mode === "server" && !finishSettled) return;
-  clearCampaign(storage, getCampaignSaveKey(null));
+  clearCampaign(storage, saveKey);
   clearCampaign(storage, LEGACY_SAVE_KEY);
   window.location.reload();
 }
@@ -534,6 +637,9 @@ function applyStaticTranslations(): void {
   elements.buildEyebrow.textContent = text("arsenal");
   elements.buildHint.textContent = text("build_hint");
   elements.practiceBadge.textContent = text("practice");
+  const sessionMenuLabel = text("session_menu");
+  elements.sessionMenuButton.setAttribute("aria-label", sessionMenuLabel);
+  elements.sessionMenuButton.title = sessionMenuLabel;
   syncFullscreenUi(telegram.isFullscreen);
   const guideButtonLabel = text("tower_guide_button");
   elements.towerGuideButton.setAttribute("aria-label", guideButtonLabel);
@@ -552,8 +658,8 @@ function applyStaticTranslations(): void {
   elements.nextWaveLabel.textContent = text("next_wave");
   elements.introTitle.textContent = text("intro_title");
   elements.introBody.textContent = text("intro_body");
-  elements.introStart.textContent = text("intro_start");
-  elements.introWaves.textContent = text("intro_waves", { count: FINAL_WAVE });
+  elements.introStart.textContent = text(introReturnsToRun ? "intro_continue" : "intro_start");
+  syncSessionControls();
   elements.introTowers.textContent = text("intro_towers", { count: 4 });
   elements.introBosses.textContent = text("intro_bosses");
   elements.resultEyebrow.textContent = text("result_eyebrow");
@@ -561,6 +667,44 @@ function applyStaticTranslations(): void {
   elements.pauseButton.setAttribute("aria-label", text("pause"));
   elements.speedButton.setAttribute("aria-label", text("speed"));
   elements.pulseButton.setAttribute("aria-label", text("pulse_ready"));
+}
+
+function syncSessionControls(): void {
+  elements.levelSelect.replaceChildren(...Object.values(CONTENT_CATALOG.levels).map((level) => {
+    const option = document.createElement("option");
+    option.value = level.id;
+    option.textContent = text(level.displayNameKey);
+    return option;
+  }));
+  elements.modeSelect.replaceChildren(...Object.values(CONTENT_CATALOG.modes).map((mode) => {
+    const option = document.createElement("option");
+    option.value = mode.id;
+    option.textContent = text(mode.displayNameKey);
+    return option;
+  }));
+
+  elements.levelSelect.value = selectedSession.level.id;
+  elements.modeSelect.value = selectedSession.mode.id;
+  elements.levelChoiceLabel.textContent = text("session_level");
+  elements.modeChoiceLabel.textContent = text("session_mode");
+  elements.sessionChoiceHint.textContent = text("session_hint");
+  elements.sessionPicker.hidden = selectedSession.locked;
+  elements.levelSelect.disabled = selectedSession.locked || sessionSwitching;
+  elements.modeSelect.disabled = selectedSession.locked || sessionSwitching;
+  const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
+  elements.introWaves.textContent = finalWave === null
+    ? text("intro_endless")
+    : text("intro_waves", { count: finalWave });
+}
+
+function hasRunProgress(campaign: TowerDefenseUiState["campaign"]): boolean {
+  return campaign.completedWave > 0 || campaign.towers.length > 0;
+}
+
+function waitForRendererCleanup(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+  });
 }
 
 function syncFullscreenUi(isFullscreen: boolean): void {
@@ -660,6 +804,12 @@ function byId(id: string): HTMLElement {
 function button(id: string): HTMLButtonElement {
   const element = byId(id);
   if (!(element instanceof HTMLButtonElement)) throw new Error(`Expected button: ${id}`);
+  return element;
+}
+
+function select(id: string): HTMLSelectElement {
+  const element = byId(id);
+  if (!(element instanceof HTMLSelectElement)) throw new Error(`Expected select: ${id}`);
   return element;
 }
 

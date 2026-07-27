@@ -504,6 +504,13 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .intro-sigil,
 .result-sigil { width: 76px; height: 76px; margin: 0 auto 16px; display: grid; place-items: center; border: 1px solid rgba(163, 241, 205, 0.46); border-radius: 24px 24px 31px 24px; background: radial-gradient(circle at 40% 30%, #4a9670, #1f5746 60%, #173b34); color: #d9ffe8; font-size: 33px; box-shadow: 0 14px 30px rgba(0,0,0,0.28), inset 0 2px rgba(255,255,255,0.12); }
 .intro-sigil span { animation: pulse-glow 1.8s ease-in-out infinite; }
+.intro-card { max-height: 100%; overflow-x: hidden; overflow-y: auto; }
+.session-picker { margin: 15px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; text-align: left; }
+.session-picker label { min-width: 0; display: grid; gap: 5px; color: #8fbea6; font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+.session-picker select { width: 100%; min-height: 42px; padding: 0 28px 0 10px; border: 1px solid rgba(145, 202, 170, 0.24); border-radius: 12px; background: #17382f; color: #e5f4eb; font: 700 11px/1 system-ui, sans-serif; }
+.session-picker select:focus-visible { outline: 3px solid rgba(117, 227, 189, 0.72); outline-offset: 2px; }
+.session-picker select:disabled { opacity: 0.56; }
+.session-picker > small { grid-column: 1 / -1; color: #789687; font-size: 8px; font-weight: 600; letter-spacing: normal; line-height: 1.35; text-align: center; text-transform: none; }
 .intro-features { margin: 22px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .intro-features span { padding: 9px 4px; display: grid; gap: 4px; border: 1px solid rgba(145, 202, 170, 0.13); border-radius: 13px; background: rgba(255,255,255,0.035); color: #c5d8cd; font-size: 9px; }
 .feature-icon { color: var(--gold); font-style: normal; font-size: 17px; }

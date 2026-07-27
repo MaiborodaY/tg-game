@@ -12,8 +12,11 @@ export type TowerPlacement = Readonly<{
   level: TowerLevel;
 }>;
 
-export type CampaignState = Readonly<{
-  version: 3;
+export type RunState = Readonly<{
+  version: 4;
+  contentVersion: number;
+  levelId: string;
+  modeId: string;
   gold: number;
   lives: number;
   completedWave: number;
@@ -21,6 +24,9 @@ export type CampaignState = Readonly<{
   activeDurationMs: number;
   towers: readonly TowerPlacement[];
 }>;
+
+// Kept as a compatibility name while application code migrates to RunState.
+export type CampaignState = RunState;
 
 export type TowerStats = Readonly<{
   type: TowerType;

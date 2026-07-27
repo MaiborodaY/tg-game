@@ -1,19 +1,34 @@
 import {
-  BUILD_PADS,
   MASTERY_UNLOCK_WAVE,
   MAX_TOWER_LEVEL,
-  STARTING_GOLD,
-  STARTING_LIVES,
   TOWER_DEFINITIONS,
   getTowerTotalInvestment,
 } from "./config.ts";
+import {
+  CAMPAIGN_RULESET,
+  CLASSIC_CAMPAIGN_LEVEL,
+  CONTENT_VERSION,
+  getLevelDefinition,
+  type LevelDefinition,
+  type ModeRuleset,
+} from "./content.ts";
 import type { CampaignError, CampaignResult, CampaignState, TowerLevel, TowerPlacement, TowerType } from "./types.ts";
 
-export function createCampaignState(): CampaignState {
+export type CreateRunStateOptions = Readonly<{
+  level?: LevelDefinition;
+  mode?: ModeRuleset;
+}>;
+
+export function createCampaignState(options: CreateRunStateOptions = {}): CampaignState {
+  const level = options.level ?? CLASSIC_CAMPAIGN_LEVEL;
+  const mode = options.mode ?? CAMPAIGN_RULESET;
   return freezeState({
-    version: 3,
-    gold: STARTING_GOLD,
-    lives: STARTING_LIVES,
+    version: 4,
+    contentVersion: CONTENT_VERSION,
+    levelId: level.id,
+    modeId: mode.id,
+    gold: level.startingGold,
+    lives: level.startingLives,
     completedWave: 0,
     totalKills: 0,
     activeDurationMs: 0,
@@ -22,7 +37,7 @@ export function createCampaignState(): CampaignState {
 }
 
 export function buildTower(state: CampaignState, padId: number, type: TowerType): CampaignResult {
-  if (!isValidPad(padId)) return failure(state, "invalid_pad");
+  if (!isValidPad(state, padId)) return failure(state, "invalid_pad");
   if (state.towers.some((tower) => tower.padId === padId)) return failure(state, "pad_occupied");
   const cost = TOWER_DEFINITIONS[type].buildCost;
   if (state.gold < cost) return failure(state, "insufficient_gold");
@@ -34,7 +49,7 @@ export function buildTower(state: CampaignState, padId: number, type: TowerType)
 
 export function upgradeTower(state: CampaignState, padId: number): CampaignResult {
   const tower = state.towers.find((candidate) => candidate.padId === padId);
-  if (!tower) return failure(state, isValidPad(padId) ? "pad_empty" : "invalid_pad");
+  if (!tower) return failure(state, isValidPad(state, padId) ? "pad_empty" : "invalid_pad");
   if (tower.level >= MAX_TOWER_LEVEL) return failure(state, "max_level");
   if (tower.level === 3 && state.completedWave < MASTERY_UNLOCK_WAVE) return failure(state, "mastery_locked");
   const cost = TOWER_DEFINITIONS[tower.type].upgradeCosts[tower.level - 1];
@@ -47,7 +62,7 @@ export function upgradeTower(state: CampaignState, padId: number): CampaignResul
 
 export function sellTower(state: CampaignState, padId: number): CampaignResult {
   const tower = state.towers.find((candidate) => candidate.padId === padId);
-  if (!tower) return failure(state, isValidPad(padId) ? "pad_empty" : "invalid_pad");
+  if (!tower) return failure(state, isValidPad(state, padId) ? "pad_empty" : "invalid_pad");
   const refund = Math.floor(getTowerTotalInvestment(tower.type, tower.level) * 0.65);
   return success(state, {
     gold: state.gold + refund,
@@ -69,7 +84,8 @@ export function applyLeakDamage(state: CampaignState, damage: number): CampaignS
 }
 
 export function repairLives(state: CampaignState, amount: number): CampaignState {
-  return freezeState({ ...state, lives: Math.min(STARTING_LIVES, state.lives + clampInteger(amount, 0, 100)) });
+  const maximumLives = getLevelDefinition(state.levelId)?.startingLives ?? state.lives;
+  return freezeState({ ...state, lives: Math.min(maximumLives, state.lives + clampInteger(amount, 0, 100)) });
 }
 
 export function recordActiveDuration(state: CampaignState, durationMs: number): CampaignState {
@@ -117,8 +133,9 @@ function freezeState(state: CampaignState): CampaignState {
   return Object.freeze({ ...state, towers: Object.freeze([...state.towers]) });
 }
 
-function isValidPad(padId: number): boolean {
-  return Number.isInteger(padId) && padId >= 0 && padId < BUILD_PADS.length;
+function isValidPad(state: CampaignState, padId: number): boolean {
+  const level = getLevelDefinition(state.levelId);
+  return Boolean(level && Number.isInteger(padId) && padId >= 0 && padId < level.buildPads.length);
 }
 
 function clampInteger(value: number, min: number, max: number): number {

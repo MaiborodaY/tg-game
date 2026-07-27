@@ -15,6 +15,18 @@ export type WorldArt = Readonly<{
   gateHomeX: number;
 }>;
 
+export type WorldDefinition = Readonly<{
+  width: number;
+  height: number;
+  route: readonly Point[];
+}>;
+
+const DEFAULT_WORLD: WorldDefinition = Object.freeze({
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
+  route: ROUTE_POINTS,
+});
+
 export type TowerArt = Readonly<{
   container: Phaser.GameObjects.Container;
   head: Phaser.GameObjects.Container;
@@ -75,24 +87,25 @@ const ENEMY_BUILDERS = {
 
 const enemyRigs = new WeakMap<Phaser.GameObjects.Container, EnemyRig>();
 
-export function drawWorld(scene: Phaser.Scene): WorldArt {
+export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_WORLD): WorldArt {
+  const { width, height, route } = world;
   const background = scene.add.graphics().setDepth(-30);
-  background.fillStyle(0x102a27, 1).fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-  for (let band = 0; band < 16; band += 1) {
+  background.fillStyle(0x102a27, 1).fillRect(0, 0, width, height);
+  for (let band = 0; band < Math.ceil(height / 36); band += 1) {
     const color = band % 2 === 0 ? 0x173a30 : 0x15342d;
-    background.fillStyle(color, 0.54).fillRect(0, band * 36, GAME_WIDTH, 38);
+    background.fillStyle(color, 0.54).fillRect(0, band * 36, width, 38);
   }
 
-  drawRoute(scene);
-  drawDecorations(scene);
-  drawEntrance(scene);
-  const gate = drawGate(scene);
-  const actVeil = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x52366f, 0)
+  drawRoute(scene, route);
+  drawDecorations(scene, route, width, height);
+  drawEntrance(scene, route[0]);
+  const gate = drawGate(scene, route[route.length - 1], height);
+  const actVeil = scene.add.rectangle(width / 2, height / 2, width, height, 0x52366f, 0)
     .setDepth(-12)
     .setBlendMode(Phaser.BlendModes.ADD);
 
   const vignette = scene.add.graphics().setDepth(80).setScrollFactor(0);
-  vignette.lineStyle(18, 0x071310, 0.2).strokeRoundedRect(-5, -5, GAME_WIDTH + 10, GAME_HEIGHT + 10, 28);
+  vignette.lineStyle(18, 0x071310, 0.2).strokeRoundedRect(-5, -5, width + 10, height + 10, 28);
   vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
   return Object.freeze({ actVeil, gate: gate.container, gateCrystal: gate.crystal, gateHomeX: gate.container.x });
 }
@@ -298,19 +311,19 @@ export function createGateHitEffect(scene: Phaser.Scene, art: WorldArt, damage: 
   }
 }
 
-function drawRoute(scene: Phaser.Scene): void {
+function drawRoute(scene: Phaser.Scene, points: readonly Point[]): void {
   const route = scene.add.graphics().setDepth(-18);
-  strokePolyline(route, ROUTE_POINTS, 48, 0x071a18, 0.72);
-  strokePolyline(route, ROUTE_POINTS, 42, 0x765838, 1);
-  strokePolyline(route, ROUTE_POINTS, 34, 0xb78a53, 1);
-  strokePolyline(route, ROUTE_POINTS, 25, 0xc9a369, 0.72);
-  strokePolyline(route, ROUTE_POINTS, 2, 0xf3d99b, 0.2);
+  strokePolyline(route, points, 48, 0x071a18, 0.72);
+  strokePolyline(route, points, 42, 0x765838, 1);
+  strokePolyline(route, points, 34, 0xb78a53, 1);
+  strokePolyline(route, points, 25, 0xc9a369, 0.72);
+  strokePolyline(route, points, 2, 0xf3d99b, 0.2);
 
   const marks = scene.add.graphics().setDepth(-16);
   marks.fillStyle(0x5c432d, 0.34);
-  for (let index = 0; index < ROUTE_POINTS.length - 1; index += 1) {
-    const start = ROUTE_POINTS[index];
-    const end = ROUTE_POINTS[index + 1];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
     const length = Math.hypot(end.x - start.x, end.y - start.y);
     const steps = Math.floor(length / 34);
     for (let step = 1; step < steps; step += 1) {
@@ -334,13 +347,18 @@ function strokePolyline(
   graphics.strokePath();
 }
 
-function drawDecorations(scene: Phaser.Scene): void {
+function drawDecorations(
+  scene: Phaser.Scene,
+  route: readonly Point[],
+  width: number,
+  height: number,
+): void {
   const rng = seededRandom(87_121);
   const graphics = scene.add.graphics().setDepth(-20);
   for (let index = 0; index < 86; index += 1) {
-    const x = 10 + rng() * (GAME_WIDTH - 20);
-    const y = 10 + rng() * (GAME_HEIGHT - 20);
-    if (distanceToRoute(x, y) < 34) continue;
+    const x = 10 + rng() * (width - 20);
+    const y = 10 + rng() * (height - 20);
+    if (distanceToRoute(x, y, route) < 34) continue;
     const radius = 2 + rng() * 4;
     if (rng() > 0.35) {
       graphics.fillStyle(rng() > 0.5 ? 0x245a43 : 0x1e4a3a, 0.84).fillCircle(x, y, radius + 2);
@@ -352,7 +370,7 @@ function drawDecorations(scene: Phaser.Scene): void {
   }
 
   for (let index = 0; index < 8; index += 1) {
-    const x = index % 2 === 0 ? 12 + rng() * 34 : GAME_WIDTH - 12 - rng() * 34;
+    const x = index % 2 === 0 ? 12 + rng() * 34 : width - 12 - rng() * 34;
     const y = 55 + index * 62 + rng() * 20;
     const tree = scene.add.container(x, y).setDepth(y - 15);
     const trunk = scene.add.rectangle(0, 8, 8, 22, 0x59412e).setOrigin(0.5);
@@ -363,7 +381,7 @@ function drawDecorations(scene: Phaser.Scene): void {
   }
 
   for (let index = 0; index < 5; index += 1) {
-    const firefly = scene.add.circle(26 + rng() * (GAME_WIDTH - 52), 80 + rng() * (GAME_HEIGHT - 150), 1.5, 0xd6ff9b, 0.24)
+    const firefly = scene.add.circle(26 + rng() * (width - 52), 80 + rng() * (height - 150), 1.5, 0xd6ff9b, 0.24)
       .setDepth(-14)
       .setBlendMode(Phaser.BlendModes.ADD);
     scene.tweens.add({
@@ -380,19 +398,19 @@ function drawDecorations(scene: Phaser.Scene): void {
   }
 }
 
-function drawEntrance(scene: Phaser.Scene): void {
-  const portal = scene.add.container(8, 52).setDepth(40);
+function drawEntrance(scene: Phaser.Scene, entrance: Point): void {
+  const portal = scene.add.container(Math.max(8, entrance.x + 32), entrance.y).setDepth(40);
   const glow = scene.add.circle(0, 0, 24, 0xb46cff, 0.08).setStrokeStyle(3, 0xb987ff, 0.65);
   const inner = scene.add.circle(0, 0, 13, 0x58317a, 0.8).setStrokeStyle(2, 0xe4bdff, 0.8);
   portal.add([glow, inner]);
   scene.tweens.add({ targets: glow, scale: 1.25, alpha: 0.18, duration: 1_200, yoyo: true, repeat: -1 });
 }
 
-function drawGate(scene: Phaser.Scene): Readonly<{
+function drawGate(scene: Phaser.Scene, exit: Point, height: number): Readonly<{
   container: Phaser.GameObjects.Container;
   crystal: Phaser.GameObjects.Rectangle;
 }> {
-  const gate = scene.add.container(162, 535).setDepth(600);
+  const gate = scene.add.container(exit.x, Math.min(height - 25, exit.y + 17)).setDepth(600);
   const shadow = scene.add.ellipse(0, 17, 72, 24, 0x07110f, 0.45);
   const left = scene.add.rectangle(-23, 1, 18, 48, 0x31423e).setStrokeStyle(3, 0x809080);
   const right = scene.add.rectangle(23, 1, 18, 48, 0x31423e).setStrokeStyle(3, 0x809080);
@@ -672,10 +690,10 @@ function applySwingPose(part: RigPart | undefined, swing: number): void {
   part.target.rotation = part.rotation + swing;
 }
 
-function distanceToRoute(x: number, y: number): number {
+function distanceToRoute(x: number, y: number, route: readonly Point[]): number {
   let best = Number.POSITIVE_INFINITY;
-  for (let index = 1; index < ROUTE_POINTS.length; index += 1) {
-    best = Math.min(best, distanceToSegment(x, y, ROUTE_POINTS[index - 1], ROUTE_POINTS[index]));
+  for (let index = 1; index < route.length; index += 1) {
+    best = Math.min(best, distanceToSegment(x, y, route[index - 1], route[index]));
   }
   return best;
 }
