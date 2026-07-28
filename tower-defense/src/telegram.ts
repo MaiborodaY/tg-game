@@ -24,6 +24,7 @@ type TelegramWebApp = {
   setBackgroundColor?: (color: string) => void;
   enableClosingConfirmation?: () => void;
   disableClosingConfirmation?: () => void;
+  close?: () => void;
   onEvent?: (name: string, callback: () => void) => void;
   offEvent?: (name: string, callback: () => void) => void;
   HapticFeedback?: {
@@ -42,10 +43,12 @@ export type TelegramBridge = Readonly<{
   refresh(): void;
   readonly supportsFullscreen: boolean;
   readonly isFullscreen: boolean;
+  readonly canClose: boolean;
   requestFullscreen(): boolean;
   exitFullscreen(): boolean;
   onFullscreenChange(listener: (isFullscreen: boolean) => void): () => void;
   setClosingConfirmation(enabled: boolean): void;
+  close(): boolean;
   readonly initData: string;
   haptic(kind: HapticKind): void;
   destroy(): void;
@@ -173,6 +176,16 @@ export function setupTelegramBridge(): TelegramBridge {
     applyClosingConfirmation();
   };
 
+  const close = () => {
+    if (destroyed || typeof webApp?.close !== "function") return false;
+    try {
+      webApp.close();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const haptic = (kind: HapticKind) => {
     try {
       if (!supportsApiVersion(webApp, "6.1")) return;
@@ -201,11 +214,13 @@ export function setupTelegramBridge(): TelegramBridge {
     get initData() { return webApp?.initData ?? ""; },
     get supportsFullscreen() { return supportsFullscreen(webApp); },
     get isFullscreen() { return webApp?.isFullscreen === true; },
+    get canClose() { return typeof webApp?.close === "function"; },
     refresh,
     requestFullscreen,
     exitFullscreen,
     onFullscreenChange,
     setClosingConfirmation,
+    close,
     haptic,
     destroy,
   });

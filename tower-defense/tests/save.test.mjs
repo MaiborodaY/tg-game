@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  clearCampaign,
   createLocalCampaignSaveKey,
   getCampaignSaveKey,
   loadCampaign,
@@ -21,10 +22,10 @@ import { captureFinalResult } from "../src/reward.ts";
 import { loadPendingResult, pendingKey, savePendingResult } from "../src/pendingResult.ts";
 
 test("practice and reward runs have isolated checkpoint keys", () => {
-  assert.equal(getCampaignSaveKey(null), "td-save-v4:local:forest-gate:campaign");
-  assert.equal(getCampaignSaveKey("run-a"), "td-save-v4:run:run-a");
+  assert.equal(getCampaignSaveKey(null), "td-save-v5:local:forest-gate:campaign");
+  assert.equal(getCampaignSaveKey("run-a"), "td-save-v5:run:run-a");
   assert.notEqual(getCampaignSaveKey("run-a"), getCampaignSaveKey("run-b"));
-  assert.equal(createLocalCampaignSaveKey("northern-pass", "endless"), "td-save-v4:local:northern-pass:endless");
+  assert.equal(createLocalCampaignSaveKey("northern-pass", "endless"), "td-save-v5:local:northern-pass:endless");
 
   const storage = memoryStorage();
   const campaign = buildTower(createCampaignState(), 2, "frost").state;
@@ -71,6 +72,62 @@ test("corrupted saves are rejected and tower coordinates are strictly sanitized"
     { padId: 1, type: "ranger", level: 2 },
     { padId: 3, type: "storm", level: 4 },
   ]);
+  assert.equal(sanitizeCampaign({ ...createCampaignState(), hero: { id: "missing", level: 1, anchorId: 0 } }), null);
+  assert.equal(sanitizeCampaign({ ...createCampaignState(), hero: { id: "eira", level: 1, anchorId: 99 } }), null);
+});
+
+test("v4 saves migrate through the physical fallback key for every level and mode", () => {
+  const storage = memoryStorage();
+  const current = {
+    ...createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: ENDLESS_RULESET, heroId: "toren" }),
+    completedWave: 17,
+    gold: 777,
+    towers: [{ padId: 4, type: "storm", level: 3 }],
+  };
+  const { hero: _hero, ...legacy } = current;
+  const oldKey = "td-save-v4:local:northern-pass:endless";
+  const newKey = createLocalCampaignSaveKey("northern-pass", "endless");
+  storage.setItem(oldKey, JSON.stringify({ ...legacy, version: 4 }));
+
+  const migrated = loadCampaign(storage, newKey, { levelId: "northern-pass", modeId: "endless" });
+  assert.equal(migrated.version, 5);
+  assert.equal(migrated.completedWave, 17);
+  assert.equal(migrated.gold, 777);
+  assert.deepEqual(migrated.towers, current.towers);
+  assert.deepEqual(migrated.hero, { id: "eira", level: 1, anchorId: 0 });
+  assert.equal(storage.getItem(oldKey), null);
+  assert.deepEqual(JSON.parse(storage.getItem(newKey)), migrated);
+});
+
+test("a mismatched v4 reward checkpoint cannot bypass the expected server binding", () => {
+  const storage = memoryStorage();
+  const runId = "bound-reward";
+  const legacyKey = `td-save-v4:run:${runId}`;
+  const currentKey = getCampaignSaveKey(runId);
+  const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: ENDLESS_RULESET });
+  const { hero: _hero, ...legacy } = northern;
+  storage.setItem(legacyKey, JSON.stringify({ ...legacy, version: 4 }));
+
+  assert.equal(loadCampaign(storage, currentKey, {
+    levelId: CLASSIC_CAMPAIGN_LEVEL.id,
+    modeId: CAMPAIGN_RULESET.id,
+  }), null);
+  assert.equal(migrateLegacyCampaign(storage, runId), null);
+  assert.equal(storage.getItem(currentKey), null);
+  assert.notEqual(storage.getItem(legacyKey), null);
+});
+
+test("clearing a v5 checkpoint also removes a stale v4 fallback", () => {
+  const storage = memoryStorage();
+  const key = getCampaignSaveKey("clear-me");
+  const legacyKey = "td-save-v4:run:clear-me";
+  storage.setItem(key, JSON.stringify(createCampaignState()));
+  storage.setItem(legacyKey, JSON.stringify({ ...createCampaignState(), version: 4, hero: undefined }));
+
+  clearCampaign(storage, key);
+  assert.equal(storage.getItem(key), null);
+  assert.equal(storage.getItem(legacyKey), null);
+  assert.equal(loadCampaign(storage, key), null);
 });
 
 test("saved progress can never exceed the finite campaign score", () => {
@@ -105,10 +162,11 @@ test("v3 checkpoints migrate into the versioned classic run contract", () => {
   }));
 
   const migrated = migrateLegacyCampaign(storage);
-  assert.equal(migrated.version, 4);
+  assert.equal(migrated.version, 5);
   assert.equal(migrated.levelId, "forest-gate");
   assert.equal(migrated.modeId, "campaign");
   assert.equal(migrated.completedWave, 7);
+  assert.deepEqual(migrated.hero, { id: "eira", level: 1, anchorId: 0 });
   assert.equal(storage.getItem("td-save-v3:local"), null);
   assert.deepEqual(loadCampaign(storage, getCampaignSaveKey(null)), migrated);
 });

@@ -41,6 +41,7 @@ export type LevelDefinition = Readonly<{
   startingLives: number;
   route: readonly Point[];
   buildPads: readonly Point[];
+  heroAnchors: readonly Point[];
   waves: WaveSource;
 }>;
 
@@ -79,6 +80,11 @@ export const CLASSIC_CAMPAIGN_LEVEL = defineLevel({
   startingLives: STARTING_LIVES,
   route: ROUTE_POINTS,
   buildPads: BUILD_PADS,
+  heroAnchors: [
+    { x: 350, y: 88 },
+    { x: 34, y: 382 },
+    { x: 345, y: 492 },
+  ],
   waves: classicWaveSource,
 });
 
@@ -164,6 +170,11 @@ export const NORTHERN_PASS_LEVEL = defineLevel({
   startingLives: 15,
   route: northernPassRoute,
   buildPads: northernPassPads,
+  heroAnchors: [
+    { x: 35, y: 225 },
+    { x: 330, y: 345 },
+    { x: 270, y: 525 },
+  ],
   waves: northernPassWaveSource,
 });
 
@@ -272,6 +283,10 @@ export function validateLevelDefinition(value: unknown): readonly string[] {
   if (!positiveInteger(value.startingLives)) errors.push("startingLives must be a positive integer");
   validatePoints(value.route, "route", 2, value.width, value.height, errors, true);
   validatePoints(value.buildPads, "buildPads", 1, value.width, value.height, errors, false);
+  validatePoints(value.heroAnchors, "heroAnchors", 3, value.width, value.height, errors, false);
+  if (Array.isArray(value.heroAnchors) && value.heroAnchors.length !== 3) {
+    errors.push("heroAnchors must contain exactly 3 points");
+  }
   errors.push(...validateWaveSource(value.waves).map((error) => `waves.${error}`));
   if (!Object.isFrozen(value)) errors.push("level must be frozen");
   return Object.freeze(errors);
@@ -332,15 +347,17 @@ function defineWaveSource(id: string, finalWave: number, factory: (wave: number)
   return Object.freeze({ id, contentVersion: CONTENT_VERSION, kind: "finite", finalWave, createWave: factory });
 }
 
-function defineLevel(value: Omit<LevelDefinition, "contentVersion" | "route" | "buildPads"> & {
+function defineLevel(value: Omit<LevelDefinition, "contentVersion" | "route" | "buildPads" | "heroAnchors"> & {
   route: readonly Point[];
   buildPads: readonly Point[];
+  heroAnchors: readonly Point[];
 }): LevelDefinition {
   return Object.freeze({
     ...value,
     contentVersion: CONTENT_VERSION,
     route: freezePoints(value.route),
     buildPads: freezePoints(value.buildPads),
+    heroAnchors: freezePoints(value.heroAnchors),
   });
 }
 

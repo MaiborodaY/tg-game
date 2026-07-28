@@ -36,7 +36,7 @@ test("manual language controls are available before and during a match", () => {
 });
 
 test("fullscreen remains an explicit player choice", () => {
-  assert.match(html, /id="fullscreen-button" class="fullscreen-button"[^>]*aria-pressed="false"[^>]*hidden/);
+  assert.match(html, /id="fullscreen-button" class="game-menu-action"[^>]*aria-pressed="false"[^>]*hidden/);
   assert.equal(mainSource.match(/telegram\.requestFullscreen\(\)/g)?.length, 1);
   assert.equal(mainSource.match(/telegram\.exitFullscreen\(\)/g)?.length, 1);
   assert.doesNotMatch(mainSource, /restorePendingFinish\(\);\s*if \(elements\.introOverlay\.hidden\) telegram\.requestFullscreen\(\);/);
@@ -47,7 +47,7 @@ test("fullscreen remains an explicit player choice", () => {
 test("fullscreen control follows Telegram support and confirmed state", () => {
   assert.match(mainSource, /telegram\.onFullscreenChange\(syncFullscreenUi\);/);
   assert.match(mainSource, /document\.documentElement\.classList\.toggle\("is-telegram-fullscreen", isFullscreen\);/);
-  assert.match(mainSource, /elements\.buildPanel\.classList\.toggle\("has-fullscreen-control", supportsFullscreen\);/);
+  assert.doesNotMatch(mainSource, /elements\.buildPanel\.classList\.toggle\("has-fullscreen-control"/);
   assert.match(mainSource, /elements\.fullscreenButton\.hidden = !supportsFullscreen;/);
   assert.match(mainSource, /elements\.fullscreenButton\.setAttribute\("aria-pressed", String\(isFullscreen\)\);/);
   assert.match(mainSource, /text\(isFullscreen \? "fullscreen_exit" : "fullscreen_enter"\)/);
@@ -64,7 +64,8 @@ test("practice exposes content selection while rewarded runs stay pinned", () =>
   assert.match(mainSource, /loadCampaign\(storage, saveKey, selectedSession\.selection\)/);
   assert.match(mainSource, /elements\.sessionPicker\.hidden = selectedSession\.locked/);
   assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching \|\| gameStarting\) return/);
-  assert.match(mainSource, /elements\.sessionMenuButton\.addEventListener\("click", openSessionMenu\)/);
+  assert.match(mainSource, /elements\.gameMenuSession\.addEventListener\("click", \(\) => \{[\s\S]*openSessionMenu\(\);/);
+  assert.match(mainSource, /elements\.gameMenuSession\.hidden = reward\.mode === "server"/);
 });
 
 test("Phaser and the renderer load behind one retry-safe runtime boundary", () => {

@@ -8,9 +8,11 @@ import {
   completeWave,
   createCampaignState,
   createWaveCheckpoint,
+  moveHero,
   recordActiveDuration,
   repairLives,
   sellTower,
+  upgradeHero,
   upgradeTower,
 } from "../src/game/state.ts";
 import { CAMPAIGN_RULESET, NORTHERN_PASS_LEVEL } from "../src/game/content.ts";
@@ -20,8 +22,10 @@ test("new runs bind transient state to a versioned level and mode", () => {
   const classic = createCampaignState();
   assert.deepEqual(
     { version: classic.version, contentVersion: classic.contentVersion, levelId: classic.levelId, modeId: classic.modeId },
-    { version: 4, contentVersion: 2, levelId: "forest-gate", modeId: "campaign" },
+    { version: 5, contentVersion: 2, levelId: "forest-gate", modeId: "campaign" },
   );
+  assert.deepEqual(classic.hero, { id: "eira", level: 1, anchorId: 0 });
+  assert.deepEqual(createCampaignState({ heroId: "toren" }).hero, { id: "toren", level: 1, anchorId: 0 });
 
   const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET });
   assert.equal(northern.gold, 220);
@@ -29,6 +33,29 @@ test("new runs bind transient state to a versioned level and mode", () => {
   assert.equal(buildTower(northern, 12, "ranger").ok, true);
   assert.equal(buildTower(northern, 13, "ranger").error, "invalid_pad");
   assert.equal(repairLives({ ...northern, lives: 10 }, 99).lives, 15);
+});
+
+test("heroes move freely in setup state and upgrade through wave-gated gold costs", () => {
+  const initial = { ...createCampaignState({ heroId: "eira" }), gold: 2_000 };
+  assert.equal(moveHero(initial, 3).error, "invalid_hero_anchor");
+  const moved = moveHero(initial, 2);
+  assert.equal(moved.ok, true);
+  assert.equal(moved.goldDelta, 0);
+  assert.deepEqual(moved.state.hero, { id: "eira", level: 1, anchorId: 2 });
+
+  assert.equal(upgradeHero(moved.state).error, "hero_upgrade_locked");
+  const levelTwo = upgradeHero({ ...moved.state, completedWave: 4 });
+  assert.equal(levelTwo.ok, true);
+  assert.equal(levelTwo.state.gold, 1_850);
+  assert.deepEqual(levelTwo.state.hero, { id: "eira", level: 2, anchorId: 2 });
+  assert.equal(upgradeHero(levelTwo.state).error, "hero_upgrade_locked");
+
+  const levelThree = upgradeHero({ ...levelTwo.state, completedWave: 12 });
+  assert.equal(levelThree.ok, true);
+  assert.equal(levelThree.state.gold, 1_370);
+  assert.equal(levelThree.state.hero.level, 3);
+  assert.equal(upgradeHero(levelThree.state).error, "hero_max_level");
+  assert.ok(Object.isFrozen(levelThree.state.hero));
 });
 
 test("tower economy builds, upgrades and sells from immutable campaign states", () => {
@@ -104,6 +131,7 @@ test("a mid-wave duration checkpoint keeps pre-wave economy and damage", () => {
   assert.equal(checkpoint.gold, waveStart.gold);
   assert.equal(checkpoint.lives, 16, "lost lives remain lost after a reload");
   assert.equal(checkpoint.totalKills, waveStart.totalKills);
+  assert.deepEqual(checkpoint.hero, waveStart.hero);
 });
 
 test("level-four tower mastery unlocks only after wave twelve", () => {

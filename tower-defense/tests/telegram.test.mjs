@@ -128,6 +128,31 @@ test("Telegram bridge bootstrap expands the Mini App without entering or exiting
   });
 });
 
+test("Telegram close remains an explicit supported menu action", () => {
+  let closeCalls = 0;
+  const webApp = {
+    isVersionAtLeast: () => true,
+    close: () => { closeCalls += 1; },
+  };
+
+  withTelegramEnvironment(webApp, () => {
+    const bridge = setupTelegramBridge();
+    assert.equal(bridge.canClose, true);
+    assert.equal(closeCalls, 0);
+    assert.equal(bridge.close(), true);
+    assert.equal(closeCalls, 1);
+    bridge.destroy();
+    assert.equal(bridge.close(), false);
+  });
+
+  withTelegramEnvironment({ isVersionAtLeast: () => true }, () => {
+    const bridge = setupTelegramBridge();
+    assert.equal(bridge.canClose, false);
+    assert.equal(bridge.close(), false);
+    bridge.destroy();
+  });
+});
+
 test("Telegram bridge enters fullscreen only after an explicit request", () => {
   let expandCalls = 0;
   let fullscreenCalls = 0;

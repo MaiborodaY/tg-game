@@ -1,7 +1,7 @@
 # Tower Defense architecture
 
 This document records the boundaries that must stay intact while the PvE game
-grows. It deliberately excludes PvP and heroes.
+grows. PvP remains outside this architecture; the first PvE heroes are included.
 
 ## Runtime flow
 
@@ -20,9 +20,12 @@ content catalog + saved RunState
        main.ts (DOM UI, Telegram and reward adapter)
 ```
 
-- `game/content.ts` owns stable level and mode IDs, routes, build pads and wave
-  factories. New PvE content is registered here instead of branching in the
-  scene.
+- `game/content.ts` owns stable level and mode IDs, routes, build pads, hero
+  anchors and wave factories. New PvE content is registered here instead of
+  branching in the scene.
+- `game/heroes.ts` owns immutable hero definitions, ranks, upgrade gates and
+  combat parameters. Hero attacks, auras and abilities are resolved only by
+  `game/simulation.ts`.
 - `game/simulation.ts` is the canonical, Phaser-free battle. It advances at a
   fixed 60 Hz step, accepts commands and emits domain events. Tests can run it
   headlessly and replay the same command trace deterministically.
@@ -41,8 +44,9 @@ content catalog + saved RunState
 ## State ownership
 
 `RunState` is a disposable checkpoint for one match: selected content IDs,
-gold, lives, wave progress, time and tower placements. Save keys are isolated by
-run, level and mode, and old saves are migrated into schema v4. Rewarded
+gold, lives, wave progress, time, the selected hero and tower placements. Save
+keys are isolated by run, level and mode, and old saves are migrated into schema
+v5 with a deterministic Eira fallback for pre-hero checkpoints. Rewarded
 checkpoints live in browser `localStorage`; they resume on the same device but
 are not a cross-device cloud save.
 
@@ -80,8 +84,16 @@ to new PvE modes are enabled, the server must verify an authoritative result
 version). Client-side signatures or localStorage metadata do not solve this.
 
 The current server profile is therefore a PvE foundation, not proof of fair
-play. `northern-pass` is a non-economic unlock; heroes and PvP remain outside
-this phase.
+play. `northern-pass` is a non-economic unlock; PvP remains outside this phase.
+Both launch heroes are available without profile unlocks, and their run-local
+rank and anchor are deliberately absent from the permanent profile.
+
+The public `/start` binding still uses content version 2, so the hero release
+keeps that value for backend compatibility and distinguishes deterministic
+replays with the internal `heroes-v1` rules suffix. A future authoritative
+rating rollout must coordinate a new content version with the backend; changing
+only the client would make old and new balance rules indistinguishable to the
+server.
 
 ## Adding content safely
 
@@ -98,15 +110,21 @@ For a new enemy or tower:
 2. Extend the exhaustive visual mapping under `rendering/`.
 3. Add focused behavior tests and include it in the endless soak test.
 
-Heroes should later enter as their own content definitions plus explicit
-simulation commands/components. They should not be implemented as special
-branches inside the Phaser scene.
+For a new hero:
+
+1. Add the typed immutable definition under `game/heroes.ts`.
+2. Add explicit simulation commands, state and deterministic behavior under
+   `game/`; keep Phaser limited to input and effects.
+3. Extend the exhaustive code-native visual mapping under `rendering/`.
+4. Cover upgrades, abilities, save migration and replay determinism with
+   headless tests.
 
 ## Performance rules for Telegram WebViews
 
 - Simulation work uses fixed steps and remains independent of render FPS.
 - Path sampling and other hot loops reuse scratch objects.
-- Enemy art and projectile objects are pooled by the Phaser adapter.
+- Enemy art, projectile objects and hero combat effects are pooled by the
+  Phaser adapter.
 - Visual depth is updated in buckets rather than sorted on every pixel.
 - Phaser is emitted as a stable lazy vendor chunk. Fingerprinted files under
   `/td/assets/` use a one-year immutable browser cache, while `/td/` HTML must

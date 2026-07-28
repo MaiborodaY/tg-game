@@ -1,0 +1,130 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const html = readFileSync(new globalThis.URL("../index.html", import.meta.url), "utf8");
+const mainSource = readFileSync(new globalThis.URL("../src/main.ts", import.meta.url), "utf8");
+const css = readFileSync(new globalThis.URL("../src/styles.css", import.meta.url), "utf8");
+
+function elementMarkupById(source, id) {
+  const idIndex = source.indexOf(`id="${id}"`);
+  if (idIndex < 0) return "";
+  const start = source.lastIndexOf("<", idIndex);
+  const openingTag = source.slice(start).match(/^<([a-z][a-z0-9-]*)\b[^>]*>/i);
+  if (!openingTag) return "";
+  const tagName = openingTag[1];
+  const tokens = new RegExp(`<\\/?${tagName}\\b[^>]*>`, "gi");
+  tokens.lastIndex = start;
+  let depth = 0;
+  for (let token = tokens.exec(source); token; token = tokens.exec(source)) {
+    depth += token[0].startsWith("</") ? -1 : 1;
+    if (depth === 0) return source.slice(start, tokens.lastIndex);
+  }
+  return "";
+}
+
+test("intro offers exactly two accessible heroes without adding a tower card", () => {
+  assert.equal(html.match(/data-hero-choice=/g)?.length, 2);
+  assert.match(html, /data-hero-choice="eira"/);
+  assert.match(html, /data-hero-choice="toren"/);
+  assert.equal(html.match(/data-tower=/g)?.length, 4);
+  assert.match(html, /id="hero-choice-button"[^>]*aria-controls="hero-picker"[^>]*aria-expanded="false"/);
+  assert.match(html, /class="hero-options" role="radiogroup"/);
+  assert.equal(html.match(/role="radio"/g)?.length, 2);
+});
+
+test("hero choice only replaces a fresh campaign before the renderer mounts", () => {
+  assert.match(mainSource, /function chooseHero\(value: string\): void \{[\s\S]*isHeroId\(value\)[\s\S]*heroChoiceIsLocked\(\)[\s\S]*createCampaignState\(\{[\s\S]*heroId: selectedHeroId/);
+  assert.match(mainSource, /function heroChoiceIsLocked\(\): boolean \{\s*return gameMounted \|\| runStarted \|\| hasRunProgress\(latestUi\?\.campaign \?\? initialCampaign\);/);
+  assert.match(mainSource, /selectedHeroId = initialCampaign\.hero\.id/);
+  assert.match(mainSource, /let runStarted = Boolean\(restoredCheckpoint\)/);
+  assert.match(mainSource, /saveCampaign\(storage, saveKey, startedCampaign\)/);
+  assert.match(mainSource, /elements\.heroChoiceButton\.disabled = disabled/);
+  assert.match(mainSource, /elements\.heroChoiceLock\.hidden = !locked/);
+});
+
+test("fresh sessions always reach hero choice before their renderer mounts", () => {
+  const sessionSwitch = mainSource.match(/async function switchPracticeSession[\s\S]*?(?=\nfunction (?:openGameMenu|openSessionMenu))/)?.[0] ?? "";
+  const pendingRestore = mainSource.match(/function restorePendingFinish[\s\S]*?(?=\nfunction showRestoredRunStatus)/)?.[0] ?? "";
+  assert.doesNotMatch(sessionSwitch, /ensureGameMounted\(/);
+  assert.doesNotMatch(pendingRestore, /td-intro-seen-v1/);
+  assert.match(pendingRestore, /if \(runStarted \|\| hasRunProgress\(initialCampaign\)\) elements\.introOverlay\.hidden = true/);
+  assert.match(mainSource, /campaign\.activeDurationMs > 0[\s\S]*campaign\.hero\.anchorId !== 0/);
+});
+
+test("selected map hero reuses the compact command controls and active ability button", () => {
+  assert.match(html, /id="hero-panel" class="hero-panel" hidden/);
+  assert.match(html, /id="hero-upgrade-button"/);
+  assert.match(html, /id="selected-hero-hint"/);
+  assert.match(mainSource, /const heroSelected = ui\.selectedHero && !selected/);
+  assert.match(mainSource, /elements\.buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
+  assert.match(mainSource, /elements\.heroPanel\.hidden = !heroSelected/);
+  assert.match(mainSource, /currentScene\(\)\?\.upgradeHero\(\)/);
+  assert.match(mainSource, /currentScene\(\)\?\.useHeroAbility\(\)/);
+  assert.doesNotMatch(mainSource, /pulseButton\.addEventListener\("click", \(\) => currentScene\(\)\?\.usePulse\(\)\)/);
+});
+
+test("hero controls preserve compact rows and Telegram-sized touch targets", () => {
+  assert.match(css, /\.hero-panel \{[^}]*min-height:\s*var\(--tower-controls-height\);[^}]*height:\s*100%;/s);
+  assert.match(css, /\.hero-actions button \{[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*58px;/s);
+  assert.match(css, /\.hero-picker-close \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
+  assert.match(css, /\.hero-picker \.modal-primary \{[^}]*min-height:\s*44px;/s);
+  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*?\.hero-options \{ grid-template-columns:\s*1fr; \}/);
+});
+
+test("one accessible game menu replaces the session shortcut and owns auxiliary actions", () => {
+  const menuMarkup = elementMarkupById(html, "game-menu-overlay");
+  const menuButton = html.match(/<button[^>]*id="game-menu-button"[^>]*>/)?.[0] ?? "";
+  const topActions = html.match(/<div class="top-actions">([\s\S]*?)<\/div>/)?.[1] ?? "";
+
+  assert.notEqual(menuMarkup, "");
+  assert.match(menuMarkup, /role="dialog"/);
+  assert.match(menuMarkup, /aria-modal="true"/);
+  assert.match(menuButton, /aria-controls="game-menu-overlay"/);
+  assert.match(menuButton, /aria-expanded="false"/);
+  assert.match(menuMarkup, /id="game-menu-continue"/);
+  assert.match(menuMarkup, /id="game-menu-restart"/);
+  assert.match(menuMarkup, /id="game-menu-hero-details"/);
+  assert.doesNotMatch(html, /id="session-menu-button"/);
+  if (/data-role="language"/.test(topActions)) {
+    assert.match(topActions, /<(?:label|div)[^>]*(?:\bhidden\b|aria-hidden="true"|is-hidden)[^>]*>[\s\S]*data-role="language"/);
+  }
+  assert.match(menuMarkup, /data-role="language"/);
+  assert.match(mainSource, /gameMenuButton\.addEventListener\("click"/);
+  assert.match(mainSource, /gameMenuContinue\.addEventListener\("click"/);
+  assert.match(mainSource, /gameMenuRestart\.addEventListener\("click"/);
+  assert.match(mainSource, /gameMenuButton\.textContent = combatPhase \? \(ui\.paused \? "▶" : "Ⅱ"\) : "☰"/);
+  assert.match(mainSource, /combatPhase \? \(ui\.paused \? "game_menu_continue" : "pause"\) : "game_menu"/);
+  assert.match(mainSource, /resumeAfterMenu = combatPhase && !latestUi\.paused/);
+  for (const key of [
+    "game_menu",
+    "game_menu_continue",
+    "game_menu_restart",
+    "game_menu_restart_confirm",
+    "game_menu_restart_confirm_copy",
+    "game_menu_restart_unavailable",
+    "game_menu_hero_details",
+    "game_menu_session",
+    "game_menu_language",
+    "game_menu_fullscreen",
+    "game_menu_tower_guide",
+  ]) {
+    assert.match(mainSource, new RegExp(`"${key}"`));
+  }
+});
+
+test("hero picker exposes semantic rank, attack, passive, and ability details for the selected hero", () => {
+  const detailsStart = html.indexOf('id="hero-picker-details"');
+  const detailsEnd = html.indexOf('id="hero-picker-done"', detailsStart);
+  const detailsMarkup = detailsStart >= 0 && detailsEnd > detailsStart
+    ? html.slice(detailsStart, detailsEnd)
+    : "";
+
+  assert.notEqual(detailsMarkup, "");
+  for (const detail of ["rank", "attack", "passive", "ability"]) {
+    assert.match(detailsMarkup, new RegExp(`data-hero-detail="${detail}"`));
+  }
+  assert.match(mainSource, /heroPickerDetails/);
+  assert.match(mainSource, /hero_detail_(?:rank|attack|passive|ability)/);
+});

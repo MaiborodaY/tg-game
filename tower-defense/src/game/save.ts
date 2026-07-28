@@ -9,7 +9,8 @@ import {
   getModeRuleset,
 } from "./content.ts";
 import { createCampaignState } from "./state.ts";
-import type { CampaignState, Point, TowerPlacement, TowerType } from "./types.ts";
+import { isHeroId, isHeroLevel } from "./heroes.ts";
+import type { CampaignState, HeroState, Point, TowerPlacement, TowerType } from "./types.ts";
 
 export const LOCAL_SAVE_KEY = createLocalCampaignSaveKey(CLASSIC_CAMPAIGN_LEVEL_ID, CAMPAIGN_MODE_ID);
 export const LEGACY_V3_LOCAL_SAVE_KEY = "td-save-v3:local";
@@ -23,7 +24,7 @@ export type RunContentBinding = Readonly<{
 }>;
 
 export function createLocalCampaignSaveKey(levelId: string, modeId: string): string {
-  return `td-save-v4:local:${levelId}:${modeId}`;
+  return `td-save-v5:local:${levelId}:${modeId}`;
 }
 
 export function getCampaignSaveKey(
@@ -31,7 +32,7 @@ export function getCampaignSaveKey(
   levelId = CLASSIC_CAMPAIGN_LEVEL_ID,
   modeId = CAMPAIGN_MODE_ID,
 ): string {
-  return runId ? `td-save-v4:run:${runId}` : createLocalCampaignSaveKey(levelId, modeId);
+  return runId ? `td-save-v5:run:${runId}` : createLocalCampaignSaveKey(levelId, modeId);
 }
 
 export function loadCampaign(
@@ -41,7 +42,14 @@ export function loadCampaign(
 ): CampaignState | null {
   if (!storage) return null;
   try {
-    const raw = storage.getItem(key);
+    let raw = storage.getItem(key);
+    let migratedFrom: string | null = null;
+    if (!raw) {
+      const legacyKey = legacyV4KeyForV5(key);
+      if (!legacyKey) return null;
+      raw = storage.getItem(legacyKey);
+      migratedFrom = raw ? legacyKey : null;
+    }
     if (!raw) return null;
     const campaign = sanitizeCampaign(JSON.parse(raw) as unknown);
     if (
@@ -51,6 +59,7 @@ export function loadCampaign(
         || campaign.modeId !== expectedBinding.modeId
       ))
     ) return null;
+    if (migratedFrom) persistMigration(storage, key, migratedFrom, campaign);
     return campaign;
   } catch {
     return null;
@@ -61,6 +70,14 @@ export function saveCampaign(storage: StorageLike | null, key: string, state: Ca
   if (!storage) return false;
   try {
     storage.setItem(key, JSON.stringify(state));
+    const legacyKey = legacyV4KeyForV5(key);
+    if (legacyKey) {
+      try {
+        storage.removeItem(legacyKey);
+      } catch {
+        // The v5 checkpoint is already durable; stale cleanup can retry later.
+      }
+    }
     return true;
   } catch {
     return false;
@@ -69,10 +86,13 @@ export function saveCampaign(storage: StorageLike | null, key: string, state: Ca
 
 export function clearCampaign(storage: StorageLike | null, key: string): void {
   if (!storage) return;
-  try {
-    storage.removeItem(key);
-  } catch {
-    // A blocked WebView storage must not prevent a restart.
+  const keys = [key, legacyV4KeyForV5(key)].filter((candidate): candidate is string => Boolean(candidate));
+  for (const candidate of keys) {
+    try {
+      storage.removeItem(candidate);
+    } catch {
+      // A blocked WebView storage must not prevent a restart.
+    }
   }
 }
 
@@ -137,10 +157,18 @@ export function migrateLegacyCampaign(storage: StorageLike | null, runId: string
 }
 
 export function sanitizeCampaign(value: unknown): CampaignState | null {
-  if (!isRecord(value) || value.version !== 4 || value.contentVersion !== CONTENT_VERSION) return null;
+  if (
+    !isRecord(value)
+    || (value.version !== 4 && value.version !== 5)
+    || value.contentVersion !== CONTENT_VERSION
+  ) return null;
   const level = typeof value.levelId === "string" ? getLevelDefinition(value.levelId) : null;
   const mode = typeof value.modeId === "string" ? getModeRuleset(value.modeId) : null;
   if (!level || !mode) return null;
+  const hero = value.version === 4
+    ? Object.freeze({ id: "eira", level: 1, anchorId: 0 } as const)
+    : sanitizeHero(value.hero, level.heroAnchors.length);
+  if (!hero) return null;
 
   const usedPads = new Set<number>();
   const towers: TowerPlacement[] = [];
@@ -158,7 +186,7 @@ export function sanitizeCampaign(value: unknown): CampaignState | null {
 
   const finalWave = mode.getFinalWave(level);
   return Object.freeze({
-    version: 4,
+    version: 5,
     contentVersion: CONTENT_VERSION,
     levelId: level.id,
     modeId: mode.id,
@@ -167,6 +195,7 @@ export function sanitizeCampaign(value: unknown): CampaignState | null {
     completedWave: clampInteger(value.completedWave, 0, finalWave ?? MAX_ENDLESS_WAVE, 0),
     totalKills: clampInteger(value.totalKills, 0, 100_000_000, 0),
     activeDurationMs: clampInteger(value.activeDurationMs, 0, Number.MAX_SAFE_INTEGER, 0),
+    hero,
     towers: Object.freeze(towers),
   });
 }
@@ -199,6 +228,10 @@ function persistMigration(
   }
 }
 
+function legacyV4KeyForV5(key: string): string | null {
+  return key.startsWith("td-save-v5:") ? key.replace(/^td-save-v5:/, "td-save-v4:") : null;
+}
+
 function nearestUnusedPad(
   x: number,
   y: number,
@@ -220,6 +253,13 @@ function nearestUnusedPad(
 
 function sanitizeTowerType(value: unknown): TowerType | null {
   return value === "ranger" || value === "frost" || value === "ember" || value === "storm" ? value : null;
+}
+
+function sanitizeHero(value: unknown, anchorCount: number): HeroState | null {
+  if (!isRecord(value) || !isHeroId(value.id) || !isHeroLevel(value.level)) return null;
+  const anchorId = finiteInteger(value.anchorId);
+  if (anchorId === null || anchorId < 0 || anchorId >= anchorCount) return null;
+  return Object.freeze({ id: value.id, level: value.level, anchorId });
 }
 
 function finiteInteger(value: unknown): number | null {

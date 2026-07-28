@@ -38,7 +38,82 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("ru", "game_loading"), "Загружаем поле…");
   assert.match(tr("uk", "game_load_failed"), /перезавантаж гру/);
   assert.equal(tr("en", "game_load_retry"), "Reload game");
+  assert.equal(tr("ru", "hero_eira_ability"), "Метка охотницы");
+  assert.equal(tr("uk", "hero_toren_role"), "Вартовий проти натовпу");
+  assert.equal(tr("en", "hero_picker_title"), "Choose a hero");
+  assert.equal(tr("en", "hero_ability_ready", { ability: "Hunter's Mark" }), "Ability ready: Hunter's Mark");
+  assert.equal(tr("ru", "hero_ability_no_target"), "Нет врагов в радиусе героя");
   assert.equal(detectLocale("uk-UA"), "uk");
+});
+
+test("the unified menu and restart confirmation are localized in Russian, Ukrainian, and English", () => {
+  const keys = [
+    "game_menu",
+    "game_menu_continue",
+    "game_menu_restart",
+    "game_menu_restart_confirm",
+    "game_menu_restart_confirm_copy",
+    "game_menu_restart_unavailable",
+    "game_menu_hero_details",
+    "game_menu_session",
+    "game_menu_language",
+    "game_menu_fullscreen",
+    "game_menu_tower_guide",
+    "hero_detail_rank",
+    "hero_detail_attack",
+    "hero_detail_passive",
+    "hero_detail_ability",
+    "hero_detail_next_upgrade",
+    "hero_placement_hint",
+  ];
+  const params = {
+    rank: 2,
+    count: 2,
+    wave: 4,
+    cost: 150,
+    hero: "Eira",
+    ability: "Hunter's Mark",
+    damage: 10,
+    range: 120,
+    percent: 8,
+    duration: 6,
+    effect: "aura +8%",
+  };
+
+  for (const locale of ["ru", "uk", "en"]) {
+    for (const key of keys) {
+      const value = tr(locale, key, params);
+      assert.ok(value.trim().length >= 2, `${locale}.${key} must not be empty`);
+      assert.doesNotMatch(value, /\{[a-zA-Z0-9_]+\}/, `${locale}.${key} has an unresolved placeholder`);
+    }
+  }
+
+  assert.match(tr("ru", "game_menu_restart_confirm_copy"), /прогресс|забег/ui);
+  assert.match(tr("uk", "game_menu_restart_confirm_copy"), /прогрес|забіг/ui);
+  assert.match(tr("en", "game_menu_restart_confirm_copy"), /progress|run/i);
+});
+
+test("both heroes explain attack, rank-two passive, and ability in every locale", () => {
+  for (const locale of ["ru", "uk", "en"]) {
+    for (const hero of ["eira", "toren"]) {
+      const attack = tr(locale, `hero_${hero}_attack_text`);
+      const passive = tr(locale, `hero_${hero}_passive_text`);
+      const ability = tr(locale, `hero_${hero}_ability_text`);
+      assert.ok(attack.trim().length >= 12, `${locale}.${hero} attack needs explanatory copy`);
+      assert.ok(passive.trim().length >= 12, `${locale}.${hero} passive needs explanatory copy`);
+      assert.ok(ability.trim().length >= 12, `${locale}.${hero} ability needs explanatory copy`);
+      assert.match(passive, /2/u, `${locale}.${hero} passive must state its rank-two unlock`);
+    }
+  }
+
+  assert.match(tr("ru", "hero_eira_passive_text"), /с ранга 2/ui);
+  assert.match(tr("ru", "hero_toren_passive_text"), /с ранга 2/ui);
+  assert.match(tr("uk", "hero_eira_passive_text"), /ранг/ui);
+  assert.match(tr("uk", "hero_toren_passive_text"), /ранг/ui);
+  assert.match(tr("en", "hero_eira_passive_text"), /rank\s*2/i);
+  assert.match(tr("en", "hero_toren_passive_text"), /rank\s*2/i);
+  assert.notEqual(tr("en", "hero_eira_attack_text"), tr("en", "hero_toren_attack_text"));
+  assert.notEqual(tr("en", "hero_eira_ability_text"), tr("en", "hero_toren_ability_text"));
 });
 
 test("manual locale storage is persistent and fails closed", () => {

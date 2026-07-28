@@ -22,10 +22,11 @@ import {
 } from "./game/sessionSelection.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
+import { getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
-import type { EnemyType, TowerType } from "./game/types.ts";
+import type { EnemyType, HeroId, TowerType } from "./game/types.ts";
 import {
   detectLocale,
   normalizeLocale,
@@ -138,6 +139,8 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let renderedPreviewWave = -1;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
+let resumeAfterMenu = false;
+let menuReturnFocus: HTMLElement | null = null;
 let introReturnsToRun = false;
 let sessionSwitching = false;
 let localSaveWarningShown = false;
@@ -145,9 +148,12 @@ let finishAuthRefreshAttempted = false;
 let finishRunReplaced = false;
 let replacementBootstrapCached = false;
 let gameStarting = false;
+let gameMounted = false;
 let runtimeLoadFailed = false;
 let reloadRequested = false;
 let playerProfile: PlayerProfileSnapshot | null = miniAppBootstrap?.profile ?? null;
+let selectedHeroId: HeroId = initialCampaign.hero.id;
+let runStarted = Boolean(restoredCheckpoint);
 
 const elements = {
   appShell: byId("app"),
@@ -161,8 +167,7 @@ const elements = {
   waveLabel: byId("wave-label"),
   waveValue: byId("wave-value"),
   waveProgress: byId("wave-progress"),
-  sessionMenuButton: button("session-menu-button"),
-  pauseButton: button("pause-button"),
+  gameMenuButton: button("game-menu-button"),
   speedButton: button("speed-button"),
   pulseButton: button("pulse-button"),
   pulseLabel: byId("pulse-label"),
@@ -176,6 +181,7 @@ const elements = {
   countdown: byId("countdown"),
   buildPanel: byId("build-panel"),
   towerPanel: byId("tower-panel"),
+  heroPanel: byId("hero-panel"),
   buildEyebrow: byId("build-eyebrow"),
   buildHint: byId("build-hint"),
   practiceBadge: byId("practice-badge"),
@@ -200,11 +206,20 @@ const elements = {
   upgradeButton: button("upgrade-button"),
   sellButton: button("sell-button"),
   closeTowerPanel: button("close-tower-panel"),
+  selectedHeroEmblem: byId("selected-hero-emblem"),
+  selectedHeroRank: byId("selected-hero-rank"),
+  selectedHeroName: byId("selected-hero-name"),
+  selectedHeroRole: byId("selected-hero-role"),
+  selectedHeroHint: byId("selected-hero-hint"),
+  heroUpgradeButton: button("hero-upgrade-button"),
+  heroDetailsButton: button("hero-details-button"),
+  closeHeroPanel: button("close-hero-panel"),
   nextWaveLabel: byId("next-wave-label"),
   waveEnemies: byId("wave-enemies"),
   threatMeter: byId("threat-meter"),
   startWaveButton: button("start-wave-button"),
   introOverlay: byId("intro-overlay"),
+  introCard: document.querySelector<HTMLElement>(".intro-card")!,
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
   introStart: button("intro-start"),
@@ -214,9 +229,49 @@ const elements = {
   modeChoiceLabel: byId("mode-choice-label"),
   modeSelect: select("mode-select"),
   sessionChoiceHint: byId("session-choice-hint"),
+  heroChoiceButton: button("hero-choice-button"),
+  heroChoiceEmblem: byId("hero-choice-emblem"),
+  heroChoiceLabel: byId("hero-choice-label"),
+  heroChoiceName: byId("hero-choice-name"),
+  heroChoiceRole: byId("hero-choice-role"),
+  heroChoiceLock: byId("hero-choice-lock"),
+  heroPicker: byId("hero-picker"),
+  heroPickerEyebrow: byId("hero-picker-eyebrow"),
+  heroPickerTitle: byId("hero-picker-title"),
+  heroPickerHint: byId("hero-picker-hint"),
+  heroPickerClose: button("hero-picker-close"),
+  heroPickerDone: button("hero-picker-done"),
+  heroPickerDetails: byId("hero-picker-details"),
+  heroEiraName: byId("hero-eira-name"),
+  heroEiraRole: byId("hero-eira-role"),
+  heroEiraAbility: byId("hero-eira-ability"),
+  heroTorenName: byId("hero-toren-name"),
+  heroTorenRole: byId("hero-toren-role"),
+  heroTorenAbility: byId("hero-toren-ability"),
   introWaves: byId("intro-waves"),
   introTowers: byId("intro-towers"),
   introBosses: byId("intro-bosses"),
+  gameMenuOverlay: byId("game-menu-overlay"),
+  gameMenuTitle: byId("game-menu-title"),
+  gameMenuEyebrow: byId("game-menu-eyebrow"),
+  gameMenuClose: button("game-menu-close"),
+  gameMenuContinue: button("game-menu-continue"),
+  gameMenuHeroDetails: byId("game-menu-hero-details"),
+  gameMenuSpeedLabel: byId("game-menu-speed-label"),
+  gameMenuSpeedButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-menu-speed]")],
+  gameMenuTowerGuideLabel: byId("game-menu-tower-guide-label"),
+  gameMenuFullscreenLabel: byId("game-menu-fullscreen-label"),
+  gameMenuSession: button("game-menu-session"),
+  gameMenuSessionLabel: byId("game-menu-session-label"),
+  gameMenuRestart: button("game-menu-restart"),
+  gameMenuRestartLabel: byId("game-menu-restart-label"),
+  gameMenuExit: button("game-menu-exit"),
+  gameMenuExitLabel: byId("game-menu-exit-label"),
+  gameMenuRestartConfirm: byId("game-menu-restart-confirm"),
+  gameMenuRestartConfirmTitle: byId("game-menu-restart-confirm-title"),
+  gameMenuRestartConfirmCopy: byId("game-menu-restart-confirm-copy"),
+  gameMenuRestartCancel: button("game-menu-restart-cancel"),
+  gameMenuRestartAccept: button("game-menu-restart-accept"),
   resultOverlay: byId("result-overlay"),
   resultCard: document.querySelector<HTMLElement>(".result-card")!,
   resultSigil: byId("result-sigil"),
@@ -230,6 +285,7 @@ const elements = {
   toast: byId("toast"),
   gameRoot: byId("game-root"),
   towerCards: [...document.querySelectorAll<HTMLButtonElement>("[data-tower]")],
+  heroOptions: [...document.querySelectorAll<HTMLButtonElement>("[data-hero-choice]")],
   languageSelects: [...document.querySelectorAll<HTMLSelectElement>('[data-role="language"]')],
   languageLabels: [...document.querySelectorAll<HTMLElement>("[data-language-label]")],
 };
@@ -295,19 +351,39 @@ function bindInteractions(): void {
     card.addEventListener("click", () => currentScene()?.setBuildType(card.dataset.tower as TowerType));
   });
   elements.startWaveButton.addEventListener("click", () => currentScene()?.startWave());
-  elements.pauseButton.addEventListener("click", () => currentScene()?.togglePause());
   elements.speedButton.addEventListener("click", () => currentScene()?.toggleSpeed());
-  elements.pulseButton.addEventListener("click", () => currentScene()?.usePulse());
+  elements.gameMenuButton.addEventListener("click", toggleGameMenu);
+  elements.gameMenuClose.addEventListener("click", () => closeGameMenu(true));
+  elements.gameMenuContinue.addEventListener("click", () => closeGameMenu(true));
+  elements.gameMenuOverlay.addEventListener("click", (event) => {
+    if (event.target === elements.gameMenuOverlay) closeGameMenu(true);
+  });
+  elements.gameMenuSpeedButtons.forEach((control) => {
+    control.addEventListener("click", () => setGameSpeed(control.dataset.menuSpeed));
+  });
+  elements.pulseButton.addEventListener("click", () => currentScene()?.useHeroAbility());
   elements.upgradeButton.addEventListener("click", () => currentScene()?.upgradeSelectedTower());
   elements.sellButton.addEventListener("click", () => currentScene()?.sellSelectedTower());
   elements.closeTowerPanel.addEventListener("click", () => currentScene()?.clearSelection());
+  elements.heroUpgradeButton.addEventListener("click", () => currentScene()?.upgradeHero());
+  elements.heroDetailsButton.addEventListener("click", () => openGameMenu(true));
+  elements.closeHeroPanel.addEventListener("click", () => currentScene()?.clearSelection());
   elements.fullscreenButton.addEventListener("click", () => {
     if (telegram.isFullscreen) telegram.exitFullscreen();
     else telegram.requestFullscreen();
   });
-  elements.sessionMenuButton.addEventListener("click", openSessionMenu);
+  elements.gameMenuSession.addEventListener("click", () => {
+    closeGameMenu(false, false);
+    openSessionMenu();
+  });
+  elements.gameMenuRestart.addEventListener("click", showRestartConfirmation);
+  elements.gameMenuRestartCancel.addEventListener("click", hideRestartConfirmation);
+  elements.gameMenuRestartAccept.addEventListener("click", restartGame);
+  elements.gameMenuExit.addEventListener("click", () => {
+    if (!telegram.close()) closeGameMenu(true);
+  });
   telegram.onFullscreenChange(syncFullscreenUi);
-  elements.towerGuideButton.addEventListener("click", openTowerGuide);
+  elements.towerGuideButton.addEventListener("click", () => openTowerGuideFromMenu());
   elements.towerGuideClose.addEventListener("click", closeTowerGuide);
   elements.towerGuideDone.addEventListener("click", closeTowerGuide);
   elements.towerGuideOverlay.addEventListener("click", (event) => {
@@ -321,6 +397,12 @@ function bindInteractions(): void {
     elements.levelSelect.value,
     elements.modeSelect.value,
   ));
+  elements.heroChoiceButton.addEventListener("click", openHeroPicker);
+  elements.heroPickerClose.addEventListener("click", () => closeHeroPicker(true));
+  elements.heroPickerDone.addEventListener("click", () => closeHeroPicker(true));
+  elements.heroOptions.forEach((option) => {
+    option.addEventListener("click", () => chooseHero(option.dataset.heroChoice as HeroId));
+  });
   elements.introStart.addEventListener("click", () => {
     if (launchError === "miniapp_start_failed" || runtimeLoadFailed) reloadPage();
     else void startGameFromIntro();
@@ -344,7 +426,11 @@ function bindInteractions(): void {
     }
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !elements.towerGuideOverlay.hidden) closeTowerGuide();
+    if (event.key !== "Escape") return;
+    if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
+    else if (!elements.gameMenuRestartConfirm.hidden) hideRestartConfirmation();
+    else if (!elements.gameMenuOverlay.hidden) closeGameMenu(true);
+    else if (!elements.heroPicker.hidden) closeHeroPicker(true);
   });
 }
 
@@ -359,6 +445,8 @@ async function ensureGameMounted(): Promise<boolean> {
       campaign: initialCampaign,
       callbacks: gameCallbacks,
     });
+    gameMounted = true;
+    syncHeroChoiceControls();
     return true;
   } catch {
     return false;
@@ -367,6 +455,7 @@ async function ensureGameMounted(): Promise<boolean> {
 
 async function startGameFromIntro(): Promise<void> {
   if (gameStarting || sessionSwitching || launchError) return;
+  closeHeroPicker(false);
   gameStarting = true;
   runtimeLoadFailed = false;
   syncIntroAction();
@@ -376,6 +465,12 @@ async function startGameFromIntro(): Promise<void> {
   if (!ready) {
     showRuntimeLoadFailure();
     return;
+  }
+  runStarted = true;
+  const startedCampaign = currentScene()?.getCampaign() ?? initialCampaign;
+  if (!saveCampaign(storage, saveKey, startedCampaign) && !localSaveWarningShown) {
+    localSaveWarningShown = true;
+    showToast(text("local_save_unavailable"), true);
   }
   syncIntroAction();
   syncSessionControls();
@@ -420,17 +515,25 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.goldValue.textContent = String(ui.campaign.gold);
   elements.waveValue.textContent = `${ui.currentWave} / ${ui.finalWave ?? "∞"}`;
   elements.waveProgress.style.width = `${Math.round(ui.waveProgress * 100)}%`;
-  elements.pauseButton.textContent = ui.paused ? "▶" : "Ⅱ";
-  elements.pauseButton.classList.toggle("is-active", ui.paused);
-  elements.pauseButton.setAttribute("aria-label", text(ui.paused ? "resume" : "pause"));
-  elements.pauseButton.disabled = ui.phase === "gameover" || ui.phase === "victory";
+  const combatPhase = ui.phase === "wave" || ui.phase === "countdown";
+  elements.gameMenuButton.textContent = combatPhase ? (ui.paused ? "▶" : "Ⅱ") : "☰";
+  elements.gameMenuButton.classList.toggle("is-active", ui.paused);
+  elements.gameMenuButton.disabled = ui.phase === "gameover" || ui.phase === "victory";
   elements.speedButton.textContent = `×${ui.speed}`;
   elements.speedButton.classList.toggle("is-active", ui.speed === 2);
   elements.phaseBadge.textContent = `${phaseLabel(ui)} · ${text("act", { count: ui.act })}`;
   elements.countdown.hidden = ui.phase !== "countdown" || ui.paused;
   elements.countdown.textContent = String(Math.max(1, ui.countdown));
-  elements.pulseButton.disabled = ui.phase !== "wave" || !ui.pulseAvailable || ui.enemiesAlive === 0 || ui.paused;
-  elements.pulseButton.classList.toggle("is-used", !ui.pulseAvailable);
+  const heroAbility = heroAbilityName(ui.hero.id);
+  elements.pulseLabel.textContent = heroAbility;
+  elements.pulseButton.disabled = ui.phase !== "wave" || !ui.heroAbilityAvailable || ui.enemiesAlive === 0 || ui.paused;
+  elements.pulseButton.classList.toggle("is-used", !ui.heroAbilityAvailable);
+  elements.pulseButton.classList.toggle("is-eira", ui.hero.id === "eira");
+  elements.pulseButton.classList.toggle("is-toren", ui.hero.id === "toren");
+  elements.pulseButton.setAttribute("aria-label", text(
+    ui.heroAbilityAvailable ? "hero_ability_ready" : "hero_ability_used",
+    { ability: heroAbility },
+  ));
   elements.bossHud.hidden = !ui.boss;
   if (ui.boss) {
     elements.bossIcon.textContent = ui.boss.type === "titan" ? "♜" : "♛";
@@ -451,8 +554,10 @@ function renderUi(ui: TowerDefenseUiState): void {
   });
 
   const selected = getSelectedTowerDetails(ui);
-  elements.buildPanel.hidden = Boolean(selected);
+  const heroSelected = ui.selectedHero && !selected;
+  elements.buildPanel.hidden = Boolean(selected) || heroSelected;
   elements.towerPanel.hidden = !selected;
+  elements.heroPanel.hidden = !heroSelected;
   if (selected) {
     elements.selectedEmblem.className = `tower-emblem ${selected.tower.type}`;
     elements.selectedEmblem.innerHTML = "<i></i>";
@@ -468,6 +573,31 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.sellButton.textContent = `${text("sell")} · ${selected.sellValue} ●`;
     elements.sellButton.disabled = !editing;
   }
+  if (heroSelected) {
+    const hero = ui.hero;
+    const upgradeCost = getHeroUpgradeCost(hero.id, hero.level);
+    const upgradeWave = getHeroUpgradeWaveGate(hero.level);
+    const upgradeUnlocked = upgradeWave === null || ui.campaign.completedWave >= upgradeWave;
+    elements.selectedHeroEmblem.className = `hero-emblem ${hero.id}`;
+    elements.selectedHeroEmblem.innerHTML = "<i></i>";
+    elements.selectedHeroRank.textContent = text("hero_rank", { count: hero.level });
+    elements.selectedHeroName.textContent = heroName(hero.id);
+    elements.selectedHeroRole.textContent = heroRole(hero.id);
+    elements.selectedHeroHint.textContent = text("hero_placement_hint");
+    elements.heroDetailsButton.setAttribute("aria-label", text("game_menu_hero_details"));
+    elements.heroUpgradeButton.textContent = upgradeCost === null
+      ? text("hero_max_rank")
+      : !upgradeUnlocked && upgradeWave !== null
+        ? text("hero_upgrade_wave", { wave: upgradeWave })
+        : `${text("upgrade")} · ${upgradeCost} ●`;
+    elements.heroUpgradeButton.disabled = !editing
+      || upgradeCost === null
+      || !upgradeUnlocked
+      || ui.campaign.gold < upgradeCost;
+  }
+
+  selectedHeroId = ui.hero.id;
+  syncHeroChoiceControls();
 
   const plan = ui.nextWavePlan;
   if (renderedPreviewWave !== plan.wave) {
@@ -480,8 +610,7 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.startWaveButton.classList.toggle("is-boss", plan.hasBoss);
   elements.startWaveButton.textContent = plan.hasBoss ? text("boss_wave") : text("start_wave");
   elements.practiceBadge.hidden = reward.mode === "server";
-  elements.sessionMenuButton.hidden = reward.mode === "server";
-  elements.sessionMenuButton.disabled = ui.phase !== "setup";
+  syncGameMenuUi(ui);
 }
 
 function renderWavePreview(_wave: number, types: readonly EnemyType[]): void {
@@ -511,16 +640,29 @@ function phaseLabel(ui: TowerDefenseUiState): string {
 }
 
 function showNotice(code: NoticeCode): void {
+  if (code === "pulse_used") {
+    const ability = heroAbilityName(latestUi?.hero.id ?? selectedHeroId);
+    showToast(text("hero_ability_used", { ability }), true);
+    return;
+  }
+  if (code === "hero_ability_unavailable") {
+    showToast(text("hero_ability_no_target"), true);
+    return;
+  }
   const key: TranslationKey = code === "insufficient_gold"
     ? "insufficient_gold"
     : code === "max_level"
       ? "max_level"
+      : code === "hero_max_level"
+        ? "hero_max_rank"
+        : code === "hero_upgrade_locked"
+          ? "hero_upgrade_locked"
       : code === "mastery_locked"
         ? "mastery_locked"
-      : code === "pulse_used"
-        ? "pulse_used"
         : code === "build_locked"
           ? "build_locked"
+          : code === "invalid_hero_anchor"
+            ? "select_hero_anchor"
           : "select_pad";
   showToast(text(key), true);
 }
@@ -687,12 +829,12 @@ function showResult(
 function restorePendingFinish(): boolean {
   if (launchError) return false;
   if (reward.mode !== "server" || !reward.runId) {
-    if (initialCampaign.completedWave > 0 || initialCampaign.towers.length > 0) elements.introOverlay.hidden = true;
+    if (runStarted || hasRunProgress(initialCampaign)) elements.introOverlay.hidden = true;
     return false;
   }
   const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE);
   if (!pending) {
-    if (initialCampaign.completedWave > 0 || readFlag(session, "td-intro-seen-v1")) elements.introOverlay.hidden = true;
+    if (runStarted || hasRunProgress(initialCampaign)) elements.introOverlay.hidden = true;
     return false;
   }
   terminalResult = captureFinalResult(pending.score, pending.durationMs);
@@ -745,29 +887,105 @@ async function switchPracticeSession(levelId: string, modeId: string): Promise<v
     saveKey = getCampaignSaveKey(null, next.level.id, next.mode.id);
     const saved = loadCampaign(storage, saveKey, next.selection);
     const mayMigrate = next.level.id === CLASSIC_CAMPAIGN_LEVEL_ID && next.mode.id === CAMPAIGN_MODE_ID;
-    initialCampaign = saved
-      || (mayMigrate ? migrateLegacyCampaign(storage) : null)
-      || createCampaignState({ level: next.level, mode: next.mode });
+    const restored = saved || (mayMigrate ? migrateLegacyCampaign(storage) : null);
+    runStarted = Boolean(restored);
+    initialCampaign = restored || createCampaignState({
+      level: next.level,
+      mode: next.mode,
+      heroId: selectedHeroId,
+    });
+    selectedHeroId = initialCampaign.hero.id;
 
     latestUi = null;
     renderedPreviewWave = -1;
     const previous = runtimeController.clearMounted();
     if (previous) {
+      gameMounted = false;
       previous.game.destroy(true);
       await waitForRendererCleanup();
       elements.gameRoot.replaceChildren();
-      if (!await ensureGameMounted()) {
-        showRuntimeLoadFailure();
-        return;
-      }
     }
     introReturnsToRun = hasRunProgress(initialCampaign);
     telegram.haptic("light");
   } finally {
     sessionSwitching = false;
     syncSessionControls();
+    syncHeroChoiceControls();
     syncIntroAction();
   }
+}
+
+function toggleGameMenu(): void {
+  if (latestUi?.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown")) {
+    currentScene()?.setPaused(false);
+    return;
+  }
+  openGameMenu(false);
+}
+
+function openGameMenu(focusHeroDetails: boolean): void {
+  if (
+    !elements.gameMenuOverlay.hidden
+    || !elements.introOverlay.hidden
+    || !elements.resultOverlay.hidden
+    || !latestUi
+    || latestUi.phase === "gameover"
+    || latestUi.phase === "victory"
+  ) return;
+
+  menuReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : elements.gameMenuButton;
+  const combatPhase = latestUi.phase === "wave" || latestUi.phase === "countdown";
+  resumeAfterMenu = combatPhase && !latestUi.paused;
+  if (combatPhase && !latestUi.paused) currentScene()?.setPaused(true);
+  elements.appShell.inert = true;
+  elements.gameMenuOverlay.hidden = false;
+  elements.gameMenuButton.setAttribute("aria-expanded", "true");
+  hideRestartConfirmation();
+  syncGameMenuUi(latestUi);
+  (focusHeroDetails ? elements.gameMenuHeroDetails : elements.gameMenuContinue).focus();
+  telegram.haptic("light");
+}
+
+function closeGameMenu(resumeGame: boolean, restoreFocus = true): void {
+  if (elements.gameMenuOverlay.hidden) return;
+  elements.gameMenuOverlay.hidden = true;
+  elements.appShell.inert = false;
+  elements.gameMenuButton.setAttribute("aria-expanded", "false");
+  hideRestartConfirmation();
+  const shouldResume = resumeGame && resumeAfterMenu;
+  resumeAfterMenu = false;
+  if (shouldResume && latestUi?.paused) currentScene()?.setPaused(false);
+  if (restoreFocus && menuReturnFocus?.isConnected) menuReturnFocus.focus();
+  menuReturnFocus = null;
+}
+
+function setGameSpeed(rawSpeed: string | undefined): void {
+  const speed = rawSpeed === "2" ? 2 : rawSpeed === "1" ? 1 : null;
+  if (!speed || !latestUi || latestUi.speed === speed) return;
+  currentScene()?.toggleSpeed();
+  telegram.haptic("light");
+}
+
+function showRestartConfirmation(): void {
+  if (reward.mode === "server" && !finishSettled) {
+    showToast(text("game_menu_restart_unavailable"), true);
+    return;
+  }
+  elements.gameMenuRestartConfirm.hidden = false;
+  elements.gameMenuRestartAccept.focus();
+  telegram.haptic("medium");
+}
+
+function hideRestartConfirmation(): void {
+  elements.gameMenuRestartConfirm.hidden = true;
+}
+
+function openTowerGuideFromMenu(): void {
+  const resumeAfterClose = resumeAfterMenu;
+  closeGameMenu(false, false);
+  openTowerGuide(resumeAfterClose, elements.gameMenuButton);
 }
 
 function openSessionMenu(): void {
@@ -790,6 +1008,7 @@ function openSessionMenu(): void {
 }
 
 function dismissIntro(): void {
+  closeHeroPicker(false);
   elements.introOverlay.hidden = true;
   elements.appShell.inert = false;
   introReturnsToRun = false;
@@ -797,11 +1016,13 @@ function dismissIntro(): void {
   telegram.haptic("light");
 }
 
-function openTowerGuide(): void {
+function openTowerGuide(resumeOverride = false, returnFocus: HTMLElement | null = null): void {
   if (!elements.towerGuideOverlay.hidden) return;
-  guideReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : elements.towerGuideButton;
-  resumeAfterGuide = Boolean(latestUi && !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown"));
-  if (resumeAfterGuide) currentScene()?.setPaused(true);
+  guideReturnFocus = returnFocus
+    ?? (document.activeElement instanceof HTMLElement ? document.activeElement : elements.towerGuideButton);
+  const running = Boolean(latestUi && !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown"));
+  resumeAfterGuide = resumeOverride || running;
+  if (running) currentScene()?.setPaused(true);
   elements.appShell.inert = true;
   elements.towerGuideOverlay.hidden = false;
   elements.towerGuideButton.setAttribute("aria-expanded", "true");
@@ -853,6 +1074,71 @@ function setLocale(value: string): void {
   telegram.haptic("light");
 }
 
+function syncGameMenuUi(ui: TowerDefenseUiState | null): void {
+  if (!ui) return;
+  const combatPhase = ui.phase === "wave" || ui.phase === "countdown";
+  elements.gameMenuTitle.textContent = text(combatPhase ? "paused" : "game_menu");
+  elements.gameMenuContinue.textContent = text("game_menu_continue");
+  elements.gameMenuButton.setAttribute("aria-label", text(
+    combatPhase ? (ui.paused ? "game_menu_continue" : "pause") : "game_menu",
+  ));
+  elements.gameMenuButton.title = text("game_menu");
+  elements.gameMenuSpeedButtons.forEach((control) => {
+    const selected = control.dataset.menuSpeed === String(ui.speed);
+    control.classList.toggle("is-active", selected);
+    control.setAttribute("aria-pressed", String(selected));
+  });
+  elements.gameMenuSession.hidden = reward.mode === "server";
+  elements.gameMenuSession.disabled = ui.phase !== "setup";
+  elements.gameMenuRestart.disabled = reward.mode === "server" && !finishSettled;
+  elements.gameMenuRestart.title = elements.gameMenuRestart.disabled
+    ? text("game_menu_restart_unavailable")
+    : text("game_menu_restart");
+  elements.gameMenuExit.hidden = !telegram.canClose;
+  renderHeroDetails(elements.gameMenuHeroDetails, ui.hero.id, ui.hero.level);
+}
+
+function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number): void {
+  const emblem = container.querySelector<HTMLElement>("[data-hero-detail-emblem]");
+  if (emblem) {
+    emblem.className = `hero-emblem ${heroId}`;
+    emblem.innerHTML = "<i></i>";
+  }
+  const name = container.querySelector<HTMLElement>("[data-hero-detail-name]");
+  const role = container.querySelector<HTMLElement>("[data-hero-detail-role]");
+  if (name) name.textContent = heroName(heroId);
+  if (role) role.textContent = heroRole(heroId);
+  setHeroDetailRow(container, "rank", null, text("hero_detail_rank", { count: level }));
+  setHeroDetailRow(container, "attack", "hero_detail_attack", `hero_${heroId}_attack_text` as TranslationKey);
+  setHeroDetailRow(container, "passive", "hero_detail_passive", `hero_${heroId}_passive_text` as TranslationKey);
+  setHeroDetailRow(container, "ability", "hero_detail_ability", `hero_${heroId}_ability_text` as TranslationKey);
+
+  const next = container.querySelector<HTMLElement>("[data-hero-detail-next]");
+  if (!next) return;
+  const upgradeCost = getHeroUpgradeCost(heroId, level as 1 | 2 | 3);
+  next.textContent = upgradeCost === null
+    ? text("hero_max_rank")
+    : text("hero_detail_next_upgrade", {
+      rank: level + 1,
+      effect: text(`hero_${heroId}_upgrade_${level + 1}` as TranslationKey),
+      cost: upgradeCost,
+    });
+}
+
+function setHeroDetailRow(
+  container: HTMLElement,
+  kind: "rank" | "attack" | "passive" | "ability",
+  labelKey: TranslationKey | null,
+  value: TranslationKey | string,
+): void {
+  const row = container.querySelector<HTMLElement>(`[data-hero-detail="${kind}"]`);
+  if (!row) return;
+  const label = row.querySelector<HTMLElement>("[data-hero-detail-label]");
+  const output = row.querySelector<HTMLElement>("[data-hero-detail-value]");
+  if (label && labelKey) label.textContent = text(labelKey);
+  if (output) output.textContent = labelKey ? text(value as TranslationKey) : value;
+}
+
 function applyStaticTranslations(): void {
   document.documentElement.lang = locale;
   document.title = text("app_title");
@@ -870,13 +1156,24 @@ function applyStaticTranslations(): void {
   elements.livesLabel.textContent = text("lives");
   elements.goldLabel.textContent = text("gold");
   elements.waveLabel.textContent = text("wave");
-  elements.pulseLabel.textContent = text("pulse");
+  elements.pulseLabel.textContent = heroAbilityName(selectedHeroId);
   elements.buildEyebrow.textContent = text("arsenal");
   elements.buildHint.textContent = text("build_hint");
   elements.practiceBadge.textContent = text("practice");
-  const sessionMenuLabel = text("session_menu");
-  elements.sessionMenuButton.setAttribute("aria-label", sessionMenuLabel);
-  elements.sessionMenuButton.title = sessionMenuLabel;
+  elements.gameMenuEyebrow.textContent = text("app_title");
+  elements.gameMenuClose.setAttribute("aria-label", text("close"));
+  elements.gameMenuSpeedLabel.textContent = text("speed");
+  const menuLanguageLabel = text("game_menu_language");
+  const menuLanguage = elements.gameMenuOverlay.querySelector<HTMLElement>(".game-menu-language > span");
+  if (menuLanguage) menuLanguage.textContent = menuLanguageLabel;
+  elements.gameMenuTowerGuideLabel.textContent = text("game_menu_tower_guide");
+  elements.gameMenuSessionLabel.textContent = text("game_menu_session");
+  elements.gameMenuRestartLabel.textContent = text("game_menu_restart");
+  elements.gameMenuExitLabel.textContent = text("game_menu_exit");
+  elements.gameMenuRestartConfirmTitle.textContent = text("game_menu_restart_confirm");
+  elements.gameMenuRestartConfirmCopy.textContent = text("game_menu_restart_confirm_copy");
+  elements.gameMenuRestartCancel.textContent = text("game_menu_cancel");
+  elements.gameMenuRestartAccept.textContent = text("game_menu_restart_accept");
   syncFullscreenUi(telegram.isFullscreen);
   const guideButtonLabel = text("tower_guide_button");
   elements.towerGuideButton.setAttribute("aria-label", guideButtonLabel);
@@ -895,15 +1192,90 @@ function applyStaticTranslations(): void {
   elements.nextWaveLabel.textContent = text("next_wave");
   elements.introTitle.textContent = text("intro_title");
   elements.introBody.textContent = text("intro_body");
+  elements.heroChoiceLabel.textContent = text("hero_choice");
+  elements.heroChoiceLock.textContent = text("hero_choice_locked");
+  elements.heroPickerEyebrow.textContent = text("hero_picker_eyebrow");
+  elements.heroPickerTitle.textContent = text("hero_picker_title");
+  elements.heroPickerHint.textContent = text("hero_picker_hint");
+  elements.heroPickerDone.textContent = text("hero_picker_done");
+  elements.heroEiraName.textContent = heroName("eira");
+  elements.heroEiraRole.textContent = heroRole("eira");
+  elements.heroEiraAbility.textContent = heroAbilityName("eira");
+  elements.heroTorenName.textContent = heroName("toren");
+  elements.heroTorenRole.textContent = heroRole("toren");
+  elements.heroTorenAbility.textContent = heroAbilityName("toren");
+  elements.heroPickerClose.setAttribute("aria-label", text("close"));
+  elements.heroDetailsButton.setAttribute("aria-label", text("game_menu_hero_details"));
+  renderHeroDetails(elements.heroPickerDetails, selectedHeroId, 1);
+  if (latestUi) syncGameMenuUi(latestUi);
+  syncHeroChoiceControls();
   syncIntroAction();
   syncSessionControls();
   elements.introTowers.textContent = text("intro_towers", { count: 4 });
   elements.introBosses.textContent = text("intro_bosses");
   elements.resultEyebrow.textContent = text("result_eyebrow");
   elements.closeTowerPanel.setAttribute("aria-label", text("close"));
-  elements.pauseButton.setAttribute("aria-label", text("pause"));
+  elements.closeHeroPanel.setAttribute("aria-label", text("close"));
   elements.speedButton.setAttribute("aria-label", text("speed"));
-  elements.pulseButton.setAttribute("aria-label", text("pulse_ready"));
+  elements.pulseButton.setAttribute("aria-label", text("hero_ability_ready", {
+    ability: heroAbilityName(selectedHeroId),
+  }));
+}
+
+function openHeroPicker(): void {
+  if (elements.heroChoiceButton.disabled || elements.introOverlay.hidden) return;
+  elements.introCard.classList.add("is-hero-picker-open");
+  elements.heroPicker.hidden = false;
+  elements.heroChoiceButton.setAttribute("aria-expanded", "true");
+  elements.heroOptions.find((option) => option.dataset.heroChoice === selectedHeroId)?.focus();
+  telegram.haptic("light");
+}
+
+function closeHeroPicker(restoreFocus: boolean): void {
+  if (elements.heroPicker.hidden) return;
+  elements.heroPicker.hidden = true;
+  elements.introCard.classList.remove("is-hero-picker-open");
+  elements.heroChoiceButton.setAttribute("aria-expanded", "false");
+  if (restoreFocus && !elements.heroChoiceButton.disabled) elements.heroChoiceButton.focus();
+}
+
+function chooseHero(value: string): void {
+  if (!isHeroId(value) || heroChoiceIsLocked()) return;
+  selectedHeroId = value;
+  initialCampaign = createCampaignState({
+    level: selectedSession.level,
+    mode: selectedSession.mode,
+    heroId: selectedHeroId,
+  });
+  syncHeroChoiceControls();
+  syncIntroAction();
+  telegram.haptic("light");
+}
+
+function syncHeroChoiceControls(): void {
+  const campaign = latestUi?.campaign ?? initialCampaign;
+  selectedHeroId = campaign.hero.id;
+  const locked = heroChoiceIsLocked();
+  const disabled = locked || sessionSwitching || gameStarting || Boolean(launchError);
+  elements.heroChoiceButton.disabled = disabled;
+  elements.heroChoiceButton.setAttribute("aria-label", `${text("hero_choice")}: ${heroName(selectedHeroId)}`);
+  elements.heroChoiceEmblem.className = `hero-emblem ${selectedHeroId}`;
+  elements.heroChoiceEmblem.innerHTML = "<i></i>";
+  elements.heroChoiceName.textContent = heroName(selectedHeroId);
+  elements.heroChoiceRole.textContent = heroRole(selectedHeroId);
+  elements.heroChoiceLock.hidden = !locked;
+  elements.heroOptions.forEach((option) => {
+    const selected = option.dataset.heroChoice === selectedHeroId;
+    option.classList.toggle("is-selected", selected);
+    option.setAttribute("aria-checked", String(selected));
+    option.disabled = disabled;
+  });
+  renderHeroDetails(elements.heroPickerDetails, selectedHeroId, 1);
+  if (disabled) closeHeroPicker(false);
+}
+
+function heroChoiceIsLocked(): boolean {
+  return gameMounted || runStarted || hasRunProgress(latestUi?.campaign ?? initialCampaign);
 }
 
 function syncSessionControls(): void {
@@ -932,10 +1304,18 @@ function syncSessionControls(): void {
   elements.introWaves.textContent = finalWave === null
     ? text("intro_endless")
     : text("intro_waves", { count: finalWave });
+  syncHeroChoiceControls();
 }
 
 function hasRunProgress(campaign: TowerDefenseUiState["campaign"]): boolean {
-  return campaign.completedWave > 0 || campaign.towers.length > 0;
+  const level = CONTENT_CATALOG.levels[campaign.levelId];
+  return campaign.completedWave > 0
+    || campaign.towers.length > 0
+    || campaign.totalKills > 0
+    || campaign.activeDurationMs > 0
+    || campaign.hero.level > 1
+    || campaign.hero.anchorId !== 0
+    || Boolean(level && (campaign.gold !== level.startingGold || campaign.lives !== level.startingLives));
 }
 
 function waitForRendererCleanup(): Promise<void> {
@@ -947,12 +1327,12 @@ function waitForRendererCleanup(): Promise<void> {
 function syncFullscreenUi(isFullscreen: boolean): void {
   const supportsFullscreen = telegram.supportsFullscreen;
   document.documentElement.classList.toggle("is-telegram-fullscreen", isFullscreen);
-  elements.buildPanel.classList.toggle("has-fullscreen-control", supportsFullscreen);
   elements.fullscreenButton.hidden = !supportsFullscreen;
   elements.fullscreenButton.setAttribute("aria-pressed", String(isFullscreen));
   const label = text(isFullscreen ? "fullscreen_exit" : "fullscreen_enter");
   elements.fullscreenButton.setAttribute("aria-label", label);
   elements.fullscreenButton.title = label;
+  elements.gameMenuFullscreenLabel.textContent = text("game_menu_fullscreen");
 }
 
 function applyLaunchErrorTranslations(): void {
@@ -1035,6 +1415,18 @@ function guideMatchup(kind: "strong" | "weak", labelKey: TranslationKey, valueKe
 
 function towerName(type: TowerType): string {
   return text(`tower_${type}` as TranslationKey);
+}
+
+function heroName(id: HeroId): string {
+  return text(`hero_${id}` as TranslationKey);
+}
+
+function heroRole(id: HeroId): string {
+  return text(`hero_${id}_role` as TranslationKey);
+}
+
+function heroAbilityName(id: HeroId): string {
+  return text(`hero_${id}_ability` as TranslationKey);
 }
 
 function enemyName(type: EnemyType): string {

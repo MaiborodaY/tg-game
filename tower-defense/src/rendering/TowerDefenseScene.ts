@@ -11,11 +11,13 @@ import {
   type LevelDefinition,
   type ModeRuleset,
 } from "../game/content.ts";
+import { getHeroStats } from "../game/heroes.ts";
 import { createPathMetrics, getRouteAngleAtDistance } from "../game/pathing.ts";
 import {
   GameSimulation,
   createSimulationRules,
   type EnemySimulationView,
+  type HeroSimulationView,
   type SimulationEvent,
   type SimulationOutcome,
   type SimulationPhase,
@@ -26,6 +28,7 @@ import type {
   CampaignError,
   CampaignState,
   EnemyType,
+  HeroId,
   TowerPlacement,
   TowerType,
   WavePlan,
@@ -46,10 +49,23 @@ import {
   type TowerArt,
   type WorldArt,
 } from "./art.ts";
+import {
+  createHeroAnchorArt,
+  createHeroArt,
+  createHeroEffectPool,
+  moveHeroArt,
+  setHeroAbilityCharge,
+  setHeroAnchorState,
+  setHeroArtSelected,
+  updateHeroArtPose,
+  type HeroAnchorArt,
+  type HeroArt,
+  type HeroEffectPool,
+} from "./heroArt.ts";
 
 export type GamePhase = SimulationPhase;
 export type TerminalOutcome = SimulationOutcome;
-export type NoticeCode = CampaignError | "build_locked" | "select_pad" | "pulse_used";
+export type NoticeCode = CampaignError | "build_locked" | "hero_ability_unavailable" | "select_pad" | "pulse_used";
 
 export type TowerDefenseUiState = Readonly<{
   campaign: CampaignState;
@@ -62,6 +78,9 @@ export type TowerDefenseUiState = Readonly<{
   speed: 1 | 2;
   selectedBuildType: TowerType | null;
   selectedPadId: number | null;
+  selectedHero: boolean;
+  hero: HeroSimulationView;
+  heroAbilityAvailable: boolean;
   currentWave: number;
   waveProgress: number;
   enemiesAlive: number;
@@ -116,6 +135,17 @@ type ProjectileRenderView = {
   previousY: number;
 };
 
+type HeroRenderView = {
+  id: HeroId;
+  art: HeroArt;
+  hitZone: Phaser.GameObjects.Zone;
+};
+
+type HeroAnchorRenderView = {
+  art: HeroAnchorArt;
+  hitZone: Phaser.GameObjects.Zone;
+};
+
 export class TowerDefenseScene extends Phaser.Scene {
   private readonly callbacks: TowerDefenseCallbacks;
   private readonly level: LevelDefinition;
@@ -124,12 +154,17 @@ export class TowerDefenseScene extends Phaser.Scene {
   private readonly path;
   private selectedBuildType: TowerType | null;
   private selectedPadId: number | null = null;
+  private selectedHero = false;
   private readonly padViews = new Map<number, PadView>();
   private readonly towerViews = new Map<number, TowerRenderView>();
   private readonly enemyViews = new Map<number, EnemyRenderView>();
   private readonly projectileViews = new Map<number, ProjectileRenderView>();
   private readonly enemyArtPool = new Map<string, EnemyArt[]>();
   private readonly projectilePool = new Map<TowerType, ProjectileObject[]>();
+  private readonly heroAnchorViews = new Map<number, HeroAnchorRenderView>();
+  private heroView?: HeroRenderView;
+  private heroEffects?: HeroEffectPool;
+  private lastHeroAttackAtMs = -1_000;
   private rangePreview?: Phaser.GameObjects.Arc;
   private lastUiEmitAt = -1_000;
   private lastBurnVfxAtMs = -1_000;
@@ -151,11 +186,18 @@ export class TowerDefenseScene extends Phaser.Scene {
   create(): void {
     this.worldArt = drawWorld(this, this.level);
     setWorldAct(this, this.worldArt, this.simulation.getCurrentWavePlan().act);
+    this.heroEffects = createHeroEffectPool(this);
+    this.createHeroAnchors();
     this.createBuildPads();
     this.syncTowerViews();
     this.syncRenderState();
     this.updatePadVisuals();
     this.emitUi(true);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.heroEffects?.destroy();
+      this.heroEffects = undefined;
+    });
 
     const view = this.simulation.readView();
     if (view.phase === "victory" || view.phase === "gameover") {
@@ -192,9 +234,11 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.callbacks.onNotice("build_locked");
       return;
     }
+    this.selectedHero = false;
     this.selectedBuildType = type;
     this.selectedPadId = null;
     this.updatePadVisuals();
+    this.updateHeroSelectionVisuals();
     this.updateRangePreview();
     this.emitUi(true);
   }
@@ -202,11 +246,13 @@ export class TowerDefenseScene extends Phaser.Scene {
   startWave(): boolean {
     if (!this.simulation.startWave()) return false;
     this.selectedPadId = null;
+    this.selectedHero = false;
     this.selectedBuildType = null;
     const view = this.simulation.readView();
     if (this.worldArt && view.wavePlan) setWorldAct(this, this.worldArt, view.wavePlan.act);
     this.processSimulationEvents();
     this.updatePadVisuals();
+    this.updateHeroSelectionVisuals();
     this.updateRangePreview();
     this.emitUi(true);
     return true;
@@ -232,14 +278,34 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.emitUi(true);
   }
 
-  usePulse(): boolean {
-    const result = this.simulation.usePulse();
+  useHeroAbility(): boolean {
+    const result = this.simulation.useHeroAbility();
     if (!result.ok) {
-      this.callbacks.onNotice("pulse_used");
+      const notice: NoticeCode = result.error === "invalid_phase"
+        ? "build_locked"
+        : result.error || "hero_ability_unavailable";
+      this.callbacks.onNotice(notice);
       return false;
     }
     this.processSimulationEvents();
     this.syncRenderState();
+    this.emitUi(true);
+    return true;
+  }
+
+  usePulse(): boolean {
+    return this.useHeroAbility();
+  }
+
+  upgradeHero(): boolean {
+    const result = this.simulation.upgradeHero();
+    if (!result.ok) {
+      this.callbacks.onNotice(result.error === "invalid_phase" ? "build_locked" : result.error || "hero_upgrade_locked");
+      return false;
+    }
+    this.processSimulationEvents();
+    this.syncRenderState();
+    this.updateRangePreview();
     this.emitUi(true);
     return true;
   }
@@ -285,9 +351,87 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   clearSelection(): void {
     this.selectedPadId = null;
+    this.selectedHero = false;
     this.updatePadVisuals();
+    this.updateHeroSelectionVisuals();
     this.updateRangePreview();
     this.emitUi(true);
+  }
+
+  private createHeroAnchors(): void {
+    this.level.heroAnchors.forEach((point, anchorId) => {
+      const art = createHeroAnchorArt(this, point);
+      const hitZone = this.add.zone(point.x, point.y, 64, 64)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(2_050);
+      hitZone.on("pointerdown", () => this.handleHeroAnchorClick(anchorId));
+      this.heroAnchorViews.set(anchorId, { art, hitZone });
+    });
+  }
+
+  private handleHeroClick(): void {
+    this.selectedHero = true;
+    this.selectedPadId = null;
+    this.selectedBuildType = null;
+    this.updatePadVisuals();
+    this.updateRangePreview();
+    this.updateHeroSelectionVisuals();
+    this.callbacks.onHaptic("light");
+    this.emitUi(true);
+  }
+
+  private handleHeroAnchorClick(anchorId: number): void {
+    const view = this.simulation.readView();
+    if (view.phase !== "setup" || !this.selectedHero) return;
+    const result = this.simulation.moveHero(anchorId);
+    if (!result.ok) {
+      this.callbacks.onNotice(result.error === "invalid_phase" ? "build_locked" : result.error || "invalid_hero_anchor");
+      return;
+    }
+    this.processSimulationEvents();
+    this.syncRenderState();
+    this.updateHeroSelectionVisuals();
+    this.updateRangePreview();
+    this.emitUi(true);
+  }
+
+  private syncHeroView(): void {
+    const view = this.simulation.readView();
+    const hero = view.hero;
+    if (!this.heroView || this.heroView.id !== hero.id) {
+      this.heroView?.hitZone.destroy();
+      this.heroView?.art.container.destroy(true);
+      const art = createHeroArt(this, hero.id, hero);
+      const hitZone = this.add.zone(hero.x, hero.y, 62, 68)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(2_100);
+      hitZone.on("pointerdown", () => this.handleHeroClick());
+      this.heroView = { id: hero.id, art, hitZone };
+    }
+
+    const attackElapsedMs = view.simulationTimeMs - this.lastHeroAttackAtMs;
+    const attackProgress = attackElapsedMs >= 0 && attackElapsedMs <= 260 ? attackElapsedMs / 260 : 0;
+    moveHeroArt(this.heroView.art, hero);
+    this.heroView.hitZone.setPosition(hero.x, hero.y);
+    updateHeroArtPose(this.heroView.art, hero.id, view.simulationTimeMs, false, attackProgress);
+    setHeroAbilityCharge(this.heroView.art, view.heroAbilityAvailable ? 1 : 0);
+    const markedEnemy = hero.markedEnemyId === null
+      ? null
+      : view.enemies.find((enemy) => enemy.id === hero.markedEnemyId) ?? null;
+    this.heroEffects?.setMark(markedEnemy, view.simulationTimeMs);
+    this.updateHeroSelectionVisuals(view);
+  }
+
+  private updateHeroSelectionVisuals(view = this.simulation.readView()): void {
+    if (this.heroView) setHeroArtSelected(this.heroView.art, this.selectedHero);
+    const anchorsAvailable = this.selectedHero && view.phase === "setup";
+    for (const [anchorId, anchor] of this.heroAnchorViews) {
+      const state = anchorsAvailable
+        ? anchorId === view.hero.anchorId ? "selected" : "available"
+        : "hidden";
+      setHeroAnchorState(anchor.art, state);
+      if (anchor.hitZone.input) anchor.hitZone.input.enabled = anchorsAvailable && anchorId !== view.hero.anchorId;
+    }
   }
 
   private createBuildPads(): void {
@@ -316,6 +460,10 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.callbacks.onNotice("build_locked");
       return;
     }
+    this.selectedHero = false;
+    this.updateHeroSelectionVisuals();
+    this.updatePadVisuals();
+    this.updateRangePreview();
     const tower = getTower(this.simulation.readView().campaign, padId);
     if (tower) {
       this.selectedPadId = padId;
@@ -359,16 +507,24 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   private updatePadVisuals(): void {
     const viewState = this.simulation.readView();
+    const heroPlacementActive = this.selectedHero && viewState.phase === "setup";
     for (const [padId, view] of this.padViews) {
       const tower = getTower(viewState.campaign, padId);
       const selected = this.selectedPadId === padId;
       const buildable = !tower && viewState.phase === "setup" && this.selectedBuildType !== null;
+      this.tweens.killTweensOf(view.rune);
+      view.rune.setScale(1);
+      if (heroPlacementActive) {
+        view.ring.setFillStyle(0x071713, tower ? 0.12 : 0.28);
+        view.ring.setStrokeStyle(1, 0x49685c, tower ? 0.08 : 0.24);
+        view.core.setAlpha(tower ? 0.03 : 0.13);
+        view.rune.setAlpha(tower ? 0 : 0.11);
+        continue;
+      }
       view.ring.setFillStyle(selected ? 0x376e5a : buildable ? 0x1f594a : 0x0d2521, selected ? 0.94 : 0.78);
       view.ring.setStrokeStyle(selected ? 3 : 2, selected ? 0xf0d77d : buildable ? 0x75e3bd : 0x5f8b77, selected ? 1 : 0.64);
       view.core.setAlpha(tower ? 0.1 : buildable ? 0.72 : 0.42);
       view.rune.setAlpha(tower ? 0 : buildable ? 0.92 : 0.48);
-      this.tweens.killTweensOf(view.rune);
-      view.rune.setScale(1);
       if (buildable) this.tweens.add({ targets: view.rune, scale: 1.16, duration: 520, yoyo: true, repeat: 1 });
     }
   }
@@ -376,8 +532,21 @@ export class TowerDefenseScene extends Phaser.Scene {
   private updateRangePreview(): void {
     this.rangePreview?.destroy();
     this.rangePreview = undefined;
+    const view = this.simulation.readView();
+    if (this.selectedHero) {
+      const stats = getHeroStats(view.hero.id, view.hero.level);
+      const radius = view.hero.level === 1
+        ? stats.attackRange
+        : view.hero.id === "eira"
+          ? stats.towerDamageAuraRadius
+          : stats.slowAuraRadius;
+      this.rangePreview = this.add.circle(view.hero.x, view.hero.y, radius, 0x7be8c5, 0.055)
+        .setStrokeStyle(2, 0x8debd0, 0.48)
+        .setDepth(3);
+      return;
+    }
     if (this.selectedPadId === null) return;
-    const tower = getTower(this.simulation.readView().campaign, this.selectedPadId);
+    const tower = getTower(view.campaign, this.selectedPadId);
     if (!tower) return;
     const point = this.level.buildPads[tower.padId];
     if (!point) return;
@@ -424,6 +593,32 @@ export class TowerDefenseScene extends Phaser.Scene {
         onComplete: () => pulse.destroy(),
       });
       this.cameras.main.flash(180, 105, 232, 204, false);
+      return;
+    }
+    if (event.type === "hero_attack") {
+      this.lastHeroAttackAtMs = this.simulation.readView().simulationTimeMs;
+      this.heroEffects?.playAttack(event.heroId, event.from, event.to);
+      return;
+    }
+    if (event.type === "hero_moved") {
+      this.syncHeroView();
+      return;
+    }
+    if (event.type === "hero_upgraded") {
+      const hero = this.simulation.readView().hero;
+      this.heroEffects?.playAbility(event.heroId, hero, 34 + event.level * 3);
+      this.cameras.main.flash(150, 226, 196, 104, false);
+      return;
+    }
+    if (event.type === "hero_ability") {
+      const target = event.targetId === null
+        ? null
+        : this.simulation.readView().enemies.find((enemy) => enemy.id === event.targetId);
+      const point = target ?? event;
+      const radius = event.heroId === "eira" ? 28 : event.radius;
+      this.heroEffects?.playAbility(event.heroId, point, radius);
+      if (event.heroId === "toren") this.cameras.main.shake(190, 0.005);
+      else this.cameras.main.flash(130, 215, 195, 92, false);
       return;
     }
     if (event.type === "enemy_healed") {
@@ -486,6 +681,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       return;
     }
     if (event.type === "wave_cleared") {
+      this.selectedHero = false;
       this.selectedBuildType = "ranger";
       this.callbacks.onWaveClear(event.wave, event.bonus, event.repairedLives);
       const view = this.simulation.readView();
@@ -511,6 +707,7 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   private syncRenderState(): void {
     const view = this.simulation.readView();
+    this.syncHeroView();
     this.syncEnemyViews(view.enemies, view.simulationTimeMs);
     this.syncProjectileViews(view.projectiles);
   }
@@ -685,6 +882,9 @@ export class TowerDefenseScene extends Phaser.Scene {
       speed: view.speed,
       selectedBuildType: this.selectedBuildType,
       selectedPadId: this.selectedPadId,
+      selectedHero: this.selectedHero,
+      hero: view.hero,
+      heroAbilityAvailable: view.heroAbilityAvailable,
       currentWave,
       waveProgress: view.phase === "setup"
         ? 0

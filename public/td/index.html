@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-BzbXyi16.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-j3SOzFWv.css">
+    <script type="module" crossorigin src="./assets/index-B2aVmYPV.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CB0-iPV9.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -24,17 +24,8 @@
           <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 24</strong></span></div>
         </section>
         <div class="top-actions">
-          <button id="session-menu-button" class="icon-button" type="button" aria-label="Уровни и режимы" title="Уровни и режимы" hidden>⌂</button>
-          <label class="language-control">
-            <span class="visually-hidden" data-language-label>Язык игры</span>
-            <select data-role="language" aria-label="Язык игры">
-              <option value="ru">RU</option>
-              <option value="uk">UA</option>
-              <option value="en">EN</option>
-            </select>
-          </label>
           <button id="speed-button" class="icon-button" type="button" aria-label="Скорость">×1</button>
-          <button id="pause-button" class="icon-button" type="button" aria-label="Пауза">Ⅱ</button>
+          <button id="game-menu-button" class="icon-button" type="button" aria-controls="game-menu-overlay" aria-expanded="false" aria-label="Меню">☰</button>
         </div>
         <div class="encounter-strip">
           <div id="phase-badge" class="phase-badge">Подготовка</div>
@@ -56,10 +47,6 @@
         <div id="build-panel" class="build-panel">
           <div class="panel-heading">
             <div class="panel-copy"><small id="build-eyebrow">Арсенал</small><strong id="build-hint">Выберите башню и площадку</strong></div>
-            <div class="panel-heading-actions">
-              <button id="fullscreen-button" class="fullscreen-button" type="button" aria-pressed="false" aria-label="Развернуть на весь экран" title="Развернуть на весь экран" hidden>⛶</button>
-              <button id="tower-guide-button" class="tower-guide-button" type="button" aria-controls="tower-guide-overlay" aria-expanded="false" aria-label="Справка по башням" title="Справка по башням">?</button>
-            </div>
           </div>
           <div class="tower-deck">
             <button class="tower-card is-selected" type="button" data-tower="ranger">
@@ -90,6 +77,23 @@
           <div class="tower-actions">
             <button id="upgrade-button" class="primary-action" type="button">Улучшить · 75 ●</button>
             <button id="sell-button" class="secondary-action" type="button">Продать · 39 ●</button>
+          </div>
+        </div>
+
+        <div id="hero-panel" class="hero-panel" hidden>
+          <button id="close-hero-panel" class="panel-close" type="button" aria-label="Закрыть">×</button>
+          <div class="selected-hero">
+            <span id="selected-hero-emblem" class="hero-emblem eira" aria-hidden="true"><i></i></span>
+            <div>
+              <small id="selected-hero-rank">Ранг 1</small>
+              <strong id="selected-hero-name">Эйра</strong>
+              <span id="selected-hero-role">Охотница на сильные цели</span>
+              <p id="selected-hero-hint">Коснись свободной стоянки, чтобы переместить героя.</p>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button id="hero-details-button" class="hero-details-button" type="button" aria-label="Герой и навыки">i</button>
+            <button id="hero-upgrade-button" class="primary-action" type="button">Улучшить · 150 ●</button>
           </div>
         </div>
 
@@ -135,12 +139,113 @@
           </label>
           <small id="session-choice-hint">Выбор сохраняется для тренировочных запусков.</small>
         </div>
+        <button id="hero-choice-button" class="hero-choice-button" type="button" aria-controls="hero-picker" aria-expanded="false">
+          <span id="hero-choice-emblem" class="hero-emblem eira" aria-hidden="true"><i></i></span>
+          <span class="hero-choice-copy">
+            <small id="hero-choice-label">Герой</small>
+            <strong id="hero-choice-name">Эйра</strong>
+            <span id="hero-choice-role">Охотница на сильные цели</span>
+          </span>
+          <span class="hero-choice-chevron" aria-hidden="true">›</span>
+        </button>
+        <small id="hero-choice-lock" class="hero-choice-lock" hidden>Герой закреплён за этим забегом</small>
+        <section id="hero-picker" class="hero-picker" aria-labelledby="hero-picker-title" hidden>
+          <div class="hero-picker-heading">
+            <div>
+              <small id="hero-picker-eyebrow">ГЕРОИ</small>
+              <h2 id="hero-picker-title">Выберите героя</h2>
+            </div>
+            <button id="hero-picker-close" class="hero-picker-close" type="button" aria-label="Закрыть">×</button>
+          </div>
+          <p id="hero-picker-hint">Герой сражается сам. Между волнами его можно перемещать по стоянкам.</p>
+          <div class="hero-options" role="radiogroup" aria-labelledby="hero-picker-title">
+            <button class="hero-option is-selected" type="button" role="radio" aria-checked="true" data-hero-choice="eira">
+              <span class="hero-emblem eira" aria-hidden="true"><i></i></span>
+              <span><strong id="hero-eira-name">Эйра</strong><small id="hero-eira-role">Охотница на сильные цели</small><b id="hero-eira-ability">Метка охотницы</b></span>
+              <i class="hero-option-check" aria-hidden="true">✓</i>
+            </button>
+            <button class="hero-option" type="button" role="radio" aria-checked="false" data-hero-choice="toren">
+              <span class="hero-emblem toren" aria-hidden="true"><i></i></span>
+              <span><strong id="hero-toren-name">Торен</strong><small id="hero-toren-role">Страж против толпы</small><b id="hero-toren-ability">Удар земли</b></span>
+              <i class="hero-option-check" aria-hidden="true">✓</i>
+            </button>
+          </div>
+          <article id="hero-picker-details" class="hero-detail-card" aria-live="polite">
+            <header class="hero-detail-header">
+              <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><i></i></span>
+              <span><small data-hero-detail="rank"><span data-hero-detail-value>Ранг 1</span></small><strong data-hero-detail-name>Эйра</strong><span data-hero-detail-role>Охотница на сильные цели</span></span>
+            </header>
+            <div class="hero-detail-list">
+              <p data-hero-detail="attack"><b data-hero-detail-label>Атака</b><span data-hero-detail-value>Физическая дальняя атака по одной цели.</span></p>
+              <p data-hero-detail="passive"><b data-hero-detail-label>Пассивный навык</b><span data-hero-detail-value>С ранга 2 усиливает башни рядом.</span></p>
+              <p data-hero-detail="ability"><b data-hero-detail-label>Активная способность</b><span data-hero-detail-value>Метка охотницы усиливает урон башен по сильнейшему врагу.</span></p>
+            </div>
+            <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
+          </article>
+          <button id="hero-picker-done" class="modal-primary" type="button">Готово</button>
+        </section>
         <div class="intro-features">
           <span><i class="feature-icon">⌁</i><b id="intro-waves">24 волны</b></span>
           <span><i class="feature-icon">♜</i><b id="intro-towers">4 башни</b></span>
           <span><i class="feature-icon">✺</i><b id="intro-bosses">Боссы</b></span>
         </div>
         <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
+      </section>
+    </div>
+
+    <div id="game-menu-overlay" class="modal-layer game-menu-layer" hidden>
+      <section class="modal-card game-menu-card" role="dialog" aria-modal="true" aria-labelledby="game-menu-title">
+        <header class="game-menu-heading">
+          <div><small id="game-menu-eyebrow" class="modal-eyebrow">ИГРОВОЕ МЕНЮ</small><h2 id="game-menu-title">Меню</h2></div>
+          <button id="game-menu-close" class="guide-close" type="button" aria-label="Закрыть">×</button>
+        </header>
+
+        <button id="game-menu-continue" class="modal-primary" type="button">Продолжить</button>
+
+        <article id="game-menu-hero-details" class="hero-detail-card game-menu-hero-card" tabindex="-1">
+          <header class="hero-detail-header">
+            <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><i></i></span>
+            <span><small data-hero-detail="rank"><span data-hero-detail-value>Ранг 1</span></small><strong data-hero-detail-name>Эйра</strong><span data-hero-detail-role>Охотница на сильные цели</span></span>
+          </header>
+          <div class="hero-detail-list">
+            <p data-hero-detail="attack"><b data-hero-detail-label>Атака</b><span data-hero-detail-value>Физическая дальняя атака по одной цели.</span></p>
+            <p data-hero-detail="passive"><b data-hero-detail-label>Пассивный навык</b><span data-hero-detail-value>С ранга 2 усиливает башни рядом.</span></p>
+            <p data-hero-detail="ability"><b data-hero-detail-label>Активная способность</b><span data-hero-detail-value>Метка охотницы усиливает урон башен по сильнейшему врагу.</span></p>
+          </div>
+          <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
+        </article>
+
+        <div class="game-menu-settings">
+          <fieldset class="game-menu-speed">
+            <legend id="game-menu-speed-label">Скорость</legend>
+            <div role="group" aria-labelledby="game-menu-speed-label">
+              <button type="button" data-menu-speed="1">×1</button>
+              <button type="button" data-menu-speed="2">×2</button>
+            </div>
+          </fieldset>
+          <label class="game-menu-language">
+            <span data-language-label>Язык игры</span>
+            <select data-role="language" aria-label="Язык игры">
+              <option value="ru">RU</option>
+              <option value="uk">UA</option>
+              <option value="en">EN</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="game-menu-actions">
+          <button id="tower-guide-button" class="game-menu-action" type="button" aria-controls="tower-guide-overlay" aria-expanded="false"><span aria-hidden="true">?</span><b id="game-menu-tower-guide-label">Справка по башням</b><i aria-hidden="true">›</i></button>
+          <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="game-menu-fullscreen-label">Развернуть на весь экран</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-session" class="game-menu-action" type="button"><span aria-hidden="true">⌂</span><b id="game-menu-session-label">Уровень и режим</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-restart" class="game-menu-action is-danger" type="button"><span aria-hidden="true">↺</span><b id="game-menu-restart-label">Начать заново и выбрать героя</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-exit" class="game-menu-action" type="button" hidden><span aria-hidden="true">×</span><b id="game-menu-exit-label">Выйти из игры</b><i aria-hidden="true">›</i></button>
+        </div>
+
+        <section id="game-menu-restart-confirm" class="game-menu-confirm" aria-live="polite" hidden>
+          <strong id="game-menu-restart-confirm-title">Начать уровень заново?</strong>
+          <p id="game-menu-restart-confirm-copy">Текущий прогресс будет удалён, после чего можно снова выбрать героя.</p>
+          <div><button id="game-menu-restart-cancel" class="secondary-action" type="button">Отмена</button><button id="game-menu-restart-accept" class="primary-action" type="button">Начать заново</button></div>
+        </section>
       </section>
     </div>
 

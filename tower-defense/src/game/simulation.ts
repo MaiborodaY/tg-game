@@ -14,7 +14,8 @@ import {
   mergeSlowEffect,
   selectHealingTargets,
 } from "./enemyAbilities.ts";
-import type { LevelDefinition, ModeRuleset } from "./content.ts";
+import { CLASSIC_CAMPAIGN_LEVEL, type LevelDefinition, type ModeRuleset } from "./content.ts";
+import { getHeroStats } from "./heroes.ts";
 import { createPathMetrics, samplePointAtDistance, type MutablePoint, type PathMetrics } from "./pathing.ts";
 import {
   applyLeakDamage,
@@ -22,9 +23,11 @@ import {
   buildTower,
   completeWave,
   createWaveCheckpoint,
+  moveHero as moveCampaignHero,
   recordActiveDuration,
   repairLives,
   sellTower,
+  upgradeHero as upgradeCampaignHero,
   upgradeTower,
 } from "./state.ts";
 import type {
@@ -33,6 +36,8 @@ import type {
   CampaignState,
   DamageKind,
   EnemyType,
+  HeroId,
+  HeroLevel,
   Point,
   TowerPlacement,
   TowerStats,
@@ -53,6 +58,7 @@ export type SimulationRules = Readonly<{
   id: string;
   routePoints: readonly Point[];
   buildPads: readonly Point[];
+  heroAnchors: readonly Point[];
   finalWave: number | null;
   isComplete(completedWave: number): boolean;
   createWavePlan(wave: number): WavePlan;
@@ -61,9 +67,10 @@ export type SimulationRules = Readonly<{
 }>;
 
 export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
-  id: "forest-campaign",
+  id: "forest-campaign:heroes-v1",
   routePoints: ROUTE_POINTS,
   buildPads: BUILD_PADS,
+  heroAnchors: CLASSIC_CAMPAIGN_LEVEL.heroAnchors,
   finalWave: FINAL_WAVE,
   isComplete: (completedWave) => completedWave >= FINAL_WAVE,
   createWavePlan,
@@ -74,9 +81,10 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
 export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset): SimulationRules {
   const finalWave = mode.getFinalWave(level);
   return Object.freeze({
-    id: `${level.id}:${mode.id}:v${level.contentVersion}`,
+    id: `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v1`,
     routePoints: level.route,
     buildPads: level.buildPads,
+    heroAnchors: level.heroAnchors,
     finalWave,
     isComplete: (completedWave) => mode.isComplete(level, completedWave),
     createWavePlan: (wave) => mode.createWave(level, wave),
@@ -110,6 +118,17 @@ export type ProjectileSimulationView = Readonly<{
   towerType: TowerType;
 }>;
 
+export type HeroSimulationView = Readonly<{
+  id: HeroId;
+  level: HeroLevel;
+  anchorId: number;
+  x: number;
+  y: number;
+  attackCooldownMs: number;
+  abilityAvailable: boolean;
+  markedEnemyId: number | null;
+}>;
+
 export type SimulationView = Readonly<{
   campaign: CampaignState;
   phase: SimulationPhase;
@@ -119,6 +138,8 @@ export type SimulationView = Readonly<{
   currentWave: number;
   wavePlan: WavePlan | null;
   countdownRemainingMs: number;
+  hero: HeroSimulationView;
+  heroAbilityAvailable: boolean;
   pulseAvailable: boolean;
   waveResolvedCount: number;
   waveTotalCount: number;
@@ -136,6 +157,8 @@ export type SimulationSnapshot = Readonly<{
   simulationTimeMs: number;
   currentWave: number;
   countdownRemainingMs: number;
+  hero: HeroSimulationView;
+  heroAbilityAvailable: boolean;
   pulseAvailable: boolean;
   waveResolvedCount: number;
   waveTotalCount: number;
@@ -148,6 +171,25 @@ export type SimulationEvent =
   | Readonly<{ type: "haptic"; kind: "light" | "medium" | "heavy" | "success" | "error" }>
   | Readonly<{ type: "boss_spawned" }>
   | Readonly<{ type: "pulse" }>
+  | Readonly<{
+      type: "hero_attack";
+      heroId: HeroId;
+      targetId: number;
+      from: Point;
+      to: Point;
+      radius: number;
+    }>
+  | Readonly<{ type: "hero_moved"; heroId: HeroId; anchorId: number; x: number; y: number }>
+  | Readonly<{ type: "hero_upgraded"; heroId: HeroId; level: HeroLevel }>
+  | Readonly<{
+      type: "hero_ability";
+      heroId: HeroId;
+      x: number;
+      y: number;
+      radius: number;
+      targetId: number | null;
+      durationMs: number;
+    }>
   | Readonly<{
       type: "enemy_healed";
       casterId: number;
@@ -206,6 +248,7 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   reward: number;
   leakDamage: number;
   slowUntilMs: number;
+  slowEffectFactor: number;
   slowFactor: number;
   burnUntilMs: number;
   burnDamagePerSecond: number;
@@ -229,16 +272,19 @@ type ProjectileEntity = ProjectileSimulationView & {
 
 export type SimulationCommandResult = Readonly<{
   ok: boolean;
-  error: CampaignError | "invalid_phase" | "pulse_used" | null;
+  error: CampaignError | "invalid_phase" | "hero_ability_unavailable" | "pulse_used" | null;
 }>;
 
 export type SimulationCommand =
   | Readonly<{ type: "build"; padId: number; towerType: TowerType }>
   | Readonly<{ type: "upgrade"; padId: number }>
   | Readonly<{ type: "sell"; padId: number }>
+  | Readonly<{ type: "move_hero"; anchorId: number }>
+  | Readonly<{ type: "upgrade_hero" }>
   | Readonly<{ type: "start_wave" }>
   | Readonly<{ type: "set_paused"; paused: boolean }>
   | Readonly<{ type: "toggle_speed" }>
+  | Readonly<{ type: "use_hero_ability" }>
   | Readonly<{ type: "use_pulse" }>;
 
 export type RecordedSimulationCommand = Readonly<{
@@ -277,7 +323,10 @@ export class GameSimulation {
   private fixedStepAccumulatorMs = 0;
   private completedTicks = 0;
   private nextSpawnIndex = 0;
-  private pulseAvailable = true;
+  private heroAttackCooldownMs = 180;
+  private heroAbilityAvailable = true;
+  private markedEnemyId: number | null = null;
+  private markUntilMs = 0;
   private waveStartLives = 0;
   private waveCheckpoint: CampaignState | null = null;
   private lastCheckpointDurationMs = 0;
@@ -326,7 +375,30 @@ export class GameSimulation {
     return this.completedTicks;
   }
 
+  private readHeroView(): HeroSimulationView {
+    const point = this.getHeroPoint();
+    const markedEnemyId = this.markUntilMs > this.simulationTimeMs && this.enemiesById.has(this.markedEnemyId ?? -1)
+      ? this.markedEnemyId
+      : null;
+    return Object.freeze({
+      ...this.campaign.hero,
+      x: point.x,
+      y: point.y,
+      attackCooldownMs: Math.max(0, this.heroAttackCooldownMs),
+      abilityAvailable: this.heroAbilityAvailable,
+      markedEnemyId,
+    });
+  }
+
+  private getHeroPoint(): Point {
+    const anchors = this.rules.heroAnchors ?? CLASSIC_CAMPAIGN_LEVEL.heroAnchors;
+    return anchors[this.campaign.hero.anchorId]
+      ?? anchors[0]
+      ?? Object.freeze({ x: 0, y: 0 });
+  }
+
   readView(): SimulationView {
+    const hero = this.readHeroView();
     return {
       campaign: this.campaign,
       phase: this.phase,
@@ -336,7 +408,9 @@ export class GameSimulation {
       currentWave: this.campaign.completedWave + 1,
       wavePlan: this.wavePlan,
       countdownRemainingMs: this.countdownRemainingMs,
-      pulseAvailable: this.pulseAvailable,
+      hero,
+      heroAbilityAvailable: this.heroAbilityAvailable,
+      pulseAvailable: this.heroAbilityAvailable,
       waveResolvedCount: this.waveResolvedCount,
       waveTotalCount: this.waveTotalCount,
       enemies: this.enemies,
@@ -357,6 +431,8 @@ export class GameSimulation {
       simulationTimeMs: view.simulationTimeMs,
       currentWave: view.currentWave,
       countdownRemainingMs: view.countdownRemainingMs,
+      hero: Object.freeze({ ...view.hero }),
+      heroAbilityAvailable: view.heroAbilityAvailable,
       pulseAvailable: view.pulseAvailable,
       waveResolvedCount: view.waveResolvedCount,
       waveTotalCount: view.waveTotalCount,
@@ -404,17 +480,23 @@ export class GameSimulation {
   }
 
   executeCommand(command: SimulationCommand): SimulationCommandResult {
-    if (command.type === "build") return this.build(command.padId, command.towerType);
-    if (command.type === "upgrade") return this.upgrade(command.padId);
-    if (command.type === "sell") return this.sell(command.padId);
-    if (command.type === "start_wave") return this.startWave() ? COMMAND_SUCCESS : commandFailure("invalid_phase");
-    if (command.type === "set_paused") return this.setPaused(command.paused) ? COMMAND_SUCCESS : commandFailure("invalid_phase");
-    if (command.type === "toggle_speed") {
-      if (this.phase === "gameover" || this.phase === "victory") return commandFailure("invalid_phase");
-      this.toggleSpeed();
-      return COMMAND_SUCCESS;
+    switch (command.type) {
+      case "build": return this.build(command.padId, command.towerType);
+      case "upgrade": return this.upgrade(command.padId);
+      case "sell": return this.sell(command.padId);
+      case "move_hero": return this.moveHero(command.anchorId);
+      case "upgrade_hero": return this.upgradeHero();
+      case "start_wave": return this.startWave() ? COMMAND_SUCCESS : commandFailure("invalid_phase");
+      case "set_paused": return this.setPaused(command.paused) ? COMMAND_SUCCESS : commandFailure("invalid_phase");
+      case "toggle_speed": {
+        if (this.phase === "gameover" || this.phase === "victory") return commandFailure("invalid_phase");
+        this.toggleSpeed();
+        return COMMAND_SUCCESS;
+      }
+      case "use_hero_ability": return this.useHeroAbility();
+      case "use_pulse": return this.usePulse();
+      default: return assertNeverCommand(command);
     }
-    return this.usePulse();
   }
 
   drainEvents(): readonly SimulationEvent[] {
@@ -457,6 +539,35 @@ export class GameSimulation {
     return COMMAND_SUCCESS;
   }
 
+  moveHero(anchorId: number): SimulationCommandResult {
+    if (this.phase !== "setup") return commandFailure("invalid_phase");
+    const result = moveCampaignHero(this.campaign, anchorId);
+    if (!result.ok) return commandFailure(result.error);
+    this.campaign = result.state;
+    const point = this.getHeroPoint();
+    this.events.push(
+      { type: "hero_moved", heroId: this.campaign.hero.id, anchorId, x: point.x, y: point.y },
+      { type: "persist", campaign: this.campaign },
+      { type: "haptic", kind: "light" },
+    );
+    this.recordCommand({ type: "move_hero", anchorId });
+    return COMMAND_SUCCESS;
+  }
+
+  upgradeHero(): SimulationCommandResult {
+    if (this.phase !== "setup") return commandFailure("invalid_phase");
+    const result = upgradeCampaignHero(this.campaign);
+    if (!result.ok) return commandFailure(result.error);
+    this.campaign = result.state;
+    this.events.push(
+      { type: "hero_upgraded", heroId: this.campaign.hero.id, level: this.campaign.hero.level },
+      { type: "persist", campaign: this.campaign },
+      { type: "haptic", kind: "success" },
+    );
+    this.recordCommand({ type: "upgrade_hero" });
+    return COMMAND_SUCCESS;
+  }
+
   startWave(): boolean {
     if (this.phase !== "setup") return false;
     if (this.rules.isComplete(this.campaign.completedWave)) return false;
@@ -473,7 +584,10 @@ export class GameSimulation {
     this.waveTotalCount = this.wavePlan.spawns.length;
     this.nextDynamicEnemyId = this.wavePlan.wave * 10_000 + this.wavePlan.spawns.length + 100;
     this.waveStartLives = this.campaign.lives;
-    this.pulseAvailable = true;
+    this.heroAttackCooldownMs = 180;
+    this.heroAbilityAvailable = true;
+    this.markedEnemyId = null;
+    this.markUntilMs = 0;
     for (const tower of this.towers.values()) tower.cooldownMs = 180;
     this.phase = "countdown";
     if (this.wavePlan.hasBoss) this.events.push({ type: "haptic", kind: "heavy" });
@@ -496,20 +610,53 @@ export class GameSimulation {
     return this.speed;
   }
 
-  usePulse(): SimulationCommandResult {
-    if (this.phase !== "wave" || this.enemies.length === 0 || !this.pulseAvailable) {
-      return commandFailure("pulse_used");
+  useHeroAbility(): SimulationCommandResult {
+    if (this.phase !== "wave") return commandFailure("invalid_phase");
+    if (this.enemies.length === 0 || !this.heroAbilityAvailable) {
+      return commandFailure("hero_ability_unavailable");
     }
-    this.pulseAvailable = false;
-    const damage = 7 + (this.wavePlan?.wave ?? 1) * 1.5;
-    for (const enemy of [...this.enemies]) {
-      const control = applyControlResistance(0.1, 1_500, enemy.controlResistance);
-      enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
-      this.damageEnemy(enemy, damage, "arcane");
+    const hero = this.campaign.hero;
+    const stats = getHeroStats(hero.id, hero.level);
+    const point = this.getHeroPoint();
+    let targetId: number | null = null;
+
+    if (hero.id === "eira") {
+      const target = this.strongestEnemy(this.enemies);
+      if (!target) return commandFailure("hero_ability_unavailable");
+      targetId = target.id;
+      this.markedEnemyId = target.id;
+      this.markUntilMs = this.simulationTimeMs + stats.markDurationMs;
+    } else {
+      const victims = [...this.enemies].filter((enemy) => squaredDistance(enemy, point) <= stats.abilityRadius ** 2);
+      if (victims.length === 0) return commandFailure("hero_ability_unavailable");
+      for (const enemy of victims) {
+        this.damageEnemy(enemy, stats.abilityDamage, stats.damageKind);
+        if (enemy.dead) continue;
+        const control = applyControlResistance(0.1, stats.abilityStunMs, enemy.controlResistance);
+        enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
+      }
     }
-    this.events.push({ type: "pulse" }, { type: "haptic", kind: "medium" });
-    this.recordCommand({ type: "use_pulse" });
+
+    this.heroAbilityAvailable = false;
+    this.events.push(
+      {
+        type: "hero_ability",
+        heroId: hero.id,
+        x: point.x,
+        y: point.y,
+        radius: stats.abilityRadius,
+        targetId,
+        durationMs: hero.id === "eira" ? stats.markDurationMs : stats.abilityStunMs,
+      },
+      { type: "haptic", kind: "medium" },
+    );
+    this.recordCommand({ type: "use_hero_ability" });
     return COMMAND_SUCCESS;
+  }
+
+  usePulse(): SimulationCommandResult {
+    const result = this.useHeroAbility();
+    return result.ok ? result : commandFailure("pulse_used");
   }
 
   advance(realDeltaMs: number): void {
@@ -542,6 +689,7 @@ export class GameSimulation {
     this.spawnScheduledEnemies();
     this.updateEnemies(deltaMs);
     if (this.phase !== "wave") return;
+    this.updateHero(deltaMs);
     this.updateTowers(deltaMs);
     this.updateProjectiles(deltaMs);
     this.checkWaveResolution();
@@ -601,6 +749,7 @@ export class GameSimulation {
       burning: false,
       enraged: false,
       slowUntilMs: 0,
+      slowEffectFactor: 1,
       slowFactor: 1,
       burnUntilMs: 0,
       burnDamagePerSecond: 0,
@@ -635,7 +784,14 @@ export class GameSimulation {
         continue;
       }
       enemy.burning = enemy.burnUntilMs > this.simulationTimeMs;
-      if (enemy.burning) this.damageEnemy(enemy, enemy.burnDamagePerSecond * (deltaMs / 1_000), "fire", false);
+      if (enemy.burning) {
+        this.damageEnemy(
+          enemy,
+          enemy.burnDamagePerSecond * this.getMarkedTowerDamageMultiplier(enemy) * (deltaMs / 1_000),
+          "fire",
+          false,
+        );
+      }
       if (enemy.dead) continue;
       enemy.stunned = enemy.stunUntilMs > this.simulationTimeMs;
 
@@ -655,8 +811,10 @@ export class GameSimulation {
         }
       }
 
-      enemy.slowed = enemy.slowUntilMs > this.simulationTimeMs;
-      enemy.slowFactor = enemy.slowed ? enemy.slowFactor : 1;
+      const timedSlow = enemy.slowUntilMs > this.simulationTimeMs;
+      const auraSlowFactor = this.getHeroSlowFactor(enemy);
+      enemy.slowed = timedSlow || auraSlowFactor < 1;
+      enemy.slowFactor = Math.min(timedSlow ? enemy.slowEffectFactor : 1, auraSlowFactor);
       enemy.enraged = (enemy.type === "boss" || enemy.type === "titan") && enemy.hp / enemy.maxHp <= 0.4;
       if (!enemy.stunned) {
         enemy.progress += enemy.speed * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
@@ -671,6 +829,78 @@ export class GameSimulation {
       enemy.y = point.y;
       index += 1;
     }
+  }
+
+  private updateHero(deltaMs: number): void {
+    this.heroAttackCooldownMs -= deltaMs;
+    if (this.heroAttackCooldownMs > 0) return;
+    const hero = this.campaign.hero;
+    const stats = getHeroStats(hero.id, hero.level);
+    const point = this.getHeroPoint();
+    const inRange = this.enemies.filter((enemy) => squaredDistance(enemy, point) <= stats.attackRange ** 2);
+    const target = hero.id === "eira"
+      ? inRange.reduce<EnemyEntity | null>((best, enemy) => !best || enemy.progress > best.progress ? enemy : best, null)
+      : chooseTowerTarget("ember", point, stats.attackRange, inRange, stats.attackSplashRadius) as EnemyEntity | null;
+    if (!target) {
+      this.heroAttackCooldownMs = 80;
+      return;
+    }
+
+    this.events.push({
+      type: "hero_attack",
+      heroId: hero.id,
+      targetId: target.id,
+      from: point,
+      to: Object.freeze({ x: target.x, y: target.y }),
+      radius: stats.attackSplashRadius,
+    });
+    const victims = stats.attackSplashRadius > 0
+      ? [...this.enemies].filter((enemy) => squaredDistance(enemy, target) <= stats.attackSplashRadius ** 2)
+      : [target];
+    for (const victim of victims) {
+      if (victim.dead) continue;
+      const falloff = victim.id === target.id ? 1 : 0.72;
+      this.damageEnemy(victim, stats.attackDamage * falloff, stats.damageKind);
+    }
+    this.heroAttackCooldownMs += stats.attackIntervalMs;
+  }
+
+  private getHeroSlowFactor(enemy: EnemyEntity): number {
+    const hero = this.campaign.hero;
+    if (hero.id !== "toren" || hero.level < 2) return 1;
+    const stats = getHeroStats(hero.id, hero.level);
+    if (squaredDistance(enemy, this.getHeroPoint()) > stats.slowAuraRadius ** 2) return 1;
+    return applyControlResistance(stats.slowAuraFactor, 1_000, enemy.controlResistance).slowFactor;
+  }
+
+  private strongestEnemy(candidates: readonly EnemyEntity[]): EnemyEntity | null {
+    return candidates.reduce<EnemyEntity | null>((best, enemy) => {
+      if (!best) return enemy;
+      const strength = enemy.hp + enemy.shield;
+      const bestStrength = best.hp + best.shield;
+      if (strength !== bestStrength) return strength > bestStrength ? enemy : best;
+      if (enemy.progress !== best.progress) return enemy.progress > best.progress ? enemy : best;
+      return enemy.id < best.id ? enemy : best;
+    }, null);
+  }
+
+  private getTowerAuraDamageMultiplier(originPadId: number): number {
+    const hero = this.campaign.hero;
+    if (hero.id !== "eira" || hero.level < 2) return 1;
+    const stats = getHeroStats(hero.id, hero.level);
+    const towerPoint = this.rules.buildPads[originPadId];
+    if (!towerPoint || squaredDistance(towerPoint, this.getHeroPoint()) > stats.towerDamageAuraRadius ** 2) return 1;
+    return stats.towerDamageMultiplier;
+  }
+
+  private getMarkedTowerDamageMultiplier(enemy: EnemyEntity): number {
+    if (enemy.id !== this.markedEnemyId || this.simulationTimeMs >= this.markUntilMs) return 1;
+    const hero = this.campaign.hero;
+    return hero.id === "eira" ? getHeroStats(hero.id, hero.level).markedTowerDamageMultiplier : 1;
+  }
+
+  private getTowerDamageMultiplier(originPadId: number, enemy: EnemyEntity): number {
+    return this.getTowerAuraDamageMultiplier(originPadId) * this.getMarkedTowerDamageMultiplier(enemy);
   }
 
   private updateTowers(deltaMs: number): void {
@@ -761,7 +991,12 @@ export class GameSimulation {
           });
         }
         const bossMultiplier = victim.type === "boss" || victim.type === "titan" ? projectile.stats.bossDamageMultiplier : 1;
-        this.damageEnemy(victim, projectile.stats.damage * Math.pow(0.72, index) * bossMultiplier, projectile.stats.damageKind);
+        const heroMultiplier = this.getTowerDamageMultiplier(projectile.originPadId, victim);
+        this.damageEnemy(
+          victim,
+          projectile.stats.damage * Math.pow(0.72, index) * bossMultiplier * heroMultiplier,
+          projectile.stats.damageKind,
+        );
         previous = victim;
       });
       return;
@@ -773,22 +1008,26 @@ export class GameSimulation {
     for (const victim of victims) {
       const falloff = victim.id === target.id ? 1 : projectile.towerType === "ember" ? 0.68 : 0.5;
       const bossMultiplier = victim.type === "boss" || victim.type === "titan" ? projectile.stats.bossDamageMultiplier : 1;
-      this.damageEnemy(victim, projectile.stats.damage * falloff * bossMultiplier, projectile.stats.damageKind);
+      const heroMultiplier = this.getTowerDamageMultiplier(projectile.originPadId, victim);
+      this.damageEnemy(victim, projectile.stats.damage * falloff * bossMultiplier * heroMultiplier, projectile.stats.damageKind);
       if (victim.dead) continue;
       if (projectile.stats.slowDurationMs > 0) {
         const control = applyControlResistance(projectile.stats.slowFactor, projectile.stats.slowDurationMs, victim.controlResistance);
         const slow = mergeSlowEffect(
-          { factor: victim.slowFactor, untilMs: victim.slowUntilMs },
+          { factor: victim.slowEffectFactor, untilMs: victim.slowUntilMs },
           { factor: control.slowFactor, durationMs: control.durationMs },
           this.simulationTimeMs,
         );
         victim.slowUntilMs = slow.untilMs;
-        victim.slowFactor = slow.factor;
+        victim.slowEffectFactor = slow.factor;
       }
       if (projectile.stats.burnDurationMs > 0) {
         const burn = mergeBurnEffect(
           { damagePerSecond: victim.burnDamagePerSecond, untilMs: victim.burnUntilMs },
-          { damagePerSecond: projectile.stats.burnDamagePerSecond, durationMs: projectile.stats.burnDurationMs },
+          {
+            damagePerSecond: projectile.stats.burnDamagePerSecond * this.getTowerAuraDamageMultiplier(projectile.originPadId),
+            durationMs: projectile.stats.burnDurationMs,
+          },
           this.simulationTimeMs,
         );
         victim.burnUntilMs = burn.untilMs;
@@ -945,7 +1184,9 @@ export class GameSimulation {
     this.waveCheckpoint = null;
     this.fixedStepAccumulatorMs = 0;
     this.phase = this.rules.isComplete(this.campaign.completedWave) ? "victory" : "setup";
-    this.pulseAvailable = true;
+    this.heroAbilityAvailable = true;
+    this.markedEnemyId = null;
+    this.markUntilMs = 0;
     if (this.phase === "victory") this.endRun("victory");
   }
 
@@ -957,6 +1198,8 @@ export class GameSimulation {
     this.wavePlan = null;
     this.waveCheckpoint = null;
     this.projectiles.length = 0;
+    this.markedEnemyId = null;
+    this.markUntilMs = 0;
     if (outcome === "gameover") {
       this.enemies.length = 0;
       this.enemiesById.clear();
@@ -1021,6 +1264,10 @@ const COMMAND_SUCCESS: SimulationCommandResult = Object.freeze({ ok: true, error
 
 function commandFailure(error: SimulationCommandResult["error"]): SimulationCommandResult {
   return Object.freeze({ ok: false, error });
+}
+
+function assertNeverCommand(command: never): never {
+  throw new Error(`Unsupported simulation command: ${String((command as { type?: unknown }).type)}`);
 }
 
 function squaredDistance(

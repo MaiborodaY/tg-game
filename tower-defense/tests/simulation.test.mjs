@@ -15,7 +15,8 @@ import {
 } from "../src/game/simulation.ts";
 import { createCampaignState } from "../src/game/state.ts";
 
-function createTestRules({ finalWave = 1, enemyHp = 1, enemySpeed = 8 } = {}) {
+function createTestRules({ finalWave = 1, enemyHp = 1, enemyHps = null, enemySpeed = 8, controlResistance = 0 } = {}) {
+  const healthValues = enemyHps ?? [enemyHp];
   return Object.freeze({
     id: "test:campaign:v1",
     routePoints: Object.freeze([
@@ -23,29 +24,34 @@ function createTestRules({ finalWave = 1, enemyHp = 1, enemySpeed = 8 } = {}) {
       Object.freeze({ x: 120, y: 20 }),
     ]),
     buildPads: Object.freeze([Object.freeze({ x: 0, y: 0 })]),
+    heroAnchors: Object.freeze([
+      Object.freeze({ x: 0, y: 0 }),
+      Object.freeze({ x: 60, y: 0 }),
+      Object.freeze({ x: 110, y: 0 }),
+    ]),
     finalWave,
     isComplete: (completedWave) => finalWave !== null && completedWave >= finalWave,
     createWavePlan: (wave) => Object.freeze({
       wave,
-      spawns: Object.freeze([Object.freeze({
-        id: wave * 1_000,
+      spawns: Object.freeze(healthValues.map((maxHp, index) => Object.freeze({
+        id: wave * 1_000 + index,
         type: "raider",
         atMs: 0,
-        maxHp: enemyHp,
+        maxHp,
         speed: enemySpeed,
         reward: 5,
         leakDamage: 1,
         physicalResistance: 0,
         magicResistance: 0,
         shieldRatio: 0,
-        controlResistance: 0,
+        controlResistance,
         healingRadius: 0,
         healingRatio: 0,
         elite: false,
         bossTier: 1,
         summonThresholds: Object.freeze([]),
         summonCount: 0,
-      })]),
+      }))),
       clearBonus: 10,
       hasBoss: false,
       act: 1,
@@ -54,6 +60,12 @@ function createTestRules({ finalWave = 1, enemyHp = 1, enemySpeed = 8 } = {}) {
     getBossRepair: () => 0,
     getWaveHealthMultiplier: () => 1,
   });
+}
+
+function advanceToLiveWave(simulation) {
+  for (let index = 0; index < 20 && simulation.readView().phase !== "wave"; index += 1) simulation.advance(250);
+  assert.equal(simulation.readView().phase, "wave");
+  assert.ok(simulation.readView().enemies.length > 0);
 }
 
 test("headless simulation owns combat and reaches a deterministic terminal result", () => {
@@ -115,7 +127,172 @@ test("content levels and modes adapt into simulation rules without Phaser", () =
   assert.equal(campaign.createWavePlan(18).wave, 18);
   assert.equal(endless.finalWave, null);
   assert.equal(endless.createWavePlan(19).wave, 19);
-  assert.match(campaign.id, /northern-pass:campaign/);
+  assert.match(campaign.id, /northern-pass:campaign.*heroes-v1/);
+});
+
+test("hero movement and upgrades are setup-only deterministic commands", () => {
+  const campaign = {
+    ...createCampaignState(),
+    completedWave: 4,
+    gold: 1_000,
+  };
+  const simulation = new GameSimulation(campaign, createTestRules({ finalWave: null, enemyHp: 10_000 }));
+  assert.deepEqual(simulation.moveHero(1), { ok: true, error: null });
+  assert.equal(simulation.readView().hero.anchorId, 1);
+  assert.deepEqual(simulation.upgradeHero(), { ok: true, error: null });
+  assert.equal(simulation.getCampaign().hero.level, 2);
+  assert.equal(simulation.getCampaign().gold, 850);
+  const events = simulation.drainEvents();
+  assert.ok(events.some((event) => event.type === "hero_moved" && event.anchorId === 1));
+  assert.ok(events.some((event) => event.type === "hero_upgraded" && event.level === 2));
+
+  assert.equal(simulation.startWave(), true);
+  assert.equal(simulation.moveHero(2).error, "invalid_phase");
+  assert.equal(simulation.upgradeHero().error, "invalid_phase");
+  assert.deepEqual(
+    simulation.exportReplay().commands.map((entry) => entry.command.type),
+    ["move_hero", "upgrade_hero", "start_wave"],
+  );
+});
+
+test("Eira marks the strongest enemy once per wave for tower damage", () => {
+  const campaign = {
+    ...createCampaignState({ heroId: "eira" }),
+    hero: { id: "eira", level: 2, anchorId: 0 },
+  };
+  const simulation = new GameSimulation(
+    campaign,
+    createTestRules({ finalWave: null, enemyHps: [500, 1_000], enemySpeed: 2 }),
+  );
+  assert.equal(simulation.useHeroAbility().error, "invalid_phase");
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.drainEvents();
+
+  assert.deepEqual(simulation.useHeroAbility(), { ok: true, error: null });
+  assert.equal(simulation.readView().hero.markedEnemyId, 1_001);
+  assert.equal(simulation.readView().heroAbilityAvailable, false);
+  assert.equal(simulation.readView().pulseAvailable, false);
+  assert.equal(simulation.useHeroAbility().error, "hero_ability_unavailable");
+  assert.ok(simulation.drainEvents().some((event) => (
+    event.type === "hero_ability" && event.heroId === "eira" && event.targetId === 1_001
+  )));
+});
+
+test("Eira rank-two aura increases damage from nearby towers", () => {
+  const baseRules = createTestRules({ finalWave: null, enemyHp: 5_000, enemySpeed: 0.01 });
+  const rules = Object.freeze({
+    ...baseRules,
+    routePoints: Object.freeze([
+      Object.freeze({ x: 55, y: 20 }),
+      Object.freeze({ x: 56, y: 20 }),
+    ]),
+  });
+  const remainingHp = (anchorId) => {
+    const campaign = {
+      ...createCampaignState({ heroId: "eira" }),
+      hero: { id: "eira", level: 2, anchorId },
+    };
+    const simulation = new GameSimulation(campaign, rules);
+    simulation.build(0, "ranger");
+    simulation.startWave();
+    for (let index = 0; index < 20; index += 1) simulation.advance(250);
+    return simulation.readView().enemies[0].hp;
+  };
+
+  assert.ok(remainingHp(0) < remainingHp(2));
+});
+
+test("Toren shock damages and stuns enemies inside his local aura", () => {
+  const campaign = {
+    ...createCampaignState({ heroId: "toren" }),
+    hero: { id: "toren", level: 2, anchorId: 0 },
+  };
+  const simulation = new GameSimulation(
+    campaign,
+    createTestRules({ finalWave: null, enemyHps: [500, 500], enemySpeed: 2 }),
+  );
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.drainEvents();
+  const beforeHp = simulation.readView().enemies.map((enemy) => enemy.hp);
+
+  assert.deepEqual(simulation.executeCommand({ type: "use_hero_ability" }), { ok: true, error: null });
+  assert.ok(simulation.readView().enemies.every((enemy, index) => enemy.hp < beforeHp[index]));
+  simulation.advance(FIXED_STEP_MS);
+  assert.ok(simulation.readView().enemies.every((enemy) => enemy.stunned));
+  assert.ok(simulation.readView().enemies.every((enemy) => enemy.slowed));
+  assert.equal(simulation.executeCommand({ type: "use_hero_ability" }).error, "hero_ability_unavailable");
+  assert.ok(simulation.drainEvents().some((event) => (
+    event.type === "hero_ability" && event.heroId === "toren" && event.radius > 0
+  )));
+});
+
+test("Toren auto-attacks clustered enemies with deterministic short splash", () => {
+  const simulation = new GameSimulation(
+    createCampaignState({ heroId: "toren" }),
+    createTestRules({ finalWave: null, enemyHps: [200, 200], enemySpeed: 2 }),
+  );
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.drainEvents();
+  for (let index = 0; index < 6; index += 1) simulation.advance(100);
+
+  assert.ok(simulation.readView().enemies.every((enemy) => enemy.hp < 200));
+  assert.ok(simulation.drainEvents().some((event) => (
+    event.type === "hero_attack" && event.heroId === "toren" && event.radius > 0
+  )));
+});
+
+test("hero ability commands replay to the same transient combat snapshot", () => {
+  const campaign = {
+    ...createCampaignState({ heroId: "toren" }),
+    hero: { id: "toren", level: 3, anchorId: 0 },
+  };
+  const rules = createTestRules({ finalWave: null, enemyHps: [2_000, 2_000], enemySpeed: 2 });
+  const simulation = new GameSimulation(campaign, rules);
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.useHeroAbility();
+  for (let index = 0; index < 12; index += 1) simulation.advance(100);
+
+  const replay = simulation.exportReplay();
+  const restored = replaySimulation(replay, rules);
+  assert.deepEqual(restored.createSnapshot(), simulation.createSnapshot());
+  assert.ok(replay.commands.some((entry) => entry.command.type === "use_hero_ability"));
+});
+
+test("wave checkpoints keep hero build state but reset transient ability use on reopen", () => {
+  const campaign = {
+    ...createCampaignState({ heroId: "toren" }),
+    hero: { id: "toren", level: 2, anchorId: 1 },
+  };
+  const rules = createTestRules({ finalWave: null, enemyHp: 10_000, enemySpeed: 2 });
+  const simulation = new GameSimulation(campaign, rules);
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.useHeroAbility();
+  simulation.drainEvents();
+  for (let index = 0; index < 12; index += 1) simulation.advance(100);
+  const checkpoint = simulation.drainEvents()
+    .filter((event) => event.type === "persist")
+    .at(-1)?.campaign;
+  assert.ok(checkpoint);
+  assert.deepEqual(checkpoint.hero, campaign.hero);
+
+  const restored = new GameSimulation(checkpoint, rules);
+  assert.equal(restored.readView().phase, "setup");
+  assert.equal(restored.readView().heroAbilityAvailable, true);
+  assert.deepEqual(restored.readView().hero, {
+    id: "toren",
+    level: 2,
+    anchorId: 1,
+    x: 60,
+    y: 0,
+    attackCooldownMs: 180,
+    abilityAvailable: true,
+    markedEnemyId: null,
+  });
 });
 
 test("an exported command log replays to the same terminal snapshot", () => {

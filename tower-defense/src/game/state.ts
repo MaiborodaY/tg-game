@@ -12,18 +12,29 @@ import {
   type LevelDefinition,
   type ModeRuleset,
 } from "./content.ts";
-import type { CampaignError, CampaignResult, CampaignState, TowerLevel, TowerPlacement, TowerType } from "./types.ts";
+import { getHeroUpgradeCost, getHeroUpgradeWaveGate } from "./heroes.ts";
+import type {
+  CampaignError,
+  CampaignResult,
+  CampaignState,
+  HeroId,
+  HeroLevel,
+  TowerLevel,
+  TowerPlacement,
+  TowerType,
+} from "./types.ts";
 
 export type CreateRunStateOptions = Readonly<{
   level?: LevelDefinition;
   mode?: ModeRuleset;
+  heroId?: HeroId;
 }>;
 
 export function createCampaignState(options: CreateRunStateOptions = {}): CampaignState {
   const level = options.level ?? CLASSIC_CAMPAIGN_LEVEL;
   const mode = options.mode ?? CAMPAIGN_RULESET;
   return freezeState({
-    version: 4,
+    version: 5,
     contentVersion: CONTENT_VERSION,
     levelId: level.id,
     modeId: mode.id,
@@ -32,8 +43,33 @@ export function createCampaignState(options: CreateRunStateOptions = {}): Campai
     completedWave: 0,
     totalKills: 0,
     activeDurationMs: 0,
+    hero: Object.freeze({ id: options.heroId ?? "eira", level: 1, anchorId: 0 }),
     towers: [],
   });
+}
+
+export function moveHero(state: CampaignState, anchorId: number): CampaignResult {
+  const level = getLevelDefinition(state.levelId);
+  if (!level || !Number.isInteger(anchorId) || anchorId < 0 || anchorId >= level.heroAnchors.length) {
+    return failure(state, "invalid_hero_anchor");
+  }
+  return success(state, {
+    hero: Object.freeze({ ...state.hero, anchorId }),
+  }, 0);
+}
+
+export function upgradeHero(state: CampaignState): CampaignResult {
+  const currentLevel = state.hero.level;
+  if (currentLevel >= 3) return failure(state, "hero_max_level");
+  const gate = getHeroUpgradeWaveGate(currentLevel);
+  if (gate !== null && state.completedWave < gate) return failure(state, "hero_upgrade_locked");
+  const cost = getHeroUpgradeCost(state.hero.id, currentLevel);
+  if (cost === null) return failure(state, "hero_max_level");
+  if (state.gold < cost) return failure(state, "insufficient_gold");
+  return success(state, {
+    gold: state.gold - cost,
+    hero: Object.freeze({ ...state.hero, level: (currentLevel + 1) as HeroLevel }),
+  }, -cost);
 }
 
 export function buildTower(state: CampaignState, padId: number, type: TowerType): CampaignResult {
@@ -119,7 +155,7 @@ export function getTower(state: CampaignState, padId: number): TowerPlacement | 
 
 function success(
   state: CampaignState,
-  patch: Partial<Pick<CampaignState, "gold" | "lives" | "completedWave" | "totalKills" | "activeDurationMs" | "towers">>,
+  patch: Partial<Pick<CampaignState, "gold" | "lives" | "completedWave" | "totalKills" | "activeDurationMs" | "hero" | "towers">>,
   goldDelta: number,
 ): CampaignResult {
   return Object.freeze({ state: freezeState({ ...state, ...patch }), ok: true, error: null, goldDelta });
@@ -130,7 +166,11 @@ function failure(state: CampaignState, error: CampaignError): CampaignResult {
 }
 
 function freezeState(state: CampaignState): CampaignState {
-  return Object.freeze({ ...state, towers: Object.freeze([...state.towers]) });
+  return Object.freeze({
+    ...state,
+    hero: Object.freeze({ ...state.hero }),
+    towers: Object.freeze([...state.towers]),
+  });
 }
 
 function isValidPad(state: CampaignState, padId: number): boolean {

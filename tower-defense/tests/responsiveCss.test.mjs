@@ -6,6 +6,23 @@ import { BUILD_PAD_HIT_SIZE } from "../src/game/config.ts";
 const css = readFileSync(new globalThis.URL("../src/styles.css", import.meta.url), "utf8");
 const html = readFileSync(new globalThis.URL("../index.html", import.meta.url), "utf8");
 
+function elementMarkupById(source, id) {
+  const idIndex = source.indexOf(`id="${id}"`);
+  if (idIndex < 0) return "";
+  const start = source.lastIndexOf("<", idIndex);
+  const openingTag = source.slice(start).match(/^<([a-z][a-z0-9-]*)\b[^>]*>/i);
+  if (!openingTag) return "";
+  const tagName = openingTag[1];
+  const tokens = new RegExp(`<\\/?${tagName}\\b[^>]*>`, "gi");
+  tokens.lastIndex = start;
+  let depth = 0;
+  for (let token = tokens.exec(source); token; token = tokens.exec(source)) {
+    depth += token[0].startsWith("</") ? -1 : 1;
+    if (depth === 0) return source.slice(start, tokens.lastIndex);
+  }
+  return "";
+}
+
 test("short Telegram viewports keep controls and modals vertically reachable", () => {
   const shortViewport = css.match(/@media \(max-height: 519px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.match(shortViewport, /html \{ height: auto; min-height: 100%; overflow-y: auto;/);
@@ -22,7 +39,7 @@ test("canvas build pads retain generous touch hit slop after scaling", () => {
 test("compact match controls retain 44px touch targets", () => {
   assert.match(css, /\.language-control \{[^}]*width:\s*44px;[^}]*min-height:\s*44px;/s);
   assert.match(css, /\.icon-button \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
-  assert.match(css, /\.language-control--modal \{[^}]*position:\s*absolute;[^}]*top:\s*10px;[^}]*left:\s*10px;/s);
+  assert.match(css, /\.game-menu-action[^\{]*\{[^}]*min-height:\s*44px;/s);
 });
 
 test("tall portrait viewports match the battlefield to the Phaser scene aspect ratio", () => {
@@ -53,17 +70,44 @@ test("build and selected tower states share one stable controls height", () => {
   assert.match(css, /\.tower-deck \{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/s);
 });
 
-test("tower guide and fullscreen actions remain reachable without increasing compact rows", () => {
-  assert.match(css, /\.tower-guide-button \{[^}]*width:\s*28px;[^}]*height:\s*28px;/s);
-  assert.match(css, /\.tower-guide-button::after \{[^}]*inset:\s*-8px;/s);
-  assert.match(css, /\.fullscreen-button \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
-  assert.match(css, /\.fullscreen-button\[aria-pressed="true"\] \{/);
-  assert.match(css, /\.panel-heading \{[^}]*position:\s*absolute;[^}]*min-height:\s*44px;/s);
-  assert.match(css, /\.panel-heading-actions \{[^}]*display:\s*flex;[^}]*gap:\s*8px;/s);
-  assert.match(css, /\.tower-deck \{[^}]*padding-right:\s*34px;/s);
-  assert.match(css, /\.build-panel\.has-fullscreen-control \.tower-deck \{ padding-right:\s*84px; \}/);
+test("selected heroes reuse the stable controls height without a fifth build card", () => {
+  assert.match(css, /\.hero-panel \{[^}]*min-height:\s*var\(--tower-controls-height\);[^}]*height:\s*100%;/s);
+  assert.match(css, /\.hero-panel\[hidden\] \{ display:\s*none; \}/);
+  assert.match(css, /\.hero-actions button \{[^}]*min-height:\s*44px;/s);
+  assert.equal(html.match(/data-tower=/g)?.length, 4);
+  assert.match(html, /id="hero-panel" class="hero-panel" hidden/);
+});
+
+test("the game menu keeps auxiliary actions reachable without reserving command-panel space", () => {
+  const topActions = html.match(/<div class="top-actions">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  const menuMarkup = elementMarkupById(html, "game-menu-overlay");
+
+  assert.match(topActions, /id="game-menu-button"/);
+  assert.match(topActions, /id="speed-button"/);
+  if (/data-role="language"/.test(topActions)) {
+    assert.match(topActions, /<(?:label|div)[^>]*(?:\bhidden\b|aria-hidden="true"|is-hidden)[^>]*>[\s\S]*data-role="language"/);
+  }
+  assert.match(menuMarkup, /data-role="language"/);
+  assert.match(menuMarkup, /id="fullscreen-button"/);
+  assert.match(menuMarkup, /id="tower-guide-button"/);
+  assert.doesNotMatch(css, /\.build-panel\.has-fullscreen-control \.tower-deck/);
   assert.match(css, /\.guide-card \{[^}]*max-height:\s*100%;/s);
   assert.match(css, /\.guide-card \{[^}]*overflow-y:\s*auto;/s);
+});
+
+test("the game menu is a safe-area-aware bottom sheet that remains scrollable on mobile", () => {
+  const overlayTag = html.match(/<div[^>]*id="game-menu-overlay"[^>]*>/)?.[0] ?? "";
+  const menuLayer = css.match(/\.game-menu-layer \{([^}]*)\}/s)?.[1] ?? "";
+  const menuCard = css.match(/\.game-menu-card \{([^}]*)\}/s)?.[1] ?? "";
+  const shortViewport = css.match(/@media \(max-height: 519px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+
+  assert.match(overlayTag, /class="[^"]*\bmodal-layer\b[^"]*\bgame-menu-layer\b[^"]*"/);
+  assert.match(menuLayer, /(?:align-items|place-items):\s*(?:end|flex-end)/);
+  assert.match(menuCard, /max-height:/);
+  assert.match(menuCard, /overflow-y:\s*auto/);
+  assert.match(menuCard, /overscroll-behavior:\s*contain/);
+  assert.match(css, /\.modal-layer \{[^}]*env\(safe-area-inset-bottom\)[^}]*var\(--tg-safe-area-inset-bottom, 0px\)[^}]*var\(--tg-content-safe-area-inset-bottom, 0px\)[^}]*var\(--td-safe-area-inset-bottom\)[^}]*var\(--td-content-safe-area-inset-bottom\)/s);
+  assert.match(shortViewport, /\.modal-layer \{ display:\s*block; overflow-y:\s*auto;/);
 });
 
 test("phase, boss health, and pulse controls stay outside the battlefield", () => {

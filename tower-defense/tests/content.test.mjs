@@ -70,6 +70,18 @@ test("northern pass is a distinct finite PvE level with its own difficulty curve
   assert.ok(first.spawns.every(Object.isFrozen));
 });
 
+test("every level exposes three immutable hero anchors clear of tower tap zones", () => {
+  for (const level of Object.values(CONTENT_CATALOG.levels)) {
+    assert.equal(level.heroAnchors.length, 3);
+    assert.ok(Object.isFrozen(level.heroAnchors));
+    assert.ok(level.heroAnchors.every(Object.isFrozen));
+    for (const anchor of level.heroAnchors) {
+      const closestPadDistance = Math.min(...level.buildPads.map((pad) => Math.hypot(anchor.x - pad.x, anchor.y - pad.y)));
+      assert.ok(closestPadDistance >= 64, `${level.id} hero anchor overlaps a tower touch zone`);
+    }
+  }
+});
+
 test("campaign ruleset delegates waves and completion to the selected level", () => {
   assert.equal(CAMPAIGN_RULESET.getFinalWave(CLASSIC_CAMPAIGN_LEVEL), 24);
   assert.equal(CAMPAIGN_RULESET.getFinalWave(NORTHERN_PASS_LEVEL), 18);

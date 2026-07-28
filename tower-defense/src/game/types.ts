@@ -1,5 +1,7 @@
 export type TowerType = "ranger" | "frost" | "ember" | "storm";
 export type TowerLevel = 1 | 2 | 3 | 4;
+export type HeroId = "eira" | "toren";
+export type HeroLevel = 1 | 2 | 3;
 export type DamageKind = "physical" | "frost" | "fire" | "arcane";
 export type EnemyType = "raider" | "swift" | "brute" | "warden" | "shade" | "bulwark" | "shaman" | "boss" | "titan";
 export type CampaignAct = 1 | 2 | 3;
@@ -12,8 +14,14 @@ export type TowerPlacement = Readonly<{
   level: TowerLevel;
 }>;
 
+export type HeroState = Readonly<{
+  id: HeroId;
+  level: HeroLevel;
+  anchorId: number;
+}>;
+
 export type RunState = Readonly<{
-  version: 4;
+  version: 5;
   contentVersion: number;
   levelId: string;
   modeId: string;
@@ -22,6 +30,7 @@ export type RunState = Readonly<{
   completedWave: number;
   totalKills: number;
   activeDurationMs: number;
+  hero: HeroState;
   towers: readonly TowerPlacement[];
 }>;
 
@@ -92,10 +101,13 @@ export type WavePlan = Readonly<{
 
 export type CampaignError =
   | "invalid_pad"
+  | "invalid_hero_anchor"
   | "pad_occupied"
   | "pad_empty"
   | "insufficient_gold"
   | "max_level"
+  | "hero_max_level"
+  | "hero_upgrade_locked"
   | "mastery_locked"
   | "invalid_wave";
 
