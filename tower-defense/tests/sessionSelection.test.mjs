@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   readSessionSelection,
+  resolveServerSessionSelection,
   resolveSessionSelection,
   SESSION_SELECTION_KEY,
   writeSessionSelection,
@@ -20,6 +21,33 @@ test("reward runs are pinned to the original finite campaign", () => {
   const resolved = resolveSessionSelection("server", { levelId: "northern-pass", modeId: "endless" });
   assert.deepEqual(resolved.selection, { levelId: "forest-gate", modeId: "campaign" });
   assert.equal(resolved.locked, true);
+});
+
+test("reward runs use their validated server binding and ignore local selection", () => {
+  const binding = { contentVersion: 2, levelId: "northern-pass", modeId: "endless" };
+  const resolved = resolveSessionSelection(
+    "server",
+    { levelId: "forest-gate", modeId: "campaign" },
+    binding,
+  );
+  assert.deepEqual(resolved.selection, { levelId: "northern-pass", modeId: "endless" });
+  assert.equal(resolved.level.id, "northern-pass");
+  assert.equal(resolved.mode.id, "endless");
+  assert.equal(resolved.locked, true);
+
+  assert.deepEqual(resolveServerSessionSelection(binding).selection, {
+    levelId: "northern-pass",
+    modeId: "endless",
+  });
+
+  assert.throws(
+    () => resolveServerSessionSelection({ ...binding, contentVersion: 999 }),
+    /Invalid Tower Defense server content binding/,
+  );
+  assert.throws(
+    () => readSessionSelection(null, "server", { ...binding, levelId: "toString" }),
+    /Invalid Tower Defense server content binding/,
+  );
 });
 
 test("selection storage fails closed and keeps only valid catalog ids", () => {

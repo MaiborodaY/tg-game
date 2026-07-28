@@ -120,6 +120,9 @@ const ru = {
   reward_saving: "Сохраняем результат…",
   reward_saved: "Результат сохранён",
   reward_duplicate: "Этот результат уже был учтён",
+  profile_sync_pending: "Результат сохранён, профиль обновится позже",
+  profile_sync_retry: "Обновить профиль",
+  profile_sync_retry_failed: "Награда сохранена, профиль пока не обновлён",
   reward_failed: "Не удалось сохранить результат",
   reward_retry: "Повторить отправку",
   restart: "Начать заново",
@@ -127,6 +130,10 @@ const ru = {
   close_hint: "Можно закрыть игру и вернуться в Telegram",
   finish_pending_hint: "Не закрывай игру, пока результат сохраняется.",
   finish_failed_hint: "Не закрывай игру: повтори отправку результата.",
+  run_resumed: "Продолжаем защиту: следующая волна — {wave}",
+  run_resume_unavailable: "Сервер нашёл незавершённый забег, но локальное сохранение на этом устройстве недоступно. Игра начнётся сначала.",
+  run_replaced: "Этот забег уже закрыт. Можно начать новый.",
+  local_save_unavailable: "Локальное сохранение недоступно — после закрытия прогресс этой партии не восстановится.",
 } as const;
 
 export type TranslationKey = keyof typeof ru;
@@ -244,6 +251,9 @@ const uk = {
   reward_saving: "Зберігаємо результат…",
   reward_saved: "Результат збережено",
   reward_duplicate: "Цей результат уже враховано",
+  profile_sync_pending: "Результат збережено, профіль оновиться пізніше",
+  profile_sync_retry: "Оновити профіль",
+  profile_sync_retry_failed: "Нагороду збережено, профіль поки не оновлено",
   reward_failed: "Не вдалося зберегти результат",
   reward_retry: "Надіслати ще раз",
   restart: "Почати заново",
@@ -251,6 +261,10 @@ const uk = {
   close_hint: "Можна закрити гру й повернутися до Telegram",
   finish_pending_hint: "Не закривай гру, доки результат зберігається.",
   finish_failed_hint: "Не закривай гру: надішли результат ще раз.",
+  run_resumed: "Продовжуємо захист: наступна хвиля — {wave}",
+  run_resume_unavailable: "Сервер знайшов незавершений забіг, але локальне збереження на цьому пристрої недоступне. Гра почнеться спочатку.",
+  run_replaced: "Цей забіг уже закрито. Можна почати новий.",
+  local_save_unavailable: "Локальне збереження недоступне — після закриття прогрес цієї партії не відновиться.",
 } satisfies Record<TranslationKey, string>;
 
 const en = {
@@ -365,6 +379,9 @@ const en = {
   reward_saving: "Saving result…",
   reward_saved: "Result saved",
   reward_duplicate: "This result has already been recorded",
+  profile_sync_pending: "Result saved; the profile will update later",
+  profile_sync_retry: "Update profile",
+  profile_sync_retry_failed: "Reward saved; the profile has not updated yet",
   reward_failed: "Could not save the result",
   reward_retry: "Try again",
   restart: "Start over",
@@ -372,6 +389,10 @@ const en = {
   close_hint: "You can close the game and return to Telegram",
   finish_pending_hint: "Keep the game open while the result is being saved.",
   finish_failed_hint: "Keep the game open and try sending the result again.",
+  run_resumed: "Defense resumed: the next wave is {wave}",
+  run_resume_unavailable: "The server found your unfinished run, but its local save is unavailable on this device. The game will start over.",
+  run_replaced: "This run is already closed. You can start a new one.",
+  local_save_unavailable: "Local saving is unavailable. Closing the game will lose this run's progress.",
 } satisfies Record<TranslationKey, string>;
 
 export const translations: Readonly<Record<Locale, Readonly<Record<TranslationKey, string>>>> = {

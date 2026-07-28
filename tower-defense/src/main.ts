@@ -18,8 +18,10 @@ import {
 import {
   readSessionSelection,
   resolveSessionSelection,
+  resolveServerSessionSelection,
   writeSessionSelection,
 } from "./game/sessionSelection.ts";
+import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
@@ -35,14 +37,17 @@ import {
 import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
 import {
   captureFinalResult,
+  captureFinishSubmission,
   clearMiniAppReward,
   createRewardFinisher,
   decideRewardLaunch,
-  loadMiniAppReward,
+  loadMiniAppBootstrap,
   parseLaunchParams,
-  saveMiniAppReward,
+  replaceMiniAppBootstrap,
+  saveMiniAppBootstrap,
   startMiniAppReward,
   type FinalResult,
+  type MiniAppBootstrap,
   type RewardFinisher,
   type RewardLaunch,
 } from "./reward.ts";
@@ -72,16 +77,19 @@ if (pendingStartButton instanceof HTMLButtonElement) pendingStartButton.disabled
 const launchDecision = decideRewardLaunch(legacyLaunch, telegram.initData);
 const isMiniAppLaunch = launchDecision.kind === "miniapp";
 let launch = legacyLaunch;
+let miniAppBootstrap: MiniAppBootstrap | null = null;
 let launchError: "invalid_launch" | "miniapp_start_failed" | null = legacyLaunch.rewardError;
 if (launchDecision.kind === "miniapp") {
-  const cachedReward = loadMiniAppReward(session);
-  if (cachedReward) {
-    launch = Object.freeze({ ...legacyLaunch, reward: cachedReward, rewardError: null });
+  const cachedBootstrap = loadMiniAppBootstrap(session);
+  if (cachedBootstrap) {
+    miniAppBootstrap = cachedBootstrap;
+    launch = Object.freeze({ ...legacyLaunch, reward: cachedBootstrap.reward, rewardError: null });
     launchError = null;
   } else {
     const started = await startMiniAppReward(launchDecision.initData);
     if (started.ok) {
-      saveMiniAppReward(session, started.reward);
+      miniAppBootstrap = started.bootstrap;
+      saveMiniAppBootstrap(session, started.bootstrap);
       launch = Object.freeze({ ...legacyLaunch, reward: started.reward, rewardError: null });
       launchError = null;
     } else {
@@ -95,10 +103,15 @@ if (launchDecision.kind === "miniapp") {
 const rewardUsedKey = launch.reward.runId ? "td-reward-used-v1:" + launch.reward.runId : null;
 const rewardAlreadyUsed = rewardUsedKey ? readFlag(storage, rewardUsedKey) : false;
 if (isMiniAppLaunch && rewardAlreadyUsed) clearMiniAppReward(session);
-const reward: RewardLaunch = rewardAlreadyUsed
+let reward: RewardLaunch = rewardAlreadyUsed
   ? Object.freeze({ mode: "local", runId: null, token: null, runNumber: null, finishUrl: null })
   : launch.reward;
-let selectedSession = readSessionSelection(storage, reward.mode);
+let selectedSession = miniAppBootstrap && reward.mode === "server"
+  ? resolveServerSessionSelection(miniAppBootstrap.binding)
+  : reward.mode === "server"
+    // Legacy signed URL launches predate server content bindings and stay on the classic campaign.
+    ? resolveSessionSelection("server", null)
+    : readSessionSelection(storage, "local");
 let saveKey = getCampaignSaveKey(
   reward.mode === "server" ? reward.runId : null,
   selectedSession.level.id,
@@ -110,12 +123,13 @@ const canMigrateLegacy = selectedSession.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
 const migrated = !savedCampaign && canMigrateLegacy
   ? migrateLegacyCampaign(storage, reward.mode === "server" ? reward.runId : null)
   : null;
+const restoredCheckpoint = savedCampaign || migrated;
 const pendingAtLaunch = reward.mode === "server" && reward.runId
   ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE)
   : null;
 let initialCampaign = pendingAtLaunch
   ? createCampaignState({ level: selectedSession.level, mode: selectedSession.mode })
-  : savedCampaign || migrated || createCampaignState({ level: selectedSession.level, mode: selectedSession.mode });
+  : restoredCheckpoint || createCampaignState({ level: selectedSession.level, mode: selectedSession.mode });
 
 let latestUi: TowerDefenseUiState | null = null;
 let rewardFinisher: RewardFinisher | null = null;
@@ -128,6 +142,11 @@ let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
 let introReturnsToRun = false;
 let sessionSwitching = false;
+let localSaveWarningShown = false;
+let finishAuthRefreshAttempted = false;
+let finishRunReplaced = false;
+let replacementBootstrapCached = false;
+let playerProfile: PlayerProfileSnapshot | null = miniAppBootstrap?.profile ?? null;
 
 const elements = {
   appShell: byId("app"),
@@ -215,6 +234,7 @@ const elements = {
 };
 
 elements.appShell.inert = true;
+applyPlayerProfile(playerProfile);
 applyStaticTranslations();
 applyLaunchErrorTranslations();
 telegram.setClosingConfirmation(reward.mode === "server" && !finishSettled);
@@ -225,7 +245,10 @@ const gameCallbacks: TowerDefenseCallbacks = {
     renderUi(ui);
   },
   onPersist: (campaign) => {
-    saveCampaign(storage, saveKey, campaign);
+    if (!saveCampaign(storage, saveKey, campaign) && !localSaveWarningShown) {
+      localSaveWarningShown = true;
+      showToast(text("local_save_unavailable"), true);
+    }
   },
   onNotice: showNotice,
   onWaveClear: (_wave, bonus, repairedLives) => {
@@ -240,6 +263,7 @@ let scene: TowerDefenseScene = mounted.scene;
 
 bindInteractions();
 restorePendingFinish();
+showRestoredRunStatus();
 if (!elements.introOverlay.hidden) elements.introStart.focus();
 else if (elements.resultOverlay.hidden) elements.appShell.inert = false;
 
@@ -281,7 +305,11 @@ function bindInteractions(): void {
     if (launchError === "miniapp_start_failed") window.location.reload();
     else dismissIntro();
   });
-  elements.rewardRetry.addEventListener("click", () => void finishReward());
+  elements.rewardRetry.addEventListener("click", () => {
+    if (finishRunReplaced) return;
+    finishAuthRefreshAttempted = false;
+    void finishReward();
+  });
   elements.restartButton.addEventListener("click", restartGame);
 
   document.addEventListener("visibilitychange", () => {
@@ -417,7 +445,7 @@ function showToast(message: string, isError = false): void {
   elements.toast.textContent = message;
   elements.toast.classList.toggle("is-error", isError);
   elements.toast.classList.add("is-visible");
-  toastTimer = setTimeout(() => elements.toast.classList.remove("is-visible"), 2_200);
+  toastTimer = setTimeout(() => elements.toast.classList.remove("is-visible"), isError ? 5_200 : 2_800);
 }
 
 function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
@@ -429,7 +457,15 @@ function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState[
   const pendingSaved = reward.mode === "server" && savePendingResult(storage, reward.runId, outcome, result, completedWaves);
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
   showResult(outcome, result, completedWaves, finalWave);
-  rewardFinisher = createRewardFinisher(reward, result);
+  finishAuthRefreshAttempted = false;
+  finishRunReplaced = false;
+  replacementBootstrapCached = false;
+  rewardFinisher = createRewardFinisher(reward, captureFinishSubmission(
+    result.score,
+    result.durationMs,
+    outcome === "victory" ? "victory" : "defeat",
+    completedWaves,
+  ));
   void finishReward();
 }
 
@@ -450,17 +486,54 @@ async function finishReward(): Promise<void> {
     telegram.setClosingConfirmation(false);
     return;
   }
+  if (!result.ok && result.error === "http_403") {
+    if (await refreshFinishAuthorization()) {
+      await finishReward();
+      return;
+    }
+    if (finishRunReplaced) {
+      finishSettled = true;
+      removePendingResult(storage, reward.runId);
+      elements.rewardStatus.textContent = text("run_replaced");
+      elements.restartButton.hidden = false;
+      elements.closeHint.textContent = text("close_hint");
+      telegram.setClosingConfirmation(false);
+      return;
+    }
+  }
   if (result.ok) {
     finishSettled = true;
+    if (result.profile) applyPlayerProfile(result.profile);
     elements.rewardStatus.classList.add("is-success");
-    elements.rewardStatus.textContent = text(result.duplicate ? "reward_duplicate" : "reward_saved");
+    elements.rewardStatus.textContent = text(
+      result.profileSync === "pending"
+        ? "profile_sync_pending"
+        : result.duplicate
+          ? "reward_duplicate"
+          : "reward_saved",
+    );
     elements.restartButton.hidden = false;
     elements.closeHint.textContent = text("close_hint");
     telegram.setClosingConfirmation(false);
+    if (result.profileSync === "pending") {
+      elements.rewardRetry.textContent = text("profile_sync_retry");
+      elements.rewardRetry.hidden = false;
+      return;
+    }
     if (rewardUsedKey) writeFlag(storage, rewardUsedKey);
     if (isMiniAppLaunch) clearMiniAppReward(session);
     clearCampaign(storage, saveKey);
     removePendingResult(storage, reward.runId);
+    return;
+  }
+  if (finishSettled) {
+    elements.rewardStatus.classList.add("is-success");
+    elements.rewardStatus.textContent = text("profile_sync_retry_failed");
+    elements.rewardRetry.textContent = text("profile_sync_retry");
+    elements.rewardRetry.hidden = false;
+    elements.restartButton.hidden = false;
+    elements.closeHint.textContent = text("close_hint");
+    telegram.setClosingConfirmation(false);
     return;
   }
   elements.rewardStatus.classList.add("is-error");
@@ -468,6 +541,39 @@ async function finishReward(): Promise<void> {
   elements.rewardRetry.hidden = false;
   elements.closeHint.textContent = text("finish_failed_hint");
   telegram.setClosingConfirmation(true);
+}
+
+async function refreshFinishAuthorization(): Promise<boolean> {
+  if (
+    finishAuthRefreshAttempted
+    || launchDecision.kind !== "miniapp"
+    || reward.mode !== "server"
+    || !rewardFinisher
+  ) return false;
+  finishAuthRefreshAttempted = true;
+  const currentRunId = reward.runId;
+  const refreshed = await startMiniAppReward(launchDecision.initData, { resumeRunId: currentRunId });
+  if (!refreshed.ok) return false;
+  const bootstrapCached = replaceMiniAppBootstrap(session, refreshed.bootstrap);
+  if (refreshed.reward.runId !== currentRunId) {
+    finishRunReplaced = true;
+    replacementBootstrapCached = bootstrapCached;
+    return false;
+  }
+
+  reward = refreshed.reward;
+  miniAppBootstrap = refreshed.bootstrap;
+  applyPlayerProfile(refreshed.bootstrap.profile);
+  const previous = rewardFinisher;
+  rewardFinisher = createRewardFinisher(reward, previous.finishMetadata
+    ? captureFinishSubmission(
+      previous.finalResult.score,
+      previous.finalResult.durationMs,
+      previous.finishMetadata.outcome,
+      previous.finishMetadata.completedWaves,
+    )
+    : previous.finalResult);
+  return true;
 }
 
 function showResult(
@@ -505,9 +611,37 @@ function restorePendingFinish(): void {
     return;
   }
   terminalResult = captureFinalResult(pending.score, pending.durationMs);
-  rewardFinisher = createRewardFinisher(reward, terminalResult);
+  finishAuthRefreshAttempted = false;
+  finishRunReplaced = false;
+  replacementBootstrapCached = false;
+  rewardFinisher = createRewardFinisher(reward, captureFinishSubmission(
+    terminalResult.score,
+    terminalResult.durationMs,
+    pending.outcome === "victory" ? "victory" : "defeat",
+    pending.waves,
+  ));
   showResult(pending.outcome, terminalResult, pending.waves, FINAL_WAVE);
   void finishReward();
+}
+
+function showRestoredRunStatus(): void {
+  if (reward.mode !== "server" || pendingAtLaunch) return;
+  if (restoredCheckpoint && hasRunProgress(restoredCheckpoint)) {
+    const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
+    const nextWave = finalWave === null
+      ? restoredCheckpoint.completedWave + 1
+      : Math.min(finalWave, restoredCheckpoint.completedWave + 1);
+    showToast(text("run_resumed", { wave: nextWave }));
+    return;
+  }
+  if (miniAppBootstrap?.resumed) showToast(text("run_resume_unavailable"), true);
+}
+
+function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
+  if (!profile) return;
+  playerProfile = profile;
+  elements.appShell.dataset.profileRevision = String(playerProfile.revision);
+  elements.appShell.dataset.unlockedLevels = String(playerProfile.unlockedLevelIds.length);
 }
 
 async function switchPracticeSession(levelId: string, modeId: string): Promise<void> {
@@ -598,6 +732,11 @@ function restartGame(): void {
   if (reward.mode === "server" && !finishSettled) return;
   clearCampaign(storage, saveKey);
   clearCampaign(storage, LEGACY_SAVE_KEY);
+  if (reward.mode === "server") {
+    removePendingResult(storage, reward.runId);
+    // A replacement bootstrap belongs to the next run and must survive this reload.
+    if (isMiniAppLaunch && !replacementBootstrapCached) clearMiniAppReward(session);
+  }
   window.location.reload();
 }
 

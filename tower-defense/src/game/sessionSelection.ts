@@ -6,6 +6,7 @@ import {
   type LevelDefinition,
   type ModeRuleset,
 } from "./content.ts";
+import { sanitizeServerRunBinding, type ServerRunBinding } from "./runBinding.ts";
 import type { StorageLike } from "./save.ts";
 
 export const SESSION_SELECTION_KEY = "td-session-selection-v1";
@@ -30,24 +31,34 @@ const DEFAULT_SELECTION: SessionSelection = Object.freeze({
 export function resolveSessionSelection(
   rewardMode: "local" | "server",
   candidate: unknown,
+  serverBinding?: ServerRunBinding | null,
 ): ResolvedSessionSelection {
-  const selection = rewardMode === "server" ? DEFAULT_SELECTION : sanitizeSelection(candidate) ?? DEFAULT_SELECTION;
+  const selection = rewardMode === "server"
+    ? resolveServerSelection(serverBinding)
+    : sanitizeSelection(candidate) ?? DEFAULT_SELECTION;
   const level = getLevelDefinition(selection.levelId);
   const mode = getModeRuleset(selection.modeId);
   if (!level || !mode) throw new Error("Default Tower Defense content is unavailable.");
   return Object.freeze({ selection, level, mode, locked: rewardMode === "server" });
 }
 
+export function resolveServerSessionSelection(bindingValue: unknown): ResolvedSessionSelection {
+  const binding = sanitizeServerRunBinding(bindingValue);
+  if (!binding) throw new Error("Invalid Tower Defense server content binding.");
+  return resolveSessionSelection("server", null, binding);
+}
+
 export function readSessionSelection(
   storage: StorageLike | null,
   rewardMode: "local" | "server",
+  serverBinding?: ServerRunBinding | null,
 ): ResolvedSessionSelection {
-  if (!storage || rewardMode === "server") return resolveSessionSelection(rewardMode, null);
+  if (!storage || rewardMode === "server") return resolveSessionSelection(rewardMode, null, serverBinding);
   try {
     const raw = storage.getItem(SESSION_SELECTION_KEY);
-    return resolveSessionSelection(rewardMode, raw ? JSON.parse(raw) : null);
+    return resolveSessionSelection(rewardMode, raw ? JSON.parse(raw) : null, serverBinding);
   } catch {
-    return resolveSessionSelection(rewardMode, null);
+    return resolveSessionSelection(rewardMode, null, serverBinding);
   }
 }
 
@@ -66,6 +77,13 @@ function sanitizeSelection(value: unknown): SessionSelection | null {
   if (!isRecord(value) || typeof value.levelId !== "string" || typeof value.modeId !== "string") return null;
   if (!getLevelDefinition(value.levelId) || !getModeRuleset(value.modeId)) return null;
   return Object.freeze({ levelId: value.levelId, modeId: value.modeId });
+}
+
+function resolveServerSelection(bindingValue: ServerRunBinding | null | undefined): SessionSelection {
+  if (bindingValue == null) return DEFAULT_SELECTION;
+  const binding = sanitizeServerRunBinding(bindingValue);
+  if (!binding) throw new Error("Invalid Tower Defense server content binding.");
+  return Object.freeze({ levelId: binding.levelId, modeId: binding.modeId });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

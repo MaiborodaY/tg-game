@@ -28,6 +28,13 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("en", "fullscreen_exit"), "Exit fullscreen");
   assert.equal(tr("ru", "tower_storm"), "Грозовой шпиль");
   assert.equal(tr("uk", "enemy_titan"), "Титан розлому");
+  assert.equal(tr("ru", "run_resumed", { wave: 3 }), "Продолжаем защиту: следующая волна — 3");
+  assert.match(tr("uk", "run_resume_unavailable"), /локальне збереження/);
+  assert.match(tr("en", "local_save_unavailable"), /Closing the game/);
+  assert.equal(tr("ru", "run_replaced"), "Этот забег уже закрыт. Можно начать новый.");
+  assert.equal(tr("ru", "profile_sync_pending"), "Результат сохранён, профиль обновится позже");
+  assert.equal(tr("en", "profile_sync_retry"), "Update profile");
+  assert.equal(tr("uk", "profile_sync_retry_failed"), "Нагороду збережено, профіль поки не оновлено");
   assert.equal(detectLocale("uk-UA"), "uk");
 });
 

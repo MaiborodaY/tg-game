@@ -52,9 +52,43 @@ test("practice exposes content selection while rewarded runs stay pinned", () =>
   assert.match(html, /id="session-picker"/);
   assert.match(html, /id="level-select"/);
   assert.match(html, /id="mode-select"/);
-  assert.match(mainSource, /readSessionSelection\(storage, reward\.mode\)/);
+  assert.match(mainSource, /resolveServerSessionSelection\(miniAppBootstrap\.binding\)/);
+  assert.match(mainSource, /resolveSessionSelection\("server", null\)/);
+  assert.match(mainSource, /readSessionSelection\(storage, "local"\)/);
   assert.match(mainSource, /loadCampaign\(storage, saveKey, selectedSession\.selection\)/);
   assert.match(mainSource, /elements\.sessionPicker\.hidden = selectedSession\.locked/);
   assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching\) return/);
   assert.match(mainSource, /elements\.sessionMenuButton\.addEventListener\("click", openSessionMenu\)/);
+});
+
+test("Mini App bootstrap cache preserves the server run binding without durable token storage", () => {
+  assert.match(mainSource, /const cachedBootstrap = loadMiniAppBootstrap\(session\)/);
+  assert.match(mainSource, /const started = await startMiniAppReward\(launchDecision\.initData\)/);
+  assert.match(mainSource, /saveMiniAppBootstrap\(session, started\.bootstrap\)/);
+  assert.doesNotMatch(mainSource, /saveMiniAppBootstrap\(storage/);
+});
+
+test("rewarded checkpoints resume visibly and blocked local saves warn only once", () => {
+  assert.match(mainSource, /const restoredCheckpoint = savedCampaign \|\| migrated/);
+  assert.match(mainSource, /restoredCheckpoint && hasRunProgress\(restoredCheckpoint\)/);
+  assert.match(mainSource, /showToast\(text\("run_resumed", \{ wave: nextWave \}\)\)/);
+  assert.match(mainSource, /miniAppBootstrap\?\.resumed[\s\S]*showToast\(text\("run_resume_unavailable"\), true\)/);
+  assert.match(mainSource, /!saveCampaign\(storage, saveKey, campaign\) && !localSaveWarningShown/);
+  assert.match(mainSource, /localSaveWarningShown = true;[\s\S]*text\("local_save_unavailable"\)/);
+});
+
+test("fresh, pending and reauthorized terminal submissions keep immutable metadata", () => {
+  assert.equal(mainSource.match(/captureFinishSubmission\(/g)?.length, 3);
+  assert.match(mainSource, /outcome === "victory" \? "victory" : "defeat",\s*completedWaves/);
+  assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : "defeat",\s*pending\.waves/);
+  assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*"profile_sync_pending"/);
+  assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*text\("profile_sync_retry"\)[\s\S]*rewardRetry\.hidden = false/);
+  assert.match(mainSource, /result\.error === "http_403"[\s\S]*refreshFinishAuthorization\(\)/);
+  assert.match(mainSource, /startMiniAppReward\(launchDecision\.initData, \{ resumeRunId: currentRunId \}\)/);
+  assert.match(mainSource, /bootstrapCached = replaceMiniAppBootstrap\(session, refreshed\.bootstrap\)/);
+  assert.match(mainSource, /refreshed\.reward\.runId !== currentRunId[\s\S]*finishRunReplaced = true;[\s\S]*replacementBootstrapCached = bootstrapCached;[\s\S]*return false/);
+  assert.match(mainSource, /if \(finishRunReplaced\) \{[\s\S]*finishSettled = true;[\s\S]*"run_replaced"[\s\S]*restartButton\.hidden = false/);
+  assert.match(mainSource, /rewardRetry\.addEventListener\("click", \(\) => \{\s*if \(finishRunReplaced\) return/);
+  assert.match(mainSource, /removePendingResult\(storage, reward\.runId\);[\s\S]*isMiniAppLaunch && !replacementBootstrapCached[\s\S]*clearMiniAppReward\(session\)/);
+  assert.match(mainSource, /if \(finishSettled\)[\s\S]*"profile_sync_retry_failed"[\s\S]*restartButton\.hidden = false[\s\S]*setClosingConfirmation\(false\)/);
 });

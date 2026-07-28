@@ -29,21 +29,36 @@ content catalog + saved RunState
 - `rendering/TowerDefenseScene.ts` converts simulation views into Phaser
   objects. It must not become the source of truth for health, economy, wave
   completion or scoring.
-- `main.ts` owns DOM presentation and adapters to Telegram/reward APIs. Server
-  reward launches are pinned to the original `forest-gate/campaign` contract;
-  practice choices cannot alter that run.
+- `main.ts` owns DOM presentation and adapters to Telegram/reward APIs. A server
+  reward launch uses the validated content binding returned by `/start`;
+  practice choices cannot alter that run. The backend currently binds rewarded
+  runs to `forest-gate/campaign`.
 
 ## State ownership
 
 `RunState` is a disposable checkpoint for one match: selected content IDs,
 gold, lives, wave progress, time and tower placements. Save keys are isolated by
-level and mode, and old saves are migrated into schema v4.
+run, level and mode, and old saves are migrated into schema v4. Rewarded
+checkpoints live in browser `localStorage`; they resume on the same device but
+are not a cross-device cloud save.
 
-`PlayerProfileSnapshot` is a separate, server-oriented cross-run model for
-level unlocks, best finite-campaign results and cosmetics. It must never contain
-run tokens, gold, lives, active timers or placements. Its mutation helpers are
-domain primitives, not authorization: only trusted server code may decide that
-an unlock, result or cosmetic grant is legitimate.
+`PlayerProfileSnapshot` is the browser transport for a D1-backed cross-run model
+of level unlocks and best finite-campaign results. Cosmetic fields are reserved
+in the transport for a later phase; the backend does not persist cosmetics or
+loadouts yet. The profile must never contain run tokens, gold, lives, active
+timers or placements. Its mutation helpers are domain primitives, not
+authorization: only trusted server code may decide that an unlock, result or
+cosmetic grant is legitimate.
+
+Reward credentials and the full `/start` bootstrap are kept in
+`sessionStorage`, never `localStorage`. When the Mini App is reopened without
+that session cache, the authenticated backend returns the same unexpired
+`run_id` and a rotated token. That identity selects the existing local
+checkpoint. Finishing the run settles the reward ledger first and then projects
+the result into the D1 profile idempotently; a duplicate finish may retry a
+pending projection. If another WebView rotates the token, a rejected finish
+refreshes authorization through `/start` and resubmits only when the backend
+returns the same `run_id`.
 
 DOM/Phaser UI state is derived from the simulation and is never persisted as
 gameplay truth.
@@ -59,6 +74,10 @@ Before competitive ratings, valuable progression rewards or any economy tied
 to new PvE modes are enabled, the server must verify an authoritative result
 (for example, by replaying a bounded command log against the exact content
 version). Client-side signatures or localStorage metadata do not solve this.
+
+The current server profile is therefore a PvE foundation, not proof of fair
+play. `northern-pass` is a non-economic unlock; heroes and PvP remain outside
+this phase.
 
 ## Adding content safely
 
