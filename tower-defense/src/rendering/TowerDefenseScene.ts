@@ -11,7 +11,7 @@ import {
   type LevelDefinition,
   type ModeRuleset,
 } from "../game/content.ts";
-import { getHeroStats } from "../game/heroes.ts";
+import { getHeroAura, getHeroStats } from "../game/heroes.ts";
 import { createPathMetrics, getRouteAngleAtDistance } from "../game/pathing.ts";
 import {
   GameSimulation,
@@ -146,6 +146,11 @@ type HeroAnchorRenderView = {
   hitZone: Phaser.GameObjects.Zone;
 };
 
+type HeroAuraTowerHighlight = {
+  ring: Phaser.GameObjects.Arc;
+  badge: Phaser.GameObjects.Text;
+};
+
 export class TowerDefenseScene extends Phaser.Scene {
   private readonly callbacks: TowerDefenseCallbacks;
   private readonly level: LevelDefinition;
@@ -166,6 +171,8 @@ export class TowerDefenseScene extends Phaser.Scene {
   private heroEffects?: HeroEffectPool;
   private lastHeroAttackAtMs = -1_000;
   private rangePreview?: Phaser.GameObjects.Arc;
+  private heroAuraPreview?: Phaser.GameObjects.Arc;
+  private readonly heroAuraTowerHighlights = new Map<number, HeroAuraTowerHighlight>();
   private lastUiEmitAt = -1_000;
   private lastBurnVfxAtMs = -1_000;
   private worldArt?: WorldArt;
@@ -532,17 +539,26 @@ export class TowerDefenseScene extends Phaser.Scene {
   private updateRangePreview(): void {
     this.rangePreview?.destroy();
     this.rangePreview = undefined;
+    this.heroAuraPreview?.destroy();
+    this.heroAuraPreview = undefined;
+    for (const highlight of this.heroAuraTowerHighlights.values()) {
+      highlight.ring.destroy();
+      highlight.badge.destroy();
+    }
+    this.heroAuraTowerHighlights.clear();
     const view = this.simulation.readView();
     if (this.selectedHero) {
       const stats = getHeroStats(view.hero.id, view.hero.level);
-      const radius = view.hero.level === 1
-        ? stats.attackRange
-        : view.hero.id === "eira"
-          ? stats.towerDamageAuraRadius
-          : stats.slowAuraRadius;
-      this.rangePreview = this.add.circle(view.hero.x, view.hero.y, radius, 0x7be8c5, 0.055)
-        .setStrokeStyle(2, 0x8debd0, 0.48)
+      this.rangePreview = this.add.circle(view.hero.x, view.hero.y, stats.attackRange, 0x7be8c5, 0.025)
+        .setStrokeStyle(1, 0x8debd0, 0.58)
         .setDepth(3);
+      const aura = getHeroAura(view.hero.id, view.hero.level);
+      if (!aura) return;
+      const auraColor = aura.kind === "tower_damage" ? 0xf1cc69 : 0x75d8ef;
+      this.heroAuraPreview = this.add.circle(view.hero.x, view.hero.y, aura.radius, auraColor, 0.045)
+        .setStrokeStyle(3, auraColor, 0.88)
+        .setDepth(2);
+      if (aura.kind === "tower_damage") this.highlightAuraTowers(view.campaign.towers, aura.radius, aura.strength);
       return;
     }
     if (this.selectedPadId === null) return;
@@ -554,6 +570,33 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.rangePreview = this.add.circle(point.x, point.y, stats.range, 0x7be8c5, 0.055)
       .setStrokeStyle(2, 0x8debd0, 0.48)
       .setDepth(3);
+  }
+
+  private highlightAuraTowers(towers: readonly TowerPlacement[], radius: number, strength: number): void {
+    const hero = this.simulation.readView().hero;
+    const radiusSquared = radius ** 2;
+    const bonus = Math.round(strength * 100);
+    for (const tower of towers) {
+      const point = this.level.buildPads[tower.padId];
+      if (!point) continue;
+      const dx = point.x - hero.x;
+      const dy = point.y - hero.y;
+      if (dx * dx + dy * dy > radiusSquared) continue;
+      const ring = this.add.circle(point.x, point.y, 24, 0xf1cc69, 0.09)
+        .setStrokeStyle(3, 0xf5d77f, 0.92)
+        .setDepth(point.y + 44);
+      const badge = this.add.text(point.x, point.y - 29, `+${bonus}%`, {
+        color: "#fff1b6",
+        backgroundColor: "#493a20",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "9px",
+        fontStyle: "bold",
+        padding: { x: 3, y: 1 },
+        stroke: "#20352b",
+        strokeThickness: 2,
+      }).setOrigin(0.5).setDepth(2_200);
+      this.heroAuraTowerHighlights.set(tower.padId, { ring, badge });
+    }
   }
 
   private shakePad(padId: number): void {

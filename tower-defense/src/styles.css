@@ -458,6 +458,11 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .selected-hero span,
 .selected-hero p { grid-column: 1 / -1; margin: 0; overflow: hidden; color: #b7cbbf; font-size: 7px; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .selected-hero p { color: #7fae98; }
+.selected-hero p::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: #6f9482; box-shadow: 0 0 5px rgba(111,148,130,0.4); }
+.selected-hero p[data-aura="tower_damage"] { color: #ead38a; }
+.selected-hero p[data-aura="tower_damage"]::before { background: #f1cc69; box-shadow: 0 0 7px rgba(241,204,105,0.72); }
+.selected-hero p[data-aura="slow"] { color: #9bdced; }
+.selected-hero p[data-aura="slow"]::before { background: #75d8ef; box-shadow: 0 0 7px rgba(117,216,239,0.68); }
 .hero-actions { display: flex; min-width: 0; }
 .hero-actions button { min-width: 92px; min-height: 44px; padding: 3px 6px; font-size: 8px; }
 .hero-actions .hero-details-button {

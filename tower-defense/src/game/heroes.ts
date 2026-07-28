@@ -28,6 +28,12 @@ export type HeroDefinition = Readonly<{
   levels: Readonly<Record<HeroLevel, HeroStats>>;
 }>;
 
+export type HeroAura = Readonly<{
+  kind: "tower_damage" | "slow";
+  radius: number;
+  strength: number;
+}>;
+
 export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object.freeze({
   eira: defineHero("eira", [150, 480], [
     {
@@ -137,6 +143,14 @@ export function getHeroDefinition(id: HeroId): HeroDefinition {
 
 export function getHeroStats(id: HeroId, level: HeroLevel): HeroStats {
   return HERO_DEFINITIONS[id].levels[level];
+}
+
+export function getHeroAura(id: HeroId, level: HeroLevel): HeroAura | null {
+  if (level < 2) return null;
+  const stats = getHeroStats(id, level);
+  return id === "eira"
+    ? Object.freeze({ kind: "tower_damage", radius: stats.towerDamageAuraRadius, strength: stats.towerDamageMultiplier - 1 })
+    : Object.freeze({ kind: "slow", radius: stats.slowAuraRadius, strength: 1 - stats.slowAuraFactor });
 }
 
 export function getHeroUpgradeCost(id: HeroId, level: HeroLevel): number | null {

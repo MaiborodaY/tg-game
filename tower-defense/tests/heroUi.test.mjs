@@ -55,12 +55,18 @@ test("fresh sessions always reach hero choice before their renderer mounts", () 
 test("selected map hero reuses the compact command controls and active ability button", () => {
   assert.match(html, /id="hero-panel" class="hero-panel" hidden/);
   assert.match(html, /id="hero-upgrade-button"/);
-  assert.match(html, /id="selected-hero-hint"/);
+  assert.match(html, /id="selected-hero-hint" data-aura="locked"/);
   assert.match(mainSource, /const heroSelected = ui\.selectedHero && !selected/);
   assert.match(mainSource, /elements\.buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
   assert.match(mainSource, /elements\.heroPanel\.hidden = !heroSelected/);
   assert.match(mainSource, /currentScene\(\)\?\.upgradeHero\(\)/);
   assert.match(mainSource, /currentScene\(\)\?\.useHeroAbility\(\)/);
+  assert.match(mainSource, /function syncHeroAuraStatus\(ui: TowerDefenseUiState\)/);
+  assert.match(mainSource, /hero_eira_aura_status/);
+  assert.match(mainSource, /hero_toren_aura_status/);
+  assert.match(mainSource, /dx \* dx \+ dy \* dy <= radiusSquared \? total \+ 1 : total/);
+  assert.match(css, /p\[data-aura="tower_damage"\][\s\S]*#f1cc69/);
+  assert.match(css, /p\[data-aura="slow"\][\s\S]*#75d8ef/);
   assert.doesNotMatch(mainSource, /pulseButton\.addEventListener\("click", \(\) => currentScene\(\)\?\.usePulse\(\)\)/);
 });
 

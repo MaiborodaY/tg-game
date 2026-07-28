@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   HERO_DEFINITIONS,
   HERO_IDS,
+  getHeroAura,
   getHeroStats,
   getHeroUpgradeCost,
   getHeroUpgradeWaveGate,
@@ -49,4 +50,16 @@ test("Eira scales tower support while Toren scales splash and control", () => {
   assert.ok(torenThree.attackSplashRadius > torenOne.attackSplashRadius);
   assert.ok(torenThree.slowAuraFactor < 1);
   assert.ok(torenThree.abilityDamage > torenOne.abilityDamage);
+});
+
+test("hero aura summaries expose only unlocked passive radii and strengths", () => {
+  assert.equal(getHeroAura("eira", 1), null);
+  assert.equal(getHeroAura("toren", 1), null);
+  const eiraAura = getHeroAura("eira", 2);
+  const torenAura = getHeroAura("toren", 3);
+  assert.deepEqual({ kind: eiraAura?.kind, radius: eiraAura?.radius }, { kind: "tower_damage", radius: 105 });
+  assert.deepEqual({ kind: torenAura?.kind, radius: torenAura?.radius }, { kind: "slow", radius: 115 });
+  assert.equal(Math.round((eiraAura?.strength ?? 0) * 100), 8);
+  assert.equal(Math.round((torenAura?.strength ?? 0) * 100), 14);
+  assert.ok(Object.isFrozen(eiraAura));
 });

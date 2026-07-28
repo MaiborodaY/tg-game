@@ -65,6 +65,9 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "hero_detail_ability",
     "hero_detail_next_upgrade",
     "hero_placement_hint",
+    "hero_aura_unlock",
+    "hero_eira_aura_status",
+    "hero_toren_aura_status",
   ];
   const params = {
     rank: 2,
@@ -76,6 +79,8 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     damage: 10,
     range: 120,
     percent: 8,
+    bonus: 8,
+    slow: 14,
     duration: 6,
     effect: "aura +8%",
   };

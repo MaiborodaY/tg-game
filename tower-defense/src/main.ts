@@ -22,7 +22,7 @@ import {
 } from "./game/sessionSelection.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
-import { getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
+import { getHeroAura, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
@@ -583,7 +583,7 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.selectedHeroRank.textContent = text("hero_rank", { count: hero.level });
     elements.selectedHeroName.textContent = heroName(hero.id);
     elements.selectedHeroRole.textContent = heroRole(hero.id);
-    elements.selectedHeroHint.textContent = text("hero_placement_hint");
+    syncHeroAuraStatus(ui);
     elements.heroDetailsButton.setAttribute("aria-label", text("game_menu_hero_details"));
     elements.heroUpgradeButton.textContent = upgradeCost === null
       ? text("hero_max_rank")
@@ -611,6 +611,38 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.startWaveButton.textContent = plan.hasBoss ? text("boss_wave") : text("start_wave");
   elements.practiceBadge.hidden = reward.mode === "server";
   syncGameMenuUi(ui);
+}
+
+function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
+  const aura = getHeroAura(ui.hero.id, ui.hero.level);
+  if (!aura) {
+    elements.selectedHeroHint.dataset.aura = "locked";
+    elements.selectedHeroHint.textContent = text("hero_aura_unlock");
+    elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
+    return;
+  }
+
+  elements.selectedHeroHint.dataset.aura = aura.kind;
+  if (aura.kind === "slow") {
+    elements.selectedHeroHint.textContent = text("hero_toren_aura_status", {
+      slow: Math.round(aura.strength * 100),
+    });
+  } else {
+    const level = CONTENT_CATALOG.levels[ui.levelId];
+    const radiusSquared = aura.radius ** 2;
+    const count = ui.campaign.towers.reduce((total, tower) => {
+      const point = level?.buildPads[tower.padId];
+      if (!point) return total;
+      const dx = point.x - ui.hero.x;
+      const dy = point.y - ui.hero.y;
+      return dx * dx + dy * dy <= radiusSquared ? total + 1 : total;
+    }, 0);
+    elements.selectedHeroHint.textContent = text("hero_eira_aura_status", {
+      count,
+      bonus: Math.round(aura.strength * 100),
+    });
+  }
+  elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
 }
 
 function renderWavePreview(_wave: number, types: readonly EnemyType[]): void {

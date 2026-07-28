@@ -70,12 +70,15 @@ test("the Phaser scene derives hero rendering and selection from simulation stat
   assert.match(sceneSource, /heroAbilityAvailable: view\.heroAbilityAvailable/);
 });
 
-test("selected heroes reuse the range preview for their primary level mechanic", () => {
-  assert.match(sceneSource, /import \{ getHeroStats \} from "\.\.\/game\/heroes\.ts"/);
+test("selected heroes show distinct attack and aura ranges with affected tower highlights", () => {
+  assert.match(sceneSource, /import \{ getHeroAura, getHeroStats \} from "\.\.\/game\/heroes\.ts"/);
   assert.match(sceneSource, /if \(this\.selectedHero\) \{[\s\S]*getHeroStats\(view\.hero\.id, view\.hero\.level\)/);
-  assert.match(sceneSource, /view\.hero\.level === 1[\s\S]*stats\.attackRange/);
-  assert.match(sceneSource, /view\.hero\.id === "eira"[\s\S]*stats\.towerDamageAuraRadius[\s\S]*stats\.slowAuraRadius/);
-  assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, radius/);
+  assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, stats\.attackRange/);
+  assert.match(sceneSource, /getHeroAura\(view\.hero\.id, view\.hero\.level\)/);
+  assert.match(sceneSource, /aura\.kind === "tower_damage" \? 0xf1cc69 : 0x75d8ef/);
+  assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, aura\.radius/);
+  assert.match(sceneSource, /highlightAuraTowers\(view\.campaign\.towers, aura\.radius, aura\.strength\)/);
+  assert.match(sceneSource, /this\.heroAuraTowerHighlights\.set\(tower\.padId, \{ ring, badge \}\)/);
 });
 
 test("hero ability failures keep a distinct unavailable notice", () => {
