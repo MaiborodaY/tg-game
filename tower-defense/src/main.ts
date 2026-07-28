@@ -1,4 +1,3 @@
-import Phaser from "phaser";
 import "./styles.css";
 import { ENEMY_DEFINITIONS, ENEMY_PREVIEW_ORDER, FINAL_WAVE, TOWER_DEFINITIONS } from "./game/config.ts";
 import {
@@ -22,9 +21,11 @@ import {
   writeSessionSelection,
 } from "./game/sessionSelection.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
+import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
-import type { EnemyType, TowerType, WavePlan } from "./game/types.ts";
+import { getSelectedTowerDetails } from "./game/towerDetails.ts";
+import type { EnemyType, TowerType } from "./game/types.ts";
 import {
   detectLocale,
   normalizeLocale,
@@ -51,14 +52,12 @@ import {
   type RewardFinisher,
   type RewardLaunch,
 } from "./reward.ts";
-import {
-  createTowerDefenseGame,
-  getSelectedTowerDetails,
-  type NoticeCode,
-  type TerminalOutcome,
-  type TowerDefenseCallbacks,
-  type TowerDefenseScene,
-  type TowerDefenseUiState,
+import type {
+  NoticeCode,
+  TerminalOutcome,
+  TowerDefenseCallbacks,
+  TowerDefenseScene,
+  TowerDefenseUiState,
 } from "./rendering/TowerDefenseScene.ts";
 import { setupTelegramBridge } from "./telegram.ts";
 import { TOWER_GUIDE_ENTRIES } from "./towerGuide.ts";
@@ -137,7 +136,6 @@ let finishSettled = reward.mode === "local";
 let terminalResult: FinalResult | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let renderedPreviewWave = -1;
-let cachedPreviewPlan: WavePlan | null = null;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
 let introReturnsToRun = false;
@@ -146,6 +144,9 @@ let localSaveWarningShown = false;
 let finishAuthRefreshAttempted = false;
 let finishRunReplaced = false;
 let replacementBootstrapCached = false;
+let gameStarting = false;
+let runtimeLoadFailed = false;
+let reloadRequested = false;
 let playerProfile: PlayerProfileSnapshot | null = miniAppBootstrap?.profile ?? null;
 
 const elements = {
@@ -258,29 +259,48 @@ const gameCallbacks: TowerDefenseCallbacks = {
   onTerminal: handleTerminal,
   onHaptic: telegram.haptic,
 };
-let mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, gameCallbacks);
-let scene: TowerDefenseScene = mounted.scene;
+
+type TowerDefenseRuntime = typeof import("./rendering/TowerDefenseScene.ts");
+type GameMountContext = Readonly<{
+  parent: HTMLElement;
+  campaign: TowerDefenseUiState["campaign"];
+  callbacks: TowerDefenseCallbacks;
+}>;
+
+const runtimeController = createLazyRuntimeController(
+  () => import("./rendering/TowerDefenseScene.ts"),
+  (runtime: TowerDefenseRuntime, context: GameMountContext) => runtime.createTowerDefenseGame(
+    context.parent,
+    context.campaign,
+    context.callbacks,
+  ),
+);
 
 bindInteractions();
-restorePendingFinish();
+const pendingFinishRestored = restorePendingFinish();
 showRestoredRunStatus();
-if (!elements.introOverlay.hidden) elements.introStart.focus();
-else if (elements.resultOverlay.hidden) elements.appShell.inert = false;
+if (!pendingFinishRestored) {
+  if (elements.introOverlay.hidden) {
+    await mountRestoredGame();
+  } else {
+    elements.introStart.focus();
+  }
+}
 
 function bindInteractions(): void {
   elements.languageSelects.forEach((select) => {
     select.addEventListener("change", () => setLocale(select.value));
   });
   elements.towerCards.forEach((card) => {
-    card.addEventListener("click", () => scene.setBuildType(card.dataset.tower as TowerType));
+    card.addEventListener("click", () => currentScene()?.setBuildType(card.dataset.tower as TowerType));
   });
-  elements.startWaveButton.addEventListener("click", () => scene.startWave());
-  elements.pauseButton.addEventListener("click", () => scene.togglePause());
-  elements.speedButton.addEventListener("click", () => scene.toggleSpeed());
-  elements.pulseButton.addEventListener("click", () => scene.usePulse());
-  elements.upgradeButton.addEventListener("click", () => scene.upgradeSelectedTower());
-  elements.sellButton.addEventListener("click", () => scene.sellSelectedTower());
-  elements.closeTowerPanel.addEventListener("click", () => scene.clearSelection());
+  elements.startWaveButton.addEventListener("click", () => currentScene()?.startWave());
+  elements.pauseButton.addEventListener("click", () => currentScene()?.togglePause());
+  elements.speedButton.addEventListener("click", () => currentScene()?.toggleSpeed());
+  elements.pulseButton.addEventListener("click", () => currentScene()?.usePulse());
+  elements.upgradeButton.addEventListener("click", () => currentScene()?.upgradeSelectedTower());
+  elements.sellButton.addEventListener("click", () => currentScene()?.sellSelectedTower());
+  elements.closeTowerPanel.addEventListener("click", () => currentScene()?.clearSelection());
   elements.fullscreenButton.addEventListener("click", () => {
     if (telegram.isFullscreen) telegram.exitFullscreen();
     else telegram.requestFullscreen();
@@ -302,8 +322,8 @@ function bindInteractions(): void {
     elements.modeSelect.value,
   ));
   elements.introStart.addEventListener("click", () => {
-    if (launchError === "miniapp_start_failed") window.location.reload();
-    else dismissIntro();
+    if (launchError === "miniapp_start_failed" || runtimeLoadFailed) reloadPage();
+    else void startGameFromIntro();
   });
   elements.rewardRetry.addEventListener("click", () => {
     if (finishRunReplaced) return;
@@ -313,10 +333,12 @@ function bindInteractions(): void {
   elements.restartButton.addEventListener("click", restartGame);
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden && latestUi && (latestUi.phase === "wave" || latestUi.phase === "countdown")) scene.setPaused(true);
+    if (document.hidden && latestUi && (latestUi.phase === "wave" || latestUi.phase === "countdown")) {
+      currentScene()?.setPaused(true);
+    }
   });
   window.addEventListener("beforeunload", (event) => {
-    if (reward.mode === "server" && !finishSettled) {
+    if (reward.mode === "server" && !finishSettled && !reloadRequested) {
       event.preventDefault();
       event.returnValue = "";
     }
@@ -324,6 +346,73 @@ function bindInteractions(): void {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !elements.towerGuideOverlay.hidden) closeTowerGuide();
   });
+}
+
+function currentScene(): TowerDefenseScene | null {
+  return runtimeController.getMounted()?.scene ?? null;
+}
+
+async function ensureGameMounted(): Promise<boolean> {
+  try {
+    await runtimeController.ensureMounted({
+      parent: elements.gameRoot,
+      campaign: initialCampaign,
+      callbacks: gameCallbacks,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function startGameFromIntro(): Promise<void> {
+  if (gameStarting || sessionSwitching || launchError) return;
+  gameStarting = true;
+  runtimeLoadFailed = false;
+  syncIntroAction();
+  syncSessionControls();
+  const ready = await ensureGameMounted();
+  gameStarting = false;
+  if (!ready) {
+    showRuntimeLoadFailure();
+    return;
+  }
+  syncIntroAction();
+  syncSessionControls();
+  dismissIntro();
+}
+
+async function mountRestoredGame(): Promise<void> {
+  introReturnsToRun = hasRunProgress(initialCampaign);
+  elements.introOverlay.hidden = false;
+  gameStarting = true;
+  runtimeLoadFailed = false;
+  syncIntroAction();
+  syncSessionControls();
+  const ready = await ensureGameMounted();
+  gameStarting = false;
+  if (!ready) {
+    showRuntimeLoadFailure();
+    return;
+  }
+  runtimeLoadFailed = false;
+  elements.introOverlay.hidden = true;
+  elements.appShell.inert = false;
+  introReturnsToRun = false;
+  syncIntroAction();
+  syncSessionControls();
+}
+
+function showRuntimeLoadFailure(): void {
+  gameStarting = false;
+  runtimeLoadFailed = true;
+  introReturnsToRun = hasRunProgress(initialCampaign);
+  elements.appShell.inert = true;
+  elements.introOverlay.hidden = false;
+  applyLaunchErrorTranslations();
+  syncSessionControls();
+  elements.introStart.focus();
+  showToast(text("game_load_failed"), true);
 }
 
 function renderUi(ui: TowerDefenseUiState): void {
@@ -380,11 +469,7 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.sellButton.disabled = !editing;
   }
 
-  const previewWave = ui.finalWave === null
-    ? ui.campaign.completedWave + 1
-    : Math.min(ui.finalWave, ui.campaign.completedWave + 1);
-  if (!cachedPreviewPlan || cachedPreviewPlan.wave !== previewWave) cachedPreviewPlan = scene.getCurrentWavePlan();
-  const plan = cachedPreviewPlan;
+  const plan = ui.nextWavePlan;
   if (renderedPreviewWave !== plan.wave) {
     renderWavePreview(plan.wave, plan.spawns.map((spawn) => spawn.type));
     renderedPreviewWave = plan.wave;
@@ -599,16 +684,16 @@ function showResult(
   elements.introOverlay.hidden = true;
 }
 
-function restorePendingFinish(): void {
-  if (launchError) return;
+function restorePendingFinish(): boolean {
+  if (launchError) return false;
   if (reward.mode !== "server" || !reward.runId) {
     if (initialCampaign.completedWave > 0 || initialCampaign.towers.length > 0) elements.introOverlay.hidden = true;
-    return;
+    return false;
   }
   const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE);
   if (!pending) {
     if (initialCampaign.completedWave > 0 || readFlag(session, "td-intro-seen-v1")) elements.introOverlay.hidden = true;
-    return;
+    return false;
   }
   terminalResult = captureFinalResult(pending.score, pending.durationMs);
   finishAuthRefreshAttempted = false;
@@ -622,6 +707,7 @@ function restorePendingFinish(): void {
   ));
   showResult(pending.outcome, terminalResult, pending.waves, FINAL_WAVE);
   void finishReward();
+  return true;
 }
 
 function showRestoredRunStatus(): void {
@@ -645,37 +731,43 @@ function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
 }
 
 async function switchPracticeSession(levelId: string, modeId: string): Promise<void> {
-  if (reward.mode === "server" || elements.introOverlay.hidden || sessionSwitching) return;
+  if (reward.mode === "server" || elements.introOverlay.hidden || sessionSwitching || gameStarting) return;
   const next = resolveSessionSelection("local", { levelId, modeId });
   if (
     next.selection.levelId === selectedSession.selection.levelId
     && next.selection.modeId === selectedSession.selection.modeId
   ) return;
-
-  selectedSession = next;
   sessionSwitching = true;
-  writeSessionSelection(storage, next.selection);
-  saveKey = getCampaignSaveKey(null, next.level.id, next.mode.id);
-  const saved = loadCampaign(storage, saveKey, next.selection);
-  const mayMigrate = next.level.id === CLASSIC_CAMPAIGN_LEVEL_ID && next.mode.id === CAMPAIGN_MODE_ID;
-  initialCampaign = saved
-    || (mayMigrate ? migrateLegacyCampaign(storage) : null)
-    || createCampaignState({ level: next.level, mode: next.mode });
+  syncSessionControls();
+  try {
+    selectedSession = next;
+    writeSessionSelection(storage, next.selection);
+    saveKey = getCampaignSaveKey(null, next.level.id, next.mode.id);
+    const saved = loadCampaign(storage, saveKey, next.selection);
+    const mayMigrate = next.level.id === CLASSIC_CAMPAIGN_LEVEL_ID && next.mode.id === CAMPAIGN_MODE_ID;
+    initialCampaign = saved
+      || (mayMigrate ? migrateLegacyCampaign(storage) : null)
+      || createCampaignState({ level: next.level, mode: next.mode });
 
-  latestUi = null;
-  cachedPreviewPlan = null;
-  renderedPreviewWave = -1;
-  mounted.game.destroy(true);
-  syncSessionControls();
-  await waitForRendererCleanup();
-  elements.gameRoot.replaceChildren();
-  mounted = createTowerDefenseGame(elements.gameRoot, initialCampaign, gameCallbacks);
-  scene = mounted.scene;
-  sessionSwitching = false;
-  introReturnsToRun = hasRunProgress(initialCampaign);
-  elements.introStart.textContent = text(introReturnsToRun ? "intro_continue" : "intro_start");
-  syncSessionControls();
-  telegram.haptic("light");
+    latestUi = null;
+    renderedPreviewWave = -1;
+    const previous = runtimeController.clearMounted();
+    if (previous) {
+      previous.game.destroy(true);
+      await waitForRendererCleanup();
+      elements.gameRoot.replaceChildren();
+      if (!await ensureGameMounted()) {
+        showRuntimeLoadFailure();
+        return;
+      }
+    }
+    introReturnsToRun = hasRunProgress(initialCampaign);
+    telegram.haptic("light");
+  } finally {
+    sessionSwitching = false;
+    syncSessionControls();
+    syncIntroAction();
+  }
 }
 
 function openSessionMenu(): void {
@@ -691,7 +783,7 @@ function openSessionMenu(): void {
   introReturnsToRun = true;
   elements.appShell.inert = true;
   elements.introOverlay.hidden = false;
-  elements.introStart.textContent = text("intro_continue");
+  syncIntroAction();
   syncSessionControls();
   elements.levelSelect.focus();
   telegram.haptic("light");
@@ -709,7 +801,7 @@ function openTowerGuide(): void {
   if (!elements.towerGuideOverlay.hidden) return;
   guideReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : elements.towerGuideButton;
   resumeAfterGuide = Boolean(latestUi && !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown"));
-  if (resumeAfterGuide) scene.setPaused(true);
+  if (resumeAfterGuide) currentScene()?.setPaused(true);
   elements.appShell.inert = true;
   elements.towerGuideOverlay.hidden = false;
   elements.towerGuideButton.setAttribute("aria-expanded", "true");
@@ -722,7 +814,7 @@ function closeTowerGuide(): void {
   elements.towerGuideOverlay.hidden = true;
   elements.appShell.inert = false;
   elements.towerGuideButton.setAttribute("aria-expanded", "false");
-  if (resumeAfterGuide) scene.setPaused(false);
+  if (resumeAfterGuide) currentScene()?.setPaused(false);
   resumeAfterGuide = false;
   if (guideReturnFocus?.isConnected) guideReturnFocus.focus();
   guideReturnFocus = null;
@@ -737,6 +829,12 @@ function restartGame(): void {
     // A replacement bootstrap belongs to the next run and must survive this reload.
     if (isMiniAppLaunch && !replacementBootstrapCached) clearMiniAppReward(session);
   }
+  reloadPage();
+}
+
+function reloadPage(): void {
+  // Preserve the checkpoint/bootstrap while bypassing only our accidental-close prompt.
+  reloadRequested = true;
   window.location.reload();
 }
 
@@ -797,7 +895,7 @@ function applyStaticTranslations(): void {
   elements.nextWaveLabel.textContent = text("next_wave");
   elements.introTitle.textContent = text("intro_title");
   elements.introBody.textContent = text("intro_body");
-  elements.introStart.textContent = text(introReturnsToRun ? "intro_continue" : "intro_start");
+  syncIntroAction();
   syncSessionControls();
   elements.introTowers.textContent = text("intro_towers", { count: 4 });
   elements.introBosses.textContent = text("intro_bosses");
@@ -828,8 +926,8 @@ function syncSessionControls(): void {
   elements.modeChoiceLabel.textContent = text("session_mode");
   elements.sessionChoiceHint.textContent = text("session_hint");
   elements.sessionPicker.hidden = selectedSession.locked;
-  elements.levelSelect.disabled = selectedSession.locked || sessionSwitching;
-  elements.modeSelect.disabled = selectedSession.locked || sessionSwitching;
+  elements.levelSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
+  elements.modeSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
   const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
   elements.introWaves.textContent = finalWave === null
     ? text("intro_endless")
@@ -858,17 +956,44 @@ function syncFullscreenUi(isFullscreen: boolean): void {
 }
 
 function applyLaunchErrorTranslations(): void {
-  elements.introStart.disabled = false;
-  if (!launchError) return;
-  elements.introTitle.textContent = text("launch_error_title");
+  elements.introTitle.textContent = text("intro_title");
+  elements.introBody.textContent = text("intro_body");
+  if (runtimeLoadFailed) {
+    elements.introTitle.textContent = text("launch_error_title");
+    elements.introBody.textContent = text("game_load_failed");
+  } else if (launchError) {
+    elements.introTitle.textContent = text("launch_error_title");
+    elements.introBody.textContent = text(
+      launchError === "miniapp_start_failed" ? "miniapp_launch_error_body" : "launch_error_body",
+    );
+  }
+  syncIntroAction();
+}
+
+function syncIntroAction(): void {
+  elements.introStart.setAttribute("aria-busy", String(gameStarting));
   if (launchError === "miniapp_start_failed") {
-    elements.introBody.textContent = text("miniapp_launch_error_body");
+    elements.introStart.disabled = false;
     elements.introStart.textContent = text("miniapp_launch_retry");
     return;
   }
-  elements.introBody.textContent = text("launch_error_body");
-  elements.introStart.textContent = text("launch_error_action");
-  elements.introStart.disabled = true;
+  if (launchError) {
+    elements.introStart.disabled = true;
+    elements.introStart.textContent = text("launch_error_action");
+    return;
+  }
+  if (gameStarting) {
+    elements.introStart.disabled = true;
+    elements.introStart.textContent = text("game_loading");
+    return;
+  }
+  if (runtimeLoadFailed) {
+    elements.introStart.disabled = false;
+    elements.introStart.textContent = text("game_load_retry");
+    return;
+  }
+  elements.introStart.disabled = sessionSwitching;
+  elements.introStart.textContent = text(introReturnsToRun ? "intro_continue" : "intro_start");
 }
 
 function renderTowerGuide(): void {
@@ -951,6 +1076,4 @@ function select(id: string): HTMLSelectElement {
   if (!(element instanceof HTMLSelectElement)) throw new Error(`Expected select: ${id}`);
   return element;
 }
-
-void Phaser;
 }

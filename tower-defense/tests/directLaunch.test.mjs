@@ -4,11 +4,17 @@ import test from "node:test";
 
 const html = readFileSync(new globalThis.URL("../index.html", import.meta.url), "utf8");
 const mainSource = readFileSync(new globalThis.URL("../src/main.ts", import.meta.url), "utf8");
+const viteConfig = readFileSync(new globalThis.URL("../vite.config.ts", import.meta.url), "utf8");
+const pagesHeaders = readFileSync(new globalThis.URL("../../public/_headers", import.meta.url), "utf8");
+const renderUiSource = mainSource.slice(
+  mainSource.indexOf("function renderUi"),
+  mainSource.indexOf("function renderWavePreview"),
+);
 
 test("Tower Defense opens its own intro without a game chooser", () => {
   assert.match(html, /id="intro-overlay" class="modal-layer">/);
   assert.doesNotMatch(html, /game-choice-overlay|choose-bridge|intro-back-to-games/);
-  assert.match(mainSource, /if \(!elements\.introOverlay\.hidden\) elements\.introStart\.focus\(\);/);
+  assert.match(mainSource, /elements\.introStart\.focus\(\);/);
 });
 
 test("Tower Defense has no client-side route into the separate Bridge app", () => {
@@ -57,8 +63,43 @@ test("practice exposes content selection while rewarded runs stay pinned", () =>
   assert.match(mainSource, /readSessionSelection\(storage, "local"\)/);
   assert.match(mainSource, /loadCampaign\(storage, saveKey, selectedSession\.selection\)/);
   assert.match(mainSource, /elements\.sessionPicker\.hidden = selectedSession\.locked/);
-  assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching\) return/);
+  assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching \|\| gameStarting\) return/);
   assert.match(mainSource, /elements\.sessionMenuButton\.addEventListener\("click", openSessionMenu\)/);
+});
+
+test("Phaser and the renderer load behind one retry-safe runtime boundary", () => {
+  assert.doesNotMatch(mainSource, /^import Phaser from "phaser";/m);
+  assert.match(mainSource, /import type \{[\s\S]*TowerDefenseScene[\s\S]*\} from "\.\/rendering\/TowerDefenseScene\.ts";/);
+  assert.match(
+    mainSource,
+    /createLazyRuntimeController\(\s*\(\) => import\("\.\/rendering\/TowerDefenseScene\.ts"\)/,
+  );
+  assert.match(mainSource, /const pendingFinishRestored = restorePendingFinish\(\);/);
+  assert.doesNotMatch(mainSource, /scheduleRuntimePreload|runtimeController\.preload\(\)/);
+  assert.match(mainSource, /const ready = await ensureGameMounted\(\);[\s\S]*if \(!ready\)[\s\S]*dismissIntro\(\);/);
+  assert.match(mainSource, /launchError === "miniapp_start_failed" \|\| runtimeLoadFailed\) reloadPage\(\)/);
+  assert.doesNotMatch(renderUiSource, /currentScene|getCurrentWavePlan/);
+  assert.match(renderUiSource, /const plan = ui\.nextWavePlan/);
+});
+
+test("pending results and launch errors do not require the gameplay runtime", () => {
+  assert.match(mainSource, /function restorePendingFinish\(\): boolean/);
+  assert.match(mainSource, /showResult\(pending\.outcome[\s\S]*void finishReward\(\);\s*return true/);
+  assert.match(mainSource, /if \(!pendingFinishRestored\) \{\s*if \(elements\.introOverlay\.hidden\) \{\s*await mountRestoredGame\(\);/);
+  assert.match(mainSource, /runtimeLoadFailed = true;[\s\S]*elements\.appShell\.inert = true;[\s\S]*elements\.introOverlay\.hidden = false/);
+});
+
+test("intentional runtime recovery reload keeps unfinished-run protection for other exits", () => {
+  assert.match(mainSource, /if \(reward\.mode === "server" && !finishSettled && !reloadRequested\)/);
+  assert.match(mainSource, /function reloadPage\(\): void \{\s*\/\/[^\r\n]+\s*reloadRequested = true;\s*window\.location\.reload\(\);/);
+  assert.equal(mainSource.match(/window\.location\.reload\(\)/g)?.length, 1);
+});
+
+test("fingerprinted Tower Defense assets keep a stable Phaser cache boundary", () => {
+  assert.match(viteConfig, /name: "phaser",[\s\S]*node_modules[\s\S]*phaser/);
+  assert.match(pagesHeaders, /^\/td\/assets\/\*\s*$/m);
+  assert.match(pagesHeaders, /^\s+Cache-Control:\s*public,\s*max-age=31536000,\s*immutable\s*$/mi);
+  assert.doesNotMatch(pagesHeaders, /^\/td\/?\*?\s*\r?\n\s+Cache-Control:[^\r\n]*immutable/im);
 });
 
 test("Mini App bootstrap cache preserves the server run binding without durable token storage", () => {

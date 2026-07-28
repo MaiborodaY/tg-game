@@ -14,6 +14,7 @@ import {
   upgradeTower,
 } from "../src/game/state.ts";
 import { CAMPAIGN_RULESET, NORTHERN_PASS_LEVEL } from "../src/game/content.ts";
+import { getSelectedTowerDetails } from "../src/game/towerDetails.ts";
 
 test("new runs bind transient state to a versioned level and mode", () => {
   const classic = createCampaignState();
@@ -52,6 +53,26 @@ test("tower economy builds, upgrades and sells from immutable campaign states", 
   assert.equal(sold.state.towers.length, 0);
   assert.equal(sold.goldDelta, 87);
   assert.equal(sold.state.gold, 142);
+});
+
+test("selected tower details stay Phaser-free and reflect economy and mastery", () => {
+  const built = buildTower(createCampaignState(), 0, "ranger").state;
+  const details = getSelectedTowerDetails({ campaign: built, selectedPadId: 0 });
+  assert.equal(details?.tower.type, "ranger");
+  assert.equal(details?.upgradeCost, 75);
+  assert.equal(details?.sellValue, 39);
+  assert.equal(details?.masteryLocked, false);
+  assert.equal(getSelectedTowerDetails({ campaign: built, selectedPadId: null }), null);
+
+  const mastery = getSelectedTowerDetails({
+    campaign: {
+      ...built,
+      completedWave: 11,
+      towers: [{ padId: 0, type: "ranger", level: 3 }],
+    },
+    selectedPadId: 0,
+  });
+  assert.equal(mastery?.masteryLocked, true);
 });
 
 test("only the next completed wave advances the reward score", () => {

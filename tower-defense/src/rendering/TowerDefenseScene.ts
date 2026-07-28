@@ -3,11 +3,7 @@ import {
   BUILD_PAD_HIT_SIZE,
   GAME_HEIGHT,
   GAME_WIDTH,
-  MAX_TOWER_LEVEL,
-  MASTERY_UNLOCK_WAVE,
-  TOWER_DEFINITIONS,
   getTowerStats,
-  getTowerTotalInvestment,
 } from "../game/config.ts";
 import {
   getLevelDefinition,
@@ -31,7 +27,6 @@ import type {
   CampaignState,
   EnemyType,
   TowerPlacement,
-  TowerStats,
   TowerType,
   WavePlan,
 } from "../game/types.ts";
@@ -61,6 +56,7 @@ export type TowerDefenseUiState = Readonly<{
   levelId: string;
   modeId: string;
   finalWave: number | null;
+  nextWavePlan: WavePlan;
   phase: GamePhase;
   paused: boolean;
   speed: 1 | 2;
@@ -683,6 +679,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       levelId: this.level.id,
       modeId: this.mode.id,
       finalWave,
+      nextWavePlan: plan,
       phase: view.phase,
       paused: view.paused,
       speed: view.speed,
@@ -711,25 +708,6 @@ export class TowerDefenseScene extends Phaser.Scene {
         : null,
     }));
   }
-}
-
-export function getSelectedTowerDetails(state: TowerDefenseUiState): Readonly<{
-  tower: TowerPlacement;
-  stats: TowerStats;
-  upgradeCost: number | null;
-  sellValue: number;
-  masteryLocked: boolean;
-}> | null {
-  if (state.selectedPadId === null) return null;
-  const tower = getTower(state.campaign, state.selectedPadId);
-  if (!tower) return null;
-  return Object.freeze({
-    tower,
-    stats: getTowerStats(tower.type, tower.level),
-    upgradeCost: tower.level < MAX_TOWER_LEVEL ? TOWER_DEFINITIONS[tower.type].upgradeCosts[tower.level - 1] : null,
-    sellValue: Math.floor(getTowerTotalInvestment(tower.type, tower.level) * 0.65),
-    masteryLocked: tower.level === 3 && state.campaign.completedWave < MASTERY_UNLOCK_WAVE,
-  });
 }
 
 export const TOWER_DEFENSE_GAME_CONFIG: Phaser.Types.Core.GameConfig = {

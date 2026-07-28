@@ -29,6 +29,10 @@ content catalog + saved RunState
 - `rendering/TowerDefenseScene.ts` converts simulation views into Phaser
   objects. It must not become the source of truth for health, economy, wave
   completion or scoring.
+- `game/lazyRuntime.ts` keeps the Phaser renderer behind one retry-safe dynamic
+  import and one shared mount. Launch errors and pending reward submissions do
+  not load Phaser; a fresh intro waits for the player's start action, while a
+  restored live run mounts it before the field becomes interactive.
 - `main.ts` owns DOM presentation and adapters to Telegram/reward APIs. A server
   reward launch uses the validated content binding returned by `/start`;
   practice choices cannot alter that run. The backend currently binds rewarded
@@ -104,6 +108,9 @@ branches inside the Phaser scene.
 - Path sampling and other hot loops reuse scratch objects.
 - Enemy art and projectile objects are pooled by the Phaser adapter.
 - Visual depth is updated in buckets rather than sorted on every pixel.
+- Phaser is emitted as a stable lazy vendor chunk. Fingerprinted files under
+  `/td/assets/` use a one-year immutable browser cache, while `/td/` HTML must
+  remain revalidated so it can point at new hashes.
 - The headless 36-wave endless soak guards against stalled progression and
   unbounded enemy growth. Device profiling is still required before raising
   simultaneous enemy counts or adding expensive shaders/particles.

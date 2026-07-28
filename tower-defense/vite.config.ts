@@ -13,5 +13,17 @@ export default defineConfig({
         assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "phaser",
+              test: /[\\/]node_modules[\\/]phaser[\\/]/,
+            },
+          ],
+        },
+      },
+    },
   },
 });

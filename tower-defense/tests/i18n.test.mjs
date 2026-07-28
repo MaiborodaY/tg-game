@@ -35,6 +35,9 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("ru", "profile_sync_pending"), "Результат сохранён, профиль обновится позже");
   assert.equal(tr("en", "profile_sync_retry"), "Update profile");
   assert.equal(tr("uk", "profile_sync_retry_failed"), "Нагороду збережено, профіль поки не оновлено");
+  assert.equal(tr("ru", "game_loading"), "Загружаем поле…");
+  assert.match(tr("uk", "game_load_failed"), /перезавантаж гру/);
+  assert.equal(tr("en", "game_load_retry"), "Reload game");
   assert.equal(detectLocale("uk-UA"), "uk");
 });
 
