@@ -193,6 +193,19 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   white-space: nowrap;
 }
 .hud-stat strong { font-size: 14px; line-height: 1; letter-spacing: -0.02em; white-space: nowrap; }
+.hud-value-row { min-width: 0; display: flex; align-items: center; gap: 4px; }
+.gate-shield {
+  padding: 2px 4px;
+  border: 1px solid rgba(143, 232, 239, 0.32);
+  border-radius: 7px;
+  background: rgba(73, 145, 153, 0.2);
+  color: #bffaff;
+  font-size: 8px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 0 8px rgba(117, 216, 239, 0.12);
+}
+.gate-shield[hidden] { display: none; }
 .hud-icon { width: 21px; height: 21px; display: grid; flex: 0 0 21px; place-items: center; border-radius: 8px; font-size: 12px; }
 .hud-icon.heart { color: #ff8b7e; background: rgba(255, 105, 94, 0.12); }
 .hud-icon.coin { color: var(--gold); background: rgba(240, 200, 106, 0.12); }
@@ -294,8 +307,44 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 }
 .countdown:not([hidden]) { display: grid; animation: countdown-pulse 0.85s ease-in-out infinite; }
 
+.hero-target-prompt {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 10px;
+  width: min(calc(100% - 20px), 300px);
+  min-height: 48px;
+  padding: 4px 4px 4px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(150, 232, 211, 0.5);
+  border-radius: 14px;
+  background: rgba(9, 34, 29, 0.95);
+  color: #e5fff5;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+}
+.hero-target-prompt[hidden] { display: none; }
+.hero-target-prompt button {
+  flex: 0 0 auto;
+  min-width: 72px;
+  min-height: 44px;
+  border: 1px solid rgba(173, 218, 197, 0.28);
+  border-radius: 11px;
+  background: rgba(50, 82, 72, 0.94);
+  color: #e8f7ef;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
 .pulse-button {
-  position: static;
+  position: relative;
   min-width: 70px;
   min-height: 44px;
   height: 44px;
@@ -321,6 +370,25 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .pulse-button.is-grak { border-color: rgba(239, 139, 84, 0.58); background: linear-gradient(145deg, rgba(126, 57, 35, 0.98), rgba(74, 40, 31, 0.98)); }
 .pulse-button.is-grak .pulse-icon { color: #ffd09b; }
 .pulse-button.is-used { filter: grayscale(0.42); }
+.pulse-button.is-targeting { border-color: rgba(191, 250, 255, 0.88); box-shadow: 0 0 15px rgba(117, 216, 239, 0.28), inset 0 1px rgba(255,255,255,0.16); }
+.pulse-charges {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+}
+.pulse-charges[hidden] { display: none; }
+.pulse-charges i {
+  width: 5px;
+  height: 5px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 0.54;
+}
+.pulse-charges[data-charges="1"] i:first-child,
+.pulse-charges[data-charges="2"] i { background: currentColor; opacity: 1; box-shadow: 0 0 5px currentColor; }
 
 .command-panel {
   --tower-controls-height: 52px;
@@ -337,15 +405,23 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   box-shadow: 0 -8px 26px rgba(1, 10, 8, 0.22), inset 0 1px rgba(255, 255, 255, 0.06);
 }
 .build-panel { min-height: var(--tower-controls-height); height: 100%; position: relative; }
-.panel-heading { position: absolute; z-index: 3; top: 4px; right: 1px; min-height: 44px; pointer-events: none; }
+.panel-heading { position: absolute; z-index: 3; top: -8px; left: 7px; min-height: 14px; pointer-events: none; }
 .panel-copy {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+  max-width: min(76vw, 280px);
+  padding: 2px 7px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  border: 1px solid rgba(142, 211, 178, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 35, 30, 0.94);
+  color: #cce2d5;
+  font-size: 7px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
+.panel-copy small { display: none; }
+.panel-copy strong { font-size: inherit; font-weight: 800; }
 .panel-heading-actions { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
 .panel-heading small,
 .wave-preview > small,
@@ -702,6 +778,10 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .hero-detail-list p { max-width: none; margin: 0; display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 7px; font-size: 9px; line-height: 1.35; }
 .hero-detail-list b { color: #e4c978; font-size: 8px; }
 .hero-detail-list span { color: #bfd1c6; }
+.hero-detail-list p[data-hero-detail="awakening"] { padding-top: 5px; border-top: 1px solid rgba(229, 187, 93, 0.13); }
+.hero-detail-list p[data-hero-detail="awakening"] b { color: #edc86e; }
+.hero-detail-list p[data-hero-detail="awakening"][data-state="active"] span { color: #f2dfa4; }
+.hero-detail-list p[data-hero-detail="awakening"][data-state="locked"] span { color: #829e90; }
 .hero-detail-next { max-width: none !important; margin: 8px 0 0 !important; padding-top: 7px; border-top: 1px solid rgba(145, 203, 169, 0.13); color: #9de9c6 !important; font-size: 8px !important; line-height: 1.35 !important; }
 .hero-picker .modal-primary { min-height: 44px; margin-top: 10px; }
 .intro-card.is-hero-picker-open #intro-body,
@@ -907,7 +987,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   .command-panel { --tower-controls-height: 48px; grid-template-rows: var(--tower-controls-height) 42px; padding: 5px; gap: 3px; }
   .tower-card { min-height: 48px; height: 48px; }
   .tower-card .tower-emblem { transform: scale(0.68); }
-  .panel-heading { top: 2px; }
+  .panel-heading { top: -8px; }
   .panel-close { top: 2px; }
   .wave-command,
   .pulse-button,
@@ -944,7 +1024,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   .hero-actions button { min-width: 76px; padding-left: 4px; padding-right: 4px; }
   .selected-hero span { display: none; }
   .pulse-button { min-width: 44px; padding-left: 5px; padding-right: 5px; }
-  .pulse-button span:last-child { display: none; }
+  .pulse-button #pulse-label { display: none; }
   .start-wave-button { min-width: 106px; padding-left: 7px; padding-right: 7px; font-size: 9px; }
   .enemy-chip { padding: 2px 3px; }
   .guide-card { padding-left: 14px; padding-right: 14px; }

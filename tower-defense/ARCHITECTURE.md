@@ -46,7 +46,9 @@ content catalog + saved RunState
 `RunState` is a disposable checkpoint for one match: selected content IDs,
 gold, lives, wave progress, time, the selected hero and tower placements. Save
 keys are isolated by run, level and mode, and old saves are migrated into schema
-v5 with a deterministic Eira fallback for pre-hero checkpoints. Rewarded
+v5 with a deterministic Eira fallback for pre-hero checkpoints. Awakening is
+derived from rank and completed-wave progress; ability charges, marks, barriers
+and gate shields are transient wave state owned by the simulation. Rewarded
 checkpoints live in browser `localStorage`; they resume on the same device but
 are not a cross-device cloud save.
 
@@ -96,7 +98,7 @@ removed from production builds through `import.meta.env.DEV`.
 
 The public `/start` binding still uses content version 2, so hero releases keep
 that value for backend compatibility and distinguish deterministic replays with
-the internal `heroes-v2` rules suffix. A future authoritative
+the internal `heroes-v3` rules suffix. A future authoritative
 rating rollout must coordinate a new content version with the backend; changing
 only the client would make old and new balance rules indistinguishable to the
 server.

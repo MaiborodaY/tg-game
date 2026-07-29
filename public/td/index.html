@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-DiBSxOJJ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-NeVKR5RN.css">
+    <script type="module" crossorigin src="./assets/index-Cl1MydTT.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CG_MgKnG.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -19,7 +19,7 @@
           <span><strong id="app-title">Стражи тропы</strong><small id="app-subtitle">Защита Сердца леса</small></span>
         </div>
         <section id="hud-region" class="hud" aria-label="Состояние защиты">
-          <div class="hud-stat"><span class="hud-icon heart">♥</span><span><small id="lives-label">Жизни</small><strong id="lives-value">20</strong></span></div>
+          <div class="hud-stat"><span class="hud-icon heart">♥</span><span><small id="lives-label">Жизни</small><span class="hud-value-row"><strong id="lives-value">20</strong><b id="gate-shield" class="gate-shield" hidden>◇ 2</b></span></span></div>
           <div class="hud-stat"><span class="hud-icon coin">●</span><span><small id="gold-label">Золото</small><strong id="gold-value">190</strong></span></div>
           <div class="hud-stat wave-stat"><span class="hud-icon wave">⌁</span><span><small id="wave-label">Волна</small><strong id="wave-value">1 / 24</strong></span></div>
         </section>
@@ -41,6 +41,10 @@
       <main class="battle-shell">
         <div id="game-root" class="game-root" aria-label="Игровое поле"></div>
         <div id="countdown" class="countdown" hidden>3</div>
+        <div id="hero-target-prompt" class="hero-target-prompt" role="status" hidden>
+          <span id="hero-target-prompt-label">Выберите точку на дороге</span>
+          <button id="hero-target-cancel" type="button">Отмена</button>
+        </div>
       </main>
 
       <section class="command-panel">
@@ -101,6 +105,7 @@
           <button id="pulse-button" class="pulse-button" type="button">
             <span class="pulse-icon" aria-hidden="true">✺</span>
             <span id="pulse-label">Импульс</span>
+            <span id="pulse-charges" class="pulse-charges" aria-hidden="true" hidden><i></i><i></i></span>
           </button>
           <div class="wave-preview"><div class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></div><div id="wave-enemies" class="enemy-list"></div></div>
           <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
@@ -185,6 +190,7 @@
               <p data-hero-detail="attack"><b data-hero-detail-label>Атака</b><span data-hero-detail-value>Физическая дальняя атака по одной цели.</span></p>
               <p data-hero-detail="passive"><b data-hero-detail-label>Пассивный навык</b><span data-hero-detail-value>С ранга 2 усиливает башни рядом.</span></p>
               <p data-hero-detail="ability"><b data-hero-detail-label>Активная способность</b><span data-hero-detail-value>Метка охотницы усиливает урон башен по сильнейшему врагу.</span></p>
+              <p data-hero-detail="awakening"><b data-hero-detail-label>Пробуждение</b><span data-hero-detail-value>Откроется после 20-й волны на ранге 3.</span></p>
             </div>
             <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
           </article>
@@ -217,6 +223,7 @@
             <p data-hero-detail="attack"><b data-hero-detail-label>Атака</b><span data-hero-detail-value>Физическая дальняя атака по одной цели.</span></p>
             <p data-hero-detail="passive"><b data-hero-detail-label>Пассивный навык</b><span data-hero-detail-value>С ранга 2 усиливает башни рядом.</span></p>
             <p data-hero-detail="ability"><b data-hero-detail-label>Активная способность</b><span data-hero-detail-value>Метка охотницы усиливает урон башен по сильнейшему врагу.</span></p>
+            <p data-hero-detail="awakening"><b data-hero-detail-label>Пробуждение</b><span data-hero-detail-value>Откроется после 20-й волны на ранге 3.</span></p>
           </div>
           <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
         </article>

@@ -64,6 +64,9 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "hero_detail_attack",
     "hero_detail_passive",
     "hero_detail_ability",
+    "hero_detail_awakening",
+    "hero_awakening_requirement",
+    "hero_awakening_unlocked",
     "hero_detail_next_upgrade",
     "hero_placement_hint",
     "hero_aura_unlock",
@@ -73,6 +76,11 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "hero_grak_unlock_requirement",
     "hero_grak_locked",
     "hero_grak_unlocked",
+    "hero_ability_ready_charges",
+    "hero_ability_recharge",
+    "hero_ability_target_road",
+    "hero_ability_target_cancel",
+    "hero_gate_shield",
   ];
   const params = {
     rank: 2,
@@ -85,7 +93,13 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     range: 120,
     percent: 8,
     bonus: 8,
+    global: 8,
+    local: 20,
     slow: 14,
+    shield: 2,
+    current: 1,
+    max: 2,
+    total: 25,
     duration: 6,
     effect: "aura +8%",
   };
@@ -131,6 +145,24 @@ test("all heroes explain attack, rank-two passive, and ability in every locale",
   }
   assert.notEqual(tr("en", "hero_eira_attack_text"), tr("en", "hero_toren_attack_text"));
   assert.notEqual(tr("en", "hero_eira_ability_text"), tr("en", "hero_toren_ability_text"));
+});
+
+test("hero awakenings and compact tower roles are explicit in every locale", () => {
+  for (const locale of ["ru", "uk", "en"]) {
+    for (const hero of ["eira", "toren", "grak"]) {
+      const awakening = tr(locale, `hero_${hero}_awakening_text`);
+      assert.match(awakening, /25/);
+      assert.ok(awakening.length >= 80, `${locale}.${hero} awakening needs full mechanics`);
+    }
+    for (const tower of ["ranger", "frost", "ember", "storm"]) {
+      assert.ok(tr(locale, `tower_role_${tower}`).length >= 18, `${locale}.${tower} role needs actionable copy`);
+    }
+  }
+
+  assert.match(tr("ru", "tower_role_ranger"), /IV.*босс/ui);
+  assert.match(tr("ru", "tower_role_frost"), /1–2/u);
+  assert.match(tr("ru", "tower_role_ember"), /не складывается/ui);
+  assert.match(tr("ru", "tower_role_storm"), /игнорирует защиту/ui);
 });
 
 test("manual locale storage is persistent and fails closed", () => {

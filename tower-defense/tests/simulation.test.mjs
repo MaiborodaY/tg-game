@@ -19,7 +19,9 @@ function createTestRules({
   finalWave = 1,
   enemyHp = 1,
   enemyHps = null,
+  enemyTypes = null,
   enemySpeed = 8,
+  leakDamage = 1,
   controlResistance = 0,
   physicalResistance = 0,
   magicResistance = 0,
@@ -43,12 +45,12 @@ function createTestRules({
       wave,
       spawns: Object.freeze(healthValues.map((maxHp, index) => Object.freeze({
         id: wave * 1_000 + index,
-        type: "raider",
+        type: enemyTypes?.[index] ?? "raider",
         atMs: 0,
         maxHp,
         speed: enemySpeed,
         reward: 5,
-        leakDamage: 1,
+        leakDamage,
         physicalResistance,
         magicResistance,
         shieldRatio: 0,
@@ -135,7 +137,7 @@ test("content levels and modes adapt into simulation rules without Phaser", () =
   assert.equal(campaign.createWavePlan(18).wave, 18);
   assert.equal(endless.finalWave, null);
   assert.equal(endless.createWavePlan(19).wave, 19);
-  assert.match(campaign.id, /northern-pass:campaign.*heroes-v2/);
+  assert.match(campaign.id, /northern-pass:campaign.*heroes-v3/);
 });
 
 test("hero movement and upgrades are setup-only deterministic commands", () => {
@@ -179,6 +181,7 @@ test("Eira marks the strongest enemy once per wave for tower damage", () => {
 
   assert.deepEqual(simulation.useHeroAbility(), { ok: true, error: null });
   assert.equal(simulation.readView().hero.markedEnemyId, 1_001);
+  assert.deepEqual(simulation.readView().hero.markedEnemyIds, [1_001]);
   assert.equal(simulation.readView().heroAbilityAvailable, false);
   assert.equal(simulation.readView().pulseAvailable, false);
   assert.equal(simulation.useHeroAbility().error, "hero_ability_unavailable");
@@ -194,6 +197,11 @@ test("Eira rank-two aura increases damage from nearby towers", () => {
     routePoints: Object.freeze([
       Object.freeze({ x: 55, y: 20 }),
       Object.freeze({ x: 56, y: 20 }),
+    ]),
+    heroAnchors: Object.freeze([
+      Object.freeze({ x: 0, y: 0 }),
+      Object.freeze({ x: 60, y: 0 }),
+      Object.freeze({ x: 300, y: 0 }),
     ]),
   });
   const remainingHp = (anchorId) => {
@@ -253,7 +261,15 @@ test("Toren auto-attacks clustered enemies with deterministic short splash", () 
 });
 
 test("Grak rank-two passive speeds up nearby towers", () => {
-  const rules = createTestRules({ finalWave: null, enemyHp: 50_000, enemySpeed: 0.01 });
+  const baseRules = createTestRules({ finalWave: null, enemyHp: 50_000, enemySpeed: 0.01 });
+  const rules = Object.freeze({
+    ...baseRules,
+    heroAnchors: Object.freeze([
+      Object.freeze({ x: 0, y: 0 }),
+      Object.freeze({ x: 60, y: 0 }),
+      Object.freeze({ x: 300, y: 0 }),
+    ]),
+  });
   const remainingHp = (anchorId) => {
     const campaign = {
       ...createCampaignState({ heroId: "grak" }),
@@ -310,22 +326,238 @@ test("Grak banner is once per wave, boosts nearby towers, and expires determinis
   assert.equal(boosted.readView().hero.bannerRemainingMs, 0);
 });
 
+test("awakening is derived from a paid rank three and completed wave twenty", () => {
+  const rules = createTestRules({ finalWave: null, enemyHp: 10_000, enemySpeed: 0.01 });
+  const locked = new GameSimulation({
+    ...createCampaignState({ heroId: "eira" }),
+    completedWave: 19,
+    hero: { id: "eira", level: 3, anchorId: 0 },
+  }, rules);
+  assert.equal(locked.readView().hero.awakened, false);
+
+  const lateUpgrade = new GameSimulation({
+    ...createCampaignState({ heroId: "eira" }),
+    completedWave: 20,
+    gold: 1_000,
+    hero: { id: "eira", level: 2, anchorId: 0 },
+  }, rules);
+  assert.equal(lateUpgrade.readView().hero.awakened, false);
+  assert.deepEqual(lateUpgrade.upgradeHero(), { ok: true, error: null });
+  assert.equal(lateUpgrade.getCampaign().gold, 520);
+  assert.equal(lateUpgrade.readView().hero.awakened, true);
+});
+
+test("awakened Eira marks four strongest enemies and transfers a killed mark", () => {
+  const simulation = new GameSimulation({
+    ...createCampaignState({ heroId: "eira" }),
+    completedWave: 20,
+    hero: { id: "eira", level: 3, anchorId: 0 },
+  }, createTestRules({
+    finalWave: null,
+    enemyHps: [45, 44, 43, 42, 41],
+    enemySpeed: 0.01,
+  }));
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.drainEvents();
+
+  assert.deepEqual(simulation.useHeroAbility(), { ok: true, error: null });
+  assert.deepEqual(simulation.readView().hero.markedEnemyIds, [21_000, 21_001, 21_002, 21_003]);
+  const ability = simulation.drainEvents().find((event) => event.type === "hero_ability");
+  assert.deepEqual(ability?.targetIds, [21_000, 21_001, 21_002, 21_003]);
+  assert.equal(ability?.durationMs, 12_000);
+
+  for (let index = 0; index < 30 && simulation.readView().enemies.some((enemy) => enemy.id === 21_000); index += 1) {
+    simulation.advance(100);
+  }
+  assert.equal(simulation.readView().enemies.some((enemy) => enemy.id === 21_000), false);
+  assert.deepEqual(new Set(simulation.readView().hero.markedEnemyIds), new Set([21_001, 21_002, 21_003, 21_004]));
+});
+
+test("awakened Toren places a validated road barrier with capacity and boss limits", () => {
+  const simulation = new GameSimulation({
+    ...createCampaignState({ heroId: "toren" }),
+    completedWave: 20,
+    hero: { id: "toren", level: 3, anchorId: 0 },
+  }, createTestRules({
+    finalWave: null,
+    enemyHps: Array.from({ length: 9 }, () => 1_000),
+    enemyTypes: ["titan", ...Array.from({ length: 8 }, () => "raider")],
+    enemySpeed: 0.01,
+    controlResistance: 1,
+  }));
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.drainEvents();
+
+  assert.equal(simulation.useHeroAbility().error, "hero_ability_target_required");
+  assert.equal(simulation.useHeroAbility(Number.NaN).error, "invalid_hero_ability_target");
+  assert.equal(simulation.useHeroAbility(121).error, "invalid_hero_ability_target");
+  assert.deepEqual(simulation.useHeroAbility(0), { ok: true, error: null });
+  assert.equal(simulation.readView().hero.abilityCharges, 0);
+  assert.deepEqual(
+    {
+      progress: simulation.readView().hero.barrier?.progress,
+      capacity: simulation.readView().hero.barrier?.capacity,
+      capturedCount: simulation.readView().hero.barrier?.capturedCount,
+    },
+    { progress: 0, capacity: 8, capturedCount: 8 },
+  );
+  assert.equal(simulation.readView().enemies.filter((enemy) => enemy.blocked).length, 8);
+  assert.ok(simulation.readView().enemies.every((enemy) => enemy.hp < 1_000));
+
+  for (let index = 0; index < 24; index += 1) simulation.advance(100);
+  const titan = simulation.readView().enemies.find((enemy) => enemy.type === "titan");
+  assert.equal(titan?.blocked, false, "Titan ignores the second half of the barrier duration");
+  assert.equal(simulation.readView().hero.barrier?.capturedCount, 8);
+  assert.ok(simulation.readView().hero.barrier?.remainingMs > 0);
+  const events = simulation.drainEvents();
+  assert.ok(events.some((event) => event.type === "hero_barrier_created" && event.progress === 0));
+  assert.equal(events.filter((event) => event.type === "hero_barrier_blocked").length, 8);
+});
+
+test("Toren's gate shield absorbs leak damage before campaign lives", () => {
+  const simulation = new GameSimulation({
+    ...createCampaignState({ heroId: "toren" }),
+    completedWave: 12,
+    hero: { id: "toren", level: 3, anchorId: 0 },
+  }, createTestRules({
+    finalWave: null,
+    enemyHps: [10_000, 10_000, 10_000],
+    enemySpeed: 1_000,
+  }));
+  simulation.startWave();
+  assert.equal(simulation.readView().gateShield, 2);
+  const events = [...simulation.drainEvents()];
+  for (let index = 0; index < 60 && simulation.readView().phase !== "setup"; index += 1) {
+    simulation.advance(100);
+    events.push(...simulation.drainEvents());
+  }
+
+  assert.equal(simulation.getCampaign().lives, 19);
+  assert.equal(simulation.readView().gateShield, 0);
+  assert.equal(
+    events.filter((event) => event.type === "gate_shield_absorbed")
+      .reduce((total, event) => total + event.amount, 0),
+    2,
+  );
+  assert.deepEqual(
+    events.filter((event) => event.type === "enemy_leaked").map((event) => [event.damage, event.absorbed]),
+    [[0, 1], [0, 1], [1, 0]],
+  );
+});
+
+test("awakened Grak's war banner reaches towers outside his local aura", () => {
+  const baseRules = createTestRules({
+    finalWave: null,
+    enemyHp: 50_000,
+    enemySpeed: 0.01,
+    physicalResistance: 0.5,
+  });
+  const rules = Object.freeze({
+    ...baseRules,
+    routePoints: Object.freeze([
+      Object.freeze({ x: 300, y: 20 }),
+      Object.freeze({ x: 301, y: 20 }),
+    ]),
+    buildPads: Object.freeze([Object.freeze({ x: 300, y: 0 })]),
+  });
+  const createGrak = () => {
+    const simulation = new GameSimulation({
+      ...createCampaignState({ heroId: "grak" }),
+      completedWave: 20,
+      hero: { id: "grak", level: 3, anchorId: 0 },
+    }, rules);
+    simulation.build(0, "ranger");
+    simulation.startWave();
+    advanceToLiveWave(simulation);
+    simulation.drainEvents();
+    return simulation;
+  };
+  const baseline = createGrak();
+  const boosted = createGrak();
+  assert.deepEqual(boosted.useHeroAbility(), { ok: true, error: null });
+  assert.equal(boosted.readView().hero.bannerRemainingMs, 10_000);
+
+  for (let index = 0; index < 50; index += 1) {
+    baseline.advance(100);
+    boosted.advance(100);
+  }
+  assert.ok(boosted.readView().enemies[0].hp < baseline.readView().enemies[0].hp);
+});
+
+test("the twenty-fifth awakened kill grants one bankable second ability charge", () => {
+  const simulation = new GameSimulation({
+    ...createCampaignState({ heroId: "eira" }),
+    completedWave: 20,
+    hero: { id: "eira", level: 3, anchorId: 0 },
+  }, createTestRules({
+    finalWave: null,
+    enemyHps: [...Array.from({ length: 25 }, () => 1), 100_000],
+    enemySpeed: 0.01,
+  }));
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  const events = [...simulation.drainEvents()];
+  for (let index = 0; index < 250 && !simulation.readView().hero.bonusChargeEarned; index += 1) {
+    simulation.advance(100);
+    events.push(...simulation.drainEvents());
+  }
+
+  assert.equal(simulation.readView().hero.rechargeKills, 25);
+  assert.equal(simulation.readView().hero.bonusChargeEarned, true);
+  assert.equal(simulation.readView().hero.abilityCharges, 2);
+  assert.equal(events.filter((event) => event.type === "hero_ability_recharged").length, 1);
+  assert.deepEqual(simulation.useHeroAbility(), { ok: true, error: null });
+  assert.deepEqual(simulation.useHeroAbility(), { ok: true, error: null });
+  assert.equal(simulation.readView().hero.abilityCharges, 0);
+  assert.equal(simulation.readView().hero.bonusChargeEarned, true);
+  assert.equal(simulation.useHeroAbility().error, "hero_ability_unavailable");
+});
+
+test("Toren spends his charge before an impact earns the kill recharge", () => {
+  const simulation = new GameSimulation({
+    ...createCampaignState({ heroId: "toren" }),
+    completedWave: 20,
+    hero: { id: "toren", level: 3, anchorId: 0 },
+  }, createTestRules({
+    finalWave: null,
+    enemyHps: Array.from({ length: 25 }, () => 50),
+    enemySpeed: 0.01,
+  }));
+  simulation.startWave();
+  advanceToLiveWave(simulation);
+  simulation.drainEvents();
+
+  assert.deepEqual(simulation.useHeroAbility(0), { ok: true, error: null });
+  assert.equal(simulation.readView().hero.abilityCharges, 1);
+  assert.equal(simulation.readView().hero.bonusChargeEarned, true);
+  assert.equal(simulation.readView().hero.rechargeKills, 25);
+  assert.ok(simulation.drainEvents().some((event) => (
+    event.type === "hero_ability_recharged" && event.charges === 1
+  )));
+});
+
 test("hero ability commands replay to the same transient combat snapshot", () => {
   const campaign = {
     ...createCampaignState({ heroId: "toren" }),
+    completedWave: 20,
     hero: { id: "toren", level: 3, anchorId: 0 },
   };
   const rules = createTestRules({ finalWave: null, enemyHps: [2_000, 2_000], enemySpeed: 2 });
   const simulation = new GameSimulation(campaign, rules);
   simulation.startWave();
   advanceToLiveWave(simulation);
-  simulation.useHeroAbility();
+  simulation.useHeroAbility(10);
   for (let index = 0; index < 12; index += 1) simulation.advance(100);
 
   const replay = simulation.exportReplay();
   const restored = replaySimulation(replay, rules);
+  assert.equal(replay.version, 2);
   assert.deepEqual(restored.createSnapshot(), simulation.createSnapshot());
-  assert.ok(replay.commands.some((entry) => entry.command.type === "use_hero_ability"));
+  assert.ok(replay.commands.some((entry) => (
+    entry.command.type === "use_hero_ability" && entry.command.targetDistance === 10
+  )));
 });
 
 test("wave checkpoints keep hero build state but reset transient ability use on reopen", () => {
@@ -357,9 +589,18 @@ test("wave checkpoints keep hero build state but reset transient ability use on 
     y: 0,
     attackCooldownMs: 180,
     abilityAvailable: true,
+    awakened: false,
+    abilityCharges: 1,
+    maxAbilityCharges: 1,
+    rechargeKills: 0,
+    rechargeThreshold: 25,
+    bonusChargeEarned: false,
     markedEnemyId: null,
+    markedEnemyIds: [],
+    markRemainingMs: 0,
     bannerActive: false,
     bannerRemainingMs: 0,
+    barrier: null,
   });
 });
 
@@ -388,6 +629,7 @@ test("an exported command log replays to the same terminal snapshot", () => {
   assert.deepEqual(replay.commands.map((entry) => entry.command.type), ["build", "upgrade", "start_wave"]);
   assert.ok(Object.isFrozen(replay.commands));
   assert.throws(() => replaySimulation({ ...replay, rulesId: "wrong" }, rules), /rules do not match/);
+  assert.throws(() => replaySimulation({ ...replay, version: 1 }, rules), /rules do not match/);
 });
 
 test("a 36-wave endless soak remains bounded and completes within a generous budget", () => {

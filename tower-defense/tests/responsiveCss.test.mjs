@@ -135,7 +135,8 @@ test("phase, boss health, and pulse controls stay outside the battlefield", () =
   assert.ok(html.indexOf('id="pulse-button"') > battleEnd);
   assert.doesNotMatch(bossHud, /position:\s*absolute/);
   assert.doesNotMatch(phaseBadge, /position:\s*absolute/);
-  assert.match(pulseButton, /position:\s*static/);
+  assert.match(pulseButton, /position:\s*relative/);
+  assert.match(css, /\.pulse-charges \{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.encounter-strip \{[^}]*grid-column:\s*1 \/ -1;/s);
   assert.match(css, /\.boss-bars > span \{[^}]*height:\s*3px;/s);
 });

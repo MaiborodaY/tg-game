@@ -77,10 +77,35 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(mainSource, /hero_eira_aura_status/);
   assert.match(mainSource, /hero_toren_aura_status/);
   assert.match(mainSource, /hero_grak_aura_status/);
+  assert.match(mainSource, /aura\.globalStrength/);
   assert.match(mainSource, /dx \* dx \+ dy \* dy <= radiusSquared \? total \+ 1 : total/);
   assert.match(css, /p\[data-aura="tower_damage"\][\s\S]*#f1cc69/);
   assert.match(css, /p\[data-aura="slow"\][\s\S]*#75d8ef/);
   assert.doesNotMatch(mainSource, /pulseButton\.addEventListener\("click", \(\) => currentScene\(\)\?\.usePulse\(\)\)/);
+});
+
+test("awakening state exposes charges, recharge, gate shield, and Toren road targeting accessibly", () => {
+  assert.match(html, /id="gate-shield" class="gate-shield" hidden/);
+  assert.match(html, /id="pulse-charges" class="pulse-charges"[^>]*hidden><i><\/i><i><\/i>/);
+  assert.match(html, /id="hero-target-prompt"[^>]*role="status"[^>]*hidden/);
+  assert.match(html, /id="hero-target-cancel"/);
+  assert.equal(html.match(/data-hero-detail="awakening"/g)?.length, 2);
+  assert.match(mainSource, /ui\.hero\.abilityCharges/);
+  assert.match(mainSource, /ui\.hero\.bonusChargeEarned/);
+  assert.match(mainSource, /ui\.hero\.rechargeKills/);
+  assert.match(mainSource, /elements\.gateShield\.hidden = ui\.gateShield <= 0/);
+  assert.match(mainSource, /cancelHeroAbilityTargeting\(\)/);
+  assert.match(mainSource, /code === "hero_awakening_unlocked"/);
+  assert.match(css, /\.hero-target-prompt button \{[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.pulse-charges \{[^}]*position:\s*absolute;/s);
+});
+
+test("the selected build type explains its practical role without adding a fifth card", () => {
+  assert.equal(html.match(/data-tower=/g)?.length, 4);
+  assert.match(mainSource, /elements\.buildHint\.textContent = ui\.selectedBuildType[\s\S]*towerRole\(ui\.selectedBuildType\)/);
+  assert.match(mainSource, /function towerRole\(type: TowerType\)/);
+  assert.match(mainSource, /card\.title = role/);
+  assert.match(css, /\.panel-copy \{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s);
 });
 
 test("hero controls preserve compact rows and Telegram-sized touch targets", () => {

@@ -26,7 +26,7 @@ import {
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { isHeroUnlocked } from "./game/heroAvailability.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
-import { getHeroAura, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
+import { getHeroAura, getHeroStats, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
@@ -176,6 +176,7 @@ const elements = {
   hudRegion: byId("hud-region"),
   livesLabel: byId("lives-label"),
   livesValue: byId("lives-value"),
+  gateShield: byId("gate-shield"),
   goldLabel: byId("gold-label"),
   goldValue: byId("gold-value"),
   waveLabel: byId("wave-label"),
@@ -185,6 +186,7 @@ const elements = {
   speedButton: button("speed-button"),
   pulseButton: button("pulse-button"),
   pulseLabel: byId("pulse-label"),
+  pulseCharges: byId("pulse-charges"),
   phaseBadge: byId("phase-badge"),
   bossHud: byId("boss-hud"),
   bossIcon: byId("boss-icon"),
@@ -193,6 +195,9 @@ const elements = {
   bossHealthFill: byId("boss-health-fill"),
   bossShieldFill: byId("boss-shield-fill"),
   countdown: byId("countdown"),
+  heroTargetPrompt: byId("hero-target-prompt"),
+  heroTargetPromptLabel: byId("hero-target-prompt-label"),
+  heroTargetCancel: button("hero-target-cancel"),
   buildPanel: byId("build-panel"),
   towerPanel: byId("tower-panel"),
   heroPanel: byId("hero-panel"),
@@ -326,8 +331,11 @@ const gameCallbacks: TowerDefenseCallbacks = {
     }
   },
   onNotice: showNotice,
-  onWaveClear: (_wave, bonus, repairedLives) => {
-    showToast(`${text("wave_clear")} · ${text("clear_bonus", { amount: bonus })}`);
+  onWaveClear: (wave, bonus, repairedLives) => {
+    const awakeningUnlocked = wave === 20 && currentScene()?.getCampaign().hero.level === 3;
+    showToast(awakeningUnlocked
+      ? `${text("hero_awakening_unlocked")} · ${text("clear_bonus", { amount: bonus })}`
+      : `${text("wave_clear")} · ${text("clear_bonus", { amount: bonus })}`);
     if (repairedLives > 0) window.setTimeout(() => showToast(`♥ +${repairedLives} · ${text("boss_repair")}`), 750);
   },
   onTerminal: handleTerminal,
@@ -380,6 +388,7 @@ function bindInteractions(): void {
     control.addEventListener("click", () => setGameSpeed(control.dataset.menuSpeed));
   });
   elements.pulseButton.addEventListener("click", () => currentScene()?.useHeroAbility());
+  elements.heroTargetCancel.addEventListener("click", () => currentScene()?.cancelHeroAbilityTargeting());
   elements.upgradeButton.addEventListener("click", () => currentScene()?.upgradeSelectedTower());
   elements.sellButton.addEventListener("click", () => currentScene()?.sellSelectedTower());
   elements.closeTowerPanel.addEventListener("click", () => currentScene()?.clearSelection());
@@ -445,7 +454,8 @@ function bindInteractions(): void {
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
+    if (!elements.heroTargetPrompt.hidden) currentScene()?.cancelHeroAbilityTargeting();
+    else if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
     else if (!elements.gameMenuRestartConfirm.hidden) hideRestartConfirmation();
     else if (!elements.gameMenuOverlay.hidden) closeGameMenu(true);
     else if (!elements.heroPicker.hidden) closeHeroPicker(true);
@@ -530,6 +540,10 @@ function showRuntimeLoadFailure(): void {
 
 function renderUi(ui: TowerDefenseUiState): void {
   elements.livesValue.textContent = String(ui.campaign.lives);
+  elements.gateShield.hidden = ui.gateShield <= 0;
+  elements.gateShield.textContent = `◇ ${ui.gateShield}`;
+  elements.gateShield.title = text("hero_gate_shield", { count: ui.gateShield });
+  elements.gateShield.setAttribute("aria-label", elements.gateShield.title);
   elements.goldValue.textContent = String(ui.campaign.gold);
   elements.waveValue.textContent = `${ui.currentWave} / ${ui.finalWave ?? "∞"}`;
   elements.waveProgress.style.transform = `scaleX(${Math.min(1, Math.max(0, ui.waveProgress))})`;
@@ -543,16 +557,39 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.countdown.hidden = ui.phase !== "countdown" || ui.paused;
   elements.countdown.textContent = String(Math.max(1, ui.countdown));
   const heroAbility = heroAbilityName(ui.hero.id);
-  elements.pulseLabel.textContent = heroAbility;
-  elements.pulseButton.disabled = ui.phase !== "wave" || !ui.heroAbilityAvailable || ui.enemiesAlive === 0 || ui.paused;
-  elements.pulseButton.classList.toggle("is-used", !ui.heroAbilityAvailable);
+  const recharging = ui.hero.awakened
+    && ui.hero.abilityCharges === 0
+    && !ui.hero.bonusChargeEarned;
+  elements.pulseLabel.textContent = recharging
+    ? `${ui.hero.rechargeKills}/${ui.hero.rechargeThreshold}`
+    : heroAbility;
+  elements.pulseButton.disabled = ui.heroTargeting
+    || ui.phase !== "wave"
+    || ui.hero.abilityCharges <= 0
+    || ui.enemiesAlive === 0
+    || ui.paused;
+  elements.pulseButton.classList.toggle("is-used", ui.hero.abilityCharges <= 0);
+  elements.pulseButton.classList.toggle("is-targeting", ui.heroTargeting);
   elements.pulseButton.classList.toggle("is-eira", ui.hero.id === "eira");
   elements.pulseButton.classList.toggle("is-toren", ui.hero.id === "toren");
   elements.pulseButton.classList.toggle("is-grak", ui.hero.id === "grak");
-  elements.pulseButton.setAttribute("aria-label", text(
-    ui.heroAbilityAvailable ? "hero_ability_ready" : "hero_ability_used",
-    { ability: heroAbility },
-  ));
+  elements.pulseCharges.hidden = !ui.hero.awakened;
+  elements.pulseCharges.dataset.charges = String(ui.hero.abilityCharges);
+  elements.pulseButton.setAttribute("aria-label", recharging
+    ? text("hero_ability_recharge", {
+        count: ui.hero.rechargeKills,
+        total: ui.hero.rechargeThreshold,
+      })
+    : ui.hero.abilityCharges > 0 && ui.hero.awakened
+      ? text("hero_ability_ready_charges", {
+          ability: heroAbility,
+          current: ui.hero.abilityCharges,
+          max: ui.hero.maxAbilityCharges,
+        })
+      : text(ui.hero.abilityCharges > 0 ? "hero_ability_ready" : "hero_ability_used", {
+          ability: heroAbility,
+        }));
+  elements.heroTargetPrompt.hidden = !ui.heroTargeting;
   elements.bossHud.hidden = !ui.boss;
   if (ui.boss) {
     elements.bossIcon.textContent = ui.boss.type === "titan" ? "♜" : "♛";
@@ -566,6 +603,9 @@ function renderUi(ui: TowerDefenseUiState): void {
   }
 
   const editing = ui.phase === "setup" && !ui.paused;
+  elements.buildHint.textContent = ui.selectedBuildType
+    ? towerRole(ui.selectedBuildType)
+    : text("build_hint");
   elements.towerCards.forEach((card) => {
     const type = card.dataset.tower as TowerType;
     const selected = ui.selectedBuildType === type;
@@ -600,7 +640,10 @@ function renderUi(ui: TowerDefenseUiState): void {
     const upgradeWave = getHeroUpgradeWaveGate(hero.level);
     const upgradeUnlocked = upgradeWave === null || ui.campaign.completedWave >= upgradeWave;
     syncHeroPortrait(elements.selectedHeroEmblem, hero.id);
-    elements.selectedHeroRank.textContent = text("hero_rank", { count: hero.level });
+    elements.selectedHeroRank.textContent = hero.awakened
+      ? `${text("hero_rank", { count: hero.level })} · ✦`
+      : text("hero_rank", { count: hero.level });
+    elements.selectedHeroRank.title = hero.awakened ? text("hero_awakened") : elements.selectedHeroRank.textContent;
     elements.selectedHeroName.textContent = heroName(hero.id);
     elements.selectedHeroRole.textContent = heroRole(hero.id);
     syncHeroAuraStatus(ui);
@@ -644,8 +687,10 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
 
   elements.selectedHeroHint.dataset.aura = aura.kind;
   if (aura.kind === "slow") {
+    const stats = getHeroStats(ui.hero.id, ui.hero.level);
     elements.selectedHeroHint.textContent = text("hero_toren_aura_status", {
       slow: Math.round(aura.strength * 100),
+      shield: stats.gateShield,
     });
   } else {
     const level = CONTENT_CATALOG.levels[ui.levelId];
@@ -661,7 +706,8 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
       ? "hero_grak_aura_status"
       : "hero_eira_aura_status", {
       count,
-      bonus: Math.round(aura.strength * 100),
+      global: Math.round(aura.globalStrength * 100),
+      local: Math.round(aura.strength * 100),
     });
   }
   elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
@@ -694,6 +740,10 @@ function phaseLabel(ui: TowerDefenseUiState): string {
 }
 
 function showNotice(code: NoticeCode): void {
+  if (code === "hero_awakening_unlocked") {
+    showToast(text("hero_awakening_unlocked"));
+    return;
+  }
   if (code === "pulse_used") {
     const ability = heroAbilityName(latestUi?.hero.id ?? selectedHeroId);
     showToast(text("hero_ability_used", { ability }), true);
@@ -701,6 +751,10 @@ function showNotice(code: NoticeCode): void {
   }
   if (code === "hero_ability_unavailable") {
     showToast(text("hero_ability_no_target"), true);
+    return;
+  }
+  if (code === "hero_ability_target_required" || code === "invalid_hero_ability_target") {
+    showToast(text("hero_ability_target_road"), true);
     return;
   }
   const key: TranslationKey = code === "insufficient_gold"
@@ -1155,10 +1209,10 @@ function syncGameMenuUi(ui: TowerDefenseUiState | null): void {
     ? text("game_menu_restart_unavailable")
     : text("game_menu_restart");
   elements.gameMenuExit.hidden = !telegram.canClose;
-  renderHeroDetails(elements.gameMenuHeroDetails, ui.hero.id, ui.hero.level);
+  renderHeroDetails(elements.gameMenuHeroDetails, ui.hero.id, ui.hero.level, ui.hero.awakened);
 }
 
-function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number): void {
+function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number, awakened = false): void {
   const emblem = container.querySelector<HTMLElement>("[data-hero-detail-emblem]");
   if (emblem) syncHeroPortrait(emblem, heroId);
   const name = container.querySelector<HTMLElement>("[data-hero-detail-name]");
@@ -1169,12 +1223,20 @@ function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number
   setHeroDetailRow(container, "attack", "hero_detail_attack", `hero_${heroId}_attack_text` as TranslationKey);
   setHeroDetailRow(container, "passive", "hero_detail_passive", `hero_${heroId}_passive_text` as TranslationKey);
   setHeroDetailRow(container, "ability", "hero_detail_ability", `hero_${heroId}_ability_text` as TranslationKey);
+  setHeroDetailRow(
+    container,
+    "awakening",
+    "hero_detail_awakening",
+    awakened ? `hero_${heroId}_awakening_text` as TranslationKey : "hero_awakening_requirement",
+  );
+  const awakeningRow = container.querySelector<HTMLElement>('[data-hero-detail="awakening"]');
+  if (awakeningRow) awakeningRow.dataset.state = awakened ? "active" : "locked";
 
   const next = container.querySelector<HTMLElement>("[data-hero-detail-next]");
   if (!next) return;
   const upgradeCost = getHeroUpgradeCost(heroId, level as 1 | 2 | 3);
   next.textContent = upgradeCost === null
-    ? text("hero_max_rank")
+    ? text(awakened ? "hero_awakened" : "hero_max_rank")
     : text("hero_detail_next_upgrade", {
       rank: level + 1,
       effect: text(`hero_${heroId}_upgrade_${level + 1}` as TranslationKey),
@@ -1184,7 +1246,7 @@ function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number
 
 function setHeroDetailRow(
   container: HTMLElement,
-  kind: "rank" | "attack" | "passive" | "ability",
+  kind: "rank" | "attack" | "passive" | "ability" | "awakening",
   labelKey: TranslationKey | null,
   value: TranslationKey | string,
 ): void {
@@ -1246,7 +1308,15 @@ function applyStaticTranslations(): void {
   elements.frostName.textContent = text("tower_frost");
   elements.emberName.textContent = text("tower_ember");
   elements.stormName.textContent = text("tower_storm");
+  elements.towerCards.forEach((card) => {
+    const type = card.dataset.tower as TowerType;
+    const role = towerRole(type);
+    card.title = role;
+    card.setAttribute("aria-label", `${towerName(type)}. ${role}. ${TOWER_DEFINITIONS[type].buildCost} ${text("gold")}`);
+  });
   elements.nextWaveLabel.textContent = text("next_wave");
+  elements.heroTargetPromptLabel.textContent = text("hero_ability_target_road");
+  elements.heroTargetCancel.textContent = text("hero_ability_target_cancel");
   elements.introTitle.textContent = text("intro_title");
   elements.introBody.textContent = text("intro_body");
   elements.heroChoiceLabel.textContent = text("hero_choice");
@@ -1506,6 +1576,10 @@ function guideMatchup(kind: "strong" | "weak", labelKey: TranslationKey, valueKe
 
 function towerName(type: TowerType): string {
   return text(`tower_${type}` as TranslationKey);
+}
+
+function towerRole(type: TowerType): string {
+  return text(`tower_role_${type}` as TranslationKey);
 }
 
 function heroName(id: HeroId): string {

@@ -15,8 +15,19 @@ import {
   selectHealingTargets,
 } from "./enemyAbilities.ts";
 import { CLASSIC_CAMPAIGN_LEVEL, type LevelDefinition, type ModeRuleset } from "./content.ts";
-import { getHeroStats } from "./heroes.ts";
-import { createPathMetrics, samplePointAtDistance, type MutablePoint, type PathMetrics } from "./pathing.ts";
+import {
+  HERO_ABILITY_RECHARGE_KILLS,
+  HERO_AWAKENINGS,
+  getHeroStats,
+  isHeroAwakened,
+} from "./heroes.ts";
+import {
+  createPathMetrics,
+  getPointAtDistance,
+  samplePointAtDistance,
+  type MutablePoint,
+  type PathMetrics,
+} from "./pathing.ts";
 import {
   applyLeakDamage,
   awardEnemyKill,
@@ -67,7 +78,7 @@ export type SimulationRules = Readonly<{
 }>;
 
 export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
-  id: "forest-campaign:heroes-v2",
+  id: "forest-campaign:heroes-v3",
   routePoints: ROUTE_POINTS,
   buildPads: BUILD_PADS,
   heroAnchors: CLASSIC_CAMPAIGN_LEVEL.heroAnchors,
@@ -81,7 +92,7 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
 export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset): SimulationRules {
   const finalWave = mode.getFinalWave(level);
   return Object.freeze({
-    id: `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v2`,
+    id: `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v3`,
     routePoints: level.route,
     buildPads: level.buildPads,
     heroAnchors: level.heroAnchors,
@@ -103,10 +114,21 @@ export type EnemySimulationView = Readonly<TargetCandidate> & Readonly<{
   shield: number;
   maxShield: number;
   stunned: boolean;
+  blocked: boolean;
   burning: boolean;
   elite: boolean;
   bossTier: CampaignAct;
   enraged: boolean;
+}>;
+
+export type HeroBarrierSimulationView = Readonly<{
+  progress: number;
+  x: number;
+  y: number;
+  remainingMs: number;
+  capacity: number;
+  capturedCount: number;
+  capturedEnemyIds: readonly number[];
 }>;
 
 export type ProjectileSimulationView = Readonly<{
@@ -126,9 +148,18 @@ export type HeroSimulationView = Readonly<{
   y: number;
   attackCooldownMs: number;
   abilityAvailable: boolean;
+  awakened: boolean;
+  abilityCharges: number;
+  maxAbilityCharges: number;
+  rechargeKills: number;
+  rechargeThreshold: number;
+  bonusChargeEarned: boolean;
   markedEnemyId: number | null;
+  markedEnemyIds: readonly number[];
+  markRemainingMs: number;
   bannerActive: boolean;
   bannerRemainingMs: number;
+  barrier: HeroBarrierSimulationView | null;
 }>;
 
 export type SimulationView = Readonly<{
@@ -143,6 +174,7 @@ export type SimulationView = Readonly<{
   hero: HeroSimulationView;
   heroAbilityAvailable: boolean;
   pulseAvailable: boolean;
+  gateShield: number;
   waveResolvedCount: number;
   waveTotalCount: number;
   enemies: readonly EnemySimulationView[];
@@ -162,6 +194,7 @@ export type SimulationSnapshot = Readonly<{
   hero: HeroSimulationView;
   heroAbilityAvailable: boolean;
   pulseAvailable: boolean;
+  gateShield: number;
   waveResolvedCount: number;
   waveTotalCount: number;
   enemies: readonly Readonly<EnemySimulationView>[];
@@ -190,8 +223,27 @@ export type SimulationEvent =
       y: number;
       radius: number;
       targetId: number | null;
+      targetIds: readonly number[];
+      targetPoint: Point;
       durationMs: number;
     }>
+  | Readonly<{ type: "hero_ability_recharged"; heroId: HeroId; charges: number }>
+  | Readonly<{
+      type: "hero_barrier_created";
+      x: number;
+      y: number;
+      progress: number;
+      durationMs: number;
+      capacity: number;
+    }>
+  | Readonly<{
+      type: "hero_barrier_blocked";
+      enemyId: number;
+      x: number;
+      y: number;
+      durationMs: number;
+    }>
+  | Readonly<{ type: "gate_shield_absorbed"; amount: number; remaining: number }>
   | Readonly<{
       type: "enemy_healed";
       casterId: number;
@@ -232,7 +284,7 @@ export type SimulationEvent =
       bossTier: CampaignAct;
       shielded: boolean;
     }>
-  | Readonly<{ type: "enemy_leaked"; enemyId: number; x: number; y: number; damage: number }>
+  | Readonly<{ type: "enemy_leaked"; enemyId: number; x: number; y: number; damage: number; absorbed: number }>
   | Readonly<{ type: "wave_cleared"; wave: number; bonus: number; repairedLives: number }>
   | Readonly<{ type: "terminal"; outcome: SimulationOutcome; campaign: CampaignState }>;
 
@@ -255,6 +307,7 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   burnUntilMs: number;
   burnDamagePerSecond: number;
   stunUntilMs: number;
+  barrierUntilMs: number;
   controlResistance: number;
   healingRadius: number;
   healingRatio: number;
@@ -273,9 +326,25 @@ type ProjectileEntity = ProjectileSimulationView & {
   resistancePenetration: number;
 };
 
+type HeroBarrierEntity = {
+  progress: number;
+  x: number;
+  y: number;
+  untilMs: number;
+  capacity: number;
+  capturedEnemyIds: Set<number>;
+};
+
 export type SimulationCommandResult = Readonly<{
   ok: boolean;
-  error: CampaignError | "invalid_phase" | "hero_ability_unavailable" | "pulse_used" | null;
+  error:
+    | CampaignError
+    | "invalid_phase"
+    | "hero_ability_unavailable"
+    | "hero_ability_target_required"
+    | "invalid_hero_ability_target"
+    | "pulse_used"
+    | null;
 }>;
 
 export type SimulationCommand =
@@ -287,7 +356,7 @@ export type SimulationCommand =
   | Readonly<{ type: "start_wave" }>
   | Readonly<{ type: "set_paused"; paused: boolean }>
   | Readonly<{ type: "toggle_speed" }>
-  | Readonly<{ type: "use_hero_ability" }>
+  | Readonly<{ type: "use_hero_ability"; targetDistance?: number }>
   | Readonly<{ type: "use_pulse" }>;
 
 export type RecordedSimulationCommand = Readonly<{
@@ -296,7 +365,7 @@ export type RecordedSimulationCommand = Readonly<{
 }>;
 
 export type SimulationReplay = Readonly<{
-  version: 1;
+  version: 2;
   rulesId: string;
   initialCampaign: CampaignState;
   completedTicks: number;
@@ -327,10 +396,14 @@ export class GameSimulation {
   private completedTicks = 0;
   private nextSpawnIndex = 0;
   private heroAttackCooldownMs = 180;
-  private heroAbilityAvailable = true;
-  private markedEnemyId: number | null = null;
+  private heroAbilityCharges = 1;
+  private heroAbilityRechargeKills = 0;
+  private heroAbilityRechargeGranted = false;
+  private markedEnemyIds: number[] = [];
   private markUntilMs = 0;
   private bannerUntilMs = 0;
+  private heroBarrier: HeroBarrierEntity | null = null;
+  private gateShield = 0;
   private waveStartLives = 0;
   private waveCheckpoint: CampaignState | null = null;
   private lastCheckpointDurationMs = 0;
@@ -381,20 +454,41 @@ export class GameSimulation {
 
   private readHeroView(): HeroSimulationView {
     const point = this.getHeroPoint();
-    const markedEnemyId = this.markUntilMs > this.simulationTimeMs && this.enemiesById.has(this.markedEnemyId ?? -1)
-      ? this.markedEnemyId
+    const awakened = this.isCurrentHeroAwakened();
+    const markedEnemyIds = this.markUntilMs > this.simulationTimeMs
+      ? Object.freeze(this.markedEnemyIds.filter((id) => this.enemiesById.has(id)))
+      : Object.freeze([] as number[]);
+    const barrier = this.heroBarrier && this.heroBarrier.untilMs > this.simulationTimeMs
+      ? Object.freeze({
+          progress: this.heroBarrier.progress,
+          x: this.heroBarrier.x,
+          y: this.heroBarrier.y,
+          remainingMs: this.heroBarrier.untilMs - this.simulationTimeMs,
+          capacity: this.heroBarrier.capacity,
+          capturedCount: this.heroBarrier.capturedEnemyIds.size,
+          capturedEnemyIds: Object.freeze([...this.heroBarrier.capturedEnemyIds]),
+        })
       : null;
     return Object.freeze({
       ...this.campaign.hero,
       x: point.x,
       y: point.y,
       attackCooldownMs: Math.max(0, this.heroAttackCooldownMs),
-      abilityAvailable: this.heroAbilityAvailable,
-      markedEnemyId,
+      abilityAvailable: this.heroAbilityCharges > 0,
+      awakened,
+      abilityCharges: this.heroAbilityCharges,
+      maxAbilityCharges: awakened ? 2 : 1,
+      rechargeKills: awakened ? Math.min(HERO_ABILITY_RECHARGE_KILLS, this.heroAbilityRechargeKills) : 0,
+      rechargeThreshold: HERO_ABILITY_RECHARGE_KILLS,
+      bonusChargeEarned: awakened && this.heroAbilityRechargeGranted,
+      markedEnemyId: markedEnemyIds[0] ?? null,
+      markedEnemyIds,
+      markRemainingMs: markedEnemyIds.length > 0 ? this.markUntilMs - this.simulationTimeMs : 0,
       bannerActive: this.campaign.hero.id === "grak" && this.bannerUntilMs > this.simulationTimeMs,
       bannerRemainingMs: this.campaign.hero.id === "grak"
         ? Math.max(0, this.bannerUntilMs - this.simulationTimeMs)
         : 0,
+      barrier,
     });
   }
 
@@ -403,6 +497,10 @@ export class GameSimulation {
     return anchors[this.campaign.hero.anchorId]
       ?? anchors[0]
       ?? Object.freeze({ x: 0, y: 0 });
+  }
+
+  private isCurrentHeroAwakened(): boolean {
+    return isHeroAwakened(this.campaign.hero.level, this.campaign.completedWave);
   }
 
   readView(): SimulationView {
@@ -417,8 +515,9 @@ export class GameSimulation {
       wavePlan: this.wavePlan,
       countdownRemainingMs: this.countdownRemainingMs,
       hero,
-      heroAbilityAvailable: this.heroAbilityAvailable,
-      pulseAvailable: this.heroAbilityAvailable,
+      heroAbilityAvailable: this.heroAbilityCharges > 0,
+      pulseAvailable: this.heroAbilityCharges > 0,
+      gateShield: this.gateShield,
       waveResolvedCount: this.waveResolvedCount,
       waveTotalCount: this.waveTotalCount,
       enemies: this.enemies,
@@ -442,6 +541,7 @@ export class GameSimulation {
       hero: Object.freeze({ ...view.hero }),
       heroAbilityAvailable: view.heroAbilityAvailable,
       pulseAvailable: view.pulseAvailable,
+      gateShield: view.gateShield,
       waveResolvedCount: view.waveResolvedCount,
       waveTotalCount: view.waveTotalCount,
       enemies: Object.freeze(view.enemies.map((enemy) => Object.freeze({
@@ -456,6 +556,7 @@ export class GameSimulation {
         maxShield: enemy.maxShield,
         slowed: enemy.slowed,
         stunned: enemy.stunned,
+        blocked: enemy.blocked,
         burning: enemy.burning,
         elite: enemy.elite,
         bossTier: enemy.bossTier,
@@ -476,7 +577,7 @@ export class GameSimulation {
 
   exportReplay(): SimulationReplay {
     return Object.freeze({
-      version: 1,
+      version: 2,
       rulesId: this.rules.id,
       initialCampaign: this.initialCampaign,
       completedTicks: this.completedTicks,
@@ -501,7 +602,7 @@ export class GameSimulation {
         this.toggleSpeed();
         return COMMAND_SUCCESS;
       }
-      case "use_hero_ability": return this.useHeroAbility();
+      case "use_hero_ability": return this.useHeroAbility(command.targetDistance);
       case "use_pulse": return this.usePulse();
       default: return assertNeverCommand(command);
     }
@@ -593,10 +694,14 @@ export class GameSimulation {
     this.nextDynamicEnemyId = this.wavePlan.wave * 10_000 + this.wavePlan.spawns.length + 100;
     this.waveStartLives = this.campaign.lives;
     this.heroAttackCooldownMs = 180;
-    this.heroAbilityAvailable = true;
-    this.markedEnemyId = null;
+    this.heroAbilityCharges = 1;
+    this.heroAbilityRechargeKills = 0;
+    this.heroAbilityRechargeGranted = false;
+    this.markedEnemyIds = [];
     this.markUntilMs = 0;
     this.bannerUntilMs = 0;
+    this.heroBarrier = null;
+    this.gateShield = getHeroStats(this.campaign.hero.id, this.campaign.hero.level).gateShield;
     for (const tower of this.towers.values()) tower.cooldownMs = 180;
     this.phase = "countdown";
     if (this.wavePlan.hasBoss) this.events.push({ type: "haptic", kind: "heavy" });
@@ -619,53 +724,117 @@ export class GameSimulation {
     return this.speed;
   }
 
-  useHeroAbility(): SimulationCommandResult {
+  useHeroAbility(targetDistance?: number): SimulationCommandResult {
     if (this.phase !== "wave") return commandFailure("invalid_phase");
-    if (this.enemies.length === 0 || !this.heroAbilityAvailable) {
-      return commandFailure("hero_ability_unavailable");
-    }
+    if (this.heroAbilityCharges <= 0) return commandFailure("hero_ability_unavailable");
     const hero = this.campaign.hero;
     const stats = getHeroStats(hero.id, hero.level);
-    const point = this.getHeroPoint();
-    let targetId: number | null = null;
+    const heroPoint = this.getHeroPoint();
+    const awakened = this.isCurrentHeroAwakened();
+    let targetPoint: Point = heroPoint;
+    let targetIds: number[] = [];
+    let eventRadius = stats.abilityRadius;
+    let eventDurationMs = 0;
+    let torenVictims: EnemyEntity[] = [];
+    let barrierProgress: number | null = null;
 
     if (hero.id === "eira") {
-      const target = this.strongestEnemy(this.enemies);
-      if (!target) return commandFailure("hero_ability_unavailable");
-      targetId = target.id;
-      this.markedEnemyId = target.id;
-      this.markUntilMs = this.simulationTimeMs + stats.markDurationMs;
+      const targets = awakened
+        ? this.strongestEnemies(this.enemies, HERO_AWAKENINGS.eira.markedTargetCount)
+        : this.strongestEnemies(this.enemies, 1);
+      if (targets.length === 0) return commandFailure("hero_ability_unavailable");
+      targetIds = targets.map((target) => target.id);
+      targetPoint = Object.freeze({ x: targets[0].x, y: targets[0].y });
+      eventDurationMs = awakened ? HERO_AWAKENINGS.eira.abilityDurationMs : stats.markDurationMs;
     } else if (hero.id === "toren") {
-      const victims = [...this.enemies].filter((enemy) => squaredDistance(enemy, point) <= stats.abilityRadius ** 2);
-      if (victims.length === 0) return commandFailure("hero_ability_unavailable");
-      for (const enemy of victims) {
-        this.damageEnemy(enemy, stats.abilityDamage, stats.damageKind);
-        if (enemy.dead) continue;
-        const control = applyControlResistance(0.1, stats.abilityStunMs, enemy.controlResistance);
-        enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
+      if (awakened) {
+        if (targetDistance === undefined) return commandFailure("hero_ability_target_required");
+        if (
+          !Number.isFinite(targetDistance)
+          || targetDistance < 0
+          || targetDistance > this.path.totalLength
+        ) return commandFailure("invalid_hero_ability_target");
+        barrierProgress = targetDistance;
+        targetPoint = getPointAtDistance(this.path, targetDistance);
+        eventRadius = HERO_AWAKENINGS.toren.impactRadius;
+        eventDurationMs = HERO_AWAKENINGS.toren.abilityDurationMs;
+        torenVictims = this.enemies.filter(
+          (enemy) => squaredDistance(enemy, targetPoint) <= HERO_AWAKENINGS.toren.impactRadius ** 2,
+        );
+        targetIds = torenVictims.map((enemy) => enemy.id);
+      } else {
+        torenVictims = this.enemies.filter(
+          (enemy) => squaredDistance(enemy, heroPoint) <= stats.abilityRadius ** 2,
+        );
+        if (torenVictims.length === 0) return commandFailure("hero_ability_unavailable");
+        targetIds = torenVictims.map((enemy) => enemy.id);
+        eventDurationMs = stats.abilityStunMs;
       }
     } else {
-      this.bannerUntilMs = this.simulationTimeMs + stats.abilityDurationMs;
+      if (this.enemies.length === 0) return commandFailure("hero_ability_unavailable");
+      eventDurationMs = awakened ? HERO_AWAKENINGS.grak.abilityDurationMs : stats.abilityDurationMs;
     }
 
-    this.heroAbilityAvailable = false;
+    // Spend the charge before damage is resolved: the 25th kill caused by
+    // Toren's impact must be able to grant the earned recharge immediately.
+    this.heroAbilityCharges -= 1;
+    if (hero.id === "eira") {
+      this.markedEnemyIds = targetIds;
+      this.markUntilMs = this.simulationTimeMs + eventDurationMs;
+    } else if (hero.id === "toren" && awakened && barrierProgress !== null) {
+      this.clearHeroBarrier();
+      this.heroBarrier = {
+        progress: barrierProgress,
+        x: targetPoint.x,
+        y: targetPoint.y,
+        untilMs: this.simulationTimeMs + HERO_AWAKENINGS.toren.abilityDurationMs,
+        capacity: HERO_AWAKENINGS.toren.barrierCapacity,
+        capturedEnemyIds: new Set<number>(),
+      };
+    } else if (hero.id === "grak") {
+      this.bannerUntilMs = this.simulationTimeMs + eventDurationMs;
+    }
+
+    const frozenTargetIds = Object.freeze([...targetIds]);
     this.events.push(
       {
         type: "hero_ability",
         heroId: hero.id,
-        x: point.x,
-        y: point.y,
-        radius: stats.abilityRadius,
-        targetId,
-        durationMs: hero.id === "eira"
-          ? stats.markDurationMs
-          : hero.id === "toren"
-            ? stats.abilityStunMs
-            : stats.abilityDurationMs,
+        x: heroPoint.x,
+        y: heroPoint.y,
+        radius: eventRadius,
+        targetId: frozenTargetIds[0] ?? null,
+        targetIds: frozenTargetIds,
+        targetPoint,
+        durationMs: eventDurationMs,
       },
       { type: "haptic", kind: "medium" },
     );
-    this.recordCommand({ type: "use_hero_ability" });
+    if (this.heroBarrier) {
+      this.events.push({
+        type: "hero_barrier_created",
+        x: this.heroBarrier.x,
+        y: this.heroBarrier.y,
+        progress: this.heroBarrier.progress,
+        durationMs: HERO_AWAKENINGS.toren.abilityDurationMs,
+        capacity: this.heroBarrier.capacity,
+      });
+    }
+
+    if (hero.id === "toren") {
+      for (const enemy of torenVictims) {
+        const damage = awakened ? HERO_AWAKENINGS.toren.impactDamage : stats.abilityDamage;
+        this.damageEnemy(enemy, damage, stats.damageKind);
+        if (awakened || enemy.dead) continue;
+        const control = applyControlResistance(0.1, stats.abilityStunMs, enemy.controlResistance);
+        enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
+      }
+      if (awakened) this.captureBarrierEnemies();
+    }
+
+    this.recordCommand(targetDistance === undefined
+      ? { type: "use_hero_ability" }
+      : { type: "use_hero_ability", targetDistance });
     return COMMAND_SUCCESS;
   }
 
@@ -761,6 +930,7 @@ export class GameSimulation {
       magicResistance: spawn.magicResistance,
       slowed: false,
       stunned: false,
+      blocked: false,
       burning: false,
       enraged: false,
       slowUntilMs: 0,
@@ -769,6 +939,7 @@ export class GameSimulation {
       burnUntilMs: 0,
       burnDamagePerSecond: 0,
       stunUntilMs: 0,
+      barrierUntilMs: 0,
       controlResistance: spawn.controlResistance,
       healingRadius: spawn.healingRadius,
       healingRatio: spawn.healingRatio,
@@ -791,6 +962,7 @@ export class GameSimulation {
 
   private updateEnemies(deltaMs: number): void {
     // Spawn order is gameplay-visible for simultaneous burns and healer casts.
+    if (this.heroBarrier && this.heroBarrier.untilMs <= this.simulationTimeMs) this.heroBarrier = null;
     let index = 0;
     while (index < this.enemies.length) {
       const enemy = this.enemies[index];
@@ -809,6 +981,8 @@ export class GameSimulation {
       }
       if (enemy.dead) continue;
       enemy.stunned = enemy.stunUntilMs > this.simulationTimeMs;
+      this.captureEnemyWithBarrier(enemy);
+      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs;
 
       if (enemy.healingRadius > 0 && isEnemyAbilityReady(this.simulationTimeMs, enemy.stunUntilMs, enemy.lastHealAtMs)) {
         enemy.lastHealAtMs = this.simulationTimeMs + 2_800;
@@ -831,7 +1005,7 @@ export class GameSimulation {
       enemy.slowed = timedSlow || auraSlowFactor < 1;
       enemy.slowFactor = Math.min(timedSlow ? enemy.slowEffectFactor : 1, auraSlowFactor);
       enemy.enraged = (enemy.type === "boss" || enemy.type === "titan") && enemy.hp / enemy.maxHp <= 0.4;
-      if (!enemy.stunned) {
+      if (!enemy.stunned && !enemy.blocked) {
         enemy.progress += enemy.speed * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
       }
       if (enemy.progress >= this.path.totalLength) {
@@ -888,30 +1062,106 @@ export class GameSimulation {
     return applyControlResistance(stats.slowAuraFactor, 1_000, enemy.controlResistance).slowFactor;
   }
 
-  private strongestEnemy(candidates: readonly EnemyEntity[]): EnemyEntity | null {
-    return candidates.reduce<EnemyEntity | null>((best, enemy) => {
-      if (!best) return enemy;
-      const strength = enemy.hp + enemy.shield;
-      const bestStrength = best.hp + best.shield;
-      if (strength !== bestStrength) return strength > bestStrength ? enemy : best;
-      if (enemy.progress !== best.progress) return enemy.progress > best.progress ? enemy : best;
-      return enemy.id < best.id ? enemy : best;
-    }, null);
+  private captureBarrierEnemies(): void {
+    for (const enemy of this.enemies) this.captureEnemyWithBarrier(enemy);
+  }
+
+  private clearHeroBarrier(): void {
+    if (!this.heroBarrier) return;
+    for (const enemyId of this.heroBarrier.capturedEnemyIds) {
+      const enemy = this.enemiesById.get(enemyId);
+      if (enemy) enemy.barrierUntilMs = 0;
+    }
+    this.heroBarrier = null;
+  }
+
+  private captureEnemyWithBarrier(enemy: EnemyEntity): void {
+    const barrier = this.heroBarrier;
+    if (
+      !barrier
+      || barrier.untilMs <= this.simulationTimeMs
+      || barrier.capturedEnemyIds.has(enemy.id)
+      || barrier.capturedEnemyIds.size >= barrier.capacity
+      || Math.abs(enemy.progress - barrier.progress) > HERO_AWAKENINGS.toren.barrierCaptureRadius
+    ) return;
+
+    const maximumDuration = enemy.type === "boss" || enemy.type === "titan"
+      ? HERO_AWAKENINGS.toren.bossBarrierDurationMs
+      : HERO_AWAKENINGS.toren.abilityDurationMs;
+    const durationMs = Math.min(maximumDuration, barrier.untilMs - this.simulationTimeMs);
+    barrier.capturedEnemyIds.add(enemy.id);
+    enemy.barrierUntilMs = Math.max(enemy.barrierUntilMs, this.simulationTimeMs + durationMs);
+    enemy.blocked = true;
+    this.events.push({
+      type: "hero_barrier_blocked",
+      enemyId: enemy.id,
+      x: enemy.x,
+      y: enemy.y,
+      durationMs,
+    });
+  }
+
+  private strongestEnemies(candidates: readonly EnemyEntity[], limit: number): EnemyEntity[] {
+    return [...candidates]
+      .sort((left, right) => {
+        const strengthDelta = (right.hp + right.shield) - (left.hp + left.shield);
+        if (strengthDelta !== 0) return strengthDelta;
+        if (left.progress !== right.progress) return right.progress - left.progress;
+        return left.id - right.id;
+      })
+      .slice(0, Math.max(0, limit));
+  }
+
+  private refillAwakenedEiraMarks(): void {
+    if (
+      this.campaign.hero.id !== "eira"
+      || !this.isCurrentHeroAwakened()
+      || this.markUntilMs <= this.simulationTimeMs
+    ) return;
+    this.markedEnemyIds = this.markedEnemyIds.filter((id) => this.enemiesById.has(id));
+    const missing = HERO_AWAKENINGS.eira.markedTargetCount - this.markedEnemyIds.length;
+    if (missing <= 0) return;
+    const marked = new Set(this.markedEnemyIds);
+    const replacements = this.strongestEnemies(
+      this.enemies.filter((enemy) => !marked.has(enemy.id)),
+      missing,
+    );
+    this.markedEnemyIds.push(...replacements.map((enemy) => enemy.id));
+  }
+
+  private recordHeroAbilityRechargeKill(): void {
+    if (!this.isCurrentHeroAwakened() || this.heroAbilityRechargeGranted) return;
+    this.heroAbilityRechargeKills += 1;
+    if (this.heroAbilityRechargeKills < HERO_ABILITY_RECHARGE_KILLS) return;
+    this.heroAbilityRechargeGranted = true;
+    this.heroAbilityCharges = Math.min(2, this.heroAbilityCharges + 1);
+    this.events.push({
+      type: "hero_ability_recharged",
+      heroId: this.campaign.hero.id,
+      charges: this.heroAbilityCharges,
+    });
   }
 
   private getTowerAuraDamageMultiplier(originPadId: number): number {
     const hero = this.campaign.hero;
-    if (hero.id !== "eira" || hero.level < 2) return 1;
+    if (hero.id !== "eira") return 1;
     const stats = getHeroStats(hero.id, hero.level);
     const towerPoint = this.rules.buildPads[originPadId];
-    if (!towerPoint || squaredDistance(towerPoint, this.getHeroPoint()) > stats.towerDamageAuraRadius ** 2) return 1;
-    return stats.towerDamageMultiplier;
+    if (
+      towerPoint
+      && stats.towerDamageAuraRadius > 0
+      && squaredDistance(towerPoint, this.getHeroPoint()) <= stats.towerDamageAuraRadius ** 2
+    ) return stats.towerDamageMultiplier;
+    return stats.globalTowerDamageMultiplier;
   }
 
   private getMarkedTowerDamageMultiplier(enemy: EnemyEntity): number {
-    if (enemy.id !== this.markedEnemyId || this.simulationTimeMs >= this.markUntilMs) return 1;
+    if (!this.markedEnemyIds.includes(enemy.id) || this.simulationTimeMs >= this.markUntilMs) return 1;
     const hero = this.campaign.hero;
-    return hero.id === "eira" ? getHeroStats(hero.id, hero.level).markedTowerDamageMultiplier : 1;
+    if (hero.id !== "eira") return 1;
+    return this.isCurrentHeroAwakened()
+      ? HERO_AWAKENINGS.eira.markedTowerDamageMultiplier
+      : getHeroStats(hero.id, hero.level).markedTowerDamageMultiplier;
   }
 
   private getTowerDamageMultiplier(originPadId: number, enemy: EnemyEntity): number {
@@ -925,11 +1175,15 @@ export class GameSimulation {
     if (!towerPoint) return 1;
     const stats = getHeroStats(hero.id, hero.level);
     const distance = squaredDistance(towerPoint, this.getHeroPoint());
-    let multiplier = hero.level >= 2 && distance <= stats.towerAttackSpeedAuraRadius ** 2
+    let multiplier = stats.towerAttackSpeedAuraRadius > 0 && distance <= stats.towerAttackSpeedAuraRadius ** 2
       ? stats.towerAttackIntervalMultiplier
-      : 1;
-    if (this.bannerUntilMs > this.simulationTimeMs && distance <= stats.abilityRadius ** 2) {
-      multiplier *= stats.abilityTowerAttackIntervalMultiplier;
+      : stats.globalTowerAttackIntervalMultiplier;
+    if (this.bannerUntilMs > this.simulationTimeMs) {
+      if (this.isCurrentHeroAwakened()) {
+        multiplier *= HERO_AWAKENINGS.grak.towerAttackIntervalMultiplier;
+      } else if (distance <= stats.abilityRadius ** 2) {
+        multiplier *= stats.abilityTowerAttackIntervalMultiplier;
+      }
     }
     return multiplier;
   }
@@ -939,8 +1193,11 @@ export class GameSimulation {
     if (hero.id !== "grak" || this.bannerUntilMs <= this.simulationTimeMs) return 0;
     const towerPoint = this.rules.buildPads[originPadId];
     const stats = getHeroStats(hero.id, hero.level);
-    if (!towerPoint || squaredDistance(towerPoint, this.getHeroPoint()) > stats.abilityRadius ** 2) return 0;
-    return stats.abilityResistancePenetration;
+    if (!towerPoint) return 0;
+    if (this.isCurrentHeroAwakened()) return HERO_AWAKENINGS.grak.resistancePenetration;
+    return squaredDistance(towerPoint, this.getHeroPoint()) <= stats.abilityRadius ** 2
+      ? stats.abilityResistancePenetration
+      : 0;
   }
 
   private updateTowers(deltaMs: number): void {
@@ -1165,6 +1422,10 @@ export class GameSimulation {
 
   private killEnemy(enemy: EnemyEntity): void {
     if (enemy.dead) return;
+    const transferAwakenedMark = this.isCurrentHeroAwakened()
+      && this.campaign.hero.id === "eira"
+      && this.markUntilMs > this.simulationTimeMs
+      && this.markedEnemyIds.includes(enemy.id);
     enemy.dead = true;
     this.removeEnemy(enemy);
     this.waveResolvedCount += 1;
@@ -1180,6 +1441,8 @@ export class GameSimulation {
       bossTier: enemy.bossTier,
       shielded: enemy.maxShield > 0,
     });
+    if (transferAwakenedMark) this.refillAwakenedEiraMarks();
+    this.recordHeroAbilityRechargeKill();
     if (enemy.type === "boss" || enemy.type === "titan") {
       this.events.push({ type: "haptic", kind: "heavy" });
       this.lastKillHapticAtMs = this.simulationTimeMs;
@@ -1194,9 +1457,15 @@ export class GameSimulation {
     enemy.dead = true;
     this.removeEnemy(enemy);
     this.waveResolvedCount += 1;
-    this.campaign = applyLeakDamage(this.campaign, enemy.leakDamage);
+    const absorbed = Math.min(this.gateShield, enemy.leakDamage);
+    const damage = enemy.leakDamage - absorbed;
+    this.gateShield -= absorbed;
+    if (damage > 0) this.campaign = applyLeakDamage(this.campaign, damage);
+    if (absorbed > 0) {
+      this.events.push({ type: "gate_shield_absorbed", amount: absorbed, remaining: this.gateShield });
+    }
     this.events.push(
-      { type: "enemy_leaked", enemyId: enemy.id, x: enemy.x, y: enemy.y, damage: enemy.leakDamage },
+      { type: "enemy_leaked", enemyId: enemy.id, x: enemy.x, y: enemy.y, damage, absorbed },
       { type: "haptic", kind: "heavy" },
     );
     this.persistWaveDurationCheckpoint(true);
@@ -1241,10 +1510,14 @@ export class GameSimulation {
     this.waveCheckpoint = null;
     this.fixedStepAccumulatorMs = 0;
     this.phase = this.rules.isComplete(this.campaign.completedWave) ? "victory" : "setup";
-    this.heroAbilityAvailable = true;
-    this.markedEnemyId = null;
+    this.heroAbilityCharges = 1;
+    this.heroAbilityRechargeKills = 0;
+    this.heroAbilityRechargeGranted = false;
+    this.markedEnemyIds = [];
     this.markUntilMs = 0;
     this.bannerUntilMs = 0;
+    this.heroBarrier = null;
+    this.gateShield = 0;
     if (this.phase === "victory") this.endRun("victory");
   }
 
@@ -1256,9 +1529,11 @@ export class GameSimulation {
     this.wavePlan = null;
     this.waveCheckpoint = null;
     this.projectiles.length = 0;
-    this.markedEnemyId = null;
+    this.markedEnemyIds = [];
     this.markUntilMs = 0;
     this.bannerUntilMs = 0;
+    this.heroBarrier = null;
+    this.gateShield = 0;
     if (outcome === "gameover") {
       this.enemies.length = 0;
       this.enemiesById.clear();
@@ -1294,7 +1569,7 @@ export class GameSimulation {
 }
 
 export function replaySimulation(replay: SimulationReplay, rules: SimulationRules): GameSimulation {
-  if (replay.version !== 1 || replay.rulesId !== rules.id) throw new Error("Replay rules do not match.");
+  if (replay.version !== 2 || replay.rulesId !== rules.id) throw new Error("Replay rules do not match.");
   if (!Number.isSafeInteger(replay.completedTicks) || replay.completedTicks < 0) throw new Error("Replay tick count is invalid.");
   const simulation = new GameSimulation(replay.initialCampaign, rules);
   let previousTick = 0;

@@ -5,6 +5,7 @@ import {
   createPathMetrics,
   getPointAtDistance,
   getRouteAngleAtDistance,
+  projectPointToPathDistance,
   samplePointAtDistance,
 } from "../src/game/pathing.ts";
 
@@ -71,4 +72,25 @@ test("zero-length segments keep sampling and angles finite", () => {
   assert.deepEqual(samplePointAtDistance(path, 3, output), { x: 5, y: 3 });
   assert.equal(getRouteAngleAtDistance(path, 0), 0);
   assert.equal(Number.isFinite(getRouteAngleAtDistance(path, 3)), true);
+});
+
+test("point projection selects the nearest segment and clamps to route endpoints", () => {
+  const path = createPathMetrics([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }]);
+
+  assert.equal(projectPointToPathDistance(path, { x: 4, y: 3 }), 4);
+  assert.equal(projectPointToPathDistance(path, { x: 13, y: 7 }), 17);
+  assert.equal(projectPointToPathDistance(path, { x: -50, y: 0 }), 0);
+  assert.equal(projectPointToPathDistance(path, { x: 10, y: 50 }), 20);
+});
+
+test("equidistant path projection deterministically prefers the earliest progress", () => {
+  const path = createPathMetrics([
+    { x: 0, y: 0 },
+    { x: 10, y: 0 },
+    { x: 10, y: 10 },
+    { x: 0, y: 10 },
+  ]);
+
+  assert.equal(projectPointToPathDistance(path, { x: 5, y: 5 }), 5);
+  assert.equal(projectPointToPathDistance(path, { x: Number.NaN, y: Number.NaN }), 0);
 });

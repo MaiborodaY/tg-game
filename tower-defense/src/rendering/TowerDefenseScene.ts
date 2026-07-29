@@ -12,7 +12,12 @@ import {
   type ModeRuleset,
 } from "../game/content.ts";
 import { getHeroAura, getHeroStats } from "../game/heroes.ts";
-import { createPathMetrics, getRouteAngleAtDistance } from "../game/pathing.ts";
+import {
+  createPathMetrics,
+  getPointAtDistance,
+  getRouteAngleAtDistance,
+  projectPointToPathDistance,
+} from "../game/pathing.ts";
 import {
   GameSimulation,
   createSimulationRules,
@@ -65,7 +70,14 @@ import {
 
 export type GamePhase = SimulationPhase;
 export type TerminalOutcome = SimulationOutcome;
-export type NoticeCode = CampaignError | "build_locked" | "hero_ability_unavailable" | "select_pad" | "pulse_used";
+export type NoticeCode = CampaignError
+  | "build_locked"
+  | "hero_ability_unavailable"
+  | "hero_ability_target_required"
+  | "invalid_hero_ability_target"
+  | "hero_awakening_unlocked"
+  | "select_pad"
+  | "pulse_used";
 
 export type TowerDefenseUiState = Readonly<{
   campaign: CampaignState;
@@ -81,6 +93,8 @@ export type TowerDefenseUiState = Readonly<{
   selectedHero: boolean;
   hero: HeroSimulationView;
   heroAbilityAvailable: boolean;
+  gateShield: number;
+  heroTargeting: boolean;
   currentWave: number;
   waveProgress: number;
   enemiesAlive: number;
@@ -151,6 +165,12 @@ type HeroAuraTowerHighlight = {
   badge: Phaser.GameObjects.Text;
 };
 
+type HeroBarrierRenderView = {
+  container: Phaser.GameObjects.Container;
+  glow: Phaser.GameObjects.Arc;
+  counter: Phaser.GameObjects.Text;
+};
+
 export class TowerDefenseScene extends Phaser.Scene {
   private readonly callbacks: TowerDefenseCallbacks;
   private readonly level: LevelDefinition;
@@ -160,6 +180,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private selectedBuildType: TowerType | null;
   private selectedPadId: number | null = null;
   private selectedHero = false;
+  private heroAbilityTargeting = false;
   private readonly padViews = new Map<number, PadView>();
   private readonly towerViews = new Map<number, TowerRenderView>();
   private readonly enemyViews = new Map<number, EnemyRenderView>();
@@ -172,6 +193,8 @@ export class TowerDefenseScene extends Phaser.Scene {
   private lastHeroAttackAtMs = -1_000;
   private rangePreview?: Phaser.GameObjects.Arc;
   private heroAuraPreview?: Phaser.GameObjects.Arc;
+  private heroTargetPreview?: Phaser.GameObjects.Arc;
+  private heroBarrierView?: HeroBarrierRenderView;
   private readonly heroAuraTowerHighlights = new Map<number, HeroAuraTowerHighlight>();
   private lastUiEmitAt = -1_000;
   private lastBurnVfxAtMs = -1_000;
@@ -200,10 +223,18 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.syncRenderState();
     this.updatePadVisuals();
     this.emitUi(true);
+    this.input.on("pointermove", this.handleHeroTargetPointerMove, this);
+    this.input.on("pointerdown", this.handleHeroTargetPointerDown, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off("pointermove", this.handleHeroTargetPointerMove, this);
+      this.input.off("pointerdown", this.handleHeroTargetPointerDown, this);
       this.heroEffects?.destroy();
       this.heroEffects = undefined;
+      this.heroTargetPreview?.destroy();
+      this.heroTargetPreview = undefined;
+      this.heroBarrierView?.container.destroy(true);
+      this.heroBarrierView = undefined;
     });
 
     const view = this.simulation.readView();
@@ -255,6 +286,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.selectedPadId = null;
     this.selectedHero = false;
     this.selectedBuildType = null;
+    this.clearHeroAbilityTargeting();
     const view = this.simulation.readView();
     if (this.worldArt && view.wavePlan) setWorldAct(this, this.worldArt, view.wavePlan.act);
     this.processSimulationEvents();
@@ -274,6 +306,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   setPaused(value: boolean): void {
     const view = this.simulation.readView();
     if (view.phase === "gameover" || view.phase === "victory") return;
+    if (value) this.clearHeroAbilityTargeting();
     this.simulation.setPaused(value);
     this.tweens.timeScale = value ? 0 : 1;
     this.emitUi(true);
@@ -286,7 +319,32 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   useHeroAbility(): boolean {
-    const result = this.simulation.useHeroAbility();
+    const view = this.simulation.readView();
+    if (
+      view.hero.id === "toren"
+      && view.hero.awakened
+      && view.phase === "wave"
+      && !view.paused
+      && view.hero.abilityCharges > 0
+      && view.enemies.length > 0
+    ) {
+      this.heroAbilityTargeting = true;
+      const target = view.enemies.reduce((furthest, enemy) => enemy.progress > furthest.progress ? enemy : furthest);
+      this.updateHeroTargetPreview(projectPointToPathDistance(this.path, target));
+      this.emitUi(true);
+      return true;
+    }
+    return this.activateHeroAbility();
+  }
+
+  cancelHeroAbilityTargeting(): void {
+    if (!this.heroAbilityTargeting) return;
+    this.clearHeroAbilityTargeting();
+    this.emitUi(true);
+  }
+
+  private activateHeroAbility(targetDistance?: number): boolean {
+    const result = this.simulation.useHeroAbility(targetDistance);
     if (!result.ok) {
       const notice: NoticeCode = result.error === "invalid_phase"
         ? "build_locked"
@@ -294,6 +352,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.callbacks.onNotice(notice);
       return false;
     }
+    this.clearHeroAbilityTargeting();
     this.processSimulationEvents();
     this.syncRenderState();
     this.emitUi(true);
@@ -402,6 +461,34 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.emitUi(true);
   }
 
+  private handleHeroTargetPointerMove(pointer: Phaser.Input.Pointer): void {
+    if (!this.heroAbilityTargeting) return;
+    const distance = projectPointToPathDistance(this.path, { x: pointer.worldX, y: pointer.worldY });
+    this.updateHeroTargetPreview(distance);
+  }
+
+  private handleHeroTargetPointerDown(pointer: Phaser.Input.Pointer): void {
+    if (!this.heroAbilityTargeting) return;
+    const distance = projectPointToPathDistance(this.path, { x: pointer.worldX, y: pointer.worldY });
+    this.activateHeroAbility(distance);
+  }
+
+  private updateHeroTargetPreview(distance: number): void {
+    const point = getPointAtDistance(this.path, distance);
+    if (!this.heroTargetPreview) {
+      this.heroTargetPreview = this.add.circle(point.x, point.y, 23, 0x75d8ef, 0.12)
+        .setStrokeStyle(3, 0xbffaff, 0.96)
+        .setDepth(2_300);
+    }
+    this.heroTargetPreview.setPosition(point.x, point.y).setVisible(true);
+  }
+
+  private clearHeroAbilityTargeting(): void {
+    this.heroAbilityTargeting = false;
+    this.heroTargetPreview?.destroy();
+    this.heroTargetPreview = undefined;
+  }
+
   private syncHeroView(): void {
     const view = this.simulation.readView();
     const hero = view.hero;
@@ -426,19 +513,74 @@ export class TowerDefenseScene extends Phaser.Scene {
     moveHeroArt(this.heroView.art, hero);
     this.heroView.hitZone.setPosition(hero.x, hero.y - (hero.id === "grak" ? 7 : 0));
     updateHeroArtPose(this.heroView.art, hero.id, view.simulationTimeMs, false, attackProgress);
-    setHeroAbilityCharge(this.heroView.art, view.heroAbilityAvailable ? 1 : 0);
+    setHeroAbilityCharge(
+      this.heroView.art,
+      hero.maxAbilityCharges > 0 ? hero.abilityCharges / hero.maxAbilityCharges : 0,
+    );
     const heroStats = getHeroStats(hero.id, hero.level);
     this.heroEffects?.setBanner(
       hero.id === "grak" && hero.bannerActive ? hero : null,
-      heroStats.abilityRadius,
+      hero.awakened ? Math.hypot(this.level.width, this.level.height) : heroStats.abilityRadius,
       hero.bannerRemainingMs,
       view.simulationTimeMs,
     );
-    const markedEnemy = hero.markedEnemyId === null
-      ? null
-      : view.enemies.find((enemy) => enemy.id === hero.markedEnemyId) ?? null;
-    this.heroEffects?.setMark(markedEnemy, view.simulationTimeMs);
+    const markedIds = hero.markedEnemyIds.length > 0
+      ? hero.markedEnemyIds
+      : hero.markedEnemyId === null ? [] : [hero.markedEnemyId];
+    const markedEnemies = markedIds.flatMap((id) => {
+      const enemy = view.enemies.find((candidate) => candidate.id === id);
+      return enemy ? [enemy] : [];
+    });
+    this.heroEffects?.setMarks(markedEnemies, view.simulationTimeMs);
+    this.syncHeroBarrier(hero.barrier, view.simulationTimeMs);
     this.updateHeroSelectionVisuals(view);
+  }
+
+  private syncHeroBarrier(barrier: HeroSimulationView["barrier"], simulationTimeMs: number): void {
+    if (!barrier) {
+      this.heroBarrierView?.container.destroy(true);
+      this.heroBarrierView = undefined;
+      return;
+    }
+    if (!this.heroBarrierView) this.heroBarrierView = this.createHeroBarrierView();
+    const view = this.heroBarrierView;
+    const angle = getRouteAngleAtDistance(this.path, barrier.progress);
+    const pulse = (Math.sin(simulationTimeMs * 0.009) + 1) * 0.5;
+    view.container
+      .setPosition(barrier.x, barrier.y)
+      .setRotation(angle)
+      .setAlpha(0.76 + pulse * 0.2)
+      .setDepth(barrier.y + 50);
+    view.glow.setAlpha(0.08 + pulse * 0.08);
+    view.counter
+      .setText(`${barrier.capturedCount}/${barrier.capacity}`)
+      .setRotation(-angle)
+      .setVisible(barrier.capturedCount > 0);
+  }
+
+  private createHeroBarrierView(): HeroBarrierRenderView {
+    const container = this.add.container(0, 0);
+    const glow = this.add.circle(0, 0, 29, 0x75d8ef, 0.12).setStrokeStyle(2, 0xbffaff, 0.76);
+    const body = this.add.graphics();
+    body.fillStyle(0x254b45, 0.98);
+    body.lineStyle(2, 0xbffaff, 0.92);
+    body.fillRoundedRect(-8, -35, 16, 70, 4);
+    body.strokeRoundedRect(-8, -35, 16, 70, 4);
+    body.lineStyle(3, 0xe3c46c, 0.9);
+    body.lineBetween(-4, -27, 4, -19);
+    body.lineBetween(4, -19, -4, -11);
+    body.lineBetween(-4, 0, 4, 8);
+    body.lineBetween(4, 8, -4, 16);
+    const counter = this.add.text(0, -43, "", {
+      color: "#dffeff",
+      backgroundColor: "#173f3b",
+      fontFamily: "Arial, sans-serif",
+      fontSize: "9px",
+      fontStyle: "bold",
+      padding: { x: 4, y: 2 },
+    }).setOrigin(0.5);
+    container.add([glow, body, counter]);
+    return { container, glow, counter };
   }
 
   private updateHeroSelectionVisuals(view = this.simulation.readView()): void {
@@ -689,13 +831,14 @@ export class TowerDefenseScene extends Phaser.Scene {
       const hero = this.simulation.readView().hero;
       this.heroEffects?.playAbility(event.heroId, hero, 34 + event.level * 3);
       this.cameras.main.flash(150, 226, 196, 104, false);
+      if (hero.awakened) this.callbacks.onNotice("hero_awakening_unlocked");
       return;
     }
     if (event.type === "hero_ability") {
       const target = event.targetId === null
         ? null
         : this.simulation.readView().enemies.find((enemy) => enemy.id === event.targetId);
-      const point = target ?? event;
+      const point = target ?? event.targetPoint;
       const radius = event.heroId === "eira" ? 28 : event.radius;
       this.heroEffects?.playAbility(event.heroId, point, radius);
       if (event.heroId === "toren") this.cameras.main.shake(190, 0.005);
@@ -703,6 +846,27 @@ export class TowerDefenseScene extends Phaser.Scene {
         this.cameras.main.shake(230, 0.006);
         this.cameras.main.flash(170, 229, 111, 50, false);
       } else this.cameras.main.flash(130, 215, 195, 92, false);
+      return;
+    }
+    if (event.type === "hero_ability_recharged") {
+      const hero = this.simulation.readView().hero;
+      this.heroEffects?.playAbility(event.heroId, hero, 30);
+      createFloatingText(this, hero.x, hero.y - 34, `+${event.charges}`, "#f5d77f");
+      return;
+    }
+    if (event.type === "hero_barrier_created") {
+      this.heroEffects?.playAbility("toren", event, 48);
+      this.cameras.main.shake(130, 0.0035);
+      return;
+    }
+    if (event.type === "hero_barrier_blocked") {
+      createFloatingText(this, event.x, event.y - 24, "✦", "#bffaff");
+      return;
+    }
+    if (event.type === "gate_shield_absorbed") {
+      const gate = this.level.route[this.level.route.length - 1];
+      if (gate) createFloatingText(this, gate.x, gate.y - 30, `◇ −${event.amount}`, "#bffaff");
+      this.cameras.main.flash(100, 117, 216, 239, false);
       return;
     }
     if (event.type === "enemy_healed") {
@@ -760,13 +924,16 @@ export class TowerDefenseScene extends Phaser.Scene {
         this.enemyViews.delete(event.enemyId);
         this.releaseEnemyArt(renderView);
       }
-      if (this.worldArt) createGateHitEffect(this, this.worldArt, event.damage);
-      this.cameras.main.shake(170, 0.006);
+      if (event.damage > 0) {
+        if (this.worldArt) createGateHitEffect(this, this.worldArt, event.damage);
+        this.cameras.main.shake(170, 0.006);
+      }
       return;
     }
     if (event.type === "wave_cleared") {
       this.selectedHero = false;
       this.selectedBuildType = "ranger";
+      this.clearHeroAbilityTargeting();
       this.callbacks.onWaveClear(event.wave, event.bonus, event.repairedLives);
       const view = this.simulation.readView();
       if (this.worldArt && view.phase === "setup") setWorldAct(this, this.worldArt, this.simulation.getCurrentWavePlan().act);
@@ -778,6 +945,7 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   private handleTerminalEvent(outcome: TerminalOutcome, campaign: CampaignState): void {
     this.tweens.timeScale = 1;
+    this.clearHeroAbilityTargeting();
     this.releaseAllProjectiles();
     if (outcome === "gameover") {
       this.releaseAllEnemies();
@@ -969,6 +1137,8 @@ export class TowerDefenseScene extends Phaser.Scene {
       selectedHero: this.selectedHero,
       hero: view.hero,
       heroAbilityAvailable: view.heroAbilityAvailable,
+      gateShield: view.gateShield,
+      heroTargeting: this.heroAbilityTargeting,
       currentWave,
       waveProgress: view.phase === "setup"
         ? 0

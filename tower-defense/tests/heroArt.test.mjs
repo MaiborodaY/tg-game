@@ -69,7 +69,7 @@ test("the Phaser scene derives hero rendering and selection from simulation stat
   assert.match(sceneSource, /this\.level\.heroAnchors\.forEach\(\(point, anchorId\) =>/);
   assert.match(sceneSource, /this\.simulation\.moveHero\(anchorId\)/);
   assert.match(sceneSource, /this\.simulation\.upgradeHero\(\)/);
-  assert.match(sceneSource, /this\.simulation\.useHeroAbility\(\)/);
+  assert.match(sceneSource, /this\.simulation\.useHeroAbility\(targetDistance\)/);
   assert.match(sceneSource, /hero: view\.hero/);
   assert.match(sceneSource, /selectedHero: this\.selectedHero/);
   assert.match(sceneSource, /heroAbilityAvailable: view\.heroAbilityAvailable/);
@@ -93,7 +93,7 @@ test("Grak's banner persists from simulation state and visualizes its full effec
   );
   const bannerSyncSource = heroSyncSource.slice(
     heroSyncSource.indexOf("const heroStats"),
-    heroSyncSource.indexOf("const markedEnemy"),
+    heroSyncSource.indexOf("const markedIds"),
   );
   assert.equal(source.match(/const banner = createHeroBanner\(scene\)/g)?.length, 1);
   assert.match(source, /function setBanner\(point: Point \| null, radius: number, remainingMs: number, elapsedMs: number\)/);
@@ -135,15 +135,37 @@ test("hero domain events use pooled rendering effects instead of gameplay branch
   assert.doesNotMatch(sceneSource, /campaign\.hero\s*=|campaign\.hero\.[a-zA-Z]+\s*=/);
 });
 
-test("Eira's persistent mark reuses one visual and follows the simulation target", () => {
+test("Eira's persistent marks reuse a bounded pool and follow all simulation targets", () => {
   const heroSyncSource = sceneSource.slice(
     sceneSource.indexOf("private syncHeroView"),
     sceneSource.indexOf("private updateHeroSelectionVisuals"),
   );
-  const markSyncSource = heroSyncSource.slice(heroSyncSource.indexOf("const markedEnemy"));
-  assert.equal(source.match(/const mark = createHeroMark\(scene\)/g)?.length, 1);
-  assert.match(source, /function setMark\(point: Point \| null, elapsedMs: number\)/);
+  const markSyncSource = heroSyncSource.slice(
+    heroSyncSource.indexOf("const markedIds"),
+    heroSyncSource.indexOf("this.syncHeroBarrier"),
+  );
+  assert.match(source, /const marks = Array\.from\(\{ length: 4 \}, \(\) => createHeroMark\(scene\)\)/);
+  assert.match(source, /function setMarks\(points: readonly Point\[\], elapsedMs: number\)/);
   assert.match(source, /mark\.container[\s\S]*setPosition\(point\.x, point\.y\)[\s\S]*setVisible\(true\)/);
-  assert.match(sceneSource, /hero\.markedEnemyId[\s\S]*view\.enemies\.find[\s\S]*heroEffects\?\.setMark/);
+  assert.match(sceneSource, /hero\.markedEnemyIds[\s\S]*view\.enemies\.find[\s\S]*heroEffects\?\.setMarks/);
   assert.doesNotMatch(markSyncSource, /this\.add\./);
+});
+
+test("awakened Toren targeting projects taps to the route and renders one transient barrier", () => {
+  assert.match(sceneSource, /projectPointToPathDistance\(this\.path, \{ x: pointer\.worldX, y: pointer\.worldY \}\)/);
+  assert.match(sceneSource, /this\.simulation\.useHeroAbility\(targetDistance\)/);
+  assert.match(sceneSource, /private syncHeroBarrier\(barrier: HeroSimulationView\["barrier"\]/);
+  assert.match(sceneSource, /barrier\.capturedCount[\s\S]*barrier\.capacity/);
+  assert.match(sceneSource, /event\.type === "hero_barrier_created"/);
+  assert.match(sceneSource, /event\.type === "hero_barrier_blocked"/);
+  assert.match(sceneSource, /const point = target \?\? event\.targetPoint/);
+  assert.match(sceneSource, /private handleTerminalEvent[\s\S]*this\.clearHeroAbilityTargeting\(\)/);
+});
+
+test("a fully absorbed leak keeps damage-only gate feedback hidden", () => {
+  const leakEventSource = sceneSource.slice(
+    sceneSource.indexOf('event.type === "enemy_leaked"'),
+    sceneSource.indexOf('event.type === "wave_cleared"'),
+  );
+  assert.match(leakEventSource, /if \(event\.damage > 0\) \{[\s\S]*createGateHitEffect[\s\S]*cameras\.main\.shake/);
 });

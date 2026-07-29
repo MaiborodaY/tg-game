@@ -68,6 +68,7 @@ export type HeroEffectPool = Readonly<{
   playAttack(heroId: HeroId, from: Point, to: Point): void;
   playAbility(heroId: HeroId, point: Point, radius: number): void;
   setMark(point: Point | null, elapsedMs: number): void;
+  setMarks(points: readonly Point[], elapsedMs: number): void;
   setBanner(point: Point | null, radius: number, remainingMs: number, elapsedMs: number): void;
   destroy(): void;
 }>;
@@ -284,7 +285,7 @@ function drawClosedShape(graphics: Phaser.GameObjects.Graphics, points: readonly
 export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
   const attackEffects: AttackEffect[] = [];
   const abilityEffects: AbilityEffect[] = [];
-  const mark = createHeroMark(scene);
+  const marks = Array.from({ length: 4 }, () => createHeroMark(scene));
   const banner = createHeroBanner(scene);
 
   function playAttack(heroId: HeroId, from: Point, to: Point): void {
@@ -353,20 +354,28 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
   }
 
   function setMark(point: Point | null, elapsedMs: number): void {
-    if (!point) {
-      mark.container.setVisible(false);
-      return;
-    }
+    setMarks(point ? [point] : [], elapsedMs);
+  }
+
+  function setMarks(points: readonly Point[], elapsedMs: number): void {
     const safeTime = Number.isFinite(elapsedMs) ? elapsedMs : 0;
     const pulse = (Math.sin(safeTime * 0.008) + 1) * 0.5;
-    mark.container
-      .setPosition(point.x, point.y)
-      .setRotation(Math.sin(safeTime * 0.0024) * 0.08)
-      .setScale(0.94 + pulse * 0.1)
-      .setVisible(true)
-      .setDepth(1_075);
-    mark.ring.setAlpha(0.68 + pulse * 0.28);
-    mark.rune.setAlpha(0.72 + pulse * 0.28);
+    for (let index = 0; index < marks.length; index += 1) {
+      const mark = marks[index];
+      const point = points[index];
+      if (!point) {
+        mark.container.setVisible(false);
+        continue;
+      }
+      mark.container
+        .setPosition(point.x, point.y)
+        .setRotation(Math.sin(safeTime * 0.0024 + index * 0.7) * 0.08)
+        .setScale(0.94 + pulse * 0.1)
+        .setVisible(true)
+        .setDepth(1_075);
+      mark.ring.setAlpha(0.68 + pulse * 0.28);
+      mark.rune.setAlpha(0.72 + pulse * 0.28);
+    }
   }
 
   function setBanner(point: Point | null, radius: number, remainingMs: number, elapsedMs: number): void {
@@ -406,7 +415,7 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       effect.ring.destroy();
       effect.core.destroy();
     }
-    mark.container.destroy(true);
+    for (const mark of marks) mark.container.destroy(true);
     banner.aura.destroy();
     banner.innerRing.destroy();
     banner.container.destroy(true);
@@ -414,7 +423,7 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
     abilityEffects.length = 0;
   }
 
-  return Object.freeze({ playAttack, playAbility, setMark, setBanner, destroy });
+  return Object.freeze({ playAttack, playAbility, setMark, setMarks, setBanner, destroy });
 }
 
 function createHeroMark(scene: Phaser.Scene): Readonly<{
