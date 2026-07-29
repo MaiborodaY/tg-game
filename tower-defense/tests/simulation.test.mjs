@@ -15,7 +15,15 @@ import {
 } from "../src/game/simulation.ts";
 import { createCampaignState } from "../src/game/state.ts";
 
-function createTestRules({ finalWave = 1, enemyHp = 1, enemyHps = null, enemySpeed = 8, controlResistance = 0 } = {}) {
+function createTestRules({
+  finalWave = 1,
+  enemyHp = 1,
+  enemyHps = null,
+  enemySpeed = 8,
+  controlResistance = 0,
+  physicalResistance = 0,
+  magicResistance = 0,
+} = {}) {
   const healthValues = enemyHps ?? [enemyHp];
   return Object.freeze({
     id: "test:campaign:v1",
@@ -41,8 +49,8 @@ function createTestRules({ finalWave = 1, enemyHp = 1, enemyHps = null, enemySpe
         speed: enemySpeed,
         reward: 5,
         leakDamage: 1,
-        physicalResistance: 0,
-        magicResistance: 0,
+        physicalResistance,
+        magicResistance,
         shieldRatio: 0,
         controlResistance,
         healingRadius: 0,
@@ -127,7 +135,7 @@ test("content levels and modes adapt into simulation rules without Phaser", () =
   assert.equal(campaign.createWavePlan(18).wave, 18);
   assert.equal(endless.finalWave, null);
   assert.equal(endless.createWavePlan(19).wave, 19);
-  assert.match(campaign.id, /northern-pass:campaign.*heroes-v1/);
+  assert.match(campaign.id, /northern-pass:campaign.*heroes-v2/);
 });
 
 test("hero movement and upgrades are setup-only deterministic commands", () => {
@@ -244,6 +252,64 @@ test("Toren auto-attacks clustered enemies with deterministic short splash", () 
   )));
 });
 
+test("Grak rank-two passive speeds up nearby towers", () => {
+  const rules = createTestRules({ finalWave: null, enemyHp: 50_000, enemySpeed: 0.01 });
+  const remainingHp = (anchorId) => {
+    const campaign = {
+      ...createCampaignState({ heroId: "grak" }),
+      hero: { id: "grak", level: 2, anchorId },
+    };
+    const simulation = new GameSimulation(campaign, rules);
+    simulation.build(0, "ranger");
+    simulation.startWave();
+    advanceToLiveWave(simulation);
+    for (let index = 0; index < 100; index += 1) simulation.advance(100);
+    return simulation.readView().enemies[0].hp;
+  };
+
+  assert.ok(remainingHp(0) < remainingHp(2));
+});
+
+test("Grak banner is once per wave, boosts nearby towers, and expires deterministically", () => {
+  const rules = createTestRules({
+    finalWave: null,
+    enemyHp: 50_000,
+    enemySpeed: 0.01,
+    physicalResistance: 0.5,
+  });
+  const createGrakSimulation = () => {
+    const simulation = new GameSimulation(createCampaignState({ heroId: "grak" }), rules);
+    simulation.build(0, "ranger");
+    simulation.startWave();
+    advanceToLiveWave(simulation);
+    simulation.drainEvents();
+    return simulation;
+  };
+  const baseline = createGrakSimulation();
+  const boosted = createGrakSimulation();
+
+  assert.deepEqual(boosted.useHeroAbility(), { ok: true, error: null });
+  assert.equal(boosted.readView().hero.bannerActive, true);
+  assert.equal(boosted.readView().hero.bannerRemainingMs, 6_000);
+  assert.equal(boosted.useHeroAbility().error, "hero_ability_unavailable");
+  assert.ok(boosted.drainEvents().some((event) => (
+    event.type === "hero_ability"
+    && event.heroId === "grak"
+    && event.durationMs === 6_000
+  )));
+
+  for (let index = 0; index < 50; index += 1) {
+    baseline.advance(100);
+    boosted.advance(100);
+  }
+  assert.ok(boosted.readView().enemies[0].hp < baseline.readView().enemies[0].hp);
+  assert.equal(boosted.readView().hero.bannerActive, true);
+
+  for (let index = 0; index < 11; index += 1) boosted.advance(100);
+  assert.equal(boosted.readView().hero.bannerActive, false);
+  assert.equal(boosted.readView().hero.bannerRemainingMs, 0);
+});
+
 test("hero ability commands replay to the same transient combat snapshot", () => {
   const campaign = {
     ...createCampaignState({ heroId: "toren" }),
@@ -292,6 +358,8 @@ test("wave checkpoints keep hero build state but reset transient ability use on 
     attackCooldownMs: 180,
     abilityAvailable: true,
     markedEnemyId: null,
+    bannerActive: false,
+    bannerRemainingMs: 0,
   });
 });
 

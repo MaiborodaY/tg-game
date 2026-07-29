@@ -8,7 +8,7 @@ const heroAnchorSource = source.slice(
   source.indexOf("export function createHeroAnchorArt"),
   source.indexOf("export function createHeroEffectPool"),
 );
-const heroIds = ["eira", "toren"];
+const heroIds = ["eira", "toren", "grak"];
 
 test("hero art exhaustively maps every approved hero to a profile and builder", () => {
   assert.match(source, /satisfies Readonly<Record<HeroId, HeroVisualProfile>>/);
@@ -20,13 +20,18 @@ test("hero art exhaustively maps every approved hero to a profile and builder", 
   assert.equal(new Set(heroIds).size, heroIds.length);
 });
 
-test("Eira and Toren keep distinct readable silhouettes and signature weapons", () => {
+test("every hero keeps a distinct readable silhouette and signature weapon", () => {
   assert.match(source, /function drawEira[\s\S]*fillTriangle[\s\S]*bow\.arc[\s\S]*arrowHead/);
   assert.match(source, /function drawToren[\s\S]*leftShoulder[\s\S]*beard[\s\S]*hammerHead[\s\S]*rune/);
   assert.match(source, /eira:[\s\S]*primary: 0x2f7550[\s\S]*accent: 0xe6c665/);
   assert.match(source, /toren:[\s\S]*primary: 0x777a74[\s\S]*accent: 0xb77b43/);
   assert.match(source, /toren:[\s\S]*shadowWidth: 48/);
   assert.match(source, /eira:[\s\S]*shadowWidth: 37/);
+  assert.match(source, /function drawGrak[\s\S]*backBanner[\s\S]*leftTusk[\s\S]*mohawk[\s\S]*axeHead[\s\S]*axeRune/);
+  assert.match(source, /grak:[\s\S]*primary: 0x3d7145[\s\S]*accent: 0xe56f32/);
+  assert.match(source, /grak:[\s\S]*shadowWidth: 52/);
+  assert.match(source, /const axeBlade[\s\S]*axeBlade\.lineTo\(18, 0\)/);
+  assert.match(source, /effect\.axeBlade\.setVisible\(heroId === "grak"\)/);
 });
 
 test("hero rendering stays code-native and pools bounded combat effects", () => {
@@ -75,10 +80,28 @@ test("selected heroes show distinct attack and aura ranges with affected tower h
   assert.match(sceneSource, /if \(this\.selectedHero\) \{[\s\S]*getHeroStats\(view\.hero\.id, view\.hero\.level\)/);
   assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, stats\.attackRange/);
   assert.match(sceneSource, /getHeroAura\(view\.hero\.id, view\.hero\.level\)/);
-  assert.match(sceneSource, /aura\.kind === "tower_damage" \? 0xf1cc69 : 0x75d8ef/);
+  assert.match(sceneSource, /aura\.kind === "tower_damage"[\s\S]*0xf1cc69[\s\S]*aura\.kind === "tower_attack_speed"[\s\S]*0xff8a45/);
   assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, aura\.radius/);
-  assert.match(sceneSource, /highlightAuraTowers\(view\.campaign\.towers, aura\.radius, aura\.strength\)/);
+  assert.match(sceneSource, /highlightAuraTowers\(view\.campaign\.towers, aura\.radius, aura\.strength, aura\.kind\)/);
   assert.match(sceneSource, /this\.heroAuraTowerHighlights\.set\(tower\.padId, \{ ring, badge \}\)/);
+});
+
+test("Grak's banner persists from simulation state and visualizes its full effect radius", () => {
+  const heroSyncSource = sceneSource.slice(
+    sceneSource.indexOf("private syncHeroView"),
+    sceneSource.indexOf("private updateHeroSelectionVisuals"),
+  );
+  const bannerSyncSource = heroSyncSource.slice(
+    heroSyncSource.indexOf("const heroStats"),
+    heroSyncSource.indexOf("const markedEnemy"),
+  );
+  assert.equal(source.match(/const banner = createHeroBanner\(scene\)/g)?.length, 1);
+  assert.match(source, /function setBanner\(point: Point \| null, radius: number, remainingMs: number, elapsedMs: number\)/);
+  assert.match(source, /banner\.aura[\s\S]*setRadius\(safeRadius\)[\s\S]*setStrokeStyle\(3, 0xff8a45/);
+  assert.match(source, /function createHeroBanner[\s\S]*const cloth[\s\S]*const rune/);
+  assert.match(heroSyncSource, /hero\.id === "grak" && hero\.bannerActive \? hero : null/);
+  assert.match(heroSyncSource, /heroStats\.abilityRadius[\s\S]*hero\.bannerRemainingMs/);
+  assert.doesNotMatch(bannerSyncSource, /this\.add\./);
 });
 
 test("hero ability failures keep a distinct unavailable notice", () => {

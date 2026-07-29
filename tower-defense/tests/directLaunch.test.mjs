@@ -112,6 +112,7 @@ test("Mini App bootstrap cache preserves the server run binding without durable 
 
 test("rewarded checkpoints resume visibly and blocked local saves warn only once", () => {
   assert.match(mainSource, /const restoredCheckpoint = savedCampaign \|\| migrated/);
+  assert.doesNotMatch(mainSource, /restoredHeroUnavailable/);
   assert.match(mainSource, /restoredCheckpoint && hasRunProgress\(restoredCheckpoint\)/);
   assert.match(mainSource, /showToast\(text\("run_resumed", \{ wave: nextWave \}\)\)/);
   assert.match(mainSource, /miniAppBootstrap\?\.resumed[\s\S]*showToast\(text\("run_resume_unavailable"\), true\)/);

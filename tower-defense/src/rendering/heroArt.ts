@@ -36,6 +36,17 @@ export const HERO_VISUAL_PROFILES = Object.freeze({
     stepRate: 0.008,
     bob: 0.8,
   }),
+  grak: Object.freeze({
+    primary: 0x3d7145,
+    secondary: 0x33251f,
+    accent: 0xe56f32,
+    shadowWidth: 52,
+    shadowHeight: 18,
+    silhouetteWidth: 51,
+    silhouetteHeight: 51,
+    stepRate: 0.009,
+    bob: 1.05,
+  }),
 } satisfies Readonly<Record<HeroId, HeroVisualProfile>>);
 
 export type HeroArt = Readonly<{
@@ -57,6 +68,7 @@ export type HeroEffectPool = Readonly<{
   playAttack(heroId: HeroId, from: Point, to: Point): void;
   playAbility(heroId: HeroId, point: Point, radius: number): void;
   setMark(point: Point | null, elapsedMs: number): void;
+  setBanner(point: Point | null, radius: number, remainingMs: number, elapsedMs: number): void;
   destroy(): void;
 }>;
 
@@ -76,6 +88,7 @@ type AttackEffect = {
   container: Phaser.GameObjects.Container;
   shaft: Phaser.GameObjects.Rectangle;
   head: Phaser.GameObjects.Triangle;
+  axeBlade: Phaser.GameObjects.Graphics;
   active: boolean;
   tween: Phaser.Tweens.Tween | null;
 };
@@ -86,6 +99,13 @@ type AbilityEffect = {
   active: boolean;
   tween: Phaser.Tweens.Tween | null;
 };
+
+type HeroBannerArt = Readonly<{
+  aura: Phaser.GameObjects.Arc;
+  innerRing: Phaser.GameObjects.Arc;
+  container: Phaser.GameObjects.Container;
+  cloth: Phaser.GameObjects.Graphics;
+}>;
 
 const MAX_ATTACK_EFFECTS = 12;
 const MAX_ABILITY_EFFECTS = 4;
@@ -135,6 +155,7 @@ const HERO_ANCHOR_PALETTES = Object.freeze({
 const HERO_BUILDERS = {
   eira: drawEira,
   toren: drawToren,
+  grak: drawGrak,
 } satisfies Readonly<Record<HeroId, HeroBuilder>>;
 
 export function createHeroArt(scene: Phaser.Scene, heroId: HeroId, point: Point): HeroArt {
@@ -173,12 +194,14 @@ export function updateHeroArtPose(
   const swing = Math.sin(attack * Math.PI);
 
   art.body.y = rig.bodyHomeY - Math.abs(stride) * visual.bob;
-  art.body.rotation = stride * (heroId === "eira" ? 0.025 : 0.014);
+  art.body.rotation = stride * (heroId === "eira" ? 0.025 : heroId === "grak" ? 0.018 : 0.014);
   art.body.scaleX = 1 + Math.sin(phase * 0.42) * 0.012;
   art.body.scaleY = 1 - Math.sin(phase * 0.42) * 0.009;
   art.weapon.y = art.body.y;
-  art.weapon.rotation = rig.weaponHomeRotation + (heroId === "eira" ? -0.18 : -0.72) * swing;
-  art.weapon.scaleX = 1 + swing * (heroId === "eira" ? 0.03 : 0.08);
+  const weaponSwing = heroId === "eira" ? -0.18 : heroId === "grak" ? -1.02 : -0.72;
+  const weaponStretch = heroId === "eira" ? 0.03 : heroId === "grak" ? 0.12 : 0.08;
+  art.weapon.rotation = rig.weaponHomeRotation + weaponSwing * swing;
+  art.weapon.scaleX = 1 + swing * weaponStretch;
 }
 
 export function moveHeroArt(art: HeroArt, point: Point): void {
@@ -262,18 +285,25 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
   const attackEffects: AttackEffect[] = [];
   const abilityEffects: AbilityEffect[] = [];
   const mark = createHeroMark(scene);
+  const banner = createHeroBanner(scene);
 
   function playAttack(heroId: HeroId, from: Point, to: Point): void {
     const effect = acquireAttackEffect(scene, attackEffects);
     const visual = HERO_VISUAL_PROFILES[heroId];
     effect.tween?.stop();
     effect.active = true;
-    effect.shaft.setFillStyle(heroId === "eira" ? visual.accent : visual.secondary, 1);
-    effect.head.setFillStyle(heroId === "eira" ? 0xf4e2a1 : visual.accent, 1);
+    effect.shaft
+      .setFillStyle(heroId === "eira" ? visual.accent : heroId === "grak" ? 0x6a4228 : visual.secondary, 1)
+      .setSize(heroId === "grak" ? 17 : 20, heroId === "grak" ? 5 : 3);
+    effect.head
+      .setFillStyle(heroId === "eira" ? 0xf4e2a1 : visual.accent, 1)
+      .setScale(1)
+      .setVisible(heroId !== "grak");
+    effect.axeBlade.setVisible(heroId === "grak");
     effect.container
       .setPosition(from.x, from.y - 8)
       .setRotation(Math.atan2(to.y - from.y, to.x - from.x))
-      .setScale(heroId === "eira" ? 1 : 1.34)
+      .setScale(heroId === "eira" ? 1 : heroId === "grak" ? 1.52 : 1.34)
       .setAlpha(1)
       .setVisible(true)
       .setDepth(1_100);
@@ -281,8 +311,9 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       targets: effect.container,
       x: to.x,
       y: to.y - 6,
+      ...(heroId === "grak" ? { rotation: effect.container.rotation + Math.PI * 2.5 } : {}),
       alpha: heroId === "eira" ? 0.9 : 0.25,
-      duration: heroId === "eira" ? 155 : 110,
+      duration: heroId === "eira" ? 155 : heroId === "grak" ? 210 : 110,
       ease: "Quad.Out",
       onComplete: () => releaseAttackEffect(effect),
     });
@@ -299,14 +330,14 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       .setRadius(14)
       .setScale(1)
       .setAlpha(0.95)
-      .setStrokeStyle(heroId === "eira" ? 3 : 4, visual.accent, 0.95)
+      .setStrokeStyle(heroId === "eira" ? 3 : heroId === "grak" ? 5 : 4, visual.accent, 0.95)
       .setVisible(true)
       .setDepth(1_090);
     effect.core
       .setPosition(point.x, point.y)
       .setRadius(9)
       .setScale(1)
-      .setAlpha(heroId === "eira" ? 0.28 : 0.4)
+      .setAlpha(heroId === "eira" ? 0.28 : heroId === "grak" ? 0.5 : 0.4)
       .setFillStyle(visual.primary, 1)
       .setVisible(true)
       .setDepth(1_089);
@@ -315,7 +346,7 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       targets: [effect.ring, effect.core],
       scale,
       alpha: 0,
-      duration: heroId === "eira" ? 460 : 380,
+      duration: heroId === "eira" ? 460 : heroId === "grak" ? 520 : 380,
       ease: "Cubic.Out",
       onComplete: () => releaseAbilityEffect(effect),
     });
@@ -338,6 +369,33 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
     mark.rune.setAlpha(0.72 + pulse * 0.28);
   }
 
+  function setBanner(point: Point | null, radius: number, remainingMs: number, elapsedMs: number): void {
+    const active = point !== null && remainingMs > 0;
+    banner.container.setVisible(active);
+    banner.aura.setVisible(active);
+    banner.innerRing.setVisible(active);
+    if (!active || !point) return;
+
+    const safeTime = Number.isFinite(elapsedMs) ? elapsedMs : 0;
+    const pulse = (Math.sin(safeTime * 0.0065) + 1) * 0.5;
+    const safeRadius = Math.max(24, Number.isFinite(radius) ? radius : 24);
+    banner.aura
+      .setPosition(point.x, point.y)
+      .setRadius(safeRadius)
+      .setAlpha(0.13 + pulse * 0.05)
+      .setStrokeStyle(3, 0xff8a45, 0.74 + pulse * 0.18)
+      .setDepth(4);
+    banner.innerRing
+      .setPosition(point.x, point.y)
+      .setRadius(Math.max(18, safeRadius - 8))
+      .setAlpha(0.16 + pulse * 0.06)
+      .setDepth(5);
+    banner.container
+      .setPosition(point.x + 22, point.y - 10)
+      .setDepth(point.y + 48);
+    banner.cloth.setScale(1 + pulse * 0.035, 1 - pulse * 0.025);
+  }
+
   function destroy(): void {
     for (const effect of attackEffects) {
       effect.tween?.stop();
@@ -349,11 +407,14 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       effect.core.destroy();
     }
     mark.container.destroy(true);
+    banner.aura.destroy();
+    banner.innerRing.destroy();
+    banner.container.destroy(true);
     attackEffects.length = 0;
     abilityEffects.length = 0;
   }
 
-  return Object.freeze({ playAttack, playAbility, setMark, destroy });
+  return Object.freeze({ playAttack, playAbility, setMark, setBanner, destroy });
 }
 
 function createHeroMark(scene: Phaser.Scene): Readonly<{
@@ -370,6 +431,40 @@ function createHeroMark(scene: Phaser.Scene): Readonly<{
   rune.lineBetween(0, -16, 0, -10);
   container.add([ring, rune]);
   return Object.freeze({ container, ring, rune });
+}
+
+function createHeroBanner(scene: Phaser.Scene): HeroBannerArt {
+  const aura = scene.add.circle(0, 0, 24, 0xe56f32, 0.12)
+    .setStrokeStyle(3, 0xff8a45, 0.82)
+    .setVisible(false);
+  const innerRing = scene.add.circle(0, 0, 18, 0x5b281e, 0.08)
+    .setStrokeStyle(1, 0xffc078, 0.5)
+    .setVisible(false);
+  const container = scene.add.container(0, 0).setVisible(false);
+  const shadow = scene.add.ellipse(0, 17, 19, 7, 0x100b08, 0.42);
+  const pole = scene.add.rectangle(0, -8, 4, 50, 0x68442d, 1)
+    .setStrokeStyle(1, 0xc59255, 0.9);
+  const spear = scene.add.triangle(0, -37, 0, -8, -5, 2, 5, 2, 0xe7a25c, 1)
+    .setStrokeStyle(1, 0x6a321f, 1);
+  const cloth = scene.add.graphics().setPosition(2, -27);
+  cloth.fillStyle(0x9d3124, 1);
+  cloth.lineStyle(2, 0xf0793d, 1);
+  cloth.beginPath();
+  cloth.moveTo(0, 0);
+  cloth.lineTo(25, 3);
+  cloth.lineTo(19, 13);
+  cloth.lineTo(25, 22);
+  cloth.lineTo(0, 19);
+  cloth.closePath();
+  cloth.fillPath();
+  cloth.strokePath();
+  const rune = scene.add.graphics().setPosition(12, -17);
+  rune.lineStyle(2, 0xffcf85, 0.95);
+  rune.strokeCircle(0, 0, 5);
+  rune.lineBetween(-4, 4, 4, -4);
+  rune.lineBetween(-3, -4, 4, 3);
+  container.add([shadow, pole, cloth, rune, spear]);
+  return Object.freeze({ aura, innerRing, container, cloth });
 }
 
 function drawEira(
@@ -438,6 +533,109 @@ function drawToren(
   weapon.add([handle, hammerHead, rune, cap]);
 }
 
+function drawGrak(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+): void {
+  const backBannerPole = scene.add.rectangle(-18, -6, 3, 48, 0x6b442d, 1).setRotation(-0.08);
+  const backBanner = scene.add.graphics().setPosition(-20, -29).setRotation(-0.08);
+  backBanner.fillStyle(0x8f3026, 1);
+  backBanner.lineStyle(2, 0xe56f32, 0.9);
+  backBanner.beginPath();
+  backBanner.moveTo(0, 0);
+  backBanner.lineTo(20, 4);
+  backBanner.lineTo(14, 12);
+  backBanner.lineTo(19, 20);
+  backBanner.lineTo(0, 17);
+  backBanner.closePath();
+  backBanner.fillPath();
+  backBanner.strokePath();
+
+  const leftBoot = scene.add.ellipse(-9, 16, 13, 12, 0x251b17, 1).setRotation(-0.14);
+  const rightBoot = scene.add.ellipse(9, 16, 13, 12, 0x251b17, 1).setRotation(0.14);
+  const furCloak = scene.add.graphics();
+  furCloak.fillStyle(0x392923, 1).fillTriangle(-20, -8, 20, -8, 0, 21);
+  furCloak.lineStyle(2, 0x81604a, 0.88).strokeTriangle(-20, -8, 20, -8, 0, 21);
+  const torso = scene.add.ellipse(0, -2, 39, 34, 0x3d7145, 1).setStrokeStyle(2, 0x203e2b, 1);
+  const chestHarness = scene.add.graphics();
+  chestHarness.lineStyle(5, 0x6b422b, 1);
+  chestHarness.lineBetween(-13, -12, 12, 10);
+  chestHarness.lineBetween(13, -12, -6, 8);
+  const belt = scene.add.rectangle(0, 9, 38, 6, 0x43281e, 1).setStrokeStyle(1, 0xb8733d, 0.85);
+  const buckle = scene.add.circle(0, 9, 5, 0xca7239, 1).setStrokeStyle(2, 0x55291f, 1);
+  const leftShoulder = scene.add.circle(-20, -8, 10, 0x5e3828, 1).setStrokeStyle(2, 0xd26a34, 0.92);
+  const rightShoulder = scene.add.circle(20, -8, 10, 0x5e3828, 1).setStrokeStyle(2, 0xd26a34, 0.92);
+  const shoulderSpikes = scene.add.graphics();
+  shoulderSpikes.fillStyle(0xd8b273, 1);
+  shoulderSpikes.fillTriangle(-27, -13, -21, -28, -17, -12);
+  shoulderSpikes.fillTriangle(17, -12, 22, -28, 27, -13);
+
+  const neck = scene.add.rectangle(0, -18, 12, 10, 0x467f4b, 1);
+  const head = scene.add.ellipse(0, -26, 25, 23, 0x4b884f, 1).setStrokeStyle(2, 0x24492d, 1);
+  const brow = scene.add.rectangle(0, -30, 19, 4, 0x285234, 1).setRotation(-0.03);
+  const nose = scene.add.ellipse(0, -24, 6, 8, 0x35673e, 1);
+  const jaw = scene.add.ellipse(0, -17, 21, 10, 0x397441, 1).setStrokeStyle(1, 0x1c3d27, 1);
+  const leftTusk = scene.add.triangle(-8, -18, 0, 5, 7, 4, 4, -5, 0xf1d49b, 1).setRotation(-0.14);
+  const rightTusk = scene.add.triangle(8, -18, 0, 5, -7, 4, -4, -5, 0xf1d49b, 1).setRotation(0.14);
+  const eyes = scene.add.graphics();
+  eyes.fillStyle(0xffb04e, 1);
+  eyes.fillCircle(-5, -29, 1.5);
+  eyes.fillCircle(5, -29, 1.5);
+  const mohawk = scene.add.graphics();
+  mohawk.fillStyle(0xb94028, 1);
+  mohawk.fillTriangle(-7, -36, -3, -50, 1, -36);
+  mohawk.fillTriangle(-2, -37, 3, -53, 7, -35);
+  mohawk.lineStyle(1, 0xf06f37, 0.84);
+  mohawk.lineBetween(-4, -39, -2, -48);
+  mohawk.lineBetween(2, -39, 3, -50);
+  body.add([
+    backBannerPole,
+    backBanner,
+    leftBoot,
+    rightBoot,
+    furCloak,
+    torso,
+    chestHarness,
+    belt,
+    buckle,
+    leftShoulder,
+    rightShoulder,
+    shoulderSpikes,
+    neck,
+    head,
+    brow,
+    nose,
+    jaw,
+    leftTusk,
+    rightTusk,
+    eyes,
+    mohawk,
+  ]);
+
+  const axeHandle = scene.add.rectangle(17, -2, 6, 47, 0x69432b, 1)
+    .setStrokeStyle(1, 0xd09551, 0.8)
+    .setRotation(-0.36);
+  const axeHead = scene.add.graphics().setPosition(22, -23).setRotation(-0.36);
+  axeHead.fillStyle(0x3c4645, 1);
+  axeHead.lineStyle(2, 0xd66b35, 1);
+  axeHead.beginPath();
+  axeHead.moveTo(-4, -7);
+  axeHead.lineTo(13, -11);
+  axeHead.lineTo(18, 0);
+  axeHead.lineTo(13, 11);
+  axeHead.lineTo(-4, 7);
+  axeHead.closePath();
+  axeHead.fillPath();
+  axeHead.strokePath();
+  const axeRune = scene.add.graphics().setPosition(26, -23).setRotation(-0.36);
+  axeRune.lineStyle(2, 0xffa75f, 0.95);
+  axeRune.lineBetween(-4, 0, 4, 0);
+  axeRune.lineBetween(0, -4, 0, 4);
+  const grip = scene.add.rectangle(10, 18, 9, 8, 0xa83a29, 1).setRotation(-0.36);
+  weapon.add([axeHandle, axeHead, axeRune, grip]);
+}
+
 function acquireAttackEffect(scene: Phaser.Scene, pool: AttackEffect[]): AttackEffect {
   const available = pool.find((effect) => !effect.active);
   if (available) return available;
@@ -451,8 +649,21 @@ function acquireAttackEffect(scene: Phaser.Scene, pool: AttackEffect[]): AttackE
   const container = scene.add.container(0, 0).setVisible(false);
   const shaft = scene.add.rectangle(0, 0, 20, 3, 0xe6c665, 1).setOrigin(0.35, 0.5);
   const head = scene.add.triangle(13, 0, 0, 0, -7, -5, -7, 5, 0xf4e2a1, 1);
-  container.add([shaft, head]);
-  const effect: AttackEffect = { container, shaft, head, active: false, tween: null };
+  const axeBlade = scene.add.graphics().setVisible(false);
+  axeBlade.fillStyle(0x424a49, 1);
+  axeBlade.lineStyle(2, 0xf0793d, 1);
+  axeBlade.beginPath();
+  axeBlade.moveTo(5, -10);
+  axeBlade.lineTo(14, -7);
+  axeBlade.lineTo(18, 0);
+  axeBlade.lineTo(14, 7);
+  axeBlade.lineTo(5, 10);
+  axeBlade.lineTo(8, 0);
+  axeBlade.closePath();
+  axeBlade.fillPath();
+  axeBlade.strokePath();
+  container.add([shaft, head, axeBlade]);
+  const effect: AttackEffect = { container, shaft, head, axeBlade, active: false, tween: null };
   pool.push(effect);
   return effect;
 }
@@ -460,6 +671,8 @@ function acquireAttackEffect(scene: Phaser.Scene, pool: AttackEffect[]): AttackE
 function releaseAttackEffect(effect: AttackEffect): void {
   effect.tween = null;
   effect.active = false;
+  effect.head.setVisible(true);
+  effect.axeBlade.setVisible(false);
   effect.container.setVisible(false).setAlpha(1).setScale(1);
 }
 

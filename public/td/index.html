@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-5yk226lJ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Dl9d9aUK.css">
+    <script type="module" crossorigin src="./assets/index-CnDGvhKe.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BNeuI2HC.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -83,7 +83,7 @@
         <div id="hero-panel" class="hero-panel" hidden>
           <button id="close-hero-panel" class="panel-close" type="button" aria-label="Закрыть">×</button>
           <div class="selected-hero">
-            <span id="selected-hero-emblem" class="hero-emblem eira" aria-hidden="true"><i></i></span>
+            <span id="selected-hero-emblem" class="hero-emblem eira" aria-hidden="true"><img src="./assets/eira-portrait-rVJ71EgI.webp" alt=""></span>
             <div>
               <small id="selected-hero-rank">Ранг 1</small>
               <strong id="selected-hero-name">Эйра</strong>
@@ -140,7 +140,7 @@
           <small id="session-choice-hint">Выбор сохраняется для тренировочных запусков.</small>
         </div>
         <button id="hero-choice-button" class="hero-choice-button" type="button" aria-controls="hero-picker" aria-expanded="false">
-          <span id="hero-choice-emblem" class="hero-emblem eira" aria-hidden="true"><i></i></span>
+          <span id="hero-choice-emblem" class="hero-emblem eira" aria-hidden="true"><img src="./assets/eira-portrait-rVJ71EgI.webp" alt=""></span>
           <span class="hero-choice-copy">
             <small id="hero-choice-label">Герой</small>
             <strong id="hero-choice-name">Эйра</strong>
@@ -160,19 +160,25 @@
           <p id="hero-picker-hint">Герой сражается сам. Между волнами его можно перемещать по стоянкам.</p>
           <div class="hero-options" role="radiogroup" aria-labelledby="hero-picker-title">
             <button class="hero-option is-selected" type="button" role="radio" aria-checked="true" data-hero-choice="eira">
-              <span class="hero-emblem eira" aria-hidden="true"><i></i></span>
-              <span><strong id="hero-eira-name">Эйра</strong><small id="hero-eira-role">Охотница на сильные цели</small><b id="hero-eira-ability">Метка охотницы</b></span>
+              <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./assets/eira-portrait-rVJ71EgI.webp" alt=""></span>
+              <span class="hero-option-copy"><strong id="hero-eira-name">Эйра</strong><small id="hero-eira-role">Охотница на сильные цели</small><b id="hero-eira-ability">Метка охотницы</b></span>
               <i class="hero-option-check" aria-hidden="true">✓</i>
             </button>
             <button class="hero-option" type="button" role="radio" aria-checked="false" data-hero-choice="toren">
-              <span class="hero-emblem toren" aria-hidden="true"><i></i></span>
-              <span><strong id="hero-toren-name">Торен</strong><small id="hero-toren-role">Страж против толпы</small><b id="hero-toren-ability">Удар земли</b></span>
+              <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./assets/toren-portrait-B5hDhPmU.webp" alt=""></span>
+              <span class="hero-option-copy"><strong id="hero-toren-name">Торен</strong><small id="hero-toren-role">Страж против толпы</small><b id="hero-toren-ability">Удар земли</b></span>
+              <i class="hero-option-check" aria-hidden="true">✓</i>
+            </button>
+            <button class="hero-option is-locked" type="button" role="radio" aria-checked="false" aria-disabled="true" aria-describedby="hero-grak-unlock" data-hero-choice="grak">
+              <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./assets/grak-portrait-D8hwxIlC.webp" alt=""></span>
+              <span class="hero-option-copy"><strong id="hero-grak-name">Грак</strong><small id="hero-grak-role">Вождь Железного Клыка</small><b id="hero-grak-ability">Знамя ярости</b></span>
+              <span id="hero-grak-unlock" class="hero-option-lock"><i aria-hidden="true">◆</i><small>Откроется после победы в Лесных вратах</small></span>
               <i class="hero-option-check" aria-hidden="true">✓</i>
             </button>
           </div>
           <article id="hero-picker-details" class="hero-detail-card" aria-live="polite">
             <header class="hero-detail-header">
-              <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><i></i></span>
+              <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><img src="./assets/eira-portrait-rVJ71EgI.webp" alt=""></span>
               <span><small data-hero-detail="rank"><span data-hero-detail-value>Ранг 1</span></small><strong data-hero-detail-name>Эйра</strong><span data-hero-detail-role>Охотница на сильные цели</span></span>
             </header>
             <div class="hero-detail-list">
@@ -204,7 +210,7 @@
 
         <article id="game-menu-hero-details" class="hero-detail-card game-menu-hero-card" tabindex="-1">
           <header class="hero-detail-header">
-            <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><i></i></span>
+            <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><img src="./assets/eira-portrait-rVJ71EgI.webp" alt=""></span>
             <span><small data-hero-detail="rank"><span data-hero-detail-value>Ранг 1</span></small><strong data-hero-detail-name>Эйра</strong><span data-hero-detail-role>Охотница на сильные цели</span></span>
           </header>
           <div class="hero-detail-list">

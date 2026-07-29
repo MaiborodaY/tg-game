@@ -409,7 +409,12 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.heroView?.hitZone.destroy();
       this.heroView?.art.container.destroy(true);
       const art = createHeroArt(this, hero.id, hero);
-      const hitZone = this.add.zone(hero.x, hero.y, 62, 68)
+      const hitZone = this.add.zone(
+        hero.x,
+        hero.y - (hero.id === "grak" ? 7 : 0),
+        hero.id === "grak" ? 82 : 62,
+        hero.id === "grak" ? 88 : 68,
+      )
         .setInteractive({ useHandCursor: true })
         .setDepth(2_100);
       hitZone.on("pointerdown", () => this.handleHeroClick());
@@ -419,9 +424,16 @@ export class TowerDefenseScene extends Phaser.Scene {
     const attackElapsedMs = view.simulationTimeMs - this.lastHeroAttackAtMs;
     const attackProgress = attackElapsedMs >= 0 && attackElapsedMs <= 260 ? attackElapsedMs / 260 : 0;
     moveHeroArt(this.heroView.art, hero);
-    this.heroView.hitZone.setPosition(hero.x, hero.y);
+    this.heroView.hitZone.setPosition(hero.x, hero.y - (hero.id === "grak" ? 7 : 0));
     updateHeroArtPose(this.heroView.art, hero.id, view.simulationTimeMs, false, attackProgress);
     setHeroAbilityCharge(this.heroView.art, view.heroAbilityAvailable ? 1 : 0);
+    const heroStats = getHeroStats(hero.id, hero.level);
+    this.heroEffects?.setBanner(
+      hero.id === "grak" && hero.bannerActive ? hero : null,
+      heroStats.abilityRadius,
+      hero.bannerRemainingMs,
+      view.simulationTimeMs,
+    );
     const markedEnemy = hero.markedEnemyId === null
       ? null
       : view.enemies.find((enemy) => enemy.id === hero.markedEnemyId) ?? null;
@@ -554,11 +566,17 @@ export class TowerDefenseScene extends Phaser.Scene {
         .setDepth(3);
       const aura = getHeroAura(view.hero.id, view.hero.level);
       if (!aura) return;
-      const auraColor = aura.kind === "tower_damage" ? 0xf1cc69 : 0x75d8ef;
+      const auraColor = aura.kind === "tower_damage"
+        ? 0xf1cc69
+        : aura.kind === "tower_attack_speed"
+          ? 0xff8a45
+          : 0x75d8ef;
       this.heroAuraPreview = this.add.circle(view.hero.x, view.hero.y, aura.radius, auraColor, 0.045)
         .setStrokeStyle(3, auraColor, 0.88)
         .setDepth(2);
-      if (aura.kind === "tower_damage") this.highlightAuraTowers(view.campaign.towers, aura.radius, aura.strength);
+      if (aura.kind !== "slow") {
+        this.highlightAuraTowers(view.campaign.towers, aura.radius, aura.strength, aura.kind);
+      }
       return;
     }
     if (this.selectedPadId === null) return;
@@ -572,22 +590,31 @@ export class TowerDefenseScene extends Phaser.Scene {
       .setDepth(3);
   }
 
-  private highlightAuraTowers(towers: readonly TowerPlacement[], radius: number, strength: number): void {
+  private highlightAuraTowers(
+    towers: readonly TowerPlacement[],
+    radius: number,
+    strength: number,
+    kind: "tower_damage" | "tower_attack_speed",
+  ): void {
     const hero = this.simulation.readView().hero;
     const radiusSquared = radius ** 2;
     const bonus = Math.round(strength * 100);
+    const color = kind === "tower_attack_speed" ? 0xff8a45 : 0xf1cc69;
+    const stroke = kind === "tower_attack_speed" ? 0xffad68 : 0xf5d77f;
+    const textColor = kind === "tower_attack_speed" ? "#ffe0bf" : "#fff1b6";
+    const backgroundColor = kind === "tower_attack_speed" ? "#55291d" : "#493a20";
     for (const tower of towers) {
       const point = this.level.buildPads[tower.padId];
       if (!point) continue;
       const dx = point.x - hero.x;
       const dy = point.y - hero.y;
       if (dx * dx + dy * dy > radiusSquared) continue;
-      const ring = this.add.circle(point.x, point.y, 24, 0xf1cc69, 0.09)
-        .setStrokeStyle(3, 0xf5d77f, 0.92)
+      const ring = this.add.circle(point.x, point.y, 24, color, 0.09)
+        .setStrokeStyle(3, stroke, 0.92)
         .setDepth(point.y + 44);
       const badge = this.add.text(point.x, point.y - 29, `+${bonus}%`, {
-        color: "#fff1b6",
-        backgroundColor: "#493a20",
+        color: textColor,
+        backgroundColor,
         fontFamily: "Arial, sans-serif",
         fontSize: "9px",
         fontStyle: "bold",
@@ -661,7 +688,10 @@ export class TowerDefenseScene extends Phaser.Scene {
       const radius = event.heroId === "eira" ? 28 : event.radius;
       this.heroEffects?.playAbility(event.heroId, point, radius);
       if (event.heroId === "toren") this.cameras.main.shake(190, 0.005);
-      else this.cameras.main.flash(130, 215, 195, 92, false);
+      else if (event.heroId === "grak") {
+        this.cameras.main.shake(230, 0.006);
+        this.cameras.main.flash(170, 229, 111, 50, false);
+      } else this.cameras.main.flash(130, 215, 195, 92, false);
       return;
     }
     if (event.type === "enemy_healed") {

@@ -23,14 +23,21 @@ function elementMarkupById(source, id) {
   return "";
 }
 
-test("intro offers exactly two accessible heroes without adding a tower card", () => {
-  assert.equal(html.match(/data-hero-choice=/g)?.length, 2);
+test("intro offers three accessible hero portraits without adding a tower card", () => {
+  assert.equal(html.match(/data-hero-choice=/g)?.length, 3);
   assert.match(html, /data-hero-choice="eira"/);
   assert.match(html, /data-hero-choice="toren"/);
+  assert.match(html, /data-hero-choice="grak"/);
+  assert.match(html, /eira-portrait\.webp/);
+  assert.match(html, /toren-portrait\.webp/);
+  assert.match(html, /grak-portrait\.webp/);
   assert.equal(html.match(/data-tower=/g)?.length, 4);
   assert.match(html, /id="hero-choice-button"[^>]*aria-controls="hero-picker"[^>]*aria-expanded="false"/);
   assert.match(html, /class="hero-options" role="radiogroup"/);
-  assert.equal(html.match(/role="radio"/g)?.length, 2);
+  assert.equal(html.match(/role="radio"/g)?.length, 3);
+  const grakOption = html.match(/<button[^>]*data-hero-choice="grak"[^>]*>/)?.[0] ?? "";
+  assert.match(grakOption, /aria-disabled="true"/);
+  assert.match(grakOption, /aria-describedby="hero-grak-unlock"/);
 });
 
 test("hero choice only replaces a fresh campaign before the renderer mounts", () => {
@@ -41,6 +48,11 @@ test("hero choice only replaces a fresh campaign before the renderer mounts", ()
   assert.match(mainSource, /saveCampaign\(storage, saveKey, startedCampaign\)/);
   assert.match(mainSource, /elements\.heroChoiceButton\.disabled = disabled/);
   assert.match(mainSource, /elements\.heroChoiceLock\.hidden = !locked/);
+  assert.match(mainSource, /isHeroAvailable\(value, playerProfile\)/);
+  assert.match(mainSource, /const unavailable = !isHeroAvailable\(optionHeroId, playerProfile\)/);
+  assert.match(mainSource, /option\.disabled = disabled \|\| unavailable/);
+  assert.match(mainSource, /!grakWasUnlocked && isHeroAvailable\("grak", playerProfile\)[\s\S]*hero_grak_unlocked/);
+  assert.match(mainSource, /import\.meta\.env\.DEV[\s\S]*preview_hero/);
 });
 
 test("fresh sessions always reach hero choice before their renderer mounts", () => {
@@ -64,6 +76,7 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(mainSource, /function syncHeroAuraStatus\(ui: TowerDefenseUiState\)/);
   assert.match(mainSource, /hero_eira_aura_status/);
   assert.match(mainSource, /hero_toren_aura_status/);
+  assert.match(mainSource, /hero_grak_aura_status/);
   assert.match(mainSource, /dx \* dx \+ dy \* dy <= radiusSquared \? total \+ 1 : total/);
   assert.match(css, /p\[data-aura="tower_damage"\][\s\S]*#f1cc69/);
   assert.match(css, /p\[data-aura="slow"\][\s\S]*#75d8ef/);
@@ -76,7 +89,10 @@ test("hero controls preserve compact rows and Telegram-sized touch targets", () 
   assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*58px;/s);
   assert.match(css, /\.hero-picker-close \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
   assert.match(css, /\.hero-picker \.modal-primary \{[^}]*min-height:\s*44px;/s);
-  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*?\.hero-options \{ grid-template-columns:\s*1fr; \}/);
+  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*?\.hero-options \{[^}]*overflow-x:\s*auto;/);
+  assert.match(css, /\.hero-option-portrait \{[^}]*object-fit:\s*cover;/s);
+  assert.match(css, /\.hero-option\.is-locked \.hero-option-lock \{ display:\s*flex; \}/);
+  assert.match(css, /\.hero-option\.is-locked:disabled \{[^}]*filter:\s*none;[^}]*opacity:\s*1;/s);
 });
 
 test("one accessible game menu replaces the session shortcut and owns auxiliary actions", () => {

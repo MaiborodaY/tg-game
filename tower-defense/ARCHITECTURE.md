@@ -85,12 +85,18 @@ version). Client-side signatures or localStorage metadata do not solve this.
 
 The current server profile is therefore a PvE foundation, not proof of fair
 play. `northern-pass` is a non-economic unlock; PvP remains outside this phase.
-Both launch heroes are available without profile unlocks, and their run-local
-rank and anchor are deliberately absent from the permanent profile.
+Eira and Toren are available without profile unlocks. Grak is derived from a
+trusted profile result: a full `forest-gate` campaign victory. Hero rank and
+anchor remain run-local and are deliberately absent from the permanent profile.
+Production requires that profile proof for a new Grak selection. An existing
+Grak checkpoint remains resumable when bootstrap profile transport is
+temporarily unavailable, so a reload cannot destroy valid progress. Local Vite
+development can opt into `?preview_hero=grak` for visual QA; the branch is
+removed from production builds through `import.meta.env.DEV`.
 
-The public `/start` binding still uses content version 2, so the hero release
-keeps that value for backend compatibility and distinguishes deterministic
-replays with the internal `heroes-v1` rules suffix. A future authoritative
+The public `/start` binding still uses content version 2, so hero releases keep
+that value for backend compatibility and distinguish deterministic replays with
+the internal `heroes-v2` rules suffix. A future authoritative
 rating rollout must coordinate a new content version with the backend; changing
 only the client would make old and new balance rules indistinguishable to the
 server.

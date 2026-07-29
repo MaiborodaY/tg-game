@@ -34,6 +34,19 @@ test("practice and reward runs have isolated checkpoint keys", () => {
   assert.equal(loadCampaign(storage, getCampaignSaveKey("run-b")), null);
 });
 
+test("an unlocked Grak run remains resumable without rechecking profile transport", () => {
+  const storage = memoryStorage();
+  const key = getCampaignSaveKey("grak-run");
+  const campaign = {
+    ...createCampaignState({ heroId: "grak" }),
+    completedWave: 8,
+    hero: { id: "grak", level: 2, anchorId: 1 },
+  };
+
+  assert.equal(saveCampaign(storage, key, campaign), true);
+  assert.deepEqual(loadCampaign(storage, key), campaign);
+});
+
 test("callers can pin a checkpoint to the expected level and mode", () => {
   const storage = memoryStorage();
   const key = getCampaignSaveKey("reward-run");

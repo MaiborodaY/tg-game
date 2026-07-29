@@ -1,4 +1,7 @@
 import "./styles.css";
+import eiraPortraitUrl from "./assets/heroes/eira-portrait.webp";
+import grakPortraitUrl from "./assets/heroes/grak-portrait.webp";
+import torenPortraitUrl from "./assets/heroes/toren-portrait.webp";
 import { ENEMY_DEFINITIONS, ENEMY_PREVIEW_ORDER, FINAL_WAVE, TOWER_DEFINITIONS } from "./game/config.ts";
 import {
   CAMPAIGN_MODE_ID,
@@ -21,6 +24,7 @@ import {
   writeSessionSelection,
 } from "./game/sessionSelection.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
+import { isHeroUnlocked } from "./game/heroAvailability.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
 import { getHeroAura, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
@@ -69,6 +73,8 @@ async function bootstrap(): Promise<void> {
 const legacyLaunch = parseLaunchParams(window.location.href);
 const storage = safeStorage("localStorage");
 const session = safeStorage("sessionStorage");
+const developmentGrakPreview = import.meta.env.DEV
+  && new URL(window.location.href).searchParams.get("preview_hero") === "grak";
 const telegram = setupTelegramBridge();
 let locale = readStoredLocale(storage) ?? detectLocale(legacyLaunch.payload?.lang, legacyLaunch.payload?.language);
 const pendingStartButton = document.getElementById("intro-start");
@@ -123,6 +129,8 @@ const canMigrateLegacy = selectedSession.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
 const migrated = !savedCampaign && canMigrateLegacy
   ? migrateLegacyCampaign(storage, reward.mode === "server" ? reward.runId : null)
   : null;
+// A profile controls new hero selection, but an already-started run must remain
+// resumable if the bootstrap profile is temporarily unavailable during reload.
 const restoredCheckpoint = savedCampaign || migrated;
 const pendingAtLaunch = reward.mode === "server" && reward.runId
   ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE)
@@ -154,6 +162,12 @@ let reloadRequested = false;
 let playerProfile: PlayerProfileSnapshot | null = miniAppBootstrap?.profile ?? null;
 let selectedHeroId: HeroId = initialCampaign.hero.id;
 let runStarted = Boolean(restoredCheckpoint);
+
+const HERO_PORTRAIT_URLS: Readonly<Record<HeroId, string>> = Object.freeze({
+  eira: eiraPortraitUrl,
+  toren: torenPortraitUrl,
+  grak: grakPortraitUrl,
+});
 
 const elements = {
   appShell: byId("app"),
@@ -248,6 +262,10 @@ const elements = {
   heroTorenName: byId("hero-toren-name"),
   heroTorenRole: byId("hero-toren-role"),
   heroTorenAbility: byId("hero-toren-ability"),
+  heroGrakName: byId("hero-grak-name"),
+  heroGrakRole: byId("hero-grak-role"),
+  heroGrakAbility: byId("hero-grak-ability"),
+  heroGrakUnlock: byId("hero-grak-unlock"),
   introWaves: byId("intro-waves"),
   introTowers: byId("intro-towers"),
   introBosses: byId("intro-bosses"),
@@ -530,6 +548,7 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.pulseButton.classList.toggle("is-used", !ui.heroAbilityAvailable);
   elements.pulseButton.classList.toggle("is-eira", ui.hero.id === "eira");
   elements.pulseButton.classList.toggle("is-toren", ui.hero.id === "toren");
+  elements.pulseButton.classList.toggle("is-grak", ui.hero.id === "grak");
   elements.pulseButton.setAttribute("aria-label", text(
     ui.heroAbilityAvailable ? "hero_ability_ready" : "hero_ability_used",
     { ability: heroAbility },
@@ -578,8 +597,7 @@ function renderUi(ui: TowerDefenseUiState): void {
     const upgradeCost = getHeroUpgradeCost(hero.id, hero.level);
     const upgradeWave = getHeroUpgradeWaveGate(hero.level);
     const upgradeUnlocked = upgradeWave === null || ui.campaign.completedWave >= upgradeWave;
-    elements.selectedHeroEmblem.className = `hero-emblem ${hero.id}`;
-    elements.selectedHeroEmblem.innerHTML = "<i></i>";
+    syncHeroPortrait(elements.selectedHeroEmblem, hero.id);
     elements.selectedHeroRank.textContent = text("hero_rank", { count: hero.level });
     elements.selectedHeroName.textContent = heroName(hero.id);
     elements.selectedHeroRole.textContent = heroRole(hero.id);
@@ -637,7 +655,9 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
       const dy = point.y - ui.hero.y;
       return dx * dx + dy * dy <= radiusSquared ? total + 1 : total;
     }, 0);
-    elements.selectedHeroHint.textContent = text("hero_eira_aura_status", {
+    elements.selectedHeroHint.textContent = text(aura.kind === "tower_attack_speed"
+      ? "hero_grak_aura_status"
+      : "hero_eira_aura_status", {
       count,
       bonus: Math.round(aura.strength * 100),
     });
@@ -899,9 +919,15 @@ function showRestoredRunStatus(): void {
 
 function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
   if (!profile) return;
+  const grakWasUnlocked = isHeroAvailable("grak", playerProfile);
   playerProfile = profile;
   elements.appShell.dataset.profileRevision = String(playerProfile.revision);
   elements.appShell.dataset.unlockedLevels = String(playerProfile.unlockedLevelIds.length);
+  syncHeroChoiceControls();
+  if (!grakWasUnlocked && isHeroAvailable("grak", playerProfile)) {
+    showToast(text("hero_grak_unlocked"), true);
+    telegram.haptic("heavy");
+  }
 }
 
 async function switchPracticeSession(levelId: string, modeId: string): Promise<void> {
@@ -1132,10 +1158,7 @@ function syncGameMenuUi(ui: TowerDefenseUiState | null): void {
 
 function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number): void {
   const emblem = container.querySelector<HTMLElement>("[data-hero-detail-emblem]");
-  if (emblem) {
-    emblem.className = `hero-emblem ${heroId}`;
-    emblem.innerHTML = "<i></i>";
-  }
+  if (emblem) syncHeroPortrait(emblem, heroId);
   const name = container.querySelector<HTMLElement>("[data-hero-detail-name]");
   const role = container.querySelector<HTMLElement>("[data-hero-detail-role]");
   if (name) name.textContent = heroName(heroId);
@@ -1236,6 +1259,10 @@ function applyStaticTranslations(): void {
   elements.heroTorenName.textContent = heroName("toren");
   elements.heroTorenRole.textContent = heroRole("toren");
   elements.heroTorenAbility.textContent = heroAbilityName("toren");
+  elements.heroGrakName.textContent = heroName("grak");
+  elements.heroGrakRole.textContent = heroRole("grak");
+  elements.heroGrakAbility.textContent = heroAbilityName("grak");
+  elements.heroGrakUnlock.querySelector("small")!.textContent = text("hero_grak_unlock_requirement");
   elements.heroPickerClose.setAttribute("aria-label", text("close"));
   elements.heroDetailsButton.setAttribute("aria-label", text("game_menu_hero_details"));
   renderHeroDetails(elements.heroPickerDetails, selectedHeroId, 1);
@@ -1273,6 +1300,11 @@ function closeHeroPicker(restoreFocus: boolean): void {
 
 function chooseHero(value: string): void {
   if (!isHeroId(value) || heroChoiceIsLocked()) return;
+  if (!isHeroAvailable(value, playerProfile)) {
+    showToast(text("hero_grak_locked"));
+    telegram.haptic("medium");
+    return;
+  }
   selectedHeroId = value;
   initialCampaign = createCampaignState({
     level: selectedSession.level,
@@ -1291,16 +1323,24 @@ function syncHeroChoiceControls(): void {
   const disabled = locked || sessionSwitching || gameStarting || Boolean(launchError);
   elements.heroChoiceButton.disabled = disabled;
   elements.heroChoiceButton.setAttribute("aria-label", `${text("hero_choice")}: ${heroName(selectedHeroId)}`);
-  elements.heroChoiceEmblem.className = `hero-emblem ${selectedHeroId}`;
-  elements.heroChoiceEmblem.innerHTML = "<i></i>";
+  syncHeroPortrait(elements.heroChoiceEmblem, selectedHeroId);
   elements.heroChoiceName.textContent = heroName(selectedHeroId);
   elements.heroChoiceRole.textContent = heroRole(selectedHeroId);
   elements.heroChoiceLock.hidden = !locked;
   elements.heroOptions.forEach((option) => {
-    const selected = option.dataset.heroChoice === selectedHeroId;
+    const optionHeroId = option.dataset.heroChoice;
+    if (!isHeroId(optionHeroId)) return;
+    const selected = optionHeroId === selectedHeroId;
+    const unavailable = !isHeroAvailable(optionHeroId, playerProfile);
     option.classList.toggle("is-selected", selected);
+    option.classList.toggle("is-locked", unavailable);
     option.setAttribute("aria-checked", String(selected));
-    option.disabled = disabled;
+    option.setAttribute("aria-disabled", String(disabled || unavailable));
+    if (optionHeroId === "grak") {
+      if (unavailable) option.setAttribute("aria-describedby", "hero-grak-unlock");
+      else option.removeAttribute("aria-describedby");
+    }
+    option.disabled = disabled || unavailable;
   });
   renderHeroDetails(elements.heroPickerDetails, selectedHeroId, 1);
   if (disabled) closeHeroPicker(false);
@@ -1308,6 +1348,23 @@ function syncHeroChoiceControls(): void {
 
 function heroChoiceIsLocked(): boolean {
   return gameMounted || runStarted || hasRunProgress(latestUi?.campaign ?? initialCampaign);
+}
+
+function isHeroAvailable(heroId: HeroId, profile: PlayerProfileSnapshot | null): boolean {
+  return isHeroUnlocked(heroId, profile) || (heroId === "grak" && developmentGrakPreview);
+}
+
+function syncHeroPortrait(container: HTMLElement, heroId: HeroId): void {
+  container.className = `hero-emblem ${heroId}`;
+  let image = container.querySelector<HTMLImageElement>("img");
+  if (!image) {
+    image = document.createElement("img");
+    image.alt = "";
+    container.replaceChildren(image);
+  }
+  if (image.dataset.heroPortrait === heroId) return;
+  image.src = HERO_PORTRAIT_URLS[heroId];
+  image.dataset.heroPortrait = heroId;
 }
 
 function syncSessionControls(): void {

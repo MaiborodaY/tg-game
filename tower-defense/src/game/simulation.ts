@@ -67,7 +67,7 @@ export type SimulationRules = Readonly<{
 }>;
 
 export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
-  id: "forest-campaign:heroes-v1",
+  id: "forest-campaign:heroes-v2",
   routePoints: ROUTE_POINTS,
   buildPads: BUILD_PADS,
   heroAnchors: CLASSIC_CAMPAIGN_LEVEL.heroAnchors,
@@ -81,7 +81,7 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
 export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset): SimulationRules {
   const finalWave = mode.getFinalWave(level);
   return Object.freeze({
-    id: `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v1`,
+    id: `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v2`,
     routePoints: level.route,
     buildPads: level.buildPads,
     heroAnchors: level.heroAnchors,
@@ -127,6 +127,8 @@ export type HeroSimulationView = Readonly<{
   attackCooldownMs: number;
   abilityAvailable: boolean;
   markedEnemyId: number | null;
+  bannerActive: boolean;
+  bannerRemainingMs: number;
 }>;
 
 export type SimulationView = Readonly<{
@@ -268,6 +270,7 @@ type ProjectileEntity = ProjectileSimulationView & {
   x: number;
   y: number;
   stats: TowerStats;
+  resistancePenetration: number;
 };
 
 export type SimulationCommandResult = Readonly<{
@@ -327,6 +330,7 @@ export class GameSimulation {
   private heroAbilityAvailable = true;
   private markedEnemyId: number | null = null;
   private markUntilMs = 0;
+  private bannerUntilMs = 0;
   private waveStartLives = 0;
   private waveCheckpoint: CampaignState | null = null;
   private lastCheckpointDurationMs = 0;
@@ -387,6 +391,10 @@ export class GameSimulation {
       attackCooldownMs: Math.max(0, this.heroAttackCooldownMs),
       abilityAvailable: this.heroAbilityAvailable,
       markedEnemyId,
+      bannerActive: this.campaign.hero.id === "grak" && this.bannerUntilMs > this.simulationTimeMs,
+      bannerRemainingMs: this.campaign.hero.id === "grak"
+        ? Math.max(0, this.bannerUntilMs - this.simulationTimeMs)
+        : 0,
     });
   }
 
@@ -588,6 +596,7 @@ export class GameSimulation {
     this.heroAbilityAvailable = true;
     this.markedEnemyId = null;
     this.markUntilMs = 0;
+    this.bannerUntilMs = 0;
     for (const tower of this.towers.values()) tower.cooldownMs = 180;
     this.phase = "countdown";
     if (this.wavePlan.hasBoss) this.events.push({ type: "haptic", kind: "heavy" });
@@ -626,7 +635,7 @@ export class GameSimulation {
       targetId = target.id;
       this.markedEnemyId = target.id;
       this.markUntilMs = this.simulationTimeMs + stats.markDurationMs;
-    } else {
+    } else if (hero.id === "toren") {
       const victims = [...this.enemies].filter((enemy) => squaredDistance(enemy, point) <= stats.abilityRadius ** 2);
       if (victims.length === 0) return commandFailure("hero_ability_unavailable");
       for (const enemy of victims) {
@@ -635,6 +644,8 @@ export class GameSimulation {
         const control = applyControlResistance(0.1, stats.abilityStunMs, enemy.controlResistance);
         enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
       }
+    } else {
+      this.bannerUntilMs = this.simulationTimeMs + stats.abilityDurationMs;
     }
 
     this.heroAbilityAvailable = false;
@@ -646,7 +657,11 @@ export class GameSimulation {
         y: point.y,
         radius: stats.abilityRadius,
         targetId,
-        durationMs: hero.id === "eira" ? stats.markDurationMs : stats.abilityStunMs,
+        durationMs: hero.id === "eira"
+          ? stats.markDurationMs
+          : hero.id === "toren"
+            ? stats.abilityStunMs
+            : stats.abilityDurationMs,
       },
       { type: "haptic", kind: "medium" },
     );
@@ -903,6 +918,31 @@ export class GameSimulation {
     return this.getTowerAuraDamageMultiplier(originPadId) * this.getMarkedTowerDamageMultiplier(enemy);
   }
 
+  private getTowerAttackIntervalMultiplier(originPadId: number): number {
+    const hero = this.campaign.hero;
+    if (hero.id !== "grak") return 1;
+    const towerPoint = this.rules.buildPads[originPadId];
+    if (!towerPoint) return 1;
+    const stats = getHeroStats(hero.id, hero.level);
+    const distance = squaredDistance(towerPoint, this.getHeroPoint());
+    let multiplier = hero.level >= 2 && distance <= stats.towerAttackSpeedAuraRadius ** 2
+      ? stats.towerAttackIntervalMultiplier
+      : 1;
+    if (this.bannerUntilMs > this.simulationTimeMs && distance <= stats.abilityRadius ** 2) {
+      multiplier *= stats.abilityTowerAttackIntervalMultiplier;
+    }
+    return multiplier;
+  }
+
+  private getTowerResistancePenetration(originPadId: number): number {
+    const hero = this.campaign.hero;
+    if (hero.id !== "grak" || this.bannerUntilMs <= this.simulationTimeMs) return 0;
+    const towerPoint = this.rules.buildPads[originPadId];
+    const stats = getHeroStats(hero.id, hero.level);
+    if (!towerPoint || squaredDistance(towerPoint, this.getHeroPoint()) > stats.abilityRadius ** 2) return 0;
+    return stats.abilityResistancePenetration;
+  }
+
   private updateTowers(deltaMs: number): void {
     for (const tower of this.towers.values()) {
       tower.cooldownMs -= deltaMs;
@@ -924,9 +964,12 @@ export class GameSimulation {
         targetId: target.id,
         towerType: tower.placement.type,
         stats,
+        // Snapshot the banner bonus when the tower fires so an in-flight shot
+        // cannot gain or lose penetration when the timed aura changes.
+        resistancePenetration: this.getTowerResistancePenetration(tower.placement.padId),
       });
       this.nextProjectileId += 1;
-      tower.cooldownMs += stats.fireRateMs;
+      tower.cooldownMs += stats.fireRateMs * this.getTowerAttackIntervalMultiplier(tower.placement.padId);
     }
   }
 
@@ -996,6 +1039,8 @@ export class GameSimulation {
           victim,
           projectile.stats.damage * Math.pow(0.72, index) * bossMultiplier * heroMultiplier,
           projectile.stats.damageKind,
+          true,
+          projectile.resistancePenetration,
         );
         previous = victim;
       });
@@ -1009,7 +1054,13 @@ export class GameSimulation {
       const falloff = victim.id === target.id ? 1 : projectile.towerType === "ember" ? 0.68 : 0.5;
       const bossMultiplier = victim.type === "boss" || victim.type === "titan" ? projectile.stats.bossDamageMultiplier : 1;
       const heroMultiplier = this.getTowerDamageMultiplier(projectile.originPadId, victim);
-      this.damageEnemy(victim, projectile.stats.damage * falloff * bossMultiplier * heroMultiplier, projectile.stats.damageKind);
+      this.damageEnemy(
+        victim,
+        projectile.stats.damage * falloff * bossMultiplier * heroMultiplier,
+        projectile.stats.damageKind,
+        true,
+        projectile.resistancePenetration,
+      );
       if (victim.dead) continue;
       if (projectile.stats.slowDurationMs > 0) {
         const control = applyControlResistance(projectile.stats.slowFactor, projectile.stats.slowDurationMs, victim.controlResistance);
@@ -1036,9 +1087,15 @@ export class GameSimulation {
     }
   }
 
-  private damageEnemy(enemy: EnemyEntity, amount: number, kind: DamageKind, showText = true): void {
+  private damageEnemy(
+    enemy: EnemyEntity,
+    amount: number,
+    kind: DamageKind,
+    showText = true,
+    resistancePenetration = 0,
+  ): void {
     if (enemy.dead) return;
-    const damage = calculateDamage(amount, kind, enemy);
+    const damage = calculateDamage(amount, kind, enemy, resistancePenetration);
     const previousHpRatio = enemy.hp / enemy.maxHp;
     const absorbed = Math.min(enemy.shield, damage);
     enemy.shield -= absorbed;
@@ -1187,6 +1244,7 @@ export class GameSimulation {
     this.heroAbilityAvailable = true;
     this.markedEnemyId = null;
     this.markUntilMs = 0;
+    this.bannerUntilMs = 0;
     if (this.phase === "victory") this.endRun("victory");
   }
 
@@ -1200,6 +1258,7 @@ export class GameSimulation {
     this.projectiles.length = 0;
     this.markedEnemyId = null;
     this.markUntilMs = 0;
+    this.bannerUntilMs = 0;
     if (outcome === "gameover") {
       this.enemies.length = 0;
       this.enemiesById.clear();

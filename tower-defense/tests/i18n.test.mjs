@@ -40,6 +40,7 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("en", "game_load_retry"), "Reload game");
   assert.equal(tr("ru", "hero_eira_ability"), "Метка охотницы");
   assert.equal(tr("uk", "hero_toren_role"), "Вартовий проти натовпу");
+  assert.equal(tr("ru", "hero_grak_ability"), "Знамя ярости");
   assert.equal(tr("en", "hero_picker_title"), "Choose a hero");
   assert.equal(tr("en", "hero_ability_ready", { ability: "Hunter's Mark" }), "Ability ready: Hunter's Mark");
   assert.equal(tr("ru", "hero_ability_no_target"), "Нет врагов в радиусе героя");
@@ -68,6 +69,10 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "hero_aura_unlock",
     "hero_eira_aura_status",
     "hero_toren_aura_status",
+    "hero_grak_aura_status",
+    "hero_grak_unlock_requirement",
+    "hero_grak_locked",
+    "hero_grak_unlocked",
   ];
   const params = {
     rank: 2,
@@ -98,9 +103,9 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
   assert.match(tr("en", "game_menu_restart_confirm_copy"), /progress|run/i);
 });
 
-test("both heroes explain attack, rank-two passive, and ability in every locale", () => {
+test("all heroes explain attack, rank-two passive, and ability in every locale", () => {
   for (const locale of ["ru", "uk", "en"]) {
-    for (const hero of ["eira", "toren"]) {
+    for (const hero of ["eira", "toren", "grak"]) {
       const attack = tr(locale, `hero_${hero}_attack_text`);
       const passive = tr(locale, `hero_${hero}_passive_text`);
       const ability = tr(locale, `hero_${hero}_ability_text`);
@@ -113,10 +118,17 @@ test("both heroes explain attack, rank-two passive, and ability in every locale"
 
   assert.match(tr("ru", "hero_eira_passive_text"), /с ранга 2/ui);
   assert.match(tr("ru", "hero_toren_passive_text"), /с ранга 2/ui);
+  assert.match(tr("ru", "hero_grak_passive_text"), /с ранга 2/ui);
   assert.match(tr("uk", "hero_eira_passive_text"), /ранг/ui);
   assert.match(tr("uk", "hero_toren_passive_text"), /ранг/ui);
+  assert.match(tr("uk", "hero_grak_passive_text"), /ранг/ui);
   assert.match(tr("en", "hero_eira_passive_text"), /rank\s*2/i);
   assert.match(tr("en", "hero_toren_passive_text"), /rank\s*2/i);
+  assert.match(tr("en", "hero_grak_passive_text"), /rank\s*2/i);
+  for (const locale of ["ru", "uk", "en"]) {
+    assert.match(tr(locale, "hero_grak_ability_text"), /18%/);
+    assert.match(tr(locale, "hero_grak_ability_text"), /15%/);
+  }
   assert.notEqual(tr("en", "hero_eira_attack_text"), tr("en", "hero_toren_attack_text"));
   assert.notEqual(tr("en", "hero_eira_ability_text"), tr("en", "hero_toren_ability_text"));
 });

@@ -74,9 +74,12 @@ export function calculateDamage(
   amount: number,
   kind: DamageKind,
   target: Pick<TargetCandidate, "physicalResistance" | "magicResistance">,
+  resistancePenetration = 0,
 ): number {
   const resistance = kind === "physical" ? target.physicalResistance : kind === "arcane" ? 0 : target.magicResistance;
-  return Math.max(0, amount * (1 - Math.min(0.9, Math.max(0, resistance))));
+  const penetration = Math.min(1, Math.max(0, resistancePenetration));
+  const effectiveResistance = resistance * (1 - penetration);
+  return Math.max(0, amount * (1 - Math.min(0.9, Math.max(0, effectiveResistance))));
 }
 
 function squaredDistance(left: Readonly<{ x: number; y: number }>, right: Readonly<{ x: number; y: number }>): number {

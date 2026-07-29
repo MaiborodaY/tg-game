@@ -1,6 +1,6 @@
 import type { DamageKind, HeroId, HeroLevel } from "./types.ts";
 
-export const HERO_IDS = Object.freeze(["eira", "toren"] as const);
+export const HERO_IDS = Object.freeze(["eira", "toren", "grak"] as const);
 export const HERO_UPGRADE_WAVE_GATES = Object.freeze([4, 12] as const);
 
 export type HeroStats = Readonly<{
@@ -13,11 +13,16 @@ export type HeroStats = Readonly<{
   attackSplashRadius: number;
   towerDamageAuraRadius: number;
   towerDamageMultiplier: number;
+  towerAttackSpeedAuraRadius: number;
+  towerAttackIntervalMultiplier: number;
   slowAuraRadius: number;
   slowAuraFactor: number;
   abilityRadius: number;
   abilityDamage: number;
   abilityStunMs: number;
+  abilityDurationMs: number;
+  abilityTowerAttackIntervalMultiplier: number;
+  abilityResistancePenetration: number;
   markDurationMs: number;
   markedTowerDamageMultiplier: number;
 }>;
@@ -29,7 +34,7 @@ export type HeroDefinition = Readonly<{
 }>;
 
 export type HeroAura = Readonly<{
-  kind: "tower_damage" | "slow";
+  kind: "tower_damage" | "slow" | "tower_attack_speed";
   radius: number;
   strength: number;
 }>;
@@ -44,11 +49,16 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       attackSplashRadius: 0,
       towerDamageAuraRadius: 0,
       towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
       slowAuraRadius: 0,
       slowAuraFactor: 1,
       abilityRadius: 0,
       abilityDamage: 0,
       abilityStunMs: 0,
+      abilityDurationMs: 0,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
       markDurationMs: 6_000,
       markedTowerDamageMultiplier: 1.18,
     },
@@ -60,11 +70,16 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       attackSplashRadius: 0,
       towerDamageAuraRadius: 105,
       towerDamageMultiplier: 1.08,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
       slowAuraRadius: 0,
       slowAuraFactor: 1,
       abilityRadius: 0,
       abilityDamage: 0,
       abilityStunMs: 0,
+      abilityDurationMs: 0,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
       markDurationMs: 7_000,
       markedTowerDamageMultiplier: 1.22,
     },
@@ -76,11 +91,16 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       attackSplashRadius: 0,
       towerDamageAuraRadius: 118,
       towerDamageMultiplier: 1.12,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
       slowAuraRadius: 0,
       slowAuraFactor: 1,
       abilityRadius: 0,
       abilityDamage: 0,
       abilityStunMs: 0,
+      abilityDurationMs: 0,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
       markDurationMs: 8_000,
       markedTowerDamageMultiplier: 1.26,
     },
@@ -94,11 +114,16 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       attackSplashRadius: 28,
       towerDamageAuraRadius: 0,
       towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
       slowAuraRadius: 0,
       slowAuraFactor: 1,
       abilityRadius: 115,
       abilityDamage: 24,
       abilityStunMs: 850,
+      abilityDurationMs: 0,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
       markDurationMs: 0,
       markedTowerDamageMultiplier: 1,
     },
@@ -110,11 +135,16 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       attackSplashRadius: 30,
       towerDamageAuraRadius: 0,
       towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
       slowAuraRadius: 100,
       slowAuraFactor: 0.92,
       abilityRadius: 128,
       abilityDamage: 45,
       abilityStunMs: 1_050,
+      abilityDurationMs: 0,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
       markDurationMs: 0,
       markedTowerDamageMultiplier: 1,
     },
@@ -126,11 +156,81 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       attackSplashRadius: 34,
       towerDamageAuraRadius: 0,
       towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
       slowAuraRadius: 115,
       slowAuraFactor: 0.86,
       abilityRadius: 142,
       abilityDamage: 75,
       abilityStunMs: 1_250,
+      abilityDurationMs: 0,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
+      markDurationMs: 0,
+      markedTowerDamageMultiplier: 1,
+    },
+  ]),
+  grak: defineHero("grak", [170, 520], [
+    {
+      damageKind: "physical",
+      attackDamage: 14,
+      attackRange: 112,
+      attackIntervalMs: 820,
+      attackSplashRadius: 26,
+      towerDamageAuraRadius: 0,
+      towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
+      slowAuraRadius: 0,
+      slowAuraFactor: 1,
+      abilityRadius: 108,
+      abilityDamage: 0,
+      abilityStunMs: 0,
+      abilityDurationMs: 6_000,
+      abilityTowerAttackIntervalMultiplier: 1 / 1.18,
+      abilityResistancePenetration: 0.15,
+      markDurationMs: 0,
+      markedTowerDamageMultiplier: 1,
+    },
+    {
+      damageKind: "physical",
+      attackDamage: 21,
+      attackRange: 116,
+      attackIntervalMs: 760,
+      attackSplashRadius: 30,
+      towerDamageAuraRadius: 0,
+      towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 104,
+      towerAttackIntervalMultiplier: 1 / 1.06,
+      slowAuraRadius: 0,
+      slowAuraFactor: 1,
+      abilityRadius: 116,
+      abilityDamage: 0,
+      abilityStunMs: 0,
+      abilityDurationMs: 7_500,
+      abilityTowerAttackIntervalMultiplier: 1 / 1.22,
+      abilityResistancePenetration: 0.22,
+      markDurationMs: 0,
+      markedTowerDamageMultiplier: 1,
+    },
+    {
+      damageKind: "physical",
+      attackDamage: 30,
+      attackRange: 120,
+      attackIntervalMs: 690,
+      attackSplashRadius: 34,
+      towerDamageAuraRadius: 0,
+      towerDamageMultiplier: 1,
+      towerAttackSpeedAuraRadius: 118,
+      towerAttackIntervalMultiplier: 1 / 1.12,
+      slowAuraRadius: 0,
+      slowAuraFactor: 1,
+      abilityRadius: 128,
+      abilityDamage: 0,
+      abilityStunMs: 0,
+      abilityDurationMs: 9_000,
+      abilityTowerAttackIntervalMultiplier: 1 / 1.25,
+      abilityResistancePenetration: 0.3,
       markDurationMs: 0,
       markedTowerDamageMultiplier: 1,
     },
@@ -148,9 +248,17 @@ export function getHeroStats(id: HeroId, level: HeroLevel): HeroStats {
 export function getHeroAura(id: HeroId, level: HeroLevel): HeroAura | null {
   if (level < 2) return null;
   const stats = getHeroStats(id, level);
-  return id === "eira"
-    ? Object.freeze({ kind: "tower_damage", radius: stats.towerDamageAuraRadius, strength: stats.towerDamageMultiplier - 1 })
-    : Object.freeze({ kind: "slow", radius: stats.slowAuraRadius, strength: 1 - stats.slowAuraFactor });
+  if (id === "eira") {
+    return Object.freeze({ kind: "tower_damage", radius: stats.towerDamageAuraRadius, strength: stats.towerDamageMultiplier - 1 });
+  }
+  if (id === "toren") {
+    return Object.freeze({ kind: "slow", radius: stats.slowAuraRadius, strength: 1 - stats.slowAuraFactor });
+  }
+  return Object.freeze({
+    kind: "tower_attack_speed",
+    radius: stats.towerAttackSpeedAuraRadius,
+    strength: 1 / stats.towerAttackIntervalMultiplier - 1,
+  });
 }
 
 export function getHeroUpgradeCost(id: HeroId, level: HeroLevel): number | null {

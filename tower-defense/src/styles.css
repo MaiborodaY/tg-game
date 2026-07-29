@@ -302,6 +302,8 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .pulse-button.is-eira { border-color: rgba(242, 202, 106, 0.5); background: linear-gradient(145deg, rgba(108, 91, 48, 0.96), rgba(61, 65, 43, 0.96)); }
 .pulse-button.is-eira .pulse-icon { color: #ffe8a5; }
 .pulse-button.is-toren { border-color: rgba(128, 215, 191, 0.5); background: linear-gradient(145deg, rgba(51, 112, 94, 0.96), rgba(35, 67, 62, 0.96)); }
+.pulse-button.is-grak { border-color: rgba(239, 139, 84, 0.58); background: linear-gradient(145deg, rgba(126, 57, 35, 0.98), rgba(74, 40, 31, 0.98)); }
+.pulse-button.is-grak .pulse-icon { color: #ffd09b; }
 .pulse-button.is-used { filter: grayscale(0.42); }
 
 .command-panel {
@@ -441,14 +443,18 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
   border-radius: 50%;
   box-shadow: inset 0 1px rgba(255,255,255,0.12), 0 5px 12px rgba(0,0,0,0.22);
 }
-.hero-emblem::before,
-.hero-emblem i { content: ""; position: absolute; display: block; }
-.hero-emblem.eira { background: radial-gradient(circle at 38% 27%, #dfca82, #526f4b 47%, #263f35 75%); }
-.hero-emblem.eira::before { width: 24px; height: 30px; top: 8px; left: 8px; border-radius: 48% 48% 34% 34%; background: linear-gradient(145deg, #e2c489 0 29%, #6d4732 30% 48%, #315d48 49%); clip-path: polygon(50% 0, 92% 24%, 82% 100%, 18% 100%, 8% 24%); }
-.hero-emblem.eira i { width: 19px; height: 24px; top: 9px; right: 3px; border: 2px solid #f4d783; border-left-color: transparent; border-radius: 50%; transform: rotate(10deg); }
-.hero-emblem.toren { background: radial-gradient(circle at 40% 26%, #aed9c3, #416d62 48%, #263b38 74%); }
-.hero-emblem.toren::before { width: 27px; height: 29px; top: 8px; left: 7px; border-radius: 44% 44% 34% 34%; background: linear-gradient(145deg, #9dc6b2 0 25%, #425d55 26% 50%, #5d766c 51%); clip-path: polygon(15% 0, 38% 18%, 62% 18%, 85% 0, 100% 36%, 82% 100%, 18% 100%, 0 36%); }
-.hero-emblem.toren i { width: 15px; height: 15px; right: 1px; bottom: 2px; border: 2px solid #b7f0d9; border-radius: 50%; box-shadow: inset 0 0 0 3px rgba(38,72,64,0.82); }
+.hero-emblem.eira { background: #314d3e; }
+.hero-emblem.toren { background: #314d47; }
+.hero-emblem.grak { background: #593b2c; }
+.hero-emblem > img {
+  width: 210%;
+  height: auto;
+  position: absolute;
+  display: block;
+}
+.hero-emblem.eira > img { top: 5%; left: -63%; }
+.hero-emblem.toren > img { top: -26%; left: -76%; }
+.hero-emblem.grak > img { top: -21%; left: -59%; }
 
 .selected-hero { min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }
 .selected-hero .hero-emblem { flex-basis: 36px; width: 36px; height: 36px; }
@@ -463,6 +469,8 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .selected-hero p[data-aura="tower_damage"]::before { background: #f1cc69; box-shadow: 0 0 7px rgba(241,204,105,0.72); }
 .selected-hero p[data-aura="slow"] { color: #9bdced; }
 .selected-hero p[data-aura="slow"]::before { background: #75d8ef; box-shadow: 0 0 7px rgba(117,216,239,0.68); }
+.selected-hero p[data-aura="tower_attack_speed"] { color: #f1bd88; }
+.selected-hero p[data-aura="tower_attack_speed"]::before { background: #ef8b54; box-shadow: 0 0 7px rgba(239,139,84,0.72); }
 .hero-actions { display: flex; min-width: 0; }
 .hero-actions button { min-width: 92px; min-height: 44px; padding: 3px 6px; font-size: 8px; }
 .hero-actions .hero-details-button {
@@ -598,16 +606,15 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
 .hero-picker-heading h2 { margin: 3px 0 0; font-size: 23px; }
 .hero-picker-close { flex: 0 0 44px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.07); color: #b8cfc1; font-size: 24px; cursor: pointer; }
 .hero-picker > p { max-width: none; margin: 3px 0 10px; font-size: 10px; line-height: 1.4; }
-.hero-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.hero-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .hero-option {
   min-width: 0;
-  min-height: 92px;
-  padding: 9px 23px 9px 8px;
+  min-height: 168px;
+  padding: 0;
   position: relative;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
+  grid-template-rows: 105px minmax(0, 1fr);
+  overflow: hidden;
   border: 1px solid rgba(145, 202, 170, 0.2);
   border-radius: 15px;
   background: rgba(21, 51, 44, 0.9);
@@ -616,12 +623,43 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
   cursor: pointer;
 }
 .hero-option.is-selected { border-color: rgba(117, 227, 189, 0.7); background: linear-gradient(145deg, rgba(47, 98, 78, 0.96), rgba(25, 62, 52, 0.96)); box-shadow: inset 0 0 0 1px rgba(117, 227, 189, 0.12); }
-.hero-option > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
+.hero-option-visual { min-width: 0; position: relative; overflow: hidden; background: #17352d; }
+.hero-option-visual::after { content: ""; position: absolute; inset: 45% 0 0; background: linear-gradient(transparent, rgba(9,27,23,0.78)); pointer-events: none; }
+.hero-option-portrait { width: 100%; height: 100%; display: block; object-fit: cover; transition: filter 160ms ease, transform 160ms ease; }
+.hero-option[data-hero-choice="eira"] .hero-option-portrait { object-position: 50% 24%; }
+.hero-option[data-hero-choice="toren"] .hero-option-portrait { object-position: 50% 22%; }
+.hero-option[data-hero-choice="grak"] .hero-option-portrait { object-position: 50% 20%; }
+.hero-option:hover .hero-option-portrait,
+.hero-option:focus-visible .hero-option-portrait { transform: scale(1.04); }
+.hero-option-copy { min-width: 0; padding: 7px 7px 8px; display: grid; align-content: start; gap: 2px; }
 .hero-option strong { overflow: hidden; font-family: Georgia, serif; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
-.hero-option small { color: #a9c0b3; font-size: 8px; line-height: 1.2; }
-.hero-option b { color: #e6c978; font-size: 8px; font-weight: 800; }
+.hero-option small { min-height: 19px; overflow: hidden; color: #a9c0b3; font-size: 7px; line-height: 1.3; }
+.hero-option b { overflow: hidden; color: #e6c978; font-size: 7px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .hero-option-check { position: absolute; top: 7px; right: 7px; width: 17px; height: 17px; display: none; place-items: center; border-radius: 50%; background: #75e3bd; color: #173b31; font-size: 10px; font-style: normal; }
 .hero-option.is-selected .hero-option-check { display: grid; }
+.hero-option.is-locked { border-color: rgba(197, 161, 103, 0.25); }
+.hero-option.is-locked:disabled { filter: none; opacity: 1; }
+.hero-option.is-locked .hero-option-portrait { filter: saturate(0.58) brightness(0.78); }
+.hero-option-lock {
+  min-height: 34px;
+  padding: 4px 5px;
+  position: absolute;
+  z-index: 2;
+  top: 65px;
+  left: 5px;
+  right: 5px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(238, 202, 121, 0.34);
+  border-radius: 9px;
+  background: rgba(31, 27, 22, 0.9);
+  color: #efd68f;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.32);
+}
+.hero-option.is-locked .hero-option-lock { display: flex; }
+.hero-option-lock i { flex: 0 0 auto; color: #e5bb5d; font-size: 8px; font-style: normal; }
+.hero-option-lock small { min-height: 0; color: inherit; font-size: 6px; font-weight: 800; line-height: 1.15; }
 .hero-detail-card {
   margin-top: 9px;
   padding: 10px;
@@ -888,8 +926,8 @@ button:disabled { cursor: not-allowed; filter: grayscale(0.45); opacity: 0.46; }
   .start-wave-button { min-width: 106px; padding-left: 7px; padding-right: 7px; font-size: 9px; }
   .enemy-chip { padding: 2px 3px; }
   .guide-card { padding-left: 14px; padding-right: 14px; }
-  .hero-options { grid-template-columns: 1fr; }
-  .hero-option { min-height: 72px; }
+  .hero-options { display: flex; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+  .hero-option { flex: 0 0 118px; min-height: 168px; scroll-snap-align: start; }
 }
 
 @media (min-height: 800px) and (max-aspect-ratio: 47 / 100) and (max-width: 360px) {

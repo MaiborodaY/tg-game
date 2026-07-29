@@ -37,6 +37,15 @@ test("physical armor and magic wards reduce only their matching damage", () => {
   assert.equal(calculateDamage(100, "arcane", armored), 100);
 });
 
+test("resistance penetration removes a relative share of matching resistance", () => {
+  const armored = { physicalResistance: 0.5, magicResistance: 0.4 };
+  assert.equal(calculateDamage(100, "physical", armored, 0.4), 70);
+  assert.equal(calculateDamage(100, "fire", armored, 0.25), 70);
+  assert.equal(calculateDamage(100, "arcane", armored, 0.8), 100);
+  assert.equal(calculateDamage(100, "physical", armored, 2), 100);
+  assert.equal(calculateDamage(100, "physical", armored, -1), 50);
+});
+
 function target(id, x, y, progress, slowed) {
   return { id, x, y, progress, slowed, physicalResistance: 0, magicResistance: 0 };
 }

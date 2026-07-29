@@ -13,7 +13,7 @@ import {
 } from "../src/game/heroes.ts";
 
 test("hero definitions are exhaustive, immutable, and expose stable upgrade gates", () => {
-  assert.deepEqual(HERO_IDS, ["eira", "toren"]);
+  assert.deepEqual(HERO_IDS, ["eira", "toren", "grak"]);
   assert.deepEqual(Object.keys(HERO_DEFINITIONS).sort(), [...HERO_IDS].sort());
   assert.ok(Object.isFrozen(HERO_DEFINITIONS));
   for (const id of HERO_IDS) {
@@ -27,6 +27,7 @@ test("hero definitions are exhaustive, immutable, and expose stable upgrade gate
   assert.equal(getHeroUpgradeWaveGate(3), null);
   assert.equal(getHeroUpgradeCost("eira", 1), 150);
   assert.equal(getHeroUpgradeCost("toren", 2), 500);
+  assert.equal(getHeroUpgradeCost("grak", 1), 170);
   assert.equal(getHeroUpgradeCost("eira", 3), null);
   assert.equal(isHeroId("toren"), true);
   assert.equal(isHeroId("missing"), false);
@@ -34,7 +35,7 @@ test("hero definitions are exhaustive, immutable, and expose stable upgrade gate
   assert.equal(isHeroLevel(4), false);
 });
 
-test("Eira scales tower support while Toren scales splash and control", () => {
+test("heroes keep distinct scaling identities across damage, control, and attack speed", () => {
   const eiraOne = getHeroStats("eira", 1);
   const eiraThree = getHeroStats("eira", 3);
   assert.equal(eiraOne.attackSplashRadius, 0);
@@ -50,16 +51,28 @@ test("Eira scales tower support while Toren scales splash and control", () => {
   assert.ok(torenThree.attackSplashRadius > torenOne.attackSplashRadius);
   assert.ok(torenThree.slowAuraFactor < 1);
   assert.ok(torenThree.abilityDamage > torenOne.abilityDamage);
+
+  const grakOne = getHeroStats("grak", 1);
+  const grakThree = getHeroStats("grak", 3);
+  assert.ok(grakOne.attackSplashRadius > 0);
+  assert.equal(grakOne.towerAttackIntervalMultiplier, 1);
+  assert.ok(grakThree.towerAttackIntervalMultiplier < 1);
+  assert.ok(grakThree.abilityDurationMs > grakOne.abilityDurationMs);
+  assert.ok(grakThree.abilityResistancePenetration > grakOne.abilityResistancePenetration);
 });
 
 test("hero aura summaries expose only unlocked passive radii and strengths", () => {
   assert.equal(getHeroAura("eira", 1), null);
   assert.equal(getHeroAura("toren", 1), null);
+  assert.equal(getHeroAura("grak", 1), null);
   const eiraAura = getHeroAura("eira", 2);
   const torenAura = getHeroAura("toren", 3);
+  const grakAura = getHeroAura("grak", 3);
   assert.deepEqual({ kind: eiraAura?.kind, radius: eiraAura?.radius }, { kind: "tower_damage", radius: 105 });
   assert.deepEqual({ kind: torenAura?.kind, radius: torenAura?.radius }, { kind: "slow", radius: 115 });
+  assert.deepEqual({ kind: grakAura?.kind, radius: grakAura?.radius }, { kind: "tower_attack_speed", radius: 118 });
   assert.equal(Math.round((eiraAura?.strength ?? 0) * 100), 8);
   assert.equal(Math.round((torenAura?.strength ?? 0) * 100), 14);
+  assert.equal(Math.round((grakAura?.strength ?? 0) * 100), 12);
   assert.ok(Object.isFrozen(eiraAura));
 });
