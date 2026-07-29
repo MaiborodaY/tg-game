@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { GAME_HEIGHT, GAME_WIDTH, ROUTE_POINTS } from "../game/config.ts";
 import type { CampaignAct, EnemyType, Point, TowerLevel, TowerType } from "../game/types.ts";
 import {
   createEnemyMotionPose,
@@ -7,25 +6,9 @@ import {
   sampleEnemyMotion,
   type EnemyMotionPose,
 } from "./enemyVisuals.ts";
+import { drawWorld, setWorldAct, type WorldArt, type WorldDefinition } from "./worldArt.ts";
 
-export type WorldArt = Readonly<{
-  actVeil: Phaser.GameObjects.Rectangle;
-  gate: Phaser.GameObjects.Container;
-  gateCrystal: Phaser.GameObjects.Rectangle;
-  gateHomeX: number;
-}>;
-
-export type WorldDefinition = Readonly<{
-  width: number;
-  height: number;
-  route: readonly Point[];
-}>;
-
-const DEFAULT_WORLD: WorldDefinition = Object.freeze({
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
-  route: ROUTE_POINTS,
-});
+export { drawWorld, setWorldAct, type WorldArt, type WorldDefinition };
 
 export type TowerArt = Readonly<{
   container: Phaser.GameObjects.Container;
@@ -86,29 +69,6 @@ const ENEMY_BUILDERS = {
 } satisfies Readonly<Record<EnemyType, EnemyBuilder>>;
 
 const enemyRigs = new WeakMap<Phaser.GameObjects.Container, EnemyRig>();
-
-export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_WORLD): WorldArt {
-  const { width, height, route } = world;
-  const background = scene.add.graphics().setDepth(-30);
-  background.fillStyle(0x102a27, 1).fillRect(0, 0, width, height);
-  for (let band = 0; band < Math.ceil(height / 36); band += 1) {
-    const color = band % 2 === 0 ? 0x173a30 : 0x15342d;
-    background.fillStyle(color, 0.54).fillRect(0, band * 36, width, 38);
-  }
-
-  drawRoute(scene, route);
-  drawDecorations(scene, route, width, height);
-  drawEntrance(scene, route[0]);
-  const gate = drawGate(scene, route[route.length - 1], height);
-  const actVeil = scene.add.rectangle(width / 2, height / 2, width, height, 0x52366f, 0)
-    .setDepth(-12)
-    .setBlendMode(Phaser.BlendModes.ADD);
-
-  const vignette = scene.add.graphics().setDepth(80).setScrollFactor(0);
-  vignette.lineStyle(18, 0x071310, 0.2).strokeRoundedRect(-5, -5, width + 10, height + 10, 28);
-  vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
-  return Object.freeze({ actVeil, gate: gate.container, gateCrystal: gate.crystal, gateHomeX: gate.container.x });
-}
 
 export function createTowerArt(
   scene: Phaser.Scene,
@@ -256,13 +216,6 @@ export function createFloatingText(scene: Phaser.Scene, x: number, y: number, te
   });
 }
 
-export function setWorldAct(scene: Phaser.Scene, art: WorldArt, act: CampaignAct): void {
-  const colors: Record<CampaignAct, number> = { 1: 0x3e7b63, 2: 0x5c3c78, 3: 0x8b3448 };
-  const alpha: Record<CampaignAct, number> = { 1: 0, 2: 0.08, 3: 0.14 };
-  art.actVeil.setFillStyle(colors[act], 1);
-  scene.tweens.add({ targets: art.actVeil, alpha: alpha[act], duration: 850, ease: "Sine.InOut" });
-}
-
 export function createLightningArc(
   scene: Phaser.Scene,
   from: Point,
@@ -296,7 +249,7 @@ export function createGateHitEffect(scene: Phaser.Scene, art: WorldArt, damage: 
   art.gate.setX(art.gateHomeX);
   scene.tweens.add({ targets: art.gate, x: art.gateHomeX + 5, duration: 45, yoyo: true, repeat: 3 });
   art.gateCrystal.setFillStyle(0xff685f, 1);
-  scene.time.delayedCall(260, () => art.gateCrystal.active && art.gateCrystal.setFillStyle(0x72e6c2, 1));
+  scene.time.delayedCall(260, () => art.gateCrystal.active && art.gateCrystal.setFillStyle(art.gateCrystalHomeColor, 1));
   createFloatingText(scene, art.gate.x, art.gate.y - 35, `−${damage} ♥`, "#ff9589");
   for (let index = 0; index < 4; index += 1) {
     const shard = scene.add.rectangle(art.gate.x, art.gate.y - 18, 4, 8, 0x9ff6dc).setRotation(index * 0.8).setDepth(1_100);
@@ -309,117 +262,6 @@ export function createGateHitEffect(scene: Phaser.Scene, art: WorldArt, damage: 
       onComplete: () => shard.destroy(),
     });
   }
-}
-
-function drawRoute(scene: Phaser.Scene, points: readonly Point[]): void {
-  const route = scene.add.graphics().setDepth(-18);
-  strokePolyline(route, points, 48, 0x071a18, 0.72);
-  strokePolyline(route, points, 42, 0x765838, 1);
-  strokePolyline(route, points, 34, 0xb78a53, 1);
-  strokePolyline(route, points, 25, 0xc9a369, 0.72);
-  strokePolyline(route, points, 2, 0xf3d99b, 0.2);
-
-  const marks = scene.add.graphics().setDepth(-16);
-  marks.fillStyle(0x5c432d, 0.34);
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = points[index];
-    const end = points[index + 1];
-    const length = Math.hypot(end.x - start.x, end.y - start.y);
-    const steps = Math.floor(length / 34);
-    for (let step = 1; step < steps; step += 1) {
-      const ratio = step / steps;
-      const x = start.x + (end.x - start.x) * ratio;
-      const y = start.y + (end.y - start.y) * ratio;
-      marks.fillCircle(x + (step % 2 ? -5 : 6), y + (index % 2 ? 4 : -4), 1.5);
-    }
-  }
-}
-
-function strokePolyline(
-  graphics: Phaser.GameObjects.Graphics,
-  points: readonly Point[],
-  width: number,
-  color: number,
-  alpha: number,
-): void {
-  graphics.lineStyle(width, color, alpha).beginPath().moveTo(points[0].x, points[0].y);
-  for (let index = 1; index < points.length; index += 1) graphics.lineTo(points[index].x, points[index].y);
-  graphics.strokePath();
-}
-
-function drawDecorations(
-  scene: Phaser.Scene,
-  route: readonly Point[],
-  width: number,
-  height: number,
-): void {
-  const rng = seededRandom(87_121);
-  const graphics = scene.add.graphics().setDepth(-20);
-  for (let index = 0; index < 86; index += 1) {
-    const x = 10 + rng() * (width - 20);
-    const y = 10 + rng() * (height - 20);
-    if (distanceToRoute(x, y, route) < 34) continue;
-    const radius = 2 + rng() * 4;
-    if (rng() > 0.35) {
-      graphics.fillStyle(rng() > 0.5 ? 0x245a43 : 0x1e4a3a, 0.84).fillCircle(x, y, radius + 2);
-      graphics.fillStyle(0x3c7650, 0.62).fillCircle(x - 2, y - 2, radius);
-    } else {
-      graphics.fillStyle(0xc6db88, 0.65).fillCircle(x, y, 1.4);
-      graphics.fillStyle(rng() > 0.5 ? 0xe9a873 : 0x88d7c0, 0.8).fillCircle(x + 2, y - 1, 1.2);
-    }
-  }
-
-  for (let index = 0; index < 8; index += 1) {
-    const x = index % 2 === 0 ? 12 + rng() * 34 : width - 12 - rng() * 34;
-    const y = 55 + index * 62 + rng() * 20;
-    const tree = scene.add.container(x, y).setDepth(y - 15);
-    const trunk = scene.add.rectangle(0, 8, 8, 22, 0x59412e).setOrigin(0.5);
-    const crownBack = scene.add.circle(0, -4, 18, 0x12392e);
-    const crown = scene.add.circle(-3, -8, 14, 0x246044);
-    const light = scene.add.circle(-8, -13, 6, 0x46825a, 0.7);
-    tree.add([trunk, crownBack, crown, light]);
-  }
-
-  for (let index = 0; index < 5; index += 1) {
-    const firefly = scene.add.circle(26 + rng() * (width - 52), 80 + rng() * (height - 150), 1.5, 0xd6ff9b, 0.24)
-      .setDepth(-14)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    scene.tweens.add({
-      targets: firefly,
-      x: firefly.x + (rng() - 0.5) * 30,
-      y: firefly.y + (rng() - 0.5) * 24,
-      alpha: 0.85,
-      duration: 1_700 + rng() * 1_200,
-      delay: rng() * 900,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.InOut",
-    });
-  }
-}
-
-function drawEntrance(scene: Phaser.Scene, entrance: Point): void {
-  const portal = scene.add.container(Math.max(8, entrance.x + 32), entrance.y).setDepth(40);
-  const glow = scene.add.circle(0, 0, 24, 0xb46cff, 0.08).setStrokeStyle(3, 0xb987ff, 0.65);
-  const inner = scene.add.circle(0, 0, 13, 0x58317a, 0.8).setStrokeStyle(2, 0xe4bdff, 0.8);
-  portal.add([glow, inner]);
-  scene.tweens.add({ targets: glow, scale: 1.25, alpha: 0.18, duration: 1_200, yoyo: true, repeat: -1 });
-}
-
-function drawGate(scene: Phaser.Scene, exit: Point, height: number): Readonly<{
-  container: Phaser.GameObjects.Container;
-  crystal: Phaser.GameObjects.Rectangle;
-}> {
-  const gate = scene.add.container(exit.x, Math.min(height - 25, exit.y + 17)).setDepth(600);
-  const shadow = scene.add.ellipse(0, 17, 72, 24, 0x07110f, 0.45);
-  const left = scene.add.rectangle(-23, 1, 18, 48, 0x31423e).setStrokeStyle(3, 0x809080);
-  const right = scene.add.rectangle(23, 1, 18, 48, 0x31423e).setStrokeStyle(3, 0x809080);
-  const arch = scene.add.rectangle(0, -20, 61, 15, 0x3c5049).setStrokeStyle(3, 0x8ea08f);
-  const crystal = scene.add.rectangle(0, -23, 12, 12, 0x72e6c2).setRotation(Math.PI / 4).setStrokeStyle(2, 0xd6fff1);
-  const doors = scene.add.rectangle(0, 8, 28, 34, 0x6f4a2d).setStrokeStyle(2, 0x261b15);
-  gate.add([shadow, doors, left, right, arch, crystal]);
-  scene.tweens.add({ targets: crystal, alpha: 0.55, duration: 950, yoyo: true, repeat: -1 });
-  return Object.freeze({ container: gate, crystal });
 }
 
 function drawRanger(scene: Phaser.Scene, head: Phaser.GameObjects.Container, level: number): void {
@@ -688,28 +530,4 @@ function applyFootPose(part: RigPart | undefined, lift: number, swing: number): 
 function applySwingPose(part: RigPart | undefined, swing: number): void {
   if (!part) return;
   part.target.rotation = part.rotation + swing;
-}
-
-function distanceToRoute(x: number, y: number, route: readonly Point[]): number {
-  let best = Number.POSITIVE_INFINITY;
-  for (let index = 1; index < route.length; index += 1) {
-    best = Math.min(best, distanceToSegment(x, y, route[index - 1], route[index]));
-  }
-  return best;
-}
-
-function distanceToSegment(x: number, y: number, start: Point, end: Point): number {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const lengthSquared = dx * dx + dy * dy;
-  const ratio = lengthSquared === 0 ? 0 : Math.min(1, Math.max(0, ((x - start.x) * dx + (y - start.y) * dy) / lengthSquared));
-  return Math.hypot(x - (start.x + dx * ratio), y - (start.y + dy * ratio));
-}
-
-function seededRandom(seed: number): () => number {
-  let value = seed >>> 0;
-  return () => {
-    value = Math.imul(1_664_525, value) + 1_013_904_223;
-    return (value >>> 0) / 4_294_967_296;
-  };
 }

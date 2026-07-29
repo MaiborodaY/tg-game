@@ -532,7 +532,7 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.livesValue.textContent = String(ui.campaign.lives);
   elements.goldValue.textContent = String(ui.campaign.gold);
   elements.waveValue.textContent = `${ui.currentWave} / ${ui.finalWave ?? "∞"}`;
-  elements.waveProgress.style.width = `${Math.round(ui.waveProgress * 100)}%`;
+  elements.waveProgress.style.transform = `scaleX(${Math.min(1, Math.max(0, ui.waveProgress))})`;
   const combatPhase = ui.phase === "wave" || ui.phase === "countdown";
   elements.gameMenuButton.textContent = combatPhase ? (ui.paused ? "▶" : "Ⅱ") : "☰";
   elements.gameMenuButton.classList.toggle("is-active", ui.paused);
@@ -568,7 +568,9 @@ function renderUi(ui: TowerDefenseUiState): void {
   const editing = ui.phase === "setup" && !ui.paused;
   elements.towerCards.forEach((card) => {
     const type = card.dataset.tower as TowerType;
-    card.classList.toggle("is-selected", ui.selectedBuildType === type);
+    const selected = ui.selectedBuildType === type;
+    card.classList.toggle("is-selected", selected);
+    card.setAttribute("aria-pressed", String(selected));
     card.disabled = !editing || ui.campaign.gold < TOWER_DEFINITIONS[type].buildCost;
   });
 

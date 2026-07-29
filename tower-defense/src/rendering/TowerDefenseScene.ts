@@ -455,11 +455,22 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   private createBuildPads(): void {
     this.level.buildPads.forEach((point, padId) => {
-      const ring = this.add.circle(point.x, point.y, 20, 0x0d2521, 0.82)
-        .setStrokeStyle(2, 0x5f8b77, 0.62)
+      const foundation = this.add.graphics().setDepth(point.y + 4);
+      foundation.fillStyle(0x071613, 0.48).fillEllipse(point.x, point.y + 4, 47, 24);
+      for (let stone = 0; stone < 8; stone += 1) {
+        const angle = (Math.PI * 2 * stone) / 8 + (padId % 3) * 0.08;
+        const radius = stone % 2 === 0 ? 19 : 18;
+        const x = point.x + Math.cos(angle) * radius;
+        const y = point.y + Math.sin(angle) * radius * 0.72;
+        foundation.fillStyle(stone % 3 === 0 ? 0x52675c : 0x344a42, 0.78)
+          .fillEllipse(x, y, stone % 2 === 0 ? 9 : 8, 6);
+        foundation.fillStyle(0x8ba08f, 0.2).fillEllipse(x - 1, y - 1, 5, 2.4);
+      }
+      const ring = this.add.circle(point.x, point.y, 18, 0x0d2521, 0.62)
+        .setStrokeStyle(2, 0x6f8a79, 0.48)
         .setDepth(point.y + 5);
-      const core = this.add.circle(point.x, point.y, 13, 0x214a3b, 0.45)
-        .setStrokeStyle(1, 0x9bc98d, 0.34)
+      const core = this.add.circle(point.x, point.y, 11.5, 0x214a3b, 0.34)
+        .setStrokeStyle(1, 0xa8c795, 0.25)
         .setDepth(point.y + 6);
       const rune = this.add.text(point.x, point.y - 1, "✦", {
         color: "#a9d9ad",
@@ -540,10 +551,10 @@ export class TowerDefenseScene extends Phaser.Scene {
         view.rune.setAlpha(tower ? 0 : 0.11);
         continue;
       }
-      view.ring.setFillStyle(selected ? 0x376e5a : buildable ? 0x1f594a : 0x0d2521, selected ? 0.94 : 0.78);
-      view.ring.setStrokeStyle(selected ? 3 : 2, selected ? 0xf0d77d : buildable ? 0x75e3bd : 0x5f8b77, selected ? 1 : 0.64);
-      view.core.setAlpha(tower ? 0.1 : buildable ? 0.72 : 0.42);
-      view.rune.setAlpha(tower ? 0 : buildable ? 0.92 : 0.48);
+      view.ring.setFillStyle(selected ? 0x57472b : buildable ? 0x1f594a : 0x0d2521, selected ? 0.94 : buildable ? 0.82 : 0.54);
+      view.ring.setStrokeStyle(selected ? 3 : 2, selected ? 0xf0d77d : buildable ? 0x75e3bd : 0x6f8a79, selected ? 1 : buildable ? 0.78 : 0.42);
+      view.core.setAlpha(tower ? 0.06 : buildable ? 0.76 : 0.3);
+      view.rune.setAlpha(tower ? 0 : buildable ? 0.94 : 0.34);
       if (buildable) this.tweens.add({ targets: view.rune, scale: 1.16, duration: 520, yoyo: true, repeat: 1 });
     }
   }
