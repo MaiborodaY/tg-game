@@ -216,7 +216,7 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       slowAuraRadius: 190,
       slowAuraFactor: 0.78,
       controlResistancePenetration: 0.35,
-      gateShield: 5,
+      gateShield: 3,
       abilityRadius: 155,
       abilityDamage: 105,
       abilityStunMs: 1_600,

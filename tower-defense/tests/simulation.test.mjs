@@ -447,11 +447,11 @@ test("Toren's gate shield absorbs leak damage before campaign lives", () => {
     hero: { id: "toren", level: 3, anchorId: 0 },
   }, createTestRules({
     finalWave: null,
-    enemyHps: Array.from({ length: 6 }, () => 10_000),
+    enemyHps: Array.from({ length: 4 }, () => 10_000),
     enemySpeed: 1_000,
   }));
   simulation.startWave();
-  assert.equal(simulation.readView().gateShield, 5);
+  assert.equal(simulation.readView().gateShield, 3);
   const events = [...simulation.drainEvents()];
   for (let index = 0; index < 60 && simulation.readView().phase !== "setup"; index += 1) {
     simulation.advance(100);
@@ -463,11 +463,11 @@ test("Toren's gate shield absorbs leak damage before campaign lives", () => {
   assert.equal(
     events.filter((event) => event.type === "gate_shield_absorbed")
       .reduce((total, event) => total + event.amount, 0),
-    5,
+    3,
   );
   assert.deepEqual(
     events.filter((event) => event.type === "enemy_leaked").map((event) => [event.damage, event.absorbed]),
-    [[0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [1, 0]],
+    [[0, 1], [0, 1], [0, 1], [1, 0]],
   );
 });
 
