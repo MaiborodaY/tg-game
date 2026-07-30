@@ -70,7 +70,7 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(html, /id="selected-hero-hint" data-aura="locked"/);
   assert.match(mainSource, /const heroSelected = ui\.selectedHero && !selected/);
   assert.match(mainSource, /elements\.buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
-  assert.match(mainSource, /elements\.appShell\.classList\.toggle\("is-combat-compact", combatCompact\)/);
+  assert.doesNotMatch(mainSource, /is-combat-compact/);
   assert.match(mainSource, /elements\.heroPanel\.hidden = !heroSelected/);
   assert.match(mainSource, /currentScene\(\)\?\.upgradeHero\(\)/);
   assert.match(mainSource, /currentScene\(\)\?\.useHeroAbility\(\)/);

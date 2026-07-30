@@ -53,15 +53,11 @@ test("wave preview derives traits and tower recommendations from the existing pl
   assert.match(main, /wave_preview_summary/);
 });
 
-test("combat only collapses an unselected tower deck and tower upgrades preview their next stats", () => {
-  assert.match(main, /const combatCompact = combatPhase && !selected && !heroSelected/);
-  assert.match(main, /commandPanel\.classList\.toggle\("is-combat-compact", combatCompact\)/);
-  assert.match(main, /appShell\.classList\.toggle\("is-combat-compact", combatCompact\)/);
+test("combat keeps the command geometry stable and tower upgrades preview their next stats", () => {
   assert.match(main, /buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
-  assert.match(css, /\.command-panel\.is-combat-compact \{[^}]*--tower-controls-height:\s*0px;/s);
-  assert.match(css, /\.command-panel\.is-combat-compact \{[^}]*min-height:\s*52px;/s);
-  assert.match(css, /@media \(min-height:\s*800px\) and \(max-aspect-ratio:\s*47 \/ 100\)[\s\S]*?\.command-panel\.is-combat-compact \.build-panel \{ display:\s*block; \}/);
-  assert.match(css, /@media \(max-height:\s*799px\) and \(max-aspect-ratio:\s*3 \/ 5\)[\s\S]*?\.command-panel\.is-combat-compact \.build-panel \{ display:\s*block; \}/);
+  assert.doesNotMatch(main, /combatCompact|is-combat-compact/);
+  assert.doesNotMatch(css, /is-combat-compact/);
+  assert.match(css, /\.command-panel \{[^}]*grid-template-rows:\s*var\(--tower-controls-height\) 44px;/s);
   assert.match(main, /getTowerStats\(selected\.tower\.type, \(selected\.tower\.level \+ 1\) as TowerLevel\)/);
   assert.match(main, /selected\.stats\.damage\}→\$\{nextStats\.damage/);
 });

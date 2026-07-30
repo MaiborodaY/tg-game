@@ -801,9 +801,6 @@ function renderUi(ui: TowerDefenseUiState): void {
 
   const selected = getSelectedTowerDetails(ui);
   const heroSelected = ui.selectedHero && !selected;
-  const combatCompact = combatPhase && !selected && !heroSelected;
-  elements.appShell.classList.toggle("is-combat-compact", combatCompact);
-  elements.commandPanel.classList.toggle("is-combat-compact", combatCompact);
   elements.buildPanel.hidden = Boolean(selected) || heroSelected;
   elements.towerPanel.hidden = !selected;
   elements.heroPanel.hidden = !heroSelected;

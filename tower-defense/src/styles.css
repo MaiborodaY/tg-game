@@ -719,14 +719,6 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .enemy-glyph.titan::after { top: 5px; left: 5px; width: 4px; height: 4px; border: 1px solid #eaffff; background: #8fe8ef; transform: rotate(45deg); box-shadow: 0 0 4px rgba(143, 232, 239, 0.8); }
 .start-wave-button { min-width: 118px; padding: 5px 9px; border: 1px solid rgba(255, 222, 137, 0.62); background: linear-gradient(145deg, #d1a04e, #8b5c2c); color: #fff9df; font-size: 10px; text-shadow: 0 1px rgba(54, 32, 10, 0.6); box-shadow: inset 0 1px rgba(255,255,255,0.2), 0 7px 16px rgba(0,0,0,0.24); }
 .start-wave-button.is-boss { border-color: rgba(255, 127, 98, 0.66); background: linear-gradient(145deg, #b85e43, #7f3d35); }
-.command-panel.is-combat-compact {
-  --tower-controls-height: 0px;
-  min-height: 52px;
-  grid-template-rows: 0 44px;
-  padding-top: 4px;
-}
-.command-panel.is-combat-compact .build-panel { display: none; }
-
 .modal-layer {
   position: fixed;
   inset: 0;
@@ -1346,8 +1338,6 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   .app-shell { grid-template-rows: auto auto minmax(164px, 1fr); gap: 5px; }
   .battle-shell { width: 100%; aspect-ratio: 390 / 560; justify-self: center; }
   .command-panel { --tower-controls-height: 94px; min-height: 164px; grid-template-rows: minmax(var(--tower-controls-height), 1fr) 48px; gap: 6px; padding: 7px; }
-  .command-panel.is-combat-compact { --tower-controls-height: 94px; min-height: 164px; grid-template-rows: minmax(var(--tower-controls-height), 1fr) 48px; gap: 6px; padding: 7px; }
-  .command-panel.is-combat-compact .build-panel { display: block; }
   .tower-deck { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .tower-card { min-height: 0; height: auto; padding: 5px; flex-direction: row; justify-content: flex-start; gap: 6px; text-align: left; }
   .tower-card .tower-emblem { flex-basis: 38px; width: 38px; height: 38px; margin: 0; transform: none; }
@@ -1355,11 +1345,6 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   .tower-card strong { font-size: 10px; line-height: 1.05; }
   .tower-card small { font-size: 9px; }
   .wave-command { min-height: 48px; }
-}
-
-@media (max-height: 799px) and (max-aspect-ratio: 3 / 5) {
-  .command-panel.is-combat-compact { --tower-controls-height: 52px; min-height: 108px; grid-template-rows: var(--tower-controls-height) 44px; gap: 4px; padding: 6px; }
-  .command-panel.is-combat-compact .build-panel { display: block; }
 }
 
 @media (max-height: 700px) {
