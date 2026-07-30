@@ -72,8 +72,12 @@ test("daily attempt exhaustion is explicit and the obsolete practice hint is abs
   assert.doesNotMatch(html, /session-choice-hint|Выбор сохраняется для тренировочных запусков/u);
   assert.doesNotMatch(mainSource, /sessionChoiceHint|session_hint/);
   assert.match(mainSource, /started\.error === "daily_attempt_limit" \? "daily_attempt_limit" : "miniapp_start_failed"/);
+  assert.match(mainSource, /canResetDailyAttempts = started\.canResetAttempts === true/);
   assert.match(mainSource, /launchError === "daily_attempt_limit"[\s\S]*daily_attempt_limit_title[\s\S]*daily_attempt_limit_body/);
-  assert.match(mainSource, /launchError === "daily_attempt_limit"[\s\S]*introStart\.disabled = true[\s\S]*daily_attempt_limit_action/);
+  assert.match(mainSource, /launchError === "daily_attempt_limit" && canResetDailyAttempts[\s\S]*resetAdminDailyAttempts/);
+  assert.match(mainSource, /resetMiniAppDailyAttempts\(launchDecision\.initData\)/);
+  assert.match(mainSource, /introStart\.disabled = !canResetDailyAttempts \|\| resettingDailyAttempts/);
+  assert.match(mainSource, /daily_attempt_reset_action[\s\S]*daily_attempt_limit_action/);
 });
 
 test("Phaser and the renderer load behind one retry-safe runtime boundary", () => {

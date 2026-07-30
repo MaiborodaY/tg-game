@@ -7,6 +7,7 @@ import {
   MINIAPP_REWARD_SESSION_KEY,
   MINIAPP_REWARD_TTL_MS,
   TOWER_DEFENSE_FINISH_URL,
+  TOWER_DEFENSE_RESET_ATTEMPTS_URL,
   TOWER_DEFENSE_START_URL,
   captureFinalResult,
   captureFinishSubmission,
@@ -17,6 +18,7 @@ import {
   loadMiniAppReward,
   parseLaunchParams,
   replaceMiniAppBootstrap,
+  resetMiniAppDailyAttempts,
   saveMiniAppBootstrap,
   saveMiniAppReward,
   startMiniAppReward,
@@ -134,9 +136,40 @@ test("Mini App start rejects mismatched game, finish endpoint, and HTTP failures
   assert.equal((await startMiniAppReward("signed", {
     fetch: async () => response({ ok: false, code: "daily_attempt_limit" }, 429),
   })).error, "daily_attempt_limit");
+  assert.deepEqual(await startMiniAppReward("signed", {
+    fetch: async () => response({
+      ok: false,
+      code: "daily_attempt_limit",
+      can_reset_attempts: true,
+    }, 429),
+  }), { ok: false, error: "daily_attempt_limit", canResetAttempts: true });
   assert.equal((await startMiniAppReward("signed", {
     fetch: async () => response({ ok: false, code: "other_limit" }, 429),
   })).error, "http_429");
+});
+
+test("admin attempt reset posts only signed initData to the pinned endpoint", async () => {
+  const requests = [];
+  const result = await resetMiniAppDailyAttempts("query_id=telegram&hash=signed", {
+    fetch: async (url, init) => {
+      requests.push({ url, init });
+      return response({ ok: true, code: "daily_attempts_reset" });
+    },
+  });
+
+  assert.deepEqual(result, { ok: true });
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, TOWER_DEFENSE_RESET_ATTEMPTS_URL);
+  assert.deepEqual(JSON.parse(requests[0].init.body), {
+    init_data: "query_id=telegram&hash=signed",
+  });
+  assert.deepEqual(requests[0].init.headers, { "content-type": "application/json" });
+  assert.deepEqual(await resetMiniAppDailyAttempts("signed", {
+    fetch: async () => response({ ok: false, code: "forbidden" }, 403),
+  }), { ok: false, error: "http_403" });
+  assert.deepEqual(await resetMiniAppDailyAttempts("signed", {
+    fetch: async () => response({ ok: true, code: "unexpected" }),
+  }), { ok: false, error: "reset_rejected" });
 });
 
 test("Mini App start forwards only a bounded resume hint and rejects malformed bootstrap metadata", async () => {

@@ -17,6 +17,7 @@ const MAX_SCORE = 2_147_483_647;
 
 export const TOWER_DEFENSE_START_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/start";
 export const TOWER_DEFENSE_FINISH_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/finish";
+export const TOWER_DEFENSE_RESET_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/reset";
 export const MINIAPP_BOOTSTRAP_SESSION_KEY = "td-miniapp-bootstrap-v2";
 export const MINIAPP_REWARD_SESSION_KEY = "td-miniapp-reward-v1";
 // The server keeps a run for 120 minutes; the client stops reusing it well before that boundary.
@@ -100,6 +101,10 @@ export type RewardLaunchDecision = Readonly<
 
 export type MiniAppStartResult = Readonly<
   | { ok: true; reward: ServerRewardLaunch; bootstrap: MiniAppBootstrap }
+  | { ok: false; error: string; canResetAttempts?: true }
+>;
+export type DailyAttemptsResetResult = Readonly<
+  | { ok: true }
   | { ok: false; error: string }
 >;
 
@@ -158,16 +163,44 @@ export async function startMiniAppReward(
     });
     const { response, data } = await postJson(TOWER_DEFENSE_START_URL, body, options);
     if (!response.ok) {
-      const error = isRecord(data) && data.code === "daily_attempt_limit"
-        ? "daily_attempt_limit"
-        : "http_" + (response.status || 0);
-      return Object.freeze({ ok: false, error });
+      if (isRecord(data) && data.code === "daily_attempt_limit") {
+        return Object.freeze({
+          ok: false,
+          error: "daily_attempt_limit",
+          ...(data.can_reset_attempts === true ? { canResetAttempts: true as const } : {}),
+        });
+      }
+      return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
     }
     const bootstrap = parseMiniAppBootstrapResponse(data);
     const now = readNow(options.now);
     return bootstrap && bootstrap.expiresAt > now
       ? Object.freeze({ ok: true, reward: bootstrap.reward, bootstrap })
       : Object.freeze({ ok: false, error: responseError(data, "start_rejected") });
+  } catch (error: unknown) {
+    return Object.freeze({ ok: false, error: errorMessage(error) });
+  }
+}
+
+export async function resetMiniAppDailyAttempts(
+  initData: string,
+  options: RequestOptions = {},
+): Promise<DailyAttemptsResetResult> {
+  const boundedInitData = boundedText(initData, MAX_PAYLOAD_LENGTH);
+  if (!boundedInitData) return Object.freeze({ ok: false, error: "invalid_reset_request" });
+
+  try {
+    const { response, data } = await postJson(
+      TOWER_DEFENSE_RESET_ATTEMPTS_URL,
+      JSON.stringify({ init_data: boundedInitData }),
+      options,
+    );
+    if (!response.ok) {
+      return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
+    }
+    return isRecord(data) && data.ok === true && data.code === "daily_attempts_reset"
+      ? Object.freeze({ ok: true })
+      : Object.freeze({ ok: false, error: "reset_rejected" });
   } catch (error: unknown) {
     return Object.freeze({ ok: false, error: errorMessage(error) });
   }

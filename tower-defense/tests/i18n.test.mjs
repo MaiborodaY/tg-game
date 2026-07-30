@@ -84,6 +84,9 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "daily_attempt_limit_title",
     "daily_attempt_limit_body",
     "daily_attempt_limit_action",
+    "daily_attempt_reset_action",
+    "daily_attempt_resetting",
+    "daily_attempt_reset_failed",
   ];
   const params = {
     rank: 2,
@@ -119,6 +122,7 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
   assert.match(tr("uk", "game_menu_restart_confirm_copy"), /прогрес|забіг/ui);
   assert.match(tr("en", "game_menu_restart_confirm_copy"), /progress|run/i);
   assert.equal(tr("en", "daily_attempt_limit_body"), "You have used all 5 attempts. Come back tomorrow.");
+  assert.equal(tr("en", "daily_attempt_reset_action"), "Reset attempts");
 });
 
 test("all heroes explain attack, rank-two passive, and ability in every locale", () => {

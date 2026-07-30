@@ -57,6 +57,7 @@ import {
   loadMiniAppBootstrap,
   parseLaunchParams,
   replaceMiniAppBootstrap,
+  resetMiniAppDailyAttempts,
   saveMiniAppBootstrap,
   startMiniAppReward,
   type FinalResult,
@@ -97,6 +98,8 @@ const leaderboardClient = launchDecision.kind === "miniapp"
 let launch = legacyLaunch;
 let miniAppBootstrap: MiniAppBootstrap | null = null;
 let launchError: "invalid_launch" | "miniapp_start_failed" | "daily_attempt_limit" | null = legacyLaunch.rewardError;
+let canResetDailyAttempts = false;
+let resettingDailyAttempts = false;
 if (launchDecision.kind === "miniapp") {
   const cachedBootstrap = loadMiniAppBootstrap(session);
   if (cachedBootstrap) {
@@ -112,6 +115,7 @@ if (launchDecision.kind === "miniapp") {
       launchError = null;
     } else {
       launchError = started.error === "daily_attempt_limit" ? "daily_attempt_limit" : "miniapp_start_failed";
+      canResetDailyAttempts = started.canResetAttempts === true;
     }
   }
 } else if (launchDecision.kind === "error") {
@@ -492,7 +496,8 @@ function bindInteractions(): void {
     option.addEventListener("click", () => chooseHero(option.dataset.heroChoice as HeroId));
   });
   elements.introStart.addEventListener("click", () => {
-    if (launchError === "miniapp_start_failed" || runtimeLoadFailed) reloadPage();
+    if (launchError === "daily_attempt_limit" && canResetDailyAttempts) void resetAdminDailyAttempts();
+    else if (launchError === "miniapp_start_failed" || runtimeLoadFailed) reloadPage();
     else void startGameFromIntro();
   });
   elements.rewardRetry.addEventListener("click", () => {
@@ -1478,6 +1483,26 @@ function reloadPage(): void {
   window.location.reload();
 }
 
+async function resetAdminDailyAttempts(): Promise<void> {
+  if (
+    resettingDailyAttempts
+    || !canResetDailyAttempts
+    || launchError !== "daily_attempt_limit"
+    || launchDecision.kind !== "miniapp"
+  ) return;
+
+  resettingDailyAttempts = true;
+  syncIntroAction();
+  const result = await resetMiniAppDailyAttempts(launchDecision.initData);
+  if (result.ok) {
+    reloadPage();
+    return;
+  }
+  resettingDailyAttempts = false;
+  showToast(text("daily_attempt_reset_failed"), true);
+  syncIntroAction();
+}
+
 function setLocale(value: string): void {
   const selectedLocale = normalizeLocale(value);
   if (!selectedLocale || selectedLocale === locale) return;
@@ -1836,11 +1861,15 @@ function applyLaunchErrorTranslations(): void {
 }
 
 function syncIntroAction(): void {
-  elements.introStart.setAttribute("aria-busy", String(gameStarting));
+  elements.introStart.setAttribute("aria-busy", String(gameStarting || resettingDailyAttempts));
   elements.introLeaderboard.disabled = gameStarting || sessionSwitching;
   if (launchError === "daily_attempt_limit") {
-    elements.introStart.disabled = true;
-    elements.introStart.textContent = text("daily_attempt_limit_action");
+    elements.introStart.disabled = !canResetDailyAttempts || resettingDailyAttempts;
+    elements.introStart.textContent = text(
+      canResetDailyAttempts
+        ? (resettingDailyAttempts ? "daily_attempt_resetting" : "daily_attempt_reset_action")
+        : "daily_attempt_limit_action",
+    );
     return;
   }
   if (launchError === "miniapp_start_failed") {
