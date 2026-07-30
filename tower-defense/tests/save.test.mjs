@@ -215,6 +215,48 @@ test("a pending finish is scoped by run and survives a reload without storing a 
   assert.equal(storage.getItem(pendingKey("run-a")).includes("token"), false);
 });
 
+test("a pending finish optionally preserves a validated run summary", () => {
+  const storage = memoryStorage();
+  const result = captureFinalResult(52, 123_456);
+  const summary = { lives: 3, kills: 287, towers: 9, heroId: "grak" };
+
+  assert.equal(savePendingResult(storage, "summary-run", "gameover", result, 19, summary), true);
+  assert.deepEqual(JSON.parse(storage.getItem(pendingKey("summary-run"))).summary, summary);
+  assert.deepEqual(loadPendingResult(storage, "summary-run", 72, 24), {
+    version: 2,
+    outcome: "gameover",
+    score: 52,
+    waves: 19,
+    durationMs: 123_456,
+    summary,
+  });
+});
+
+test("invalid optional pending summaries are omitted without invalidating retry data", () => {
+  const storage = memoryStorage();
+  const result = captureFinalResult(12, 44_000);
+  const invalidSummary = { lives: -1, kills: 4.5, towers: 2, heroId: "missing" };
+
+  assert.equal(savePendingResult(storage, "invalid-summary", "gameover", result, 6, invalidSummary), true);
+  assert.equal("summary" in JSON.parse(storage.getItem(pendingKey("invalid-summary"))), false);
+
+  storage.setItem(pendingKey("loaded-invalid-summary"), JSON.stringify({
+    version: 2,
+    outcome: "victory",
+    score: 72,
+    waves: 24,
+    durationMs: 91_000,
+    summary: { lives: 4, kills: 300, towers: 8, heroId: "unknown" },
+  }));
+  assert.deepEqual(loadPendingResult(storage, "loaded-invalid-summary", 72, 24), {
+    version: 2,
+    outcome: "victory",
+    score: 72,
+    waves: 24,
+    durationMs: 91_000,
+  });
+});
+
 test("legacy pending wave scores remain retryable after the rating change", () => {
   const storage = memoryStorage();
   storage.setItem(pendingKey("legacy-run"), JSON.stringify({

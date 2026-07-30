@@ -87,7 +87,11 @@ test("Phaser and the renderer load behind one retry-safe runtime boundary", () =
     mainSource,
     /createLazyRuntimeController\(\s*\(\) => import\("\.\/rendering\/TowerDefenseScene\.ts"\)/,
   );
-  assert.match(mainSource, /const pendingFinishRestored = restorePendingFinish\(\);/);
+  assert.match(
+    mainSource,
+    /const developmentResultShown = showDevelopmentResultPreview\(\);\s*const pendingFinishRestored = developmentResultShown \|\| restorePendingFinish\(\);/,
+  );
+  assert.match(mainSource, /const developmentResultPreview = import\.meta\.env\.DEV/);
   assert.doesNotMatch(mainSource, /scheduleRuntimePreload|runtimeController\.preload\(\)/);
   assert.match(mainSource, /const ready = await ensureGameMounted\(\);[\s\S]*if \(!ready\)[\s\S]*dismissIntro\(\);/);
   assert.match(mainSource, /launchError === "miniapp_start_failed" \|\| runtimeLoadFailed\) reloadPage\(\)/);
@@ -97,7 +101,7 @@ test("Phaser and the renderer load behind one retry-safe runtime boundary", () =
 
 test("pending results and launch errors do not require the gameplay runtime", () => {
   assert.match(mainSource, /function restorePendingFinish\(\): boolean/);
-  assert.match(mainSource, /showResult\(pending\.outcome[\s\S]*void finishReward\(\);\s*return true/);
+  assert.match(mainSource, /showResult\(\s*pending\.outcome,[\s\S]*pending\.summary,[\s\S]*\);\s*void finishReward\(\);\s*return true/);
   assert.match(mainSource, /if \(!pendingFinishRestored\) \{\s*if \(elements\.introOverlay\.hidden\) \{\s*await mountRestoredGame\(\);/);
   assert.match(mainSource, /runtimeLoadFailed = true;[\s\S]*elements\.appShell\.inert = true;[\s\S]*elements\.introOverlay\.hidden = false/);
 });

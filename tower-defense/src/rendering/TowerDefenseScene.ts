@@ -204,7 +204,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private lastBurnVfxAtMs = -1_000;
   private worldArt?: WorldArt;
 
-  constructor(campaign: CampaignState, callbacks: TowerDefenseCallbacks) {
+  constructor(campaign: CampaignState, callbacks: TowerDefenseCallbacks, initialBuildType?: TowerType | null) {
     super({ key: "tower-defense" });
     const level = getLevelDefinition(campaign.levelId);
     const mode = getModeRuleset(campaign.modeId);
@@ -214,7 +214,9 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.mode = mode;
     this.simulation = new GameSimulation(campaign, createSimulationRules(level, mode));
     this.path = createPathMetrics(level.route);
-    this.selectedBuildType = this.simulation.readView().phase === "setup" ? "ranger" : null;
+    this.selectedBuildType = this.simulation.readView().phase === "setup"
+      ? initialBuildType === undefined ? "ranger" : initialBuildType
+      : null;
   }
 
   create(): void {
@@ -1232,9 +1234,10 @@ export function createTowerDefenseGame(
   parent: HTMLElement,
   campaign: CampaignState,
   callbacks: TowerDefenseCallbacks,
+  initialBuildType?: TowerType | null,
 ): Readonly<{ game: Phaser.Game; scene: TowerDefenseScene }> {
   const level = getLevelDefinition(campaign.levelId);
-  const scene = new TowerDefenseScene(campaign, callbacks);
+  const scene = new TowerDefenseScene(campaign, callbacks, initialBuildType);
   const game = new Phaser.Game({
     ...TOWER_DEFENSE_GAME_CONFIG,
     width: level?.width ?? GAME_WIDTH,

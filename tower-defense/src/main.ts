@@ -4,8 +4,6 @@ import grakPortraitUrl from "./assets/heroes/grak-portrait.webp";
 import torenPortraitUrl from "./assets/heroes/toren-portrait.webp";
 import {
   ENEMY_DEFINITIONS,
-  ENEMY_PREVIEW_ORDER,
-  FINAL_WAVE,
   MAX_TOWER_LEVEL,
   TOWER_DEFINITIONS,
   getTowerStats,
@@ -34,11 +32,24 @@ import {
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { isHeroUnlocked } from "./game/heroAvailability.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
+import {
+  aggregateWaveEnemies,
+  deriveResultAdvice,
+  recommendWaveTowers,
+  type WaveEnemyAggregate,
+} from "./game/gameplayIntel.ts";
 import { getHeroAura, getHeroStats, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
-import type { EnemyType, HeroId, TowerLevel, TowerType } from "./game/types.ts";
+import {
+  createTutorialState,
+  isTutorialDone,
+  reduceTutorial,
+  TUTORIAL_COMPLETION_STORAGE_KEY,
+  type TutorialState,
+} from "./game/tutorial.ts";
+import type { EnemyType, HeroId, TowerLevel, TowerType, WavePlan } from "./game/types.ts";
 import {
   detectLocale,
   normalizeLocale,
@@ -54,7 +65,12 @@ import {
   type LeaderboardEntry,
   type TowerDefenseLeaderboard,
 } from "./leaderboard.ts";
-import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
+import {
+  loadPendingResult,
+  removePendingResult,
+  savePendingResult,
+  type PendingRunSummary,
+} from "./pendingResult.ts";
 import {
   captureFinalResult,
   captureFinishSubmission,
@@ -92,6 +108,9 @@ const developmentGrakPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_hero") === "grak";
 const developmentLeaderboardPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_leaderboard") === "1";
+const developmentResultPreview = import.meta.env.DEV
+  ? new URL(window.location.href).searchParams.get("preview_result")
+  : null;
 const telegram = setupTelegramBridge();
 let locale = readStoredLocale(storage) ?? detectLocale(legacyLaunch.payload?.lang, legacyLaunch.payload?.language);
 const pendingStartButton = document.getElementById("intro-start");
@@ -155,8 +174,9 @@ const migrated = !savedCampaign && canMigrateLegacy
 // A profile controls new hero selection, but an already-started run must remain
 // resumable if the bootstrap profile is temporarily unavailable during reload.
 const restoredCheckpoint = savedCampaign || migrated;
+const pendingWaveLimit = selectedSession.mode.getFinalWave(selectedSession.level) ?? Number.MAX_SAFE_INTEGER;
 const pendingAtLaunch = reward.mode === "server" && reward.runId
-  ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE)
+  ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, pendingWaveLimit)
   : null;
 let initialCampaign = pendingAtLaunch
   ? createCampaignState({ level: selectedSession.level, mode: selectedSession.mode })
@@ -170,6 +190,10 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let renderedPreviewWave = -1;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
+let resumeAfterWaveIntel = false;
+let waveIntelReturnFocus: HTMLElement | null = null;
+let selectedWaveIntelType: EnemyType | null = null;
+let renderedWaveIntelPlan: WavePlan | null = null;
 let resumeAfterMenu = false;
 let menuReturnFocus: HTMLElement | null = null;
 let leaderboardOrigin: "intro" | "menu" | "result" | null = null;
@@ -190,6 +214,12 @@ let reloadRequested = false;
 let playerProfile: PlayerProfileSnapshot | null = miniAppBootstrap?.profile ?? null;
 let selectedHeroId: HeroId = initialCampaign.hero.id;
 let runStarted = Boolean(restoredCheckpoint);
+let tutorialState: TutorialState = createTutorialState({
+  campaign: initialCampaign,
+  phase: "setup",
+  profile: playerProfile,
+  tutorialCompleted: readFlag(storage, TUTORIAL_COMPLETION_STORAGE_KEY),
+});
 
 const HERO_PORTRAIT_URLS: Readonly<Record<HeroId, string>> = Object.freeze({
   eira: eiraPortraitUrl,
@@ -226,6 +256,13 @@ const elements = {
   heroTargetPrompt: byId("hero-target-prompt"),
   heroTargetPromptLabel: byId("hero-target-prompt-label"),
   heroTargetCancel: button("hero-target-cancel"),
+  tutorialCoach: byId("tutorial-coach"),
+  tutorialStep: byId("tutorial-step"),
+  tutorialTitle: byId("tutorial-title"),
+  tutorialBody: byId("tutorial-body"),
+  tutorialSkip: button("tutorial-skip"),
+  battleShell: document.querySelector<HTMLElement>(".battle-shell")!,
+  towerDeck: document.querySelector<HTMLElement>(".tower-deck")!,
   commandPanel: document.querySelector<HTMLElement>(".command-panel")!,
   buildPanel: byId("build-panel"),
   towerPanel: byId("tower-panel"),
@@ -243,6 +280,27 @@ const elements = {
   towerGuideGrid: byId("tower-guide-grid"),
   towerGuideCombo: byId("tower-guide-combo"),
   towerGuideDone: button("tower-guide-done"),
+  waveIntelOverlay: byId("wave-intel-overlay"),
+  waveIntelClose: button("wave-intel-close"),
+  waveIntelEyebrow: byId("wave-intel-eyebrow"),
+  waveIntelTitle: byId("wave-intel-title"),
+  waveIntelIntro: byId("wave-intel-intro"),
+  waveIntelTabs: byId("wave-intel-tabs"),
+  waveIntelDetail: byId("wave-intel-detail"),
+  waveIntelGlyph: byId("wave-intel-glyph"),
+  waveIntelCount: byId("wave-intel-count"),
+  waveIntelEnemyName: byId("wave-intel-enemy-name"),
+  waveIntelDescription: byId("wave-intel-description"),
+  waveIntelHpLabel: byId("wave-intel-hp-label"),
+  waveIntelHp: byId("wave-intel-hp"),
+  waveIntelSpeedLabel: byId("wave-intel-speed-label"),
+  waveIntelSpeed: byId("wave-intel-speed"),
+  waveIntelLeakLabel: byId("wave-intel-leak-label"),
+  waveIntelLeak: byId("wave-intel-leak"),
+  waveIntelTraits: byId("wave-intel-traits"),
+  waveIntelCounterLabel: byId("wave-intel-counter-label"),
+  waveIntelCounter: byId("wave-intel-counter"),
+  waveIntelDone: button("wave-intel-done"),
   rangerName: byId("ranger-name"),
   frostName: byId("frost-name"),
   emberName: byId("ember-name"),
@@ -263,6 +321,7 @@ const elements = {
   heroDetailsButton: button("hero-details-button"),
   closeHeroPanel: button("close-hero-panel"),
   nextWaveLabel: byId("next-wave-label"),
+  waveIntelButton: button("wave-intel-button"),
   wavePreviewSummary: byId("wave-preview-summary"),
   waveEnemies: byId("wave-enemies"),
   threatMeter: byId("threat-meter"),
@@ -349,6 +408,17 @@ const elements = {
   resultEyebrow: byId("result-eyebrow"),
   resultTitle: byId("result-title"),
   resultScore: byId("result-score"),
+  resultStats: byId("result-stats"),
+  resultWaves: byId("result-waves"),
+  resultWavesLabel: byId("result-waves-label"),
+  resultDuration: byId("result-duration"),
+  resultDurationLabel: byId("result-duration-label"),
+  resultKills: byId("result-kills"),
+  resultKillsLabel: byId("result-kills-label"),
+  resultRunSummary: byId("result-run-summary"),
+  resultAdviceEyebrow: byId("result-advice-eyebrow"),
+  resultAdviceTitle: byId("result-advice-title"),
+  resultAdviceBody: byId("result-advice-body"),
   rewardStatus: byId("reward-status"),
   rewardRetry: button("reward-retry"),
   resultLeaderboard: button("result-leaderboard"),
@@ -396,6 +466,7 @@ type GameMountContext = Readonly<{
   parent: HTMLElement;
   campaign: TowerDefenseUiState["campaign"];
   callbacks: TowerDefenseCallbacks;
+  initialBuildType?: TowerType | null;
 }>;
 
 const runtimeController = createLazyRuntimeController(
@@ -404,12 +475,14 @@ const runtimeController = createLazyRuntimeController(
     context.parent,
     context.campaign,
     context.callbacks,
+    context.initialBuildType,
   ),
 );
 
 bindInteractions();
-const pendingFinishRestored = restorePendingFinish();
-showRestoredRunStatus();
+const developmentResultShown = showDevelopmentResultPreview();
+const pendingFinishRestored = developmentResultShown || restorePendingFinish();
+if (!developmentResultShown) showRestoredRunStatus();
 if (!pendingFinishRestored) {
   if (elements.introOverlay.hidden) {
     await mountRestoredGame();
@@ -423,9 +496,37 @@ function bindInteractions(): void {
     select.addEventListener("change", () => setLocale(select.value));
   });
   elements.towerCards.forEach((card) => {
-    card.addEventListener("click", () => currentScene()?.setBuildType(card.dataset.tower as TowerType));
+    card.addEventListener("click", () => {
+      currentScene()?.setBuildType(card.dataset.tower as TowerType);
+      updateTutorialState(reduceTutorial(tutorialState, { type: "tower_selected" }));
+    });
   });
-  elements.startWaveButton.addEventListener("click", () => currentScene()?.startWave());
+  elements.startWaveButton.addEventListener("click", () => {
+    if (currentScene()?.startWave()) completeTutorial();
+  });
+  elements.tutorialSkip.addEventListener("click", () => completeTutorial());
+  elements.waveIntelButton.addEventListener("click", openWaveIntel);
+  elements.waveIntelClose.addEventListener("click", closeWaveIntel);
+  elements.waveIntelDone.addEventListener("click", closeWaveIntel);
+  elements.waveIntelOverlay.addEventListener("click", (event) => {
+    if (event.target === elements.waveIntelOverlay) closeWaveIntel();
+  });
+  elements.waveIntelTabs.addEventListener("keydown", (event) => {
+    if (!(event.target instanceof HTMLButtonElement) || !renderedWaveIntelPlan) return;
+    const tabs = [...elements.waveIntelTabs.querySelectorAll<HTMLButtonElement>("[role=tab]")];
+    const currentIndex = tabs.indexOf(event.target);
+    if (currentIndex < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? tabs.length - 1
+        : event.key === "ArrowRight"
+          ? (currentIndex + 1) % tabs.length
+          : (currentIndex - 1 + tabs.length) % tabs.length;
+    const type = tabs[nextIndex]?.dataset.enemyType;
+    if (type) selectWaveIntelEnemy(type as EnemyType, true);
+  });
   elements.speedButton.addEventListener("click", () => currentScene()?.toggleSpeed());
   elements.gameMenuButton.addEventListener("click", toggleGameMenu);
   elements.gameMenuClose.addEventListener("click", () => closeGameMenu(true));
@@ -534,6 +635,7 @@ function bindInteractions(): void {
     if (event.key !== "Escape") return;
     if (!elements.heroTargetPrompt.hidden) currentScene()?.cancelHeroAbilityTargeting();
     else if (!elements.leaderboardOverlay.hidden) closeLeaderboard();
+    else if (!elements.waveIntelOverlay.hidden) closeWaveIntel();
     else if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
     else if (!elements.gameMenuRestartConfirm.hidden) hideRestartConfirmation();
     else if (!elements.gameMenuOverlay.hidden) closeGameMenu(true);
@@ -551,11 +653,13 @@ async function ensureGameMounted(): Promise<boolean> {
       parent: elements.gameRoot,
       campaign: initialCampaign,
       callbacks: gameCallbacks,
+      initialBuildType: tutorialState.step === "choose_tower" ? null : undefined,
     });
     gameMounted = true;
     syncHeroChoiceControls();
     return true;
-  } catch {
+  } catch (error) {
+    if (import.meta.env.DEV) console.error("Tower Defense runtime failed to mount", error);
     return false;
   }
 }
@@ -567,6 +671,7 @@ async function startGameFromIntro(): Promise<void> {
   runtimeLoadFailed = false;
   syncIntroAction();
   syncSessionControls();
+  if (latestUi) syncTutorial(latestUi);
   const ready = await ensureGameMounted();
   gameStarting = false;
   if (!ready) {
@@ -603,6 +708,7 @@ async function mountRestoredGame(): Promise<void> {
   introReturnsToRun = false;
   syncIntroAction();
   syncSessionControls();
+  if (latestUi) syncTutorial(latestUi);
 }
 
 function showRuntimeLoadFailure(): void {
@@ -752,7 +858,7 @@ function renderUi(ui: TowerDefenseUiState): void {
 
   const plan = ui.nextWavePlan;
   if (renderedPreviewWave !== plan.wave) {
-    renderWavePreview(plan.wave, plan.spawns.map((spawn) => spawn.type));
+    renderWavePreview(plan);
     renderedPreviewWave = plan.wave;
   }
   elements.threatMeter.textContent = `${"◆".repeat(plan.threat)}${"◇".repeat(5 - plan.threat)}`;
@@ -762,6 +868,42 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.startWaveButton.textContent = plan.hasBoss ? text("boss_wave") : text("start_wave");
   elements.practiceBadge.hidden = reward.mode === "server";
   syncGameMenuUi(ui);
+  syncTutorial(ui);
+}
+
+function syncTutorial(ui: TowerDefenseUiState): void {
+  updateTutorialState(reduceTutorial(tutorialState, { type: "ui_changed", snapshot: ui }));
+}
+
+function updateTutorialState(next: TutorialState): void {
+  const completedNow = !isTutorialDone(tutorialState) && isTutorialDone(next);
+  tutorialState = next;
+  if (completedNow) writeFlag(storage, TUTORIAL_COMPLETION_STORAGE_KEY);
+
+  elements.towerDeck.classList.remove("tutorial-focus");
+  elements.battleShell.classList.remove("tutorial-focus");
+  elements.startWaveButton.classList.remove("tutorial-focus");
+  const visible = !isTutorialDone(tutorialState)
+    && gameMounted
+    && elements.introOverlay.hidden
+    && elements.resultOverlay.hidden;
+  elements.tutorialCoach.hidden = !visible;
+  if (!visible) return;
+
+  const stepNumber = tutorialState.step === "choose_tower" ? 1 : tutorialState.step === "place_tower" ? 2 : 3;
+  elements.tutorialStep.textContent = `${stepNumber} / 3`;
+  elements.tutorialTitle.textContent = text(`tutorial_${tutorialState.step}_title` as TranslationKey);
+  elements.tutorialBody.textContent = text(`tutorial_${tutorialState.step}_body` as TranslationKey);
+  const focusTarget = tutorialState.step === "choose_tower"
+    ? elements.towerDeck
+    : tutorialState.step === "place_tower"
+      ? elements.battleShell
+      : elements.startWaveButton;
+  focusTarget.classList.add("tutorial-focus");
+}
+
+function completeTutorial(): void {
+  updateTutorialState(reduceTutorial(tutorialState, { type: "skip" }));
 }
 
 function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
@@ -801,38 +943,30 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
   elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
 }
 
-function renderWavePreview(wave: number, types: readonly EnemyType[]): void {
-  const counts = new Map<EnemyType, number>();
-  for (const type of types) counts.set(type, (counts.get(type) || 0) + 1);
+function renderWavePreview(plan: WavePlan): void {
+  const types = plan.spawns.map((spawn) => spawn.type);
   const traits: TranslationKey[] = [];
   if (types.some((type) => type === "boss" || type === "titan")) traits.push("wave_trait_boss");
   if (types.some((type) => type === "swift" || type === "shade")) traits.push("wave_trait_fast");
   if (types.some((type) => type === "brute" || type === "bulwark")) traits.push("wave_trait_armored");
   if (types.some((type) => type === "warden" || type === "shaman")) traits.push("wave_trait_support");
-  const recommended = new Set<TowerType>();
-  if (types.some((type) => type === "boss" || type === "titan" || type === "shade")) recommended.add("ranger");
-  if (types.includes("swift")) recommended.add("frost");
-  if (types.some((type) => type === "brute" || type === "bulwark")) recommended.add("ember");
-  if (types.some((type) => type === "warden" || type === "shaman")) recommended.add("storm");
-  if (recommended.size === 0) recommended.add("ranger");
+  const recommended = recommendWaveTowers(plan);
   const displayedTraits: readonly TranslationKey[] = traits.length ? traits : ["wave_trait_mixed"];
-  elements.nextWaveLabel.textContent = text("wave_preview_title", { wave });
+  elements.nextWaveLabel.textContent = text("wave_preview_title", { wave: plan.wave });
   elements.wavePreviewSummary.textContent = text("wave_preview_summary", {
     traits: displayedTraits.slice(0, 2).map((key) => text(key)).join(" · "),
-    towers: [...recommended].slice(0, 2).map(towerName).join(" + "),
+    towers: recommended.map(towerName).join(" + "),
   });
-  elements.waveEnemies.replaceChildren(...ENEMY_PREVIEW_ORDER.flatMap((type) => {
-    const count = counts.get(type);
-    if (!count) return [];
+  elements.waveEnemies.replaceChildren(...aggregateWaveEnemies(plan).map((enemy) => {
     const chip = document.createElement("span");
     chip.className = "enemy-chip";
-    chip.title = enemyName(type);
-    chip.setAttribute("aria-label", `${enemyName(type)}: ${count}`);
+    chip.title = enemyName(enemy.type);
+    chip.setAttribute("aria-label", `${enemyName(enemy.type)}: ${enemy.count}`);
     const glyph = document.createElement("i");
-    glyph.className = `enemy-glyph ${type}`;
+    glyph.className = `enemy-glyph ${enemy.type}`;
     glyph.setAttribute("aria-hidden", "true");
-    chip.append(glyph, document.createTextNode(`${count}`));
-    return [chip];
+    chip.append(glyph, document.createTextNode(`${enemy.count}`));
+    return chip;
   }));
 }
 
@@ -893,10 +1027,12 @@ function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState[
   const completedWaves = finalWave === null ? campaign.completedWave : Math.min(finalWave, campaign.completedWave);
   const score = selectedSession.mode.calculateScore(completedWaves);
   const result = captureFinalResult(score, campaign.activeDurationMs);
+  const summary = createPendingRunSummary(campaign);
   terminalResult = result;
-  const pendingSaved = reward.mode === "server" && savePendingResult(storage, reward.runId, outcome, result, completedWaves);
+  const pendingSaved = reward.mode === "server"
+    && savePendingResult(storage, reward.runId, outcome, result, completedWaves, summary);
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
-  showResult(outcome, result, completedWaves, finalWave);
+  showResult(outcome, result, completedWaves, finalWave, summary);
   finishAuthRefreshAttempted = false;
   finishRunReplaced = false;
   replacementBootstrapCached = false;
@@ -1025,6 +1161,7 @@ function showResult(
   result: FinalResult,
   completedWaves: number,
   finalWave: number | null,
+  summary?: PendingRunSummary,
 ): void {
   elements.resultOverlay.hidden = false;
   elements.appShell.inert = true;
@@ -1032,15 +1169,71 @@ function showResult(
   elements.resultCard.classList.toggle("is-defeat", outcome === "gameover");
   elements.resultSigil.textContent = outcome === "victory" ? "✦" : "◆";
   elements.resultTitle.textContent = text(outcome === "victory" ? "victory" : "game_over");
-  elements.resultScore.textContent = text(selectedSession.mode.resultSummaryKey, {
-    waves: completedWaves,
-    total: finalWave ?? "∞",
-    score: result.score,
+  elements.resultScore.textContent = `${text(selectedSession.level.displayNameKey)} · ${text(selectedSession.mode.displayNameKey)}`;
+  elements.resultWaves.textContent = `${completedWaves} / ${finalWave ?? "∞"}`;
+  elements.resultDuration.textContent = formatLeaderboardDuration(result.durationMs);
+  elements.resultKills.textContent = summary ? String(summary.kills) : "—";
+  elements.resultRunSummary.hidden = !summary;
+  if (summary) {
+    elements.resultRunSummary.textContent = text("result_run_summary", {
+      hero: heroName(summary.heroId),
+      towers: summary.towers,
+      lives: summary.lives,
+    });
+  }
+  const adviceWave = outcome === "victory"
+    ? Math.max(1, completedWaves)
+    : Math.max(1, completedWaves + 1);
+  const advice = deriveResultAdvice(resolveResultWavePlan(adviceWave), outcome === "victory" ? "victory" : "defeat");
+  const adviceTowers = advice.recommendedTowers.map(towerName).join(" + ");
+  elements.resultAdviceTitle.textContent = text(`result_advice_${advice.category}_title` as TranslationKey);
+  elements.resultAdviceBody.textContent = text(`result_advice_${advice.category}_body` as TranslationKey, {
+    wave: adviceWave,
+    towers: adviceTowers,
+    time: formatLeaderboardDuration(result.durationMs),
   });
   elements.rewardRetry.textContent = text("reward_retry");
   elements.restartButton.textContent = text("restart");
   elements.closeHint.textContent = text(reward.mode === "server" ? "finish_pending_hint" : "close_hint");
   elements.introOverlay.hidden = true;
+  elements.resultCard.focus({ preventScroll: true });
+}
+
+function createPendingRunSummary(campaign: TowerDefenseUiState["campaign"]): PendingRunSummary {
+  return Object.freeze({
+    lives: campaign.lives,
+    kills: campaign.totalKills,
+    towers: campaign.towers.length,
+    heroId: campaign.hero.id,
+  });
+}
+
+function resolveResultWavePlan(wave: number): WavePlan {
+  try {
+    return selectedSession.mode.createWave(selectedSession.level, wave);
+  } catch {
+    return latestUi?.nextWavePlan ?? selectedSession.mode.createWave(selectedSession.level, 1);
+  }
+}
+
+function showDevelopmentResultPreview(): boolean {
+  if (developmentResultPreview !== "defeat" && developmentResultPreview !== "victory") return false;
+  const outcome: TerminalOutcome = developmentResultPreview === "victory" ? "victory" : "gameover";
+  const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
+  const completedWaves = outcome === "victory" ? (finalWave ?? 24) : Math.max(0, (finalWave ?? 24) - 1);
+  const result = captureFinalResult(selectedSession.mode.calculateScore(completedWaves), 519_000);
+  showResult(outcome, result, completedWaves, finalWave, Object.freeze({
+    lives: outcome === "victory" ? 7 : 0,
+    kills: outcome === "victory" ? 214 : 198,
+    towers: 8,
+    heroId: selectedHeroId,
+  }));
+  finishSettled = true;
+  elements.rewardStatus.classList.add("is-success");
+  elements.rewardStatus.textContent = text("practice");
+  elements.restartButton.hidden = false;
+  elements.closeHint.textContent = text("close_hint");
+  return true;
 }
 
 function restorePendingFinish(): boolean {
@@ -1049,7 +1242,7 @@ function restorePendingFinish(): boolean {
     if (runStarted || hasRunProgress(initialCampaign)) elements.introOverlay.hidden = true;
     return false;
   }
-  const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, FINAL_WAVE);
+  const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, pendingWaveLimit);
   if (!pending) {
     if (runStarted || hasRunProgress(initialCampaign)) elements.introOverlay.hidden = true;
     return false;
@@ -1064,7 +1257,13 @@ function restorePendingFinish(): boolean {
     pending.outcome === "victory" ? "victory" : "defeat",
     pending.waves,
   ));
-  showResult(pending.outcome, terminalResult, pending.waves, FINAL_WAVE);
+  showResult(
+    pending.outcome,
+    terminalResult,
+    pending.waves,
+    selectedSession.mode.getFinalWave(selectedSession.level),
+    pending.summary,
+  );
   void finishReward();
   return true;
 }
@@ -1475,6 +1674,7 @@ function dismissIntro(): void {
   elements.appShell.inert = false;
   introReturnsToRun = false;
   writeFlag(session, "td-intro-seen-v1");
+  if (latestUi) syncTutorial(latestUi);
   telegram.haptic("light");
 }
 
@@ -1501,6 +1701,132 @@ function closeTowerGuide(): void {
   resumeAfterGuide = false;
   if (guideReturnFocus?.isConnected) guideReturnFocus.focus();
   guideReturnFocus = null;
+}
+
+function openWaveIntel(): void {
+  if (!latestUi || !elements.waveIntelOverlay.hidden) return;
+  renderedWaveIntelPlan = latestUi.nextWavePlan;
+  renderWaveIntel(renderedWaveIntelPlan);
+  waveIntelReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : elements.waveIntelButton;
+  const running = !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown");
+  resumeAfterWaveIntel = running;
+  if (running) currentScene()?.setPaused(true);
+  elements.appShell.inert = true;
+  elements.waveIntelOverlay.hidden = false;
+  elements.waveIntelButton.setAttribute("aria-expanded", "true");
+  elements.waveIntelClose.focus();
+  telegram.haptic("light");
+}
+
+function closeWaveIntel(): void {
+  if (elements.waveIntelOverlay.hidden) return;
+  elements.waveIntelOverlay.hidden = true;
+  elements.appShell.inert = false;
+  elements.waveIntelButton.setAttribute("aria-expanded", "false");
+  if (resumeAfterWaveIntel) currentScene()?.setPaused(false);
+  resumeAfterWaveIntel = false;
+  if (waveIntelReturnFocus?.isConnected) waveIntelReturnFocus.focus();
+  waveIntelReturnFocus = null;
+}
+
+function renderWaveIntel(plan: WavePlan): void {
+  const enemies = aggregateWaveEnemies(plan);
+  elements.waveIntelTitle.textContent = text("wave_intel_title", { wave: plan.wave });
+  selectedWaveIntelType = enemies.some(({ type }) => type === selectedWaveIntelType)
+    ? selectedWaveIntelType
+    : enemies[0]?.type ?? null;
+  elements.waveIntelTabs.replaceChildren(...enemies.map((enemy) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.id = `wave-intel-tab-${enemy.type}`;
+    tab.className = "wave-intel-tab";
+    tab.dataset.enemyType = enemy.type;
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-controls", "wave-intel-detail");
+    tab.setAttribute("aria-selected", String(enemy.type === selectedWaveIntelType));
+    tab.tabIndex = enemy.type === selectedWaveIntelType ? 0 : -1;
+    const glyph = document.createElement("i");
+    glyph.className = `enemy-glyph ${enemy.type}`;
+    glyph.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = enemyName(enemy.type);
+    const count = document.createElement("small");
+    count.textContent = text("wave_intel_count", { count: enemy.count });
+    copy.append(name, count);
+    tab.append(glyph, copy);
+    tab.addEventListener("click", () => selectWaveIntelEnemy(enemy.type));
+    return tab;
+  }));
+  if (selectedWaveIntelType) selectWaveIntelEnemy(selectedWaveIntelType);
+}
+
+function selectWaveIntelEnemy(type: EnemyType, focus = false): void {
+  if (!renderedWaveIntelPlan) return;
+  const enemy = aggregateWaveEnemies(renderedWaveIntelPlan).find((candidate) => candidate.type === type);
+  if (!enemy) return;
+  selectedWaveIntelType = type;
+  elements.waveIntelTabs.querySelectorAll<HTMLButtonElement>("[role=tab]").forEach((tab) => {
+    const selected = tab.dataset.enemyType === type;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && focus) tab.focus();
+  });
+  elements.waveIntelDetail.setAttribute("aria-labelledby", `wave-intel-tab-${type}`);
+  elements.waveIntelGlyph.className = `enemy-glyph ${type}`;
+  elements.waveIntelCount.textContent = text("wave_intel_count", { count: enemy.count });
+  elements.waveIntelEnemyName.textContent = enemyName(type);
+  elements.waveIntelDescription.textContent = text(`wave_intel_enemy_${type}` as TranslationKey);
+  elements.waveIntelHp.textContent = formatEnemyStat(enemy, ({ maxHp }) => maxHp);
+  elements.waveIntelSpeed.textContent = formatEnemyStat(enemy, ({ speed }) => speed);
+  elements.waveIntelLeak.textContent = formatEnemyStat(enemy, ({ leakDamage }) => leakDamage);
+  elements.waveIntelTraits.replaceChildren(...createWaveIntelTraits(enemy));
+
+  const focusedPlan: WavePlan = Object.freeze({
+    ...renderedWaveIntelPlan,
+    spawns: Object.freeze(renderedWaveIntelPlan.spawns.filter((spawn) => spawn.type === type)),
+  });
+  const counter = recommendWaveTowers(focusedPlan, 1)[0] ?? "ranger";
+  elements.waveIntelCounter.textContent = towerName(counter);
+}
+
+function formatEnemyStat(
+  enemy: WaveEnemyAggregate,
+  select: (variant: WaveEnemyAggregate["variants"][number]) => number,
+): string {
+  const values = enemy.variants.map((variant) => Math.round(select(variant))).sort((left, right) => left - right);
+  return values[0] === values[values.length - 1] ? String(values[0]) : `${values[0]}–${values[values.length - 1]}`;
+}
+
+function createWaveIntelTraits(enemy: WaveEnemyAggregate): HTMLElement[] {
+  const maximum = (select: (variant: WaveEnemyAggregate["variants"][number]) => number): number => (
+    Math.max(...enemy.variants.map(select))
+  );
+  const traits: Array<readonly [TranslationKey, number]> = [];
+  if (enemy.eliteCount > 0) traits.push(["wave_intel_trait_elite", enemy.eliteCount]);
+  if (maximum(({ physicalResistance }) => physicalResistance) > 0) {
+    traits.push(["wave_intel_trait_physical", Math.round(maximum(({ physicalResistance }) => physicalResistance) * 100)]);
+  }
+  if (maximum(({ magicResistance }) => magicResistance) > 0) {
+    traits.push(["wave_intel_trait_magic", Math.round(maximum(({ magicResistance }) => magicResistance) * 100)]);
+  }
+  if (maximum(({ controlResistance }) => controlResistance) > 0) {
+    traits.push(["wave_intel_trait_control", Math.round(maximum(({ controlResistance }) => controlResistance) * 100)]);
+  }
+  if (maximum(({ shieldRatio }) => shieldRatio) > 0) {
+    traits.push(["wave_intel_trait_shield", Math.round(maximum(({ shieldRatio }) => shieldRatio) * 100)]);
+  }
+  if (maximum(({ healingRatio }) => healingRatio) > 0) {
+    traits.push(["wave_intel_trait_healing", Math.round(maximum(({ healingRatio }) => healingRatio) * 100)]);
+  }
+  if (traits.length === 0) traits.push(["wave_intel_trait_none", 0]);
+  return traits.map(([key, value]) => {
+    const chip = document.createElement("span");
+    chip.textContent = text(key, { count: value, value });
+    return chip;
+  });
 }
 
 function restartGame(): void {
@@ -1689,6 +2015,17 @@ function applyStaticTranslations(): void {
   elements.towerGuideCombo.textContent = text("guide_combo");
   elements.towerGuideDone.textContent = text("guide_done");
   renderTowerGuide();
+  elements.tutorialSkip.textContent = text("tutorial_skip");
+  elements.waveIntelClose.setAttribute("aria-label", text("close"));
+  elements.waveIntelEyebrow.textContent = text("wave_intel_eyebrow");
+  elements.waveIntelIntro.textContent = text("wave_intel_intro");
+  elements.waveIntelTabs.setAttribute("aria-label", text("wave_intel_tabs_label"));
+  elements.waveIntelHpLabel.textContent = text("wave_intel_hp");
+  elements.waveIntelSpeedLabel.textContent = text("wave_intel_speed");
+  elements.waveIntelLeakLabel.textContent = text("wave_intel_leak");
+  elements.waveIntelCounterLabel.textContent = text("wave_intel_counter");
+  elements.waveIntelDone.textContent = text("wave_intel_done");
+  if (renderedWaveIntelPlan) renderWaveIntel(renderedWaveIntelPlan);
   elements.rangerName.textContent = text("tower_ranger");
   elements.frostName.textContent = text("tower_frost");
   elements.emberName.textContent = text("tower_ember");
@@ -1732,12 +2069,18 @@ function applyStaticTranslations(): void {
   elements.introTowers.textContent = text("intro_towers", { count: 4 });
   elements.introBosses.textContent = text("intro_bosses");
   elements.resultEyebrow.textContent = text("result_eyebrow");
+  elements.resultStats.setAttribute("aria-label", text("result_stats_label"));
+  elements.resultWavesLabel.textContent = text("result_stat_waves");
+  elements.resultDurationLabel.textContent = text("result_stat_time");
+  elements.resultKillsLabel.textContent = text("result_stat_kills");
+  elements.resultAdviceEyebrow.textContent = text("result_advice_eyebrow");
   elements.closeTowerPanel.setAttribute("aria-label", text("close"));
   elements.closeHeroPanel.setAttribute("aria-label", text("close"));
   elements.speedButton.setAttribute("aria-label", text("speed"));
   elements.pulseButton.setAttribute("aria-label", text("hero_ability_ready", {
     ability: heroAbilityName(selectedHeroId),
   }));
+  updateTutorialState(tutorialState);
 }
 
 function openHeroPicker(): void {

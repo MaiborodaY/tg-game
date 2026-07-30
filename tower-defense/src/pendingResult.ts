@@ -1,12 +1,21 @@
 import type { FinalResult } from "./reward.ts";
+import { isHeroId } from "./game/heroes.ts";
+import type { HeroId } from "./game/types.ts";
 
 export type PendingOutcome = "gameover" | "victory";
+export type PendingRunSummary = Readonly<{
+  lives: number;
+  kills: number;
+  towers: number;
+  heroId: HeroId;
+}>;
 export type PendingResult = Readonly<{
   version: 2;
   outcome: PendingOutcome;
   score: number;
   waves: number;
   durationMs: number;
+  summary?: PendingRunSummary;
 }>;
 
 export type PendingStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -17,15 +26,18 @@ export function savePendingResult(
   outcome: PendingOutcome,
   result: FinalResult,
   completedWaves: number,
+  summary?: PendingRunSummary,
 ): boolean {
   if (!storage || !runId) return false;
   try {
+    const validSummary = sanitizePendingRunSummary(summary);
     storage.setItem(pendingKey(runId), JSON.stringify({
       version: 2,
       outcome,
       score: result.score,
       waves: completedWaves,
       durationMs: result.durationMs,
+      ...(validSummary ? { summary: validSummary } : {}),
     }));
     return true;
   } catch {
@@ -50,12 +62,14 @@ export function loadPendingResult(
     const waves = value.version === 2
       ? clampInteger(value.waves as number, maxWaves)
       : Math.min(maxWaves, score);
+    const summary = sanitizePendingRunSummary(value.summary);
     return Object.freeze({
       version: 2,
       outcome: value.outcome,
       score,
       waves,
       durationMs: clampInteger(value.durationMs as number, Number.MAX_SAFE_INTEGER),
+      ...(summary ? { summary } : {}),
     });
   } catch {
     return null;
@@ -81,4 +95,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function clampInteger(value: number, max: number): number {
   return Math.max(0, Math.min(max, Math.floor(value)));
+}
+
+function sanitizePendingRunSummary(value: unknown): PendingRunSummary | null {
+  if (!isRecord(value) || !isHeroId(value.heroId)) return null;
+  if (!isNonNegativeSafeInteger(value.lives)) return null;
+  if (!isNonNegativeSafeInteger(value.kills)) return null;
+  if (!isNonNegativeSafeInteger(value.towers)) return null;
+  return Object.freeze({
+    lives: value.lives,
+    kills: value.kills,
+    towers: value.towers,
+    heroId: value.heroId,
+  });
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }

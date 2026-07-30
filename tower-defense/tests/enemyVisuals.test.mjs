@@ -49,7 +49,7 @@ test("wave preview uses accessible enemy silhouettes instead of geometric text g
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
   const config = readFileSync(new URL("../src/game/config.ts", import.meta.url), "utf8");
 
-  assert.match(main, /chip\.setAttribute\("aria-label", `\$\{enemyName\(type\)\}: \$\{count\}`\)/);
+  assert.match(main, /chip\.setAttribute\("aria-label", `\$\{enemyName\(enemy\.type\)\}: \$\{enemy\.count\}`\)/);
   assert.match(main, /glyph\.setAttribute\("aria-hidden", "true"\)/);
   assert.doesNotMatch(main, /ENEMY_DEFINITIONS\[type\]\.glyph/);
   assert.doesNotMatch(config, /glyph:\s*["']/);

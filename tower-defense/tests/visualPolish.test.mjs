@@ -7,6 +7,7 @@ import { translations } from "../src/i18n.ts";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.ts", import.meta.url), "utf8");
+const gameplayIntel = readFileSync(new URL("../src/game/gameplayIntel.ts", import.meta.url), "utf8");
 
 test("the mission intro uses the available mobile width without dropping safe areas", () => {
   assert.match(html, /<header class="intro-mission">[\s\S]*id="intro-title"[\s\S]*id="intro-body"/);
@@ -44,11 +45,11 @@ test("every build card exposes a short visible role and keeps the full role for 
 test("wave preview derives traits and tower recommendations from the existing plan", () => {
   assert.match(html, /id="wave-preview-summary" class="wave-preview-summary"/);
   assert.match(main, /const plan = ui\.nextWavePlan/);
-  assert.match(main, /type === "boss" \|\| type === "titan" \|\| type === "shade"[\s\S]*recommended\.add\("ranger"\)/);
-  assert.match(main, /types\.includes\("swift"\)[\s\S]*recommended\.add\("frost"\)/);
-  assert.doesNotMatch(main, /if \(types\.some\(\(type\) => type === "swift" \|\| type === "shade"\)\) recommended\.add\("frost"\)/);
-  assert.match(main, /type === "brute" \|\| type === "bulwark"[\s\S]*recommended\.add\("ember"\)/);
-  assert.ok(main.indexOf('recommended.add("ranger")') < main.indexOf('recommended.add("ember")'));
+  assert.match(main, /const recommended = recommendWaveTowers\(plan\)/);
+  assert.match(gameplayIntel, /spawn\.type === "boss" \|\| spawn\.type === "titan"[\s\S]*add\("ranger", 8/);
+  assert.match(gameplayIntel, /spawn\.speed >= 70[\s\S]*spawn\.controlResistance < 0\.55\) add\("frost", 4/);
+  assert.match(gameplayIntel, /spawn\.physicalResistance >= 0\.18[\s\S]*add\("ember", 2/);
+  assert.match(gameplayIntel, /spawn\.controlResistance >= 0\.6[\s\S]*add\("frost", -1/);
   assert.match(main, /wave_preview_summary/);
 });
 

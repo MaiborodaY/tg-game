@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-CPzKob73.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CJIRMTeH.css">
+    <script type="module" crossorigin src="./assets/index-2_vTJW9O.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B52C-_LF.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -41,6 +41,11 @@
       <main class="battle-shell">
         <div id="game-root" class="game-root" aria-label="Игровое поле"></div>
         <div id="countdown" class="countdown" hidden>3</div>
+        <aside id="tutorial-coach" class="tutorial-coach" role="status" aria-live="polite" hidden>
+          <span id="tutorial-step" class="tutorial-step">1 / 3</span>
+          <span class="tutorial-copy"><strong id="tutorial-title">Выберите первую башню</strong><small id="tutorial-body">Для начала возьмите Следопыта — он надёжен против одиночных целей.</small></span>
+          <button id="tutorial-skip" type="button">Пропустить</button>
+        </aside>
         <div id="hero-target-prompt" class="hero-target-prompt" role="status" hidden>
           <span id="hero-target-prompt-label">Выберите точку на дороге</span>
           <button id="hero-target-cancel" type="button">Отмена</button>
@@ -107,11 +112,11 @@
             <span id="pulse-label">Импульс</span>
             <span id="pulse-charges" class="pulse-charges" aria-hidden="true" hidden><i></i><i></i></span>
           </button>
-          <div class="wave-preview">
-            <div class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></div>
+          <button id="wave-intel-button" class="wave-preview" type="button" aria-controls="wave-intel-overlay" aria-expanded="false">
+            <span class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></span>
             <strong id="wave-preview-summary" class="wave-preview-summary">Обычный отряд</strong>
-            <div id="wave-enemies" class="enemy-list"></div>
-          </div>
+            <span class="wave-preview-bottom"><span id="wave-enemies" class="enemy-list"></span><i class="wave-preview-more" aria-hidden="true">›</i></span>
+          </button>
           <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
         </div>
       </section>
@@ -287,6 +292,31 @@
       </section>
     </div>
 
+    <div id="wave-intel-overlay" class="modal-layer wave-intel-layer" hidden>
+      <section class="modal-card wave-intel-card" role="dialog" aria-modal="true" aria-labelledby="wave-intel-title">
+        <button id="wave-intel-close" class="guide-close" type="button" aria-label="Закрыть">×</button>
+        <small id="wave-intel-eyebrow" class="modal-eyebrow">РАЗВЕДКА</small>
+        <h2 id="wave-intel-title">Волна 1</h2>
+        <p id="wave-intel-intro" class="guide-intro">Нажмите на врага, чтобы узнать его сильные стороны и чем его остановить.</p>
+        <div id="wave-intel-tabs" class="wave-intel-tabs" role="tablist" aria-label="Враги волны"></div>
+        <article id="wave-intel-detail" class="wave-intel-detail" role="tabpanel" tabindex="0">
+          <header>
+            <span id="wave-intel-glyph" class="enemy-glyph raider" aria-hidden="true"></span>
+            <span><small id="wave-intel-count">× 1</small><strong id="wave-intel-enemy-name">Налётчик</strong></span>
+          </header>
+          <p id="wave-intel-description">Обычный противник без особой защиты.</p>
+          <div class="wave-intel-stats">
+            <span><small id="wave-intel-hp-label">Здоровье</small><strong id="wave-intel-hp">38</strong></span>
+            <span><small id="wave-intel-speed-label">Скорость</small><strong id="wave-intel-speed">52</strong></span>
+            <span><small id="wave-intel-leak-label">Урон воротам</small><strong id="wave-intel-leak">1</strong></span>
+          </div>
+          <div id="wave-intel-traits" class="wave-intel-traits"></div>
+          <p class="wave-intel-counter"><small id="wave-intel-counter-label">Лучший ответ</small><strong id="wave-intel-counter">Следопыт</strong></p>
+        </article>
+        <button id="wave-intel-done" class="modal-primary" type="button">Вернуться к защите</button>
+      </section>
+    </div>
+
     <div id="leaderboard-overlay" class="modal-layer leaderboard-layer" hidden>
       <section class="modal-card leaderboard-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
         <header class="leaderboard-heading">
@@ -310,11 +340,22 @@
     </div>
 
     <div id="result-overlay" class="modal-layer" hidden>
-      <section class="modal-card result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+      <section class="modal-card result-card" role="dialog" aria-modal="true" aria-labelledby="result-title" tabindex="-1">
         <div id="result-sigil" class="result-sigil" aria-hidden="true">✦</div>
         <small id="result-eyebrow" class="modal-eyebrow">ИТОГ ЗАЩИТЫ</small>
         <h2 id="result-title">Лес спасён!</h2>
-        <p id="result-score">Волны: 24 / 24 · Очки рейтинга: 72</p>
+        <p id="result-score" class="result-context">Лесные врата · Кампания</p>
+        <div id="result-stats" class="result-stats" aria-label="Результаты забега">
+          <span><strong id="result-waves">24 / 24</strong><small id="result-waves-label">Волны</small></span>
+          <span><strong id="result-duration">8:39</strong><small id="result-duration-label">Время</small></span>
+          <span><strong id="result-kills">68</strong><small id="result-kills-label">Побеждено</small></span>
+        </div>
+        <p id="result-run-summary" class="result-run-summary">Герой: Эйра · Башни: 8 · Жизни: 3</p>
+        <article class="result-advice">
+          <small id="result-advice-eyebrow">СОВЕТ СТРАТЕГА</small>
+          <strong id="result-advice-title">Усильте контроль</strong>
+          <p id="result-advice-body">Перед повторной попыткой поставьте Ледяного стража раньше — быстрые враги дольше останутся под огнём.</p>
+        </article>
         <div id="reward-status" class="reward-status">Сохраняем результат…</div>
         <button id="reward-retry" class="secondary-action wide" type="button" hidden>Повторить отправку</button>
         <button id="result-leaderboard" class="secondary-action wide" type="button" aria-controls="leaderboard-overlay" aria-expanded="false">Рейтинг</button>
