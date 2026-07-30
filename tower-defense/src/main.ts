@@ -7,6 +7,7 @@ import {
   CAMPAIGN_MODE_ID,
   CLASSIC_CAMPAIGN_LEVEL_ID,
   CONTENT_CATALOG,
+  NORTHERN_PASS_LEVEL_ID,
 } from "./game/content.ts";
 import {
   clearCampaign,
@@ -40,6 +41,12 @@ import {
   type Locale,
   type TranslationKey,
 } from "./i18n.ts";
+import {
+  createLeaderboardClient,
+  type LeaderboardClient,
+  type LeaderboardEntry,
+  type TowerDefenseLeaderboard,
+} from "./leaderboard.ts";
 import { loadPendingResult, removePendingResult, savePendingResult } from "./pendingResult.ts";
 import {
   captureFinalResult,
@@ -75,6 +82,8 @@ const storage = safeStorage("localStorage");
 const session = safeStorage("sessionStorage");
 const developmentGrakPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_hero") === "grak";
+const developmentLeaderboardPreview = import.meta.env.DEV
+  && new URL(window.location.href).searchParams.get("preview_leaderboard") === "1";
 const telegram = setupTelegramBridge();
 let locale = readStoredLocale(storage) ?? detectLocale(legacyLaunch.payload?.lang, legacyLaunch.payload?.language);
 const pendingStartButton = document.getElementById("intro-start");
@@ -82,6 +91,9 @@ if (pendingStartButton instanceof HTMLButtonElement) pendingStartButton.disabled
 
 const launchDecision = decideRewardLaunch(legacyLaunch, telegram.initData);
 const isMiniAppLaunch = launchDecision.kind === "miniapp";
+const leaderboardClient = launchDecision.kind === "miniapp"
+  ? safelyCreateLeaderboardClient(launchDecision.initData)
+  : null;
 let launch = legacyLaunch;
 let miniAppBootstrap: MiniAppBootstrap | null = null;
 let launchError: "invalid_launch" | "miniapp_start_failed" | null = legacyLaunch.rewardError;
@@ -149,6 +161,11 @@ let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
 let resumeAfterMenu = false;
 let menuReturnFocus: HTMLElement | null = null;
+let leaderboardOrigin: "intro" | "menu" | "result" | null = null;
+let leaderboardReturnFocus: HTMLElement | null = null;
+let leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
+let leaderboardRequestId = 0;
+let renderedLeaderboard: TowerDefenseLeaderboard | null = null;
 let introReturnsToRun = false;
 let sessionSwitching = false;
 let localSaveWarningShown = false;
@@ -242,6 +259,8 @@ const elements = {
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
   introStart: button("intro-start"),
+  introLeaderboard: button("intro-leaderboard"),
+  introLeaderboardLabel: byId("intro-leaderboard-label"),
   sessionPicker: byId("session-picker"),
   levelChoiceLabel: byId("level-choice-label"),
   levelSelect: select("level-select"),
@@ -283,6 +302,8 @@ const elements = {
   gameMenuSpeedLabel: byId("game-menu-speed-label"),
   gameMenuSpeedButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-menu-speed]")],
   gameMenuTowerGuideLabel: byId("game-menu-tower-guide-label"),
+  gameMenuLeaderboard: button("game-menu-leaderboard"),
+  gameMenuLeaderboardLabel: byId("game-menu-leaderboard-label"),
   gameMenuFullscreenLabel: byId("game-menu-fullscreen-label"),
   gameMenuSession: button("game-menu-session"),
   gameMenuSessionLabel: byId("game-menu-session-label"),
@@ -295,6 +316,18 @@ const elements = {
   gameMenuRestartConfirmCopy: byId("game-menu-restart-confirm-copy"),
   gameMenuRestartCancel: button("game-menu-restart-cancel"),
   gameMenuRestartAccept: button("game-menu-restart-accept"),
+  leaderboardOverlay: byId("leaderboard-overlay"),
+  leaderboardClose: button("leaderboard-close"),
+  leaderboardEyebrow: byId("leaderboard-eyebrow"),
+  leaderboardTitle: byId("leaderboard-title"),
+  leaderboardTabs: byId("leaderboard-tabs"),
+  leaderboardTabButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-leaderboard-level]")],
+  leaderboardPanel: byId("leaderboard-panel"),
+  leaderboardSummary: byId("leaderboard-summary"),
+  leaderboardStatus: byId("leaderboard-status"),
+  leaderboardList: byId("leaderboard-list"),
+  leaderboardSelf: byId("leaderboard-self"),
+  leaderboardRetry: button("leaderboard-retry"),
   resultOverlay: byId("result-overlay"),
   resultCard: document.querySelector<HTMLElement>(".result-card")!,
   resultSigil: byId("result-sigil"),
@@ -303,6 +336,7 @@ const elements = {
   resultScore: byId("result-score"),
   rewardStatus: byId("reward-status"),
   rewardRetry: button("reward-retry"),
+  resultLeaderboard: button("result-leaderboard"),
   restartButton: button("restart-button"),
   closeHint: byId("close-hint"),
   toast: byId("toast"),
@@ -384,6 +418,34 @@ function bindInteractions(): void {
   elements.gameMenuOverlay.addEventListener("click", (event) => {
     if (event.target === elements.gameMenuOverlay) closeGameMenu(true);
   });
+  elements.introLeaderboard.addEventListener("click", () => openLeaderboard("intro"));
+  elements.gameMenuLeaderboard.addEventListener("click", () => openLeaderboard("menu"));
+  elements.resultLeaderboard.addEventListener("click", () => openLeaderboard("result"));
+  elements.leaderboardClose.addEventListener("click", closeLeaderboard);
+  elements.leaderboardOverlay.addEventListener("click", (event) => {
+    if (event.target === elements.leaderboardOverlay) closeLeaderboard();
+  });
+  elements.leaderboardTabButtons.forEach((control) => {
+    control.addEventListener("click", () => selectLeaderboardLevel(control.dataset.leaderboardLevel));
+  });
+  elements.leaderboardTabs.addEventListener("keydown", (event) => {
+    if (!(event.target instanceof HTMLButtonElement)) return;
+    const currentIndex = elements.leaderboardTabButtons.indexOf(event.target);
+    if (currentIndex < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const lastIndex = elements.leaderboardTabButtons.length - 1;
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? lastIndex
+        : event.key === "ArrowRight"
+          ? (currentIndex + 1) % elements.leaderboardTabButtons.length
+          : (currentIndex - 1 + elements.leaderboardTabButtons.length) % elements.leaderboardTabButtons.length;
+    const next = elements.leaderboardTabButtons[nextIndex];
+    selectLeaderboardLevel(next.dataset.leaderboardLevel);
+    next.focus();
+  });
+  elements.leaderboardRetry.addEventListener("click", () => void loadLeaderboard(true));
   elements.gameMenuSpeedButtons.forEach((control) => {
     control.addEventListener("click", () => setGameSpeed(control.dataset.menuSpeed));
   });
@@ -455,6 +517,7 @@ function bindInteractions(): void {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     if (!elements.heroTargetPrompt.hidden) currentScene()?.cancelHeroAbilityTargeting();
+    else if (!elements.leaderboardOverlay.hidden) closeLeaderboard();
     else if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
     else if (!elements.gameMenuRestartConfirm.hidden) hideRestartConfirmation();
     else if (!elements.gameMenuOverlay.hidden) closeGameMenu(true);
@@ -838,6 +901,10 @@ async function finishReward(): Promise<void> {
   }
   if (result.ok) {
     finishSettled = true;
+    leaderboardClient?.invalidate(selectedSession.level.id);
+    if (!elements.leaderboardOverlay.hidden && leaderboardLevelId === selectedSession.level.id) {
+      void loadLeaderboard(true);
+    }
     if (result.profile) applyPlayerProfile(result.profile);
     elements.rewardStatus.classList.add("is-success");
     elements.rewardStatus.textContent = text(
@@ -1075,6 +1142,245 @@ function closeGameMenu(resumeGame: boolean, restoreFocus = true): void {
   menuReturnFocus = null;
 }
 
+function openLeaderboard(origin: "intro" | "menu" | "result"): void {
+  if (!elements.leaderboardOverlay.hidden) return;
+  if (origin === "intro" && elements.introOverlay.hidden) return;
+  if (origin === "menu" && elements.gameMenuOverlay.hidden) return;
+  if (origin === "result" && elements.resultOverlay.hidden) return;
+
+  leaderboardOrigin = origin;
+  leaderboardReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : origin === "intro"
+      ? elements.introLeaderboard
+      : origin === "menu" ? elements.gameMenuLeaderboard : elements.resultLeaderboard;
+  leaderboardLevelId = isLeaderboardLevel(selectedSession.level.id)
+    ? selectedSession.level.id
+    : CLASSIC_CAMPAIGN_LEVEL_ID;
+
+  if (origin === "intro") {
+    elements.introOverlay.hidden = true;
+    elements.introLeaderboard.setAttribute("aria-expanded", "true");
+  } else if (origin === "menu") {
+    hideRestartConfirmation();
+    elements.gameMenuOverlay.hidden = true;
+    elements.gameMenuButton.setAttribute("aria-expanded", "false");
+    elements.gameMenuLeaderboard.setAttribute("aria-expanded", "true");
+  } else {
+    elements.resultOverlay.hidden = true;
+    elements.resultLeaderboard.setAttribute("aria-expanded", "true");
+  }
+
+  elements.appShell.inert = true;
+  elements.leaderboardOverlay.hidden = false;
+  syncLeaderboardTabs();
+  elements.leaderboardClose.focus();
+  telegram.haptic("light");
+  void loadLeaderboard();
+}
+
+function closeLeaderboard(): void {
+  if (elements.leaderboardOverlay.hidden) return;
+  leaderboardRequestId += 1;
+  elements.leaderboardOverlay.hidden = true;
+  elements.leaderboardPanel.setAttribute("aria-busy", "false");
+  elements.introLeaderboard.setAttribute("aria-expanded", "false");
+  elements.gameMenuLeaderboard.setAttribute("aria-expanded", "false");
+  elements.resultLeaderboard.setAttribute("aria-expanded", "false");
+
+  const origin = leaderboardOrigin;
+  const returnFocus = leaderboardReturnFocus;
+  leaderboardOrigin = null;
+  leaderboardReturnFocus = null;
+  if (origin === "intro") {
+    elements.introOverlay.hidden = false;
+    elements.appShell.inert = true;
+  } else if (origin === "menu") {
+    elements.gameMenuOverlay.hidden = false;
+    elements.gameMenuButton.setAttribute("aria-expanded", "true");
+    elements.appShell.inert = true;
+  } else if (origin === "result") {
+    elements.resultOverlay.hidden = false;
+    elements.appShell.inert = true;
+  } else {
+    elements.appShell.inert = false;
+  }
+  if (returnFocus?.isConnected) returnFocus.focus();
+}
+
+function selectLeaderboardLevel(rawLevelId: string | undefined): void {
+  if (!rawLevelId || !isLeaderboardLevel(rawLevelId) || rawLevelId === leaderboardLevelId) return;
+  leaderboardLevelId = rawLevelId;
+  renderedLeaderboard = null;
+  syncLeaderboardTabs();
+  telegram.haptic("light");
+  void loadLeaderboard();
+}
+
+function syncLeaderboardTabs(): void {
+  const level = CONTENT_CATALOG.levels[leaderboardLevelId];
+  elements.leaderboardTabButtons.forEach((control) => {
+    const selected = control.dataset.leaderboardLevel === leaderboardLevelId;
+    control.setAttribute("aria-selected", String(selected));
+    control.tabIndex = selected ? 0 : -1;
+    if (selected) elements.leaderboardPanel.setAttribute("aria-labelledby", control.id);
+  });
+  const summary = text("leaderboard_summary", { count: level.waves.finalWave });
+  elements.leaderboardSummary.textContent = renderedLeaderboard?.levelId === leaderboardLevelId
+    ? `${summary} · ${text("leaderboard_players", { count: renderedLeaderboard.totalPlayers })}`
+    : summary;
+}
+
+async function loadLeaderboard(force = false): Promise<void> {
+  const requestId = ++leaderboardRequestId;
+  const levelId = leaderboardLevelId;
+  renderedLeaderboard = null;
+  syncLeaderboardTabs();
+  elements.leaderboardPanel.setAttribute("aria-busy", "true");
+  elements.leaderboardStatus.hidden = false;
+  elements.leaderboardStatus.classList.remove("is-error");
+  elements.leaderboardStatus.textContent = text("leaderboard_loading");
+  elements.leaderboardList.hidden = true;
+  elements.leaderboardList.replaceChildren();
+  elements.leaderboardSelf.hidden = true;
+  elements.leaderboardSelf.replaceChildren();
+  elements.leaderboardRetry.hidden = true;
+
+  if (developmentLeaderboardPreview) {
+    renderLeaderboard(createDevelopmentLeaderboard(levelId), requestId);
+    return;
+  }
+  if (!leaderboardClient) {
+    finishLeaderboardStatus(requestId, "leaderboard_unavailable", false);
+    return;
+  }
+
+  if (force) leaderboardClient.invalidate(levelId);
+  try {
+    const result = await leaderboardClient.load(levelId);
+    renderLeaderboard(result, requestId);
+  } catch (error) {
+    const authExpired = error instanceof Error && error.message === "http_401";
+    finishLeaderboardStatus(
+      requestId,
+      authExpired ? "leaderboard_auth_expired" : "leaderboard_error",
+      !authExpired,
+    );
+  }
+}
+
+function renderLeaderboard(result: TowerDefenseLeaderboard, requestId: number): void {
+  if (!leaderboardRequestIsCurrent(requestId, result.levelId)) return;
+  renderedLeaderboard = result;
+  elements.leaderboardPanel.setAttribute("aria-busy", "false");
+  syncLeaderboardTabs();
+  if (result.entries.length === 0) {
+    finishLeaderboardStatus(requestId, "leaderboard_empty", false);
+    return;
+  }
+
+  elements.leaderboardStatus.hidden = true;
+  elements.leaderboardList.hidden = false;
+  elements.leaderboardList.replaceChildren(...result.entries.map((entry) => createLeaderboardRow(entry, result.maxWaves, true)));
+  const ownEntryIsInList = result.entries.some((entry) => entry.isMe);
+  if (result.me && !ownEntryIsInList) {
+    const label = document.createElement("small");
+    label.textContent = text("leaderboard_self");
+    elements.leaderboardSelf.replaceChildren(label, createLeaderboardRow(result.me, result.maxWaves, false));
+    elements.leaderboardSelf.hidden = false;
+  } else {
+    elements.leaderboardSelf.hidden = true;
+    elements.leaderboardSelf.replaceChildren();
+  }
+}
+
+function finishLeaderboardStatus(requestId: number, key: TranslationKey, canRetry: boolean): void {
+  if (!leaderboardRequestIsCurrent(requestId, leaderboardLevelId)) return;
+  elements.leaderboardPanel.setAttribute("aria-busy", "false");
+  elements.leaderboardStatus.hidden = false;
+  elements.leaderboardStatus.classList.toggle("is-error", canRetry);
+  elements.leaderboardStatus.textContent = text(key);
+  elements.leaderboardRetry.hidden = !canRetry;
+}
+
+function createLeaderboardRow(entry: LeaderboardEntry, maxWaves: number, listItem: boolean): HTMLElement {
+  const row = document.createElement(listItem ? "li" : "div");
+  row.className = `leaderboard-entry${entry.isMe ? " is-me" : ""}`;
+  if (row instanceof HTMLLIElement) row.value = entry.rank;
+
+  const rank = document.createElement("span");
+  rank.className = "leaderboard-rank";
+  rank.textContent = `#${entry.rank}`;
+
+  const copy = document.createElement("span");
+  copy.className = "leaderboard-copy";
+  const name = document.createElement("strong");
+  const playerName = entry.name ?? text("leaderboard_player_unknown");
+  name.textContent = entry.isMe ? `${playerName} · ${text("leaderboard_you")}` : playerName;
+  const duration = document.createElement("small");
+  duration.textContent = formatLeaderboardDuration(entry.durationMs);
+  copy.append(name, duration);
+
+  const result = document.createElement("span");
+  result.className = "leaderboard-result";
+  const waves = document.createElement("strong");
+  waves.textContent = `${entry.completedWaves} / ${maxWaves}`;
+  const unit = document.createElement("small");
+  unit.textContent = text("leaderboard_waves");
+  result.append(waves, unit);
+  row.append(rank, copy, result);
+  return row;
+}
+
+function formatLeaderboardDuration(durationMs: number | null): string {
+  if (durationMs === null) return text("leaderboard_time_unknown");
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1_000));
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor(totalSeconds % 3_600 / 60);
+  const seconds = totalSeconds % 60;
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function leaderboardRequestIsCurrent(requestId: number, levelId: string): boolean {
+  return requestId === leaderboardRequestId
+    && levelId === leaderboardLevelId
+    && !elements.leaderboardOverlay.hidden;
+}
+
+function isLeaderboardLevel(value: string): value is typeof CLASSIC_CAMPAIGN_LEVEL_ID | typeof NORTHERN_PASS_LEVEL_ID {
+  return value === CLASSIC_CAMPAIGN_LEVEL_ID || value === NORTHERN_PASS_LEVEL_ID;
+}
+
+function createDevelopmentLeaderboard(levelId: string): TowerDefenseLeaderboard {
+  const maxWaves = CONTENT_CATALOG.levels[levelId].waves.finalWave;
+  const values: readonly LeaderboardEntry[] = [
+    { rank: 1, name: "Astralglow", outcome: "victory", completedWaves: maxWaves, durationMs: 381_000, isMe: false },
+    { rank: 2, name: "JOKER", outcome: "victory", completedWaves: maxWaves, durationMs: 432_000, isMe: false },
+    { rank: 3, name: "Єнотенко", outcome: "defeat", completedWaves: maxWaves - 1, durationMs: 449_000, isMe: false },
+    { rank: 4, name: null, outcome: "defeat", completedWaves: maxWaves - 2, durationMs: null, isMe: false },
+    { rank: 5, name: "GTR_730", outcome: "defeat", completedWaves: maxWaves - 2, durationMs: 487_000, isMe: false },
+  ];
+  const me: LeaderboardEntry = {
+    rank: 17,
+    name: "Mr.Maybik",
+    outcome: "defeat",
+    completedWaves: Math.max(1, maxWaves - 3),
+    durationMs: 519_000,
+    isMe: true,
+  };
+  return Object.freeze({
+    gameId: "td",
+    levelId,
+    modeId: "campaign",
+    maxWaves,
+    totalPlayers: 42,
+    entries: Object.freeze(values.map((entry) => Object.freeze(entry))),
+    me: Object.freeze(me),
+  });
+}
+
 function setGameSpeed(rawSpeed: string | undefined): void {
   const speed = rawSpeed === "2" ? 2 : rawSpeed === "1" ? 1 : null;
   if (!speed || !latestUi || latestUi.speed === speed) return;
@@ -1286,6 +1592,8 @@ function applyStaticTranslations(): void {
   const menuLanguage = elements.gameMenuOverlay.querySelector<HTMLElement>(".game-menu-language > span");
   if (menuLanguage) menuLanguage.textContent = menuLanguageLabel;
   elements.gameMenuTowerGuideLabel.textContent = text("game_menu_tower_guide");
+  elements.introLeaderboardLabel.textContent = text("game_menu_leaderboard");
+  elements.gameMenuLeaderboardLabel.textContent = text("game_menu_leaderboard");
   elements.gameMenuSessionLabel.textContent = text("game_menu_session");
   elements.gameMenuRestartLabel.textContent = text("game_menu_restart");
   elements.gameMenuExitLabel.textContent = text("game_menu_exit");
@@ -1293,6 +1601,21 @@ function applyStaticTranslations(): void {
   elements.gameMenuRestartConfirmCopy.textContent = text("game_menu_restart_confirm_copy");
   elements.gameMenuRestartCancel.textContent = text("game_menu_cancel");
   elements.gameMenuRestartAccept.textContent = text("game_menu_restart_accept");
+  elements.leaderboardEyebrow.textContent = text("leaderboard_eyebrow");
+  elements.leaderboardTitle.textContent = text("leaderboard_title");
+  elements.leaderboardClose.setAttribute("aria-label", text("close"));
+  elements.leaderboardTabs.setAttribute("aria-label", text("leaderboard_level_label"));
+  elements.leaderboardList.setAttribute("aria-label", text("leaderboard_results_label"));
+  elements.leaderboardSelf.setAttribute("aria-label", text("leaderboard_self"));
+  elements.leaderboardRetry.textContent = text("leaderboard_retry");
+  elements.resultLeaderboard.textContent = text("game_menu_leaderboard");
+  elements.leaderboardTabButtons.forEach((control) => {
+    const levelId = control.dataset.leaderboardLevel;
+    if (levelId && isLeaderboardLevel(levelId)) {
+      control.textContent = text(CONTENT_CATALOG.levels[levelId].displayNameKey);
+    }
+  });
+  syncLeaderboardTabs();
   syncFullscreenUi(telegram.isFullscreen);
   const guideButtonLabel = text("tower_guide_button");
   elements.towerGuideButton.setAttribute("aria-label", guideButtonLabel);
@@ -1513,6 +1836,7 @@ function applyLaunchErrorTranslations(): void {
 
 function syncIntroAction(): void {
   elements.introStart.setAttribute("aria-busy", String(gameStarting));
+  elements.introLeaderboard.disabled = gameStarting || sessionSwitching;
   if (launchError === "miniapp_start_failed") {
     elements.introStart.disabled = false;
     elements.introStart.textContent = text("miniapp_launch_retry");
@@ -1600,6 +1924,14 @@ function enemyName(type: EnemyType): string {
 
 function text(key: TranslationKey, params: Record<string, string | number> = {}): string {
   return tr(locale as Locale, key, params);
+}
+
+function safelyCreateLeaderboardClient(initData: string): LeaderboardClient | null {
+  try {
+    return createLeaderboardClient(initData);
+  } catch {
+    return null;
+  }
 }
 
 function readFlag(target: StorageLike | null, key: string): boolean {

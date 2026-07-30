@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-Cl1MydTT.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CG_MgKnG.css">
+    <script type="module" crossorigin src="./assets/index-DJJsoqaR.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CTpulJAL.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -202,6 +202,7 @@
           <span><i class="feature-icon">✺</i><b id="intro-bosses">Боссы</b></span>
         </div>
         <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
+        <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span aria-hidden="true">🏆</span><b id="intro-leaderboard-label">Рейтинг</b></button>
       </section>
     </div>
 
@@ -248,6 +249,7 @@
 
         <div class="game-menu-actions">
           <button id="tower-guide-button" class="game-menu-action" type="button" aria-controls="tower-guide-overlay" aria-expanded="false"><span aria-hidden="true">?</span><b id="game-menu-tower-guide-label">Справка по башням</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-leaderboard" class="game-menu-action" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span aria-hidden="true">🏆</span><b id="game-menu-leaderboard-label">Рейтинг</b><i aria-hidden="true">›</i></button>
           <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="game-menu-fullscreen-label">Развернуть на весь экран</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-session" class="game-menu-action" type="button"><span aria-hidden="true">⌂</span><b id="game-menu-session-label">Уровень и режим</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-restart" class="game-menu-action is-danger" type="button"><span aria-hidden="true">↺</span><b id="game-menu-restart-label">Начать заново и выбрать героя</b><i aria-hidden="true">›</i></button>
@@ -274,6 +276,28 @@
       </section>
     </div>
 
+    <div id="leaderboard-overlay" class="modal-layer leaderboard-layer" hidden>
+      <section class="modal-card leaderboard-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
+        <header class="leaderboard-heading">
+          <div><small id="leaderboard-eyebrow" class="modal-eyebrow">РЕЙТИНГ КАМПАНИИ</small><h2 id="leaderboard-title">Лучшие защитники</h2></div>
+          <button id="leaderboard-close" class="guide-close" type="button" aria-label="Назад">×</button>
+        </header>
+
+        <div id="leaderboard-tabs" class="leaderboard-tabs" role="tablist" aria-label="Уровень">
+          <button id="leaderboard-tab-forest-gate" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="true" data-leaderboard-level="forest-gate">Лесные врата</button>
+          <button id="leaderboard-tab-northern-pass" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="false" data-leaderboard-level="northern-pass">Северный перевал</button>
+        </div>
+
+        <section id="leaderboard-panel" class="leaderboard-panel" role="tabpanel" aria-labelledby="leaderboard-tab-forest-gate" tabindex="0" aria-busy="false">
+          <p id="leaderboard-summary" class="leaderboard-summary">Последняя волна — 24. При равенстве выше тот, кто прошёл быстрее.</p>
+          <div id="leaderboard-status" class="leaderboard-status" role="status" aria-live="polite">Загружаем рейтинг…</div>
+          <ol id="leaderboard-list" class="leaderboard-list" aria-label="Лучшие результаты"></ol>
+          <section id="leaderboard-self" class="leaderboard-self" aria-label="Ваш результат" hidden></section>
+          <button id="leaderboard-retry" class="secondary-action wide" type="button" hidden>Повторить</button>
+        </section>
+      </section>
+    </div>
+
     <div id="result-overlay" class="modal-layer" hidden>
       <section class="modal-card result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
         <div id="result-sigil" class="result-sigil" aria-hidden="true">✦</div>
@@ -282,6 +306,7 @@
         <p id="result-score">Волны: 24 / 24 · Очки рейтинга: 72</p>
         <div id="reward-status" class="reward-status">Сохраняем результат…</div>
         <button id="reward-retry" class="secondary-action wide" type="button" hidden>Повторить отправку</button>
+        <button id="result-leaderboard" class="secondary-action wide" type="button" aria-controls="leaderboard-overlay" aria-expanded="false">Рейтинг</button>
         <button id="restart-button" class="modal-primary" type="button" hidden>Начать заново</button>
         <small id="close-hint" class="close-hint">Можно закрыть игру и вернуться в Telegram</small>
       </section>
