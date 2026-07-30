@@ -53,19 +53,19 @@
           <div class="tower-deck">
             <button class="tower-card is-selected" type="button" data-tower="ranger">
               <span class="tower-emblem ranger" aria-hidden="true"><i></i></span>
-              <span><strong id="ranger-name">Следопыт</strong><small><b>60</b> ●</small></span>
+              <span class="tower-card-copy"><strong id="ranger-name">Следопыт</strong><em id="ranger-role">Одна цель</em><small><b>60</b> ●</small></span>
             </button>
             <button class="tower-card" type="button" data-tower="frost">
               <span class="tower-emblem frost" aria-hidden="true"><i></i></span>
-              <span><strong id="frost-name">Ледяной страж</strong><small><b>90</b> ●</small></span>
+              <span class="tower-card-copy"><strong id="frost-name">Ледяной страж</strong><em id="frost-role">Контроль</em><small><b>90</b> ●</small></span>
             </button>
             <button class="tower-card" type="button" data-tower="ember">
               <span class="tower-emblem ember" aria-hidden="true"><i></i></span>
-              <span><strong id="ember-name">Искромант</strong><small><b>125</b> ●</small></span>
+              <span class="tower-card-copy"><strong id="ember-name">Искромант</strong><em id="ember-role">Против толпы</em><small><b>125</b> ●</small></span>
             </button>
             <button class="tower-card" type="button" data-tower="storm">
               <span class="tower-emblem storm" aria-hidden="true"><i></i></span>
-              <span><strong id="storm-name">Грозовой шпиль</strong><small><b>145</b> ●</small></span>
+              <span class="tower-card-copy"><strong id="storm-name">Грозовой шпиль</strong><em id="storm-role">Цепная атака</em><small><b>145</b> ●</small></span>
             </button>
           </div>
         </div>
@@ -105,7 +105,11 @@
             <span id="pulse-label">Импульс</span>
             <span id="pulse-charges" class="pulse-charges" aria-hidden="true" hidden><i></i><i></i></span>
           </button>
-          <div class="wave-preview"><div class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></div><div id="wave-enemies" class="enemy-list"></div></div>
+          <div class="wave-preview">
+            <div class="wave-preview-title"><small id="next-wave-label">Следующая волна</small><span id="threat-meter" class="threat-meter" aria-label="Угроза">◆◇◇◇◇</span></div>
+            <strong id="wave-preview-summary" class="wave-preview-summary">Обычный отряд</strong>
+            <div id="wave-enemies" class="enemy-list"></div>
+          </div>
           <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
         </div>
       </section>
@@ -113,27 +117,35 @@
 
     <div id="intro-overlay" class="modal-layer">
       <section class="modal-card intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
-        <label class="language-control language-control--modal">
-          <span class="visually-hidden" data-language-label>Язык игры</span>
-          <select data-role="language" aria-label="Язык игры">
-            <option value="ru">RU</option>
-            <option value="uk">UA</option>
-            <option value="en">EN</option>
-          </select>
-        </label>
-        <div class="intro-sigil" aria-hidden="true"><span>✦</span></div>
-        <small class="modal-eyebrow">TOWER DEFENSE</small>
-        <h1 id="intro-title">Защити Сердце леса</h1>
-        <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
+        <header class="intro-mission">
+          <div class="intro-sigil" aria-hidden="true"><span>✦</span></div>
+          <div class="intro-mission-copy">
+            <small class="modal-eyebrow">TOWER DEFENSE</small>
+            <h1 id="intro-title">Защити Сердце леса</h1>
+            <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
+          </div>
+        </header>
+        <div id="intro-attempts" class="intro-attempts">
+          <span class="intro-attempt-icon" aria-hidden="true"><i></i></span>
+          <span role="status"><small id="intro-attempts-label">Доступ</small><strong id="intro-attempts-value">До 5 попыток в день</strong></span>
+          <label class="language-control language-control--modal">
+            <span class="visually-hidden" data-language-label>Язык игры</span>
+            <select data-role="language" aria-label="Язык игры">
+              <option value="ru">RU</option>
+              <option value="uk">UA</option>
+              <option value="en">EN</option>
+            </select>
+          </label>
+        </div>
         <div id="session-picker" class="session-picker">
-          <label>
+          <label class="session-choice session-choice--level">
             <span id="level-choice-label">Уровень</span>
             <select id="level-select">
               <option value="forest-gate">Лесные врата</option>
               <option value="northern-pass">Северный перевал</option>
             </select>
           </label>
-          <label>
+          <label class="session-choice session-choice--mode">
             <span id="mode-choice-label">Режим</span>
             <select id="mode-select">
               <option value="campaign">Кампания</option>
@@ -194,12 +206,12 @@
           <button id="hero-picker-done" class="modal-primary" type="button">Готово</button>
         </section>
         <div class="intro-features">
-          <span><i class="feature-icon">⌁</i><b id="intro-waves">24 волны</b></span>
-          <span><i class="feature-icon">♜</i><b id="intro-towers">4 башни</b></span>
-          <span><i class="feature-icon">✺</i><b id="intro-bosses">Боссы</b></span>
+          <span><i class="feature-icon feature-icon--waves" aria-hidden="true"></i><b id="intro-waves">24 волны</b></span>
+          <span><i class="feature-icon feature-icon--towers" aria-hidden="true"></i><b id="intro-towers">4 башни</b></span>
+          <span><i class="feature-icon feature-icon--bosses" aria-hidden="true"></i><b id="intro-bosses">Боссы</b></span>
         </div>
         <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
-        <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span aria-hidden="true">🏆</span><b id="intro-leaderboard-label">Рейтинг</b></button>
+        <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
       </section>
     </div>
 
@@ -246,7 +258,7 @@
 
         <div class="game-menu-actions">
           <button id="tower-guide-button" class="game-menu-action" type="button" aria-controls="tower-guide-overlay" aria-expanded="false"><span aria-hidden="true">?</span><b id="game-menu-tower-guide-label">Справка по башням</b><i aria-hidden="true">›</i></button>
-          <button id="game-menu-leaderboard" class="game-menu-action" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span aria-hidden="true">🏆</span><b id="game-menu-leaderboard-label">Рейтинг</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-leaderboard" class="game-menu-action" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="game-menu-leaderboard-label">Рейтинг</b><i aria-hidden="true">›</i></button>
           <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="game-menu-fullscreen-label">Развернуть на весь экран</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-session" class="game-menu-action" type="button"><span aria-hidden="true">⌂</span><b id="game-menu-session-label">Уровень и режим</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-restart" class="game-menu-action is-danger" type="button"><span aria-hidden="true">↺</span><b id="game-menu-restart-label">Начать заново и выбрать героя</b><i aria-hidden="true">›</i></button>

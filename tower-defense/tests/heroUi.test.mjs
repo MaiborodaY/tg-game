@@ -70,6 +70,7 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(html, /id="selected-hero-hint" data-aura="locked"/);
   assert.match(mainSource, /const heroSelected = ui\.selectedHero && !selected/);
   assert.match(mainSource, /elements\.buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
+  assert.match(mainSource, /elements\.appShell\.classList\.toggle\("is-combat-compact", combatCompact\)/);
   assert.match(mainSource, /elements\.heroPanel\.hidden = !heroSelected/);
   assert.match(mainSource, /currentScene\(\)\?\.upgradeHero\(\)/);
   assert.match(mainSource, /currentScene\(\)\?\.useHeroAbility\(\)/);
@@ -111,7 +112,7 @@ test("the selected build type explains its practical role without adding a fifth
 test("hero controls preserve compact rows and Telegram-sized touch targets", () => {
   assert.match(css, /\.hero-panel \{[^}]*min-height:\s*var\(--tower-controls-height\);[^}]*height:\s*100%;/s);
   assert.match(css, /\.hero-actions button \{[^}]*min-height:\s*44px;/s);
-  assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*58px;/s);
+  assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*70px;/s);
   assert.match(css, /\.hero-picker-close \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
   assert.match(css, /\.hero-picker \.modal-primary \{[^}]*min-height:\s*44px;/s);
   assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*?\.hero-options \{[^}]*overflow-x:\s*auto;/);

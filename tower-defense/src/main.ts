@@ -2,7 +2,14 @@ import "./styles.css";
 import eiraPortraitUrl from "./assets/heroes/eira-portrait.webp";
 import grakPortraitUrl from "./assets/heroes/grak-portrait.webp";
 import torenPortraitUrl from "./assets/heroes/toren-portrait.webp";
-import { ENEMY_DEFINITIONS, ENEMY_PREVIEW_ORDER, FINAL_WAVE, TOWER_DEFINITIONS } from "./game/config.ts";
+import {
+  ENEMY_DEFINITIONS,
+  ENEMY_PREVIEW_ORDER,
+  FINAL_WAVE,
+  MAX_TOWER_LEVEL,
+  TOWER_DEFINITIONS,
+  getTowerStats,
+} from "./game/config.ts";
 import {
   CAMPAIGN_MODE_ID,
   CLASSIC_CAMPAIGN_LEVEL_ID,
@@ -31,7 +38,7 @@ import { getHeroAura, getHeroStats, getHeroUpgradeCost, getHeroUpgradeWaveGate, 
 import { createCampaignState } from "./game/state.ts";
 import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
-import type { EnemyType, HeroId, TowerType } from "./game/types.ts";
+import type { EnemyType, HeroId, TowerLevel, TowerType } from "./game/types.ts";
 import {
   detectLocale,
   normalizeLocale,
@@ -219,6 +226,7 @@ const elements = {
   heroTargetPrompt: byId("hero-target-prompt"),
   heroTargetPromptLabel: byId("hero-target-prompt-label"),
   heroTargetCancel: button("hero-target-cancel"),
+  commandPanel: document.querySelector<HTMLElement>(".command-panel")!,
   buildPanel: byId("build-panel"),
   towerPanel: byId("tower-panel"),
   heroPanel: byId("hero-panel"),
@@ -255,6 +263,7 @@ const elements = {
   heroDetailsButton: button("hero-details-button"),
   closeHeroPanel: button("close-hero-panel"),
   nextWaveLabel: byId("next-wave-label"),
+  wavePreviewSummary: byId("wave-preview-summary"),
   waveEnemies: byId("wave-enemies"),
   threatMeter: byId("threat-meter"),
   startWaveButton: button("start-wave-button"),
@@ -262,6 +271,9 @@ const elements = {
   introCard: document.querySelector<HTMLElement>(".intro-card")!,
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
+  introAttempts: byId("intro-attempts"),
+  introAttemptsLabel: byId("intro-attempts-label"),
+  introAttemptsValue: byId("intro-attempts-value"),
   introStart: button("intro-start"),
   introLeaderboard: button("intro-leaderboard"),
   introLeaderboardLabel: byId("intro-leaderboard-label"),
@@ -683,6 +695,9 @@ function renderUi(ui: TowerDefenseUiState): void {
 
   const selected = getSelectedTowerDetails(ui);
   const heroSelected = ui.selectedHero && !selected;
+  const combatCompact = combatPhase && !selected && !heroSelected;
+  elements.appShell.classList.toggle("is-combat-compact", combatCompact);
+  elements.commandPanel.classList.toggle("is-combat-compact", combatCompact);
   elements.buildPanel.hidden = Boolean(selected) || heroSelected;
   elements.towerPanel.hidden = !selected;
   elements.heroPanel.hidden = !heroSelected;
@@ -691,7 +706,13 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.selectedEmblem.innerHTML = "<i></i>";
     elements.selectedLevel.textContent = `${text("level")} ${selected.tower.level}`;
     elements.selectedName.textContent = towerName(selected.tower.type);
-    elements.selectedStats.textContent = `${text("damage")} ${selected.stats.damage} · ${text("range")} ${Math.round(selected.stats.range)}`;
+    const nextStats = selected.tower.level < MAX_TOWER_LEVEL
+      ? getTowerStats(selected.tower.type, (selected.tower.level + 1) as TowerLevel)
+      : null;
+    elements.selectedStats.textContent = nextStats
+      ? `${text("damage")} ${selected.stats.damage}→${nextStats.damage} · ${text("range")} ${Math.round(selected.stats.range)}→${Math.round(nextStats.range)}`
+      : `${text("damage")} ${selected.stats.damage} · ${text("range")} ${Math.round(selected.stats.range)}`;
+    elements.selectedStats.title = elements.selectedStats.textContent;
     elements.upgradeButton.textContent = selected.masteryLocked
       ? text("mastery_locked")
       : selected.upgradeCost === null
@@ -780,9 +801,26 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
   elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
 }
 
-function renderWavePreview(_wave: number, types: readonly EnemyType[]): void {
+function renderWavePreview(wave: number, types: readonly EnemyType[]): void {
   const counts = new Map<EnemyType, number>();
   for (const type of types) counts.set(type, (counts.get(type) || 0) + 1);
+  const traits: TranslationKey[] = [];
+  if (types.some((type) => type === "boss" || type === "titan")) traits.push("wave_trait_boss");
+  if (types.some((type) => type === "swift" || type === "shade")) traits.push("wave_trait_fast");
+  if (types.some((type) => type === "brute" || type === "bulwark")) traits.push("wave_trait_armored");
+  if (types.some((type) => type === "warden" || type === "shaman")) traits.push("wave_trait_support");
+  const recommended = new Set<TowerType>();
+  if (types.some((type) => type === "boss" || type === "titan" || type === "shade")) recommended.add("ranger");
+  if (types.includes("swift")) recommended.add("frost");
+  if (types.some((type) => type === "brute" || type === "bulwark")) recommended.add("ember");
+  if (types.some((type) => type === "warden" || type === "shaman")) recommended.add("storm");
+  if (recommended.size === 0) recommended.add("ranger");
+  const displayedTraits: readonly TranslationKey[] = traits.length ? traits : ["wave_trait_mixed"];
+  elements.nextWaveLabel.textContent = text("wave_preview_title", { wave });
+  elements.wavePreviewSummary.textContent = text("wave_preview_summary", {
+    traits: displayedTraits.slice(0, 2).map((key) => text(key)).join(" · "),
+    towers: [...recommended].slice(0, 2).map(towerName).join(" + "),
+  });
   elements.waveEnemies.replaceChildren(...ENEMY_PREVIEW_ORDER.flatMap((type) => {
     const count = counts.get(type);
     if (!count) return [];
@@ -1658,6 +1696,8 @@ function applyStaticTranslations(): void {
   elements.towerCards.forEach((card) => {
     const type = card.dataset.tower as TowerType;
     const role = towerRole(type);
+    const compactRole = card.querySelector<HTMLElement>("em");
+    if (compactRole) compactRole.textContent = text(`tower_card_role_${type}` as TranslationKey);
     card.title = role;
     card.setAttribute("aria-label", `${towerName(type)}. ${role}. ${TOWER_DEFINITIONS[type].buildCost} ${text("gold")}`);
   });
@@ -1857,7 +1897,25 @@ function applyLaunchErrorTranslations(): void {
       launchError === "miniapp_start_failed" ? "miniapp_launch_error_body" : "launch_error_body",
     );
   }
+  syncIntroAttemptStatus();
   syncIntroAction();
+}
+
+function syncIntroAttemptStatus(): void {
+  const exhausted = launchError === "daily_attempt_limit";
+  const practice = !launchError && reward.mode !== "server";
+  elements.introAttempts.classList.toggle("is-exhausted", exhausted);
+  elements.introAttempts.classList.toggle("is-practice", practice);
+  elements.introAttemptsLabel.textContent = text("intro_attempts_label");
+  elements.introAttemptsValue.textContent = text(
+    exhausted
+      ? "intro_attempts_exhausted"
+      : launchError
+        ? "intro_attempts_unavailable"
+        : practice
+          ? "intro_attempts_practice"
+          : "intro_attempts_rewarded",
+  );
 }
 
 function syncIntroAction(): void {

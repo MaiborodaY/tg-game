@@ -40,6 +40,7 @@ import type {
 } from "../game/types.ts";
 import {
   createEnemyArt,
+  createBossArrivalEffect,
   createFloatingText,
   createGateHitEffect,
   createHealPulse,
@@ -48,7 +49,9 @@ import {
   createSummonBurst,
   createTowerArt,
   drawWorld,
+  playTowerConstructionEffect,
   setWorldAct,
+  setTowerAuraMarker,
   updateEnemyArtPose,
   type EnemyArt,
   type TowerArt,
@@ -67,6 +70,7 @@ import {
   type HeroArt,
   type HeroEffectPool,
 } from "./heroArt.ts";
+import { isPointWithinVisualRadius } from "./worldThemes.ts";
 
 export type GamePhase = SimulationPhase;
 export type TerminalOutcome = SimulationOutcome;
@@ -388,6 +392,19 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
     this.processSimulationEvents();
     this.syncTowerViews();
+    const upgradedTower = getTower(this.simulation.readView().campaign, this.selectedPadId);
+    const upgradedView = this.towerViews.get(this.selectedPadId);
+    const upgradedPoint = this.level.buildPads[this.selectedPadId];
+    if (upgradedTower && upgradedView && upgradedPoint) {
+      playTowerConstructionEffect(
+        this,
+        upgradedView.art,
+        upgradedPoint,
+        upgradedTower.type,
+        upgradedTower.level,
+        "upgrade",
+      );
+    }
     this.updatePadVisuals();
     this.updateRangePreview();
     this.callbacks.onHaptic("success");
@@ -660,6 +677,12 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.selectedBuildType = null;
     this.processSimulationEvents();
     this.syncTowerViews();
+    const builtTower = getTower(this.simulation.readView().campaign, padId);
+    const builtView = this.towerViews.get(padId);
+    const builtPoint = this.level.buildPads[padId];
+    if (builtTower && builtView && builtPoint) {
+      playTowerConstructionEffect(this, builtView.art, builtPoint, builtTower.type, builtTower.level, "build");
+    }
     this.updatePadVisuals();
     this.updateRangePreview();
     this.callbacks.onHaptic("success");
@@ -675,6 +698,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       const art = createTowerArt(this, placement.type, placement.level, point);
       this.towerViews.set(placement.padId, { placement, art });
     }
+    this.syncTowerAuraMarkers();
   }
 
   private updatePadVisuals(): void {
@@ -711,6 +735,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       highlight.badge.destroy();
     }
     this.heroAuraTowerHighlights.clear();
+    this.syncTowerAuraMarkers();
     const view = this.simulation.readView();
     if (this.selectedHero) {
       const stats = getHeroStats(view.hero.id, view.hero.level);
@@ -779,6 +804,20 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
   }
 
+  private syncTowerAuraMarkers(): void {
+    const view = this.simulation.readView();
+    const aura = getHeroAura(view.hero.id, view.hero.level);
+    const towerAuraKind = aura?.kind === "tower_damage" || aura?.kind === "tower_attack_speed" ? aura.kind : null;
+    for (const [padId, towerView] of this.towerViews) {
+      const point = this.level.buildPads[padId];
+      if (!aura || !towerAuraKind || !point || !isPointWithinVisualRadius(point, view.hero, aura.radius)) {
+        setTowerAuraMarker(towerView.art, null);
+        continue;
+      }
+      setTowerAuraMarker(towerView.art, towerAuraKind, this.selectedHero);
+    }
+  }
+
   private shakePad(padId: number): void {
     const view = this.padViews.get(padId);
     if (!view) return;
@@ -800,6 +839,8 @@ export class TowerDefenseScene extends Phaser.Scene {
       return;
     }
     if (event.type === "boss_spawned") {
+      const boss = this.simulation.readView().enemies.find((enemy) => enemy.type === "boss" || enemy.type === "titan");
+      if (boss) createBossArrivalEffect(this, boss, boss.bossTier, this.worldArt?.themeId);
       this.cameras.main.shake(320, 0.008);
       return;
     }

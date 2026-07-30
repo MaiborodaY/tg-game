@@ -8,6 +8,7 @@ import {
   WORLD_VISUAL_THEMES,
   createWorldDecorationLayout,
   distanceToWorldRoute,
+  getActVisualProfile,
   getWorldVisualTheme,
 } from "../src/rendering/worldThemes.ts";
 
@@ -20,6 +21,22 @@ test("each shipped level resolves to a stable and distinct visual theme", () => 
   assert.equal(getWorldVisualTheme("northern-pass").id, "northern-pass");
   assert.notEqual(getWorldVisualTheme("forest-gate").seed, getWorldVisualTheme("northern-pass").seed);
   assert.equal(getWorldVisualTheme("unknown-level").id, "forest-gate");
+});
+
+test("campaign acts escalate lighting without changing world geometry", () => {
+  const acts = [1, 2, 3].map((act) => getActVisualProfile(act));
+  const northernActs = [1, 2, 3].map((act) => getActVisualProfile(act, "northern-pass"));
+  assert.deepEqual(acts.map((profile) => profile.veilAlpha), [0, 0.08, 0.14]);
+  assert.deepEqual(northernActs.map((profile) => profile.veilAlpha), [0, 0.07, 0.12]);
+  assert.equal(new Set(acts.map((profile) => profile.portal)).size, 3);
+  assert.equal(northernActs[0].portal, WORLD_VISUAL_THEMES["northern-pass"].portal);
+  assert.notEqual(northernActs[0].portal, acts[0].portal);
+  assert.equal(new Set(acts.map((profile) => profile.gateWard)).size, 3);
+  assert.ok(acts.every(Object.isFrozen));
+  assert.ok(northernActs.every(Object.isFrozen));
+  assert.match(worldArtSource, /getActVisualProfile\(act, art\.themeId\)/);
+  assert.match(worldArtSource, /art\.portalGlow\.setFillStyle\(profile\.portal/);
+  assert.match(worldArtSource, /art\.gateWard\.setFillStyle\(profile\.gateWard/);
 });
 
 test("forest decoration is deterministic and keeps interactive zones legible", () => {

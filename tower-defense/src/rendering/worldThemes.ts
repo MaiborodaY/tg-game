@@ -1,4 +1,21 @@
-import type { Point } from "../game/types.ts";
+import type { CampaignAct, Point, TowerLevel, TowerType } from "../game/types.ts";
+
+export type TowerTierVisualProfile = Readonly<{
+  footprintRadius: number;
+  headLift: number;
+  buttressCount: number;
+  accent: number;
+  trim: number;
+  mastery: boolean;
+}>;
+
+export type ActVisualProfile = Readonly<{
+  veil: number;
+  veilAlpha: number;
+  portal: number;
+  gateWard: number;
+  bossAccent: number;
+}>;
 
 export type WorldVisualTheme = Readonly<{
   id: "forest-gate" | "northern-pass";
@@ -35,6 +52,38 @@ export type WorldDecorationLayout = Readonly<{
   trees: readonly WorldDecorationPoint[];
   fireflies: readonly WorldDecorationPoint[];
 }>;
+
+const TOWER_VISUAL_COLORS = Object.freeze({
+  ranger: Object.freeze({ accent: 0xd8ad62, trim: 0xf3d88a }),
+  frost: Object.freeze({ accent: 0x74e8f3, trim: 0xd9ffff }),
+  ember: Object.freeze({ accent: 0xff7b45, trim: 0xffd56a }),
+  storm: Object.freeze({ accent: 0x74dff2, trim: 0xc9f8ff }),
+}) satisfies Readonly<Record<TowerType, Readonly<{ accent: number; trim: number }>>>;
+
+const TOWER_TIER_GEOMETRY = Object.freeze({
+  1: Object.freeze({ footprintRadius: 17, headLift: 0, buttressCount: 0, mastery: false }),
+  2: Object.freeze({ footprintRadius: 18, headLift: 2, buttressCount: 2, mastery: false }),
+  3: Object.freeze({ footprintRadius: 20, headLift: 4, buttressCount: 4, mastery: false }),
+  4: Object.freeze({ footprintRadius: 22, headLift: 6, buttressCount: 4, mastery: true }),
+}) satisfies Readonly<Record<TowerLevel, Readonly<{
+  footprintRadius: number;
+  headLift: number;
+  buttressCount: number;
+  mastery: boolean;
+}>>>;
+
+const ACT_VISUAL_PROFILES = Object.freeze({
+  "forest-gate": Object.freeze({
+    1: Object.freeze({ veil: 0x3e7b63, veilAlpha: 0, portal: 0xb77df2, gateWard: 0x72e6c2, bossAccent: 0xf3c967 }),
+    2: Object.freeze({ veil: 0x5c3c78, veilAlpha: 0.08, portal: 0xa879e8, gateWard: 0x79d9ed, bossAccent: 0xc7a2f5 }),
+    3: Object.freeze({ veil: 0x8b3448, veilAlpha: 0.14, portal: 0xe05f78, gateWard: 0xffa168, bossAccent: 0xff7b72 }),
+  }),
+  "northern-pass": Object.freeze({
+    1: Object.freeze({ veil: 0x315d76, veilAlpha: 0, portal: 0x79c9e8, gateWard: 0x8fe8ef, bossAccent: 0xd9f7ff }),
+    2: Object.freeze({ veil: 0x3f4f7c, veilAlpha: 0.07, portal: 0x8fb8f4, gateWard: 0xb6e9ff, bossAccent: 0xd9edff }),
+    3: Object.freeze({ veil: 0x6f3d62, veilAlpha: 0.12, portal: 0xc887d9, gateWard: 0x8fd8ff, bossAccent: 0xffb6d0 }),
+  }),
+}) satisfies Readonly<Record<WorldVisualTheme["id"], Readonly<Record<CampaignAct, ActVisualProfile>>>>;
 
 const FOREST_GATE_THEME: WorldVisualTheme = Object.freeze({
   id: "forest-gate",
@@ -87,6 +136,24 @@ export const FOREST_GATE_LANDMARKS = Object.freeze([
   Object.freeze({ id: "fallen-log", x: 346, y: 294, radius: 28 }),
   Object.freeze({ id: "mushroom-ring", x: 28, y: 430, radius: 17 }),
 ] as const);
+
+export function getTowerTierVisualProfile(type: TowerType, level: TowerLevel): TowerTierVisualProfile {
+  return Object.freeze({ ...TOWER_TIER_GEOMETRY[level], ...TOWER_VISUAL_COLORS[type] });
+}
+
+export function getActVisualProfile(
+  act: CampaignAct,
+  themeId: WorldVisualTheme["id"] = "forest-gate",
+): ActVisualProfile {
+  return ACT_VISUAL_PROFILES[themeId][act];
+}
+
+export function isPointWithinVisualRadius(point: Point, center: Point, radius: number): boolean {
+  if (!Number.isFinite(radius) || radius <= 0) return false;
+  const dx = point.x - center.x;
+  const dy = point.y - center.y;
+  return dx * dx + dy * dy <= radius * radius;
+}
 
 export function getWorldVisualTheme(levelId?: string): WorldVisualTheme {
   return levelId === "northern-pass" ? NORTHERN_PASS_THEME : FOREST_GATE_THEME;

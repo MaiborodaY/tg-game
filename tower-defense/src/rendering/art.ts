@@ -7,12 +7,28 @@ import {
   type EnemyMotionPose,
 } from "./enemyVisuals.ts";
 import { drawWorld, setWorldAct, type WorldArt, type WorldDefinition } from "./worldArt.ts";
+import {
+  getActVisualProfile,
+  getTowerTierVisualProfile,
+  type TowerTierVisualProfile,
+  type WorldVisualTheme,
+} from "./worldThemes.ts";
 
 export { drawWorld, setWorldAct, type WorldArt, type WorldDefinition };
+export { getTowerTierVisualProfile, type TowerTierVisualProfile };
+
+export type TowerAuraKind = "tower_damage" | "tower_attack_speed";
+
+export type TowerAuraMarkerArt = Readonly<{
+  container: Phaser.GameObjects.Container;
+  halo: Phaser.GameObjects.Arc;
+  gem: Phaser.GameObjects.Rectangle;
+}>;
 
 export type TowerArt = Readonly<{
   container: Phaser.GameObjects.Container;
   head: Phaser.GameObjects.Container;
+  auraMarker: TowerAuraMarkerArt;
   aura?: Phaser.GameObjects.Arc;
 }>;
 
@@ -76,25 +92,95 @@ export function createTowerArt(
   level: TowerLevel,
   point: Point,
 ): TowerArt {
+  const profile = getTowerTierVisualProfile(type, level);
   const container = scene.add.container(point.x, point.y).setDepth(point.y + 50);
-  const shadow = scene.add.ellipse(0, 9, 39, 17, 0x071511, 0.4);
+  const shadow = scene.add.ellipse(0, 9, profile.footprintRadius * 2 + 5, 17 + profile.headLift, 0x071511, 0.4);
   const base = scene.add.graphics();
-  base.fillStyle(0x213a36, 1).fillCircle(0, 1, 19);
-  base.lineStyle(2, 0x6f8873, 0.8).strokeCircle(0, 1, 17);
-  base.fillStyle(0x314a43, 1).fillCircle(0, -2, 13);
-  for (let index = 0; index < level; index += 1) {
-    base.fillStyle(0xf3c967, 0.95).fillCircle(-6 + index * 6, 11, 2);
-  }
+  drawTowerTierBase(base, profile, level);
 
-  const head = scene.add.container(0, -8);
+  const masteryHalo = scene.add.circle(0, -4, profile.footprintRadius + 2, profile.accent, profile.mastery ? 0.06 : 0)
+    .setStrokeStyle(profile.mastery ? 2 : 0, profile.trim, profile.mastery ? 0.72 : 0);
+  const head = scene.add.container(0, -8 - profile.headLift);
+  const auraMarker = createTowerAuraMarker(scene, 15, -26 - profile.headLift);
   let aura: Phaser.GameObjects.Arc | undefined;
   if (type === "ranger") drawRanger(scene, head, level);
   if (type === "frost") aura = drawFrost(scene, head, level);
   if (type === "ember") aura = drawEmber(scene, head, level);
   if (type === "storm") aura = drawStorm(scene, head, level);
-  container.add([shadow, base, head]);
-  if (aura) container.addAt(aura, 2);
-  return Object.freeze({ container, head, aura });
+  container.add([shadow, masteryHalo, base]);
+  if (aura) container.add(aura);
+  container.add([head, auraMarker.container]);
+  return Object.freeze({ container, head, auraMarker, aura });
+}
+
+export function setTowerAuraMarker(
+  art: TowerArt,
+  kind: TowerAuraKind | null,
+  emphasized = false,
+): void {
+  if (!kind) {
+    art.auraMarker.container.setVisible(false);
+    return;
+  }
+  const damageAura = kind === "tower_damage";
+  const color = damageAura ? 0xf1cc69 : 0xff8a45;
+  const trim = damageAura ? 0xfff1b6 : 0xffdec0;
+  art.auraMarker.halo
+    .setFillStyle(color, emphasized ? 0.2 : 0.12)
+    .setStrokeStyle(emphasized ? 2 : 1.5, trim, emphasized ? 0.94 : 0.72);
+  art.auraMarker.gem
+    .setFillStyle(trim, 0.96)
+    .setStrokeStyle(1, color, 0.9)
+    .setRotation(damageAura ? Math.PI / 4 : 0)
+    .setScale(damageAura ? 0.82 : 1, damageAura ? 0.82 : 0.55);
+  art.auraMarker.container
+    .setVisible(true)
+    .setAlpha(emphasized ? 1 : 0.78)
+    .setScale(emphasized ? 1.08 : 0.88);
+}
+
+export function playTowerConstructionEffect(
+  scene: Phaser.Scene,
+  art: TowerArt,
+  point: Point,
+  type: TowerType,
+  level: TowerLevel,
+  kind: "build" | "upgrade",
+): void {
+  const profile = getTowerTierVisualProfile(type, level);
+  const effect = scene.add.graphics().setPosition(point.x, point.y).setDepth(point.y + 90);
+  const startRadius = kind === "build" ? 12 : profile.footprintRadius;
+  const rayCount = kind === "build" ? 6 : 8;
+  effect.lineStyle(kind === "build" ? 3 : 2, profile.trim, 0.94).strokeCircle(0, 0, startRadius);
+  effect.lineStyle(2, profile.accent, 0.78);
+  for (let index = 0; index < rayCount; index += 1) {
+    const angle = (Math.PI * 2 * index) / rayCount;
+    const inner = profile.footprintRadius + 3;
+    const outer = inner + (kind === "build" ? 10 : 7);
+    effect.lineBetween(
+      Math.cos(angle) * inner,
+      Math.sin(angle) * inner * 0.72,
+      Math.cos(angle) * outer,
+      Math.sin(angle) * outer * 0.72,
+    );
+  }
+
+  art.container.setAlpha(kind === "build" ? 0.35 : 0.64).setScale(kind === "build" ? 0.7 : 0.88);
+  scene.tweens.add({
+    targets: art.container,
+    alpha: 1,
+    scale: 1,
+    duration: kind === "build" ? 260 : 210,
+    ease: "Back.Out",
+  });
+  scene.tweens.add({
+    targets: effect,
+    alpha: 0,
+    scale: kind === "build" ? 1.55 : 1.36,
+    duration: kind === "build" ? 420 : 360,
+    ease: "Quad.Out",
+    onComplete: () => effect.destroy(),
+  });
 }
 
 export function createEnemyArt(
@@ -244,12 +330,54 @@ export function createSummonBurst(scene: Phaser.Scene, point: Point): void {
   scene.tweens.add({ targets: ring, radius: 58, alpha: 0, duration: 620, ease: "Quad.Out", onComplete: () => ring.destroy() });
 }
 
+export function createBossArrivalEffect(
+  scene: Phaser.Scene,
+  point: Point,
+  act: CampaignAct,
+  themeId: WorldVisualTheme["id"] = "forest-gate",
+): void {
+  const profile = getActVisualProfile(act, themeId);
+  const sigil = scene.add.graphics().setPosition(point.x, point.y).setDepth(1_080);
+  sigil.lineStyle(4, profile.bossAccent, 0.92).strokeCircle(0, 0, 28);
+  sigil.lineStyle(2, profile.portal, 0.78).strokeCircle(0, 0, 38);
+  sigil.fillStyle(profile.bossAccent, 0.9)
+    .fillTriangle(-24, -19, -15, -42, -8, -22)
+    .fillTriangle(24, -19, 15, -42, 8, -22);
+  sigil.lineStyle(3, profile.portal, 0.84)
+    .beginPath()
+    .moveTo(-18, 18)
+    .lineTo(0, 31)
+    .lineTo(18, 18)
+    .strokePath();
+  sigil.setScale(0.55).setAlpha(0.94);
+  scene.tweens.add({
+    targets: sigil,
+    alpha: 0,
+    scale: 1.55,
+    rotation: 0.12,
+    duration: 720,
+    ease: "Quad.Out",
+    onComplete: () => sigil.destroy(),
+  });
+}
+
 export function createGateHitEffect(scene: Phaser.Scene, art: WorldArt, damage: number): void {
   scene.tweens.killTweensOf(art.gate);
   art.gate.setX(art.gateHomeX);
   scene.tweens.add({ targets: art.gate, x: art.gateHomeX + 5, duration: 45, yoyo: true, repeat: 3 });
   art.gateCrystal.setFillStyle(0xff685f, 1);
   scene.time.delayedCall(260, () => art.gateCrystal.active && art.gateCrystal.setFillStyle(art.gateCrystalHomeColor, 1));
+  const wardPulse = scene.add.circle(art.gate.x, art.gate.y - 26, 14, 0xff8d78, 0.08)
+    .setStrokeStyle(3, 0xffb098, 0.86)
+    .setDepth(1_090);
+  scene.tweens.add({
+    targets: wardPulse,
+    alpha: 0,
+    scale: 1.75,
+    duration: 330,
+    ease: "Quad.Out",
+    onComplete: () => wardPulse.destroy(),
+  });
   createFloatingText(scene, art.gate.x, art.gate.y - 35, `−${damage} ♥`, "#ff9589");
   for (let index = 0; index < 4; index += 1) {
     const shard = scene.add.rectangle(art.gate.x, art.gate.y - 18, 4, 8, 0x9ff6dc).setRotation(index * 0.8).setDepth(1_100);
@@ -264,21 +392,108 @@ export function createGateHitEffect(scene: Phaser.Scene, art: WorldArt, damage: 
   }
 }
 
+function drawTowerTierBase(
+  base: Phaser.GameObjects.Graphics,
+  profile: TowerTierVisualProfile,
+  level: TowerLevel,
+): void {
+  const radius = profile.footprintRadius;
+  base.fillStyle(0x152b27, 1).fillCircle(0, 2, radius + 2);
+  base.lineStyle(level >= 3 ? 3 : 2, level === 4 ? profile.trim : 0x6f8873, level === 4 ? 0.88 : 0.78)
+    .strokeCircle(0, 1, radius);
+
+  if (level >= 3) {
+    base.fillStyle(0x233f39, 1)
+      .fillTriangle(-radius - 3, 2, -radius + 5, -6, -radius + 5, 10)
+      .fillTriangle(radius + 3, 2, radius - 5, -6, radius - 5, 10);
+    if (level === 4) {
+      base.fillTriangle(-6, -radius - 3, 0, -radius + 5, 6, -radius - 3)
+        .fillTriangle(-6, radius + 4, 0, radius - 4, 6, radius + 4);
+    }
+  }
+
+  base.fillStyle(0x314a43, 1).fillCircle(0, -2, 12 + level);
+  base.lineStyle(level >= 2 ? 2 : 1, profile.accent, 0.26 + level * 0.1)
+    .strokeCircle(0, -2, 10 + level);
+
+  for (let index = 0; index < profile.buttressCount; index += 1) {
+    const angle = (Math.PI * 2 * index) / profile.buttressCount + Math.PI / 4;
+    base.fillStyle(level === 4 ? profile.trim : profile.accent, level === 4 ? 0.9 : 0.64)
+      .fillCircle(Math.cos(angle) * (radius - 2), 1 + Math.sin(angle) * (radius - 2) * 0.72, level === 4 ? 3 : 2.5);
+  }
+
+  if (level === 4) {
+    base.lineStyle(2, profile.trim, 0.82)
+      .beginPath()
+      .moveTo(-7, 10)
+      .lineTo(0, 14)
+      .lineTo(7, 10)
+      .strokePath();
+  }
+}
+
+function createTowerAuraMarker(scene: Phaser.Scene, x: number, y: number): TowerAuraMarkerArt {
+  const container = scene.add.container(x, y).setVisible(false);
+  const halo = scene.add.circle(0, 0, 6.5, 0xf1cc69, 0.12).setStrokeStyle(1.5, 0xfff1b6, 0.72);
+  const gem = scene.add.rectangle(0, 0, 5, 5, 0xfff1b6, 0.96)
+    .setRotation(Math.PI / 4)
+    .setStrokeStyle(1, 0xf1cc69, 0.9);
+  container.add([halo, gem]);
+  return Object.freeze({ container, halo, gem });
+}
+
 function drawRanger(scene: Phaser.Scene, head: Phaser.GameObjects.Container, level: number): void {
-  const deck = scene.add.rectangle(0, 0, 28, 12, 0x725032).setStrokeStyle(2, 0xc59752);
+  const deck = scene.add.rectangle(0, 1, 26 + level * 2, 10 + level, 0x725032)
+    .setStrokeStyle(level === 4 ? 3 : 2, level === 4 ? 0xf3d88a : 0xc59752);
   const bow = scene.add.graphics();
   bow.lineStyle(3 + level * 0.4, 0xd8ad62, 1).beginPath().arc(5, 0, 13, -1.2, 1.2).strokePath();
   bow.lineStyle(1, 0xe8e0c3, 0.9).beginPath().moveTo(10, -12).lineTo(10, 12).strokePath();
   const bolt = scene.add.rectangle(12, 0, 28, 2.4, 0xf0db95).setOrigin(0.15, 0.5);
-  head.add([deck, bow, bolt]);
+  const details = scene.add.graphics();
+  if (level >= 2) {
+    details.fillStyle(0x493523, 1).fillRoundedRect(-15, -7, 6, 18, 2);
+    details.lineStyle(1.5, 0xf0db95, 0.86)
+      .lineBetween(-14, -9, -10, 4)
+      .lineBetween(-11, -10, -8, 3);
+  }
+  if (level >= 3) {
+    details.lineStyle(2, 0xd8ad62, 0.9)
+      .lineBetween(1, -13, 7, -17)
+      .lineBetween(1, 13, 7, 17);
+    details.fillStyle(0xf3c967, 0.98).fillCircle(4, 0, 3.2);
+  }
+  if (level === 4) {
+    details.lineStyle(2, 0xf3d88a, 0.82).strokeCircle(4, 0, 8);
+    details.fillStyle(0xffefb0, 0.96)
+      .fillTriangle(22, 0, 14, -4, 14, 4)
+      .fillCircle(-12, 1, 3);
+  }
+  head.add([deck, details, bow, bolt]);
 }
 
 function drawFrost(scene: Phaser.Scene, head: Phaser.GameObjects.Container, level: number): Phaser.GameObjects.Arc {
   const aura = scene.add.circle(0, -8, 16 + level * 2, 0x65dce8, 0.08).setStrokeStyle(2, 0x74e8f3, 0.36);
+  const pedestal = scene.add.ellipse(0, 7, 24 + level * 2, 10, 0x315968)
+    .setStrokeStyle(level === 4 ? 3 : 2, level === 4 ? 0xd9ffff : 0x74b9c7, 0.92);
   const crystal = scene.add.rectangle(0, -2, 18 + level * 2, 18 + level * 2, 0x7ee5ee)
     .setRotation(Math.PI / 4).setScale(0.72, 1.12).setStrokeStyle(2, 0xd9ffff);
   const core = scene.add.rectangle(-3, -6, 7, 7, 0xffffff, 0.72).setRotation(Math.PI / 4).setScale(0.7, 1.1);
-  head.add([crystal, core]);
+  const details = scene.add.graphics();
+  if (level >= 2) {
+    details.fillStyle(0x71d8e5, 0.94)
+      .fillTriangle(-14, 5, -8, -9, -4, 7)
+      .fillTriangle(14, 5, 8, -9, 4, 7);
+  }
+  if (level >= 3) {
+    details.fillStyle(0xbff9ff, 0.88)
+      .fillTriangle(-10, -1, -5, -17, -1, 2)
+      .fillTriangle(10, -1, 5, -17, 1, 2);
+  }
+  if (level === 4) {
+    details.lineStyle(2, 0xd9ffff, 0.74).strokeCircle(0, -4, 17);
+    details.fillStyle(0xf4ffff, 0.96).fillCircle(0, -21, 3);
+  }
+  head.add([pedestal, details, crystal, core]);
   scene.tweens.add({ targets: [crystal, core], y: "-=3", duration: 880, yoyo: true, repeat: -1, ease: "Sine.InOut" });
   scene.tweens.add({ targets: aura, alpha: 0.2, scale: 1.2, duration: 1_100, yoyo: true, repeat: -1 });
   return aura;
@@ -286,10 +501,29 @@ function drawFrost(scene: Phaser.Scene, head: Phaser.GameObjects.Container, leve
 
 function drawEmber(scene: Phaser.Scene, head: Phaser.GameObjects.Container, level: number): Phaser.GameObjects.Arc {
   const aura = scene.add.circle(0, -8, 18 + level * 2, 0xff7b45, 0.08);
-  const bowl = scene.add.ellipse(0, 5, 28, 14, 0x6f4030).setStrokeStyle(2, 0xd08b56);
+  const bowl = scene.add.ellipse(0, 5, 27 + level * 2, 13 + Math.min(level, 3), 0x6f4030)
+    .setStrokeStyle(level === 4 ? 3 : 2, level === 4 ? 0xffd56a : 0xd08b56);
   const flameOuter = scene.add.triangle(0, -9, -9, 10, 0, -17 - level * 2, 9, 10, 0xff7643);
   const flameInner = scene.add.triangle(0, -5, -5, 6, 1, -10 - level, 6, 6, 0xffd56a);
-  head.add([bowl, flameOuter, flameInner]);
+  const details = scene.add.graphics();
+  if (level >= 2) {
+    details.lineStyle(3, 0xd08b56, 0.9)
+      .lineBetween(-15, 1, -20, 7)
+      .lineBetween(15, 1, 20, 7);
+  }
+  if (level >= 3) {
+    details.fillStyle(0xff9651, 0.92)
+      .fillTriangle(-13, 2, -9, -11, -5, 4)
+      .fillTriangle(13, 2, 9, -11, 5, 4);
+  }
+  if (level === 4) {
+    details.lineStyle(2, 0xffd56a, 0.76).strokeCircle(0, -5, 18);
+    for (let index = 0; index < 4; index += 1) {
+      const angle = (Math.PI * 2 * index) / 4 + Math.PI / 4;
+      details.fillStyle(0xffe38b, 0.94).fillCircle(Math.cos(angle) * 18, -5 + Math.sin(angle) * 18, 2.4);
+    }
+  }
+  head.add([bowl, details, flameOuter, flameInner]);
   scene.tweens.add({ targets: [flameOuter, flameInner], scaleX: 0.78, scaleY: 1.12, duration: 180, yoyo: true, repeat: -1 });
   scene.tweens.add({ targets: aura, alpha: 0.2, scale: 1.3, duration: 760, yoyo: true, repeat: -1 });
   return aura;
@@ -315,7 +549,28 @@ function drawStorm(scene: Phaser.Scene, head: Phaser.GameObjects.Container, leve
     .setStrokeStyle(2, 0x65d9ee, 0.86);
   const prongLeft = scene.add.rectangle(-10, -10, 3, 17, 0x8ddcec).setRotation(-0.35);
   const prongRight = scene.add.rectangle(11, -11, 3, 17, 0x8ddcec).setRotation(0.35);
-  head.add([crown, prongLeft, prongRight, core]);
+  prongLeft.setVisible(level >= 2);
+  prongRight.setVisible(level >= 2);
+  const details = scene.add.graphics();
+  if (level >= 3) {
+    details.fillStyle(0xbff8ff, 0.92)
+      .fillCircle(-15, -14, 3.2)
+      .fillCircle(16, -15, 3.2);
+    details.lineStyle(1.5, 0x74dff2, 0.76)
+      .lineBetween(-15, -14, -4, -6)
+      .lineBetween(16, -15, 5, -7);
+  }
+  if (level === 4) {
+    details.lineStyle(2, 0xc9f8ff, 0.82).strokeCircle(1, -6, 18);
+    details.lineStyle(2, 0x74dff2, 0.86)
+      .beginPath()
+      .moveTo(-8, -21)
+      .lineTo(-2, -16)
+      .lineTo(3, -23)
+      .lineTo(9, -17)
+      .strokePath();
+  }
+  head.add([crown, details, prongLeft, prongRight, core]);
   scene.tweens.add({ targets: core, scale: 1.35, alpha: 0.62, duration: 390, yoyo: true, repeat: -1 });
   scene.tweens.add({ targets: aura, alpha: 0.2, scale: 1.26, duration: 820, yoyo: true, repeat: -1 });
   return aura;

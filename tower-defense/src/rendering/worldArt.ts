@@ -4,15 +4,20 @@ import type { CampaignAct, Point } from "../game/types.ts";
 import {
   FOREST_GATE_LANDMARKS,
   createWorldDecorationLayout,
+  getActVisualProfile,
   getWorldVisualTheme,
   type WorldDecorationLayout,
   type WorldVisualTheme,
 } from "./worldThemes.ts";
 
 export type WorldArt = Readonly<{
+  themeId: WorldVisualTheme["id"];
   actVeil: Phaser.GameObjects.Rectangle;
+  portalGlow: Phaser.GameObjects.Ellipse;
+  portalCore: Phaser.GameObjects.Ellipse;
   gate: Phaser.GameObjects.Container;
   gateCrystal: Phaser.GameObjects.Rectangle;
+  gateWard: Phaser.GameObjects.Arc;
   gateCrystalHomeColor: number;
   gateHomeX: number;
 }>;
@@ -45,7 +50,7 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
   drawRoute(scene, route, theme);
   drawDecorations(scene, layout, theme);
   if (theme.id === "forest-gate") drawForestLandmarks(scene);
-  drawEntrance(scene, route[0], theme);
+  const entrance = drawEntrance(scene, route[0], theme);
   const gate = drawGate(scene, route[route.length - 1], height, theme);
   const actVeil = scene.add.rectangle(width / 2, height / 2, width, height, 0x52366f, 0)
     .setDepth(-12)
@@ -56,19 +61,26 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
   vignette.lineStyle(2, theme.stoneLight, 0.13).strokeRoundedRect(2, 2, width - 4, height - 4, 24);
   vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
   return Object.freeze({
+    themeId: theme.id,
     actVeil,
+    portalGlow: entrance.glow,
+    portalCore: entrance.inner,
     gate: gate.container,
     gateCrystal: gate.crystal,
+    gateWard: gate.ward,
     gateCrystalHomeColor: gate.crystalHomeColor,
     gateHomeX: gate.container.x,
   });
 }
 
 export function setWorldAct(scene: Phaser.Scene, art: WorldArt, act: CampaignAct): void {
-  const colors: Record<CampaignAct, number> = { 1: 0x3e7b63, 2: 0x5c3c78, 3: 0x8b3448 };
-  const alpha: Record<CampaignAct, number> = { 1: 0, 2: 0.08, 3: 0.14 };
-  art.actVeil.setFillStyle(colors[act], 1);
-  scene.tweens.add({ targets: art.actVeil, alpha: alpha[act], duration: 850, ease: "Sine.InOut" });
+  const profile = getActVisualProfile(act, art.themeId);
+  scene.tweens.killTweensOf(art.actVeil);
+  art.actVeil.setFillStyle(profile.veil, 1);
+  art.portalGlow.setFillStyle(profile.portal, 0.09).setStrokeStyle(3, profile.portal, 0.58);
+  art.portalCore.setFillStyle(profile.portal, 0.38).setStrokeStyle(2, profile.bossAccent, 0.72);
+  art.gateWard.setFillStyle(profile.gateWard, 0.1).setStrokeStyle(2, profile.gateWard, 0.34);
+  scene.tweens.add({ targets: art.actVeil, alpha: profile.veilAlpha, duration: 850, ease: "Sine.InOut" });
 }
 
 function drawGround(
@@ -257,7 +269,15 @@ function drawForestLandmarks(scene: Phaser.Scene): void {
   }
 }
 
-function drawEntrance(scene: Phaser.Scene, entrance: Point, theme: WorldVisualTheme): void {
+function drawEntrance(
+  scene: Phaser.Scene,
+  entrance: Point,
+  theme: WorldVisualTheme,
+): Readonly<{
+  container: Phaser.GameObjects.Container;
+  glow: Phaser.GameObjects.Ellipse;
+  inner: Phaser.GameObjects.Ellipse;
+}> {
   const x = Math.max(11, entrance.x + 35);
   const portal = scene.add.container(x, entrance.y).setDepth(40);
   const shadow = scene.add.ellipse(0, 17, 54, 17, theme.groundDeep, 0.56);
@@ -277,6 +297,7 @@ function drawEntrance(scene: Phaser.Scene, entrance: Point, theme: WorldVisualTh
   }).setOrigin(0.5).setAlpha(0.82);
   portal.add([shadow, glow, inner, arch, rune]);
   scene.tweens.add({ targets: [glow, inner], scale: 1.08, alpha: "+=0.08", duration: 1_350, yoyo: true, repeat: -1, ease: "Sine.InOut" });
+  return Object.freeze({ container: portal, glow, inner });
 }
 
 function drawGate(
@@ -287,6 +308,7 @@ function drawGate(
 ): Readonly<{
   container: Phaser.GameObjects.Container;
   crystal: Phaser.GameObjects.Rectangle;
+  ward: Phaser.GameObjects.Arc;
   crystalHomeColor: number;
 }> {
   const gate = scene.add.container(exit.x, Math.min(height - 25, exit.y + 17)).setDepth(600);
@@ -316,5 +338,5 @@ function drawGate(
     .setStrokeStyle(2, 0xd9fff3);
   gate.add([shadow, roots, doors, doorLine, left, right, arch, crystalGlow, leftLamp, rightLamp, crystal]);
   scene.tweens.add({ targets: [crystalGlow, crystal], alpha: 0.58, duration: 1_050, yoyo: true, repeat: -1, ease: "Sine.InOut" });
-  return Object.freeze({ container: gate, crystal, crystalHomeColor: theme.crystal });
+  return Object.freeze({ container: gate, crystal, ward: crystalGlow, crystalHomeColor: theme.crystal });
 }
