@@ -446,7 +446,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .pulse-charges[data-charges="2"] i { background: currentColor; opacity: 1; box-shadow: 0 0 5px currentColor; }
 
 .command-panel {
-  --tower-controls-height: 52px;
+  --tower-controls-height: 58px;
   display: grid;
   grid-template-rows: var(--tower-controls-height) 44px;
   gap: 4px;
@@ -518,8 +518,8 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .tower-deck { height: 100%; padding-right: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .tower-card {
   min-width: 0;
-  min-height: 52px;
-  height: 52px;
+  min-height: 58px;
+  height: 58px;
   padding: 2px 3px;
   display: flex;
   flex-direction: column;
@@ -544,6 +544,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .tower-card strong { min-width: 0; overflow: hidden; font-size: 9px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
 .tower-card em {
   grid-column: 1 / -1;
+  grid-row: 2;
   overflow: hidden;
   color: #91b9a5;
   font-size: 8px;
@@ -553,7 +554,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tower-card small { flex: 0 0 auto; padding: 1px 3px; border-radius: 5px; background: rgba(4, 20, 17, 0.34); color: #c8d8ce; font-size: 8px; white-space: nowrap; }
+.tower-card small { grid-column: 2; grid-row: 1; flex: 0 0 auto; padding: 1px 3px; border-radius: 5px; background: rgba(4, 20, 17, 0.34); color: #c8d8ce; font-size: 8px; white-space: nowrap; }
 .tower-card small b { color: var(--gold); }
 .tower-card:disabled small b { color: #e4c576; }
 

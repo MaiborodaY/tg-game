@@ -71,10 +71,13 @@ test("tall portrait viewports match the battlefield to the Phaser scene aspect r
 });
 
 test("build and selected tower states share one stable controls height", () => {
-  assert.match(css, /\.command-panel \{[^}]*--tower-controls-height:\s*52px;/s);
+  assert.match(css, /\.command-panel \{[^}]*--tower-controls-height:\s*58px;/s);
   assert.match(css, /\.command-panel \{[^}]*grid-template-rows:\s*var\(--tower-controls-height\) 44px;/s);
   assert.match(css, /\.build-panel \{[^}]*min-height:\s*var\(--tower-controls-height\);[^}]*height:\s*100%;/s);
   assert.match(css, /\.tower-panel \{[^}]*min-height:\s*var\(--tower-controls-height\);[^}]*height:\s*100%;/s);
+  assert.match(css, /\.tower-card \{[^}]*min-height:\s*58px;[^}]*height:\s*58px;/s);
+  assert.match(css, /\.tower-card em \{[^}]*grid-row:\s*2;/s);
+  assert.match(css, /\.tower-card small \{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
   assert.match(css, /\.panel-close \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
 
   const compactViewport = css.match(/@media \(max-height: 700px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
