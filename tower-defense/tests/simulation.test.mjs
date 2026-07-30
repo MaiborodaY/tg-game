@@ -244,6 +244,28 @@ test("Toren shock damages and stuns enemies inside his local aura", () => {
   )));
 });
 
+test("rank-three Toren keeps meaningful slow against control-resistant late enemies", () => {
+  const progressAfterTwoSeconds = (level) => {
+    const simulation = new GameSimulation({
+      ...createCampaignState({ heroId: "toren" }),
+      hero: { id: "toren", level, anchorId: 0 },
+    }, createTestRules({
+      finalWave: null,
+      enemyHp: 50_000,
+      enemySpeed: 2,
+      controlResistance: 0.7,
+    }));
+    simulation.startWave();
+    advanceToLiveWave(simulation);
+    for (let index = 0; index < 20; index += 1) simulation.advance(100);
+    return simulation.readView().enemies[0].progress;
+  };
+
+  const rankTwoProgress = progressAfterTwoSeconds(2);
+  const rankThreeProgress = progressAfterTwoSeconds(3);
+  assert.ok(rankThreeProgress < rankTwoProgress * 0.92);
+});
+
 test("Toren auto-attacks clustered enemies with deterministic short splash", () => {
   const simulation = new GameSimulation(
     createCampaignState({ heroId: "toren" }),
@@ -381,8 +403,8 @@ test("awakened Toren places a validated road barrier with capacity and boss limi
     hero: { id: "toren", level: 3, anchorId: 0 },
   }, createTestRules({
     finalWave: null,
-    enemyHps: Array.from({ length: 9 }, () => 1_000),
-    enemyTypes: ["titan", ...Array.from({ length: 8 }, () => "raider")],
+    enemyHps: Array.from({ length: 11 }, () => 1_000),
+    enemyTypes: ["titan", ...Array.from({ length: 10 }, () => "raider")],
     enemySpeed: 0.01,
     controlResistance: 1,
   }));
@@ -401,19 +423,21 @@ test("awakened Toren places a validated road barrier with capacity and boss limi
       capacity: simulation.readView().hero.barrier?.capacity,
       capturedCount: simulation.readView().hero.barrier?.capturedCount,
     },
-    { progress: 0, capacity: 8, capturedCount: 8 },
+    { progress: 0, capacity: 10, capturedCount: 10 },
   );
-  assert.equal(simulation.readView().enemies.filter((enemy) => enemy.blocked).length, 8);
+  assert.equal(simulation.readView().enemies.filter((enemy) => enemy.blocked).length, 10);
   assert.ok(simulation.readView().enemies.every((enemy) => enemy.hp < 1_000));
 
-  for (let index = 0; index < 24; index += 1) simulation.advance(100);
+  for (let index = 0; index < 32; index += 1) simulation.advance(100);
   const titan = simulation.readView().enemies.find((enemy) => enemy.type === "titan");
   assert.equal(titan?.blocked, false, "Titan ignores the second half of the barrier duration");
-  assert.equal(simulation.readView().hero.barrier?.capturedCount, 8);
+  assert.equal(simulation.readView().hero.barrier?.capturedCount, 10);
   assert.ok(simulation.readView().hero.barrier?.remainingMs > 0);
   const events = simulation.drainEvents();
-  assert.ok(events.some((event) => event.type === "hero_barrier_created" && event.progress === 0));
-  assert.equal(events.filter((event) => event.type === "hero_barrier_blocked").length, 8);
+  assert.ok(events.some((event) => (
+    event.type === "hero_barrier_created" && event.progress === 0 && event.radius === 60
+  )));
+  assert.equal(events.filter((event) => event.type === "hero_barrier_blocked").length, 10);
 });
 
 test("Toren's gate shield absorbs leak damage before campaign lives", () => {
@@ -423,11 +447,11 @@ test("Toren's gate shield absorbs leak damage before campaign lives", () => {
     hero: { id: "toren", level: 3, anchorId: 0 },
   }, createTestRules({
     finalWave: null,
-    enemyHps: [10_000, 10_000, 10_000],
+    enemyHps: Array.from({ length: 6 }, () => 10_000),
     enemySpeed: 1_000,
   }));
   simulation.startWave();
-  assert.equal(simulation.readView().gateShield, 2);
+  assert.equal(simulation.readView().gateShield, 5);
   const events = [...simulation.drainEvents()];
   for (let index = 0; index < 60 && simulation.readView().phase !== "setup"; index += 1) {
     simulation.advance(100);
@@ -439,11 +463,11 @@ test("Toren's gate shield absorbs leak damage before campaign lives", () => {
   assert.equal(
     events.filter((event) => event.type === "gate_shield_absorbed")
       .reduce((total, event) => total + event.amount, 0),
-    2,
+    5,
   );
   assert.deepEqual(
     events.filter((event) => event.type === "enemy_leaked").map((event) => [event.damage, event.absorbed]),
-    [[0, 1], [0, 1], [1, 0]],
+    [[0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [1, 0]],
   );
 });
 

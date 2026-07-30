@@ -233,6 +233,7 @@ export type SimulationEvent =
       x: number;
       y: number;
       progress: number;
+      radius: number;
       durationMs: number;
       capacity: number;
     }>
@@ -816,6 +817,7 @@ export class GameSimulation {
         x: this.heroBarrier.x,
         y: this.heroBarrier.y,
         progress: this.heroBarrier.progress,
+        radius: HERO_AWAKENINGS.toren.impactRadius,
         durationMs: HERO_AWAKENINGS.toren.abilityDurationMs,
         capacity: this.heroBarrier.capacity,
       });
@@ -826,7 +828,8 @@ export class GameSimulation {
         const damage = awakened ? HERO_AWAKENINGS.toren.impactDamage : stats.abilityDamage;
         this.damageEnemy(enemy, damage, stats.damageKind);
         if (awakened || enemy.dead) continue;
-        const control = applyControlResistance(0.1, stats.abilityStunMs, enemy.controlResistance);
+        const resistance = Math.max(0, enemy.controlResistance - stats.controlResistancePenetration);
+        const control = applyControlResistance(0.1, stats.abilityStunMs, resistance);
         enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs + control.durationMs);
       }
       if (awakened) this.captureBarrierEnemies();
@@ -1059,7 +1062,8 @@ export class GameSimulation {
     if (hero.id !== "toren" || hero.level < 2) return 1;
     const stats = getHeroStats(hero.id, hero.level);
     if (squaredDistance(enemy, this.getHeroPoint()) > stats.slowAuraRadius ** 2) return 1;
-    return applyControlResistance(stats.slowAuraFactor, 1_000, enemy.controlResistance).slowFactor;
+    const resistance = Math.max(0, enemy.controlResistance - stats.controlResistancePenetration);
+    return applyControlResistance(stats.slowAuraFactor, 1_000, resistance).slowFactor;
   }
 
   private captureBarrierEnemies(): void {

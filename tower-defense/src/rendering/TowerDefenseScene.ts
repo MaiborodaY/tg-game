@@ -898,7 +898,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       return;
     }
     if (event.type === "hero_barrier_created") {
-      this.heroEffects?.playAbility("toren", event, 48);
+      this.heroEffects?.playAbility("toren", event, event.radius);
       this.cameras.main.shake(130, 0.0035);
       return;
     }

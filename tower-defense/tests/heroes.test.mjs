@@ -55,6 +55,7 @@ test("heroes keep distinct scaling identities across damage, control, and attack
   assert.equal(torenOne.slowAuraFactor, 1);
   assert.ok(torenThree.attackSplashRadius > torenOne.attackSplashRadius);
   assert.ok(torenThree.slowAuraFactor < 1);
+  assert.equal(torenThree.controlResistancePenetration, 0.35);
   assert.ok(torenThree.abilityDamage > torenOne.abilityDamage);
 
   const grakOne = getHeroStats("grak", 1);
@@ -74,11 +75,11 @@ test("hero aura summaries expose only unlocked passive radii and strengths", () 
   const torenAura = getHeroAura("toren", 3);
   const grakAura = getHeroAura("grak", 3);
   assert.deepEqual({ kind: eiraAura?.kind, radius: eiraAura?.radius }, { kind: "tower_damage", radius: 145 });
-  assert.deepEqual({ kind: torenAura?.kind, radius: torenAura?.radius }, { kind: "slow", radius: 170 });
+  assert.deepEqual({ kind: torenAura?.kind, radius: torenAura?.radius }, { kind: "slow", radius: 190 });
   assert.deepEqual({ kind: grakAura?.kind, radius: grakAura?.radius }, { kind: "tower_attack_speed", radius: 160 });
   assert.equal(Math.round((eiraAura?.strength ?? 0) * 100), 12);
   assert.equal(Math.round((eiraAura?.globalStrength ?? 0) * 100), 4);
-  assert.equal(Math.round((torenAura?.strength ?? 0) * 100), 14);
+  assert.equal(Math.round((torenAura?.strength ?? 0) * 100), 22);
   assert.equal(Math.round((grakAura?.strength ?? 0) * 100), 20);
   assert.equal(Math.round((grakAura?.globalStrength ?? 0) * 100), 8);
   assert.ok(Object.isFrozen(eiraAura));
@@ -92,7 +93,8 @@ test("rank-three heroes awaken only after wave twenty without changing paid rank
   assert.equal(isHeroAwakened(3, 20), true);
   assert.equal(getHeroAwakening("eira"), HERO_AWAKENINGS.eira);
   assert.equal(HERO_AWAKENINGS.eira.markedTargetCount, 4);
-  assert.equal(HERO_AWAKENINGS.toren.barrierCapacity, 8);
+  assert.equal(HERO_AWAKENINGS.toren.barrierCapacity, 10);
+  assert.equal(HERO_AWAKENINGS.toren.abilityDurationMs, 6_000);
   assert.equal(HERO_AWAKENINGS.grak.abilityDurationMs, 10_000);
   assert.ok(Object.isFrozen(HERO_AWAKENINGS));
   assert.ok(Object.isFrozen(HERO_AWAKENINGS.toren));
