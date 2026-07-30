@@ -138,8 +138,9 @@ test("rewarded checkpoints resume visibly and blocked local saves warn only once
 
 test("fresh, pending and reauthorized terminal submissions keep immutable metadata", () => {
   assert.equal(mainSource.match(/captureFinishSubmission\(/g)?.length, 3);
-  assert.match(mainSource, /outcome === "victory" \? "victory" : "defeat",\s*completedWaves/);
-  assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : "defeat",\s*pending\.waves/);
+  assert.match(mainSource, /outcome === "victory" \? "victory" : "defeat",\s*completedWaves,\s*summary\.heroId/);
+  assert.match(mainSource, /previous\.finishMetadata\.completedWaves,\s*previous\.finishMetadata\.heroId/);
+  assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : "defeat",\s*pending\.waves,\s*pending\.summary\?\.heroId \?\? null/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*"profile_sync_pending"/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*text\("profile_sync_retry"\)[\s\S]*rewardRetry\.hidden = false/);
   assert.match(mainSource, /result\.error === "http_403"[\s\S]*refreshFinishAuthorization\(\)/);

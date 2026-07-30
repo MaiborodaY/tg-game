@@ -1,9 +1,11 @@
 import { CONTENT_VERSION } from "./game/content.ts";
+import { isHeroId } from "./game/heroes.ts";
 import {
   parsePlayerProfileTransport,
   serializePlayerProfileTransport,
 } from "./game/profileTransport.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
+import type { HeroId } from "./game/types.ts";
 import {
   sanitizeServerRunBinding,
   type ServerRunBinding,
@@ -60,6 +62,7 @@ export type FinishOutcome = "defeat" | "victory";
 export type FinishMetadata = Readonly<{
   outcome: FinishOutcome;
   completedWaves: number;
+  heroId: HeroId | null;
 }>;
 export type FinishSubmission = FinalResult & FinishMetadata;
 export type FinishResult = Readonly<{
@@ -370,12 +373,15 @@ export function captureFinishSubmission(
   durationMs: unknown,
   outcome: FinishOutcome,
   completedWaves: unknown,
+  heroId: unknown = null,
 ): FinishSubmission {
   if (outcome !== "defeat" && outcome !== "victory") throw new Error("Invalid finish outcome.");
+  if (heroId !== null && !isHeroId(heroId)) throw new Error("Invalid finish hero.");
   return Object.freeze({
     ...captureFinalResult(score, durationMs),
     outcome,
     completedWaves: normalizeInteger(completedWaves, MAX_SCORE),
+    heroId,
   });
 }
 
@@ -419,6 +425,7 @@ export function createRewardFinisher(
       ...(finishMetadata ? {
         outcome: finishMetadata.outcome,
         completed_waves: finishMetadata.completedWaves,
+        ...(finishMetadata.heroId ? { hero_id: finishMetadata.heroId } : {}),
       } : {}),
     });
     pending = postJson(capturedReward.finishUrl, body, options)
@@ -473,11 +480,12 @@ function readFinishMetadata(value: FinalResult | FinishSubmission): FinishMetada
   if (!("outcome" in value) || !("completedWaves" in value)) return null;
   if (value.outcome !== "defeat" && value.outcome !== "victory") return null;
   if (!Number.isSafeInteger(value.completedWaves) || value.completedWaves < 0 || value.completedWaves > MAX_SCORE) return null;
-  return Object.freeze({ outcome: value.outcome, completedWaves: value.completedWaves });
+  if (!("heroId" in value) || value.heroId !== null && !isHeroId(value.heroId)) return null;
+  return Object.freeze({ outcome: value.outcome, completedWaves: value.completedWaves, heroId: value.heroId });
 }
 
 function hasFinishMetadataFields(value: FinalResult | FinishSubmission): boolean {
-  return "outcome" in value || "completedWaves" in value;
+  return "outcome" in value || "completedWaves" in value || "heroId" in value;
 }
 
 function finishFailure(error: string): FinishResult {

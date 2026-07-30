@@ -1038,6 +1038,7 @@ function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState[
     result.durationMs,
     outcome === "victory" ? "victory" : "defeat",
     completedWaves,
+    summary.heroId,
   ));
   void finishReward();
 }
@@ -1148,6 +1149,7 @@ async function refreshFinishAuthorization(): Promise<boolean> {
       previous.finalResult.durationMs,
       previous.finishMetadata.outcome,
       previous.finishMetadata.completedWaves,
+      previous.finishMetadata.heroId,
     )
     : previous.finalResult);
   return true;
@@ -1253,6 +1255,7 @@ function restorePendingFinish(): boolean {
     terminalResult.durationMs,
     pending.outcome === "victory" ? "victory" : "defeat",
     pending.waves,
+    pending.summary?.heroId ?? null,
   ));
   showResult(
     pending.outcome,

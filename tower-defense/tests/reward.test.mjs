@@ -295,7 +295,7 @@ test("finish retries immutable snake_case data, shares concurrent calls and acce
 
 test("finish posts immutable campaign metadata and returns an applied strict profile", async () => {
   const requests = [];
-  const submission = captureFinishSubmission(72.9, 81_234.9, "victory", 24.9);
+  const submission = captureFinishSubmission(72.9, 81_234.9, "victory", 24.9, "toren");
   const finisher = createRewardFinisher(serverReward(), submission, {
     fetch: async (_url, init) => {
       requests.push(JSON.parse(init.body));
@@ -307,7 +307,7 @@ test("finish posts immutable campaign metadata and returns an applied strict pro
     },
   });
 
-  assert.deepEqual(finisher.finishMetadata, { outcome: "victory", completedWaves: 24 });
+  assert.deepEqual(finisher.finishMetadata, { outcome: "victory", completedWaves: 24, heroId: "toren" });
   const result = await finisher.finish();
   assert.equal(result.ok, true);
   assert.equal(result.profileSync, "applied");
@@ -319,7 +319,15 @@ test("finish posts immutable campaign metadata and returns an applied strict pro
     duration_ms: 81_234,
     outcome: "victory",
     completed_waves: 24,
+    hero_id: "toren",
   }]);
+});
+
+test("finish rejects an unknown hero before sending campaign metadata", () => {
+  assert.throws(
+    () => captureFinishSubmission(72, 81_234, "victory", 24, "unknown"),
+    /Invalid finish hero/,
+  );
 });
 
 test("pending profile sync is explicit, retryable, and may omit a malformed optional snapshot", async () => {
