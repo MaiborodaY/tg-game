@@ -158,7 +158,10 @@ export async function startMiniAppReward(
     });
     const { response, data } = await postJson(TOWER_DEFENSE_START_URL, body, options);
     if (!response.ok) {
-      return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
+      const error = isRecord(data) && data.code === "daily_attempt_limit"
+        ? "daily_attempt_limit"
+        : "http_" + (response.status || 0);
+      return Object.freeze({ ok: false, error });
     }
     const bootstrap = parseMiniAppBootstrapResponse(data);
     const now = readNow(options.now);

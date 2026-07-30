@@ -130,6 +130,13 @@ test("Mini App start rejects mismatched game, finish endpoint, and HTTP failures
   assert.equal((await startMiniAppReward("signed", {
     fetch: async () => response({ ok: false, code: "unauthorized" }, 401),
   })).error, "http_401");
+
+  assert.equal((await startMiniAppReward("signed", {
+    fetch: async () => response({ ok: false, code: "daily_attempt_limit" }, 429),
+  })).error, "daily_attempt_limit");
+  assert.equal((await startMiniAppReward("signed", {
+    fetch: async () => response({ ok: false, code: "other_limit" }, 429),
+  })).error, "http_429");
 });
 
 test("Mini App start forwards only a bounded resume hint and rejects malformed bootstrap metadata", async () => {

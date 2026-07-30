@@ -68,6 +68,14 @@ test("practice exposes content selection while rewarded runs stay pinned", () =>
   assert.match(mainSource, /elements\.gameMenuSession\.hidden = reward\.mode === "server"/);
 });
 
+test("daily attempt exhaustion is explicit and the obsolete practice hint is absent", () => {
+  assert.doesNotMatch(html, /session-choice-hint|Выбор сохраняется для тренировочных запусков/u);
+  assert.doesNotMatch(mainSource, /sessionChoiceHint|session_hint/);
+  assert.match(mainSource, /started\.error === "daily_attempt_limit" \? "daily_attempt_limit" : "miniapp_start_failed"/);
+  assert.match(mainSource, /launchError === "daily_attempt_limit"[\s\S]*daily_attempt_limit_title[\s\S]*daily_attempt_limit_body/);
+  assert.match(mainSource, /launchError === "daily_attempt_limit"[\s\S]*introStart\.disabled = true[\s\S]*daily_attempt_limit_action/);
+});
+
 test("Phaser and the renderer load behind one retry-safe runtime boundary", () => {
   assert.doesNotMatch(mainSource, /^import Phaser from "phaser";/m);
   assert.match(mainSource, /import type \{[\s\S]*TowerDefenseScene[\s\S]*\} from "\.\/rendering\/TowerDefenseScene\.ts";/);

@@ -96,7 +96,7 @@ const leaderboardClient = launchDecision.kind === "miniapp"
   : null;
 let launch = legacyLaunch;
 let miniAppBootstrap: MiniAppBootstrap | null = null;
-let launchError: "invalid_launch" | "miniapp_start_failed" | null = legacyLaunch.rewardError;
+let launchError: "invalid_launch" | "miniapp_start_failed" | "daily_attempt_limit" | null = legacyLaunch.rewardError;
 if (launchDecision.kind === "miniapp") {
   const cachedBootstrap = loadMiniAppBootstrap(session);
   if (cachedBootstrap) {
@@ -111,7 +111,7 @@ if (launchDecision.kind === "miniapp") {
       launch = Object.freeze({ ...legacyLaunch, reward: started.reward, rewardError: null });
       launchError = null;
     } else {
-      launchError = "miniapp_start_failed";
+      launchError = started.error === "daily_attempt_limit" ? "daily_attempt_limit" : "miniapp_start_failed";
     }
   }
 } else if (launchDecision.kind === "error") {
@@ -266,7 +266,6 @@ const elements = {
   levelSelect: select("level-select"),
   modeChoiceLabel: byId("mode-choice-label"),
   modeSelect: select("mode-select"),
-  sessionChoiceHint: byId("session-choice-hint"),
   heroChoiceButton: button("hero-choice-button"),
   heroChoiceEmblem: byId("hero-choice-emblem"),
   heroChoiceLabel: byId("hero-choice-label"),
@@ -1780,7 +1779,6 @@ function syncSessionControls(): void {
   elements.modeSelect.value = selectedSession.mode.id;
   elements.levelChoiceLabel.textContent = text("session_level");
   elements.modeChoiceLabel.textContent = text("session_mode");
-  elements.sessionChoiceHint.textContent = text("session_hint");
   elements.sessionPicker.hidden = selectedSession.locked;
   elements.levelSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
   elements.modeSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
@@ -1825,6 +1823,9 @@ function applyLaunchErrorTranslations(): void {
   if (runtimeLoadFailed) {
     elements.introTitle.textContent = text("launch_error_title");
     elements.introBody.textContent = text("game_load_failed");
+  } else if (launchError === "daily_attempt_limit") {
+    elements.introTitle.textContent = text("daily_attempt_limit_title");
+    elements.introBody.textContent = text("daily_attempt_limit_body");
   } else if (launchError) {
     elements.introTitle.textContent = text("launch_error_title");
     elements.introBody.textContent = text(
@@ -1837,6 +1838,11 @@ function applyLaunchErrorTranslations(): void {
 function syncIntroAction(): void {
   elements.introStart.setAttribute("aria-busy", String(gameStarting));
   elements.introLeaderboard.disabled = gameStarting || sessionSwitching;
+  if (launchError === "daily_attempt_limit") {
+    elements.introStart.disabled = true;
+    elements.introStart.textContent = text("daily_attempt_limit_action");
+    return;
+  }
   if (launchError === "miniapp_start_failed") {
     elements.introStart.disabled = false;
     elements.introStart.textContent = text("miniapp_launch_retry");
