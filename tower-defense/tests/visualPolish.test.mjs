@@ -30,6 +30,17 @@ test("intro attempt status stays truthful across rewarded, practice, error, and 
   assert.doesNotMatch(main, /reward\.runNumber\s*[%+-]/);
 });
 
+test("exhausted attempts expose an accessible inline crystal purchase without crowding 320px screens", () => {
+  assert.match(html, /id="attempt-purchase"[\s\S]*id="attempt-purchase-balance"/);
+  assert.match(html, /id="attempt-purchase-confirmation"[\s\S]*id="attempt-purchase-status"[\s\S]*aria-live="polite"/);
+  assert.match(html, /id="attempt-purchase-cancel"[\s\S]*id="attempt-purchase-confirm"/);
+  assert.match(css, /\.attempt-purchase-actions \{[^}]*grid-template-columns:/s);
+  assert.match(css, /@media \(max-width: 340px\) \{[\s\S]*\.attempt-purchase-actions \{ grid-template-columns: 1fr; \}/);
+  assert.match(main, /attemptPurchaseOffer && !canResetDailyAttempts[\s\S]*daily_attempt_purchase_body/);
+  assert.match(main, /attemptPurchaseState === "loading"[\s\S]*attemptPurchaseConfirm\.disabled/);
+  assert.match(main, /daily_attempt_purchase_insufficient[\s\S]*attemptPurchaseStatus\.className/);
+});
+
 test("every build card exposes a short visible role and keeps the full role for accessibility", () => {
   for (const tower of ["ranger", "frost", "ember", "storm"]) {
     assert.match(html, new RegExp(`data-tower="${tower}"[\\s\\S]*?id="${tower}-role"`));

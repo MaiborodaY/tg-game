@@ -74,16 +74,22 @@ import {
 import {
   captureFinalResult,
   captureFinishSubmission,
+  clearAttemptPurchaseRequestId,
   clearMiniAppReward,
   createRewardFinisher,
+  decideAttemptPurchaseRequestIdLifecycle,
   decideRewardLaunch,
+  executeDailyAttemptLimitPrimaryAction,
+  getOrCreateAttemptPurchaseRequestId,
   loadMiniAppBootstrap,
   parseLaunchParams,
+  purchaseMiniAppDailyAttempts,
   replaceMiniAppBootstrap,
   resetMiniAppDailyAttempts,
   saveMiniAppBootstrap,
   startMiniAppReward,
   type FinalResult,
+  type AttemptPurchaseOffer,
   type MiniAppBootstrap,
   type RewardFinisher,
   type RewardLaunch,
@@ -98,6 +104,8 @@ import type {
 import { setupTelegramBridge } from "./telegram.ts";
 import { TOWER_GUIDE_ENTRIES } from "./towerGuide.ts";
 
+type AttemptPurchaseUiState = "offer" | "confirm" | "loading" | "success" | "insufficient" | "retry";
+
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
@@ -108,6 +116,9 @@ const developmentGrakPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_hero") === "grak";
 const developmentLeaderboardPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_leaderboard") === "1";
+const developmentAttemptPurchasePreview = import.meta.env.DEV
+  ? new URL(window.location.href).searchParams.get("preview_attempt_purchase")
+  : null;
 const developmentResultPreview = import.meta.env.DEV
   ? new URL(window.location.href).searchParams.get("preview_result")
   : null;
@@ -126,15 +137,21 @@ let miniAppBootstrap: MiniAppBootstrap | null = null;
 let launchError: "invalid_launch" | "miniapp_start_failed" | "daily_attempt_limit" | null = legacyLaunch.rewardError;
 let canResetDailyAttempts = false;
 let resettingDailyAttempts = false;
+let attemptPurchaseOffer: AttemptPurchaseOffer | null = null;
+let attemptPurchaseState: AttemptPurchaseUiState = "offer";
+let attemptPurchaseError: string | null = null;
+let attemptPurchaseBalanceCrystals = 0;
 if (launchDecision.kind === "miniapp") {
   const cachedBootstrap = loadMiniAppBootstrap(session);
   if (cachedBootstrap) {
+    clearAttemptPurchaseRequestId(session);
     miniAppBootstrap = cachedBootstrap;
     launch = Object.freeze({ ...legacyLaunch, reward: cachedBootstrap.reward, rewardError: null });
     launchError = null;
   } else {
     const started = await startMiniAppReward(launchDecision.initData);
     if (started.ok) {
+      clearAttemptPurchaseRequestId(session);
       miniAppBootstrap = started.bootstrap;
       saveMiniAppBootstrap(session, started.bootstrap);
       launch = Object.freeze({ ...legacyLaunch, reward: started.reward, rewardError: null });
@@ -142,10 +159,26 @@ if (launchDecision.kind === "miniapp") {
     } else {
       launchError = started.error === "daily_attempt_limit" ? "daily_attempt_limit" : "miniapp_start_failed";
       canResetDailyAttempts = started.canResetAttempts === true;
+      attemptPurchaseOffer = started.attemptPurchase ?? null;
+      attemptPurchaseBalanceCrystals = attemptPurchaseOffer?.balanceCrystals ?? 0;
     }
   }
 } else if (launchDecision.kind === "error") {
   launchError = launchDecision.error;
+}
+if (developmentAttemptPurchasePreview) {
+  const insufficient = developmentAttemptPurchasePreview === "insufficient";
+  launchError = "daily_attempt_limit";
+  canResetDailyAttempts = false;
+  attemptPurchaseOffer = Object.freeze({ attempts: 5, priceCrystals: 5, balanceCrystals: insufficient ? 3 : 27 });
+  attemptPurchaseBalanceCrystals = attemptPurchaseOffer.balanceCrystals;
+  attemptPurchaseState = developmentAttemptPurchasePreview === "confirm"
+    ? "confirm"
+    : developmentAttemptPurchasePreview === "success"
+      ? "success"
+      : insufficient
+        ? "insufficient"
+        : "offer";
 }
 
 const rewardUsedKey = launch.reward.runId ? "td-reward-used-v1:" + launch.reward.runId : null;
@@ -333,6 +366,16 @@ const elements = {
   introAttempts: byId("intro-attempts"),
   introAttemptsLabel: byId("intro-attempts-label"),
   introAttemptsValue: byId("intro-attempts-value"),
+  attemptPurchase: byId("attempt-purchase"),
+  attemptPurchaseSource: byId("attempt-purchase-source"),
+  attemptPurchaseBalance: byId("attempt-purchase-balance"),
+  attemptPurchaseConfirmation: byId("attempt-purchase-confirmation"),
+  attemptPurchaseEyebrow: byId("attempt-purchase-eyebrow"),
+  attemptPurchaseTitle: byId("attempt-purchase-title"),
+  attemptPurchaseCopy: byId("attempt-purchase-copy"),
+  attemptPurchaseStatus: byId("attempt-purchase-status"),
+  attemptPurchaseCancel: button("attempt-purchase-cancel"),
+  attemptPurchaseConfirm: button("attempt-purchase-confirm"),
   introStart: button("intro-start"),
   introLeaderboard: button("intro-leaderboard"),
   introLeaderboardLabel: byId("intro-leaderboard-label"),
@@ -487,7 +530,7 @@ if (!pendingFinishRestored) {
   if (elements.introOverlay.hidden) {
     await mountRestoredGame();
   } else {
-    elements.introStart.focus();
+    (attemptPurchaseState === "offer" ? elements.introStart : elements.attemptPurchaseConfirm).focus();
   }
 }
 
@@ -609,10 +652,19 @@ function bindInteractions(): void {
     option.addEventListener("click", () => chooseHero(option.dataset.heroChoice as HeroId));
   });
   elements.introStart.addEventListener("click", () => {
-    if (launchError === "daily_attempt_limit" && canResetDailyAttempts) void resetAdminDailyAttempts();
+    if (launchError === "daily_attempt_limit") {
+      void executeDailyAttemptLimitPrimaryAction({
+        canResetAttempts: canResetDailyAttempts,
+        hasPurchaseOffer: Boolean(attemptPurchaseOffer),
+        onAdminReset: resetAdminDailyAttempts,
+        onPurchaseOffer: showAttemptPurchaseConfirmation,
+      });
+    }
     else if (launchError === "miniapp_start_failed" || runtimeLoadFailed) reloadPage();
     else void startGameFromIntro();
   });
+  elements.attemptPurchaseCancel.addEventListener("click", hideAttemptPurchaseConfirmation);
+  elements.attemptPurchaseConfirm.addEventListener("click", () => void purchaseDailyAttempts());
   elements.rewardRetry.addEventListener("click", () => {
     if (finishRunReplaced) return;
     finishAuthRefreshAttempted = false;
@@ -639,6 +691,9 @@ function bindInteractions(): void {
     else if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
     else if (!elements.gameMenuRestartConfirm.hidden) hideRestartConfirmation();
     else if (!elements.gameMenuOverlay.hidden) closeGameMenu(true);
+    else if (attemptPurchaseState !== "offer" && attemptPurchaseState !== "loading" && attemptPurchaseState !== "success") {
+      hideAttemptPurchaseConfirmation();
+    }
     else if (!elements.heroPicker.hidden) closeHeroPicker(true);
   });
 }
@@ -1899,6 +1954,100 @@ async function resetAdminDailyAttempts(): Promise<void> {
   syncIntroAction();
 }
 
+function showAttemptPurchaseConfirmation(): void {
+  if (
+    launchError !== "daily_attempt_limit"
+    || !attemptPurchaseOffer
+    || canResetDailyAttempts
+    || attemptPurchaseState === "loading"
+    || attemptPurchaseState === "success"
+  ) return;
+  attemptPurchaseState = "confirm";
+  attemptPurchaseError = null;
+  syncIntroAction();
+  elements.attemptPurchaseConfirm.focus();
+  telegram.haptic("light");
+}
+
+function hideAttemptPurchaseConfirmation(): void {
+  if (attemptPurchaseState === "loading" || attemptPurchaseState === "success") return;
+  attemptPurchaseState = "offer";
+  attemptPurchaseError = null;
+  syncIntroAction();
+  elements.introStart.focus();
+}
+
+async function purchaseDailyAttempts(): Promise<void> {
+  if (
+    !attemptPurchaseOffer
+    || canResetDailyAttempts
+    || launchError !== "daily_attempt_limit"
+    || attemptPurchaseState === "loading"
+    || attemptPurchaseState === "success"
+  ) return;
+
+  attemptPurchaseState = "loading";
+  attemptPurchaseError = null;
+  syncIntroAction();
+
+  if (developmentAttemptPurchasePreview && launchDecision.kind !== "miniapp") {
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
+    attemptPurchaseState = "success";
+    attemptPurchaseBalanceCrystals = Math.max(0, attemptPurchaseBalanceCrystals - attemptPurchaseOffer.priceCrystals);
+    syncIntroAction();
+    telegram.haptic("success");
+    return;
+  }
+
+  if (launchDecision.kind !== "miniapp") {
+    attemptPurchaseState = "retry";
+    attemptPurchaseError = "invalid_purchase_request";
+    syncIntroAction();
+    telegram.haptic("error");
+    return;
+  }
+
+  const requestId = getOrCreateAttemptPurchaseRequestId(session);
+  if (!requestId) {
+    attemptPurchaseState = "retry";
+    attemptPurchaseError = "request_id_unavailable";
+    syncIntroAction();
+    telegram.haptic("error");
+    return;
+  }
+
+  const result = await purchaseMiniAppDailyAttempts(launchDecision.initData, requestId);
+  if (decideAttemptPurchaseRequestIdLifecycle(result) === "clear") {
+    clearAttemptPurchaseRequestId(session);
+  }
+  if (result.ok) {
+    attemptPurchaseBalanceCrystals = result.crystalBalance;
+    attemptPurchaseState = "success";
+    syncIntroAction();
+    telegram.haptic("success");
+    window.setTimeout(reloadPage, 850);
+    return;
+  }
+
+  attemptPurchaseError = result.error;
+  if (result.error === "not_enough_crystals") {
+    if (result.crystalBalance !== undefined) attemptPurchaseBalanceCrystals = result.crystalBalance;
+    attemptPurchaseState = "insufficient";
+  } else if (result.error === "attempts_available") {
+    attemptPurchaseState = "success";
+    window.setTimeout(reloadPage, 650);
+  } else if (result.error === "request_conflict") {
+    // This key belongs to a different purchase context and is safe to replace.
+    attemptPurchaseState = "retry";
+  } else {
+    // Ambiguous failures retain the request id so a retry can never charge twice.
+    attemptPurchaseState = "retry";
+  }
+  syncIntroAction();
+  if (attemptPurchaseState === "insufficient") elements.attemptPurchaseCancel.focus();
+  telegram.haptic(attemptPurchaseState === "success" ? "success" : "error");
+}
+
 function setLocale(value: string): void {
   const selectedLocale = normalizeLocale(value);
   if (!selectedLocale || selectedLocale === locale) return;
@@ -2265,7 +2414,11 @@ function applyLaunchErrorTranslations(): void {
     elements.introBody.textContent = text("game_load_failed");
   } else if (launchError === "daily_attempt_limit") {
     elements.introTitle.textContent = text("daily_attempt_limit_title");
-    elements.introBody.textContent = text("daily_attempt_limit_body");
+    elements.introBody.textContent = text(
+      attemptPurchaseOffer && !canResetDailyAttempts
+        ? "daily_attempt_purchase_body"
+        : "daily_attempt_limit_body",
+    );
   } else if (launchError) {
     elements.introTitle.textContent = text("launch_error_title");
     elements.introBody.textContent = text(
@@ -2293,18 +2446,84 @@ function syncIntroAttemptStatus(): void {
   );
 }
 
+function syncAttemptPurchaseUi(): void {
+  const visible = launchError === "daily_attempt_limit" && Boolean(attemptPurchaseOffer) && !canResetDailyAttempts;
+  const confirmationVisible = visible && attemptPurchaseState !== "offer";
+  elements.attemptPurchase.hidden = !visible;
+  elements.attemptPurchaseConfirmation.hidden = !confirmationVisible;
+  elements.introCard.classList.toggle("is-attempt-purchase-confirming", confirmationVisible);
+  elements.introStart.hidden = confirmationVisible;
+  if (!visible || !attemptPurchaseOffer) return;
+
+  elements.attemptPurchaseSource.textContent = text("daily_attempt_purchase_source");
+  elements.attemptPurchaseBalance.textContent = text("daily_attempt_purchase_balance", {
+    balance: attemptPurchaseBalanceCrystals,
+  });
+  elements.attemptPurchaseEyebrow.textContent = text("daily_attempt_purchase_eyebrow");
+  elements.attemptPurchaseTitle.textContent = text("daily_attempt_purchase_title");
+  elements.attemptPurchaseCopy.textContent = text("daily_attempt_purchase_confirm_copy");
+  elements.attemptPurchaseCancel.textContent = text("daily_attempt_purchase_cancel");
+  elements.attemptPurchaseCancel.disabled = attemptPurchaseState === "loading" || attemptPurchaseState === "success";
+  elements.attemptPurchaseConfirm.disabled = attemptPurchaseState === "loading"
+    || attemptPurchaseState === "success"
+    || (attemptPurchaseState === "insufficient" && attemptPurchaseBalanceCrystals < attemptPurchaseOffer.priceCrystals);
+  elements.attemptPurchaseConfirm.setAttribute("aria-busy", String(attemptPurchaseState === "loading"));
+  elements.attemptPurchaseConfirm.textContent = text(
+    attemptPurchaseState === "loading"
+      ? "daily_attempt_purchase_loading"
+      : attemptPurchaseState === "retry"
+        ? "daily_attempt_purchase_retry_action"
+        : "daily_attempt_purchase_confirm",
+  );
+
+  let statusKey: TranslationKey | null = null;
+  let statusClass = "";
+  if (attemptPurchaseState === "loading") statusKey = "daily_attempt_purchase_loading_detail";
+  if (attemptPurchaseState === "success") {
+    statusKey = attemptPurchaseError === "attempts_available"
+      ? "daily_attempt_purchase_available"
+      : "daily_attempt_purchase_success";
+    statusClass = "is-success";
+  }
+  if (attemptPurchaseState === "insufficient") {
+    statusKey = "daily_attempt_purchase_insufficient";
+    statusClass = "is-error";
+  }
+  if (attemptPurchaseState === "retry") {
+    statusKey = attemptPurchaseError === "purchase_in_progress" || attemptPurchaseError === "profile_sync_pending"
+      ? "daily_attempt_purchase_pending"
+      : "daily_attempt_purchase_retry";
+    statusClass = "is-error";
+  }
+  elements.attemptPurchaseStatus.hidden = statusKey === null;
+  elements.attemptPurchaseStatus.className = `attempt-purchase-status${statusClass ? ` ${statusClass}` : ""}`;
+  elements.attemptPurchaseStatus.textContent = statusKey
+    ? text(statusKey, { balance: attemptPurchaseBalanceCrystals })
+    : "";
+}
+
 function syncIntroAction(): void {
-  elements.introStart.setAttribute("aria-busy", String(gameStarting || resettingDailyAttempts));
+  syncAttemptPurchaseUi();
+  elements.introStart.setAttribute("aria-busy", String(
+    gameStarting || resettingDailyAttempts || attemptPurchaseState === "loading",
+  ));
   elements.introLeaderboard.disabled = gameStarting || sessionSwitching;
   if (launchError === "daily_attempt_limit") {
-    elements.introStart.disabled = !canResetDailyAttempts || resettingDailyAttempts;
-    elements.introStart.textContent = text(
-      canResetDailyAttempts
-        ? (resettingDailyAttempts ? "daily_attempt_resetting" : "daily_attempt_reset_action")
-        : "daily_attempt_limit_action",
-    );
+    if (canResetDailyAttempts) {
+      elements.introStart.disabled = resettingDailyAttempts;
+      elements.introStart.textContent = text(
+        resettingDailyAttempts ? "daily_attempt_resetting" : "daily_attempt_admin_reset_action",
+      );
+    } else if (attemptPurchaseOffer) {
+      elements.introStart.disabled = attemptPurchaseState !== "offer";
+      elements.introStart.textContent = text("daily_attempt_purchase_action");
+    } else {
+      elements.introStart.disabled = true;
+      elements.introStart.textContent = text("daily_attempt_limit_action");
+    }
     return;
   }
+  elements.introStart.hidden = false;
   if (launchError === "miniapp_start_failed") {
     elements.introStart.disabled = false;
     elements.introStart.textContent = text("miniapp_launch_retry");

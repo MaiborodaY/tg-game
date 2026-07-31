@@ -85,8 +85,26 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "daily_attempt_limit_body",
     "daily_attempt_limit_action",
     "daily_attempt_reset_action",
+    "daily_attempt_admin_reset_action",
     "daily_attempt_resetting",
     "daily_attempt_reset_failed",
+    "daily_attempt_purchase_body",
+    "daily_attempt_purchase_action",
+    "daily_attempt_purchase_source",
+    "daily_attempt_purchase_balance",
+    "daily_attempt_purchase_eyebrow",
+    "daily_attempt_purchase_title",
+    "daily_attempt_purchase_confirm_copy",
+    "daily_attempt_purchase_cancel",
+    "daily_attempt_purchase_confirm",
+    "daily_attempt_purchase_loading",
+    "daily_attempt_purchase_loading_detail",
+    "daily_attempt_purchase_success",
+    "daily_attempt_purchase_insufficient",
+    "daily_attempt_purchase_retry",
+    "daily_attempt_purchase_pending",
+    "daily_attempt_purchase_available",
+    "daily_attempt_purchase_retry_action",
   ];
   const params = {
     rank: 2,
@@ -108,6 +126,7 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     total: 25,
     duration: 6,
     effect: "aura +8%",
+    balance: 17,
   };
 
   for (const locale of ["ru", "uk", "en"]) {
@@ -123,6 +142,9 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
   assert.match(tr("en", "game_menu_restart_confirm_copy"), /progress|run/i);
   assert.equal(tr("en", "daily_attempt_limit_body"), "You have used all 5 attempts. Come back tomorrow.");
   assert.equal(tr("en", "daily_attempt_reset_action"), "Reset attempts");
+  assert.match(tr("ru", "daily_attempt_purchase_action"), /5.*5/u);
+  assert.match(tr("uk", "daily_attempt_purchase_insufficient", { balance: 3 }), /5.*3/u);
+  assert.match(tr("en", "daily_attempt_purchase_retry"), /not be charged twice/i);
 });
 
 test("all heroes explain attack, rank-two passive, and ability in every locale", () => {

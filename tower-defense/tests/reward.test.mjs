@@ -4,19 +4,26 @@ import test from "node:test";
 
 import {
   MINIAPP_BOOTSTRAP_SESSION_KEY,
+  MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY,
   MINIAPP_REWARD_SESSION_KEY,
   MINIAPP_REWARD_TTL_MS,
   TOWER_DEFENSE_FINISH_URL,
+  TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL,
   TOWER_DEFENSE_RESET_ATTEMPTS_URL,
   TOWER_DEFENSE_START_URL,
   captureFinalResult,
   captureFinishSubmission,
+  clearAttemptPurchaseRequestId,
   clearMiniAppReward,
   createRewardFinisher,
+  decideAttemptPurchaseRequestIdLifecycle,
   decideRewardLaunch,
+  executeDailyAttemptLimitPrimaryAction,
+  getOrCreateAttemptPurchaseRequestId,
   loadMiniAppBootstrap,
   loadMiniAppReward,
   parseLaunchParams,
+  purchaseMiniAppDailyAttempts,
   replaceMiniAppBootstrap,
   resetMiniAppDailyAttempts,
   saveMiniAppBootstrap,
@@ -148,6 +155,31 @@ test("Mini App start rejects mismatched game, finish endpoint, and HTTP failures
   })).error, "http_429");
 });
 
+test("daily attempt exhaustion accepts only the fixed server purchase offer", async () => {
+  assert.deepEqual(await startMiniAppReward("signed", {
+    fetch: async () => response({
+      ok: false,
+      code: "daily_attempt_limit",
+      attempt_purchase: { attempts: 5, price_crystals: 5, balance_crystals: 17 },
+    }, 429),
+  }), {
+    ok: false,
+    error: "daily_attempt_limit",
+    attemptPurchase: { attempts: 5, priceCrystals: 5, balanceCrystals: 17 },
+  });
+
+  for (const attempt_purchase of [
+    { attempts: 4, price_crystals: 5, balance_crystals: 17 },
+    { attempts: 5, price_crystals: 6, balance_crystals: 17 },
+    { attempts: 5, price_crystals: 5, balance_crystals: -1 },
+    { attempts: 5, price_crystals: 5, balance_crystals: 17, user_id: 42 },
+  ]) {
+    assert.deepEqual(await startMiniAppReward("signed", {
+      fetch: async () => response({ ok: false, code: "daily_attempt_limit", attempt_purchase }, 429),
+    }), { ok: false, error: "daily_attempt_limit" });
+  }
+});
+
 test("admin attempt reset posts only signed initData to the pinned endpoint", async () => {
   const requests = [];
   const result = await resetMiniAppDailyAttempts("query_id=telegram&hash=signed", {
@@ -170,6 +202,134 @@ test("admin attempt reset posts only signed initData to the pinned endpoint", as
   assert.deepEqual(await resetMiniAppDailyAttempts("signed", {
     fetch: async () => response({ ok: true, code: "unexpected" }),
   }), { ok: false, error: "reset_rejected" });
+});
+
+test("attempt purchase sends only auth and one idempotency key to the pinned endpoint", async () => {
+  const requestId = "76c56091-70d2-4c01-9954-75cc58c74d38";
+  const requests = [];
+  const result = await purchaseMiniAppDailyAttempts("query_id=telegram&hash=signed", requestId, {
+    fetch: async (url, init) => {
+      requests.push({ url, init });
+      return response({
+        ok: true,
+        code: "daily_attempts_purchased",
+        purchase_id: "td-attempt-purchase:42:2026-07-31:1",
+        attempts_added: 5,
+        crystals_spent: 5,
+        crystal_balance: 12,
+        duplicate: false,
+      });
+    },
+  });
+
+  assert.deepEqual(result, {
+    ok: true,
+    purchaseId: "td-attempt-purchase:42:2026-07-31:1",
+    attemptsAdded: 5,
+    crystalsSpent: 5,
+    crystalBalance: 12,
+    duplicate: false,
+  });
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL);
+  assert.deepEqual(JSON.parse(requests[0].init.body), {
+    init_data: "query_id=telegram&hash=signed",
+    request_id: requestId,
+  });
+  assert.deepEqual(Object.keys(JSON.parse(requests[0].init.body)).sort(), ["init_data", "request_id"]);
+});
+
+test("attempt purchase separates definitive balance errors from retry-safe ambiguous states", async () => {
+  const requestId = "76c56091-70d2-4c01-9954-75cc58c74d38";
+  assert.deepEqual(await purchaseMiniAppDailyAttempts("signed", requestId, {
+    fetch: async () => response({ ok: false, code: "not_enough_crystals", crystal_balance: 3 }, 409),
+  }), { ok: false, error: "not_enough_crystals", crystalBalance: 3 });
+  for (const code of ["attempts_available", "purchase_in_progress", "profile_sync_pending", "request_conflict"]) {
+    assert.deepEqual(await purchaseMiniAppDailyAttempts("signed", requestId, {
+      fetch: async () => response({ ok: false, code }, 409),
+    }), { ok: false, error: code });
+  }
+  for (const [code, status] of [["invalid_purchase_request", 400], ["purchase_unavailable", 503]]) {
+    assert.deepEqual(await purchaseMiniAppDailyAttempts("signed", requestId, {
+      fetch: async () => response({ ok: false, code }, status),
+    }), { ok: false, error: code });
+  }
+  assert.deepEqual(await purchaseMiniAppDailyAttempts("signed", requestId, {
+    fetch: async () => response({ ok: false, code: "not_found" }, 404),
+  }), { ok: false, error: "http_404" });
+  assert.deepEqual(await purchaseMiniAppDailyAttempts("signed", "not-a-uuid", {
+    fetch: async () => assert.fail("invalid request must not reach fetch"),
+  }), { ok: false, error: "invalid_purchase_request" });
+});
+
+test("attempt purchase request-id lifecycle clears only definitive outcomes", () => {
+  const cases = [
+    [{ ok: true, purchaseId: "purchase-1", attemptsAdded: 5, crystalsSpent: 5, crystalBalance: 12, duplicate: false }, "clear"],
+    [{ ok: false, error: "not_enough_crystals", crystalBalance: 3 }, "clear"],
+    [{ ok: false, error: "attempts_available" }, "clear"],
+    [{ ok: false, error: "request_conflict" }, "clear"],
+    [{ ok: false, error: "invalid_purchase_request" }, "clear"],
+    [{ ok: false, error: "purchase_in_progress" }, "retain"],
+    [{ ok: false, error: "profile_sync_pending" }, "retain"],
+    [{ ok: false, error: "purchase_unavailable" }, "retain"],
+    [{ ok: false, error: "Failed to fetch" }, "retain"],
+    [{ ok: false, error: "http_503" }, "retain"],
+  ];
+
+  for (const [result, expected] of cases) {
+    assert.equal(decideAttemptPurchaseRequestIdLifecycle(result), expected, JSON.stringify(result));
+  }
+});
+
+test("admin reset wins over a simultaneous paid offer without creating a purchase request", async () => {
+  const requestId = "76c56091-70d2-4c01-9954-75cc58c74d38";
+  const storage = memoryStorage();
+  const requests = [];
+  let paidFlowShown = 0;
+
+  const action = await executeDailyAttemptLimitPrimaryAction({
+    canResetAttempts: true,
+    hasPurchaseOffer: true,
+    onAdminReset: async () => {
+      const result = await resetMiniAppDailyAttempts("query_id=telegram&hash=signed", {
+        fetch: async (url, init) => {
+          requests.push({ url, init });
+          return response({ ok: true, code: "daily_attempts_reset" });
+        },
+      });
+      assert.deepEqual(result, { ok: true });
+    },
+    onPurchaseOffer: async () => {
+      paidFlowShown += 1;
+      const purchaseRequestId = getOrCreateAttemptPurchaseRequestId(storage, () => requestId);
+      await purchaseMiniAppDailyAttempts("query_id=telegram&hash=signed", purchaseRequestId, {
+        fetch: async () => assert.fail("paid endpoint must not be called for an administrator"),
+      });
+    },
+  });
+
+  assert.equal(action, "admin_reset");
+  assert.equal(paidFlowShown, 0);
+  assert.equal(storage.getItem(MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY), null);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, TOWER_DEFENSE_RESET_ATTEMPTS_URL);
+});
+
+test("attempt purchase request id survives retries until explicitly cleared", () => {
+  const storage = memoryStorage();
+  const requestId = "76c56091-70d2-4c01-9954-75cc58c74d38";
+  let creates = 0;
+  const create = () => {
+    creates += 1;
+    return requestId;
+  };
+  assert.equal(getOrCreateAttemptPurchaseRequestId(storage, create), requestId);
+  assert.equal(getOrCreateAttemptPurchaseRequestId(storage, create), requestId);
+  assert.equal(creates, 1);
+  assert.equal(storage.getItem(MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY), requestId);
+  clearAttemptPurchaseRequestId(storage);
+  assert.equal(storage.getItem(MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY), null);
+  assert.equal(getOrCreateAttemptPurchaseRequestId(storage, () => "unsafe"), null);
 });
 
 test("Mini App start forwards only a bounded resume hint and rejects malformed bootstrap metadata", async () => {

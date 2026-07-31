@@ -68,16 +68,24 @@ test("practice exposes content selection while rewarded runs stay pinned", () =>
   assert.match(mainSource, /elements\.gameMenuSession\.hidden = reward\.mode === "server"/);
 });
 
-test("daily attempt exhaustion is explicit and the obsolete practice hint is absent", () => {
+test("daily attempt exhaustion keeps admin reset separate from a retry-safe crystal purchase", () => {
   assert.doesNotMatch(html, /session-choice-hint|Выбор сохраняется для тренировочных запусков/u);
   assert.doesNotMatch(mainSource, /sessionChoiceHint|session_hint/);
   assert.match(mainSource, /started\.error === "daily_attempt_limit" \? "daily_attempt_limit" : "miniapp_start_failed"/);
   assert.match(mainSource, /canResetDailyAttempts = started\.canResetAttempts === true/);
+  assert.match(mainSource, /attemptPurchaseOffer = started\.attemptPurchase \?\? null/);
   assert.match(mainSource, /launchError === "daily_attempt_limit"[\s\S]*daily_attempt_limit_title[\s\S]*daily_attempt_limit_body/);
-  assert.match(mainSource, /launchError === "daily_attempt_limit" && canResetDailyAttempts[\s\S]*resetAdminDailyAttempts/);
+  assert.match(mainSource, /executeDailyAttemptLimitPrimaryAction\(\{[\s\S]*canResetAttempts: canResetDailyAttempts[\s\S]*onAdminReset: resetAdminDailyAttempts[\s\S]*onPurchaseOffer: showAttemptPurchaseConfirmation/);
   assert.match(mainSource, /resetMiniAppDailyAttempts\(launchDecision\.initData\)/);
-  assert.match(mainSource, /introStart\.disabled = !canResetDailyAttempts \|\| resettingDailyAttempts/);
-  assert.match(mainSource, /daily_attempt_reset_action[\s\S]*daily_attempt_limit_action/);
+  assert.match(mainSource, /daily_attempt_admin_reset_action/);
+  assert.match(mainSource, /showAttemptPurchaseConfirmation\(\)/);
+  assert.match(mainSource, /getOrCreateAttemptPurchaseRequestId\(session\)/);
+  assert.match(mainSource, /purchaseMiniAppDailyAttempts\(launchDecision\.initData, requestId\)/);
+  assert.match(mainSource, /decideAttemptPurchaseRequestIdLifecycle\(result\) === "clear"[\s\S]*clearAttemptPurchaseRequestId\(session\)/);
+  assert.match(mainSource, /Ambiguous failures retain the request id[\s\S]*attemptPurchaseState = "retry"/);
+  assert.match(mainSource, /attemptPurchaseState === "insufficient"\) elements\.attemptPurchaseCancel\.focus\(\)/);
+  assert.match(mainSource, /preview_attempt_purchase/);
+  assert.doesNotMatch(mainSource, /purchaseMiniAppDailyAttempts\([^)]*price|purchaseMiniAppDailyAttempts\([^)]*attempts/);
 });
 
 test("Phaser and the renderer load behind one retry-safe runtime boundary", () => {

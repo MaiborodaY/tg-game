@@ -20,8 +20,10 @@ const MAX_SCORE = 2_147_483_647;
 export const TOWER_DEFENSE_START_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/start";
 export const TOWER_DEFENSE_FINISH_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/finish";
 export const TOWER_DEFENSE_RESET_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/reset";
+export const TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/purchase";
 export const MINIAPP_BOOTSTRAP_SESSION_KEY = "td-miniapp-bootstrap-v2";
 export const MINIAPP_REWARD_SESSION_KEY = "td-miniapp-reward-v1";
+export const MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY = "td-attempt-purchase-request-v1";
 // The server keeps a run for 120 minutes; the client stops reusing it well before that boundary.
 export const MINIAPP_REWARD_TTL_MS = 90 * 60_000;
 
@@ -102,14 +104,72 @@ export type RewardLaunchDecision = Readonly<
   | { kind: "error"; error: "invalid_launch" }
 >;
 
+export type AttemptPurchaseOffer = Readonly<{
+  attempts: number;
+  priceCrystals: number;
+  balanceCrystals: number;
+}>;
+
 export type MiniAppStartResult = Readonly<
   | { ok: true; reward: ServerRewardLaunch; bootstrap: MiniAppBootstrap }
-  | { ok: false; error: string; canResetAttempts?: true }
+  | { ok: false; error: string; canResetAttempts?: true; attemptPurchase?: AttemptPurchaseOffer }
 >;
 export type DailyAttemptsResetResult = Readonly<
   | { ok: true }
   | { ok: false; error: string }
 >;
+export type DailyAttemptsPurchaseResult = Readonly<
+  | {
+    ok: true;
+    purchaseId: string;
+    attemptsAdded: number;
+    crystalsSpent: number;
+    crystalBalance: number;
+    duplicate: boolean;
+  }
+  | { ok: false; error: string; crystalBalance?: number }
+>;
+
+export type AttemptPurchaseRequestIdLifecycle = "clear" | "retain";
+export type DailyAttemptLimitPrimaryAction = "admin_reset" | "purchase_offer" | "blocked";
+
+export function decideAttemptPurchaseRequestIdLifecycle(
+  result: DailyAttemptsPurchaseResult,
+): AttemptPurchaseRequestIdLifecycle {
+  if (result.ok) return "clear";
+  return ["not_enough_crystals", "attempts_available", "request_conflict", "invalid_purchase_request"].includes(result.error)
+    ? "clear"
+    : "retain";
+}
+
+export function decideDailyAttemptLimitPrimaryAction({
+  canResetAttempts,
+  hasPurchaseOffer,
+}: Readonly<{
+  canResetAttempts: boolean;
+  hasPurchaseOffer: boolean;
+}>): DailyAttemptLimitPrimaryAction {
+  if (canResetAttempts) return "admin_reset";
+  if (hasPurchaseOffer) return "purchase_offer";
+  return "blocked";
+}
+
+export async function executeDailyAttemptLimitPrimaryAction({
+  canResetAttempts,
+  hasPurchaseOffer,
+  onAdminReset,
+  onPurchaseOffer,
+}: Readonly<{
+  canResetAttempts: boolean;
+  hasPurchaseOffer: boolean;
+  onAdminReset: () => void | Promise<void>;
+  onPurchaseOffer: () => void | Promise<void>;
+}>): Promise<DailyAttemptLimitPrimaryAction> {
+  const action = decideDailyAttemptLimitPrimaryAction({ canResetAttempts, hasPurchaseOffer });
+  if (action === "admin_reset") await onAdminReset();
+  if (action === "purchase_offer") await onPurchaseOffer();
+  return action;
+}
 
 type RequestOptions = { fetch?: RewardFetch; timeoutMs?: number };
 export type MiniAppStartOptions = RequestOptions & Readonly<{
@@ -167,10 +227,12 @@ export async function startMiniAppReward(
     const { response, data } = await postJson(TOWER_DEFENSE_START_URL, body, options);
     if (!response.ok) {
       if (isRecord(data) && data.code === "daily_attempt_limit") {
+        const attemptPurchase = parseAttemptPurchaseOffer(data.attempt_purchase);
         return Object.freeze({
           ok: false,
           error: "daily_attempt_limit",
           ...(data.can_reset_attempts === true ? { canResetAttempts: true as const } : {}),
+          ...(attemptPurchase ? { attemptPurchase } : {}),
         });
       }
       return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
@@ -207,6 +269,78 @@ export async function resetMiniAppDailyAttempts(
   } catch (error: unknown) {
     return Object.freeze({ ok: false, error: errorMessage(error) });
   }
+}
+
+export async function purchaseMiniAppDailyAttempts(
+  initData: string,
+  requestId: string,
+  options: RequestOptions = {},
+): Promise<DailyAttemptsPurchaseResult> {
+  const boundedInitData = boundedText(initData, MAX_PAYLOAD_LENGTH);
+  const boundedRequestId = readPurchaseRequestId(requestId);
+  if (!boundedInitData || !boundedRequestId) {
+    return Object.freeze({ ok: false, error: "invalid_purchase_request" });
+  }
+
+  try {
+    const { response, data } = await postJson(
+      TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL,
+      JSON.stringify({ init_data: boundedInitData, request_id: boundedRequestId }),
+      options,
+    );
+    const success = parseAttemptPurchaseSuccess(data);
+    if (response.ok && success) return success;
+    if (isRecord(data)) {
+      const error = boundedUnknownText(data.code, 128);
+      if (error === "not_enough_crystals") {
+        const crystalBalance = nonNegativeInteger(data.crystal_balance);
+        return Object.freeze({
+          ok: false,
+          error,
+          ...(crystalBalance === null ? {} : { crystalBalance }),
+        });
+      }
+      if ([
+        "attempts_available",
+        "purchase_in_progress",
+        "profile_sync_pending",
+        "request_conflict",
+        "invalid_purchase_request",
+        "purchase_unavailable",
+      ].includes(error ?? "")) {
+        return Object.freeze({ ok: false, error: error! });
+      }
+    }
+    return Object.freeze({
+      ok: false,
+      error: response.ok ? "purchase_rejected" : "http_" + (response.status || 0),
+    });
+  } catch (error: unknown) {
+    return Object.freeze({ ok: false, error: errorMessage(error) });
+  }
+}
+
+export function getOrCreateAttemptPurchaseRequestId(
+  storage: RewardSessionStorage | null | undefined,
+  createRequestId: () => string | null = createSecureRequestId,
+): string | null {
+  if (!storage) return null;
+  try {
+    const existing = readPurchaseRequestId(storage.getItem(MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY));
+    if (existing) return existing;
+    const created = readPurchaseRequestId(createRequestId());
+    if (!created) return null;
+    storage.setItem(MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY, created);
+    return created;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAttemptPurchaseRequestId(
+  storage: RewardSessionStorage | null | undefined,
+): void {
+  try { storage?.removeItem(MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY); } catch { /* session storage is optional */ }
 }
 
 export function loadMiniAppBootstrap(
@@ -559,6 +693,39 @@ function parseMiniAppBootstrapResponse(value: unknown): MiniAppBootstrap | null 
   return Object.freeze({ reward, resumed: value.resumed, expiresAt, binding, profile });
 }
 
+function parseAttemptPurchaseOffer(value: unknown): AttemptPurchaseOffer | null {
+  if (!isRecord(value) || !hasExactKeys(value, ["attempts", "price_crystals", "balance_crystals"])) return null;
+  const attempts = positiveInteger(value.attempts);
+  const priceCrystals = positiveInteger(value.price_crystals);
+  const balanceCrystals = nonNegativeInteger(value.balance_crystals);
+  return attempts === 5 && priceCrystals === 5 && balanceCrystals !== null
+    ? Object.freeze({ attempts, priceCrystals, balanceCrystals })
+    : null;
+}
+
+function parseAttemptPurchaseSuccess(value: unknown): DailyAttemptsPurchaseResult | null {
+  if (
+    !isRecord(value)
+    || value.ok !== true
+    || value.code !== "daily_attempts_purchased"
+    || typeof value.duplicate !== "boolean"
+  ) return null;
+  const purchaseId = boundedUnknownText(value.purchase_id, 256);
+  const attemptsAdded = positiveInteger(value.attempts_added);
+  const crystalsSpent = positiveInteger(value.crystals_spent);
+  const crystalBalance = nonNegativeInteger(value.crystal_balance);
+  return purchaseId && attemptsAdded === 5 && crystalsSpent === 5 && crystalBalance !== null
+    ? Object.freeze({
+      ok: true,
+      purchaseId,
+      attemptsAdded,
+      crystalsSpent,
+      crystalBalance,
+      duplicate: value.duplicate,
+    })
+    : null;
+}
+
 function parseMiniAppRewardFields(value: unknown): ServerRewardLaunch | null {
   if (!isRecord(value) || value.ok !== true || value.game_id !== "td") return null;
   const runId = boundedUnknownText(value.run_id, 256);
@@ -655,6 +822,36 @@ function positiveInteger(value: unknown): number | null {
       ? Number(value)
       : Number.NaN;
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function nonNegativeInteger(value: unknown): number | null {
+  const parsed = typeof value === "number"
+    ? value
+    : typeof value === "string" && /^\d+$/.test(value.trim())
+      ? Number(value)
+      : Number.NaN;
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function readPurchaseRequestId(value: unknown): string | null {
+  const candidate = boundedUnknownText(value, 64);
+  return candidate && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate)
+    ? candidate
+    : null;
+}
+
+function createSecureRequestId(): string | null {
+  try {
+    if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
+    if (typeof globalThis.crypto?.getRandomValues !== "function") return null;
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+    bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+    const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  } catch {
+    return null;
+  }
 }
 
 async function postJson(url: string, body: string, options: RequestOptions): Promise<{

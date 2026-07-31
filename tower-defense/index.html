@@ -142,6 +142,22 @@
             </select>
           </label>
         </div>
+        <section id="attempt-purchase" class="attempt-purchase" aria-labelledby="attempt-purchase-source" hidden>
+          <div class="attempt-purchase-summary">
+            <span class="attempt-purchase-crystal" aria-hidden="true"></span>
+            <span><small id="attempt-purchase-source">С баланса World of Life</small><strong id="attempt-purchase-balance">Баланс: 0 кристаллов</strong></span>
+          </div>
+          <div id="attempt-purchase-confirmation" class="attempt-purchase-confirmation" hidden>
+            <small id="attempt-purchase-eyebrow" class="modal-eyebrow">ПОКУПКА ПОПЫТОК</small>
+            <h2 id="attempt-purchase-title">Ещё 5 попыток</h2>
+            <p id="attempt-purchase-copy">Списать 5 кристаллов с баланса World of Life?</p>
+            <p id="attempt-purchase-status" class="attempt-purchase-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+            <div class="attempt-purchase-actions">
+              <button id="attempt-purchase-cancel" class="secondary-action" type="button">Отмена</button>
+              <button id="attempt-purchase-confirm" class="modal-primary" type="button">Получить за 5 кристаллов</button>
+            </div>
+          </div>
+        </section>
         <div id="session-picker" class="session-picker">
           <label class="session-choice session-choice--level">
             <span id="level-choice-label">Уровень</span>
