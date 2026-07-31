@@ -1,3 +1,6 @@
+import { HERO_IDS, isHeroId } from "./game/heroes.ts";
+import type { HeroId } from "./game/types.ts";
+
 const DEFAULT_TIMEOUT_MS = 10_000;
 const MAX_TIMEOUT_MS = 60_000;
 const MAX_INIT_DATA_LENGTH = 32_768;
@@ -16,7 +19,7 @@ const RESPONSE_KEYS = Object.freeze([
   "entries",
   "me",
 ] as const);
-const ENTRY_KEYS = Object.freeze([
+const LEGACY_ENTRY_KEYS = Object.freeze([
   "rank",
   "name",
   "outcome",
@@ -24,6 +27,8 @@ const ENTRY_KEYS = Object.freeze([
   "duration_ms",
   "is_me",
 ] as const);
+const ENTRY_KEYS = Object.freeze([...LEGACY_ENTRY_KEYS, "hero_wins"] as const);
+const HERO_WIN_KEYS = Object.freeze(["hero_id", "completions"] as const);
 
 export const TOWER_DEFENSE_LEADERBOARD_URL =
   "https://work-bot.mr-maybik.workers.dev/api/minigames/td/leaderboard";
@@ -31,12 +36,19 @@ export const LEADERBOARD_CACHE_TTL_MS = 30_000;
 
 export type LeaderboardOutcome = "defeat" | "victory";
 
+export type LeaderboardHeroWin = Readonly<{
+  heroId: HeroId;
+  completions: number;
+}>;
+const EMPTY_HERO_WINS: readonly LeaderboardHeroWin[] = Object.freeze([]);
+
 export type LeaderboardEntry = Readonly<{
   rank: number;
   name: string | null;
   outcome: LeaderboardOutcome;
   completedWaves: number;
   durationMs: number | null;
+  heroWins: readonly LeaderboardHeroWin[];
   isMe: boolean;
 }>;
 
@@ -223,6 +235,7 @@ async function requestLeaderboard(
           init_data: initData,
           level_id: levelId,
           mode_id: "campaign",
+          stats_version: 2,
         }),
         signal: controller.signal,
         cache: "no-store",
@@ -241,19 +254,23 @@ async function requestLeaderboard(
 }
 
 function parseEntry(value: unknown, maxWaves: number, totalPlayers: number): LeaderboardEntry | null {
-  if (!hasExactKeys(value, ENTRY_KEYS)) return null;
+  const hasHeroWins = hasExactKeys(value, ENTRY_KEYS);
+  if (!hasHeroWins && !hasExactKeys(value, LEGACY_ENTRY_KEYS)) return null;
   const rank = readInteger(value.rank, 1, totalPlayers);
   const name = value.name === null ? null : readName(value.name);
   const completedWaves = readInteger(value.completed_waves, 0, maxWaves);
   const durationMs = value.duration_ms === null
     ? null
     : readInteger(value.duration_ms, 0, Number.MAX_SAFE_INTEGER);
+  const heroWins = hasHeroWins ? parseHeroWins(value.hero_wins) : EMPTY_HERO_WINS;
   if (
     rank === null
     || (name === null && value.name !== null)
     || (value.outcome !== "defeat" && value.outcome !== "victory")
     || completedWaves === null
     || durationMs === null && value.duration_ms !== null
+    || heroWins === null
+    || heroWins.length > 0 && (value.outcome !== "victory" || completedWaves !== maxWaves)
     || typeof value.is_me !== "boolean"
   ) return null;
 
@@ -263,8 +280,25 @@ function parseEntry(value: unknown, maxWaves: number, totalPlayers: number): Lea
     outcome: value.outcome,
     completedWaves,
     durationMs,
+    heroWins,
     isMe: value.is_me,
   });
+}
+
+function parseHeroWins(value: unknown): readonly LeaderboardHeroWin[] | null {
+  if (!Array.isArray(value) || value.length > HERO_IDS.length) return null;
+
+  const heroWins: LeaderboardHeroWin[] = [];
+  let previousHeroIndex = -1;
+  for (const candidate of value) {
+    if (!hasExactKeys(candidate, HERO_WIN_KEYS) || !isHeroId(candidate.hero_id)) return null;
+    const heroIndex = HERO_IDS.indexOf(candidate.hero_id);
+    const completions = readInteger(candidate.completions, 1, Number.MAX_SAFE_INTEGER);
+    if (heroIndex <= previousHeroIndex || completions === null) return null;
+    previousHeroIndex = heroIndex;
+    heroWins.push(Object.freeze({ heroId: candidate.hero_id, completions }));
+  }
+  return Object.freeze(heroWins);
 }
 
 function sameEntry(left: LeaderboardEntry, right: LeaderboardEntry): boolean {
@@ -273,7 +307,14 @@ function sameEntry(left: LeaderboardEntry, right: LeaderboardEntry): boolean {
     && left.outcome === right.outcome
     && left.completedWaves === right.completedWaves
     && left.durationMs === right.durationMs
+    && sameHeroWins(left.heroWins, right.heroWins)
     && left.isMe === right.isMe;
+}
+
+function sameHeroWins(left: readonly LeaderboardHeroWin[], right: readonly LeaderboardHeroWin[]): boolean {
+  return left.length === right.length
+    && left.every((heroWin, index) => heroWin.heroId === right[index]?.heroId
+      && heroWin.completions === right[index]?.completions);
 }
 
 function readInitData(value: unknown): string | null {

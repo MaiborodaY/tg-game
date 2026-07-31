@@ -21,9 +21,13 @@ test("leaderboard response is strict, immutable and maps transport fields", () =
       {
         rank: 1,
         name: "Mr.Maybik",
-        outcome: "defeat",
-        completedWaves: 23,
+        outcome: "victory",
+        completedWaves: 24,
         durationMs: 519_000,
+        heroWins: [
+          { heroId: "eira", completions: 2 },
+          { heroId: "grak", completions: 1 },
+        ],
         isMe: true,
       },
       {
@@ -32,22 +36,40 @@ test("leaderboard response is strict, immutable and maps transport fields", () =
         outcome: "defeat",
         completedWaves: 22,
         durationMs: null,
+        heroWins: [],
         isMe: false,
       },
     ],
     me: {
       rank: 1,
       name: "Mr.Maybik",
-      outcome: "defeat",
-      completedWaves: 23,
+      outcome: "victory",
+      completedWaves: 24,
       durationMs: 519_000,
+      heroWins: [
+        { heroId: "eira", completions: 2 },
+        { heroId: "grak", completions: 1 },
+      ],
       isMe: true,
     },
   });
   assert.equal(Object.isFrozen(parsed), true);
   assert.equal(Object.isFrozen(parsed.entries), true);
   assert.equal(Object.isFrozen(parsed.entries[0]), true);
+  assert.equal(Object.isFrozen(parsed.entries[0].heroWins), true);
+  assert.equal(Object.isFrozen(parsed.entries[0].heroWins[0]), true);
   assert.equal(Object.isFrozen(parsed.me), true);
+});
+
+test("leaderboard parser keeps rollout compatibility with legacy entries", () => {
+  const v2 = responseBody();
+  const entries = v2.entries.map(({ hero_wins: _heroWins, ...entry }) => entry);
+  const { hero_wins: _heroWins, ...me } = v2.me;
+  const parsed = parseLeaderboardResponse({ ...v2, entries, me }, "forest-gate");
+
+  assert.deepEqual(parsed?.entries.map((entry) => entry.heroWins), [[], []]);
+  assert.deepEqual(parsed?.me?.heroWins, []);
+  assert.equal(Object.isFrozen(parsed?.entries[0].heroWins), true);
 });
 
 test("leaderboard parser rejects schema drift and inconsistent identity data", () => {
@@ -61,6 +83,15 @@ test("leaderboard parser rejects schema drift and inconsistent identity data", (
     { ...valid, max_waves: 23.5 },
     { ...valid, total_players: 1 },
     { ...valid, entries: [{ ...valid.entries[0], nickname: "duplicate" }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: null }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "mage", completions: 1 }] }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "eira", completions: 0 }] }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "eira", completions: 1.5 }] }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "eira", completions: 1, extra: true }] }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "eira", completions: 1 }, { hero_id: "eira", completions: 2 }] }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "grak", completions: 1 }, { hero_id: "toren", completions: 1 }] }] },
+    { ...valid, entries: [valid.entries[0], { ...valid.entries[1], hero_wins: [{ hero_id: "eira", completions: 1 }] }] },
+    { ...valid, entries: [{ ...valid.entries[0], outcome: "defeat" }, valid.entries[1]] },
     { ...valid, entries: [{ ...valid.entries[0], completed_waves: 25 }] },
     { ...valid, entries: [{ ...valid.entries[0], name: " Mr.Maybik" }] },
     { ...valid, entries: [{ ...valid.entries[0], rank: 2 }, valid.entries[1]], me: null },
@@ -96,6 +127,7 @@ test("client posts pinned campaign request and deduplicates concurrent loads", a
     init_data: "query_id=telegram&hash=signed",
     level_id: "forest-gate",
     mode_id: "campaign",
+    stats_version: 2,
   });
 
   resolveFetch(jsonResponse(responseBody()));
@@ -188,9 +220,13 @@ function responseBody({ levelId = "forest-gate", maxWaves = 24 } = {}) {
   const me = {
     rank: 1,
     name: "Mr.Maybik",
-    outcome: "defeat",
-    completed_waves: Math.min(23, maxWaves),
+    outcome: "victory",
+    completed_waves: maxWaves,
     duration_ms: 519_000,
+    hero_wins: [
+      { hero_id: "eira", completions: 2 },
+      { hero_id: "grak", completions: 1 },
+    ],
     is_me: true,
   };
   return {
@@ -208,6 +244,7 @@ function responseBody({ levelId = "forest-gate", maxWaves = 24 } = {}) {
         outcome: "defeat",
         completed_waves: Math.min(22, maxWaves),
         duration_ms: null,
+        hero_wins: [],
         is_me: false,
       },
     ],

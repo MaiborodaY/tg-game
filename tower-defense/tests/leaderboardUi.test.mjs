@@ -86,6 +86,8 @@ test("leaderboard bottom sheet remains scrollable, focus-visible and touch-safe 
   assert.match(css, /\.leaderboard-panel:focus-visible \{[^}]*outline:\s*2px solid[^}]*outline-offset:\s*3px;/s);
   assert.match(narrowViewport, /\.leaderboard-card \{[^}]*padding-left:\s*13px;[^}]*padding-right:\s*13px;/s);
   assert.match(narrowViewport, /\.leaderboard-entry \{[^}]*grid-template-columns:\s*27px minmax\(0, 1fr\) auto;/s);
+  assert.match(narrowViewport, /\.leaderboard-entry\.has-hero-wins \{[^}]*grid-template-columns:\s*27px minmax\(72px, 1fr\) auto auto;[^}]*gap:\s*4px;/s);
+  assert.match(narrowViewport, /\.leaderboard-hero-medal \{[^}]*width:\s*24px;/s);
   assert.match(css, /\.leaderboard-copy strong \{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s);
 });
 
@@ -109,11 +111,12 @@ test("leaderboard copy is complete in every locale and resolves placeholders", (
     "leaderboard_time_unknown",
     "leaderboard_player_unknown",
     "leaderboard_players",
+    "leaderboard_hero_completions",
   ];
 
   for (const locale of ["ru", "uk", "en"]) {
     for (const key of keys) {
-      const value = tr(locale, key, { count: 24 });
+      const value = tr(locale, key, { count: 24, hero: "Eira" });
       assert.ok(value.trim().length >= 2, `${locale}.${key} must not be empty`);
       assert.doesNotMatch(value, /\{[a-zA-Z0-9_]+\}/, `${locale}.${key} has an unresolved placeholder`);
     }
@@ -122,6 +125,28 @@ test("leaderboard copy is complete in every locale and resolves placeholders", (
   assert.match(tr("ru", "leaderboard_summary", { count: 24 }), /24/);
   assert.match(tr("uk", "leaderboard_players", { count: 12 }), /12/);
   assert.match(tr("en", "leaderboard_time_unknown"), /time/i);
+  assert.match(tr("ru", "leaderboard_hero_completions", { hero: "Эйра", count: 2 }), /Эйра[\s\S]*2/);
+});
+
+test("full clears render compact localized hero medals with real portraits", () => {
+  assert.match(leaderboardFunctions, /const isComplete = entry\.outcome === "victory" && entry\.completedWaves === maxWaves/);
+  assert.match(leaderboardFunctions, /const hasHeroWins = isComplete && entry\.heroWins\.length > 0/);
+  assert.match(leaderboardFunctions, /is-complete/);
+  assert.match(leaderboardFunctions, /has-hero-wins/);
+  assert.match(leaderboardFunctions, /if \(hasHeroWins\) row\.append\(createLeaderboardHeroWins\(entry\.heroWins\)\)/);
+  assert.match(leaderboardFunctions, /text\("leaderboard_hero_completions"/);
+  assert.match(leaderboardFunctions, /text\(`hero_\$\{heroWin\.heroId\}`\)/);
+  assert.match(leaderboardFunctions, /medal\.setAttribute\("role", "img"\)/);
+  assert.match(leaderboardFunctions, /medal\.setAttribute\("aria-label", label\)/);
+  assert.match(leaderboardFunctions, /medal\.title = label/);
+  assert.match(leaderboardFunctions, /portrait\.src = HERO_PORTRAIT_URLS\[heroWin\.heroId\]/);
+  assert.match(leaderboardFunctions, /portrait\.alt = ""/);
+  assert.match(leaderboardFunctions, /count\.textContent = `×\$\{heroWin\.completions\}`/);
+  assert.match(css, /\.leaderboard-entry\.is-complete:not\(\.is-me\)/);
+  assert.match(css, /\.leaderboard-entry\.is-me/);
+  assert.match(css, /\.leaderboard-hero-medal img \{[^}]*border-radius:\s*50%;[^}]*object-fit:\s*cover;/s);
+  assert.match(mainSource, /heroWins: Object\.freeze\(\[\{ heroId: "eira", completions: 1 \}\]\)/);
+  assert.match(mainSource, /heroWins: Object\.freeze\(\[\{ heroId: "eira", completions: 2 \}, \{ heroId: "grak", completions: 1 \}\]\)/);
 });
 
 test("nullable player names stay valid and render through localized safe text", () => {
@@ -138,6 +163,7 @@ test("nullable player names stay valid and render through localized safe text", 
       outcome: "victory",
       completed_waves: 24,
       duration_ms: null,
+      hero_wins: [{ hero_id: "eira", completions: 2 }],
       is_me: true,
     }],
     me: {
@@ -146,6 +172,7 @@ test("nullable player names stay valid and render through localized safe text", 
       outcome: "victory",
       completed_waves: 24,
       duration_ms: null,
+      hero_wins: [{ hero_id: "eira", completions: 2 }],
       is_me: true,
     },
   };

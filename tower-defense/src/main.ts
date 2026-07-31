@@ -1546,7 +1546,9 @@ function finishLeaderboardStatus(requestId: number, key: TranslationKey, canRetr
 
 function createLeaderboardRow(entry: LeaderboardEntry, maxWaves: number, listItem: boolean): HTMLElement {
   const row = document.createElement(listItem ? "li" : "div");
-  row.className = `leaderboard-entry${entry.isMe ? " is-me" : ""}`;
+  const isComplete = entry.outcome === "victory" && entry.completedWaves === maxWaves;
+  const hasHeroWins = isComplete && entry.heroWins.length > 0;
+  row.className = `leaderboard-entry${isComplete ? " is-complete" : ""}${hasHeroWins ? " has-hero-wins" : ""}${entry.isMe ? " is-me" : ""}`;
   if (row instanceof HTMLLIElement) row.value = entry.rank;
 
   const rank = document.createElement("span");
@@ -1569,8 +1571,37 @@ function createLeaderboardRow(entry: LeaderboardEntry, maxWaves: number, listIte
   const unit = document.createElement("small");
   unit.textContent = text("leaderboard_waves");
   result.append(waves, unit);
-  row.append(rank, copy, result);
+  row.append(rank, copy);
+  if (hasHeroWins) row.append(createLeaderboardHeroWins(entry.heroWins));
+  row.append(result);
   return row;
+}
+
+function createLeaderboardHeroWins(heroWins: LeaderboardEntry["heroWins"]): HTMLElement {
+  const cluster = document.createElement("span");
+  cluster.className = "leaderboard-hero-wins";
+  for (const heroWin of heroWins) {
+    const label = text("leaderboard_hero_completions", {
+      hero: text(`hero_${heroWin.heroId}`),
+      count: heroWin.completions,
+    });
+    const medal = document.createElement("span");
+    medal.className = `leaderboard-hero-medal ${heroWin.heroId}`;
+    medal.setAttribute("role", "img");
+    medal.setAttribute("aria-label", label);
+    medal.title = label;
+
+    const portrait = document.createElement("img");
+    portrait.src = HERO_PORTRAIT_URLS[heroWin.heroId];
+    portrait.alt = "";
+    portrait.loading = "lazy";
+    portrait.decoding = "async";
+    const count = document.createElement("small");
+    count.textContent = `×${heroWin.completions}`;
+    medal.append(portrait, count);
+    cluster.append(medal);
+  }
+  return cluster;
 }
 
 function formatLeaderboardDuration(durationMs: number | null): string {
@@ -1597,11 +1628,11 @@ function isLeaderboardLevel(value: string): value is typeof CLASSIC_CAMPAIGN_LEV
 function createDevelopmentLeaderboard(levelId: string): TowerDefenseLeaderboard {
   const maxWaves = CONTENT_CATALOG.levels[levelId].waves.finalWave;
   const values: readonly LeaderboardEntry[] = [
-    { rank: 1, name: "Astralglow", outcome: "victory", completedWaves: maxWaves, durationMs: 381_000, isMe: false },
-    { rank: 2, name: "JOKER", outcome: "victory", completedWaves: maxWaves, durationMs: 432_000, isMe: false },
-    { rank: 3, name: "Єнотенко", outcome: "defeat", completedWaves: maxWaves - 1, durationMs: 449_000, isMe: false },
-    { rank: 4, name: null, outcome: "defeat", completedWaves: maxWaves - 2, durationMs: null, isMe: false },
-    { rank: 5, name: "GTR_730", outcome: "defeat", completedWaves: maxWaves - 2, durationMs: 487_000, isMe: false },
+    { rank: 1, name: "Astralglow", outcome: "victory", completedWaves: maxWaves, durationMs: 381_000, heroWins: Object.freeze([{ heroId: "eira", completions: 1 }]), isMe: false },
+    { rank: 2, name: "JOKER", outcome: "victory", completedWaves: maxWaves, durationMs: 432_000, heroWins: Object.freeze([{ heroId: "eira", completions: 2 }, { heroId: "grak", completions: 1 }]), isMe: false },
+    { rank: 3, name: "Єнотенко", outcome: "defeat", completedWaves: maxWaves - 1, durationMs: 449_000, heroWins: Object.freeze([]), isMe: false },
+    { rank: 4, name: null, outcome: "defeat", completedWaves: maxWaves - 2, durationMs: null, heroWins: Object.freeze([]), isMe: false },
+    { rank: 5, name: "GTR_730", outcome: "defeat", completedWaves: maxWaves - 2, durationMs: 487_000, heroWins: Object.freeze([]), isMe: false },
   ];
   const me: LeaderboardEntry = {
     rank: 17,
@@ -1609,6 +1640,7 @@ function createDevelopmentLeaderboard(levelId: string): TowerDefenseLeaderboard 
     outcome: "defeat",
     completedWaves: Math.max(1, maxWaves - 3),
     durationMs: 519_000,
+    heroWins: Object.freeze([]),
     isMe: true,
   };
   return Object.freeze({

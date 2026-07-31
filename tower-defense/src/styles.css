@@ -1294,6 +1294,11 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   border-radius: 13px;
   background: linear-gradient(145deg, rgba(30, 65, 56, 0.9), rgba(15, 40, 35, 0.9));
 }
+.leaderboard-entry.has-hero-wins { grid-template-columns: 30px minmax(0, 1fr) auto auto; }
+.leaderboard-entry.is-complete:not(.is-me) {
+  border-color: rgba(239, 198, 102, 0.28);
+  box-shadow: inset 3px 0 rgba(239, 198, 102, 0.4);
+}
 .leaderboard-entry.is-me { border-color: rgba(239, 198, 102, 0.48); background: linear-gradient(145deg, rgba(76, 67, 38, 0.86), rgba(30, 49, 38, 0.94)); }
 .leaderboard-rank { color: #efcc76; font: 800 16px/1 Georgia, serif; text-align: center; }
 .leaderboard-copy { min-width: 0; display: grid; gap: 3px; }
@@ -1302,6 +1307,23 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .leaderboard-result { display: grid; justify-items: end; gap: 2px; }
 .leaderboard-result strong { color: #aaf0d0; font-size: 13px; }
 .leaderboard-result small { color: #789687; font-size: 8px; }
+.leaderboard-hero-wins { min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+.leaderboard-hero-medal {
+  width: 28px;
+  padding: 2px 2px 3px;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  border: 1px solid rgba(239, 198, 102, 0.25);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(54, 82, 62, 0.96), rgba(20, 43, 37, 0.96));
+  box-shadow: 0 3px 8px rgba(2, 13, 10, 0.2);
+}
+.leaderboard-hero-medal img { width: 22px; height: 22px; display: block; border: 1px solid rgba(239, 218, 157, 0.55); border-radius: 50%; object-fit: cover; }
+.leaderboard-hero-medal.eira img { object-position: 50% 24%; }
+.leaderboard-hero-medal.toren img { object-position: 50% 22%; }
+.leaderboard-hero-medal.grak img { object-position: 50% 20%; }
+.leaderboard-hero-medal small { color: #f1d58e; font-size: 7px; font-weight: 900; line-height: 1; }
 .leaderboard-self { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(145, 203, 169, 0.14); }
 .leaderboard-self > small { display: block; margin: 0 0 6px 3px; color: #efcc76; font-size: 8px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
 .leaderboard-panel > .secondary-action { min-height: 44px; margin-top: 10px; }
@@ -1400,7 +1422,11 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   .guide-card { padding-left: 14px; padding-right: 14px; }
   .leaderboard-card { padding-left: 13px; padding-right: 13px; }
   .leaderboard-entry { grid-template-columns: 27px minmax(0, 1fr) auto; gap: 6px; padding-left: 7px; padding-right: 7px; }
+  .leaderboard-entry.has-hero-wins { grid-template-columns: 27px minmax(72px, 1fr) auto auto; gap: 4px; }
   .leaderboard-copy strong { font-size: 10px; }
+  .leaderboard-hero-wins { gap: 1px; }
+  .leaderboard-hero-medal { width: 24px; padding-left: 1px; padding-right: 1px; }
+  .leaderboard-hero-medal img { width: 19px; height: 19px; }
   .hero-options { display: flex; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; scrollbar-width: thin; }
   .hero-option { flex: 0 0 118px; min-height: 168px; scroll-snap-align: start; }
 }
