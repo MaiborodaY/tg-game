@@ -17,6 +17,16 @@ assert.ok(!/(?:src|href)=["']\/assets\//i.test(html), "Production assets must us
 assert.ok(html.includes('id="intro-overlay"'), "Production HTML is missing the Tower Defense intro");
 assert.ok(!html.includes('id="game-choice-overlay"'), "Production HTML still contains the removed game chooser");
 assert.ok(!html.includes('id="choose-bridge"'), "Production HTML still contains a Bridge launch action");
+assert.match(
+  html,
+  /<div id="session-picker"[^>]*\bhidden\b/,
+  "Production session picker must stay hidden until the release policy initializes",
+);
+assert.match(
+  html,
+  /<button id="leaderboard-tab-northern-pass"[^>]*\bhidden\b/,
+  "Production Northern Pass leaderboard tab must be hidden by default",
+);
 
 const localReferences = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/gi)]
   .map((match) => match[1])

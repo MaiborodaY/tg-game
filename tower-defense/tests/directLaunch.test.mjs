@@ -4,6 +4,7 @@ import test from "node:test";
 
 const html = readFileSync(new globalThis.URL("../index.html", import.meta.url), "utf8");
 const mainSource = readFileSync(new globalThis.URL("../src/main.ts", import.meta.url), "utf8");
+const css = readFileSync(new globalThis.URL("../src/styles.css", import.meta.url), "utf8");
 const viteConfig = readFileSync(new globalThis.URL("../vite.config.ts", import.meta.url), "utf8");
 const pagesHeaders = readFileSync(new globalThis.URL("../../public/_headers", import.meta.url), "utf8");
 const renderUiSource = mainSource.slice(
@@ -54,16 +55,27 @@ test("fullscreen control follows Telegram support and confirmed state", () => {
   assert.match(mainSource, /function applyStaticTranslations\(\): void \{[\s\S]*syncFullscreenUi\(telegram\.isFullscreen\);/);
 });
 
-test("practice exposes content selection while rewarded runs stay pinned", () => {
-  assert.match(html, /id="session-picker"/);
+test("only local development practice exposes preview content while production stays fail-closed", () => {
+  assert.match(html, /id="session-picker" class="session-picker" hidden/);
+  assert.match(css, /\.session-picker\[hidden\] \{ display: none; \}/);
   assert.match(html, /id="level-select"/);
   assert.match(html, /id="mode-select"/);
+  assert.match(mainSource, /shouldExposePreviewContent\(import\.meta\.env\.DEV, launchDecision\.kind\)/);
   assert.match(mainSource, /resolveServerSessionSelection\(miniAppBootstrap\.binding\)/);
   assert.match(mainSource, /resolveSessionSelection\("server", null\)/);
   assert.match(mainSource, /readSessionSelection\(storage, "local"\)/);
+  assert.match(mainSource, /cachedBootstrap && !isClientLevelReleased\(cachedBootstrap\.binding\.levelId, previewContentEnabled\)/);
+  assert.match(mainSource, /cachedBootstrap && !isClientLevelReleased[\s\S]*clearMiniAppReward\(session\);[\s\S]*cachedBootstrap = null;[\s\S]*if \(cachedBootstrap\)/);
+  assert.match(mainSource, /activeRun && !isClientLevelReleased\(activeRun\.binding\.levelId, previewContentEnabled\)/);
+  assert.match(mainSource, /normalizeClientLevelId\(selectedSession\.level\.id, previewContentEnabled\)/);
+  assert.match(mainSource, /clientSelectionWasUnreleased[\s\S]*writeSessionSelection\(storage, selectedSession\.selection\)/);
   assert.match(mainSource, /loadCampaign\(storage, saveKey, selectedSession\.selection\)/);
-  assert.match(mainSource, /elements\.sessionPicker\.hidden = selectedSession\.locked/);
+  assert.match(mainSource, /visibleLevels = Object\.values\(CONTENT_CATALOG\.levels\)\.filter/);
+  assert.match(mainSource, /elements\.sessionPicker\.hidden = Boolean\(launchError\) \|\| selectedSession\.locked/);
   assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching \|\| gameStarting\) return/);
+  assert.match(mainSource, /if \(!isClientLevelReleased\(levelId, previewContentEnabled\)\) \{\s*syncSessionControls\(\);\s*return;/);
+  assert.match(mainSource, /async function createSelectedMiniAppRun[\s\S]*!isClientLevelReleased\(selectedSession\.level\.id, previewContentEnabled\)/);
+  assert.match(mainSource, /!isClientLevelReleased\(started\.bootstrap\.binding\.levelId, previewContentEnabled\)/);
   assert.match(mainSource, /elements\.gameMenuSession\.addEventListener\("click", \(\) => \{[\s\S]*openSessionMenu\(\);/);
   assert.match(mainSource, /elements\.gameMenuSession\.hidden = reward\.mode === "server"/);
 });

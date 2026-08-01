@@ -34,6 +34,11 @@ import {
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { isHeroUnlocked } from "./game/heroAvailability.ts";
 import { isSessionAvailable } from "./game/progression.ts";
+import {
+  isClientLevelReleased,
+  normalizeClientLevelId,
+  shouldExposePreviewContent,
+} from "./game/releasePolicy.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
 import {
   aggregateWaveEnemies,
@@ -136,6 +141,7 @@ if (pendingStartButton instanceof HTMLButtonElement) pendingStartButton.disabled
 
 const launchDecision = decideRewardLaunch(legacyLaunch, telegram.initData);
 const isMiniAppLaunch = launchDecision.kind === "miniapp";
+const previewContentEnabled = shouldExposePreviewContent(import.meta.env.DEV, launchDecision.kind);
 const leaderboardClient = launchDecision.kind === "miniapp"
   ? safelyCreateLeaderboardClient(launchDecision.initData)
   : null;
@@ -155,6 +161,12 @@ if (launchDecision.kind === "miniapp") {
     clearMiniAppReward(session);
     cachedBootstrap = null;
   }
+  if (cachedBootstrap && !isClientLevelReleased(cachedBootstrap.binding.levelId, previewContentEnabled)) {
+    // A previously released preview must not trap the player on a permanent
+    // launch error after the binding is withdrawn from production.
+    clearMiniAppReward(session);
+    cachedBootstrap = null;
+  }
   if (cachedBootstrap) {
     clearAttemptPurchaseRequestId(session);
     miniAppBootstrap = cachedBootstrap;
@@ -165,7 +177,9 @@ if (launchDecision.kind === "miniapp") {
     if (profiled.ok) {
       miniAppProfileBootstrap = profiled.bootstrap;
       const activeRun = profiled.bootstrap.activeRun;
-      if (activeRun) {
+      if (activeRun && !isClientLevelReleased(activeRun.binding.levelId, previewContentEnabled)) {
+        launchError = "miniapp_start_failed";
+      } else if (activeRun) {
         const started = await startMiniAppReward(launchDecision.initData, {
           resumeRunId: activeRun.runId,
           selection: {
@@ -174,7 +188,7 @@ if (launchDecision.kind === "miniapp") {
             heroId: activeRun.heroId,
           },
         });
-        if (started.ok) {
+        if (started.ok && isClientLevelReleased(started.bootstrap.binding.levelId, previewContentEnabled)) {
           clearAttemptPurchaseRequestId(session);
           miniAppBootstrap = started.bootstrap;
           saveMiniAppBootstrap(session, started.bootstrap);
@@ -222,14 +236,18 @@ let selectedSession = miniAppBootstrap && reward.mode === "server"
     : readSessionSelection(storage, "local");
 const awaitingMiniAppStart = isMiniAppLaunch && !miniAppBootstrap;
 const launchProfile = miniAppBootstrap?.profile ?? miniAppProfileBootstrap?.profile ?? null;
-if (
+const normalizedClientLevelId = normalizeClientLevelId(selectedSession.level.id, previewContentEnabled);
+const clientSelectionWasUnreleased = !selectedSession.locked
+  && normalizedClientLevelId !== selectedSession.level.id;
+if (clientSelectionWasUnreleased || (
   awaitingMiniAppStart
   && !isSessionAvailable(selectedSession.level.id, selectedSession.mode.id, launchProfile)
-) {
+)) {
   selectedSession = resolveSessionSelection("local", {
-    levelId: CLASSIC_CAMPAIGN_LEVEL_ID,
+    levelId: normalizedClientLevelId,
     modeId: CAMPAIGN_MODE_ID,
   });
+  if (clientSelectionWasUnreleased) writeSessionSelection(storage, selectedSession.selection);
 }
 let saveKey = getCampaignSaveKey(
   reward.mode === "server" ? reward.runId : null,
@@ -861,6 +879,10 @@ async function startGameFromIntro(): Promise<void> {
 
 async function createSelectedMiniAppRun(): Promise<boolean> {
   if (launchDecision.kind !== "miniapp") return true;
+  if (!isClientLevelReleased(selectedSession.level.id, previewContentEnabled)) {
+    showToast(text("miniapp_launch_error_body"), true);
+    return false;
+  }
   if (!isSessionAvailable(selectedSession.level.id, selectedSession.mode.id, playerProfile)) {
     showToast(text("mode_endless_locked"), true);
     return false;
@@ -887,6 +909,10 @@ async function createSelectedMiniAppRun(): Promise<boolean> {
     } else {
       showToast(text(started.error === "mode_locked" ? "mode_endless_locked" : "miniapp_launch_error_body"), true);
     }
+    return false;
+  }
+  if (!isClientLevelReleased(started.bootstrap.binding.levelId, previewContentEnabled)) {
+    showToast(text("miniapp_launch_error_body"), true);
     return false;
   }
   if (started.bootstrap.runContractVersion !== 3) {
@@ -1796,6 +1822,10 @@ function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
 
 async function switchPracticeSession(levelId: string, modeId: string): Promise<void> {
   if (reward.mode === "server" || elements.introOverlay.hidden || sessionSwitching || gameStarting) return;
+  if (!isClientLevelReleased(levelId, previewContentEnabled)) {
+    syncSessionControls();
+    return;
+  }
   const selectableModeId = isSelectableSession(levelId, modeId) ? modeId : CAMPAIGN_MODE_ID;
   const next = resolveSessionSelection("local", { levelId, modeId: selectableModeId });
   if (
@@ -1897,6 +1927,7 @@ function openLeaderboard(origin: "intro" | "menu" | "result"): void {
       ? elements.introLeaderboard
       : origin === "menu" ? elements.gameMenuLeaderboard : elements.resultLeaderboard;
   leaderboardLevelId = isLeaderboardLevel(selectedSession.level.id)
+    && isClientLevelReleased(selectedSession.level.id, previewContentEnabled)
     ? selectedSession.level.id
     : CLASSIC_CAMPAIGN_LEVEL_ID;
   leaderboardModeId = selectedSession.mode.id === ENDLESS_MODE_ID ? ENDLESS_MODE_ID : CAMPAIGN_MODE_ID;
@@ -1953,7 +1984,12 @@ function closeLeaderboard(): void {
 }
 
 function selectLeaderboardLevel(rawLevelId: string | undefined): void {
-  if (!rawLevelId || !isLeaderboardLevel(rawLevelId) || rawLevelId === leaderboardLevelId) return;
+  if (
+    !rawLevelId
+    || !isLeaderboardLevel(rawLevelId)
+    || !isClientLevelReleased(rawLevelId, previewContentEnabled)
+    || rawLevelId === leaderboardLevelId
+  ) return;
   leaderboardLevelId = rawLevelId;
   if (leaderboardLevelId !== CLASSIC_CAMPAIGN_LEVEL_ID) leaderboardModeId = CAMPAIGN_MODE_ID;
   renderedLeaderboard = null;
@@ -1979,8 +2015,10 @@ function syncLeaderboardTabs(): void {
   const level = CONTENT_CATALOG.levels[leaderboardLevelId];
   elements.leaderboardTabButtons.forEach((control) => {
     const selected = control.dataset.leaderboardLevel === leaderboardLevelId;
-    const unavailable = leaderboardModeId === ENDLESS_MODE_ID
-      && control.dataset.leaderboardLevel !== CLASSIC_CAMPAIGN_LEVEL_ID;
+    const levelId = control.dataset.leaderboardLevel;
+    const unavailable = !levelId
+      || !isClientLevelReleased(levelId, previewContentEnabled)
+      || (leaderboardModeId === ENDLESS_MODE_ID && levelId !== CLASSIC_CAMPAIGN_LEVEL_ID);
     control.hidden = unavailable;
     control.disabled = unavailable;
     control.setAttribute("aria-selected", String(selected));
@@ -2945,7 +2983,10 @@ function syncHeroPortrait(container: HTMLElement, heroId: HeroId): void {
 }
 
 function syncSessionControls(): void {
-  elements.levelSelect.replaceChildren(...Object.values(CONTENT_CATALOG.levels).map((level) => {
+  const visibleLevels = Object.values(CONTENT_CATALOG.levels).filter((level) => (
+    isClientLevelReleased(level.id, previewContentEnabled)
+  ));
+  elements.levelSelect.replaceChildren(...visibleLevels.map((level) => {
     const option = document.createElement("option");
     option.value = level.id;
     option.textContent = text(level.displayNameKey);
@@ -2971,7 +3012,7 @@ function syncSessionControls(): void {
   );
   elements.modeUnlockHint.hidden = !endlessLocked || selectedSession.locked;
   elements.modeUnlockHint.textContent = text("mode_endless_locked");
-  elements.sessionPicker.hidden = selectedSession.locked;
+  elements.sessionPicker.hidden = Boolean(launchError) || selectedSession.locked;
   elements.levelSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
   elements.modeSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
   const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
@@ -2982,6 +3023,7 @@ function syncSessionControls(): void {
 }
 
 function isSelectableSession(levelId: string, modeId: string): boolean {
+  if (!isClientLevelReleased(levelId, previewContentEnabled)) return false;
   if (isMiniAppLaunch) return isSessionAvailable(levelId, modeId, playerProfile);
   return modeId === CAMPAIGN_MODE_ID
     || (modeId === ENDLESS_MODE_ID && levelId === CLASSIC_CAMPAIGN_LEVEL_ID);

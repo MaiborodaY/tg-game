@@ -69,6 +69,16 @@ test("leaderboard dialog, tabs and live states expose accessible semantics", () 
   assert.match(mainSource, /leaderboardPanel\.setAttribute\([\s\S]*"aria-labelledby",[\s\S]*selectedLevelControl\.id[\s\S]*selectedModeControl\.id/);
 });
 
+test("leaderboard keeps Northern Pass hidden until the client release gate opens it", () => {
+  const northernPassTab = openingTagById(html, "leaderboard-tab-northern-pass");
+
+  assert.match(northernPassTab, /\shidden(?:\s|>)/);
+  assert.match(leaderboardFunctions, /isClientLevelReleased\(selectedSession\.level\.id, previewContentEnabled\)/);
+  assert.match(leaderboardFunctions, /!isClientLevelReleased\(rawLevelId, previewContentEnabled\)/);
+  assert.match(leaderboardFunctions, /!isClientLevelReleased\(levelId, previewContentEnabled\)/);
+  assert.match(mainSource, /availableControls = elements\.leaderboardTabButtons\.filter\(\(control\) => !control\.hidden && !control\.disabled\)/);
+});
+
 test("leaderboard bottom sheet remains scrollable, focus-visible and touch-safe on mobile", () => {
   const overlayTag = openingTagById(html, "leaderboard-overlay");
   const layer = css.match(/\.leaderboard-layer \{([^}]*)\}/s)?.[1] ?? "";
