@@ -39,7 +39,7 @@ content catalog + saved RunState
 - `main.ts` owns DOM presentation and adapters to Telegram/reward APIs. A server
   reward launch uses the validated content binding returned by `/start`;
   practice choices cannot alter that run. The backend currently binds rewarded
-  runs to `forest-gate/campaign`.
+  runs to the released `forest-gate/campaign` and `forest-gate/endless` modes.
 
 ## State ownership
 
@@ -139,6 +139,6 @@ For a new hero:
 - Phaser is emitted as a stable lazy vendor chunk. Fingerprinted files under
   `/td/assets/` use a one-year immutable browser cache, while `/td/` HTML must
   remain revalidated so it can point at new hashes.
-- The headless 36-wave endless soak guards against stalled progression and
+- The headless 36-wave `forest-gate` endless soak guards against stalled progression and
   unbounded enemy growth. Device profiling is still required before raising
   simultaneous enemy counts or adding expensive shaders/particles.

@@ -114,11 +114,17 @@ test("endless ruleset cycles level content with deterministic bounded escalation
     (total, spawn) => total + spawn.maxHp * (1 + spawn.shieldRatio),
     0,
   );
+  const totalReward = (plan) => plan.clearBonus + plan.spawns.reduce(
+    (total, spawn) => total + spawn.reward,
+    0,
+  );
   const finalBaseWave = ENDLESS_RULESET.createWave(CLASSIC_CAMPAIGN_LEVEL, 24);
   const finalSecondCycle = ENDLESS_RULESET.createWave(CLASSIC_CAMPAIGN_LEVEL, 48);
   const thirdCycleStart = ENDLESS_RULESET.createWave(CLASSIC_CAMPAIGN_LEVEL, 49);
   assert.ok(totalHealth(nextCycle) >= totalHealth(finalBaseWave) * 0.98);
   assert.ok(totalHealth(thirdCycleStart) >= totalHealth(finalSecondCycle) * 0.98);
+  assert.ok(totalReward(nextCycle) >= totalReward(finalBaseWave));
+  assert.ok(totalReward(thirdCycleStart) >= totalReward(finalSecondCycle));
   assert.throws(() => ENDLESS_RULESET.createWave(CLASSIC_CAMPAIGN_LEVEL, 0), RangeError);
   assert.throws(() => ENDLESS_RULESET.createWave(CLASSIC_CAMPAIGN_LEVEL, MAX_ENDLESS_WAVE + 1), RangeError);
 });

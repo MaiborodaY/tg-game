@@ -91,6 +91,7 @@ import {
   getOrCreateAttemptPurchaseRequestId,
   loadMiniAppBootstrap,
   parseLaunchParams,
+  normalizeFinishOutcome,
   purchaseMiniAppDailyAttempts,
   recordMiniAppCheckpoint,
   replaceMiniAppBootstrap,
@@ -1498,6 +1499,8 @@ function showToast(message: string, isError = false): void {
 }
 
 function handleTerminal(outcome: RunTerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
+  const finishOutcome = normalizeFinishOutcome(selectedSession.mode.id, outcome);
+  const settledOutcome: RunTerminalOutcome = finishOutcome === "defeat" ? "gameover" : finishOutcome;
   const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
   const completedWaves = finalWave === null ? campaign.completedWave : Math.min(finalWave, campaign.completedWave);
   const score = selectedSession.mode.calculateScore(completedWaves);
@@ -1508,21 +1511,21 @@ function handleTerminal(outcome: RunTerminalOutcome, campaign: TowerDefenseUiSta
     && savePendingResult(
       storage,
       reward.runId,
-      outcome,
+      settledOutcome,
       result,
       completedWaves,
       summary,
       currentRunRevision(),
     );
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
-  showResult(outcome, result, completedWaves, finalWave, summary);
+  showResult(settledOutcome, result, completedWaves, finalWave, summary);
   finishAuthRefreshAttempted = false;
   finishRunReplaced = false;
   replacementBootstrapCached = false;
   rewardFinisher = createRewardFinisher(reward, captureFinishSubmission(
     result.score,
     result.durationMs,
-    outcome === "victory" ? "victory" : outcome === "retired" ? "retired" : "defeat",
+    finishOutcome,
     completedWaves,
     summary.heroId,
   ), { runRevision: miniAppBootstrap?.runRevision });

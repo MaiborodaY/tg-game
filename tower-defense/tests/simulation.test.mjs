@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   CAMPAIGN_RULESET,
+  CLASSIC_CAMPAIGN_LEVEL,
   ENDLESS_RULESET,
   NORTHERN_PASS_LEVEL,
 } from "../src/game/content.ts";
@@ -658,12 +659,12 @@ test("an exported command log replays to the same terminal snapshot", () => {
 
 test("a 36-wave endless soak remains bounded and completes within a generous budget", () => {
   const initial = {
-    ...createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: ENDLESS_RULESET }),
+    ...createCampaignState({ level: CLASSIC_CAMPAIGN_LEVEL, mode: ENDLESS_RULESET }),
     lives: 100_000,
   };
   const simulation = new GameSimulation(
     initial,
-    createSimulationRules(NORTHERN_PASS_LEVEL, ENDLESS_RULESET),
+    createSimulationRules(CLASSIC_CAMPAIGN_LEVEL, ENDLESS_RULESET),
   );
   const startedAt = performance.now();
   let advanceCalls = 0;

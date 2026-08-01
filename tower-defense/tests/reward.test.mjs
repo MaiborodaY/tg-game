@@ -26,6 +26,7 @@ import {
   getOrCreateAttemptPurchaseRequestId,
   loadMiniAppBootstrap,
   loadMiniAppReward,
+  normalizeFinishOutcome,
   parseLaunchParams,
   purchaseMiniAppDailyAttempts,
   recordMiniAppCheckpoint,
@@ -38,6 +39,13 @@ import {
 } from "../src/reward.ts";
 
 const FUTURE_EXPIRES_AT = 4_102_444_800_000;
+
+test("endless operational cap settles through the server-supported retired outcome", () => {
+  assert.equal(normalizeFinishOutcome("endless", "victory"), "retired");
+  assert.equal(normalizeFinishOutcome("endless", "defeat"), "defeat");
+  assert.equal(normalizeFinishOutcome("endless", "gameover"), "defeat");
+  assert.equal(normalizeFinishOutcome("campaign", "victory"), "victory");
+});
 
 test("real Telegram launch parameters preserve the cross-origin finish contract", () => {
   const payload = Buffer.from(JSON.stringify({ user_id: 42, lang: "ru" }), "utf8").toString("base64url");

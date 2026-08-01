@@ -1,5 +1,6 @@
 import {
   CONTENT_VERSION,
+  ENDLESS_MODE_ID,
   getLevelDefinition,
   getModeRuleset,
 } from "./game/content.ts";
@@ -32,7 +33,7 @@ export const TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL = "https://work-bot.mr-maybik.w
 export const MINIAPP_BOOTSTRAP_SESSION_KEY = "td-miniapp-bootstrap-v2";
 export const MINIAPP_REWARD_SESSION_KEY = "td-miniapp-reward-v1";
 export const MINIAPP_ATTEMPT_PURCHASE_SESSION_KEY = "td-attempt-purchase-request-v1";
-// The server keeps a run for 120 minutes; the client stops reusing it well before that boundary.
+// Campaign is the shortest server run at 120 minutes; cached credentials expire earlier.
 export const MINIAPP_REWARD_TTL_MS = 90 * 60_000;
 
 export type TelegramPayload = Record<string, unknown>;
@@ -96,6 +97,14 @@ export type LaunchParams = Readonly<{
 
 export type FinalResult = Readonly<{ score: number; durationMs: number }>;
 export type FinishOutcome = "defeat" | "victory" | "retired";
+
+export function normalizeFinishOutcome(
+  modeId: string,
+  outcome: FinishOutcome | "gameover",
+): FinishOutcome {
+  if (outcome === "gameover") return "defeat";
+  return modeId === ENDLESS_MODE_ID && outcome === "victory" ? "retired" : outcome;
+}
 export type FinishMetadata = Readonly<{
   outcome: FinishOutcome;
   completedWaves: number;

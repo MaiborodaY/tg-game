@@ -301,6 +301,14 @@ function createEndlessWave(level: LevelDefinition, wave: number): WaveDefinition
   const healthMultiplier = endlessHealthMultiplier(level, source, cycle, localWave);
   const speedMultiplier = Math.min(1.55, 1 + cycle * 0.06);
   const rewardMultiplier = 1 + cycle * 0.18;
+  const scaledClearBonus = Math.ceil(source.clearBonus * (1 + cycle * 0.25));
+  const scaledSpawnReward = source.spawns.reduce(
+    (total, spawn) => total + Math.max(0, Math.ceil(spawn.reward * rewardMultiplier)),
+    0,
+  );
+  const preliminaryReward = scaledSpawnReward + scaledClearBonus;
+  const rewardFloor = endlessRewardFloor(level, cycle, localWave);
+  const continuityBonus = Math.max(0, rewardFloor - preliminaryReward);
   const spawns = source.spawns.map((spawn, spawnIndex): WaveSpawn => Object.freeze({
     ...spawn,
     id: index * 100_000 + spawnIndex,
@@ -319,10 +327,23 @@ function createEndlessWave(level: LevelDefinition, wave: number): WaveDefinition
     ...source,
     wave: index,
     spawns,
-    clearBonus: Math.ceil(source.clearBonus * (1 + cycle * 0.25)),
+    clearBonus: scaledClearBonus + continuityBonus,
     act: cycle > 0 ? 3 : source.act,
     threat: (cycle > 0 ? 5 : source.threat) as 1 | 2 | 3 | 4 | 5,
   });
+}
+
+function endlessRewardFloor(level: LevelDefinition, cycle: number, localWave: number): number {
+  if (cycle === 0) return 0;
+  const finalWave = level.waves.createWave(level.waves.finalWave);
+  const finalWaveReward = totalWaveReward(finalWave);
+  const progress = level.waves.finalWave <= 1 ? 1 : (localWave - 1) / (level.waves.finalWave - 1);
+  // A new cycle keeps the previous finale's economy instead of returning to
+  // wave-one income while enemy effective health stays at finale scale.
+  const previousFinalScale = 1 + (cycle - 1) * 0.25;
+  const currentFinalScale = 1 + cycle * 0.25;
+  const continuousScale = previousFinalScale + (currentFinalScale - previousFinalScale) * progress;
+  return Math.round(finalWaveReward * continuousScale);
 }
 
 function endlessHealthMultiplier(
@@ -341,6 +362,10 @@ function endlessHealthMultiplier(
 
 function totalWaveHealth(wave: WaveDefinition): number {
   return wave.spawns.reduce((total, spawn) => total + spawn.maxHp * (1 + spawn.shieldRatio), 0);
+}
+
+function totalWaveReward(wave: WaveDefinition): number {
+  return wave.clearBonus + wave.spawns.reduce((total, spawn) => total + spawn.reward, 0);
 }
 
 function defineWaveSource(id: string, finalWave: number, factory: (wave: number) => WaveDefinition): WaveSource {

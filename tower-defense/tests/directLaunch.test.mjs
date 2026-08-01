@@ -171,7 +171,9 @@ test("a token rotated in another tab is refreshed before checkpoint, restart, or
 
 test("fresh, pending and reauthorized terminal submissions keep immutable metadata", () => {
   assert.equal(mainSource.match(/captureFinishSubmission\(/g)?.length, 3);
-  assert.match(mainSource, /outcome === "victory" \? "victory" : outcome === "retired" \? "retired" : "defeat",\s*completedWaves,\s*summary\.heroId/);
+  assert.match(mainSource, /const finishOutcome = normalizeFinishOutcome\(selectedSession\.mode\.id, outcome\)/);
+  assert.match(mainSource, /const settledOutcome: RunTerminalOutcome = finishOutcome === "defeat" \? "gameover" : finishOutcome/);
+  assert.match(mainSource, /finishOutcome,\s*completedWaves,\s*summary\.heroId/);
   assert.match(mainSource, /previous\.finishMetadata\.completedWaves,\s*previous\.finishMetadata\.heroId/);
   assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : pending\.outcome === "retired" \? "retired" : "defeat",\s*pending\.waves,\s*pending\.summary\?\.heroId \?\? null/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*"profile_sync_pending"/);
