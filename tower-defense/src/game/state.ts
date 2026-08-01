@@ -1,5 +1,4 @@
 import {
-  MASTERY_UNLOCK_WAVE,
   MAX_TOWER_LEVEL,
   TOWER_DEFINITIONS,
   getTowerTotalInvestment,
@@ -61,7 +60,8 @@ export function moveHero(state: CampaignState, anchorId: number): CampaignResult
 export function upgradeHero(state: CampaignState): CampaignResult {
   const currentLevel = state.hero.level;
   if (currentLevel >= 3) return failure(state, "hero_max_level");
-  const gate = getHeroUpgradeWaveGate(currentLevel);
+  const progression = getLevelDefinition(state.levelId)?.progression ?? CLASSIC_CAMPAIGN_LEVEL.progression;
+  const gate = getHeroUpgradeWaveGate(currentLevel, progression.heroUpgradeWaves);
   if (gate !== null && state.completedWave < gate) return failure(state, "hero_upgrade_locked");
   const cost = getHeroUpgradeCost(state.hero.id, currentLevel);
   if (cost === null) return failure(state, "hero_max_level");
@@ -87,7 +87,8 @@ export function upgradeTower(state: CampaignState, padId: number): CampaignResul
   const tower = state.towers.find((candidate) => candidate.padId === padId);
   if (!tower) return failure(state, isValidPad(state, padId) ? "pad_empty" : "invalid_pad");
   if (tower.level >= MAX_TOWER_LEVEL) return failure(state, "max_level");
-  if (tower.level === 3 && state.completedWave < MASTERY_UNLOCK_WAVE) return failure(state, "mastery_locked");
+  const progression = getLevelDefinition(state.levelId)?.progression ?? CLASSIC_CAMPAIGN_LEVEL.progression;
+  if (tower.level === 3 && state.completedWave < progression.masteryWave) return failure(state, "mastery_locked");
   const cost = TOWER_DEFINITIONS[tower.type].upgradeCosts[tower.level - 1];
   if (state.gold < cost) return failure(state, "insufficient_gold");
   const towers = state.towers.map((candidate): TowerPlacement => candidate.padId === padId

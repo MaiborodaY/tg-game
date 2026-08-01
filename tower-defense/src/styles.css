@@ -772,7 +772,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 }
 .intro-card > * { position: relative; z-index: 1; }
 .intro-mission {
-  min-height: 128px;
+  min-height: 224px;
   padding: 16px 14px 14px;
   display: grid;
   grid-template-columns: 68px minmax(0, 1fr);
@@ -786,6 +786,23 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
     radial-gradient(circle at 93% 82%, rgba(98, 203, 159, 0.13), transparent 35%),
     linear-gradient(135deg, rgba(36, 79, 63, 0.86), rgba(13, 45, 39, 0.94));
   text-align: left;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+.intro-mission > * { position: relative; z-index: 1; }
+.intro-mission[data-level-theme="forest-gate"] {
+  border-color: rgba(157, 225, 188, 0.19);
+  background:
+    radial-gradient(circle at 6% 18%, rgba(211, 242, 177, 0.16), transparent 26%),
+    radial-gradient(circle at 93% 82%, rgba(98, 203, 159, 0.13), transparent 35%),
+    linear-gradient(135deg, rgba(36, 79, 63, 0.9), rgba(13, 45, 39, 0.96));
+}
+.intro-mission[data-level-theme="northern-pass"] {
+  border-color: rgba(155, 220, 233, 0.3);
+  background:
+    radial-gradient(circle at 8% 15%, rgba(219, 252, 255, 0.2), transparent 25%),
+    radial-gradient(circle at 89% 86%, rgba(86, 176, 205, 0.19), transparent 38%),
+    linear-gradient(145deg, rgba(33, 73, 82, 0.96), rgba(13, 34, 46, 0.98));
+  box-shadow: inset 0 1px rgba(229, 253, 255, 0.08), 0 12px 28px rgba(3, 17, 23, 0.2);
 }
 .intro-mission::after {
   content: "";
@@ -806,8 +823,91 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   border-radius: 20px 20px 26px 20px;
   font-size: 27px;
 }
+.intro-mission[data-level-theme="northern-pass"] .intro-sigil {
+  border-color: rgba(189, 240, 247, 0.56);
+  background: radial-gradient(circle at 40% 30%, #6daebd, #326d7a 58%, #1b4654);
+  color: #e4fbff;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.3), inset 0 2px rgba(255,255,255,0.16), 0 0 22px rgba(119, 215, 230, 0.12);
+}
+.intro-mission[data-level-theme="northern-pass"] .modal-eyebrow { color: #9fd6df; }
 .intro-mission h1 { margin: 6px 0 5px; font-size: clamp(24px, 7vw, 31px); }
 .intro-mission p { max-width: none; margin: 0; font-size: 11px; line-height: 1.4; }
+.mission-metrics {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.mission-metric {
+  min-width: 0;
+  min-height: 47px;
+  padding: 7px 8px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid rgba(174, 225, 199, 0.13);
+  border-radius: 11px;
+  background: rgba(4, 25, 21, 0.22);
+}
+.mission-metric small,
+.mission-trait small {
+  overflow: hidden;
+  color: #82af99;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.mission-metric strong { overflow: hidden; color: #edf7f0; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.mission-trait {
+  grid-column: 1 / -1;
+  min-width: 0;
+  min-height: 57px;
+  padding: 8px 9px;
+  display: grid;
+  grid-template-columns: 35px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(226, 196, 112, 0.18);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(100, 78, 35, 0.18), rgba(5, 28, 24, 0.16));
+}
+.mission-trait > span:last-child { min-width: 0; display: grid; gap: 1px; }
+.mission-trait strong { overflow: hidden; color: #f1dda5; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.mission-trait > span:last-child > span { overflow: hidden; color: #b9cec1; font-size: 8px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.mission-trait-mark {
+  width: 35px;
+  height: 35px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(232, 201, 113, 0.28);
+  border-radius: 11px;
+  background: rgba(205, 166, 66, 0.08);
+}
+.mission-trait-mark::before,
+.mission-trait-mark::after,
+.mission-trait-mark i {
+  content: "";
+  position: absolute;
+  border-radius: 50% 50% 58% 42%;
+  transform: rotate(45deg);
+}
+.mission-trait-mark::before { width: 13px; height: 13px; background: #efd47d; box-shadow: 0 0 12px rgba(239, 212, 125, 0.34); }
+.mission-trait-mark::after { width: 7px; height: 7px; background: #fff0b5; }
+.mission-trait-mark i { width: 21px; height: 21px; border: 1px solid rgba(234, 204, 120, 0.2); }
+.intro-mission[data-level-theme="northern-pass"] .mission-metric { border-color: rgba(160, 221, 232, 0.17); background: rgba(4, 22, 31, 0.25); }
+.intro-mission[data-level-theme="northern-pass"] .mission-metric small,
+.intro-mission[data-level-theme="northern-pass"] .mission-trait small { color: #8fc2cb; }
+.intro-mission[data-level-theme="northern-pass"] .mission-trait { border-color: rgba(120, 213, 226, 0.24); background: linear-gradient(135deg, rgba(48, 124, 138, 0.24), rgba(4, 24, 34, 0.18)); }
+.intro-mission[data-level-theme="northern-pass"] .mission-trait strong { color: #cceff3; }
+.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark { border-color: rgba(128, 224, 235, 0.4); background: rgba(82, 181, 195, 0.12); }
+.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark::before { background: #7fe1e7; box-shadow: 0 0 14px rgba(107, 222, 230, 0.52); }
+.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark::after { background: #e2feff; }
+.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark i { border-color: rgba(139, 231, 238, 0.28); }
 .intro-attempts {
   min-height: 48px;
   margin-top: 8px;
@@ -1509,11 +1609,19 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   .leaderboard-hero-medal img { width: 19px; height: 19px; }
   .hero-options { display: flex; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; scrollbar-width: thin; }
   .hero-option { flex: 0 0 118px; min-height: 168px; scroll-snap-align: start; }
+  .intro-mission { padding-left: 11px; padding-right: 11px; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; }
+  .intro-mission .intro-sigil { width: 54px; height: 54px; font-size: 24px; }
+  .intro-mission h1 { font-size: 23px; }
+  .mission-metric { padding-left: 6px; padding-right: 6px; }
+  .mission-metric small { font-size: 6px; letter-spacing: 0.05em; }
+  .mission-trait { grid-template-columns: 31px minmax(0, 1fr); gap: 7px; padding-left: 7px; padding-right: 7px; }
+  .mission-trait-mark { width: 31px; height: 31px; }
 }
 
 @media (max-width: 340px) {
   .attempt-purchase-actions { grid-template-columns: 1fr; }
   .attempt-purchase-actions button { min-height: 42px; }
+  .mission-trait > span:last-child > span { white-space: normal; }
 }
 
 @media (min-height: 800px) and (max-aspect-ratio: 47 / 100) and (max-width: 360px) {

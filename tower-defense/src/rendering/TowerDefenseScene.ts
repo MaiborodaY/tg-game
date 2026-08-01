@@ -8,6 +8,7 @@ import {
 import {
   getLevelDefinition,
   getModeRuleset,
+  NORTHERN_PASS_LEVEL_ID,
   type LevelDefinition,
   type ModeRuleset,
 } from "../game/content.ts";
@@ -32,6 +33,7 @@ import type {
   CampaignAct,
   CampaignError,
   CampaignState,
+  EnemyVariant,
   EnemyType,
   HeroId,
   TowerPlacement,
@@ -46,14 +48,17 @@ import {
   createHealPulse,
   createHitBurst,
   createLightningArc,
+  createSignalFireArt,
   createSummonBurst,
   createTowerArt,
   drawWorld,
   playTowerConstructionEffect,
+  setSignalFireState,
   setWorldAct,
   setTowerAuraMarker,
   updateEnemyArtPose,
   type EnemyArt,
+  type SignalFireArt,
   type TowerArt,
   type WorldArt,
 } from "./art.ts";
@@ -192,6 +197,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private readonly enemyArtPool = new Map<string, EnemyArt[]>();
   private readonly projectilePool = new Map<TowerType, ProjectileObject[]>();
   private readonly heroAnchorViews = new Map<number, HeroAnchorRenderView>();
+  private readonly signalFireViews = new Map<number, SignalFireArt>();
   private heroView?: HeroRenderView;
   private heroEffects?: HeroEffectPool;
   private lastHeroAttackAtMs = -1_000;
@@ -223,6 +229,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.worldArt = drawWorld(this, this.level);
     setWorldAct(this, this.worldArt, this.simulation.getCurrentWavePlan().act);
     this.heroEffects = createHeroEffectPool(this);
+    this.createSignalFires();
     this.createHeroAnchors();
     this.createBuildPads();
     this.syncTowerViews();
@@ -454,6 +461,12 @@ export class TowerDefenseScene extends Phaser.Scene {
     });
   }
 
+  private createSignalFires(): void {
+    this.level.signalFires?.forEach((point, anchorId) => {
+      this.signalFireViews.set(anchorId, createSignalFireArt(this, point));
+    });
+  }
+
   private handleHeroClick(): void {
     this.selectedHero = true;
     this.selectedPadId = null;
@@ -612,29 +625,41 @@ export class TowerDefenseScene extends Phaser.Scene {
       setHeroAnchorState(anchor.art, state);
       if (anchor.hitZone.input) anchor.hitZone.input.enabled = anchorsAvailable && anchorId !== view.hero.anchorId;
     }
+    for (const [anchorId, fire] of this.signalFireViews) {
+      const state = anchorId === view.hero.anchorId
+        ? "active"
+        : anchorsAvailable ? "available" : "idle";
+      setSignalFireState(fire, state);
+    }
   }
 
   private createBuildPads(): void {
+    const northern = this.level.id === NORTHERN_PASS_LEVEL_ID;
     this.level.buildPads.forEach((point, padId) => {
       const foundation = this.add.graphics().setDepth(point.y + 4);
-      foundation.fillStyle(0x071613, 0.48).fillEllipse(point.x, point.y + 4, 47, 24);
+      foundation.fillStyle(northern ? 0x081923 : 0x071613, northern ? 0.62 : 0.48)
+        .fillEllipse(point.x, point.y + 4, 47, 24);
       for (let stone = 0; stone < 8; stone += 1) {
         const angle = (Math.PI * 2 * stone) / 8 + (padId % 3) * 0.08;
         const radius = stone % 2 === 0 ? 19 : 18;
         const x = point.x + Math.cos(angle) * radius;
         const y = point.y + Math.sin(angle) * radius * 0.72;
-        foundation.fillStyle(stone % 3 === 0 ? 0x52675c : 0x344a42, 0.78)
+        const stoneColor = northern
+          ? stone % 3 === 0 ? 0x66869a : 0x344f62
+          : stone % 3 === 0 ? 0x52675c : 0x344a42;
+        foundation.fillStyle(stoneColor, northern ? 0.84 : 0.78)
           .fillEllipse(x, y, stone % 2 === 0 ? 9 : 8, 6);
-        foundation.fillStyle(0x8ba08f, 0.2).fillEllipse(x - 1, y - 1, 5, 2.4);
+        foundation.fillStyle(northern ? 0xc0e8f1 : 0x8ba08f, northern ? 0.27 : 0.2)
+          .fillEllipse(x - 1, y - 1, 5, 2.4);
       }
-      const ring = this.add.circle(point.x, point.y, 18, 0x0d2521, 0.62)
-        .setStrokeStyle(2, 0x6f8a79, 0.48)
+      const ring = this.add.circle(point.x, point.y, 18, northern ? 0x102c3a : 0x0d2521, 0.62)
+        .setStrokeStyle(2, northern ? 0x8bcbd8 : 0x6f8a79, northern ? 0.56 : 0.48)
         .setDepth(point.y + 5);
-      const core = this.add.circle(point.x, point.y, 11.5, 0x214a3b, 0.34)
-        .setStrokeStyle(1, 0xa8c795, 0.25)
+      const core = this.add.circle(point.x, point.y, 11.5, northern ? 0x24566a : 0x214a3b, 0.34)
+        .setStrokeStyle(1, northern ? 0xc6eff4 : 0xa8c795, northern ? 0.34 : 0.25)
         .setDepth(point.y + 6);
-      const rune = this.add.text(point.x, point.y - 1, "✦", {
-        color: "#a9d9ad",
+      const rune = this.add.text(point.x, point.y - 1, northern ? "❄" : "✦", {
+        color: northern ? "#c9f4f7" : "#a9d9ad",
         fontFamily: "Georgia, serif",
         fontSize: "14px",
       }).setOrigin(0.5).setAlpha(0.58).setDepth(point.y + 7);
@@ -706,6 +731,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private updatePadVisuals(): void {
     const viewState = this.simulation.readView();
     const heroPlacementActive = this.selectedHero && viewState.phase === "setup";
+    const northern = this.level.id === NORTHERN_PASS_LEVEL_ID;
     for (const [padId, view] of this.padViews) {
       const tower = getTower(viewState.campaign, padId);
       const selected = this.selectedPadId === padId;
@@ -713,10 +739,23 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.tweens.killTweensOf(view.rune);
       view.rune.setScale(1);
       if (heroPlacementActive) {
-        view.ring.setFillStyle(0x071713, tower ? 0.12 : 0.28);
-        view.ring.setStrokeStyle(1, 0x49685c, tower ? 0.08 : 0.24);
+        if (northern) {
+          view.ring.setFillStyle(0x091b25, tower ? 0.12 : 0.28);
+          view.ring.setStrokeStyle(1, 0x527b8e, tower ? 0.08 : 0.24);
+        } else {
+          view.ring.setFillStyle(0x071713, tower ? 0.12 : 0.28);
+          view.ring.setStrokeStyle(1, 0x49685c, tower ? 0.08 : 0.24);
+        }
         view.core.setAlpha(tower ? 0.03 : 0.13);
         view.rune.setAlpha(tower ? 0 : 0.11);
+        continue;
+      }
+      if (northern) {
+        view.ring.setFillStyle(selected ? 0x4a4b57 : buildable ? 0x245f71 : 0x102c3a, selected ? 0.94 : buildable ? 0.82 : 0.58);
+        view.ring.setStrokeStyle(selected ? 3 : 2, selected ? 0xffd78b : buildable ? 0x9ceaf0 : 0x759daf, selected ? 1 : buildable ? 0.84 : 0.5);
+        view.core.setAlpha(tower ? 0.06 : buildable ? 0.8 : 0.36);
+        view.rune.setAlpha(tower ? 0 : buildable ? 0.98 : 0.46);
+        if (buildable) this.tweens.add({ targets: view.rune, scale: 1.16, duration: 520, yoyo: true, repeat: 1 });
         continue;
       }
       view.ring.setFillStyle(selected ? 0x57472b : buildable ? 0x1f594a : 0x0d2521, selected ? 0.94 : buildable ? 0.82 : 0.54);
@@ -921,7 +960,15 @@ export class TowerDefenseScene extends Phaser.Scene {
       return;
     }
     if (event.type === "enemy_damaged") {
-      createFloatingText(this, event.x, event.y - 15, `${Math.round(event.damage)}`, event.absorbed > 0 ? "#bcefff" : "#fff1bd");
+      const damageColor = event.frostAbsorbed > 0
+        ? "#d7fbff"
+        : event.absorbed > 0 ? "#bcefff" : "#fff1bd";
+      createFloatingText(this, event.x, event.y - 15, `${Math.round(event.damage)}`, damageColor);
+      return;
+    }
+    if (event.type === "frost_armor_broken") {
+      createHitBurst(this, event.x, event.y, 0xb9f6ff, 30, 4);
+      createFloatingText(this, event.x, event.y - 25, "❄", "#e1fcff");
       return;
     }
     if (event.type === "projectile_hit") {
@@ -950,6 +997,8 @@ export class TowerDefenseScene extends Phaser.Scene {
           event.elite,
           event.bossTier,
           event.shielded,
+          event.enemyVariant,
+          event.frostArmored,
         );
       }
       this.tweens.add({
@@ -1025,12 +1074,20 @@ export class TowerDefenseScene extends Phaser.Scene {
       }
       updateEnemyArtPose(art, enemy.type, simulationTimeMs, enemy.progress, enemy.id, !enemy.stunned, enemy.enraged);
       art.healthFill.scaleX = Math.max(0, enemy.hp / enemy.maxHp);
-      const damaged = enemy.hp < enemy.maxHp || enemy.shield < enemy.maxShield;
+      const damaged = enemy.hp < enemy.maxHp
+        || enemy.shield < enemy.maxShield
+        || enemy.frostArmor < enemy.maxFrostArmor;
       const major = enemy.type === "boss" || enemy.type === "titan";
       art.healthBack.setAlpha(major || damaged ? 1 : 0);
       art.healthFill.setAlpha(major || damaged ? 1 : 0);
-      art.shieldFill.scaleX = enemy.maxShield > 0 ? Math.max(0, enemy.shield / enemy.maxShield) : 0;
-      art.shieldFill.setAlpha(enemy.shield > 0 ? 0.95 : 0);
+      const frostArmorActive = enemy.maxFrostArmor > 0 && enemy.frostArmor > 0;
+      const protectionRatio = frostArmorActive
+        ? Math.max(0, enemy.frostArmor / enemy.maxFrostArmor)
+        : enemy.maxShield > 0 ? Math.max(0, enemy.shield / enemy.maxShield) : 0;
+      art.shieldFill
+        .setFillStyle(frostArmorActive ? 0xb4f4ff : 0x77dff2, 0.95)
+        .setScale(protectionRatio, 1)
+        .setAlpha(protectionRatio > 0 ? 0.95 : 0);
       const statusActive = enemy.stunned || enemy.slowed;
       art.statusRing.setAlpha(statusActive ? 0.78 : 0)
         .setStrokeStyle(2, enemy.stunned ? 0x77f3d5 : 0x78dff6, statusActive ? 0.9 : 0);
@@ -1056,6 +1113,8 @@ export class TowerDefenseScene extends Phaser.Scene {
       enemy.elite,
       enemy.bossTier,
       enemy.maxShield > 0,
+      enemy.variant,
+      enemy.maxFrostArmor > 0,
     );
   }
 
@@ -1066,15 +1125,23 @@ export class TowerDefenseScene extends Phaser.Scene {
     elite: boolean,
     bossTier: CampaignAct,
     shielded: boolean,
+    variant: EnemyVariant,
+    frostArmored: boolean,
   ): EnemyRenderView {
-    const poolKey = `${type}:${elite ? 1 : 0}:${bossTier}:${shielded ? 1 : 0}`;
+    const poolKey = `${type}:${elite ? 1 : 0}:${bossTier}:${shielded ? 1 : 0}:${variant}:${frostArmored ? 1 : 0}`;
     const pool = this.enemyArtPool.get(poolKey);
     const art = pool?.pop() ?? createEnemyArt(this, type, { x, y }, {
       elite,
       bossTier,
-      shielded,
+      shielded: shielded || frostArmored,
+      frostArmored,
+      variant,
     });
     art.container.setActive(true).setVisible(true).setAlpha(1).setScale(1).setRotation(0).setPosition(x, y);
+    art.shieldFill
+      .setFillStyle(frostArmored ? 0xb4f4ff : 0x77dff2, 0.95)
+      .setScale(1, 1)
+      .setAlpha(shielded || frostArmored ? 0.95 : 0);
     return { type, poolKey, art, depthBucket: Number.NaN };
   }
 
@@ -1199,7 +1266,9 @@ export class TowerDefenseScene extends Phaser.Scene {
             type: boss.type,
             tier: boss.bossTier,
             hpRatio: Math.max(0, boss.hp / boss.maxHp),
-            shieldRatio: boss.maxShield > 0 ? Math.max(0, boss.shield / boss.maxShield) : 0,
+            shieldRatio: boss.maxShield + boss.maxFrostArmor > 0
+              ? Math.max(0, (boss.shield + boss.frostArmor) / (boss.maxShield + boss.maxFrostArmor))
+              : 0,
             enraged: boss.enraged,
           })
         : null,

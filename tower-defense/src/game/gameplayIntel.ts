@@ -3,6 +3,7 @@ import type { EnemyType, TowerType, WavePlan, WaveSpawn } from "./types.ts";
 
 export type WaveEnemyVariant = Readonly<{
   count: number;
+  variant: WaveSpawn["variant"];
   maxHp: number;
   speed: number;
   leakDamage: number;
@@ -10,6 +11,7 @@ export type WaveEnemyVariant = Readonly<{
   magicResistance: number;
   controlResistance: number;
   shieldRatio: number;
+  frostArmorRatio: number;
   healingRadius: number;
   healingRatio: number;
   elite: boolean;
@@ -116,6 +118,11 @@ export function recommendWaveTowers(plan: WavePlan, max = 2): readonly TowerType
       add("ember", 2 * weight);
       add("storm", 3 * weight);
     }
+    if ((spawn.frostArmorRatio ?? 0) > 0) {
+      // Ember cracks frost armour fastest; Storm remains useful once the shell is gone.
+      add("ember", 7 * weight);
+      add("storm", 1.5 * weight);
+    }
     if (spawn.healingRadius > 0 && spawn.healingRatio > 0) {
       add("ranger", 2 * weight);
       add("storm", 4 * weight);
@@ -164,6 +171,7 @@ function deriveDefeatCategory(plan: WavePlan): Exclude<GameplayAdviceCategory, "
   if (plan.spawns.some(({ physicalResistance, magicResistance, shieldRatio }) => (
     physicalResistance >= 0.2 || magicResistance >= 0.25 || shieldRatio >= 0.1
   ))) return "armor";
+  if (plan.spawns.some(({ frostArmorRatio }) => (frostArmorRatio ?? 0) > 0)) return "armor";
   if (plan.spawns.some(({ speed }) => speed >= 70)) return "swift";
   if (plan.spawns.length >= 10) return "control";
   return "mixed";
@@ -171,6 +179,7 @@ function deriveDefeatCategory(plan: WavePlan): Exclude<GameplayAdviceCategory, "
 
 function variantValues(spawn: WaveSpawn): Omit<WaveEnemyVariant, "count"> {
   return {
+    variant: spawn.variant ?? "standard",
     maxHp: spawn.maxHp,
     speed: spawn.speed,
     leakDamage: spawn.leakDamage,
@@ -178,6 +187,7 @@ function variantValues(spawn: WaveSpawn): Omit<WaveEnemyVariant, "count"> {
     magicResistance: spawn.magicResistance,
     controlResistance: spawn.controlResistance,
     shieldRatio: spawn.shieldRatio,
+    frostArmorRatio: spawn.frostArmorRatio ?? 0,
     healingRadius: spawn.healingRadius,
     healingRatio: spawn.healingRatio,
     elite: spawn.elite,

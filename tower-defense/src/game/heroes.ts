@@ -345,16 +345,26 @@ export function getHeroAwakening(id: HeroId): HeroAwakeningDefinition {
   return HERO_AWAKENINGS[id];
 }
 
-export function isHeroAwakened(level: HeroLevel, completedWave: number): boolean {
-  return level === 3 && Number.isFinite(completedWave) && completedWave >= HERO_AWAKENING_WAVE;
+export function isHeroAwakened(
+  level: HeroLevel,
+  completedWave: number,
+  awakeningWave = HERO_AWAKENING_WAVE,
+): boolean {
+  return level === 3
+    && Number.isFinite(completedWave)
+    && Number.isFinite(awakeningWave)
+    && completedWave >= Math.max(0, Math.floor(awakeningWave));
 }
 
 export function getHeroUpgradeCost(id: HeroId, level: HeroLevel): number | null {
   return level >= 3 ? null : HERO_DEFINITIONS[id].upgradeCosts[level - 1];
 }
 
-export function getHeroUpgradeWaveGate(level: HeroLevel): number | null {
-  return level >= 3 ? null : HERO_UPGRADE_WAVE_GATES[level - 1];
+export function getHeroUpgradeWaveGate(
+  level: HeroLevel,
+  gates: readonly [number, number] = HERO_UPGRADE_WAVE_GATES,
+): number | null {
+  return level >= 3 ? null : gates[level - 1];
 }
 
 export function isHeroId(value: unknown): value is HeroId {

@@ -15,6 +15,9 @@ export type ActVisualProfile = Readonly<{
   portal: number;
   gateWard: number;
   bossAccent: number;
+  snowAlpha: number;
+  auroraAlpha: number;
+  stormAlpha: number;
 }>;
 
 export type WorldVisualTheme = Readonly<{
@@ -53,6 +56,11 @@ export type WorldDecorationLayout = Readonly<{
   fireflies: readonly WorldDecorationPoint[];
 }>;
 
+export type NorthernLandmarkLayout = Readonly<{
+  caravan: Readonly<{ x: number; y: number; rotation: number }>;
+  iceBridge: Readonly<{ x: number; y: number; rotation: number; length: number }>;
+}>;
+
 const TOWER_VISUAL_COLORS = Object.freeze({
   ranger: Object.freeze({ accent: 0xd8ad62, trim: 0xf3d88a }),
   frost: Object.freeze({ accent: 0x74e8f3, trim: 0xd9ffff }),
@@ -74,14 +82,14 @@ const TOWER_TIER_GEOMETRY = Object.freeze({
 
 const ACT_VISUAL_PROFILES = Object.freeze({
   "forest-gate": Object.freeze({
-    1: Object.freeze({ veil: 0x3e7b63, veilAlpha: 0, portal: 0xb77df2, gateWard: 0x72e6c2, bossAccent: 0xf3c967 }),
-    2: Object.freeze({ veil: 0x5c3c78, veilAlpha: 0.08, portal: 0xa879e8, gateWard: 0x79d9ed, bossAccent: 0xc7a2f5 }),
-    3: Object.freeze({ veil: 0x8b3448, veilAlpha: 0.14, portal: 0xe05f78, gateWard: 0xffa168, bossAccent: 0xff7b72 }),
+    1: Object.freeze({ veil: 0x3e7b63, veilAlpha: 0, portal: 0xb77df2, gateWard: 0x72e6c2, bossAccent: 0xf3c967, snowAlpha: 0, auroraAlpha: 0, stormAlpha: 0 }),
+    2: Object.freeze({ veil: 0x5c3c78, veilAlpha: 0.08, portal: 0xa879e8, gateWard: 0x79d9ed, bossAccent: 0xc7a2f5, snowAlpha: 0, auroraAlpha: 0, stormAlpha: 0 }),
+    3: Object.freeze({ veil: 0x8b3448, veilAlpha: 0.14, portal: 0xe05f78, gateWard: 0xffa168, bossAccent: 0xff7b72, snowAlpha: 0, auroraAlpha: 0, stormAlpha: 0 }),
   }),
   "northern-pass": Object.freeze({
-    1: Object.freeze({ veil: 0x315d76, veilAlpha: 0, portal: 0x79c9e8, gateWard: 0x8fe8ef, bossAccent: 0xd9f7ff }),
-    2: Object.freeze({ veil: 0x3f4f7c, veilAlpha: 0.07, portal: 0x8fb8f4, gateWard: 0xb6e9ff, bossAccent: 0xd9edff }),
-    3: Object.freeze({ veil: 0x6f3d62, veilAlpha: 0.12, portal: 0xc887d9, gateWard: 0x8fd8ff, bossAccent: 0xffb6d0 }),
+    1: Object.freeze({ veil: 0x24495e, veilAlpha: 0.025, portal: 0x75d7f5, gateWard: 0x8fe8ef, bossAccent: 0xe1fbff, snowAlpha: 0.18, auroraAlpha: 0, stormAlpha: 0 }),
+    2: Object.freeze({ veil: 0x30486f, veilAlpha: 0.1, portal: 0xa0d8ff, gateWard: 0xb6e9ff, bossAccent: 0xd9edff, snowAlpha: 0.54, auroraAlpha: 0, stormAlpha: 0.18 }),
+    3: Object.freeze({ veil: 0x244e61, veilAlpha: 0.08, portal: 0x91e8ef, gateWard: 0xa7f5dc, bossAccent: 0xffd1e6, snowAlpha: 0.32, auroraAlpha: 0.3, stormAlpha: 0.06 }),
   }),
 }) satisfies Readonly<Record<WorldVisualTheme["id"], Readonly<Record<CampaignAct, ActVisualProfile>>>>;
 
@@ -109,21 +117,21 @@ const FOREST_GATE_THEME: WorldVisualTheme = Object.freeze({
 const NORTHERN_PASS_THEME: WorldVisualTheme = Object.freeze({
   id: "northern-pass",
   seed: 41_903,
-  ground: 0x172b2b,
-  groundDeep: 0x0b1b20,
-  groundLight: 0x294243,
-  moss: 0x3d5d57,
-  leaf: 0x77958a,
-  flower: 0xb9e5df,
-  routeShadow: 0x071418,
-  routeBank: 0x414445,
-  routeEdge: 0x6c716f,
-  routeBed: 0x9a8d75,
-  routeLight: 0xc6b99a,
-  routeWidths: Object.freeze([48, 42, 34, 25, 17] as const),
-  stoneDark: 0x354246,
-  stoneLight: 0x8ba0a0,
-  portal: 0x79c9e8,
+  ground: 0x14262e,
+  groundDeep: 0x07151d,
+  groundLight: 0x28414b,
+  moss: 0x35515a,
+  leaf: 0x87aab2,
+  flower: 0xdaf8ff,
+  routeShadow: 0x06121a,
+  routeBank: 0x283842,
+  routeEdge: 0x667986,
+  routeBed: 0x8999a0,
+  routeLight: 0xd4e3e4,
+  routeWidths: Object.freeze([48, 43, 36, 28, 19] as const),
+  stoneDark: 0x263943,
+  stoneLight: 0x91aeb9,
+  portal: 0x75d7f5,
   crystal: 0x8fe8ef,
 });
 
@@ -167,12 +175,37 @@ export function createWorldDecorationLayout(
   reservedPoints: readonly Point[] = [],
 ): WorldDecorationLayout {
   const rng = seededRandom(theme.seed);
-  const clearings = createScatteredPoints(rng, 11, width, height, route, reservedPoints, 48, 50, 0.8, 1.45);
-  const groundDetails = createScatteredPoints(rng, 78, width, height, route, reservedPoints, 29, 22, 0.65, 1.25);
-  const shrubs = createScatteredPoints(rng, 34, width, height, route, reservedPoints, 38, 30, 0.72, 1.3);
-  const trees = createEdgePoints(rng, 10, width, height, route, reservedPoints);
-  const fireflies = createScatteredPoints(rng, 6, width, height, route, reservedPoints, 31, 24, 0.8, 1.15);
+  const northern = theme.id === "northern-pass";
+  const clearings = createScatteredPoints(rng, northern ? 9 : 11, width, height, route, reservedPoints, 48, 50, 0.8, 1.45);
+  const groundDetails = createScatteredPoints(rng, northern ? 58 : 78, width, height, route, reservedPoints, 29, 22, 0.65, 1.25);
+  const shrubs = createScatteredPoints(rng, northern ? 21 : 34, width, height, route, reservedPoints, 38, 30, 0.72, 1.3);
+  const trees = createEdgePoints(rng, northern ? 8 : 10, width, height, route, reservedPoints);
+  const fireflies = createScatteredPoints(rng, northern ? 12 : 6, width, height, route, reservedPoints, 31, 24, 0.8, 1.15);
   return Object.freeze({ clearings, groundDetails, shrubs, trees, fireflies });
+}
+
+/** Keeps authored Northern Pass landmarks stable while adapting to future route revisions. */
+export function createNorthernLandmarkLayout(
+  route: readonly Point[],
+  width: number,
+  height: number,
+  clearings: readonly WorldDecorationPoint[],
+): NorthernLandmarkLayout {
+  const caravanTarget = Object.freeze({ x: width * 0.19, y: height * 0.62 });
+  const caravanPoint = clearings.reduce<WorldDecorationPoint | undefined>((best, point) => {
+    if (!best) return point;
+    return pointDistance(point, caravanTarget) < pointDistance(best, caravanTarget) ? point : best;
+  }, undefined) ?? Object.freeze({ ...caravanTarget, scale: 1, variant: 0 });
+
+  const bridgeSegment = findBridgeSegment(route, width, height);
+  return Object.freeze({
+    caravan: Object.freeze({
+      x: caravanPoint.x,
+      y: caravanPoint.y,
+      rotation: caravanPoint.variant % 2 === 0 ? -0.16 : 0.16,
+    }),
+    iceBridge: Object.freeze(bridgeSegment),
+  });
 }
 
 export function distanceToWorldRoute(point: Point, route: readonly Point[]): number {
@@ -254,6 +287,40 @@ function distanceToSegment(point: Point, start: Point, end: Point): number {
     ? 0
     : Math.min(1, Math.max(0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
   return Math.hypot(point.x - (start.x + dx * ratio), point.y - (start.y + dy * ratio));
+}
+
+function findBridgeSegment(
+  route: readonly Point[],
+  width: number,
+  height: number,
+): Readonly<{ x: number; y: number; rotation: number; length: number }> {
+  const center = Object.freeze({ x: width * 0.52, y: height * 0.46 });
+  let best: Readonly<{ start: Point; end: Point; score: number }> | undefined;
+  for (let index = 1; index < route.length; index += 1) {
+    const start = route[index - 1];
+    const end = route[index];
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    if (length < 44) continue;
+    const midpoint = Object.freeze({ x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 });
+    const edgePenalty = midpoint.x < 36 || midpoint.x > width - 36 || midpoint.y < 36 || midpoint.y > height - 36
+      ? width + height
+      : 0;
+    const score = pointDistance(midpoint, center) + edgePenalty - Math.min(length, 120) * 0.12;
+    if (!best || score < best.score) best = Object.freeze({ start, end, score });
+  }
+
+  const start = best?.start ?? route[0] ?? Object.freeze({ x: width * 0.35, y: height * 0.46 });
+  const end = best?.end ?? route[1] ?? Object.freeze({ x: width * 0.69, y: height * 0.46 });
+  return Object.freeze({
+    x: (start.x + end.x) / 2,
+    y: (start.y + end.y) / 2,
+    rotation: Math.atan2(end.y - start.y, end.x - start.x),
+    length: Math.min(104, Math.max(54, Math.hypot(end.x - start.x, end.y - start.y) * 0.72)),
+  });
+}
+
+function pointDistance(first: Point, second: Point): number {
+  return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
 function seededRandom(seed: number): () => number {

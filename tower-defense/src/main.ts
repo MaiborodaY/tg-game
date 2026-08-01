@@ -330,6 +330,10 @@ let tutorialState: TutorialState = createTutorialState({
   profile: playerProfile,
   tutorialCompleted: readFlag(storage, TUTORIAL_COMPLETION_STORAGE_KEY),
 });
+const NORTHERN_ONBOARDING_STORAGE_KEY = "td-northern-onboarding-v1";
+const NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY = "td-northern-armor-onboarding-v1";
+type NorthernOnboardingStep = "beacon" | "armor";
+let northernOnboardingStep = getNorthernOnboardingStep(initialCampaign);
 
 const HERO_PORTRAIT_URLS: Readonly<Record<HeroId, string>> = Object.freeze({
   eira: eiraPortraitUrl,
@@ -438,8 +442,21 @@ const elements = {
   startWaveButton: button("start-wave-button"),
   introOverlay: byId("intro-overlay"),
   introCard: document.querySelector<HTMLElement>(".intro-card")!,
+  missionPreview: byId("mission-preview"),
+  introSigilMark: byId("intro-sigil-mark"),
+  introMissionEyebrow: byId("intro-mission-eyebrow"),
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
+  missionMetrics: byId("mission-metrics"),
+  missionDifficultyLabel: byId("mission-difficulty-label"),
+  missionDifficulty: byId("mission-difficulty"),
+  missionGoldLabel: byId("mission-gold-label"),
+  missionGold: byId("mission-gold"),
+  missionLivesLabel: byId("mission-lives-label"),
+  missionLives: byId("mission-lives"),
+  missionTraitLabel: byId("mission-trait-label"),
+  missionTraitTitle: byId("mission-trait-title"),
+  missionTraitCopy: byId("mission-trait-copy"),
   introAttempts: byId("intro-attempts"),
   introAttemptsLabel: byId("intro-attempts-label"),
   introAttemptsValue: byId("intro-attempts-value"),
@@ -583,7 +600,9 @@ const gameCallbacks: TowerDefenseCallbacks = {
         showToast(text("checkpoint_save_failed"), true);
       }
     });
-    const awakeningUnlocked = wave === 20 && currentScene()?.getCampaign().hero.level === 3;
+    const level = currentScene()?.getCampaign().levelId;
+    const awakeningWave = level ? CONTENT_CATALOG.levels[level]?.progression.awakeningWave : null;
+    const awakeningUnlocked = wave === awakeningWave && currentScene()?.getCampaign().hero.level === 3;
     showToast(awakeningUnlocked
       ? `${text("hero_awakening_unlocked")} · ${text("clear_bonus", { amount: bonus })}`
       : `${text("wave_clear")} · ${text("clear_bonus", { amount: bonus })}`);
@@ -1009,6 +1028,7 @@ async function applyPendingRestart(): Promise<boolean> {
       profile: playerProfile,
       tutorialCompleted: readFlag(storage, TUTORIAL_COMPLETION_STORAGE_KEY),
     });
+    northernOnboardingStep = getNorthernOnboardingStep(initialCampaign);
     restartSelectionPending = false;
     telegram.haptic("success");
     return true;
@@ -1215,7 +1235,10 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.gameMenuButton.disabled = ui.phase === "gameover" || ui.phase === "victory";
   elements.speedButton.textContent = `×${ui.speed}`;
   elements.speedButton.classList.toggle("is-active", ui.speed === 2);
-  elements.phaseBadge.textContent = `${phaseLabel(ui)} · ${text("act", { count: ui.act })}`;
+  const actLabel = ui.levelId === NORTHERN_PASS_LEVEL_ID
+    ? text(`northern_act_${ui.act}` as TranslationKey)
+    : text("act", { count: ui.act });
+  elements.phaseBadge.textContent = `${phaseLabel(ui)} · ${actLabel}`;
   elements.countdown.hidden = ui.phase !== "countdown" || ui.paused;
   elements.countdown.textContent = String(Math.max(1, ui.countdown));
   const heroAbility = heroAbilityName(ui.hero.id);
@@ -1257,7 +1280,7 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.bossIcon.textContent = ui.boss.type === "titan" ? "♜" : "♛";
     elements.bossName.textContent = ui.boss.type === "titan"
       ? text("enemy_titan")
-      : text(`boss_act_${ui.boss.tier}` as TranslationKey);
+      : text(`${ui.levelId === NORTHERN_PASS_LEVEL_ID ? "northern_boss_act" : "boss_act"}_${ui.boss.tier}` as TranslationKey);
     elements.bossState.textContent = text(ui.boss.enraged ? "boss_enraged" : "boss_state");
     elements.bossHealthFill.style.width = `${Math.round(ui.boss.hpRatio * 100)}%`;
     elements.bossShieldFill.style.width = `${Math.round(ui.boss.shieldRatio * 100)}%`;
@@ -1305,7 +1328,8 @@ function renderUi(ui: TowerDefenseUiState): void {
   if (heroSelected) {
     const hero = ui.hero;
     const upgradeCost = getHeroUpgradeCost(hero.id, hero.level);
-    const upgradeWave = getHeroUpgradeWaveGate(hero.level);
+    const progression = CONTENT_CATALOG.levels[ui.levelId]?.progression;
+    const upgradeWave = getHeroUpgradeWaveGate(hero.level, progression?.heroUpgradeWaves);
     const upgradeUnlocked = upgradeWave === null || ui.campaign.completedWave >= upgradeWave;
     syncHeroPortrait(elements.selectedHeroEmblem, hero.id);
     elements.selectedHeroRank.textContent = hero.awakened
@@ -1359,12 +1383,31 @@ function updateTutorialState(next: TutorialState): void {
   elements.towerDeck.classList.remove("tutorial-focus");
   elements.battleShell.classList.remove("tutorial-focus");
   elements.startWaveButton.classList.remove("tutorial-focus");
-  const visible = !isTutorialDone(tutorialState)
+  if (!northernOnboardingStep && latestUi) {
+    northernOnboardingStep = getNorthernOnboardingStep(latestUi.campaign);
+  }
+  const northernVisible = northernOnboardingStep !== null
+    && latestUi?.levelId === NORTHERN_PASS_LEVEL_ID
+    && latestUi.phase === "setup";
+  const visible = (northernVisible || !isTutorialDone(tutorialState))
     && gameMounted
     && elements.introOverlay.hidden
     && elements.resultOverlay.hidden;
   elements.tutorialCoach.hidden = !visible;
   if (!visible) return;
+
+  if (northernVisible) {
+    const armorStep = northernOnboardingStep === "armor";
+    elements.tutorialStep.textContent = armorStep ? "2 / 2" : "1 / 2";
+    elements.tutorialTitle.textContent = text(armorStep
+      ? "northern_onboarding_armor_title"
+      : "northern_onboarding_title");
+    elements.tutorialBody.textContent = text(armorStep
+      ? "northern_onboarding_armor_body"
+      : "northern_onboarding_body");
+    elements.battleShell.classList.add("tutorial-focus");
+    return;
+  }
 
   const stepNumber = tutorialState.step === "choose_tower" ? 1 : tutorialState.step === "place_tower" ? 2 : 3;
   elements.tutorialStep.textContent = `${stepNumber} / 3`;
@@ -1379,7 +1422,20 @@ function updateTutorialState(next: TutorialState): void {
 }
 
 function completeTutorial(): void {
+  if (northernOnboardingStep) {
+    writeFlag(storage, northernOnboardingStep === "armor"
+      ? NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY
+      : NORTHERN_ONBOARDING_STORAGE_KEY);
+    northernOnboardingStep = null;
+  }
   updateTutorialState(reduceTutorial(tutorialState, { type: "skip" }));
+}
+
+function getNorthernOnboardingStep(campaign: TowerDefenseUiState["campaign"]): NorthernOnboardingStep | null {
+  if (campaign.levelId !== NORTHERN_PASS_LEVEL_ID) return null;
+  if (!readFlag(storage, NORTHERN_ONBOARDING_STORAGE_KEY) && !hasRunProgress(campaign)) return "beacon";
+  if (campaign.completedWave >= 2 && !readFlag(storage, NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY)) return "armor";
+  return null;
 }
 
 function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
@@ -1425,6 +1481,7 @@ function renderWavePreview(plan: WavePlan): void {
   if (types.some((type) => type === "boss" || type === "titan")) traits.push("wave_trait_boss");
   if (types.some((type) => type === "swift" || type === "shade")) traits.push("wave_trait_fast");
   if (types.some((type) => type === "brute" || type === "bulwark")) traits.push("wave_trait_armored");
+  if (plan.spawns.some(({ frostArmorRatio }) => (frostArmorRatio ?? 0) > 0)) traits.push("wave_trait_frost");
   if (types.some((type) => type === "warden" || type === "shaman")) traits.push("wave_trait_support");
   const recommended = recommendWaveTowers(plan);
   const displayedTraits: readonly TranslationKey[] = traits.length ? traits : ["wave_trait_mixed"];
@@ -1850,6 +1907,7 @@ async function switchPracticeSession(levelId: string, modeId: string): Promise<v
       mode: next.mode,
       heroId: selectedHeroId,
     });
+    northernOnboardingStep = getNorthernOnboardingStep(initialCampaign);
     selectedHeroId = initialCampaign.hero.id;
 
     latestUi = null;
@@ -2524,6 +2582,9 @@ function createWaveIntelTraits(enemy: WaveEnemyAggregate): HTMLElement[] {
   if (maximum(({ shieldRatio }) => shieldRatio) > 0) {
     traits.push(["wave_intel_trait_shield", Math.round(maximum(({ shieldRatio }) => shieldRatio) * 100)]);
   }
+  if (maximum(({ frostArmorRatio }) => frostArmorRatio) > 0) {
+    traits.push(["wave_intel_trait_frost_armor", Math.round(maximum(({ frostArmorRatio }) => frostArmorRatio) * 100)]);
+  }
   if (maximum(({ healingRatio }) => healingRatio) > 0) {
     traits.push(["wave_intel_trait_healing", Math.round(maximum(({ healingRatio }) => healingRatio) * 100)]);
   }
@@ -2726,6 +2787,12 @@ function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number
     "hero_detail_awakening",
     awakened ? `hero_${heroId}_awakening_text` as TranslationKey : "hero_awakening_requirement",
   );
+  if (!awakened) {
+    const requirement = container.querySelector<HTMLElement>('[data-hero-detail="awakening"] [data-hero-detail-value]');
+    if (requirement) requirement.textContent = text("hero_awakening_requirement", {
+      wave: selectedSession.level.progression.awakeningWave,
+    });
+  }
   const awakeningRow = container.querySelector<HTMLElement>('[data-hero-detail="awakening"]');
   if (awakeningRow) awakeningRow.dataset.state = awakened ? "active" : "locked";
 
@@ -2852,8 +2919,6 @@ function applyStaticTranslations(): void {
   elements.nextWaveLabel.textContent = text("next_wave");
   elements.heroTargetPromptLabel.textContent = text("hero_ability_target_road");
   elements.heroTargetCancel.textContent = text("hero_ability_target_cancel");
-  elements.introTitle.textContent = text("intro_title");
-  elements.introBody.textContent = text("intro_body");
   elements.heroChoiceLabel.textContent = text("hero_choice");
   elements.heroChoiceLock.textContent = text("hero_choice_locked");
   elements.heroPickerEyebrow.textContent = text("hero_picker_eyebrow");
@@ -3022,7 +3087,28 @@ function syncSessionControls(): void {
   elements.introWaves.textContent = finalWave === null
     ? text("intro_endless")
     : text("intro_waves", { count: finalWave });
+  syncMissionPreview();
   syncHeroChoiceControls();
+}
+
+function syncMissionPreview(): void {
+  const northern = selectedSession.level.id === NORTHERN_PASS_LEVEL_ID;
+  const prefix = northern ? "mission_northern" : "mission_forest";
+  elements.missionPreview.dataset.levelTheme = northern ? NORTHERN_PASS_LEVEL_ID : CLASSIC_CAMPAIGN_LEVEL_ID;
+  elements.introSigilMark.textContent = northern ? "✧" : "✦";
+  elements.introMissionEyebrow.textContent = text(`${prefix}_eyebrow` as TranslationKey);
+  elements.introTitle.textContent = text(`${prefix}_title` as TranslationKey);
+  elements.introBody.textContent = text(`${prefix}_body` as TranslationKey);
+  elements.missionMetrics.setAttribute("aria-label", text("mission_preview_label"));
+  elements.missionDifficultyLabel.textContent = text("mission_difficulty_label");
+  elements.missionDifficulty.textContent = text(`${prefix}_difficulty` as TranslationKey);
+  elements.missionGoldLabel.textContent = text("mission_starting_gold_label");
+  elements.missionGold.textContent = String(selectedSession.level.startingGold);
+  elements.missionLivesLabel.textContent = text("mission_starting_lives_label");
+  elements.missionLives.textContent = String(selectedSession.level.startingLives);
+  elements.missionTraitLabel.textContent = text("mission_trait_label");
+  elements.missionTraitTitle.textContent = text(`${prefix}_trait` as TranslationKey);
+  elements.missionTraitCopy.textContent = text(`${prefix}_trait_body` as TranslationKey);
 }
 
 function isSelectableSession(levelId: string, modeId: string): boolean {
@@ -3061,8 +3147,7 @@ function syncFullscreenUi(isFullscreen: boolean): void {
 }
 
 function applyLaunchErrorTranslations(): void {
-  elements.introTitle.textContent = text("intro_title");
-  elements.introBody.textContent = text("intro_body");
+  syncMissionPreview();
   if (runtimeLoadFailed) {
     elements.introTitle.textContent = text("launch_error_title");
     elements.introBody.textContent = text("game_load_failed");
@@ -3201,9 +3286,11 @@ function syncIntroAction(): void {
     return;
   }
   elements.introStart.disabled = sessionSwitching || restartSubmitting;
-  elements.introStart.textContent = text(
-    restartSelectionPending ? "game_menu_restart_accept" : introReturnsToRun ? "intro_continue" : "intro_start",
-  );
+  elements.introStart.textContent = restartSelectionPending
+    ? text("game_menu_restart_accept")
+    : introReturnsToRun
+      ? text("intro_continue")
+      : text(selectedSession.level.id === NORTHERN_PASS_LEVEL_ID ? "mission_northern_cta" : "mission_forest_cta");
 }
 
 function renderTowerGuide(): void {

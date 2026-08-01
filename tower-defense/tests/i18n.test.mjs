@@ -147,6 +147,62 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
   assert.match(tr("en", "daily_attempt_purchase_retry"), /not be charged twice/i);
 });
 
+test("both campaigns and the Northern Pass mechanic have complete localized mission copy", () => {
+  const keys = [
+    "mission_preview_label",
+    "mission_difficulty_label",
+    "mission_starting_gold_label",
+    "mission_starting_lives_label",
+    "mission_trait_label",
+    "mission_forest_eyebrow",
+    "mission_forest_title",
+    "mission_forest_body",
+    "mission_forest_difficulty",
+    "mission_forest_trait",
+    "mission_forest_trait_body",
+    "mission_forest_cta",
+    "mission_northern_eyebrow",
+    "mission_northern_title",
+    "mission_northern_body",
+    "mission_northern_difficulty",
+    "mission_northern_trait",
+    "mission_northern_trait_body",
+    "mission_northern_cta",
+    "northern_act_1",
+    "northern_act_2",
+    "northern_act_3",
+    "northern_boss_act_1",
+    "northern_boss_act_2",
+    "northern_boss_act_3",
+    "frost_armor",
+    "frost_armor_description",
+    "frost_armor_broken",
+    "wave_trait_frost",
+    "wave_intel_trait_frost_armor",
+    "warm_beacon",
+    "warm_beacon_active",
+    "warm_beacon_hint",
+    "northern_onboarding_title",
+    "northern_onboarding_body",
+    "northern_onboarding_armor_title",
+    "northern_onboarding_armor_body",
+  ];
+
+  for (const locale of ["ru", "uk", "en"]) {
+    for (const key of keys) {
+      assert.ok(tr(locale, key).trim().length >= 3, `${locale}.${key} must not be empty`);
+    }
+    assert.match(tr(locale, "mission_northern_eyebrow"), /II/i);
+    assert.match(tr(locale, "northern_onboarding_body"), /3|тр[её]х|трьох|three/ui);
+    assert.ok(tr(locale, "frost_armor_description").length >= 55);
+    assert.match(tr(locale, "hero_awakening_requirement", { wave: 14 }), /14/);
+  }
+
+  assert.match(tr("ru", "mission_northern_trait_body"), /героя.*огн/ui);
+  assert.match(tr("uk", "frost_armor_description"), /Іскромант/ui);
+  assert.match(tr("en", "warm_beacon_hint"), /hero.*fire/i);
+});
+
 test("all heroes explain attack, rank-two passive, and ability in every locale", () => {
   for (const locale of ["ru", "uk", "en"]) {
     for (const hero of ["eira", "toren", "grak"]) {

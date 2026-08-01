@@ -11,6 +11,7 @@ function spawn(type, overrides = {}) {
   return Object.freeze({
     id: overrides.id ?? 1,
     type,
+    variant: overrides.variant ?? "standard",
     atMs: overrides.atMs ?? 0,
     maxHp: overrides.maxHp ?? 100,
     speed: overrides.speed ?? 50,
@@ -19,6 +20,7 @@ function spawn(type, overrides = {}) {
     physicalResistance: overrides.physicalResistance ?? 0,
     magicResistance: overrides.magicResistance ?? 0,
     shieldRatio: overrides.shieldRatio ?? 0,
+    frostArmorRatio: overrides.frostArmorRatio ?? 0,
     controlResistance: overrides.controlResistance ?? 0,
     healingRadius: overrides.healingRadius ?? 0,
     healingRatio: overrides.healingRatio ?? 0,
@@ -58,6 +60,7 @@ test("wave aggregation follows preview order and preserves exact spawn variants"
     variants: [
       {
         count: 2,
+        variant: "standard",
         maxHp: 31,
         speed: 86,
         leakDamage: 1,
@@ -65,12 +68,14 @@ test("wave aggregation follows preview order and preserves exact spawn variants"
         magicResistance: 0.08,
         controlResistance: 0.08,
         shieldRatio: 0,
+        frostArmorRatio: 0,
         healingRadius: 0,
         healingRatio: 0,
         elite: false,
       },
       {
         count: 1,
+        variant: "standard",
         maxHp: 45,
         speed: 91.16,
         leakDamage: 2,
@@ -78,6 +83,7 @@ test("wave aggregation follows preview order and preserves exact spawn variants"
         magicResistance: 0.14,
         controlResistance: 0.2,
         shieldRatio: 0.12,
+        frostArmorRatio: 0,
         healingRadius: 0,
         healingRatio: 0,
         elite: true,
@@ -106,12 +112,21 @@ test("tower recommendations use actual speed, resistance, shield, healing, and e
   assert.deepEqual(recommendWaveTowers(support), ["storm", "ranger"]);
   assert.deepEqual(recommendWaveTowers(support, 1), ["storm"]);
   assert.deepEqual(recommendWaveTowers(support, 0), []);
+
+  const frostArmored = plan(Array.from({ length: 3 }, (_, id) => spawn("warden", {
+    id,
+    variant: "icebound",
+    frostArmorRatio: 0.35,
+  })));
+  assert.equal(recommendWaveTowers(frostArmored)[0], "ember");
+  assert.equal(aggregateWaveEnemies(frostArmored)[0].variants[0].frostArmorRatio, 0.35);
 });
 
 test("result advice returns only safe categories and a bounded tower shortlist", () => {
   const boss = plan([spawn("boss")], { hasBoss: true });
   const support = plan([spawn("shaman", { healingRadius: 80, healingRatio: 0.04 })]);
   const armor = plan([spawn("brute", { physicalResistance: 0.25 })]);
+  const frostArmor = plan([spawn("warden", { frostArmorRatio: 0.3 })]);
   const swift = plan([spawn("swift", { speed: 80 })]);
   const control = plan(Array.from({ length: 10 }, (_, id) => spawn("raider", { id })));
   const mixed = plan([spawn("raider")]);
@@ -120,6 +135,7 @@ test("result advice returns only safe categories and a bounded tower shortlist",
   assert.equal(deriveResultAdvice(boss, "defeat").recommendedTowers[0], "ranger");
   assert.equal(deriveResultAdvice(support, "defeat").category, "support");
   assert.equal(deriveResultAdvice(armor, "defeat").category, "armor");
+  assert.equal(deriveResultAdvice(frostArmor, "defeat").category, "armor");
   assert.equal(deriveResultAdvice(swift, "defeat").category, "swift");
   assert.equal(deriveResultAdvice(control, "defeat").category, "control");
   assert.equal(deriveResultAdvice(mixed, "defeat").category, "mixed");

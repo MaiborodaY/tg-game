@@ -8,9 +8,18 @@ import {
   STARTING_GOLD,
   STARTING_LIVES,
 } from "./config.ts";
-import type { CampaignAct, Point, WavePlan, WaveSpawn } from "./types.ts";
+import type { LevelProgression, Point, WavePlan, WaveSpawn } from "./types.ts";
 import type { TranslationKey } from "../i18n.ts";
 import { calculateRatingScore } from "./scoring.ts";
+import {
+  NORTHERN_PASS_BUILD_PADS,
+  NORTHERN_PASS_FINAL_WAVE,
+  NORTHERN_PASS_HERO_ANCHORS,
+  NORTHERN_PASS_PROGRESSION,
+  NORTHERN_PASS_ROUTE,
+  NORTHERN_PASS_SIGNAL_FIRES,
+  createNorthernPassWave,
+} from "./northernPassContent.ts";
 import { createWavePlan } from "./waves.ts";
 
 export const CONTENT_VERSION = 2 as const;
@@ -42,6 +51,8 @@ export type LevelDefinition = Readonly<{
   route: readonly Point[];
   buildPads: readonly Point[];
   heroAnchors: readonly Point[];
+  signalFires: readonly Point[];
+  progression: LevelProgression;
   waves: WaveSource;
 }>;
 
@@ -85,79 +96,21 @@ export const CLASSIC_CAMPAIGN_LEVEL = defineLevel({
     { x: 34, y: 382 },
     { x: 345, y: 492 },
   ],
+  signalFires: [],
+  progression: Object.freeze({
+    heroUpgradeWaves: Object.freeze([4, 12]) as readonly [number, number],
+    masteryWave: 12,
+    awakeningWave: 20,
+    actSize: 8,
+  }),
   waves: classicWaveSource,
 });
 
-const northernPassRoute: readonly Point[] = [
-  { x: -24, y: 78 },
-  { x: 96, y: 78 },
-  { x: 96, y: 172 },
-  { x: 286, y: 172 },
-  { x: 286, y: 80 },
-  { x: 366, y: 80 },
-  { x: 366, y: 286 },
-  { x: 176, y: 286 },
-  { x: 176, y: 386 },
-  { x: 62, y: 386 },
-  { x: 62, y: 486 },
-  { x: 190, y: 486 },
-  { x: 190, y: 530 },
-];
-
-const northernPassPads: readonly Point[] = [
-  { x: 32, y: 137 },
-  { x: 154, y: 124 },
-  { x: 230, y: 124 },
-  { x: 342, y: 137 },
-  { x: 342, y: 230 },
-  { x: 236, y: 232 },
-  { x: 122, y: 234 },
-  { x: 116, y: 334 },
-  { x: 236, y: 340 },
-  { x: 28, y: 436 },
-  { x: 126, y: 446 },
-  { x: 270, y: 450 },
-  { x: 340, y: 506 },
-];
-
-const northernPassWaveMap = Object.freeze([
-  1, 3, 5, 6, 7, 8,
-  9, 10, 11, 13, 14, 16,
-  17, 18, 19, 21, 22, 24,
-] as const);
-
-export function createNorthernPassWave(wave: number): WaveDefinition {
-  const index = requireWaveIndex(wave, northernPassWaveMap.length);
-  const source = createWavePlan(northernPassWaveMap[index - 1]);
-  const act = Math.min(3, Math.ceil(index / 6)) as CampaignAct;
-  const healthMultiplier = 1.08 + (act - 1) * 0.07;
-  const spawns = source.spawns.map((spawn, spawnIndex): WaveSpawn => Object.freeze({
-    ...spawn,
-    id: index * 10_000 + spawnIndex,
-    atMs: Math.round(spawn.atMs * 0.9),
-    maxHp: Math.max(1, Math.round(spawn.maxHp * healthMultiplier)),
-    speed: spawn.speed * 0.96,
-    reward: Math.max(0, Math.ceil(spawn.reward * 1.08)),
-    physicalResistance: Math.min(0.72, spawn.physicalResistance + (act - 1) * 0.02),
-    magicResistance: Math.min(0.72, spawn.magicResistance + 0.08),
-    controlResistance: Math.min(0.88, spawn.controlResistance + 0.1),
-    bossTier: act,
-    summonThresholds: Object.freeze([...spawn.summonThresholds]),
-  }));
-
-  return freezeWave({
-    wave: index,
-    spawns,
-    clearBonus: Math.ceil(source.clearBonus * 1.1),
-    hasBoss: source.hasBoss,
-    act,
-    threat: Math.min(5, Math.ceil(index / 4)) as 1 | 2 | 3 | 4 | 5,
-  });
-}
+export { createNorthernPassWave } from "./northernPassContent.ts";
 
 const northernPassWaveSource = defineWaveSource(
-  "northern-pass-campaign-v1",
-  northernPassWaveMap.length,
+  "northern-pass-campaign-v2",
+  NORTHERN_PASS_FINAL_WAVE,
   createNorthernPassWave,
 );
 
@@ -168,13 +121,11 @@ export const NORTHERN_PASS_LEVEL = defineLevel({
   height: GAME_HEIGHT,
   startingGold: 220,
   startingLives: 15,
-  route: northernPassRoute,
-  buildPads: northernPassPads,
-  heroAnchors: [
-    { x: 35, y: 225 },
-    { x: 330, y: 345 },
-    { x: 270, y: 525 },
-  ],
+  route: NORTHERN_PASS_ROUTE,
+  buildPads: NORTHERN_PASS_BUILD_PADS,
+  heroAnchors: NORTHERN_PASS_HERO_ANCHORS,
+  signalFires: NORTHERN_PASS_SIGNAL_FIRES,
+  progression: NORTHERN_PASS_PROGRESSION,
   waves: northernPassWaveSource,
 });
 
@@ -284,9 +235,14 @@ export function validateLevelDefinition(value: unknown): readonly string[] {
   validatePoints(value.route, "route", 2, value.width, value.height, errors, true);
   validatePoints(value.buildPads, "buildPads", 1, value.width, value.height, errors, false);
   validatePoints(value.heroAnchors, "heroAnchors", 3, value.width, value.height, errors, false);
+  validatePoints(value.signalFires, "signalFires", 0, value.width, value.height, errors, false);
   if (Array.isArray(value.heroAnchors) && value.heroAnchors.length !== 3) {
     errors.push("heroAnchors must contain exactly 3 points");
   }
+  if (Array.isArray(value.signalFires) && value.signalFires.length !== 0 && value.signalFires.length !== 3) {
+    errors.push("signalFires must be empty or contain exactly 3 points");
+  }
+  errors.push(...validateProgression(value.progression, isRecord(value.waves) ? value.waves.finalWave : null));
   errors.push(...validateWaveSource(value.waves).map((error) => `waves.${error}`));
   if (!Object.isFrozen(value)) errors.push("level must be frozen");
   return Object.freeze(errors);
@@ -361,7 +317,10 @@ function endlessHealthMultiplier(
 }
 
 function totalWaveHealth(wave: WaveDefinition): number {
-  return wave.spawns.reduce((total, spawn) => total + spawn.maxHp * (1 + spawn.shieldRatio), 0);
+  return wave.spawns.reduce(
+    (total, spawn) => total + spawn.maxHp * (1 + spawn.shieldRatio + (spawn.frostArmorRatio ?? 0)),
+    0,
+  );
 }
 
 function totalWaveReward(wave: WaveDefinition): number {
@@ -372,10 +331,12 @@ function defineWaveSource(id: string, finalWave: number, factory: (wave: number)
   return Object.freeze({ id, contentVersion: CONTENT_VERSION, kind: "finite", finalWave, createWave: factory });
 }
 
-function defineLevel(value: Omit<LevelDefinition, "contentVersion" | "route" | "buildPads" | "heroAnchors"> & {
+function defineLevel(value: Omit<LevelDefinition, "contentVersion" | "route" | "buildPads" | "heroAnchors" | "signalFires" | "progression"> & {
   route: readonly Point[];
   buildPads: readonly Point[];
   heroAnchors: readonly Point[];
+  signalFires?: readonly Point[];
+  progression: LevelProgression;
 }): LevelDefinition {
   return Object.freeze({
     ...value,
@@ -383,6 +344,11 @@ function defineLevel(value: Omit<LevelDefinition, "contentVersion" | "route" | "
     route: freezePoints(value.route),
     buildPads: freezePoints(value.buildPads),
     heroAnchors: freezePoints(value.heroAnchors),
+    signalFires: freezePoints(value.signalFires ?? []),
+    progression: Object.freeze({
+      ...value.progression,
+      heroUpgradeWaves: Object.freeze([...value.progression.heroUpgradeWaves]) as readonly [number, number],
+    }),
   });
 }
 
@@ -473,12 +439,21 @@ function validateWaveDefinition(value: unknown, expectedWave: number): readonly 
       if (!nonNegativeInteger(candidate.atMs) || (candidate.atMs as number) < previousTime) errors.push(`spawn ${index} has invalid timing`);
       else previousTime = candidate.atMs as number;
       if (typeof candidate.type !== "string" || !(candidate.type in ENEMY_DEFINITIONS)) errors.push(`spawn ${index} has an unknown type`);
+      if (
+        candidate.variant !== undefined
+        && candidate.variant !== "standard"
+        && candidate.variant !== "snow-runner"
+        && candidate.variant !== "icebound"
+      ) errors.push(`spawn ${index} has an unknown variant`);
       if (!positiveNumber(candidate.maxHp)) errors.push(`spawn ${index} must have positive maxHp`);
       if (!positiveNumber(candidate.speed)) errors.push(`spawn ${index} must have positive speed`);
       if (!nonNegativeInteger(candidate.reward)) errors.push(`spawn ${index} must have a non-negative reward`);
       if (!positiveInteger(candidate.leakDamage)) errors.push(`spawn ${index} must have positive leakDamage`);
       for (const key of ["physicalResistance", "magicResistance", "shieldRatio", "controlResistance"] as const) {
         if (!boundedNumber(candidate[key], 0, 1)) errors.push(`spawn ${index} has invalid ${key}`);
+      }
+      if (candidate.frostArmorRatio !== undefined && !boundedNumber(candidate.frostArmorRatio, 0, 1)) {
+        errors.push(`spawn ${index} has invalid frostArmorRatio`);
       }
       if (!boundedNumber(candidate.healingRadius, 0, Number.MAX_SAFE_INTEGER)) errors.push(`spawn ${index} has invalid healingRadius`);
       if (!boundedNumber(candidate.healingRatio, 0, 1)) errors.push(`spawn ${index} has invalid healingRatio`);
@@ -532,6 +507,37 @@ function validatePoints(
     if (!Object.isFrozen(candidate)) errors.push(`${key}.${index} must be frozen`);
   });
   if (!Object.isFrozen(value)) errors.push(`${key} must be frozen`);
+}
+
+function validateProgression(value: unknown, finalWaveValue: unknown): readonly string[] {
+  const errors: string[] = [];
+  if (!isRecord(value)) return Object.freeze(["progression must be an object"]);
+  const finalWave = Number(finalWaveValue);
+  if (!Object.isFrozen(value)) errors.push("progression must be frozen");
+  if (
+    !Array.isArray(value.heroUpgradeWaves)
+    || value.heroUpgradeWaves.length !== 2
+    || !Object.isFrozen(value.heroUpgradeWaves)
+    || !value.heroUpgradeWaves.every(positiveInteger)
+    || Number(value.heroUpgradeWaves[0]) >= Number(value.heroUpgradeWaves[1])
+  ) errors.push("progression.heroUpgradeWaves must be an ascending frozen pair");
+  for (const key of ["masteryWave", "awakeningWave", "actSize"] as const) {
+    if (!positiveInteger(value[key])) errors.push(`progression.${key} must be a positive integer`);
+  }
+  if (positiveInteger(finalWave) && positiveInteger(value.actSize) && value.actSize * 3 !== finalWave) {
+    errors.push("progression.actSize must split the campaign into three equal acts");
+  }
+  if (positiveInteger(finalWave)) {
+    const milestones = [
+      ...(Array.isArray(value.heroUpgradeWaves) ? value.heroUpgradeWaves : []),
+      value.masteryWave,
+      value.awakeningWave,
+    ];
+    if (milestones.some((milestone) => !positiveInteger(milestone) || milestone >= finalWave)) {
+      errors.push("progression milestones must occur before the final wave");
+    }
+  }
+  return Object.freeze(errors);
 }
 
 function validateRecord(value: unknown, key: string, errors: string[]): readonly [string, unknown][] {

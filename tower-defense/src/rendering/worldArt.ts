@@ -3,12 +3,25 @@ import { BUILD_PADS, GAME_HEIGHT, GAME_WIDTH, ROUTE_POINTS } from "../game/confi
 import type { CampaignAct, Point } from "../game/types.ts";
 import {
   FOREST_GATE_LANDMARKS,
+  createNorthernLandmarkLayout,
   createWorldDecorationLayout,
   getActVisualProfile,
   getWorldVisualTheme,
   type WorldDecorationLayout,
   type WorldVisualTheme,
 } from "./worldThemes.ts";
+import {
+  createNorthernAtmosphere,
+  drawBrokenCaravan,
+  drawNorthernBridgeRails,
+  drawNorthernCitadel,
+  drawNorthernDecorations,
+  drawNorthernEntrance,
+  drawNorthernGroundDetails,
+  drawNorthernIceBridgeUnderlay,
+  drawNorthernMountainFrame,
+  type NorthernAtmosphere,
+} from "./northernWorldArt.ts";
 
 export type WorldArt = Readonly<{
   themeId: WorldVisualTheme["id"];
@@ -20,6 +33,7 @@ export type WorldArt = Readonly<{
   gateWard: Phaser.GameObjects.Arc;
   gateCrystalHomeColor: number;
   gateHomeX: number;
+  northernAtmosphere: NorthernAtmosphere | null;
 }>;
 
 export type WorldDefinition = Readonly<{
@@ -44,14 +58,36 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
   const theme = getWorldVisualTheme(world.id);
   const reservedPoints = [...(world.buildPads ?? []), ...(world.heroAnchors ?? [])];
   const layout = createWorldDecorationLayout(theme, route, width, height, reservedPoints);
+  const northernLandmarks = theme.id === "northern-pass"
+    ? createNorthernLandmarkLayout(route, width, height, layout.clearings)
+    : null;
 
   drawGround(scene, width, height, theme, layout);
-  drawCanopyFrame(scene, width, height, theme);
+  if (theme.id === "northern-pass") {
+    drawNorthernGroundDetails(scene, width, height, theme, layout);
+    drawNorthernMountainFrame(scene, width, height, theme);
+    if (northernLandmarks) drawNorthernIceBridgeUnderlay(scene, northernLandmarks.iceBridge, theme);
+  } else {
+    drawCanopyFrame(scene, width, height, theme);
+  }
   drawRoute(scene, route, theme);
-  drawDecorations(scene, layout, theme);
-  if (theme.id === "forest-gate") drawForestLandmarks(scene);
-  const entrance = drawEntrance(scene, route[0], theme);
-  const gate = drawGate(scene, route[route.length - 1], height, theme);
+  if (theme.id === "northern-pass" && northernLandmarks) {
+    drawNorthernDecorations(scene, layout, theme, world.buildPads ?? []);
+    drawNorthernBridgeRails(scene, northernLandmarks.iceBridge);
+    drawBrokenCaravan(scene, northernLandmarks.caravan);
+  } else {
+    drawDecorations(scene, layout, theme);
+    drawForestLandmarks(scene);
+  }
+  const entrance = theme.id === "northern-pass"
+    ? drawNorthernEntrance(scene, route[0], theme)
+    : drawEntrance(scene, route[0], theme);
+  const gate = theme.id === "northern-pass"
+    ? drawNorthernCitadel(scene, route[route.length - 1], height, theme)
+    : drawGate(scene, route[route.length - 1], height, theme);
+  const northernAtmosphere = theme.id === "northern-pass"
+    ? createNorthernAtmosphere(scene, width, height, layout)
+    : null;
   const actVeil = scene.add.rectangle(width / 2, height / 2, width, height, 0x52366f, 0)
     .setDepth(-12)
     .setBlendMode(Phaser.BlendModes.ADD);
@@ -70,6 +106,7 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
     gateWard: gate.ward,
     gateCrystalHomeColor: gate.crystalHomeColor,
     gateHomeX: gate.container.x,
+    northernAtmosphere,
   });
 }
 
@@ -81,6 +118,26 @@ export function setWorldAct(scene: Phaser.Scene, art: WorldArt, act: CampaignAct
   art.portalCore.setFillStyle(profile.portal, 0.38).setStrokeStyle(2, profile.bossAccent, 0.72);
   art.gateWard.setFillStyle(profile.gateWard, 0.1).setStrokeStyle(2, profile.gateWard, 0.34);
   scene.tweens.add({ targets: art.actVeil, alpha: profile.veilAlpha, duration: 850, ease: "Sine.InOut" });
+  if (art.northernAtmosphere) {
+    scene.tweens.add({
+      targets: art.northernAtmosphere.snow,
+      alpha: profile.snowAlpha,
+      duration: 900,
+      ease: "Sine.InOut",
+    });
+    scene.tweens.add({
+      targets: art.northernAtmosphere.aurora,
+      alpha: profile.auroraAlpha,
+      duration: 1_200,
+      ease: "Sine.InOut",
+    });
+    scene.tweens.add({
+      targets: art.northernAtmosphere.storm,
+      alpha: profile.stormAlpha,
+      duration: 900,
+      ease: "Sine.InOut",
+    });
+  }
 }
 
 function drawGround(

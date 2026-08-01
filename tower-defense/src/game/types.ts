@@ -4,9 +4,17 @@ export type HeroId = "eira" | "toren" | "grak";
 export type HeroLevel = 1 | 2 | 3;
 export type DamageKind = "physical" | "frost" | "fire" | "arcane";
 export type EnemyType = "raider" | "swift" | "brute" | "warden" | "shade" | "bulwark" | "shaman" | "boss" | "titan";
+export type EnemyVariant = "standard" | "snow-runner" | "icebound";
 export type CampaignAct = 1 | 2 | 3;
 
 export type Point = Readonly<{ x: number; y: number }>;
+
+export type LevelProgression = Readonly<{
+  heroUpgradeWaves: readonly [number, number];
+  masteryWave: number;
+  awakeningWave: number;
+  actSize: number;
+}>;
 
 export type TowerPlacement = Readonly<{
   padId: number;
@@ -73,6 +81,8 @@ export type EnemyDefinition = Readonly<{
 export type WaveSpawn = Readonly<{
   id: number;
   type: EnemyType;
+  /** Optional for legacy Forest Gate plans; authored Northern Pass waves always set it. */
+  variant?: EnemyVariant;
   atMs: number;
   maxHp: number;
   speed: number;
@@ -81,6 +91,8 @@ export type WaveSpawn = Readonly<{
   physicalResistance: number;
   magicResistance: number;
   shieldRatio: number;
+  /** Additional breakable armour, expressed as a fraction of max HP. */
+  frostArmorRatio?: number;
   controlResistance: number;
   healingRadius: number;
   healingRatio: number;

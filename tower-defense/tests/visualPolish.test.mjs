@@ -10,12 +10,27 @@ const main = readFileSync(new URL("../src/main.ts", import.meta.url), "utf8");
 const gameplayIntel = readFileSync(new URL("../src/game/gameplayIntel.ts", import.meta.url), "utf8");
 
 test("the mission intro uses the available mobile width without dropping safe areas", () => {
-  assert.match(html, /<header class="intro-mission">[\s\S]*id="intro-title"[\s\S]*id="intro-body"/);
+  assert.match(html, /<header id="mission-preview" class="intro-mission"[\s\S]*id="intro-title"[\s\S]*id="intro-body"/);
   assert.match(html, /id="intro-attempts" class="intro-attempts"[\s\S]*?<span role="status">/);
   assert.match(css, /#intro-overlay \{[\s\S]*max\(6px, env\(safe-area-inset-right\)[\s\S]*max\(6px, env\(safe-area-inset-left\)/);
   assert.match(css, /\.intro-card \{[^}]*width:\s*min\(100%, 448px\);[^}]*padding:\s*16px 14px 14px;/s);
   assert.match(css, /\.intro-mission \{[^}]*grid-template-columns:/s);
   assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*70px;/s);
+});
+
+test("the selected level is presented as a themed mission card instead of a bare dropdown", () => {
+  assert.match(html, /id="mission-preview"[^>]*data-mission-preview[^>]*data-level-theme="forest-gate"/);
+  assert.match(html, /id="intro-sigil"[^>]*data-mission-sigil/);
+  assert.match(html, /id="intro-mission-eyebrow"[^>]*data-mission-eyebrow/);
+  assert.match(html, /id="mission-difficulty"[^>]*data-mission-difficulty/);
+  assert.match(html, /id="mission-gold"[^>]*data-mission-gold/);
+  assert.match(html, /id="mission-lives"[^>]*data-mission-lives/);
+  assert.match(html, /id="mission-trait"[^>]*data-mission-trait/);
+  assert.match(html, /id="intro-start"[^>]*data-mission-cta/);
+  assert.match(css, /\.intro-mission\[data-level-theme="forest-gate"\]/);
+  assert.match(css, /\.intro-mission\[data-level-theme="northern-pass"\]/);
+  assert.match(css, /\.mission-metrics \{[^}]*grid-template-columns:\s*repeat\(3,/s);
+  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*\.mission-trait/);
 });
 
 test("intro attempt status stays truthful across rewarded, practice, error, and exhausted launches", () => {
@@ -62,6 +77,15 @@ test("wave preview derives traits and tower recommendations from the existing pl
   assert.match(gameplayIntel, /spawn\.physicalResistance >= 0\.18[\s\S]*add\("ember", 2/);
   assert.match(gameplayIntel, /spawn\.controlResistance >= 0\.6[\s\S]*add\("frost", -1/);
   assert.match(main, /wave_preview_summary/);
+});
+
+test("Northern Pass teaches signal fires first and frost armour when it becomes relevant", () => {
+  assert.match(main, /type NorthernOnboardingStep = "beacon" \| "armor"/);
+  assert.match(main, /completedWave >= 2[\s\S]*NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY/);
+  assert.match(main, /northern_onboarding_armor_title/);
+  assert.match(main, /northern_onboarding_armor_body/);
+  assert.match(main, /wave_trait_frost/);
+  assert.match(gameplayIntel, /spawn\.frostArmorRatio[\s\S]*add\("ember", 7/);
 });
 
 test("combat keeps the command geometry stable and tower upgrades preview their next stats", () => {

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { CampaignAct, EnemyType, Point, TowerLevel, TowerType } from "../game/types.ts";
+import type { CampaignAct, EnemyType, EnemyVariant, Point, TowerLevel, TowerType } from "../game/types.ts";
 import {
   createEnemyMotionPose,
   ENEMY_VISUAL_PROFILES,
@@ -15,6 +15,15 @@ import {
 } from "./worldThemes.ts";
 
 export { drawWorld, setWorldAct, type WorldArt, type WorldDefinition };
+export {
+  SIGNAL_FIRE_RADIUS,
+  createSignalFireArt,
+  getSignalFireVisualProfile,
+  setSignalFireState,
+  type SignalFireArt,
+  type SignalFireState,
+  type SignalFireVisualProfile,
+} from "./signalFireArt.ts";
 export { getTowerTierVisualProfile, type TowerTierVisualProfile };
 
 export type TowerAuraKind = "tower_damage" | "tower_attack_speed";
@@ -42,7 +51,13 @@ export type EnemyArt = Readonly<{
 }>;
 
 type AnimatedShape = Phaser.GameObjects.Shape;
-type EnemyDrawOptions = Readonly<{ elite?: boolean; bossTier?: CampaignAct; shielded?: boolean }>;
+type EnemyDrawOptions = Readonly<{
+  elite?: boolean;
+  bossTier?: CampaignAct;
+  shielded?: boolean;
+  frostArmored?: boolean;
+  variant?: EnemyVariant;
+}>;
 type EnemyRigSpec = Readonly<{
   feet?: readonly [AnimatedShape, AnimatedShape];
   arms?: readonly [AnimatedShape, AnimatedShape];
@@ -195,13 +210,21 @@ export function createEnemyArt(
   const visual = ENEMY_VISUAL_PROFILES[type];
   const shadow = scene.add.ellipse(0, 9, visual.shadowWidth, visual.shadowHeight, 0x06100e, 0.42);
   const rigSpec = ENEMY_BUILDERS[type](scene, body, options);
+  drawEnemyVariant(scene, body, options.variant ?? "standard", major);
 
   const barWidth = visual.healthBarWidth;
   const barY = visual.healthBarY;
   const healthBack = scene.add.rectangle(0, barY, barWidth + 4, 6, 0x07110f, 0.9).setOrigin(0.5).setAlpha(major ? 1 : 0);
   const healthFill = scene.add.rectangle(-barWidth / 2, barY, barWidth, 3, major ? 0xf4bf56 : 0x77e6a5)
     .setOrigin(0, 0.5).setAlpha(major ? 1 : 0);
-  const shieldFill = scene.add.rectangle(-barWidth / 2, barY - 5, barWidth, 2, 0x77dff2, 0.95)
+  const shieldFill = scene.add.rectangle(
+    -barWidth / 2,
+    barY - 5,
+    barWidth,
+    options.frostArmored ? 3 : 2,
+    options.frostArmored ? 0xb4f4ff : 0x77dff2,
+    0.95,
+  )
     .setOrigin(0, 0.5).setAlpha(options.shielded ? 1 : 0);
   const statusRing = scene.add.circle(0, 1, visual.statusRadius, 0x74dff2, 0)
     .setStrokeStyle(2, 0x74dff2, 0)
@@ -213,6 +236,32 @@ export function createEnemyArt(
   const art = Object.freeze({ container, body, healthBack, healthFill, shieldFill, statusRing });
   enemyRigs.set(body, createEnemyRig(type, rigSpec, options.elite ? eliteAura : null));
   return art;
+}
+
+function drawEnemyVariant(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  variant: EnemyVariant,
+  major: boolean,
+): void {
+  if (variant === "standard") return;
+  const accent = scene.add.graphics();
+  if (variant === "snow-runner") {
+    accent.fillStyle(0xd8f4f6, 0.9)
+      .fillTriangle(-3, -7, -17, -4, -4, 1)
+      .fillTriangle(2, -8, 15, -2, 3, 0);
+    accent.lineStyle(2, 0x79cbd8, 0.76).lineBetween(-8, -5, 8, -5);
+  } else {
+    const scale = major ? 1.34 : 1;
+    accent.fillStyle(0x8edce8, 0.88)
+      .fillTriangle(-12 * scale, -2, -6 * scale, -18 * scale, -2 * scale, -3)
+      .fillTriangle(12 * scale, -2, 6 * scale, -18 * scale, 2 * scale, -3)
+      .fillTriangle(-4 * scale, -8, 0, -20 * scale, 4 * scale, -8);
+    accent.lineStyle(1, 0xe3fdff, 0.78)
+      .lineBetween(-6 * scale, -15 * scale, -3 * scale, -5)
+      .lineBetween(6 * scale, -15 * scale, 3 * scale, -5);
+  }
+  body.add(accent);
 }
 
 export function updateEnemyArtPose(

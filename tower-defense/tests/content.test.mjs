@@ -21,6 +21,14 @@ import {
   validateContentCatalog,
 } from "../src/game/content.ts";
 import { createWavePlan } from "../src/game/waves.ts";
+import {
+  NORTHERN_PASS_BUILD_PADS,
+  NORTHERN_PASS_FINAL_WAVE,
+  NORTHERN_PASS_HERO_ANCHORS,
+  NORTHERN_PASS_PROGRESSION,
+  NORTHERN_PASS_ROUTE,
+  NORTHERN_PASS_SIGNAL_FIRES,
+} from "../src/game/northernPassContent.ts";
 
 test("content catalog is runtime-valid, immutable, and addressable by stable ids", () => {
   assert.equal(CONTENT_VERSION, 2);
@@ -53,21 +61,74 @@ test("classic level adapts the existing route, pads, and all campaign wave seman
   assert.throws(() => CLASSIC_CAMPAIGN_LEVEL.waves.createWave(25), RangeError);
 });
 
-test("northern pass is a distinct finite PvE level with its own difficulty curve", () => {
+test("northern pass owns an authored 18-wave campaign split into three six-wave acts", () => {
   assert.notDeepEqual(NORTHERN_PASS_LEVEL.route, CLASSIC_CAMPAIGN_LEVEL.route);
   assert.notDeepEqual(NORTHERN_PASS_LEVEL.buildPads, CLASSIC_CAMPAIGN_LEVEL.buildPads);
   assert.notEqual(NORTHERN_PASS_LEVEL.startingGold, CLASSIC_CAMPAIGN_LEVEL.startingGold);
   assert.notEqual(NORTHERN_PASS_LEVEL.startingLives, CLASSIC_CAMPAIGN_LEVEL.startingLives);
-  assert.equal(NORTHERN_PASS_LEVEL.waves.finalWave, 18);
+  assert.equal(NORTHERN_PASS_LEVEL.waves.finalWave, NORTHERN_PASS_FINAL_WAVE);
 
   const first = NORTHERN_PASS_LEVEL.waves.createWave(1);
   assert.notDeepEqual(first, createWavePlan(1));
-  assert.ok(first.spawns[0].magicResistance > createWavePlan(1).spawns[0].magicResistance);
+  assert.deepEqual([1, 6, 7, 12, 13, 18].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).act), [1, 1, 2, 2, 3, 3]);
   assert.deepEqual([6, 12, 18].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss), [true, true, true]);
+  assert.deepEqual(
+    Array.from({ length: 18 }, (_, index) => index + 1).filter((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss),
+    [6, 12, 18],
+  );
+  const allSpawns = Array.from({ length: 18 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 1).spawns).flat();
+  assert.ok(allSpawns.every((spawn) => ["standard", "snow-runner", "icebound"].includes(spawn.variant)));
+  assert.ok(allSpawns.every((spawn) => Number.isFinite(spawn.frostArmorRatio)));
+  assert.ok(allSpawns.some((spawn) => spawn.variant === "snow-runner"));
+  assert.ok(allSpawns.some((spawn) => spawn.variant === "icebound" && spawn.frostArmorRatio > 0));
+  assert.ok(allSpawns.filter((spawn) => spawn.variant !== "icebound").every((spawn) => spawn.frostArmorRatio === 0));
   assert.deepEqual(NORTHERN_PASS_LEVEL.waves.createWave(18), NORTHERN_PASS_LEVEL.waves.createWave(18));
   assert.ok(Object.isFrozen(first));
   assert.ok(Object.isFrozen(first.spawns));
   assert.ok(first.spawns.every(Object.isFrozen));
+});
+
+test("northern pass geometry exposes a diagonal S route, viable build pads, and paired signal fires", () => {
+  assert.deepEqual(NORTHERN_PASS_LEVEL.route, NORTHERN_PASS_ROUTE);
+  assert.deepEqual(NORTHERN_PASS_LEVEL.buildPads, NORTHERN_PASS_BUILD_PADS);
+  assert.deepEqual(NORTHERN_PASS_LEVEL.heroAnchors, NORTHERN_PASS_HERO_ANCHORS);
+  assert.deepEqual(NORTHERN_PASS_LEVEL.signalFires, NORTHERN_PASS_SIGNAL_FIRES);
+  assert.equal(NORTHERN_PASS_LEVEL.buildPads.length, 13);
+  assert.equal(NORTHERN_PASS_LEVEL.heroAnchors.length, 3);
+  assert.equal(NORTHERN_PASS_LEVEL.signalFires.length, 3);
+  assert.ok(NORTHERN_PASS_LEVEL.route.some((point, index, route) => index > 0 && point.x !== route[index - 1].x && point.y !== route[index - 1].y));
+
+  for (const [index, anchor] of NORTHERN_PASS_LEVEL.heroAnchors.entries()) {
+    const fire = NORTHERN_PASS_LEVEL.signalFires[index];
+    assert.ok(Math.hypot(anchor.x - fire.x, anchor.y - fire.y) <= 90, `signal fire ${index} is detached from its hero anchor`);
+  }
+  for (const pad of NORTHERN_PASS_LEVEL.buildPads) {
+    const nearestOtherPad = Math.min(...NORTHERN_PASS_LEVEL.buildPads
+      .filter((candidate) => candidate !== pad)
+      .map((candidate) => Math.hypot(candidate.x - pad.x, candidate.y - pad.y)));
+    assert.ok(nearestOtherPad >= 70, "tower pads must keep independent tap targets");
+  }
+});
+
+test("each level owns immutable progression milestones matching its campaign length", () => {
+  assert.deepEqual(CLASSIC_CAMPAIGN_LEVEL.progression, {
+    heroUpgradeWaves: [4, 12],
+    masteryWave: 12,
+    awakeningWave: 20,
+    actSize: 8,
+  });
+  assert.deepEqual(NORTHERN_PASS_LEVEL.progression, NORTHERN_PASS_PROGRESSION);
+  assert.deepEqual(NORTHERN_PASS_LEVEL.progression, {
+    heroUpgradeWaves: [3, 9],
+    masteryWave: 9,
+    awakeningWave: 14,
+    actSize: 6,
+  });
+  for (const level of Object.values(CONTENT_CATALOG.levels)) {
+    assert.equal(level.progression.actSize * 3, level.waves.finalWave);
+    assert.ok(Object.isFrozen(level.progression));
+    assert.ok(Object.isFrozen(level.progression.heroUpgradeWaves));
+  }
 });
 
 test("every level exposes three immutable hero anchors clear of tower tap zones", () => {

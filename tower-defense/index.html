@@ -122,12 +122,34 @@
 
     <div id="intro-overlay" class="modal-layer">
       <section class="modal-card intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
-        <header class="intro-mission">
-          <div class="intro-sigil" aria-hidden="true"><span>✦</span></div>
+        <header id="mission-preview" class="intro-mission" data-mission-preview data-level-theme="forest-gate" aria-describedby="intro-body mission-trait-copy">
+          <div id="intro-sigil" class="intro-sigil" data-mission-sigil aria-hidden="true"><span id="intro-sigil-mark">✦</span></div>
           <div class="intro-mission-copy">
-            <small class="modal-eyebrow">TOWER DEFENSE</small>
+            <small id="intro-mission-eyebrow" class="modal-eyebrow" data-mission-eyebrow>КАМПАНИЯ I · ЛЕСНЫЕ ВРАТА</small>
             <h1 id="intro-title">Защити Сердце леса</h1>
             <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
+          </div>
+          <div id="mission-metrics" class="mission-metrics" aria-label="Параметры миссии">
+            <span class="mission-metric">
+              <small id="mission-difficulty-label">Сложность</small>
+              <strong id="mission-difficulty" data-mission-difficulty>Начальная</strong>
+            </span>
+            <span class="mission-metric">
+              <small id="mission-gold-label">Стартовое золото</small>
+              <strong id="mission-gold" data-mission-gold>190</strong>
+            </span>
+            <span class="mission-metric">
+              <small id="mission-lives-label">Жизни</small>
+              <strong id="mission-lives" data-mission-lives>20</strong>
+            </span>
+          </div>
+          <div id="mission-trait" class="mission-trait" data-mission-trait>
+            <span class="mission-trait-mark" aria-hidden="true"><i></i></span>
+            <span>
+              <small id="mission-trait-label">Особенность миссии</small>
+              <strong id="mission-trait-title">Сердце леса</strong>
+              <span id="mission-trait-copy">Освой четыре башни и удержи единственную дорогу к воротам.</span>
+            </span>
           </div>
         </header>
         <div id="intro-attempts" class="intro-attempts">
@@ -232,7 +254,7 @@
           <span><i class="feature-icon feature-icon--towers" aria-hidden="true"></i><b id="intro-towers">4 башни</b></span>
           <span><i class="feature-icon feature-icon--bosses" aria-hidden="true"></i><b id="intro-bosses">Боссы</b></span>
         </div>
-        <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
+        <button id="intro-start" class="modal-primary" type="button" data-mission-cta>Встать на защиту</button>
         <button id="intro-restart-cancel" class="secondary-action wide" type="button" hidden>Вернуться к забегу</button>
         <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
       </section>

@@ -14,6 +14,7 @@ import {
   mergeSlowEffect,
   selectHealingTargets,
 } from "./enemyAbilities.ts";
+import { getFrostArmorDamageMultiplier, isInsideSignalFire } from "./northernPassMechanics.ts";
 import { CLASSIC_CAMPAIGN_LEVEL, type LevelDefinition, type ModeRuleset } from "./content.ts";
 import {
   HERO_ABILITY_RECHARGE_KILLS,
@@ -47,6 +48,7 @@ import type {
   CampaignState,
   DamageKind,
   EnemyType,
+  EnemyVariant,
   HeroId,
   HeroLevel,
   Point,
@@ -70,6 +72,8 @@ export type SimulationRules = Readonly<{
   routePoints: readonly Point[];
   buildPads: readonly Point[];
   heroAnchors: readonly Point[];
+  signalFires: readonly Point[];
+  heroAwakeningWave: number;
   finalWave: number | null;
   isComplete(completedWave: number): boolean;
   createWavePlan(wave: number): WavePlan;
@@ -82,6 +86,8 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
   routePoints: ROUTE_POINTS,
   buildPads: BUILD_PADS,
   heroAnchors: CLASSIC_CAMPAIGN_LEVEL.heroAnchors,
+  signalFires: Object.freeze([]),
+  heroAwakeningWave: 20,
   finalWave: FINAL_WAVE,
   isComplete: (completedWave) => completedWave >= FINAL_WAVE,
   createWavePlan,
@@ -96,6 +102,8 @@ export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset)
     routePoints: level.route,
     buildPads: level.buildPads,
     heroAnchors: level.heroAnchors,
+    signalFires: level.signalFires ?? Object.freeze([]),
+    heroAwakeningWave: level.progression.awakeningWave,
     finalWave,
     isComplete: (completedWave) => mode.isComplete(level, completedWave),
     createWavePlan: (wave) => mode.createWave(level, wave),
@@ -109,10 +117,14 @@ export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset)
 
 export type EnemySimulationView = Readonly<TargetCandidate> & Readonly<{
   type: EnemyType;
+  variant: EnemyVariant;
   hp: number;
   maxHp: number;
   shield: number;
   maxShield: number;
+  frostArmor: number;
+  maxFrostArmor: number;
+  insideWarmZone: boolean;
   stunned: boolean;
   blocked: boolean;
   burning: boolean;
@@ -257,7 +269,9 @@ export type SimulationEvent =
       y: number;
       damage: number;
       absorbed: number;
+      frostAbsorbed: number;
     }>
+  | Readonly<{ type: "frost_armor_broken"; enemyId: number; x: number; y: number }>
   | Readonly<{
       type: "projectile_hit";
       towerType: TowerType;
@@ -278,12 +292,14 @@ export type SimulationEvent =
       type: "enemy_killed";
       enemyId: number;
       enemyType: EnemyType;
+      enemyVariant: EnemyVariant;
       x: number;
       y: number;
       reward: number;
       elite: boolean;
       bossTier: CampaignAct;
       shielded: boolean;
+      frostArmored: boolean;
     }>
   | Readonly<{ type: "enemy_leaked"; enemyId: number; x: number; y: number; damage: number; absorbed: number }>
   | Readonly<{ type: "wave_cleared"; wave: number; bonus: number; repairedLives: number }>
@@ -501,7 +517,11 @@ export class GameSimulation {
   }
 
   private isCurrentHeroAwakened(): boolean {
-    return isHeroAwakened(this.campaign.hero.level, this.campaign.completedWave);
+    return isHeroAwakened(
+      this.campaign.hero.level,
+      this.campaign.completedWave,
+      this.rules.heroAwakeningWave ?? DEFAULT_SIMULATION_RULES.heroAwakeningWave,
+    );
   }
 
   readView(): SimulationView {
@@ -548,6 +568,7 @@ export class GameSimulation {
       enemies: Object.freeze(view.enemies.map((enemy) => Object.freeze({
         id: enemy.id,
         type: enemy.type,
+        variant: enemy.variant,
         x: enemy.x,
         y: enemy.y,
         progress: enemy.progress,
@@ -555,6 +576,9 @@ export class GameSimulation {
         maxHp: enemy.maxHp,
         shield: enemy.shield,
         maxShield: enemy.maxShield,
+        frostArmor: enemy.frostArmor,
+        maxFrostArmor: enemy.maxFrostArmor,
+        insideWarmZone: enemy.insideWarmZone,
         slowed: enemy.slowed,
         stunned: enemy.stunned,
         blocked: enemy.blocked,
@@ -916,9 +940,11 @@ export class GameSimulation {
   private spawnEnemy(spawn: WaveSpawn, progress = 0, dynamic = false): void {
     const point = samplePointAtDistance(this.path, progress, this.pointScratch);
     const maxShield = Math.round(spawn.maxHp * spawn.shieldRatio);
+    const maxFrostArmor = Math.round(spawn.maxHp * (spawn.frostArmorRatio ?? 0));
     const entity: EnemyEntity = {
       id: spawn.id,
       type: spawn.type,
+      variant: spawn.variant ?? "standard",
       x: point.x,
       y: point.y,
       progress,
@@ -926,6 +952,9 @@ export class GameSimulation {
       maxHp: spawn.maxHp,
       shield: maxShield,
       maxShield,
+      frostArmor: maxFrostArmor,
+      maxFrostArmor,
+      insideWarmZone: this.isPointInsideActiveSignalFire(point),
       speed: spawn.speed,
       reward: spawn.reward,
       leakDamage: spawn.leakDamage,
@@ -974,6 +1003,7 @@ export class GameSimulation {
         continue;
       }
       enemy.burning = enemy.burnUntilMs > this.simulationTimeMs;
+      enemy.insideWarmZone = this.isPointInsideActiveSignalFire(enemy);
       if (enemy.burning) {
         this.damageEnemy(
           enemy,
@@ -1019,8 +1049,13 @@ export class GameSimulation {
       const point = samplePointAtDistance(this.path, enemy.progress, this.pointScratch);
       enemy.x = point.x;
       enemy.y = point.y;
+      enemy.insideWarmZone = this.isPointInsideActiveSignalFire(point);
       index += 1;
     }
+  }
+
+  private isPointInsideActiveSignalFire(point: Point): boolean {
+    return isInsideSignalFire(point, this.rules.signalFires?.[this.campaign.hero.anchorId]);
   }
 
   private updateHero(deltaMs: number): void {
@@ -1358,14 +1393,20 @@ export class GameSimulation {
     if (enemy.dead) return;
     const damage = calculateDamage(amount, kind, enemy, resistancePenetration);
     const previousHpRatio = enemy.hp / enemy.maxHp;
-    const absorbed = Math.min(enemy.shield, damage);
+    const frostMultiplier = getFrostArmorDamageMultiplier(kind, enemy.insideWarmZone);
+    const previousFrostArmor = enemy.frostArmor;
+    const frostAbsorbed = Math.min(enemy.frostArmor, damage * frostMultiplier);
+    enemy.frostArmor -= frostAbsorbed;
+    const damageAfterFrostArmor = Math.max(0, damage - frostAbsorbed / frostMultiplier);
+    const absorbed = Math.min(enemy.shield, damageAfterFrostArmor);
     enemy.shield -= absorbed;
-    const coreDamage = Math.max(0, damage - absorbed);
+    const coreDamage = Math.max(0, damageAfterFrostArmor - absorbed);
     enemy.hp -= coreDamage;
+    const appliedDamage = frostAbsorbed + absorbed + coreDamage;
     if (
       showText
-      && damage >= 1
-      && (damage >= 8 || enemy.type === "boss" || enemy.type === "titan")
+      && appliedDamage >= 1
+      && (appliedDamage >= 8 || enemy.type === "boss" || enemy.type === "titan")
       && this.simulationTimeMs - enemy.lastDamageTextAtMs >= 160
     ) {
       enemy.lastDamageTextAtMs = this.simulationTimeMs;
@@ -1374,9 +1415,13 @@ export class GameSimulation {
         enemyId: enemy.id,
         x: enemy.x,
         y: enemy.y,
-        damage,
+        damage: appliedDamage,
         absorbed,
+        frostAbsorbed,
       });
+    }
+    if (previousFrostArmor > 0 && enemy.frostArmor <= 0) {
+      this.events.push({ type: "frost_armor_broken", enemyId: enemy.id, x: enemy.x, y: enemy.y });
     }
     if (enemy.type === "titan" && coreDamage > 0 && enemy.hp > 0) {
       const crossed = crossedSummonThresholds(
@@ -1438,12 +1483,14 @@ export class GameSimulation {
       type: "enemy_killed",
       enemyId: enemy.id,
       enemyType: enemy.type,
+      enemyVariant: enemy.variant,
       x: enemy.x,
       y: enemy.y,
       reward: enemy.reward,
       elite: enemy.elite,
       bossTier: enemy.bossTier,
       shielded: enemy.maxShield > 0,
+      frostArmored: enemy.maxFrostArmor > 0,
     });
     if (transferAwakenedMark) this.refillAwakenedEiraMarks();
     this.recordHeroAbilityRechargeKill();
