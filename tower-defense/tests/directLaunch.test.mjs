@@ -172,10 +172,10 @@ test("a token rotated in another tab is refreshed before checkpoint, restart, or
 test("fresh, pending and reauthorized terminal submissions keep immutable metadata", () => {
   assert.equal(mainSource.match(/captureFinishSubmission\(/g)?.length, 3);
   assert.match(mainSource, /const finishOutcome = normalizeFinishOutcome\(selectedSession\.mode\.id, outcome\)/);
-  assert.match(mainSource, /const settledOutcome: RunTerminalOutcome = finishOutcome === "defeat" \? "gameover" : finishOutcome/);
+  assert.match(mainSource, /const pendingOutcome: RunTerminalOutcome = finishOutcome === "defeat" \? "gameover" : finishOutcome/);
   assert.match(mainSource, /finishOutcome,\s*completedWaves,\s*summary\.heroId/);
   assert.match(mainSource, /previous\.finishMetadata\.completedWaves,\s*previous\.finishMetadata\.heroId/);
-  assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : pending\.outcome === "retired" \? "retired" : "defeat",\s*pending\.waves,\s*pending\.summary\?\.heroId \?\? null/);
+  assert.match(mainSource, /normalizeFinishOutcome\(selectedSession\.mode\.id, pending\.outcome\),\s*pending\.waves,\s*pending\.summary\?\.heroId \?\? null/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*"profile_sync_pending"/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*text\("profile_sync_retry"\)[\s\S]*rewardRetry\.hidden = false/);
   assert.match(mainSource, /result\.error === "http_403"[\s\S]*refreshFinishAuthorization\(\)/);
@@ -186,4 +186,60 @@ test("fresh, pending and reauthorized terminal submissions keep immutable metada
   assert.match(mainSource, /rewardRetry\.addEventListener\("click", \(\) => \{\s*if \(finishRunReplaced\) return/);
   assert.match(mainSource, /removePendingResult\(storage, reward\.runId, currentRunRevision\(\)\);[\s\S]*isMiniAppLaunch && !replacementBootstrapCached[\s\S]*clearMiniAppReward\(session\)/);
   assert.match(mainSource, /if \(finishSettled\)[\s\S]*"profile_sync_retry_failed"[\s\S]*restartButton\.hidden = false[\s\S]*setClosingConfirmation\(false\)/);
+});
+
+test("surrender is available from the game menu for campaign and endless runs before wave one", () => {
+  assert.match(mainSource, /elements\.gameMenuRetire\.addEventListener\("click", showRetireConfirmation\)/);
+  assert.match(mainSource, /elements\.gameMenuExit\.addEventListener\("click", showRetireConfirmation\)/);
+  assert.match(mainSource, /elements\.gameMenuRetire\.hidden = false/);
+  assert.match(mainSource, /elements\.gameMenuRetire\.disabled = false/);
+  assert.match(mainSource, /elements\.gameMenuExit\.hidden = true/);
+
+  const confirmationSource = mainSource.slice(
+    mainSource.indexOf("function showRetireConfirmation"),
+    mainSource.indexOf("function acceptMenuConfirmation"),
+  );
+  assert.doesNotMatch(confirmationSource, /ENDLESS_MODE_ID|completedWave/);
+});
+
+test("surrender stores a campaign defeat while retaining the retired result presentation", () => {
+  const terminalSource = mainSource.slice(
+    mainSource.indexOf("function handleTerminal"),
+    mainSource.indexOf("async function finishReward"),
+  );
+  assert.match(terminalSource, /const finishOutcome = normalizeFinishOutcome\(selectedSession\.mode\.id, outcome\)/);
+  assert.match(terminalSource, /const displayOutcome: RunTerminalOutcome = outcome === "retired"[\s\S]*finishOutcome === "defeat" \? "gameover" : finishOutcome/);
+  assert.match(terminalSource, /const pendingOutcome: RunTerminalOutcome = finishOutcome === "defeat" \? "gameover" : finishOutcome/);
+  assert.match(terminalSource, /savePendingResult\([\s\S]*pendingOutcome/);
+  assert.match(terminalSource, /showResult\(displayOutcome,/);
+  assert.match(mainSource, /outcome === "retired" \? "run_retired" : "game_over"/);
+});
+
+test("surrender is single-shot and returns to the main menu only after settlement", () => {
+  const terminalSource = mainSource.slice(
+    mainSource.indexOf("function handleTerminal"),
+    mainSource.indexOf("async function finishReward"),
+  );
+  assert.match(terminalSource, /if \(terminalSubmissionStarted\) return;\s*terminalSubmissionStarted = true;/);
+  assert.doesNotMatch(terminalSource, /completeTerminalExit\(\)/);
+
+  const confirmationSource = mainSource.slice(
+    mainSource.indexOf("function acceptMenuConfirmation"),
+    mainSource.indexOf("function hideRestartConfirmation"),
+  );
+  assert.match(confirmationSource, /exitAfterTerminalSettlement = true;[\s\S]*handleTerminal\("retired", campaign\)/);
+  assert.doesNotMatch(confirmationSource, /completeTerminalExit|telegram\.close|reloadPage/);
+
+  const exitSource = mainSource.slice(
+    mainSource.indexOf("function completeTerminalExit"),
+    mainSource.indexOf("function showResult"),
+  );
+  assert.match(exitSource, /if \(!exitAfterTerminalSettlement \|\| !finishSettled\) return;/);
+  assert.match(exitSource, /restartGame\(\);/);
+  assert.doesNotMatch(exitSource, /telegram\.close|reloadPage/);
+  const finishSource = mainSource.slice(
+    mainSource.indexOf("async function finishReward"),
+    mainSource.indexOf("async function refreshFinishAuthorization"),
+  );
+  assert.match(finishSource, /finishSettled = true;[\s\S]*completeTerminalExit\(\)/);
 });

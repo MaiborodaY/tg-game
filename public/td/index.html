@@ -8,7 +8,7 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-DnRp1yJh.js"></script>
+    <script type="module" crossorigin src="./assets/index-CAxWqjuY.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-Dofeeh_W.css">
   </head>
   <body>
@@ -309,11 +309,11 @@
           <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="game-menu-fullscreen-label">Развернуть на весь экран</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-session" class="game-menu-action" type="button"><span aria-hidden="true">⌂</span><b id="game-menu-session-label">Уровень и режим</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-restart" class="game-menu-action is-danger" type="button"><span aria-hidden="true">↺</span><b id="game-menu-restart-label">Начать заново и выбрать героя</b><i aria-hidden="true">›</i></button>
-          <button id="game-menu-retire" class="game-menu-action is-danger" type="button" hidden><span aria-hidden="true">◇</span><b id="game-menu-retire-label">Завершить забег</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-retire" class="game-menu-action is-danger" type="button" hidden><span aria-hidden="true">◇</span><b id="game-menu-retire-label">Сдаться и выйти в меню</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-exit" class="game-menu-action" type="button" hidden><span aria-hidden="true">×</span><b id="game-menu-exit-label">Выйти из игры</b><i aria-hidden="true">›</i></button>
         </div>
 
-        <section id="game-menu-restart-confirm" class="game-menu-confirm" aria-live="polite" hidden>
+        <section id="game-menu-restart-confirm" class="game-menu-confirm" role="alertdialog" aria-modal="true" aria-labelledby="game-menu-restart-confirm-title" aria-describedby="game-menu-restart-confirm-copy" hidden>
           <strong id="game-menu-restart-confirm-title">Начать уровень заново?</strong>
           <p id="game-menu-restart-confirm-copy">Текущий прогресс будет удалён, после чего можно снова выбрать героя.</p>
           <div><button id="game-menu-restart-cancel" class="secondary-action" type="button">Отмена</button><button id="game-menu-restart-accept" class="primary-action" type="button">Начать заново</button></div>

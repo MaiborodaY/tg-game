@@ -42,9 +42,11 @@ const FUTURE_EXPIRES_AT = 4_102_444_800_000;
 
 test("endless operational cap settles through the server-supported retired outcome", () => {
   assert.equal(normalizeFinishOutcome("endless", "victory"), "retired");
+  assert.equal(normalizeFinishOutcome("endless", "retired"), "retired");
   assert.equal(normalizeFinishOutcome("endless", "defeat"), "defeat");
   assert.equal(normalizeFinishOutcome("endless", "gameover"), "defeat");
   assert.equal(normalizeFinishOutcome("campaign", "victory"), "victory");
+  assert.equal(normalizeFinishOutcome("campaign", "retired"), "defeat");
 });
 
 test("real Telegram launch parameters preserve the cross-origin finish contract", () => {

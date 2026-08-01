@@ -103,7 +103,8 @@ export function normalizeFinishOutcome(
   outcome: FinishOutcome | "gameover",
 ): FinishOutcome {
   if (outcome === "gameover") return "defeat";
-  return modeId === ENDLESS_MODE_ID && outcome === "victory" ? "retired" : outcome;
+  if (modeId === ENDLESS_MODE_ID) return outcome === "victory" ? "retired" : outcome;
+  return outcome === "retired" ? "defeat" : outcome;
 }
 export type FinishMetadata = Readonly<{
   outcome: FinishOutcome;

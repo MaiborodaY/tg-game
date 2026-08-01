@@ -304,6 +304,8 @@ let localSaveWarningShown = false;
 let finishAuthRefreshAttempted = false;
 let finishRunReplaced = false;
 let replacementBootstrapCached = false;
+let terminalSubmissionStarted = false;
+let exitAfterTerminalSettlement = false;
 let restartSelectionPending = false;
 let restartSubmitting = false;
 let resumeAfterRestartPicker = false;
@@ -762,9 +764,7 @@ function bindInteractions(): void {
   elements.gameMenuRetire.addEventListener("click", showRetireConfirmation);
   elements.gameMenuRestartCancel.addEventListener("click", hideRestartConfirmation);
   elements.gameMenuRestartAccept.addEventListener("click", acceptMenuConfirmation);
-  elements.gameMenuExit.addEventListener("click", () => {
-    if (!telegram.close()) closeGameMenu(true);
-  });
+  elements.gameMenuExit.addEventListener("click", showRetireConfirmation);
   telegram.onFullscreenChange(syncFullscreenUi);
   elements.towerGuideButton.addEventListener("click", () => openTowerGuideFromMenu());
   elements.towerGuideClose.addEventListener("click", closeTowerGuide);
@@ -1020,6 +1020,8 @@ async function applyPendingRestart(): Promise<boolean> {
     rewardFinisher = null;
     terminalResult = null;
     finishSettled = reward.mode === "local";
+    terminalSubmissionStarted = false;
+    exitAfterTerminalSettlement = false;
     serverCheckpointTail = Promise.resolve(true);
     confirmedServerWave = miniAppBootstrap?.confirmedWave ?? 0;
     tutorialState = createTutorialState({
@@ -1556,8 +1558,13 @@ function showToast(message: string, isError = false): void {
 }
 
 function handleTerminal(outcome: RunTerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
+  if (terminalSubmissionStarted) return;
+  terminalSubmissionStarted = true;
   const finishOutcome = normalizeFinishOutcome(selectedSession.mode.id, outcome);
-  const settledOutcome: RunTerminalOutcome = finishOutcome === "defeat" ? "gameover" : finishOutcome;
+  const displayOutcome: RunTerminalOutcome = outcome === "retired"
+    ? "retired"
+    : finishOutcome === "defeat" ? "gameover" : finishOutcome;
+  const pendingOutcome: RunTerminalOutcome = finishOutcome === "defeat" ? "gameover" : finishOutcome;
   const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
   const completedWaves = finalWave === null ? campaign.completedWave : Math.min(finalWave, campaign.completedWave);
   const score = selectedSession.mode.calculateScore(completedWaves);
@@ -1568,14 +1575,14 @@ function handleTerminal(outcome: RunTerminalOutcome, campaign: TowerDefenseUiSta
     && savePendingResult(
       storage,
       reward.runId,
-      settledOutcome,
+      pendingOutcome,
       result,
       completedWaves,
       summary,
       currentRunRevision(),
     );
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
-  showResult(settledOutcome, result, completedWaves, finalWave, summary);
+  showResult(displayOutcome, result, completedWaves, finalWave, summary);
   finishAuthRefreshAttempted = false;
   finishRunReplaced = false;
   replacementBootstrapCached = false;
@@ -1618,6 +1625,7 @@ async function finishReward(): Promise<void> {
     elements.restartButton.hidden = false;
     elements.closeHint.textContent = text("close_hint");
     telegram.setClosingConfirmation(false);
+    completeTerminalExit();
     return;
   }
   if (!result.ok && result.error === "http_403") {
@@ -1632,6 +1640,7 @@ async function finishReward(): Promise<void> {
       elements.restartButton.hidden = false;
       elements.closeHint.textContent = text("close_hint");
       telegram.setClosingConfirmation(false);
+      completeTerminalExit();
       return;
     }
   }
@@ -1666,6 +1675,7 @@ async function finishReward(): Promise<void> {
     if (isMiniAppLaunch) clearMiniAppReward(session);
     clearCampaign(storage, saveKey);
     removePendingResult(storage, reward.runId, currentRunRevision());
+    completeTerminalExit();
     return;
   }
   if (finishSettled) {
@@ -1683,6 +1693,13 @@ async function finishReward(): Promise<void> {
   elements.rewardRetry.hidden = false;
   elements.closeHint.textContent = text("finish_failed_hint");
   telegram.setClosingConfirmation(true);
+}
+
+function completeTerminalExit(): void {
+  if (!exitAfterTerminalSettlement || !finishSettled) return;
+  exitAfterTerminalSettlement = false;
+  telegram.setClosingConfirmation(false);
+  restartGame();
 }
 
 async function refreshFinishAuthorization(): Promise<boolean> {
@@ -1832,13 +1849,14 @@ function restorePendingFinish(): boolean {
     return false;
   }
   terminalResult = captureFinalResult(pending.score, pending.durationMs);
+  terminalSubmissionStarted = true;
   finishAuthRefreshAttempted = false;
   finishRunReplaced = false;
   replacementBootstrapCached = false;
   rewardFinisher = createRewardFinisher(reward, captureFinishSubmission(
     terminalResult.score,
     terminalResult.durationMs,
-    pending.outcome === "victory" ? "victory" : pending.outcome === "retired" ? "retired" : "defeat",
+    normalizeFinishOutcome(selectedSession.mode.id, pending.outcome),
     pending.waves,
     pending.summary?.heroId ?? null,
   ), { runRevision: miniAppBootstrap?.runRevision });
@@ -2348,13 +2366,13 @@ function showRestartConfirmation(): void {
 }
 
 function showRetireConfirmation(): void {
-  if (selectedSession.mode.id !== ENDLESS_MODE_ID || !latestUi || latestUi.campaign.completedWave < 1) return;
+  if (!latestUi || terminalSubmissionStarted) return;
   menuConfirmation = "retire";
   elements.gameMenuRestartConfirmTitle.textContent = text("game_menu_retire_confirm_title");
   elements.gameMenuRestartConfirmCopy.textContent = text("game_menu_retire_confirm_copy");
   elements.gameMenuRestartAccept.textContent = text("game_menu_retire_accept");
   elements.gameMenuRestartConfirm.hidden = false;
-  elements.gameMenuRestartAccept.focus();
+  elements.gameMenuRestartCancel.focus();
   telegram.haptic("medium");
 }
 
@@ -2368,6 +2386,7 @@ function acceptMenuConfirmation(): void {
   if (action === "retire") {
     const campaign = currentScene()?.getCampaign();
     if (!campaign) return;
+    exitAfterTerminalSettlement = true;
     closeGameMenu(false, false);
     handleTerminal("retired", campaign);
   }
@@ -2763,10 +2782,10 @@ function syncGameMenuUi(ui: TowerDefenseUiState | null): void {
   elements.gameMenuRestart.title = elements.gameMenuRestart.disabled
     ? text("game_menu_restart_unavailable")
     : text("game_menu_restart");
-  elements.gameMenuRetire.hidden = selectedSession.mode.id !== ENDLESS_MODE_ID;
-  elements.gameMenuRetire.disabled = ui.campaign.completedWave < 1;
+  elements.gameMenuRetire.hidden = false;
+  elements.gameMenuRetire.disabled = false;
   elements.gameMenuRetire.title = text("game_menu_retire");
-  elements.gameMenuExit.hidden = !telegram.canClose;
+  elements.gameMenuExit.hidden = true;
   renderHeroDetails(elements.gameMenuHeroDetails, ui.hero.id, ui.hero.level, ui.hero.awakened);
 }
 
