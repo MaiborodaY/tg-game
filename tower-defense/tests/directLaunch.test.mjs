@@ -71,7 +71,7 @@ test("practice exposes content selection while rewarded runs stay pinned", () =>
 test("daily attempt exhaustion keeps admin reset separate from a retry-safe crystal purchase", () => {
   assert.doesNotMatch(html, /session-choice-hint|Выбор сохраняется для тренировочных запусков/u);
   assert.doesNotMatch(mainSource, /sessionChoiceHint|session_hint/);
-  assert.match(mainSource, /started\.error === "daily_attempt_limit" \? "daily_attempt_limit" : "miniapp_start_failed"/);
+  assert.match(mainSource, /if \(started\.error === "daily_attempt_limit"\) \{\s*launchError = "daily_attempt_limit"/);
   assert.match(mainSource, /canResetDailyAttempts = started\.canResetAttempts === true/);
   assert.match(mainSource, /attemptPurchaseOffer = started\.attemptPurchase \?\? null/);
   assert.match(mainSource, /launchError === "daily_attempt_limit"[\s\S]*daily_attempt_limit_title[\s\S]*daily_attempt_limit_body/);
@@ -128,8 +128,9 @@ test("fingerprinted Tower Defense assets keep a stable Phaser cache boundary", (
 });
 
 test("Mini App bootstrap cache preserves the server run binding without durable token storage", () => {
-  assert.match(mainSource, /const cachedBootstrap = loadMiniAppBootstrap\(session\)/);
-  assert.match(mainSource, /const started = await startMiniAppReward\(launchDecision\.initData\)/);
+  assert.match(mainSource, /let cachedBootstrap = loadMiniAppBootstrap\(session\)/);
+  assert.match(mainSource, /fetchMiniAppProfile\(launchDecision\.initData\)/);
+  assert.match(mainSource, /const started = await startMiniAppReward\(launchDecision\.initData, \{[\s\S]*resumeRunId: activeRun\.runId,[\s\S]*heroId: activeRun\.heroId/);
   assert.match(mainSource, /saveMiniAppBootstrap\(session, started\.bootstrap\)/);
   assert.doesNotMatch(mainSource, /saveMiniAppBootstrap\(storage/);
 });
@@ -144,19 +145,31 @@ test("rewarded checkpoints resume visibly and blocked local saves warn only once
   assert.match(mainSource, /localSaveWarningShown = true;[\s\S]*text\("local_save_unavailable"\)/);
 });
 
+test("a token rotated in another tab is refreshed before checkpoint, restart, or finish retry", () => {
+  assert.match(mainSource, /result\.error === "invalid_token" \|\| result\.error === "http_403"[\s\S]*refreshActiveRunAuthorization\(source\)[\s\S]*source = miniAppBootstrap;[\s\S]*continue/);
+  assert.match(mainSource, /startMiniAppReward\(launchDecision\.initData, \{\s*resumeRunId: expected\.reward\.runId,[\s\S]*heroId: expected\.heroId/);
+  assert.match(mainSource, /refreshed\.bootstrap\.reward\.runId !== expected\.reward\.runId[\s\S]*refreshed\.bootstrap\.runRevision !== expected\.runRevision[\s\S]*refreshed\.bootstrap\.confirmedWave !== confirmedServerWave/);
+  assert.match(mainSource, /replaceMiniAppBootstrap\(session, refreshed\.bootstrap\)[\s\S]*miniAppBootstrap = refreshed\.bootstrap;[\s\S]*reward = refreshed\.reward/);
+  assert.match(mainSource, /restartMiniAppRun\([\s\S]*selectedHeroId[\s\S]*restarted\.error === "invalid_token"[\s\S]*refreshActiveRunAuthorization\(miniAppBootstrap\)[\s\S]*restartMiniAppRun\(/);
+  assert.match(mainSource, /recoverAppliedRestart\(restartSource, selectedHeroId\)/);
+  assert.match(mainSource, /active\.runRevision <= expected\.runRevision[\s\S]*active\.confirmedWave !== 0[\s\S]*active\.heroId !== heroId/);
+  assert.match(mainSource, /resumed\.bootstrap\.runRevision === active\.runRevision[\s\S]*resumed\.bootstrap\.confirmedWave === 0[\s\S]*resumed\.bootstrap\.heroId === heroId/);
+  assert.match(mainSource, /reward\.mode === "server"[\s\S]*miniAppBootstrap\?\.runContractVersion === 3[\s\S]*!await ensureServerCheckpoints\(finishMetadata\.completedWaves\)[\s\S]*checkpoint_save_failed/);
+});
+
 test("fresh, pending and reauthorized terminal submissions keep immutable metadata", () => {
   assert.equal(mainSource.match(/captureFinishSubmission\(/g)?.length, 3);
-  assert.match(mainSource, /outcome === "victory" \? "victory" : "defeat",\s*completedWaves,\s*summary\.heroId/);
+  assert.match(mainSource, /outcome === "victory" \? "victory" : outcome === "retired" \? "retired" : "defeat",\s*completedWaves,\s*summary\.heroId/);
   assert.match(mainSource, /previous\.finishMetadata\.completedWaves,\s*previous\.finishMetadata\.heroId/);
-  assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : "defeat",\s*pending\.waves,\s*pending\.summary\?\.heroId \?\? null/);
+  assert.match(mainSource, /pending\.outcome === "victory" \? "victory" : pending\.outcome === "retired" \? "retired" : "defeat",\s*pending\.waves,\s*pending\.summary\?\.heroId \?\? null/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*"profile_sync_pending"/);
   assert.match(mainSource, /result\.profileSync === "pending"[\s\S]*text\("profile_sync_retry"\)[\s\S]*rewardRetry\.hidden = false/);
   assert.match(mainSource, /result\.error === "http_403"[\s\S]*refreshFinishAuthorization\(\)/);
-  assert.match(mainSource, /startMiniAppReward\(launchDecision\.initData, \{ resumeRunId: currentRunId \}\)/);
+  assert.match(mainSource, /startMiniAppReward\(launchDecision\.initData, \{\s*resumeRunId: currentRunId,\s*selection: \{[\s\S]*heroId: selectedHeroId/);
   assert.match(mainSource, /bootstrapCached = replaceMiniAppBootstrap\(session, refreshed\.bootstrap\)/);
   assert.match(mainSource, /refreshed\.reward\.runId !== currentRunId[\s\S]*finishRunReplaced = true;[\s\S]*replacementBootstrapCached = bootstrapCached;[\s\S]*return false/);
   assert.match(mainSource, /if \(finishRunReplaced\) \{[\s\S]*finishSettled = true;[\s\S]*"run_replaced"[\s\S]*restartButton\.hidden = false/);
   assert.match(mainSource, /rewardRetry\.addEventListener\("click", \(\) => \{\s*if \(finishRunReplaced\) return/);
-  assert.match(mainSource, /removePendingResult\(storage, reward\.runId\);[\s\S]*isMiniAppLaunch && !replacementBootstrapCached[\s\S]*clearMiniAppReward\(session\)/);
+  assert.match(mainSource, /removePendingResult\(storage, reward\.runId, currentRunRevision\(\)\);[\s\S]*isMiniAppLaunch && !replacementBootstrapCached[\s\S]*clearMiniAppReward\(session\)/);
   assert.match(mainSource, /if \(finishSettled\)[\s\S]*"profile_sync_retry_failed"[\s\S]*restartButton\.hidden = false[\s\S]*setClosingConfirmation\(false\)/);
 });

@@ -12,6 +12,8 @@ import {
   CAMPAIGN_MODE_ID,
   CLASSIC_CAMPAIGN_LEVEL_ID,
   CONTENT_CATALOG,
+  ENDLESS_MODE_ID,
+  MAX_ENDLESS_WAVE,
   NORTHERN_PASS_LEVEL_ID,
 } from "./game/content.ts";
 import {
@@ -31,6 +33,7 @@ import {
 } from "./game/sessionSelection.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { isHeroUnlocked } from "./game/heroAvailability.ts";
+import { isSessionAvailable } from "./game/progression.ts";
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
 import {
   aggregateWaveEnemies,
@@ -40,7 +43,6 @@ import {
 } from "./game/gameplayIntel.ts";
 import { getHeroAura, getHeroStats, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
-import { MAX_RATING_SCORE } from "./game/scoring.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
 import {
   createTutorialState,
@@ -80,17 +82,21 @@ import {
   decideAttemptPurchaseRequestIdLifecycle,
   decideRewardLaunch,
   executeDailyAttemptLimitPrimaryAction,
+  fetchMiniAppProfile,
   getOrCreateAttemptPurchaseRequestId,
   loadMiniAppBootstrap,
   parseLaunchParams,
   purchaseMiniAppDailyAttempts,
+  recordMiniAppCheckpoint,
   replaceMiniAppBootstrap,
   resetMiniAppDailyAttempts,
+  restartMiniAppRun,
   saveMiniAppBootstrap,
   startMiniAppReward,
   type FinalResult,
   type AttemptPurchaseOffer,
   type MiniAppBootstrap,
+  type MiniAppProfileBootstrap,
   type RewardFinisher,
   type RewardLaunch,
 } from "./reward.ts";
@@ -105,6 +111,7 @@ import { setupTelegramBridge } from "./telegram.ts";
 import { TOWER_GUIDE_ENTRIES } from "./towerGuide.ts";
 
 type AttemptPurchaseUiState = "offer" | "confirm" | "loading" | "success" | "insufficient" | "retry";
+type RunTerminalOutcome = TerminalOutcome | "retired";
 
 void bootstrap();
 
@@ -134,6 +141,7 @@ const leaderboardClient = launchDecision.kind === "miniapp"
   : null;
 let launch = legacyLaunch;
 let miniAppBootstrap: MiniAppBootstrap | null = null;
+let miniAppProfileBootstrap: MiniAppProfileBootstrap | null = null;
 let launchError: "invalid_launch" | "miniapp_start_failed" | "daily_attempt_limit" | null = legacyLaunch.rewardError;
 let canResetDailyAttempts = false;
 let resettingDailyAttempts = false;
@@ -142,25 +150,44 @@ let attemptPurchaseState: AttemptPurchaseUiState = "offer";
 let attemptPurchaseError: string | null = null;
 let attemptPurchaseBalanceCrystals = 0;
 if (launchDecision.kind === "miniapp") {
-  const cachedBootstrap = loadMiniAppBootstrap(session);
+  let cachedBootstrap = loadMiniAppBootstrap(session);
+  if (cachedBootstrap && readFlag(storage, "td-reward-used-v1:" + cachedBootstrap.reward.runId)) {
+    clearMiniAppReward(session);
+    cachedBootstrap = null;
+  }
   if (cachedBootstrap) {
     clearAttemptPurchaseRequestId(session);
     miniAppBootstrap = cachedBootstrap;
     launch = Object.freeze({ ...legacyLaunch, reward: cachedBootstrap.reward, rewardError: null });
     launchError = null;
   } else {
-    const started = await startMiniAppReward(launchDecision.initData);
-    if (started.ok) {
-      clearAttemptPurchaseRequestId(session);
-      miniAppBootstrap = started.bootstrap;
-      saveMiniAppBootstrap(session, started.bootstrap);
-      launch = Object.freeze({ ...legacyLaunch, reward: started.reward, rewardError: null });
-      launchError = null;
+    const profiled = await fetchMiniAppProfile(launchDecision.initData);
+    if (profiled.ok) {
+      miniAppProfileBootstrap = profiled.bootstrap;
+      const activeRun = profiled.bootstrap.activeRun;
+      if (activeRun) {
+        const started = await startMiniAppReward(launchDecision.initData, {
+          resumeRunId: activeRun.runId,
+          selection: {
+            levelId: activeRun.binding.levelId,
+            modeId: activeRun.binding.modeId,
+            heroId: activeRun.heroId,
+          },
+        });
+        if (started.ok) {
+          clearAttemptPurchaseRequestId(session);
+          miniAppBootstrap = started.bootstrap;
+          saveMiniAppBootstrap(session, started.bootstrap);
+          launch = Object.freeze({ ...legacyLaunch, reward: started.reward, rewardError: null });
+          launchError = null;
+        } else {
+          launchError = "miniapp_start_failed";
+        }
+      } else {
+        launchError = null;
+      }
     } else {
-      launchError = started.error === "daily_attempt_limit" ? "daily_attempt_limit" : "miniapp_start_failed";
-      canResetDailyAttempts = started.canResetAttempts === true;
-      attemptPurchaseOffer = started.attemptPurchase ?? null;
-      attemptPurchaseBalanceCrystals = attemptPurchaseOffer?.balanceCrystals ?? 0;
+      launchError = "miniapp_start_failed";
     }
   }
 } else if (launchDecision.kind === "error") {
@@ -181,7 +208,7 @@ if (developmentAttemptPurchasePreview) {
         : "offer";
 }
 
-const rewardUsedKey = launch.reward.runId ? "td-reward-used-v1:" + launch.reward.runId : null;
+let rewardUsedKey = launch.reward.runId ? "td-reward-used-v1:" + launch.reward.runId : null;
 const rewardAlreadyUsed = rewardUsedKey ? readFlag(storage, rewardUsedKey) : false;
 if (isMiniAppLaunch && rewardAlreadyUsed) clearMiniAppReward(session);
 let reward: RewardLaunch = rewardAlreadyUsed
@@ -193,27 +220,44 @@ let selectedSession = miniAppBootstrap && reward.mode === "server"
     // Legacy signed URL launches predate server content bindings and stay on the classic campaign.
     ? resolveSessionSelection("server", null)
     : readSessionSelection(storage, "local");
+const awaitingMiniAppStart = isMiniAppLaunch && !miniAppBootstrap;
+const launchProfile = miniAppBootstrap?.profile ?? miniAppProfileBootstrap?.profile ?? null;
+if (
+  awaitingMiniAppStart
+  && !isSessionAvailable(selectedSession.level.id, selectedSession.mode.id, launchProfile)
+) {
+  selectedSession = resolveSessionSelection("local", {
+    levelId: CLASSIC_CAMPAIGN_LEVEL_ID,
+    modeId: CAMPAIGN_MODE_ID,
+  });
+}
 let saveKey = getCampaignSaveKey(
   reward.mode === "server" ? reward.runId : null,
   selectedSession.level.id,
   selectedSession.mode.id,
+  currentRunRevision(),
 );
-const savedCampaign = loadCampaign(storage, saveKey, selectedSession.selection);
+const savedCampaign = awaitingMiniAppStart ? null : loadCampaign(storage, saveKey, selectedSession.selection);
 const canMigrateLegacy = selectedSession.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
   && selectedSession.mode.id === CAMPAIGN_MODE_ID;
-const migrated = !savedCampaign && canMigrateLegacy
+const migrated = !awaitingMiniAppStart && !savedCampaign && canMigrateLegacy
   ? migrateLegacyCampaign(storage, reward.mode === "server" ? reward.runId : null)
   : null;
 // A profile controls new hero selection, but an already-started run must remain
 // resumable if the bootstrap profile is temporarily unavailable during reload.
 const restoredCheckpoint = savedCampaign || migrated;
-const pendingWaveLimit = selectedSession.mode.getFinalWave(selectedSession.level) ?? Number.MAX_SAFE_INTEGER;
+let pendingWaveLimit = selectedSession.mode.getFinalWave(selectedSession.level) ?? MAX_ENDLESS_WAVE;
+let pendingScoreLimit = selectedSession.mode.calculateScore(pendingWaveLimit);
 const pendingAtLaunch = reward.mode === "server" && reward.runId
-  ? loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, pendingWaveLimit)
+  ? loadPendingResult(storage, reward.runId, pendingScoreLimit, pendingWaveLimit, currentRunRevision())
   : null;
 let initialCampaign = pendingAtLaunch
-  ? createCampaignState({ level: selectedSession.level, mode: selectedSession.mode })
-  : restoredCheckpoint || createCampaignState({ level: selectedSession.level, mode: selectedSession.mode });
+  ? createCampaignState({ level: selectedSession.level, mode: selectedSession.mode, heroId: miniAppBootstrap?.heroId ?? "eira" })
+  : restoredCheckpoint || createCampaignState({
+      level: selectedSession.level,
+      mode: selectedSession.mode,
+      heroId: miniAppBootstrap?.heroId ?? miniAppProfileBootstrap?.activeRun?.heroId ?? "eira",
+    });
 
 let latestUi: TowerDefenseUiState | null = null;
 let rewardFinisher: RewardFinisher | null = null;
@@ -232,6 +276,7 @@ let menuReturnFocus: HTMLElement | null = null;
 let leaderboardOrigin: "intro" | "menu" | "result" | null = null;
 let leaderboardReturnFocus: HTMLElement | null = null;
 let leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
+let leaderboardModeId: typeof CAMPAIGN_MODE_ID | typeof ENDLESS_MODE_ID = CAMPAIGN_MODE_ID;
 let leaderboardRequestId = 0;
 let renderedLeaderboard: TowerDefenseLeaderboard | null = null;
 let introReturnsToRun = false;
@@ -240,11 +285,24 @@ let localSaveWarningShown = false;
 let finishAuthRefreshAttempted = false;
 let finishRunReplaced = false;
 let replacementBootstrapCached = false;
+let restartSelectionPending = false;
+let restartSubmitting = false;
+let resumeAfterRestartPicker = false;
+let menuConfirmation: "restart" | "retire" | null = null;
+let serverCheckpointTail: Promise<boolean> = Promise.resolve(true);
+let confirmedServerWave = miniAppBootstrap?.confirmedWave ?? 0;
+const restoredServerWave = pendingAtLaunch?.waves ?? restoredCheckpoint?.completedWave ?? 0;
+let checkpointTargetWave = Math.max(confirmedServerWave, restoredServerWave);
+let checkpointFailureShown = false;
+let checkpointResumeMismatch = Boolean(
+  miniAppBootstrap?.runContractVersion === 3 && confirmedServerWave > restoredServerWave,
+);
+if (checkpointResumeMismatch) restartSelectionPending = true;
 let gameStarting = false;
 let gameMounted = false;
 let runtimeLoadFailed = false;
 let reloadRequested = false;
-let playerProfile: PlayerProfileSnapshot | null = miniAppBootstrap?.profile ?? null;
+let playerProfile: PlayerProfileSnapshot | null = launchProfile;
 let selectedHeroId: HeroId = initialCampaign.hero.id;
 let runStarted = Boolean(restoredCheckpoint);
 let tutorialState: TutorialState = createTutorialState({
@@ -377,6 +435,7 @@ const elements = {
   attemptPurchaseCancel: button("attempt-purchase-cancel"),
   attemptPurchaseConfirm: button("attempt-purchase-confirm"),
   introStart: button("intro-start"),
+  introRestartCancel: button("intro-restart-cancel"),
   introLeaderboard: button("intro-leaderboard"),
   introLeaderboardLabel: byId("intro-leaderboard-label"),
   sessionPicker: byId("session-picker"),
@@ -384,6 +443,7 @@ const elements = {
   levelSelect: select("level-select"),
   modeChoiceLabel: byId("mode-choice-label"),
   modeSelect: select("mode-select"),
+  modeUnlockHint: byId("mode-unlock-hint"),
   heroChoiceButton: button("hero-choice-button"),
   heroChoiceEmblem: byId("hero-choice-emblem"),
   heroChoiceLabel: byId("hero-choice-label"),
@@ -426,6 +486,8 @@ const elements = {
   gameMenuSessionLabel: byId("game-menu-session-label"),
   gameMenuRestart: button("game-menu-restart"),
   gameMenuRestartLabel: byId("game-menu-restart-label"),
+  gameMenuRetire: button("game-menu-retire"),
+  gameMenuRetireLabel: byId("game-menu-retire-label"),
   gameMenuExit: button("game-menu-exit"),
   gameMenuExitLabel: byId("game-menu-exit-label"),
   gameMenuRestartConfirm: byId("game-menu-restart-confirm"),
@@ -439,6 +501,8 @@ const elements = {
   leaderboardTitle: byId("leaderboard-title"),
   leaderboardTabs: byId("leaderboard-tabs"),
   leaderboardTabButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-leaderboard-level]")],
+  leaderboardModeTabs: byId("leaderboard-mode-tabs"),
+  leaderboardModeButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-leaderboard-mode]")],
   leaderboardPanel: byId("leaderboard-panel"),
   leaderboardSummary: byId("leaderboard-summary"),
   leaderboardStatus: byId("leaderboard-status"),
@@ -494,6 +558,12 @@ const gameCallbacks: TowerDefenseCallbacks = {
   },
   onNotice: showNotice,
   onWaveClear: (wave, bonus, repairedLives) => {
+    void ensureServerCheckpoints(wave).then((saved) => {
+      if (!saved && !checkpointFailureShown) {
+        checkpointFailureShown = true;
+        showToast(text("checkpoint_save_failed"), true);
+      }
+    });
     const awakeningUnlocked = wave === 20 && currentScene()?.getCampaign().hero.level === 3;
     showToast(awakeningUnlocked
       ? `${text("hero_awakening_unlocked")} · ${text("clear_bonus", { amount: bonus })}`
@@ -503,6 +573,10 @@ const gameCallbacks: TowerDefenseCallbacks = {
   onTerminal: handleTerminal,
   onHaptic: telegram.haptic,
 };
+
+if (!checkpointResumeMismatch && checkpointTargetWave > confirmedServerWave) {
+  void ensureServerCheckpoints(checkpointTargetWave);
+}
 
 type TowerDefenseRuntime = typeof import("./rendering/TowerDefenseScene.ts");
 type GameMountContext = Readonly<{
@@ -526,6 +600,7 @@ bindInteractions();
 const developmentResultShown = showDevelopmentResultPreview();
 const pendingFinishRestored = developmentResultShown || restorePendingFinish();
 if (!developmentResultShown) showRestoredRunStatus();
+if (checkpointResumeMismatch) showToast(text("run_resume_restart_required"), true);
 if (!pendingFinishRestored) {
   if (elements.introOverlay.hidden) {
     await mountRestoredGame();
@@ -587,21 +662,42 @@ function bindInteractions(): void {
   elements.leaderboardTabButtons.forEach((control) => {
     control.addEventListener("click", () => selectLeaderboardLevel(control.dataset.leaderboardLevel));
   });
+  elements.leaderboardModeButtons.forEach((control) => {
+    control.addEventListener("click", () => selectLeaderboardMode(control.dataset.leaderboardMode));
+  });
   elements.leaderboardTabs.addEventListener("keydown", (event) => {
     if (!(event.target instanceof HTMLButtonElement)) return;
-    const currentIndex = elements.leaderboardTabButtons.indexOf(event.target);
+    const availableControls = elements.leaderboardTabButtons.filter((control) => !control.hidden && !control.disabled);
+    const currentIndex = availableControls.indexOf(event.target);
     if (currentIndex < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const lastIndex = elements.leaderboardTabButtons.length - 1;
+    const lastIndex = availableControls.length - 1;
     const nextIndex = event.key === "Home"
       ? 0
       : event.key === "End"
         ? lastIndex
         : event.key === "ArrowRight"
-          ? (currentIndex + 1) % elements.leaderboardTabButtons.length
-          : (currentIndex - 1 + elements.leaderboardTabButtons.length) % elements.leaderboardTabButtons.length;
-    const next = elements.leaderboardTabButtons[nextIndex];
+          ? (currentIndex + 1) % availableControls.length
+          : (currentIndex - 1 + availableControls.length) % availableControls.length;
+    const next = availableControls[nextIndex];
     selectLeaderboardLevel(next.dataset.leaderboardLevel);
+    next.focus();
+  });
+  elements.leaderboardModeTabs.addEventListener("keydown", (event) => {
+    if (!(event.target instanceof HTMLButtonElement)) return;
+    const currentIndex = elements.leaderboardModeButtons.indexOf(event.target);
+    if (currentIndex < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const lastIndex = elements.leaderboardModeButtons.length - 1;
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? lastIndex
+        : event.key === "ArrowRight"
+          ? (currentIndex + 1) % elements.leaderboardModeButtons.length
+          : (currentIndex - 1 + elements.leaderboardModeButtons.length) % elements.leaderboardModeButtons.length;
+    const next = elements.leaderboardModeButtons[nextIndex];
+    selectLeaderboardMode(next.dataset.leaderboardMode);
     next.focus();
   });
   elements.leaderboardRetry.addEventListener("click", () => void loadLeaderboard(true));
@@ -625,8 +721,9 @@ function bindInteractions(): void {
     openSessionMenu();
   });
   elements.gameMenuRestart.addEventListener("click", showRestartConfirmation);
+  elements.gameMenuRetire.addEventListener("click", showRetireConfirmation);
   elements.gameMenuRestartCancel.addEventListener("click", hideRestartConfirmation);
-  elements.gameMenuRestartAccept.addEventListener("click", restartGame);
+  elements.gameMenuRestartAccept.addEventListener("click", acceptMenuConfirmation);
   elements.gameMenuExit.addEventListener("click", () => {
     if (!telegram.close()) closeGameMenu(true);
   });
@@ -663,6 +760,7 @@ function bindInteractions(): void {
     else if (launchError === "miniapp_start_failed" || runtimeLoadFailed) reloadPage();
     else void startGameFromIntro();
   });
+  elements.introRestartCancel.addEventListener("click", cancelPendingRestart);
   elements.attemptPurchaseCancel.addEventListener("click", hideAttemptPurchaseConfirmation);
   elements.attemptPurchaseConfirm.addEventListener("click", () => void purchaseDailyAttempts());
   elements.rewardRetry.addEventListener("click", () => {
@@ -727,6 +825,23 @@ async function startGameFromIntro(): Promise<void> {
   syncIntroAction();
   syncSessionControls();
   if (latestUi) syncTutorial(latestUi);
+  if (restartSelectionPending) {
+    const restarted = await applyPendingRestart();
+    if (!restarted) {
+      gameStarting = false;
+      syncIntroAction();
+      syncSessionControls();
+      return;
+    }
+  } else if (launchDecision.kind === "miniapp" && reward.mode !== "server") {
+    const started = await createSelectedMiniAppRun();
+    if (!started) {
+      gameStarting = false;
+      syncIntroAction();
+      syncSessionControls();
+      return;
+    }
+  }
   const ready = await ensureGameMounted();
   gameStarting = false;
   if (!ready) {
@@ -742,6 +857,286 @@ async function startGameFromIntro(): Promise<void> {
   syncIntroAction();
   syncSessionControls();
   dismissIntro();
+}
+
+async function createSelectedMiniAppRun(): Promise<boolean> {
+  if (launchDecision.kind !== "miniapp") return true;
+  if (!isSessionAvailable(selectedSession.level.id, selectedSession.mode.id, playerProfile)) {
+    showToast(text("mode_endless_locked"), true);
+    return false;
+  }
+  const requestedSelection = Object.freeze({
+    levelId: selectedSession.level.id,
+    modeId: selectedSession.mode.id,
+    heroId: selectedHeroId,
+  });
+  const started = await startMiniAppReward(launchDecision.initData, {
+    selection: {
+      ...requestedSelection,
+    },
+  });
+  if (!started.ok) {
+    if (started.error === "daily_attempt_limit") {
+      launchError = "daily_attempt_limit";
+      canResetDailyAttempts = started.canResetAttempts === true;
+      attemptPurchaseOffer = started.attemptPurchase ?? null;
+      attemptPurchaseBalanceCrystals = attemptPurchaseOffer?.balanceCrystals ?? 0;
+      applyLaunchErrorTranslations();
+    } else if (started.error === "active_run_conflict") {
+      reloadPage();
+    } else {
+      showToast(text(started.error === "mode_locked" ? "mode_endless_locked" : "miniapp_launch_error_body"), true);
+    }
+    return false;
+  }
+  if (started.bootstrap.runContractVersion !== 3) {
+    showToast(text("miniapp_launch_error_body"), true);
+    return false;
+  }
+  const selectionChanged = started.bootstrap.binding.levelId !== requestedSelection.levelId
+    || started.bootstrap.binding.modeId !== requestedSelection.modeId
+    || started.bootstrap.heroId !== requestedSelection.heroId;
+  clearAttemptPurchaseRequestId(session);
+  if (!saveMiniAppBootstrap(session, started.bootstrap)) {
+    showToast(text("local_save_unavailable"), true);
+  }
+  activateServerBootstrap(started.bootstrap, selectedHeroId);
+  initialCampaign = createCampaignState({
+    level: selectedSession.level,
+    mode: selectedSession.mode,
+    heroId: selectedHeroId,
+  });
+  if (selectionChanged || started.bootstrap.resumed && started.bootstrap.confirmedWave > 0) {
+    restartSelectionPending = true;
+    showToast(text(selectionChanged ? "run_selection_changed" : "run_resume_restart_required"), true);
+    return false;
+  }
+  return true;
+}
+
+async function applyPendingRestart(): Promise<boolean> {
+  if (!restartSelectionPending || restartSubmitting) return false;
+  restartSubmitting = true;
+  syncIntroAction();
+  try {
+    if (reward.mode === "server") {
+      if (launchDecision.kind !== "miniapp" || !miniAppBootstrap) return false;
+      const restartSource = miniAppBootstrap;
+      let restarted = await restartMiniAppRun(
+        launchDecision.initData,
+        miniAppBootstrap,
+        selectedHeroId,
+      );
+      if (!restarted.ok && (restarted.error === "invalid_token" || restarted.error === "http_403")) {
+        const refreshed = await refreshActiveRunAuthorization(miniAppBootstrap);
+        if (refreshed && miniAppBootstrap) {
+          restarted = await restartMiniAppRun(
+            launchDecision.initData,
+            miniAppBootstrap,
+            selectedHeroId,
+          );
+        }
+      }
+      if (!restarted.ok) {
+        const recovered = await recoverAppliedRestart(restartSource, selectedHeroId);
+        if (recovered) restarted = Object.freeze({ ok: true, bootstrap: recovered });
+      }
+      if (!restarted.ok) {
+        showToast(text("game_menu_restart_failed"), true);
+        return false;
+      }
+      if (!replaceMiniAppBootstrap(session, restarted.bootstrap)) {
+        showToast(text("local_save_unavailable"), true);
+      }
+      clearCampaign(storage, saveKey);
+      removePendingResult(storage, reward.runId, currentRunRevision());
+      activateServerBootstrap(restarted.bootstrap, selectedHeroId);
+    } else {
+      clearCampaign(storage, saveKey);
+      clearCampaign(storage, LEGACY_SAVE_KEY);
+    }
+
+    const previous = runtimeController.clearMounted();
+    if (previous) {
+      gameMounted = false;
+      previous.game.destroy(true);
+      await waitForRendererCleanup();
+      elements.gameRoot.replaceChildren();
+    }
+    initialCampaign = createCampaignState({
+      level: selectedSession.level,
+      mode: selectedSession.mode,
+      heroId: selectedHeroId,
+    });
+    latestUi = null;
+    runStarted = false;
+    renderedPreviewWave = -1;
+    rewardFinisher = null;
+    terminalResult = null;
+    finishSettled = reward.mode === "local";
+    serverCheckpointTail = Promise.resolve(true);
+    confirmedServerWave = miniAppBootstrap?.confirmedWave ?? 0;
+    tutorialState = createTutorialState({
+      campaign: initialCampaign,
+      phase: "setup",
+      profile: playerProfile,
+      tutorialCompleted: readFlag(storage, TUTORIAL_COMPLETION_STORAGE_KEY),
+    });
+    restartSelectionPending = false;
+    telegram.haptic("success");
+    return true;
+  } finally {
+    restartSubmitting = false;
+  }
+}
+
+async function recoverAppliedRestart(
+  expected: MiniAppBootstrap,
+  heroId: HeroId,
+): Promise<MiniAppBootstrap | null> {
+  if (launchDecision.kind !== "miniapp" || expected.runRevision === null) return null;
+  const profileResult = await fetchMiniAppProfile(launchDecision.initData);
+  if (!profileResult.ok) return null;
+  const active = profileResult.bootstrap.activeRun;
+  if (
+    !active
+    || active.runId !== expected.reward.runId
+    || active.runContractVersion !== 3
+    || active.runRevision <= expected.runRevision
+    || active.confirmedWave !== 0
+    || active.heroId !== heroId
+    || active.binding.levelId !== expected.binding.levelId
+    || active.binding.modeId !== expected.binding.modeId
+  ) return null;
+
+  const resumed = await startMiniAppReward(launchDecision.initData, {
+    resumeRunId: active.runId,
+    selection: {
+      levelId: active.binding.levelId,
+      modeId: active.binding.modeId,
+      heroId: active.heroId,
+    },
+  });
+  return resumed.ok
+    && resumed.bootstrap.runContractVersion === 3
+    && resumed.bootstrap.reward.runId === active.runId
+    && resumed.bootstrap.runRevision === active.runRevision
+    && resumed.bootstrap.confirmedWave === 0
+    && resumed.bootstrap.heroId === heroId
+    && resumed.bootstrap.binding.levelId === active.binding.levelId
+    && resumed.bootstrap.binding.modeId === active.binding.modeId
+    ? resumed.bootstrap
+    : null;
+}
+
+function activateServerBootstrap(bootstrap: MiniAppBootstrap, fallbackHeroId: HeroId): void {
+  miniAppBootstrap = bootstrap;
+  miniAppProfileBootstrap = Object.freeze({ profile: bootstrap.profile, activeRun: null });
+  reward = bootstrap.reward;
+  rewardUsedKey = "td-reward-used-v1:" + reward.runId;
+  selectedSession = resolveServerSessionSelection(bootstrap.binding);
+  saveKey = getCampaignSaveKey(
+    reward.runId,
+    selectedSession.level.id,
+    selectedSession.mode.id,
+    currentRunRevision(),
+  );
+  pendingWaveLimit = selectedSession.mode.getFinalWave(selectedSession.level) ?? MAX_ENDLESS_WAVE;
+  pendingScoreLimit = selectedSession.mode.calculateScore(pendingWaveLimit);
+  selectedHeroId = bootstrap.heroId ?? fallbackHeroId;
+  confirmedServerWave = bootstrap.confirmedWave;
+  checkpointTargetWave = confirmedServerWave;
+  checkpointFailureShown = false;
+  checkpointResumeMismatch = false;
+  finishSettled = false;
+  applyPlayerProfile(bootstrap.profile);
+  telegram.setClosingConfirmation(true);
+}
+
+function currentRunRevision(): number | null {
+  return miniAppBootstrap?.runContractVersion === 3 ? miniAppBootstrap.runRevision : null;
+}
+
+function ensureServerCheckpoints(targetWave: number): Promise<boolean> {
+  if (
+    launchDecision.kind !== "miniapp"
+    || reward.mode !== "server"
+    || !miniAppBootstrap
+    || miniAppBootstrap.runContractVersion !== 3
+  ) return Promise.resolve(true);
+  checkpointTargetWave = Math.max(checkpointTargetWave, Math.min(MAX_ENDLESS_WAVE, Math.floor(targetWave)));
+  serverCheckpointTail = serverCheckpointTail.then(async () => {
+    while (confirmedServerWave < checkpointTargetWave) {
+      const saved = await submitServerCheckpoint(confirmedServerWave + 1);
+      if (!saved) return false;
+    }
+    return true;
+  });
+  return serverCheckpointTail;
+}
+
+async function submitServerCheckpoint(completedWave: number): Promise<boolean> {
+  if (launchDecision.kind !== "miniapp" || !miniAppBootstrap) return false;
+  let source = miniAppBootstrap;
+  let authRefreshed = false;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = await recordMiniAppCheckpoint(
+      launchDecision.initData,
+      source,
+      completedWave,
+    );
+    if (result.ok) {
+      if (
+        miniAppBootstrap?.reward.runId !== source.reward.runId
+        || miniAppBootstrap.runRevision !== source.runRevision
+      ) return false;
+      confirmedServerWave = result.confirmedWave;
+      miniAppBootstrap = Object.freeze({ ...miniAppBootstrap, confirmedWave: result.confirmedWave });
+      replaceMiniAppBootstrap(session, miniAppBootstrap);
+      checkpointFailureShown = false;
+      return true;
+    }
+    if (
+      !authRefreshed
+      && (result.error === "invalid_token" || result.error === "http_403")
+      && await refreshActiveRunAuthorization(source)
+      && miniAppBootstrap
+    ) {
+      authRefreshed = true;
+      source = miniAppBootstrap;
+      continue;
+    }
+    if (result.error !== "checkpoint_too_fast" || attempt > 1) return false;
+    await new Promise((resolve) => window.setTimeout(resolve, Math.max(50, result.retryAfterMs ?? 250)));
+  }
+  return false;
+}
+
+async function refreshActiveRunAuthorization(expected: MiniAppBootstrap): Promise<boolean> {
+  if (launchDecision.kind !== "miniapp" || expected.runContractVersion !== 3 || !expected.heroId) return false;
+  const refreshed = await startMiniAppReward(launchDecision.initData, {
+    resumeRunId: expected.reward.runId,
+    selection: {
+      levelId: expected.binding.levelId,
+      modeId: expected.binding.modeId,
+      heroId: expected.heroId,
+    },
+  });
+  if (
+    !refreshed.ok
+    || refreshed.bootstrap.runContractVersion !== 3
+    || refreshed.bootstrap.reward.runId !== expected.reward.runId
+    || refreshed.bootstrap.runRevision !== expected.runRevision
+    || refreshed.bootstrap.confirmedWave !== confirmedServerWave
+    || refreshed.bootstrap.binding.levelId !== expected.binding.levelId
+    || refreshed.bootstrap.binding.modeId !== expected.binding.modeId
+    || refreshed.bootstrap.heroId !== expected.heroId
+  ) return false;
+  if (!replaceMiniAppBootstrap(session, refreshed.bootstrap)) return false;
+  miniAppBootstrap = refreshed.bootstrap;
+  reward = refreshed.reward;
+  applyPlayerProfile(refreshed.bootstrap.profile);
+  return true;
 }
 
 async function mountRestoredGame(): Promise<void> {
@@ -905,7 +1300,9 @@ function renderUi(ui: TowerDefenseUiState): void {
       || ui.campaign.gold < upgradeCost;
   }
 
-  selectedHeroId = ui.hero.id;
+  // The paused scene keeps emitting UI snapshots behind the restart picker.
+  // Do not let its old hero overwrite the player's pending restart choice.
+  if (!restartSelectionPending) selectedHeroId = ui.hero.id;
   syncHeroChoiceControls();
 
   const plan = ui.nextWavePlan;
@@ -1074,7 +1471,7 @@ function showToast(message: string, isError = false): void {
   toastTimer = setTimeout(() => elements.toast.classList.remove("is-visible"), isError ? 5_200 : 2_800);
 }
 
-function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
+function handleTerminal(outcome: RunTerminalOutcome, campaign: TowerDefenseUiState["campaign"]): void {
   const finalWave = selectedSession.mode.getFinalWave(selectedSession.level);
   const completedWaves = finalWave === null ? campaign.completedWave : Math.min(finalWave, campaign.completedWave);
   const score = selectedSession.mode.calculateScore(completedWaves);
@@ -1082,7 +1479,15 @@ function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState[
   const summary = createPendingRunSummary(campaign);
   terminalResult = result;
   const pendingSaved = reward.mode === "server"
-    && savePendingResult(storage, reward.runId, outcome, result, completedWaves, summary);
+    && savePendingResult(
+      storage,
+      reward.runId,
+      outcome,
+      result,
+      completedWaves,
+      summary,
+      currentRunRevision(),
+    );
   if (reward.mode === "local" || pendingSaved) clearCampaign(storage, saveKey);
   showResult(outcome, result, completedWaves, finalWave, summary);
   finishAuthRefreshAttempted = false;
@@ -1091,10 +1496,10 @@ function handleTerminal(outcome: TerminalOutcome, campaign: TowerDefenseUiState[
   rewardFinisher = createRewardFinisher(reward, captureFinishSubmission(
     result.score,
     result.durationMs,
-    outcome === "victory" ? "victory" : "defeat",
+    outcome === "victory" ? "victory" : outcome === "retired" ? "retired" : "defeat",
     completedWaves,
     summary.heroId,
-  ));
+  ), { runRevision: miniAppBootstrap?.runRevision });
   void finishReward();
 }
 
@@ -1105,6 +1510,20 @@ async function finishReward(): Promise<void> {
   elements.rewardStatus.className = "reward-status";
   elements.rewardStatus.textContent = text("reward_saving");
   elements.closeHint.textContent = text(reward.mode === "server" ? "finish_pending_hint" : "close_hint");
+  const finishMetadata = rewardFinisher.finishMetadata;
+  if (
+    reward.mode === "server"
+    && miniAppBootstrap?.runContractVersion === 3
+    && finishMetadata
+    && !await ensureServerCheckpoints(finishMetadata.completedWaves)
+  ) {
+    elements.rewardStatus.classList.add("is-error");
+    elements.rewardStatus.textContent = text("checkpoint_save_failed");
+    elements.rewardRetry.hidden = false;
+    elements.closeHint.textContent = text("finish_failed_hint");
+    telegram.setClosingConfirmation(true);
+    return;
+  }
   const result = await rewardFinisher.finish();
   if (result.mode === "local") {
     finishSettled = true;
@@ -1122,7 +1541,7 @@ async function finishReward(): Promise<void> {
     }
     if (finishRunReplaced) {
       finishSettled = true;
-      removePendingResult(storage, reward.runId);
+      removePendingResult(storage, reward.runId, currentRunRevision());
       elements.rewardStatus.textContent = text("run_replaced");
       elements.restartButton.hidden = false;
       elements.closeHint.textContent = text("close_hint");
@@ -1132,8 +1551,12 @@ async function finishReward(): Promise<void> {
   }
   if (result.ok) {
     finishSettled = true;
-    leaderboardClient?.invalidate(selectedSession.level.id);
-    if (!elements.leaderboardOverlay.hidden && leaderboardLevelId === selectedSession.level.id) {
+    leaderboardClient?.invalidate(selectedSession.level.id, selectedSession.mode.id as typeof CAMPAIGN_MODE_ID | typeof ENDLESS_MODE_ID);
+    if (
+      !elements.leaderboardOverlay.hidden
+      && leaderboardLevelId === selectedSession.level.id
+      && leaderboardModeId === selectedSession.mode.id
+    ) {
       void loadLeaderboard(true);
     }
     if (result.profile) applyPlayerProfile(result.profile);
@@ -1156,7 +1579,7 @@ async function finishReward(): Promise<void> {
     if (rewardUsedKey) writeFlag(storage, rewardUsedKey);
     if (isMiniAppLaunch) clearMiniAppReward(session);
     clearCampaign(storage, saveKey);
-    removePendingResult(storage, reward.runId);
+    removePendingResult(storage, reward.runId, currentRunRevision());
     return;
   }
   if (finishSettled) {
@@ -1185,10 +1608,21 @@ async function refreshFinishAuthorization(): Promise<boolean> {
   ) return false;
   finishAuthRefreshAttempted = true;
   const currentRunId = reward.runId;
-  const refreshed = await startMiniAppReward(launchDecision.initData, { resumeRunId: currentRunId });
+  const currentRevision = currentRunRevision();
+  const refreshed = await startMiniAppReward(launchDecision.initData, {
+    resumeRunId: currentRunId,
+    selection: {
+      levelId: selectedSession.level.id,
+      modeId: selectedSession.mode.id,
+      heroId: selectedHeroId,
+    },
+  });
   if (!refreshed.ok) return false;
   const bootstrapCached = replaceMiniAppBootstrap(session, refreshed.bootstrap);
-  if (refreshed.reward.runId !== currentRunId) {
+  if (
+    refreshed.reward.runId !== currentRunId
+    || (currentRevision !== null && refreshed.bootstrap.runRevision !== currentRevision)
+  ) {
     finishRunReplaced = true;
     replacementBootstrapCached = bootstrapCached;
     return false;
@@ -1206,12 +1640,12 @@ async function refreshFinishAuthorization(): Promise<boolean> {
       previous.finishMetadata.completedWaves,
       previous.finishMetadata.heroId,
     )
-    : previous.finalResult);
+    : previous.finalResult, { runRevision: refreshed.bootstrap.runRevision });
   return true;
 }
 
 function showResult(
-  outcome: TerminalOutcome,
+  outcome: RunTerminalOutcome,
   result: FinalResult,
   completedWaves: number,
   finalWave: number | null,
@@ -1221,8 +1655,11 @@ function showResult(
   elements.appShell.inert = true;
   elements.resultCard.classList.toggle("is-victory", outcome === "victory");
   elements.resultCard.classList.toggle("is-defeat", outcome === "gameover");
-  elements.resultSigil.textContent = outcome === "victory" ? "✦" : "◆";
-  elements.resultTitle.textContent = text(outcome === "victory" ? "victory" : "game_over");
+  elements.resultCard.classList.toggle("is-retired", outcome === "retired");
+  elements.resultSigil.textContent = outcome === "victory" ? "✦" : outcome === "retired" ? "◇" : "◆";
+  elements.resultTitle.textContent = text(
+    outcome === "victory" ? "victory" : outcome === "retired" ? "run_retired" : "game_over",
+  );
   elements.resultScore.textContent = `${text(selectedSession.level.displayNameKey)} · ${text(selectedSession.mode.displayNameKey)}`;
   elements.resultWaves.textContent = `${completedWaves} / ${finalWave ?? "∞"}`;
   elements.resultDuration.textContent = formatLeaderboardDuration(result.durationMs);
@@ -1235,7 +1672,7 @@ function showResult(
       lives: summary.lives,
     });
   }
-  const adviceWave = outcome === "victory"
+  const adviceWave = outcome === "victory" || outcome === "retired"
     ? Math.max(1, completedWaves)
     : Math.max(1, completedWaves + 1);
   const advice = deriveResultAdvice(resolveResultWavePlan(adviceWave), outcome === "victory" ? "victory" : "defeat");
@@ -1292,11 +1729,18 @@ function showDevelopmentResultPreview(): boolean {
 
 function restorePendingFinish(): boolean {
   if (launchError) return false;
+  if (checkpointResumeMismatch) return false;
   if (reward.mode !== "server" || !reward.runId) {
     if (runStarted || hasRunProgress(initialCampaign)) elements.introOverlay.hidden = true;
     return false;
   }
-  const pending = pendingAtLaunch || loadPendingResult(storage, reward.runId, MAX_RATING_SCORE, pendingWaveLimit);
+  const pending = pendingAtLaunch || loadPendingResult(
+    storage,
+    reward.runId,
+    pendingScoreLimit,
+    pendingWaveLimit,
+    currentRunRevision(),
+  );
   if (!pending) {
     if (runStarted || hasRunProgress(initialCampaign)) elements.introOverlay.hidden = true;
     return false;
@@ -1308,10 +1752,10 @@ function restorePendingFinish(): boolean {
   rewardFinisher = createRewardFinisher(reward, captureFinishSubmission(
     terminalResult.score,
     terminalResult.durationMs,
-    pending.outcome === "victory" ? "victory" : "defeat",
+    pending.outcome === "victory" ? "victory" : pending.outcome === "retired" ? "retired" : "defeat",
     pending.waves,
     pending.summary?.heroId ?? null,
-  ));
+  ), { runRevision: miniAppBootstrap?.runRevision });
   showResult(
     pending.outcome,
     terminalResult,
@@ -1342,6 +1786,7 @@ function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
   playerProfile = profile;
   elements.appShell.dataset.profileRevision = String(playerProfile.revision);
   elements.appShell.dataset.unlockedLevels = String(playerProfile.unlockedLevelIds.length);
+  syncSessionControls();
   syncHeroChoiceControls();
   if (!grakWasUnlocked && isHeroAvailable("grak", playerProfile)) {
     showToast(text("hero_grak_unlocked"), true);
@@ -1351,7 +1796,8 @@ function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
 
 async function switchPracticeSession(levelId: string, modeId: string): Promise<void> {
   if (reward.mode === "server" || elements.introOverlay.hidden || sessionSwitching || gameStarting) return;
-  const next = resolveSessionSelection("local", { levelId, modeId });
+  const selectableModeId = isSelectableSession(levelId, modeId) ? modeId : CAMPAIGN_MODE_ID;
+  const next = resolveSessionSelection("local", { levelId, modeId: selectableModeId });
   if (
     next.selection.levelId === selectedSession.selection.levelId
     && next.selection.modeId === selectedSession.selection.modeId
@@ -1453,6 +1899,8 @@ function openLeaderboard(origin: "intro" | "menu" | "result"): void {
   leaderboardLevelId = isLeaderboardLevel(selectedSession.level.id)
     ? selectedSession.level.id
     : CLASSIC_CAMPAIGN_LEVEL_ID;
+  leaderboardModeId = selectedSession.mode.id === ENDLESS_MODE_ID ? ENDLESS_MODE_ID : CAMPAIGN_MODE_ID;
+  if (leaderboardModeId === ENDLESS_MODE_ID) leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
 
   if (origin === "intro") {
     elements.introOverlay.hidden = true;
@@ -1507,6 +1955,20 @@ function closeLeaderboard(): void {
 function selectLeaderboardLevel(rawLevelId: string | undefined): void {
   if (!rawLevelId || !isLeaderboardLevel(rawLevelId) || rawLevelId === leaderboardLevelId) return;
   leaderboardLevelId = rawLevelId;
+  if (leaderboardLevelId !== CLASSIC_CAMPAIGN_LEVEL_ID) leaderboardModeId = CAMPAIGN_MODE_ID;
+  renderedLeaderboard = null;
+  syncLeaderboardTabs();
+  telegram.haptic("light");
+  void loadLeaderboard();
+}
+
+function selectLeaderboardMode(rawModeId: string | undefined): void {
+  if (
+    (rawModeId !== CAMPAIGN_MODE_ID && rawModeId !== ENDLESS_MODE_ID)
+    || rawModeId === leaderboardModeId
+  ) return;
+  leaderboardModeId = rawModeId;
+  if (leaderboardModeId === ENDLESS_MODE_ID) leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
   renderedLeaderboard = null;
   syncLeaderboardTabs();
   telegram.haptic("light");
@@ -1517,12 +1979,38 @@ function syncLeaderboardTabs(): void {
   const level = CONTENT_CATALOG.levels[leaderboardLevelId];
   elements.leaderboardTabButtons.forEach((control) => {
     const selected = control.dataset.leaderboardLevel === leaderboardLevelId;
+    const unavailable = leaderboardModeId === ENDLESS_MODE_ID
+      && control.dataset.leaderboardLevel !== CLASSIC_CAMPAIGN_LEVEL_ID;
+    control.hidden = unavailable;
+    control.disabled = unavailable;
     control.setAttribute("aria-selected", String(selected));
     control.tabIndex = selected ? 0 : -1;
-    if (selected) elements.leaderboardPanel.setAttribute("aria-labelledby", control.id);
   });
-  const summary = text("leaderboard_summary", { count: level.waves.finalWave });
+  elements.leaderboardModeButtons.forEach((control) => {
+    const selected = control.dataset.leaderboardMode === leaderboardModeId;
+    control.setAttribute("aria-selected", String(selected));
+    control.tabIndex = selected ? 0 : -1;
+  });
+  const selectedLevelControl = elements.leaderboardTabButtons.find(
+    (control) => control.dataset.leaderboardLevel === leaderboardLevelId,
+  );
+  const selectedModeControl = elements.leaderboardModeButtons.find(
+    (control) => control.dataset.leaderboardMode === leaderboardModeId,
+  );
+  if (selectedLevelControl && selectedModeControl) {
+    elements.leaderboardPanel.setAttribute(
+      "aria-labelledby",
+      `${selectedLevelControl.id} ${selectedModeControl.id}`,
+    );
+  }
+  elements.leaderboardEyebrow.textContent = text(
+    leaderboardModeId === ENDLESS_MODE_ID ? "leaderboard_eyebrow_endless" : "leaderboard_eyebrow",
+  );
+  const summary = leaderboardModeId === ENDLESS_MODE_ID
+    ? text("leaderboard_summary_endless")
+    : text("leaderboard_summary", { count: level.waves.finalWave });
   elements.leaderboardSummary.textContent = renderedLeaderboard?.levelId === leaderboardLevelId
+    && renderedLeaderboard.modeId === leaderboardModeId
     ? `${summary} · ${text("leaderboard_players", { count: renderedLeaderboard.totalPlayers })}`
     : summary;
 }
@@ -1530,6 +2018,7 @@ function syncLeaderboardTabs(): void {
 async function loadLeaderboard(force = false): Promise<void> {
   const requestId = ++leaderboardRequestId;
   const levelId = leaderboardLevelId;
+  const modeId = leaderboardModeId;
   renderedLeaderboard = null;
   syncLeaderboardTabs();
   elements.leaderboardPanel.setAttribute("aria-busy", "true");
@@ -1543,7 +2032,7 @@ async function loadLeaderboard(force = false): Promise<void> {
   elements.leaderboardRetry.hidden = true;
 
   if (developmentLeaderboardPreview) {
-    renderLeaderboard(createDevelopmentLeaderboard(levelId), requestId);
+    renderLeaderboard(createDevelopmentLeaderboard(levelId, modeId), requestId);
     return;
   }
   if (!leaderboardClient) {
@@ -1551,9 +2040,9 @@ async function loadLeaderboard(force = false): Promise<void> {
     return;
   }
 
-  if (force) leaderboardClient.invalidate(levelId);
+  if (force) leaderboardClient.invalidate(levelId, modeId);
   try {
-    const result = await leaderboardClient.load(levelId);
+    const result = await leaderboardClient.load(levelId, modeId);
     renderLeaderboard(result, requestId);
   } catch (error) {
     const authExpired = error instanceof Error && error.message === "http_401";
@@ -1566,7 +2055,7 @@ async function loadLeaderboard(force = false): Promise<void> {
 }
 
 function renderLeaderboard(result: TowerDefenseLeaderboard, requestId: number): void {
-  if (!leaderboardRequestIsCurrent(requestId, result.levelId)) return;
+  if (!leaderboardRequestIsCurrent(requestId, result.levelId, result.modeId)) return;
   renderedLeaderboard = result;
   elements.leaderboardPanel.setAttribute("aria-busy", "false");
   syncLeaderboardTabs();
@@ -1591,7 +2080,7 @@ function renderLeaderboard(result: TowerDefenseLeaderboard, requestId: number): 
 }
 
 function finishLeaderboardStatus(requestId: number, key: TranslationKey, canRetry: boolean): void {
-  if (!leaderboardRequestIsCurrent(requestId, leaderboardLevelId)) return;
+  if (!leaderboardRequestIsCurrent(requestId, leaderboardLevelId, leaderboardModeId)) return;
   elements.leaderboardPanel.setAttribute("aria-busy", "false");
   elements.leaderboardStatus.hidden = false;
   elements.leaderboardStatus.classList.toggle("is-error", canRetry);
@@ -1599,9 +2088,9 @@ function finishLeaderboardStatus(requestId: number, key: TranslationKey, canRetr
   elements.leaderboardRetry.hidden = !canRetry;
 }
 
-function createLeaderboardRow(entry: LeaderboardEntry, maxWaves: number, listItem: boolean): HTMLElement {
+function createLeaderboardRow(entry: LeaderboardEntry, maxWaves: number | null, listItem: boolean): HTMLElement {
   const row = document.createElement(listItem ? "li" : "div");
-  const isComplete = entry.outcome === "victory" && entry.completedWaves === maxWaves;
+  const isComplete = maxWaves !== null && entry.outcome === "victory" && entry.completedWaves === maxWaves;
   const hasHeroWins = isComplete && entry.heroWins.length > 0;
   row.className = `leaderboard-entry${isComplete ? " is-complete" : ""}${hasHeroWins ? " has-hero-wins" : ""}${entry.isMe ? " is-me" : ""}`;
   if (row instanceof HTMLLIElement) row.value = entry.rank;
@@ -1622,14 +2111,32 @@ function createLeaderboardRow(entry: LeaderboardEntry, maxWaves: number, listIte
   const result = document.createElement("span");
   result.className = "leaderboard-result";
   const waves = document.createElement("strong");
-  waves.textContent = `${entry.completedWaves} / ${maxWaves}`;
+  waves.textContent = maxWaves === null
+    ? String(entry.completedWaves)
+    : `${entry.completedWaves} / ${maxWaves}`;
   const unit = document.createElement("small");
   unit.textContent = text("leaderboard_waves");
   result.append(waves, unit);
   row.append(rank, copy);
   if (hasHeroWins) row.append(createLeaderboardHeroWins(entry.heroWins));
+  else if (maxWaves === null && entry.heroId) row.append(createLeaderboardRunHero(entry.heroId));
   row.append(result);
   return row;
+}
+
+function createLeaderboardRunHero(heroId: HeroId): HTMLElement {
+  const emblem = document.createElement("span");
+  emblem.className = `leaderboard-run-hero ${heroId}`;
+  const label = text("leaderboard_run_hero", { hero: text(`hero_${heroId}`) });
+  emblem.setAttribute("role", "img");
+  emblem.setAttribute("aria-label", label);
+  emblem.title = label;
+  const portrait = document.createElement("img");
+  portrait.src = HERO_PORTRAIT_URLS[heroId];
+  portrait.alt = "";
+  portrait.loading = "lazy";
+  emblem.append(portrait);
+  return emblem;
 }
 
 function createLeaderboardHeroWins(heroWins: LeaderboardEntry["heroWins"]): HTMLElement {
@@ -1670,9 +2177,14 @@ function formatLeaderboardDuration(durationMs: number | null): string {
     : `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function leaderboardRequestIsCurrent(requestId: number, levelId: string): boolean {
+function leaderboardRequestIsCurrent(
+  requestId: number,
+  levelId: string,
+  modeId: typeof CAMPAIGN_MODE_ID | typeof ENDLESS_MODE_ID,
+): boolean {
   return requestId === leaderboardRequestId
     && levelId === leaderboardLevelId
+    && modeId === leaderboardModeId
     && !elements.leaderboardOverlay.hidden;
 }
 
@@ -1680,29 +2192,35 @@ function isLeaderboardLevel(value: string): value is typeof CLASSIC_CAMPAIGN_LEV
   return value === CLASSIC_CAMPAIGN_LEVEL_ID || value === NORTHERN_PASS_LEVEL_ID;
 }
 
-function createDevelopmentLeaderboard(levelId: string): TowerDefenseLeaderboard {
-  const maxWaves = CONTENT_CATALOG.levels[levelId].waves.finalWave;
+function createDevelopmentLeaderboard(
+  levelId: string,
+  modeId: typeof CAMPAIGN_MODE_ID | typeof ENDLESS_MODE_ID,
+): TowerDefenseLeaderboard {
+  const maxWaves = modeId === ENDLESS_MODE_ID ? null : CONTENT_CATALOG.levels[levelId].waves.finalWave;
+  const showcaseWave = maxWaves ?? 68;
   const values: readonly LeaderboardEntry[] = [
-    { rank: 1, name: "Astralglow", outcome: "victory", completedWaves: maxWaves, durationMs: 381_000, heroWins: Object.freeze([{ heroId: "eira", completions: 1 }]), isMe: false },
-    { rank: 2, name: "JOKER", outcome: "victory", completedWaves: maxWaves, durationMs: 432_000, heroWins: Object.freeze([{ heroId: "eira", completions: 2 }, { heroId: "grak", completions: 1 }]), isMe: false },
-    { rank: 3, name: "Єнотенко", outcome: "defeat", completedWaves: maxWaves - 1, durationMs: 449_000, heroWins: Object.freeze([]), isMe: false },
-    { rank: 4, name: null, outcome: "defeat", completedWaves: maxWaves - 2, durationMs: null, heroWins: Object.freeze([]), isMe: false },
-    { rank: 5, name: "GTR_730", outcome: "defeat", completedWaves: maxWaves - 2, durationMs: 487_000, heroWins: Object.freeze([]), isMe: false },
+    { rank: 1, name: "Astralglow", outcome: modeId === ENDLESS_MODE_ID ? "defeat" : "victory", completedWaves: showcaseWave, durationMs: 381_000, heroWins: Object.freeze(modeId === ENDLESS_MODE_ID ? [] : [{ heroId: "eira", completions: 1 }]), heroId: modeId === ENDLESS_MODE_ID ? "eira" : null, isMe: false },
+    { rank: 2, name: "JOKER", outcome: modeId === ENDLESS_MODE_ID ? "defeat" : "victory", completedWaves: showcaseWave, durationMs: 432_000, heroWins: Object.freeze(modeId === ENDLESS_MODE_ID ? [] : [{ heroId: "eira", completions: 2 }, { heroId: "grak", completions: 1 }]), heroId: modeId === ENDLESS_MODE_ID ? "grak" : null, isMe: false },
+    { rank: 3, name: "Єнотенко", outcome: "defeat", completedWaves: showcaseWave - 1, durationMs: 449_000, heroWins: Object.freeze([]), heroId: modeId === ENDLESS_MODE_ID ? "toren" : null, isMe: false },
+    { rank: 4, name: null, outcome: "defeat", completedWaves: showcaseWave - 2, durationMs: null, heroWins: Object.freeze([]), heroId: null, isMe: false },
+    { rank: 5, name: "GTR_730", outcome: "defeat", completedWaves: showcaseWave - 2, durationMs: 487_000, heroWins: Object.freeze([]), heroId: modeId === ENDLESS_MODE_ID ? "eira" : null, isMe: false },
   ];
   const me: LeaderboardEntry = {
     rank: 17,
     name: "Mr.Maybik",
     outcome: "defeat",
-    completedWaves: Math.max(1, maxWaves - 3),
+    completedWaves: Math.max(1, showcaseWave - 3),
     durationMs: 519_000,
     heroWins: Object.freeze([]),
+    heroId: modeId === ENDLESS_MODE_ID ? "toren" : null,
     isMe: true,
   };
   return Object.freeze({
     gameId: "td",
     levelId,
-    modeId: "campaign",
+    modeId,
     maxWaves,
+    seasonId: modeId === ENDLESS_MODE_ID ? "endless-v1" : null,
     totalPlayers: 42,
     entries: Object.freeze(values.map((entry) => Object.freeze(entry))),
     me: Object.freeze(me),
@@ -1717,17 +2235,77 @@ function setGameSpeed(rawSpeed: string | undefined): void {
 }
 
 function showRestartConfirmation(): void {
-  if (reward.mode === "server" && !finishSettled) {
+  if (reward.mode === "server" && miniAppBootstrap?.runContractVersion !== 3) {
     showToast(text("game_menu_restart_unavailable"), true);
     return;
   }
+  menuConfirmation = "restart";
+  elements.gameMenuRestartConfirmTitle.textContent = text("game_menu_restart_confirm");
+  elements.gameMenuRestartConfirmCopy.textContent = text("game_menu_restart_confirm_copy");
+  elements.gameMenuRestartAccept.textContent = text("game_menu_restart_accept");
   elements.gameMenuRestartConfirm.hidden = false;
   elements.gameMenuRestartAccept.focus();
   telegram.haptic("medium");
 }
 
+function showRetireConfirmation(): void {
+  if (selectedSession.mode.id !== ENDLESS_MODE_ID || !latestUi || latestUi.campaign.completedWave < 1) return;
+  menuConfirmation = "retire";
+  elements.gameMenuRestartConfirmTitle.textContent = text("game_menu_retire_confirm_title");
+  elements.gameMenuRestartConfirmCopy.textContent = text("game_menu_retire_confirm_copy");
+  elements.gameMenuRestartAccept.textContent = text("game_menu_retire_accept");
+  elements.gameMenuRestartConfirm.hidden = false;
+  elements.gameMenuRestartAccept.focus();
+  telegram.haptic("medium");
+}
+
+function acceptMenuConfirmation(): void {
+  const action = menuConfirmation;
+  hideRestartConfirmation();
+  if (action === "restart") {
+    enterRestartHeroSelection();
+    return;
+  }
+  if (action === "retire") {
+    const campaign = currentScene()?.getCampaign();
+    if (!campaign) return;
+    closeGameMenu(false, false);
+    handleTerminal("retired", campaign);
+  }
+}
+
 function hideRestartConfirmation(): void {
   elements.gameMenuRestartConfirm.hidden = true;
+  menuConfirmation = null;
+}
+
+function enterRestartHeroSelection(): void {
+  if (!latestUi || restartSelectionPending) return;
+  resumeAfterRestartPicker = resumeAfterMenu;
+  selectedHeroId = latestUi.campaign.hero.id;
+  restartSelectionPending = true;
+  closeGameMenu(false, false);
+  elements.appShell.inert = true;
+  elements.introOverlay.hidden = false;
+  introReturnsToRun = false;
+  syncSessionControls();
+  syncIntroAction();
+  openHeroPicker();
+  telegram.haptic("light");
+}
+
+function cancelPendingRestart(): void {
+  if (!restartSelectionPending || restartSubmitting || checkpointResumeMismatch) return;
+  restartSelectionPending = false;
+  selectedHeroId = currentScene()?.getCampaign().hero.id ?? initialCampaign.hero.id;
+  closeHeroPicker(false);
+  elements.introOverlay.hidden = true;
+  elements.appShell.inert = false;
+  if (resumeAfterRestartPicker && latestUi?.paused) currentScene()?.setPaused(false);
+  resumeAfterRestartPicker = false;
+  syncSessionControls();
+  syncIntroAction();
+  elements.gameMenuButton.focus();
 }
 
 function openTowerGuideFromMenu(): void {
@@ -1921,7 +2499,7 @@ function restartGame(): void {
   clearCampaign(storage, saveKey);
   clearCampaign(storage, LEGACY_SAVE_KEY);
   if (reward.mode === "server") {
-    removePendingResult(storage, reward.runId);
+    removePendingResult(storage, reward.runId, currentRunRevision());
     // A replacement bootstrap belongs to the next run and must survive this reload.
     if (isMiniAppLaunch && !replacementBootstrapCached) clearMiniAppReward(session);
   }
@@ -2079,10 +2657,13 @@ function syncGameMenuUi(ui: TowerDefenseUiState | null): void {
   });
   elements.gameMenuSession.hidden = reward.mode === "server";
   elements.gameMenuSession.disabled = ui.phase !== "setup";
-  elements.gameMenuRestart.disabled = reward.mode === "server" && !finishSettled;
+  elements.gameMenuRestart.disabled = reward.mode === "server" && miniAppBootstrap?.runContractVersion !== 3;
   elements.gameMenuRestart.title = elements.gameMenuRestart.disabled
     ? text("game_menu_restart_unavailable")
     : text("game_menu_restart");
+  elements.gameMenuRetire.hidden = selectedSession.mode.id !== ENDLESS_MODE_ID;
+  elements.gameMenuRetire.disabled = ui.campaign.completedWave < 1;
+  elements.gameMenuRetire.title = text("game_menu_retire");
   elements.gameMenuExit.hidden = !telegram.canClose;
   renderHeroDetails(elements.gameMenuHeroDetails, ui.hero.id, ui.hero.level, ui.hero.awakened);
 }
@@ -2165,15 +2746,18 @@ function applyStaticTranslations(): void {
   elements.gameMenuLeaderboardLabel.textContent = text("game_menu_leaderboard");
   elements.gameMenuSessionLabel.textContent = text("game_menu_session");
   elements.gameMenuRestartLabel.textContent = text("game_menu_restart");
+  elements.gameMenuRetireLabel.textContent = text("game_menu_retire");
   elements.gameMenuExitLabel.textContent = text("game_menu_exit");
   elements.gameMenuRestartConfirmTitle.textContent = text("game_menu_restart_confirm");
   elements.gameMenuRestartConfirmCopy.textContent = text("game_menu_restart_confirm_copy");
   elements.gameMenuRestartCancel.textContent = text("game_menu_cancel");
   elements.gameMenuRestartAccept.textContent = text("game_menu_restart_accept");
+  elements.introRestartCancel.textContent = text("game_menu_cancel");
   elements.leaderboardEyebrow.textContent = text("leaderboard_eyebrow");
   elements.leaderboardTitle.textContent = text("leaderboard_title");
   elements.leaderboardClose.setAttribute("aria-label", text("close"));
   elements.leaderboardTabs.setAttribute("aria-label", text("leaderboard_level_label"));
+  elements.leaderboardModeTabs.setAttribute("aria-label", text("session_mode"));
   elements.leaderboardList.setAttribute("aria-label", text("leaderboard_results_label"));
   elements.leaderboardSelf.setAttribute("aria-label", text("leaderboard_self"));
   elements.leaderboardRetry.textContent = text("leaderboard_retry");
@@ -2183,6 +2767,11 @@ function applyStaticTranslations(): void {
     if (levelId && isLeaderboardLevel(levelId)) {
       control.textContent = text(CONTENT_CATALOG.levels[levelId].displayNameKey);
     }
+  });
+  elements.leaderboardModeButtons.forEach((control) => {
+    control.textContent = text(
+      control.dataset.leaderboardMode === ENDLESS_MODE_ID ? "mode_endless" : "mode_campaign",
+    );
   });
   syncLeaderboardTabs();
   syncFullscreenUi(telegram.isFullscreen);
@@ -2289,19 +2878,23 @@ function chooseHero(value: string): void {
     return;
   }
   selectedHeroId = value;
-  initialCampaign = createCampaignState({
-    level: selectedSession.level,
-    mode: selectedSession.mode,
-    heroId: selectedHeroId,
-  });
+  if (!restartSelectionPending) {
+    initialCampaign = createCampaignState({
+      level: selectedSession.level,
+      mode: selectedSession.mode,
+      heroId: selectedHeroId,
+    });
+  }
   syncHeroChoiceControls();
   syncIntroAction();
   telegram.haptic("light");
 }
 
 function syncHeroChoiceControls(): void {
-  const campaign = latestUi?.campaign ?? initialCampaign;
-  selectedHeroId = campaign.hero.id;
+  if (!restartSelectionPending) {
+    const campaign = latestUi?.campaign ?? initialCampaign;
+    selectedHeroId = campaign.hero.id;
+  }
   const locked = heroChoiceIsLocked();
   const disabled = locked || sessionSwitching || gameStarting || Boolean(launchError);
   elements.heroChoiceButton.disabled = disabled;
@@ -2330,6 +2923,7 @@ function syncHeroChoiceControls(): void {
 }
 
 function heroChoiceIsLocked(): boolean {
+  if (restartSelectionPending) return false;
   return gameMounted || runStarted || hasRunProgress(latestUi?.campaign ?? initialCampaign);
 }
 
@@ -2355,12 +2949,14 @@ function syncSessionControls(): void {
     const option = document.createElement("option");
     option.value = level.id;
     option.textContent = text(level.displayNameKey);
+    option.disabled = isMiniAppLaunch && !playerProfile?.unlockedLevelIds.includes(level.id);
     return option;
   }));
   elements.modeSelect.replaceChildren(...Object.values(CONTENT_CATALOG.modes).map((mode) => {
     const option = document.createElement("option");
     option.value = mode.id;
     option.textContent = text(mode.displayNameKey);
+    option.disabled = !isSelectableSession(selectedSession.level.id, mode.id);
     return option;
   }));
 
@@ -2368,6 +2964,13 @@ function syncSessionControls(): void {
   elements.modeSelect.value = selectedSession.mode.id;
   elements.levelChoiceLabel.textContent = text("session_level");
   elements.modeChoiceLabel.textContent = text("session_mode");
+  const endlessLocked = isMiniAppLaunch && !isSessionAvailable(
+    CLASSIC_CAMPAIGN_LEVEL_ID,
+    ENDLESS_MODE_ID,
+    playerProfile,
+  );
+  elements.modeUnlockHint.hidden = !endlessLocked || selectedSession.locked;
+  elements.modeUnlockHint.textContent = text("mode_endless_locked");
   elements.sessionPicker.hidden = selectedSession.locked;
   elements.levelSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
   elements.modeSelect.disabled = selectedSession.locked || sessionSwitching || gameStarting;
@@ -2376,6 +2979,12 @@ function syncSessionControls(): void {
     ? text("intro_endless")
     : text("intro_waves", { count: finalWave });
   syncHeroChoiceControls();
+}
+
+function isSelectableSession(levelId: string, modeId: string): boolean {
+  if (isMiniAppLaunch) return isSessionAvailable(levelId, modeId, playerProfile);
+  return modeId === CAMPAIGN_MODE_ID
+    || (modeId === ENDLESS_MODE_ID && levelId === CLASSIC_CAMPAIGN_LEVEL_ID);
 }
 
 function hasRunProgress(campaign: TowerDefenseUiState["campaign"]): boolean {
@@ -2431,7 +3040,7 @@ function applyLaunchErrorTranslations(): void {
 
 function syncIntroAttemptStatus(): void {
   const exhausted = launchError === "daily_attempt_limit";
-  const practice = !launchError && reward.mode !== "server";
+  const practice = !launchError && reward.mode !== "server" && !isMiniAppLaunch;
   elements.introAttempts.classList.toggle("is-exhausted", exhausted);
   elements.introAttempts.classList.toggle("is-practice", practice);
   elements.introAttemptsLabel.textContent = text("intro_attempts_label");
@@ -2505,8 +3114,10 @@ function syncAttemptPurchaseUi(): void {
 function syncIntroAction(): void {
   syncAttemptPurchaseUi();
   elements.introStart.setAttribute("aria-busy", String(
-    gameStarting || resettingDailyAttempts || attemptPurchaseState === "loading",
+    gameStarting || restartSubmitting || resettingDailyAttempts || attemptPurchaseState === "loading",
   ));
+  elements.introRestartCancel.hidden = !restartSelectionPending;
+  elements.introRestartCancel.disabled = restartSubmitting || checkpointResumeMismatch;
   elements.introLeaderboard.disabled = gameStarting || sessionSwitching;
   if (launchError === "daily_attempt_limit") {
     if (canResetDailyAttempts) {
@@ -2544,8 +3155,10 @@ function syncIntroAction(): void {
     elements.introStart.textContent = text("game_load_retry");
     return;
   }
-  elements.introStart.disabled = sessionSwitching;
-  elements.introStart.textContent = text(introReturnsToRun ? "intro_continue" : "intro_start");
+  elements.introStart.disabled = sessionSwitching || restartSubmitting;
+  elements.introStart.textContent = text(
+    restartSelectionPending ? "game_menu_restart_accept" : introReturnsToRun ? "intro_continue" : "intro_start",
+  );
 }
 
 function renderTowerGuide(): void {

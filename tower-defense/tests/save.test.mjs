@@ -19,7 +19,7 @@ import {
 } from "../src/game/content.ts";
 import { buildTower, createCampaignState } from "../src/game/state.ts";
 import { captureFinalResult } from "../src/reward.ts";
-import { loadPendingResult, pendingKey, savePendingResult } from "../src/pendingResult.ts";
+import { loadPendingResult, pendingKey, removePendingResult, savePendingResult } from "../src/pendingResult.ts";
 
 test("practice and reward runs have isolated checkpoint keys", () => {
   assert.equal(getCampaignSaveKey(null), "td-save-v5:local:forest-gate:campaign");
@@ -32,6 +32,23 @@ test("practice and reward runs have isolated checkpoint keys", () => {
   assert.equal(saveCampaign(storage, getCampaignSaveKey("run-a"), campaign), true);
   assert.deepEqual(loadCampaign(storage, getCampaignSaveKey("run-a")), campaign);
   assert.equal(loadCampaign(storage, getCampaignSaveKey("run-b")), null);
+});
+
+test("server restart revisions isolate both same-hero and changed-hero checkpoints", () => {
+  const storage = memoryStorage();
+  const firstRevisionKey = getCampaignSaveKey("restart-run", "forest-gate", "campaign", 1);
+  const secondRevisionKey = getCampaignSaveKey("restart-run", "forest-gate", "campaign", 2);
+  const eira = { ...createCampaignState({ heroId: "eira" }), completedWave: 8 };
+  const toren = { ...createCampaignState({ heroId: "toren" }), completedWave: 2 };
+
+  assert.notEqual(firstRevisionKey, secondRevisionKey);
+  assert.equal(saveCampaign(storage, firstRevisionKey, eira), true);
+  assert.equal(loadCampaign(storage, secondRevisionKey), null);
+  assert.equal(saveCampaign(storage, secondRevisionKey, toren), true);
+
+  // A stale tab may still write revision 1, but it cannot overwrite revision 2.
+  assert.equal(saveCampaign(storage, firstRevisionKey, { ...eira, completedWave: 9 }), true);
+  assert.deepEqual(loadCampaign(storage, secondRevisionKey), toren);
 });
 
 test("an unlocked Grak run remains resumable without rechecking profile transport", () => {
@@ -229,6 +246,36 @@ test("a pending finish optionally preserves a validated run summary", () => {
     waves: 19,
     durationMs: 123_456,
     summary,
+  });
+});
+
+test("pending results stay revision-scoped across Eira to Eira and Eira to Toren restarts", () => {
+  const storage = memoryStorage();
+  const result = captureFinalResult(24, 90_000);
+  const eiraSummary = { lives: 2, kills: 250, towers: 8, heroId: "eira" };
+  const torenSummary = { lives: 1, kills: 270, towers: 9, heroId: "toren" };
+
+  assert.equal(savePendingResult(storage, "pending-restart", "gameover", result, 23, eiraSummary, 1), true);
+  assert.equal(loadPendingResult(storage, "pending-restart", 72, 24, 2), null);
+  assert.equal(savePendingResult(storage, "pending-restart", "gameover", result, 23, eiraSummary, 2), true);
+  assert.equal(savePendingResult(storage, "pending-restart", "gameover", result, 23, torenSummary, 3), true);
+
+  removePendingResult(storage, "pending-restart", 1);
+  assert.equal(loadPendingResult(storage, "pending-restart", 72, 24, 1), null);
+  assert.equal(loadPendingResult(storage, "pending-restart", 72, 24, 2)?.summary?.heroId, "eira");
+  assert.equal(loadPendingResult(storage, "pending-restart", 72, 24, 3)?.summary?.heroId, "toren");
+});
+
+test("endless pending results retain waves above the campaign cap", () => {
+  const storage = memoryStorage();
+  const result = captureFinalResult(68, 519_000);
+  assert.equal(savePendingResult(storage, "endless-run", "retired", result, 68, undefined, 1), true);
+  assert.deepEqual(loadPendingResult(storage, "endless-run", MAX_ENDLESS_WAVE, MAX_ENDLESS_WAVE, 1), {
+    version: 2,
+    outcome: "retired",
+    score: 68,
+    waves: 68,
+    durationMs: 519_000,
   });
 });
 

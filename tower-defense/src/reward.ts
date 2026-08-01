@@ -1,4 +1,8 @@
-import { CONTENT_VERSION } from "./game/content.ts";
+import {
+  CONTENT_VERSION,
+  getLevelDefinition,
+  getModeRuleset,
+} from "./game/content.ts";
 import { isHeroId } from "./game/heroes.ts";
 import {
   parsePlayerProfileTransport,
@@ -16,9 +20,13 @@ const MAX_TIMEOUT_MS = 60_000;
 const MAX_PAYLOAD_LENGTH = 32_768;
 const MAX_BOOTSTRAP_CACHE_LENGTH = 262_144;
 const MAX_SCORE = 2_147_483_647;
+export const RANKED_RUN_CONTRACT_VERSION = 3 as const;
 
 export const TOWER_DEFENSE_START_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/start";
 export const TOWER_DEFENSE_FINISH_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/finish";
+export const TOWER_DEFENSE_BOOTSTRAP_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/bootstrap";
+export const TOWER_DEFENSE_CHECKPOINT_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/checkpoint";
+export const TOWER_DEFENSE_RESTART_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/restart";
 export const TOWER_DEFENSE_RESET_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/reset";
 export const TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/purchase";
 export const MINIAPP_BOOTSTRAP_SESSION_KEY = "td-miniapp-bootstrap-v2";
@@ -50,7 +58,34 @@ export type MiniAppBootstrap = Readonly<{
   resumed: boolean;
   expiresAt: number;
   binding: ServerRunBinding;
+  runContractVersion: 2 | typeof RANKED_RUN_CONTRACT_VERSION;
   profile: PlayerProfileSnapshot;
+  runRevision: number | null;
+  heroId: HeroId | null;
+  confirmedWave: number;
+  checkpointUrl: string | null;
+  restartUrl: string | null;
+}>;
+
+export type MiniAppActiveRun = Readonly<{
+  runId: string;
+  expiresAt: number;
+  runRevision: number;
+  heroId: HeroId;
+  confirmedWave: number;
+  binding: ServerRunBinding;
+  runContractVersion: 2 | typeof RANKED_RUN_CONTRACT_VERSION;
+}>;
+
+export type MiniAppProfileBootstrap = Readonly<{
+  profile: PlayerProfileSnapshot;
+  activeRun: MiniAppActiveRun | null;
+}>;
+
+export type MiniAppRunSelection = Readonly<{
+  levelId: string;
+  modeId: string;
+  heroId: HeroId;
 }>;
 
 export type LaunchParams = Readonly<{
@@ -60,7 +95,7 @@ export type LaunchParams = Readonly<{
 }>;
 
 export type FinalResult = Readonly<{ score: number; durationMs: number }>;
-export type FinishOutcome = "defeat" | "victory";
+export type FinishOutcome = "defeat" | "victory" | "retired";
 export type FinishMetadata = Readonly<{
   outcome: FinishOutcome;
   completedWaves: number;
@@ -172,10 +207,27 @@ export async function executeDailyAttemptLimitPrimaryAction({
 }
 
 type RequestOptions = { fetch?: RewardFetch; timeoutMs?: number };
+export type RewardFinisherOptions = RequestOptions & Readonly<{ runRevision?: number | null }>;
 export type MiniAppStartOptions = RequestOptions & Readonly<{
   resumeRunId?: string | null;
+  selection?: MiniAppRunSelection | null;
   now?: () => number;
 }>;
+
+export type MiniAppProfileResult = Readonly<
+  | { ok: true; bootstrap: MiniAppProfileBootstrap }
+  | { ok: false; error: string }
+>;
+
+export type MiniAppCheckpointResult = Readonly<
+  | { ok: true; replayed: boolean; runRevision: number; confirmedWave: number }
+  | { ok: false; error: string; retryAfterMs?: number }
+>;
+
+export type MiniAppRunRestartResult = Readonly<
+  | { ok: true; bootstrap: MiniAppBootstrap }
+  | { ok: false; error: string }
+>;
 
 export function parseLaunchParams(source: string | URLSearchParams, baseUrl?: string): LaunchParams {
   const { params, effectiveBaseUrl } = readSearchParams(source, baseUrl);
@@ -207,6 +259,29 @@ export function decideRewardLaunch(
   return Object.freeze({ kind: "miniapp", initData });
 }
 
+export async function fetchMiniAppProfile(
+  initData: string,
+  options: RequestOptions = {},
+): Promise<MiniAppProfileResult> {
+  const boundedInitData = boundedText(initData, MAX_PAYLOAD_LENGTH);
+  if (!boundedInitData) return Object.freeze({ ok: false, error: "invalid_bootstrap_request" });
+
+  try {
+    const { response, data } = await postJson(
+      TOWER_DEFENSE_BOOTSTRAP_URL,
+      JSON.stringify({ init_data: boundedInitData }),
+      options,
+    );
+    if (!response.ok) return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
+    const bootstrap = parseMiniAppProfileBootstrapResponse(data);
+    return bootstrap
+      ? Object.freeze({ ok: true, bootstrap })
+      : Object.freeze({ ok: false, error: responseError(data, "bootstrap_rejected") });
+  } catch (error: unknown) {
+    return Object.freeze({ ok: false, error: errorMessage(error) });
+  }
+}
+
 export async function startMiniAppReward(
   initData: string,
   options: MiniAppStartOptions = {},
@@ -218,10 +293,20 @@ export async function startMiniAppReward(
 
   try {
     const resumeRunId = boundedUnknownText(options.resumeRunId, 256);
+    const selection = sanitizeMiniAppRunSelection(options.selection);
+    if (options.selection && !selection) {
+      return Object.freeze({ ok: false, error: "invalid_start_selection" });
+    }
     const body = JSON.stringify({
       init_data: boundedInitData,
       game_id: "td",
       client_content_version: CONTENT_VERSION,
+      client_protocol_version: RANKED_RUN_CONTRACT_VERSION,
+      ...(selection ? {
+        level_id: selection.levelId,
+        mode_id: selection.modeId,
+        hero_id: selection.heroId,
+      } : {}),
       ...(resumeRunId ? { resume_run_id: resumeRunId } : {}),
     });
     const { response, data } = await postJson(TOWER_DEFENSE_START_URL, body, options);
@@ -235,6 +320,8 @@ export async function startMiniAppReward(
           ...(attemptPurchase ? { attemptPurchase } : {}),
         });
       }
+      const code = isRecord(data) ? boundedUnknownText(data.code, 128) : null;
+      if (code) return Object.freeze({ ok: false, error: code });
       return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
     }
     const bootstrap = parseMiniAppBootstrapResponse(data);
@@ -242,6 +329,105 @@ export async function startMiniAppReward(
     return bootstrap && bootstrap.expiresAt > now
       ? Object.freeze({ ok: true, reward: bootstrap.reward, bootstrap })
       : Object.freeze({ ok: false, error: responseError(data, "start_rejected") });
+  } catch (error: unknown) {
+    return Object.freeze({ ok: false, error: errorMessage(error) });
+  }
+}
+
+export async function recordMiniAppCheckpoint(
+  initData: string,
+  bootstrap: MiniAppBootstrap,
+  completedWave: number,
+  options: RequestOptions = {},
+): Promise<MiniAppCheckpointResult> {
+  const boundedInitData = boundedText(initData, MAX_PAYLOAD_LENGTH);
+  const runRevision = positiveInteger(bootstrap.runRevision);
+  const wave = nonNegativeInteger(completedWave);
+  if (
+    !boundedInitData
+    || bootstrap.runContractVersion !== RANKED_RUN_CONTRACT_VERSION
+    || bootstrap.checkpointUrl !== TOWER_DEFENSE_CHECKPOINT_URL
+    || runRevision === null
+    || wave === null
+  ) return Object.freeze({ ok: false, error: "invalid_checkpoint_request" });
+
+  try {
+    const { response, data } = await postJson(
+      TOWER_DEFENSE_CHECKPOINT_URL,
+      JSON.stringify({
+        init_data: boundedInitData,
+        run_id: bootstrap.reward.runId,
+        token: bootstrap.reward.token,
+        run_revision: runRevision,
+        completed_wave: wave,
+      }),
+      options,
+    );
+    if (response.ok && isRecord(data) && data.ok === true) {
+      const confirmedWave = nonNegativeInteger(data.confirmed_wave);
+      const confirmedRevision = positiveInteger(data.run_revision);
+      if (
+        (data.code !== "checkpoint_recorded" && data.code !== "checkpoint_replayed")
+        || confirmedWave === null
+        || confirmedRevision !== runRevision
+        || confirmedWave !== wave
+      ) return Object.freeze({ ok: false, error: "checkpoint_rejected" });
+      return Object.freeze({
+        ok: true,
+        replayed: data.code === "checkpoint_replayed",
+        runRevision: confirmedRevision,
+        confirmedWave,
+      });
+    }
+    const error = isRecord(data) ? boundedUnknownText(data.code, 128) : null;
+    const retryAfterMs = isRecord(data) ? nonNegativeInteger(data.retry_after_ms) : null;
+    return Object.freeze({
+      ok: false,
+      error: error ?? (response.ok ? "checkpoint_rejected" : "http_" + (response.status || 0)),
+      ...(retryAfterMs === null ? {} : { retryAfterMs: Math.min(retryAfterMs, MAX_TIMEOUT_MS) }),
+    });
+  } catch (error: unknown) {
+    return Object.freeze({ ok: false, error: errorMessage(error) });
+  }
+}
+
+export async function restartMiniAppRun(
+  initData: string,
+  bootstrap: MiniAppBootstrap,
+  heroId: HeroId,
+  options: RequestOptions & Readonly<{ now?: () => number }> = {},
+): Promise<MiniAppRunRestartResult> {
+  const boundedInitData = boundedText(initData, MAX_PAYLOAD_LENGTH);
+  const runRevision = positiveInteger(bootstrap.runRevision);
+  if (
+    !boundedInitData
+    || !isHeroId(heroId)
+    || bootstrap.runContractVersion !== RANKED_RUN_CONTRACT_VERSION
+    || bootstrap.restartUrl !== TOWER_DEFENSE_RESTART_URL
+    || runRevision === null
+  ) return Object.freeze({ ok: false, error: "invalid_restart_request" });
+
+  try {
+    const { response, data } = await postJson(
+      TOWER_DEFENSE_RESTART_URL,
+      JSON.stringify({
+        init_data: boundedInitData,
+        run_id: bootstrap.reward.runId,
+        token: bootstrap.reward.token,
+        run_revision: runRevision,
+        hero_id: heroId,
+      }),
+      options,
+    );
+    if (!response.ok) {
+      const code = isRecord(data) ? boundedUnknownText(data.code, 128) : null;
+      return Object.freeze({ ok: false, error: code ?? "http_" + (response.status || 0) });
+    }
+    const restarted = parseRestartedBootstrapResponse(data, bootstrap);
+    const now = readNow(options.now);
+    return restarted && restarted.expiresAt > now
+      ? Object.freeze({ ok: true, bootstrap: restarted })
+      : Object.freeze({ ok: false, error: responseError(data, "restart_rejected") });
   } catch (error: unknown) {
     return Object.freeze({ ok: false, error: errorMessage(error) });
   }
@@ -509,7 +695,9 @@ export function captureFinishSubmission(
   completedWaves: unknown,
   heroId: unknown = null,
 ): FinishSubmission {
-  if (outcome !== "defeat" && outcome !== "victory") throw new Error("Invalid finish outcome.");
+  if (outcome !== "defeat" && outcome !== "victory" && outcome !== "retired") {
+    throw new Error("Invalid finish outcome.");
+  }
   if (heroId !== null && !isHeroId(heroId)) throw new Error("Invalid finish hero.");
   return Object.freeze({
     ...captureFinalResult(score, durationMs),
@@ -522,10 +710,11 @@ export function captureFinishSubmission(
 export function createRewardFinisher(
   reward: RewardLaunch,
   finalResult: FinalResult | FinishSubmission,
-  options: RequestOptions = {},
+  options: RewardFinisherOptions = {},
 ): RewardFinisher {
   const capturedReward = Object.freeze({ ...reward });
   const capturedResult = captureFinalResult(finalResult.score, finalResult.durationMs);
+  const capturedRunRevision = positiveInteger(options.runRevision);
   const finishMetadata = readFinishMetadata(finalResult);
   const hasInvalidMetadata = hasFinishMetadataFields(finalResult) && !finishMetadata;
   const localResult = Object.freeze({
@@ -556,6 +745,7 @@ export function createRewardFinisher(
       token: capturedReward.token,
       score: capturedResult.score,
       duration_ms: capturedResult.durationMs,
+      ...(capturedRunRevision === null ? {} : { run_revision: capturedRunRevision }),
       ...(finishMetadata ? {
         outcome: finishMetadata.outcome,
         completed_waves: finishMetadata.completedWaves,
@@ -612,7 +802,7 @@ export function createRewardFinisher(
 
 function readFinishMetadata(value: FinalResult | FinishSubmission): FinishMetadata | null {
   if (!("outcome" in value) || !("completedWaves" in value)) return null;
-  if (value.outcome !== "defeat" && value.outcome !== "victory") return null;
+  if (value.outcome !== "defeat" && value.outcome !== "victory" && value.outcome !== "retired") return null;
   if (!Number.isSafeInteger(value.completedWaves) || value.completedWaves < 0 || value.completedWaves > MAX_SCORE) return null;
   if (!("heroId" in value) || value.heroId !== null && !isHeroId(value.heroId)) return null;
   return Object.freeze({ outcome: value.outcome, completedWaves: value.completedWaves, heroId: value.heroId });
@@ -690,7 +880,139 @@ function parseMiniAppBootstrapResponse(value: unknown): MiniAppBootstrap | null 
   const profile = parsePlayerProfileTransport(value.profile);
   if (!reward || typeof value.resumed !== "boolean" || expiresAt === null || !binding || !profile) return null;
   if (!profile.unlockedLevelIds.includes(binding.levelId)) return null;
-  return Object.freeze({ reward, resumed: value.resumed, expiresAt, binding, profile });
+  const runContractVersion = readRunContractVersion(value.run_contract_version, 2);
+  if (runContractVersion === null) return null;
+  if (runContractVersion === 2) {
+    return Object.freeze({
+      reward,
+      resumed: value.resumed,
+      expiresAt,
+      binding,
+      runContractVersion,
+      profile,
+      runRevision: null,
+      heroId: null,
+      confirmedWave: 0,
+      checkpointUrl: null,
+      restartUrl: null,
+    });
+  }
+
+  const runRevision = positiveInteger(value.run_revision);
+  const heroId = isHeroId(value.hero_id) ? value.hero_id : null;
+  const confirmedWave = nonNegativeInteger(value.confirmed_wave);
+  const checkpointUrl = safeHttpUrl(typeof value.checkpoint_url === "string" ? value.checkpoint_url : null);
+  const restartUrl = safeHttpUrl(typeof value.restart_url === "string" ? value.restart_url : null);
+  if (
+    runRevision === null
+    || !heroId
+    || confirmedWave === null
+    || checkpointUrl !== TOWER_DEFENSE_CHECKPOINT_URL
+    || restartUrl !== TOWER_DEFENSE_RESTART_URL
+  ) return null;
+  return Object.freeze({
+    reward,
+    resumed: value.resumed,
+    expiresAt,
+    binding,
+    runContractVersion,
+    profile,
+    runRevision,
+    heroId,
+    confirmedWave,
+    checkpointUrl: TOWER_DEFENSE_CHECKPOINT_URL,
+    restartUrl: TOWER_DEFENSE_RESTART_URL,
+  });
+}
+
+function parseMiniAppProfileBootstrapResponse(value: unknown): MiniAppProfileBootstrap | null {
+  if (
+    !isRecord(value)
+    || value.ok !== true
+    || value.game_id !== "td"
+    || value.content_version !== CONTENT_VERSION
+    || value.run_contract_version !== RANKED_RUN_CONTRACT_VERSION
+  ) {
+    return null;
+  }
+  const profile = parsePlayerProfileTransport(value.profile);
+  if (!profile) return null;
+  if (value.active_run === null) return Object.freeze({ profile, activeRun: null });
+  if (!isRecord(value.active_run)) return null;
+
+  const runId = boundedUnknownText(value.active_run.run_id, 256);
+  const expiresAt = positiveInteger(value.active_run.expires_at);
+  const runRevision = positiveInteger(value.active_run.run_revision);
+  const heroId = isHeroId(value.active_run.hero_id) ? value.active_run.hero_id : null;
+  const confirmedWave = nonNegativeInteger(value.active_run.confirmed_wave);
+  const runContractVersion = readRunContractVersion(value.active_run.run_contract_version, 2);
+  const binding = parseServerRunBindingTransport(value.active_run.binding);
+  if (
+    !runId
+    || expiresAt === null
+    || runRevision === null
+    || !heroId
+    || confirmedWave === null
+    || runContractVersion === null
+    || !binding
+  ) return null;
+  if (!profile.unlockedLevelIds.includes(binding.levelId)) return null;
+  return Object.freeze({
+    profile,
+    activeRun: Object.freeze({
+      runId,
+      expiresAt,
+      runRevision,
+      heroId,
+      confirmedWave,
+      binding,
+      runContractVersion,
+    }),
+  });
+}
+
+function parseRestartedBootstrapResponse(
+  value: unknown,
+  previous: MiniAppBootstrap,
+): MiniAppBootstrap | null {
+  if (!isRecord(value) || value.ok !== true || value.code !== "run_restarted") return null;
+  const runId = boundedUnknownText(value.run_id, 256);
+  const token = boundedUnknownText(value.token, 4_096);
+  const runRevision = positiveInteger(value.run_revision);
+  const runContractVersion = readRunContractVersion(value.run_contract_version, null);
+  const heroId = isHeroId(value.hero_id) ? value.hero_id : null;
+  const confirmedWave = nonNegativeInteger(value.confirmed_wave);
+  const expiresAt = positiveInteger(value.expires_at);
+  const binding = parseServerRunBindingTransport(value.binding);
+  const profile = parsePlayerProfileTransport(value.profile);
+  if (
+    runId !== previous.reward.runId
+    || !token
+    || runRevision === null
+    || previous.runRevision === null
+    || runRevision <= previous.runRevision
+    || !heroId
+    || confirmedWave !== 0
+    || expiresAt === null
+    || !binding
+    || runContractVersion !== RANKED_RUN_CONTRACT_VERSION
+    || binding.levelId !== previous.binding.levelId
+    || binding.modeId !== previous.binding.modeId
+    || !profile
+  ) return null;
+  return Object.freeze({
+    reward: Object.freeze({ ...previous.reward, token }),
+    resumed: true,
+    expiresAt,
+    binding,
+    runContractVersion,
+    profile,
+    runRevision,
+    heroId,
+    confirmedWave,
+    checkpointUrl: TOWER_DEFENSE_CHECKPOINT_URL,
+    restartUrl: TOWER_DEFENSE_RESTART_URL,
+  });
 }
 
 function parseAttemptPurchaseOffer(value: unknown): AttemptPurchaseOffer | null {
@@ -768,6 +1090,22 @@ function serializeMiniAppBootstrap(bootstrap: MiniAppBootstrap): Record<string, 
     finish_url: reward.finishUrl,
   });
   if (!validatedReward) return null;
+  const runRevision = positiveInteger(bootstrap.runRevision);
+  const heroId = bootstrap.heroId && isHeroId(bootstrap.heroId) ? bootstrap.heroId : null;
+  const confirmedWave = nonNegativeInteger(bootstrap.confirmedWave);
+  const runContractVersion = readRunContractVersion(bootstrap.runContractVersion, 2);
+  if (runContractVersion === null) return null;
+  const rankedV3 = runContractVersion === RANKED_RUN_CONTRACT_VERSION;
+  if (
+    rankedV3
+    && (
+      runRevision === null
+      || !heroId
+      || confirmedWave === null
+      || bootstrap.checkpointUrl !== TOWER_DEFENSE_CHECKPOINT_URL
+      || bootstrap.restartUrl !== TOWER_DEFENSE_RESTART_URL
+    )
+  ) return null;
   return {
     game_id: "td",
     run_id: validatedReward.runId,
@@ -781,8 +1119,31 @@ function serializeMiniAppBootstrap(bootstrap: MiniAppBootstrap): Record<string, 
       level_id: binding.levelId,
       mode_id: binding.modeId,
     },
+    run_contract_version: runContractVersion,
     profile,
+    ...(rankedV3 ? {
+      run_revision: runRevision,
+      hero_id: heroId,
+      confirmed_wave: confirmedWave,
+      checkpoint_url: TOWER_DEFENSE_CHECKPOINT_URL,
+      restart_url: TOWER_DEFENSE_RESTART_URL,
+    } : {}),
   };
+}
+
+function readRunContractVersion(
+  value: unknown,
+  fallback: 2 | null,
+): 2 | typeof RANKED_RUN_CONTRACT_VERSION | null {
+  if (value === 2 || value === RANKED_RUN_CONTRACT_VERSION) return value;
+  return value === undefined ? fallback : null;
+}
+
+function sanitizeMiniAppRunSelection(value: unknown): MiniAppRunSelection | null {
+  if (!isRecord(value) || !isHeroId(value.heroId)) return null;
+  if (typeof value.levelId !== "string" || typeof value.modeId !== "string") return null;
+  if (!getLevelDefinition(value.levelId) || !getModeRuleset(value.modeId)) return null;
+  return Object.freeze({ levelId: value.levelId, modeId: value.modeId, heroId: value.heroId });
 }
 
 function normalizeBase64(value: string): string | null {

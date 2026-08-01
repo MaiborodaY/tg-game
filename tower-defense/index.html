@@ -173,6 +173,7 @@
               <option value="endless">Бесконечный</option>
             </select>
           </label>
+          <small id="mode-unlock-hint" class="session-unlock-hint" hidden>Бесконечный режим откроется после победы в Лесных вратах.</small>
         </div>
         <button id="hero-choice-button" class="hero-choice-button" type="button" aria-controls="hero-picker" aria-expanded="false">
           <span id="hero-choice-emblem" class="hero-emblem eira" aria-hidden="true"><img src="./src/assets/heroes/eira-portrait.webp" alt=""></span>
@@ -232,6 +233,7 @@
           <span><i class="feature-icon feature-icon--bosses" aria-hidden="true"></i><b id="intro-bosses">Боссы</b></span>
         </div>
         <button id="intro-start" class="modal-primary" type="button">Встать на защиту</button>
+        <button id="intro-restart-cancel" class="secondary-action wide" type="button" hidden>Вернуться к забегу</button>
         <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
       </section>
     </div>
@@ -283,6 +285,7 @@
           <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="game-menu-fullscreen-label">Развернуть на весь экран</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-session" class="game-menu-action" type="button"><span aria-hidden="true">⌂</span><b id="game-menu-session-label">Уровень и режим</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-restart" class="game-menu-action is-danger" type="button"><span aria-hidden="true">↺</span><b id="game-menu-restart-label">Начать заново и выбрать героя</b><i aria-hidden="true">›</i></button>
+          <button id="game-menu-retire" class="game-menu-action is-danger" type="button" hidden><span aria-hidden="true">◇</span><b id="game-menu-retire-label">Завершить забег</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-exit" class="game-menu-action" type="button" hidden><span aria-hidden="true">×</span><b id="game-menu-exit-label">Выйти из игры</b><i aria-hidden="true">›</i></button>
         </div>
 
@@ -342,8 +345,12 @@
           <button id="leaderboard-tab-forest-gate" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="true" data-leaderboard-level="forest-gate">Лесные врата</button>
           <button id="leaderboard-tab-northern-pass" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="false" data-leaderboard-level="northern-pass">Северный перевал</button>
         </div>
+        <div id="leaderboard-mode-tabs" class="leaderboard-tabs leaderboard-mode-tabs" role="tablist" aria-label="Режим">
+          <button id="leaderboard-mode-campaign" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="true" data-leaderboard-mode="campaign">Кампания</button>
+          <button id="leaderboard-mode-endless" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="false" data-leaderboard-mode="endless">Бесконечный</button>
+        </div>
 
-        <section id="leaderboard-panel" class="leaderboard-panel" role="tabpanel" aria-labelledby="leaderboard-tab-forest-gate" tabindex="0" aria-busy="false">
+        <section id="leaderboard-panel" class="leaderboard-panel" role="tabpanel" aria-labelledby="leaderboard-tab-forest-gate leaderboard-mode-campaign" tabindex="0" aria-busy="false">
           <p id="leaderboard-summary" class="leaderboard-summary">Последняя волна — 24. При равенстве выше тот, кто прошёл быстрее.</p>
           <div id="leaderboard-status" class="leaderboard-status" role="status" aria-live="polite">Загружаем рейтинг…</div>
           <ol id="leaderboard-list" class="leaderboard-list" aria-label="Лучшие результаты"></ol>

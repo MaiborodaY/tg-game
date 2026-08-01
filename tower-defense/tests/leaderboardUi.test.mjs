@@ -46,9 +46,10 @@ test("leaderboard dialog, tabs and live states expose accessible semantics", () 
   assert.match(overlay, /aria-modal="true"/);
   assert.match(overlay, /aria-labelledby="leaderboard-title"/);
   assert.match(overlay, /id="leaderboard-tabs"[^>]*role="tablist"/);
-  assert.equal(overlay.match(/role="tab"/g)?.length, 2);
+  assert.match(overlay, /id="leaderboard-mode-tabs"[^>]*role="tablist"/);
+  assert.equal(overlay.match(/role="tab"/g)?.length, 4);
   assert.match(overlay, /role="tabpanel"/);
-  assert.match(panel, /aria-labelledby="leaderboard-tab-forest-gate"/);
+  assert.match(panel, /aria-labelledby="leaderboard-tab-forest-gate leaderboard-mode-campaign"/);
   assert.match(panel, /tabindex="0"/);
   assert.match(panel, /aria-busy="false"/);
   assert.match(overlay, /id="leaderboard-status"[^>]*role="status"[^>]*aria-live="polite"/);
@@ -56,14 +57,16 @@ test("leaderboard dialog, tabs and live states expose accessible semantics", () 
   assert.match(overlay, /id="leaderboard-self"[^>]*aria-label=/);
 
   assert.match(mainSource, /leaderboardTabs\.addEventListener\("keydown"/);
+  assert.match(mainSource, /leaderboardModeTabs\.addEventListener\("keydown"/);
   for (const key of ["ArrowLeft", "ArrowRight", "Home", "End"]) {
     assert.match(mainSource, new RegExp(`"${key}"`));
   }
   assert.match(mainSource, /event\.preventDefault\(\)/);
   assert.match(mainSource, /selectLeaderboardLevel\(next\.dataset\.leaderboardLevel\);[\s\S]*next\.focus\(\)/);
+  assert.match(mainSource, /selectLeaderboardMode\(next\.dataset\.leaderboardMode\);[\s\S]*next\.focus\(\)/);
   assert.match(mainSource, /control\.setAttribute\("aria-selected", String\(selected\)\)/);
   assert.match(mainSource, /control\.tabIndex = selected \? 0 : -1/);
-  assert.match(mainSource, /leaderboardPanel\.setAttribute\("aria-labelledby", control\.id\)/);
+  assert.match(mainSource, /leaderboardPanel\.setAttribute\([\s\S]*"aria-labelledby",[\s\S]*selectedLevelControl\.id[\s\S]*selectedModeControl\.id/);
 });
 
 test("leaderboard bottom sheet remains scrollable, focus-visible and touch-safe on mobile", () => {
@@ -95,9 +98,11 @@ test("leaderboard copy is complete in every locale and resolves placeholders", (
   const keys = [
     "game_menu_leaderboard",
     "leaderboard_eyebrow",
+    "leaderboard_eyebrow_endless",
     "leaderboard_title",
     "leaderboard_level_label",
     "leaderboard_summary",
+    "leaderboard_summary_endless",
     "leaderboard_loading",
     "leaderboard_empty",
     "leaderboard_unavailable",
@@ -112,6 +117,7 @@ test("leaderboard copy is complete in every locale and resolves placeholders", (
     "leaderboard_player_unknown",
     "leaderboard_players",
     "leaderboard_hero_completions",
+    "leaderboard_run_hero",
   ];
 
   for (const locale of ["ru", "uk", "en"]) {
@@ -129,7 +135,7 @@ test("leaderboard copy is complete in every locale and resolves placeholders", (
 });
 
 test("full clears render compact localized hero medals with real portraits", () => {
-  assert.match(leaderboardFunctions, /const isComplete = entry\.outcome === "victory" && entry\.completedWaves === maxWaves/);
+  assert.match(leaderboardFunctions, /const isComplete = maxWaves !== null && entry\.outcome === "victory" && entry\.completedWaves === maxWaves/);
   assert.match(leaderboardFunctions, /const hasHeroWins = isComplete && entry\.heroWins\.length > 0/);
   assert.match(leaderboardFunctions, /is-complete/);
   assert.match(leaderboardFunctions, /has-hero-wins/);
@@ -145,8 +151,10 @@ test("full clears render compact localized hero medals with real portraits", () 
   assert.match(css, /\.leaderboard-entry\.is-complete:not\(\.is-me\)/);
   assert.match(css, /\.leaderboard-entry\.is-me/);
   assert.match(css, /\.leaderboard-hero-medal img \{[^}]*border-radius:\s*50%;[^}]*object-fit:\s*cover;/s);
-  assert.match(mainSource, /heroWins: Object\.freeze\(\[\{ heroId: "eira", completions: 1 \}\]\)/);
-  assert.match(mainSource, /heroWins: Object\.freeze\(\[\{ heroId: "eira", completions: 2 \}, \{ heroId: "grak", completions: 1 \}\]\)/);
+  assert.match(mainSource, /heroWins: Object\.freeze\(modeId === ENDLESS_MODE_ID \? \[\] : \[\{ heroId: "eira", completions: 1 \}\]\)/);
+  assert.match(mainSource, /heroWins: Object\.freeze\(modeId === ENDLESS_MODE_ID \? \[\] : \[\{ heroId: "eira", completions: 2 \}, \{ heroId: "grak", completions: 1 \}\]\)/);
+  assert.match(leaderboardFunctions, /maxWaves === null && entry\.heroId[\s\S]*createLeaderboardRunHero\(entry\.heroId\)/);
+  assert.match(leaderboardFunctions, /portrait\.src = HERO_PORTRAIT_URLS\[heroId\]/);
 });
 
 test("nullable player names stay valid and render through localized safe text", () => {
@@ -187,9 +195,9 @@ test("nullable player names stay valid and render through localized safe text", 
 });
 
 test("successful reward settlement invalidates the current level without accepting stale responses", () => {
-  assert.match(mainSource, /if \(result\.ok\) \{[\s\S]*leaderboardClient\?\.invalidate\(selectedSession\.level\.id\)/);
+  assert.match(mainSource, /if \(result\.ok\) \{[\s\S]*leaderboardClient\?\.invalidate\(selectedSession\.level\.id, selectedSession\.mode\.id/);
   assert.match(mainSource, /const requestId = \+\+leaderboardRequestId/);
-  assert.match(mainSource, /requestId === leaderboardRequestId[\s\S]*levelId === leaderboardLevelId[\s\S]*!elements\.leaderboardOverlay\.hidden/);
+  assert.match(mainSource, /requestId === leaderboardRequestId[\s\S]*levelId === leaderboardLevelId[\s\S]*modeId === leaderboardModeId[\s\S]*!elements\.leaderboardOverlay\.hidden/);
 });
 
 test("expired Telegram auth does not offer a useless network retry", () => {

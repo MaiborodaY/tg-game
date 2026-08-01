@@ -41,8 +41,8 @@ test("intro offers three accessible hero portraits without adding a tower card",
 });
 
 test("hero choice only replaces a fresh campaign before the renderer mounts", () => {
-  assert.match(mainSource, /function chooseHero\(value: string\): void \{[\s\S]*isHeroId\(value\)[\s\S]*heroChoiceIsLocked\(\)[\s\S]*createCampaignState\(\{[\s\S]*heroId: selectedHeroId/);
-  assert.match(mainSource, /function heroChoiceIsLocked\(\): boolean \{\s*return gameMounted \|\| runStarted \|\| hasRunProgress\(latestUi\?\.campaign \?\? initialCampaign\);/);
+  assert.match(mainSource, /function chooseHero\(value: string\): void \{[\s\S]*isHeroId\(value\)[\s\S]*heroChoiceIsLocked\(\)[\s\S]*if \(!restartSelectionPending\) \{\s*initialCampaign = createCampaignState\(\{[\s\S]*heroId: selectedHeroId/);
+  assert.match(mainSource, /function heroChoiceIsLocked\(\): boolean \{\s*if \(restartSelectionPending\) return false;\s*return gameMounted \|\| runStarted \|\| hasRunProgress\(latestUi\?\.campaign \?\? initialCampaign\);/);
   assert.match(mainSource, /selectedHeroId = initialCampaign\.hero\.id/);
   assert.match(mainSource, /let runStarted = Boolean\(restoredCheckpoint\)/);
   assert.match(mainSource, /saveCampaign\(storage, saveKey, startedCampaign\)/);
@@ -53,6 +53,15 @@ test("hero choice only replaces a fresh campaign before the renderer mounts", ()
   assert.match(mainSource, /option\.disabled = disabled \|\| unavailable/);
   assert.match(mainSource, /!grakWasUnlocked && isHeroAvailable\("grak", playerProfile\)[\s\S]*hero_grak_unlocked/);
   assert.match(mainSource, /import\.meta\.env\.DEV[\s\S]*preview_hero/);
+});
+
+test("same-attempt restart keeps the newly chosen hero instead of restoring the paused hero", () => {
+  const renderUiSource = mainSource.match(/function renderUi[\s\S]*?(?=\nfunction renderWavePreview)/)?.[0] ?? "";
+  assert.match(mainSource, /function syncHeroChoiceControls\(\): void \{\s*if \(!restartSelectionPending\) \{[\s\S]*selectedHeroId = campaign\.hero\.id/);
+  assert.match(renderUiSource, /if \(!restartSelectionPending\) selectedHeroId = ui\.hero\.id;/);
+  assert.match(mainSource, /if \(restartSelectionPending\) \{\s*const restarted = await applyPendingRestart\(\)/);
+  assert.match(mainSource, /restartMiniAppRun\(\s*launchDecision\.initData,\s*miniAppBootstrap,\s*selectedHeroId/);
+  assert.match(mainSource, /activateServerBootstrap\(restarted\.bootstrap, selectedHeroId\)/);
 });
 
 test("fresh sessions always reach hero choice before their renderer mounts", () => {

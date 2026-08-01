@@ -38,7 +38,7 @@ test("result screen keeps server score internal and gives durable run stats plus
   for (const id of ["result-waves", "result-duration", "result-kills", "result-run-summary", "result-advice-body"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-  assert.match(main, /savePendingResult\([\s\S]*completedWaves, summary\)/);
+  assert.match(main, /savePendingResult\([\s\S]*completedWaves,[\s\S]*summary,[\s\S]*currentRunRevision\(\)/);
   assert.match(main, /elements\.resultDuration\.textContent = formatLeaderboardDuration\(result\.durationMs\)/);
   assert.match(main, /deriveResultAdvice\(resolveResultWavePlan\(adviceWave\)/);
   assert.match(main, /pending\.summary/);

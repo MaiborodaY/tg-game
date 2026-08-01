@@ -2,7 +2,7 @@ import type { FinalResult } from "./reward.ts";
 import { isHeroId } from "./game/heroes.ts";
 import type { HeroId } from "./game/types.ts";
 
-export type PendingOutcome = "gameover" | "victory";
+export type PendingOutcome = "gameover" | "victory" | "retired";
 export type PendingRunSummary = Readonly<{
   lives: number;
   kills: number;
@@ -27,11 +27,12 @@ export function savePendingResult(
   result: FinalResult,
   completedWaves: number,
   summary?: PendingRunSummary,
+  runRevision: number | null = null,
 ): boolean {
   if (!storage || !runId) return false;
   try {
     const validSummary = sanitizePendingRunSummary(summary);
-    storage.setItem(pendingKey(runId), JSON.stringify({
+    storage.setItem(pendingKey(runId, runRevision), JSON.stringify({
       version: 2,
       outcome,
       score: result.score,
@@ -50,12 +51,13 @@ export function loadPendingResult(
   runId: string,
   maxScore: number,
   maxWaves: number,
+  runRevision: number | null = null,
 ): PendingResult | null {
   if (!storage) return null;
   try {
-    const value = JSON.parse(storage.getItem(pendingKey(runId)) || "null") as unknown;
+    const value = JSON.parse(storage.getItem(pendingKey(runId, runRevision)) || "null") as unknown;
     if (!isRecord(value) || (value.version !== 1 && value.version !== 2)) return null;
-    if (value.outcome !== "gameover" && value.outcome !== "victory") return null;
+    if (value.outcome !== "gameover" && value.outcome !== "victory" && value.outcome !== "retired") return null;
     if (!Number.isFinite(value.score) || !Number.isFinite(value.durationMs)) return null;
     if (value.version === 2 && !Number.isFinite(value.waves)) return null;
     const score = clampInteger(value.score as number, maxScore);
@@ -76,17 +78,23 @@ export function loadPendingResult(
   }
 }
 
-export function removePendingResult(storage: PendingStorage | null, runId: string | null): void {
+export function removePendingResult(
+  storage: PendingStorage | null,
+  runId: string | null,
+  runRevision: number | null = null,
+): void {
   if (!storage || !runId) return;
   try {
-    storage.removeItem(pendingKey(runId));
+    storage.removeItem(pendingKey(runId, runRevision));
   } catch {
     // Storage failures keep the confirmed server result authoritative.
   }
 }
 
-export function pendingKey(runId: string): string {
-  return `td-pending-finish-v1:${runId}`;
+export function pendingKey(runId: string, runRevision: number | null = null): string {
+  return Number.isSafeInteger(runRevision) && (runRevision ?? 0) > 0
+    ? `td-pending-finish-v2:${runId}:rev:${runRevision}`
+    : `td-pending-finish-v1:${runId}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

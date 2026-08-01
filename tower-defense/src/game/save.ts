@@ -31,8 +31,12 @@ export function getCampaignSaveKey(
   runId: string | null,
   levelId = CLASSIC_CAMPAIGN_LEVEL_ID,
   modeId = CAMPAIGN_MODE_ID,
+  runRevision: number | null = null,
 ): string {
-  return runId ? `td-save-v5:run:${runId}` : createLocalCampaignSaveKey(levelId, modeId);
+  if (!runId) return createLocalCampaignSaveKey(levelId, modeId);
+  return Number.isSafeInteger(runRevision) && (runRevision ?? 0) > 0
+    ? `td-save-v6:run:${runId}:rev:${runRevision}`
+    : `td-save-v5:run:${runId}`;
 }
 
 export function loadCampaign(

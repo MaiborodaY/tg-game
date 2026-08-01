@@ -16,6 +16,7 @@ test("leaderboard response is strict, immutable and maps transport fields", () =
     levelId: "forest-gate",
     modeId: "campaign",
     maxWaves: 24,
+    seasonId: null,
     totalPlayers: 12,
     entries: [
       {
@@ -28,6 +29,7 @@ test("leaderboard response is strict, immutable and maps transport fields", () =
           { heroId: "eira", completions: 2 },
           { heroId: "grak", completions: 1 },
         ],
+        heroId: null,
         isMe: true,
       },
       {
@@ -37,6 +39,7 @@ test("leaderboard response is strict, immutable and maps transport fields", () =
         completedWaves: 22,
         durationMs: null,
         heroWins: [],
+        heroId: null,
         isMe: false,
       },
     ],
@@ -50,6 +53,7 @@ test("leaderboard response is strict, immutable and maps transport fields", () =
         { heroId: "eira", completions: 2 },
         { heroId: "grak", completions: 1 },
       ],
+      heroId: null,
       isMe: true,
     },
   });
@@ -70,6 +74,35 @@ test("leaderboard parser keeps rollout compatibility with legacy entries", () =>
   assert.deepEqual(parsed?.entries.map((entry) => entry.heroWins), [[], []]);
   assert.deepEqual(parsed?.me?.heroWins, []);
   assert.equal(Object.isFrozen(parsed?.entries[0].heroWins), true);
+});
+
+test("endless leaderboard is season-bound and identifies each run hero", () => {
+  const entry = {
+    rank: 1,
+    name: "Mr.Maybik",
+    outcome: "defeat",
+    completed_waves: 68,
+    duration_ms: 519_000,
+    hero_wins: [],
+    hero_id: "eira",
+    is_me: true,
+  };
+  const parsed = parseLeaderboardResponse({
+    ok: true,
+    game_id: "td",
+    level_id: "forest-gate",
+    mode_id: "endless",
+    max_waves: null,
+    season_id: "endless-v1",
+    total_players: 1,
+    entries: [entry],
+    me: { ...entry },
+  }, "forest-gate", "endless");
+
+  assert.equal(parsed?.modeId, "endless");
+  assert.equal(parsed?.maxWaves, null);
+  assert.equal(parsed?.seasonId, "endless-v1");
+  assert.equal(parsed?.entries[0].heroId, "eira");
 });
 
 test("leaderboard parser rejects schema drift and inconsistent identity data", () => {
@@ -127,7 +160,7 @@ test("client posts pinned campaign request and deduplicates concurrent loads", a
     init_data: "query_id=telegram&hash=signed",
     level_id: "forest-gate",
     mode_id: "campaign",
-    stats_version: 2,
+    stats_version: 3,
   });
 
   resolveFetch(jsonResponse(responseBody()));

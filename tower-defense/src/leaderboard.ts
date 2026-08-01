@@ -1,4 +1,5 @@
 import { HERO_IDS, isHeroId } from "./game/heroes.ts";
+import { CAMPAIGN_MODE_ID, ENDLESS_MODE_ID, MAX_ENDLESS_WAVE } from "./game/content.ts";
 import type { HeroId } from "./game/types.ts";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -9,7 +10,7 @@ const MAX_ENTRIES = 100;
 const CONTENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{0,95}$/;
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
 
-const RESPONSE_KEYS = Object.freeze([
+const LEGACY_RESPONSE_KEYS = Object.freeze([
   "ok",
   "game_id",
   "level_id",
@@ -19,6 +20,7 @@ const RESPONSE_KEYS = Object.freeze([
   "entries",
   "me",
 ] as const);
+const RANKED_RESPONSE_KEYS = Object.freeze([...LEGACY_RESPONSE_KEYS, "season_id"] as const);
 const LEGACY_ENTRY_KEYS = Object.freeze([
   "rank",
   "name",
@@ -28,6 +30,7 @@ const LEGACY_ENTRY_KEYS = Object.freeze([
   "is_me",
 ] as const);
 const ENTRY_KEYS = Object.freeze([...LEGACY_ENTRY_KEYS, "hero_wins"] as const);
+const RANKED_ENTRY_KEYS = Object.freeze([...ENTRY_KEYS, "hero_id"] as const);
 const HERO_WIN_KEYS = Object.freeze(["hero_id", "completions"] as const);
 
 export const TOWER_DEFENSE_LEADERBOARD_URL =
@@ -35,6 +38,7 @@ export const TOWER_DEFENSE_LEADERBOARD_URL =
 export const LEADERBOARD_CACHE_TTL_MS = 30_000;
 
 export type LeaderboardOutcome = "defeat" | "victory";
+export type LeaderboardModeId = typeof CAMPAIGN_MODE_ID | typeof ENDLESS_MODE_ID;
 
 export type LeaderboardHeroWin = Readonly<{
   heroId: HeroId;
@@ -49,14 +53,16 @@ export type LeaderboardEntry = Readonly<{
   completedWaves: number;
   durationMs: number | null;
   heroWins: readonly LeaderboardHeroWin[];
+  heroId: HeroId | null;
   isMe: boolean;
 }>;
 
 export type TowerDefenseLeaderboard = Readonly<{
   gameId: "td";
   levelId: string;
-  modeId: "campaign";
-  maxWaves: number;
+  modeId: LeaderboardModeId;
+  maxWaves: number | null;
+  seasonId: string | null;
   totalPlayers: number;
   entries: readonly LeaderboardEntry[];
   me: LeaderboardEntry | null;
@@ -87,8 +93,8 @@ export type LeaderboardClientOptions = Readonly<{
 }>;
 
 export type LeaderboardClient = Readonly<{
-  load(levelId: string): Promise<TowerDefenseLeaderboard>;
-  invalidate(levelId?: string): void;
+  load(levelId: string, modeId?: LeaderboardModeId): Promise<TowerDefenseLeaderboard>;
+  invalidate(levelId?: string, modeId?: LeaderboardModeId): void;
 }>;
 
 type CachedLeaderboard = Readonly<{
@@ -115,38 +121,44 @@ export function createLeaderboardClient(
   const revisions = new Map<string, number>();
   let epoch = 0;
 
-  const load = (rawLevelId: string): Promise<TowerDefenseLeaderboard> => {
+  const load = (
+    rawLevelId: string,
+    rawModeId: LeaderboardModeId = CAMPAIGN_MODE_ID,
+  ): Promise<TowerDefenseLeaderboard> => {
     const levelId = readContentId(rawLevelId);
     if (!levelId) return Promise.reject(new Error("invalid_level_id"));
+    const modeId = readModeId(rawModeId);
+    if (!modeId) return Promise.reject(new Error("invalid_mode_id"));
+    const cacheKey = leaderboardCacheKey(levelId, modeId);
 
     const now = safeNow(readCurrentTime);
-    const cached = cache.get(levelId);
+    const cached = cache.get(cacheKey);
     if (cached && cached.expiresAt > now) return Promise.resolve(cached.value);
-    if (cached) cache.delete(levelId);
+    if (cached) cache.delete(cacheKey);
 
-    const pending = inFlight.get(levelId);
+    const pending = inFlight.get(cacheKey);
     if (pending) return pending;
 
     const requestEpoch = epoch;
-    const requestRevision = revisions.get(levelId) ?? 0;
-    const request = requestLeaderboard(fetcher, initData, levelId, timeoutMs)
+    const requestRevision = revisions.get(cacheKey) ?? 0;
+    const request = requestLeaderboard(fetcher, initData, levelId, modeId, timeoutMs)
       .then((value) => {
-        if (epoch === requestEpoch && (revisions.get(levelId) ?? 0) === requestRevision) {
-          cache.set(levelId, {
+        if (epoch === requestEpoch && (revisions.get(cacheKey) ?? 0) === requestRevision) {
+          cache.set(cacheKey, {
             expiresAt: safeNow(readCurrentTime) + LEADERBOARD_CACHE_TTL_MS,
             value,
           });
         }
         return value;
       });
-    inFlight.set(levelId, request);
+    inFlight.set(cacheKey, request);
     void request.finally(() => {
-      if (inFlight.get(levelId) === request) inFlight.delete(levelId);
+      if (inFlight.get(cacheKey) === request) inFlight.delete(cacheKey);
     }).catch(() => undefined);
     return request;
   };
 
-  const invalidate = (rawLevelId?: string): void => {
+  const invalidate = (rawLevelId?: string, rawModeId?: LeaderboardModeId): void => {
     if (rawLevelId === undefined) {
       epoch += 1;
       cache.clear();
@@ -156,9 +168,21 @@ export function createLeaderboardClient(
 
     const levelId = readContentId(rawLevelId);
     if (!levelId) return;
-    revisions.set(levelId, (revisions.get(levelId) ?? 0) + 1);
-    cache.delete(levelId);
-    inFlight.delete(levelId);
+    if (rawModeId === undefined) {
+      for (const modeId of [CAMPAIGN_MODE_ID, ENDLESS_MODE_ID] as const) {
+        const cacheKey = leaderboardCacheKey(levelId, modeId);
+        revisions.set(cacheKey, (revisions.get(cacheKey) ?? 0) + 1);
+        cache.delete(cacheKey);
+        inFlight.delete(cacheKey);
+      }
+      return;
+    }
+    const modeId = readModeId(rawModeId);
+    if (!modeId) return;
+    const cacheKey = leaderboardCacheKey(levelId, modeId);
+    revisions.set(cacheKey, (revisions.get(cacheKey) ?? 0) + 1);
+    cache.delete(cacheKey);
+    inFlight.delete(cacheKey);
   };
 
   return Object.freeze({ load, invalidate });
@@ -167,22 +191,35 @@ export function createLeaderboardClient(
 export function parseLeaderboardResponse(
   value: unknown,
   expectedLevelId: string,
+  expectedModeId: LeaderboardModeId = CAMPAIGN_MODE_ID,
 ): TowerDefenseLeaderboard | null {
   const levelId = readContentId(expectedLevelId);
-  if (!levelId || !hasExactKeys(value, RESPONSE_KEYS)) return null;
-  if (value.ok !== true || value.game_id !== "td" || value.mode_id !== "campaign") return null;
+  const modeId = readModeId(expectedModeId);
+  const rankedResponse = hasExactKeys(value, RANKED_RESPONSE_KEYS);
+  if (!levelId || !modeId || (!rankedResponse && !hasExactKeys(value, LEGACY_RESPONSE_KEYS))) return null;
+  if (value.ok !== true || value.game_id !== "td" || value.mode_id !== modeId) return null;
   if (value.level_id !== levelId) return null;
 
-  const maxWaves = readInteger(value.max_waves, 1, Number.MAX_SAFE_INTEGER);
+  const maxWaves = modeId === CAMPAIGN_MODE_ID
+    ? readInteger(value.max_waves, 1, Number.MAX_SAFE_INTEGER)
+    : value.max_waves === null ? null : undefined;
+  const seasonId = rankedResponse && typeof value.season_id === "string" ? value.season_id : null;
   const totalPlayers = readInteger(value.total_players, 0, Number.MAX_SAFE_INTEGER);
-  if (maxWaves === null || totalPlayers === null || !Array.isArray(value.entries)) return null;
+  if (
+    maxWaves === undefined
+    || (modeId === CAMPAIGN_MODE_ID && maxWaves === null)
+    || totalPlayers === null
+    || !Array.isArray(value.entries)
+  ) return null;
+  if (modeId === ENDLESS_MODE_ID && (!rankedResponse || seasonId !== "endless-v1")) return null;
+  if (modeId === CAMPAIGN_MODE_ID && rankedResponse && value.season_id !== null) return null;
   if (value.entries.length > MAX_ENTRIES || value.entries.length > totalPlayers) return null;
 
   const entries: LeaderboardEntry[] = [];
   let previousRank = 0;
   let ownEntry: LeaderboardEntry | null = null;
   for (const candidate of value.entries) {
-    const entry = parseEntry(candidate, maxWaves, totalPlayers);
+    const entry = parseEntry(candidate, modeId, maxWaves, totalPlayers);
     if (!entry || entry.rank <= previousRank) return null;
     previousRank = entry.rank;
     if (entry.isMe) {
@@ -192,7 +229,7 @@ export function parseLeaderboardResponse(
     entries.push(entry);
   }
 
-  const me = value.me === null ? null : parseEntry(value.me, maxWaves, totalPlayers);
+  const me = value.me === null ? null : parseEntry(value.me, modeId, maxWaves, totalPlayers);
   if (me && !me.isMe) return null;
   if (!me && ownEntry) return null;
   if (me && ownEntry && !sameEntry(me, ownEntry)) return null;
@@ -200,8 +237,9 @@ export function parseLeaderboardResponse(
   return Object.freeze({
     gameId: "td",
     levelId,
-    modeId: "campaign",
+    modeId,
     maxWaves,
+    seasonId,
     totalPlayers,
     entries: Object.freeze(entries),
     me,
@@ -212,6 +250,7 @@ async function requestLeaderboard(
   fetcher: LeaderboardFetch,
   initData: string,
   levelId: string,
+  modeId: LeaderboardModeId,
   timeoutMs: number,
 ): Promise<TowerDefenseLeaderboard> {
   const controller = new AbortController();
@@ -234,8 +273,8 @@ async function requestLeaderboard(
         body: JSON.stringify({
           init_data: initData,
           level_id: levelId,
-          mode_id: "campaign",
-          stats_version: 2,
+          mode_id: modeId,
+          stats_version: 3,
         }),
         signal: controller.signal,
         cache: "no-store",
@@ -245,7 +284,7 @@ async function requestLeaderboard(
     ]);
     if (!response.ok) throw new Error(`http_${response.status ?? 0}`);
     const data = await Promise.race([response.json(), timeout]);
-    const parsed = parseLeaderboardResponse(data, levelId);
+    const parsed = parseLeaderboardResponse(data, levelId, modeId);
     if (!parsed) throw new Error("invalid_response");
     return parsed;
   } finally {
@@ -253,16 +292,26 @@ async function requestLeaderboard(
   }
 }
 
-function parseEntry(value: unknown, maxWaves: number, totalPlayers: number): LeaderboardEntry | null {
+function parseEntry(
+  value: unknown,
+  modeId: LeaderboardModeId,
+  maxWaves: number | null,
+  totalPlayers: number,
+): LeaderboardEntry | null {
+  const hasRankedHero = hasExactKeys(value, RANKED_ENTRY_KEYS);
   const hasHeroWins = hasExactKeys(value, ENTRY_KEYS);
-  if (!hasHeroWins && !hasExactKeys(value, LEGACY_ENTRY_KEYS)) return null;
+  if (!hasRankedHero && !hasHeroWins && !hasExactKeys(value, LEGACY_ENTRY_KEYS)) return null;
+  if (modeId === ENDLESS_MODE_ID && !hasRankedHero) return null;
   const rank = readInteger(value.rank, 1, totalPlayers);
   const name = value.name === null ? null : readName(value.name);
-  const completedWaves = readInteger(value.completed_waves, 0, maxWaves);
+  const completedWaves = readInteger(value.completed_waves, 0, maxWaves ?? MAX_ENDLESS_WAVE);
   const durationMs = value.duration_ms === null
     ? null
     : readInteger(value.duration_ms, 0, Number.MAX_SAFE_INTEGER);
-  const heroWins = hasHeroWins ? parseHeroWins(value.hero_wins) : EMPTY_HERO_WINS;
+  const heroWins = hasHeroWins || hasRankedHero ? parseHeroWins(value.hero_wins) : EMPTY_HERO_WINS;
+  const heroId = hasRankedHero
+    ? value.hero_id === null ? null : isHeroId(value.hero_id) ? value.hero_id : undefined
+    : null;
   if (
     rank === null
     || (name === null && value.name !== null)
@@ -270,7 +319,9 @@ function parseEntry(value: unknown, maxWaves: number, totalPlayers: number): Lea
     || completedWaves === null
     || durationMs === null && value.duration_ms !== null
     || heroWins === null
-    || heroWins.length > 0 && (value.outcome !== "victory" || completedWaves !== maxWaves)
+    || heroId === undefined
+    || modeId === ENDLESS_MODE_ID && (value.outcome !== "defeat" || heroWins.length > 0)
+    || modeId === CAMPAIGN_MODE_ID && heroWins.length > 0 && (value.outcome !== "victory" || completedWaves !== maxWaves)
     || typeof value.is_me !== "boolean"
   ) return null;
 
@@ -281,6 +332,7 @@ function parseEntry(value: unknown, maxWaves: number, totalPlayers: number): Lea
     completedWaves,
     durationMs,
     heroWins,
+    heroId,
     isMe: value.is_me,
   });
 }
@@ -308,6 +360,7 @@ function sameEntry(left: LeaderboardEntry, right: LeaderboardEntry): boolean {
     && left.completedWaves === right.completedWaves
     && left.durationMs === right.durationMs
     && sameHeroWins(left.heroWins, right.heroWins)
+    && left.heroId === right.heroId
     && left.isMe === right.isMe;
 }
 
@@ -324,6 +377,14 @@ function readInitData(value: unknown): string | null {
 
 function readContentId(value: unknown): string | null {
   return typeof value === "string" && CONTENT_ID_PATTERN.test(value) ? value : null;
+}
+
+function readModeId(value: unknown): LeaderboardModeId | null {
+  return value === CAMPAIGN_MODE_ID || value === ENDLESS_MODE_ID ? value : null;
+}
+
+function leaderboardCacheKey(levelId: string, modeId: LeaderboardModeId): string {
+  return `${levelId}:${modeId}`;
 }
 
 function readName(value: unknown): string | null {

@@ -1327,6 +1327,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   cursor: pointer;
 }
 .leaderboard-tabs button[aria-selected="true"] { border-color: rgba(117, 227, 189, 0.64); background: #285d4c; color: var(--mint-light); }
+.leaderboard-mode-tabs { margin-top: 6px; }
 .leaderboard-panel { min-height: 310px; outline: none; }
 .leaderboard-panel:focus-visible { outline: 2px solid rgba(117, 227, 189, 0.72); outline-offset: 3px; border-radius: 12px; }
 .leaderboard-summary { max-width: none !important; margin: 12px 1px 10px !important; color: #91ab9c !important; font-size: 9px !important; line-height: 1.45 !important; }
@@ -1388,6 +1389,20 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .leaderboard-hero-medal.toren img { object-position: 50% 22%; }
 .leaderboard-hero-medal.grak img { object-position: 50% 20%; }
 .leaderboard-hero-medal small { color: #f1d58e; font-size: 7px; font-weight: 900; line-height: 1; }
+.leaderboard-run-hero {
+  width: 29px;
+  height: 29px;
+  padding: 2px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(117, 227, 189, 0.36);
+  border-radius: 50%;
+  background: rgba(117, 227, 189, 0.08);
+}
+.leaderboard-run-hero img { width: 23px; height: 23px; display: block; border-radius: 50%; object-fit: cover; }
+.leaderboard-run-hero.eira img { object-position: 50% 24%; }
+.leaderboard-run-hero.toren img { object-position: 50% 22%; }
+.leaderboard-run-hero.grak img { object-position: 50% 20%; }
 .leaderboard-self { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(145, 203, 169, 0.14); }
 .leaderboard-self > small { display: block; margin: 0 0 6px 3px; color: #efcc76; font-size: 8px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
 .leaderboard-panel > .secondary-action { min-height: 44px; margin-top: 10px; }
