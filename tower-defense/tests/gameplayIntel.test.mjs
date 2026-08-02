@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   aggregateWaveEnemies,
+  deriveNorthernAvalanchePreview,
   deriveResultAdvice,
   recommendWaveTowers,
 } from "../src/game/gameplayIntel.ts";
@@ -30,6 +31,24 @@ function spawn(type, overrides = {}) {
     summonCount: overrides.summonCount ?? 0,
   });
 }
+
+test("Northern Pass preview follows live avalanche charges without changing the authored wave", () => {
+  const northernPlan = Object.freeze({
+    ...plan([spawn("raider")]),
+    northernPass: Object.freeze({
+      avalancheCharges: 2,
+      dangerZoneId: "upper",
+      routeVariantId: "lower-outpost",
+      routePoints: Object.freeze([]),
+      zones: Object.freeze([]),
+    }),
+  });
+
+  assert.deepEqual(deriveNorthernAvalanchePreview(northernPlan), { charges: 2, status: "ready" });
+  assert.deepEqual(deriveNorthernAvalanchePreview(northernPlan, 1), { charges: 1, status: "ready" });
+  assert.deepEqual(deriveNorthernAvalanchePreview(northernPlan, 0), { charges: 0, status: "spent" });
+  assert.equal(deriveNorthernAvalanchePreview(plan([spawn("raider")]), 0), null);
+});
 
 function plan(spawns, overrides = {}) {
   return Object.freeze({

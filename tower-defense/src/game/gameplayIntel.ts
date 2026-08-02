@@ -40,7 +40,28 @@ export type GameplayResultAdvice = Readonly<{
   recommendedTowers: readonly TowerType[];
 }>;
 
+export type NorthernAvalanchePreview = Readonly<{
+  charges: number;
+  status: "ready" | "spent";
+}>;
+
 const TOWER_ORDER: readonly TowerType[] = Object.freeze(["ranger", "frost", "ember", "storm"]);
+
+/** Keeps the wave forecast aligned with the live charge count after an avalanche is triggered. */
+export function deriveNorthernAvalanchePreview(
+  plan: WavePlan,
+  liveCharges: number | null = null,
+): NorthernAvalanchePreview | null {
+  if (!plan.northernPass) return null;
+  const plannedCharges = plan.northernPass.avalancheCharges;
+  const charges = liveCharges === null
+    ? plannedCharges
+    : Math.max(0, Math.min(plannedCharges, Math.trunc(liveCharges)));
+  return Object.freeze({
+    charges,
+    status: charges > 0 ? "ready" : "spent",
+  });
+}
 
 /** Groups identical spawn variants without replacing actual wave stats with base definitions. */
 export function aggregateWaveEnemies(plan: WavePlan): readonly WaveEnemyAggregate[] {

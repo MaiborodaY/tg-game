@@ -65,6 +65,9 @@ test("tall portrait viewports match the battlefield to the Phaser scene aspect r
   assert.match(tallPortrait, /\.command-panel \{[^}]*--tower-controls-height:\s*94px;[^}]*min-height:\s*164px;/s);
   assert.match(tallPortrait, /\.tower-deck \{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*grid-template-rows:\s*repeat\(2, minmax\(0, 1fr\)\);/s);
   assert.match(tallPortrait, /\.tower-card \{[^}]*flex-direction:\s*row;[^}]*text-align:\s*left;/s);
+  assert.match(css, /\.wave-command \{[^}]*grid-template-rows:\s*minmax\(0, 1fr\);/s);
+  assert.match(css, /\.wave-preview \{[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.wave-preview-summary \{[^}]*display:\s*none;/s);
   assert.match(css, /@media \(min-height: 800px\) and \(max-aspect-ratio: 47 \/ 100\) and \(max-width: 360px\) \{[\s\S]*?\.tower-card strong \{[^}]*display:\s*block;[^}]*font-size:\s*10px;/);
   assert.match(css, /\.brand \{ display:\s*none;/);
   assert.match(css, /\.enemy-list \{[^}]*overflow-x:\s*auto;/s);

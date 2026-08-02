@@ -43,6 +43,7 @@ import {
 import { createLazyRuntimeController } from "./game/lazyRuntime.ts";
 import {
   aggregateWaveEnemies,
+  deriveNorthernAvalanchePreview,
   deriveResultAdvice,
   recommendWaveTowers,
   type WaveEnemyAggregate,
@@ -1393,6 +1394,7 @@ function renderUi(ui: TowerDefenseUiState): void {
     renderWavePreview(plan);
     renderedPreviewWave = plan.wave;
   }
+  syncNorthernAvalanchePreview(ui, plan);
   elements.threatMeter.textContent = `${"◆".repeat(plan.threat)}${"◇".repeat(5 - plan.threat)}`;
   elements.threatMeter.setAttribute("aria-label", text("threat", { count: plan.threat }));
   elements.startWaveButton.disabled = !editing || (ui.finalWave !== null && ui.campaign.completedWave >= ui.finalWave);
@@ -1401,6 +1403,21 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.practiceBadge.hidden = reward.mode === "server";
   syncGameMenuUi(ui);
   syncTutorial(ui);
+}
+
+function syncNorthernAvalanchePreview(ui: TowerDefenseUiState, plan: WavePlan): void {
+  const liveCharges = ui.phase === "wave"
+    ? ui.northernPass?.avalanche.chargesRemaining ?? null
+    : null;
+  const preview = deriveNorthernAvalanchePreview(plan, liveCharges);
+  if (!preview || !plan.northernPass) return;
+  elements.nextWaveLabel.textContent = text(
+    preview.status === "spent" ? "northern_avalanche_spent" : "northern_avalanche_preview",
+    {
+      zone: northernAvalancheZoneLabel(plan.northernPass.dangerZoneId),
+      charges: preview.charges,
+    },
+  );
 }
 
 function syncTutorial(ui: TowerDefenseUiState): void {
