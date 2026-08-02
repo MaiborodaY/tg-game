@@ -1189,6 +1189,18 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .secondary-action.wide { width: 100%; margin-bottom: 7px; }
 .secondary-action.wide.intro-leaderboard { margin-bottom: 0; }
 .close-hint { display: block; margin-top: 12px; color: #718f7f; font-size: 9px; }
+.app-build-version {
+  display: block;
+  margin-top: 8px;
+  color: #668677;
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-align: center;
+  user-select: text;
+}
 
 .game-menu-layer { align-items: end; background: rgba(3, 13, 12, 0.78); }
 .game-menu-card {
@@ -1204,6 +1216,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   scrollbar-color: rgba(117, 227, 189, 0.38) transparent;
 }
 .game-menu-card > * { position: relative; z-index: 1; }
+.game-menu-card > .app-build-version { margin-top: 10px; }
 .game-menu-heading { min-height: 44px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .game-menu-heading h2 { margin: 4px 50px 0 0; font-size: 27px; }
 .game-menu-card > .modal-primary { margin-top: 5px; }

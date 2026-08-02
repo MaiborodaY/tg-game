@@ -141,7 +141,7 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
   assert.match(tr("ru", "game_menu_restart_confirm_copy"), /прогресс|забег/ui);
   assert.match(tr("uk", "game_menu_restart_confirm_copy"), /прогрес|забіг/ui);
   assert.match(tr("en", "game_menu_restart_confirm_copy"), /progress|run/i);
-  assert.equal(tr("en", "daily_attempt_limit_body"), "You have used all 5 attempts. Come back tomorrow.");
+  assert.equal(tr("en", "daily_attempt_limit_body"), "You have used all 10 free attempts. Come back tomorrow.");
   assert.equal(tr("en", "daily_attempt_reset_action"), "Reset attempts");
   assert.match(tr("ru", "daily_attempt_purchase_action"), /5.*5/u);
   assert.match(tr("uk", "daily_attempt_purchase_insufficient", { balance: 3 }), /5.*3/u);

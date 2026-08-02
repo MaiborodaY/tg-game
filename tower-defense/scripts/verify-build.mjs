@@ -3,11 +3,17 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  parseTowerDefenseAppVersion,
+  TOWER_DEFENSE_BUILD_PLACEHOLDER,
+} from "./app-version.mjs";
+
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const outputDir = resolve(scriptDir, "../../public/td");
 const assetsDir = resolve(outputDir, "assets");
 const headersPath = resolve(outputDir, "../_headers");
 const htmlPath = resolve(outputDir, "index.html");
+const versionPath = resolve(scriptDir, "../version.json");
 
 assert.ok(existsSync(htmlPath), "Tower Defense build is missing public/td/index.html");
 const html = readFileSync(htmlPath, "utf8");
@@ -15,6 +21,17 @@ assert.ok(!html.includes("/src/main.ts"), "Production HTML still references /src
 assert.ok(!/localhost|127\.0\.0\.1/i.test(html), "Production HTML contains a local development address");
 assert.ok(!/(?:src|href)=["']\/assets\//i.test(html), "Production assets must use relative URLs");
 assert.ok(html.includes('id="intro-overlay"'), "Production HTML is missing the Tower Defense intro");
+assert.ok(!html.includes(TOWER_DEFENSE_BUILD_PLACEHOLDER), "Production HTML contains an unresolved app version");
+const appVersion = parseTowerDefenseAppVersion(readFileSync(versionPath, "utf8"));
+const visibleBuilds = [...html.matchAll(/<small class="app-build-version" data-app-version>([^<]+)<\/small>/g)]
+  .map((match) => match[1]);
+assert.equal(visibleBuilds.length, 2, "Production HTML must show the app version in both game menus");
+assert.ok(visibleBuilds.every((label) => label === visibleBuilds[0]), "Visible app versions must match");
+assert.match(
+  visibleBuilds[0],
+  new RegExp(`^v${appVersion.replaceAll(".", "\\.")} · [gb][0-9a-f]{8}$`),
+  "Production HTML contains a malformed app version",
+);
 assert.ok(!html.includes('id="game-choice-overlay"'), "Production HTML still contains the removed game chooser");
 assert.ok(!html.includes('id="choose-bridge"'), "Production HTML still contains a Bridge launch action");
 assert.match(

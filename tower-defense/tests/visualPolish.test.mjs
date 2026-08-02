@@ -18,6 +18,14 @@ test("the mission intro uses the available mobile width without dropping safe ar
   assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*70px;/s);
 });
 
+test("the production build identity stays readable without taking combat space", () => {
+  assert.equal(html.match(/class="app-build-version" data-app-version/g)?.length, 2);
+  assert.match(html, /id="intro-leaderboard"[\s\S]*class="app-build-version" data-app-version/);
+  assert.match(html, /id="game-menu-restart-confirm"[\s\S]*class="app-build-version" data-app-version/);
+  assert.match(css, /\.app-build-version \{[^}]*font-size:\s*8px;[^}]*user-select:\s*text;/s);
+  assert.doesNotMatch(css, /\.app-build-version \{[^}]*(?:position:\s*(?:fixed|absolute)|z-index:)/s);
+});
+
 test("the selected level is presented as a themed mission card instead of a bare dropdown", () => {
   assert.match(html, /id="mission-preview"[^>]*data-mission-preview[^>]*data-level-theme="forest-gate"/);
   assert.match(html, /id="intro-sigil"[^>]*data-mission-sigil/);
@@ -35,9 +43,9 @@ test("the selected level is presented as a themed mission card instead of a bare
 
 test("intro attempt status stays truthful across rewarded, practice, error, and exhausted launches", () => {
   for (const locale of Object.keys(translations)) {
-    assert.match(translations[locale].intro_attempts_rewarded, /5/);
+    assert.match(translations[locale].intro_attempts_rewarded, /10/);
     assert.ok(translations[locale].intro_attempts_practice.length >= 10);
-    assert.match(translations[locale].intro_attempts_exhausted, /0.*5/);
+    assert.match(translations[locale].intro_attempts_exhausted, /0.*10/);
     assert.ok(translations[locale].intro_attempts_unavailable.length >= 10);
   }
   assert.match(main, /const exhausted = launchError === "daily_attempt_limit"/);

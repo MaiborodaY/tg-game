@@ -73,6 +73,15 @@ returns the same `run_id`.
 DOM/Phaser UI state is derived from the simulation and is never persisted as
 gameplay truth.
 
+## Release identity
+
+`version.json` is the player-visible Tower Defense release version. Vite adds a
+build identity to it: `g` plus the CI commit when available, or `b` plus a
+deterministic fingerprint of the local build inputs. This release label is
+independent from content, protocol, save and profile schema versions; those
+must continue to change only when their respective compatibility contract
+changes.
+
 ## Trust boundary
 
 The browser is untrusted. Validation of local saves protects compatibility and
