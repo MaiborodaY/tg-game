@@ -18,10 +18,12 @@ test("unreleased content is visible only in a local development practice launch"
   }
 });
 
-test("production keeps Forest Gate and normalizes Northern Pass fail-closed", () => {
+test("production releases both shipped campaign levels and rejects unknown content", () => {
   assert.equal(isClientLevelReleased("forest-gate", false), true);
-  assert.equal(isClientLevelReleased("northern-pass", false), false);
-  assert.equal(normalizeClientLevelId("northern-pass", false), "forest-gate");
+  assert.equal(isClientLevelReleased("northern-pass", false), true);
+  assert.equal(normalizeClientLevelId("northern-pass", false), "northern-pass");
+  assert.equal(isClientLevelReleased("missing-level", false), false);
+  assert.equal(normalizeClientLevelId("missing-level", false), "forest-gate");
 });
 
 test("development practice exposes the catalog without accepting unknown levels", () => {

@@ -1,6 +1,7 @@
 import {
   CLASSIC_CAMPAIGN_LEVEL_ID,
   CONTENT_CATALOG,
+  NORTHERN_PASS_LEVEL_ID,
 } from "./content.ts";
 
 export type ClientLaunchKind = "practice" | "miniapp" | "legacy" | "error";
@@ -16,7 +17,9 @@ export function shouldExposePreviewContent(
 
 export function isClientLevelReleased(levelId: string, previewContentEnabled: boolean): boolean {
   if (!Object.hasOwn(CONTENT_CATALOG.levels, levelId)) return false;
-  return previewContentEnabled || levelId === CLASSIC_CAMPAIGN_LEVEL_ID;
+  return previewContentEnabled
+    || levelId === CLASSIC_CAMPAIGN_LEVEL_ID
+    || levelId === NORTHERN_PASS_LEVEL_ID;
 }
 
 export function normalizeClientLevelId(levelId: string, previewContentEnabled: boolean): string {
