@@ -28,7 +28,7 @@ test("new runs bind transient state to a versioned level and mode", () => {
   assert.deepEqual(createCampaignState({ heroId: "toren" }).hero, { id: "toren", level: 1, anchorId: 0 });
 
   const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET });
-  assert.equal(northern.gold, 220);
+  assert.equal(northern.gold, 190);
   assert.equal(northern.lives, 15);
   assert.equal(buildTower(northern, 12, "ranger").ok, true);
   assert.equal(buildTower(northern, 13, "ranger").error, "invalid_pad");

@@ -104,6 +104,7 @@ test("read-only bootstrap returns profile and active binding without creating a 
         game_id: "td",
         content_version: 2,
         run_contract_version: 3,
+        can_access_northern_pass: true,
         profile,
         active_run: {
           run_id: "active-run",
@@ -122,6 +123,7 @@ test("read-only bootstrap returns profile and active binding without creating a 
   assert.equal(result.bootstrap.activeRun.runId, "active-run");
   assert.equal(result.bootstrap.activeRun.confirmedWave, 7);
   assert.equal(result.bootstrap.activeRun.heroId, "toren");
+  assert.equal(result.bootstrap.canAccessNorthernPass, true);
   assert.deepEqual(requests, [{
     url: TOWER_DEFENSE_BOOTSTRAP_URL,
     body: { init_data: "query_id=telegram&hash=signed" },
@@ -167,6 +169,7 @@ test("Mini App start posts initData only to the pinned API and parses snake_case
       confirmedWave: 0,
       checkpointUrl: TOWER_DEFENSE_CHECKPOINT_URL,
       restartUrl: TOWER_DEFENSE_RESTART_URL,
+      canAccessNorthernPass: false,
     },
   });
   assert.equal(requests.length, 1);
@@ -787,6 +790,7 @@ function miniAppBootstrap() {
     confirmedWave: 0,
     checkpointUrl: TOWER_DEFENSE_CHECKPOINT_URL,
     restartUrl: TOWER_DEFENSE_RESTART_URL,
+    canAccessNorthernPass: false,
   };
 }
 
@@ -823,6 +827,7 @@ function miniAppStartBody(overrides = {}) {
     confirmed_wave: 0,
     checkpoint_url: TOWER_DEFENSE_CHECKPOINT_URL,
     restart_url: TOWER_DEFENSE_RESTART_URL,
+    can_access_northern_pass: false,
     binding: { content_version: 2, level_id: "forest-gate", mode_id: "campaign" },
     profile: {
       version: 1,

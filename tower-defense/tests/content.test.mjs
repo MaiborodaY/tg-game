@@ -28,6 +28,7 @@ import {
   NORTHERN_PASS_PROGRESSION,
   NORTHERN_PASS_ROUTE,
   NORTHERN_PASS_SIGNAL_FIRES,
+  createNorthernPassStormPlan,
 } from "../src/game/northernPassContent.ts";
 
 test("content catalog is runtime-valid, immutable, and addressable by stable ids", () => {
@@ -64,7 +65,7 @@ test("classic level adapts the existing route, pads, and all campaign wave seman
 test("northern pass owns an authored 18-wave campaign split into three six-wave acts", () => {
   assert.notDeepEqual(NORTHERN_PASS_LEVEL.route, CLASSIC_CAMPAIGN_LEVEL.route);
   assert.notDeepEqual(NORTHERN_PASS_LEVEL.buildPads, CLASSIC_CAMPAIGN_LEVEL.buildPads);
-  assert.notEqual(NORTHERN_PASS_LEVEL.startingGold, CLASSIC_CAMPAIGN_LEVEL.startingGold);
+  assert.equal(NORTHERN_PASS_LEVEL.startingGold, 190);
   assert.notEqual(NORTHERN_PASS_LEVEL.startingLives, CLASSIC_CAMPAIGN_LEVEL.startingLives);
   assert.equal(NORTHERN_PASS_LEVEL.waves.finalWave, NORTHERN_PASS_FINAL_WAVE);
 
@@ -86,6 +87,36 @@ test("northern pass owns an authored 18-wave campaign split into three six-wave 
   assert.ok(Object.isFrozen(first));
   assert.ok(Object.isFrozen(first.spawns));
   assert.ok(first.spawns.every(Object.isFrozen));
+});
+
+test("northern storm fronts are deterministic, escalate by act, and preserve the authored HP budget", () => {
+  const plans = Array.from({ length: 18 }, (_, index) => createNorthernPassStormPlan(index + 1));
+  assert.deepEqual(plans.slice(0, 6).map((plan) => plan.sectorIds), [
+    ["upper"], ["middle"], ["lower"], ["upper"], ["middle"], ["lower"],
+  ]);
+  assert.deepEqual([plans[0].runnerSpeedBonus, plans[6].runnerSpeedBonus, plans[12].runnerSpeedBonus], [0.15, 0.2, 0.25]);
+  assert.ok(plans.slice(6, 17).every((plan) => plan.sectorIds.length === 2));
+  assert.deepEqual(plans[17].sectorIds, ["upper", "middle", "lower"]);
+  assert.ok(plans.every((plan) => plan.iceboundControlResistanceBonus === 0.2));
+  assert.ok(plans.every(Object.isFrozen));
+  assert.ok(plans.every((plan) => Object.isFrozen(plan.sectorIds)));
+  assert.deepEqual(createNorthernPassStormPlan(18), createNorthernPassStormPlan(18));
+
+  // Storm pressure and formation order replace global health inflation.
+  assert.deepEqual(
+    Array.from({ length: 18 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 1)
+      .spawns.reduce((total, spawn) => total + spawn.maxHp, 0)),
+    [304, 437, 578, 618, 965, 1531, 1697, 1215, 2004, 2147, 2846, 3814, 4181, 4954, 6772, 8315, 11658, 14657],
+  );
+});
+
+test("mixed northern formations send bosses with an escort instead of as a final cleanup target", () => {
+  for (const waveValue of [6, 12, 18]) {
+    const wave = NORTHERN_PASS_LEVEL.waves.createWave(waveValue);
+    const bossIndex = wave.spawns.findIndex((spawn) => spawn.type === "boss" || spawn.type === "titan");
+    assert.ok(bossIndex >= 0 && bossIndex < wave.spawns.length / 3, `wave ${waveValue} boss spawned too late`);
+    assert.ok(wave.spawns.slice(bossIndex + 1).length >= 5, `wave ${waveValue} boss has no escort`);
+  }
 });
 
 test("northern pass geometry exposes a diagonal S route, viable build pads, and paired signal fires", () => {

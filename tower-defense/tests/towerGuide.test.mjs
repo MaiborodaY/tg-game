@@ -22,6 +22,6 @@ test("tower guide dialog is labelled and controlled by an accessible button", ()
   assert.match(html, /id="tower-guide-button"[^>]*aria-controls="tower-guide-overlay"[^>]*aria-expanded="false"/);
   assert.match(html, /id="tower-guide-overlay"[^>]*hidden/);
   assert.match(html, /role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="tower-guide-title"/);
-  assert.match(main, /elements\.appShell\.inert = true;/);
-  assert.match(main, /elements\.appShell\.inert = false;/);
+  assert.match(main, /setAppShellBlocked\(true\);/);
+  assert.match(main, /setAppShellBlocked\(false\);/);
 });

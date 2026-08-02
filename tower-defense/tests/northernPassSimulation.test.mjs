@@ -9,6 +9,8 @@ function createFrostArmorRules({
   frostArmorRatio = 0.2,
   signalFireActive = false,
   heroAwakeningWave = 14,
+  variant = frostArmorRatio > 0 ? "icebound" : "standard",
+  northernStorm,
 } = {}) {
   return Object.freeze({
     id: `northern-pass:test:${frostArmorRatio}:${signalFireActive}`,
@@ -18,7 +20,11 @@ function createFrostArmorRules({
     ]),
     buildPads: Object.freeze([]),
     // Keep the hero outside combat range so these tests isolate frost armor.
-    heroAnchors: Object.freeze([Object.freeze({ x: 1_000, y: 1_000 })]),
+    heroAnchors: Object.freeze([
+      Object.freeze({ x: 1_000, y: 1_000 }),
+      Object.freeze({ x: 1_020, y: 1_000 }),
+      Object.freeze({ x: 1_040, y: 1_000 }),
+    ]),
     signalFires: signalFireActive
       ? Object.freeze([Object.freeze({ x: 0, y: 20 })])
       : Object.freeze([]),
@@ -30,7 +36,7 @@ function createFrostArmorRules({
       spawns: Object.freeze([Object.freeze({
         id: wave * 1_000,
         type: "raider",
-        variant: frostArmorRatio > 0 ? "icebound" : "standard",
+        variant,
         atMs: 0,
         maxHp: 1_000,
         speed: 0.001,
@@ -52,6 +58,7 @@ function createFrostArmorRules({
       hasBoss: false,
       act: 1,
       threat: 1,
+      ...(northernStorm ? { northernStorm } : {}),
     }),
     getBossRepair: () => 0,
     getWaveHealthMultiplier: () => 1,
@@ -147,4 +154,41 @@ test("Northern Pass can use its own hero upgrade and awakening wave gates", () =
   assert.equal(getHeroUpgradeWaveGate(3, northernUpgradeWaves), null);
   assert.equal(isHeroAwakened(3, 13, 14), false);
   assert.equal(isHeroAwakened(3, 14, 14), true);
+});
+
+test("the canonical simulation applies storm buffs only in an uncovered active sector", () => {
+  const northernStorm = Object.freeze({
+    sectorIds: Object.freeze(["middle"]),
+    runnerSpeedBonus: 0.25,
+    iceboundControlResistanceBonus: 0.2,
+  });
+  const exposed = createLiveEnemy({ frostArmorRatio: 0, variant: "snow-runner", northernStorm });
+  const protectedByMiddleFire = new GameSimulation(
+    createCampaignState(),
+    createFrostArmorRules({ frostArmorRatio: 0, variant: "snow-runner", northernStorm }),
+  );
+  assert.equal(protectedByMiddleFire.moveHero(1).ok, true);
+  assert.equal(protectedByMiddleFire.startWave(), true);
+  for (let index = 0; index < 20 && protectedByMiddleFire.readView().enemies.length === 0; index += 1) {
+    protectedByMiddleFire.advance(250);
+  }
+
+  const exposedRunner = exposed.readView().enemies[0];
+  const protectedRunner = protectedByMiddleFire.readView().enemies[0];
+  exposedRunner.progress = 60;
+  protectedRunner.progress = 60;
+  exposedRunner.speed = 10;
+  protectedRunner.speed = 10;
+  exposed.advance(100);
+  protectedByMiddleFire.advance(100);
+
+  assert.equal(exposed.readView().enemies[0].stormSectorId, "middle");
+  assert.equal(exposed.readView().enemies[0].stormAffected, true);
+  assert.equal(protectedByMiddleFire.readView().enemies[0].stormAffected, false);
+  assert.ok(exposed.readView().enemies[0].progress > protectedByMiddleFire.readView().enemies[0].progress);
+
+  const icebound = createLiveEnemy({ variant: "icebound", northernStorm });
+  icebound.readView().enemies[0].progress = 60;
+  icebound.advance(20);
+  assert.equal(icebound.readView().enemies[0].controlResistance, 0.2);
 });

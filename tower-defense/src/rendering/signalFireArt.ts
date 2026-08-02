@@ -20,6 +20,8 @@ export type SignalFireArt = Readonly<{
   flame: Phaser.GameObjects.Ellipse;
   core: Phaser.GameObjects.Ellipse;
   rune: Phaser.GameObjects.Arc;
+  choiceRing: Phaser.GameObjects.Arc;
+  pointer: Phaser.GameObjects.Triangle;
 }>;
 
 export function createSignalFireArt(
@@ -33,6 +35,9 @@ export function createSignalFireArt(
   const rune = scene.add.circle(point.x, point.y, 26, 0x0c1a20, 0.18)
     .setStrokeStyle(1.5, 0xffd780, 0)
     .setDepth(point.y + 1);
+  const choiceRing = scene.add.circle(point.x, point.y, 34, 0x000000, 0)
+    .setStrokeStyle(2, 0xffd780, 0)
+    .setDepth(point.y + 2);
 
   const container = scene.add.container(point.x, point.y + 13).setDepth(point.y + 12);
   const shadow = scene.add.ellipse(0, 9, 38, 12, 0x061117, 0.52);
@@ -47,9 +52,11 @@ export function createSignalFireArt(
     .lineBetween(-12, 14, 12, 14);
   const flame = scene.add.ellipse(0, -12, 11, 23, 0xff7b35, 0.98).setRotation(0.08);
   const core = scene.add.ellipse(1, -9, 5, 13, 0xfff0a8, 0.9).setRotation(-0.12);
-  container.add([shadow, halo, brazier, flame, core]);
+  const pointer = scene.add.triangle(0, -43, -7, -6, 7, -6, 0, 5, 0xffe3a0, 0)
+    .setStrokeStyle(1, 0x6f4d25, 0.8);
+  container.add([shadow, halo, brazier, flame, core, pointer]);
 
-  const art = Object.freeze({ container, zone, halo, flame, core, rune });
+  const art = Object.freeze({ container, zone, halo, flame, core, rune, choiceRing, pointer });
   setSignalFireState(art, active ? "active" : "idle");
   scene.tweens.add({
     targets: [halo, flame],
@@ -64,6 +71,7 @@ export function createSignalFireArt(
 }
 
 export function setSignalFireState(art: SignalFireArt, state: SignalFireState): void {
+  if (art.container.getData("signalFireState") === state) return;
   const profile = getSignalFireVisualProfile(state);
   art.container.setData("signalFireState", state);
   art.zone
@@ -75,4 +83,6 @@ export function setSignalFireState(art: SignalFireArt, state: SignalFireState): 
   art.rune
     .setFillStyle(0x0c1a20, state === "idle" ? 0.18 : 0.28)
     .setStrokeStyle(state === "active" ? 2 : 1.5, profile.rune, profile.runeAlpha);
+  art.choiceRing.setStrokeStyle(state === "available" || state === "active" ? 2.5 : 1.5, profile.choice, profile.choiceAlpha);
+  art.pointer.setFillStyle(profile.choice, profile.pointerAlpha).setAlpha(profile.pointerAlpha);
 }

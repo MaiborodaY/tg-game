@@ -45,20 +45,27 @@ const STRATEGIES = Object.freeze([
   }),
 ]);
 
-function prepareWave(simulation, strategy) {
+const STORM_ANCHOR_BY_SECTOR = Object.freeze({ upper: 0, middle: 1, lower: 2 });
+
+function prepareWave(simulation, strategy, followStorm) {
   let view = simulation.readView();
-  simulation.moveHero(strategy.anchorId);
+  const stormSector = simulation.getCurrentWavePlan().northernStorm?.sectorIds[0];
+  const desiredAnchor = followStorm && stormSector
+    ? STORM_ANCHOR_BY_SECTOR[stormSector]
+    : strategy.anchorId;
+  const switchedFire = desiredAnchor !== view.campaign.hero.anchorId;
+  simulation.moveHero(desiredAnchor);
 
   const heroGate = NORTHERN_PASS_LEVEL.progression.heroUpgradeWaves[view.campaign.hero.level - 1];
   if (heroGate !== undefined && view.campaign.completedWave >= heroGate) {
     // Saving for a due hero rank is intentional player-like economy behavior.
-    if (!simulation.upgradeHero().ok) return;
+    if (!simulation.upgradeHero().ok) return switchedFire;
     view = simulation.readView();
   }
 
   for (const [padId, type, dueWave] of strategy.buildPlan) {
     if (dueWave > view.campaign.completedWave || view.campaign.towers.some((tower) => tower.padId === padId)) continue;
-    if (!simulation.build(padId, type).ok) return;
+    if (!simulation.build(padId, type).ok) return switchedFire;
     view = simulation.readView();
   }
 
@@ -72,7 +79,7 @@ function prepareWave(simulation, strategy) {
         break;
       }
     }
-    if (!upgraded) return;
+    if (!upgraded) return switchedFire;
   }
 }
 
@@ -110,36 +117,52 @@ function tryUseHeroAbility(simulation, heroId) {
   return bestCluster.count >= 5 && simulation.useHeroAbility(bestCluster.progress).ok;
 }
 
-function playCampaign(strategy) {
+function playCampaign(strategy, { followStorm = false } = {}) {
   const simulation = new GameSimulation(
     createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET, heroId: strategy.heroId }),
     createSimulationRules(NORTHERN_PASS_LEVEL, CAMPAIGN_RULESET),
   );
   let abilityUses = 0;
+  let fireSwitches = 0;
+  let stormExposureTicks = 0;
 
   for (let wave = 1; wave <= NORTHERN_PASS_LEVEL.waves.finalWave && simulation.readView().phase !== "gameover"; wave += 1) {
-    prepareWave(simulation, strategy);
+    if (prepareWave(simulation, strategy, followStorm)) fireSwitches += 1;
     assert.equal(simulation.startWave(), true, `${strategy.name} could not start wave ${wave}`);
     let ticks = 0;
     while (!["setup", "victory", "gameover"].includes(simulation.readView().phase) && ticks < 12_000) {
       simulation.advance(100);
+      stormExposureTicks += simulation.readView().enemies.filter((enemy) => enemy.stormAffected).length;
       if (tryUseHeroAbility(simulation, strategy.heroId)) abilityUses += 1;
       ticks += 1;
     }
     assert.ok(ticks < 12_000, `${strategy.name} stalled on wave ${wave}`);
   }
 
-  return Object.freeze({ view: simulation.readView(), abilityUses });
+  return Object.freeze({ view: simulation.readView(), abilityUses, fireSwitches, stormExposureTicks });
 }
 
 for (const strategy of STRATEGIES) {
   test(`Northern Pass is completable with ${strategy.name}`, () => {
-    const result = playCampaign(strategy);
+    const result = playCampaign(strategy, { followStorm: true });
 
     assert.equal(result.view.phase, "victory");
     assert.equal(result.view.campaign.completedWave, NORTHERN_PASS_LEVEL.waves.finalWave);
     assert.ok(result.view.campaign.lives > 0);
     assert.equal(result.view.campaign.hero.level, 3);
     assert.ok(result.abilityUses > 0);
+    assert.ok(result.fireSwitches >= 10);
   });
 }
+
+test("reading the storm forecast and switching signal fires outperforms a fixed fire", () => {
+  const informed = playCampaign(STRATEGIES[0], { followStorm: true });
+  const fixed = playCampaign(Object.freeze({ ...STRATEGIES[0], anchorId: 2 }));
+
+  assert.equal(informed.view.phase, "victory");
+  assert.ok(informed.fireSwitches >= 10);
+  assert.ok(
+    fixed.stormExposureTicks >= informed.stormExposureTicks * 1.25,
+    `fixed fire exposure ${fixed.stormExposureTicks} was not meaningfully above informed exposure ${informed.stormExposureTicks}`,
+  );
+});

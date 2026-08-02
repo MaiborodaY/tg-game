@@ -14,7 +14,11 @@ import {
   mergeSlowEffect,
   selectHealingTargets,
 } from "./enemyAbilities.ts";
-import { getFrostArmorDamageMultiplier, isInsideSignalFire } from "./northernPassMechanics.ts";
+import {
+  getFrostArmorDamageMultiplier,
+  getNorthernStormEffect,
+  isInsideSignalFire,
+} from "./northernPassMechanics.ts";
 import { CLASSIC_CAMPAIGN_LEVEL, type LevelDefinition, type ModeRuleset } from "./content.ts";
 import {
   HERO_ABILITY_RECHARGE_KILLS,
@@ -51,6 +55,7 @@ import type {
   EnemyVariant,
   HeroId,
   HeroLevel,
+  NorthernStormSectorId,
   Point,
   TowerPlacement,
   TowerStats,
@@ -125,6 +130,8 @@ export type EnemySimulationView = Readonly<TargetCandidate> & Readonly<{
   frostArmor: number;
   maxFrostArmor: number;
   insideWarmZone: boolean;
+  stormSectorId: NorthernStormSectorId | null;
+  stormAffected: boolean;
   stunned: boolean;
   blocked: boolean;
   burning: boolean;
@@ -326,6 +333,7 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   stunUntilMs: number;
   barrierUntilMs: number;
   controlResistance: number;
+  baseControlResistance: number;
   healingRadius: number;
   healingRatio: number;
   lastHealAtMs: number;
@@ -579,6 +587,8 @@ export class GameSimulation {
         frostArmor: enemy.frostArmor,
         maxFrostArmor: enemy.maxFrostArmor,
         insideWarmZone: enemy.insideWarmZone,
+        stormSectorId: enemy.stormSectorId,
+        stormAffected: enemy.stormAffected,
         slowed: enemy.slowed,
         stunned: enemy.stunned,
         blocked: enemy.blocked,
@@ -941,6 +951,7 @@ export class GameSimulation {
     const point = samplePointAtDistance(this.path, progress, this.pointScratch);
     const maxShield = Math.round(spawn.maxHp * spawn.shieldRatio);
     const maxFrostArmor = Math.round(spawn.maxHp * (spawn.frostArmorRatio ?? 0));
+    const storm = this.readNorthernStormEffect(spawn.variant ?? "standard", progress);
     const entity: EnemyEntity = {
       id: spawn.id,
       type: spawn.type,
@@ -954,7 +965,9 @@ export class GameSimulation {
       maxShield,
       frostArmor: maxFrostArmor,
       maxFrostArmor,
-      insideWarmZone: this.isPointInsideActiveSignalFire(point),
+      insideWarmZone: storm ? storm.protected : this.isPointInsideActiveSignalFire(point),
+      stormSectorId: storm?.sectorId ?? null,
+      stormAffected: storm?.affected ?? false,
       speed: spawn.speed,
       reward: spawn.reward,
       leakDamage: spawn.leakDamage,
@@ -972,7 +985,8 @@ export class GameSimulation {
       burnDamagePerSecond: 0,
       stunUntilMs: 0,
       barrierUntilMs: 0,
-      controlResistance: spawn.controlResistance,
+      controlResistance: Math.min(0.9, spawn.controlResistance + (storm?.controlResistanceBonus ?? 0)),
+      baseControlResistance: spawn.controlResistance,
       healingRadius: spawn.healingRadius,
       healingRatio: spawn.healingRatio,
       lastHealAtMs: this.simulationTimeMs + 900 + (spawn.id % 7) * 170,
@@ -1003,7 +1017,7 @@ export class GameSimulation {
         continue;
       }
       enemy.burning = enemy.burnUntilMs > this.simulationTimeMs;
-      enemy.insideWarmZone = this.isPointInsideActiveSignalFire(enemy);
+      const stormSpeedMultiplier = this.refreshEnemyNorthernState(enemy);
       if (enemy.burning) {
         this.damageEnemy(
           enemy,
@@ -1039,7 +1053,7 @@ export class GameSimulation {
       enemy.slowFactor = Math.min(timedSlow ? enemy.slowEffectFactor : 1, auraSlowFactor);
       enemy.enraged = (enemy.type === "boss" || enemy.type === "titan") && enemy.hp / enemy.maxHp <= 0.4;
       if (!enemy.stunned && !enemy.blocked) {
-        enemy.progress += enemy.speed * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
+        enemy.progress += enemy.speed * stormSpeedMultiplier * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
       }
       if (enemy.progress >= this.path.totalLength) {
         this.leakEnemy(enemy);
@@ -1049,13 +1063,41 @@ export class GameSimulation {
       const point = samplePointAtDistance(this.path, enemy.progress, this.pointScratch);
       enemy.x = point.x;
       enemy.y = point.y;
-      enemy.insideWarmZone = this.isPointInsideActiveSignalFire(point);
+      this.refreshEnemyNorthernState(enemy);
       index += 1;
     }
   }
 
   private isPointInsideActiveSignalFire(point: Point): boolean {
     return isInsideSignalFire(point, this.rules.signalFires?.[this.campaign.hero.anchorId]);
+  }
+
+  private readNorthernStormEffect(variant: EnemyVariant, progress: number) {
+    const plan = this.wavePlan?.northernStorm;
+    if (!plan) return null;
+    return getNorthernStormEffect(
+      variant,
+      progress,
+      this.path.totalLength,
+      this.campaign.hero.anchorId,
+      plan,
+    );
+  }
+
+  private refreshEnemyNorthernState(enemy: EnemyEntity): number {
+    const storm = this.readNorthernStormEffect(enemy.variant, enemy.progress);
+    if (!storm) {
+      enemy.insideWarmZone = this.isPointInsideActiveSignalFire(enemy);
+      enemy.stormSectorId = null;
+      enemy.stormAffected = false;
+      enemy.controlResistance = enemy.baseControlResistance;
+      return 1;
+    }
+    enemy.insideWarmZone = storm.protected;
+    enemy.stormSectorId = storm.sectorId;
+    enemy.stormAffected = storm.affected;
+    enemy.controlResistance = Math.min(0.9, enemy.baseControlResistance + storm.controlResistanceBonus);
+    return storm.speedMultiplier;
   }
 
   private updateHero(deltaMs: number): void {

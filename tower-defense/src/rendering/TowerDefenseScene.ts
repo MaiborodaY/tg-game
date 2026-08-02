@@ -14,6 +14,10 @@ import {
 } from "../game/content.ts";
 import { getHeroAura, getHeroStats } from "../game/heroes.ts";
 import {
+  NORTHERN_STORM_SECTORS,
+  getHeroProtectedStormSector,
+} from "../game/northernPassMechanics.ts";
+import {
   createPathMetrics,
   getPointAtDistance,
   getRouteAngleAtDistance,
@@ -36,6 +40,7 @@ import type {
   EnemyVariant,
   EnemyType,
   HeroId,
+  NorthernStormSectorId,
   TowerPlacement,
   TowerType,
   WavePlan,
@@ -48,16 +53,19 @@ import {
   createHealPulse,
   createHitBurst,
   createLightningArc,
+  createNorthernStormSectorArt,
   createSignalFireArt,
   createSummonBurst,
   createTowerArt,
   drawWorld,
   playTowerConstructionEffect,
   setSignalFireState,
+  setNorthernStormSectorState,
   setWorldAct,
   setTowerAuraMarker,
   updateEnemyArtPose,
   type EnemyArt,
+  type NorthernStormSectorArt,
   type SignalFireArt,
   type TowerArt,
   type WorldArt,
@@ -169,6 +177,11 @@ type HeroAnchorRenderView = {
   hitZone: Phaser.GameObjects.Zone;
 };
 
+type SignalFireRenderView = {
+  art: SignalFireArt;
+  hitZone: Phaser.GameObjects.Zone;
+};
+
 type HeroAuraTowerHighlight = {
   ring: Phaser.GameObjects.Arc;
   badge: Phaser.GameObjects.Text;
@@ -189,6 +202,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private selectedBuildType: TowerType | null;
   private selectedPadId: number | null = null;
   private selectedHero = false;
+  private interactionEnabled = true;
   private heroAbilityTargeting = false;
   private readonly padViews = new Map<number, PadView>();
   private readonly towerViews = new Map<number, TowerRenderView>();
@@ -197,7 +211,10 @@ export class TowerDefenseScene extends Phaser.Scene {
   private readonly enemyArtPool = new Map<string, EnemyArt[]>();
   private readonly projectilePool = new Map<TowerType, ProjectileObject[]>();
   private readonly heroAnchorViews = new Map<number, HeroAnchorRenderView>();
-  private readonly signalFireViews = new Map<number, SignalFireArt>();
+  private readonly signalFireViews = new Map<number, SignalFireRenderView>();
+  private readonly northernStormSectorViews = new Map<NorthernStormSectorId, NorthernStormSectorArt>();
+  private northernStormPlanWave = -1;
+  private northernStormPlan: WavePlan["northernStorm"];
   private heroView?: HeroRenderView;
   private heroEffects?: HeroEffectPool;
   private lastHeroAttackAtMs = -1_000;
@@ -226,9 +243,11 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.input.enabled = this.interactionEnabled;
     this.worldArt = drawWorld(this, this.level);
     setWorldAct(this, this.worldArt, this.simulation.getCurrentWavePlan().act);
     this.heroEffects = createHeroEffectPool(this);
+    this.createNorthernStormSectors();
     this.createSignalFires();
     this.createHeroAnchors();
     this.createBuildPads();
@@ -266,6 +285,11 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   getCampaign(): CampaignState {
     return this.simulation.getCampaign();
+  }
+
+  setInputEnabled(enabled: boolean): void {
+    this.interactionEnabled = enabled;
+    if (this.input) this.input.enabled = enabled;
   }
 
   getCurrentWavePlan(): WavePlan {
@@ -463,7 +487,23 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   private createSignalFires(): void {
     this.level.signalFires?.forEach((point, anchorId) => {
-      this.signalFireViews.set(anchorId, createSignalFireArt(this, point));
+      const art = createSignalFireArt(this, point);
+      const hitZone = this.add.zone(point.x, point.y, 68, 68)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(2_040);
+      if (hitZone.input) hitZone.input.enabled = false;
+      hitZone.on("pointerdown", () => this.handleSignalFireClick(anchorId));
+      this.signalFireViews.set(anchorId, { art, hitZone });
+    });
+  }
+
+  private createNorthernStormSectors(): void {
+    if (this.level.id !== NORTHERN_PASS_LEVEL_ID) return;
+    NORTHERN_STORM_SECTORS.forEach((sector, index) => {
+      this.northernStormSectorViews.set(
+        sector.id,
+        createNorthernStormSectorArt(this, this.path, sector, index),
+      );
     });
   }
 
@@ -476,6 +516,16 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.updateHeroSelectionVisuals();
     this.callbacks.onHaptic("light");
     this.emitUi(true);
+  }
+
+  private handleSignalFireClick(anchorId: number): void {
+    const view = this.simulation.readView();
+    if (view.phase !== "setup" || anchorId === view.hero.anchorId) return;
+    this.selectedHero = true;
+    this.selectedBuildType = null;
+    this.selectedPadId = null;
+    this.updatePadVisuals();
+    this.handleHeroAnchorClick(anchorId);
   }
 
   private handleHeroAnchorClick(anchorId: number): void {
@@ -625,12 +675,48 @@ export class TowerDefenseScene extends Phaser.Scene {
       setHeroAnchorState(anchor.art, state);
       if (anchor.hitZone.input) anchor.hitZone.input.enabled = anchorsAvailable && anchorId !== view.hero.anchorId;
     }
-    for (const [anchorId, fire] of this.signalFireViews) {
-      const state = anchorId === view.hero.anchorId
-        ? "active"
-        : anchorsAvailable ? "available" : "idle";
-      setSignalFireState(fire, state);
+    this.updateNorthernStormVisuals(view);
+  }
+
+  private updateNorthernStormVisuals(view: ReturnType<GameSimulation["readView"]>): void {
+    if (this.northernStormSectorViews.size === 0 && this.signalFireViews.size === 0) return;
+    const plan = this.resolveNorthernStormPlan(view);
+    const threatened = new Set(plan?.sectorIds ?? []);
+    const protectedSector = getHeroProtectedStormSector(view.hero.anchorId);
+
+    for (const [sectorId, art] of this.northernStormSectorViews) {
+      const state = sectorId === protectedSector
+        ? "protected"
+        : threatened.has(sectorId) ? "threatened" : "calm";
+      setNorthernStormSectorState(art, state);
     }
+
+    for (const [anchorId, fire] of this.signalFireViews) {
+      const sectorId = NORTHERN_STORM_SECTORS[anchorId]?.id;
+      const selected = anchorId === view.hero.anchorId;
+      const selectable = view.phase === "setup" && !selected;
+      const state = selected
+        ? view.phase === "setup" ? "active" : "protected"
+        : selectable ? "available" : sectorId && threatened.has(sectorId) ? "threatened" : "idle";
+      setSignalFireState(fire.art, state);
+      if (fire.hitZone.input) fire.hitZone.input.enabled = selectable;
+    }
+  }
+
+  private resolveNorthernStormPlan(view: ReturnType<GameSimulation["readView"]>): WavePlan["northernStorm"] {
+    if (this.level.id !== NORTHERN_PASS_LEVEL_ID) return undefined;
+    const wave = view.wavePlan?.wave ?? view.campaign.completedWave + 1;
+    if (view.wavePlan?.northernStorm) {
+      this.northernStormPlanWave = wave;
+      this.northernStormPlan = view.wavePlan.northernStorm;
+      return this.northernStormPlan;
+    }
+    if (view.phase !== "setup") return undefined;
+    if (this.northernStormPlanWave !== wave) {
+      this.northernStormPlanWave = wave;
+      this.northernStormPlan = this.simulation.getCurrentWavePlan().northernStorm;
+    }
+    return this.northernStormPlan;
   }
 
   private createBuildPads(): void {

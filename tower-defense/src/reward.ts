@@ -66,6 +66,7 @@ export type MiniAppBootstrap = Readonly<{
   confirmedWave: number;
   checkpointUrl: string | null;
   restartUrl: string | null;
+  canAccessNorthernPass: boolean;
 }>;
 
 export type MiniAppActiveRun = Readonly<{
@@ -81,6 +82,7 @@ export type MiniAppActiveRun = Readonly<{
 export type MiniAppProfileBootstrap = Readonly<{
   profile: PlayerProfileSnapshot;
   activeRun: MiniAppActiveRun | null;
+  canAccessNorthernPass: boolean;
 }>;
 
 export type MiniAppRunSelection = Readonly<{
@@ -888,6 +890,7 @@ function parseMiniAppBootstrapResponse(value: unknown): MiniAppBootstrap | null 
   const expiresAt = positiveInteger(value.expires_at);
   const binding = parseServerRunBindingTransport(value.binding);
   const profile = parsePlayerProfileTransport(value.profile);
+  const canAccessNorthernPass = value.can_access_northern_pass === true;
   if (!reward || typeof value.resumed !== "boolean" || expiresAt === null || !binding || !profile) return null;
   if (!profile.unlockedLevelIds.includes(binding.levelId)) return null;
   const runContractVersion = readRunContractVersion(value.run_contract_version, 2);
@@ -905,6 +908,7 @@ function parseMiniAppBootstrapResponse(value: unknown): MiniAppBootstrap | null 
       confirmedWave: 0,
       checkpointUrl: null,
       restartUrl: null,
+      canAccessNorthernPass,
     });
   }
 
@@ -932,6 +936,7 @@ function parseMiniAppBootstrapResponse(value: unknown): MiniAppBootstrap | null 
     confirmedWave,
     checkpointUrl: TOWER_DEFENSE_CHECKPOINT_URL,
     restartUrl: TOWER_DEFENSE_RESTART_URL,
+    canAccessNorthernPass,
   });
 }
 
@@ -947,7 +952,8 @@ function parseMiniAppProfileBootstrapResponse(value: unknown): MiniAppProfileBoo
   }
   const profile = parsePlayerProfileTransport(value.profile);
   if (!profile) return null;
-  if (value.active_run === null) return Object.freeze({ profile, activeRun: null });
+  const canAccessNorthernPass = value.can_access_northern_pass === true;
+  if (value.active_run === null) return Object.freeze({ profile, activeRun: null, canAccessNorthernPass });
   if (!isRecord(value.active_run)) return null;
 
   const runId = boundedUnknownText(value.active_run.run_id, 256);
@@ -969,6 +975,7 @@ function parseMiniAppProfileBootstrapResponse(value: unknown): MiniAppProfileBoo
   if (!profile.unlockedLevelIds.includes(binding.levelId)) return null;
   return Object.freeze({
     profile,
+    canAccessNorthernPass,
     activeRun: Object.freeze({
       runId,
       expiresAt,
@@ -1022,6 +1029,7 @@ function parseRestartedBootstrapResponse(
     confirmedWave,
     checkpointUrl: TOWER_DEFENSE_CHECKPOINT_URL,
     restartUrl: TOWER_DEFENSE_RESTART_URL,
+    canAccessNorthernPass: previous.canAccessNorthernPass,
   });
 }
 
@@ -1131,6 +1139,7 @@ function serializeMiniAppBootstrap(bootstrap: MiniAppBootstrap): Record<string, 
     },
     run_contract_version: runContractVersion,
     profile,
+    can_access_northern_pass: bootstrap.canAccessNorthernPass === true,
     ...(rankedV3 ? {
       run_revision: runRevision,
       hero_id: heroId,

@@ -24,6 +24,16 @@ export {
   type SignalFireState,
   type SignalFireVisualProfile,
 } from "./signalFireArt.ts";
+export {
+  createNorthernStormSectorArt,
+  setNorthernStormSectorState,
+  type NorthernStormSectorArt,
+} from "./northernStormArt.ts";
+export {
+  getNorthernStormVisualProfile,
+  type NorthernStormVisualProfile,
+  type NorthernStormVisualState,
+} from "./northernStormVisuals.ts";
 export { getTowerTierVisualProfile, type TowerTierVisualProfile };
 
 export type TowerAuraKind = "tower_damage" | "tower_attack_speed";

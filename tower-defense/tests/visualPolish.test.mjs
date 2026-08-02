@@ -88,6 +88,12 @@ test("Northern Pass teaches signal fires first and frost armour when it becomes 
   assert.match(gameplayIntel, /spawn\.frostArmorRatio[\s\S]*add\("ember", 7/);
 });
 
+test("modal layers quarantine Phaser input until the closing pointer event is over", () => {
+  assert.match(main, /function setAppShellBlocked\(blocked: boolean\)[\s\S]*setInputEnabled\(false\)[\s\S]*window\.setTimeout\([\s\S]*setInputEnabled\(true\)/);
+  assert.match(main, /function openWaveIntel\([\s\S]*setAppShellBlocked\(true\)/);
+  assert.match(main, /function closeWaveIntel\([\s\S]*setAppShellBlocked\(false\)/);
+});
+
 test("combat keeps the command geometry stable and tower upgrades preview their next stats", () => {
   assert.match(main, /buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
   assert.doesNotMatch(main, /combatCompact|is-combat-compact/);

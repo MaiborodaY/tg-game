@@ -119,7 +119,7 @@ export const NORTHERN_PASS_LEVEL = defineLevel({
   displayNameKey: "level_northern_pass",
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
-  startingGold: 220,
+  startingGold: 190,
   startingLives: 15,
   route: NORTHERN_PASS_ROUTE,
   buildPads: NORTHERN_PASS_BUILD_PADS,

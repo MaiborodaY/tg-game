@@ -55,12 +55,14 @@ test("fullscreen control follows Telegram support and confirmed state", () => {
   assert.match(mainSource, /function applyStaticTranslations\(\): void \{[\s\S]*syncFullscreenUi\(telegram\.isFullscreen\);/);
 });
 
-test("only local development practice exposes preview content while production stays fail-closed", () => {
+test("Northern Pass preview requires local development or a server-issued admin capability", () => {
   assert.match(html, /id="session-picker" class="session-picker" hidden/);
   assert.match(css, /\.session-picker\[hidden\] \{ display: none; \}/);
   assert.match(html, /id="level-select"/);
   assert.match(html, /id="mode-select"/);
   assert.match(mainSource, /shouldExposePreviewContent\(import\.meta\.env\.DEV, launchDecision\.kind\)/);
+  assert.match(mainSource, /if \(cachedBootstrap\?\.canAccessNorthernPass\) previewContentEnabled = true/);
+  assert.match(mainSource, /if \(profiled\.bootstrap\.canAccessNorthernPass\) previewContentEnabled = true/);
   assert.match(mainSource, /resolveServerSessionSelection\(miniAppBootstrap\.binding\)/);
   assert.match(mainSource, /resolveSessionSelection\("server", null\)/);
   assert.match(mainSource, /readSessionSelection\(storage, "local"\)/);
@@ -123,7 +125,7 @@ test("pending results and launch errors do not require the gameplay runtime", ()
   assert.match(mainSource, /function restorePendingFinish\(\): boolean/);
   assert.match(mainSource, /showResult\(\s*pending\.outcome,[\s\S]*pending\.summary,[\s\S]*\);\s*void finishReward\(\);\s*return true/);
   assert.match(mainSource, /if \(!pendingFinishRestored\) \{\s*if \(elements\.introOverlay\.hidden\) \{\s*await mountRestoredGame\(\);/);
-  assert.match(mainSource, /runtimeLoadFailed = true;[\s\S]*elements\.appShell\.inert = true;[\s\S]*elements\.introOverlay\.hidden = false/);
+  assert.match(mainSource, /runtimeLoadFailed = true;[\s\S]*setAppShellBlocked\(true\);[\s\S]*elements\.introOverlay\.hidden = false/);
 });
 
 test("intentional runtime recovery reload keeps unfinished-run protection for other exits", () => {

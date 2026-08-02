@@ -56,7 +56,14 @@ import {
   TUTORIAL_COMPLETION_STORAGE_KEY,
   type TutorialState,
 } from "./game/tutorial.ts";
-import type { EnemyType, HeroId, TowerLevel, TowerType, WavePlan } from "./game/types.ts";
+import type {
+  EnemyType,
+  HeroId,
+  NorthernStormSectorId,
+  TowerLevel,
+  TowerType,
+  WavePlan,
+} from "./game/types.ts";
 import {
   detectLocale,
   normalizeLocale,
@@ -142,7 +149,7 @@ if (pendingStartButton instanceof HTMLButtonElement) pendingStartButton.disabled
 
 const launchDecision = decideRewardLaunch(legacyLaunch, telegram.initData);
 const isMiniAppLaunch = launchDecision.kind === "miniapp";
-const previewContentEnabled = shouldExposePreviewContent(import.meta.env.DEV, launchDecision.kind);
+let previewContentEnabled = shouldExposePreviewContent(import.meta.env.DEV, launchDecision.kind);
 const leaderboardClient = launchDecision.kind === "miniapp"
   ? safelyCreateLeaderboardClient(launchDecision.initData)
   : null;
@@ -162,6 +169,7 @@ if (launchDecision.kind === "miniapp") {
     clearMiniAppReward(session);
     cachedBootstrap = null;
   }
+  if (cachedBootstrap?.canAccessNorthernPass) previewContentEnabled = true;
   if (cachedBootstrap && !isClientLevelReleased(cachedBootstrap.binding.levelId, previewContentEnabled)) {
     // A previously released preview must not trap the player on a permanent
     // launch error after the binding is withdrawn from production.
@@ -177,6 +185,7 @@ if (launchDecision.kind === "miniapp") {
     const profiled = await fetchMiniAppProfile(launchDecision.initData);
     if (profiled.ok) {
       miniAppProfileBootstrap = profiled.bootstrap;
+      if (profiled.bootstrap.canAccessNorthernPass) previewContentEnabled = true;
       const activeRun = profiled.bootstrap.activeRun;
       if (activeRun && !isClientLevelReleased(activeRun.binding.levelId, previewContentEnabled)) {
         launchError = "miniapp_start_failed";
@@ -189,6 +198,7 @@ if (launchDecision.kind === "miniapp") {
             heroId: activeRun.heroId,
           },
         });
+        if (started.ok && started.bootstrap.canAccessNorthernPass) previewContentEnabled = true;
         if (started.ok && isClientLevelReleased(started.bootstrap.binding.levelId, previewContentEnabled)) {
           clearAttemptPurchaseRequestId(session);
           miniAppBootstrap = started.bootstrap;
@@ -284,6 +294,7 @@ let finishSettled = reward.mode === "local";
 let terminalResult: FinalResult | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let renderedPreviewWave = -1;
+let renderedPreviewAnchorId = -1;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
 let resumeAfterWaveIntel = false;
@@ -838,6 +849,19 @@ function currentScene(): TowerDefenseScene | null {
   return runtimeController.getMounted()?.scene ?? null;
 }
 
+function setAppShellBlocked(blocked: boolean): void {
+  elements.appShell.inert = blocked;
+  if (blocked) {
+    currentScene()?.setInputEnabled(false);
+    return;
+  }
+  // Re-enable after the closing pointer event has finished, so it cannot also
+  // activate the map object underneath the dismissed modal.
+  window.setTimeout(() => {
+    if (!elements.appShell.inert) currentScene()?.setInputEnabled(true);
+  }, 0);
+}
+
 async function ensureGameMounted(): Promise<boolean> {
   try {
     await runtimeController.ensureMounted({
@@ -847,6 +871,7 @@ async function ensureGameMounted(): Promise<boolean> {
       initialBuildType: tutorialState.step === "choose_tower" ? null : undefined,
     });
     gameMounted = true;
+    currentScene()?.setInputEnabled(!elements.appShell.inert);
     syncHeroChoiceControls();
     return true;
   } catch (error) {
@@ -1079,8 +1104,13 @@ async function recoverAppliedRestart(
 }
 
 function activateServerBootstrap(bootstrap: MiniAppBootstrap, fallbackHeroId: HeroId): void {
+  if (bootstrap.canAccessNorthernPass) previewContentEnabled = true;
   miniAppBootstrap = bootstrap;
-  miniAppProfileBootstrap = Object.freeze({ profile: bootstrap.profile, activeRun: null });
+  miniAppProfileBootstrap = Object.freeze({
+    profile: bootstrap.profile,
+    activeRun: null,
+    canAccessNorthernPass: bootstrap.canAccessNorthernPass,
+  });
   reward = bootstrap.reward;
   rewardUsedKey = "td-reward-used-v1:" + reward.runId;
   selectedSession = resolveServerSessionSelection(bootstrap.binding);
@@ -1203,7 +1233,7 @@ async function mountRestoredGame(): Promise<void> {
   }
   runtimeLoadFailed = false;
   elements.introOverlay.hidden = true;
-  elements.appShell.inert = false;
+  setAppShellBlocked(false);
   introReturnsToRun = false;
   syncIntroAction();
   syncSessionControls();
@@ -1214,7 +1244,7 @@ function showRuntimeLoadFailure(): void {
   gameStarting = false;
   runtimeLoadFailed = true;
   introReturnsToRun = hasRunProgress(initialCampaign);
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.introOverlay.hidden = false;
   applyLaunchErrorTranslations();
   syncSessionControls();
@@ -1359,9 +1389,10 @@ function renderUi(ui: TowerDefenseUiState): void {
   syncHeroChoiceControls();
 
   const plan = ui.nextWavePlan;
-  if (renderedPreviewWave !== plan.wave) {
-    renderWavePreview(plan);
+  if (renderedPreviewWave !== plan.wave || renderedPreviewAnchorId !== ui.hero.anchorId) {
+    renderWavePreview(plan, ui.hero.anchorId);
     renderedPreviewWave = plan.wave;
+    renderedPreviewAnchorId = ui.hero.anchorId;
   }
   elements.threatMeter.textContent = `${"◆".repeat(plan.threat)}${"◇".repeat(5 - plan.threat)}`;
   elements.threatMeter.setAttribute("aria-label", text("threat", { count: plan.threat }));
@@ -1477,7 +1508,7 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
   elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
 }
 
-function renderWavePreview(plan: WavePlan): void {
+function renderWavePreview(plan: WavePlan, heroAnchorId: number): void {
   const types = plan.spawns.map((spawn) => spawn.type);
   const traits: TranslationKey[] = [];
   if (types.some((type) => type === "boss" || type === "titan")) traits.push("wave_trait_boss");
@@ -1487,11 +1518,21 @@ function renderWavePreview(plan: WavePlan): void {
   if (types.some((type) => type === "warden" || type === "shaman")) traits.push("wave_trait_support");
   const recommended = recommendWaveTowers(plan);
   const displayedTraits: readonly TranslationKey[] = traits.length ? traits : ["wave_trait_mixed"];
-  elements.nextWaveLabel.textContent = text("wave_preview_title", { wave: plan.wave });
-  elements.wavePreviewSummary.textContent = text("wave_preview_summary", {
-    traits: displayedTraits.slice(0, 2).map((key) => text(key)).join(" · "),
-    towers: recommended.map(towerName).join(" + "),
-  });
+  if (plan.northernStorm) {
+    elements.nextWaveLabel.textContent = text("northern_storm_preview", {
+      sectors: formatNorthernStormSectors(plan.northernStorm.sectorIds),
+    });
+    elements.wavePreviewSummary.textContent = text("northern_storm_summary", {
+      active: northernStormSectorLabel(getNorthernStormSectorForAnchor(heroAnchorId)),
+      towers: recommended.map(towerName).join(" + "),
+    });
+  } else {
+    elements.nextWaveLabel.textContent = text("wave_preview_title", { wave: plan.wave });
+    elements.wavePreviewSummary.textContent = text("wave_preview_summary", {
+      traits: displayedTraits.slice(0, 2).map((key) => text(key)).join(" · "),
+      towers: recommended.map(towerName).join(" + "),
+    });
+  }
   elements.waveEnemies.replaceChildren(...aggregateWaveEnemies(plan).map((enemy) => {
     const chip = document.createElement("span");
     chip.className = "enemy-chip";
@@ -1503,6 +1544,18 @@ function renderWavePreview(plan: WavePlan): void {
     chip.append(glyph, document.createTextNode(`${enemy.count}`));
     return chip;
   }));
+}
+
+function getNorthernStormSectorForAnchor(anchorId: number): NorthernStormSectorId {
+  return (["upper", "middle", "lower"] as const)[anchorId] ?? "upper";
+}
+
+function northernStormSectorLabel(sectorId: NorthernStormSectorId): string {
+  return text(`northern_sector_${sectorId}` as TranslationKey);
+}
+
+function formatNorthernStormSectors(sectorIds: readonly NorthernStormSectorId[]): string {
+  return sectorIds.map(northernStormSectorLabel).join(" + ");
 }
 
 function phaseLabel(ui: TowerDefenseUiState): string {
@@ -1755,7 +1808,7 @@ function showResult(
   summary?: PendingRunSummary,
 ): void {
   elements.resultOverlay.hidden = false;
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.resultCard.classList.toggle("is-victory", outcome === "victory");
   elements.resultCard.classList.toggle("is-defeat", outcome === "gameover");
   elements.resultCard.classList.toggle("is-retired", outcome === "retired");
@@ -1971,7 +2024,7 @@ function openGameMenu(focusHeroDetails: boolean): void {
   const combatPhase = latestUi.phase === "wave" || latestUi.phase === "countdown";
   resumeAfterMenu = combatPhase && !latestUi.paused;
   if (combatPhase && !latestUi.paused) currentScene()?.setPaused(true);
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.gameMenuOverlay.hidden = false;
   elements.gameMenuButton.setAttribute("aria-expanded", "true");
   hideRestartConfirmation();
@@ -1983,7 +2036,7 @@ function openGameMenu(focusHeroDetails: boolean): void {
 function closeGameMenu(resumeGame: boolean, restoreFocus = true): void {
   if (elements.gameMenuOverlay.hidden) return;
   elements.gameMenuOverlay.hidden = true;
-  elements.appShell.inert = false;
+  setAppShellBlocked(false);
   elements.gameMenuButton.setAttribute("aria-expanded", "false");
   hideRestartConfirmation();
   const shouldResume = resumeGame && resumeAfterMenu;
@@ -2025,7 +2078,7 @@ function openLeaderboard(origin: "intro" | "menu" | "result"): void {
     elements.resultLeaderboard.setAttribute("aria-expanded", "true");
   }
 
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.leaderboardOverlay.hidden = false;
   syncLeaderboardTabs();
   elements.leaderboardClose.focus();
@@ -2048,16 +2101,16 @@ function closeLeaderboard(): void {
   leaderboardReturnFocus = null;
   if (origin === "intro") {
     elements.introOverlay.hidden = false;
-    elements.appShell.inert = true;
+    setAppShellBlocked(true);
   } else if (origin === "menu") {
     elements.gameMenuOverlay.hidden = false;
     elements.gameMenuButton.setAttribute("aria-expanded", "true");
-    elements.appShell.inert = true;
+    setAppShellBlocked(true);
   } else if (origin === "result") {
     elements.resultOverlay.hidden = false;
-    elements.appShell.inert = true;
+    setAppShellBlocked(true);
   } else {
-    elements.appShell.inert = false;
+    setAppShellBlocked(false);
   }
   if (returnFocus?.isConnected) returnFocus.focus();
 }
@@ -2403,7 +2456,7 @@ function enterRestartHeroSelection(): void {
   selectedHeroId = latestUi.campaign.hero.id;
   restartSelectionPending = true;
   closeGameMenu(false, false);
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.introOverlay.hidden = false;
   introReturnsToRun = false;
   syncSessionControls();
@@ -2418,7 +2471,7 @@ function cancelPendingRestart(): void {
   selectedHeroId = currentScene()?.getCampaign().hero.id ?? initialCampaign.hero.id;
   closeHeroPicker(false);
   elements.introOverlay.hidden = true;
-  elements.appShell.inert = false;
+  setAppShellBlocked(false);
   if (resumeAfterRestartPicker && latestUi?.paused) currentScene()?.setPaused(false);
   resumeAfterRestartPicker = false;
   syncSessionControls();
@@ -2443,7 +2496,7 @@ function openSessionMenu(): void {
     || sessionSwitching
   ) return;
   introReturnsToRun = true;
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.introOverlay.hidden = false;
   syncIntroAction();
   syncSessionControls();
@@ -2454,7 +2507,7 @@ function openSessionMenu(): void {
 function dismissIntro(): void {
   closeHeroPicker(false);
   elements.introOverlay.hidden = true;
-  elements.appShell.inert = false;
+  setAppShellBlocked(false);
   introReturnsToRun = false;
   writeFlag(session, "td-intro-seen-v1");
   if (latestUi) syncTutorial(latestUi);
@@ -2468,7 +2521,7 @@ function openTowerGuide(resumeOverride = false, returnFocus: HTMLElement | null 
   const running = Boolean(latestUi && !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown"));
   resumeAfterGuide = resumeOverride || running;
   if (running) currentScene()?.setPaused(true);
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.towerGuideOverlay.hidden = false;
   elements.towerGuideButton.setAttribute("aria-expanded", "true");
   elements.towerGuideClose.focus();
@@ -2478,7 +2531,7 @@ function openTowerGuide(resumeOverride = false, returnFocus: HTMLElement | null 
 function closeTowerGuide(): void {
   if (elements.towerGuideOverlay.hidden) return;
   elements.towerGuideOverlay.hidden = true;
-  elements.appShell.inert = false;
+  setAppShellBlocked(false);
   elements.towerGuideButton.setAttribute("aria-expanded", "false");
   if (resumeAfterGuide) currentScene()?.setPaused(false);
   resumeAfterGuide = false;
@@ -2496,7 +2549,7 @@ function openWaveIntel(): void {
   const running = !latestUi.paused && (latestUi.phase === "wave" || latestUi.phase === "countdown");
   resumeAfterWaveIntel = running;
   if (running) currentScene()?.setPaused(true);
-  elements.appShell.inert = true;
+  setAppShellBlocked(true);
   elements.waveIntelOverlay.hidden = false;
   elements.waveIntelButton.setAttribute("aria-expanded", "true");
   elements.waveIntelClose.focus();
@@ -2506,7 +2559,7 @@ function openWaveIntel(): void {
 function closeWaveIntel(): void {
   if (elements.waveIntelOverlay.hidden) return;
   elements.waveIntelOverlay.hidden = true;
-  elements.appShell.inert = false;
+  setAppShellBlocked(false);
   elements.waveIntelButton.setAttribute("aria-expanded", "false");
   if (resumeAfterWaveIntel) currentScene()?.setPaused(false);
   resumeAfterWaveIntel = false;
@@ -2517,6 +2570,14 @@ function closeWaveIntel(): void {
 function renderWaveIntel(plan: WavePlan): void {
   const enemies = aggregateWaveEnemies(plan);
   elements.waveIntelTitle.textContent = text("wave_intel_title", { wave: plan.wave });
+  elements.waveIntelIntro.textContent = plan.northernStorm
+    ? text("northern_storm_intel", {
+        sectors: formatNorthernStormSectors(plan.northernStorm.sectorIds),
+        active: northernStormSectorLabel(getNorthernStormSectorForAnchor(latestUi?.hero.anchorId ?? 0)),
+        speed: Math.round(plan.northernStorm.runnerSpeedBonus * 100),
+        resist: Math.round(plan.northernStorm.iceboundControlResistanceBonus * 100),
+      })
+    : text("wave_intel_intro");
   selectedWaveIntelType = enemies.some(({ type }) => type === selectedWaveIntelType)
     ? selectedWaveIntelType
     : enemies[0]?.type ?? null;

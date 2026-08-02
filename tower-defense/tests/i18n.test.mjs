@@ -182,6 +182,12 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
     "warm_beacon",
     "warm_beacon_active",
     "warm_beacon_hint",
+    "northern_storm_preview",
+    "northern_storm_summary",
+    "northern_storm_intel",
+    "northern_sector_upper",
+    "northern_sector_middle",
+    "northern_sector_lower",
     "northern_onboarding_title",
     "northern_onboarding_body",
     "northern_onboarding_armor_title",
@@ -198,9 +204,15 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
     assert.match(tr(locale, "hero_awakening_requirement", { wave: 14 }), /14/);
   }
 
-  assert.match(tr("ru", "mission_northern_trait_body"), /героя.*огн/ui);
+  assert.match(tr("ru", "mission_northern_trait_body"), /Снегобег.*огонь/ui);
   assert.match(tr("uk", "frost_armor_description"), /Іскромант/ui);
-  assert.match(tr("en", "warm_beacon_hint"), /hero.*fire/i);
+  assert.match(tr("en", "warm_beacon_hint"), /tap.*fire/i);
+  assert.match(tr("ru", "northern_storm_intel", {
+    sectors: "верх + центр",
+    active: "верх",
+    speed: 25,
+    resist: 20,
+  }), /верх \+ центр.*25%.*20%/ui);
 });
 
 test("all heroes explain attack, rank-two passive, and ability in every locale", () => {
