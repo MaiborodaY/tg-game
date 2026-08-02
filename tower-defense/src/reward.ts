@@ -1,8 +1,10 @@
 import {
+  CAMPAIGN_MODE_ID,
   CONTENT_VERSION,
   ENDLESS_MODE_ID,
   getLevelDefinition,
   getModeRuleset,
+  NORTHERN_PASS_LEVEL_ID,
 } from "./game/content.ts";
 import { isHeroId } from "./game/heroes.ts";
 import {
@@ -892,7 +894,11 @@ function parseMiniAppBootstrapResponse(value: unknown): MiniAppBootstrap | null 
   const profile = parsePlayerProfileTransport(value.profile);
   const canAccessNorthernPass = value.can_access_northern_pass === true;
   if (!reward || typeof value.resumed !== "boolean" || expiresAt === null || !binding || !profile) return null;
-  if (!profile.unlockedLevelIds.includes(binding.levelId)) return null;
+  const canResumeNorthernPass = value.resumed === true
+    && canAccessNorthernPass
+    && binding.levelId === NORTHERN_PASS_LEVEL_ID
+    && binding.modeId === CAMPAIGN_MODE_ID;
+  if (!profile.unlockedLevelIds.includes(binding.levelId) && !canResumeNorthernPass) return null;
   const runContractVersion = readRunContractVersion(value.run_contract_version, 2);
   if (runContractVersion === null) return null;
   if (runContractVersion === 2) {
@@ -972,7 +978,10 @@ function parseMiniAppProfileBootstrapResponse(value: unknown): MiniAppProfileBoo
     || runContractVersion === null
     || !binding
   ) return null;
-  if (!profile.unlockedLevelIds.includes(binding.levelId)) return null;
+  const canResumeNorthernPass = canAccessNorthernPass
+    && binding.levelId === NORTHERN_PASS_LEVEL_ID
+    && binding.modeId === CAMPAIGN_MODE_ID;
+  if (!profile.unlockedLevelIds.includes(binding.levelId) && !canResumeNorthernPass) return null;
   return Object.freeze({
     profile,
     canAccessNorthernPass,

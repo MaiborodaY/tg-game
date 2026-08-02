@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  CAMPAIGN_RULESET,
-  NORTHERN_PASS_LEVEL,
-} from "../src/game/content.ts";
+import { CAMPAIGN_RULESET, NORTHERN_PASS_LEVEL } from "../src/game/content.ts";
 import { getHeroStats } from "../src/game/heroes.ts";
 import { GameSimulation, createSimulationRules } from "../src/game/simulation.ts";
 import { createCampaignState } from "../src/game/state.ts";
@@ -37,35 +34,28 @@ const STRATEGIES = Object.freeze([
     heroId: "grak",
     anchorId: 1,
     buildPlan: Object.freeze([
-      Object.freeze([10, "ember", 0]), Object.freeze([11, "ranger", 0]), Object.freeze([7, "frost", 1]),
-      Object.freeze([8, "storm", 3]), Object.freeze([4, "ember", 5]), Object.freeze([5, "ranger", 7]),
-      Object.freeze([6, "storm", 9]), Object.freeze([12, "ember", 11]), Object.freeze([1, "ranger", 13]),
+      Object.freeze([9, "ember", 0]), Object.freeze([12, "ranger", 0]), Object.freeze([8, "frost", 1]),
+      Object.freeze([11, "storm", 3]), Object.freeze([10, "ember", 5]), Object.freeze([5, "ranger", 7]),
+      Object.freeze([7, "storm", 9]), Object.freeze([4, "ember", 11]), Object.freeze([1, "ranger", 13]),
     ]),
-    upgradePriority: Object.freeze([10, 8, 11, 7, 4, 12, 5, 6, 1]),
+    upgradePriority: Object.freeze([9, 12, 8, 11, 10, 5, 7, 4, 1]),
   }),
 ]);
 
-const STORM_ANCHOR_BY_SECTOR = Object.freeze({ upper: 0, middle: 1, lower: 2 });
-
-function prepareWave(simulation, strategy, followStorm) {
+function prepareWave(simulation, strategy) {
   let view = simulation.readView();
-  const stormSector = simulation.getCurrentWavePlan().northernStorm?.sectorIds[0];
-  const desiredAnchor = followStorm && stormSector
-    ? STORM_ANCHOR_BY_SECTOR[stormSector]
-    : strategy.anchorId;
-  const switchedFire = desiredAnchor !== view.campaign.hero.anchorId;
-  simulation.moveHero(desiredAnchor);
+  simulation.moveHero(strategy.anchorId);
 
   const heroGate = NORTHERN_PASS_LEVEL.progression.heroUpgradeWaves[view.campaign.hero.level - 1];
   if (heroGate !== undefined && view.campaign.completedWave >= heroGate) {
-    // Saving for a due hero rank is intentional player-like economy behavior.
-    if (!simulation.upgradeHero().ok) return switchedFire;
+    // Saving for a due hero rank mirrors the choice offered to a real player.
+    if (!simulation.upgradeHero().ok) return;
     view = simulation.readView();
   }
 
   for (const [padId, type, dueWave] of strategy.buildPlan) {
     if (dueWave > view.campaign.completedWave || view.campaign.towers.some((tower) => tower.padId === padId)) continue;
-    if (!simulation.build(padId, type).ok) return switchedFire;
+    if (!simulation.build(padId, type).ok) return;
     view = simulation.readView();
   }
 
@@ -79,7 +69,7 @@ function prepareWave(simulation, strategy, followStorm) {
         break;
       }
     }
-    if (!upgraded) return switchedFire;
+    if (!upgraded) return;
   }
 }
 
@@ -91,8 +81,10 @@ function tryUseHeroAbility(simulation, heroId) {
     const hasBoss = view.enemies.some((enemy) => enemy.type === "boss" || enemy.type === "titan");
     return (view.enemies.length >= 5 || hasBoss) && simulation.useHeroAbility().ok;
   }
-
   if (heroId === "grak") {
+    if (view.wavePlan?.hasBoss && !view.enemies.some((enemy) => enemy.type === "boss" || enemy.type === "titan")) {
+      return false;
+    }
     const radius = getHeroStats("grak", view.hero.level).abilityRadius;
     const supportedTowers = view.campaign.towers.filter((tower) => {
       const pad = NORTHERN_PASS_LEVEL.buildPads[tower.padId];
@@ -100,7 +92,6 @@ function tryUseHeroAbility(simulation, heroId) {
     }).length;
     return supportedTowers >= 1 && view.enemies.length >= 5 && simulation.useHeroAbility().ok;
   }
-
   if (!view.hero.awakened) {
     const radius = getHeroStats("toren", view.hero.level).abilityRadius;
     const nearbyCount = view.enemies.filter((enemy) => (
@@ -117,52 +108,100 @@ function tryUseHeroAbility(simulation, heroId) {
   return bestCluster.count >= 5 && simulation.useHeroAbility(bestCluster.progress).ok;
 }
 
-function playCampaign(strategy, { followStorm = false } = {}) {
+function tryUseAvalanche(simulation, mode) {
+  if (mode === "none") return false;
+  const view = simulation.readView();
+  const northern = view.northernPass;
+  if (view.phase !== "wave" || !northern?.avalanche.available) return false;
+  const requestedZoneId = mode === "fixed-upper" ? "upper" : northern.forecastDangerZoneId;
+  const zone = northern.avalanche.zones.find((candidate) => candidate.id === requestedZoneId);
+  if (!zone?.canTrigger) return false;
+
+  const routeLength = routeTotalLength(northern.routePoints);
+  const targets = view.enemies.filter((enemy) => {
+    const ratio = routeLength > 0 ? enemy.progress / routeLength : 0;
+    return ratio >= zone.startRatio && ratio < zone.endRatio;
+  });
+  const hasPriorityTarget = targets.some((enemy) => (
+    enemy.type === "boss" || enemy.type === "titan" || enemy.type === "shaman"
+  ));
+  const bossPresent = targets.some((enemy) => enemy.type === "boss" || enemy.type === "titan");
+  if (view.wavePlan?.hasBoss) {
+    const firstBossChargeReady = northern.avalanche.chargesRemaining === northern.avalanche.maxCharges
+      && bossPresent;
+    const committedBossChargeReady = northern.avalanche.chargesRemaining < northern.avalanche.maxCharges
+      && bossPresent;
+    if (!firstBossChargeReady && !committedBossChargeReady) return false;
+  } else if (!hasPriorityTarget && targets.length < 3) {
+    return false;
+  }
+  return simulation.triggerNorthernAvalanche(requestedZoneId).ok;
+}
+
+function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
   const simulation = new GameSimulation(
     createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET, heroId: strategy.heroId }),
     createSimulationRules(NORTHERN_PASS_LEVEL, CAMPAIGN_RULESET),
   );
   let abilityUses = 0;
-  let fireSwitches = 0;
-  let stormExposureTicks = 0;
+  let avalancheUses = 0;
+  let lastCompletedWave = 0;
+  const livesByWave = [];
+  const leaks = [];
+  const avalanches = [];
 
   for (let wave = 1; wave <= NORTHERN_PASS_LEVEL.waves.finalWave && simulation.readView().phase !== "gameover"; wave += 1) {
-    if (prepareWave(simulation, strategy, followStorm)) fireSwitches += 1;
+    prepareWave(simulation, strategy);
+    const spawnTypes = new Map(simulation.getCurrentWavePlan().spawns.map((spawn) => [spawn.id, spawn.type]));
     assert.equal(simulation.startWave(), true, `${strategy.name} could not start wave ${wave}`);
     let ticks = 0;
     while (!["setup", "victory", "gameover"].includes(simulation.readView().phase) && ticks < 12_000) {
       simulation.advance(100);
-      stormExposureTicks += simulation.readView().enemies.filter((enemy) => enemy.stormAffected).length;
+      if (tryUseAvalanche(simulation, avalancheMode)) avalancheUses += 1;
       if (tryUseHeroAbility(simulation, strategy.heroId)) abilityUses += 1;
+      for (const event of simulation.drainEvents()) {
+        if (event.type === "enemy_leaked") leaks.push([wave, spawnTypes.get(event.enemyId) ?? "summon", event.damage]);
+        if (event.type === "northern_avalanche") {
+          avalanches.push([wave, event.zoneId, event.impacts.map((impact) => spawnTypes.get(impact.enemyId) ?? "summon")]);
+        }
+      }
       ticks += 1;
     }
     assert.ok(ticks < 12_000, `${strategy.name} stalled on wave ${wave}`);
+    lastCompletedWave = simulation.readView().campaign.completedWave;
+    livesByWave.push([lastCompletedWave, simulation.readView().campaign.lives]);
   }
-
-  return Object.freeze({ view: simulation.readView(), abilityUses, fireSwitches, stormExposureTicks });
+  return Object.freeze({ view: simulation.readView(), abilityUses, avalancheUses, lastCompletedWave, livesByWave, leaks, avalanches });
 }
 
 for (const strategy of STRATEGIES) {
-  test(`Northern Pass is completable with ${strategy.name}`, () => {
-    const result = playCampaign(strategy, { followStorm: true });
-
-    assert.equal(result.view.phase, "victory");
-    assert.equal(result.view.campaign.completedWave, NORTHERN_PASS_LEVEL.waves.finalWave);
-    assert.ok(result.view.campaign.lives > 0);
+  test(`Northern Pass v3 is completable with informed avalanche timing and ${strategy.name}`, () => {
+    const result = playCampaign(strategy);
+    assert.equal(result.view.phase, "victory", JSON.stringify({ wave: result.lastCompletedWave, lives: result.view.campaign.lives, uses: result.avalancheUses, history: result.livesByWave, leaks: result.leaks, avalanches: result.avalanches.filter(([wave]) => wave >= 23) }));
+    assert.equal(result.view.campaign.completedWave, 24);
+    assert.ok(result.view.campaign.lives > 0 && result.view.campaign.lives <= 8, `expected a limited margin, got ${result.view.campaign.lives} lives`);
     assert.equal(result.view.campaign.hero.level, 3);
     assert.ok(result.abilityUses > 0);
-    assert.ok(result.fireSwitches >= 10);
+    assert.ok(result.avalancheUses >= 14, `expected meaningful avalanche use, got ${result.avalancheUses}`);
   });
 }
 
-test("reading the storm forecast and switching signal fires outperforms a fixed fire", () => {
-  const informed = playCampaign(STRATEGIES[0], { followStorm: true });
-  const fixed = playCampaign(Object.freeze({ ...STRATEGIES[0], anchorId: 2 }));
-
-  assert.equal(informed.view.phase, "victory");
-  assert.ok(informed.fireSwitches >= 10);
-  assert.ok(
-    fixed.stormExposureTicks >= informed.stormExposureTicks * 1.25,
-    `fixed fire exposure ${fixed.stormExposureTicks} was not meaningfully above informed exposure ${informed.stormExposureTicks}`,
-  );
+test("an obsolete fixed-upper avalanche strategy loses in the late campaign", () => {
+  const fixed = playCampaign(STRATEGIES[0], { avalancheMode: "fixed-upper" });
+  assert.equal(fixed.view.phase, "gameover", JSON.stringify({ lives: fixed.view.campaign.lives, wave: fixed.lastCompletedWave, uses: fixed.avalancheUses }));
+  assert.ok(fixed.lastCompletedWave >= 16, `fixed strategy failed too early on wave ${fixed.lastCompletedWave + 1}`);
+  assert.ok(fixed.lastCompletedWave < 24);
 });
+
+test("ignoring the authored avalanche mechanic loses in the late campaign", () => {
+  const ignored = playCampaign(STRATEGIES[0], { avalancheMode: "none" });
+  assert.equal(ignored.view.phase, "gameover", JSON.stringify({ lives: ignored.view.campaign.lives, wave: ignored.lastCompletedWave, uses: ignored.avalancheUses }));
+  assert.ok(ignored.lastCompletedWave >= 16, `no-avalanche strategy failed too early on wave ${ignored.lastCompletedWave + 1}`);
+  assert.ok(ignored.lastCompletedWave < 24);
+});
+
+function routeTotalLength(points) {
+  return points.slice(1).reduce((total, point, index) => (
+    total + Math.hypot(point.x - points[index].x, point.y - points[index].y)
+  ), 0);
+}

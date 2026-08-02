@@ -6,7 +6,8 @@ export type DamageKind = "physical" | "frost" | "fire" | "arcane";
 export type EnemyType = "raider" | "swift" | "brute" | "warden" | "shade" | "bulwark" | "shaman" | "boss" | "titan";
 export type EnemyVariant = "standard" | "snow-runner" | "icebound";
 export type CampaignAct = 1 | 2 | 3;
-export type NorthernStormSectorId = "upper" | "middle" | "lower";
+export type NorthernAvalancheZoneId = "upper" | "middle" | "lower";
+export type NorthernRouteVariantId = "ridge" | "ravine" | "summit";
 
 export type Point = Readonly<{ x: number; y: number }>;
 
@@ -103,10 +104,18 @@ export type WaveSpawn = Readonly<{
   summonCount: number;
 }>;
 
-export type NorthernStormPlan = Readonly<{
-  sectorIds: readonly NorthernStormSectorId[];
-  runnerSpeedBonus: number;
-  iceboundControlResistanceBonus: number;
+export type NorthernAvalancheZone = Readonly<{
+  id: NorthernAvalancheZoneId;
+  startRatio: number;
+  endRatio: number;
+}>;
+
+export type NorthernPassWavePlan = Readonly<{
+  routeVariantId: NorthernRouteVariantId;
+  routePoints: readonly Point[];
+  avalancheCharges: 1 | 2;
+  zones: readonly NorthernAvalancheZone[];
+  dangerZoneId: NorthernAvalancheZoneId;
 }>;
 
 export type WavePlan = Readonly<{
@@ -116,8 +125,8 @@ export type WavePlan = Readonly<{
   hasBoss: boolean;
   act: CampaignAct;
   threat: 1 | 2 | 3 | 4 | 5;
-  /** Present only on Northern Pass waves governed by the storm-front mechanic. */
-  northernStorm?: NorthernStormPlan;
+  /** Present only on the authored Northern Pass v3 campaign. */
+  northernPass?: NorthernPassWavePlan;
 }>;
 
 export type CampaignError =

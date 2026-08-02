@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { BUILD_PADS, GAME_HEIGHT, GAME_WIDTH, ROUTE_POINTS } from "../game/config.ts";
+import { NORTHERN_PASS_ROUTE_VARIANTS } from "../game/northernPassContent.ts";
 import type { CampaignAct, Point } from "../game/types.ts";
 import {
   FOREST_GATE_LANDMARKS,
@@ -25,6 +26,8 @@ import {
 
 export type WorldArt = Readonly<{
   themeId: WorldVisualTheme["id"];
+  route: Phaser.GameObjects.Graphics;
+  routeMarks: Phaser.GameObjects.Graphics;
   actVeil: Phaser.GameObjects.Rectangle;
   portalGlow: Phaser.GameObjects.Ellipse;
   portalCore: Phaser.GameObjects.Ellipse;
@@ -57,21 +60,24 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
   const { width, height, route } = world;
   const theme = getWorldVisualTheme(world.id);
   const reservedPoints = [...(world.buildPads ?? []), ...(world.heroAnchors ?? [])];
-  const layout = createWorldDecorationLayout(theme, route, width, height, reservedPoints);
-  const northernLandmarks = theme.id === "northern-pass"
+  const additionalRoutes = theme.id === "northern-pass-v3"
+    ? Object.values(NORTHERN_PASS_ROUTE_VARIANTS).filter((candidate) => candidate !== route)
+    : [];
+  const layout = createWorldDecorationLayout(theme, route, width, height, reservedPoints, additionalRoutes);
+  const northernLandmarks = theme.id === "northern-pass-v3"
     ? createNorthernLandmarkLayout(route, width, height, layout.clearings)
     : null;
 
   drawGround(scene, width, height, theme, layout);
-  if (theme.id === "northern-pass") {
+  if (theme.id === "northern-pass-v3") {
     drawNorthernGroundDetails(scene, width, height, theme, layout);
     drawNorthernMountainFrame(scene, width, height, theme);
     if (northernLandmarks) drawNorthernIceBridgeUnderlay(scene, northernLandmarks.iceBridge, theme);
   } else {
     drawCanopyFrame(scene, width, height, theme);
   }
-  drawRoute(scene, route, theme);
-  if (theme.id === "northern-pass" && northernLandmarks) {
+  const routeArt = drawRoute(scene, route, theme);
+  if (theme.id === "northern-pass-v3" && northernLandmarks) {
     drawNorthernDecorations(scene, layout, theme, world.buildPads ?? []);
     drawNorthernBridgeRails(scene, northernLandmarks.iceBridge);
     drawBrokenCaravan(scene, northernLandmarks.caravan);
@@ -79,13 +85,13 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
     drawDecorations(scene, layout, theme);
     drawForestLandmarks(scene);
   }
-  const entrance = theme.id === "northern-pass"
+  const entrance = theme.id === "northern-pass-v3"
     ? drawNorthernEntrance(scene, route[0], theme)
     : drawEntrance(scene, route[0], theme);
-  const gate = theme.id === "northern-pass"
+  const gate = theme.id === "northern-pass-v3"
     ? drawNorthernCitadel(scene, route[route.length - 1], height, theme)
     : drawGate(scene, route[route.length - 1], height, theme);
-  const northernAtmosphere = theme.id === "northern-pass"
+  const northernAtmosphere = theme.id === "northern-pass-v3"
     ? createNorthernAtmosphere(scene, width, height, layout)
     : null;
   const actVeil = scene.add.rectangle(width / 2, height / 2, width, height, 0x52366f, 0)
@@ -98,6 +104,8 @@ export function drawWorld(scene: Phaser.Scene, world: WorldDefinition = DEFAULT_
   vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
   return Object.freeze({
     themeId: theme.id,
+    route: routeArt.route,
+    routeMarks: routeArt.marks,
     actVeil,
     portalGlow: entrance.glow,
     portalCore: entrance.inner,
@@ -138,6 +146,10 @@ export function setWorldAct(scene: Phaser.Scene, art: WorldArt, act: CampaignAct
       ease: "Sine.InOut",
     });
   }
+}
+
+export function setWorldRoute(art: WorldArt, points: readonly Point[]): void {
+  drawRouteGraphics(art.route, art.routeMarks, points, getWorldVisualTheme(art.themeId));
 }
 
 function drawGround(
@@ -185,9 +197,26 @@ function drawCanopyFrame(scene: Phaser.Scene, width: number, height: number, the
   light.fillTriangle(width * 0.68, 0, width * 0.84, 0, width * 0.61, height * 0.62);
 }
 
-function drawRoute(scene: Phaser.Scene, points: readonly Point[], theme: WorldVisualTheme): void {
-  if (points.length < 2) return;
+function drawRoute(
+  scene: Phaser.Scene,
+  points: readonly Point[],
+  theme: WorldVisualTheme,
+): Readonly<{ route: Phaser.GameObjects.Graphics; marks: Phaser.GameObjects.Graphics }> {
   const route = scene.add.graphics().setDepth(-18);
+  const marks = scene.add.graphics().setDepth(-16);
+  drawRouteGraphics(route, marks, points, theme);
+  return Object.freeze({ route, marks });
+}
+
+function drawRouteGraphics(
+  route: Phaser.GameObjects.Graphics,
+  marks: Phaser.GameObjects.Graphics,
+  points: readonly Point[],
+  theme: WorldVisualTheme,
+): void {
+  route.clear();
+  marks.clear();
+  if (points.length < 2) return;
   const [shadowWidth, bankWidth, edgeWidth, bedWidth, lightWidth] = theme.routeWidths;
   drawRouteLayer(route, points, shadowWidth, theme.routeShadow, 0.58);
   drawRouteLayer(route, points, bankWidth, theme.routeBank, 1);
@@ -195,7 +224,6 @@ function drawRoute(scene: Phaser.Scene, points: readonly Point[], theme: WorldVi
   drawRouteLayer(route, points, bedWidth, theme.routeBed, 1);
   drawRouteLayer(route, points, lightWidth, theme.routeLight, 0.66);
 
-  const marks = scene.add.graphics().setDepth(-16);
   for (let index = 0; index < points.length - 1; index += 1) {
     const start = points[index];
     const end = points[index + 1];

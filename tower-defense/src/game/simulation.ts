@@ -15,9 +15,10 @@ import {
   selectHealingTargets,
 } from "./enemyAbilities.ts";
 import {
+  AVALANCHE_HEALING_INTERRUPT_MS,
+  calculateNorthernAvalancheImpact,
   getFrostArmorDamageMultiplier,
-  getNorthernStormEffect,
-  isInsideSignalFire,
+  isProgressInsideNorthernAvalancheZone,
 } from "./northernPassMechanics.ts";
 import { CLASSIC_CAMPAIGN_LEVEL, type LevelDefinition, type ModeRuleset } from "./content.ts";
 import {
@@ -55,7 +56,9 @@ import type {
   EnemyVariant,
   HeroId,
   HeroLevel,
-  NorthernStormSectorId,
+  NorthernAvalancheZoneId,
+  NorthernPassWavePlan,
+  NorthernRouteVariantId,
   Point,
   TowerPlacement,
   TowerStats,
@@ -77,7 +80,6 @@ export type SimulationRules = Readonly<{
   routePoints: readonly Point[];
   buildPads: readonly Point[];
   heroAnchors: readonly Point[];
-  signalFires: readonly Point[];
   heroAwakeningWave: number;
   finalWave: number | null;
   isComplete(completedWave: number): boolean;
@@ -91,7 +93,6 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
   routePoints: ROUTE_POINTS,
   buildPads: BUILD_PADS,
   heroAnchors: CLASSIC_CAMPAIGN_LEVEL.heroAnchors,
-  signalFires: Object.freeze([]),
   heroAwakeningWave: 20,
   finalWave: FINAL_WAVE,
   isComplete: (completedWave) => completedWave >= FINAL_WAVE,
@@ -107,7 +108,6 @@ export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset)
     routePoints: level.route,
     buildPads: level.buildPads,
     heroAnchors: level.heroAnchors,
-    signalFires: level.signalFires ?? Object.freeze([]),
     heroAwakeningWave: level.progression.awakeningWave,
     finalWave,
     isComplete: (completedWave) => mode.isComplete(level, completedWave),
@@ -129,9 +129,6 @@ export type EnemySimulationView = Readonly<TargetCandidate> & Readonly<{
   maxShield: number;
   frostArmor: number;
   maxFrostArmor: number;
-  insideWarmZone: boolean;
-  stormSectorId: NorthernStormSectorId | null;
-  stormAffected: boolean;
   stunned: boolean;
   blocked: boolean;
   burning: boolean;
@@ -181,6 +178,26 @@ export type HeroSimulationView = Readonly<{
   barrier: HeroBarrierSimulationView | null;
 }>;
 
+export type NorthernAvalancheZoneSimulationView = Readonly<{
+  id: NorthernAvalancheZoneId;
+  startRatio: number;
+  endRatio: number;
+  targetCount: number;
+  canTrigger: boolean;
+}>;
+
+export type NorthernPassSimulationView = Readonly<{
+  routeVariantId: NorthernRouteVariantId;
+  routePoints: readonly Point[];
+  forecastDangerZoneId: NorthernAvalancheZoneId;
+  avalanche: Readonly<{
+    maxCharges: number;
+    chargesRemaining: number;
+    available: boolean;
+    zones: readonly NorthernAvalancheZoneSimulationView[];
+  }>;
+}>;
+
 export type SimulationView = Readonly<{
   campaign: CampaignState;
   phase: SimulationPhase;
@@ -189,6 +206,7 @@ export type SimulationView = Readonly<{
   simulationTimeMs: number;
   currentWave: number;
   wavePlan: WavePlan | null;
+  northernPass: NorthernPassSimulationView | null;
   countdownRemainingMs: number;
   hero: HeroSimulationView;
   heroAbilityAvailable: boolean;
@@ -209,6 +227,7 @@ export type SimulationSnapshot = Readonly<{
   speed: 1 | 2;
   simulationTimeMs: number;
   currentWave: number;
+  northernPass: NorthernPassSimulationView | null;
   countdownRemainingMs: number;
   hero: HeroSimulationView;
   heroAbilityAvailable: boolean;
@@ -310,6 +329,27 @@ export type SimulationEvent =
     }>
   | Readonly<{ type: "enemy_leaked"; enemyId: number; x: number; y: number; damage: number; absorbed: number }>
   | Readonly<{ type: "wave_cleared"; wave: number; bonus: number; repairedLives: number }>
+  | Readonly<{
+      type: "northern_route_changed";
+      wave: number;
+      routeVariantId: NorthernRouteVariantId;
+      routePoints: readonly Point[];
+    }>
+  | Readonly<{
+      type: "northern_avalanche";
+      zoneId: NorthernAvalancheZoneId;
+      routeVariantId: NorthernRouteVariantId;
+      chargesRemaining: number;
+      impacts: readonly Readonly<{
+        enemyId: number;
+        x: number;
+        y: number;
+        frostArmorRemoved: number;
+        stunDurationMs: number;
+        healingInterrupted: boolean;
+        boss: boolean;
+      }>[];
+    }>
   | Readonly<{ type: "terminal"; outcome: SimulationOutcome; campaign: CampaignState }>;
 
 type TowerEntity = {
@@ -333,7 +373,6 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   stunUntilMs: number;
   barrierUntilMs: number;
   controlResistance: number;
-  baseControlResistance: number;
   healingRadius: number;
   healingRatio: number;
   lastHealAtMs: number;
@@ -369,6 +408,9 @@ export type SimulationCommandResult = Readonly<{
     | "hero_ability_target_required"
     | "invalid_hero_ability_target"
     | "pulse_used"
+    | "invalid_avalanche_zone"
+    | "avalanche_unavailable"
+    | "avalanche_empty_zone"
     | null;
 }>;
 
@@ -382,6 +424,7 @@ export type SimulationCommand =
   | Readonly<{ type: "set_paused"; paused: boolean }>
   | Readonly<{ type: "toggle_speed" }>
   | Readonly<{ type: "use_hero_ability"; targetDistance?: number }>
+  | Readonly<{ type: "trigger_northern_avalanche"; zoneId: NorthernAvalancheZoneId }>
   | Readonly<{ type: "use_pulse" }>;
 
 export type RecordedSimulationCommand = Readonly<{
@@ -405,7 +448,7 @@ export class GameSimulation {
   private campaign: CampaignState;
   private readonly initialCampaign: CampaignState;
   private readonly rules: SimulationRules;
-  private readonly path: PathMetrics;
+  private path: PathMetrics;
   private phase: SimulationPhase;
   private paused = false;
   private speed: 1 | 2 = 1;
@@ -429,6 +472,8 @@ export class GameSimulation {
   private bannerUntilMs = 0;
   private heroBarrier: HeroBarrierEntity | null = null;
   private gateShield = 0;
+  private northernAvalancheMaxCharges = 0;
+  private northernAvalancheCharges = 0;
   private waveStartLives = 0;
   private waveCheckpoint: CampaignState | null = null;
   private lastCheckpointDurationMs = 0;
@@ -532,6 +577,45 @@ export class GameSimulation {
     );
   }
 
+  private readNorthernPassView(): NorthernPassSimulationView | null {
+    const plan = this.wavePlan?.northernPass
+      ?? (this.phase === "setup" ? this.getCurrentWavePlan().northernPass : undefined);
+    if (!plan) return null;
+
+    const active = Boolean(this.wavePlan?.northernPass) && this.phase === "wave";
+    const maxCharges = this.wavePlan?.northernPass
+      ? this.northernAvalancheMaxCharges
+      : plan.avalancheCharges;
+    const chargesRemaining = this.wavePlan?.northernPass
+      ? this.northernAvalancheCharges
+      : plan.avalancheCharges;
+    const armed = active && chargesRemaining > 0;
+    const zones = Object.freeze(plan.zones.map((zone) => {
+      const targetCount = active
+        ? this.enemies.filter((enemy) => (
+            !enemy.dead
+            && isProgressInsideNorthernAvalancheZone(enemy.progress, this.path.totalLength, zone.id)
+          )).length
+        : 0;
+      return Object.freeze({
+        ...zone,
+        targetCount,
+        canTrigger: armed && zone.id === plan.dangerZoneId && targetCount > 0,
+      });
+    }));
+    return Object.freeze({
+      routeVariantId: plan.routeVariantId,
+      routePoints: plan.routePoints,
+      forecastDangerZoneId: plan.dangerZoneId,
+      avalanche: Object.freeze({
+        maxCharges,
+        chargesRemaining,
+        available: armed,
+        zones,
+      }),
+    });
+  }
+
   readView(): SimulationView {
     const hero = this.readHeroView();
     return {
@@ -542,6 +626,7 @@ export class GameSimulation {
       simulationTimeMs: this.simulationTimeMs,
       currentWave: this.campaign.completedWave + 1,
       wavePlan: this.wavePlan,
+      northernPass: this.readNorthernPassView(),
       countdownRemainingMs: this.countdownRemainingMs,
       hero,
       heroAbilityAvailable: this.heroAbilityCharges > 0,
@@ -566,6 +651,14 @@ export class GameSimulation {
       speed: view.speed,
       simulationTimeMs: view.simulationTimeMs,
       currentWave: view.currentWave,
+      northernPass: view.northernPass ? Object.freeze({
+        ...view.northernPass,
+        routePoints: Object.freeze(view.northernPass.routePoints.map((point) => Object.freeze({ ...point }))),
+        avalanche: Object.freeze({
+          ...view.northernPass.avalanche,
+          zones: Object.freeze(view.northernPass.avalanche.zones.map((zone) => Object.freeze({ ...zone }))),
+        }),
+      }) : null,
       countdownRemainingMs: view.countdownRemainingMs,
       hero: Object.freeze({ ...view.hero }),
       heroAbilityAvailable: view.heroAbilityAvailable,
@@ -586,9 +679,6 @@ export class GameSimulation {
         maxShield: enemy.maxShield,
         frostArmor: enemy.frostArmor,
         maxFrostArmor: enemy.maxFrostArmor,
-        insideWarmZone: enemy.insideWarmZone,
-        stormSectorId: enemy.stormSectorId,
-        stormAffected: enemy.stormAffected,
         slowed: enemy.slowed,
         stunned: enemy.stunned,
         blocked: enemy.blocked,
@@ -638,6 +728,7 @@ export class GameSimulation {
         return COMMAND_SUCCESS;
       }
       case "use_hero_ability": return this.useHeroAbility(command.targetDistance);
+      case "trigger_northern_avalanche": return this.triggerNorthernAvalanche(command.zoneId);
       case "use_pulse": return this.usePulse();
       default: return assertNeverCommand(command);
     }
@@ -720,6 +811,10 @@ export class GameSimulation {
     this.waveCheckpoint = this.campaign;
     this.lastCheckpointDurationMs = this.activeDurationMs;
     this.wavePlan = this.rules.createWavePlan(this.campaign.completedWave + 1);
+    const northernPass = this.wavePlan.northernPass;
+    this.path = createPathMetrics(northernPass?.routePoints ?? this.rules.routePoints);
+    this.northernAvalancheMaxCharges = northernPass?.avalancheCharges ?? 0;
+    this.northernAvalancheCharges = this.northernAvalancheMaxCharges;
     this.waveElapsedMs = 0;
     this.countdownRemainingMs = COUNTDOWN_MS;
     this.fixedStepAccumulatorMs = 0;
@@ -739,9 +834,83 @@ export class GameSimulation {
     this.gateShield = getHeroStats(this.campaign.hero.id, this.campaign.hero.level).gateShield;
     for (const tower of this.towers.values()) tower.cooldownMs = 180;
     this.phase = "countdown";
+    if (northernPass) {
+      this.events.push({
+        type: "northern_route_changed",
+        wave: this.wavePlan.wave,
+        routeVariantId: northernPass.routeVariantId,
+        routePoints: northernPass.routePoints,
+      });
+    }
     if (this.wavePlan.hasBoss) this.events.push({ type: "haptic", kind: "heavy" });
     this.recordCommand({ type: "start_wave" });
     return true;
+  }
+
+  triggerNorthernAvalanche(zoneId: NorthernAvalancheZoneId): SimulationCommandResult {
+    const plan = this.wavePlan?.northernPass;
+    if (!plan?.zones.some((zone) => zone.id === zoneId)) {
+      return commandFailure("invalid_avalanche_zone");
+    }
+    if (
+      this.phase !== "wave"
+      || this.northernAvalancheCharges <= 0
+      || zoneId !== plan.dangerZoneId
+    ) {
+      return commandFailure("avalanche_unavailable");
+    }
+
+    const targets = this.enemies.filter((enemy) => (
+      !enemy.dead
+      && isProgressInsideNorthernAvalancheZone(enemy.progress, this.path.totalLength, zoneId)
+    ));
+    if (targets.length === 0) return commandFailure("avalanche_empty_zone");
+
+    const impacts = targets.map((enemy) => {
+      const boss = enemy.type === "boss" || enemy.type === "titan";
+      const impact = calculateNorthernAvalancheImpact(
+        enemy.frostArmor,
+        enemy.maxFrostArmor,
+        boss,
+        enemy.healingRadius > 0,
+      );
+      const previousFrostArmor = enemy.frostArmor;
+      enemy.frostArmor = Math.max(0, enemy.frostArmor - impact.frostArmorRemoved);
+      // Boss waves grant a second charge intentionally: avalanche stuns stack so
+      // committing both charges is a real tactical choice instead of a no-op.
+      enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs) + impact.stunDurationMs;
+      if (impact.healingInterrupted) {
+        enemy.lastHealAtMs = Math.max(
+          enemy.lastHealAtMs,
+          this.simulationTimeMs + AVALANCHE_HEALING_INTERRUPT_MS,
+        );
+      }
+      if (previousFrostArmor > 0 && enemy.frostArmor <= 0) {
+        this.events.push({ type: "frost_armor_broken", enemyId: enemy.id, x: enemy.x, y: enemy.y });
+      }
+      return Object.freeze({
+        enemyId: enemy.id,
+        x: enemy.x,
+        y: enemy.y,
+        frostArmorRemoved: impact.frostArmorRemoved,
+        stunDurationMs: impact.stunDurationMs,
+        healingInterrupted: impact.healingInterrupted,
+        boss,
+      });
+    });
+    this.northernAvalancheCharges -= 1;
+    this.events.push(
+      {
+        type: "northern_avalanche",
+        zoneId,
+        routeVariantId: plan.routeVariantId,
+        chargesRemaining: this.northernAvalancheCharges,
+        impacts: Object.freeze(impacts),
+      },
+      { type: "haptic", kind: "heavy" },
+    );
+    this.recordCommand({ type: "trigger_northern_avalanche", zoneId });
+    return COMMAND_SUCCESS;
   }
 
   setPaused(value: boolean): boolean {
@@ -951,7 +1120,6 @@ export class GameSimulation {
     const point = samplePointAtDistance(this.path, progress, this.pointScratch);
     const maxShield = Math.round(spawn.maxHp * spawn.shieldRatio);
     const maxFrostArmor = Math.round(spawn.maxHp * (spawn.frostArmorRatio ?? 0));
-    const storm = this.readNorthernStormEffect(spawn.variant ?? "standard", progress);
     const entity: EnemyEntity = {
       id: spawn.id,
       type: spawn.type,
@@ -965,9 +1133,6 @@ export class GameSimulation {
       maxShield,
       frostArmor: maxFrostArmor,
       maxFrostArmor,
-      insideWarmZone: storm ? storm.protected : this.isPointInsideActiveSignalFire(point),
-      stormSectorId: storm?.sectorId ?? null,
-      stormAffected: storm?.affected ?? false,
       speed: spawn.speed,
       reward: spawn.reward,
       leakDamage: spawn.leakDamage,
@@ -985,8 +1150,7 @@ export class GameSimulation {
       burnDamagePerSecond: 0,
       stunUntilMs: 0,
       barrierUntilMs: 0,
-      controlResistance: Math.min(0.9, spawn.controlResistance + (storm?.controlResistanceBonus ?? 0)),
-      baseControlResistance: spawn.controlResistance,
+      controlResistance: spawn.controlResistance,
       healingRadius: spawn.healingRadius,
       healingRatio: spawn.healingRatio,
       lastHealAtMs: this.simulationTimeMs + 900 + (spawn.id % 7) * 170,
@@ -1017,7 +1181,6 @@ export class GameSimulation {
         continue;
       }
       enemy.burning = enemy.burnUntilMs > this.simulationTimeMs;
-      const stormSpeedMultiplier = this.refreshEnemyNorthernState(enemy);
       if (enemy.burning) {
         this.damageEnemy(
           enemy,
@@ -1053,7 +1216,7 @@ export class GameSimulation {
       enemy.slowFactor = Math.min(timedSlow ? enemy.slowEffectFactor : 1, auraSlowFactor);
       enemy.enraged = (enemy.type === "boss" || enemy.type === "titan") && enemy.hp / enemy.maxHp <= 0.4;
       if (!enemy.stunned && !enemy.blocked) {
-        enemy.progress += enemy.speed * stormSpeedMultiplier * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
+        enemy.progress += enemy.speed * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
       }
       if (enemy.progress >= this.path.totalLength) {
         this.leakEnemy(enemy);
@@ -1063,41 +1226,8 @@ export class GameSimulation {
       const point = samplePointAtDistance(this.path, enemy.progress, this.pointScratch);
       enemy.x = point.x;
       enemy.y = point.y;
-      this.refreshEnemyNorthernState(enemy);
       index += 1;
     }
-  }
-
-  private isPointInsideActiveSignalFire(point: Point): boolean {
-    return isInsideSignalFire(point, this.rules.signalFires?.[this.campaign.hero.anchorId]);
-  }
-
-  private readNorthernStormEffect(variant: EnemyVariant, progress: number) {
-    const plan = this.wavePlan?.northernStorm;
-    if (!plan) return null;
-    return getNorthernStormEffect(
-      variant,
-      progress,
-      this.path.totalLength,
-      this.campaign.hero.anchorId,
-      plan,
-    );
-  }
-
-  private refreshEnemyNorthernState(enemy: EnemyEntity): number {
-    const storm = this.readNorthernStormEffect(enemy.variant, enemy.progress);
-    if (!storm) {
-      enemy.insideWarmZone = this.isPointInsideActiveSignalFire(enemy);
-      enemy.stormSectorId = null;
-      enemy.stormAffected = false;
-      enemy.controlResistance = enemy.baseControlResistance;
-      return 1;
-    }
-    enemy.insideWarmZone = storm.protected;
-    enemy.stormSectorId = storm.sectorId;
-    enemy.stormAffected = storm.affected;
-    enemy.controlResistance = Math.min(0.9, enemy.baseControlResistance + storm.controlResistanceBonus);
-    return storm.speedMultiplier;
   }
 
   private updateHero(deltaMs: number): void {
@@ -1435,7 +1565,7 @@ export class GameSimulation {
     if (enemy.dead) return;
     const damage = calculateDamage(amount, kind, enemy, resistancePenetration);
     const previousHpRatio = enemy.hp / enemy.maxHp;
-    const frostMultiplier = getFrostArmorDamageMultiplier(kind, enemy.insideWarmZone);
+    const frostMultiplier = getFrostArmorDamageMultiplier(kind);
     const previousFrostArmor = enemy.frostArmor;
     const frostAbsorbed = Math.min(enemy.frostArmor, damage * frostMultiplier);
     enemy.frostArmor -= frostAbsorbed;
@@ -1600,6 +1730,9 @@ export class GameSimulation {
       { type: "haptic", kind: "success" },
     );
     this.wavePlan = null;
+    this.path = createPathMetrics(this.rules.routePoints);
+    this.northernAvalancheMaxCharges = 0;
+    this.northernAvalancheCharges = 0;
     this.waveCheckpoint = null;
     this.fixedStepAccumulatorMs = 0;
     this.phase = this.rules.isComplete(this.campaign.completedWave) ? "victory" : "setup";
@@ -1620,6 +1753,9 @@ export class GameSimulation {
     this.syncCampaignDuration();
     this.paused = false;
     this.wavePlan = null;
+    this.path = createPathMetrics(this.rules.routePoints);
+    this.northernAvalancheMaxCharges = 0;
+    this.northernAvalancheCharges = 0;
     this.waveCheckpoint = null;
     this.projectiles.length = 0;
     this.markedEnemyIds = [];

@@ -8,6 +8,7 @@ import {
   normalizeLocale,
   readStoredLocale,
   tr,
+  translations,
   writeStoredLocale,
 } from "../src/i18n.ts";
 
@@ -179,19 +180,22 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
     "frost_armor_broken",
     "wave_trait_frost",
     "wave_intel_trait_frost_armor",
-    "warm_beacon",
-    "warm_beacon_active",
-    "warm_beacon_hint",
-    "northern_storm_preview",
-    "northern_storm_summary",
-    "northern_storm_intel",
-    "northern_sector_upper",
-    "northern_sector_middle",
-    "northern_sector_lower",
+    "avalanche_name",
+    "avalanche_ready",
+    "avalanche_hint",
+    "northern_avalanche_preview",
+    "northern_avalanche_summary",
+    "northern_avalanche_intel",
+    "northern_zone_upper",
+    "northern_zone_middle",
+    "northern_zone_lower",
     "northern_onboarding_title",
     "northern_onboarding_body",
     "northern_onboarding_armor_title",
     "northern_onboarding_armor_body",
+    "invalid_avalanche_zone",
+    "avalanche_unavailable",
+    "avalanche_empty_zone",
   ];
 
   for (const locale of ["ru", "uk", "en"]) {
@@ -199,20 +203,21 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
       assert.ok(tr(locale, key).trim().length >= 3, `${locale}.${key} must not be empty`);
     }
     assert.match(tr(locale, "mission_northern_eyebrow"), /II/i);
-    assert.match(tr(locale, "northern_onboarding_body"), /3|тр[её]х|трьох|three/ui);
+    assert.match(tr(locale, "northern_onboarding_body"), /нажми|натисни|tap/ui);
     assert.ok(tr(locale, "frost_armor_description").length >= 55);
     assert.match(tr(locale, "hero_awakening_requirement", { wave: 14 }), /14/);
   }
 
-  assert.match(tr("ru", "mission_northern_trait_body"), /Снегобег.*огонь/ui);
+  assert.match(tr("ru", "mission_northern_trait_body"), /лавин.*брон/ui);
   assert.match(tr("uk", "frost_armor_description"), /Іскромант/ui);
-  assert.match(tr("en", "warm_beacon_hint"), /tap.*fire/i);
-  assert.match(tr("ru", "northern_storm_intel", {
-    sectors: "верх + центр",
-    active: "верх",
-    speed: 25,
-    resist: 20,
-  }), /верх \+ центр.*25%.*20%/ui);
+  assert.match(tr("en", "avalanche_hint"), /tap.*zone.*enemies/i);
+  assert.match(tr("ru", "northern_avalanche_intel", {
+    zone: "низ",
+    charges: 2,
+  }), /низ.*2/ui);
+  for (const oldKey of ["warm_beacon", "northern_storm_preview", "northern_storm_intel"]) {
+    assert.equal(oldKey in translations.ru, false, `${oldKey} must not survive the avalanche redesign`);
+  }
 });
 
 test("all heroes explain attack, rank-two passive, and ability in every locale", () => {

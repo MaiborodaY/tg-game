@@ -363,6 +363,11 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   backdrop-filter: blur(9px);
 }
 .tutorial-coach[hidden] { display: none; }
+.tutorial-coach.is-action-ready {
+  border-color: rgba(255, 218, 126, 0.96);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38), 0 0 22px rgba(255, 190, 76, 0.28), inset 0 1px rgba(255,255,255,0.12);
+  animation: avalanche-coach-ready 1s ease-in-out infinite;
+}
 .tutorial-step {
   width: 34px;
   height: 34px;
@@ -682,6 +687,16 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .wave-preview:active { background: rgba(117, 227, 189, 0.06); }
 .wave-preview-title { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .wave-preview-title small { color: #a5c5b3; font-size: 9px; letter-spacing: 0.04em; }
+.wave-preview-title small[data-kind="avalanche"] { display: inline-flex; align-items: center; gap: 5px; color: #c7edf0; }
+.wave-preview-title small[data-kind="avalanche"]::before {
+  content: "";
+  width: 10px;
+  height: 9px;
+  flex: 0 0 10px;
+  background: linear-gradient(145deg, #e9fdff 0 44%, #71c6d2 45% 68%, #315f70 69%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 3px rgba(117, 222, 232, 0.42));
+}
 .threat-meter { color: #edbd68; font-size: 9px; letter-spacing: -0.04em; white-space: nowrap; }
 .wave-preview-summary {
   overflow: hidden;
@@ -796,7 +811,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
     radial-gradient(circle at 93% 82%, rgba(98, 203, 159, 0.13), transparent 35%),
     linear-gradient(135deg, rgba(36, 79, 63, 0.9), rgba(13, 45, 39, 0.96));
 }
-.intro-mission[data-level-theme="northern-pass"] {
+.intro-mission[data-level-theme="northern-pass-v3"] {
   border-color: rgba(155, 220, 233, 0.3);
   background:
     radial-gradient(circle at 8% 15%, rgba(219, 252, 255, 0.2), transparent 25%),
@@ -823,13 +838,13 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   border-radius: 20px 20px 26px 20px;
   font-size: 27px;
 }
-.intro-mission[data-level-theme="northern-pass"] .intro-sigil {
+.intro-mission[data-level-theme="northern-pass-v3"] .intro-sigil {
   border-color: rgba(189, 240, 247, 0.56);
   background: radial-gradient(circle at 40% 30%, #6daebd, #326d7a 58%, #1b4654);
   color: #e4fbff;
   box-shadow: 0 14px 30px rgba(0,0,0,0.3), inset 0 2px rgba(255,255,255,0.16), 0 0 22px rgba(119, 215, 230, 0.12);
 }
-.intro-mission[data-level-theme="northern-pass"] .modal-eyebrow { color: #9fd6df; }
+.intro-mission[data-level-theme="northern-pass-v3"] .modal-eyebrow { color: #9fd6df; }
 .intro-mission h1 { margin: 6px 0 5px; font-size: clamp(24px, 7vw, 31px); }
 .intro-mission p { max-width: none; margin: 0; font-size: 11px; line-height: 1.4; }
 .mission-metrics {
@@ -899,15 +914,15 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .mission-trait-mark::before { width: 13px; height: 13px; background: #efd47d; box-shadow: 0 0 12px rgba(239, 212, 125, 0.34); }
 .mission-trait-mark::after { width: 7px; height: 7px; background: #fff0b5; }
 .mission-trait-mark i { width: 21px; height: 21px; border: 1px solid rgba(234, 204, 120, 0.2); }
-.intro-mission[data-level-theme="northern-pass"] .mission-metric { border-color: rgba(160, 221, 232, 0.17); background: rgba(4, 22, 31, 0.25); }
-.intro-mission[data-level-theme="northern-pass"] .mission-metric small,
-.intro-mission[data-level-theme="northern-pass"] .mission-trait small { color: #8fc2cb; }
-.intro-mission[data-level-theme="northern-pass"] .mission-trait { border-color: rgba(120, 213, 226, 0.24); background: linear-gradient(135deg, rgba(48, 124, 138, 0.24), rgba(4, 24, 34, 0.18)); }
-.intro-mission[data-level-theme="northern-pass"] .mission-trait strong { color: #cceff3; }
-.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark { border-color: rgba(128, 224, 235, 0.4); background: rgba(82, 181, 195, 0.12); }
-.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark::before { background: #7fe1e7; box-shadow: 0 0 14px rgba(107, 222, 230, 0.52); }
-.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark::after { background: #e2feff; }
-.intro-mission[data-level-theme="northern-pass"] .mission-trait-mark i { border-color: rgba(139, 231, 238, 0.28); }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-metric { border-color: rgba(160, 221, 232, 0.17); background: rgba(4, 22, 31, 0.25); }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-metric small,
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait small { color: #8fc2cb; }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait { border-color: rgba(120, 213, 226, 0.24); background: linear-gradient(135deg, rgba(48, 124, 138, 0.24), rgba(4, 24, 34, 0.18)); }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait strong { color: #cceff3; }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait-mark { border-color: rgba(128, 224, 235, 0.4); background: rgba(82, 181, 195, 0.12); }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait-mark::before { background: #7fe1e7; box-shadow: 0 0 14px rgba(107, 222, 230, 0.52); }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait-mark::after { background: #e2feff; }
+.intro-mission[data-level-theme="northern-pass-v3"] .mission-trait-mark i { border-color: rgba(139, 231, 238, 0.28); }
 .intro-attempts {
   min-height: 48px;
   margin-top: 8px;
@@ -1535,6 +1550,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 @keyframes pulse-glow { 0%, 100% { transform: scale(0.94); opacity: 0.72; } 50% { transform: scale(1.08); opacity: 1; } }
 @keyframes countdown-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(0.96); } 50% { transform: translate(-50%, -50%) scale(1.06); } }
 @keyframes tutorial-focus-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.12); } }
+@keyframes avalanche-coach-ready { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.16); } }
 
 @media (min-height: 800px) and (max-aspect-ratio: 47 / 100) {
   .app-shell { grid-template-rows: auto auto minmax(164px, 1fr); gap: 5px; }

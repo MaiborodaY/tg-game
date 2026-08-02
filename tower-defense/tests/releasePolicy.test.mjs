@@ -22,14 +22,18 @@ test("production keeps Northern Pass behind an explicit preview capability", () 
   assert.equal(isClientLevelReleased("forest-gate", false), true);
   assert.equal(isClientLevelReleased("northern-pass", false), false);
   assert.equal(normalizeClientLevelId("northern-pass", false), "forest-gate");
+  assert.equal(isClientLevelReleased("northern-pass-v3", false), false);
+  assert.equal(normalizeClientLevelId("northern-pass-v3", false), "forest-gate");
   assert.equal(isClientLevelReleased("missing-level", false), false);
   assert.equal(normalizeClientLevelId("missing-level", false), "forest-gate");
 });
 
-test("development practice exposes the catalog without accepting unknown levels", () => {
+test("development practice exposes only current preview content", () => {
   assert.equal(isClientLevelReleased("forest-gate", true), true);
-  assert.equal(isClientLevelReleased("northern-pass", true), true);
-  assert.equal(normalizeClientLevelId("northern-pass", true), "northern-pass");
+  assert.equal(isClientLevelReleased("northern-pass-v3", true), true);
+  assert.equal(normalizeClientLevelId("northern-pass-v3", true), "northern-pass-v3");
+  assert.equal(isClientLevelReleased("northern-pass", true), false);
+  assert.equal(normalizeClientLevelId("northern-pass", true), "forest-gate");
   assert.equal(isClientLevelReleased("missing-level", true), false);
   assert.equal(normalizeClientLevelId("missing-level", true), "forest-gate");
 });

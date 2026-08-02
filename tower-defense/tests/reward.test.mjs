@@ -130,6 +130,54 @@ test("read-only bootstrap returns profile and active binding without creating a 
   }]);
 });
 
+test("read-only bootstrap accepts an authorized Northern Pass resume without exposing a permanent unlock", async () => {
+  const body = miniAppStartBody();
+  const result = await fetchMiniAppProfile("signed", {
+    fetch: async () => response({
+      ok: true,
+      game_id: "td",
+      content_version: 2,
+      run_contract_version: 3,
+      can_access_northern_pass: true,
+      profile: body.profile,
+      active_run: {
+        run_id: "active-northern-run",
+        expires_at: FUTURE_EXPIRES_AT,
+        run_revision: 2,
+        run_contract_version: 3,
+        hero_id: "eira",
+        confirmed_wave: 5,
+        binding: { content_version: 2, level_id: "northern-pass-v3", mode_id: "campaign" },
+      },
+    }),
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.bootstrap.activeRun.binding.levelId, "northern-pass-v3");
+  assert.deepEqual(result.bootstrap.profile.unlockedLevelIds, ["forest-gate"]);
+
+  const unauthorized = await fetchMiniAppProfile("signed", {
+    fetch: async () => response({
+      ok: true,
+      game_id: "td",
+      content_version: 2,
+      run_contract_version: 3,
+      can_access_northern_pass: false,
+      profile: body.profile,
+      active_run: {
+        run_id: "active-northern-run",
+        expires_at: FUTURE_EXPIRES_AT,
+        run_revision: 2,
+        run_contract_version: 3,
+        hero_id: "eira",
+        confirmed_wave: 5,
+        binding: { content_version: 2, level_id: "northern-pass-v3", mode_id: "campaign" },
+      },
+    }),
+  });
+  assert.equal(unauthorized.ok, false);
+});
+
 test("Mini App start posts initData only to the pinned API and parses snake_case reward data", async () => {
   const requests = [];
   const fetch = async (url, init) => {
@@ -472,6 +520,26 @@ test("Mini App start forwards only a bounded resume hint and rejects malformed b
     },
   });
   assert.equal(lockedBinding.ok, false);
+
+  const resumedNorthernPass = await startMiniAppReward("signed", {
+    resumeRunId: "active-northern-run",
+    fetch: async () => response(miniAppStartBody({
+      resumed: true,
+      can_access_northern_pass: true,
+      binding: { content_version: 2, level_id: "northern-pass-v3", mode_id: "campaign" },
+    })),
+  });
+  assert.equal(resumedNorthernPass.ok, true);
+  assert.equal(resumedNorthernPass.bootstrap.binding.levelId, "northern-pass-v3");
+
+  const freshNorthernPassWithoutUnlock = await startMiniAppReward("signed", {
+    fetch: async () => response(miniAppStartBody({
+      resumed: false,
+      can_access_northern_pass: true,
+      binding: { content_version: 2, level_id: "northern-pass-v3", mode_id: "campaign" },
+    })),
+  });
+  assert.equal(freshNorthernPassWithoutUnlock.ok, false);
 
   const expired = await startMiniAppReward("signed", {
     now: () => 20_000,

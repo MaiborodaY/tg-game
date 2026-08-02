@@ -28,7 +28,7 @@ test("the selected level is presented as a themed mission card instead of a bare
   assert.match(html, /id="mission-trait"[^>]*data-mission-trait/);
   assert.match(html, /id="intro-start"[^>]*data-mission-cta/);
   assert.match(css, /\.intro-mission\[data-level-theme="forest-gate"\]/);
-  assert.match(css, /\.intro-mission\[data-level-theme="northern-pass"\]/);
+  assert.match(css, /\.intro-mission\[data-level-theme="northern-pass-v3"\]/);
   assert.match(css, /\.mission-metrics \{[^}]*grid-template-columns:\s*repeat\(3,/s);
   assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*\.mission-trait/);
 });
@@ -79,9 +79,11 @@ test("wave preview derives traits and tower recommendations from the existing pl
   assert.match(main, /wave_preview_summary/);
 });
 
-test("Northern Pass teaches signal fires first and frost armour when it becomes relevant", () => {
-  assert.match(main, /type NorthernOnboardingStep = "beacon" \| "armor"/);
+test("Northern Pass teaches the avalanche through an in-wave action before frost armour detail", () => {
+  assert.match(main, /type NorthernOnboardingStep = "avalanche" \| "armor"/);
   assert.match(main, /completedWave >= 2[\s\S]*NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY/);
+  assert.match(main, /zones\.some\(\(zone\) => zone\.canTrigger\)/);
+  assert.match(main, /chargesRemaining >= northernPass\.avalanche\.maxCharges\) return;[\s\S]*writeFlag\(storage, NORTHERN_ONBOARDING_STORAGE_KEY\)/);
   assert.match(main, /northern_onboarding_armor_title/);
   assert.match(main, /northern_onboarding_armor_body/);
   assert.match(main, /wave_trait_frost/);

@@ -11,6 +11,7 @@ import {
   CONTENT_VERSION,
   ENDLESS_MODE_ID,
   ENDLESS_RULESET,
+  LEGACY_NORTHERN_PASS_LEVEL_ID,
   MAX_ENDLESS_WAVE,
   NORTHERN_PASS_LEVEL,
   NORTHERN_PASS_LEVEL_ID,
@@ -25,10 +26,12 @@ import {
   NORTHERN_PASS_BUILD_PADS,
   NORTHERN_PASS_FINAL_WAVE,
   NORTHERN_PASS_HERO_ANCHORS,
+  NORTHERN_PASS_RAVINE_ROUTE,
   NORTHERN_PASS_PROGRESSION,
   NORTHERN_PASS_ROUTE,
-  NORTHERN_PASS_SIGNAL_FIRES,
-  createNorthernPassStormPlan,
+  NORTHERN_PASS_ROUTE_VARIANTS,
+  NORTHERN_PASS_SUMMIT_ROUTE,
+  createNorthernPassMechanicPlan,
 } from "../src/game/northernPassContent.ts";
 
 test("content catalog is runtime-valid, immutable, and addressable by stable ids", () => {
@@ -37,6 +40,7 @@ test("content catalog is runtime-valid, immutable, and addressable by stable ids
   assert.doesNotThrow(() => assertValidContentCatalog(CONTENT_CATALOG));
   assert.equal(getLevelDefinition(CLASSIC_CAMPAIGN_LEVEL_ID), CLASSIC_CAMPAIGN_LEVEL);
   assert.equal(getLevelDefinition(NORTHERN_PASS_LEVEL_ID), NORTHERN_PASS_LEVEL);
+  assert.equal(getLevelDefinition(LEGACY_NORTHERN_PASS_LEVEL_ID), null, "legacy v2 is rejected, not playable");
   assert.equal(getModeRuleset(CAMPAIGN_MODE_ID), CAMPAIGN_RULESET);
   assert.equal(getModeRuleset(ENDLESS_MODE_ID), ENDLESS_RULESET);
   assert.equal(getLevelDefinition("missing"), null);
@@ -62,7 +66,7 @@ test("classic level adapts the existing route, pads, and all campaign wave seman
   assert.throws(() => CLASSIC_CAMPAIGN_LEVEL.waves.createWave(25), RangeError);
 });
 
-test("northern pass owns an authored 18-wave campaign split into three six-wave acts", () => {
+test("Northern Pass v3 owns an authored 24-wave campaign split into three eight-wave acts", () => {
   assert.notDeepEqual(NORTHERN_PASS_LEVEL.route, CLASSIC_CAMPAIGN_LEVEL.route);
   assert.notDeepEqual(NORTHERN_PASS_LEVEL.buildPads, CLASSIC_CAMPAIGN_LEVEL.buildPads);
   assert.equal(NORTHERN_PASS_LEVEL.startingGold, 190);
@@ -71,47 +75,47 @@ test("northern pass owns an authored 18-wave campaign split into three six-wave 
 
   const first = NORTHERN_PASS_LEVEL.waves.createWave(1);
   assert.notDeepEqual(first, createWavePlan(1));
-  assert.deepEqual([1, 6, 7, 12, 13, 18].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).act), [1, 1, 2, 2, 3, 3]);
-  assert.deepEqual([6, 12, 18].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss), [true, true, true]);
+  assert.deepEqual([1, 8, 9, 16, 17, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).act), [1, 1, 2, 2, 3, 3]);
+  assert.deepEqual([8, 16, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss), [true, true, true]);
   assert.deepEqual(
-    Array.from({ length: 18 }, (_, index) => index + 1).filter((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss),
-    [6, 12, 18],
+    Array.from({ length: 24 }, (_, index) => index + 1).filter((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss),
+    [8, 16, 24],
   );
-  const allSpawns = Array.from({ length: 18 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 1).spawns).flat();
+  const allSpawns = Array.from({ length: 24 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 1).spawns).flat();
   assert.ok(allSpawns.every((spawn) => ["standard", "snow-runner", "icebound"].includes(spawn.variant)));
   assert.ok(allSpawns.every((spawn) => Number.isFinite(spawn.frostArmorRatio)));
   assert.ok(allSpawns.some((spawn) => spawn.variant === "snow-runner"));
   assert.ok(allSpawns.some((spawn) => spawn.variant === "icebound" && spawn.frostArmorRatio > 0));
   assert.ok(allSpawns.filter((spawn) => spawn.variant !== "icebound").every((spawn) => spawn.frostArmorRatio === 0));
-  assert.deepEqual(NORTHERN_PASS_LEVEL.waves.createWave(18), NORTHERN_PASS_LEVEL.waves.createWave(18));
+  assert.deepEqual(NORTHERN_PASS_LEVEL.waves.createWave(24), NORTHERN_PASS_LEVEL.waves.createWave(24));
   assert.ok(Object.isFrozen(first));
   assert.ok(Object.isFrozen(first.spawns));
   assert.ok(first.spawns.every(Object.isFrozen));
 });
 
-test("northern storm fronts are deterministic, escalate by act, and preserve the authored HP budget", () => {
-  const plans = Array.from({ length: 18 }, (_, index) => createNorthernPassStormPlan(index + 1));
-  assert.deepEqual(plans.slice(0, 6).map((plan) => plan.sectorIds), [
-    ["upper"], ["middle"], ["lower"], ["upper"], ["middle"], ["lower"],
+test("Northern Pass v3 forecasts one avalanche zone and changes route deterministically by act", () => {
+  const plans = Array.from({ length: 24 }, (_, index) => createNorthernPassMechanicPlan(index + 1));
+  assert.deepEqual([plans[0].routeVariantId, plans[8].routeVariantId, plans[16].routeVariantId], ["ridge", "ravine", "summit"]);
+  assert.deepEqual(plans.slice(0, 8).map((plan) => plan.dangerZoneId), [
+    "upper", "upper", "middle", "lower", "upper", "middle", "lower", "middle",
   ]);
-  assert.deepEqual([plans[0].runnerSpeedBonus, plans[6].runnerSpeedBonus, plans[12].runnerSpeedBonus], [0.15, 0.2, 0.25]);
-  assert.ok(plans.slice(6, 17).every((plan) => plan.sectorIds.length === 2));
-  assert.deepEqual(plans[17].sectorIds, ["upper", "middle", "lower"]);
-  assert.ok(plans.every((plan) => plan.iceboundControlResistanceBonus === 0.2));
+  assert.ok(plans.every((plan) => ["upper", "middle", "lower"].includes(plan.dangerZoneId)));
+  assert.deepEqual(plans.map((plan) => plan.avalancheCharges).filter((charges) => charges === 2).length, 3);
+  assert.deepEqual([plans[7].avalancheCharges, plans[15].avalancheCharges, plans[23].avalancheCharges], [2, 2, 2]);
   assert.ok(plans.every(Object.isFrozen));
-  assert.ok(plans.every((plan) => Object.isFrozen(plan.sectorIds)));
-  assert.deepEqual(createNorthernPassStormPlan(18), createNorthernPassStormPlan(18));
+  assert.ok(plans.every((plan) => Object.isFrozen(plan.routePoints) && Object.isFrozen(plan.zones)));
+  assert.deepEqual(createNorthernPassMechanicPlan(24), createNorthernPassMechanicPlan(24));
 
-  // Storm pressure and formation order replace global health inflation.
-  assert.deepEqual(
-    Array.from({ length: 18 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 1)
-      .spawns.reduce((total, spawn) => total + spawn.maxHp, 0)),
-    [304, 437, 578, 618, 965, 1531, 1697, 1215, 2004, 2147, 2846, 3814, 4181, 4954, 6772, 8315, 11658, 14657],
-  );
+  const actHealth = [0, 1, 2].map((actIndex) => Array.from({ length: 8 }, (_, offset) => (
+    NORTHERN_PASS_LEVEL.waves.createWave(actIndex * 8 + offset + 1).spawns
+      .reduce((total, spawn) => total + spawn.maxHp * (1 + spawn.frostArmorRatio), 0)
+  )).reduce((sum, value) => sum + value, 0));
+  assert.ok(actHealth[1] > actHealth[0] * 2);
+  assert.ok(actHealth[2] > actHealth[1] * 1.45);
 });
 
 test("mixed northern formations send bosses with an escort instead of as a final cleanup target", () => {
-  for (const waveValue of [6, 12, 18]) {
+  for (const waveValue of [8, 16, 24]) {
     const wave = NORTHERN_PASS_LEVEL.waves.createWave(waveValue);
     const bossIndex = wave.spawns.findIndex((spawn) => spawn.type === "boss" || spawn.type === "titan");
     assert.ok(bossIndex >= 0 && bossIndex < wave.spawns.length / 3, `wave ${waveValue} boss spawned too late`);
@@ -119,20 +123,46 @@ test("mixed northern formations send bosses with an escort instead of as a final
   }
 });
 
-test("northern pass geometry exposes a diagonal S route, viable build pads, and paired signal fires", () => {
+test("Northern Pass route variants materially shorten and reshape the road between acts", () => {
   assert.deepEqual(NORTHERN_PASS_LEVEL.route, NORTHERN_PASS_ROUTE);
   assert.deepEqual(NORTHERN_PASS_LEVEL.buildPads, NORTHERN_PASS_BUILD_PADS);
   assert.deepEqual(NORTHERN_PASS_LEVEL.heroAnchors, NORTHERN_PASS_HERO_ANCHORS);
-  assert.deepEqual(NORTHERN_PASS_LEVEL.signalFires, NORTHERN_PASS_SIGNAL_FIRES);
+  assert.deepEqual(NORTHERN_PASS_LEVEL.signalFires, []);
   assert.equal(NORTHERN_PASS_LEVEL.buildPads.length, 13);
   assert.equal(NORTHERN_PASS_LEVEL.heroAnchors.length, 3);
-  assert.equal(NORTHERN_PASS_LEVEL.signalFires.length, 3);
   assert.ok(NORTHERN_PASS_LEVEL.route.some((point, index, route) => index > 0 && point.x !== route[index - 1].x && point.y !== route[index - 1].y));
 
-  for (const [index, anchor] of NORTHERN_PASS_LEVEL.heroAnchors.entries()) {
-    const fire = NORTHERN_PASS_LEVEL.signalFires[index];
-    assert.ok(Math.hypot(anchor.x - fire.x, anchor.y - fire.y) <= 90, `signal fire ${index} is detached from its hero anchor`);
+  const lengths = Object.fromEntries(Object.entries(NORTHERN_PASS_ROUTE_VARIANTS)
+    .map(([id, route]) => [id, routeLength(route)]));
+  assert.ok(lengths.ravine < lengths.ridge * 0.96, "Act II must be more than a cosmetic route nudge");
+  assert.ok(lengths.summit < lengths.ravine * 0.78, "Act III must materially reduce firing time");
+  assert.deepEqual(NORTHERN_PASS_RAVINE_ROUTE.slice(0, 3), NORTHERN_PASS_ROUTE.slice(0, 3));
+  assert.deepEqual(NORTHERN_PASS_SUMMIT_ROUTE.slice(0, 3), NORTHERN_PASS_ROUTE.slice(0, 3));
+  assert.deepEqual(NORTHERN_PASS_RAVINE_ROUTE.slice(-3), NORTHERN_PASS_ROUTE.slice(-3));
+  assert.deepEqual(NORTHERN_PASS_SUMMIT_ROUTE.slice(-3), NORTHERN_PASS_ROUTE.slice(-3));
+  assert.ok(maxNearestVertexDistance(NORTHERN_PASS_ROUTE, NORTHERN_PASS_SUMMIT_ROUTE) >= 90);
+
+  for (const [variantId, route] of Object.entries(NORTHERN_PASS_ROUTE_VARIANTS)) {
+    for (const bridgePoint of [{ x: 149, y: 280 }, { x: 201, y: 280 }, { x: 253, y: 280 }]) {
+      assert.ok(
+        minimumDistanceToRoute(bridgePoint, route) <= 2,
+        `${variantId} route detaches from the authored ice bridge`,
+      );
+    }
+    for (const [padId, pad] of NORTHERN_PASS_BUILD_PADS.entries()) {
+      assert.ok(
+        minimumDistanceToRoute(pad, route) >= 40,
+        `${variantId} route crosses tower pad ${padId}`,
+      );
+    }
+    for (const [anchorId, anchor] of NORTHERN_PASS_HERO_ANCHORS.entries()) {
+      assert.ok(
+        minimumDistanceToRoute(anchor, route) >= 40,
+        `${variantId} route crosses hero anchor ${anchorId}`,
+      );
+    }
   }
+
   for (const pad of NORTHERN_PASS_LEVEL.buildPads) {
     const nearestOtherPad = Math.min(...NORTHERN_PASS_LEVEL.buildPads
       .filter((candidate) => candidate !== pad)
@@ -150,10 +180,10 @@ test("each level owns immutable progression milestones matching its campaign len
   });
   assert.deepEqual(NORTHERN_PASS_LEVEL.progression, NORTHERN_PASS_PROGRESSION);
   assert.deepEqual(NORTHERN_PASS_LEVEL.progression, {
-    heroUpgradeWaves: [3, 9],
-    masteryWave: 9,
-    awakeningWave: 14,
-    actSize: 6,
+    heroUpgradeWaves: [4, 12],
+    masteryWave: 14,
+    awakeningWave: 20,
+    actSize: 8,
   });
   for (const level of Object.values(CONTENT_CATALOG.levels)) {
     assert.equal(level.progression.actSize * 3, level.waves.finalWave);
@@ -176,13 +206,13 @@ test("every level exposes three immutable hero anchors clear of tower tap zones"
 
 test("campaign ruleset delegates waves and completion to the selected level", () => {
   assert.equal(CAMPAIGN_RULESET.getFinalWave(CLASSIC_CAMPAIGN_LEVEL), 24);
-  assert.equal(CAMPAIGN_RULESET.getFinalWave(NORTHERN_PASS_LEVEL), 18);
-  assert.equal(CAMPAIGN_RULESET.isComplete(NORTHERN_PASS_LEVEL, 17), false);
-  assert.equal(CAMPAIGN_RULESET.isComplete(NORTHERN_PASS_LEVEL, 18), true);
+  assert.equal(CAMPAIGN_RULESET.getFinalWave(NORTHERN_PASS_LEVEL), 24);
+  assert.equal(CAMPAIGN_RULESET.isComplete(NORTHERN_PASS_LEVEL, 23), false);
+  assert.equal(CAMPAIGN_RULESET.isComplete(NORTHERN_PASS_LEVEL, 24), true);
   assert.equal(CAMPAIGN_RULESET.calculateScore(24), 72);
   assert.deepEqual(
-    CAMPAIGN_RULESET.createWave(NORTHERN_PASS_LEVEL, 12),
-    NORTHERN_PASS_LEVEL.waves.createWave(12),
+    CAMPAIGN_RULESET.createWave(NORTHERN_PASS_LEVEL, 16),
+    NORTHERN_PASS_LEVEL.waves.createWave(16),
   );
 });
 
@@ -259,3 +289,32 @@ test("runtime validation executes wave adapters and rejects malformed spawn data
   assert.ok(errors.some((error) => error.includes("unknown type")));
   assert.ok(errors.some((error) => error.includes("positive maxHp")));
 });
+
+function routeLength(route) {
+  return route.slice(1).reduce((total, point, index) => (
+    total + Math.hypot(point.x - route[index].x, point.y - route[index].y)
+  ), 0);
+}
+
+function maxNearestVertexDistance(route, comparison) {
+  return Math.max(...route.map((point) => Math.min(...comparison.map((candidate) => (
+    Math.hypot(point.x - candidate.x, point.y - candidate.y)
+  )))));
+}
+
+function minimumDistanceToRoute(point, route) {
+  return Math.min(...route.slice(1).map((end, index) => pointToSegmentDistance(point, route[index], end)));
+}
+
+function pointToSegmentDistance(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const denominator = dx * dx + dy * dy;
+  const projection = denominator > 0
+    ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / denominator))
+    : 0;
+  return Math.hypot(
+    point.x - (start.x + projection * dx),
+    point.y - (start.y + projection * dy),
+  );
+}

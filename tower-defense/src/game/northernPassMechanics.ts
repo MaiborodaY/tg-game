@@ -1,76 +1,75 @@
 import type {
   DamageKind,
-  EnemyVariant,
-  NorthernStormPlan,
-  NorthernStormSectorId,
-  Point,
+  NorthernAvalancheZone,
+  NorthernAvalancheZoneId,
 } from "./types.ts";
 
-export const SIGNAL_FIRE_RADIUS = 124;
-export const FROST_ARMOR_FIRE_MULTIPLIER = 1.7;
-export const FROST_ARMOR_WARM_MULTIPLIER = 1.55;
-export const FROST_ARMOR_MAX_MULTIPLIER = 2.2;
-
-export const NORTHERN_STORM_SECTORS: readonly Readonly<{
-  id: NorthernStormSectorId;
-  startRatio: number;
-  endRatio: number;
-}>[] = Object.freeze([
-  Object.freeze({ id: "upper", startRatio: 0, endRatio: 0.45 }),
-  Object.freeze({ id: "middle", startRatio: 0.45, endRatio: 0.73 }),
-  Object.freeze({ id: "lower", startRatio: 0.73, endRatio: 1 }),
+export const NORTHERN_AVALANCHE_ZONES: readonly NorthernAvalancheZone[] = Object.freeze([
+  Object.freeze({ id: "upper", startRatio: 0, endRatio: 0.36 }),
+  Object.freeze({ id: "middle", startRatio: 0.36, endRatio: 0.7 }),
+  Object.freeze({ id: "lower", startRatio: 0.7, endRatio: 1 }),
 ]);
 
-const HERO_ANCHOR_SECTORS: readonly NorthernStormSectorId[] = Object.freeze(["upper", "middle", "lower"]);
+export const AVALANCHE_FROST_ARMOR_REMOVAL_RATIO = 1;
+export const AVALANCHE_BOSS_FROST_ARMOR_REMOVAL_RATIO = 0.9;
+export const AVALANCHE_STUN_MS = 2_000;
+export const AVALANCHE_BOSS_STUN_MS = 1_600;
+export const AVALANCHE_HEALING_INTERRUPT_MS = 3_500;
+export const FROST_ARMOR_FIRE_MULTIPLIER = 1.7;
 
-export type NorthernStormEffect = Readonly<{
-  sectorId: NorthernStormSectorId;
-  protected: boolean;
-  affected: boolean;
-  speedMultiplier: number;
-  controlResistanceBonus: number;
+export type NorthernAvalancheImpact = Readonly<{
+  frostArmorRemoved: number;
+  stunDurationMs: number;
+  healingInterrupted: boolean;
 }>;
 
-export function isInsideSignalFire(point: Point, fire: Point | null | undefined): boolean {
-  if (!fire) return false;
-  const dx = point.x - fire.x;
-  const dy = point.y - fire.y;
-  return dx * dx + dy * dy <= SIGNAL_FIRE_RADIUS * SIGNAL_FIRE_RADIUS;
+export function getNorthernAvalancheZone(zoneId: NorthernAvalancheZoneId): NorthernAvalancheZone {
+  const zone = NORTHERN_AVALANCHE_ZONES.find((candidate) => candidate.id === zoneId);
+  if (!zone) throw new RangeError(`Unknown Northern avalanche zone: ${zoneId}`);
+  return zone;
 }
 
-export function getFrostArmorDamageMultiplier(kind: DamageKind, insideWarmZone: boolean): number {
-  const fireMultiplier = kind === "fire" ? FROST_ARMOR_FIRE_MULTIPLIER : 1;
-  const warmMultiplier = insideWarmZone ? FROST_ARMOR_WARM_MULTIPLIER : 1;
-  return Math.min(FROST_ARMOR_MAX_MULTIPLIER, fireMultiplier * warmMultiplier);
-}
-
-export function getHeroProtectedStormSector(anchorId: number): NorthernStormSectorId | null {
-  return HERO_ANCHOR_SECTORS[anchorId] ?? null;
-}
-
-export function getStormSectorAtProgress(progress: number, totalLength: number): NorthernStormSectorId {
-  const ratio = totalLength > 0 ? Math.min(1, Math.max(0, progress / totalLength)) : 0;
-  return NORTHERN_STORM_SECTORS.find((sector) => ratio < sector.endRatio)?.id ?? "lower";
-}
-
-export function getNorthernStormEffect(
-  variant: EnemyVariant,
+export function getNorthernAvalancheZoneAtProgress(
   progress: number,
   totalLength: number,
-  activeHeroAnchorId: number,
-  plan: NorthernStormPlan | null | undefined,
-): NorthernStormEffect {
-  const sectorId = getStormSectorAtProgress(progress, totalLength);
-  const protectedSectorId = getHeroProtectedStormSector(activeHeroAnchorId);
-  const protectedByFire = protectedSectorId === sectorId;
-  const affected = Boolean(plan?.sectorIds.includes(sectorId) && !protectedByFire);
+): NorthernAvalancheZoneId {
+  const ratio = normalizeProgressRatio(progress, totalLength);
+  return NORTHERN_AVALANCHE_ZONES.find((zone) => ratio < zone.endRatio)?.id ?? "lower";
+}
+
+export function isProgressInsideNorthernAvalancheZone(
+  progress: number,
+  totalLength: number,
+  zoneId: NorthernAvalancheZoneId,
+): boolean {
+  return getNorthernAvalancheZoneAtProgress(progress, totalLength) === zoneId;
+}
+
+export function calculateNorthernAvalancheImpact(
+  frostArmor: number,
+  maxFrostArmor: number,
+  boss: boolean,
+  healer: boolean,
+): NorthernAvalancheImpact {
+  const armorRemovalRatio = boss
+    ? AVALANCHE_BOSS_FROST_ARMOR_REMOVAL_RATIO
+    : AVALANCHE_FROST_ARMOR_REMOVAL_RATIO;
   return Object.freeze({
-    sectorId,
-    protected: protectedByFire,
-    affected,
-    speedMultiplier: affected && variant === "snow-runner" ? 1 + (plan?.runnerSpeedBonus ?? 0) : 1,
-    controlResistanceBonus: affected && variant === "icebound"
-      ? plan?.iceboundControlResistanceBonus ?? 0
-      : 0,
+    frostArmorRemoved: Math.min(
+      Math.max(0, frostArmor),
+      Math.max(0, maxFrostArmor) * armorRemovalRatio,
+    ),
+    stunDurationMs: boss ? AVALANCHE_BOSS_STUN_MS : AVALANCHE_STUN_MS,
+    healingInterrupted: healer,
   });
+}
+
+/** Fire keeps its tower-role advantage, without depending on the removed signal-fire system. */
+export function getFrostArmorDamageMultiplier(kind: DamageKind): number {
+  return kind === "fire" ? FROST_ARMOR_FIRE_MULTIPLIER : 1;
+}
+
+function normalizeProgressRatio(progress: number, totalLength: number): number {
+  if (!Number.isFinite(progress) || !Number.isFinite(totalLength) || totalLength <= 0) return 0;
+  return Math.min(1, Math.max(0, progress / totalLength));
 }

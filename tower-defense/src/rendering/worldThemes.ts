@@ -21,7 +21,7 @@ export type ActVisualProfile = Readonly<{
 }>;
 
 export type WorldVisualTheme = Readonly<{
-  id: "forest-gate" | "northern-pass";
+  id: "forest-gate" | "northern-pass-v3";
   seed: number;
   ground: number;
   groundDeep: number;
@@ -86,7 +86,7 @@ const ACT_VISUAL_PROFILES = Object.freeze({
     2: Object.freeze({ veil: 0x5c3c78, veilAlpha: 0.08, portal: 0xa879e8, gateWard: 0x79d9ed, bossAccent: 0xc7a2f5, snowAlpha: 0, auroraAlpha: 0, stormAlpha: 0 }),
     3: Object.freeze({ veil: 0x8b3448, veilAlpha: 0.14, portal: 0xe05f78, gateWard: 0xffa168, bossAccent: 0xff7b72, snowAlpha: 0, auroraAlpha: 0, stormAlpha: 0 }),
   }),
-  "northern-pass": Object.freeze({
+  "northern-pass-v3": Object.freeze({
     1: Object.freeze({ veil: 0x24495e, veilAlpha: 0.025, portal: 0x75d7f5, gateWard: 0x8fe8ef, bossAccent: 0xe1fbff, snowAlpha: 0.18, auroraAlpha: 0, stormAlpha: 0 }),
     2: Object.freeze({ veil: 0x30486f, veilAlpha: 0.1, portal: 0xa0d8ff, gateWard: 0xb6e9ff, bossAccent: 0xd9edff, snowAlpha: 0.54, auroraAlpha: 0, stormAlpha: 0.18 }),
     3: Object.freeze({ veil: 0x244e61, veilAlpha: 0.08, portal: 0x91e8ef, gateWard: 0xa7f5dc, bossAccent: 0xffd1e6, snowAlpha: 0.32, auroraAlpha: 0.3, stormAlpha: 0.06 }),
@@ -115,7 +115,7 @@ const FOREST_GATE_THEME: WorldVisualTheme = Object.freeze({
 });
 
 const NORTHERN_PASS_THEME: WorldVisualTheme = Object.freeze({
-  id: "northern-pass",
+  id: "northern-pass-v3",
   seed: 41_903,
   ground: 0x14262e,
   groundDeep: 0x07151d,
@@ -137,7 +137,7 @@ const NORTHERN_PASS_THEME: WorldVisualTheme = Object.freeze({
 
 export const WORLD_VISUAL_THEMES = Object.freeze({
   "forest-gate": FOREST_GATE_THEME,
-  "northern-pass": NORTHERN_PASS_THEME,
+  "northern-pass-v3": NORTHERN_PASS_THEME,
 });
 
 export const FOREST_GATE_LANDMARKS = Object.freeze([
@@ -164,7 +164,7 @@ export function isPointWithinVisualRadius(point: Point, center: Point, radius: n
 }
 
 export function getWorldVisualTheme(levelId?: string): WorldVisualTheme {
-  return levelId === "northern-pass" ? NORTHERN_PASS_THEME : FOREST_GATE_THEME;
+  return levelId === "northern-pass-v3" ? NORTHERN_PASS_THEME : FOREST_GATE_THEME;
 }
 
 export function createWorldDecorationLayout(
@@ -173,14 +173,16 @@ export function createWorldDecorationLayout(
   width: number,
   height: number,
   reservedPoints: readonly Point[] = [],
+  additionalRoutes: readonly (readonly Point[])[] = [],
 ): WorldDecorationLayout {
   const rng = seededRandom(theme.seed);
-  const northern = theme.id === "northern-pass";
-  const clearings = createScatteredPoints(rng, northern ? 9 : 11, width, height, route, reservedPoints, 48, 50, 0.8, 1.45);
-  const groundDetails = createScatteredPoints(rng, northern ? 58 : 78, width, height, route, reservedPoints, 29, 22, 0.65, 1.25);
-  const shrubs = createScatteredPoints(rng, northern ? 21 : 34, width, height, route, reservedPoints, 38, 30, 0.72, 1.3);
-  const trees = createEdgePoints(rng, northern ? 8 : 10, width, height, route, reservedPoints);
-  const fireflies = createScatteredPoints(rng, northern ? 12 : 6, width, height, route, reservedPoints, 31, 24, 0.8, 1.15);
+  const northern = theme.id === "northern-pass-v3";
+  const routes = Object.freeze([route, ...additionalRoutes]);
+  const clearings = createScatteredPoints(rng, northern ? 9 : 11, width, height, routes, reservedPoints, 48, 50, 0.8, 1.45);
+  const groundDetails = createScatteredPoints(rng, northern ? 58 : 78, width, height, routes, reservedPoints, 29, 22, 0.65, 1.25);
+  const shrubs = createScatteredPoints(rng, northern ? 21 : 34, width, height, routes, reservedPoints, 38, 30, 0.72, 1.3);
+  const trees = createEdgePoints(rng, northern ? 8 : 10, width, height, routes, reservedPoints);
+  const fireflies = createScatteredPoints(rng, northern ? 12 : 6, width, height, routes, reservedPoints, 31, 24, 0.8, 1.15);
   return Object.freeze({ clearings, groundDetails, shrubs, trees, fireflies });
 }
 
@@ -221,7 +223,7 @@ function createScatteredPoints(
   targetCount: number,
   width: number,
   height: number,
-  route: readonly Point[],
+  routes: readonly (readonly Point[])[],
   reservedPoints: readonly Point[],
   routeClearance: number,
   reservedClearance: number,
@@ -237,7 +239,7 @@ function createScatteredPoints(
       scale: minScale + rng() * (maxScale - minScale),
       variant: Math.floor(rng() * 4),
     });
-    if (!isWorldPointClear(candidate, route, reservedPoints, routeClearance, reservedClearance)) continue;
+    if (!isWorldPointClear(candidate, routes, reservedPoints, routeClearance, reservedClearance)) continue;
     points.push(candidate);
   }
   return Object.freeze(points);
@@ -248,7 +250,7 @@ function createEdgePoints(
   targetCount: number,
   width: number,
   height: number,
-  route: readonly Point[],
+  routes: readonly (readonly Point[])[],
   reservedPoints: readonly Point[],
 ): readonly WorldDecorationPoint[] {
   const points: WorldDecorationPoint[] = [];
@@ -261,7 +263,7 @@ function createEdgePoints(
       scale: 0.82 + rng() * 0.42,
       variant: Math.floor(rng() * 4),
     });
-    if (!isWorldPointClear(candidate, route, reservedPoints, 40, 38)) continue;
+    if (!isWorldPointClear(candidate, routes, reservedPoints, 40, 38)) continue;
     if (points.some((point) => Math.hypot(point.x - candidate.x, point.y - candidate.y) < 42)) continue;
     points.push(candidate);
   }
@@ -270,12 +272,12 @@ function createEdgePoints(
 
 function isWorldPointClear(
   point: Point,
-  route: readonly Point[],
+  routes: readonly (readonly Point[])[],
   reservedPoints: readonly Point[],
   routeClearance: number,
   reservedClearance: number,
 ): boolean {
-  if (distanceToWorldRoute(point, route) < routeClearance) return false;
+  if (routes.some((route) => distanceToWorldRoute(point, route) < routeClearance)) return false;
   return reservedPoints.every((reserved) => Math.hypot(point.x - reserved.x, point.y - reserved.y) >= reservedClearance);
 }
 

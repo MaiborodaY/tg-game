@@ -14,10 +14,6 @@ import {
 } from "../game/content.ts";
 import { getHeroAura, getHeroStats } from "../game/heroes.ts";
 import {
-  NORTHERN_STORM_SECTORS,
-  getHeroProtectedStormSector,
-} from "../game/northernPassMechanics.ts";
-import {
   createPathMetrics,
   getPointAtDistance,
   getRouteAngleAtDistance,
@@ -40,7 +36,8 @@ import type {
   EnemyVariant,
   EnemyType,
   HeroId,
-  NorthernStormSectorId,
+  NorthernAvalancheZoneId,
+  Point,
   TowerPlacement,
   TowerType,
   WavePlan,
@@ -53,20 +50,23 @@ import {
   createHealPulse,
   createHitBurst,
   createLightningArc,
-  createNorthernStormSectorArt,
-  createSignalFireArt,
+  AVALANCHE_ZONE_HIT_SIZE,
+  createAvalancheZoneArt,
+  playAvalancheCollapse,
+  sampleAvalancheRouteSegment,
+  selectAvalancheMarkerPoint,
   createSummonBurst,
   createTowerArt,
   drawWorld,
   playTowerConstructionEffect,
-  setSignalFireState,
-  setNorthernStormSectorState,
+  setAvalancheZoneAct,
+  setAvalancheZoneState,
   setWorldAct,
+  setWorldRoute,
   setTowerAuraMarker,
   updateEnemyArtPose,
   type EnemyArt,
-  type NorthernStormSectorArt,
-  type SignalFireArt,
+  type AvalancheZoneArt,
   type TowerArt,
   type WorldArt,
 } from "./art.ts";
@@ -93,6 +93,9 @@ export type NoticeCode = CampaignError
   | "hero_ability_target_required"
   | "invalid_hero_ability_target"
   | "hero_awakening_unlocked"
+  | "invalid_avalanche_zone"
+  | "avalanche_unavailable"
+  | "avalanche_empty_zone"
   | "select_pad"
   | "pulse_used";
 
@@ -127,6 +130,7 @@ export type TowerDefenseUiState = Readonly<{
     shieldRatio: number;
     enraged: boolean;
   }> | null;
+  northernPass: ReturnType<GameSimulation["readView"]>["northernPass"];
 }>;
 
 export type TowerDefenseCallbacks = Readonly<{
@@ -177,8 +181,8 @@ type HeroAnchorRenderView = {
   hitZone: Phaser.GameObjects.Zone;
 };
 
-type SignalFireRenderView = {
-  art: SignalFireArt;
+type AvalancheZoneRenderView = {
+  art: AvalancheZoneArt;
   hitZone: Phaser.GameObjects.Zone;
 };
 
@@ -198,7 +202,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private readonly level: LevelDefinition;
   private readonly mode: ModeRuleset;
   private readonly simulation: GameSimulation;
-  private readonly path;
+  private path;
   private selectedBuildType: TowerType | null;
   private selectedPadId: number | null = null;
   private selectedHero = false;
@@ -211,10 +215,10 @@ export class TowerDefenseScene extends Phaser.Scene {
   private readonly enemyArtPool = new Map<string, EnemyArt[]>();
   private readonly projectilePool = new Map<TowerType, ProjectileObject[]>();
   private readonly heroAnchorViews = new Map<number, HeroAnchorRenderView>();
-  private readonly signalFireViews = new Map<number, SignalFireRenderView>();
-  private readonly northernStormSectorViews = new Map<NorthernStormSectorId, NorthernStormSectorArt>();
-  private northernStormPlanWave = -1;
-  private northernStormPlan: WavePlan["northernStorm"];
+  private readonly avalancheZoneViews = new Map<NorthernAvalancheZoneId, AvalancheZoneRenderView>();
+  private avalancheRouteHighlight?: Phaser.GameObjects.Graphics;
+  private avalancheRouteHighlightKey: string | null = null;
+  private northernRouteVariantId: string | null = null;
   private heroView?: HeroRenderView;
   private heroEffects?: HeroEffectPool;
   private lastHeroAttackAtMs = -1_000;
@@ -244,11 +248,14 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   create(): void {
     this.input.enabled = this.interactionEnabled;
+    const initialView = this.simulation.readView();
     this.worldArt = drawWorld(this, this.level);
+    if (initialView.northernPass) {
+      this.applyNorthernRoute(initialView.northernPass.routePoints, initialView.northernPass.routeVariantId);
+    }
     setWorldAct(this, this.worldArt, this.simulation.getCurrentWavePlan().act);
     this.heroEffects = createHeroEffectPool(this);
-    this.createNorthernStormSectors();
-    this.createSignalFires();
+    this.createAvalancheZones(initialView);
     this.createHeroAnchors();
     this.createBuildPads();
     this.syncTowerViews();
@@ -485,26 +492,51 @@ export class TowerDefenseScene extends Phaser.Scene {
     });
   }
 
-  private createSignalFires(): void {
-    this.level.signalFires?.forEach((point, anchorId) => {
-      const art = createSignalFireArt(this, point);
-      const hitZone = this.add.zone(point.x, point.y, 68, 68)
+  private createAvalancheZones(view: ReturnType<GameSimulation["readView"]>): void {
+    if (!view.northernPass) return;
+    this.avalancheRouteHighlight = this.add.graphics()
+      .setDepth(-15.5)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    view.northernPass.avalanche.zones.forEach((zone, index) => {
+      const point = this.getAvalancheZonePoint(zone.startRatio, zone.endRatio);
+      const art = createAvalancheZoneArt(this, point, index, this.simulation.getCurrentWavePlan().act);
+      const hitZone = this.add.zone(point.x, point.y, AVALANCHE_ZONE_HIT_SIZE, AVALANCHE_ZONE_HIT_SIZE)
         .setInteractive({ useHandCursor: true })
         .setDepth(2_040);
       if (hitZone.input) hitZone.input.enabled = false;
-      hitZone.on("pointerdown", () => this.handleSignalFireClick(anchorId));
-      this.signalFireViews.set(anchorId, { art, hitZone });
+      hitZone.on("pointerdown", () => this.handleAvalancheClick(zone.id));
+      this.avalancheZoneViews.set(zone.id, { art, hitZone });
     });
   }
 
-  private createNorthernStormSectors(): void {
-    if (this.level.id !== NORTHERN_PASS_LEVEL_ID) return;
-    NORTHERN_STORM_SECTORS.forEach((sector, index) => {
-      this.northernStormSectorViews.set(
-        sector.id,
-        createNorthernStormSectorArt(this, this.path, sector, index),
-      );
-    });
+  private getAvalancheZonePoint(startRatio: number, endRatio: number): Point {
+    return selectAvalancheMarkerPoint(
+      this.path.points,
+      startRatio,
+      endRatio,
+      [...this.level.buildPads, ...this.level.heroAnchors],
+      this.level.width,
+      this.level.height,
+    );
+  }
+
+  private applyNorthernRoute(routePoints: readonly Point[], routeVariantId: string): void {
+    this.path = createPathMetrics(routePoints);
+    this.northernRouteVariantId = routeVariantId;
+    if (this.worldArt) setWorldRoute(this.worldArt, routePoints);
+    this.repositionAvalancheZones();
+  }
+
+  private repositionAvalancheZones(): void {
+    const northernPass = this.simulation.readView().northernPass;
+    if (!northernPass) return;
+    for (const zone of northernPass.avalanche.zones) {
+      const renderView = this.avalancheZoneViews.get(zone.id);
+      if (!renderView) continue;
+      const point = this.getAvalancheZonePoint(zone.startRatio, zone.endRatio);
+      renderView.art.container.setPosition(point.x, point.y);
+      renderView.hitZone.setPosition(point.x, point.y);
+    }
   }
 
   private handleHeroClick(): void {
@@ -518,14 +550,21 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.emitUi(true);
   }
 
-  private handleSignalFireClick(anchorId: number): void {
-    const view = this.simulation.readView();
-    if (view.phase !== "setup" || anchorId === view.hero.anchorId) return;
-    this.selectedHero = true;
-    this.selectedBuildType = null;
-    this.selectedPadId = null;
-    this.updatePadVisuals();
-    this.handleHeroAnchorClick(anchorId);
+  private handleAvalancheClick(zoneId: NorthernAvalancheZoneId): void {
+    const result = this.simulation.executeCommand({ type: "trigger_northern_avalanche", zoneId });
+    if (!result.ok) {
+      const notice = result.error === "invalid_avalanche_zone"
+        || result.error === "avalanche_empty_zone"
+        || result.error === "avalanche_unavailable"
+        ? result.error
+        : "avalanche_unavailable";
+      this.callbacks.onNotice(notice);
+      this.callbacks.onHaptic("error");
+      return;
+    }
+    this.processSimulationEvents();
+    this.syncRenderState();
+    this.emitUi(true);
   }
 
   private handleHeroAnchorClick(anchorId: number): void {
@@ -675,48 +714,68 @@ export class TowerDefenseScene extends Phaser.Scene {
       setHeroAnchorState(anchor.art, state);
       if (anchor.hitZone.input) anchor.hitZone.input.enabled = anchorsAvailable && anchorId !== view.hero.anchorId;
     }
-    this.updateNorthernStormVisuals(view);
   }
 
-  private updateNorthernStormVisuals(view: ReturnType<GameSimulation["readView"]>): void {
-    if (this.northernStormSectorViews.size === 0 && this.signalFireViews.size === 0) return;
-    const plan = this.resolveNorthernStormPlan(view);
-    const threatened = new Set(plan?.sectorIds ?? []);
-    const protectedSector = getHeroProtectedStormSector(view.hero.anchorId);
-
-    for (const [sectorId, art] of this.northernStormSectorViews) {
-      const state = sectorId === protectedSector
-        ? "protected"
-        : threatened.has(sectorId) ? "threatened" : "calm";
-      setNorthernStormSectorState(art, state);
+  private syncNorthernPassVisuals(view: ReturnType<GameSimulation["readView"]>): void {
+    const northernPass = view.northernPass;
+    if (!northernPass) return;
+    if (this.northernRouteVariantId !== northernPass.routeVariantId) {
+      this.applyNorthernRoute(northernPass.routePoints, northernPass.routeVariantId);
     }
-
-    for (const [anchorId, fire] of this.signalFireViews) {
-      const sectorId = NORTHERN_STORM_SECTORS[anchorId]?.id;
-      const selected = anchorId === view.hero.anchorId;
-      const selectable = view.phase === "setup" && !selected;
-      const state = selected
-        ? view.phase === "setup" ? "active" : "protected"
-        : selectable ? "available" : sectorId && threatened.has(sectorId) ? "threatened" : "idle";
-      setSignalFireState(fire.art, state);
-      if (fire.hitZone.input) fire.hitZone.input.enabled = selectable;
+    const act = (view.wavePlan ?? this.simulation.getCurrentWavePlan()).act;
+    const avalanche = northernPass.avalanche;
+    this.drawAvalancheRouteHighlight(northernPass);
+    const interactive = view.phase === "wave"
+      && !view.paused
+      && avalanche.available
+      && avalanche.chargesRemaining > 0;
+    for (const zone of avalanche.zones) {
+      const renderView = this.avalancheZoneViews.get(zone.id);
+      if (!renderView) continue;
+      const state = avalanche.chargesRemaining <= 0
+        ? "spent"
+        : zone.id === northernPass.forecastDangerZoneId && zone.canTrigger ? "armed" : "available";
+      setAvalancheZoneAct(renderView.art, act);
+      setAvalancheZoneState(renderView.art, state);
+      renderView.art.container.setAlpha(
+        avalanche.chargesRemaining <= 0 || zone.id === northernPass.forecastDangerZoneId ? 1 : 0.46,
+      );
+      if (renderView.hitZone.input) {
+        renderView.hitZone.input.enabled = interactive && zone.id === northernPass.forecastDangerZoneId;
+      }
     }
   }
 
-  private resolveNorthernStormPlan(view: ReturnType<GameSimulation["readView"]>): WavePlan["northernStorm"] {
-    if (this.level.id !== NORTHERN_PASS_LEVEL_ID) return undefined;
-    const wave = view.wavePlan?.wave ?? view.campaign.completedWave + 1;
-    if (view.wavePlan?.northernStorm) {
-      this.northernStormPlanWave = wave;
-      this.northernStormPlan = view.wavePlan.northernStorm;
-      return this.northernStormPlan;
-    }
-    if (view.phase !== "setup") return undefined;
-    if (this.northernStormPlanWave !== wave) {
-      this.northernStormPlanWave = wave;
-      this.northernStormPlan = this.simulation.getCurrentWavePlan().northernStorm;
-    }
-    return this.northernStormPlan;
+  private drawAvalancheRouteHighlight(
+    northernPass: NonNullable<ReturnType<GameSimulation["readView"]>["northernPass"]>,
+  ): void {
+    const graphics = this.avalancheRouteHighlight;
+    if (!graphics) return;
+    const available = northernPass.avalanche.chargesRemaining > 0;
+    const zone = northernPass.avalanche.zones.find((candidate) => (
+      candidate.id === northernPass.forecastDangerZoneId
+    ));
+    const renderKey = `${northernPass.routeVariantId}:${northernPass.forecastDangerZoneId}:${zone?.canTrigger === true}:${available}`;
+    if (renderKey === this.avalancheRouteHighlightKey) return;
+    this.avalancheRouteHighlightKey = renderKey;
+    graphics.clear();
+    if (!available || !zone) return;
+    const points = sampleAvalancheRouteSegment(this.path.points, zone.startRatio, zone.endRatio);
+    const armed = zone.canTrigger;
+    const color = armed ? 0xffd47c : 0x8ee9f1;
+    const stroke = (width: number, alpha: number) => {
+      graphics.lineStyle(width, color, alpha).beginPath().moveTo(points[0].x, points[0].y);
+      for (let index = 1; index < points.length; index += 1) {
+        graphics.lineTo(points[index].x, points[index].y);
+      }
+      graphics.strokePath();
+    };
+    stroke(12, armed ? 0.2 : 0.1);
+    stroke(2.5, armed ? 0.82 : 0.52);
+    const last = points[points.length - 1] ?? points[0];
+    graphics.fillStyle(color, armed ? 0.88 : 0.62)
+      .fillCircle(points[0].x, points[0].y, 4)
+      .fillCircle(last.x, last.y, 4);
   }
 
   private createBuildPads(): void {
@@ -965,6 +1024,29 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.callbacks.onHaptic(event.kind);
       return;
     }
+    if (event.type === "northern_route_changed") {
+      this.applyNorthernRoute(event.routePoints, event.routeVariantId);
+      return;
+    }
+    if (event.type === "northern_avalanche") {
+      const zone = this.avalancheZoneViews.get(event.zoneId);
+      if (zone) playAvalancheCollapse(this, zone.art);
+      for (const impact of event.impacts.slice(0, 8)) {
+        createHitBurst(this, impact.x, impact.y, 0xdffaff, impact.boss ? 32 : 24, 3);
+        if (impact.frostArmorRemoved > 0) {
+          createFloatingText(
+            this,
+            impact.x,
+            impact.y - 22,
+            `-${Math.round(impact.frostArmorRemoved)}`,
+            "#e6fdff",
+          );
+        }
+      }
+      this.cameras.main.shake(210, 0.006);
+      this.callbacks.onHaptic("heavy");
+      return;
+    }
     if (event.type === "boss_spawned") {
       const boss = this.simulation.readView().enemies.find((enemy) => enemy.type === "boss" || enemy.type === "titan");
       if (boss) createBossArrivalEffect(this, boss, boss.bossTier, this.worldArt?.themeId);
@@ -1137,6 +1219,7 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   private syncRenderState(): void {
     const view = this.simulation.readView();
+    this.syncNorthernPassVisuals(view);
     this.syncHeroView();
     this.syncEnemyViews(view.enemies, view.simulationTimeMs);
     this.syncProjectileViews(view.projectiles);
@@ -1347,6 +1430,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       pulseAvailable: view.pulseAvailable,
       act: plan.act,
       threat: plan.threat,
+      northernPass: view.northernPass,
       boss: boss && (boss.type === "boss" || boss.type === "titan")
         ? Object.freeze({
             type: boss.type,

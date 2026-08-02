@@ -67,13 +67,13 @@ test("an unlocked Grak run remains resumable without rechecking profile transpor
 test("callers can pin a checkpoint to the expected level and mode", () => {
   const storage = memoryStorage();
   const key = getCampaignSaveKey("reward-run");
-  const endless = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: ENDLESS_RULESET });
-  assert.equal(saveCampaign(storage, key, endless), true);
+  const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET });
+  assert.equal(saveCampaign(storage, key, northern), true);
 
   assert.deepEqual(loadCampaign(storage, key, {
     levelId: NORTHERN_PASS_LEVEL.id,
-    modeId: ENDLESS_RULESET.id,
-  }), endless);
+    modeId: CAMPAIGN_RULESET.id,
+  }), northern);
   assert.equal(loadCampaign(storage, key, {
     levelId: CLASSIC_CAMPAIGN_LEVEL.id,
     modeId: CAMPAIGN_RULESET.id,
@@ -106,27 +106,23 @@ test("corrupted saves are rejected and tower coordinates are strictly sanitized"
   assert.equal(sanitizeCampaign({ ...createCampaignState(), hero: { id: "eira", level: 1, anchorId: 99 } }), null);
 });
 
-test("v4 saves migrate through the physical fallback key for every level and mode", () => {
+test("legacy Northern Pass v4 saves are rejected instead of resuming removed mechanics", () => {
   const storage = memoryStorage();
   const current = {
-    ...createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: ENDLESS_RULESET, heroId: "toren" }),
+    ...createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET, heroId: "toren" }),
+    levelId: "northern-pass",
     completedWave: 17,
     gold: 777,
     towers: [{ padId: 4, type: "storm", level: 3 }],
   };
   const { hero: _hero, ...legacy } = current;
-  const oldKey = "td-save-v4:local:northern-pass:endless";
-  const newKey = createLocalCampaignSaveKey("northern-pass", "endless");
+  const oldKey = "td-save-v4:local:northern-pass:campaign";
+  const newKey = createLocalCampaignSaveKey("northern-pass", "campaign");
   storage.setItem(oldKey, JSON.stringify({ ...legacy, version: 4 }));
 
-  const migrated = loadCampaign(storage, newKey, { levelId: "northern-pass", modeId: "endless" });
-  assert.equal(migrated.version, 5);
-  assert.equal(migrated.completedWave, 17);
-  assert.equal(migrated.gold, 777);
-  assert.deepEqual(migrated.towers, current.towers);
-  assert.deepEqual(migrated.hero, { id: "eira", level: 1, anchorId: 0 });
-  assert.equal(storage.getItem(oldKey), null);
-  assert.deepEqual(JSON.parse(storage.getItem(newKey)), migrated);
+  assert.equal(loadCampaign(storage, newKey, { levelId: "northern-pass", modeId: "campaign" }), null);
+  assert.notEqual(storage.getItem(oldKey), null, "rejected data is not silently rewritten as v3 content");
+  assert.equal(storage.getItem(newKey), null);
 });
 
 test("a mismatched v4 reward checkpoint cannot bypass the expected server binding", () => {
@@ -170,10 +166,11 @@ test("saved progress can never exceed the finite campaign score", () => {
 
 test("run saves respect the selected level and endless completion boundaries", () => {
   const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET });
-  assert.equal(sanitizeCampaign({ ...northern, completedWave: 999 }).completedWave, 18);
-  assert.equal(sanitizeCampaign({ ...northern, lives: 999 }).lives, 15);
+  assert.equal(sanitizeCampaign({ ...northern, completedWave: 999 }).completedWave, 24);
+  assert.equal(sanitizeCampaign({ ...northern, lives: 999 }).lives, 8);
+  assert.equal(sanitizeCampaign({ ...northern, levelId: "northern-pass" }), null);
 
-  const endless = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: ENDLESS_RULESET });
+  const endless = createCampaignState({ level: CLASSIC_CAMPAIGN_LEVEL, mode: ENDLESS_RULESET });
   assert.equal(sanitizeCampaign({ ...endless, completedWave: 127 }).completedWave, 127);
   assert.equal(sanitizeCampaign({ ...endless, completedWave: MAX_ENDLESS_WAVE + 1 }).completedWave, MAX_ENDLESS_WAVE);
   assert.equal(sanitizeCampaign({ ...endless, levelId: "missing" }), null);

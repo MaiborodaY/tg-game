@@ -6,7 +6,7 @@ import {
   sampleEnemyMotion,
   type EnemyMotionPose,
 } from "./enemyVisuals.ts";
-import { drawWorld, setWorldAct, type WorldArt, type WorldDefinition } from "./worldArt.ts";
+import { drawWorld, setWorldAct, setWorldRoute, type WorldArt, type WorldDefinition } from "./worldArt.ts";
 import {
   getActVisualProfile,
   getTowerTierVisualProfile,
@@ -14,26 +14,22 @@ import {
   type WorldVisualTheme,
 } from "./worldThemes.ts";
 
-export { drawWorld, setWorldAct, type WorldArt, type WorldDefinition };
+export { drawWorld, setWorldAct, setWorldRoute, type WorldArt, type WorldDefinition };
 export {
-  SIGNAL_FIRE_RADIUS,
-  createSignalFireArt,
-  getSignalFireVisualProfile,
-  setSignalFireState,
-  type SignalFireArt,
-  type SignalFireState,
-  type SignalFireVisualProfile,
-} from "./signalFireArt.ts";
-export {
-  createNorthernStormSectorArt,
-  setNorthernStormSectorState,
-  type NorthernStormSectorArt,
-} from "./northernStormArt.ts";
-export {
-  getNorthernStormVisualProfile,
-  type NorthernStormVisualProfile,
-  type NorthernStormVisualState,
-} from "./northernStormVisuals.ts";
+  AVALANCHE_ZONE_HIT_SIZE,
+  createAvalancheZoneArt,
+  getAvalancheActVisualProfile,
+  getAvalancheZoneVisualProfile,
+  playAvalancheCollapse,
+  sampleAvalancheRouteSegment,
+  selectAvalancheMarkerPoint,
+  setAvalancheZoneAct,
+  setAvalancheZoneState,
+  type AvalancheActVisualProfile,
+  type AvalancheZoneArt,
+  type AvalancheZoneState,
+  type AvalancheZoneVisualProfile,
+} from "./avalancheArt.ts";
 export { getTowerTierVisualProfile, type TowerTierVisualProfile };
 
 export type TowerAuraKind = "tower_damage" | "tower_attack_speed";

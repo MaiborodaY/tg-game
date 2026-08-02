@@ -29,10 +29,10 @@ test("new runs bind transient state to a versioned level and mode", () => {
 
   const northern = createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET });
   assert.equal(northern.gold, 190);
-  assert.equal(northern.lives, 15);
+  assert.equal(northern.lives, 8);
   assert.equal(buildTower(northern, 12, "ranger").ok, true);
   assert.equal(buildTower(northern, 13, "ranger").error, "invalid_pad");
-  assert.equal(repairLives({ ...northern, lives: 10 }, 99).lives, 15);
+  assert.equal(repairLives({ ...northern, lives: 3 }, 99).lives, 8);
 });
 
 test("heroes move freely in setup state and upgrade through wave-gated gold costs", () => {

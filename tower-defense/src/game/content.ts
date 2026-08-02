@@ -17,7 +17,6 @@ import {
   NORTHERN_PASS_HERO_ANCHORS,
   NORTHERN_PASS_PROGRESSION,
   NORTHERN_PASS_ROUTE,
-  NORTHERN_PASS_SIGNAL_FIRES,
   createNorthernPassWave,
 } from "./northernPassContent.ts";
 import { createWavePlan } from "./waves.ts";
@@ -25,7 +24,8 @@ import { createWavePlan } from "./waves.ts";
 export const CONTENT_VERSION = 2 as const;
 
 export const CLASSIC_CAMPAIGN_LEVEL_ID = "forest-gate";
-export const NORTHERN_PASS_LEVEL_ID = "northern-pass";
+export const LEGACY_NORTHERN_PASS_LEVEL_ID = "northern-pass";
+export const NORTHERN_PASS_LEVEL_ID = "northern-pass-v3";
 export const CAMPAIGN_MODE_ID = "campaign";
 export const ENDLESS_MODE_ID = "endless";
 export const MAX_ENDLESS_WAVE = 1_000_000;
@@ -109,7 +109,7 @@ export const CLASSIC_CAMPAIGN_LEVEL = defineLevel({
 export { createNorthernPassWave } from "./northernPassContent.ts";
 
 const northernPassWaveSource = defineWaveSource(
-  "northern-pass-campaign-v2",
+  "northern-pass-campaign-v3",
   NORTHERN_PASS_FINAL_WAVE,
   createNorthernPassWave,
 );
@@ -120,11 +120,11 @@ export const NORTHERN_PASS_LEVEL = defineLevel({
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   startingGold: 190,
-  startingLives: 15,
+  startingLives: 8,
   route: NORTHERN_PASS_ROUTE,
   buildPads: NORTHERN_PASS_BUILD_PADS,
   heroAnchors: NORTHERN_PASS_HERO_ANCHORS,
-  signalFires: NORTHERN_PASS_SIGNAL_FIRES,
+  signalFires: [],
   progression: NORTHERN_PASS_PROGRESSION,
   waves: northernPassWaveSource,
 });

@@ -4,25 +4,27 @@ import type {
   EnemyType,
   EnemyVariant,
   LevelProgression,
-  NorthernStormPlan,
-  NorthernStormSectorId,
+  NorthernAvalancheZoneId,
+  NorthernPassWavePlan,
+  NorthernRouteVariantId,
   Point,
   WavePlan,
   WaveSpawn,
 } from "./types.ts";
+import { NORTHERN_AVALANCHE_ZONES } from "./northernPassMechanics.ts";
 
-export const NORTHERN_PASS_FINAL_WAVE = 18;
+export const NORTHERN_PASS_FINAL_WAVE = 24;
 
 export const NORTHERN_PASS_PROGRESSION: LevelProgression = Object.freeze({
-  heroUpgradeWaves: Object.freeze([3, 9]) as readonly [number, number],
-  masteryWave: 9,
-  awakeningWave: 14,
-  actSize: 6,
+  heroUpgradeWaves: Object.freeze([4, 12]) as readonly [number, number],
+  masteryWave: 14,
+  awakeningWave: 20,
+  actSize: 8,
 });
 
 // A diagonal three-turn ascent keeps the familiar S readability while making
 // the pass visually and tactically distinct from Forest Gate's square lanes.
-export const NORTHERN_PASS_ROUTE: readonly Point[] = freezePoints([
+export const NORTHERN_PASS_RIDGE_ROUTE: readonly Point[] = freezePoints([
   { x: -24, y: 54 },
   { x: 68, y: 54 },
   { x: 118, y: 104 },
@@ -42,6 +44,36 @@ export const NORTHERN_PASS_ROUTE: readonly Point[] = freezePoints([
   { x: 190, y: 530 },
 ]);
 
+export const NORTHERN_PASS_RAVINE_ROUTE: readonly Point[] = freezePoints([
+  { x: -24, y: 54 }, { x: 68, y: 54 }, { x: 118, y: 104 },
+  { x: 320, y: 104 }, { x: 354, y: 144 }, { x: 314, y: 188 },
+  // Act II moves both switchbacks into the inner ravine corridors. Existing
+  // central pads stay useful while the road visibly stops hugging the cliffs.
+  { x: 104, y: 188 }, { x: 104, y: 280 }, { x: 310, y: 280 },
+  { x: 310, y: 372 }, { x: 118, y: 372 }, { x: 78, y: 418 },
+  { x: 122, y: 462 }, { x: 190, y: 462 },
+  { x: 190, y: 530 },
+]);
+
+export const NORTHERN_PASS_SUMMIT_ROUTE: readonly Point[] = freezePoints([
+  { x: -24, y: 54 }, { x: 68, y: 54 }, { x: 118, y: 104 },
+  // Act III opens a dangerous eastern chute and removes one whole shelf. The
+  // summit cut still crosses the authored ice bridge before its western drop.
+  { x: 320, y: 104 }, { x: 354, y: 144 }, { x: 314, y: 188 },
+  { x: 314, y: 280 }, { x: 82, y: 280 }, { x: 82, y: 372 },
+  { x: 118, y: 372 }, { x: 78, y: 418 },
+  { x: 122, y: 462 }, { x: 190, y: 462 },
+  { x: 190, y: 530 },
+]);
+
+export const NORTHERN_PASS_ROUTE = NORTHERN_PASS_RIDGE_ROUTE;
+
+export const NORTHERN_PASS_ROUTE_VARIANTS: Readonly<Record<NorthernRouteVariantId, readonly Point[]>> = Object.freeze({
+  ridge: NORTHERN_PASS_RIDGE_ROUTE,
+  ravine: NORTHERN_PASS_RAVINE_ROUTE,
+  summit: NORTHERN_PASS_SUMMIT_ROUTE,
+});
+
 export const NORTHERN_PASS_BUILD_PADS: readonly Point[] = freezePoints([
   { x: 30, y: 125 },
   { x: 168, y: 54 },
@@ -59,15 +91,9 @@ export const NORTHERN_PASS_BUILD_PADS: readonly Point[] = freezePoints([
 ]);
 
 export const NORTHERN_PASS_HERO_ANCHORS: readonly Point[] = freezePoints([
-  { x: 24, y: 258 },
-  { x: 366, y: 350 },
+  { x: 18, y: 264 },
+  { x: 376, y: 360 },
   { x: 284, y: 510 },
-]);
-
-export const NORTHERN_PASS_SIGNAL_FIRES: readonly Point[] = freezePoints([
-  { x: 26, y: 218 },
-  { x: 364, y: 382 },
-  { x: 230, y: 492 },
 ]);
 
 type NorthernWaveGroup = Readonly<{
@@ -95,13 +121,10 @@ type NorthernWaveBlueprint = Readonly<{
   mixedFormation: boolean;
 }>;
 
-const NORTHERN_STORM_SCHEDULE: readonly (readonly NorthernStormSectorId[])[] = Object.freeze([
-  sectors("upper"), sectors("middle"), sectors("lower"),
-  sectors("upper"), sectors("middle"), sectors("lower"),
-  sectors("upper", "middle"), sectors("middle", "lower"), sectors("upper", "lower"),
-  sectors("middle", "lower"), sectors("upper", "middle"), sectors("upper", "lower"),
-  sectors("middle", "lower"), sectors("upper", "lower"), sectors("upper", "middle"),
-  sectors("middle", "lower"), sectors("upper", "lower"), sectors("upper", "middle", "lower"),
+const NORTHERN_DANGER_ZONE_SCHEDULE: readonly NorthernAvalancheZoneId[] = Object.freeze([
+  "upper", "upper", "middle", "lower", "upper", "middle", "lower", "middle",
+  "upper", "middle", "lower", "upper", "middle", "lower", "upper", "middle",
+  "lower", "upper", "middle", "lower", "upper", "middle", "lower", "middle",
 ]);
 
 const standard = (type: EnemyType, count: number, options: Omit<NorthernWaveGroup, "type" | "count"> = {}): NorthernWaveGroup => (
@@ -117,34 +140,61 @@ const icebound = (type: EnemyType, count: number, frostArmorRatio: number, optio
 );
 
 const NORTHERN_PASS_WAVES: readonly NorthernWaveBlueprint[] = Object.freeze([
-  wave(1.00, 1.00, 760, 30, 1, [standard("raider", 8)]),
-  wave(1.08, 1.00, 720, 34, 1, [standard("raider", 7), runner("swift", 5)]),
-  wave(1.18, 1.00, 700, 38, 1, [standard("raider", 8), icebound("brute", 2, 0.18)]),
-  wave(1.30, 1.00, 660, 44, 2, [runner("swift", 9), standard("raider", 6)], true),
-  wave(1.45, 0.96, 640, 50, 2, [standard("raider", 8), runner("swift", 6), icebound("warden", 3, 0.24)], true),
-  wave(1.70, 0.94, 620, 78, 2, [standard("raider", 8), icebound("boss", 1, 0.42, { hpScale: 1.08 }), runner("swift", 5)], true),
+  wave(1.00, 1.00, 760, 24, 1, [standard("raider", 8)]),
+  wave(1.08, 0.95, 700, 27, 1, [standard("raider", 6), runner("swift", 5)]),
+  wave(1.18, 0.92, 680, 30, 1, [standard("raider", 8), icebound("brute", 3, 0.18)]),
+  wave(1.32, 0.90, 630, 34, 2, [runner("swift", 8), standard("raider", 7)], true),
+  wave(1.48, 0.86, 600, 38, 2, [standard("raider", 8), runner("swift", 6), icebound("warden", 4, 0.24)], true),
+  wave(1.68, 0.82, 570, 42, 2, [standard("raider", 8), icebound("brute", 5, 0.26), standard("shaman", 1)], true),
+  wave(1.90, 0.78, 540, 46, 3, [runner("swift", 10), icebound("warden", 5, 0.3), standard("raider", 8)], true),
+  wave(2.15, 0.75, 520, 70, 3, [
+    runner("swift", 3, { gapAfterMs: 0 }), icebound("brute", 3, 0.32, { gapAfterMs: 0 }),
+    icebound("boss", 1, 0.44, { hpScale: 1.05, gapAfterMs: 0 }),
+    standard("raider", 6, { gapAfterMs: 0 }), runner("swift", 5, { gapAfterMs: 0 }),
+    standard("shaman", 1, { gapAfterMs: 0 }),
+  ]),
 
-  wave(1.82, 0.81, 530, 53, 3, [standard("raider", 9), runner("swift", 8), icebound("brute", 4, 0.24)], true),
-  wave(2.02, 0.79, 515, 58, 3, [runner("swift", 10), icebound("warden", 5, 0.3)], true),
-  wave(2.24, 0.77, 505, 63, 3, [standard("raider", 10), runner("swift", 8), icebound("bulwark", 2, 0.36)], true),
-  wave(2.48, 0.76, 485, 70, 3, [runner("swift", 9), icebound("brute", 5, 0.28), standard("shaman", 2)], true),
-  wave(2.76, 0.74, 470, 77, 4, [standard("raider", 9), runner("shade", 8), icebound("warden", 5, 0.34)], true),
-  wave(3.12, 0.72, 460, 104, 4, [icebound("bulwark", 4, 0.42), icebound("boss", 1, 0.52, { hpScale: 1.16, healingRadius: 118, healingRatio: 0.04 }), standard("shaman", 2)], true),
+  wave(2.20, 0.72, 500, 50, 3, [standard("raider", 8), runner("swift", 8), icebound("brute", 5, 0.3)], true),
+  wave(2.45, 0.69, 480, 54, 3, [runner("swift", 10), icebound("warden", 6, 0.34), standard("raider", 7)], true),
+  wave(2.70, 0.66, 460, 58, 3, [icebound("bulwark", 3, 0.38), standard("shaman", 2), runner("swift", 10), standard("raider", 8)], true),
+  wave(3.00, 0.63, 440, 62, 4, [runner("swift", 12), runner("shade", 6), icebound("warden", 6, 0.38), standard("raider", 6)], true),
+  wave(3.30, 0.60, 420, 66, 4, [runner("shade", 10), icebound("brute", 8, 0.38), icebound("warden", 5, 0.42), standard("shaman", 2), standard("raider", 7)], true),
+  wave(3.65, 0.58, 405, 70, 4, [runner("swift", 12), icebound("bulwark", 5, 0.46), icebound("warden", 6, 0.42), standard("shaman", 2), standard("raider", 8)], true),
+  wave(4.00, 0.56, 390, 75, 4, [runner("shade", 12, { eliteEvery: 8 }), icebound("brute", 8, 0.4), icebound("warden", 7, 0.46), icebound("bulwark", 4, 0.5), standard("shaman", 2), standard("raider", 4)], true),
+  wave(4.40, 0.54, 380, 110, 5, [
+    runner("swift", 4, { gapAfterMs: 0 }), icebound("bulwark", 4, 0.5, { gapAfterMs: 0 }),
+    icebound("boss", 1, 0.58, { hpScale: 1.12, healingRadius: 118, healingRatio: 0.04, gapAfterMs: 0 }),
+    standard("raider", 6, { gapAfterMs: 0 }), runner("shade", 7, { gapAfterMs: 0 }),
+    icebound("warden", 5, 0.46, { gapAfterMs: 0 }), standard("shaman", 2, { gapAfterMs: 0 }),
+  ]),
 
-  wave(3.38, 0.65, 400, 87, 4, [standard("raider", 10), runner("shade", 10, { eliteEvery: 7 }), icebound("warden", 6, 0.38)], true),
-  wave(3.72, 0.63, 385, 94, 4, [runner("swift", 13, { eliteEvery: 8 }), icebound("bulwark", 5, 0.46), standard("shaman", 3)], true),
-  wave(4.08, 0.61, 375, 100, 5, [runner("shade", 10, { eliteEvery: 6 }), icebound("brute", 8, 0.36), icebound("warden", 7, 0.42)], true),
-  wave(4.48, 0.60, 360, 107, 5, [standard("raider", 9), runner("swift", 14, { eliteEvery: 7 }), icebound("bulwark", 6, 0.5), standard("shaman", 3)], true),
-  wave(4.92, 0.58, 350, 116, 5, [runner("shade", 14, { eliteEvery: 6 }), icebound("warden", 8, 0.46), icebound("bulwark", 6, 0.54), standard("shaman", 4)], true),
-  wave(5.45, 0.56, 345, 162, 5, [runner("swift", 10, { eliteEvery: 5 }), icebound("titan", 1, 0.68, { hpScale: 1.22, summonThresholds: [0.72, 0.42], summonCount: 3 }), icebound("bulwark", 6, 0.56), standard("shaman", 3), runner("shade", 10, { eliteEvery: 5 })], true),
+  wave(4.45, 0.52, 370, 82, 4, [runner("swift", 12), runner("shade", 10), icebound("brute", 7, 0.42), icebound("warden", 6, 0.46)], true),
+  wave(4.75, 0.50, 360, 88, 4, [icebound("bulwark", 6, 0.54), icebound("warden", 8, 0.48), standard("shaman", 3), runner("swift", 12), standard("raider", 8)], true),
+  wave(5.00, 0.48, 350, 94, 5, [runner("shade", 12, { eliteEvery: 8 }), runner("swift", 10), icebound("brute", 8, 0.44), icebound("bulwark", 5, 0.54), standard("shaman", 3)], true),
+  wave(5.25, 0.46, 340, 100, 5, [standard("raider", 8), runner("swift", 12), icebound("warden", 7, 0.5), icebound("bulwark", 6, 0.56), standard("shaman", 3)], true),
+  wave(5.55, 0.44, 330, 106, 5, [runner("swift", 14, { eliteEvery: 8 }), runner("shade", 10), icebound("brute", 8, 0.46), icebound("warden", 6, 0.5), standard("shaman", 3)], true),
+  wave(5.85, 0.42, 320, 112, 5, [standard("raider", 8), runner("shade", 12, { eliteEvery: 7 }), icebound("warden", 8, 0.52), icebound("bulwark", 7, 0.58), standard("shaman", 4), runner("swift", 5)], true),
+  wave(6.15, 0.40, 310, 120, 5, [runner("swift", 14, { eliteEvery: 7 }), runner("shade", 12, { eliteEvery: 7 }), icebound("brute", 8, 0.48), icebound("bulwark", 6, 0.58), standard("shaman", 4)], true),
+  wave(6.60, 0.38, 300, 180, 5, [
+    runner("swift", 5, { eliteEvery: 5, gapAfterMs: 0 }), icebound("bulwark", 5, 0.6, { gapAfterMs: 0 }),
+    icebound("titan", 1, 0.68, { hpScale: 0.6, summonThresholds: [0.72, 0.42], summonCount: 3, gapAfterMs: 0 }),
+    runner("shade", 10, { eliteEvery: 7, gapAfterMs: 0 }), icebound("warden", 8, 0.54, { gapAfterMs: 0 }),
+    standard("shaman", 4, { gapAfterMs: 0 }), standard("raider", 7, { gapAfterMs: 0 }),
+  ]),
 ]);
 
 export function createNorthernPassWave(waveValue: number): WavePlan {
+  return createAuthoredNorthernWave(waveValue);
+}
+
+function createAuthoredNorthernWave(waveValue: number): WavePlan {
   if (!Number.isInteger(waveValue) || waveValue < 1 || waveValue > NORTHERN_PASS_FINAL_WAVE) {
     throw new RangeError(`Wave must be an integer between 1 and ${NORTHERN_PASS_FINAL_WAVE}.`);
   }
   const blueprint = NORTHERN_PASS_WAVES[waveValue - 1];
   const act = Math.ceil(waveValue / NORTHERN_PASS_PROGRESSION.actSize) as CampaignAct;
+  const v3HealthPressure = ([1, 1.28, 1.45] as const)[act - 1];
+  const v3IceboundFrostArmorFloor = ([0.18, 0.42, 0.58] as const)[act - 1];
   const spawns: WaveSpawn[] = [];
   let atMs = 0;
 
@@ -162,14 +212,26 @@ export function createNorthernPassWave(waveValue: number): WavePlan {
       type: group.type,
       variant,
       atMs: Math.round(atMs),
-      maxHp: Math.max(1, Math.round(definition.baseHp * blueprint.healthScale * (group.hpScale ?? 1) * (elite ? 1.35 : 1))),
+      maxHp: Math.max(1, Math.round(
+        definition.baseHp
+        * blueprint.healthScale
+        * v3HealthPressure
+        * (group.hpScale ?? 1)
+        * (elite ? 1.35 : 1),
+      )),
       speed: definition.speed * (group.speedScale ?? variantSpeed) * Math.min(1.18, 1 + (waveValue - 1) * 0.006),
       reward: Math.max(0, Math.ceil(definition.reward * blueprint.rewardScale) + (elite ? 3 : 0)),
       leakDamage: definition.leakDamage + (elite ? 1 : 0),
       physicalResistance: Math.min(0.72, definition.physicalResistance + variantPhysical + (elite ? 0.05 : 0)),
       magicResistance: Math.min(0.72, definition.magicResistance + (elite ? 0.05 : 0)),
       shieldRatio: Math.min(0.55, definition.shieldRatio + (elite ? 0.08 : 0)),
-      frostArmorRatio: Math.min(0.8, (group.frostArmorRatio ?? 0) + (elite && variant === "icebound" ? 0.06 : 0)),
+      frostArmorRatio: Math.min(
+        0.8,
+        (variant === "icebound"
+          ? Math.max(v3IceboundFrostArmorFloor, group.frostArmorRatio ?? 0)
+          : group.frostArmorRatio ?? 0)
+        + (elite && variant === "icebound" ? 0.06 : 0),
+      ),
       controlResistance: Math.min(0.9, definition.controlResistance + variantControl + (elite ? 0.08 : 0)),
       healingRadius: group.healingRadius ?? definition.healingRadius,
       healingRatio: group.healingRatio ?? definition.healingRatio,
@@ -185,26 +247,37 @@ export function createNorthernPassWave(waveValue: number): WavePlan {
   }
 
   const frozenSpawns = Object.freeze(spawns);
-  return Object.freeze({
+  const basePlan = {
     wave: waveValue,
     spawns: frozenSpawns,
     clearBonus: blueprint.clearBonus,
     hasBoss: frozenSpawns.some((spawn) => spawn.type === "boss" || spawn.type === "titan"),
     act,
     threat: blueprint.threat,
-    northernStorm: createNorthernPassStormPlan(waveValue),
+  } as const;
+  return Object.freeze({
+    ...basePlan,
+    northernPass: createNorthernPassMechanicPlan(waveValue, act, basePlan.hasBoss),
   });
 }
 
-export function createNorthernPassStormPlan(waveValue: number): NorthernStormPlan {
+export function createNorthernPassMechanicPlan(
+  waveValue: number,
+  actValue?: CampaignAct,
+  bossWave?: boolean,
+): NorthernPassWavePlan {
   if (!Number.isInteger(waveValue) || waveValue < 1 || waveValue > NORTHERN_PASS_FINAL_WAVE) {
     throw new RangeError(`Wave must be an integer between 1 and ${NORTHERN_PASS_FINAL_WAVE}.`);
   }
-  const act = Math.ceil(waveValue / NORTHERN_PASS_PROGRESSION.actSize) as CampaignAct;
+  const act = actValue ?? Math.ceil(waveValue / NORTHERN_PASS_PROGRESSION.actSize) as CampaignAct;
+  const routeVariantId = (["ridge", "ravine", "summit"] as const)[act - 1];
+  const hasBoss = bossWave ?? (waveValue === 8 || waveValue === 16 || waveValue === 24);
   return Object.freeze({
-    sectorIds: NORTHERN_STORM_SCHEDULE[waveValue - 1],
-    runnerSpeedBonus: ([0.15, 0.2, 0.25] as const)[act - 1],
-    iceboundControlResistanceBonus: 0.2,
+    routeVariantId,
+    routePoints: NORTHERN_PASS_ROUTE_VARIANTS[routeVariantId],
+    avalancheCharges: hasBoss ? 2 : 1,
+    zones: NORTHERN_AVALANCHE_ZONES,
+    dangerZoneId: NORTHERN_DANGER_ZONE_SCHEDULE[waveValue - 1],
   });
 }
 
@@ -248,10 +321,6 @@ function createFormationSlots(blueprint: NorthernWaveBlueprint): readonly Format
     });
   }
   return slots;
-}
-
-function sectors(...ids: NorthernStormSectorId[]): readonly NorthernStormSectorId[] {
-  return Object.freeze(ids);
 }
 
 function freezePoints(points: readonly Point[]): readonly Point[] {

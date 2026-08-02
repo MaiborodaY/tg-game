@@ -2,32 +2,26 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { getHeroUpgradeWaveGate, isHeroAwakened } from "../src/game/heroes.ts";
+import { NORTHERN_AVALANCHE_ZONES } from "../src/game/northernPassMechanics.ts";
 import { GameSimulation } from "../src/game/simulation.ts";
 import { createCampaignState } from "../src/game/state.ts";
 
 function createFrostArmorRules({
   frostArmorRatio = 0.2,
-  signalFireActive = false,
-  heroAwakeningWave = 14,
+  heroAwakeningWave = 20,
   variant = frostArmorRatio > 0 ? "icebound" : "standard",
-  northernStorm,
+  type = "raider",
+  northernPass = null,
 } = {}) {
   return Object.freeze({
-    id: `northern-pass:test:${frostArmorRatio}:${signalFireActive}`,
-    routePoints: Object.freeze([
-      Object.freeze({ x: 0, y: 20 }),
-      Object.freeze({ x: 120, y: 20 }),
-    ]),
+    id: `northern-pass-v3:test:${frostArmorRatio}:${type}`,
+    routePoints: Object.freeze([Object.freeze({ x: 0, y: 20 }), Object.freeze({ x: 120, y: 20 })]),
     buildPads: Object.freeze([]),
-    // Keep the hero outside combat range so these tests isolate frost armor.
     heroAnchors: Object.freeze([
       Object.freeze({ x: 1_000, y: 1_000 }),
       Object.freeze({ x: 1_020, y: 1_000 }),
       Object.freeze({ x: 1_040, y: 1_000 }),
     ]),
-    signalFires: signalFireActive
-      ? Object.freeze([Object.freeze({ x: 0, y: 20 })])
-      : Object.freeze([]),
     heroAwakeningWave,
     finalWave: null,
     isComplete: () => false,
@@ -35,7 +29,7 @@ function createFrostArmorRules({
       wave,
       spawns: Object.freeze([Object.freeze({
         id: wave * 1_000,
-        type: "raider",
+        type,
         variant,
         atMs: 0,
         maxHp: 1_000,
@@ -47,30 +41,38 @@ function createFrostArmorRules({
         shieldRatio: 0,
         frostArmorRatio,
         controlResistance: 0,
-        healingRadius: 0,
-        healingRatio: 0,
+        healingRadius: type === "shaman" ? 100 : 0,
+        healingRatio: type === "shaman" ? 0.1 : 0,
         elite: false,
         bossTier: 1,
         summonThresholds: Object.freeze([]),
         summonCount: 0,
       })]),
       clearBonus: 0,
-      hasBoss: false,
+      hasBoss: type === "boss" || type === "titan",
       act: 1,
       threat: 1,
-      ...(northernStorm ? { northernStorm } : {}),
+      ...(northernPass ? { northernPass } : {}),
     }),
     getBossRepair: () => 0,
     getWaveHealthMultiplier: () => 1,
   });
 }
 
+function avalanchePlan({ dangerZoneId = "upper", charges = 1 } = {}) {
+  return Object.freeze({
+    routeVariantId: "ridge",
+    routePoints: Object.freeze([Object.freeze({ x: 0, y: 20 }), Object.freeze({ x: 120, y: 20 })]),
+    avalancheCharges: charges,
+    zones: NORTHERN_AVALANCHE_ZONES,
+    dangerZoneId,
+  });
+}
+
 function createLiveEnemy(options = {}) {
   const simulation = new GameSimulation(createCampaignState(), createFrostArmorRules(options));
   assert.equal(simulation.startWave(), true);
-  for (let index = 0; index < 20 && simulation.readView().enemies.length === 0; index += 1) {
-    simulation.advance(250);
-  }
+  for (let index = 0; index < 20 && simulation.readView().enemies.length === 0; index += 1) simulation.advance(250);
   assert.equal(simulation.readView().phase, "wave");
   assert.equal(simulation.readView().enemies.length, 1);
   simulation.drainEvents();
@@ -80,115 +82,84 @@ function createLiveEnemy(options = {}) {
 function dealDirectDamage(simulation, amount, kind) {
   const enemy = simulation.readView().enemies[0];
   assert.ok(enemy);
-  // TypeScript private methods are runtime methods; invoking this one keeps the
-  // test focused on the canonical armor-resolution path without tower timing.
+  // This runtime call isolates the canonical armor-resolution path from tower timing.
   simulation.damageEnemy(enemy, amount, kind, true);
   return simulation.readView().enemies[0];
 }
 
 test("frost armor absorbs ordinary damage before health", () => {
-  const simulation = createLiveEnemy();
-  const enemy = dealDirectDamage(simulation, 100, "physical");
-
+  const enemy = dealDirectDamage(createLiveEnemy(), 100, "physical");
   assert.equal(enemy.maxFrostArmor, 200);
   assert.equal(enemy.frostArmor, 100);
   assert.equal(enemy.hp, 1_000);
-  assert.equal(enemy.insideWarmZone, false);
+  assert.equal("insideWarmZone" in enemy, false);
 });
 
 test("fire strips frost armor faster than ordinary damage", () => {
-  const physical = createLiveEnemy();
-  const fire = createLiveEnemy();
-
-  const afterPhysical = dealDirectDamage(physical, 100, "physical");
-  const afterFire = dealDirectDamage(fire, 100, "fire");
-
+  const afterPhysical = dealDirectDamage(createLiveEnemy(), 100, "physical");
+  const afterFire = dealDirectDamage(createLiveEnemy(), 100, "fire");
   assert.equal(afterPhysical.frostArmor, 100);
   assert.equal(afterFire.frostArmor, 30);
   assert.ok(afterFire.frostArmor < afterPhysical.frostArmor);
-  assert.equal(afterFire.hp, 1_000);
 });
 
-test("the signal fire selected by the active hero anchor boosts armor breaking", () => {
-  const cold = createLiveEnemy({ signalFireActive: false });
-  const warm = createLiveEnemy({ signalFireActive: true });
-
-  const coldEnemy = dealDirectDamage(cold, 100, "fire");
-  const warmEnemy = dealDirectDamage(warm, 100, "fire");
-
-  assert.equal(coldEnemy.insideWarmZone, false);
-  assert.equal(warmEnemy.insideWarmZone, true);
-  assert.equal(coldEnemy.frostArmor, 30);
-  assert.equal(warmEnemy.frostArmor, 0);
-  assert.ok(warmEnemy.hp < coldEnemy.hp, "surplus warm fire damage should reach health");
-});
-
-test("breaking frost armor emits one armor-break event", () => {
+test("breaking frost armor emits exactly one armor-break event", () => {
   const simulation = createLiveEnemy();
-
   dealDirectDamage(simulation, 200, "physical");
   dealDirectDamage(simulation, 20, "physical");
-
-  const breakEvents = simulation.drainEvents().filter((event) => event.type === "frost_armor_broken");
-  assert.equal(breakEvents.length, 1);
-  assert.equal(breakEvents[0].enemyId, 1_000);
+  assert.equal(simulation.drainEvents().filter((event) => event.type === "frost_armor_broken").length, 1);
 });
 
-test("a Forest-style spawn without frost armor keeps the original direct-damage flow", () => {
-  const simulation = createLiveEnemy({ frostArmorRatio: 0, signalFireActive: false });
+test("Forest-style spawns retain the original direct-damage flow", () => {
+  const simulation = createLiveEnemy({ frostArmorRatio: 0, variant: "standard" });
   const enemy = dealDirectDamage(simulation, 100, "physical");
-  const events = simulation.drainEvents();
-
   assert.equal(enemy.maxFrostArmor, 0);
-  assert.equal(enemy.frostArmor, 0);
   assert.equal(enemy.hp, 900);
-  assert.equal(events.some((event) => event.type === "frost_armor_broken"), false);
-  assert.ok(events.some((event) => event.type === "enemy_damaged" && event.frostAbsorbed === 0));
+  assert.equal(simulation.drainEvents().some((event) => event.type === "frost_armor_broken"), false);
 });
 
-test("Northern Pass can use its own hero upgrade and awakening wave gates", () => {
-  const northernUpgradeWaves = Object.freeze([3, 9]);
-
-  assert.equal(getHeroUpgradeWaveGate(1, northernUpgradeWaves), 3);
-  assert.equal(getHeroUpgradeWaveGate(2, northernUpgradeWaves), 9);
-  assert.equal(getHeroUpgradeWaveGate(3, northernUpgradeWaves), null);
-  assert.equal(isHeroAwakened(3, 13, 14), false);
-  assert.equal(isHeroAwakened(3, 14, 14), true);
+test("Northern Pass v3 uses 4/12 hero ranks and wave 20 awakening", () => {
+  assert.equal(getHeroUpgradeWaveGate(1, [4, 12]), 4);
+  assert.equal(getHeroUpgradeWaveGate(2, [4, 12]), 12);
+  assert.equal(isHeroAwakened(3, 19, 20), false);
+  assert.equal(isHeroAwakened(3, 20, 20), true);
 });
 
-test("the canonical simulation applies storm buffs only in an uncovered active sector", () => {
-  const northernStorm = Object.freeze({
-    sectorIds: Object.freeze(["middle"]),
-    runnerSpeedBonus: 0.25,
-    iceboundControlResistanceBonus: 0.2,
-  });
-  const exposed = createLiveEnemy({ frostArmorRatio: 0, variant: "snow-runner", northernStorm });
-  const protectedByMiddleFire = new GameSimulation(
+test("only the forecast danger zone is armed and a valid avalanche consumes one charge", () => {
+  const simulation = createLiveEnemy({ northernPass: avalanchePlan({ dangerZoneId: "upper" }) });
+  const view = simulation.readView();
+  assert.equal(view.northernPass.forecastDangerZoneId, "upper");
+  assert.equal(view.northernPass.avalanche.zones.find((zone) => zone.id === "upper").canTrigger, true);
+  assert.equal(view.northernPass.avalanche.zones.find((zone) => zone.id === "middle").canTrigger, false);
+  assert.deepEqual(simulation.triggerNorthernAvalanche("middle"), { ok: false, error: "avalanche_unavailable" });
+
+  assert.deepEqual(simulation.triggerNorthernAvalanche("upper"), { ok: true, error: null });
+  const after = simulation.readView();
+  assert.equal(after.northernPass.avalanche.chargesRemaining, 0);
+  assert.equal(after.enemies[0].frostArmor, 0);
+  assert.equal(after.enemies[0].stunned, false, "stun state is refreshed on the following fixed step");
+  simulation.advance(20);
+  assert.equal(simulation.readView().enemies[0].stunned, true);
+  const event = simulation.drainEvents().find((candidate) => candidate.type === "northern_avalanche");
+  assert.equal(event.zoneId, "upper");
+  assert.equal(event.impacts.length, 1);
+  assert.equal(event.impacts[0].frostArmorRemoved, 200);
+});
+
+test("an avalanche cannot be spent before a target reaches the armed zone", () => {
+  const simulation = createLiveEnemy({ northernPass: avalanchePlan({ dangerZoneId: "middle" }) });
+  assert.deepEqual(simulation.triggerNorthernAvalanche("middle"), { ok: false, error: "avalanche_empty_zone" });
+  assert.equal(simulation.readView().northernPass.avalanche.chargesRemaining, 1);
+});
+
+test("boss waves expose two charges and route changes are replay-visible domain events", () => {
+  const simulation = new GameSimulation(
     createCampaignState(),
-    createFrostArmorRules({ frostArmorRatio: 0, variant: "snow-runner", northernStorm }),
+    createFrostArmorRules({ type: "boss", northernPass: avalanchePlan({ charges: 2 }) }),
   );
-  assert.equal(protectedByMiddleFire.moveHero(1).ok, true);
-  assert.equal(protectedByMiddleFire.startWave(), true);
-  for (let index = 0; index < 20 && protectedByMiddleFire.readView().enemies.length === 0; index += 1) {
-    protectedByMiddleFire.advance(250);
-  }
-
-  const exposedRunner = exposed.readView().enemies[0];
-  const protectedRunner = protectedByMiddleFire.readView().enemies[0];
-  exposedRunner.progress = 60;
-  protectedRunner.progress = 60;
-  exposedRunner.speed = 10;
-  protectedRunner.speed = 10;
-  exposed.advance(100);
-  protectedByMiddleFire.advance(100);
-
-  assert.equal(exposed.readView().enemies[0].stormSectorId, "middle");
-  assert.equal(exposed.readView().enemies[0].stormAffected, true);
-  assert.equal(protectedByMiddleFire.readView().enemies[0].stormAffected, false);
-  assert.ok(exposed.readView().enemies[0].progress > protectedByMiddleFire.readView().enemies[0].progress);
-
-  const icebound = createLiveEnemy({ variant: "icebound", northernStorm });
-  icebound.readView().enemies[0].progress = 60;
-  icebound.advance(20);
-  assert.equal(icebound.readView().enemies[0].controlResistance, 0.2);
+  assert.equal(simulation.startWave(), true);
+  assert.equal(simulation.readView().northernPass.avalanche.maxCharges, 2);
+  const event = simulation.drainEvents().find((candidate) => candidate.type === "northern_route_changed");
+  assert.equal(event.routeVariantId, "ridge");
+  assert.equal(event.wave, 1);
 });

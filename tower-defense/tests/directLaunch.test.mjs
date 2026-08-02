@@ -73,6 +73,7 @@ test("Northern Pass preview requires local development or a server-issued admin 
   assert.match(mainSource, /clientSelectionWasUnreleased[\s\S]*writeSessionSelection\(storage, selectedSession\.selection\)/);
   assert.match(mainSource, /loadCampaign\(storage, saveKey, selectedSession\.selection\)/);
   assert.match(mainSource, /visibleLevels = Object\.values\(CONTENT_CATALOG\.levels\)\.filter/);
+  assert.match(mainSource, /level\.id !== LEGACY_NORTHERN_PASS_LEVEL_ID[\s\S]*isClientLevelReleased\(level\.id, previewContentEnabled\)/);
   assert.match(mainSource, /elements\.sessionPicker\.hidden = Boolean\(launchError\) \|\| selectedSession\.locked/);
   assert.match(mainSource, /if \(reward\.mode === "server" \|\| elements\.introOverlay\.hidden \|\| sessionSwitching \|\| gameStarting\) return/);
   assert.match(mainSource, /if \(!isClientLevelReleased\(levelId, previewContentEnabled\)\) \{\s*syncSessionControls\(\);\s*return;/);

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { BUILD_PADS, GAME_HEIGHT, GAME_WIDTH, ROUTE_POINTS } from "../src/game/config.ts";
 import { CLASSIC_CAMPAIGN_LEVEL, NORTHERN_PASS_LEVEL } from "../src/game/content.ts";
+import { NORTHERN_PASS_ROUTE_VARIANTS } from "../src/game/northernPassContent.ts";
 import {
   FOREST_GATE_LANDMARKS,
   WORLD_VISUAL_THEMES,
@@ -18,20 +19,20 @@ const northernWorldArtSource = readFileSync(new URL("../src/rendering/northernWo
 const sceneSource = readFileSync(new URL("../src/rendering/TowerDefenseScene.ts", import.meta.url), "utf8");
 
 test("each shipped level resolves to a stable and distinct visual theme", () => {
-  assert.deepEqual(Object.keys(WORLD_VISUAL_THEMES).sort(), ["forest-gate", "northern-pass"]);
+  assert.deepEqual(Object.keys(WORLD_VISUAL_THEMES).sort(), ["forest-gate", "northern-pass-v3"]);
   assert.equal(getWorldVisualTheme("forest-gate").id, "forest-gate");
-  assert.equal(getWorldVisualTheme("northern-pass").id, "northern-pass");
-  assert.notEqual(getWorldVisualTheme("forest-gate").seed, getWorldVisualTheme("northern-pass").seed);
+  assert.equal(getWorldVisualTheme("northern-pass-v3").id, "northern-pass-v3");
+  assert.notEqual(getWorldVisualTheme("forest-gate").seed, getWorldVisualTheme("northern-pass-v3").seed);
   assert.equal(getWorldVisualTheme("unknown-level").id, "forest-gate");
 });
 
-test("campaign acts escalate lighting without changing world geometry", () => {
+test("campaign acts escalate lighting while route variants own geometry changes", () => {
   const acts = [1, 2, 3].map((act) => getActVisualProfile(act));
-  const northernActs = [1, 2, 3].map((act) => getActVisualProfile(act, "northern-pass"));
+  const northernActs = [1, 2, 3].map((act) => getActVisualProfile(act, "northern-pass-v3"));
   assert.deepEqual(acts.map((profile) => profile.veilAlpha), [0, 0.08, 0.14]);
   assert.deepEqual(northernActs.map((profile) => profile.veilAlpha), [0.025, 0.1, 0.08]);
   assert.equal(new Set(acts.map((profile) => profile.portal)).size, 3);
-  assert.equal(northernActs[0].portal, WORLD_VISUAL_THEMES["northern-pass"].portal);
+  assert.equal(northernActs[0].portal, WORLD_VISUAL_THEMES["northern-pass-v3"].portal);
   assert.notEqual(northernActs[0].portal, acts[0].portal);
   assert.equal(new Set(acts.map((profile) => profile.gateWard)).size, 3);
   assert.deepEqual(northernActs.map((profile) => profile.snowAlpha), [0.18, 0.54, 0.32]);
@@ -46,14 +47,16 @@ test("campaign acts escalate lighting without changing world geometry", () => {
 });
 
 test("Northern Pass decoration remains sparse, deterministic, and visibly wintry", () => {
-  const theme = getWorldVisualTheme("northern-pass");
+  const theme = getWorldVisualTheme("northern-pass-v3");
   const reserved = [...NORTHERN_PASS_LEVEL.buildPads, ...NORTHERN_PASS_LEVEL.heroAnchors];
+  const additionalRoutes = Object.values(NORTHERN_PASS_ROUTE_VARIANTS).slice(1);
   const first = createWorldDecorationLayout(
     theme,
     NORTHERN_PASS_LEVEL.route,
     NORTHERN_PASS_LEVEL.width,
     NORTHERN_PASS_LEVEL.height,
     reserved,
+    additionalRoutes,
   );
   const second = createWorldDecorationLayout(
     theme,
@@ -61,6 +64,7 @@ test("Northern Pass decoration remains sparse, deterministic, and visibly wintry
     NORTHERN_PASS_LEVEL.width,
     NORTHERN_PASS_LEVEL.height,
     reserved,
+    additionalRoutes,
   );
 
   assert.deepEqual(first, second);
@@ -69,6 +73,34 @@ test("Northern Pass decoration remains sparse, deterministic, and visibly wintry
   assert.ok(first.trees.length <= 8);
   assert.ok(first.fireflies.length > 0 && first.fireflies.length <= 12);
   assert.ok(first.groundDetails.length < 78);
+});
+
+test("Northern Pass decorations remain clear of every act route", () => {
+  const theme = getWorldVisualTheme("northern-pass-v3");
+  const routes = Object.values(NORTHERN_PASS_ROUTE_VARIANTS);
+  const reserved = [...NORTHERN_PASS_LEVEL.buildPads, ...NORTHERN_PASS_LEVEL.heroAnchors];
+  const layout = createWorldDecorationLayout(
+    theme,
+    NORTHERN_PASS_LEVEL.route,
+    NORTHERN_PASS_LEVEL.width,
+    NORTHERN_PASS_LEVEL.height,
+    reserved,
+    routes.slice(1),
+  );
+  const expectations = [
+    [layout.clearings, 48],
+    [layout.groundDetails, 29],
+    [layout.shrubs, 38],
+    [layout.trees, 40],
+    [layout.fireflies, 31],
+  ];
+  for (const [points, clearance] of expectations) {
+    for (const point of points) {
+      for (const route of routes) {
+        assert.ok(distanceToWorldRoute(point, route) >= clearance - 1e-9);
+      }
+    }
+  }
 });
 
 test("forest decoration is deterministic and keeps interactive zones legible", () => {
@@ -140,10 +172,12 @@ test("Northern Pass landmarks adapt to the route without covering interaction po
 test("world rendering stays code-native and uses a bounded ambient animation budget", () => {
   assert.doesNotMatch(worldArtSource, /\.load\.(?:image|spritesheet|atlas)|new Image\(|\.png|\.webp|\.jpg/);
   assert.doesNotMatch(northernWorldArtSource, /\.load\.(?:image|spritesheet|atlas)|new Image\(|\.png|\.webp|\.jpg/);
-  assert.match(worldArtSource, /createWorldDecorationLayout\(theme, route, width, height, reservedPoints\)/);
+  assert.match(worldArtSource, /createWorldDecorationLayout\(theme, route, width, height, reservedPoints, additionalRoutes\)/);
   assert.match(worldArtSource, /drawNorthernIceBridgeUnderlay\(scene, northernLandmarks\.iceBridge, theme\)/);
   assert.match(worldArtSource, /drawBrokenCaravan\(scene, northernLandmarks\.caravan\)/);
   assert.match(worldArtSource, /drawNorthernCitadel\(scene, route\[route\.length - 1\], height, theme\)/);
+  assert.match(worldArtSource, /export function setWorldRoute\(art: WorldArt, points: readonly Point\[\]\)/);
+  assert.match(worldArtSource, /drawRouteGraphics\(art\.route, art\.routeMarks, points/);
   assert.match(worldArtSource, /for \(const fireflyPoint of layout\.fireflies\)/);
   assert.match(northernWorldArtSource, /layout\.fireflies\.map\(\(point, index\) =>/);
   assert.match(northernWorldArtSource, /drawNorthernEntrance/);

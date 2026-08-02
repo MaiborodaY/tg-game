@@ -13,6 +13,7 @@ import {
   CLASSIC_CAMPAIGN_LEVEL_ID,
   CONTENT_CATALOG,
   ENDLESS_MODE_ID,
+  LEGACY_NORTHERN_PASS_LEVEL_ID,
   MAX_ENDLESS_WAVE,
   NORTHERN_PASS_LEVEL_ID,
 } from "./game/content.ts";
@@ -59,7 +60,7 @@ import {
 import type {
   EnemyType,
   HeroId,
-  NorthernStormSectorId,
+  NorthernAvalancheZoneId,
   TowerLevel,
   TowerType,
   WavePlan,
@@ -294,7 +295,6 @@ let finishSettled = reward.mode === "local";
 let terminalResult: FinalResult | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let renderedPreviewWave = -1;
-let renderedPreviewAnchorId = -1;
 let resumeAfterGuide = false;
 let guideReturnFocus: HTMLElement | null = null;
 let resumeAfterWaveIntel = false;
@@ -343,9 +343,9 @@ let tutorialState: TutorialState = createTutorialState({
   profile: playerProfile,
   tutorialCompleted: readFlag(storage, TUTORIAL_COMPLETION_STORAGE_KEY),
 });
-const NORTHERN_ONBOARDING_STORAGE_KEY = "td-northern-onboarding-v1";
-const NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY = "td-northern-armor-onboarding-v1";
-type NorthernOnboardingStep = "beacon" | "armor";
+const NORTHERN_ONBOARDING_STORAGE_KEY = "td-northern-avalanche-onboarding-v3";
+const NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY = "td-northern-armor-onboarding-v3";
+type NorthernOnboardingStep = "avalanche" | "armor";
 let northernOnboardingStep = getNorthernOnboardingStep(initialCampaign);
 
 const HERO_PORTRAIT_URLS: Readonly<Record<HeroId, string>> = Object.freeze({
@@ -1389,10 +1389,9 @@ function renderUi(ui: TowerDefenseUiState): void {
   syncHeroChoiceControls();
 
   const plan = ui.nextWavePlan;
-  if (renderedPreviewWave !== plan.wave || renderedPreviewAnchorId !== ui.hero.anchorId) {
-    renderWavePreview(plan, ui.hero.anchorId);
+  if (renderedPreviewWave !== plan.wave) {
+    renderWavePreview(plan);
     renderedPreviewWave = plan.wave;
-    renderedPreviewAnchorId = ui.hero.anchorId;
   }
   elements.threatMeter.textContent = `${"◆".repeat(plan.threat)}${"◇".repeat(5 - plan.threat)}`;
   elements.threatMeter.setAttribute("aria-label", text("threat", { count: plan.threat }));
@@ -1405,7 +1404,16 @@ function renderUi(ui: TowerDefenseUiState): void {
 }
 
 function syncTutorial(ui: TowerDefenseUiState): void {
+  syncNorthernOnboardingProgress(ui);
   updateTutorialState(reduceTutorial(tutorialState, { type: "ui_changed", snapshot: ui }));
+}
+
+function syncNorthernOnboardingProgress(ui: TowerDefenseUiState): void {
+  if (northernOnboardingStep !== "avalanche") return;
+  const northernPass = ui.northernPass;
+  if (!northernPass || northernPass.avalanche.chargesRemaining >= northernPass.avalanche.maxCharges) return;
+  writeFlag(storage, NORTHERN_ONBOARDING_STORAGE_KEY);
+  northernOnboardingStep = getNorthernOnboardingStep(ui.campaign);
 }
 
 function updateTutorialState(next: TutorialState): void {
@@ -1416,12 +1424,20 @@ function updateTutorialState(next: TutorialState): void {
   elements.towerDeck.classList.remove("tutorial-focus");
   elements.battleShell.classList.remove("tutorial-focus");
   elements.startWaveButton.classList.remove("tutorial-focus");
+  elements.tutorialCoach.classList.remove("is-action-ready");
   if (!northernOnboardingStep && latestUi) {
     northernOnboardingStep = getNorthernOnboardingStep(latestUi.campaign);
   }
+  const northernPass = latestUi?.northernPass;
+  const avalancheTargetReady = Boolean(northernPass?.avalanche.zones.some((zone) => zone.canTrigger));
   const northernVisible = northernOnboardingStep !== null
     && latestUi?.levelId === NORTHERN_PASS_LEVEL_ID
-    && latestUi.phase === "setup";
+    && (northernOnboardingStep === "avalanche"
+      ? latestUi.phase === "wave"
+        && !latestUi.paused
+        && Boolean(northernPass?.avalanche.available)
+        && (northernPass?.avalanche.chargesRemaining ?? 0) > 0
+      : latestUi.phase === "setup");
   const visible = (northernVisible || !isTutorialDone(tutorialState))
     && gameMounted
     && elements.introOverlay.hidden
@@ -1431,13 +1447,14 @@ function updateTutorialState(next: TutorialState): void {
 
   if (northernVisible) {
     const armorStep = northernOnboardingStep === "armor";
-    elements.tutorialStep.textContent = armorStep ? "2 / 2" : "1 / 2";
+    elements.tutorialStep.textContent = "1 / 1";
     elements.tutorialTitle.textContent = text(armorStep
       ? "northern_onboarding_armor_title"
       : "northern_onboarding_title");
     elements.tutorialBody.textContent = text(armorStep
       ? "northern_onboarding_armor_body"
       : "northern_onboarding_body");
+    elements.tutorialCoach.classList.toggle("is-action-ready", !armorStep && avalancheTargetReady);
     elements.battleShell.classList.add("tutorial-focus");
     return;
   }
@@ -1466,7 +1483,7 @@ function completeTutorial(): void {
 
 function getNorthernOnboardingStep(campaign: TowerDefenseUiState["campaign"]): NorthernOnboardingStep | null {
   if (campaign.levelId !== NORTHERN_PASS_LEVEL_ID) return null;
-  if (!readFlag(storage, NORTHERN_ONBOARDING_STORAGE_KEY) && !hasRunProgress(campaign)) return "beacon";
+  if (!readFlag(storage, NORTHERN_ONBOARDING_STORAGE_KEY) && !hasRunProgress(campaign)) return "avalanche";
   if (campaign.completedWave >= 2 && !readFlag(storage, NORTHERN_ARMOR_ONBOARDING_STORAGE_KEY)) return "armor";
   return null;
 }
@@ -1508,7 +1525,7 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
   elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
 }
 
-function renderWavePreview(plan: WavePlan, heroAnchorId: number): void {
+function renderWavePreview(plan: WavePlan): void {
   const types = plan.spawns.map((spawn) => spawn.type);
   const traits: TranslationKey[] = [];
   if (types.some((type) => type === "boss" || type === "titan")) traits.push("wave_trait_boss");
@@ -1518,15 +1535,17 @@ function renderWavePreview(plan: WavePlan, heroAnchorId: number): void {
   if (types.some((type) => type === "warden" || type === "shaman")) traits.push("wave_trait_support");
   const recommended = recommendWaveTowers(plan);
   const displayedTraits: readonly TranslationKey[] = traits.length ? traits : ["wave_trait_mixed"];
-  if (plan.northernStorm) {
-    elements.nextWaveLabel.textContent = text("northern_storm_preview", {
-      sectors: formatNorthernStormSectors(plan.northernStorm.sectorIds),
+  if (plan.northernPass) {
+    elements.nextWaveLabel.dataset.kind = "avalanche";
+    elements.nextWaveLabel.textContent = text("northern_avalanche_preview", {
+      zone: northernAvalancheZoneLabel(plan.northernPass.dangerZoneId),
+      charges: plan.northernPass.avalancheCharges,
     });
-    elements.wavePreviewSummary.textContent = text("northern_storm_summary", {
-      active: northernStormSectorLabel(getNorthernStormSectorForAnchor(heroAnchorId)),
+    elements.wavePreviewSummary.textContent = text("northern_avalanche_summary", {
       towers: recommended.map(towerName).join(" + "),
     });
   } else {
+    delete elements.nextWaveLabel.dataset.kind;
     elements.nextWaveLabel.textContent = text("wave_preview_title", { wave: plan.wave });
     elements.wavePreviewSummary.textContent = text("wave_preview_summary", {
       traits: displayedTraits.slice(0, 2).map((key) => text(key)).join(" · "),
@@ -1546,16 +1565,8 @@ function renderWavePreview(plan: WavePlan, heroAnchorId: number): void {
   }));
 }
 
-function getNorthernStormSectorForAnchor(anchorId: number): NorthernStormSectorId {
-  return (["upper", "middle", "lower"] as const)[anchorId] ?? "upper";
-}
-
-function northernStormSectorLabel(sectorId: NorthernStormSectorId): string {
-  return text(`northern_sector_${sectorId}` as TranslationKey);
-}
-
-function formatNorthernStormSectors(sectorIds: readonly NorthernStormSectorId[]): string {
-  return sectorIds.map(northernStormSectorLabel).join(" + ");
+function northernAvalancheZoneLabel(zoneId: NorthernAvalancheZoneId): string {
+  return text(`northern_zone_${zoneId}` as TranslationKey);
 }
 
 function phaseLabel(ui: TowerDefenseUiState): string {
@@ -1582,6 +1593,10 @@ function showNotice(code: NoticeCode): void {
   }
   if (code === "hero_ability_target_required" || code === "invalid_hero_ability_target") {
     showToast(text("hero_ability_target_road"), true);
+    return;
+  }
+  if (code === "invalid_avalanche_zone" || code === "avalanche_unavailable" || code === "avalanche_empty_zone") {
+    showToast(text(code), true);
     return;
   }
   const key: TranslationKey = code === "insufficient_gold"
@@ -2570,12 +2585,10 @@ function closeWaveIntel(): void {
 function renderWaveIntel(plan: WavePlan): void {
   const enemies = aggregateWaveEnemies(plan);
   elements.waveIntelTitle.textContent = text("wave_intel_title", { wave: plan.wave });
-  elements.waveIntelIntro.textContent = plan.northernStorm
-    ? text("northern_storm_intel", {
-        sectors: formatNorthernStormSectors(plan.northernStorm.sectorIds),
-        active: northernStormSectorLabel(getNorthernStormSectorForAnchor(latestUi?.hero.anchorId ?? 0)),
-        speed: Math.round(plan.northernStorm.runnerSpeedBonus * 100),
-        resist: Math.round(plan.northernStorm.iceboundControlResistanceBonus * 100),
+  elements.waveIntelIntro.textContent = plan.northernPass
+    ? text("northern_avalanche_intel", {
+        zone: northernAvalancheZoneLabel(plan.northernPass.dangerZoneId),
+        charges: plan.northernPass.avalancheCharges,
       })
     : text("wave_intel_intro");
   selectedWaveIntelType = enemies.some(({ type }) => type === selectedWaveIntelType)
@@ -3132,7 +3145,8 @@ function syncHeroPortrait(container: HTMLElement, heroId: HeroId): void {
 
 function syncSessionControls(): void {
   const visibleLevels = Object.values(CONTENT_CATALOG.levels).filter((level) => (
-    isClientLevelReleased(level.id, previewContentEnabled)
+    level.id !== LEGACY_NORTHERN_PASS_LEVEL_ID
+      && isClientLevelReleased(level.id, previewContentEnabled)
   ));
   elements.levelSelect.replaceChildren(...visibleLevels.map((level) => {
     const option = document.createElement("option");

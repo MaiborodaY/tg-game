@@ -133,12 +133,12 @@ test("content levels and modes adapt into simulation rules without Phaser", () =
   const campaign = createSimulationRules(NORTHERN_PASS_LEVEL, CAMPAIGN_RULESET);
   const endless = createSimulationRules(NORTHERN_PASS_LEVEL, ENDLESS_RULESET);
 
-  assert.equal(campaign.finalWave, 18);
+  assert.equal(campaign.finalWave, 24);
   assert.equal(campaign.buildPads.length, 13);
-  assert.equal(campaign.createWavePlan(18).wave, 18);
+  assert.equal(campaign.createWavePlan(24).wave, 24);
   assert.equal(endless.finalWave, null);
   assert.equal(endless.createWavePlan(19).wave, 19);
-  assert.match(campaign.id, /northern-pass:campaign.*heroes-v3/);
+  assert.match(campaign.id, /northern-pass-v3:campaign.*heroes-v3/);
 });
 
 test("hero movement and upgrades are setup-only deterministic commands", () => {
