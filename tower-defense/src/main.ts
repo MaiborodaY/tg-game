@@ -34,6 +34,13 @@ import {
 } from "./game/sessionSelection.ts";
 import type { PlayerProfileSnapshot } from "./game/profile.ts";
 import { isHeroUnlocked } from "./game/heroAvailability.ts";
+import {
+  HERO_COMBAT_PREVIEW_QUERY_PARAM,
+  buildHeroCombatPreviewSaveKey,
+  isHeroCombatPreviewRequest,
+  isHeroCombatPreviewSession,
+  shouldEnableHeroCombatPreview,
+} from "./game/heroCombatPreview.ts";
 import { isSessionAvailable } from "./game/progression.ts";
 import {
   isClientLevelReleased,
@@ -144,6 +151,9 @@ const developmentAttemptPurchasePreview = import.meta.env.DEV
 const developmentResultPreview = import.meta.env.DEV
   ? new URL(window.location.href).searchParams.get("preview_result")
   : null;
+const developmentHeroCombatPreviewQuery = import.meta.env.DEV
+  ? new URL(window.location.href).searchParams.get(HERO_COMBAT_PREVIEW_QUERY_PARAM)
+  : null;
 const telegram = setupTelegramBridge();
 let locale = readStoredLocale(storage) ?? detectLocale(legacyLaunch.payload?.lang, legacyLaunch.payload?.language);
 const pendingStartButton = document.getElementById("intro-start");
@@ -241,12 +251,25 @@ if (isMiniAppLaunch && rewardAlreadyUsed) clearMiniAppReward(session);
 let reward: RewardLaunch = rewardAlreadyUsed
   ? Object.freeze({ mode: "local", runId: null, token: null, runNumber: null, finishUrl: null })
   : launch.reward;
+const heroCombatPreviewRequest = isHeroCombatPreviewRequest({
+  isDevelopment: import.meta.env.DEV,
+  launchKind: launchDecision.kind,
+  rewardMode: reward.mode,
+  queryValue: developmentHeroCombatPreviewQuery,
+});
 let selectedSession = miniAppBootstrap && reward.mode === "server"
   ? resolveServerSessionSelection(miniAppBootstrap.binding)
   : reward.mode === "server"
     // Legacy signed URL launches predate server content bindings and stay on the classic campaign.
     ? resolveSessionSelection("server", null)
     : readSessionSelection(storage, "local");
+if (heroCombatPreviewRequest) {
+  // The explicit local prototype URL must not resume an unrelated practice session.
+  selectedSession = resolveSessionSelection("local", {
+    levelId: CLASSIC_CAMPAIGN_LEVEL_ID,
+    modeId: CAMPAIGN_MODE_ID,
+  });
+}
 const awaitingMiniAppStart = isMiniAppLaunch && !miniAppBootstrap;
 const launchProfile = miniAppBootstrap?.profile ?? miniAppProfileBootstrap?.profile ?? null;
 const normalizedClientLevelId = normalizeClientLevelId(selectedSession.level.id, previewContentEnabled);
@@ -262,15 +285,19 @@ if (clientSelectionWasUnreleased || (
   });
   if (clientSelectionWasUnreleased) writeSessionSelection(storage, selectedSession.selection);
 }
-let saveKey = getCampaignSaveKey(
+let saveKey = buildHeroCombatPreviewSaveKey(getCampaignSaveKey(
   reward.mode === "server" ? reward.runId : null,
   selectedSession.level.id,
   selectedSession.mode.id,
   currentRunRevision(),
-);
-const savedCampaign = awaitingMiniAppStart ? null : loadCampaign(storage, saveKey, selectedSession.selection);
+), isHeroCombatPreviewSessionEnabled());
+const loadedCampaign = awaitingMiniAppStart ? null : loadCampaign(storage, saveKey, selectedSession.selection);
+const savedCampaign = isHeroCombatPreviewSessionEnabled() && loadedCampaign?.hero.id !== "toren"
+  ? null
+  : loadedCampaign;
 const canMigrateLegacy = selectedSession.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
-  && selectedSession.mode.id === CAMPAIGN_MODE_ID;
+  && selectedSession.mode.id === CAMPAIGN_MODE_ID
+  && !isHeroCombatPreviewSessionEnabled();
 const migrated = !awaitingMiniAppStart && !savedCampaign && canMigrateLegacy
   ? migrateLegacyCampaign(storage, reward.mode === "server" ? reward.runId : null)
   : null;
@@ -287,8 +314,36 @@ let initialCampaign = pendingAtLaunch
   : restoredCheckpoint || createCampaignState({
       level: selectedSession.level,
       mode: selectedSession.mode,
-      heroId: miniAppBootstrap?.heroId ?? miniAppProfileBootstrap?.activeRun?.heroId ?? "eira",
+      heroId: isHeroCombatPreviewSessionEnabled()
+        ? "toren"
+        : miniAppBootstrap?.heroId ?? miniAppProfileBootstrap?.activeRun?.heroId ?? "eira",
     });
+
+function isHeroCombatPreviewSessionEnabled(
+  levelId = selectedSession.level.id,
+  modeId = selectedSession.mode.id,
+): boolean {
+  return isHeroCombatPreviewSession({
+    isDevelopment: import.meta.env.DEV,
+    launchKind: launchDecision.kind,
+    rewardMode: reward.mode,
+    queryValue: developmentHeroCombatPreviewQuery,
+    levelId,
+    modeId,
+  });
+}
+
+function isHeroCombatPreviewEnabled(heroId: HeroId): boolean {
+  return shouldEnableHeroCombatPreview({
+    isDevelopment: import.meta.env.DEV,
+    launchKind: launchDecision.kind,
+    rewardMode: reward.mode,
+    queryValue: developmentHeroCombatPreviewQuery,
+    levelId: selectedSession.level.id,
+    modeId: selectedSession.mode.id,
+    heroId,
+  });
+}
 
 let latestUi: TowerDefenseUiState | null = null;
 let rewardFinisher: RewardFinisher | null = null;
@@ -636,6 +691,7 @@ type GameMountContext = Readonly<{
   campaign: TowerDefenseUiState["campaign"];
   callbacks: TowerDefenseCallbacks;
   initialBuildType?: TowerType | null;
+  heroCombatPreview: boolean;
 }>;
 
 const runtimeController = createLazyRuntimeController(
@@ -645,6 +701,7 @@ const runtimeController = createLazyRuntimeController(
     context.campaign,
     context.callbacks,
     context.initialBuildType,
+    { heroCombatPreview: context.heroCombatPreview },
   ),
 );
 
@@ -870,6 +927,7 @@ async function ensureGameMounted(): Promise<boolean> {
       campaign: initialCampaign,
       callbacks: gameCallbacks,
       initialBuildType: tutorialState.step === "choose_tower" ? null : undefined,
+      heroCombatPreview: isHeroCombatPreviewEnabled(initialCampaign.hero.id),
     });
     gameMounted = true;
     currentScene()?.setInputEnabled(!elements.appShell.inert);
@@ -1278,12 +1336,20 @@ function renderUi(ui: TowerDefenseUiState): void {
   const recharging = ui.hero.awakened
     && ui.hero.abilityCharges === 0
     && !ui.hero.bonusChargeEarned;
-  elements.pulseLabel.textContent = recharging
+  const frontlineKnockedOut = ui.hero.frontline?.status === "knocked_out";
+  const frontlineReturnSeconds = Math.max(
+    1,
+    Math.ceil((ui.hero.frontline?.knockoutRemainingMs ?? 0) / 1_000),
+  );
+  elements.pulseLabel.textContent = frontlineKnockedOut
+    ? text("hero_frontline_return_short", { seconds: frontlineReturnSeconds })
+    : recharging
     ? `${ui.hero.rechargeKills}/${ui.hero.rechargeThreshold}`
     : heroAbility;
   elements.pulseButton.disabled = ui.heroTargeting
     || ui.phase !== "wave"
     || ui.hero.abilityCharges <= 0
+    || frontlineKnockedOut
     || ui.enemiesAlive === 0
     || ui.paused;
   elements.pulseButton.classList.toggle("is-used", ui.hero.abilityCharges <= 0);
@@ -1293,7 +1359,9 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.pulseButton.classList.toggle("is-grak", ui.hero.id === "grak");
   elements.pulseCharges.hidden = !ui.hero.awakened;
   elements.pulseCharges.dataset.charges = String(ui.hero.abilityCharges);
-  elements.pulseButton.setAttribute("aria-label", recharging
+  elements.pulseButton.setAttribute("aria-label", frontlineKnockedOut
+    ? text("hero_frontline_knocked_out", { seconds: frontlineReturnSeconds })
+    : recharging
     ? text("hero_ability_recharge", {
         count: ui.hero.rechargeKills,
         total: ui.hero.rechargeThreshold,
@@ -1506,6 +1574,31 @@ function getNorthernOnboardingStep(campaign: TowerDefenseUiState["campaign"]): N
 }
 
 function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
+  const frontline = ui.hero.frontline;
+  if (frontline) {
+    elements.selectedHeroHint.dataset.aura = "frontline";
+    const params = {
+      hp: Math.max(0, Math.ceil(frontline.hp)),
+      max: frontline.maxHp,
+      used: frontline.blockUsed,
+      capacity: frontline.blockCapacity,
+      seconds: Math.max(1, Math.ceil(frontline.knockoutRemainingMs / 1_000)),
+    };
+    const statusKey: TranslationKey = frontline.status === "knocked_out"
+      ? "hero_frontline_knocked_out"
+      : frontline.status === "deploying"
+        ? "hero_frontline_deploying"
+        : frontline.regenActive
+          ? "hero_frontline_recovering"
+          : frontline.status === "fighting"
+            ? "hero_frontline_fighting"
+            : frontline.status === "ready"
+              ? "hero_frontline_ready"
+              : "hero_frontline_holding";
+    elements.selectedHeroHint.textContent = text(statusKey, params);
+    elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
+    return;
+  }
   const aura = getHeroAura(ui.hero.id, ui.hero.level);
   if (!aura) {
     elements.selectedHeroHint.dataset.aura = "locked";
@@ -2000,9 +2093,14 @@ async function switchPracticeSession(levelId: string, modeId: string): Promise<v
   try {
     selectedSession = next;
     writeSessionSelection(storage, next.selection);
-    saveKey = getCampaignSaveKey(null, next.level.id, next.mode.id);
+    saveKey = buildHeroCombatPreviewSaveKey(
+      getCampaignSaveKey(null, next.level.id, next.mode.id),
+      isHeroCombatPreviewSessionEnabled(next.level.id, next.mode.id),
+    );
     const saved = loadCampaign(storage, saveKey, next.selection);
-    const mayMigrate = next.level.id === CLASSIC_CAMPAIGN_LEVEL_ID && next.mode.id === CAMPAIGN_MODE_ID;
+    const mayMigrate = next.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
+      && next.mode.id === CAMPAIGN_MODE_ID
+      && !isHeroCombatPreviewSessionEnabled(next.level.id, next.mode.id);
     const restored = saved || (mayMigrate ? migrateLegacyCampaign(storage) : null);
     runStarted = Boolean(restored);
     initialCampaign = restored || createCampaignState({

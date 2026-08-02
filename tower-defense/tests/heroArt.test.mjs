@@ -43,6 +43,32 @@ test("hero rendering stays code-native and pools bounded combat effects", () => 
   assert.match(source, /onComplete: \(\) => releaseAbilityEffect\(effect\)/);
 });
 
+test("frontline health and knockout art is allocated once and updated without new game objects", () => {
+  const createSource = source.slice(
+    source.indexOf("export function createHeroArt"),
+    source.indexOf("export function updateHeroArtPose"),
+  );
+  const frontlineSource = source.slice(
+    source.indexOf("export function setHeroFrontlineState"),
+    source.indexOf("export function createHeroAnchorArt"),
+  );
+
+  assert.match(source, /healthTrack: Phaser\.GameObjects\.Rectangle/);
+  assert.match(source, /healthFill: Phaser\.GameObjects\.Rectangle/);
+  assert.match(source, /knockoutBadge: Phaser\.GameObjects\.Text/);
+  assert.equal(createSource.match(/const healthTrack = scene\.add\.rectangle/g)?.length, 1);
+  assert.equal(createSource.match(/const healthFill = scene\.add\.rectangle/g)?.length, 1);
+  assert.equal(createSource.match(/const knockoutBadge = scene\.add\.text/g)?.length, 1);
+  assert.match(createSource, /container\.add\(\[selectionRing, abilityAura, shadow, body, weapon, healthTrack, healthFill, knockoutBadge\]\)/);
+  assert.doesNotMatch(frontlineSource, /scene\.add\.|new Phaser/);
+  assert.match(frontlineSource, /state: HeroFrontlineState \| null/);
+  assert.match(frontlineSource, /state\.status === "knocked_out"/);
+  assert.match(frontlineSource, /state\.status === "fighting" \|\| hpRatio < 0\.999/);
+  assert.match(frontlineSource, /setScale\(hpRatio, 1\)/);
+  assert.match(frontlineSource, /art\.body\.setAlpha\(knockedOut \? 0\.34 : 1\)/);
+  assert.match(frontlineSource, /art\.weapon\.setAlpha\(knockedOut \? 0\.3 : 1\)/);
+});
+
 test("hero anchors expose explicit hidden, available, and selected states", () => {
   assert.match(source, /state: "hidden" \| "available" \| "selected"/);
   assert.match(source, /setVisible\(state !== "hidden"\)/);
@@ -66,7 +92,7 @@ test("hero placement keeps generous hit targets and visually subdues tower pads"
 
 test("the Phaser scene derives hero rendering and selection from simulation state", () => {
   assert.match(sceneSource, /private selectedHero = false/);
-  assert.match(sceneSource, /this\.level\.heroAnchors\.forEach\(\(point, anchorId\) =>/);
+  assert.match(sceneSource, /this\.simulation\.getRules\(\)\.heroAnchors\.forEach\(\(point, anchorId\) =>/);
   assert.match(sceneSource, /this\.simulation\.moveHero\(anchorId\)/);
   assert.match(sceneSource, /this\.simulation\.upgradeHero\(\)/);
   assert.match(sceneSource, /this\.simulation\.useHeroAbility\(targetDistance\)/);

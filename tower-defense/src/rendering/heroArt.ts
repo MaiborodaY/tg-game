@@ -55,6 +55,17 @@ export type HeroArt = Readonly<{
   weapon: Phaser.GameObjects.Container;
   selectionRing: Phaser.GameObjects.Arc;
   abilityAura: Phaser.GameObjects.Arc;
+  healthTrack: Phaser.GameObjects.Rectangle;
+  healthFill: Phaser.GameObjects.Rectangle;
+  knockoutBadge: Phaser.GameObjects.Text;
+}>;
+
+export type HeroFrontlineStatus = "ready" | "deploying" | "holding" | "fighting" | "knocked_out";
+
+export type HeroFrontlineState = Readonly<{
+  hp: number;
+  maxHp: number;
+  status: HeroFrontlineStatus;
 }>;
 
 export type HeroAnchorArt = Readonly<{
@@ -172,10 +183,37 @@ export function createHeroArt(scene: Phaser.Scene, heroId: HeroId, point: Point)
     .setDepth(-2);
   const body = scene.add.container(0, -5);
   const weapon = scene.add.container(0, -5);
+  const healthY = -visual.silhouetteHeight - 15;
+  const healthWidth = Math.max(34, visual.silhouetteWidth - 3);
+  const healthTrack = scene.add.rectangle(0, healthY, healthWidth, 6, 0x071713, 0.84)
+    .setStrokeStyle(1, 0xb9dfcc, 0.46)
+    .setDepth(8)
+    .setVisible(false);
+  const healthFill = scene.add.rectangle(-(healthWidth - 2) / 2, healthY, healthWidth - 2, 4, 0x75d8a8, 0.94)
+    .setOrigin(0, 0.5)
+    .setDepth(9)
+    .setVisible(false);
+  const knockoutBadge = scene.add.text(0, healthY - 9, "KO", {
+    color: "#fff1d0",
+    fontFamily: "Arial, sans-serif",
+    fontSize: "8px",
+    fontStyle: "bold",
+    stroke: "#3c1715",
+    strokeThickness: 3,
+  }).setOrigin(0.5).setDepth(10).setVisible(false);
   HERO_BUILDERS[heroId](scene, body, weapon);
-  container.add([selectionRing, abilityAura, shadow, body, weapon]);
+  container.add([selectionRing, abilityAura, shadow, body, weapon, healthTrack, healthFill, knockoutBadge]);
   heroRigs.set(container, Object.freeze({ heroId, bodyHomeY: body.y, weaponHomeRotation: weapon.rotation }));
-  return Object.freeze({ container, body, weapon, selectionRing, abilityAura });
+  return Object.freeze({
+    container,
+    body,
+    weapon,
+    selectionRing,
+    abilityAura,
+    healthTrack,
+    healthFill,
+    knockoutBadge,
+  });
 }
 
 export function updateHeroArtPose(
@@ -218,6 +256,35 @@ export function setHeroAbilityCharge(art: HeroArt, ratio: number): void {
   const charge = clamp01(ratio);
   art.abilityAura.setAlpha(0.12 + charge * 0.48);
   art.abilityAura.setScale(0.9 + charge * 0.14);
+}
+
+export function setHeroFrontlineState(art: HeroArt, state: HeroFrontlineState | null): void {
+  if (!state) {
+    art.healthTrack.setVisible(false);
+    art.healthFill.setVisible(false);
+    art.knockoutBadge.setVisible(false);
+    art.body.setAlpha(1);
+    art.weapon.setAlpha(1);
+    return;
+  }
+
+  const maxHp = Number.isFinite(state.maxHp) && state.maxHp > 0 ? state.maxHp : 1;
+  const hp = Number.isFinite(state.hp) ? Math.min(maxHp, Math.max(0, state.hp)) : 0;
+  const hpRatio = hp / maxHp;
+  const knockedOut = state.status === "knocked_out";
+  const prominent = knockedOut || state.status === "fighting" || hpRatio < 0.999;
+  const alpha = prominent ? 1 : 0.16;
+  const fillColor = hpRatio <= 0.3 ? 0xe66d5f : hpRatio <= 0.6 ? 0xe6be65 : 0x75d8a8;
+
+  art.healthTrack.setVisible(true).setAlpha(alpha);
+  art.healthFill
+    .setVisible(hpRatio > 0)
+    .setAlpha(alpha)
+    .setFillStyle(fillColor, 0.94)
+    .setScale(hpRatio, 1);
+  art.knockoutBadge.setVisible(knockedOut);
+  art.body.setAlpha(knockedOut ? 0.34 : 1);
+  art.weapon.setAlpha(knockedOut ? 0.3 : 1);
 }
 
 export function createHeroAnchorArt(scene: Phaser.Scene, point: Point): HeroAnchorArt {

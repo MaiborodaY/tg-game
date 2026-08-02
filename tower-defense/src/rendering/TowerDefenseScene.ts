@@ -78,6 +78,7 @@ import {
   setHeroAbilityCharge,
   setHeroAnchorState,
   setHeroArtSelected,
+  setHeroFrontlineState,
   updateHeroArtPose,
   type HeroAnchorArt,
   type HeroArt,
@@ -140,6 +141,10 @@ export type TowerDefenseCallbacks = Readonly<{
   onWaveClear(wave: number, bonus: number, repairedLives: number): void;
   onTerminal(outcome: TerminalOutcome, state: CampaignState): void;
   onHaptic(kind: "light" | "medium" | "heavy" | "success" | "error"): void;
+}>;
+
+export type TowerDefenseGameOptions = Readonly<{
+  heroCombatPreview?: boolean;
 }>;
 
 type PadView = {
@@ -231,7 +236,12 @@ export class TowerDefenseScene extends Phaser.Scene {
   private lastBurnVfxAtMs = -1_000;
   private worldArt?: WorldArt;
 
-  constructor(campaign: CampaignState, callbacks: TowerDefenseCallbacks, initialBuildType?: TowerType | null) {
+  constructor(
+    campaign: CampaignState,
+    callbacks: TowerDefenseCallbacks,
+    initialBuildType?: TowerType | null,
+    options: TowerDefenseGameOptions = {},
+  ) {
     super({ key: "tower-defense" });
     const level = getLevelDefinition(campaign.levelId);
     const mode = getModeRuleset(campaign.modeId);
@@ -239,7 +249,12 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.callbacks = callbacks;
     this.level = level;
     this.mode = mode;
-    this.simulation = new GameSimulation(campaign, createSimulationRules(level, mode));
+    const currentHeroId = campaign.hero.id;
+    this.simulation = new GameSimulation(campaign, createSimulationRules(level, mode, {
+      heroCombat: options.heroCombatPreview && currentHeroId === "toren"
+        ? "toren-frontline-v1"
+        : null,
+    }));
     this.path = createPathMetrics(level.route);
     this.selectedBuildType = this.simulation.readView().phase === "setup"
       ? initialBuildType === undefined ? "ranger" : initialBuildType
@@ -482,7 +497,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   private createHeroAnchors(): void {
-    this.level.heroAnchors.forEach((point, anchorId) => {
+    this.simulation.getRules().heroAnchors.forEach((point, anchorId) => {
       const art = createHeroAnchorArt(this, point);
       const hitZone = this.add.zone(point.x, point.y, 64, 64)
         .setInteractive({ useHandCursor: true })
@@ -633,7 +648,15 @@ export class TowerDefenseScene extends Phaser.Scene {
     const attackProgress = attackElapsedMs >= 0 && attackElapsedMs <= 260 ? attackElapsedMs / 260 : 0;
     moveHeroArt(this.heroView.art, hero);
     this.heroView.hitZone.setPosition(hero.x, hero.y - (hero.id === "grak" ? 7 : 0));
-    updateHeroArtPose(this.heroView.art, hero.id, view.simulationTimeMs, false, attackProgress);
+    if (this.heroView.hitZone.input) this.heroView.hitZone.input.enabled = hero.frontline?.status !== "knocked_out";
+    updateHeroArtPose(
+      this.heroView.art,
+      hero.id,
+      view.simulationTimeMs,
+      hero.frontline?.status === "deploying",
+      attackProgress,
+    );
+    setHeroFrontlineState(this.heroView.art, hero.frontline);
     setHeroAbilityCharge(
       this.heroView.art,
       hero.maxAbilityCharges > 0 ? hero.abilityCharges / hero.maxAbilityCharges : 0,
@@ -1073,6 +1096,25 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.heroEffects?.playAttack(event.heroId, event.from, event.to);
       return;
     }
+    if (event.type === "enemy_attacked_hero") {
+      const hero = this.simulation.readView().hero;
+      createFloatingText(this, hero.x, hero.y - 34, `-${event.damage}`, "#ff9d86");
+      createHitBurst(this, hero.x, hero.y - 6, 0xd66c55, 18, 2);
+      return;
+    }
+    if (event.type === "hero_knocked_out") {
+      this.cameras.main.shake(180, 0.005);
+      createHitBurst(this, event.x, event.y, 0xd66c55, 34, 4);
+      return;
+    }
+    if (event.type === "hero_respawned") {
+      this.heroEffects?.playAbility("toren", event, 30);
+      return;
+    }
+    if (event.type === "hero_frontline_arrived") {
+      createHitBurst(this, event.x, event.y + 5, 0xe7bd68, 18, 2);
+      return;
+    }
     if (event.type === "hero_moved") {
       this.syncHeroView();
       return;
@@ -1474,9 +1516,10 @@ export function createTowerDefenseGame(
   campaign: CampaignState,
   callbacks: TowerDefenseCallbacks,
   initialBuildType?: TowerType | null,
+  options: TowerDefenseGameOptions = {},
 ): Readonly<{ game: Phaser.Game; scene: TowerDefenseScene }> {
   const level = getLevelDefinition(campaign.levelId);
-  const scene = new TowerDefenseScene(campaign, callbacks, initialBuildType);
+  const scene = new TowerDefenseScene(campaign, callbacks, initialBuildType, options);
   const game = new Phaser.Game({
     ...TOWER_DEFENSE_GAME_CONFIG,
     width: level?.width ?? GAME_WIDTH,

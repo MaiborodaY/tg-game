@@ -638,6 +638,8 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .selected-hero p[data-aura="tower_damage"]::before { background: #f1cc69; box-shadow: 0 0 7px rgba(241,204,105,0.72); }
 .selected-hero p[data-aura="slow"] { color: #9bdced; }
 .selected-hero p[data-aura="slow"]::before { background: #75d8ef; box-shadow: 0 0 7px rgba(117,216,239,0.68); }
+.selected-hero p[data-aura="frontline"] { color: #f0ce83; }
+.selected-hero p[data-aura="frontline"]::before { background: #e3a956; box-shadow: 0 0 7px rgba(227,169,86,0.7); }
 .selected-hero p[data-aura="tower_attack_speed"] { color: #f1bd88; }
 .selected-hero p[data-aura="tower_attack_speed"]::before { background: #ef8b54; box-shadow: 0 0 7px rgba(239,139,84,0.72); }
 .hero-actions { display: flex; min-width: 0; }

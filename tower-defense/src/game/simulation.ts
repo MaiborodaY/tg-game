@@ -28,6 +28,17 @@ import {
   isHeroAwakened,
 } from "./heroes.ts";
 import {
+  HERO_COMBAT_RULESET_SUFFIX,
+  HERO_COMBAT_TIMING,
+  HERO_FRONTLINE_RATIOS,
+  calculateHeroDamageTaken,
+  getEnemyHeroAttackProfile,
+  getEnemyHeroBlockCost,
+  getEnemyHeroFirstAttackDelayMs,
+  getHeroFrontlineProgress,
+  getTorenHeroCombatStats,
+} from "./heroCombat.ts";
+import {
   createPathMetrics,
   getPointAtDistance,
   samplePointAtDistance,
@@ -80,6 +91,7 @@ export type SimulationRules = Readonly<{
   routePoints: readonly Point[];
   buildPads: readonly Point[];
   heroAnchors: readonly Point[];
+  heroCombat: "toren-frontline-v1" | null;
   heroAwakeningWave: number;
   finalWave: number | null;
   isComplete(completedWave: number): boolean;
@@ -93,6 +105,7 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
   routePoints: ROUTE_POINTS,
   buildPads: BUILD_PADS,
   heroAnchors: CLASSIC_CAMPAIGN_LEVEL.heroAnchors,
+  heroCombat: null,
   heroAwakeningWave: 20,
   finalWave: FINAL_WAVE,
   isComplete: (completedWave) => completedWave >= FINAL_WAVE,
@@ -101,13 +114,32 @@ export const DEFAULT_SIMULATION_RULES: SimulationRules = Object.freeze({
   getWaveHealthMultiplier,
 });
 
-export function createSimulationRules(level: LevelDefinition, mode: ModeRuleset): SimulationRules {
+export type SimulationRuleOptions = Readonly<{
+  heroCombat?: "toren-frontline-v1" | null;
+}>;
+
+export function createSimulationRules(
+  level: LevelDefinition,
+  mode: ModeRuleset,
+  options: SimulationRuleOptions = {},
+): SimulationRules {
   const finalWave = mode.getFinalWave(level);
+  const heroCombat = options.heroCombat ?? null;
+  const path = heroCombat ? createPathMetrics(level.route) : null;
+  const heroAnchors = path
+    ? Object.freeze(HERO_FRONTLINE_RATIOS.map((_, anchorId) => getPointAtDistance(
+        path,
+        getHeroFrontlineProgress(path.totalLength, anchorId) ?? 0,
+      )))
+    : level.heroAnchors;
   return Object.freeze({
-    id: `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v3`,
+    id: heroCombat
+      ? `${level.id}:${mode.id}:v${level.contentVersion}:${HERO_COMBAT_RULESET_SUFFIX}`
+      : `${level.id}:${mode.id}:v${level.contentVersion}:heroes-v3`,
     routePoints: level.route,
     buildPads: level.buildPads,
-    heroAnchors: level.heroAnchors,
+    heroAnchors,
+    heroCombat,
     heroAwakeningWave: level.progression.awakeningWave,
     finalWave,
     isComplete: (completedWave) => mode.isComplete(level, completedWave),
@@ -176,6 +208,22 @@ export type HeroSimulationView = Readonly<{
   bannerActive: boolean;
   bannerRemainingMs: number;
   barrier: HeroBarrierSimulationView | null;
+  frontline: HeroFrontlineSimulationView | null;
+}>;
+
+export type HeroFrontlineStatus = "ready" | "deploying" | "holding" | "fighting" | "knocked_out";
+
+export type HeroFrontlineSimulationView = Readonly<{
+  status: HeroFrontlineStatus;
+  progress: number;
+  targetProgress: number;
+  hp: number;
+  maxHp: number;
+  regenActive: boolean;
+  knockoutRemainingMs: number;
+  blockUsed: number;
+  blockCapacity: number;
+  blockedEnemyIds: readonly number[];
 }>;
 
 export type NorthernAvalancheZoneSimulationView = Readonly<{
@@ -254,6 +302,17 @@ export type SimulationEvent =
     }>
   | Readonly<{ type: "hero_moved"; heroId: HeroId; anchorId: number; x: number; y: number }>
   | Readonly<{ type: "hero_upgraded"; heroId: HeroId; level: HeroLevel }>
+  | Readonly<{ type: "hero_frontline_arrived"; x: number; y: number }>
+  | Readonly<{
+      type: "enemy_attacked_hero";
+      enemyId: number;
+      x: number;
+      y: number;
+      damage: number;
+      remainingHp: number;
+    }>
+  | Readonly<{ type: "hero_knocked_out"; x: number; y: number; returnInMs: number }>
+  | Readonly<{ type: "hero_respawned"; x: number; y: number; hp: number }>
   | Readonly<{
       type: "hero_ability";
       heroId: HeroId;
@@ -372,6 +431,10 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   burnDamagePerSecond: number;
   stunUntilMs: number;
   barrierUntilMs: number;
+  blockedByHero: boolean;
+  heroAttackCooldownMs: number;
+  heroBlockStartedAtMs: number;
+  heroBlockImmuneUntilMs: number;
   controlResistance: number;
   healingRadius: number;
   healingRatio: number;
@@ -397,6 +460,19 @@ type HeroBarrierEntity = {
   untilMs: number;
   capacity: number;
   capturedEnemyIds: Set<number>;
+};
+
+type HeroFrontlineEntity = {
+  status: HeroFrontlineStatus;
+  progress: number;
+  targetProgress: number;
+  hp: number;
+  maxHp: number;
+  lastDamagedAtMs: number;
+  knockoutUntilMs: number;
+  moveSpeed: number;
+  regenActive: boolean;
+  blockedEnemyIds: Set<number>;
 };
 
 export type SimulationCommandResult = Readonly<{
@@ -471,6 +547,7 @@ export class GameSimulation {
   private markUntilMs = 0;
   private bannerUntilMs = 0;
   private heroBarrier: HeroBarrierEntity | null = null;
+  private heroFrontline: HeroFrontlineEntity | null = null;
   private gateShield = 0;
   private northernAvalancheMaxCharges = 0;
   private northernAvalancheCharges = 0;
@@ -499,6 +576,7 @@ export class GameSimulation {
       : rules.isComplete(campaign.completedWave)
         ? "victory"
         : "setup";
+    this.heroFrontline = this.createHeroFrontline();
     this.syncTowerEntities();
   }
 
@@ -539,12 +617,32 @@ export class GameSimulation {
           capturedEnemyIds: Object.freeze([...this.heroBarrier.capturedEnemyIds]),
         })
       : null;
+    const frontlineStats = this.heroFrontline
+      ? getTorenHeroCombatStats(this.campaign.hero.level)
+      : null;
+    const frontline = this.heroFrontline && frontlineStats
+      ? Object.freeze({
+          status: this.heroFrontline.status,
+          progress: this.heroFrontline.progress,
+          targetProgress: this.heroFrontline.targetProgress,
+          hp: Math.max(0, this.heroFrontline.hp),
+          maxHp: this.heroFrontline.maxHp,
+          regenActive: this.heroFrontline.regenActive,
+          knockoutRemainingMs: this.heroFrontline.status === "knocked_out"
+            ? Math.max(0, this.heroFrontline.knockoutUntilMs - this.simulationTimeMs)
+            : 0,
+          blockUsed: this.getHeroFrontlineBlockUsed(),
+          blockCapacity: frontlineStats.blockCapacity,
+          blockedEnemyIds: Object.freeze([...this.heroFrontline.blockedEnemyIds].sort((a, b) => a - b)),
+        })
+      : null;
+    const abilityAvailable = this.heroAbilityCharges > 0 && frontline?.status !== "knocked_out";
     return Object.freeze({
       ...this.campaign.hero,
       x: point.x,
       y: point.y,
       attackCooldownMs: Math.max(0, this.heroAttackCooldownMs),
-      abilityAvailable: this.heroAbilityCharges > 0,
+      abilityAvailable,
       awakened,
       abilityCharges: this.heroAbilityCharges,
       maxAbilityCharges: awakened ? 2 : 1,
@@ -559,14 +657,34 @@ export class GameSimulation {
         ? Math.max(0, this.bannerUntilMs - this.simulationTimeMs)
         : 0,
       barrier,
+      frontline,
     });
   }
 
   private getHeroPoint(): Point {
+    if (this.heroFrontline) return getPointAtDistance(this.path, this.heroFrontline.progress);
     const anchors = this.rules.heroAnchors ?? CLASSIC_CAMPAIGN_LEVEL.heroAnchors;
     return anchors[this.campaign.hero.anchorId]
       ?? anchors[0]
       ?? Object.freeze({ x: 0, y: 0 });
+  }
+
+  private createHeroFrontline(): HeroFrontlineEntity | null {
+    if (this.rules.heroCombat !== "toren-frontline-v1" || this.campaign.hero.id !== "toren") return null;
+    const stats = getTorenHeroCombatStats(this.campaign.hero.level);
+    const targetProgress = getHeroFrontlineProgress(this.path.totalLength, this.campaign.hero.anchorId) ?? 0;
+    return {
+      status: "ready",
+      progress: targetProgress,
+      targetProgress,
+      hp: stats.maxHp,
+      maxHp: stats.maxHp,
+      lastDamagedAtMs: Number.NEGATIVE_INFINITY,
+      knockoutUntilMs: 0,
+      moveSpeed: HERO_COMBAT_TIMING.countdownMoveSpeed,
+      regenActive: false,
+      blockedEnemyIds: new Set<number>(),
+    };
   }
 
   private isCurrentHeroAwakened(): boolean {
@@ -629,8 +747,8 @@ export class GameSimulation {
       northernPass: this.readNorthernPassView(),
       countdownRemainingMs: this.countdownRemainingMs,
       hero,
-      heroAbilityAvailable: this.heroAbilityCharges > 0,
-      pulseAvailable: this.heroAbilityCharges > 0,
+      heroAbilityAvailable: hero.abilityAvailable,
+      pulseAvailable: hero.abilityAvailable,
       gateShield: this.gateShield,
       waveResolvedCount: this.waveResolvedCount,
       waveTotalCount: this.waveTotalCount,
@@ -660,7 +778,13 @@ export class GameSimulation {
         }),
       }) : null,
       countdownRemainingMs: view.countdownRemainingMs,
-      hero: Object.freeze({ ...view.hero }),
+      hero: Object.freeze({
+        ...view.hero,
+        frontline: view.hero.frontline ? Object.freeze({
+          ...view.hero.frontline,
+          blockedEnemyIds: Object.freeze([...view.hero.frontline.blockedEnemyIds]),
+        }) : null,
+      }),
       heroAbilityAvailable: view.heroAbilityAvailable,
       pulseAvailable: view.pulseAvailable,
       gateShield: view.gateShield,
@@ -779,6 +903,11 @@ export class GameSimulation {
     const result = moveCampaignHero(this.campaign, anchorId);
     if (!result.ok) return commandFailure(result.error);
     this.campaign = result.state;
+    if (this.heroFrontline) {
+      this.heroFrontline.targetProgress = getHeroFrontlineProgress(this.path.totalLength, anchorId) ?? 0;
+      this.heroFrontline.progress = this.heroFrontline.targetProgress;
+      this.heroFrontline.status = "ready";
+    }
     const point = this.getHeroPoint();
     this.events.push(
       { type: "hero_moved", heroId: this.campaign.hero.id, anchorId, x: point.x, y: point.y },
@@ -794,6 +923,11 @@ export class GameSimulation {
     const result = upgradeCampaignHero(this.campaign);
     if (!result.ok) return commandFailure(result.error);
     this.campaign = result.state;
+    if (this.heroFrontline) {
+      const stats = getTorenHeroCombatStats(this.campaign.hero.level);
+      this.heroFrontline.maxHp = stats.maxHp;
+      this.heroFrontline.hp = stats.maxHp;
+    }
     this.events.push(
       { type: "hero_upgraded", heroId: this.campaign.hero.id, level: this.campaign.hero.level },
       { type: "persist", campaign: this.campaign },
@@ -831,6 +965,7 @@ export class GameSimulation {
     this.markUntilMs = 0;
     this.bannerUntilMs = 0;
     this.heroBarrier = null;
+    this.resetHeroFrontlineForWave();
     this.gateShield = getHeroStats(this.campaign.hero.id, this.campaign.hero.level).gateShield;
     for (const tower of this.towers.values()) tower.cooldownMs = 180;
     this.phase = "countdown";
@@ -930,7 +1065,9 @@ export class GameSimulation {
 
   useHeroAbility(targetDistance?: number): SimulationCommandResult {
     if (this.phase !== "wave") return commandFailure("invalid_phase");
-    if (this.heroAbilityCharges <= 0) return commandFailure("hero_ability_unavailable");
+    if (this.heroAbilityCharges <= 0 || this.heroFrontline?.status === "knocked_out") {
+      return commandFailure("hero_ability_unavailable");
+    }
     const hero = this.campaign.hero;
     const stats = getHeroStats(hero.id, hero.level);
     const heroPoint = this.getHeroPoint();
@@ -1070,6 +1207,7 @@ export class GameSimulation {
   private step(deltaMs: number): void {
     this.simulationTimeMs += deltaMs;
     if (this.phase === "countdown") {
+      this.updateHeroFrontlineMovement(deltaMs);
       this.countdownRemainingMs = Math.max(0, this.countdownRemainingMs - deltaMs);
       if (this.countdownRemainingMs <= 0) this.phase = "wave";
       return;
@@ -1077,6 +1215,8 @@ export class GameSimulation {
 
     this.waveElapsedMs += deltaMs;
     this.spawnScheduledEnemies();
+    this.updateHeroFrontlineMovement(deltaMs);
+    this.updateHeroFrontlineBlocks();
     this.updateEnemies(deltaMs);
     if (this.phase !== "wave") return;
     this.updateHero(deltaMs);
@@ -1150,6 +1290,10 @@ export class GameSimulation {
       burnDamagePerSecond: 0,
       stunUntilMs: 0,
       barrierUntilMs: 0,
+      blockedByHero: false,
+      heroAttackCooldownMs: 0,
+      heroBlockStartedAtMs: 0,
+      heroBlockImmuneUntilMs: 0,
       controlResistance: spawn.controlResistance,
       healingRadius: spawn.healingRadius,
       healingRatio: spawn.healingRatio,
@@ -1168,6 +1312,184 @@ export class GameSimulation {
     if (spawn.type === "boss" || spawn.type === "titan") {
       this.events.push({ type: "boss_spawned" }, { type: "haptic", kind: "heavy" });
     }
+  }
+
+  private resetHeroFrontlineForWave(): void {
+    const frontline = this.heroFrontline;
+    if (!frontline) return;
+    this.releaseAllHeroFrontlineBlocks(false);
+    const stats = getTorenHeroCombatStats(this.campaign.hero.level);
+    frontline.maxHp = stats.maxHp;
+    frontline.hp = stats.maxHp;
+    frontline.targetProgress = getHeroFrontlineProgress(this.path.totalLength, this.campaign.hero.anchorId) ?? 0;
+    frontline.progress = this.path.totalLength;
+    frontline.status = "deploying";
+    frontline.moveSpeed = HERO_COMBAT_TIMING.countdownMoveSpeed;
+    frontline.lastDamagedAtMs = Number.NEGATIVE_INFINITY;
+    frontline.knockoutUntilMs = 0;
+    frontline.regenActive = false;
+  }
+
+  private resetHeroFrontlineAfterWave(): void {
+    const frontline = this.heroFrontline;
+    if (!frontline) return;
+    this.releaseAllHeroFrontlineBlocks(false);
+    const stats = getTorenHeroCombatStats(this.campaign.hero.level);
+    frontline.maxHp = stats.maxHp;
+    frontline.hp = stats.maxHp;
+    frontline.targetProgress = getHeroFrontlineProgress(this.path.totalLength, this.campaign.hero.anchorId) ?? 0;
+    frontline.progress = frontline.targetProgress;
+    frontline.status = "ready";
+    frontline.lastDamagedAtMs = Number.NEGATIVE_INFINITY;
+    frontline.knockoutUntilMs = 0;
+    frontline.regenActive = false;
+  }
+
+  private updateHeroFrontlineMovement(deltaMs: number): void {
+    const frontline = this.heroFrontline;
+    if (!frontline) return;
+
+    if (frontline.status === "knocked_out") {
+      if (this.simulationTimeMs < frontline.knockoutUntilMs) return;
+      frontline.hp = Math.max(1, Math.round(frontline.maxHp * HERO_COMBAT_TIMING.respawnHpRatio));
+      frontline.progress = this.path.totalLength;
+      frontline.targetProgress = getHeroFrontlineProgress(this.path.totalLength, this.campaign.hero.anchorId) ?? 0;
+      frontline.status = "deploying";
+      frontline.moveSpeed = HERO_COMBAT_TIMING.respawnMoveSpeed;
+      frontline.lastDamagedAtMs = this.simulationTimeMs;
+      const point = getPointAtDistance(this.path, frontline.progress);
+      this.events.push(
+        { type: "hero_respawned", x: point.x, y: point.y, hp: frontline.hp },
+        { type: "haptic", kind: "medium" },
+      );
+    }
+
+    if (frontline.status !== "deploying") return;
+    frontline.progress = Math.max(
+      frontline.targetProgress,
+      frontline.progress - frontline.moveSpeed * (deltaMs / 1_000),
+    );
+    if (frontline.progress > frontline.targetProgress + 1e-6) return;
+    frontline.progress = frontline.targetProgress;
+    frontline.status = "holding";
+    const point = getPointAtDistance(this.path, frontline.progress);
+    this.events.push({ type: "hero_frontline_arrived", x: point.x, y: point.y });
+  }
+
+  private updateHeroFrontlineBlocks(): void {
+    const frontline = this.heroFrontline;
+    if (!frontline) return;
+
+    for (const enemyId of [...frontline.blockedEnemyIds]) {
+      const enemy = this.enemiesById.get(enemyId);
+      if (!enemy || enemy.dead) {
+        frontline.blockedEnemyIds.delete(enemyId);
+        continue;
+      }
+      const bossBlockExpired = (enemy.type === "boss" || enemy.type === "titan")
+        && this.simulationTimeMs - enemy.heroBlockStartedAtMs >= HERO_COMBAT_TIMING.bossMaximumBlockMs;
+      if (bossBlockExpired) this.releaseHeroFrontlineBlock(enemy, true);
+    }
+
+    if (frontline.status !== "holding" && frontline.status !== "fighting") {
+      this.releaseAllHeroFrontlineBlocks(false);
+      return;
+    }
+
+    const stats = getTorenHeroCombatStats(this.campaign.hero.level);
+    let blockUsed = this.getHeroFrontlineBlockUsed();
+    const candidates = this.enemies
+      .filter((enemy) => (
+        !enemy.dead
+        && !enemy.blockedByHero
+        && enemy.heroBlockImmuneUntilMs <= this.simulationTimeMs
+        && Math.abs(enemy.progress - frontline.progress) <= HERO_COMBAT_TIMING.captureDistance
+      ))
+      .sort((left, right) => right.progress - left.progress || left.id - right.id);
+
+    for (const enemy of candidates) {
+      const cost = getEnemyHeroBlockCost(enemy.type);
+      if (blockUsed + cost > stats.blockCapacity) continue;
+      enemy.blockedByHero = true;
+      enemy.heroBlockStartedAtMs = this.simulationTimeMs;
+      enemy.heroAttackCooldownMs = getEnemyHeroFirstAttackDelayMs(enemy.type);
+      frontline.blockedEnemyIds.add(enemy.id);
+      blockUsed += cost;
+    }
+    frontline.status = frontline.blockedEnemyIds.size > 0 ? "fighting" : "holding";
+  }
+
+  private getHeroFrontlineBlockUsed(): number {
+    const frontline = this.heroFrontline;
+    if (!frontline) return 0;
+    let used = 0;
+    for (const enemyId of frontline.blockedEnemyIds) {
+      const enemy = this.enemiesById.get(enemyId);
+      if (enemy && !enemy.dead && enemy.blockedByHero) used += getEnemyHeroBlockCost(enemy.type);
+    }
+    return used;
+  }
+
+  private releaseHeroFrontlineBlock(enemy: EnemyEntity, grantImmunity: boolean): void {
+    enemy.blockedByHero = false;
+    enemy.heroAttackCooldownMs = 0;
+    enemy.heroBlockStartedAtMs = 0;
+    if (grantImmunity) {
+      enemy.heroBlockImmuneUntilMs = this.simulationTimeMs + HERO_COMBAT_TIMING.bossBlockImmunityMs;
+    }
+    this.heroFrontline?.blockedEnemyIds.delete(enemy.id);
+  }
+
+  private releaseAllHeroFrontlineBlocks(grantBossImmunity: boolean): void {
+    const frontline = this.heroFrontline;
+    if (!frontline) return;
+    for (const enemyId of [...frontline.blockedEnemyIds]) {
+      const enemy = this.enemiesById.get(enemyId);
+      if (enemy) {
+        this.releaseHeroFrontlineBlock(
+          enemy,
+          grantBossImmunity && (enemy.type === "boss" || enemy.type === "titan"),
+        );
+      } else {
+        frontline.blockedEnemyIds.delete(enemyId);
+      }
+    }
+  }
+
+  private attackHeroWithEnemy(enemy: EnemyEntity, deltaMs: number): void {
+    const frontline = this.heroFrontline;
+    if (!frontline || !enemy.blockedByHero || enemy.stunned || frontline.status === "knocked_out") return;
+    enemy.heroAttackCooldownMs -= deltaMs;
+    if (enemy.heroAttackCooldownMs > 0) return;
+    const profile = getEnemyHeroAttackProfile(enemy.type);
+    enemy.heroAttackCooldownMs += profile.intervalMs;
+    const stats = getTorenHeroCombatStats(this.campaign.hero.level);
+    const damage = calculateHeroDamageTaken(profile.damage, stats.armor);
+    frontline.hp = Math.max(0, frontline.hp - damage);
+    frontline.lastDamagedAtMs = this.simulationTimeMs;
+    frontline.regenActive = false;
+    this.events.push({
+      type: "enemy_attacked_hero",
+      enemyId: enemy.id,
+      x: enemy.x,
+      y: enemy.y,
+      damage,
+      remainingHp: frontline.hp,
+    });
+    if (frontline.hp > 0) return;
+    const point = getPointAtDistance(this.path, frontline.progress);
+    frontline.status = "knocked_out";
+    frontline.knockoutUntilMs = this.simulationTimeMs + HERO_COMBAT_TIMING.knockoutDurationMs;
+    this.releaseAllHeroFrontlineBlocks(false);
+    this.events.push(
+      {
+        type: "hero_knocked_out",
+        x: point.x,
+        y: point.y,
+        returnInMs: HERO_COMBAT_TIMING.knockoutDurationMs,
+      },
+      { type: "haptic", kind: "heavy" },
+    );
   }
 
   private updateEnemies(deltaMs: number): void {
@@ -1192,7 +1514,10 @@ export class GameSimulation {
       if (enemy.dead) continue;
       enemy.stunned = enemy.stunUntilMs > this.simulationTimeMs;
       this.captureEnemyWithBarrier(enemy);
-      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs;
+      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs || enemy.blockedByHero;
+      this.attackHeroWithEnemy(enemy, deltaMs);
+      // A hit can knock Toren out and release every enemy during this same fixed tick.
+      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs || enemy.blockedByHero;
 
       if (enemy.healingRadius > 0 && isEnemyAbilityReady(this.simulationTimeMs, enemy.stunUntilMs, enemy.lastHealAtMs)) {
         enemy.lastHealAtMs = this.simulationTimeMs + 2_800;
@@ -1231,15 +1556,40 @@ export class GameSimulation {
   }
 
   private updateHero(deltaMs: number): void {
+    const frontline = this.heroFrontline;
+    if (frontline) {
+      frontline.regenActive = false;
+      const canRegenerate = (frontline.status === "holding" || frontline.status === "fighting")
+        && frontline.blockedEnemyIds.size === 0
+        && frontline.hp < frontline.maxHp
+        && this.simulationTimeMs - frontline.lastDamagedAtMs >= HERO_COMBAT_TIMING.regenDelayMs;
+      if (canRegenerate) {
+        const combatStats = getTorenHeroCombatStats(this.campaign.hero.level);
+        frontline.hp = Math.min(
+          frontline.maxHp,
+          frontline.hp + combatStats.regenHpPerSecond * (deltaMs / 1_000),
+        );
+        frontline.regenActive = frontline.hp < frontline.maxHp;
+      }
+      if (frontline.status !== "holding" && frontline.status !== "fighting") return;
+    }
+
     this.heroAttackCooldownMs -= deltaMs;
     if (this.heroAttackCooldownMs > 0) return;
     const hero = this.campaign.hero;
     const stats = getHeroStats(hero.id, hero.level);
     const point = this.getHeroPoint();
-    const inRange = this.enemies.filter((enemy) => squaredDistance(enemy, point) <= stats.attackRange ** 2);
-    const target = hero.id === "eira"
+    const attackRange = frontline ? HERO_COMBAT_TIMING.meleeRange : stats.attackRange;
+    const inRange = this.enemies.filter((enemy) => squaredDistance(enemy, point) <= attackRange ** 2);
+    const blockedTarget = frontline
+      ? [...frontline.blockedEnemyIds]
+          .map((enemyId) => this.enemiesById.get(enemyId))
+          .filter((enemy): enemy is EnemyEntity => Boolean(enemy && !enemy.dead))
+          .sort((left, right) => right.progress - left.progress || left.id - right.id)[0] ?? null
+      : null;
+    const target = blockedTarget ?? (hero.id === "eira"
       ? inRange.reduce<EnemyEntity | null>((best, enemy) => !best || enemy.progress > best.progress ? enemy : best, null)
-      : chooseTowerTarget("ember", point, stats.attackRange, inRange, stats.attackSplashRadius) as EnemyEntity | null;
+      : chooseTowerTarget("ember", point, attackRange, inRange, stats.attackSplashRadius) as EnemyEntity | null);
     if (!target) {
       this.heroAttackCooldownMs = 80;
       return;
@@ -1696,6 +2046,7 @@ export class GameSimulation {
   }
 
   private removeEnemy(enemy: EnemyEntity): void {
+    if (enemy.blockedByHero) this.releaseHeroFrontlineBlock(enemy, false);
     const index = this.enemies.indexOf(enemy);
     if (index >= 0) this.enemies.splice(index, 1);
     this.enemiesById.delete(enemy.id);
@@ -1731,6 +2082,7 @@ export class GameSimulation {
     );
     this.wavePlan = null;
     this.path = createPathMetrics(this.rules.routePoints);
+    this.resetHeroFrontlineAfterWave();
     this.northernAvalancheMaxCharges = 0;
     this.northernAvalancheCharges = 0;
     this.waveCheckpoint = null;
@@ -1754,6 +2106,7 @@ export class GameSimulation {
     this.paused = false;
     this.wavePlan = null;
     this.path = createPathMetrics(this.rules.routePoints);
+    this.releaseAllHeroFrontlineBlocks(false);
     this.northernAvalancheMaxCharges = 0;
     this.northernAvalancheCharges = 0;
     this.waveCheckpoint = null;
