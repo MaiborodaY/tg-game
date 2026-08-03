@@ -9,6 +9,7 @@ import {
   HERO_COMBAT_TIMING,
   HERO_FRONTLINE_PASSIVE_POWER,
   HERO_FRONTLINE_RATIOS,
+  HERO_PASSING_STRIKE_SCALES,
   applyHeroicArmorDamage,
   calculateHeroDamageTaken,
   getEffectiveEnemyHeroBlockCost,
@@ -19,6 +20,7 @@ import {
   getHeroCombatStats,
   getHeroFrontlineProgress,
   getHeroFrontlineRatio,
+  getHeroPassingStrikeScales,
 } from "../src/game/heroCombat.ts";
 
 const EXPECTED_HERO_STATS = Object.freeze({
@@ -90,6 +92,17 @@ test("enemy attacks define damage, armor chip, and deterministic first wind-up e
   }
   assert.ok(getEnemyHeroAttackProfile("boss").armorDamage > getEnemyHeroAttackProfile("bulwark").armorDamage);
   assert.ok(getEnemyHeroAttackProfile("titan").armorDamage > getEnemyHeroAttackProfile("boss").armorDamage);
+});
+
+test("passing strikes preserve fragile, tank, and bruiser exposure independently from block capacity", () => {
+  assert.deepEqual(HERO_PASSING_STRIKE_SCALES, {
+    eira: { damage: 0.45, armorDamage: 0.5 },
+    toren: { damage: 0.25, armorDamage: 0.275 },
+    grak: { damage: 0.36, armorDamage: 0.4 },
+  });
+  assert.ok(getHeroPassingStrikeScales("eira").damage > getHeroPassingStrikeScales("grak").damage);
+  assert.ok(getHeroPassingStrikeScales("grak").damage > getHeroPassingStrikeScales("toren").damage);
+  assert.ok(Object.values(HERO_PASSING_STRIKE_SCALES).every(Object.isFrozen));
 });
 
 test("intact frost armor makes an enemy more dangerous to a frontline hero", () => {

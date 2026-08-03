@@ -121,9 +121,73 @@ test("frontline Toren deploys deterministically and blocks only his rank capacit
       > simulation.readView().enemies.find((enemy) => enemy.id === 1_000).progress,
   );
 
-  advanceUntil(simulation, (view) => view.hero.frontline.hp < 130, 1_000);
-  assert.ok(simulation.readView().hero.frontline.heroicArmor < 6);
+  advanceUntil(simulation, (view) => view.hero.frontline.heroicArmor < 6, 2_500);
+  assert.ok(simulation.readView().hero.frontline.hp < 130);
   assert.ok(simulation.drainEvents().some((event) => event.type === "enemy_attacked_hero"));
+});
+
+test("overflow enemies strike Eira once while the held enemy stays engaged", () => {
+  const simulation = new GameSimulation(
+    createHeroCampaign("eira", 1),
+    createFrontlineRules({ enemyTypes: ["raider", "raider", "raider"], enemyHp: 10_000 }),
+  );
+  simulation.startWave();
+  const events = [];
+  let elapsedMs = 0;
+  while (elapsedMs < 10_000) {
+    simulation.advance(100);
+    events.push(...simulation.drainEvents());
+    elapsedMs += 100;
+    const view = simulation.readView();
+    const overflow = view.enemies.filter((enemy) => enemy.id !== 1_000);
+    if (overflow.length === 2 && overflow.every((enemy) => enemy.progress > view.hero.frontline.progress + 40)) break;
+  }
+
+  const passing = events.filter((event) => event.type === "enemy_attacked_hero" && event.attackKind === "passing");
+  const engaged = events.filter((event) => event.type === "enemy_attacked_hero" && event.attackKind === "engaged");
+  assert.deepEqual(passing.map((event) => event.enemyId), [1_001, 1_002]);
+  assert.ok(engaged.length > 0 && engaged.every((event) => event.enemyId === 1_000));
+  assert.deepEqual(simulation.readView().hero.frontline.blockedEnemyIds, [1_000]);
+  assert.ok(simulation.readView().enemies.filter((enemy) => enemy.id !== 1_000).every((enemy) => !enemy.blocked));
+
+  const replay = replaySimulation(simulation.exportReplay(), simulation.getRules());
+  assert.deepEqual(replay.createSnapshot(), simulation.createSnapshot());
+});
+
+test("a high-speed heavy enemy cannot skip Eira's passing-strike window", () => {
+  const simulation = new GameSimulation(
+    createHeroCampaign("eira", 1),
+    createFrontlineRules({ enemyTypes: ["brute"], enemySpeed: 20_000, enemyHp: 10_000 }),
+  );
+  simulation.startWave();
+  const events = [];
+  for (let elapsedMs = 0; elapsedMs < 3_000; elapsedMs += 50) {
+    simulation.advance(50);
+    events.push(...simulation.drainEvents());
+  }
+  const passing = events.filter((event) => event.type === "enemy_attacked_hero" && event.attackKind === "passing");
+  assert.equal(passing.length, 1);
+  assert.equal(passing[0].enemyId, 1_000);
+});
+
+test("a passing strike that knocks Eira out prevents later enemies hitting her body", () => {
+  const simulation = new GameSimulation(
+    createHeroCampaign("eira", 1),
+    createFrontlineRules({ enemyTypes: Array.from({ length: 9 }, () => "brute"), enemyHp: 10_000 }),
+  );
+  simulation.startWave();
+  const events = [];
+  let elapsedMs = 0;
+  while (simulation.readView().hero.frontline.status !== "knocked_out" && elapsedMs < 10_000) {
+    simulation.advance(100);
+    events.push(...simulation.drainEvents());
+    elapsedMs += 100;
+  }
+  const passing = events.filter((event) => event.type === "enemy_attacked_hero" && event.attackKind === "passing");
+  assert.equal(simulation.readView().hero.frontline.status, "knocked_out");
+  assert.equal(passing.length, 7);
+  assert.equal(new Set(passing.map((event) => event.enemyId)).size, passing.length);
+  assert.ok(simulation.readView().enemies.every((enemy) => !enemy.blocked));
 });
 
 test("all heroes receive their distinct frontline durability, range, and block role", () => {

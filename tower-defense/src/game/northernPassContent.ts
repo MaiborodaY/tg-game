@@ -109,6 +109,7 @@ type NorthernWaveGroup = Readonly<{
   healingRatio?: number;
   summonThresholds?: readonly number[];
   summonCount?: number;
+  leakDamage?: number;
 }>;
 
 type NorthernWaveBlueprint = Readonly<{
@@ -163,23 +164,23 @@ const NORTHERN_PASS_WAVES: readonly NorthernWaveBlueprint[] = Object.freeze([
   wave(4.00, 0.56, 390, 75, 4, [runner("shade", 12, { eliteEvery: 8 }), icebound("brute", 8, 0.4), icebound("warden", 7, 0.46), icebound("bulwark", 4, 0.5), standard("shaman", 2), standard("raider", 4)], true),
   wave(4.40, 0.54, 380, 110, 5, [
     runner("swift", 4, { gapAfterMs: 0 }), icebound("bulwark", 4, 0.5, { gapAfterMs: 0 }),
-    icebound("boss", 1, 0.58, { hpScale: 1.12, healingRadius: 118, healingRatio: 0.04, gapAfterMs: 0 }),
-    standard("raider", 6, { gapAfterMs: 0 }), runner("shade", 7, { gapAfterMs: 0 }),
-    icebound("warden", 5, 0.46, { gapAfterMs: 0 }), standard("shaman", 2, { gapAfterMs: 0 }),
+    icebound("boss", 1, 0.66, { hpScale: 1.22, healingRadius: 118, healingRatio: 0.04, gapAfterMs: 0 }),
+    standard("shaman", 2, { gapAfterMs: 0 }), standard("raider", 6, { gapAfterMs: 0 }),
+    runner("shade", 7, { gapAfterMs: 0 }), icebound("warden", 5, 0.48, { gapAfterMs: 0 }),
   ]),
 
-  wave(4.45, 0.52, 370, 82, 4, [runner("swift", 12), runner("shade", 10), icebound("brute", 7, 0.42), icebound("warden", 6, 0.46)], true),
-  wave(4.75, 0.50, 360, 88, 4, [icebound("bulwark", 6, 0.54), icebound("warden", 8, 0.48), standard("shaman", 3), runner("swift", 12), standard("raider", 8)], true),
-  wave(5.00, 0.48, 350, 94, 5, [runner("shade", 12, { eliteEvery: 8 }), runner("swift", 10), icebound("brute", 8, 0.44), icebound("bulwark", 5, 0.54), standard("shaman", 3)], true),
-  wave(5.25, 0.46, 340, 100, 5, [standard("raider", 8), runner("swift", 12), icebound("warden", 7, 0.5), icebound("bulwark", 6, 0.56), standard("shaman", 3)], true),
-  wave(5.55, 0.44, 330, 106, 5, [runner("swift", 14, { eliteEvery: 8 }), runner("shade", 10), icebound("brute", 8, 0.46), icebound("warden", 6, 0.5), standard("shaman", 3)], true),
-  wave(5.85, 0.42, 320, 112, 5, [standard("raider", 8), runner("shade", 12, { eliteEvery: 7 }), icebound("warden", 8, 0.52), icebound("bulwark", 7, 0.58), standard("shaman", 4), runner("swift", 5)], true),
-  wave(6.15, 0.40, 310, 120, 5, [runner("swift", 14, { eliteEvery: 7 }), runner("shade", 12, { eliteEvery: 7 }), icebound("brute", 8, 0.48), icebound("bulwark", 6, 0.58), standard("shaman", 4)], true),
-  wave(6.60, 0.38, 300, 180, 5, [
-    runner("swift", 5, { eliteEvery: 5, gapAfterMs: 0 }), icebound("bulwark", 5, 0.6, { gapAfterMs: 0 }),
-    icebound("titan", 1, 0.68, { hpScale: 0.6, summonThresholds: [0.72, 0.42], summonCount: 3, gapAfterMs: 0 }),
-    runner("shade", 10, { eliteEvery: 7, gapAfterMs: 0 }), icebound("warden", 8, 0.54, { gapAfterMs: 0 }),
-    standard("shaman", 4, { gapAfterMs: 0 }), standard("raider", 7, { gapAfterMs: 0 }),
+  wave(4.45, 0.52, 350, 82, 4, [runner("swift", 10), runner("shade", 8), icebound("brute", 6, 0.48), icebound("warden", 6, 0.52), icebound("bulwark", 3, 0.56), standard("shaman", 2)], true),
+  wave(4.75, 0.50, 345, 88, 4, [icebound("bulwark", 6, 0.56), icebound("warden", 8, 0.52), standard("shaman", 3), runner("swift", 12), standard("raider", 8)], true),
+  wave(5.00, 0.48, 340, 94, 5, [runner("shade", 12, { eliteEvery: 6 }), runner("swift", 10), icebound("brute", 8, 0.48), icebound("bulwark", 5, 0.58), standard("shaman", 3)], true),
+  wave(5.25, 0.46, 320, 100, 5, [standard("raider", 6), runner("swift", 10, { eliteEvery: 7 }), icebound("warden", 7, 0.56), icebound("bulwark", 8, 0.62), standard("shaman", 4)], true),
+  wave(5.55, 0.44, 310, 106, 5, [runner("swift", 10, { eliteEvery: 6 }), runner("shade", 10, { eliteEvery: 7 }), icebound("brute", 7, 0.52), icebound("warden", 6, 0.56), icebound("bulwark", 4, 0.62), standard("shaman", 4)], true),
+  wave(5.85, 0.42, 300, 112, 5, [standard("raider", 6), runner("shade", 12, { eliteEvery: 5 }), icebound("warden", 8, 0.58), icebound("bulwark", 8, 0.64), standard("shaman", 4), runner("swift", 4, { eliteEvery: 4 })], true),
+  wave(6.15, 0.40, 290, 120, 5, [runner("swift", 12, { eliteEvery: 5 }), runner("shade", 12, { eliteEvery: 5 }), icebound("brute", 8, 0.54), icebound("bulwark", 7, 0.64), standard("shaman", 4)], true),
+  wave(6.60, 0.38, 280, 180, 5, [
+    runner("swift", 5, { eliteEvery: 4, gapAfterMs: 0 }), icebound("bulwark", 5, 0.66, { gapAfterMs: 0 }),
+    icebound("titan", 1, 0.72, { hpScale: 0.58, leakDamage: 11, summonThresholds: [0.72, 0.42], summonCount: 3, gapAfterMs: 0 }),
+    standard("shaman", 6, { gapAfterMs: 0 }), runner("shade", 10, { eliteEvery: 5, gapAfterMs: 0 }),
+    icebound("warden", 8, 0.6, { gapAfterMs: 0 }), standard("raider", 4, { gapAfterMs: 0 }),
   ]),
 ]);
 
@@ -193,8 +194,8 @@ function createAuthoredNorthernWave(waveValue: number): WavePlan {
   }
   const blueprint = NORTHERN_PASS_WAVES[waveValue - 1];
   const act = Math.ceil(waveValue / NORTHERN_PASS_PROGRESSION.actSize) as CampaignAct;
-  const v3HealthPressure = ([1, 1.28, 1.45] as const)[act - 1];
-  const v3IceboundFrostArmorFloor = ([0.18, 0.42, 0.58] as const)[act - 1];
+  const v3HealthPressure = ([1, 1.32, 1.52] as const)[act - 1];
+  const v3IceboundFrostArmorFloor = ([0.18, 0.48, 0.64] as const)[act - 1];
   const spawns: WaveSpawn[] = [];
   let atMs = 0;
 
@@ -221,7 +222,7 @@ function createAuthoredNorthernWave(waveValue: number): WavePlan {
       )),
       speed: definition.speed * (group.speedScale ?? variantSpeed) * Math.min(1.18, 1 + (waveValue - 1) * 0.006),
       reward: Math.max(0, Math.ceil(definition.reward * blueprint.rewardScale) + (elite ? 3 : 0)),
-      leakDamage: definition.leakDamage + (elite ? 1 : 0),
+      leakDamage: (group.leakDamage ?? definition.leakDamage) + (elite ? 1 : 0),
       physicalResistance: Math.min(0.72, definition.physicalResistance + variantPhysical + (elite ? 0.05 : 0)),
       magicResistance: Math.min(0.72, definition.magicResistance + (elite ? 0.05 : 0)),
       shieldRatio: Math.min(0.55, definition.shieldRatio + (elite ? 0.08 : 0)),

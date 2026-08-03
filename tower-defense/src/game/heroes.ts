@@ -57,7 +57,7 @@ export const HERO_AWAKENINGS = Object.freeze({
     id: "toren" as const,
     abilityDurationMs: 6_000,
     bossBarrierDurationMs: 3_000,
-    barrierCapacity: 10,
+    barrierCapacity: 6,
     barrierCaptureRadius: 28,
     impactRadius: 60,
     impactDamage: 110,

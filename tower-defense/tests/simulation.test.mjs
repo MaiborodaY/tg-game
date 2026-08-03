@@ -424,21 +424,21 @@ test("awakened Toren places a validated road barrier with capacity and boss limi
       capacity: simulation.readView().hero.barrier?.capacity,
       capturedCount: simulation.readView().hero.barrier?.capturedCount,
     },
-    { progress: 0, capacity: 10, capturedCount: 10 },
+    { progress: 0, capacity: 6, capturedCount: 6 },
   );
-  assert.equal(simulation.readView().enemies.filter((enemy) => enemy.blocked).length, 10);
+  assert.equal(simulation.readView().enemies.filter((enemy) => enemy.blocked).length, 6);
   assert.ok(simulation.readView().enemies.every((enemy) => enemy.hp < 1_000));
 
   for (let index = 0; index < 32; index += 1) simulation.advance(100);
   const titan = simulation.readView().enemies.find((enemy) => enemy.type === "titan");
   assert.equal(titan?.blocked, false, "Titan ignores the second half of the barrier duration");
-  assert.equal(simulation.readView().hero.barrier?.capturedCount, 10);
+  assert.equal(simulation.readView().hero.barrier?.capturedCount, 6);
   assert.ok(simulation.readView().hero.barrier?.remainingMs > 0);
   const events = simulation.drainEvents();
   assert.ok(events.some((event) => (
     event.type === "hero_barrier_created" && event.progress === 0 && event.radius === 60
   )));
-  assert.equal(events.filter((event) => event.type === "hero_barrier_blocked").length, 10);
+  assert.equal(events.filter((event) => event.type === "hero_barrier_blocked").length, 6);
 });
 
 test("Toren's gate shield absorbs leak damage before campaign lives", () => {

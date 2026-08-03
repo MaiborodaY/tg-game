@@ -63,7 +63,7 @@ test("overflow arcs around the hero and rejoins the route after passing", () => 
   assert.ok(Math.abs(after.lateralOffset) < 1e-8);
 });
 
-test("major enemies use a stable bounded side when walking around a defeated hero", () => {
+test("major enemy bypass arcs remain deterministic and bounded while a frontline is active", () => {
   const frame = createHeroFrontlineRouteFrameAtPoint({ x: 0, y: 0 }, -0.7);
   for (const type of ["boss", "titan"]) {
     const side = getHeroFrontlineBypassSide(1_002, type);
@@ -81,6 +81,9 @@ test("major enemies use a stable bounded side when walking around a defeated her
 });
 
 test("the scene renders contacts and overflow without mutating gameplay positions", () => {
+  assert.match(sceneSource, /frontlinePresent = Boolean\(frontline && \(frontline\.status === "holding" \|\| frontline\.status === "fighting"\)\)/);
+  assert.doesNotMatch(sceneSource, /frontline\.status === "knocked_out"\s*\|\|\s*enemy\.progress/);
+  assert.match(sceneSource, /event\.attackKind === "passing"/);
   assert.match(sceneSource, /blockedSlots[\s\S]*getHeroFrontlineContactPose/);
   assert.match(sceneSource, /getEffectiveEnemyHeroBlockCost\(enemy\.type, frontline\.blockCapacity\) > remainingCapacity/);
   assert.match(sceneSource, /kind: "overflow"[\s\S]*enemy\.progress - bypassStart/);

@@ -1140,11 +1140,12 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
     if (event.type === "enemy_attacked_hero") {
       const hero = this.simulation.readView().hero;
-      createFloatingText(this, hero.x, hero.y - 34, `-${event.damage}`, "#ff9d86");
+      const passing = event.attackKind === "passing";
+      createFloatingText(this, hero.x, hero.y - 34, `-${event.damage}`, passing ? "#ffd08a" : "#ff9d86");
       if (event.armorDamage > 0) {
         createFloatingText(this, hero.x, hero.y - 45, `⛨ −${event.armorDamage}`, "#f0ce83");
       }
-      createHitBurst(this, hero.x, hero.y - 6, 0xd66c55, 18, 2);
+      createHitBurst(this, hero.x, hero.y - 6, passing ? 0xe7bd68 : 0xd66c55, passing ? 14 : 18, 2);
       return;
     }
     if (event.type === "hero_knocked_out") {
@@ -1338,7 +1339,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   ): void {
     const liveIds = new Set<number>();
     const frontline = hero.frontline;
-    const frontlinePresent = Boolean(frontline && frontline.status !== "deploying");
+    const frontlinePresent = Boolean(frontline && (frontline.status === "holding" || frontline.status === "fighting"));
     const frame = frontline ? createHeroFrontlineRouteFrame(this.path, frontline.progress) : null;
     const blockedSlots = new Map(frontline?.blockedEnemyIds.map((enemyId, index) => [enemyId, index]) ?? []);
     const blockedCount = blockedSlots.size;
@@ -1367,8 +1368,7 @@ export class TowerDefenseScene extends Phaser.Scene {
         const bypassStart = frontline.progress - 32;
         const bypassEnd = frontline.progress + 34;
         const remainingCapacity = Math.max(0, frontline.blockCapacity - frontline.blockUsed);
-        const cannotJoinContact = frontline.status === "knocked_out"
-          || enemy.progress >= frontline.progress
+        const cannotJoinContact = enemy.progress >= frontline.progress
           || getEffectiveEnemyHeroBlockCost(enemy.type, frontline.blockCapacity) > remainingCapacity;
         if (cannotJoinContact && enemy.progress >= bypassStart && enemy.progress <= bypassEnd) {
           const pose = getHeroFrontlineBypassPose(frame, enemy.id, enemy.type, {

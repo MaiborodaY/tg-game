@@ -41,6 +41,7 @@ import {
   getEnemyHeroFirstAttackDelayMs,
   getHeroCombatStats,
   getHeroFrontlineProgress,
+  getHeroPassingStrikeScales,
 } from "./heroCombat.ts";
 import {
   createPathMetrics,
@@ -312,6 +313,7 @@ export type SimulationEvent =
   | Readonly<{ type: "hero_frontline_arrived"; x: number; y: number }>
   | Readonly<{
       type: "enemy_attacked_hero";
+      attackKind: "engaged" | "passing";
       enemyId: number;
       x: number;
       y: number;
@@ -443,6 +445,7 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   stunUntilMs: number;
   barrierUntilMs: number;
   blockedByHero: boolean;
+  heroPassingStrikeUsed: boolean;
   heroAttackCooldownMs: number;
   controlResistance: number;
   healingRadius: number;
@@ -1312,6 +1315,7 @@ export class GameSimulation {
       stunUntilMs: 0,
       barrierUntilMs: 0,
       blockedByHero: false,
+      heroPassingStrikeUsed: false,
       heroAttackCooldownMs: 0,
       controlResistance: spawn.controlResistance,
       healingRadius: spawn.healingRadius,
@@ -1498,19 +1502,48 @@ export class GameSimulation {
     if (enemy.heroAttackCooldownMs > 0) return;
     const profile = getEnemyHeroAttackProfile(enemy.type);
     enemy.heroAttackCooldownMs += profile.intervalMs;
+    this.damageHeroFromEnemy(enemy, "engaged");
+  }
+
+  private strikeHeroWhilePassing(enemy: EnemyEntity, fromProgress: number, toProgress: number): void {
+    const frontline = this.heroFrontline;
+    if (
+      !frontline
+      || enemy.heroPassingStrikeUsed
+      || enemy.blocked
+      || enemy.stunned
+      || (frontline.status !== "holding" && frontline.status !== "fighting")
+      || fromProgress > frontline.progress
+      || toProgress < frontline.progress
+    ) return;
+    enemy.heroPassingStrikeUsed = true;
+    const scale = getHeroPassingStrikeScales(this.campaign.hero.id);
+    this.damageHeroFromEnemy(enemy, "passing", scale.damage, scale.armorDamage);
+  }
+
+  private damageHeroFromEnemy(
+    enemy: EnemyEntity,
+    attackKind: "engaged" | "passing",
+    damageScale = 1,
+    armorDamageScale = 1,
+  ): void {
+    const frontline = this.heroFrontline;
+    if (!frontline || frontline.status === "knocked_out") return;
+    const profile = getEnemyHeroAttackProfile(enemy.type);
     const damageMultiplier = getEnemyHeroDamageMultiplier(enemy.frostArmor);
     const armorBeforeHit = frontline.heroicArmor;
     const damage = calculateHeroDamageTaken(
-      Math.round(profile.damage * damageMultiplier),
+      Math.round(profile.damage * damageMultiplier * damageScale),
       armorBeforeHit,
     );
-    const armorDamage = Math.round(profile.armorDamage * damageMultiplier);
+    const armorDamage = Math.round(profile.armorDamage * damageMultiplier * armorDamageScale);
     frontline.hp = Math.max(0, frontline.hp - damage);
     frontline.heroicArmor = applyHeroicArmorDamage(frontline.heroicArmor, armorDamage);
     frontline.lastDamagedAtMs = this.simulationTimeMs;
     frontline.regenActive = false;
     this.events.push({
       type: "enemy_attacked_hero",
+      attackKind,
       enemyId: enemy.id,
       x: enemy.x,
       y: enemy.y,
@@ -1585,7 +1618,10 @@ export class GameSimulation {
       enemy.slowFactor = Math.min(timedSlow ? enemy.slowEffectFactor : 1, auraSlowFactor);
       enemy.enraged = (enemy.type === "boss" || enemy.type === "titan") && enemy.hp / enemy.maxHp <= 0.4;
       if (!enemy.stunned && !enemy.blocked) {
-        enemy.progress += enemy.speed * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
+        const nextProgress = enemy.progress
+          + enemy.speed * (enemy.enraged ? 1.28 : 1) * enemy.slowFactor * (deltaMs / 1_000);
+        this.strikeHeroWhilePassing(enemy, enemy.progress, nextProgress);
+        enemy.progress = nextProgress;
       }
       if (enemy.progress >= this.path.totalLength) {
         this.leakEnemy(enemy);

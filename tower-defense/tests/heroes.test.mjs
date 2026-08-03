@@ -93,7 +93,7 @@ test("rank-three heroes awaken only after wave twenty without changing paid rank
   assert.equal(isHeroAwakened(3, 20), true);
   assert.equal(getHeroAwakening("eira"), HERO_AWAKENINGS.eira);
   assert.equal(HERO_AWAKENINGS.eira.markedTargetCount, 4);
-  assert.equal(HERO_AWAKENINGS.toren.barrierCapacity, 10);
+  assert.equal(HERO_AWAKENINGS.toren.barrierCapacity, 6);
   assert.equal(HERO_AWAKENINGS.toren.abilityDurationMs, 6_000);
   assert.equal(HERO_AWAKENINGS.grak.abilityDurationMs, 10_000);
   assert.ok(Object.isFrozen(HERO_AWAKENINGS));

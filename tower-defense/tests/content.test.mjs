@@ -87,6 +87,14 @@ test("Northern Pass v3 owns an authored 24-wave campaign split into three eight-
   assert.ok(allSpawns.some((spawn) => spawn.variant === "snow-runner"));
   assert.ok(allSpawns.some((spawn) => spawn.variant === "icebound" && spawn.frostArmorRatio > 0));
   assert.ok(allSpawns.filter((spawn) => spawn.variant !== "icebound").every((spawn) => spawn.frostArmorRatio === 0));
+  const actThreeIcebound = Array.from({ length: 8 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 17).spawns)
+    .flat()
+    .filter((spawn) => spawn.variant === "icebound");
+  assert.ok(actThreeIcebound.length > 0);
+  assert.ok(actThreeIcebound.every((spawn) => spawn.frostArmorRatio >= 0.64));
+  const finalTitan = NORTHERN_PASS_LEVEL.waves.createWave(24).spawns.find((spawn) => spawn.type === "titan");
+  assert.equal(finalTitan?.frostArmorRatio, 0.72);
+  assert.equal(finalTitan?.leakDamage, 11);
   assert.deepEqual(NORTHERN_PASS_LEVEL.waves.createWave(24), NORTHERN_PASS_LEVEL.waves.createWave(24));
   assert.ok(Object.isFrozen(first));
   assert.ok(Object.isFrozen(first.spawns));
@@ -110,8 +118,8 @@ test("Northern Pass v3 forecasts one avalanche zone and changes route determinis
     NORTHERN_PASS_LEVEL.waves.createWave(actIndex * 8 + offset + 1).spawns
       .reduce((total, spawn) => total + spawn.maxHp * (1 + spawn.frostArmorRatio), 0)
   )).reduce((sum, value) => sum + value, 0));
-  assert.ok(actHealth[1] > actHealth[0] * 2);
-  assert.ok(actHealth[2] > actHealth[1] * 1.45);
+  assert.ok(actHealth[1] > actHealth[0] * 4);
+  assert.ok(actHealth[2] > actHealth[1] * 2.5);
 });
 
 test("mixed northern formations send bosses with an escort instead of as a final cleanup target", () => {

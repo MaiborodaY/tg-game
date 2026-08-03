@@ -46,6 +46,18 @@ export const HERO_COMBAT_TIMING = Object.freeze({
   meleeRange: 38,
 });
 
+// Overflow enemies keep moving, so their single passing strike is weaker than
+// a full engagement. Hero-specific exposure preserves the fragile/ranged,
+// tank, and bruiser roles without coupling them to block capacity.
+export const HERO_PASSING_STRIKE_SCALES: Readonly<Record<HeroId, Readonly<{
+  damage: number;
+  armorDamage: number;
+}>>> = Object.freeze({
+  eira: Object.freeze({ damage: 0.45, armorDamage: 0.5 }),
+  toren: Object.freeze({ damage: 0.25, armorDamage: 0.275 }),
+  grak: Object.freeze({ damage: 0.36, armorDamage: 0.4 }),
+});
+
 // A passive is part of the hero's identity and only pauses while the hero is
 // absent from their post: deploying or knocked out.
 export const HERO_FRONTLINE_PASSIVE_POWER = Object.freeze({
@@ -90,6 +102,10 @@ export const ENEMY_HERO_BLOCK_COSTS: Readonly<Record<EnemyType, number>> = Objec
 
 export function getHeroCombatStats(id: HeroId, level: HeroLevel): HeroCombatStats {
   return HERO_COMBAT_STATS[id][level];
+}
+
+export function getHeroPassingStrikeScales(id: HeroId): Readonly<{ damage: number; armorDamage: number }> {
+  return HERO_PASSING_STRIKE_SCALES[id];
 }
 
 export function getEnemyHeroAttackProfile(type: EnemyType): EnemyHeroAttackProfile {

@@ -21,7 +21,7 @@ const STRATEGIES = Object.freeze([
   Object.freeze({
     name: "Toren crowd-control",
     heroId: "toren",
-    anchorId: 0,
+    anchorId: 1,
     buildPlan: Object.freeze([
       Object.freeze([7, "ember", 0]), Object.freeze([8, "ranger", 0]), Object.freeze([4, "frost", 1]),
       Object.freeze([5, "storm", 3]), Object.freeze([10, "ember", 5]), Object.freeze([11, "ranger", 7]),
@@ -138,21 +138,25 @@ function tryUseAvalanche(simulation, mode) {
   return simulation.triggerNorthernAvalanche(requestedZoneId).ok;
 }
 
-function playCampaign(strategy, { avalancheMode = "informed", heroCombat = false } = {}) {
+function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
   const simulation = new GameSimulation(
     createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET, heroId: strategy.heroId }),
     createSimulationRules(
       NORTHERN_PASS_LEVEL,
       CAMPAIGN_RULESET,
-      heroCombat ? { heroCombat: "hero-frontline-v2" } : {},
+      { heroCombat: "hero-frontline-v2" },
     ),
   );
   let abilityUses = 0;
   let avalancheUses = 0;
+  let passingHits = 0;
+  let engagedHits = 0;
+  let heroKnockouts = 0;
   let lastCompletedWave = 0;
   const livesByWave = [];
   const leaks = [];
   const avalanches = [];
+  const knockoutWaves = [];
 
   for (let wave = 1; wave <= NORTHERN_PASS_LEVEL.waves.finalWave && simulation.readView().phase !== "gameover"; wave += 1) {
     prepareWave(simulation, strategy);
@@ -165,6 +169,14 @@ function playCampaign(strategy, { avalancheMode = "informed", heroCombat = false
       if (tryUseHeroAbility(simulation, strategy.heroId)) abilityUses += 1;
       for (const event of simulation.drainEvents()) {
         if (event.type === "enemy_leaked") leaks.push([wave, spawnTypes.get(event.enemyId) ?? "summon", event.damage]);
+        if (event.type === "enemy_attacked_hero") {
+          if (event.attackKind === "passing") passingHits += 1;
+          else engagedHits += 1;
+        }
+        if (event.type === "hero_knocked_out") {
+          heroKnockouts += 1;
+          knockoutWaves.push(wave);
+        }
         if (event.type === "northern_avalanche") {
           avalanches.push([wave, event.zoneId, event.impacts.map((impact) => spawnTypes.get(impact.enemyId) ?? "summon")]);
         }
@@ -175,12 +187,15 @@ function playCampaign(strategy, { avalancheMode = "informed", heroCombat = false
     lastCompletedWave = simulation.readView().campaign.completedWave;
     livesByWave.push([lastCompletedWave, simulation.readView().campaign.lives]);
   }
-  return Object.freeze({ view: simulation.readView(), abilityUses, avalancheUses, lastCompletedWave, livesByWave, leaks, avalanches });
+  return Object.freeze({
+    view: simulation.readView(), abilityUses, avalancheUses, passingHits, engagedHits,
+    heroKnockouts, knockoutWaves, lastCompletedWave, livesByWave, leaks, avalanches,
+  });
 }
 
 for (const strategy of STRATEGIES) {
   test(`frontline ${strategy.name} still needs the informed Northern Pass mechanic`, () => {
-    const result = playCampaign(strategy, { heroCombat: true });
+    const result = playCampaign(strategy);
     assert.equal(result.view.phase, "victory", JSON.stringify({
       wave: result.lastCompletedWave,
       lives: result.view.campaign.lives,
@@ -193,39 +208,19 @@ for (const strategy of STRATEGIES) {
     );
     assert.ok(result.abilityUses > 0);
     assert.ok(result.avalancheUses >= 14);
+    assert.ok(result.passingHits > 0, `${strategy.name} never faced overflow pressure`);
+    assert.ok(result.engagedHits > 0, `${strategy.name} never traded with a held enemy`);
+    assert.ok(result.heroKnockouts > 0, `${strategy.name} never left the field`);
+    if (strategy.heroId === "eira") {
+      assert.ok(result.heroKnockouts >= 8, `Eira was still too durable with ${result.heroKnockouts} knockouts`);
+    }
   });
 }
-
-for (const strategy of STRATEGIES) {
-  test(`Northern Pass v3 is completable with informed avalanche timing and ${strategy.name}`, () => {
-    const result = playCampaign(strategy);
-    assert.equal(result.view.phase, "victory", JSON.stringify({ wave: result.lastCompletedWave, lives: result.view.campaign.lives, uses: result.avalancheUses, history: result.livesByWave, leaks: result.leaks, avalanches: result.avalanches.filter(([wave]) => wave >= 23) }));
-    assert.equal(result.view.campaign.completedWave, 24);
-    assert.ok(result.view.campaign.lives > 0 && result.view.campaign.lives <= 8, `expected a limited margin, got ${result.view.campaign.lives} lives`);
-    assert.equal(result.view.campaign.hero.level, 3);
-    assert.ok(result.abilityUses > 0);
-    assert.ok(result.avalancheUses >= 14, `expected meaningful avalanche use, got ${result.avalancheUses}`);
-  });
-}
-
-test("an obsolete fixed-upper avalanche strategy loses in the late campaign", () => {
-  const fixed = playCampaign(STRATEGIES[0], { avalancheMode: "fixed-upper" });
-  assert.equal(fixed.view.phase, "gameover", JSON.stringify({ lives: fixed.view.campaign.lives, wave: fixed.lastCompletedWave, uses: fixed.avalancheUses }));
-  assert.ok(fixed.lastCompletedWave >= 16, `fixed strategy failed too early on wave ${fixed.lastCompletedWave + 1}`);
-  assert.ok(fixed.lastCompletedWave < 24);
-});
-
-test("ignoring the authored avalanche mechanic loses in the late campaign", () => {
-  const ignored = playCampaign(STRATEGIES[0], { avalancheMode: "none" });
-  assert.equal(ignored.view.phase, "gameover", JSON.stringify({ lives: ignored.view.campaign.lives, wave: ignored.lastCompletedWave, uses: ignored.avalancheUses }));
-  assert.ok(ignored.lastCompletedWave >= 16, `no-avalanche strategy failed too early on wave ${ignored.lastCompletedWave + 1}`);
-  assert.ok(ignored.lastCompletedWave < 24);
-});
 
 for (const strategy of STRATEGIES) {
   for (const avalancheMode of ["fixed-upper", "none"]) {
     test(`frontline ${strategy.name} does not turn ${avalancheMode} into a winning strategy`, () => {
-      const result = playCampaign(strategy, { avalancheMode, heroCombat: true });
+      const result = playCampaign(strategy, { avalancheMode });
       assert.equal(result.view.phase, "gameover", JSON.stringify({
         wave: result.lastCompletedWave,
         lives: result.view.campaign.lives,
