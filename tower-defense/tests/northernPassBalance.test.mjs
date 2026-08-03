@@ -138,10 +138,14 @@ function tryUseAvalanche(simulation, mode) {
   return simulation.triggerNorthernAvalanche(requestedZoneId).ok;
 }
 
-function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
+function playCampaign(strategy, { avalancheMode = "informed", heroCombat = false } = {}) {
   const simulation = new GameSimulation(
     createCampaignState({ level: NORTHERN_PASS_LEVEL, mode: CAMPAIGN_RULESET, heroId: strategy.heroId }),
-    createSimulationRules(NORTHERN_PASS_LEVEL, CAMPAIGN_RULESET),
+    createSimulationRules(
+      NORTHERN_PASS_LEVEL,
+      CAMPAIGN_RULESET,
+      heroCombat ? { heroCombat: "hero-frontline-v2" } : {},
+    ),
   );
   let abilityUses = 0;
   let avalancheUses = 0;
@@ -175,6 +179,24 @@ function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
 }
 
 for (const strategy of STRATEGIES) {
+  test(`frontline ${strategy.name} still needs the informed Northern Pass mechanic`, () => {
+    const result = playCampaign(strategy, { heroCombat: true });
+    assert.equal(result.view.phase, "victory", JSON.stringify({
+      wave: result.lastCompletedWave,
+      lives: result.view.campaign.lives,
+      uses: result.avalancheUses,
+    }));
+    assert.equal(result.view.campaign.completedWave, 24);
+    assert.ok(
+      result.view.campaign.lives > 0 && result.view.campaign.lives <= 8,
+      `expected a limited margin, got ${result.view.campaign.lives} lives`,
+    );
+    assert.ok(result.abilityUses > 0);
+    assert.ok(result.avalancheUses >= 14);
+  });
+}
+
+for (const strategy of STRATEGIES) {
   test(`Northern Pass v3 is completable with informed avalanche timing and ${strategy.name}`, () => {
     const result = playCampaign(strategy);
     assert.equal(result.view.phase, "victory", JSON.stringify({ wave: result.lastCompletedWave, lives: result.view.campaign.lives, uses: result.avalancheUses, history: result.livesByWave, leaks: result.leaks, avalanches: result.avalanches.filter(([wave]) => wave >= 23) }));
@@ -199,6 +221,21 @@ test("ignoring the authored avalanche mechanic loses in the late campaign", () =
   assert.ok(ignored.lastCompletedWave >= 16, `no-avalanche strategy failed too early on wave ${ignored.lastCompletedWave + 1}`);
   assert.ok(ignored.lastCompletedWave < 24);
 });
+
+for (const strategy of STRATEGIES) {
+  for (const avalancheMode of ["fixed-upper", "none"]) {
+    test(`frontline ${strategy.name} does not turn ${avalancheMode} into a winning strategy`, () => {
+      const result = playCampaign(strategy, { avalancheMode, heroCombat: true });
+      assert.equal(result.view.phase, "gameover", JSON.stringify({
+        wave: result.lastCompletedWave,
+        lives: result.view.campaign.lives,
+        uses: result.avalancheUses,
+      }));
+      assert.ok(result.lastCompletedWave >= 16, `${strategy.name} failed too early on wave ${result.lastCompletedWave + 1}`);
+      assert.ok(result.lastCompletedWave < 24);
+    });
+  }
+}
 
 function routeTotalLength(points) {
   return points.slice(1).reduce((total, point, index) => (

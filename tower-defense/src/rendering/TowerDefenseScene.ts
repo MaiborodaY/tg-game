@@ -13,6 +13,7 @@ import {
   type ModeRuleset,
 } from "../game/content.ts";
 import { getHeroAura, getHeroStats } from "../game/heroes.ts";
+import { getEffectiveEnemyHeroBlockCost, getHeroCombatStats } from "../game/heroCombat.ts";
 import {
   createPathMetrics,
   getPointAtDistance,
@@ -84,6 +85,11 @@ import {
   type HeroArt,
   type HeroEffectPool,
 } from "./heroArt.ts";
+import {
+  createHeroFrontlineRouteFrame,
+  getHeroFrontlineBypassPose,
+  getHeroFrontlineContactPose,
+} from "./heroFrontlineVisuals.ts";
 import { isPointWithinVisualRadius } from "./worldThemes.ts";
 
 export type GamePhase = SimulationPhase;
@@ -144,7 +150,7 @@ export type TowerDefenseCallbacks = Readonly<{
 }>;
 
 export type TowerDefenseGameOptions = Readonly<{
-  heroCombatPreview?: boolean;
+  heroCombatEnabled?: boolean;
 }>;
 
 type PadView = {
@@ -227,6 +233,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private heroView?: HeroRenderView;
   private heroEffects?: HeroEffectPool;
   private lastHeroAttackAtMs = -1_000;
+  private lastHeroPassivePower = Number.NaN;
   private rangePreview?: Phaser.GameObjects.Arc;
   private heroAuraPreview?: Phaser.GameObjects.Arc;
   private heroTargetPreview?: Phaser.GameObjects.Arc;
@@ -249,10 +256,9 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.callbacks = callbacks;
     this.level = level;
     this.mode = mode;
-    const currentHeroId = campaign.hero.id;
     this.simulation = new GameSimulation(campaign, createSimulationRules(level, mode, {
-      heroCombat: options.heroCombatPreview && currentHeroId === "toren"
-        ? "toren-frontline-v1"
+      heroCombat: options.heroCombatEnabled
+        ? "hero-frontline-v2"
         : null,
     }));
     this.path = createPathMetrics(level.route);
@@ -647,6 +653,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     const attackElapsedMs = view.simulationTimeMs - this.lastHeroAttackAtMs;
     const attackProgress = attackElapsedMs >= 0 && attackElapsedMs <= 260 ? attackElapsedMs / 260 : 0;
     moveHeroArt(this.heroView.art, hero);
+    this.heroView.art.container.setRotation(0);
     this.heroView.hitZone.setPosition(hero.x, hero.y - (hero.id === "grak" ? 7 : 0));
     if (this.heroView.hitZone.input) this.heroView.hitZone.input.enabled = hero.frontline?.status !== "knocked_out";
     updateHeroArtPose(
@@ -657,6 +664,12 @@ export class TowerDefenseScene extends Phaser.Scene {
       attackProgress,
     );
     setHeroFrontlineState(this.heroView.art, hero.frontline);
+    const passivePower = hero.frontline?.passivePower ?? 1;
+    if (passivePower !== this.lastHeroPassivePower) {
+      this.lastHeroPassivePower = passivePower;
+      if (this.selectedHero) this.updateRangePreview();
+      else this.syncTowerAuraMarkers();
+    }
     setHeroAbilityCharge(
       this.heroView.art,
       hero.maxAbilityCharges > 0 ? hero.abilityCharges / hero.maxAbilityCharges : 0,
@@ -673,7 +686,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       : hero.markedEnemyId === null ? [] : [hero.markedEnemyId];
     const markedEnemies = markedIds.flatMap((id) => {
       const enemy = view.enemies.find((candidate) => candidate.id === id);
-      return enemy ? [enemy] : [];
+      return enemy ? [this.getEnemyRenderPoint(id, enemy)] : [];
     });
     this.heroEffects?.setMarks(markedEnemies, view.simulationTimeMs);
     this.syncHeroBarrier(hero.barrier, view.simulationTimeMs);
@@ -948,7 +961,11 @@ export class TowerDefenseScene extends Phaser.Scene {
     const view = this.simulation.readView();
     if (this.selectedHero) {
       const stats = getHeroStats(view.hero.id, view.hero.level);
-      this.rangePreview = this.add.circle(view.hero.x, view.hero.y, stats.attackRange, 0x7be8c5, 0.025)
+      const attackRange = view.hero.frontline
+        ? getHeroCombatStats(view.hero.id, view.hero.level).attackRange
+        : stats.attackRange;
+      const passivePower = view.hero.frontline?.passivePower ?? 1;
+      this.rangePreview = this.add.circle(view.hero.x, view.hero.y, attackRange, 0x7be8c5, 0.025)
         .setStrokeStyle(1, 0x8debd0, 0.58)
         .setDepth(3);
       const aura = getHeroAura(view.hero.id, view.hero.level);
@@ -958,11 +975,16 @@ export class TowerDefenseScene extends Phaser.Scene {
         : aura.kind === "tower_attack_speed"
           ? 0xff8a45
           : 0x75d8ef;
-      this.heroAuraPreview = this.add.circle(view.hero.x, view.hero.y, aura.radius, auraColor, 0.045)
-        .setStrokeStyle(3, auraColor, 0.88)
+      this.heroAuraPreview = this.add.circle(view.hero.x, view.hero.y, aura.radius, auraColor, 0.02 + passivePower * 0.025)
+        .setStrokeStyle(3, auraColor, 0.28 + passivePower * 0.6)
         .setDepth(2);
-      if (aura.kind !== "slow") {
-        this.highlightAuraTowers(view.campaign.towers, aura.radius, aura.strength, aura.kind);
+      if (aura.kind !== "slow" && passivePower > 0) {
+        this.highlightAuraTowers(
+          view.campaign.towers,
+          aura.radius,
+          aura.strength * passivePower,
+          aura.kind,
+        );
       }
       return;
     }
@@ -1016,10 +1038,17 @@ export class TowerDefenseScene extends Phaser.Scene {
   private syncTowerAuraMarkers(): void {
     const view = this.simulation.readView();
     const aura = getHeroAura(view.hero.id, view.hero.level);
+    const passivePower = view.hero.frontline?.passivePower ?? 1;
     const towerAuraKind = aura?.kind === "tower_damage" || aura?.kind === "tower_attack_speed" ? aura.kind : null;
     for (const [padId, towerView] of this.towerViews) {
       const point = this.level.buildPads[padId];
-      if (!aura || !towerAuraKind || !point || !isPointWithinVisualRadius(point, view.hero, aura.radius)) {
+      if (
+        !aura
+        || !towerAuraKind
+        || passivePower <= 0
+        || !point
+        || !isPointWithinVisualRadius(point, view.hero, aura.radius)
+      ) {
         setTowerAuraMarker(towerView.art, null);
         continue;
       }
@@ -1055,12 +1084,13 @@ export class TowerDefenseScene extends Phaser.Scene {
       const zone = this.avalancheZoneViews.get(event.zoneId);
       if (zone) playAvalancheCollapse(this, zone.art);
       for (const impact of event.impacts.slice(0, 8)) {
-        createHitBurst(this, impact.x, impact.y, 0xdffaff, impact.boss ? 32 : 24, 3);
+        const point = this.getEnemyRenderPoint(impact.enemyId, impact);
+        createHitBurst(this, point.x, point.y, 0xdffaff, impact.boss ? 32 : 24, 3);
         if (impact.frostArmorRemoved > 0) {
           createFloatingText(
             this,
-            impact.x,
-            impact.y - 22,
+            point.x,
+            point.y - 22,
             `-${Math.round(impact.frostArmorRemoved)}`,
             "#e6fdff",
           );
@@ -1093,12 +1123,18 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
     if (event.type === "hero_attack") {
       this.lastHeroAttackAtMs = this.simulation.readView().simulationTimeMs;
-      this.heroEffects?.playAttack(event.heroId, event.from, event.to);
+      const from = this.heroView
+        ? { x: this.heroView.art.container.x, y: this.heroView.art.container.y }
+        : event.from;
+      this.heroEffects?.playAttack(event.heroId, from, this.getEnemyRenderPoint(event.targetId, event.to));
       return;
     }
     if (event.type === "enemy_attacked_hero") {
       const hero = this.simulation.readView().hero;
       createFloatingText(this, hero.x, hero.y - 34, `-${event.damage}`, "#ff9d86");
+      if (event.armorDamage > 0) {
+        createFloatingText(this, hero.x, hero.y - 45, `⛨ −${event.armorDamage}`, "#f0ce83");
+      }
       createHitBurst(this, hero.x, hero.y - 6, 0xd66c55, 18, 2);
       return;
     }
@@ -1108,7 +1144,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       return;
     }
     if (event.type === "hero_respawned") {
-      this.heroEffects?.playAbility("toren", event, 30);
+      this.heroEffects?.playAbility(this.simulation.readView().hero.id, event, 30);
       return;
     }
     if (event.type === "hero_frontline_arrived") {
@@ -1130,7 +1166,9 @@ export class TowerDefenseScene extends Phaser.Scene {
       const target = event.targetId === null
         ? null
         : this.simulation.readView().enemies.find((enemy) => enemy.id === event.targetId);
-      const point = target ?? event.targetPoint;
+      const point = target
+        ? this.getEnemyRenderPoint(target.id, target)
+        : event.targetPoint;
       const radius = event.heroId === "eira" ? 28 : event.radius;
       this.heroEffects?.playAbility(event.heroId, point, radius);
       if (event.heroId === "toren") this.cameras.main.shake(190, 0.005);
@@ -1163,31 +1201,40 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
     if (event.type === "enemy_healed") {
       const caster = this.simulation.readView().enemies.find((enemy) => enemy.id === event.casterId);
-      if (caster) createHealPulse(this, caster);
+      if (caster) createHealPulse(this, this.getEnemyRenderPoint(caster.id, caster));
       for (const target of event.targets) {
-        createFloatingText(this, target.x, target.y - 18, `+${Math.ceil(target.amount)}`, "#9effbc");
+        const point = this.getEnemyRenderPoint(target.id, target);
+        createFloatingText(this, point.x, point.y - 18, `+${Math.ceil(target.amount)}`, "#9effbc");
       }
       return;
     }
     if (event.type === "enemy_damaged") {
+      const point = this.getEnemyRenderPoint(event.enemyId, event);
       const damageColor = event.frostAbsorbed > 0
         ? "#d7fbff"
         : event.absorbed > 0 ? "#bcefff" : "#fff1bd";
-      createFloatingText(this, event.x, event.y - 15, `${Math.round(event.damage)}`, damageColor);
+      createFloatingText(this, point.x, point.y - 15, `${Math.round(event.damage)}`, damageColor);
       return;
     }
     if (event.type === "frost_armor_broken") {
-      createHitBurst(this, event.x, event.y, 0xb9f6ff, 30, 4);
-      createFloatingText(this, event.x, event.y - 25, "❄", "#e1fcff");
+      const point = this.getEnemyRenderPoint(event.enemyId, event);
+      createHitBurst(this, point.x, point.y, 0xb9f6ff, 30, 4);
+      createFloatingText(this, point.x, point.y - 25, "❄", "#e1fcff");
       return;
     }
     if (event.type === "projectile_hit") {
       const color = projectileColor(event.towerType);
-      createHitBurst(this, event.x, event.y, color, event.radius, event.towerType === "ranger" ? 0 : event.major ? 3 : 2);
+      const point = this.getEnemyRenderPoint(event.targetId, event);
+      createHitBurst(this, point.x, point.y, color, event.radius, event.towerType === "ranger" ? 0 : event.major ? 3 : 2);
       return;
     }
     if (event.type === "lightning") {
-      createLightningArc(this, event.from, event.to, event.intensity);
+      createLightningArc(
+        this,
+        this.getEnemyRenderPoint(event.fromId, event.from),
+        this.getEnemyRenderPoint(event.toId, event.to),
+        event.intensity,
+      );
       return;
     }
     if (event.type === "titan_summon") {
@@ -1195,7 +1242,6 @@ export class TowerDefenseScene extends Phaser.Scene {
       return;
     }
     if (event.type === "enemy_killed") {
-      if (event.reward > 0) createFloatingText(this, event.x, event.y - 2, `+${event.reward}`, "#ffd86c");
       let renderView = this.enemyViews.get(event.enemyId);
       if (renderView) {
         this.enemyViews.delete(event.enemyId);
@@ -1209,6 +1255,15 @@ export class TowerDefenseScene extends Phaser.Scene {
           event.shielded,
           event.enemyVariant,
           event.frostArmored,
+        );
+      }
+      if (event.reward > 0) {
+        createFloatingText(
+          this,
+          renderView.art.container.x,
+          renderView.art.container.y - 2,
+          `+${event.reward}`,
+          "#ffd86c",
         );
       }
       this.tweens.add({
@@ -1262,13 +1317,22 @@ export class TowerDefenseScene extends Phaser.Scene {
   private syncRenderState(): void {
     const view = this.simulation.readView();
     this.syncNorthernPassVisuals(view);
+    this.syncEnemyViews(view.enemies, view.hero, view.simulationTimeMs);
     this.syncHeroView();
-    this.syncEnemyViews(view.enemies, view.simulationTimeMs);
-    this.syncProjectileViews(view.projectiles);
+    this.syncProjectileViews(view.projectiles, view.enemies);
   }
 
-  private syncEnemyViews(enemies: readonly EnemySimulationView[], simulationTimeMs: number): void {
+  private syncEnemyViews(
+    enemies: readonly EnemySimulationView[],
+    hero: HeroSimulationView,
+    simulationTimeMs: number,
+  ): void {
     const liveIds = new Set<number>();
+    const frontline = hero.frontline;
+    const frontlinePresent = Boolean(frontline && frontline.status !== "deploying");
+    const frame = frontline ? createHeroFrontlineRouteFrame(this.path, frontline.progress) : null;
+    const blockedSlots = new Map(frontline?.blockedEnemyIds.map((enemyId, index) => [enemyId, index]) ?? []);
+    const blockedCount = blockedSlots.size;
     for (const enemy of enemies) {
       liveIds.add(enemy.id);
       let renderView = this.enemyViews.get(enemy.id);
@@ -1277,13 +1341,51 @@ export class TowerDefenseScene extends Phaser.Scene {
         this.enemyViews.set(enemy.id, renderView);
       }
       const { art } = renderView;
-      art.container.setPosition(enemy.x, enemy.y).setRotation(getRouteAngleAtDistance(this.path, enemy.progress) * 0.03);
-      const depthBucket = Math.floor(enemy.y / 4);
+      let renderX = enemy.x;
+      let renderY = enemy.y;
+      let renderRotation = getRouteAngleAtDistance(this.path, enemy.progress) * 0.03;
+      if (frame && blockedSlots.has(enemy.id)) {
+        const pose = getHeroFrontlineContactPose(
+          frame,
+          enemy.type,
+          blockedSlots.get(enemy.id) ?? 0,
+          blockedCount,
+        );
+        renderX = pose.x;
+        renderY = pose.y;
+        renderRotation = frame.angle * 0.03;
+      } else if (frame && frontline && frontlinePresent) {
+        const bypassStart = frontline.progress - 32;
+        const bypassEnd = frontline.progress + 34;
+        const remainingCapacity = Math.max(0, frontline.blockCapacity - frontline.blockUsed);
+        const cannotJoinContact = frontline.status === "knocked_out"
+          || enemy.progress >= frontline.progress
+          || getEffectiveEnemyHeroBlockCost(enemy.type, frontline.blockCapacity) > remainingCapacity;
+        if (cannotJoinContact && enemy.progress >= bypassStart && enemy.progress <= bypassEnd) {
+          const pose = getHeroFrontlineBypassPose(frame, enemy.id, enemy.type, {
+            kind: "overflow",
+            progress: (enemy.progress - bypassStart) / (bypassEnd - bypassStart),
+          });
+          renderX = pose.x;
+          renderY = pose.y;
+          renderRotation = frame.angle * 0.03 + (pose.rotation - frame.angle);
+        }
+      }
+      art.container.setPosition(renderX, renderY).setRotation(renderRotation);
+      const depthBucket = Math.floor(renderY / 4);
       if (depthBucket !== renderView.depthBucket) {
         renderView.depthBucket = depthBucket;
-        art.container.setDepth(enemy.y + 30);
+        art.container.setDepth(renderY + 30);
       }
-      updateEnemyArtPose(art, enemy.type, simulationTimeMs, enemy.progress, enemy.id, !enemy.stunned, enemy.enraged);
+      updateEnemyArtPose(
+        art,
+        enemy.type,
+        simulationTimeMs,
+        enemy.progress,
+        enemy.id,
+        !enemy.stunned && !enemy.blocked,
+        enemy.enraged,
+      );
       art.healthFill.scaleX = Math.max(0, enemy.hp / enemy.maxHp);
       const damaged = enemy.hp < enemy.maxHp
         || enemy.shield < enemy.maxShield
@@ -1304,7 +1406,7 @@ export class TowerDefenseScene extends Phaser.Scene {
         .setStrokeStyle(2, enemy.stunned ? 0x77f3d5 : 0x78dff6, statusActive ? 0.9 : 0);
       if (enemy.burning && simulationTimeMs - this.lastBurnVfxAtMs >= 85 && Math.random() < 0.22) {
         this.lastBurnVfxAtMs = simulationTimeMs;
-        const ember = this.add.circle(enemy.x + (Math.random() * 8 - 4), enemy.y - 7, 2, 0xff9e5c, 0.88).setDepth(1_000);
+        const ember = this.add.circle(renderX + (Math.random() * 8 - 4), renderY - 7, 2, 0xff9e5c, 0.88).setDepth(1_000);
         this.tweens.add({ targets: ember, y: ember.y - 11, alpha: 0, duration: 310, onComplete: () => ember.destroy() });
       }
     }
@@ -1327,6 +1429,13 @@ export class TowerDefenseScene extends Phaser.Scene {
       enemy.variant,
       enemy.maxFrostArmor > 0,
     );
+  }
+
+  private getEnemyRenderPoint(enemyId: number, fallback: Point): Point {
+    const container = this.enemyViews.get(enemyId)?.art.container;
+    return container?.visible
+      ? { x: container.x, y: container.y }
+      : fallback;
   }
 
   private acquireEnemyArtByAppearance(
@@ -1376,30 +1485,38 @@ export class TowerDefenseScene extends Phaser.Scene {
     originPadId: number;
     targetId: number;
     towerType: TowerType;
-  }>[]): void {
+  }>[], enemies: readonly EnemySimulationView[]): void {
     const liveIds = new Set<number>();
-    const enemies = this.simulation.readView().enemies;
     for (const projectile of projectiles) {
       liveIds.add(projectile.id);
+      const target = enemies.find((enemy) => enemy.id === projectile.targetId);
+      const targetArt = this.enemyViews.get(projectile.targetId)?.art.container;
+      const distanceToTarget = target
+        ? Math.hypot(target.x - projectile.x, target.y - projectile.y)
+        : Number.POSITIVE_INFINITY;
+      const visualBlend = target && targetArt?.visible
+        ? Math.max(0, Math.min(1, 1 - distanceToTarget / 90))
+        : 0;
+      const renderX = projectile.x + (target && targetArt ? targetArt.x - target.x : 0) * visualBlend;
+      const renderY = projectile.y + (target && targetArt ? targetArt.y - target.y : 0) * visualBlend;
       let view = this.projectileViews.get(projectile.id);
       if (!view) {
-        const object = this.acquireProjectile(projectile.towerType, projectile.x, projectile.y);
-        view = { towerType: projectile.towerType, object, previousX: projectile.x, previousY: projectile.y };
+        const object = this.acquireProjectile(projectile.towerType, renderX, renderY);
+        view = { towerType: projectile.towerType, object, previousX: renderX, previousY: renderY };
         this.projectileViews.set(projectile.id, view);
-        const target = enemies.find((enemy) => enemy.id === projectile.targetId);
         const tower = this.towerViews.get(projectile.originPadId);
         const origin = this.level.buildPads[projectile.originPadId];
-        if (target && tower && origin && tower.placement.type !== "frost") {
-          tower.art.head.setRotation(Math.atan2(target.y - origin.y, target.x - origin.x));
+        if (target && targetArt && tower && origin && tower.placement.type !== "frost") {
+          tower.art.head.setRotation(Math.atan2(targetArt.y - origin.y, targetArt.x - origin.x));
         }
-        if (target) object.setRotation(Math.atan2(target.y - projectile.y, target.x - projectile.x));
+        if (targetArt) object.setRotation(Math.atan2(targetArt.y - renderY, targetArt.x - renderX));
       }
-      const dx = projectile.x - view.previousX;
-      const dy = projectile.y - view.previousY;
-      view.object.setPosition(projectile.x, projectile.y);
+      const dx = renderX - view.previousX;
+      const dy = renderY - view.previousY;
+      view.object.setPosition(renderX, renderY);
       if (dx !== 0 || dy !== 0) view.object.setRotation(Math.atan2(dy, dx));
-      view.previousX = projectile.x;
-      view.previousY = projectile.y;
+      view.previousX = renderX;
+      view.previousY = renderY;
     }
 
     for (const [projectileId, view] of this.projectileViews) {

@@ -77,6 +77,7 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(html, /id="hero-panel" class="hero-panel" hidden/);
   assert.match(html, /id="hero-upgrade-button"/);
   assert.match(html, /id="selected-hero-hint" data-aura="locked"/);
+  assert.equal(html.match(/data-hero-detail="frontline" hidden/g)?.length, 2);
   assert.match(mainSource, /const heroSelected = ui\.selectedHero && !selected/);
   assert.match(mainSource, /elements\.buildPanel\.hidden = Boolean\(selected\) \|\| heroSelected/);
   assert.doesNotMatch(mainSource, /is-combat-compact/);
@@ -84,10 +85,18 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(mainSource, /currentScene\(\)\?\.upgradeHero\(\)/);
   assert.match(mainSource, /currentScene\(\)\?\.useHeroAbility\(\)/);
   assert.match(mainSource, /function syncHeroAuraStatus\(ui: TowerDefenseUiState\)/);
+  assert.match(mainSource, /getHeroCombatStats\(ui\.hero\.id, ui\.hero\.level\)/);
+  assert.match(mainSource, /hero_frontline_armor_help/);
+  assert.match(mainSource, /heroCombatEnabled: HERO_COMBAT_RELEASED/);
+  assert.match(mainSource, /const frontlineEnabled = HERO_COMBAT_RELEASED/);
+  assert.match(mainSource, /frontlineRow\.hidden = !frontlineEnabled/);
+  assert.match(mainSource, /hero_frontline_detail/);
+  assert.match(mainSource, /armor: Math\.max\(0, Math\.ceil\(frontline\.heroicArmor\)\)/);
   assert.match(mainSource, /hero_eira_aura_status/);
   assert.match(mainSource, /hero_toren_aura_status/);
   assert.match(mainSource, /hero_grak_aura_status/);
   assert.match(mainSource, /aura\.globalStrength/);
+  assert.match(mainSource, /pulseButton\.disabled = ui\.heroTargeting[\s\S]*!ui\.heroAbilityAvailable/);
   assert.match(mainSource, /dx \* dx \+ dy \* dy <= radiusSquared \? total \+ 1 : total/);
   assert.match(css, /p\[data-aura="tower_damage"\][\s\S]*#f1cc69/);
   assert.match(css, /p\[data-aura="slow"\][\s\S]*#75d8ef/);

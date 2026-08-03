@@ -39,8 +39,8 @@ import {
   buildHeroCombatPreviewSaveKey,
   isHeroCombatPreviewRequest,
   isHeroCombatPreviewSession,
-  shouldEnableHeroCombatPreview,
 } from "./game/heroCombatPreview.ts";
+import { HERO_COMBAT_RELEASED, getHeroCombatStats } from "./game/heroCombat.ts";
 import { isSessionAvailable } from "./game/progression.ts";
 import {
   isClientLevelReleased,
@@ -292,9 +292,7 @@ let saveKey = buildHeroCombatPreviewSaveKey(getCampaignSaveKey(
   currentRunRevision(),
 ), isHeroCombatPreviewSessionEnabled());
 const loadedCampaign = awaitingMiniAppStart ? null : loadCampaign(storage, saveKey, selectedSession.selection);
-const savedCampaign = isHeroCombatPreviewSessionEnabled() && loadedCampaign?.hero.id !== "toren"
-  ? null
-  : loadedCampaign;
+const savedCampaign = loadedCampaign;
 const canMigrateLegacy = selectedSession.level.id === CLASSIC_CAMPAIGN_LEVEL_ID
   && selectedSession.mode.id === CAMPAIGN_MODE_ID
   && !isHeroCombatPreviewSessionEnabled();
@@ -330,18 +328,6 @@ function isHeroCombatPreviewSessionEnabled(
     queryValue: developmentHeroCombatPreviewQuery,
     levelId,
     modeId,
-  });
-}
-
-function isHeroCombatPreviewEnabled(heroId: HeroId): boolean {
-  return shouldEnableHeroCombatPreview({
-    isDevelopment: import.meta.env.DEV,
-    launchKind: launchDecision.kind,
-    rewardMode: reward.mode,
-    queryValue: developmentHeroCombatPreviewQuery,
-    levelId: selectedSession.level.id,
-    modeId: selectedSession.mode.id,
-    heroId,
   });
 }
 
@@ -691,7 +677,7 @@ type GameMountContext = Readonly<{
   campaign: TowerDefenseUiState["campaign"];
   callbacks: TowerDefenseCallbacks;
   initialBuildType?: TowerType | null;
-  heroCombatPreview: boolean;
+  heroCombatEnabled: boolean;
 }>;
 
 const runtimeController = createLazyRuntimeController(
@@ -701,7 +687,7 @@ const runtimeController = createLazyRuntimeController(
     context.campaign,
     context.callbacks,
     context.initialBuildType,
-    { heroCombatPreview: context.heroCombatPreview },
+    { heroCombatEnabled: context.heroCombatEnabled },
   ),
 );
 
@@ -927,7 +913,7 @@ async function ensureGameMounted(): Promise<boolean> {
       campaign: initialCampaign,
       callbacks: gameCallbacks,
       initialBuildType: tutorialState.step === "choose_tower" ? null : undefined,
-      heroCombatPreview: isHeroCombatPreviewEnabled(initialCampaign.hero.id),
+      heroCombatEnabled: HERO_COMBAT_RELEASED,
     });
     gameMounted = true;
     currentScene()?.setInputEnabled(!elements.appShell.inert);
@@ -1348,8 +1334,7 @@ function renderUi(ui: TowerDefenseUiState): void {
     : heroAbility;
   elements.pulseButton.disabled = ui.heroTargeting
     || ui.phase !== "wave"
-    || ui.hero.abilityCharges <= 0
-    || frontlineKnockedOut
+    || !ui.heroAbilityAvailable
     || ui.enemiesAlive === 0
     || ui.paused;
   elements.pulseButton.classList.toggle("is-used", ui.hero.abilityCharges <= 0);
@@ -1577,9 +1562,12 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
   const frontline = ui.hero.frontline;
   if (frontline) {
     elements.selectedHeroHint.dataset.aura = "frontline";
+    const combatStats = getHeroCombatStats(ui.hero.id, ui.hero.level);
     const params = {
       hp: Math.max(0, Math.ceil(frontline.hp)),
       max: frontline.maxHp,
+      armor: Math.max(0, Math.ceil(frontline.heroicArmor)),
+      damage: combatStats.attackDamage,
       used: frontline.blockUsed,
       capacity: frontline.blockCapacity,
       seconds: Math.max(1, Math.ceil(frontline.knockoutRemainingMs / 1_000)),
@@ -1596,7 +1584,7 @@ function syncHeroAuraStatus(ui: TowerDefenseUiState): void {
               ? "hero_frontline_ready"
               : "hero_frontline_holding";
     elements.selectedHeroHint.textContent = text(statusKey, params);
-    elements.selectedHeroHint.title = elements.selectedHeroHint.textContent;
+    elements.selectedHeroHint.title = `${elements.selectedHeroHint.textContent}\n${text("hero_frontline_armor_help", params)}`;
     return;
   }
   const aura = getHeroAura(ui.hero.id, ui.hero.level);
@@ -2987,6 +2975,22 @@ function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number
   if (role) role.textContent = heroRole(heroId);
   setHeroDetailRow(container, "rank", null, text("hero_detail_rank", { count: level }));
   setHeroDetailRow(container, "attack", "hero_detail_attack", `hero_${heroId}_attack_text` as TranslationKey);
+  const frontlineRow = container.querySelector<HTMLElement>('[data-hero-detail="frontline"]');
+  const frontlineEnabled = HERO_COMBAT_RELEASED;
+  if (frontlineRow) frontlineRow.hidden = !frontlineEnabled;
+  if (frontlineEnabled && frontlineRow) {
+    const combat = getHeroCombatStats(heroId, level as 1 | 2 | 3);
+    const label = frontlineRow.querySelector<HTMLElement>("[data-hero-detail-label]");
+    const output = frontlineRow.querySelector<HTMLElement>("[data-hero-detail-value]");
+    if (label) label.textContent = text("hero_detail_frontline");
+    if (output) output.textContent = text("hero_frontline_detail", {
+      hp: combat.maxHp,
+      armor: combat.maxHeroicArmor,
+      block: combat.blockCapacity,
+      damage: combat.attackDamage,
+      regen: combat.regenHpPerSecond,
+    });
+  }
   setHeroDetailRow(container, "passive", "hero_detail_passive", `hero_${heroId}_passive_text` as TranslationKey);
   setHeroDetailRow(container, "ability", "hero_detail_ability", `hero_${heroId}_ability_text` as TranslationKey);
   setHeroDetailRow(
@@ -3018,7 +3022,7 @@ function renderHeroDetails(container: HTMLElement, heroId: HeroId, level: number
 
 function setHeroDetailRow(
   container: HTMLElement,
-  kind: "rank" | "attack" | "passive" | "ability" | "awakening",
+  kind: "rank" | "attack" | "frontline" | "passive" | "ability" | "awakening",
   labelKey: TranslationKey | null,
   value: TranslationKey | string,
 ): void {
@@ -3242,7 +3246,9 @@ function heroChoiceIsLocked(): boolean {
 }
 
 function isHeroAvailable(heroId: HeroId, profile: PlayerProfileSnapshot | null): boolean {
-  return isHeroUnlocked(heroId, profile) || (heroId === "grak" && developmentGrakPreview);
+  return isHeroCombatPreviewSessionEnabled()
+    || isHeroUnlocked(heroId, profile)
+    || (heroId === "grak" && developmentGrakPreview);
 }
 
 function syncHeroPortrait(container: HTMLElement, heroId: HeroId): void {

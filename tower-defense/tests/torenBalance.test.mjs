@@ -85,21 +85,27 @@ function useTorenAbility(simulation) {
   if (bestCount >= 6) simulation.useHeroAbility(bestProgress);
 }
 
-test("Toren reaches the final Forest Gate wave with a realistic mixed build", () => {
-  const simulation = new GameSimulation(
-    createCampaignState({ heroId: "toren" }),
-    createSimulationRules(CLASSIC_CAMPAIGN_LEVEL, CAMPAIGN_RULESET),
-  );
-  for (let wave = 1; wave <= 24 && simulation.readView().phase !== "gameover"; wave += 1) {
-    prepareWave(simulation);
-    assert.equal(simulation.startWave(), true);
-    for (let tick = 0; tick < 6_000 && !["setup", "victory", "gameover"].includes(simulation.readView().phase); tick += 1) {
-      simulation.advance(100);
-      useTorenAbility(simulation);
+for (const heroCombat of [null, "hero-frontline-v2"]) {
+  test(`Toren reaches the final Forest Gate wave with a realistic mixed build${heroCombat ? " and frontline combat" : ""}`, () => {
+    const simulation = new GameSimulation(
+      createCampaignState({ heroId: "toren" }),
+      createSimulationRules(
+        CLASSIC_CAMPAIGN_LEVEL,
+        CAMPAIGN_RULESET,
+        heroCombat ? { heroCombat } : {},
+      ),
+    );
+    for (let wave = 1; wave <= 24 && simulation.readView().phase !== "gameover"; wave += 1) {
+      prepareWave(simulation);
+      assert.equal(simulation.startWave(), true);
+      for (let tick = 0; tick < 6_000 && !["setup", "victory", "gameover"].includes(simulation.readView().phase); tick += 1) {
+        simulation.advance(100);
+        useTorenAbility(simulation);
+      }
     }
-  }
 
-  const result = simulation.readView();
-  assert.equal(result.currentWave, 24);
-  assert.equal(result.campaign.completedWave, 23);
-});
+    const result = simulation.readView();
+    assert.equal(result.currentWave, 24);
+    assert.equal(result.campaign.completedWave, 23);
+  });
+}

@@ -55,16 +55,21 @@ test("frontline health and knockout art is allocated once and updated without ne
 
   assert.match(source, /healthTrack: Phaser\.GameObjects\.Rectangle/);
   assert.match(source, /healthFill: Phaser\.GameObjects\.Rectangle/);
+  assert.match(source, /armorTrack: Phaser\.GameObjects\.Rectangle/);
+  assert.match(source, /armorFill: Phaser\.GameObjects\.Rectangle/);
   assert.match(source, /knockoutBadge: Phaser\.GameObjects\.Text/);
   assert.equal(createSource.match(/const healthTrack = scene\.add\.rectangle/g)?.length, 1);
   assert.equal(createSource.match(/const healthFill = scene\.add\.rectangle/g)?.length, 1);
+  assert.equal(createSource.match(/const armorTrack = scene\.add\.rectangle/g)?.length, 1);
+  assert.equal(createSource.match(/const armorFill = scene\.add\.rectangle/g)?.length, 1);
   assert.equal(createSource.match(/const knockoutBadge = scene\.add\.text/g)?.length, 1);
-  assert.match(createSource, /container\.add\(\[selectionRing, abilityAura, shadow, body, weapon, healthTrack, healthFill, knockoutBadge\]\)/);
+  assert.match(createSource, /container\.add\(\[[\s\S]*healthTrack,[\s\S]*healthFill,[\s\S]*armorTrack,[\s\S]*armorFill,[\s\S]*knockoutBadge,[\s\S]*\]\)/);
   assert.doesNotMatch(frontlineSource, /scene\.add\.|new Phaser/);
   assert.match(frontlineSource, /state: HeroFrontlineState \| null/);
   assert.match(frontlineSource, /state\.status === "knocked_out"/);
-  assert.match(frontlineSource, /state\.status === "fighting" \|\| hpRatio < 0\.999/);
+  assert.match(frontlineSource, /state\.status === "fighting" \|\| hpRatio < 0\.999 \|\| armorRatio < 0\.999/);
   assert.match(frontlineSource, /setScale\(hpRatio, 1\)/);
+  assert.match(frontlineSource, /setScale\(armorRatio, 1\)/);
   assert.match(frontlineSource, /art\.body\.setAlpha\(knockedOut \? 0\.34 : 1\)/);
   assert.match(frontlineSource, /art\.weapon\.setAlpha\(knockedOut \? 0\.3 : 1\)/);
 });
@@ -104,11 +109,12 @@ test("the Phaser scene derives hero rendering and selection from simulation stat
 test("selected heroes show distinct attack and aura ranges with affected tower highlights", () => {
   assert.match(sceneSource, /import \{ getHeroAura, getHeroStats \} from "\.\.\/game\/heroes\.ts"/);
   assert.match(sceneSource, /if \(this\.selectedHero\) \{[\s\S]*getHeroStats\(view\.hero\.id, view\.hero\.level\)/);
-  assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, stats\.attackRange/);
+  assert.match(sceneSource, /view\.hero\.frontline[\s\S]*getHeroCombatStats\(view\.hero\.id, view\.hero\.level\)\.attackRange[\s\S]*stats\.attackRange/);
+  assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, attackRange/);
   assert.match(sceneSource, /getHeroAura\(view\.hero\.id, view\.hero\.level\)/);
   assert.match(sceneSource, /aura\.kind === "tower_damage"[\s\S]*0xf1cc69[\s\S]*aura\.kind === "tower_attack_speed"[\s\S]*0xff8a45/);
   assert.match(sceneSource, /this\.add\.circle\(view\.hero\.x, view\.hero\.y, aura\.radius/);
-  assert.match(sceneSource, /highlightAuraTowers\(view\.campaign\.towers, aura\.radius, aura\.strength, aura\.kind\)/);
+  assert.match(sceneSource, /highlightAuraTowers\([\s\S]*aura\.strength \* passivePower,[\s\S]*aura\.kind/);
   assert.match(sceneSource, /this\.heroAuraTowerHighlights\.set\(tower\.padId, \{ ring, badge \}\)/);
 });
 
@@ -184,7 +190,7 @@ test("awakened Toren targeting projects taps to the route and renders one transi
   assert.match(sceneSource, /barrier\.capturedCount[\s\S]*barrier\.capacity/);
   assert.match(sceneSource, /event\.type === "hero_barrier_created"/);
   assert.match(sceneSource, /event\.type === "hero_barrier_blocked"/);
-  assert.match(sceneSource, /const point = target \?\? event\.targetPoint/);
+  assert.match(sceneSource, /const point = target[\s\S]*this\.getEnemyRenderPoint\(target\.id, target\)[\s\S]*event\.targetPoint/);
   assert.match(sceneSource, /private handleTerminalEvent[\s\S]*this\.clearHeroAbilityTargeting\(\)/);
 });
 

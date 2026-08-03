@@ -7,7 +7,6 @@ import {
   buildHeroCombatPreviewSaveKey,
   isHeroCombatPreviewRequest,
   isHeroCombatPreviewSession,
-  shouldEnableHeroCombatPreview,
 } from "../src/game/heroCombatPreview.ts";
 
 const ELIGIBLE_CONTEXT = Object.freeze({
@@ -17,12 +16,11 @@ const ELIGIBLE_CONTEXT = Object.freeze({
   queryValue: "1",
   levelId: "forest-gate",
   modeId: "campaign",
-  heroId: "toren",
 });
 
-test("hero combat preview is limited to the explicit local Toren campaign", () => {
+test("hero combat preview isolates only the explicit local campaign", () => {
   assert.equal(HERO_COMBAT_PREVIEW_QUERY_PARAM, "preview_hero_combat");
-  assert.equal(shouldEnableHeroCombatPreview(ELIGIBLE_CONTEXT), true);
+  assert.equal(isHeroCombatPreviewSession(ELIGIBLE_CONTEXT), true);
 
   const ineligibleVariants = [
     { isDevelopment: false },
@@ -33,30 +31,23 @@ test("hero combat preview is limited to the explicit local Toren campaign", () =
     { queryValue: "true" },
     { levelId: "northern-pass-v3" },
     { modeId: "endless" },
-    { heroId: "eira" },
-    { heroId: "grak" },
   ];
   for (const patch of ineligibleVariants) {
-    assert.equal(shouldEnableHeroCombatPreview({ ...ELIGIBLE_CONTEXT, ...patch }), false);
+    assert.equal(isHeroCombatPreviewSession({ ...ELIGIBLE_CONTEXT, ...patch }), false);
   }
 });
 
-test("eligible preview sessions isolate their save before Toren is selected", () => {
-  const { heroId: _heroId, ...session } = ELIGIBLE_CONTEXT;
-  const { levelId: _levelId, modeId: _modeId, ...launch } = session;
+test("eligible preview sessions isolate their save before a hero is selected", () => {
+  const { levelId: _levelId, modeId: _modeId, ...launch } = ELIGIBLE_CONTEXT;
   assert.equal(isHeroCombatPreviewRequest(launch), true);
   assert.equal(isHeroCombatPreviewRequest({ ...launch, isDevelopment: false }), false);
-  assert.equal(isHeroCombatPreviewSession(session), true);
-  assert.equal(isHeroCombatPreviewSession({ ...session, isDevelopment: false }), false);
-  assert.equal(isHeroCombatPreviewSession({ ...session, modeId: "endless" }), false);
+  assert.equal(isHeroCombatPreviewSession(ELIGIBLE_CONTEXT), true);
+  assert.equal(isHeroCombatPreviewSession({ ...ELIGIBLE_CONTEXT, isDevelopment: false }), false);
+  assert.equal(isHeroCombatPreviewSession({ ...ELIGIBLE_CONTEXT, modeId: "endless" }), false);
 });
 
-test("production URL input cannot enable the hero combat preview", () => {
-  assert.equal(shouldEnableHeroCombatPreview({
-    ...ELIGIBLE_CONTEXT,
-    isDevelopment: false,
-    queryValue: "1",
-  }), false);
+test("production URL input cannot activate the isolated preview save", () => {
+  assert.equal(isHeroCombatPreviewSession({ ...ELIGIBLE_CONTEXT, isDevelopment: false }), false);
 });
 
 test("preview checkpoints use an isolated namespace without changing regular keys", () => {
@@ -66,5 +57,6 @@ test("preview checkpoints use an isolated namespace without changing regular key
     buildHeroCombatPreviewSaveKey(baseKey, true),
     `${baseKey}:${HERO_COMBAT_PREVIEW_SAVE_NAMESPACE}`,
   );
+  assert.match(HERO_COMBAT_PREVIEW_SAVE_NAMESPACE, /v2$/);
   assert.throws(() => buildHeroCombatPreviewSaveKey("", true), /base save key/i);
 });
