@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { audioCuesForSimulationEvents } from "../audio/audioCues.ts";
+import type { AudioCueId } from "../audio/audioCatalog.ts";
 import {
   BUILD_PAD_HIT_SIZE,
   GAME_HEIGHT,
@@ -147,6 +149,7 @@ export type TowerDefenseCallbacks = Readonly<{
   onWaveClear(wave: number, bonus: number, repairedLives: number): void;
   onTerminal(outcome: TerminalOutcome, state: CampaignState): void;
   onHaptic(kind: "light" | "medium" | "heavy" | "success" | "error"): void;
+  onAudioCue(cue: AudioCueId): void;
 }>;
 
 export type TowerDefenseGameOptions = Readonly<{
@@ -348,6 +351,7 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   startWave(): boolean {
     if (!this.simulation.startWave()) return false;
+    this.callbacks.onAudioCue("wave_start");
     this.selectedPadId = null;
     this.selectedHero = false;
     this.selectedBuildType = null;
@@ -469,6 +473,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.updatePadVisuals();
     this.updateRangePreview();
     this.callbacks.onHaptic("success");
+    this.callbacks.onAudioCue("upgrade");
     this.emitUi(true);
     return true;
   }
@@ -489,6 +494,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.updatePadVisuals();
     this.updateRangePreview();
     this.callbacks.onHaptic("medium");
+    this.callbacks.onAudioCue("sell");
     this.emitUi(true);
     return true;
   }
@@ -894,6 +900,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.updatePadVisuals();
     this.updateRangePreview();
     this.callbacks.onHaptic("success");
+    this.callbacks.onAudioCue("build");
     this.emitUi(true);
   }
 
@@ -1064,7 +1071,9 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   private processSimulationEvents(): void {
-    for (const event of this.simulation.drainEvents()) this.processSimulationEvent(event);
+    const events = this.simulation.drainEvents();
+    for (const cue of audioCuesForSimulationEvents(events)) this.callbacks.onAudioCue(cue);
+    for (const event of events) this.processSimulationEvent(event);
   }
 
   private processSimulationEvent(event: SimulationEvent): void {

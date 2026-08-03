@@ -8,8 +8,8 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-scv7dLtt.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-V6lr6G0L.css">
+    <script type="module" crossorigin src="./assets/index-DczRmi0T.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Cv04vjHv.css">
   </head>
   <body>
     <div id="app" class="app-shell">
@@ -84,8 +84,8 @@
             <div><small id="selected-level">Уровень 1</small><strong id="selected-name">Следопыт</strong><p id="selected-stats">Урон 12 · Дальность 122</p></div>
           </div>
           <div class="tower-actions">
-            <button id="upgrade-button" class="primary-action" type="button">Улучшить · 75 ●</button>
-            <button id="sell-button" class="secondary-action" type="button">Продать · 39 ●</button>
+            <button id="upgrade-button" class="primary-action" type="button" data-audio-cue-handled>Улучшить · 75 ●</button>
+            <button id="sell-button" class="secondary-action" type="button" data-audio-cue-handled>Продать · 39 ●</button>
           </div>
         </div>
 
@@ -102,12 +102,12 @@
           </div>
           <div class="hero-actions">
             <button id="hero-details-button" class="hero-details-button" type="button" aria-label="Герой и навыки">i</button>
-            <button id="hero-upgrade-button" class="primary-action" type="button">Улучшить · 150 ●</button>
+            <button id="hero-upgrade-button" class="primary-action" type="button" data-audio-cue-handled>Улучшить · 150 ●</button>
           </div>
         </div>
 
         <div class="wave-command">
-          <button id="pulse-button" class="pulse-button" type="button">
+          <button id="pulse-button" class="pulse-button" type="button" data-audio-cue-handled>
             <span class="pulse-icon" aria-hidden="true">✺</span>
             <span id="pulse-label">Импульс</span>
             <span id="pulse-charges" class="pulse-charges" aria-hidden="true" hidden><i></i><i></i></span>
@@ -117,7 +117,7 @@
             <strong id="wave-preview-summary" class="wave-preview-summary">Обычный отряд</strong>
             <span class="wave-preview-bottom"><span id="wave-enemies" class="enemy-list"></span><i class="wave-preview-more" aria-hidden="true">›</i></span>
           </button>
-          <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
+          <button id="start-wave-button" class="start-wave-button" type="button" data-audio-cue-handled>Начать волну</button>
         </div>
       </section>
     </div>
@@ -260,7 +260,7 @@
         <button id="intro-start" class="modal-primary" type="button" data-mission-cta>Встать на защиту</button>
         <button id="intro-restart-cancel" class="secondary-action wide" type="button" hidden>Вернуться к забегу</button>
         <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
-        <small class="app-build-version" data-app-version>v1.1.0 · b6dd7a866</small>
+        <small class="app-build-version" data-app-version>v1.2.0 · bd5914e34</small>
       </section>
     </div>
 
@@ -306,6 +306,14 @@
           </label>
         </div>
 
+        <fieldset class="game-menu-audio">
+          <legend id="game-menu-audio-label">Звук</legend>
+          <div role="group" aria-labelledby="game-menu-audio-label">
+            <button type="button" data-audio-toggle="music" aria-pressed="true"><span aria-hidden="true">♪</span><b data-audio-label>Музыка</b><small data-audio-state>Вкл</small></button>
+            <button type="button" data-audio-toggle="sfx" aria-pressed="true"><span aria-hidden="true">◆</span><b data-audio-label>Эффекты</b><small data-audio-state>Вкл</small></button>
+          </div>
+        </fieldset>
+
         <div class="game-menu-actions">
           <button id="tower-guide-button" class="game-menu-action" type="button" aria-controls="tower-guide-overlay" aria-expanded="false"><span aria-hidden="true">?</span><b id="game-menu-tower-guide-label">Справка по башням</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-leaderboard" class="game-menu-action" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="game-menu-leaderboard-label">Рейтинг</b><i aria-hidden="true">›</i></button>
@@ -321,7 +329,7 @@
           <p id="game-menu-restart-confirm-copy">Текущий прогресс будет удалён, после чего можно снова выбрать героя.</p>
           <div><button id="game-menu-restart-cancel" class="secondary-action" type="button">Отмена</button><button id="game-menu-restart-accept" class="primary-action" type="button">Начать заново</button></div>
         </section>
-        <small class="app-build-version" data-app-version>v1.1.0 · b6dd7a866</small>
+        <small class="app-build-version" data-app-version>v1.2.0 · bd5914e34</small>
       </section>
     </div>
 

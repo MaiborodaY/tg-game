@@ -82,8 +82,8 @@
             <div><small id="selected-level">Уровень 1</small><strong id="selected-name">Следопыт</strong><p id="selected-stats">Урон 12 · Дальность 122</p></div>
           </div>
           <div class="tower-actions">
-            <button id="upgrade-button" class="primary-action" type="button">Улучшить · 75 ●</button>
-            <button id="sell-button" class="secondary-action" type="button">Продать · 39 ●</button>
+            <button id="upgrade-button" class="primary-action" type="button" data-audio-cue-handled>Улучшить · 75 ●</button>
+            <button id="sell-button" class="secondary-action" type="button" data-audio-cue-handled>Продать · 39 ●</button>
           </div>
         </div>
 
@@ -100,12 +100,12 @@
           </div>
           <div class="hero-actions">
             <button id="hero-details-button" class="hero-details-button" type="button" aria-label="Герой и навыки">i</button>
-            <button id="hero-upgrade-button" class="primary-action" type="button">Улучшить · 150 ●</button>
+            <button id="hero-upgrade-button" class="primary-action" type="button" data-audio-cue-handled>Улучшить · 150 ●</button>
           </div>
         </div>
 
         <div class="wave-command">
-          <button id="pulse-button" class="pulse-button" type="button">
+          <button id="pulse-button" class="pulse-button" type="button" data-audio-cue-handled>
             <span class="pulse-icon" aria-hidden="true">✺</span>
             <span id="pulse-label">Импульс</span>
             <span id="pulse-charges" class="pulse-charges" aria-hidden="true" hidden><i></i><i></i></span>
@@ -115,7 +115,7 @@
             <strong id="wave-preview-summary" class="wave-preview-summary">Обычный отряд</strong>
             <span class="wave-preview-bottom"><span id="wave-enemies" class="enemy-list"></span><i class="wave-preview-more" aria-hidden="true">›</i></span>
           </button>
-          <button id="start-wave-button" class="start-wave-button" type="button">Начать волну</button>
+          <button id="start-wave-button" class="start-wave-button" type="button" data-audio-cue-handled>Начать волну</button>
         </div>
       </section>
     </div>
@@ -303,6 +303,14 @@
             </select>
           </label>
         </div>
+
+        <fieldset class="game-menu-audio">
+          <legend id="game-menu-audio-label">Звук</legend>
+          <div role="group" aria-labelledby="game-menu-audio-label">
+            <button type="button" data-audio-toggle="music" aria-pressed="true"><span aria-hidden="true">♪</span><b data-audio-label>Музыка</b><small data-audio-state>Вкл</small></button>
+            <button type="button" data-audio-toggle="sfx" aria-pressed="true"><span aria-hidden="true">◆</span><b data-audio-label>Эффекты</b><small data-audio-state>Вкл</small></button>
+          </div>
+        </fieldset>
 
         <div class="game-menu-actions">
           <button id="tower-guide-button" class="game-menu-action" type="button" aria-controls="tower-guide-overlay" aria-expanded="false"><span aria-hidden="true">?</span><b id="game-menu-tower-guide-label">Справка по башням</b><i aria-hidden="true">›</i></button>

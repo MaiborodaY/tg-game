@@ -74,6 +74,20 @@ for (const fileName of assetFiles) {
 
 const entryPath = resolve(outputDir, cleanReference(entryReferences[0]));
 const entrySource = readFileSync(entryPath, "utf8");
+const inlineAudioUrls = [...entrySource.matchAll(/data:audio\//gi)];
+assert.equal(inlineAudioUrls.length, 1, "Production entry may inline only the tiny silent unlock sample");
+assert.ok(
+  entrySource.includes("data:audio/wav;base64,UklGRigAAABXQVZF"),
+  "Production entry is missing the expected silent unlock sample",
+);
+assert.ok(
+  new TextEncoder().encode(entrySource).byteLength < 300_000,
+  "Production entry exceeded 300 KB; check for eagerly bundled media or runtime code",
+);
+assert.ok(
+  assetFiles.filter((fileName) => fileName.endsWith(".mp3")).length >= 4,
+  "Production build must emit fingerprinted audio files",
+);
 const dynamicEntryReferences = readDynamicImports(entrySource);
 assert.equal(dynamicEntryReferences.length, 1, "Production entry must have exactly one lazy gameplay chunk");
 assert.match(

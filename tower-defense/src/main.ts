@@ -2,6 +2,15 @@ import "./styles.css";
 import eiraPortraitUrl from "./assets/heroes/eira-portrait.webp";
 import grakPortraitUrl from "./assets/heroes/grak-portrait.webp";
 import torenPortraitUrl from "./assets/heroes/toren-portrait.webp";
+import { AUDIO_LIBRARY } from "./audio/audioAssets.ts";
+import { createBrowserAudioPort } from "./audio/browserAudioPort.ts";
+import { AudioDirector, resolveMusicContext } from "./audio/audioDirector.ts";
+import {
+  readAudioSettings,
+  updateAudioSetting,
+  writeAudioSettings,
+  type AudioSettings,
+} from "./audio/audioSettings.ts";
 import {
   ENEMY_DEFINITIONS,
   MAX_TOWER_LEVEL,
@@ -141,6 +150,12 @@ async function bootstrap(): Promise<void> {
 const legacyLaunch = parseLaunchParams(window.location.href);
 const storage = safeStorage("localStorage");
 const session = safeStorage("sessionStorage");
+let audioSettings: AudioSettings = readAudioSettings(storage);
+const audioDirector = new AudioDirector(
+  createBrowserAudioPort(AUDIO_LIBRARY.effectUrls),
+  audioSettings,
+  AUDIO_LIBRARY,
+);
 const developmentGrakPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_hero") === "grak";
 const developmentLeaderboardPreview = import.meta.env.DEV
@@ -378,6 +393,7 @@ let runtimeLoadFailed = false;
 let reloadRequested = false;
 let playerProfile: PlayerProfileSnapshot | null = launchProfile;
 let selectedHeroId: HeroId = initialCampaign.hero.id;
+audioDirector.setMusicContext(resolveMusicContext(initialCampaign.levelId, "setup", false));
 let runStarted = Boolean(restoredCheckpoint);
 let tutorialState: TutorialState = createTutorialState({
   campaign: initialCampaign,
@@ -569,6 +585,8 @@ const elements = {
   gameMenuHeroDetails: byId("game-menu-hero-details"),
   gameMenuSpeedLabel: byId("game-menu-speed-label"),
   gameMenuSpeedButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-menu-speed]")],
+  gameMenuAudioLabel: byId("game-menu-audio-label"),
+  audioToggleButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-audio-toggle]")],
   gameMenuTowerGuideLabel: byId("game-menu-tower-guide-label"),
   gameMenuLeaderboard: button("game-menu-leaderboard"),
   gameMenuLeaderboardLabel: byId("game-menu-leaderboard-label"),
@@ -639,6 +657,7 @@ telegram.setClosingConfirmation(reward.mode === "server" && !finishSettled);
 const gameCallbacks: TowerDefenseCallbacks = {
   onUiChange: (ui) => {
     latestUi = ui;
+    audioDirector.setMusicContext(resolveMusicContext(ui.levelId, ui.phase, Boolean(ui.boss)));
     renderUi(ui);
   },
   onPersist: (campaign) => {
@@ -665,6 +684,9 @@ const gameCallbacks: TowerDefenseCallbacks = {
   },
   onTerminal: handleTerminal,
   onHaptic: telegram.haptic,
+  onAudioCue: (cue) => {
+    audioDirector.playCue(cue);
+  },
 };
 
 if (!checkpointResumeMismatch && checkpointTargetWave > confirmedServerWave) {
@@ -705,6 +727,24 @@ if (!pendingFinishRestored) {
 }
 
 function bindInteractions(): void {
+  document.addEventListener("pointerdown", (event) => {
+    if (event.target instanceof Element && event.target.closest("[data-audio-toggle]")) return;
+    void audioDirector.unlockFromGesture();
+  }, { capture: true });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.target instanceof Element && event.target.closest("[data-audio-toggle]")) return;
+    void audioDirector.unlockFromGesture();
+  }, { capture: true });
+  document.addEventListener("click", (event) => {
+    if (!event.isTrusted) return;
+    if (event.target instanceof Element && event.target.closest("[data-audio-toggle]")) return;
+    void audioDirector.unlockFromGesture();
+  }, { capture: true });
+  document.addEventListener("click", playUiClickSound);
+  elements.audioToggleButtons.forEach((control) => {
+    control.addEventListener("click", () => toggleAudioSetting(control.dataset.audioToggle));
+  });
   elements.languageSelects.forEach((select) => {
     select.addEventListener("change", () => setLocale(select.value));
   });
@@ -864,9 +904,18 @@ function bindInteractions(): void {
   elements.restartButton.addEventListener("click", restartGame);
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden && latestUi && (latestUi.phase === "wave" || latestUi.phase === "countdown")) {
-      currentScene()?.setPaused(true);
+    if (document.hidden) {
+      audioDirector.suspend();
+      if (latestUi && (latestUi.phase === "wave" || latestUi.phase === "countdown")) {
+        currentScene()?.setPaused(true);
+      }
+    } else {
+      audioDirector.resume();
     }
+  });
+  window.addEventListener("pagehide", () => audioDirector.suspend());
+  window.addEventListener("pageshow", () => {
+    if (!document.hidden) audioDirector.resume();
   });
   window.addEventListener("beforeunload", (event) => {
     if (reward.mode === "server" && !finishSettled && !reloadRequested) {
@@ -886,6 +935,43 @@ function bindInteractions(): void {
       hideAttemptPurchaseConfirmation();
     }
     else if (!elements.heroPicker.hidden) closeHeroPicker(true);
+  });
+}
+
+function playUiClickSound(event: MouseEvent): void {
+  if (!(event.target instanceof Element)) return;
+  const control = event.target.closest<HTMLButtonElement>("button");
+  if (!control || control.disabled || control.dataset.audioToggle || control.dataset.audioCueHandled !== undefined) return;
+  audioDirector.playCue("ui_select");
+}
+
+function toggleAudioSetting(value: string | undefined): void {
+  if (value !== "music" && value !== "sfx") return;
+  const currentlyEnabled = value === "music" ? audioSettings.musicEnabled : audioSettings.sfxEnabled;
+  const nextEnabled = !currentlyEnabled;
+  if (value === "sfx" && !nextEnabled) audioDirector.playCue("ui_toggle");
+  audioSettings = updateAudioSetting(audioSettings, value, nextEnabled);
+  writeAudioSettings(storage, audioSettings);
+  audioDirector.setSettings(audioSettings);
+  syncAudioSettingsUi();
+  void audioDirector.unlockFromGesture();
+  if (value !== "sfx" || nextEnabled) audioDirector.playCue("ui_toggle");
+  telegram.haptic("light");
+}
+
+function syncAudioSettingsUi(): void {
+  elements.audioToggleButtons.forEach((control) => {
+    const kind = control.dataset.audioToggle;
+    const enabled = kind === "music" ? audioSettings.musicEnabled : audioSettings.sfxEnabled;
+    const labelKey = kind === "music" ? "audio_music" : "audio_sfx";
+    const stateKey = enabled ? "audio_on" : "audio_off";
+    const label = control.querySelector<HTMLElement>("[data-audio-label]");
+    const state = control.querySelector<HTMLElement>("[data-audio-state]");
+    if (label) label.textContent = text(labelKey);
+    if (state) state.textContent = text(stateKey);
+    control.classList.toggle("is-active", enabled);
+    control.setAttribute("aria-pressed", String(enabled));
+    control.setAttribute("aria-label", `${text(labelKey)}: ${text(stateKey)}`);
   });
 }
 
@@ -2098,6 +2184,7 @@ async function switchPracticeSession(levelId: string, modeId: string): Promise<v
     });
     northernOnboardingStep = getNorthernOnboardingStep(initialCampaign);
     selectedHeroId = initialCampaign.hero.id;
+    audioDirector.setMusicContext(resolveMusicContext(initialCampaign.levelId, "setup", false));
 
     latestUi = null;
     renderedPreviewWave = -1;
@@ -3058,6 +3145,8 @@ function applyStaticTranslations(): void {
   elements.gameMenuEyebrow.textContent = text("app_title");
   elements.gameMenuClose.setAttribute("aria-label", text("close"));
   elements.gameMenuSpeedLabel.textContent = text("speed");
+  elements.gameMenuAudioLabel.textContent = text("game_menu_audio");
+  syncAudioSettingsUi();
   const menuLanguageLabel = text("game_menu_language");
   const menuLanguage = elements.gameMenuOverlay.querySelector<HTMLElement>(".game-menu-language > span");
   if (menuLanguage) menuLanguage.textContent = menuLanguageLabel;

@@ -23,6 +23,7 @@ export default defineConfig({
   build: {
     outDir: "../public/td",
     emptyOutDir: true,
+    assetsInlineLimit: 0,
     target: "es2020",
     rollupOptions: {
       output: {
