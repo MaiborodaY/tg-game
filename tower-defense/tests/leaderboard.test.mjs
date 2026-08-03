@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  FOREST_ENDLESS_SEASON_ID,
   LEADERBOARD_CACHE_TTL_MS,
+  NORTHERN_ENDLESS_SEASON_ID,
   TOWER_DEFENSE_LEADERBOARD_URL,
   createLeaderboardClient,
   parseLeaderboardResponse,
@@ -93,7 +95,7 @@ test("endless leaderboard is season-bound and identifies each run hero", () => {
     level_id: "forest-gate",
     mode_id: "endless",
     max_waves: null,
-    season_id: "endless-v1",
+    season_id: FOREST_ENDLESS_SEASON_ID,
     total_players: 1,
     entries: [entry],
     me: { ...entry },
@@ -101,8 +103,26 @@ test("endless leaderboard is season-bound and identifies each run hero", () => {
 
   assert.equal(parsed?.modeId, "endless");
   assert.equal(parsed?.maxWaves, null);
-  assert.equal(parsed?.seasonId, "endless-v1");
+  assert.equal(parsed?.seasonId, FOREST_ENDLESS_SEASON_ID);
   assert.equal(parsed?.entries[0].heroId, "eira");
+
+  const northernBody = {
+    ok: true,
+    game_id: "td",
+    level_id: "northern-pass-v3",
+    mode_id: "endless",
+    max_waves: null,
+    season_id: NORTHERN_ENDLESS_SEASON_ID,
+    total_players: 1,
+    entries: [entry],
+    me: { ...entry },
+  };
+  const northern = parseLeaderboardResponse(northernBody, "northern-pass-v3", "endless");
+  assert.equal(northern?.seasonId, NORTHERN_ENDLESS_SEASON_ID);
+  assert.equal(parseLeaderboardResponse({
+    ...northernBody,
+    season_id: FOREST_ENDLESS_SEASON_ID,
+  }, "northern-pass-v3", "endless"), null);
 });
 
 test("leaderboard parser rejects schema drift and inconsistent identity data", () => {

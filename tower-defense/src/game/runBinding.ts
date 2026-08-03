@@ -1,10 +1,4 @@
-import {
-  ENDLESS_MODE_ID,
-  CLASSIC_CAMPAIGN_LEVEL_ID,
-  CONTENT_VERSION,
-  getLevelDefinition,
-  getModeRuleset,
-} from "./content.ts";
+import { CONTENT_VERSION, getLevelDefinition, getModeRuleset } from "./content.ts";
 
 export type ServerRunBinding = Readonly<{
   contentVersion: typeof CONTENT_VERSION;
@@ -16,7 +10,6 @@ export function sanitizeServerRunBinding(value: unknown): ServerRunBinding | nul
   if (!isRecord(value) || !hasExactBindingKeys(value) || value.contentVersion !== CONTENT_VERSION) return null;
   if (typeof value.levelId !== "string" || typeof value.modeId !== "string") return null;
   if (!getLevelDefinition(value.levelId) || !getModeRuleset(value.modeId)) return null;
-  if (value.modeId === ENDLESS_MODE_ID && value.levelId !== CLASSIC_CAMPAIGN_LEVEL_ID) return null;
   return Object.freeze({
     contentVersion: CONTENT_VERSION,
     levelId: value.levelId,

@@ -138,6 +138,7 @@ export type TowerDefenseUiState = Readonly<{
     hpRatio: number;
     shieldRatio: number;
     enraged: boolean;
+    frostCoreExposed: boolean;
   }> | null;
   northernPass: ReturnType<GameSimulation["readView"]>["northernPass"];
 }>;
@@ -1232,6 +1233,13 @@ export class TowerDefenseScene extends Phaser.Scene {
       createFloatingText(this, point.x, point.y - 25, "❄", "#e1fcff");
       return;
     }
+    if (event.type === "boss_core_exposed") {
+      const point = this.getEnemyRenderPoint(event.enemyId, event);
+      createHitBurst(this, point.x, point.y, 0xffc766, 42, 6);
+      createFloatingText(this, point.x, point.y - 30, "×2", "#ffe6a3");
+      this.cameras.main.flash(120, 255, 194, 92, false);
+      return;
+    }
     if (event.type === "projectile_hit") {
       const color = projectileColor(event.towerType);
       const point = this.getEnemyRenderPoint(event.targetId, event);
@@ -1410,9 +1418,13 @@ export class TowerDefenseScene extends Phaser.Scene {
         .setFillStyle(frostArmorActive ? 0xb4f4ff : 0x77dff2, 0.95)
         .setScale(protectionRatio, 1)
         .setAlpha(protectionRatio > 0 ? 0.95 : 0);
-      const statusActive = enemy.stunned || enemy.slowed;
+      const statusActive = enemy.stunned || enemy.slowed || enemy.frostCoreExposed;
       art.statusRing.setAlpha(statusActive ? 0.78 : 0)
-        .setStrokeStyle(2, enemy.stunned ? 0x77f3d5 : 0x78dff6, statusActive ? 0.9 : 0);
+        .setStrokeStyle(
+          enemy.frostCoreExposed ? 3 : 2,
+          enemy.frostCoreExposed ? 0xffc766 : enemy.stunned ? 0x77f3d5 : 0x78dff6,
+          statusActive ? 0.9 : 0,
+        );
       if (enemy.burning && simulationTimeMs - this.lastBurnVfxAtMs >= 85 && Math.random() < 0.22) {
         this.lastBurnVfxAtMs = simulationTimeMs;
         const ember = this.add.circle(renderX + (Math.random() * 8 - 4), renderY - 7, 2, 0xff9e5c, 0.88).setDepth(1_000);
@@ -1608,6 +1620,7 @@ export class TowerDefenseScene extends Phaser.Scene {
               ? Math.max(0, (boss.shield + boss.frostArmor) / (boss.maxShield + boss.maxFrostArmor))
               : 0,
             enraged: boss.enraged,
+            frostCoreExposed: boss.frostCoreExposed,
           })
         : null,
     }));

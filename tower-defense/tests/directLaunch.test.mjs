@@ -55,10 +55,12 @@ test("fullscreen control follows Telegram support and confirmed state", () => {
   assert.match(mainSource, /function applyStaticTranslations\(\): void \{[\s\S]*syncFullscreenUi\(telegram\.isFullscreen\);/);
 });
 
-test("Northern Pass preview requires local development or a server-issued admin capability", () => {
+test("Northern Pass release requires local development or a server-issued capability", () => {
   assert.match(html, /id="session-picker" class="session-picker" hidden/);
   assert.match(css, /\.session-picker\[hidden\] \{ display: none; \}/);
   assert.match(html, /id="level-select"/);
+  assert.match(html, /<option value="northern-pass-v3">/);
+  assert.doesNotMatch(html, /<option value="northern-pass">/);
   assert.match(html, /id="mode-select"/);
   assert.match(mainSource, /shouldExposePreviewContent\(import\.meta\.env\.DEV, launchDecision\.kind\)/);
   assert.match(mainSource, /if \(cachedBootstrap\?\.canAccessNorthernPass\) previewContentEnabled = true/);

@@ -30,6 +30,7 @@ export const TOWER_DEFENSE_FINISH_URL = "https://work-bot.mr-maybik.workers.dev/
 export const TOWER_DEFENSE_BOOTSTRAP_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/bootstrap";
 export const TOWER_DEFENSE_CHECKPOINT_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/checkpoint";
 export const TOWER_DEFENSE_RESTART_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/restart";
+export const TOWER_DEFENSE_CLIENT_RELEASE_ID = "northern-pass-v3-hard-v1";
 export const TOWER_DEFENSE_RESET_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/reset";
 export const TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL = "https://work-bot.mr-maybik.workers.dev/api/minigames/td/attempts/purchase";
 export const MINIAPP_BOOTSTRAP_SESSION_KEY = "td-miniapp-bootstrap-v2";
@@ -283,7 +284,10 @@ export async function fetchMiniAppProfile(
   try {
     const { response, data } = await postJson(
       TOWER_DEFENSE_BOOTSTRAP_URL,
-      JSON.stringify({ init_data: boundedInitData }),
+      JSON.stringify({
+        init_data: boundedInitData,
+        client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
+      }),
       options,
     );
     if (!response.ok) return Object.freeze({ ok: false, error: "http_" + (response.status || 0) });
@@ -316,6 +320,7 @@ export async function startMiniAppReward(
       game_id: "td",
       client_content_version: CONTENT_VERSION,
       client_protocol_version: RANKED_RUN_CONTRACT_VERSION,
+      client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
       ...(selection ? {
         level_id: selection.levelId,
         mode_id: selection.modeId,
@@ -430,6 +435,7 @@ export async function restartMiniAppRun(
         token: bootstrap.reward.token,
         run_revision: runRevision,
         hero_id: heroId,
+        client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
       }),
       options,
     );

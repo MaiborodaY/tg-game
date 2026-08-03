@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   hasClearedForestGateCampaign,
+  hasClearedLevelCampaign,
   isSessionAvailable,
 } from "../src/game/progression.ts";
 
@@ -29,14 +30,27 @@ test("Forest Gate endless unlock requires an authoritative campaign victory thro
   assert.equal(isSessionAvailable("forest-gate", "endless", victory), true);
 });
 
-test("v1 endless stays limited to Forest Gate and campaign follows profile level unlocks", () => {
-  const victory = profile(
-    [{ levelId: "forest-gate", outcome: "victory", completedWaves: 24, score: 24, durationMs: 1 }],
-    ["forest-gate", "northern-pass"],
+test("each endless mode requires an authoritative victory in that same campaign", () => {
+  const forestOnly = profile(
+    [{ levelId: "forest-gate", outcome: "victory", completedWaves: 24, score: 72, durationMs: 1 }],
+    ["forest-gate", "northern-pass-v3"],
   );
+  const northernShort = profile([
+    ...forestOnly.bestResults,
+    { levelId: "northern-pass-v3", outcome: "victory", completedWaves: 23, score: 68, durationMs: 1 },
+  ], ["forest-gate", "northern-pass-v3"]);
+  const bothCleared = profile([
+    ...forestOnly.bestResults,
+    { levelId: "northern-pass-v3", outcome: "victory", completedWaves: 24, score: 72, durationMs: 1 },
+  ], ["forest-gate", "northern-pass-v3"]);
 
-  assert.equal(isSessionAvailable("northern-pass", "endless", victory), false);
-  assert.equal(isSessionAvailable("forest-gate", "campaign", victory), true);
-  assert.equal(isSessionAvailable("locked-level", "campaign", victory), false);
+  assert.equal(hasClearedLevelCampaign(forestOnly, "northern-pass-v3"), false);
+  assert.equal(isSessionAvailable("forest-gate", "endless", forestOnly), true);
+  assert.equal(isSessionAvailable("northern-pass-v3", "endless", forestOnly), false);
+  assert.equal(isSessionAvailable("northern-pass-v3", "endless", northernShort), false);
+  assert.equal(hasClearedLevelCampaign(bothCleared, "northern-pass-v3"), true);
+  assert.equal(isSessionAvailable("northern-pass-v3", "endless", bothCleared), true);
+  assert.equal(isSessionAvailable("forest-gate", "campaign", bothCleared), true);
+  assert.equal(isSessionAvailable("locked-level", "campaign", bothCleared), false);
   assert.equal(isSessionAvailable("locked-level", "campaign", null), true);
 });

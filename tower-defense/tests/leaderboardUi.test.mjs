@@ -73,6 +73,8 @@ test("leaderboard keeps Northern Pass hidden until the client release gate opens
   const northernPassTab = openingTagById(html, "leaderboard-tab-northern-pass");
 
   assert.match(northernPassTab, /\shidden(?:\s|>)/);
+  assert.match(northernPassTab, /data-leaderboard-level="northern-pass-v3"/);
+  assert.doesNotMatch(northernPassTab, /data-leaderboard-level="northern-pass"/);
   assert.match(leaderboardFunctions, /isClientLevelReleased\(selectedSession\.level\.id, previewContentEnabled\)/);
   assert.match(leaderboardFunctions, /!isClientLevelReleased\(rawLevelId, previewContentEnabled\)/);
   assert.match(leaderboardFunctions, /!isClientLevelReleased\(levelId, previewContentEnabled\)/);

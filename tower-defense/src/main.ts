@@ -93,6 +93,7 @@ import {
 } from "./i18n.ts";
 import {
   createLeaderboardClient,
+  endlessLeaderboardSeasonId,
   type LeaderboardClient,
   type LeaderboardEntry,
   type TowerDefenseLeaderboard,
@@ -1453,7 +1454,9 @@ function renderUi(ui: TowerDefenseUiState): void {
     elements.bossName.textContent = ui.boss.type === "titan"
       ? text("enemy_titan")
       : text(`${ui.levelId === NORTHERN_PASS_LEVEL_ID ? "northern_boss_act" : "boss_act"}_${ui.boss.tier}` as TranslationKey);
-    elements.bossState.textContent = text(ui.boss.enraged ? "boss_enraged" : "boss_state");
+    elements.bossState.textContent = text(
+      ui.boss.frostCoreExposed ? "boss_core_exposed" : ui.boss.enraged ? "boss_enraged" : "boss_state",
+    );
     elements.bossHealthFill.style.width = `${Math.round(ui.boss.hpRatio * 100)}%`;
     elements.bossShieldFill.style.width = `${Math.round(ui.boss.shieldRatio * 100)}%`;
     elements.bossShieldFill.parentElement?.toggleAttribute("hidden", ui.boss.shieldRatio <= 0);
@@ -2268,7 +2271,6 @@ function openLeaderboard(origin: "intro" | "menu" | "result"): void {
     ? selectedSession.level.id
     : CLASSIC_CAMPAIGN_LEVEL_ID;
   leaderboardModeId = selectedSession.mode.id === ENDLESS_MODE_ID ? ENDLESS_MODE_ID : CAMPAIGN_MODE_ID;
-  if (leaderboardModeId === ENDLESS_MODE_ID) leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
 
   if (origin === "intro") {
     elements.introOverlay.hidden = true;
@@ -2328,7 +2330,6 @@ function selectLeaderboardLevel(rawLevelId: string | undefined): void {
     || rawLevelId === leaderboardLevelId
   ) return;
   leaderboardLevelId = rawLevelId;
-  if (leaderboardLevelId !== CLASSIC_CAMPAIGN_LEVEL_ID) leaderboardModeId = CAMPAIGN_MODE_ID;
   renderedLeaderboard = null;
   syncLeaderboardTabs();
   telegram.haptic("light");
@@ -2341,7 +2342,6 @@ function selectLeaderboardMode(rawModeId: string | undefined): void {
     || rawModeId === leaderboardModeId
   ) return;
   leaderboardModeId = rawModeId;
-  if (leaderboardModeId === ENDLESS_MODE_ID) leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
   renderedLeaderboard = null;
   syncLeaderboardTabs();
   telegram.haptic("light");
@@ -2354,8 +2354,7 @@ function syncLeaderboardTabs(): void {
     const selected = control.dataset.leaderboardLevel === leaderboardLevelId;
     const levelId = control.dataset.leaderboardLevel;
     const unavailable = !levelId
-      || !isClientLevelReleased(levelId, previewContentEnabled)
-      || (leaderboardModeId === ENDLESS_MODE_ID && levelId !== CLASSIC_CAMPAIGN_LEVEL_ID);
+      || !isClientLevelReleased(levelId, previewContentEnabled);
     control.hidden = unavailable;
     control.disabled = unavailable;
     control.setAttribute("aria-selected", String(selected));
@@ -2595,7 +2594,7 @@ function createDevelopmentLeaderboard(
     levelId,
     modeId,
     maxWaves,
-    seasonId: modeId === ENDLESS_MODE_ID ? "endless-v1" : null,
+    seasonId: modeId === ENDLESS_MODE_ID ? endlessLeaderboardSeasonId(levelId) : null,
     totalPlayers: 42,
     entries: Object.freeze(values.map((entry) => Object.freeze(entry))),
     me: Object.freeze(me),
@@ -3378,7 +3377,7 @@ function syncSessionControls(): void {
   elements.levelChoiceLabel.textContent = text("session_level");
   elements.modeChoiceLabel.textContent = text("session_mode");
   const endlessLocked = isMiniAppLaunch && !isSessionAvailable(
-    CLASSIC_CAMPAIGN_LEVEL_ID,
+    selectedSession.level.id,
     ENDLESS_MODE_ID,
     playerProfile,
   );
@@ -3418,8 +3417,7 @@ function syncMissionPreview(): void {
 function isSelectableSession(levelId: string, modeId: string): boolean {
   if (!isClientLevelReleased(levelId, previewContentEnabled)) return false;
   if (isMiniAppLaunch) return isSessionAvailable(levelId, modeId, playerProfile);
-  return modeId === CAMPAIGN_MODE_ID
-    || (modeId === ENDLESS_MODE_ID && levelId === CLASSIC_CAMPAIGN_LEVEL_ID);
+  return modeId === CAMPAIGN_MODE_ID || modeId === ENDLESS_MODE_ID;
 }
 
 function hasRunProgress(campaign: TowerDefenseUiState["campaign"]): boolean {

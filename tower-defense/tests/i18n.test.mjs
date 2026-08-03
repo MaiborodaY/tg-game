@@ -200,6 +200,7 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
     "frost_armor",
     "frost_armor_description",
     "frost_armor_broken",
+    "boss_core_exposed",
     "wave_trait_frost",
     "wave_intel_trait_frost_armor",
     "avalanche_name",
@@ -230,7 +231,13 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
     assert.match(tr(locale, "hero_awakening_requirement", { wave: 14 }), /14/);
   }
 
-  assert.match(tr("ru", "mission_northern_trait_body"), /лавин.*брон/ui);
+  assert.match(tr("ru", "mission_northern_trait_body"), /лавин.*ядр/ui);
+  assert.match(tr("ru", "mission_northern_body"), /босс.*три/ui);
+  assert.match(tr("ru", "mission_northern_trait_body"), /ядр.*удва/ui);
+  assert.match(tr("uk", "mission_northern_body"), /бос.*три/ui);
+  assert.match(tr("uk", "mission_northern_trait_body"), /ядр.*подво/ui);
+  assert.match(tr("en", "mission_northern_body"), /boss.*three/i);
+  assert.match(tr("en", "mission_northern_trait_body"), /core.*double/i);
   assert.match(tr("uk", "frost_armor_description"), /Іскромант/ui);
   assert.match(tr("en", "avalanche_hint"), /tap.*zone.*enemies/i);
   assert.match(tr("ru", "northern_avalanche_intel", {

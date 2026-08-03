@@ -1,5 +1,11 @@
 import { HERO_IDS, isHeroId } from "./game/heroes.ts";
-import { CAMPAIGN_MODE_ID, ENDLESS_MODE_ID, MAX_ENDLESS_WAVE } from "./game/content.ts";
+import {
+  CAMPAIGN_MODE_ID,
+  CLASSIC_CAMPAIGN_LEVEL_ID,
+  ENDLESS_MODE_ID,
+  MAX_ENDLESS_WAVE,
+  NORTHERN_PASS_LEVEL_ID,
+} from "./game/content.ts";
 import type { HeroId } from "./game/types.ts";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -36,6 +42,8 @@ const HERO_WIN_KEYS = Object.freeze(["hero_id", "completions"] as const);
 export const TOWER_DEFENSE_LEADERBOARD_URL =
   "https://work-bot.mr-maybik.workers.dev/api/minigames/td/leaderboard";
 export const LEADERBOARD_CACHE_TTL_MS = 30_000;
+export const FOREST_ENDLESS_SEASON_ID = "endless-v1";
+export const NORTHERN_ENDLESS_SEASON_ID = "northern-pass-v3-endless-v1";
 
 export type LeaderboardOutcome = "defeat" | "victory";
 export type LeaderboardModeId = typeof CAMPAIGN_MODE_ID | typeof ENDLESS_MODE_ID;
@@ -211,7 +219,10 @@ export function parseLeaderboardResponse(
     || totalPlayers === null
     || !Array.isArray(value.entries)
   ) return null;
-  if (modeId === ENDLESS_MODE_ID && (!rankedResponse || seasonId !== "endless-v1")) return null;
+  if (
+    modeId === ENDLESS_MODE_ID
+    && (!rankedResponse || seasonId !== endlessLeaderboardSeasonId(levelId))
+  ) return null;
   if (modeId === CAMPAIGN_MODE_ID && rankedResponse && value.season_id !== null) return null;
   if (value.entries.length > MAX_ENTRIES || value.entries.length > totalPlayers) return null;
 
@@ -244,6 +255,12 @@ export function parseLeaderboardResponse(
     entries: Object.freeze(entries),
     me,
   });
+}
+
+export function endlessLeaderboardSeasonId(levelId: string): string | null {
+  if (levelId === CLASSIC_CAMPAIGN_LEVEL_ID) return FOREST_ENDLESS_SEASON_ID;
+  if (levelId === NORTHERN_PASS_LEVEL_ID) return NORTHERN_ENDLESS_SEASON_ID;
+  return null;
 }
 
 async function requestLeaderboard(

@@ -95,9 +95,13 @@ to new PvE modes are enabled, the server must verify an authoritative result
 version). Client-side signatures or localStorage metadata do not solve this.
 
 The current server profile is therefore a PvE foundation, not proof of fair
-play. `northern-pass` remains preview content: the production client exposes
-only `forest-gate`, while the full catalog is available only to a local Vite
-development practice launch. PvP remains outside this phase.
+play. The production client exposes `northern-pass-v3` only when the server
+issues its release capability to the matching client release marker and the
+player has earned the level unlock by clearing `forest-gate`. Each level's
+endless mode additionally requires a full 24-wave victory in that same campaign
+and uses a separate leaderboard season.
+The legacy `northern-pass` binding remains unavailable. PvP remains outside
+this phase.
 Eira and Toren are available without profile unlocks. Grak is derived from a
 trusted profile result: a full `forest-gate` campaign victory. Hero rank and
 anchor remain run-local and are deliberately absent from the permanent profile.

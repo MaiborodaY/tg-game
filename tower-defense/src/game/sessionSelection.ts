@@ -1,7 +1,6 @@
 import {
   CAMPAIGN_MODE_ID,
   CLASSIC_CAMPAIGN_LEVEL_ID,
-  ENDLESS_MODE_ID,
   LEGACY_NORTHERN_PASS_LEVEL_ID,
   getLevelDefinition,
   getModeRuleset,
@@ -78,7 +77,6 @@ export function writeSessionSelection(storage: StorageLike | null, selection: Se
 function sanitizeSelection(value: unknown): SessionSelection | null {
   if (!isRecord(value) || typeof value.levelId !== "string" || typeof value.modeId !== "string") return null;
   if (value.levelId === LEGACY_NORTHERN_PASS_LEVEL_ID) return null;
-  if (value.modeId === ENDLESS_MODE_ID && value.levelId !== CLASSIC_CAMPAIGN_LEVEL_ID) return null;
   if (!getLevelDefinition(value.levelId) || !getModeRuleset(value.modeId)) return null;
   return Object.freeze({ levelId: value.levelId, modeId: value.modeId });
 }

@@ -8,13 +8,14 @@ import { createCampaignState } from "../src/game/state.ts";
 
 function createFrostArmorRules({
   frostArmorRatio = 0.2,
+  shieldRatio = 0,
   heroAwakeningWave = 20,
   variant = frostArmorRatio > 0 ? "icebound" : "standard",
   type = "raider",
   northernPass = null,
 } = {}) {
   return Object.freeze({
-    id: `northern-pass-v3:test:${frostArmorRatio}:${type}`,
+    id: `northern-pass-v3:test:${frostArmorRatio}:${shieldRatio}:${type}`,
     routePoints: Object.freeze([Object.freeze({ x: 0, y: 20 }), Object.freeze({ x: 120, y: 20 })]),
     buildPads: Object.freeze([]),
     heroAnchors: Object.freeze([
@@ -38,7 +39,7 @@ function createFrostArmorRules({
         leakDamage: 1,
         physicalResistance: 0,
         magicResistance: 0,
-        shieldRatio: 0,
+        shieldRatio,
         frostArmorRatio,
         controlResistance: 0,
         healingRadius: type === "shaman" ? 100 : 0,
@@ -152,14 +153,59 @@ test("an avalanche cannot be spent before a target reaches the armed zone", () =
   assert.equal(simulation.readView().northernPass.avalanche.chargesRemaining, 1);
 });
 
-test("boss waves expose two charges and route changes are replay-visible domain events", () => {
+test("boss waves expose three charges and route changes are replay-visible domain events", () => {
   const simulation = new GameSimulation(
     createCampaignState(),
-    createFrostArmorRules({ type: "boss", northernPass: avalanchePlan({ charges: 2 }) }),
+    createFrostArmorRules({ type: "boss", northernPass: avalanchePlan({ charges: 3 }) }),
   );
   assert.equal(simulation.startWave(), true);
-  assert.equal(simulation.readView().northernPass.avalanche.maxCharges, 2);
+  assert.equal(simulation.readView().northernPass.avalanche.maxCharges, 3);
   const event = simulation.drainEvents().find((candidate) => candidate.type === "northern_route_changed");
   assert.equal(event.routeVariantId, "ridge");
   assert.equal(event.wave, 1);
+});
+
+test("the second boss avalanche exposes the frost core once and the third charge does not stack damage", () => {
+  const simulation = createLiveEnemy({
+    type: "boss",
+    shieldRatio: 0.1,
+    northernPass: avalanchePlan({ charges: 3 }),
+  });
+
+  assert.deepEqual(simulation.triggerNorthernAvalanche("upper"), { ok: true, error: null });
+  let enemy = simulation.readView().enemies[0];
+  assert.equal(enemy.frostArmor, 20, "the first charge must leave 10% of a boss's frost armor");
+  assert.equal(enemy.frostCoreExposed, false);
+  assert.equal(simulation.drainEvents().filter((event) => event.type === "boss_core_exposed").length, 0);
+
+  assert.deepEqual(simulation.triggerNorthernAvalanche("upper"), { ok: true, error: null });
+  enemy = simulation.readView().enemies[0];
+  assert.equal(enemy.frostArmor, 0);
+  assert.equal(enemy.frostCoreExposed, true);
+  assert.equal(simulation.drainEvents().filter((event) => event.type === "boss_core_exposed").length, 1);
+
+  enemy = dealDirectDamage(simulation, 100, "physical");
+  assert.equal(enemy.shield, 0);
+  assert.equal(enemy.hp, 1_000, "core exposure must not double damage absorbed by the shield");
+  enemy = dealDirectDamage(simulation, 50, "physical");
+  assert.equal(enemy.hp, 900, "unshielded HP damage must be doubled after core exposure");
+
+  assert.deepEqual(simulation.triggerNorthernAvalanche("upper"), { ok: true, error: null });
+  assert.equal(simulation.drainEvents().filter((event) => event.type === "boss_core_exposed").length, 0);
+  enemy = dealDirectDamage(simulation, 50, "physical");
+  assert.equal(enemy.hp, 800, "the third charge must keep the existing x2 multiplier instead of stacking it");
+});
+
+test("ordinary damage can break boss frost armor without exposing the core", () => {
+  const simulation = createLiveEnemy({
+    type: "boss",
+    northernPass: avalanchePlan({ charges: 3 }),
+  });
+  const enemy = dealDirectDamage(simulation, 200, "physical");
+
+  assert.equal(enemy.frostArmor, 0);
+  assert.equal(enemy.frostCoreExposed, false);
+  const events = simulation.drainEvents();
+  assert.equal(events.filter((event) => event.type === "frost_armor_broken").length, 1);
+  assert.equal(events.filter((event) => event.type === "boss_core_exposed").length, 0);
 });

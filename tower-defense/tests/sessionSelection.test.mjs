@@ -17,9 +17,12 @@ test("practice selection accepts catalog levels and modes", () => {
   assert.equal(resolved.locked, false);
 });
 
-test("practice selection rejects legacy Northern Pass and unsupported endless combinations", () => {
+test("practice selection rejects legacy Northern Pass and accepts current Northern endless", () => {
   assert.equal(resolveSessionSelection("local", { levelId: "northern-pass", modeId: "campaign" }).level.id, "forest-gate");
-  assert.equal(resolveSessionSelection("local", { levelId: "northern-pass-v3", modeId: "endless" }).level.id, "forest-gate");
+  assert.deepEqual(
+    resolveSessionSelection("local", { levelId: "northern-pass-v3", modeId: "endless" }).selection,
+    { levelId: "northern-pass-v3", modeId: "endless" },
+  );
 });
 
 test("reward runs are pinned to the original finite campaign", () => {
@@ -45,6 +48,14 @@ test("reward runs use their validated server binding and ignore local selection"
     modeId: "campaign",
   });
 
+  assert.deepEqual(resolveServerSessionSelection({
+    ...binding,
+    modeId: "endless",
+  }).selection, {
+    levelId: "northern-pass-v3",
+    modeId: "endless",
+  });
+
   assert.throws(
     () => resolveServerSessionSelection({ ...binding, contentVersion: 999 }),
     /Invalid Tower Defense server content binding/,
@@ -54,7 +65,7 @@ test("reward runs use their validated server binding and ignore local selection"
     /Invalid Tower Defense server content binding/,
   );
   assert.throws(
-    () => resolveServerSessionSelection({ ...binding, modeId: "endless" }),
+    () => resolveServerSessionSelection({ ...binding, modeId: "missing-mode" }),
     /Invalid Tower Defense server content binding/,
   );
 });

@@ -10,6 +10,7 @@ import {
   TOWER_DEFENSE_FINISH_URL,
   TOWER_DEFENSE_BOOTSTRAP_URL,
   TOWER_DEFENSE_CHECKPOINT_URL,
+  TOWER_DEFENSE_CLIENT_RELEASE_ID,
   TOWER_DEFENSE_PURCHASE_ATTEMPTS_URL,
   TOWER_DEFENSE_RESET_ATTEMPTS_URL,
   TOWER_DEFENSE_START_URL,
@@ -126,7 +127,10 @@ test("read-only bootstrap returns profile and active binding without creating a 
   assert.equal(result.bootstrap.canAccessNorthernPass, true);
   assert.deepEqual(requests, [{
     url: TOWER_DEFENSE_BOOTSTRAP_URL,
-    body: { init_data: "query_id=telegram&hash=signed" },
+    body: {
+      init_data: "query_id=telegram&hash=signed",
+      client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
+    },
   }]);
 });
 
@@ -227,6 +231,7 @@ test("Mini App start posts initData only to the pinned API and parses snake_case
     game_id: "td",
     client_content_version: 2,
     client_protocol_version: 3,
+    client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
   });
   assert.deepEqual(requests[0].init.headers, { "content-type": "application/json" });
 });
@@ -250,10 +255,59 @@ test("v3 start carries the exact level, mode and hero selection", async () => {
     game_id: "td",
     client_content_version: 2,
     client_protocol_version: 3,
+    client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
     level_id: "forest-gate",
     mode_id: "endless",
     hero_id: "toren",
   });
+});
+
+test("Northern Pass endless start and resume preserve the current binding and release marker", async () => {
+  const requests = [];
+  const profile = {
+    version: 1,
+    revision: 7,
+    unlocked_level_ids: ["forest-gate", "northern-pass-v3"],
+    best_results: [
+      { level_id: "forest-gate", outcome: "victory", completed_waves: 24, score: 72, duration_ms: 90_000 },
+      { level_id: "northern-pass-v3", outcome: "victory", completed_waves: 24, score: 72, duration_ms: 120_000 },
+    ],
+    owned_cosmetic_skins: [],
+    equipped_tower_skins: [],
+  };
+  const runResponse = (resumed) => miniAppStartBody({
+    resumed,
+    can_access_northern_pass: true,
+    binding: { content_version: 2, level_id: "northern-pass-v3", mode_id: "endless" },
+    profile,
+  });
+
+  const fresh = await startMiniAppReward("signed", {
+    selection: { levelId: "northern-pass-v3", modeId: "endless", heroId: "eira" },
+    fetch: async (_url, init) => {
+      requests.push(JSON.parse(init.body));
+      return response(runResponse(false));
+    },
+  });
+  const resumed = await startMiniAppReward("signed", {
+    resumeRunId: "north-endless-run",
+    selection: { levelId: "northern-pass-v3", modeId: "endless", heroId: "eira" },
+    fetch: async (_url, init) => {
+      requests.push(JSON.parse(init.body));
+      return response(runResponse(true));
+    },
+  });
+
+  assert.equal(fresh.ok, true);
+  assert.equal(fresh.bootstrap.binding.levelId, "northern-pass-v3");
+  assert.equal(fresh.bootstrap.binding.modeId, "endless");
+  assert.equal(resumed.ok, true);
+  assert.equal(resumed.bootstrap.resumed, true);
+  assert.deepEqual(requests.map((body) => body.client_release_id), [
+    TOWER_DEFENSE_CLIENT_RELEASE_ID,
+    TOWER_DEFENSE_CLIENT_RELEASE_ID,
+  ]);
+  assert.equal(requests[1].resume_run_id, "north-endless-run");
 });
 
 test("a legacy v2 active run remains resumable without ranked checkpoint metadata", async () => {
@@ -683,6 +737,7 @@ test("same-attempt restart rotates token and revision while binding the newly se
       token: bootstrap.reward.token,
       run_revision: 1,
       hero_id: "toren",
+      client_release_id: TOWER_DEFENSE_CLIENT_RELEASE_ID,
     },
   });
 });

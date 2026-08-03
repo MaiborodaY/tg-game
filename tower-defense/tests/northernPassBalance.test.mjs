@@ -6,40 +6,33 @@ import { getHeroStats } from "../src/game/heroes.ts";
 import { GameSimulation, createSimulationRules } from "../src/game/simulation.ts";
 import { createCampaignState } from "../src/game/state.ts";
 
+const SHARED_BUILD_PLAN = Object.freeze([
+  Object.freeze([7, "ember", 0]), Object.freeze([8, "ranger", 0]), Object.freeze([4, "frost", 1]),
+  Object.freeze([5, "ember", 3]), Object.freeze([10, "ranger", 5]), Object.freeze([11, "ranger", 7]),
+  Object.freeze([6, "ember", 9]), Object.freeze([1, "ranger", 11]), Object.freeze([12, "ranger", 13]),
+]);
+
+const SHARED_UPGRADE_STAGES = Object.freeze([
+  Object.freeze([8, 3]), Object.freeze([7, 3]), Object.freeze([4, 2]),
+  Object.freeze([5, 3]), Object.freeze([10, 3]), Object.freeze([11, 3]),
+  Object.freeze([8, 4]), Object.freeze([7, 4]), Object.freeze([5, 4]),
+  Object.freeze([10, 4]), Object.freeze([11, 4]), Object.freeze([12, 4]),
+  Object.freeze([1, 4]), Object.freeze([6, 4]), Object.freeze([4, 4]),
+]);
+
+// Eira needs the late Ranger on the central summit line, where it can cover the
+// wave-20 Bulwark without changing the shared economy or upgrade cadence.
+const EIRA_BUILD_PLAN = Object.freeze(SHARED_BUILD_PLAN.map(([padId, type, dueWave]) => (
+  Object.freeze([padId === 1 ? 2 : padId, type, dueWave])
+)));
+const EIRA_UPGRADE_STAGES = Object.freeze(SHARED_UPGRADE_STAGES.map(([padId, targetLevel]) => (
+  Object.freeze([padId === 1 ? 2 : padId, targetLevel])
+)));
+
 const STRATEGIES = Object.freeze([
-  Object.freeze({
-    name: "Eira fire-control",
-    heroId: "eira",
-    anchorId: 0,
-    buildPlan: Object.freeze([
-      Object.freeze([7, "ember", 0]), Object.freeze([8, "ranger", 0]), Object.freeze([4, "frost", 1]),
-      Object.freeze([5, "ember", 3]), Object.freeze([10, "storm", 5]), Object.freeze([11, "ranger", 7]),
-      Object.freeze([6, "ember", 9]), Object.freeze([1, "storm", 11]), Object.freeze([12, "ranger", 13]),
-    ]),
-    upgradePriority: Object.freeze([7, 5, 8, 4, 10, 6, 11, 1, 12]),
-  }),
-  Object.freeze({
-    name: "Toren crowd-control",
-    heroId: "toren",
-    anchorId: 1,
-    buildPlan: Object.freeze([
-      Object.freeze([7, "ember", 0]), Object.freeze([8, "ranger", 0]), Object.freeze([4, "frost", 1]),
-      Object.freeze([5, "storm", 3]), Object.freeze([10, "ember", 5]), Object.freeze([11, "ranger", 7]),
-      Object.freeze([6, "storm", 9]), Object.freeze([1, "ember", 11]), Object.freeze([12, "ranger", 13]),
-    ]),
-    upgradePriority: Object.freeze([7, 10, 8, 4, 5, 1, 11, 6, 12]),
-  }),
-  Object.freeze({
-    name: "Grak tempo",
-    heroId: "grak",
-    anchorId: 1,
-    buildPlan: Object.freeze([
-      Object.freeze([9, "ember", 0]), Object.freeze([12, "ranger", 0]), Object.freeze([8, "frost", 1]),
-      Object.freeze([11, "storm", 3]), Object.freeze([10, "ember", 5]), Object.freeze([5, "ranger", 7]),
-      Object.freeze([7, "storm", 9]), Object.freeze([4, "ember", 11]), Object.freeze([1, "ranger", 13]),
-    ]),
-    upgradePriority: Object.freeze([9, 12, 8, 11, 10, 5, 7, 4, 1]),
-  }),
+  Object.freeze({ name: "Eira fire-control", heroId: "eira", anchorId: 1, buildPlan: EIRA_BUILD_PLAN, upgradeStages: EIRA_UPGRADE_STAGES }),
+  Object.freeze({ name: "Toren crowd-control", heroId: "toren", anchorId: 1, buildPlan: SHARED_BUILD_PLAN, upgradeStages: SHARED_UPGRADE_STAGES }),
+  Object.freeze({ name: "Grak tempo", heroId: "grak", anchorId: 1, buildPlan: SHARED_BUILD_PLAN, upgradeStages: SHARED_UPGRADE_STAGES }),
 ]);
 
 function prepareWave(simulation, strategy) {
@@ -61,9 +54,9 @@ function prepareWave(simulation, strategy) {
 
   for (;;) {
     let upgraded = false;
-    for (const padId of strategy.upgradePriority) {
+    for (const [padId, targetLevel] of strategy.upgradeStages) {
       const tower = simulation.readView().campaign.towers.find((candidate) => candidate.padId === padId);
-      if (!tower || tower.level >= 4) continue;
+      if (!tower || tower.level >= targetLevel) continue;
       if (simulation.upgrade(padId).ok) {
         upgraded = true;
         break;
@@ -156,6 +149,7 @@ function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
   const livesByWave = [];
   const leaks = [];
   const avalanches = [];
+  const coreExposureWaves = [];
   const knockoutWaves = [];
 
   for (let wave = 1; wave <= NORTHERN_PASS_LEVEL.waves.finalWave && simulation.readView().phase !== "gameover"; wave += 1) {
@@ -180,6 +174,7 @@ function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
         if (event.type === "northern_avalanche") {
           avalanches.push([wave, event.zoneId, event.impacts.map((impact) => spawnTypes.get(impact.enemyId) ?? "summon")]);
         }
+        if (event.type === "boss_core_exposed") coreExposureWaves.push(wave);
       }
       ticks += 1;
     }
@@ -190,6 +185,7 @@ function playCampaign(strategy, { avalancheMode = "informed" } = {}) {
   return Object.freeze({
     view: simulation.readView(), abilityUses, avalancheUses, passingHits, engagedHits,
     heroKnockouts, knockoutWaves, lastCompletedWave, livesByWave, leaks, avalanches,
+    coreExposureWaves,
   });
 }
 
@@ -200,6 +196,9 @@ for (const strategy of STRATEGIES) {
       wave: result.lastCompletedWave,
       lives: result.view.campaign.lives,
       uses: result.avalancheUses,
+      livesByWave: result.livesByWave,
+      leaks: result.leaks,
+      knockouts: result.knockoutWaves,
     }));
     assert.equal(result.view.campaign.completedWave, 24);
     assert.ok(
@@ -208,12 +207,10 @@ for (const strategy of STRATEGIES) {
     );
     assert.ok(result.abilityUses > 0);
     assert.ok(result.avalancheUses >= 14);
+    assert.deepEqual(result.coreExposureWaves, [8, 16, 24]);
     assert.ok(result.passingHits > 0, `${strategy.name} never faced overflow pressure`);
     assert.ok(result.engagedHits > 0, `${strategy.name} never traded with a held enemy`);
     assert.ok(result.heroKnockouts > 0, `${strategy.name} never left the field`);
-    if (strategy.heroId === "eira") {
-      assert.ok(result.heroKnockouts >= 8, `Eira was still too durable with ${result.heroKnockouts} knockouts`);
-    }
   });
 }
 

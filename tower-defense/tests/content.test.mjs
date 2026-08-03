@@ -78,6 +78,12 @@ test("Northern Pass v3 owns an authored 24-wave campaign split into three eight-
   assert.deepEqual([1, 8, 9, 16, 17, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).act), [1, 1, 2, 2, 3, 3]);
   assert.deepEqual([8, 16, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss), [true, true, true]);
   assert.deepEqual(
+    [8, 16, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).spawns
+      .find((spawn) => spawn.type === "boss" || spawn.type === "titan")?.maxHp),
+    [2_837, 8_935, 10_107],
+    "boss raw HP is a release balance contract",
+  );
+  assert.deepEqual(
     Array.from({ length: 24 }, (_, index) => index + 1).filter((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss),
     [8, 16, 24],
   );
@@ -108,8 +114,8 @@ test("Northern Pass v3 forecasts one avalanche zone and changes route determinis
     "upper", "upper", "middle", "lower", "upper", "middle", "lower", "middle",
   ]);
   assert.ok(plans.every((plan) => ["upper", "middle", "lower"].includes(plan.dangerZoneId)));
-  assert.deepEqual(plans.map((plan) => plan.avalancheCharges).filter((charges) => charges === 2).length, 3);
-  assert.deepEqual([plans[7].avalancheCharges, plans[15].avalancheCharges, plans[23].avalancheCharges], [2, 2, 2]);
+  assert.deepEqual(plans.map((plan) => plan.avalancheCharges).filter((charges) => charges === 3).length, 3);
+  assert.deepEqual([plans[7].avalancheCharges, plans[15].avalancheCharges, plans[23].avalancheCharges], [3, 3, 3]);
   assert.ok(plans.every(Object.isFrozen));
   assert.ok(plans.every((plan) => Object.isFrozen(plan.routePoints) && Object.isFrozen(plan.zones)));
   assert.deepEqual(createNorthernPassMechanicPlan(24), createNorthernPassMechanicPlan(24));

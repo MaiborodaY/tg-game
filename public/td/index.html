@@ -8,7 +8,7 @@
     <title>Стражи тропы</title>
     <script defer src="https://telegram.org/js/games.js"></script>
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-BbV-ji3U.js"></script>
+    <script type="module" crossorigin src="./assets/index-CtN7xIz4.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-Cv04vjHv.css">
   </head>
   <body>
@@ -187,7 +187,7 @@
             <span id="level-choice-label">Уровень</span>
             <select id="level-select">
               <option value="forest-gate">Лесные врата</option>
-              <option value="northern-pass">Северный перевал</option>
+              <option value="northern-pass-v3">Северный перевал</option>
             </select>
           </label>
           <label class="session-choice session-choice--mode">
@@ -197,7 +197,7 @@
               <option value="endless">Бесконечный</option>
             </select>
           </label>
-          <small id="mode-unlock-hint" class="session-unlock-hint" hidden>Бесконечный режим откроется после победы в Лесных вратах.</small>
+          <small id="mode-unlock-hint" class="session-unlock-hint" hidden>Бесконечный режим откроется после победы во всех 24 волнах выбранной кампании.</small>
         </div>
         <button id="hero-choice-button" class="hero-choice-button" type="button" aria-controls="hero-picker" aria-expanded="false">
           <span id="hero-choice-emblem" class="hero-emblem eira" aria-hidden="true"><img src="./assets/eira-portrait-rVJ71EgI.webp" alt=""></span>
@@ -260,7 +260,7 @@
         <button id="intro-start" class="modal-primary" type="button" data-mission-cta>Встать на защиту</button>
         <button id="intro-restart-cancel" class="secondary-action wide" type="button" hidden>Вернуться к забегу</button>
         <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
-        <small class="app-build-version" data-app-version>v1.3.0 · becc39881</small>
+        <small class="app-build-version" data-app-version>v1.4.0 · b7ea9f638</small>
       </section>
     </div>
 
@@ -329,7 +329,7 @@
           <p id="game-menu-restart-confirm-copy">Текущий прогресс будет удалён, после чего можно снова выбрать героя.</p>
           <div><button id="game-menu-restart-cancel" class="secondary-action" type="button">Отмена</button><button id="game-menu-restart-accept" class="primary-action" type="button">Начать заново</button></div>
         </section>
-        <small class="app-build-version" data-app-version>v1.3.0 · becc39881</small>
+        <small class="app-build-version" data-app-version>v1.4.0 · b7ea9f638</small>
       </section>
     </div>
 
@@ -379,7 +379,7 @@
 
         <div id="leaderboard-tabs" class="leaderboard-tabs" role="tablist" aria-label="Уровень">
           <button id="leaderboard-tab-forest-gate" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="true" data-leaderboard-level="forest-gate">Лесные врата</button>
-          <button id="leaderboard-tab-northern-pass" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="false" data-leaderboard-level="northern-pass" hidden>Северный перевал</button>
+          <button id="leaderboard-tab-northern-pass" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="false" data-leaderboard-level="northern-pass-v3" hidden>Северный перевал</button>
         </div>
         <div id="leaderboard-mode-tabs" class="leaderboard-tabs leaderboard-mode-tabs" role="tablist" aria-label="Режим">
           <button id="leaderboard-mode-campaign" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="true" data-leaderboard-mode="campaign">Кампания</button>

@@ -166,6 +166,7 @@ export type EnemySimulationView = Readonly<TargetCandidate> & Readonly<{
   maxShield: number;
   frostArmor: number;
   maxFrostArmor: number;
+  frostCoreExposed: boolean;
   stunned: boolean;
   blocked: boolean;
   burning: boolean;
@@ -368,6 +369,7 @@ export type SimulationEvent =
       frostAbsorbed: number;
     }>
   | Readonly<{ type: "frost_armor_broken"; enemyId: number; x: number; y: number }>
+  | Readonly<{ type: "boss_core_exposed"; enemyId: number; x: number; y: number }>
   | Readonly<{
       type: "projectile_hit";
       towerType: TowerType;
@@ -822,6 +824,7 @@ export class GameSimulation {
         maxShield: enemy.maxShield,
         frostArmor: enemy.frostArmor,
         maxFrostArmor: enemy.maxFrostArmor,
+        frostCoreExposed: enemy.frostCoreExposed,
         slowed: enemy.slowed,
         stunned: enemy.stunned,
         blocked: enemy.blocked,
@@ -1032,8 +1035,8 @@ export class GameSimulation {
       );
       const previousFrostArmor = enemy.frostArmor;
       enemy.frostArmor = Math.max(0, enemy.frostArmor - impact.frostArmorRemoved);
-      // Boss waves grant a second charge intentionally: avalanche stuns stack so
-      // committing both charges is a real tactical choice instead of a no-op.
+      // Boss waves grant extra charges intentionally: avalanche stuns stack, so
+      // spending the third charge remains a tactical choice after exposing the core.
       enemy.stunUntilMs = Math.max(enemy.stunUntilMs, this.simulationTimeMs) + impact.stunDurationMs;
       if (impact.healingInterrupted) {
         enemy.lastHealAtMs = Math.max(
@@ -1043,6 +1046,10 @@ export class GameSimulation {
       }
       if (previousFrostArmor > 0 && enemy.frostArmor <= 0) {
         this.events.push({ type: "frost_armor_broken", enemyId: enemy.id, x: enemy.x, y: enemy.y });
+      }
+      if (boss && enemy.maxFrostArmor > 0 && enemy.frostArmor <= 0 && !enemy.frostCoreExposed) {
+        enemy.frostCoreExposed = true;
+        this.events.push({ type: "boss_core_exposed", enemyId: enemy.id, x: enemy.x, y: enemy.y });
       }
       return Object.freeze({
         enemyId: enemy.id,
@@ -1297,6 +1304,7 @@ export class GameSimulation {
       maxShield,
       frostArmor: maxFrostArmor,
       maxFrostArmor,
+      frostCoreExposed: false,
       speed: spawn.speed,
       reward: spawn.reward,
       leakDamage: spawn.leakDamage,
@@ -2024,8 +2032,9 @@ export class GameSimulation {
     const absorbed = Math.min(enemy.shield, damageAfterFrostArmor);
     enemy.shield -= absorbed;
     const coreDamage = Math.max(0, damageAfterFrostArmor - absorbed);
-    enemy.hp -= coreDamage;
-    const appliedDamage = frostAbsorbed + absorbed + coreDamage;
+    const effectiveCoreDamage = coreDamage * (enemy.frostCoreExposed ? 2 : 1);
+    enemy.hp -= effectiveCoreDamage;
+    const appliedDamage = frostAbsorbed + absorbed + effectiveCoreDamage;
     if (
       showText
       && appliedDamage >= 1
@@ -2046,7 +2055,7 @@ export class GameSimulation {
     if (previousFrostArmor > 0 && enemy.frostArmor <= 0) {
       this.events.push({ type: "frost_armor_broken", enemyId: enemy.id, x: enemy.x, y: enemy.y });
     }
-    if (enemy.type === "titan" && coreDamage > 0 && enemy.hp > 0) {
+    if (enemy.type === "titan" && effectiveCoreDamage > 0 && enemy.hp > 0) {
       const crossed = crossedSummonThresholds(
         previousHpRatio,
         enemy.hp / enemy.maxHp,

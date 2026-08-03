@@ -113,7 +113,7 @@ export type NorthernAvalancheZone = Readonly<{
 export type NorthernPassWavePlan = Readonly<{
   routeVariantId: NorthernRouteVariantId;
   routePoints: readonly Point[];
-  avalancheCharges: 1 | 2;
+  avalancheCharges: 1 | 2 | 3;
   zones: readonly NorthernAvalancheZone[];
   dangerZoneId: NorthernAvalancheZoneId;
 }>;

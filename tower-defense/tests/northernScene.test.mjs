@@ -51,3 +51,11 @@ test("boss protection and northern build pads remain compatible with the new int
   assert.match(source, /northern \? "❄" : "✦"/);
   assert.match(source, /view\.ring\.setFillStyle\(selected \? 0x57472b/);
 });
+
+test("an exposed boss core has a distinct one-shot effect and persistent status ring", () => {
+  assert.match(source, /event\.type === "boss_core_exposed"/);
+  assert.match(source, /createFloatingText\(this, point\.x, point\.y - 30, "×2"/);
+  assert.match(source, /enemy\.frostCoreExposed \? 3 : 2/);
+  assert.match(source, /enemy\.frostCoreExposed \? 0xffc766/);
+  assert.match(source, /frostCoreExposed: boss\.frostCoreExposed/);
+});

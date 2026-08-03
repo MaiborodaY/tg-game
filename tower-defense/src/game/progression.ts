@@ -3,17 +3,27 @@ import {
   CAMPAIGN_MODE_ID,
   CLASSIC_CAMPAIGN_LEVEL_ID,
   ENDLESS_MODE_ID,
+  getLevelDefinition,
 } from "./content.ts";
 import type { PlayerProfileSnapshot } from "./profile.ts";
 
 export const FOREST_GATE_CLEAR_WAVES = FINAL_WAVE;
 
-export function hasClearedForestGateCampaign(profile: PlayerProfileSnapshot | null): boolean {
+export function hasClearedLevelCampaign(
+  profile: PlayerProfileSnapshot | null,
+  levelId: string,
+): boolean {
+  const level = getLevelDefinition(levelId);
+  if (!level) return false;
   return profile?.bestResults.some((result) => (
-    result.levelId === CLASSIC_CAMPAIGN_LEVEL_ID
+    result.levelId === levelId
     && result.outcome === "victory"
-    && result.completedWaves >= FOREST_GATE_CLEAR_WAVES
+    && result.completedWaves >= level.waves.finalWave
   )) ?? false;
+}
+
+export function hasClearedForestGateCampaign(profile: PlayerProfileSnapshot | null): boolean {
+  return hasClearedLevelCampaign(profile, CLASSIC_CAMPAIGN_LEVEL_ID);
 }
 
 export function isSessionAvailable(
@@ -24,7 +34,5 @@ export function isSessionAvailable(
   if (modeId === CAMPAIGN_MODE_ID) {
     return profile === null || profile.unlockedLevelIds.includes(levelId);
   }
-  return modeId === ENDLESS_MODE_ID
-    && levelId === CLASSIC_CAMPAIGN_LEVEL_ID
-    && hasClearedForestGateCampaign(profile);
+  return modeId === ENDLESS_MODE_ID && hasClearedLevelCampaign(profile, levelId);
 }
