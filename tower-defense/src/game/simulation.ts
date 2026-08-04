@@ -151,7 +151,9 @@ export function createSimulationRules(
     createWavePlan: (wave) => mode.createWave(level, wave),
     getBossRepair: (wave) => {
       if (mode.kind !== "campaign" || finalWave === null || wave >= finalWave) return 0;
-      return mode.createWave(level, wave).hasBoss ? (wave < finalWave * (2 / 3) ? 2 : 1) : 0;
+      const plan = mode.createWave(level, wave);
+      if (!plan.hasBoss || plan.majorBoss === false) return 0;
+      return wave < finalWave * (2 / 3) ? 2 : 1;
     },
     getWaveHealthMultiplier: (wave) => estimateBaseHealthMultiplier(mode.createWave(level, wave)),
   });

@@ -20,10 +20,10 @@ const SHARED_UPGRADE_STAGES = Object.freeze([
   Object.freeze([1, 4]), Object.freeze([6, 4]), Object.freeze([4, 4]),
 ]);
 
-// Eira needs the late Ranger on the central summit line, where it can cover the
-// wave-20 Bulwark without changing the shared economy or upgrade cadence.
+// Eira moves the late Ranger to the central summit line and trades one late
+// Ember for single-target damage against the wave-20 Young Jotunn.
 const EIRA_BUILD_PLAN = Object.freeze(SHARED_BUILD_PLAN.map(([padId, type, dueWave]) => (
-  Object.freeze([padId === 1 ? 2 : padId, type, dueWave])
+  Object.freeze([padId === 1 ? 2 : padId, padId === 6 ? "ranger" : type, dueWave])
 )));
 const EIRA_UPGRADE_STAGES = Object.freeze(SHARED_UPGRADE_STAGES.map(([padId, targetLevel]) => (
   Object.freeze([padId === 1 ? 2 : padId, targetLevel])
@@ -206,8 +206,8 @@ for (const strategy of STRATEGIES) {
       `expected a limited margin, got ${result.view.campaign.lives} lives`,
     );
     assert.ok(result.abilityUses > 0);
-    assert.ok(result.avalancheUses >= 14);
-    assert.deepEqual(result.coreExposureWaves, [8, 16, 24]);
+    assert.ok(result.avalancheUses >= 20);
+    assert.deepEqual(result.coreExposureWaves, [8, 12, 16, 20, 24]);
     assert.ok(result.passingHits > 0, `${strategy.name} never faced overflow pressure`);
     assert.ok(result.engagedHits > 0, `${strategy.name} never traded with a held enemy`);
     assert.ok(result.heroKnockouts > 0, `${strategy.name} never left the field`);

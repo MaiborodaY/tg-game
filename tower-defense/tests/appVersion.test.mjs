@@ -12,7 +12,7 @@ import {
 
 test("Tower Defense app version is an explicit semantic release version", () => {
   const source = readFileSync(new URL("../version.json", import.meta.url), "utf8");
-  assert.equal(parseTowerDefenseAppVersion(source), "1.4.0");
+  assert.equal(parseTowerDefenseAppVersion(source), "1.4.1");
   assert.throws(() => parseTowerDefenseAppVersion('{"version":"content-2"}'), /semantic version/);
 });
 

@@ -123,6 +123,8 @@ export type WavePlan = Readonly<{
   spawns: readonly WaveSpawn[];
   clearBonus: number;
   hasBoss: boolean;
+  /** False for an intermediate mini-boss that must not grant an act-ending repair. */
+  majorBoss?: boolean;
   act: CampaignAct;
   threat: 1 | 2 | 3 | 4 | 5;
   /** Present only on the authored Northern Pass v3 campaign. */

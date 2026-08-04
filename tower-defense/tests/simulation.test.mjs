@@ -136,6 +136,8 @@ test("content levels and modes adapt into simulation rules without Phaser", () =
   assert.equal(campaign.finalWave, 24);
   assert.equal(campaign.buildPads.length, 13);
   assert.equal(campaign.createWavePlan(24).wave, 24);
+  assert.deepEqual([4, 12, 20].map((wave) => campaign.getBossRepair(wave)), [0, 0, 0]);
+  assert.deepEqual([8, 16, 24].map((wave) => campaign.getBossRepair(wave)), [2, 1, 0]);
   assert.equal(endless.finalWave, null);
   assert.equal(endless.createWavePlan(19).wave, 19);
   assert.match(campaign.id, /northern-pass-v3:campaign.*heroes-v3/);

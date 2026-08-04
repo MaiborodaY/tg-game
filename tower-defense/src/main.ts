@@ -1451,9 +1451,14 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.bossHud.hidden = !ui.boss;
   if (ui.boss) {
     elements.bossIcon.textContent = ui.boss.type === "titan" ? "♜" : "♛";
-    elements.bossName.textContent = ui.boss.type === "titan"
-      ? text("enemy_titan")
-      : text(`${ui.levelId === NORTHERN_PASS_LEVEL_ID ? "northern_boss_act" : "boss_act"}_${ui.boss.tier}` as TranslationKey);
+    const northernBossKey = ui.levelId === NORTHERN_PASS_LEVEL_ID
+      ? `${ui.nextWavePlan.majorBoss === false ? "northern_miniboss_act" : "northern_boss_act"}_${ui.boss.tier}` as TranslationKey
+      : null;
+    elements.bossName.textContent = northernBossKey
+      ? text(northernBossKey)
+      : ui.boss.type === "titan"
+        ? text("enemy_titan")
+        : text(`boss_act_${ui.boss.tier}` as TranslationKey);
     elements.bossState.textContent = text(
       ui.boss.frostCoreExposed ? "boss_core_exposed" : ui.boss.enraged ? "boss_enraged" : "boss_state",
     );

@@ -24,8 +24,10 @@ import {
 import { createWavePlan } from "../src/game/waves.ts";
 import {
   NORTHERN_PASS_BUILD_PADS,
+  NORTHERN_PASS_BOSS_WAVES,
   NORTHERN_PASS_FINAL_WAVE,
   NORTHERN_PASS_HERO_ANCHORS,
+  NORTHERN_PASS_MAJOR_BOSS_WAVES,
   NORTHERN_PASS_RAVINE_ROUTE,
   NORTHERN_PASS_PROGRESSION,
   NORTHERN_PASS_ROUTE,
@@ -76,16 +78,35 @@ test("Northern Pass v3 owns an authored 24-wave campaign split into three eight-
   const first = NORTHERN_PASS_LEVEL.waves.createWave(1);
   assert.notDeepEqual(first, createWavePlan(1));
   assert.deepEqual([1, 8, 9, 16, 17, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).act), [1, 1, 2, 2, 3, 3]);
-  assert.deepEqual([8, 16, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss), [true, true, true]);
+  assert.deepEqual(NORTHERN_PASS_BOSS_WAVES, [4, 8, 12, 16, 20, 24]);
+  assert.deepEqual(NORTHERN_PASS_MAJOR_BOSS_WAVES, [8, 16, 24]);
+  assert.deepEqual(NORTHERN_PASS_BOSS_WAVES.map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss), [true, true, true, true, true, true]);
   assert.deepEqual(
-    [8, 16, 24].map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).spawns
+    NORTHERN_PASS_BOSS_WAVES.map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).spawns
       .find((spawn) => spawn.type === "boss" || spawn.type === "titan")?.maxHp),
-    [2_837, 8_935, 10_107],
+    [804, 2_837, 2_079, 8_935, 4_409, 10_107],
     "boss raw HP is a release balance contract",
   );
   assert.deepEqual(
+    NORTHERN_PASS_BOSS_WAVES.map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).spawns
+      .find((spawn) => spawn.type === "boss" || spawn.type === "titan")?.type),
+    ["boss", "boss", "boss", "boss", "titan", "titan"],
+  );
+  assert.deepEqual(
+    NORTHERN_PASS_BOSS_WAVES.map((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).majorBoss),
+    [false, true, false, true, false, true],
+  );
+  for (const miniBossWave of [4, 12, 20]) {
+    const totalReward = (plan) => plan.clearBonus + plan.spawns.reduce((total, spawn) => total + spawn.reward, 0);
+    assert.ok(
+      totalReward(NORTHERN_PASS_LEVEL.waves.createWave(miniBossWave))
+        <= totalReward(NORTHERN_PASS_LEVEL.waves.createWave(miniBossWave + 1)),
+      `wave ${miniBossWave} mini-boss must not create an economy spike`,
+    );
+  }
+  assert.deepEqual(
     Array.from({ length: 24 }, (_, index) => index + 1).filter((wave) => NORTHERN_PASS_LEVEL.waves.createWave(wave).hasBoss),
-    [8, 16, 24],
+    [4, 8, 12, 16, 20, 24],
   );
   const allSpawns = Array.from({ length: 24 }, (_, index) => NORTHERN_PASS_LEVEL.waves.createWave(index + 1).spawns).flat();
   assert.ok(allSpawns.every((spawn) => ["standard", "snow-runner", "icebound"].includes(spawn.variant)));
@@ -114,8 +135,9 @@ test("Northern Pass v3 forecasts one avalanche zone and changes route determinis
     "upper", "upper", "middle", "lower", "upper", "middle", "lower", "middle",
   ]);
   assert.ok(plans.every((plan) => ["upper", "middle", "lower"].includes(plan.dangerZoneId)));
-  assert.deepEqual(plans.map((plan) => plan.avalancheCharges).filter((charges) => charges === 3).length, 3);
-  assert.deepEqual([plans[7].avalancheCharges, plans[15].avalancheCharges, plans[23].avalancheCharges], [3, 3, 3]);
+  assert.deepEqual(plans.map((plan) => plan.avalancheCharges).filter((charges) => charges === 3).length, 6);
+  assert.deepEqual(NORTHERN_PASS_BOSS_WAVES.map((wave) => plans[wave - 1].avalancheCharges), [3, 3, 3, 3, 3, 3]);
+  assert.ok(plans.every((plan, index) => NORTHERN_PASS_BOSS_WAVES.includes(index + 1) || plan.avalancheCharges === 1));
   assert.ok(plans.every(Object.isFrozen));
   assert.ok(plans.every((plan) => Object.isFrozen(plan.routePoints) && Object.isFrozen(plan.zones)));
   assert.deepEqual(createNorthernPassMechanicPlan(24), createNorthernPassMechanicPlan(24));
@@ -129,11 +151,25 @@ test("Northern Pass v3 forecasts one avalanche zone and changes route determinis
 });
 
 test("mixed northern formations send bosses with an escort instead of as a final cleanup target", () => {
-  for (const waveValue of [8, 16, 24]) {
+  for (const waveValue of NORTHERN_PASS_BOSS_WAVES) {
     const wave = NORTHERN_PASS_LEVEL.waves.createWave(waveValue);
     const bossIndex = wave.spawns.findIndex((spawn) => spawn.type === "boss" || spawn.type === "titan");
     assert.ok(bossIndex >= 0 && bossIndex < wave.spawns.length / 3, `wave ${waveValue} boss spawned too late`);
     assert.ok(wave.spawns.slice(bossIndex + 1).length >= 5, `wave ${waveValue} boss has no escort`);
+  }
+});
+
+test("Northern Pass endless mode repeats and scales every mini-boss milestone", () => {
+  for (const [endlessWave, localWave] of [[28, 4], [36, 12], [44, 20]]) {
+    const base = NORTHERN_PASS_LEVEL.waves.createWave(localWave);
+    const repeated = ENDLESS_RULESET.createWave(NORTHERN_PASS_LEVEL, endlessWave);
+    const baseBoss = base.spawns.find((spawn) => spawn.type === "boss" || spawn.type === "titan");
+    const repeatedBoss = repeated.spawns.find((spawn) => spawn.type === "boss" || spawn.type === "titan");
+    assert.equal(repeated.hasBoss, true);
+    assert.equal(repeated.majorBoss, false);
+    assert.equal(repeated.northernPass?.avalancheCharges, 3);
+    assert.ok(repeatedBoss.maxHp > baseBoss.maxHp);
+    assert.notEqual(repeatedBoss.id, baseBoss.id);
   }
 });
 
