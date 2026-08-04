@@ -7,8 +7,8 @@ const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.ts", import.meta.url), "utf8");
 const port = readFileSync(new URL("../src/audio/browserAudioPort.ts", import.meta.url), "utf8");
 
-test("music and effects are independent accessible controls in the game menu", () => {
-  assert.match(html, /<fieldset class="game-menu-audio">[\s\S]*aria-labelledby="game-menu-audio-label"/);
+test("music and effects are independent accessible controls in the shared settings dialog", () => {
+  assert.match(html, /<fieldset class="game-menu-audio settings-audio">[\s\S]*aria-labelledby="settings-audio-label"/);
   assert.match(html, /data-audio-toggle="music"[^>]*aria-pressed="true"/);
   assert.match(html, /data-audio-toggle="sfx"[^>]*aria-pressed="true"/);
   assert.match(css, /\.game-menu-audio button:focus-visible/);

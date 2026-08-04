@@ -28,8 +28,11 @@ test("removing Bridge navigation keeps unfinished reward protection", () => {
   assert.match(mainSource, /telegram\.setClosingConfirmation\(reward\.mode === "server" && !finishSettled\)/);
 });
 
-test("manual language controls are available before and during a match", () => {
-  assert.equal(html.match(/data-role="language"/g)?.length, 2);
+test("the shared settings dialog keeps manual language selection available before and during a match", () => {
+  assert.equal(html.match(/data-role="language"/g)?.length, 1);
+  assert.match(html, /id="intro-settings"[^>]*aria-controls="settings-overlay"/);
+  assert.match(html, /id="game-menu-settings-button"[^>]*aria-controls="settings-overlay"/);
+  assert.match(html, /id="settings-overlay"[\s\S]*data-role="language"/);
   assert.match(mainSource, /readStoredLocale\(storage\) \?\? detectLocale/);
   assert.match(mainSource, /writeStoredLocale\(storage, locale\)/);
   assert.match(mainSource, /renderedPreviewWave = -1;/);

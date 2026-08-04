@@ -186,8 +186,9 @@ test("hero preview distinguishes inspection from the committed choice", () => {
   assert.match(mainSource, /previewHero\(nextOption\.dataset\.heroChoice\)/);
 });
 
-test("one accessible game menu replaces the session shortcut and owns auxiliary actions", () => {
+test("one accessible game menu replaces the session shortcut and routes shared settings", () => {
   const menuMarkup = elementMarkupById(html, "game-menu-overlay");
+  const settingsMarkup = elementMarkupById(html, "settings-overlay");
   const menuButton = html.match(/<button[^>]*id="game-menu-button"[^>]*>/)?.[0] ?? "";
   const topActions = html.match(/<div class="top-actions">([\s\S]*?)<\/div>/)?.[1] ?? "";
 
@@ -203,7 +204,11 @@ test("one accessible game menu replaces the session shortcut and owns auxiliary 
   if (/data-role="language"/.test(topActions)) {
     assert.match(topActions, /<(?:label|div)[^>]*(?:\bhidden\b|aria-hidden="true"|is-hidden)[^>]*>[\s\S]*data-role="language"/);
   }
-  assert.match(menuMarkup, /data-role="language"/);
+  assert.match(menuMarkup, /id="game-menu-settings-button"[^>]*aria-controls="settings-overlay"/);
+  assert.doesNotMatch(menuMarkup, /data-role="language"|data-audio-toggle|id="fullscreen-button"/);
+  assert.match(settingsMarkup, /data-role="language"/);
+  assert.match(settingsMarkup, /data-audio-toggle="music"/);
+  assert.match(settingsMarkup, /id="fullscreen-button"/);
   assert.match(mainSource, /gameMenuButton\.addEventListener\("click"/);
   assert.match(mainSource, /gameMenuContinue\.addEventListener\("click"/);
   assert.match(mainSource, /gameMenuRestart\.addEventListener\("click"/);
@@ -219,6 +224,7 @@ test("one accessible game menu replaces the session shortcut and owns auxiliary 
     "game_menu_restart_unavailable",
     "game_menu_hero_details",
     "game_menu_session",
+    "settings",
     "game_menu_language",
     "game_menu_fullscreen",
     "game_menu_tower_guide",

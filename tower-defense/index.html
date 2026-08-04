@@ -162,18 +162,6 @@
             </div>
           </details>
         </header>
-        <div id="intro-attempts" class="intro-attempts">
-          <span class="intro-attempt-icon" aria-hidden="true"><i></i></span>
-          <span role="status"><small id="intro-attempts-label">Доступ</small><strong id="intro-attempts-value">10 бесплатных попыток в день</strong></span>
-          <label class="language-control language-control--modal">
-            <span class="visually-hidden" data-language-label>Язык игры</span>
-            <select data-role="language" aria-label="Язык игры">
-              <option value="ru">RU</option>
-              <option value="uk">UA</option>
-              <option value="en">EN</option>
-            </select>
-          </label>
-        </div>
         <section id="attempt-purchase" class="attempt-purchase" aria-labelledby="attempt-purchase-source" hidden>
           <div class="attempt-purchase-summary">
             <span class="attempt-purchase-crystal" aria-hidden="true"></span>
@@ -219,7 +207,10 @@
         <small id="hero-choice-lock" class="hero-choice-lock" hidden>Герой закреплён за этим забегом</small>
         <button id="intro-start" class="modal-primary" type="button" data-mission-cta>Встать на защиту</button>
         <button id="intro-restart-cancel" class="secondary-action wide" type="button" hidden>Вернуться к забегу</button>
-        <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
+        <div class="intro-secondary-actions">
+          <button id="intro-settings" class="secondary-action wide intro-settings" type="button" aria-controls="settings-overlay" aria-expanded="false"><span class="ui-icon ui-icon--settings" aria-hidden="true"></span><b id="intro-settings-label">Настройки</b></button>
+          <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
+        </div>
         <small class="app-build-version" data-app-version>__TD_APP_VERSION__</small>
       </section>
     </div>
@@ -337,7 +328,7 @@
           <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
         </article>
 
-        <div class="game-menu-settings">
+        <div class="game-menu-settings game-menu-settings--speed-only">
           <fieldset class="game-menu-speed">
             <legend id="game-menu-speed-label">Скорость</legend>
             <div role="group" aria-labelledby="game-menu-speed-label">
@@ -345,28 +336,12 @@
               <button type="button" data-menu-speed="2">×2</button>
             </div>
           </fieldset>
-          <label class="game-menu-language">
-            <span data-language-label>Язык игры</span>
-            <select data-role="language" aria-label="Язык игры">
-              <option value="ru">RU</option>
-              <option value="uk">UA</option>
-              <option value="en">EN</option>
-            </select>
-          </label>
         </div>
 
-        <fieldset class="game-menu-audio">
-          <legend id="game-menu-audio-label">Звук</legend>
-          <div role="group" aria-labelledby="game-menu-audio-label">
-            <button type="button" data-audio-toggle="music" aria-pressed="true"><span aria-hidden="true">♪</span><b data-audio-label>Музыка</b><small data-audio-state>Вкл</small></button>
-            <button type="button" data-audio-toggle="sfx" aria-pressed="true"><span aria-hidden="true">◆</span><b data-audio-label>Эффекты</b><small data-audio-state>Вкл</small></button>
-          </div>
-        </fieldset>
-
         <div class="game-menu-actions">
+          <button id="game-menu-settings-button" class="game-menu-action" type="button" aria-controls="settings-overlay" aria-expanded="false"><span class="ui-icon ui-icon--settings" aria-hidden="true"></span><b id="game-menu-settings-label">Настройки</b><i aria-hidden="true">›</i></button>
           <button id="tower-guide-button" class="game-menu-action" type="button" aria-controls="tower-guide-overlay" aria-expanded="false"><span aria-hidden="true">?</span><b id="game-menu-tower-guide-label">Справка по башням</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-leaderboard" class="game-menu-action" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="game-menu-leaderboard-label">Рейтинг</b><i aria-hidden="true">›</i></button>
-          <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="game-menu-fullscreen-label">Развернуть на весь экран</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-session" class="game-menu-action" type="button"><span aria-hidden="true">⌂</span><b id="game-menu-session-label">Уровень и режим</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-restart" class="game-menu-action is-danger" type="button"><span aria-hidden="true">↺</span><b id="game-menu-restart-label">Начать заново и выбрать героя</b><i aria-hidden="true">›</i></button>
           <button id="game-menu-retire" class="game-menu-action is-danger" type="button" hidden><span aria-hidden="true">◇</span><b id="game-menu-retire-label">Сдаться и выйти в меню</b><i aria-hidden="true">›</i></button>
@@ -379,6 +354,43 @@
           <div><button id="game-menu-restart-cancel" class="secondary-action" type="button">Отмена</button><button id="game-menu-restart-accept" class="primary-action" type="button">Начать заново</button></div>
         </section>
         <small class="app-build-version" data-app-version>__TD_APP_VERSION__</small>
+      </section>
+    </div>
+
+    <div id="settings-overlay" class="modal-layer game-menu-layer settings-layer" hidden>
+      <section class="modal-card game-menu-card settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <header class="game-menu-heading">
+          <div><small id="settings-eyebrow" class="modal-eyebrow">ИГРОВЫЕ НАСТРОЙКИ</small><h2 id="settings-title">Настройки</h2></div>
+          <button id="settings-close" class="guide-close" type="button" aria-label="Закрыть">×</button>
+        </header>
+
+        <div id="intro-attempts" class="intro-attempts settings-attempts">
+          <span class="intro-attempt-icon" aria-hidden="true"><i></i></span>
+          <span role="status"><small id="intro-attempts-label">Попытки</small><strong id="intro-attempts-value">10 бесплатных попыток в день</strong></span>
+        </div>
+
+        <label class="game-menu-language settings-language">
+          <span data-language-label>Язык игры</span>
+          <select data-role="language" aria-label="Язык игры">
+            <option value="ru">RU</option>
+            <option value="uk">UA</option>
+            <option value="en">EN</option>
+          </select>
+        </label>
+
+        <fieldset class="game-menu-audio settings-audio">
+          <legend id="settings-audio-label">Звук</legend>
+          <div role="group" aria-labelledby="settings-audio-label">
+            <button type="button" data-audio-toggle="music" aria-pressed="true"><span aria-hidden="true">♪</span><b data-audio-label>Музыка</b><small data-audio-state>Вкл</small></button>
+            <button type="button" data-audio-toggle="sfx" aria-pressed="true"><span aria-hidden="true">◆</span><b data-audio-label>Эффекты</b><small data-audio-state>Вкл</small></button>
+          </div>
+        </fieldset>
+
+        <div class="game-menu-actions settings-actions">
+          <button id="fullscreen-button" class="game-menu-action" type="button" aria-pressed="false" hidden><span aria-hidden="true">⛶</span><b id="settings-fullscreen-label">Полный экран</b><i aria-hidden="true">›</i></button>
+        </div>
+
+        <button id="settings-done" class="modal-primary" type="button">Готово</button>
       </section>
     </div>
 

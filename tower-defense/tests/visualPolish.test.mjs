@@ -8,10 +8,14 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.ts", import.meta.url), "utf8");
 const gameplayIntel = readFileSync(new URL("../src/game/gameplayIntel.ts", import.meta.url), "utf8");
+const introMarkup = html.slice(html.indexOf('id="intro-overlay"'), html.indexOf('id="hero-picker-overlay"'));
+const settingsMarkup = html.slice(html.indexOf('id="settings-overlay"'), html.indexOf('id="tower-guide-overlay"'));
 
 test("the mission intro uses the available mobile width without dropping safe areas", () => {
   assert.match(html, /<header id="mission-preview" class="intro-mission"[\s\S]*id="intro-title"[\s\S]*id="intro-body"/);
-  assert.match(html, /id="intro-attempts" class="intro-attempts"[\s\S]*?<span role="status">/);
+  assert.match(introMarkup, /id="intro-settings"[^>]*aria-controls="settings-overlay"/);
+  assert.doesNotMatch(introMarkup, /id="intro-attempts"|data-role="language"/);
+  assert.match(settingsMarkup, /id="intro-attempts" class="intro-attempts settings-attempts"[\s\S]*?<span role="status">/);
   assert.match(css, /#intro-overlay \{[\s\S]*max\(6px, env\(safe-area-inset-right\)[\s\S]*max\(6px, env\(safe-area-inset-left\)/);
   assert.match(css, /\.intro-card \{[^}]*width:\s*min\(100%, 448px\);[^}]*padding:\s*16px 14px 14px;/s);
   assert.match(css, /\.intro-mission \{[^}]*grid-template-columns:/s);
@@ -41,7 +45,7 @@ test("the selected level is presented as a themed mission card instead of a bare
   assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*\.mission-trait/);
 });
 
-test("intro attempt status stays truthful across rewarded, practice, error, and exhausted launches", () => {
+test("settings attempt status stays truthful across rewarded, practice, error, and exhausted launches", () => {
   for (const locale of Object.keys(translations)) {
     assert.match(translations[locale].intro_attempts_rewarded, /10/);
     assert.ok(translations[locale].intro_attempts_practice.length >= 10);

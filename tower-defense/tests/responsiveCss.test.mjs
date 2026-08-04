@@ -100,14 +100,17 @@ test("selected heroes reuse the stable controls height without a fifth build car
 test("the game menu keeps auxiliary actions reachable without reserving command-panel space", () => {
   const topActions = html.match(/<div class="top-actions">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const menuMarkup = elementMarkupById(html, "game-menu-overlay");
+  const settingsMarkup = elementMarkupById(html, "settings-overlay");
 
   assert.match(topActions, /id="game-menu-button"/);
   assert.match(topActions, /id="speed-button"/);
   if (/data-role="language"/.test(topActions)) {
     assert.match(topActions, /<(?:label|div)[^>]*(?:\bhidden\b|aria-hidden="true"|is-hidden)[^>]*>[\s\S]*data-role="language"/);
   }
-  assert.match(menuMarkup, /data-role="language"/);
-  assert.match(menuMarkup, /id="fullscreen-button"/);
+  assert.match(menuMarkup, /id="game-menu-settings-button"/);
+  assert.doesNotMatch(menuMarkup, /data-role="language"|id="fullscreen-button"/);
+  assert.match(settingsMarkup, /data-role="language"/);
+  assert.match(settingsMarkup, /id="fullscreen-button"/);
   assert.match(menuMarkup, /id="tower-guide-button"/);
   assert.doesNotMatch(css, /\.build-panel\.has-fullscreen-control \.tower-deck/);
   assert.match(css, /\.guide-card \{[^}]*max-height:\s*100%;/s);

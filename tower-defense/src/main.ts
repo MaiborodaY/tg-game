@@ -365,6 +365,8 @@ let selectedWaveIntelType: EnemyType | null = null;
 let renderedWaveIntelPlan: WavePlan | null = null;
 let resumeAfterMenu = false;
 let menuReturnFocus: HTMLElement | null = null;
+let settingsOrigin: "intro" | "menu" | null = null;
+let settingsReturnFocus: HTMLElement | null = null;
 let leaderboardOrigin: "intro" | "menu" | "result" | null = null;
 let leaderboardReturnFocus: HTMLElement | null = null;
 let leaderboardLevelId = CLASSIC_CAMPAIGN_LEVEL_ID;
@@ -554,6 +556,8 @@ const elements = {
   attemptPurchaseConfirm: button("attempt-purchase-confirm"),
   introStart: button("intro-start"),
   introRestartCancel: button("intro-restart-cancel"),
+  introSettings: button("intro-settings"),
+  introSettingsLabel: byId("intro-settings-label"),
   introLeaderboard: button("intro-leaderboard"),
   introLeaderboardLabel: byId("intro-leaderboard-label"),
   sessionPicker: byId("session-picker"),
@@ -618,15 +622,22 @@ const elements = {
   gameMenuEyebrow: byId("game-menu-eyebrow"),
   gameMenuClose: button("game-menu-close"),
   gameMenuContinue: button("game-menu-continue"),
+  gameMenuSettingsButton: button("game-menu-settings-button"),
+  gameMenuSettingsLabel: byId("game-menu-settings-label"),
   gameMenuHeroDetails: byId("game-menu-hero-details"),
   gameMenuSpeedLabel: byId("game-menu-speed-label"),
   gameMenuSpeedButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-menu-speed]")],
-  gameMenuAudioLabel: byId("game-menu-audio-label"),
   audioToggleButtons: [...document.querySelectorAll<HTMLButtonElement>("[data-audio-toggle]")],
   gameMenuTowerGuideLabel: byId("game-menu-tower-guide-label"),
   gameMenuLeaderboard: button("game-menu-leaderboard"),
   gameMenuLeaderboardLabel: byId("game-menu-leaderboard-label"),
-  gameMenuFullscreenLabel: byId("game-menu-fullscreen-label"),
+  settingsOverlay: byId("settings-overlay"),
+  settingsEyebrow: byId("settings-eyebrow"),
+  settingsTitle: byId("settings-title"),
+  settingsClose: button("settings-close"),
+  settingsDone: button("settings-done"),
+  settingsAudioLabel: byId("settings-audio-label"),
+  settingsFullscreenLabel: byId("settings-fullscreen-label"),
   gameMenuSession: button("game-menu-session"),
   gameMenuSessionLabel: byId("game-menu-session-label"),
   gameMenuRestart: button("game-menu-restart"),
@@ -823,6 +834,13 @@ function bindInteractions(): void {
   elements.gameMenuOverlay.addEventListener("click", (event) => {
     if (event.target === elements.gameMenuOverlay) closeGameMenu(true);
   });
+  elements.introSettings.addEventListener("click", () => openSettings("intro"));
+  elements.gameMenuSettingsButton.addEventListener("click", () => openSettings("menu"));
+  elements.settingsClose.addEventListener("click", closeSettings);
+  elements.settingsDone.addEventListener("click", closeSettings);
+  elements.settingsOverlay.addEventListener("click", (event) => {
+    if (event.target === elements.settingsOverlay) closeSettings();
+  });
   elements.introLeaderboard.addEventListener("click", () => openLeaderboard("intro"));
   elements.gameMenuLeaderboard.addEventListener("click", () => openLeaderboard("menu"));
   elements.resultLeaderboard.addEventListener("click", () => openLeaderboard("result"));
@@ -990,6 +1008,7 @@ function bindInteractions(): void {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     if (!elements.heroTargetPrompt.hidden) currentScene()?.cancelHeroAbilityTargeting();
+    else if (!elements.settingsOverlay.hidden) closeSettings();
     else if (!elements.leaderboardOverlay.hidden) closeLeaderboard();
     else if (!elements.waveIntelOverlay.hidden) closeWaveIntel();
     else if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
@@ -2347,6 +2366,55 @@ function closeGameMenu(resumeGame: boolean, restoreFocus = true): void {
   menuReturnFocus = null;
 }
 
+function openSettings(origin: "intro" | "menu"): void {
+  if (!elements.settingsOverlay.hidden) return;
+  if (origin === "intro" && elements.introOverlay.hidden) return;
+  if (origin === "menu" && elements.gameMenuOverlay.hidden) return;
+
+  settingsOrigin = origin;
+  settingsReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : origin === "intro" ? elements.introSettings : elements.gameMenuSettingsButton;
+
+  if (origin === "intro") {
+    elements.introOverlay.hidden = true;
+    elements.introSettings.setAttribute("aria-expanded", "true");
+  } else {
+    hideRestartConfirmation();
+    elements.gameMenuOverlay.hidden = true;
+    elements.gameMenuButton.setAttribute("aria-expanded", "false");
+    elements.gameMenuSettingsButton.setAttribute("aria-expanded", "true");
+  }
+
+  setAppShellBlocked(true);
+  elements.settingsOverlay.hidden = false;
+  elements.settingsClose.focus();
+  telegram.haptic("light");
+}
+
+function closeSettings(): void {
+  if (elements.settingsOverlay.hidden) return;
+  elements.settingsOverlay.hidden = true;
+  elements.introSettings.setAttribute("aria-expanded", "false");
+  elements.gameMenuSettingsButton.setAttribute("aria-expanded", "false");
+
+  const origin = settingsOrigin;
+  const returnFocus = settingsReturnFocus;
+  settingsOrigin = null;
+  settingsReturnFocus = null;
+  if (origin === "intro") {
+    elements.introOverlay.hidden = false;
+    setAppShellBlocked(true);
+  } else if (origin === "menu") {
+    elements.gameMenuOverlay.hidden = false;
+    elements.gameMenuButton.setAttribute("aria-expanded", "true");
+    setAppShellBlocked(true);
+  } else {
+    setAppShellBlocked(false);
+  }
+  if (returnFocus?.isConnected) returnFocus.focus();
+}
+
 function openLeaderboard(origin: "intro" | "menu" | "result"): void {
   if (!elements.leaderboardOverlay.hidden) return;
   if (origin === "intro" && elements.introOverlay.hidden) return;
@@ -3237,10 +3305,17 @@ function applyStaticTranslations(): void {
   elements.gameMenuEyebrow.textContent = text("app_title");
   elements.gameMenuClose.setAttribute("aria-label", text("close"));
   elements.gameMenuSpeedLabel.textContent = text("speed");
-  elements.gameMenuAudioLabel.textContent = text("game_menu_audio");
+  elements.introSettingsLabel.textContent = text("settings");
+  elements.introSettings.setAttribute("aria-label", text("settings"));
+  elements.gameMenuSettingsLabel.textContent = text("settings");
+  elements.settingsEyebrow.textContent = text("settings_eyebrow");
+  elements.settingsTitle.textContent = text("settings");
+  elements.settingsClose.setAttribute("aria-label", text("close"));
+  elements.settingsDone.textContent = text("settings_done");
+  elements.settingsAudioLabel.textContent = text("game_menu_audio");
   syncAudioSettingsUi();
   const menuLanguageLabel = text("game_menu_language");
-  const menuLanguage = elements.gameMenuOverlay.querySelector<HTMLElement>(".game-menu-language > span");
+  const menuLanguage = elements.settingsOverlay.querySelector<HTMLElement>(".game-menu-language > span");
   if (menuLanguage) menuLanguage.textContent = menuLanguageLabel;
   elements.gameMenuTowerGuideLabel.textContent = text("game_menu_tower_guide");
   elements.introLeaderboardLabel.textContent = text("game_menu_leaderboard");
@@ -3658,7 +3733,7 @@ function syncFullscreenUi(isFullscreen: boolean): void {
   const label = text(isFullscreen ? "fullscreen_exit" : "fullscreen_enter");
   elements.fullscreenButton.setAttribute("aria-label", label);
   elements.fullscreenButton.title = label;
-  elements.gameMenuFullscreenLabel.textContent = text("game_menu_fullscreen");
+  elements.settingsFullscreenLabel.textContent = text("game_menu_fullscreen");
 }
 
 function applyLaunchErrorTranslations(): void {
