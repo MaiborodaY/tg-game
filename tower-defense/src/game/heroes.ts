@@ -1,6 +1,7 @@
 import type { DamageKind, HeroId, HeroLevel } from "./types.ts";
+import { MORNA_AWAKENING_ESSENCE, MORNA_COLOSSUS_MAJOR_HOLD_MS } from "./morna.ts";
 
-export const HERO_IDS = Object.freeze(["eira", "toren", "grak"] as const);
+export const HERO_IDS = Object.freeze(["eira", "toren", "grak", "morna"] as const);
 export const HERO_UPGRADE_WAVE_GATES = Object.freeze([4, 12] as const);
 export const HERO_AWAKENING_WAVE = 20;
 export const HERO_ABILITY_RECHARGE_KILLS = 25;
@@ -67,6 +68,11 @@ export const HERO_AWAKENINGS = Object.freeze({
     abilityDurationMs: 10_000,
     towerAttackIntervalMultiplier: 1 / 1.3,
     resistancePenetration: 0.3,
+  }),
+  morna: Object.freeze({
+    id: "morna" as const,
+    corpseEssenceRequired: MORNA_AWAKENING_ESSENCE,
+    majorHoldMs: MORNA_COLOSSUS_MAJOR_HOLD_MS,
   }),
 });
 
@@ -304,6 +310,83 @@ export const HERO_DEFINITIONS: Readonly<Record<HeroId, HeroDefinition>> = Object
       markedTowerDamageMultiplier: 1,
     },
   ]),
+  morna: defineHero("morna", [180, 540], [
+    {
+      damageKind: "arcane",
+      attackDamage: 7,
+      attackRange: 112,
+      attackIntervalMs: 920,
+      attackSplashRadius: 0,
+      globalTowerDamageMultiplier: 1,
+      towerDamageAuraRadius: 0,
+      towerDamageMultiplier: 1,
+      globalTowerAttackIntervalMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
+      slowAuraRadius: 0,
+      slowAuraFactor: 1,
+      controlResistancePenetration: 0,
+      gateShield: 0,
+      abilityRadius: 140,
+      abilityDamage: 0,
+      abilityStunMs: 0,
+      abilityDurationMs: 9_000,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
+      markDurationMs: 0,
+      markedTowerDamageMultiplier: 1,
+    },
+    {
+      damageKind: "arcane",
+      attackDamage: 10,
+      attackRange: 116,
+      attackIntervalMs: 860,
+      attackSplashRadius: 0,
+      globalTowerDamageMultiplier: 1,
+      towerDamageAuraRadius: 0,
+      towerDamageMultiplier: 1,
+      globalTowerAttackIntervalMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
+      slowAuraRadius: 0,
+      slowAuraFactor: 1,
+      controlResistancePenetration: 0,
+      gateShield: 0,
+      abilityRadius: 155,
+      abilityDamage: 0,
+      abilityStunMs: 0,
+      abilityDurationMs: 10_000,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
+      markDurationMs: 0,
+      markedTowerDamageMultiplier: 1,
+    },
+    {
+      damageKind: "arcane",
+      attackDamage: 14,
+      attackRange: 120,
+      attackIntervalMs: 800,
+      attackSplashRadius: 16,
+      globalTowerDamageMultiplier: 1,
+      towerDamageAuraRadius: 0,
+      towerDamageMultiplier: 1,
+      globalTowerAttackIntervalMultiplier: 1,
+      towerAttackSpeedAuraRadius: 0,
+      towerAttackIntervalMultiplier: 1,
+      slowAuraRadius: 0,
+      slowAuraFactor: 1,
+      controlResistancePenetration: 0,
+      gateShield: 0,
+      abilityRadius: 170,
+      abilityDamage: 0,
+      abilityStunMs: 0,
+      abilityDurationMs: 11_000,
+      abilityTowerAttackIntervalMultiplier: 1,
+      abilityResistancePenetration: 0,
+      markDurationMs: 0,
+      markedTowerDamageMultiplier: 1,
+    },
+  ]),
 });
 
 export function getHeroDefinition(id: HeroId): HeroDefinition {
@@ -333,6 +416,7 @@ export function getHeroAura(id: HeroId, level: HeroLevel): HeroAura | null {
       globalStrength: 0,
     });
   }
+  if (id === "morna") return null;
   return Object.freeze({
     kind: "tower_attack_speed",
     radius: stats.towerAttackSpeedAuraRadius,

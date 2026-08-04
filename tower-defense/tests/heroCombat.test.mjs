@@ -39,6 +39,11 @@ const EXPECTED_HERO_STATS = Object.freeze({
     2: { maxHp: 135, maxHeroicArmor: 6, blockCapacity: 1, regenHpPerSecond: 6, attackRange: 44, attackDamage: 14 },
     3: { maxHp: 185, maxHeroicArmor: 9, blockCapacity: 1, regenHpPerSecond: 8, attackRange: 46, attackDamage: 18 },
   }),
+  morna: Object.freeze({
+    1: { maxHp: 70, maxHeroicArmor: 1, blockCapacity: 1, regenHpPerSecond: 3, attackRange: 112, attackDamage: 4 },
+    2: { maxHp: 100, maxHeroicArmor: 3, blockCapacity: 1, regenHpPerSecond: 5, attackRange: 116, attackDamage: 6 },
+    3: { maxHp: 140, maxHeroicArmor: 5, blockCapacity: 1, regenHpPerSecond: 7, attackRange: 120, attackDamage: 9 },
+  }),
 });
 
 const EXPECTED_ATTACK_PROFILES = Object.freeze({
@@ -99,6 +104,7 @@ test("passing strikes preserve fragile, tank, and bruiser exposure independently
     eira: { damage: 0.45, armorDamage: 0.5 },
     toren: { damage: 0.25, armorDamage: 0.275 },
     grak: { damage: 0.36, armorDamage: 0.4 },
+    morna: { damage: 0.4, armorDamage: 0.45 },
   });
   assert.ok(getHeroPassingStrikeScales("eira").damage > getHeroPassingStrikeScales("grak").damage);
   assert.ok(getHeroPassingStrikeScales("grak").damage > getHeroPassingStrikeScales("toren").damage);

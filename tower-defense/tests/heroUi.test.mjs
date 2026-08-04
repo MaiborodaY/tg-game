@@ -23,24 +23,46 @@ function elementMarkupById(source, id) {
   return "";
 }
 
-test("intro offers three accessible hero portraits without adding a tower card", () => {
-  assert.equal(html.match(/data-hero-choice=/g)?.length, 3);
+test("a dedicated hero screen offers four accessible portraits without adding a tower card", () => {
+  const introMarkup = elementMarkupById(html, "intro-overlay");
+  const pickerMarkup = elementMarkupById(html, "hero-picker-overlay");
+
+  assert.equal(html.match(/data-hero-choice=/g)?.length, 4);
   assert.match(html, /data-hero-choice="eira"/);
   assert.match(html, /data-hero-choice="toren"/);
   assert.match(html, /data-hero-choice="grak"/);
+  assert.match(html, /data-hero-choice="morna"/);
   assert.match(html, /eira-portrait\.webp/);
   assert.match(html, /toren-portrait\.webp/);
   assert.match(html, /grak-portrait\.webp/);
+  assert.match(html, /morna-portrait\.webp/);
   assert.equal(html.match(/data-tower=/g)?.length, 4);
-  assert.match(html, /id="hero-choice-button"[^>]*aria-controls="hero-picker"[^>]*aria-expanded="false"/);
-  assert.match(html, /class="hero-options" role="radiogroup"/);
-  assert.equal(html.match(/role="radio"/g)?.length, 3);
+  assert.match(html, /id="hero-choice-button"[^>]*aria-controls="hero-picker-overlay"[^>]*aria-expanded="false"/);
+  assert.match(pickerMarkup, /role="dialog"/);
+  assert.match(pickerMarkup, /aria-modal="true"/);
+  assert.match(pickerMarkup, /aria-labelledby="hero-picker-title"/);
+  assert.doesNotMatch(introMarkup, /id="hero-picker-overlay"/);
+  assert.match(html, /class="hero-options" aria-labelledby="hero-picker-title"/);
+  assert.doesNotMatch(pickerMarkup, /role="radio"|aria-checked=/);
   const grakOption = html.match(/<button[^>]*data-hero-choice="grak"[^>]*>/)?.[0] ?? "";
-  assert.match(grakOption, /aria-disabled="true"/);
   assert.match(grakOption, /aria-describedby="hero-grak-unlock"/);
+  assert.doesNotMatch(grakOption, /\bdisabled\b/);
+  const mornaOption = html.match(/<button[^>]*data-hero-choice="morna"[^>]*>/)?.[0] ?? "";
+  assert.match(mornaOption, /aria-describedby="hero-morna-unlock"/);
+  assert.doesNotMatch(mornaOption, /\bdisabled\b/);
 });
 
-test("hero choice only replaces a fresh campaign before the renderer mounts", () => {
+test("hero preview stays separate until an available hero is confirmed", () => {
+  const previewSource = mainSource.match(/function previewHero[\s\S]*?(?=\nfunction confirmHeroChoice)/)?.[0] ?? "";
+  const confirmSource = mainSource.match(/function confirmHeroChoice[\s\S]*?(?=\nfunction setHeroPickerTab)/)?.[0] ?? "";
+
+  assert.match(mainSource, /let previewHeroId: HeroId = selectedHeroId/);
+  assert.match(previewSource, /previewHeroId = value/);
+  assert.match(previewSource, /syncHeroPickerPreview\(\)/);
+  assert.doesNotMatch(previewSource, /selectedHeroId = value|createCampaignState/);
+  assert.match(confirmSource, /isHeroAvailable\(previewHeroId, playerProfile\)/);
+  assert.match(confirmSource, /chooseHero\(previewHeroId\)/);
+  assert.match(confirmSource, /closeHeroPicker\(true\)/);
   assert.match(mainSource, /function chooseHero\(value: string\): void \{[\s\S]*isHeroId\(value\)[\s\S]*heroChoiceIsLocked\(\)[\s\S]*if \(!restartSelectionPending\) \{\s*initialCampaign = createCampaignState\(\{[\s\S]*heroId: selectedHeroId/);
   assert.match(mainSource, /function heroChoiceIsLocked\(\): boolean \{\s*if \(restartSelectionPending\) return false;\s*return gameMounted \|\| runStarted \|\| hasRunProgress\(latestUi\?\.campaign \?\? initialCampaign\);/);
   assert.match(mainSource, /selectedHeroId = initialCampaign\.hero\.id/);
@@ -49,9 +71,14 @@ test("hero choice only replaces a fresh campaign before the renderer mounts", ()
   assert.match(mainSource, /elements\.heroChoiceButton\.disabled = disabled/);
   assert.match(mainSource, /elements\.heroChoiceLock\.hidden = !locked/);
   assert.match(mainSource, /isHeroAvailable\(value, playerProfile\)/);
-  assert.match(mainSource, /const unavailable = !isHeroAvailable\(optionHeroId, playerProfile\)/);
-  assert.match(mainSource, /option\.disabled = disabled \|\| unavailable/);
+  assert.match(mainSource, /const optionUnavailable = !isHeroAvailable\(optionHeroId, playerProfile\)/);
+  assert.match(mainSource, /option\.classList\.toggle\("is-previewed", previewed\)/);
+  assert.match(mainSource, /if \(current\) option\.setAttribute\("aria-current", "true"\)/);
+  assert.doesNotMatch(mainSource, /option\.setAttribute\("aria-checked"/);
+  assert.match(mainSource, /option\.disabled = disabled/);
+  assert.match(mainSource, /heroPickerDone\.disabled = disabled \|\| unavailable/);
   assert.match(mainSource, /!grakWasUnlocked && isHeroAvailable\("grak", playerProfile\)[\s\S]*hero_grak_unlocked/);
+  assert.match(mainSource, /!mornaWasUnlocked && isHeroAvailable\("morna", playerProfile\)[\s\S]*hero_morna_unlocked/);
   assert.match(mainSource, /import\.meta\.env\.DEV[\s\S]*preview_hero/);
 });
 
@@ -95,6 +122,8 @@ test("selected map hero reuses the compact command controls and active ability b
   assert.match(mainSource, /hero_eira_aura_status/);
   assert.match(mainSource, /hero_toren_aura_status/);
   assert.match(mainSource, /hero_grak_aura_status/);
+  assert.match(mainSource, /hero_morna_essence_short/);
+  assert.match(mainSource, /mornaState\.corpseEssence/);
   assert.match(mainSource, /aura\.globalStrength/);
   assert.match(mainSource, /pulseButton\.disabled = ui\.heroTargeting[\s\S]*!ui\.heroAbilityAvailable/);
   assert.match(mainSource, /dx \* dx \+ dy \* dy <= radiusSquared \? total \+ 1 : total/);
@@ -131,12 +160,30 @@ test("hero controls preserve compact rows and Telegram-sized touch targets", () 
   assert.match(css, /\.hero-panel \{[^}]*min-height:\s*var\(--tower-controls-height\);[^}]*height:\s*100%;/s);
   assert.match(css, /\.hero-actions button \{[^}]*min-height:\s*44px;/s);
   assert.match(css, /\.hero-choice-button \{[^}]*min-height:\s*70px;/s);
-  assert.match(css, /\.hero-picker-close \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
-  assert.match(css, /\.hero-picker \.modal-primary \{[^}]*min-height:\s*44px;/s);
-  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*?\.hero-options \{[^}]*overflow-x:\s*auto;/);
-  assert.match(css, /\.hero-option-portrait \{[^}]*object-fit:\s*cover;/s);
-  assert.match(css, /\.hero-option\.is-locked \.hero-option-lock \{ display:\s*flex; \}/);
-  assert.match(css, /\.hero-option\.is-locked:disabled \{[^}]*filter:\s*none;[^}]*opacity:\s*1;/s);
+  assert.match(css, /\.hero-picker-screen \.hero-picker-close \{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
+  assert.match(css, /\.hero-showcase-visual \{[^}]*aspect-ratio:\s*4\s*\/\s*5;/s);
+  assert.match(css, /\.hero-showcase-portrait \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;[^}]*object-position:\s*center bottom;/s);
+  assert.match(css, /\.hero-picker-screen \.hero-options \{[^}]*display:\s*flex;[^}]*overflow-x:\s*auto;/s);
+  assert.match(css, /\.hero-picker-layer \{[^}]*safe-area-inset-bottom/s);
+  assert.doesNotMatch(css.match(/\.hero-picker-footer \{[^}]*\}/s)?.[0] ?? "", /safe-area-inset-bottom/);
+  assert.match(css, /\.hero-picker-footer \.modal-primary \{[^}]*min-height:\s*48px;/s);
+  assert.match(css, /@media \(min-width: 720px\) \{[\s\S]*?\.hero-picker-layout \{[^}]*grid-template-columns:/);
+});
+
+test("hero preview distinguishes inspection from the committed choice", () => {
+  const pickerMarkup = elementMarkupById(html, "hero-picker-overlay");
+  const statusMarkup = html.match(/<span[^>]*id="hero-picker-selection-status"[^>]*>/)?.[0] ?? "";
+
+  assert.match(pickerMarkup, /class="hero-option is-previewed is-current"[^>]*aria-current="true"/);
+  assert.match(css, /\.hero-picker-screen \.hero-option\.is-previewed \{/);
+  assert.match(css, /\.hero-picker-screen \.hero-option\.is-current \.hero-option-check \{ display: grid; \}/);
+  assert.equal(pickerMarkup.match(/aria-live=/g)?.length, 1);
+  assert.match(statusMarkup, /role="status"/);
+  assert.match(statusMarkup, /aria-live="polite"/);
+  assert.match(statusMarkup, /aria-atomic="true"/);
+  assert.match(mainSource, /option\.addEventListener\("keydown"/);
+  assert.match(mainSource, /nextOption\.focus\(\)/);
+  assert.match(mainSource, /previewHero\(nextOption\.dataset\.heroChoice\)/);
 });
 
 test("one accessible game menu replaces the session shortcut and owns auxiliary actions", () => {
@@ -181,6 +228,7 @@ test("one accessible game menu replaces the session shortcut and owns auxiliary 
 });
 
 test("hero picker exposes semantic rank, attack, passive, and ability details for the selected hero", () => {
+  const pickerMarkup = elementMarkupById(html, "hero-picker-overlay");
   const detailsStart = html.indexOf('id="hero-picker-details"');
   const detailsEnd = html.indexOf('id="hero-picker-done"', detailsStart);
   const detailsMarkup = detailsStart >= 0 && detailsEnd > detailsStart
@@ -188,9 +236,19 @@ test("hero picker exposes semantic rank, attack, passive, and ability details fo
     : "";
 
   assert.notEqual(detailsMarkup, "");
-  for (const detail of ["rank", "attack", "passive", "ability"]) {
+  for (const detail of ["attack", "passive", "ability", "awakening"]) {
     assert.match(detailsMarkup, new RegExp(`data-hero-detail="${detail}"`));
   }
+  assert.match(html, /id="hero-showcase-rank"/);
+  assert.equal(pickerMarkup.match(/role="tab"/g)?.length, 3);
+  assert.equal(pickerMarkup.match(/role="tabpanel"/g)?.length, 3);
+  assert.match(html, /data-hero-tab="overview"/);
+  assert.match(html, /data-hero-tab="skills"/);
+  assert.match(html, /data-hero-tab="progression"/);
   assert.match(mainSource, /heroPickerDetails/);
+  assert.match(mainSource, /function setHeroPickerTab/);
+  assert.match(mainSource, /tab\.setAttribute\("aria-selected", String\(selected\)\)/);
+  assert.match(mainSource, /panel\.hidden = panel\.dataset\.heroPanel !== activeHeroPickerTab/);
+  assert.match(mainSource, /event\.key === "ArrowRight"/);
   assert.match(mainSource, /hero_detail_(?:rank|attack|passive|ability)/);
 });

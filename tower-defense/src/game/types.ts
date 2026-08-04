@@ -1,6 +1,6 @@
 export type TowerType = "ranger" | "frost" | "ember" | "storm";
 export type TowerLevel = 1 | 2 | 3 | 4;
-export type HeroId = "eira" | "toren" | "grak";
+export type HeroId = "eira" | "toren" | "grak" | "morna";
 export type HeroLevel = 1 | 2 | 3;
 export type DamageKind = "physical" | "frost" | "fire" | "arcane";
 export type EnemyType = "raider" | "swift" | "brute" | "warden" | "shade" | "bulwark" | "shaman" | "boss" | "titan";

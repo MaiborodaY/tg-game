@@ -628,6 +628,7 @@ test("wave checkpoints keep hero build state but reset transient ability use on 
     bannerActive: false,
     bannerRemainingMs: 0,
     barrier: null,
+    morna: null,
     frontline: null,
   });
 });

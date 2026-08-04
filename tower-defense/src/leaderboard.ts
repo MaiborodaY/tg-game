@@ -298,7 +298,7 @@ async function requestLeaderboard(
           init_data: initData,
           level_id: levelId,
           mode_id: modeId,
-          stats_version: 3,
+          stats_version: 4,
         }),
         signal: controller.signal,
         cache: "no-store",

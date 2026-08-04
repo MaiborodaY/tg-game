@@ -18,7 +18,7 @@ import {
 } from "../src/game/heroes.ts";
 
 test("hero definitions are exhaustive, immutable, and expose stable upgrade gates", () => {
-  assert.deepEqual(HERO_IDS, ["eira", "toren", "grak"]);
+  assert.deepEqual(HERO_IDS, ["eira", "toren", "grak", "morna"]);
   assert.deepEqual(Object.keys(HERO_DEFINITIONS).sort(), [...HERO_IDS].sort());
   assert.ok(Object.isFrozen(HERO_DEFINITIONS));
   for (const id of HERO_IDS) {
@@ -33,8 +33,10 @@ test("hero definitions are exhaustive, immutable, and expose stable upgrade gate
   assert.equal(getHeroUpgradeCost("eira", 1), 150);
   assert.equal(getHeroUpgradeCost("toren", 2), 500);
   assert.equal(getHeroUpgradeCost("grak", 1), 170);
+  assert.equal(getHeroUpgradeCost("morna", 1), 180);
   assert.equal(getHeroUpgradeCost("eira", 3), null);
   assert.equal(isHeroId("toren"), true);
+  assert.equal(isHeroId("morna"), true);
   assert.equal(isHeroId("missing"), false);
   assert.equal(isHeroLevel(3), true);
   assert.equal(isHeroLevel(4), false);
@@ -65,12 +67,21 @@ test("heroes keep distinct scaling identities across damage, control, and attack
   assert.ok(grakThree.towerAttackIntervalMultiplier < 1);
   assert.ok(grakThree.abilityDurationMs > grakOne.abilityDurationMs);
   assert.ok(grakThree.abilityResistancePenetration > grakOne.abilityResistancePenetration);
+
+  const mornaOne = getHeroStats("morna", 1);
+  const mornaThree = getHeroStats("morna", 3);
+  assert.equal(mornaOne.damageKind, "arcane");
+  assert.equal(mornaOne.globalTowerDamageMultiplier, 1);
+  assert.ok(mornaThree.abilityRadius > mornaOne.abilityRadius);
+  assert.ok(mornaThree.abilityDurationMs > mornaOne.abilityDurationMs);
 });
 
 test("hero aura summaries expose only unlocked passive radii and strengths", () => {
   assert.equal(getHeroAura("eira", 1), null);
   assert.equal(getHeroAura("toren", 1), null);
   assert.equal(getHeroAura("grak", 1), null);
+  assert.equal(getHeroAura("morna", 1), null);
+  assert.equal(getHeroAura("morna", 3), null);
   const eiraAura = getHeroAura("eira", 2);
   const torenAura = getHeroAura("toren", 3);
   const grakAura = getHeroAura("grak", 3);
@@ -96,6 +107,8 @@ test("rank-three heroes awaken only after wave twenty without changing paid rank
   assert.equal(HERO_AWAKENINGS.toren.barrierCapacity, 6);
   assert.equal(HERO_AWAKENINGS.toren.abilityDurationMs, 6_000);
   assert.equal(HERO_AWAKENINGS.grak.abilityDurationMs, 10_000);
+  assert.equal(HERO_AWAKENINGS.morna.corpseEssenceRequired, 6);
+  assert.equal(HERO_AWAKENINGS.morna.majorHoldMs, 3_000);
   assert.ok(Object.isFrozen(HERO_AWAKENINGS));
   assert.ok(Object.isFrozen(HERO_AWAKENINGS.toren));
 });

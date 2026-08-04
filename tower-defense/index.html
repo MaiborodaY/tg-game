@@ -122,35 +122,45 @@
 
     <div id="intro-overlay" class="modal-layer">
       <section class="modal-card intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
-        <header id="mission-preview" class="intro-mission" data-mission-preview data-level-theme="forest-gate" aria-describedby="intro-body mission-trait-copy">
+        <header id="mission-preview" class="intro-mission" data-mission-preview data-level-theme="forest-gate">
           <div id="intro-sigil" class="intro-sigil" data-mission-sigil aria-hidden="true"><span id="intro-sigil-mark">✦</span></div>
           <div class="intro-mission-copy">
             <small id="intro-mission-eyebrow" class="modal-eyebrow" data-mission-eyebrow>КАМПАНИЯ I · ЛЕСНЫЕ ВРАТА</small>
             <h1 id="intro-title">Защити Сердце леса</h1>
-            <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
           </div>
-          <div id="mission-metrics" class="mission-metrics" aria-label="Параметры миссии">
-            <span class="mission-metric">
-              <small id="mission-difficulty-label">Сложность</small>
-              <strong id="mission-difficulty" data-mission-difficulty>Начальная</strong>
-            </span>
-            <span class="mission-metric">
-              <small id="mission-gold-label">Стартовое золото</small>
-              <strong id="mission-gold" data-mission-gold>190</strong>
-            </span>
-            <span class="mission-metric">
-              <small id="mission-lives-label">Жизни</small>
-              <strong id="mission-lives" data-mission-lives>20</strong>
-            </span>
-          </div>
-          <div id="mission-trait" class="mission-trait" data-mission-trait>
-            <span class="mission-trait-mark" aria-hidden="true"><i></i></span>
-            <span>
-              <small id="mission-trait-label">Особенность миссии</small>
-              <strong id="mission-trait-title">Сердце леса</strong>
-              <span id="mission-trait-copy">Освой четыре башни и удержи единственную дорогу к воротам.</span>
-            </span>
-          </div>
+          <details id="mission-details" class="intro-mission-details">
+            <summary><span id="mission-details-summary">О миссии</span><i aria-hidden="true">⌄</i></summary>
+            <div class="intro-mission-details-body">
+              <p id="intro-body">Строй башни, сочетай их силы и останови врагов, прежде чем они доберутся до Сердца.</p>
+              <div id="mission-metrics" class="mission-metrics" aria-label="Параметры миссии">
+                <span class="mission-metric">
+                  <small id="mission-difficulty-label">Сложность</small>
+                  <strong id="mission-difficulty" data-mission-difficulty>Начальная</strong>
+                </span>
+                <span class="mission-metric">
+                  <small id="mission-gold-label">Стартовое золото</small>
+                  <strong id="mission-gold" data-mission-gold>190</strong>
+                </span>
+                <span class="mission-metric">
+                  <small id="mission-lives-label">Жизни</small>
+                  <strong id="mission-lives" data-mission-lives>20</strong>
+                </span>
+              </div>
+              <div id="mission-trait" class="mission-trait" data-mission-trait>
+                <span class="mission-trait-mark" aria-hidden="true"><i></i></span>
+                <span>
+                  <small id="mission-trait-label">Особенность миссии</small>
+                  <strong id="mission-trait-title">Сердце леса</strong>
+                  <span id="mission-trait-copy">Освой четыре башни и удержи единственную дорогу к воротам.</span>
+                </span>
+              </div>
+              <div class="intro-features">
+                <span><i class="feature-icon feature-icon--waves" aria-hidden="true"></i><b id="intro-waves">24 волны</b></span>
+                <span><i class="feature-icon feature-icon--towers" aria-hidden="true"></i><b id="intro-towers">4 башни</b></span>
+                <span><i class="feature-icon feature-icon--bosses" aria-hidden="true"></i><b id="intro-bosses">Боссы</b></span>
+              </div>
+            </div>
+          </details>
         </header>
         <div id="intro-attempts" class="intro-attempts">
           <span class="intro-attempt-icon" aria-hidden="true"><i></i></span>
@@ -197,7 +207,7 @@
           </label>
           <small id="mode-unlock-hint" class="session-unlock-hint" hidden>Бесконечный режим откроется после победы во всех 24 волнах выбранной кампании.</small>
         </div>
-        <button id="hero-choice-button" class="hero-choice-button" type="button" aria-controls="hero-picker" aria-expanded="false">
+        <button id="hero-choice-button" class="hero-choice-button" type="button" aria-controls="hero-picker-overlay" aria-expanded="false">
           <span id="hero-choice-emblem" class="hero-emblem eira" aria-hidden="true"><img src="./src/assets/heroes/eira-portrait.webp" alt=""></span>
           <span class="hero-choice-copy">
             <small id="hero-choice-label">Герой</small>
@@ -207,58 +217,99 @@
           <span class="hero-choice-chevron" aria-hidden="true">›</span>
         </button>
         <small id="hero-choice-lock" class="hero-choice-lock" hidden>Герой закреплён за этим забегом</small>
-        <section id="hero-picker" class="hero-picker" aria-labelledby="hero-picker-title" hidden>
-          <div class="hero-picker-heading">
-            <div>
-              <small id="hero-picker-eyebrow">ГЕРОИ</small>
-              <h2 id="hero-picker-title">Выберите героя</h2>
-            </div>
-            <button id="hero-picker-close" class="hero-picker-close" type="button" aria-label="Закрыть">×</button>
-          </div>
-          <p id="hero-picker-hint">Герой сражается сам. Между волнами его можно перемещать по стоянкам.</p>
-          <div class="hero-options" role="radiogroup" aria-labelledby="hero-picker-title">
-            <button class="hero-option is-selected" type="button" role="radio" aria-checked="true" data-hero-choice="eira">
-              <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/eira-portrait.webp" alt=""></span>
-              <span class="hero-option-copy"><strong id="hero-eira-name">Эйра</strong><small id="hero-eira-role">Охотница на сильные цели</small><b id="hero-eira-ability">Метка охотницы</b></span>
-              <i class="hero-option-check" aria-hidden="true">✓</i>
-            </button>
-            <button class="hero-option" type="button" role="radio" aria-checked="false" data-hero-choice="toren">
-              <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/toren-portrait.webp" alt=""></span>
-              <span class="hero-option-copy"><strong id="hero-toren-name">Торен</strong><small id="hero-toren-role">Страж против толпы</small><b id="hero-toren-ability">Удар земли</b></span>
-              <i class="hero-option-check" aria-hidden="true">✓</i>
-            </button>
-            <button class="hero-option is-locked" type="button" role="radio" aria-checked="false" aria-disabled="true" aria-describedby="hero-grak-unlock" data-hero-choice="grak">
-              <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/grak-portrait.webp" alt=""></span>
-              <span class="hero-option-copy"><strong id="hero-grak-name">Грак</strong><small id="hero-grak-role">Вождь Железного Клыка</small><b id="hero-grak-ability">Знамя ярости</b></span>
-              <span id="hero-grak-unlock" class="hero-option-lock"><i aria-hidden="true">◆</i><small>Откроется после победы в Лесных вратах</small></span>
-              <i class="hero-option-check" aria-hidden="true">✓</i>
-            </button>
-          </div>
-          <article id="hero-picker-details" class="hero-detail-card" aria-live="polite">
-            <header class="hero-detail-header">
-              <span class="hero-emblem eira" data-hero-detail-emblem aria-hidden="true"><img src="./src/assets/heroes/eira-portrait.webp" alt=""></span>
-              <span><small data-hero-detail="rank"><span data-hero-detail-value>Ранг 1</span></small><strong data-hero-detail-name>Эйра</strong><span data-hero-detail-role>Охотница на сильные цели</span></span>
-            </header>
-            <div class="hero-detail-list">
-              <p data-hero-detail="attack"><b data-hero-detail-label>Атака</b><span data-hero-detail-value>Физическая дальняя атака по одной цели.</span></p>
-              <p data-hero-detail="frontline" hidden><b data-hero-detail-label>Фронтовой бой</b><span data-hero-detail-value></span></p>
-              <p data-hero-detail="passive"><b data-hero-detail-label>Пассивный навык</b><span data-hero-detail-value>С ранга 2 усиливает башни рядом.</span></p>
-              <p data-hero-detail="ability"><b data-hero-detail-label>Активная способность</b><span data-hero-detail-value>Метка охотницы усиливает урон башен по сильнейшему врагу.</span></p>
-              <p data-hero-detail="awakening"><b data-hero-detail-label>Пробуждение</b><span data-hero-detail-value>Откроется после 20-й волны на ранге 3.</span></p>
-            </div>
-            <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
-          </article>
-          <button id="hero-picker-done" class="modal-primary" type="button">Готово</button>
-        </section>
-        <div class="intro-features">
-          <span><i class="feature-icon feature-icon--waves" aria-hidden="true"></i><b id="intro-waves">24 волны</b></span>
-          <span><i class="feature-icon feature-icon--towers" aria-hidden="true"></i><b id="intro-towers">4 башни</b></span>
-          <span><i class="feature-icon feature-icon--bosses" aria-hidden="true"></i><b id="intro-bosses">Боссы</b></span>
-        </div>
         <button id="intro-start" class="modal-primary" type="button" data-mission-cta>Встать на защиту</button>
         <button id="intro-restart-cancel" class="secondary-action wide" type="button" hidden>Вернуться к забегу</button>
         <button id="intro-leaderboard" class="secondary-action wide intro-leaderboard" type="button" aria-controls="leaderboard-overlay" aria-expanded="false"><span class="ui-icon ui-icon--trophy" aria-hidden="true"></span><b id="intro-leaderboard-label">Рейтинг</b></button>
         <small class="app-build-version" data-app-version>__TD_APP_VERSION__</small>
+      </section>
+    </div>
+
+    <div id="hero-picker-overlay" class="modal-layer hero-picker-layer" hidden>
+      <section id="hero-picker" class="hero-picker-screen" role="dialog" aria-modal="true" aria-labelledby="hero-picker-title" aria-describedby="hero-picker-hint">
+        <header class="hero-picker-heading">
+          <button id="hero-picker-close" class="hero-picker-close" type="button" aria-label="Назад">←</button>
+          <div>
+            <small id="hero-picker-eyebrow">ГЕРОИ</small>
+            <h2 id="hero-picker-title">Выберите героя</h2>
+          </div>
+          <span id="hero-picker-progress" class="hero-picker-progress">1 / 4</span>
+        </header>
+
+        <div class="hero-picker-scroll">
+          <div class="hero-picker-layout">
+            <section class="hero-showcase">
+              <div class="hero-showcase-visual">
+                <img id="hero-showcase-portrait" class="hero-showcase-portrait" src="./src/assets/heroes/eira-portrait.webp" alt="">
+                <span id="hero-showcase-lock" class="hero-showcase-lock" hidden><i aria-hidden="true">◆</i><span></span></span>
+              </div>
+              <div class="hero-showcase-copy">
+                <small id="hero-showcase-rank">Ранг 1</small>
+                <h3 id="hero-showcase-name">Эйра</h3>
+                <p id="hero-showcase-role">Охотница на сильные цели</p>
+                <strong id="hero-showcase-ability">Метка охотницы</strong>
+                <div class="hero-stat-grid" aria-label="Характеристики героя">
+                  <span><small id="hero-stat-hp-label">HP</small><b id="hero-stat-hp">85</b></span>
+                  <span><small id="hero-stat-attack-label">Урон</small><b id="hero-stat-attack">6</b></span>
+                  <span><small id="hero-stat-armor-label">Броня</small><b id="hero-stat-armor">2%</b></span>
+                  <span><small id="hero-stat-block-label">Блок</small><b id="hero-stat-block">1</b></span>
+                </div>
+              </div>
+            </section>
+
+            <div class="hero-picker-content">
+              <p id="hero-picker-hint">Герой сражается сам. Между волнами его можно перемещать по стоянкам.</p>
+              <div class="hero-options" aria-labelledby="hero-picker-title">
+                <button class="hero-option is-previewed is-current" type="button" aria-current="true" data-hero-choice="eira">
+                  <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/eira-portrait.webp" alt=""></span>
+                  <span class="hero-option-copy"><strong id="hero-eira-name">Эйра</strong><small id="hero-eira-role">Охотница на сильные цели</small><b id="hero-eira-ability">Метка охотницы</b></span>
+                  <i class="hero-option-check" aria-hidden="true">✓</i>
+                </button>
+                <button class="hero-option" type="button" data-hero-choice="toren">
+                  <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/toren-portrait.webp" alt=""></span>
+                  <span class="hero-option-copy"><strong id="hero-toren-name">Торен</strong><small id="hero-toren-role">Страж против толпы</small><b id="hero-toren-ability">Удар земли</b></span>
+                  <i class="hero-option-check" aria-hidden="true">✓</i>
+                </button>
+                <button class="hero-option is-locked" type="button" aria-describedby="hero-grak-unlock" data-hero-choice="grak">
+                  <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/grak-portrait.webp" alt=""></span>
+                  <span class="hero-option-copy"><strong id="hero-grak-name">Грак</strong><small id="hero-grak-role">Вождь Железного Клыка</small><b id="hero-grak-ability">Знамя ярости</b></span>
+                  <span id="hero-grak-unlock" class="hero-option-lock"><i aria-hidden="true">◆</i><small>Откроется после победы в Лесных вратах</small></span>
+                  <i class="hero-option-check" aria-hidden="true">✓</i>
+                </button>
+                <button class="hero-option is-locked" type="button" aria-describedby="hero-morna-unlock" data-hero-choice="morna">
+                  <span class="hero-option-visual" aria-hidden="true"><img class="hero-option-portrait" src="./src/assets/heroes/morna-portrait.webp" alt=""></span>
+                  <span class="hero-option-copy"><strong id="hero-morna-name">Морна</strong><small id="hero-morna-role">Владычица павших</small><b id="hero-morna-ability">Поднять павших</b></span>
+                  <span id="hero-morna-unlock" class="hero-option-lock"><i aria-hidden="true">◆</i><small>Откроется после победы в Северном перевале</small></span>
+                  <i class="hero-option-check" aria-hidden="true">✓</i>
+                </button>
+              </div>
+
+              <div class="hero-detail-tabs" role="tablist" aria-label="Информация о герое">
+                <button id="hero-tab-overview" type="button" role="tab" aria-selected="true" aria-controls="hero-panel-overview" tabindex="0" data-hero-tab="overview">Обзор</button>
+                <button id="hero-tab-skills" type="button" role="tab" aria-selected="false" aria-controls="hero-panel-skills" tabindex="-1" data-hero-tab="skills">Навыки</button>
+                <button id="hero-tab-progression" type="button" role="tab" aria-selected="false" aria-controls="hero-panel-progression" tabindex="-1" data-hero-tab="progression">Развитие</button>
+              </div>
+              <article id="hero-picker-details" class="hero-detail-card">
+                <div id="hero-panel-overview" class="hero-detail-panel" role="tabpanel" aria-labelledby="hero-tab-overview" data-hero-panel="overview">
+                  <p data-hero-detail="attack"><b data-hero-detail-label>Атака</b><span data-hero-detail-value>Физическая дальняя атака по одной цели.</span></p>
+                  <p data-hero-detail="frontline" hidden><b data-hero-detail-label>Фронтовой бой</b><span data-hero-detail-value></span></p>
+                </div>
+                <div id="hero-panel-skills" class="hero-detail-panel" role="tabpanel" aria-labelledby="hero-tab-skills" data-hero-panel="skills" hidden>
+                  <p data-hero-detail="passive"><b data-hero-detail-label>Пассивный навык</b><span data-hero-detail-value>С ранга 2 усиливает башни рядом.</span></p>
+                  <p data-hero-detail="ability"><b data-hero-detail-label>Активная способность</b><span data-hero-detail-value>Метка охотницы усиливает урон башен по сильнейшему врагу.</span></p>
+                </div>
+                <div id="hero-panel-progression" class="hero-detail-panel" role="tabpanel" aria-labelledby="hero-tab-progression" data-hero-panel="progression" hidden>
+                  <p data-hero-detail="awakening"><b data-hero-detail-label>Пробуждение</b><span data-hero-detail-value>Откроется после 20-й волны на ранге 3.</span></p>
+                  <p class="hero-detail-next" data-hero-detail-next>Следующее улучшение: ранг 2 · аура +8% · 150 ●</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <footer class="hero-picker-footer">
+          <span id="hero-picker-selection-status" role="status" aria-live="polite" aria-atomic="true">Эйра готова к бою</span>
+          <button id="hero-picker-done" class="modal-primary" type="button">Выбрать Эйру</button>
+        </footer>
       </section>
     </div>
 

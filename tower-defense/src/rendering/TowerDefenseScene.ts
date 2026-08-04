@@ -16,6 +16,7 @@ import {
 } from "../game/content.ts";
 import { getHeroAura, getHeroStats } from "../game/heroes.ts";
 import { getEffectiveEnemyHeroBlockCost, getHeroCombatStats } from "../game/heroCombat.ts";
+import { getMornaRankRules } from "../game/morna.ts";
 import {
   createPathMetrics,
   getPointAtDistance,
@@ -87,6 +88,12 @@ import {
   type HeroArt,
   type HeroEffectPool,
 } from "./heroArt.ts";
+import {
+  createMornaBattlefieldArt,
+  destroyMornaBattlefieldArt,
+  syncMornaBattlefieldArt,
+  type MornaBattlefieldArt,
+} from "./mornaBattlefieldArt.ts";
 import {
   createHeroFrontlineRouteFrame,
   getHeroFrontlineBypassPose,
@@ -236,6 +243,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private northernRouteVariantId: string | null = null;
   private heroView?: HeroRenderView;
   private heroEffects?: HeroEffectPool;
+  private mornaBattlefieldArt?: MornaBattlefieldArt;
   private lastHeroAttackAtMs = -1_000;
   private lastHeroPassivePower = Number.NaN;
   private rangePreview?: Phaser.GameObjects.Arc;
@@ -280,6 +288,7 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
     setWorldAct(this, this.worldArt, this.simulation.getCurrentWavePlan().act);
     this.heroEffects = createHeroEffectPool(this);
+    this.mornaBattlefieldArt = createMornaBattlefieldArt(this);
     this.createAvalancheZones(initialView);
     this.createHeroAnchors();
     this.createBuildPads();
@@ -295,6 +304,8 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.input.off("pointerdown", this.handleHeroTargetPointerDown, this);
       this.heroEffects?.destroy();
       this.heroEffects = undefined;
+      if (this.mornaBattlefieldArt) destroyMornaBattlefieldArt(this.mornaBattlefieldArt);
+      this.mornaBattlefieldArt = undefined;
       this.heroTargetPreview?.destroy();
       this.heroTargetPreview = undefined;
       this.heroBarrierView?.container.destroy(true);
@@ -976,6 +987,14 @@ export class TowerDefenseScene extends Phaser.Scene {
       this.rangePreview = this.add.circle(view.hero.x, view.hero.y, attackRange, 0x7be8c5, 0.025)
         .setStrokeStyle(1, 0x8debd0, 0.58)
         .setDepth(3);
+      if (view.hero.id === "morna" && view.hero.morna) {
+        const harvestRadius = getMornaRankRules(view.hero.level).harvestRadius;
+        this.rangePreview.setFillStyle(0x76518c, 0.018).setStrokeStyle(1.5, 0xbb9bd1, 0.72);
+        this.heroAuraPreview = this.add.circle(view.hero.x, view.hero.y, harvestRadius, 0x59e1d2, 0.045)
+          .setStrokeStyle(3, 0x7ff7e9, 0.9)
+          .setDepth(2);
+        return;
+      }
       const aura = getHeroAura(view.hero.id, view.hero.level);
       if (!aura) return;
       const auraColor = aura.kind === "tower_damage"
@@ -1137,6 +1156,33 @@ export class TowerDefenseScene extends Phaser.Scene {
         ? { x: this.heroView.art.container.x, y: this.heroView.art.container.y }
         : event.from;
       this.heroEffects?.playAttack(event.heroId, from, this.getEnemyRenderPoint(event.targetId, event.to));
+      return;
+    }
+    if (event.type === "morna_summon_raised") {
+      this.heroEffects?.playAbility("morna", event, event.kind === "colossus" ? 38 : 24);
+      if (event.kind === "colossus") {
+        this.cameras.main.shake(220, 0.006);
+        this.cameras.main.flash(150, 90, 225, 210, false);
+      }
+      return;
+    }
+    if (event.type === "morna_summon_attack") {
+      const target = this.getEnemyRenderPoint(event.targetId, event.to);
+      this.heroEffects?.playAttack("morna", event.from, target);
+      if (event.radius > 0) createHitBurst(this, target.x, target.y, 0x6fe8dc, event.radius, 2);
+      return;
+    }
+    if (event.type === "enemy_attacked_morna_summon") {
+      createFloatingText(this, event.x, event.y - 28, `-${event.damage}`, "#ffad96");
+      createHitBurst(this, event.x, event.y - 5, 0xd66c55, 14, 2);
+      return;
+    }
+    if (event.type === "morna_summon_destroyed") {
+      if (event.reason !== "wave_end" && event.reason !== "run_end") {
+        const combatLoss = event.reason === "defeated" || event.reason === "major_hold";
+        createHitBurst(this, event.x, event.y, combatLoss ? 0x75e3d5 : 0x809995, event.kind === "colossus" ? 34 : 22, 3);
+        if (event.kind === "colossus" && combatLoss) this.cameras.main.shake(180, 0.005);
+      }
       return;
     }
     if (event.type === "enemy_attacked_hero") {
@@ -1337,6 +1383,9 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.syncNorthernPassVisuals(view);
     this.syncEnemyViews(view.enemies, view.hero, view.simulationTimeMs);
     this.syncHeroView();
+    if (this.mornaBattlefieldArt) {
+      syncMornaBattlefieldArt(this.mornaBattlefieldArt, view.hero.morna, view.simulationTimeMs);
+    }
     this.syncProjectileViews(view.projectiles, view.enemies);
   }
 
@@ -1372,7 +1421,7 @@ export class TowerDefenseScene extends Phaser.Scene {
         renderX = pose.x;
         renderY = pose.y;
         renderRotation = frame.angle * 0.03;
-      } else if (frame && frontline && frontlinePresent) {
+      } else if (frame && frontline && frontlinePresent && !enemy.blocked) {
         const bypassStart = frontline.progress - 32;
         const bypassEnd = frontline.progress + 34;
         const remainingCapacity = Math.max(0, frontline.blockCapacity - frontline.blockUsed);

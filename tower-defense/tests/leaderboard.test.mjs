@@ -204,7 +204,7 @@ test("client posts pinned campaign request and deduplicates concurrent loads", a
     init_data: "query_id=telegram&hash=signed",
     level_id: "forest-gate",
     mode_id: "campaign",
-    stats_version: 3,
+    stats_version: 4,
   });
 
   resolveFetch(jsonResponse(responseBody()));

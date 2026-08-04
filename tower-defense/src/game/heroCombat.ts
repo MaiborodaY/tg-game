@@ -34,6 +34,11 @@ export const HERO_COMBAT_STATS: Readonly<Record<HeroId, Readonly<Record<HeroLeve
     { maxHp: 135, maxHeroicArmor: 6, blockCapacity: 1, regenHpPerSecond: 6, attackRange: 44, attackDamage: 14 },
     { maxHp: 185, maxHeroicArmor: 9, blockCapacity: 1, regenHpPerSecond: 8, attackRange: 46, attackDamage: 18 },
   ]),
+  morna: defineHeroCombatRanks([
+    { maxHp: 70, maxHeroicArmor: 1, blockCapacity: 1, regenHpPerSecond: 3, attackRange: 112, attackDamage: 4 },
+    { maxHp: 100, maxHeroicArmor: 3, blockCapacity: 1, regenHpPerSecond: 5, attackRange: 116, attackDamage: 6 },
+    { maxHp: 140, maxHeroicArmor: 5, blockCapacity: 1, regenHpPerSecond: 7, attackRange: 120, attackDamage: 9 },
+  ]),
 });
 
 export const HERO_COMBAT_TIMING = Object.freeze({
@@ -56,6 +61,7 @@ export const HERO_PASSING_STRIKE_SCALES: Readonly<Record<HeroId, Readonly<{
   eira: Object.freeze({ damage: 0.45, armorDamage: 0.5 }),
   toren: Object.freeze({ damage: 0.25, armorDamage: 0.275 }),
   grak: Object.freeze({ damage: 0.36, armorDamage: 0.4 }),
+  morna: Object.freeze({ damage: 0.4, armorDamage: 0.45 }),
 });
 
 // A passive is part of the hero's identity and only pauses while the hero is

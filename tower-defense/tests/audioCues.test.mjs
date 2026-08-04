@@ -10,6 +10,8 @@ test("simulation events map to semantic audio without coupling sound to haptics"
   assert.deepEqual(audioCuesForSimulationEvent({ type: "hero_attack", heroId: "eira" }), ["hero_eira_attack"]);
   assert.deepEqual(audioCuesForSimulationEvent({ type: "hero_attack", heroId: "toren" }), ["hero_toren_attack"]);
   assert.deepEqual(audioCuesForSimulationEvent({ type: "hero_ability", heroId: "grak" }), ["hero_grak_ability"]);
+  assert.deepEqual(audioCuesForSimulationEvent({ type: "hero_attack", heroId: "morna" }), ["hero_morna_attack"]);
+  assert.deepEqual(audioCuesForSimulationEvent({ type: "hero_ability", heroId: "morna" }), ["hero_morna_ability"]);
   assert.deepEqual(audioCuesForSimulationEvent({ type: "projectile_hit", towerType: "ranger" }), ["tower_ranger_hit"]);
   assert.deepEqual(audioCuesForSimulationEvent({ type: "projectile_hit", towerType: "frost" }), ["tower_frost_hit"]);
   assert.deepEqual(audioCuesForSimulationEvent({ type: "lightning" }), ["storm_chain"]);

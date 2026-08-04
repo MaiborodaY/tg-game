@@ -47,6 +47,17 @@ export const HERO_VISUAL_PROFILES = Object.freeze({
     stepRate: 0.009,
     bob: 1.05,
   }),
+  morna: Object.freeze({
+    primary: 0x56345f,
+    secondary: 0x181c2b,
+    accent: 0x59e1d2,
+    shadowWidth: 41,
+    shadowHeight: 14,
+    silhouetteWidth: 40,
+    silhouetteHeight: 49,
+    stepRate: 0.01,
+    bob: 1.2,
+  }),
 } satisfies Readonly<Record<HeroId, HeroVisualProfile>>);
 
 export type HeroArt = Readonly<{
@@ -172,6 +183,7 @@ const HERO_BUILDERS = {
   eira: drawEira,
   toren: drawToren,
   grak: drawGrak,
+  morna: drawMorna,
 } satisfies Readonly<Record<HeroId, HeroBuilder>>;
 
 export function createHeroArt(scene: Phaser.Scene, heroId: HeroId, point: Point): HeroArt {
@@ -259,12 +271,12 @@ export function updateHeroArtPose(
   const swing = Math.sin(attack * Math.PI);
 
   art.body.y = rig.bodyHomeY - Math.abs(stride) * visual.bob;
-  art.body.rotation = stride * (heroId === "eira" ? 0.025 : heroId === "grak" ? 0.018 : 0.014);
+  art.body.rotation = stride * (heroId === "eira" ? 0.025 : heroId === "grak" ? 0.018 : heroId === "morna" ? 0.022 : 0.014);
   art.body.scaleX = 1 + Math.sin(phase * 0.42) * 0.012;
   art.body.scaleY = 1 - Math.sin(phase * 0.42) * 0.009;
   art.weapon.y = art.body.y;
-  const weaponSwing = heroId === "eira" ? -0.18 : heroId === "grak" ? -1.02 : -0.72;
-  const weaponStretch = heroId === "eira" ? 0.03 : heroId === "grak" ? 0.12 : 0.08;
+  const weaponSwing = heroId === "eira" ? -0.18 : heroId === "grak" ? -1.02 : heroId === "morna" ? -0.26 : -0.72;
+  const weaponStretch = heroId === "eira" ? 0.03 : heroId === "grak" ? 0.12 : heroId === "morna" ? 0.05 : 0.08;
   art.weapon.rotation = rig.weaponHomeRotation + weaponSwing * swing;
   art.weapon.scaleX = 1 + swing * weaponStretch;
 }
@@ -402,8 +414,8 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
     effect.tween?.stop();
     effect.active = true;
     effect.shaft
-      .setFillStyle(heroId === "eira" ? visual.accent : heroId === "grak" ? 0x6a4228 : visual.secondary, 1)
-      .setSize(heroId === "grak" ? 17 : 20, heroId === "grak" ? 5 : 3);
+      .setFillStyle(heroId === "eira" || heroId === "morna" ? visual.accent : heroId === "grak" ? 0x6a4228 : visual.secondary, 1)
+      .setSize(heroId === "grak" ? 17 : heroId === "morna" ? 14 : 20, heroId === "grak" || heroId === "morna" ? 5 : 3);
     effect.head
       .setFillStyle(heroId === "eira" ? 0xf4e2a1 : visual.accent, 1)
       .setScale(1)
@@ -412,7 +424,7 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
     effect.container
       .setPosition(from.x, from.y - 8)
       .setRotation(Math.atan2(to.y - from.y, to.x - from.x))
-      .setScale(heroId === "eira" ? 1 : heroId === "grak" ? 1.52 : 1.34)
+      .setScale(heroId === "eira" ? 1 : heroId === "grak" ? 1.52 : heroId === "morna" ? 1.08 : 1.34)
       .setAlpha(1)
       .setVisible(true)
       .setDepth(1_100);
@@ -421,8 +433,8 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       x: to.x,
       y: to.y - 6,
       ...(heroId === "grak" ? { rotation: effect.container.rotation + Math.PI * 2.5 } : {}),
-      alpha: heroId === "eira" ? 0.9 : 0.25,
-      duration: heroId === "eira" ? 155 : heroId === "grak" ? 210 : 110,
+      alpha: heroId === "eira" || heroId === "morna" ? 0.9 : 0.25,
+      duration: heroId === "eira" ? 155 : heroId === "grak" ? 210 : heroId === "morna" ? 185 : 110,
       ease: "Quad.Out",
       onComplete: () => releaseAttackEffect(effect),
     });
@@ -446,7 +458,7 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       .setPosition(point.x, point.y)
       .setRadius(9)
       .setScale(1)
-      .setAlpha(heroId === "eira" ? 0.28 : heroId === "grak" ? 0.5 : 0.4)
+      .setAlpha(heroId === "eira" ? 0.28 : heroId === "grak" ? 0.5 : heroId === "morna" ? 0.46 : 0.4)
       .setFillStyle(visual.primary, 1)
       .setVisible(true)
       .setDepth(1_089);
@@ -455,7 +467,7 @@ export function createHeroEffectPool(scene: Phaser.Scene): HeroEffectPool {
       targets: [effect.ring, effect.core],
       scale,
       alpha: 0,
-      duration: heroId === "eira" ? 460 : heroId === "grak" ? 520 : 380,
+      duration: heroId === "eira" ? 460 : heroId === "grak" ? 520 : heroId === "morna" ? 620 : 380,
       ease: "Cubic.Out",
       onComplete: () => releaseAbilityEffect(effect),
     });
@@ -751,6 +763,65 @@ function drawGrak(
   axeRune.lineBetween(0, -4, 0, 4);
   const grip = scene.add.rectangle(10, 18, 9, 8, 0xa83a29, 1).setRotation(-0.36);
   weapon.add([axeHandle, axeHead, axeRune, grip]);
+}
+
+function drawMorna(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+): void {
+  const cloak = scene.add.graphics();
+  cloak.fillStyle(0x211a2d, 1).fillTriangle(-17, -8, 16, -8, 2, 23);
+  cloak.lineStyle(2, 0x704477, 0.88).strokeTriangle(-17, -8, 16, -8, 2, 23);
+  const leftBoot = scene.add.ellipse(-6, 16, 8, 12, 0x171923, 1).setRotation(-0.12);
+  const rightBoot = scene.add.ellipse(6, 16, 8, 12, 0x171923, 1).setRotation(0.12);
+  const skirt = scene.add.graphics();
+  skirt.fillStyle(0x56345f, 1).fillTriangle(-12, 1, 12, 1, 0, 23);
+  skirt.lineStyle(1, 0xb08a59, 0.78).lineBetween(0, 3, 0, 20);
+  const torso = scene.add.ellipse(0, -5, 25, 29, 0x292536, 1).setStrokeStyle(2, 0xb08a59, 0.82);
+  const belt = scene.add.rectangle(0, 5, 25, 4, 0x6f4b32, 1).setStrokeStyle(1, 0xc7a46d, 0.8);
+  const boneShoulder = scene.add.graphics().setPosition(-13, -10);
+  boneShoulder.fillStyle(0xd8ccb1, 1);
+  boneShoulder.lineStyle(2, 0x796952, 1);
+  boneShoulder.fillTriangle(-7, 4, 0, -8, 7, 4);
+  boneShoulder.strokeTriangle(-7, 4, 0, -8, 7, 4);
+  const head = scene.add.circle(0, -22, 9, 0xc7c5d0, 1).setStrokeStyle(2, 0x5c5364, 0.9);
+  const hair = scene.add.graphics();
+  hair.fillStyle(0x171923, 1);
+  hair.fillEllipse(0, -27, 20, 12);
+  hair.fillTriangle(-10, -26, -8, -7, -2, -18);
+  hair.fillTriangle(9, -26, 10, -8, 2, -17);
+  hair.lineStyle(3, 0xc7c8d2, 0.92).lineBetween(3, -31, 8, -18);
+  const crown = scene.add.graphics();
+  crown.fillStyle(0xd6c7a7, 1);
+  crown.lineStyle(1, 0x756249, 1);
+  crown.fillTriangle(-8, -29, -12, -40, -3, -31);
+  crown.fillTriangle(-2, -31, 1, -43, 5, -30);
+  crown.lineBetween(-10, -30, 5, -30);
+  const eyes = scene.add.graphics();
+  eyes.fillStyle(0x72f3e0, 1);
+  eyes.fillCircle(-3, -22, 1.4);
+  eyes.fillCircle(3, -22, 1.4);
+  const soul = scene.add.circle(-16, -2, 4, 0x59e1d2, 0.82).setStrokeStyle(1, 0xb5fff4, 0.92);
+  body.add([cloak, leftBoot, rightBoot, skirt, torso, belt, boneShoulder, head, hair, crown, eyes, soul]);
+
+  const staff = scene.add.rectangle(16, -2, 4, 50, 0x392d30, 1)
+    .setStrokeStyle(1, 0xb08a59, 0.9)
+    .setRotation(-0.12);
+  const staffCrescent = scene.add.graphics().setPosition(19, -28).setRotation(-0.12);
+  staffCrescent.lineStyle(4, 0xd8ccb1, 1);
+  staffCrescent.beginPath();
+  staffCrescent.arc(0, 0, 10, -Math.PI * 0.72, Math.PI * 0.72, false);
+  staffCrescent.strokePath();
+  const lanternFrame = scene.add.graphics().setPosition(21, -20).setRotation(-0.12);
+  lanternFrame.lineStyle(2, 0xb08a59, 1);
+  lanternFrame.strokeRect(-5, -7, 10, 14);
+  lanternFrame.lineBetween(-5, -7, 0, -11);
+  lanternFrame.lineBetween(5, -7, 0, -11);
+  const lanternSoul = scene.add.circle(21, -20, 4, 0x59e1d2, 0.94)
+    .setStrokeStyle(1, 0xc5fff5, 1)
+    .setRotation(-0.12);
+  weapon.add([staff, staffCrescent, lanternFrame, lanternSoul]);
 }
 
 function acquireAttackEffect(scene: Phaser.Scene, pool: AttackEffect[]): AttackEffect {

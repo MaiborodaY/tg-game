@@ -8,12 +8,14 @@ const HERO_ATTACK_CUES: Readonly<Record<HeroId, AudioCueId>> = Object.freeze({
   eira: "hero_eira_attack",
   toren: "hero_toren_attack",
   grak: "hero_grak_attack",
+  morna: "hero_morna_attack",
 });
 
 const HERO_ABILITY_CUES: Readonly<Record<HeroId, AudioCueId>> = Object.freeze({
   eira: "hero_eira_ability",
   toren: "hero_toren_ability",
   grak: "hero_grak_ability",
+  morna: "hero_morna_ability",
 });
 
 const TOWER_HIT_CUES: Readonly<Record<TowerType, AudioCueId>> = Object.freeze({

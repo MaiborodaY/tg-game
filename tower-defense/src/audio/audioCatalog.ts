@@ -46,9 +46,11 @@ export type AudioCueId =
   | "hero_eira_attack"
   | "hero_toren_attack"
   | "hero_grak_attack"
+  | "hero_morna_attack"
   | "hero_eira_ability"
   | "hero_toren_ability"
   | "hero_grak_ability"
+  | "hero_morna_ability"
   | "hero_hit"
   | "hero_knockout"
   | "hero_respawn"
@@ -100,9 +102,11 @@ export const AUDIO_CUES: Readonly<Record<AudioCueId, AudioCueConfig>> = Object.f
   hero_eira_attack: cue(["heroEiraAttack"], 0.34, 160, 0.025, 2),
   hero_toren_attack: cue(["heroTorenAttack"], 0.38, 180, 0.02, 2),
   hero_grak_attack: cue(["heroGrakAttack"], 0.4, 170, 0.02, 2),
+  hero_morna_attack: cue(["frostHit1", "frostHit2"], 0.24, 165, 0.018, 2),
   hero_eira_ability: cue(["heroEiraAbility"], 0.48, 280, 0, 3),
   hero_toren_ability: cue(["heroTorenAbility"], 0.56, 280, 0, 3),
   hero_grak_ability: cue(["heroGrakAbility"], 0.58, 280, 0, 3),
+  hero_morna_ability: cue(["heroBarrier"], 0.52, 320, 0.01, 3),
   hero_hit: cue(["heroHit"], 0.29, 145, 0.03, 2),
   hero_knockout: cue(["heroKnockout"], 0.58, 500, 0, 3),
   hero_respawn: cue(["heroRespawn"], 0.46, 450, 0, 2),

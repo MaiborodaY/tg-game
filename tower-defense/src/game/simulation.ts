@@ -44,6 +44,17 @@ import {
   getHeroPassingStrikeScales,
 } from "./heroCombat.ts";
 import {
+  MORNA_AWAKENING_ESSENCE,
+  MORNA_COLOSSUS_MAJOR_HOLD_MS,
+  getMornaCorpseEssence,
+  getMornaCorpseKind,
+  getMornaRankRules,
+  getMornaSummonKind,
+  getMornaSummonStats,
+  type MornaCorpseKind,
+  type MornaSummonKind,
+} from "./morna.ts";
+import {
   createPathMetrics,
   getPointAtDistance,
   samplePointAtDistance,
@@ -187,6 +198,38 @@ export type HeroBarrierSimulationView = Readonly<{
   capturedEnemyIds: readonly number[];
 }>;
 
+export type MornaCorpseSimulationView = Readonly<{
+  id: number;
+  kind: MornaCorpseKind;
+  essence: number;
+  progress: number;
+  x: number;
+  y: number;
+  remainingMs: number;
+}>;
+
+export type MornaSummonSimulationView = Readonly<{
+  id: number;
+  kind: MornaSummonKind;
+  progress: number;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  remainingMs: number;
+  blockedEnemyIds: readonly number[];
+}>;
+
+export type MornaSimulationView = Readonly<{
+  corpseEssence: number;
+  maxCorpseEssence: number;
+  usedSummonSlots: number;
+  maxSummons: number;
+  colossusReady: boolean;
+  corpses: readonly MornaCorpseSimulationView[];
+  summons: readonly MornaSummonSimulationView[];
+}>;
+
 export type ProjectileSimulationView = Readonly<{
   id: number;
   x: number;
@@ -216,6 +259,7 @@ export type HeroSimulationView = Readonly<{
   bannerActive: boolean;
   bannerRemainingMs: number;
   barrier: HeroBarrierSimulationView | null;
+  morna: MornaSimulationView | null;
   frontline: HeroFrontlineSimulationView | null;
 }>;
 
@@ -340,6 +384,47 @@ export type SimulationEvent =
     }>
   | Readonly<{ type: "hero_ability_recharged"; heroId: HeroId; charges: number }>
   | Readonly<{
+      type: "morna_corpse_created";
+      corpseId: number;
+      kind: MornaCorpseKind;
+      x: number;
+      y: number;
+      essence: number;
+    }>
+  | Readonly<{
+      type: "morna_summon_raised";
+      summonId: number;
+      kind: MornaSummonKind;
+      x: number;
+      y: number;
+    }>
+  | Readonly<{
+      type: "morna_summon_attack";
+      summonId: number;
+      kind: MornaSummonKind;
+      targetId: number;
+      from: Point;
+      to: Point;
+      radius: number;
+    }>
+  | Readonly<{
+      type: "enemy_attacked_morna_summon";
+      summonId: number;
+      enemyId: number;
+      x: number;
+      y: number;
+      damage: number;
+      remainingHp: number;
+    }>
+  | Readonly<{
+      type: "morna_summon_destroyed";
+      summonId: number;
+      kind: MornaSummonKind;
+      x: number;
+      y: number;
+      reason: "defeated" | "expired" | "hero_knockout" | "wave_end" | "run_end" | "major_hold";
+    }>
+  | Readonly<{
       type: "hero_barrier_created";
       x: number;
       y: number;
@@ -449,6 +534,7 @@ type EnemyEntity = Mutable<EnemySimulationView> & {
   stunUntilMs: number;
   barrierUntilMs: number;
   blockedByHero: boolean;
+  blockedByMornaSummonId: number | null;
   heroPassingStrikeUsed: boolean;
   heroAttackCooldownMs: number;
   controlResistance: number;
@@ -491,6 +577,31 @@ type HeroFrontlineEntity = {
   moveSpeed: number;
   regenActive: boolean;
   blockedEnemyIds: Set<number>;
+};
+
+type MornaCorpseEntity = {
+  id: number;
+  kind: MornaCorpseKind;
+  essence: number;
+  progress: number;
+  x: number;
+  y: number;
+  createdAtMs: number;
+  expiresAtMs: number;
+};
+
+type MornaSummonEntity = {
+  id: number;
+  kind: MornaSummonKind;
+  progress: number;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  attackCooldownMs: number;
+  expiresAtMs: number;
+  blockedEnemyIds: Set<number>;
+  majorHoldUntilMs: number;
 };
 
 export type SimulationCommandResult = Readonly<{
@@ -566,6 +677,8 @@ export class GameSimulation {
   private bannerUntilMs = 0;
   private heroBarrier: HeroBarrierEntity | null = null;
   private heroFrontline: HeroFrontlineEntity | null = null;
+  private mornaCorpses: MornaCorpseEntity[] = [];
+  private mornaSummons: MornaSummonEntity[] = [];
   private gateShield = 0;
   private northernAvalancheMaxCharges = 0;
   private northernAvalancheCharges = 0;
@@ -579,6 +692,8 @@ export class GameSimulation {
   private lastKillHapticAtMs = -1_000;
   private lastHitBurstAtMs = -1_000;
   private nextProjectileId = 1;
+  private nextMornaCorpseId = 1;
+  private nextMornaSummonId = 1;
   private events: SimulationEvent[] = [];
   private readonly recordedCommands: RecordedSimulationCommand[] = [];
   private readonly pointScratch: MutablePoint = { x: 0, y: 0 };
@@ -657,7 +772,10 @@ export class GameSimulation {
           blockedEnemyIds: Object.freeze([...this.heroFrontline.blockedEnemyIds].sort((a, b) => a - b)),
         })
       : null;
-    const abilityAvailable = this.heroAbilityCharges > 0 && this.isHeroFrontlineActive();
+    const morna = this.readMornaView(awakened);
+    const abilityAvailable = this.heroAbilityCharges > 0
+      && this.isHeroFrontlineActive()
+      && (this.campaign.hero.id !== "morna" || this.canMornaUseAbility(awakened));
     return Object.freeze({
       ...this.campaign.hero,
       x: point.x,
@@ -678,7 +796,47 @@ export class GameSimulation {
         ? Math.max(0, this.bannerUntilMs - this.simulationTimeMs)
         : 0,
       barrier,
+      morna,
       frontline,
+    });
+  }
+
+  private readMornaView(awakened: boolean): MornaSimulationView | null {
+    if (this.campaign.hero.id !== "morna") return null;
+    const rules = getMornaRankRules(this.campaign.hero.level);
+    const corpses = Object.freeze([...this.mornaCorpses]
+      .sort((left, right) => left.id - right.id)
+      .map((corpse) => Object.freeze({
+        id: corpse.id,
+        kind: corpse.kind,
+        essence: corpse.essence,
+        progress: corpse.progress,
+        x: corpse.x,
+        y: corpse.y,
+        remainingMs: Math.max(0, corpse.expiresAtMs - this.simulationTimeMs),
+      })));
+    const summons = Object.freeze([...this.mornaSummons]
+      .sort((left, right) => left.id - right.id)
+      .map((summon) => Object.freeze({
+        id: summon.id,
+        kind: summon.kind,
+        progress: summon.progress,
+        x: summon.x,
+        y: summon.y,
+        hp: Math.max(0, summon.hp),
+        maxHp: summon.maxHp,
+        remainingMs: Math.max(0, summon.expiresAtMs - this.simulationTimeMs),
+        blockedEnemyIds: Object.freeze([...summon.blockedEnemyIds].sort((a, b) => a - b)),
+      })));
+    const corpseEssence = this.getMornaCorpseEssenceTotal();
+    return Object.freeze({
+      corpseEssence,
+      maxCorpseEssence: rules.maxCorpseEssence,
+      usedSummonSlots: this.getMornaSummonSlotsUsed(),
+      maxSummons: rules.maxSummons,
+      colossusReady: awakened && corpseEssence >= MORNA_AWAKENING_ESSENCE && summons.length === 0,
+      corpses,
+      summons,
     });
   }
 
@@ -688,6 +846,72 @@ export class GameSimulation {
     return anchors[this.campaign.hero.anchorId]
       ?? anchors[0]
       ?? Object.freeze({ x: 0, y: 0 });
+  }
+
+  private getMornaCorpseEssenceTotal(): number {
+    return this.mornaCorpses.reduce((total, corpse) => total + corpse.essence, 0);
+  }
+
+  private getMornaSummonSlotsUsed(): number {
+    const maxSummons = getMornaRankRules(this.campaign.hero.level).maxSummons;
+    return this.mornaSummons.reduce(
+      (total, summon) => total + (summon.kind === "colossus" ? maxSummons : 1),
+      0,
+    );
+  }
+
+  private canMornaUseAbility(awakened = this.isCurrentHeroAwakened()): boolean {
+    if (this.campaign.hero.id !== "morna" || this.mornaCorpses.length === 0) return false;
+    const rules = getMornaRankRules(this.campaign.hero.level);
+    const slotsUsed = this.getMornaSummonSlotsUsed();
+    return (
+      awakened && slotsUsed === 0 && this.getMornaCorpseEssenceTotal() >= MORNA_AWAKENING_ESSENCE
+    ) || slotsUsed < rules.maxSummons;
+  }
+
+  private restoreMornaFromEssence(essence: number): void {
+    const frontline = this.heroFrontline;
+    if (!frontline || essence <= 0) return;
+    const rules = getMornaRankRules(this.campaign.hero.level);
+    frontline.hp = Math.min(frontline.maxHp, frontline.hp + rules.healPerEssence * essence);
+    frontline.heroicArmor = Math.min(
+      frontline.maxHeroicArmor,
+      frontline.heroicArmor + rules.armorPerEssence * essence,
+    );
+  }
+
+  private createMornaSummon(kind: MornaSummonKind, progressValue: number, lifetimeMs: number): MornaSummonEntity {
+    const progress = Math.min(this.path.totalLength, Math.max(0, progressValue));
+    const point = getPointAtDistance(this.path, progress);
+    const stats = getMornaSummonStats(kind, this.campaign.hero.level);
+    const summon: MornaSummonEntity = {
+      id: this.nextMornaSummonId,
+      kind,
+      progress,
+      x: point.x,
+      y: point.y,
+      hp: stats.maxHp,
+      maxHp: stats.maxHp,
+      attackCooldownMs: 240,
+      expiresAtMs: this.simulationTimeMs + lifetimeMs,
+      blockedEnemyIds: new Set<number>(),
+      majorHoldUntilMs: 0,
+    };
+    this.nextMornaSummonId += 1;
+    this.mornaSummons.push(summon);
+    this.events.push({
+      type: "morna_summon_raised",
+      summonId: summon.id,
+      kind,
+      x: point.x,
+      y: point.y,
+    });
+    return summon;
+  }
+
+  private pruneMornaCorpses(): void {
+    if (this.mornaCorpses.length === 0) return;
+    this.mornaCorpses = this.mornaCorpses.filter((corpse) => corpse.expiresAtMs > this.simulationTimeMs);
   }
 
   private createHeroFrontline(): HeroFrontlineEntity | null {
@@ -806,6 +1030,14 @@ export class GameSimulation {
         frontline: view.hero.frontline ? Object.freeze({
           ...view.hero.frontline,
           blockedEnemyIds: Object.freeze([...view.hero.frontline.blockedEnemyIds]),
+        }) : null,
+        morna: view.hero.morna ? Object.freeze({
+          ...view.hero.morna,
+          corpses: Object.freeze(view.hero.morna.corpses.map((corpse) => Object.freeze({ ...corpse }))),
+          summons: Object.freeze(view.hero.morna.summons.map((summon) => Object.freeze({
+            ...summon,
+            blockedEnemyIds: Object.freeze([...summon.blockedEnemyIds]),
+          }))),
         }) : null,
       }),
       heroAbilityAvailable: view.heroAbilityAvailable,
@@ -1105,6 +1337,7 @@ export class GameSimulation {
     const stats = getHeroStats(hero.id, hero.level);
     const heroPoint = this.getHeroPoint();
     const awakened = this.isCurrentHeroAwakened();
+    if (hero.id === "morna") return this.useMornaAbility(heroPoint, awakened);
     let targetPoint: Point = heroPoint;
     let targetIds: number[] = [];
     let eventRadius = stats.abilityRadius;
@@ -1144,7 +1377,7 @@ export class GameSimulation {
         targetIds = torenVictims.map((enemy) => enemy.id);
         eventDurationMs = stats.abilityStunMs;
       }
-    } else {
+    } else if (hero.id === "grak") {
       if (this.enemies.length === 0) return commandFailure("hero_ability_unavailable");
       eventDurationMs = awakened ? HERO_AWAKENINGS.grak.abilityDurationMs : stats.abilityDurationMs;
     }
@@ -1214,6 +1447,65 @@ export class GameSimulation {
     return COMMAND_SUCCESS;
   }
 
+  private useMornaAbility(heroPoint: Point, awakened: boolean): SimulationCommandResult {
+    this.pruneMornaCorpses();
+    if (!this.canMornaUseAbility(awakened)) return commandFailure("hero_ability_unavailable");
+    const level = this.campaign.hero.level;
+    const rules = getMornaRankRules(level);
+    const ordered = [...this.mornaCorpses].sort((left, right) => (
+      squaredDistance(left, heroPoint) - squaredDistance(right, heroPoint)
+      || left.createdAtMs - right.createdAtMs
+      || left.id - right.id
+    ));
+    const summonSlotsUsed = this.getMornaSummonSlotsUsed();
+    const raiseColossus = awakened
+      && summonSlotsUsed === 0
+      && this.getMornaCorpseEssenceTotal() >= MORNA_AWAKENING_ESSENCE;
+    const selected: MornaCorpseEntity[] = [];
+    if (raiseColossus) {
+      let essence = 0;
+      for (const corpse of ordered) {
+        selected.push(corpse);
+        essence += corpse.essence;
+        if (essence >= MORNA_AWAKENING_ESSENCE) break;
+      }
+    } else {
+      selected.push(...ordered.slice(0, Math.max(0, rules.maxSummons - summonSlotsUsed)));
+    }
+    if (selected.length === 0) return commandFailure("hero_ability_unavailable");
+
+    const selectedIds = new Set(selected.map((corpse) => corpse.id));
+    this.mornaCorpses = this.mornaCorpses.filter((corpse) => !selectedIds.has(corpse.id));
+    const consumedEssence = selected.reduce((total, corpse) => total + corpse.essence, 0);
+    if (raiseColossus) {
+      const anchor = selected[0];
+      if (anchor) this.createMornaSummon("colossus", anchor.progress, rules.summonLifetimeMs + 1_000);
+    } else {
+      for (const corpse of selected) {
+        this.createMornaSummon(getMornaSummonKind(corpse.kind), corpse.progress, rules.summonLifetimeMs);
+      }
+    }
+    this.restoreMornaFromEssence(consumedEssence);
+    this.heroAbilityCharges -= 1;
+    const target = selected[0] ?? null;
+    this.events.push(
+      {
+        type: "hero_ability",
+        heroId: "morna",
+        x: heroPoint.x,
+        y: heroPoint.y,
+        radius: rules.harvestRadius,
+        targetId: null,
+        targetIds: Object.freeze([]),
+        targetPoint: target ? Object.freeze({ x: target.x, y: target.y }) : heroPoint,
+        durationMs: rules.summonLifetimeMs,
+      },
+      { type: "haptic", kind: "medium" },
+    );
+    this.recordCommand({ type: "use_hero_ability" });
+    return COMMAND_SUCCESS;
+  }
+
   usePulse(): SimulationCommandResult {
     const result = this.useHeroAbility();
     return result.ok ? result : commandFailure("pulse_used");
@@ -1249,9 +1541,12 @@ export class GameSimulation {
     this.waveElapsedMs += deltaMs;
     this.spawnScheduledEnemies();
     this.updateHeroFrontlineMovement(deltaMs);
+    this.pruneMornaCorpses();
+    this.updateMornaSummonMovementAndBlocks(deltaMs);
     this.updateHeroFrontlineBlocks();
     this.updateEnemies(deltaMs);
     if (this.phase !== "wave") return;
+    this.updateMornaSummonAttacks(deltaMs);
     this.updateHero(deltaMs);
     this.updateTowers(deltaMs);
     this.updateProjectiles(deltaMs);
@@ -1325,6 +1620,7 @@ export class GameSimulation {
       stunUntilMs: 0,
       barrierUntilMs: 0,
       blockedByHero: false,
+      blockedByMornaSummonId: null,
       heroPassingStrikeUsed: false,
       heroAttackCooldownMs: 0,
       controlResistance: spawn.controlResistance,
@@ -1348,6 +1644,8 @@ export class GameSimulation {
   }
 
   private resetHeroFrontlineForWave(): void {
+    this.mornaCorpses = [];
+    this.clearMornaSummons("wave_end");
     const frontline = this.heroFrontline;
     if (!frontline) return;
     this.releaseAllHeroFrontlineBlocks();
@@ -1366,6 +1664,8 @@ export class GameSimulation {
   }
 
   private resetHeroFrontlineAfterWave(): void {
+    this.mornaCorpses = [];
+    this.clearMornaSummons("wave_end");
     const frontline = this.heroFrontline;
     if (!frontline) return;
     this.releaseAllHeroFrontlineBlocks();
@@ -1417,6 +1717,180 @@ export class GameSimulation {
     this.events.push({ type: "hero_frontline_arrived", x: point.x, y: point.y });
   }
 
+  private updateMornaSummonMovementAndBlocks(deltaMs: number): void {
+    if (this.campaign.hero.id !== "morna" || this.mornaSummons.length === 0) return;
+    for (const summon of [...this.mornaSummons]) {
+      if (summon.expiresAtMs <= this.simulationTimeMs) {
+        this.destroyMornaSummon(summon, "expired");
+        continue;
+      }
+      if (summon.majorHoldUntilMs > 0 && summon.majorHoldUntilMs <= this.simulationTimeMs) {
+        this.destroyMornaSummon(summon, "major_hold");
+        continue;
+      }
+      for (const enemyId of [...summon.blockedEnemyIds]) {
+        const enemy = this.enemiesById.get(enemyId);
+        if (!enemy || enemy.dead || enemy.blockedByMornaSummonId !== summon.id) {
+          summon.blockedEnemyIds.delete(enemyId);
+        }
+      }
+      if (summon.blockedEnemyIds.size === 0) {
+        const stats = getMornaSummonStats(summon.kind, this.campaign.hero.level);
+        summon.progress = Math.max(0, summon.progress - stats.moveSpeed * (deltaMs / 1_000));
+        const point = samplePointAtDistance(this.path, summon.progress, this.pointScratch);
+        summon.x = point.x;
+        summon.y = point.y;
+      }
+
+      const stats = getMornaSummonStats(summon.kind, this.campaign.hero.level);
+      const candidates = this.enemies
+        .filter((enemy) => (
+          !enemy.dead
+          && !enemy.blockedByHero
+          && enemy.blockedByMornaSummonId === null
+          && enemy.barrierUntilMs <= this.simulationTimeMs
+          && Math.abs(enemy.progress - summon.progress) <= HERO_COMBAT_TIMING.captureDistance
+          && (summon.kind === "colossus" || enemy.type !== "boss" && enemy.type !== "titan")
+        ))
+        .sort((left, right) => (
+          Math.abs(left.progress - summon.progress) - Math.abs(right.progress - summon.progress)
+          || right.progress - left.progress
+          || left.id - right.id
+        ));
+      const major = candidates.find((enemy) => enemy.type === "boss" || enemy.type === "titan") ?? null;
+      if (major && summon.kind === "colossus" && summon.blockedEnemyIds.size === 0) {
+        this.bindEnemyToMornaSummon(summon, major);
+        // Engaging a major enemy starts one sacrificial fuse. Killing that
+        // target early must not let the Colossus reset or extend the hold.
+        if (summon.majorHoldUntilMs <= 0) {
+          summon.majorHoldUntilMs = this.simulationTimeMs + MORNA_COLOSSUS_MAJOR_HOLD_MS;
+        }
+        continue;
+      }
+
+      let blockUsed = this.getMornaSummonBlockUsed(summon);
+      for (const enemy of candidates) {
+        if (enemy.type === "boss" || enemy.type === "titan") continue;
+        const cost = getEnemyHeroBlockCost(enemy.type);
+        if (blockUsed + cost > stats.blockCapacity) continue;
+        this.bindEnemyToMornaSummon(summon, enemy);
+        blockUsed += cost;
+      }
+    }
+  }
+
+  private updateMornaSummonAttacks(deltaMs: number): void {
+    for (const summon of [...this.mornaSummons]) {
+      summon.attackCooldownMs -= deltaMs;
+      if (summon.attackCooldownMs > 0) continue;
+      const target = [...summon.blockedEnemyIds]
+        .map((enemyId) => this.enemiesById.get(enemyId))
+        .filter((enemy): enemy is EnemyEntity => Boolean(enemy && !enemy.dead))
+        .sort((left, right) => right.progress - left.progress || left.id - right.id)[0] ?? null;
+      if (!target) {
+        summon.attackCooldownMs = 80;
+        continue;
+      }
+      const stats = getMornaSummonStats(summon.kind, this.campaign.hero.level);
+      this.events.push({
+        type: "morna_summon_attack",
+        summonId: summon.id,
+        kind: summon.kind,
+        targetId: target.id,
+        from: Object.freeze({ x: summon.x, y: summon.y }),
+        to: Object.freeze({ x: target.x, y: target.y }),
+        radius: stats.splashRadius,
+      });
+      const victims = stats.splashRadius > 0
+        ? [...this.enemies].filter((enemy) => squaredDistance(enemy, target) <= stats.splashRadius ** 2)
+        : [target];
+      for (const victim of victims) {
+        if (victim.dead) continue;
+        const falloff = victim.id === target.id ? 1 : 0.65;
+        this.damageEnemyFromMornaSummon(victim, stats.attackDamage * falloff);
+      }
+      summon.attackCooldownMs += stats.attackIntervalMs;
+    }
+  }
+
+  private getMornaSummonBlockUsed(summon: MornaSummonEntity): number {
+    const capacity = getMornaSummonStats(summon.kind, this.campaign.hero.level).blockCapacity;
+    let used = 0;
+    for (const enemyId of summon.blockedEnemyIds) {
+      const enemy = this.enemiesById.get(enemyId);
+      if (!enemy || enemy.dead || enemy.blockedByMornaSummonId !== summon.id) continue;
+      if (enemy.type === "boss" || enemy.type === "titan") return capacity;
+      used += getEffectiveEnemyHeroBlockCost(enemy.type, capacity);
+    }
+    return used;
+  }
+
+  private bindEnemyToMornaSummon(summon: MornaSummonEntity, enemy: EnemyEntity): void {
+    enemy.blockedByMornaSummonId = summon.id;
+    enemy.heroAttackCooldownMs = getEnemyHeroFirstAttackDelayMs(enemy.type);
+    summon.blockedEnemyIds.add(enemy.id);
+  }
+
+  private releaseEnemyFromMornaSummon(enemy: EnemyEntity): void {
+    const summonId = enemy.blockedByMornaSummonId;
+    if (summonId === null) return;
+    this.mornaSummons.find((summon) => summon.id === summonId)?.blockedEnemyIds.delete(enemy.id);
+    enemy.blockedByMornaSummonId = null;
+    enemy.heroAttackCooldownMs = 0;
+  }
+
+  private attackMornaSummonWithEnemy(enemy: EnemyEntity, deltaMs: number): void {
+    if (enemy.blockedByMornaSummonId === null || enemy.stunned) return;
+    const summon = this.mornaSummons.find((candidate) => candidate.id === enemy.blockedByMornaSummonId);
+    if (!summon) {
+      this.releaseEnemyFromMornaSummon(enemy);
+      return;
+    }
+    enemy.heroAttackCooldownMs -= deltaMs;
+    if (enemy.heroAttackCooldownMs > 0) return;
+    const profile = getEnemyHeroAttackProfile(enemy.type);
+    enemy.heroAttackCooldownMs += profile.intervalMs;
+    const damage = Math.max(1, Math.round(profile.damage * getEnemyHeroDamageMultiplier(enemy.frostArmor)));
+    summon.hp = Math.max(0, summon.hp - damage);
+    this.events.push({
+      type: "enemy_attacked_morna_summon",
+      summonId: summon.id,
+      enemyId: enemy.id,
+      x: summon.x,
+      y: summon.y,
+      damage,
+      remainingHp: summon.hp,
+    });
+    if (summon.hp <= 0) this.destroyMornaSummon(summon, "defeated");
+  }
+
+  private destroyMornaSummon(
+    summon: MornaSummonEntity,
+    reason: "defeated" | "expired" | "hero_knockout" | "wave_end" | "run_end" | "major_hold",
+  ): void {
+    if (!this.mornaSummons.includes(summon)) return;
+    for (const enemyId of [...summon.blockedEnemyIds]) {
+      const enemy = this.enemiesById.get(enemyId);
+      if (enemy) this.releaseEnemyFromMornaSummon(enemy);
+    }
+    this.mornaSummons = this.mornaSummons.filter((candidate) => candidate !== summon);
+    this.events.push({
+      type: "morna_summon_destroyed",
+      summonId: summon.id,
+      kind: summon.kind,
+      x: summon.x,
+      y: summon.y,
+      reason,
+    });
+    if (summon.kind !== "colossus" || reason !== "defeated") return;
+    const victims = [...this.enemies].filter((enemy) => squaredDistance(enemy, summon) <= 45 ** 2);
+    for (const enemy of victims) this.damageEnemyFromMornaSummon(enemy, 35);
+  }
+
+  private clearMornaSummons(reason: "hero_knockout" | "wave_end" | "run_end"): void {
+    for (const summon of [...this.mornaSummons]) this.destroyMornaSummon(summon, reason);
+  }
+
   private updateHeroFrontlineBlocks(): void {
     const frontline = this.heroFrontline;
     if (!frontline) return;
@@ -1436,6 +1910,7 @@ export class GameSimulation {
       .filter((enemy) => (
         !enemy.dead
         && !enemy.blockedByHero
+        && enemy.blockedByMornaSummonId === null
         && Math.abs(enemy.progress - frontline.progress) <= HERO_COMBAT_TIMING.captureDistance
       ))
       .sort((left, right) => right.progress - left.progress || left.id - right.id);
@@ -1568,6 +2043,7 @@ export class GameSimulation {
     frontline.status = "knocked_out";
     frontline.knockoutUntilMs = this.simulationTimeMs + HERO_COMBAT_TIMING.knockoutDurationMs;
     this.releaseAllHeroFrontlineBlocks();
+    if (this.campaign.hero.id === "morna") this.clearMornaSummons("hero_knockout");
     this.events.push(
       {
         type: "hero_knocked_out",
@@ -1601,10 +2077,18 @@ export class GameSimulation {
       if (enemy.dead) continue;
       enemy.stunned = enemy.stunUntilMs > this.simulationTimeMs;
       this.captureEnemyWithBarrier(enemy);
-      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs || enemy.blockedByHero;
+      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs
+        || enemy.blockedByHero
+        || enemy.blockedByMornaSummonId !== null;
       this.attackHeroWithEnemy(enemy, deltaMs);
+      this.attackMornaSummonWithEnemy(enemy, deltaMs);
+      // A defeated Colossus can explode while this enemy is attacking it.
+      // Stop processing the removed entity before healing or movement logic runs.
+      if (enemy.dead) continue;
       // A hit can knock the hero out and release every enemy during this same fixed tick.
-      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs || enemy.blockedByHero;
+      enemy.blocked = enemy.barrierUntilMs > this.simulationTimeMs
+        || enemy.blockedByHero
+        || enemy.blockedByMornaSummonId !== null;
 
       if (enemy.healingRadius > 0 && isEnemyAbilityReady(this.simulationTimeMs, enemy.stunUntilMs, enemy.lastHealAtMs)) {
         enemy.lastHealAtMs = this.simulationTimeMs + 2_800;
@@ -2022,6 +2506,7 @@ export class GameSimulation {
     kind: DamageKind,
     showText = true,
     resistancePenetration = 0,
+    source: "other" | "morna_summon" = "other",
   ): void {
     if (enemy.dead) return;
     const damage = calculateDamage(amount, kind, enemy, resistancePenetration);
@@ -2069,7 +2554,11 @@ export class GameSimulation {
         this.summonTitanShades(enemy);
       }
     }
-    if (enemy.hp <= 0) this.killEnemy(enemy);
+    if (enemy.hp <= 0) this.killEnemy(enemy, source);
+  }
+
+  private damageEnemyFromMornaSummon(enemy: EnemyEntity, amount: number): void {
+    this.damageEnemy(enemy, amount, "arcane", true, 0, "morna_summon");
   }
 
   private summonTitanShades(titan: EnemyEntity): void {
@@ -2103,7 +2592,7 @@ export class GameSimulation {
     this.events.push({ type: "haptic", kind: "medium" });
   }
 
-  private killEnemy(enemy: EnemyEntity): void {
+  private killEnemy(enemy: EnemyEntity, source: "other" | "morna_summon" = "other"): void {
     if (enemy.dead) return;
     const transferAwakenedMark = this.isCurrentHeroAwakened()
       && this.campaign.hero.id === "eira"
@@ -2126,6 +2615,7 @@ export class GameSimulation {
       shielded: enemy.maxShield > 0,
       frostArmored: enemy.maxFrostArmor > 0,
     });
+    if (source !== "morna_summon") this.createMornaCorpse(enemy);
     if (transferAwakenedMark) this.refillAwakenedEiraMarks();
     this.recordHeroAbilityRechargeKill();
     if (enemy.type === "boss" || enemy.type === "titan") {
@@ -2135,6 +2625,44 @@ export class GameSimulation {
       this.events.push({ type: "haptic", kind: enemy.elite ? "medium" : "light" });
       this.lastKillHapticAtMs = this.simulationTimeMs;
     }
+  }
+
+  private createMornaCorpse(enemy: EnemyEntity): void {
+    if (this.campaign.hero.id !== "morna" || !this.isHeroFrontlineActive()) return;
+    const rules = getMornaRankRules(this.campaign.hero.level);
+    if (squaredDistance(enemy, this.getHeroPoint()) > rules.harvestRadius ** 2) return;
+    this.pruneMornaCorpses();
+    const kind = getMornaCorpseKind(enemy.type, enemy.elite);
+    const essence = getMornaCorpseEssence(kind);
+    while (
+      this.mornaCorpses.length > 0
+      && this.getMornaCorpseEssenceTotal() + essence > rules.maxCorpseEssence
+    ) {
+      const oldest = [...this.mornaCorpses]
+        .sort((left, right) => left.createdAtMs - right.createdAtMs || left.id - right.id)[0];
+      if (!oldest) break;
+      this.mornaCorpses = this.mornaCorpses.filter((corpse) => corpse !== oldest);
+    }
+    const corpse: MornaCorpseEntity = {
+      id: this.nextMornaCorpseId,
+      kind,
+      essence,
+      progress: enemy.progress,
+      x: enemy.x,
+      y: enemy.y,
+      createdAtMs: this.simulationTimeMs,
+      expiresAtMs: this.simulationTimeMs + rules.corpseLifetimeMs,
+    };
+    this.nextMornaCorpseId += 1;
+    this.mornaCorpses.push(corpse);
+    this.events.push({
+      type: "morna_corpse_created",
+      corpseId: corpse.id,
+      kind,
+      x: corpse.x,
+      y: corpse.y,
+      essence,
+    });
   }
 
   private leakEnemy(enemy: EnemyEntity): void {
@@ -2159,6 +2687,7 @@ export class GameSimulation {
 
   private removeEnemy(enemy: EnemyEntity): void {
     if (enemy.blockedByHero) this.releaseHeroFrontlineBlock(enemy);
+    if (enemy.blockedByMornaSummonId !== null) this.releaseEnemyFromMornaSummon(enemy);
     const index = this.enemies.indexOf(enemy);
     if (index >= 0) this.enemies.splice(index, 1);
     this.enemiesById.delete(enemy.id);
@@ -2219,6 +2748,8 @@ export class GameSimulation {
     this.wavePlan = null;
     this.path = createPathMetrics(this.rules.routePoints);
     this.releaseAllHeroFrontlineBlocks();
+    this.mornaCorpses = [];
+    this.clearMornaSummons("run_end");
     this.northernAvalancheMaxCharges = 0;
     this.northernAvalancheCharges = 0;
     this.waveCheckpoint = null;

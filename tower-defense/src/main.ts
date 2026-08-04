@@ -1,6 +1,7 @@
 import "./styles.css";
 import eiraPortraitUrl from "./assets/heroes/eira-portrait.webp";
 import grakPortraitUrl from "./assets/heroes/grak-portrait.webp";
+import mornaPortraitUrl from "./assets/heroes/morna-portrait.webp";
 import torenPortraitUrl from "./assets/heroes/toren-portrait.webp";
 import { AUDIO_LIBRARY } from "./audio/audioAssets.ts";
 import { createBrowserAudioPort } from "./audio/browserAudioPort.ts";
@@ -50,6 +51,7 @@ import {
   isHeroCombatPreviewSession,
 } from "./game/heroCombatPreview.ts";
 import { HERO_COMBAT_RELEASED, getHeroCombatStats } from "./game/heroCombat.ts";
+import { MORNA_AWAKENING_ESSENCE } from "./game/morna.ts";
 import { isSessionAvailable } from "./game/progression.ts";
 import {
   isClientLevelReleased,
@@ -64,7 +66,7 @@ import {
   recommendWaveTowers,
   type WaveEnemyAggregate,
 } from "./game/gameplayIntel.ts";
-import { getHeroAura, getHeroStats, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
+import { HERO_IDS, getHeroAura, getHeroStats, getHeroUpgradeCost, getHeroUpgradeWaveGate, isHeroId } from "./game/heroes.ts";
 import { createCampaignState } from "./game/state.ts";
 import { getSelectedTowerDetails } from "./game/towerDetails.ts";
 import {
@@ -159,6 +161,8 @@ const audioDirector = new AudioDirector(
 );
 const developmentGrakPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_hero") === "grak";
+const developmentMornaPreview = import.meta.env.DEV
+  && new URL(window.location.href).searchParams.get("preview_hero") === "morna";
 const developmentLeaderboardPreview = import.meta.env.DEV
   && new URL(window.location.href).searchParams.get("preview_leaderboard") === "1";
 const developmentAttemptPurchasePreview = import.meta.env.DEV
@@ -394,6 +398,10 @@ let runtimeLoadFailed = false;
 let reloadRequested = false;
 let playerProfile: PlayerProfileSnapshot | null = launchProfile;
 let selectedHeroId: HeroId = initialCampaign.hero.id;
+type HeroPickerTab = "overview" | "skills" | "progression";
+let previewHeroId: HeroId = selectedHeroId;
+let activeHeroPickerTab: HeroPickerTab = "overview";
+let heroPickerReturnFocus: HTMLElement | null = null;
 audioDirector.setMusicContext(resolveMusicContext(initialCampaign.levelId, "setup", false));
 let runStarted = Boolean(restoredCheckpoint);
 let tutorialState: TutorialState = createTutorialState({
@@ -411,6 +419,7 @@ const HERO_PORTRAIT_URLS: Readonly<Record<HeroId, string>> = Object.freeze({
   eira: eiraPortraitUrl,
   toren: torenPortraitUrl,
   grak: grakPortraitUrl,
+  morna: mornaPortraitUrl,
 });
 
 const elements = {
@@ -519,6 +528,7 @@ const elements = {
   introMissionEyebrow: byId("intro-mission-eyebrow"),
   introTitle: byId("intro-title"),
   introBody: byId("intro-body"),
+  missionDetailsSummary: byId("mission-details-summary"),
   missionMetrics: byId("mission-metrics"),
   missionDifficultyLabel: byId("mission-difficulty-label"),
   missionDifficulty: byId("mission-difficulty"),
@@ -558,13 +568,34 @@ const elements = {
   heroChoiceName: byId("hero-choice-name"),
   heroChoiceRole: byId("hero-choice-role"),
   heroChoiceLock: byId("hero-choice-lock"),
+  heroPickerOverlay: byId("hero-picker-overlay"),
   heroPicker: byId("hero-picker"),
   heroPickerEyebrow: byId("hero-picker-eyebrow"),
   heroPickerTitle: byId("hero-picker-title"),
   heroPickerHint: byId("hero-picker-hint"),
   heroPickerClose: button("hero-picker-close"),
   heroPickerDone: button("hero-picker-done"),
+  heroPickerProgress: byId("hero-picker-progress"),
+  heroPickerSelectionStatus: byId("hero-picker-selection-status"),
   heroPickerDetails: byId("hero-picker-details"),
+  heroShowcaseVisual: document.querySelector<HTMLElement>(".hero-showcase-visual")!,
+  heroShowcasePortrait: document.getElementById("hero-showcase-portrait") as HTMLImageElement,
+  heroShowcaseLock: byId("hero-showcase-lock"),
+  heroShowcaseRank: byId("hero-showcase-rank"),
+  heroShowcaseName: byId("hero-showcase-name"),
+  heroShowcaseRole: byId("hero-showcase-role"),
+  heroShowcaseAbility: byId("hero-showcase-ability"),
+  heroStatGrid: document.querySelector<HTMLElement>(".hero-stat-grid")!,
+  heroStatHpLabel: byId("hero-stat-hp-label"),
+  heroStatAttackLabel: byId("hero-stat-attack-label"),
+  heroStatArmorLabel: byId("hero-stat-armor-label"),
+  heroStatBlockLabel: byId("hero-stat-block-label"),
+  heroStatHp: byId("hero-stat-hp"),
+  heroStatAttack: byId("hero-stat-attack"),
+  heroStatArmor: byId("hero-stat-armor"),
+  heroStatBlock: byId("hero-stat-block"),
+  heroTabs: Array.from(document.querySelectorAll<HTMLButtonElement>("[data-hero-tab]")),
+  heroPanels: Array.from(document.querySelectorAll<HTMLElement>("[data-hero-panel]")),
   heroEiraName: byId("hero-eira-name"),
   heroEiraRole: byId("hero-eira-role"),
   heroEiraAbility: byId("hero-eira-ability"),
@@ -575,6 +606,10 @@ const elements = {
   heroGrakRole: byId("hero-grak-role"),
   heroGrakAbility: byId("hero-grak-ability"),
   heroGrakUnlock: byId("hero-grak-unlock"),
+  heroMornaName: byId("hero-morna-name"),
+  heroMornaRole: byId("hero-morna-role"),
+  heroMornaAbility: byId("hero-morna-ability"),
+  heroMornaUnlock: byId("hero-morna-unlock"),
   introWaves: byId("intro-waves"),
   introTowers: byId("intro-towers"),
   introBosses: byId("intro-bosses"),
@@ -878,9 +913,37 @@ function bindInteractions(): void {
   ));
   elements.heroChoiceButton.addEventListener("click", openHeroPicker);
   elements.heroPickerClose.addEventListener("click", () => closeHeroPicker(true));
-  elements.heroPickerDone.addEventListener("click", () => closeHeroPicker(true));
-  elements.heroOptions.forEach((option) => {
-    option.addEventListener("click", () => chooseHero(option.dataset.heroChoice as HeroId));
+  elements.heroPickerDone.addEventListener("click", confirmHeroChoice);
+  elements.heroOptions.forEach((option, index) => {
+    option.addEventListener("click", () => previewHero(option.dataset.heroChoice));
+    option.addEventListener("keydown", (event) => {
+      let nextIndex = index;
+      if (event.key === "ArrowRight") nextIndex = (index + 1) % elements.heroOptions.length;
+      else if (event.key === "ArrowLeft") nextIndex = (index - 1 + elements.heroOptions.length) % elements.heroOptions.length;
+      else if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = elements.heroOptions.length - 1;
+      else return;
+      event.preventDefault();
+      const nextOption = elements.heroOptions[nextIndex];
+      nextOption.focus();
+      previewHero(nextOption.dataset.heroChoice);
+    });
+  });
+  elements.heroTabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => setHeroPickerTab(tab.dataset.heroTab));
+    tab.addEventListener("keydown", (event) => {
+      if (!elements.heroTabs.length) return;
+      let nextIndex = index;
+      if (event.key === "ArrowRight") nextIndex = (index + 1) % elements.heroTabs.length;
+      else if (event.key === "ArrowLeft") nextIndex = (index - 1 + elements.heroTabs.length) % elements.heroTabs.length;
+      else if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = elements.heroTabs.length - 1;
+      else return;
+      event.preventDefault();
+      const nextTab = elements.heroTabs[nextIndex];
+      setHeroPickerTab(nextTab.dataset.heroTab);
+      nextTab.focus();
+    });
   });
   elements.introStart.addEventListener("click", () => {
     if (launchError === "daily_attempt_limit") {
@@ -932,10 +995,10 @@ function bindInteractions(): void {
     else if (!elements.towerGuideOverlay.hidden) closeTowerGuide();
     else if (!elements.gameMenuRestartConfirm.hidden) hideRestartConfirmation();
     else if (!elements.gameMenuOverlay.hidden) closeGameMenu(true);
+    else if (!elements.heroPickerOverlay.hidden) closeHeroPicker(true);
     else if (attemptPurchaseState !== "offer" && attemptPurchaseState !== "loading" && attemptPurchaseState !== "success") {
       hideAttemptPurchaseConfirmation();
     }
-    else if (!elements.heroPicker.hidden) closeHeroPicker(true);
   });
 }
 
@@ -1406,6 +1469,7 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.countdown.hidden = ui.phase !== "countdown" || ui.paused;
   elements.countdown.textContent = String(Math.max(1, ui.countdown));
   const heroAbility = heroAbilityName(ui.hero.id);
+  const mornaState = ui.hero.id === "morna" ? ui.hero.morna : null;
   const recharging = ui.hero.awakened
     && ui.hero.abilityCharges === 0
     && !ui.hero.bonusChargeEarned;
@@ -1418,7 +1482,12 @@ function renderUi(ui: TowerDefenseUiState): void {
     ? text("hero_frontline_return_short", { seconds: frontlineReturnSeconds })
     : recharging
     ? `${ui.hero.rechargeKills}/${ui.hero.rechargeThreshold}`
-    : heroAbility;
+    : mornaState
+      ? text("hero_morna_essence_short", {
+          current: mornaState.corpseEssence,
+          max: MORNA_AWAKENING_ESSENCE,
+        })
+      : heroAbility;
   elements.pulseButton.disabled = ui.heroTargeting
     || ui.phase !== "wave"
     || !ui.heroAbilityAvailable
@@ -1429,6 +1498,7 @@ function renderUi(ui: TowerDefenseUiState): void {
   elements.pulseButton.classList.toggle("is-eira", ui.hero.id === "eira");
   elements.pulseButton.classList.toggle("is-toren", ui.hero.id === "toren");
   elements.pulseButton.classList.toggle("is-grak", ui.hero.id === "grak");
+  elements.pulseButton.classList.toggle("is-morna", ui.hero.id === "morna");
   elements.pulseCharges.hidden = !ui.hero.awakened;
   elements.pulseCharges.dataset.charges = String(ui.hero.abilityCharges);
   elements.pulseButton.setAttribute("aria-label", frontlineKnockedOut
@@ -1444,9 +1514,22 @@ function renderUi(ui: TowerDefenseUiState): void {
           current: ui.hero.abilityCharges,
           max: ui.hero.maxAbilityCharges,
         })
-      : text(ui.hero.abilityCharges > 0 ? "hero_ability_ready" : "hero_ability_used", {
-          ability: heroAbility,
-        }));
+       : text(ui.hero.abilityCharges > 0 ? "hero_ability_ready" : "hero_ability_used", {
+           ability: heroAbility,
+         }));
+  if (mornaState) {
+    const mornaStatus = text("hero_morna_aura_status", {
+      current: mornaState.corpseEssence,
+      max: MORNA_AWAKENING_ESSENCE,
+      used: mornaState.usedSummonSlots,
+      capacity: mornaState.maxSummons,
+    });
+    const abilityLabel = elements.pulseButton.getAttribute("aria-label") ?? heroAbility;
+    elements.pulseButton.setAttribute("aria-label", `${abilityLabel}. ${mornaStatus}`);
+    elements.pulseButton.title = mornaStatus;
+  } else {
+    elements.pulseButton.title = elements.pulseButton.getAttribute("aria-label") ?? heroAbility;
+  }
   elements.heroTargetPrompt.hidden = !ui.heroTargeting;
   elements.bossHud.hidden = !ui.boss;
   if (ui.boss) {
@@ -2147,6 +2230,7 @@ function showRestoredRunStatus(): void {
 function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
   if (!profile) return;
   const grakWasUnlocked = isHeroAvailable("grak", playerProfile);
+  const mornaWasUnlocked = isHeroAvailable("morna", playerProfile);
   playerProfile = profile;
   elements.appShell.dataset.profileRevision = String(playerProfile.revision);
   elements.appShell.dataset.unlockedLevels = String(playerProfile.unlockedLevelIds.length);
@@ -2154,6 +2238,10 @@ function applyPlayerProfile(profile: PlayerProfileSnapshot | null): void {
   syncHeroChoiceControls();
   if (!grakWasUnlocked && isHeroAvailable("grak", playerProfile)) {
     showToast(text("hero_grak_unlocked"), true);
+    telegram.haptic("heavy");
+  }
+  if (!mornaWasUnlocked && isHeroAvailable("morna", playerProfile)) {
+    showToast(text("hero_morna_unlocked"), true);
     telegram.haptic("heavy");
   }
 }
@@ -3226,10 +3314,22 @@ function applyStaticTranslations(): void {
   elements.heroTargetCancel.textContent = text("hero_ability_target_cancel");
   elements.heroChoiceLabel.textContent = text("hero_choice");
   elements.heroChoiceLock.textContent = text("hero_choice_locked");
+  elements.missionDetailsSummary.textContent = text("mission_details");
   elements.heroPickerEyebrow.textContent = text("hero_picker_eyebrow");
   elements.heroPickerTitle.textContent = text("hero_picker_title");
   elements.heroPickerHint.textContent = text("hero_picker_hint");
-  elements.heroPickerDone.textContent = text("hero_picker_done");
+  elements.heroTabs.forEach((tab) => {
+    const tabId = tab.dataset.heroTab;
+    if (tabId === "overview") tab.textContent = text("hero_tab_overview");
+    else if (tabId === "skills") tab.textContent = text("hero_tab_skills");
+    else if (tabId === "progression") tab.textContent = text("hero_tab_progression");
+  });
+  elements.heroTabs[0]?.parentElement?.setAttribute("aria-label", text("hero_picker_tabs_label"));
+  elements.heroStatGrid.setAttribute("aria-label", text("hero_stats_label"));
+  elements.heroStatHpLabel.textContent = text("hero_stat_hp");
+  elements.heroStatAttackLabel.textContent = text("hero_stat_attack");
+  elements.heroStatArmorLabel.textContent = text("hero_stat_armor");
+  elements.heroStatBlockLabel.textContent = text("hero_stat_block");
   elements.heroEiraName.textContent = heroName("eira");
   elements.heroEiraRole.textContent = heroRole("eira");
   elements.heroEiraAbility.textContent = heroAbilityName("eira");
@@ -3240,9 +3340,13 @@ function applyStaticTranslations(): void {
   elements.heroGrakRole.textContent = heroRole("grak");
   elements.heroGrakAbility.textContent = heroAbilityName("grak");
   elements.heroGrakUnlock.querySelector("small")!.textContent = text("hero_grak_unlock_requirement");
-  elements.heroPickerClose.setAttribute("aria-label", text("close"));
+  elements.heroMornaName.textContent = heroName("morna");
+  elements.heroMornaRole.textContent = heroRole("morna");
+  elements.heroMornaAbility.textContent = heroAbilityName("morna");
+  elements.heroMornaUnlock.querySelector("small")!.textContent = text("hero_morna_unlock_requirement");
+  elements.heroPickerClose.setAttribute("aria-label", text("hero_picker_back"));
   elements.heroDetailsButton.setAttribute("aria-label", text("game_menu_hero_details"));
-  renderHeroDetails(elements.heroPickerDetails, selectedHeroId, 1);
+  renderHeroDetails(elements.heroPickerDetails, previewHeroId, 1);
   if (latestUi) syncGameMenuUi(latestUi);
   syncHeroChoiceControls();
   syncIntroAction();
@@ -3266,25 +3370,41 @@ function applyStaticTranslations(): void {
 
 function openHeroPicker(): void {
   if (elements.heroChoiceButton.disabled || elements.introOverlay.hidden) return;
-  elements.introCard.classList.add("is-hero-picker-open");
-  elements.heroPicker.hidden = false;
+  heroPickerReturnFocus = document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : elements.heroChoiceButton;
+  previewHeroId = selectedHeroId;
+  activeHeroPickerTab = "overview";
+  syncHeroPickerPreview();
+  elements.introOverlay.hidden = true;
+  elements.heroPickerOverlay.hidden = false;
   elements.heroChoiceButton.setAttribute("aria-expanded", "true");
-  elements.heroOptions.find((option) => option.dataset.heroChoice === selectedHeroId)?.focus();
+  requestAnimationFrame(() => {
+    elements.heroOptions.find((option) => option.dataset.heroChoice === previewHeroId)?.focus();
+  });
   telegram.haptic("light");
 }
 
 function closeHeroPicker(restoreFocus: boolean): void {
-  if (elements.heroPicker.hidden) return;
-  elements.heroPicker.hidden = true;
-  elements.introCard.classList.remove("is-hero-picker-open");
+  if (elements.heroPickerOverlay.hidden) return;
+  elements.heroPickerOverlay.hidden = true;
+  elements.introOverlay.hidden = false;
   elements.heroChoiceButton.setAttribute("aria-expanded", "false");
-  if (restoreFocus && !elements.heroChoiceButton.disabled) elements.heroChoiceButton.focus();
+  previewHeroId = selectedHeroId;
+  syncHeroPickerPreview();
+  if (restoreFocus) {
+    const target = heroPickerReturnFocus && document.contains(heroPickerReturnFocus)
+      ? heroPickerReturnFocus
+      : elements.heroChoiceButton;
+    if (!target.matches(":disabled")) target.focus();
+  }
+  heroPickerReturnFocus = null;
 }
 
 function chooseHero(value: string): void {
   if (!isHeroId(value) || heroChoiceIsLocked()) return;
   if (!isHeroAvailable(value, playerProfile)) {
-    showToast(text("hero_grak_locked"));
+    showToast(text(value === "morna" ? "hero_morna_locked" : "hero_grak_locked"));
     telegram.haptic("medium");
     return;
   }
@@ -3301,6 +3421,107 @@ function chooseHero(value: string): void {
   telegram.haptic("light");
 }
 
+function previewHero(value: string | undefined): void {
+  if (!isHeroId(value) || heroChoiceIsLocked()) return;
+  previewHeroId = value;
+  syncHeroPickerPreview();
+  telegram.haptic("light");
+}
+
+function confirmHeroChoice(): void {
+  if (!isHeroAvailable(previewHeroId, playerProfile)) {
+    showToast(text(previewHeroId === "morna" ? "hero_morna_locked" : "hero_grak_locked"));
+    telegram.haptic("medium");
+    return;
+  }
+  chooseHero(previewHeroId);
+  closeHeroPicker(true);
+}
+
+function setHeroPickerTab(value: string | undefined): void {
+  if (value !== "overview" && value !== "skills" && value !== "progression") return;
+  activeHeroPickerTab = value;
+  syncHeroPickerTabs();
+}
+
+function syncHeroPickerTabs(): void {
+  elements.heroTabs.forEach((tab) => {
+    const selected = tab.dataset.heroTab === activeHeroPickerTab;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  elements.heroPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.heroPanel !== activeHeroPickerTab;
+  });
+}
+
+function heroUnlockRequirement(heroId: HeroId): string | null {
+  if (heroId === "grak") return text("hero_grak_unlock_requirement");
+  if (heroId === "morna") return text("hero_morna_unlock_requirement");
+  return null;
+}
+
+function syncHeroPickerPreview(): void {
+  const disabled = heroChoiceIsLocked() || sessionSwitching || gameStarting || Boolean(launchError);
+  const unavailable = !isHeroAvailable(previewHeroId, playerProfile);
+  const heroIndex = HERO_IDS.indexOf(previewHeroId);
+  const combat = getHeroCombatStats(previewHeroId, 1);
+
+  elements.heroOptions.forEach((option) => {
+    const optionHeroId = option.dataset.heroChoice;
+    if (!isHeroId(optionHeroId)) return;
+    const previewed = optionHeroId === previewHeroId;
+    const current = optionHeroId === selectedHeroId;
+    const optionUnavailable = !isHeroAvailable(optionHeroId, playerProfile);
+    option.classList.toggle("is-previewed", previewed);
+    option.classList.toggle("is-current", current);
+    option.classList.toggle("is-locked", optionUnavailable);
+    if (current) option.setAttribute("aria-current", "true");
+    else option.removeAttribute("aria-current");
+    if (disabled) option.setAttribute("aria-disabled", "true");
+    else option.removeAttribute("aria-disabled");
+    option.disabled = disabled;
+    if (optionHeroId === "grak") {
+      if (optionUnavailable) option.setAttribute("aria-describedby", "hero-grak-unlock");
+      else option.removeAttribute("aria-describedby");
+    }
+    if (optionHeroId === "morna") {
+      if (optionUnavailable) option.setAttribute("aria-describedby", "hero-morna-unlock");
+      else option.removeAttribute("aria-describedby");
+    }
+  });
+
+  elements.heroPickerProgress.textContent = `${heroIndex + 1} / ${HERO_IDS.length}`;
+  elements.heroShowcaseVisual.dataset.hero = previewHeroId;
+  elements.heroShowcasePortrait.src = HERO_PORTRAIT_URLS[previewHeroId];
+  elements.heroShowcasePortrait.dataset.heroPortrait = previewHeroId;
+  elements.heroShowcaseRank.textContent = text("hero_detail_rank", { count: 1 });
+  elements.heroShowcaseName.textContent = heroName(previewHeroId);
+  elements.heroShowcaseRole.textContent = heroRole(previewHeroId);
+  elements.heroShowcaseAbility.textContent = heroAbilityName(previewHeroId);
+  elements.heroStatHp.textContent = String(combat.maxHp);
+  elements.heroStatAttack.textContent = String(combat.attackDamage);
+  elements.heroStatArmor.textContent = `${combat.maxHeroicArmor}%`;
+  elements.heroStatBlock.textContent = String(combat.blockCapacity);
+
+  const requirement = heroUnlockRequirement(previewHeroId);
+  const lockCopy = elements.heroShowcaseLock.querySelector<HTMLElement>("span");
+  elements.heroShowcaseLock.hidden = !unavailable;
+  if (lockCopy) lockCopy.textContent = requirement ?? "";
+  elements.heroPickerSelectionStatus.textContent = unavailable
+    ? requirement ?? text("hero_picker_locked_status")
+    : text(previewHeroId === selectedHeroId ? "hero_picker_current_status" : "hero_picker_ready_status", {
+      hero: heroName(previewHeroId),
+    });
+  elements.heroPickerDone.textContent = unavailable
+    ? text("hero_picker_locked_action")
+    : text("hero_picker_select_action", { hero: heroName(previewHeroId) });
+  elements.heroPickerDone.disabled = disabled || unavailable;
+
+  renderHeroDetails(elements.heroPickerDetails, previewHeroId, 1);
+  syncHeroPickerTabs();
+}
+
 function syncHeroChoiceControls(): void {
   if (!restartSelectionPending) {
     const campaign = latestUi?.campaign ?? initialCampaign;
@@ -3314,22 +3535,8 @@ function syncHeroChoiceControls(): void {
   elements.heroChoiceName.textContent = heroName(selectedHeroId);
   elements.heroChoiceRole.textContent = heroRole(selectedHeroId);
   elements.heroChoiceLock.hidden = !locked;
-  elements.heroOptions.forEach((option) => {
-    const optionHeroId = option.dataset.heroChoice;
-    if (!isHeroId(optionHeroId)) return;
-    const selected = optionHeroId === selectedHeroId;
-    const unavailable = !isHeroAvailable(optionHeroId, playerProfile);
-    option.classList.toggle("is-selected", selected);
-    option.classList.toggle("is-locked", unavailable);
-    option.setAttribute("aria-checked", String(selected));
-    option.setAttribute("aria-disabled", String(disabled || unavailable));
-    if (optionHeroId === "grak") {
-      if (unavailable) option.setAttribute("aria-describedby", "hero-grak-unlock");
-      else option.removeAttribute("aria-describedby");
-    }
-    option.disabled = disabled || unavailable;
-  });
-  renderHeroDetails(elements.heroPickerDetails, selectedHeroId, 1);
+  if (elements.heroPickerOverlay.hidden) previewHeroId = selectedHeroId;
+  syncHeroPickerPreview();
   if (disabled) closeHeroPicker(false);
 }
 
@@ -3341,7 +3548,8 @@ function heroChoiceIsLocked(): boolean {
 function isHeroAvailable(heroId: HeroId, profile: PlayerProfileSnapshot | null): boolean {
   return isHeroCombatPreviewSessionEnabled()
     || isHeroUnlocked(heroId, profile)
-    || (heroId === "grak" && developmentGrakPreview);
+    || (heroId === "grak" && developmentGrakPreview)
+    || (heroId === "morna" && developmentMornaPreview);
 }
 
 function syncHeroPortrait(container: HTMLElement, heroId: HeroId): void {

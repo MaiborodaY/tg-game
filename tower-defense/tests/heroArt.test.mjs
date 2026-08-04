@@ -8,7 +8,7 @@ const heroAnchorSource = source.slice(
   source.indexOf("export function createHeroAnchorArt"),
   source.indexOf("export function createHeroEffectPool"),
 );
-const heroIds = ["eira", "toren", "grak"];
+const heroIds = ["eira", "toren", "grak", "morna"];
 
 test("hero art exhaustively maps every approved hero to a profile and builder", () => {
   assert.match(source, /satisfies Readonly<Record<HeroId, HeroVisualProfile>>/);
@@ -32,6 +32,9 @@ test("every hero keeps a distinct readable silhouette and signature weapon", () 
   assert.match(source, /grak:[\s\S]*shadowWidth: 52/);
   assert.match(source, /const axeBlade[\s\S]*axeBlade\.lineTo\(18, 0\)/);
   assert.match(source, /effect\.axeBlade\.setVisible\(heroId === "grak"\)/);
+  assert.match(source, /function drawMorna[\s\S]*boneShoulder[\s\S]*crown[\s\S]*lanternFrame[\s\S]*lanternSoul/);
+  assert.match(source, /morna:[\s\S]*primary: 0x56345f[\s\S]*accent: 0x59e1d2/);
+  assert.match(source, /morna:[\s\S]*shadowWidth: 41/);
 });
 
 test("hero rendering stays code-native and pools bounded combat effects", () => {

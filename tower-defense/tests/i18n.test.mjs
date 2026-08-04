@@ -42,6 +42,8 @@ test("locale normalization supports Telegram language variants and Russian fallb
   assert.equal(tr("ru", "hero_eira_ability"), "Метка охотницы");
   assert.equal(tr("uk", "hero_toren_role"), "Вартовий проти натовпу");
   assert.equal(tr("ru", "hero_grak_ability"), "Знамя ярости");
+  assert.equal(tr("ru", "hero_morna_ability"), "Поднять павших");
+  assert.equal(tr("en", "hero_morna_role"), "Mistress of the Fallen");
   assert.equal(tr("en", "hero_picker_title"), "Choose a hero");
   assert.equal(tr("en", "hero_ability_ready", { ability: "Hunter's Mark" }), "Ability ready: Hunter's Mark");
   assert.equal(tr("ru", "hero_ability_no_target"), "Нет врагов в радиусе героя");
@@ -81,6 +83,8 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "hero_eira_aura_status",
     "hero_toren_aura_status",
     "hero_grak_aura_status",
+    "hero_morna_aura_status",
+    "hero_morna_essence_short",
     "hero_frontline_ready",
     "hero_frontline_deploying",
     "hero_frontline_holding",
@@ -92,6 +96,24 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
     "hero_grak_unlock_requirement",
     "hero_grak_locked",
     "hero_grak_unlocked",
+    "hero_morna_unlock_requirement",
+    "hero_morna_locked",
+    "hero_morna_unlocked",
+    "hero_picker_back",
+    "hero_picker_select_action",
+    "hero_picker_locked_action",
+    "hero_picker_locked_status",
+    "hero_picker_current_status",
+    "hero_picker_ready_status",
+    "hero_picker_tabs_label",
+    "hero_tab_overview",
+    "hero_tab_skills",
+    "hero_tab_progression",
+    "hero_stats_label",
+    "hero_stat_hp",
+    "hero_stat_attack",
+    "hero_stat_armor",
+    "hero_stat_block",
     "hero_ability_ready_charges",
     "hero_ability_recharge",
     "hero_ability_target_road",
@@ -172,6 +194,7 @@ test("the unified menu and restart confirmation are localized in Russian, Ukrain
 
 test("both campaigns and the Northern Pass mechanic have complete localized mission copy", () => {
   const keys = [
+    "mission_details",
     "mission_preview_label",
     "mission_difficulty_label",
     "mission_starting_gold_label",
@@ -254,7 +277,7 @@ test("both campaigns and the Northern Pass mechanic have complete localized miss
 
 test("all heroes explain attack, rank-two passive, and ability in every locale", () => {
   for (const locale of ["ru", "uk", "en"]) {
-    for (const hero of ["eira", "toren", "grak"]) {
+    for (const hero of ["eira", "toren", "grak", "morna"]) {
       const attack = tr(locale, `hero_${hero}_attack_text`);
       const passive = tr(locale, `hero_${hero}_passive_text`);
       const ability = tr(locale, `hero_${hero}_ability_text`);
@@ -268,15 +291,21 @@ test("all heroes explain attack, rank-two passive, and ability in every locale",
   assert.match(tr("ru", "hero_eira_passive_text"), /с ранга 2/ui);
   assert.match(tr("ru", "hero_toren_passive_text"), /с ранга 2/ui);
   assert.match(tr("ru", "hero_grak_passive_text"), /с ранга 2/ui);
+  assert.match(tr("ru", "hero_morna_ability_text"), /с ранга 2/ui);
   assert.match(tr("uk", "hero_eira_passive_text"), /ранг/ui);
   assert.match(tr("uk", "hero_toren_passive_text"), /ранг/ui);
   assert.match(tr("uk", "hero_grak_passive_text"), /ранг/ui);
+  assert.match(tr("uk", "hero_morna_ability_text"), /ранг/ui);
   assert.match(tr("en", "hero_eira_passive_text"), /rank\s*2/i);
   assert.match(tr("en", "hero_toren_passive_text"), /rank\s*2/i);
   assert.match(tr("en", "hero_grak_passive_text"), /rank\s*2/i);
+  assert.match(tr("en", "hero_morna_ability_text"), /rank\s*2/i);
   for (const locale of ["ru", "uk", "en"]) {
     assert.match(tr(locale, "hero_grak_ability_text"), /18%/);
     assert.match(tr(locale, "hero_grak_ability_text"), /15%/);
+    assert.match(tr(locale, "hero_morna_passive_text"), /140\/155\/170/);
+    assert.match(tr(locale, "hero_morna_passive_text"), /8\/9\/10/);
+    assert.match(tr(locale, "hero_morna_ability_text"), /1\/2\/3/);
   }
   assert.notEqual(tr("en", "hero_eira_attack_text"), tr("en", "hero_toren_attack_text"));
   assert.notEqual(tr("en", "hero_eira_ability_text"), tr("en", "hero_toren_ability_text"));
@@ -284,11 +313,14 @@ test("all heroes explain attack, rank-two passive, and ability in every locale",
 
 test("hero awakenings and compact tower roles are explicit in every locale", () => {
   for (const locale of ["ru", "uk", "en"]) {
-    for (const hero of ["eira", "toren", "grak"]) {
+    for (const hero of ["eira", "toren", "grak", "morna"]) {
       const awakening = tr(locale, `hero_${hero}_awakening_text`);
-      assert.match(awakening, /25/);
       assert.ok(awakening.length >= 80, `${locale}.${hero} awakening needs full mechanics`);
     }
+    for (const hero of ["eira", "toren", "grak"]) {
+      assert.match(tr(locale, `hero_${hero}_awakening_text`), /25/);
+    }
+    assert.match(tr(locale, "hero_morna_awakening_text"), /6/);
     for (const tower of ["ranger", "frost", "ember", "storm"]) {
       assert.ok(tr(locale, `tower_role_${tower}`).length >= 18, `${locale}.${tower} role needs actionable copy`);
     }
@@ -298,6 +330,9 @@ test("hero awakenings and compact tower roles are explicit in every locale", () 
   assert.match(tr("ru", "tower_role_frost"), /1–2/u);
   assert.match(tr("ru", "tower_role_ember"), /не складывается/ui);
   assert.match(tr("ru", "tower_role_storm"), /игнорирует защиту/ui);
+  assert.match(tr("ru", "hero_morna_awakening_text"), /Костяного колосса/u);
+  assert.match(tr("uk", "hero_morna_awakening_text"), /Кістяного колоса/u);
+  assert.match(tr("en", "hero_morna_awakening_text"), /Bone Colossus/u);
 });
 
 test("manual locale storage is persistent and fails closed", () => {
