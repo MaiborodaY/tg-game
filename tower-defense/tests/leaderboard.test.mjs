@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   FOREST_ENDLESS_SEASON_ID,
   LEADERBOARD_CACHE_TTL_MS,
+  NORTHERN_CAMPAIGN_SEASON_ID,
   NORTHERN_ENDLESS_SEASON_ID,
   TOWER_DEFENSE_LEADERBOARD_URL,
   createLeaderboardClient,
@@ -76,6 +77,29 @@ test("leaderboard parser keeps rollout compatibility with legacy entries", () =>
   assert.deepEqual(parsed?.entries.map((entry) => entry.heroWins), [[], []]);
   assert.deepEqual(parsed?.me?.heroWins, []);
   assert.equal(Object.isFrozen(parsed?.entries[0].heroWins), true);
+});
+
+test("Northern Pass campaign accepts only its verified server season", () => {
+  const northernBody = rankedCampaignResponseBody({
+    levelId: "northern-pass-v3",
+    seasonId: NORTHERN_CAMPAIGN_SEASON_ID,
+  });
+  const parsed = parseLeaderboardResponse(northernBody, "northern-pass-v3", "campaign");
+
+  assert.equal(parsed?.seasonId, NORTHERN_CAMPAIGN_SEASON_ID);
+  assert.equal(parsed?.entries[0].heroId, "eira");
+  assert.equal(parseLeaderboardResponse({
+    ...northernBody,
+    season_id: "northern-pass-v2",
+  }, "northern-pass-v3", "campaign"), null);
+  assert.equal(parseLeaderboardResponse(
+    responseBody({ levelId: "northern-pass-v3" }),
+    "northern-pass-v3",
+    "campaign",
+  ), null);
+
+  const forestBody = rankedCampaignResponseBody({ levelId: "forest-gate", seasonId: null });
+  assert.equal(parseLeaderboardResponse(forestBody, "forest-gate", "campaign")?.seasonId, null);
 });
 
 test("endless leaderboard is season-bound and identifies each run hero", () => {
@@ -302,6 +326,19 @@ function responseBody({ levelId = "forest-gate", maxWaves = 24 } = {}) {
       },
     ],
     me: { ...me },
+  };
+}
+
+function rankedCampaignResponseBody({ levelId, seasonId }) {
+  const legacy = responseBody({ levelId });
+  return {
+    ...legacy,
+    season_id: seasonId,
+    entries: legacy.entries.map((entry) => ({
+      ...entry,
+      hero_id: entry.is_me ? "eira" : null,
+    })),
+    me: { ...legacy.me, hero_id: "eira" },
   };
 }
 

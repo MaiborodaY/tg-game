@@ -42,6 +42,7 @@ const HERO_WIN_KEYS = Object.freeze(["hero_id", "completions"] as const);
 export const TOWER_DEFENSE_LEADERBOARD_URL =
   "https://work-bot.mr-maybik.workers.dev/api/minigames/td/leaderboard";
 export const LEADERBOARD_CACHE_TTL_MS = 30_000;
+export const NORTHERN_CAMPAIGN_SEASON_ID = "northern-pass-v3";
 export const FOREST_ENDLESS_SEASON_ID = "endless-v1";
 export const NORTHERN_ENDLESS_SEASON_ID = "northern-pass-v3-endless-v1";
 
@@ -223,7 +224,13 @@ export function parseLeaderboardResponse(
     modeId === ENDLESS_MODE_ID
     && (!rankedResponse || seasonId !== endlessLeaderboardSeasonId(levelId))
   ) return null;
-  if (modeId === CAMPAIGN_MODE_ID && rankedResponse && value.season_id !== null) return null;
+  if (modeId === CAMPAIGN_MODE_ID) {
+    const expectedSeasonId = levelId === NORTHERN_PASS_LEVEL_ID
+      ? NORTHERN_CAMPAIGN_SEASON_ID
+      : null;
+    if (rankedResponse && value.season_id !== expectedSeasonId) return null;
+    if (!rankedResponse && expectedSeasonId !== null) return null;
+  }
   if (value.entries.length > MAX_ENTRIES || value.entries.length > totalPlayers) return null;
 
   const entries: LeaderboardEntry[] = [];
