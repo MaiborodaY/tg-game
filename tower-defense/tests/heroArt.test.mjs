@@ -21,6 +21,8 @@ const heroIds = ["eira", "toren", "grak", "morna"];
 const battleAtlasUrls = Object.freeze({
   eira: new URL("../src/assets/heroes/eira-battle-atlas.webp", import.meta.url),
   toren: new URL("../src/assets/heroes/toren-battle-atlas.webp", import.meta.url),
+  grak: new URL("../src/assets/heroes/grak-battle-atlas.webp", import.meta.url),
+  morna: new URL("../src/assets/heroes/morna-battle-atlas.webp", import.meta.url),
 });
 
 test("hero art exhaustively maps every approved hero to a profile and builder", () => {
@@ -64,6 +66,8 @@ test("hero rendering keeps raster art bounded, lazy, and protected by the proced
   }
   assert.equal(HERO_BATTLE_ATLAS_SPECS.eira.displayHeight, 62);
   assert.equal(HERO_BATTLE_ATLAS_SPECS.toren.displayHeight, 64);
+  assert.equal(HERO_BATTLE_ATLAS_SPECS.grak.displayHeight, 72);
+  assert.equal(HERO_BATTLE_ATLAS_SPECS.morna.displayHeight, 70);
 
   assert.match(sceneSource, /preload\(\): void \{[\s\S]*preloadHeroBattleAtlas\(this, this\.simulation\.readView\(\)\.hero\.id\)/);
   assert.match(source, /if \(!isHeroBattleAtlasHeroId\(heroId\)\) return/);
@@ -72,6 +76,8 @@ test("hero rendering keeps raster art bounded, lazy, and protected by the proced
   assert.match(source, /if \(!textureReady\) \{[\s\S]*fallback\(scene, body, weapon\);[\s\S]*return;/);
   assert.match(source, /drawBattleAtlasHero\(scene, body, weapon, "eira", drawEira\)/);
   assert.match(source, /drawBattleAtlasHero\(scene, body, weapon, "toren", drawToren\)/);
+  assert.match(source, /drawBattleAtlasHero\(scene, body, weapon, "grak", drawGrak\)/);
+  assert.match(source, /drawBattleAtlasHero\(scene, body, weapon, "morna", drawMorna\)/);
   assert.equal(source.match(/scene\.add\.sprite\(/g)?.length, 1);
   assert.match(source, /const MAX_ATTACK_EFFECTS = 12/);
   assert.match(source, /const MAX_ABILITY_EFFECTS = 4/);
@@ -128,10 +134,105 @@ test("Toren battle atlas keeps idle stable and uses windup, impact, and recovery
   assert.match(source, /Number\(battleSprite\.sprite\.frame\.name\) !== nextFrame[\s\S]*battleSprite\.sprite\.setFrame\(nextFrame\)/);
 });
 
+test("Grak battle atlas matches the thrown axe with empty-handed follow-through frames", async () => {
+  assert.deepEqual(HERO_BATTLE_FRAMES.grak, {
+    idle: 0,
+    attackThrow: 1,
+    attackFollowThrough: 2,
+    attackRecover: 3,
+  });
+  assert.equal(selectHeroBattleFrame("grak", 0), HERO_BATTLE_FRAMES.grak.idle);
+  assert.equal(selectHeroBattleFrame("grak", 0.27), HERO_BATTLE_FRAMES.grak.attackThrow);
+  assert.equal(selectHeroBattleFrame("grak", 0.28), HERO_BATTLE_FRAMES.grak.attackFollowThrough);
+  assert.equal(selectHeroBattleFrame("grak", 0.71), HERO_BATTLE_FRAMES.grak.attackFollowThrough);
+  assert.equal(selectHeroBattleFrame("grak", 0.72), HERO_BATTLE_FRAMES.grak.attackRecover);
+  assert.equal(selectHeroBattleFrame("grak", 1), HERO_BATTLE_FRAMES.grak.attackRecover);
+  assert.equal(selectHeroBattleFrame("grak", Number.NaN), HERO_BATTLE_FRAMES.grak.idle);
+
+  const spec = HERO_BATTLE_ATLAS_SPECS.grak;
+  const { data, info } = await sharp(readFileSync(battleAtlasUrls.grak))
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const bounds = [];
+  for (let frame = 0; frame < spec.frameCount; frame += 1) {
+    let minX = spec.frameWidth;
+    let minY = spec.frameHeight;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < info.height; y += 1) {
+      for (let x = 0; x < spec.frameWidth; x += 1) {
+        const alpha = data[(y * info.width + frame * spec.frameWidth + x) * 4 + 3];
+        if (alpha <= 32) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    bounds.push({ minX, minY, maxX, maxY });
+  }
+  const bottoms = bounds.map(({ maxY }) => maxY);
+  assert.ok(Math.max(...bottoms) - Math.min(...bottoms) <= 1);
+  assert.ok(bounds.every(({ minX, minY, maxX, maxY }) => (
+    minX > 0 && minY > 0 && maxX < spec.frameWidth - 1 && maxY < spec.frameHeight - 1
+  )));
+  assert.match(source, /duration: heroId === "eira" \? 155 : heroId === "grak" \? 210/);
+  assert.match(source, /rotation: effect\.container\.rotation \+ Math\.PI \* 2\.5/);
+  assert.match(sceneSource, /Math\.max\(1, attackElapsedMs\) \/ 260/);
+});
+
+test("Morna battle atlas keeps idle stable and follows cast, release, and recovery frames", async () => {
+  assert.deepEqual(HERO_BATTLE_FRAMES.morna, {
+    idle: 0,
+    attackCast: 1,
+    attackRelease: 2,
+    attackRecover: 3,
+  });
+  assert.equal(selectHeroBattleFrame("morna", 0), HERO_BATTLE_FRAMES.morna.idle);
+  assert.equal(selectHeroBattleFrame("morna", 0.25), HERO_BATTLE_FRAMES.morna.attackCast);
+  assert.equal(selectHeroBattleFrame("morna", 0.26), HERO_BATTLE_FRAMES.morna.attackRelease);
+  assert.equal(selectHeroBattleFrame("morna", 0.71), HERO_BATTLE_FRAMES.morna.attackRelease);
+  assert.equal(selectHeroBattleFrame("morna", 0.72), HERO_BATTLE_FRAMES.morna.attackRecover);
+  assert.equal(selectHeroBattleFrame("morna", 1), HERO_BATTLE_FRAMES.morna.attackRecover);
+  assert.equal(selectHeroBattleFrame("morna", Number.NaN), HERO_BATTLE_FRAMES.morna.idle);
+
+  const spec = HERO_BATTLE_ATLAS_SPECS.morna;
+  const { data, info } = await sharp(readFileSync(battleAtlasUrls.morna))
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const bounds = [];
+  for (let frame = 0; frame < spec.frameCount; frame += 1) {
+    let minX = spec.frameWidth;
+    let minY = spec.frameHeight;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < info.height; y += 1) {
+      for (let x = 0; x < spec.frameWidth; x += 1) {
+        const alpha = data[(y * info.width + frame * spec.frameWidth + x) * 4 + 3];
+        if (alpha <= 32) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    bounds.push({ minX, minY, maxX, maxY });
+  }
+  const bottoms = bounds.map(({ maxY }) => maxY);
+  assert.ok(Math.max(...bottoms) - Math.min(...bottoms) <= 1);
+  assert.ok(bounds.every(({ minX, minY, maxX, maxY }) => (
+    minX > 0 && minY > 0 && maxX < spec.frameWidth - 1 && maxY < spec.frameHeight - 1
+  )));
+  assert.match(source, /duration: heroId === "eira" \? 155 : heroId === "grak" \? 210 : heroId === "morna" \? 185/);
+});
+
 test("raster heroes face each attack target without changing combat coordinates", () => {
   assert.equal(isHeroBattleAtlasHeroId("eira"), true);
   assert.equal(isHeroBattleAtlasHeroId("toren"), true);
-  assert.equal(isHeroBattleAtlasHeroId("grak"), false);
+  assert.equal(isHeroBattleAtlasHeroId("grak"), true);
+  assert.equal(isHeroBattleAtlasHeroId("morna"), true);
   assert.equal(selectHeroFacing(100, 60, 1), -1);
   assert.equal(selectHeroFacing(100, 140, -1), 1);
   assert.equal(selectHeroFacing(100, 100, -1), -1);

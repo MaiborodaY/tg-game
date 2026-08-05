@@ -1,6 +1,6 @@
 import type { HeroId } from "../game/types.ts";
 
-export const HERO_BATTLE_ATLAS_HERO_IDS = Object.freeze(["eira", "toren"] as const);
+export const HERO_BATTLE_ATLAS_HERO_IDS = Object.freeze(["eira", "toren", "grak", "morna"] as const);
 export type HeroBattleAtlasHeroId = (typeof HERO_BATTLE_ATLAS_HERO_IDS)[number];
 export type HeroFacing = -1 | 1;
 
@@ -36,6 +36,26 @@ export const HERO_BATTLE_ATLAS_SPECS = Object.freeze({
     displayHeight: 64,
     maxBytes: 96 * 1_024,
   }),
+  grak: Object.freeze({
+    textureKey: "hero-grak-battle-atlas",
+    textureWidth: 768,
+    textureHeight: 192,
+    frameWidth: 192,
+    frameHeight: 192,
+    frameCount: 4,
+    displayHeight: 72,
+    maxBytes: 96 * 1_024,
+  }),
+  morna: Object.freeze({
+    textureKey: "hero-morna-battle-atlas",
+    textureWidth: 768,
+    textureHeight: 192,
+    frameWidth: 192,
+    frameHeight: 192,
+    frameCount: 4,
+    displayHeight: 70,
+    maxBytes: 96 * 1_024,
+  }),
 }) satisfies Readonly<Record<HeroBattleAtlasHeroId, HeroBattleAtlasSpec>>;
 
 export const HERO_BATTLE_FRAMES = Object.freeze({
@@ -50,10 +70,22 @@ export const HERO_BATTLE_FRAMES = Object.freeze({
     attackImpact: 2,
     attackRecover: 3,
   }),
+  grak: Object.freeze({
+    idle: 0,
+    attackThrow: 1,
+    attackFollowThrough: 2,
+    attackRecover: 3,
+  }),
+  morna: Object.freeze({
+    idle: 0,
+    attackCast: 1,
+    attackRelease: 2,
+    attackRecover: 3,
+  }),
 });
 
 export function isHeroBattleAtlasHeroId(heroId: HeroId): heroId is HeroBattleAtlasHeroId {
-  return heroId === "eira" || heroId === "toren";
+  return heroId === "eira" || heroId === "toren" || heroId === "grak" || heroId === "morna";
 }
 
 export function selectHeroFacing(fromX: number, targetX: number, current: HeroFacing): HeroFacing {
@@ -71,7 +103,17 @@ export function selectHeroBattleFrame(heroId: HeroBattleAtlasHeroId, attackProgr
       ? HERO_BATTLE_FRAMES.eira.attackDraw
       : HERO_BATTLE_FRAMES.eira.attackRelease;
   }
-  if (safeAttack < 0.3) return HERO_BATTLE_FRAMES.toren.attackWindup;
-  if (safeAttack < 0.62) return HERO_BATTLE_FRAMES.toren.attackImpact;
-  return HERO_BATTLE_FRAMES.toren.attackRecover;
+  if (heroId === "toren") {
+    if (safeAttack < 0.3) return HERO_BATTLE_FRAMES.toren.attackWindup;
+    if (safeAttack < 0.62) return HERO_BATTLE_FRAMES.toren.attackImpact;
+    return HERO_BATTLE_FRAMES.toren.attackRecover;
+  }
+  if (heroId === "grak") {
+    if (safeAttack < 0.28) return HERO_BATTLE_FRAMES.grak.attackThrow;
+    if (safeAttack < 0.72) return HERO_BATTLE_FRAMES.grak.attackFollowThrough;
+    return HERO_BATTLE_FRAMES.grak.attackRecover;
+  }
+  if (safeAttack < 0.26) return HERO_BATTLE_FRAMES.morna.attackCast;
+  if (safeAttack < 0.72) return HERO_BATTLE_FRAMES.morna.attackRelease;
+  return HERO_BATTLE_FRAMES.morna.attackRecover;
 }

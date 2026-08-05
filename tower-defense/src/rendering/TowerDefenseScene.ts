@@ -680,7 +680,9 @@ export class TowerDefenseScene extends Phaser.Scene {
     }
 
     const attackElapsedMs = view.simulationTimeMs - this.lastHeroAttackAtMs;
-    const attackProgress = attackElapsedMs >= 0 && attackElapsedMs <= 260 ? attackElapsedMs / 260 : 0;
+    const attackProgress = attackElapsedMs >= 0 && attackElapsedMs <= 260
+      ? Math.max(1, attackElapsedMs) / 260
+      : 0;
     moveHeroArt(this.heroView.art, hero);
     this.heroView.art.container.setRotation(0);
     this.heroView.hitZone.setPosition(hero.x, hero.y - (hero.id === "grak" ? 7 : 0));

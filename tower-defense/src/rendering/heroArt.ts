@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import eiraBattleAtlasUrl from "../assets/heroes/eira-battle-atlas.webp";
+import grakBattleAtlasUrl from "../assets/heroes/grak-battle-atlas.webp";
+import mornaBattleAtlasUrl from "../assets/heroes/morna-battle-atlas.webp";
 import torenBattleAtlasUrl from "../assets/heroes/toren-battle-atlas.webp";
 import type { HeroId, Point } from "../game/types.ts";
 import {
@@ -154,6 +156,8 @@ const heroBattleSprites = new WeakMap<Phaser.GameObjects.Container, Readonly<{
 const HERO_BATTLE_ATLAS_URLS = Object.freeze({
   eira: eiraBattleAtlasUrl,
   toren: torenBattleAtlasUrl,
+  grak: grakBattleAtlasUrl,
+  morna: mornaBattleAtlasUrl,
 }) satisfies Readonly<Record<HeroBattleAtlasHeroId, string>>;
 
 type HeroAnchorPalette = Readonly<{
@@ -200,8 +204,8 @@ const HERO_ANCHOR_PALETTES = Object.freeze({
 const HERO_BUILDERS = {
   eira: drawEiraBattle,
   toren: drawTorenBattle,
-  grak: drawGrak,
-  morna: drawMorna,
+  grak: drawGrakBattle,
+  morna: drawMornaBattle,
 } satisfies Readonly<Record<HeroId, HeroBuilder>>;
 
 export function preloadHeroBattleAtlas(scene: Phaser.Scene, heroId: HeroId): void {
@@ -677,6 +681,22 @@ function drawTorenBattle(
   weapon: Phaser.GameObjects.Container,
 ): void {
   drawBattleAtlasHero(scene, body, weapon, "toren", drawToren);
+}
+
+function drawGrakBattle(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+): void {
+  drawBattleAtlasHero(scene, body, weapon, "grak", drawGrak);
+}
+
+function drawMornaBattle(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+): void {
+  drawBattleAtlasHero(scene, body, weapon, "morna", drawMorna);
 }
 
 function drawBattleAtlasHero(
