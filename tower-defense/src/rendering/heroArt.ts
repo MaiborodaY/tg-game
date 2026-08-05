@@ -1,12 +1,15 @@
 import Phaser from "phaser";
 import eiraBattleAtlasUrl from "../assets/heroes/eira-battle-atlas.webp";
+import torenBattleAtlasUrl from "../assets/heroes/toren-battle-atlas.webp";
 import type { HeroId, Point } from "../game/types.ts";
 import {
-  EIRA_BATTLE_ATLAS_SPEC,
-  EIRA_BATTLE_FRAMES,
-  selectEiraBattleFrame,
-  type EiraFacing,
-} from "./eiraBattleAtlas.ts";
+  HERO_BATTLE_ATLAS_SPECS,
+  HERO_BATTLE_FRAMES,
+  isHeroBattleAtlasHeroId,
+  selectHeroBattleFrame,
+  type HeroBattleAtlasHeroId,
+  type HeroFacing,
+} from "./heroBattleAtlas.ts";
 
 export type HeroVisualProfile = Readonly<{
   primary: number;
@@ -144,7 +147,14 @@ type HeroBannerArt = Readonly<{
 const MAX_ATTACK_EFFECTS = 12;
 const MAX_ABILITY_EFFECTS = 4;
 const heroRigs = new WeakMap<Phaser.GameObjects.Container, HeroRig>();
-const eiraBattleSprites = new WeakMap<Phaser.GameObjects.Container, Phaser.GameObjects.Sprite>();
+const heroBattleSprites = new WeakMap<Phaser.GameObjects.Container, Readonly<{
+  heroId: HeroBattleAtlasHeroId;
+  sprite: Phaser.GameObjects.Sprite;
+}>>();
+const HERO_BATTLE_ATLAS_URLS = Object.freeze({
+  eira: eiraBattleAtlasUrl,
+  toren: torenBattleAtlasUrl,
+}) satisfies Readonly<Record<HeroBattleAtlasHeroId, string>>;
 
 type HeroAnchorPalette = Readonly<{
   platformFill: number;
@@ -189,18 +199,20 @@ const HERO_ANCHOR_PALETTES = Object.freeze({
 
 const HERO_BUILDERS = {
   eira: drawEiraBattle,
-  toren: drawToren,
+  toren: drawTorenBattle,
   grak: drawGrak,
   morna: drawMorna,
 } satisfies Readonly<Record<HeroId, HeroBuilder>>;
 
-export function preloadEiraBattleAtlas(scene: Phaser.Scene): void {
-  if (scene.textures.exists(EIRA_BATTLE_ATLAS_SPEC.textureKey)) return;
-  scene.load.spritesheet(EIRA_BATTLE_ATLAS_SPEC.textureKey, eiraBattleAtlasUrl, {
-    frameWidth: EIRA_BATTLE_ATLAS_SPEC.frameWidth,
-    frameHeight: EIRA_BATTLE_ATLAS_SPEC.frameHeight,
+export function preloadHeroBattleAtlas(scene: Phaser.Scene, heroId: HeroId): void {
+  if (!isHeroBattleAtlasHeroId(heroId)) return;
+  const spec = HERO_BATTLE_ATLAS_SPECS[heroId];
+  if (scene.textures.exists(spec.textureKey)) return;
+  scene.load.spritesheet(spec.textureKey, HERO_BATTLE_ATLAS_URLS[heroId], {
+    frameWidth: spec.frameWidth,
+    frameHeight: spec.frameHeight,
     startFrame: 0,
-    endFrame: EIRA_BATTLE_ATLAS_SPEC.frameCount - 1,
+    endFrame: spec.frameCount - 1,
   });
 }
 
@@ -278,7 +290,7 @@ export function updateHeroArtPose(
   elapsedMs: number,
   moving: boolean,
   attackProgress = 0,
-  facing: EiraFacing = 1,
+  facing: HeroFacing = 1,
 ): void {
   const rig = heroRigs.get(art.container);
   if (!rig || rig.heroId !== heroId) return;
@@ -291,7 +303,7 @@ export function updateHeroArtPose(
 
   art.body.y = rig.bodyHomeY - Math.abs(stride) * visual.bob;
   art.body.rotation = stride * (heroId === "eira" ? 0.025 : heroId === "grak" ? 0.018 : heroId === "morna" ? 0.022 : 0.014);
-  const facingScale = heroId === "eira" ? facing : 1;
+  const facingScale = isHeroBattleAtlasHeroId(heroId) ? facing : 1;
   art.body.scaleX = facingScale * (1 + Math.sin(phase * 0.42) * 0.012);
   art.body.scaleY = 1 - Math.sin(phase * 0.42) * 0.009;
   art.weapon.y = art.body.y;
@@ -299,10 +311,10 @@ export function updateHeroArtPose(
   const weaponStretch = heroId === "eira" ? 0.03 : heroId === "grak" ? 0.12 : heroId === "morna" ? 0.05 : 0.08;
   art.weapon.rotation = rig.weaponHomeRotation + weaponSwing * swing;
   art.weapon.scaleX = facingScale * (1 + swing * weaponStretch);
-  const eiraSprite = eiraBattleSprites.get(art.body);
-  if (eiraSprite) {
-    const nextFrame = selectEiraBattleFrame(safeTime, attack);
-    if (Number(eiraSprite.frame.name) !== nextFrame) eiraSprite.setFrame(nextFrame);
+  const battleSprite = heroBattleSprites.get(art.body);
+  if (battleSprite && battleSprite.heroId === heroId) {
+    const nextFrame = selectHeroBattleFrame(battleSprite.heroId, attack);
+    if (Number(battleSprite.sprite.frame.name) !== nextFrame) battleSprite.sprite.setFrame(nextFrame);
   }
 }
 
@@ -656,18 +668,37 @@ function drawEiraBattle(
   body: Phaser.GameObjects.Container,
   weapon: Phaser.GameObjects.Container,
 ): void {
-  const textureReady = scene.textures.exists(EIRA_BATTLE_ATLAS_SPEC.textureKey)
-    && scene.textures.get(EIRA_BATTLE_ATLAS_SPEC.textureKey).frameTotal >= EIRA_BATTLE_ATLAS_SPEC.frameCount + 1;
+  drawBattleAtlasHero(scene, body, weapon, "eira", drawEira);
+}
+
+function drawTorenBattle(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+): void {
+  drawBattleAtlasHero(scene, body, weapon, "toren", drawToren);
+}
+
+function drawBattleAtlasHero(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+  heroId: HeroBattleAtlasHeroId,
+  fallback: HeroBuilder,
+): void {
+  const spec = HERO_BATTLE_ATLAS_SPECS[heroId];
+  const textureReady = scene.textures.exists(spec.textureKey)
+    && scene.textures.get(spec.textureKey).frameTotal >= spec.frameCount + 1;
   if (!textureReady) {
-    drawEira(scene, body, weapon);
+    fallback(scene, body, weapon);
     return;
   }
 
-  const scale = EIRA_BATTLE_ATLAS_SPEC.displayHeight / EIRA_BATTLE_ATLAS_SPEC.frameHeight;
-  const sprite = scene.add.sprite(0, 20, EIRA_BATTLE_ATLAS_SPEC.textureKey, EIRA_BATTLE_FRAMES.idleA)
+  const scale = spec.displayHeight / spec.frameHeight;
+  const sprite = scene.add.sprite(0, 20, spec.textureKey, HERO_BATTLE_FRAMES[heroId].idle)
     .setOrigin(0.5, 1)
-    .setDisplaySize(EIRA_BATTLE_ATLAS_SPEC.frameWidth * scale, EIRA_BATTLE_ATLAS_SPEC.displayHeight);
-  eiraBattleSprites.set(body, sprite);
+    .setDisplaySize(spec.frameWidth * scale, spec.displayHeight);
+  heroBattleSprites.set(body, Object.freeze({ heroId, sprite }));
   body.add(sprite);
 }
 

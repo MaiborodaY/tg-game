@@ -79,7 +79,7 @@ import {
   createHeroArt,
   createHeroEffectPool,
   moveHeroArt,
-  preloadEiraBattleAtlas,
+  preloadHeroBattleAtlas,
   setHeroAbilityCharge,
   setHeroAnchorState,
   setHeroArtSelected,
@@ -89,7 +89,11 @@ import {
   type HeroArt,
   type HeroEffectPool,
 } from "./heroArt.ts";
-import { selectEiraFacing, type EiraFacing } from "./eiraBattleAtlas.ts";
+import {
+  isHeroBattleAtlasHeroId,
+  selectHeroFacing,
+  type HeroFacing,
+} from "./heroBattleAtlas.ts";
 import {
   createMornaBattlefieldArt,
   destroyMornaBattlefieldArt,
@@ -247,7 +251,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private heroEffects?: HeroEffectPool;
   private mornaBattlefieldArt?: MornaBattlefieldArt;
   private lastHeroAttackAtMs = -1_000;
-  private eiraFacing: EiraFacing = 1;
+  private heroFacing: HeroFacing = 1;
   private lastHeroPassivePower = Number.NaN;
   private rangePreview?: Phaser.GameObjects.Arc;
   private heroAuraPreview?: Phaser.GameObjects.Arc;
@@ -283,7 +287,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (this.simulation.readView().hero.id === "eira") preloadEiraBattleAtlas(this);
+    preloadHeroBattleAtlas(this, this.simulation.readView().hero.id);
   }
 
   create(): void {
@@ -687,7 +691,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       view.simulationTimeMs,
       hero.frontline?.status === "deploying",
       attackProgress,
-      this.eiraFacing,
+      this.heroFacing,
     );
     setHeroFrontlineState(this.heroView.art, hero.frontline);
     const passivePower = hero.frontline?.passivePower ?? 1;
@@ -1164,7 +1168,9 @@ export class TowerDefenseScene extends Phaser.Scene {
         ? { x: this.heroView.art.container.x, y: this.heroView.art.container.y }
         : event.from;
       const target = this.getEnemyRenderPoint(event.targetId, event.to);
-      if (event.heroId === "eira") this.eiraFacing = selectEiraFacing(from.x, target.x, this.eiraFacing);
+      if (isHeroBattleAtlasHeroId(event.heroId)) {
+        this.heroFacing = selectHeroFacing(from.x, target.x, this.heroFacing);
+      }
       this.heroEffects?.playAttack(event.heroId, from, target);
       return;
     }

@@ -3,11 +3,13 @@ import { readFileSync, statSync } from "node:fs";
 import test from "node:test";
 import sharp from "sharp";
 import {
-  EIRA_BATTLE_ATLAS_SPEC,
-  EIRA_BATTLE_FRAMES,
-  selectEiraBattleFrame,
-  selectEiraFacing,
-} from "../src/rendering/eiraBattleAtlas.ts";
+  HERO_BATTLE_ATLAS_HERO_IDS,
+  HERO_BATTLE_ATLAS_SPECS,
+  HERO_BATTLE_FRAMES,
+  isHeroBattleAtlasHeroId,
+  selectHeroBattleFrame,
+  selectHeroFacing,
+} from "../src/rendering/heroBattleAtlas.ts";
 
 const source = readFileSync(new URL("../src/rendering/heroArt.ts", import.meta.url), "utf8");
 const sceneSource = readFileSync(new URL("../src/rendering/TowerDefenseScene.ts", import.meta.url), "utf8");
@@ -16,6 +18,10 @@ const heroAnchorSource = source.slice(
   source.indexOf("export function createHeroEffectPool"),
 );
 const heroIds = ["eira", "toren", "grak", "morna"];
+const battleAtlasUrls = Object.freeze({
+  eira: new URL("../src/assets/heroes/eira-battle-atlas.webp", import.meta.url),
+  toren: new URL("../src/assets/heroes/toren-battle-atlas.webp", import.meta.url),
+});
 
 test("hero art exhaustively maps every approved hero to a profile and builder", () => {
   assert.match(source, /satisfies Readonly<Record<HeroId, HeroVisualProfile>>/);
@@ -45,21 +51,27 @@ test("every hero keeps a distinct readable silhouette and signature weapon", () 
 });
 
 test("hero rendering keeps raster art bounded, lazy, and protected by the procedural fallback", async () => {
-  const atlasUrl = new URL("../src/assets/heroes/eira-battle-atlas.webp", import.meta.url);
-  const metadata = await sharp(readFileSync(atlasUrl)).metadata();
+  for (const heroId of HERO_BATTLE_ATLAS_HERO_IDS) {
+    const spec = HERO_BATTLE_ATLAS_SPECS[heroId];
+    const atlasUrl = battleAtlasUrls[heroId];
+    const metadata = await sharp(readFileSync(atlasUrl)).metadata();
+    assert.equal(metadata.width, spec.textureWidth);
+    assert.equal(metadata.height, spec.textureHeight);
+    assert.equal(metadata.hasAlpha, true);
+    assert.ok(statSync(atlasUrl).size <= spec.maxBytes);
+    assert.equal(spec.frameWidth * spec.frameCount, metadata.width);
+    assert.equal(spec.frameHeight, metadata.height);
+  }
+  assert.equal(HERO_BATTLE_ATLAS_SPECS.eira.displayHeight, 62);
+  assert.equal(HERO_BATTLE_ATLAS_SPECS.toren.displayHeight, 64);
 
-  assert.equal(metadata.width, EIRA_BATTLE_ATLAS_SPEC.textureWidth);
-  assert.equal(metadata.height, EIRA_BATTLE_ATLAS_SPEC.textureHeight);
-  assert.equal(metadata.hasAlpha, true);
-  assert.ok(statSync(atlasUrl).size <= EIRA_BATTLE_ATLAS_SPEC.maxBytes);
-  assert.equal(EIRA_BATTLE_ATLAS_SPEC.frameWidth * EIRA_BATTLE_ATLAS_SPEC.frameCount, metadata.width);
-  assert.equal(EIRA_BATTLE_ATLAS_SPEC.frameHeight, metadata.height);
-  assert.equal(EIRA_BATTLE_ATLAS_SPEC.displayHeight, 62);
-
-  assert.match(sceneSource, /preload\(\): void \{[\s\S]*hero\.id === "eira"[\s\S]*preloadEiraBattleAtlas\(this\)/);
-  assert.match(source, /scene\.load\.spritesheet\(EIRA_BATTLE_ATLAS_SPEC\.textureKey, eiraBattleAtlasUrl/);
-  assert.match(source, /scene\.textures\.exists\(EIRA_BATTLE_ATLAS_SPEC\.textureKey\)/);
-  assert.match(source, /if \(!textureReady\) \{[\s\S]*drawEira\(scene, body, weapon\);[\s\S]*return;/);
+  assert.match(sceneSource, /preload\(\): void \{[\s\S]*preloadHeroBattleAtlas\(this, this\.simulation\.readView\(\)\.hero\.id\)/);
+  assert.match(source, /if \(!isHeroBattleAtlasHeroId\(heroId\)\) return/);
+  assert.match(source, /scene\.load\.spritesheet\(spec\.textureKey, HERO_BATTLE_ATLAS_URLS\[heroId\]/);
+  assert.match(source, /scene\.textures\.exists\(spec\.textureKey\)/);
+  assert.match(source, /if \(!textureReady\) \{[\s\S]*fallback\(scene, body, weapon\);[\s\S]*return;/);
+  assert.match(source, /drawBattleAtlasHero\(scene, body, weapon, "eira", drawEira\)/);
+  assert.match(source, /drawBattleAtlasHero\(scene, body, weapon, "toren", drawToren\)/);
   assert.equal(source.match(/scene\.add\.sprite\(/g)?.length, 1);
   assert.match(source, /const MAX_ATTACK_EFFECTS = 12/);
   assert.match(source, /const MAX_ABILITY_EFFECTS = 4/);
@@ -68,34 +80,66 @@ test("hero rendering keeps raster art bounded, lazy, and protected by the proced
   assert.match(source, /onComplete: \(\) => releaseAbilityEffect\(effect\)/);
 });
 
-test("Eira battle atlas keeps idle stable and maps attacks to fixed frames", () => {
-  assert.deepEqual(EIRA_BATTLE_FRAMES, {
-    idleA: 0,
-    idleB: 1,
+test("Eira battle atlas keeps one stable idle and two fixed attack frames", () => {
+  assert.deepEqual(HERO_BATTLE_FRAMES.eira, {
+    idle: 0,
     attackDraw: 2,
     attackRelease: 3,
   });
-  assert.equal(selectEiraBattleFrame(0, 0), EIRA_BATTLE_FRAMES.idleA);
-  assert.equal(selectEiraBattleFrame(599, 0), EIRA_BATTLE_FRAMES.idleA);
-  assert.equal(selectEiraBattleFrame(600, 0), EIRA_BATTLE_FRAMES.idleA);
-  assert.equal(selectEiraBattleFrame(1_200, 0), EIRA_BATTLE_FRAMES.idleA);
-  assert.equal(selectEiraBattleFrame(60_000, 0), EIRA_BATTLE_FRAMES.idleA);
-  assert.equal(selectEiraBattleFrame(300, 0.25), EIRA_BATTLE_FRAMES.attackDraw);
-  assert.equal(selectEiraBattleFrame(300, 0.75), EIRA_BATTLE_FRAMES.attackRelease);
-  assert.equal(selectEiraBattleFrame(Number.NaN, Number.NaN), EIRA_BATTLE_FRAMES.idleA);
-  assert.match(source, /const nextFrame = selectEiraBattleFrame\(safeTime, attack\)/);
-  assert.match(source, /Number\(eiraSprite\.frame\.name\) !== nextFrame[\s\S]*eiraSprite\.setFrame\(nextFrame\)/);
+  assert.equal(selectHeroBattleFrame("eira", 0), HERO_BATTLE_FRAMES.eira.idle);
+  assert.equal(selectHeroBattleFrame("eira", 0.25), HERO_BATTLE_FRAMES.eira.attackDraw);
+  assert.equal(selectHeroBattleFrame("eira", 0.75), HERO_BATTLE_FRAMES.eira.attackRelease);
+  assert.equal(selectHeroBattleFrame("eira", Number.NaN), HERO_BATTLE_FRAMES.eira.idle);
 });
 
-test("Eira faces each attack target without changing combat coordinates", () => {
-  assert.equal(selectEiraFacing(100, 60, 1), -1);
-  assert.equal(selectEiraFacing(100, 140, -1), 1);
-  assert.equal(selectEiraFacing(100, 100, -1), -1);
-  assert.equal(selectEiraFacing(Number.NaN, 140, -1), -1);
-  assert.match(sceneSource, /private eiraFacing: EiraFacing = 1/);
-  assert.match(sceneSource, /event\.heroId === "eira"[\s\S]*selectEiraFacing\(from\.x, target\.x, this\.eiraFacing\)/);
-  assert.match(sceneSource, /updateHeroArtPose\([\s\S]*attackProgress,[\s\S]*this\.eiraFacing/);
-  assert.match(source, /const facingScale = heroId === "eira" \? facing : 1/);
+test("Toren battle atlas keeps idle stable and uses windup, impact, and recovery frames", async () => {
+  assert.deepEqual(HERO_BATTLE_FRAMES.toren, {
+    idle: 0,
+    attackWindup: 1,
+    attackImpact: 2,
+    attackRecover: 3,
+  });
+  assert.equal(selectHeroBattleFrame("toren", 0), HERO_BATTLE_FRAMES.toren.idle);
+  assert.equal(selectHeroBattleFrame("toren", 0.29), HERO_BATTLE_FRAMES.toren.attackWindup);
+  assert.equal(selectHeroBattleFrame("toren", 0.3), HERO_BATTLE_FRAMES.toren.attackImpact);
+  assert.equal(selectHeroBattleFrame("toren", 0.61), HERO_BATTLE_FRAMES.toren.attackImpact);
+  assert.equal(selectHeroBattleFrame("toren", 0.62), HERO_BATTLE_FRAMES.toren.attackRecover);
+  assert.equal(selectHeroBattleFrame("toren", 1), HERO_BATTLE_FRAMES.toren.attackRecover);
+  assert.equal(selectHeroBattleFrame("toren", Number.NaN), HERO_BATTLE_FRAMES.toren.idle);
+
+  const spec = HERO_BATTLE_ATLAS_SPECS.toren;
+  const { data, info } = await sharp(readFileSync(battleAtlasUrls.toren))
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const bottoms = [];
+  for (let frame = 0; frame < spec.frameCount; frame += 1) {
+    let bottom = -1;
+    for (let y = 0; y < info.height; y += 1) {
+      for (let x = 0; x < spec.frameWidth; x += 1) {
+        const alpha = data[(y * info.width + frame * spec.frameWidth + x) * 4 + 3];
+        if (alpha > 32) bottom = Math.max(bottom, y);
+      }
+    }
+    bottoms.push(bottom);
+  }
+  assert.ok(Math.max(...bottoms) - Math.min(...bottoms) <= 1);
+  assert.match(source, /const nextFrame = selectHeroBattleFrame\(battleSprite\.heroId, attack\)/);
+  assert.match(source, /Number\(battleSprite\.sprite\.frame\.name\) !== nextFrame[\s\S]*battleSprite\.sprite\.setFrame\(nextFrame\)/);
+});
+
+test("raster heroes face each attack target without changing combat coordinates", () => {
+  assert.equal(isHeroBattleAtlasHeroId("eira"), true);
+  assert.equal(isHeroBattleAtlasHeroId("toren"), true);
+  assert.equal(isHeroBattleAtlasHeroId("grak"), false);
+  assert.equal(selectHeroFacing(100, 60, 1), -1);
+  assert.equal(selectHeroFacing(100, 140, -1), 1);
+  assert.equal(selectHeroFacing(100, 100, -1), -1);
+  assert.equal(selectHeroFacing(Number.NaN, 140, -1), -1);
+  assert.match(sceneSource, /private heroFacing: HeroFacing = 1/);
+  assert.match(sceneSource, /isHeroBattleAtlasHeroId\(event\.heroId\)[\s\S]*selectHeroFacing\(from\.x, target\.x, this\.heroFacing\)/);
+  assert.match(sceneSource, /updateHeroArtPose\([\s\S]*attackProgress,[\s\S]*this\.heroFacing/);
+  assert.match(source, /const facingScale = isHeroBattleAtlasHeroId\(heroId\) \? facing : 1/);
   assert.match(source, /art\.body\.scaleX = facingScale \* \(1 \+/);
   assert.match(source, /art\.weapon\.scaleX = facingScale \* \(1 \+/);
 });
