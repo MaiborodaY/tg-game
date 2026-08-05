@@ -79,6 +79,7 @@ import {
   createHeroArt,
   createHeroEffectPool,
   moveHeroArt,
+  preloadEiraBattleAtlas,
   setHeroAbilityCharge,
   setHeroAnchorState,
   setHeroArtSelected,
@@ -88,6 +89,7 @@ import {
   type HeroArt,
   type HeroEffectPool,
 } from "./heroArt.ts";
+import { selectEiraFacing, type EiraFacing } from "./eiraBattleAtlas.ts";
 import {
   createMornaBattlefieldArt,
   destroyMornaBattlefieldArt,
@@ -245,6 +247,7 @@ export class TowerDefenseScene extends Phaser.Scene {
   private heroEffects?: HeroEffectPool;
   private mornaBattlefieldArt?: MornaBattlefieldArt;
   private lastHeroAttackAtMs = -1_000;
+  private eiraFacing: EiraFacing = 1;
   private lastHeroPassivePower = Number.NaN;
   private rangePreview?: Phaser.GameObjects.Arc;
   private heroAuraPreview?: Phaser.GameObjects.Arc;
@@ -277,6 +280,10 @@ export class TowerDefenseScene extends Phaser.Scene {
     this.selectedBuildType = this.simulation.readView().phase === "setup"
       ? initialBuildType === undefined ? "ranger" : initialBuildType
       : null;
+  }
+
+  preload(): void {
+    if (this.simulation.readView().hero.id === "eira") preloadEiraBattleAtlas(this);
   }
 
   create(): void {
@@ -680,6 +687,7 @@ export class TowerDefenseScene extends Phaser.Scene {
       view.simulationTimeMs,
       hero.frontline?.status === "deploying",
       attackProgress,
+      this.eiraFacing,
     );
     setHeroFrontlineState(this.heroView.art, hero.frontline);
     const passivePower = hero.frontline?.passivePower ?? 1;
@@ -1155,7 +1163,9 @@ export class TowerDefenseScene extends Phaser.Scene {
       const from = this.heroView
         ? { x: this.heroView.art.container.x, y: this.heroView.art.container.y }
         : event.from;
-      this.heroEffects?.playAttack(event.heroId, from, this.getEnemyRenderPoint(event.targetId, event.to));
+      const target = this.getEnemyRenderPoint(event.targetId, event.to);
+      if (event.heroId === "eira") this.eiraFacing = selectEiraFacing(from.x, target.x, this.eiraFacing);
+      this.heroEffects?.playAttack(event.heroId, from, target);
       return;
     }
     if (event.type === "morna_summon_raised") {

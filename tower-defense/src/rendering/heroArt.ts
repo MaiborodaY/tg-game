@@ -1,5 +1,12 @@
 import Phaser from "phaser";
+import eiraBattleAtlasUrl from "../assets/heroes/eira-battle-atlas.webp";
 import type { HeroId, Point } from "../game/types.ts";
+import {
+  EIRA_BATTLE_ATLAS_SPEC,
+  EIRA_BATTLE_FRAMES,
+  selectEiraBattleFrame,
+  type EiraFacing,
+} from "./eiraBattleAtlas.ts";
 
 export type HeroVisualProfile = Readonly<{
   primary: number;
@@ -137,6 +144,7 @@ type HeroBannerArt = Readonly<{
 const MAX_ATTACK_EFFECTS = 12;
 const MAX_ABILITY_EFFECTS = 4;
 const heroRigs = new WeakMap<Phaser.GameObjects.Container, HeroRig>();
+const eiraBattleSprites = new WeakMap<Phaser.GameObjects.Container, Phaser.GameObjects.Sprite>();
 
 type HeroAnchorPalette = Readonly<{
   platformFill: number;
@@ -180,11 +188,21 @@ const HERO_ANCHOR_PALETTES = Object.freeze({
 }) satisfies Readonly<Record<"available" | "selected", HeroAnchorPalette>>;
 
 const HERO_BUILDERS = {
-  eira: drawEira,
+  eira: drawEiraBattle,
   toren: drawToren,
   grak: drawGrak,
   morna: drawMorna,
 } satisfies Readonly<Record<HeroId, HeroBuilder>>;
+
+export function preloadEiraBattleAtlas(scene: Phaser.Scene): void {
+  if (scene.textures.exists(EIRA_BATTLE_ATLAS_SPEC.textureKey)) return;
+  scene.load.spritesheet(EIRA_BATTLE_ATLAS_SPEC.textureKey, eiraBattleAtlasUrl, {
+    frameWidth: EIRA_BATTLE_ATLAS_SPEC.frameWidth,
+    frameHeight: EIRA_BATTLE_ATLAS_SPEC.frameHeight,
+    startFrame: 0,
+    endFrame: EIRA_BATTLE_ATLAS_SPEC.frameCount - 1,
+  });
+}
 
 export function createHeroArt(scene: Phaser.Scene, heroId: HeroId, point: Point): HeroArt {
   const visual = HERO_VISUAL_PROFILES[heroId];
@@ -260,6 +278,7 @@ export function updateHeroArtPose(
   elapsedMs: number,
   moving: boolean,
   attackProgress = 0,
+  facing: EiraFacing = 1,
 ): void {
   const rig = heroRigs.get(art.container);
   if (!rig || rig.heroId !== heroId) return;
@@ -272,13 +291,19 @@ export function updateHeroArtPose(
 
   art.body.y = rig.bodyHomeY - Math.abs(stride) * visual.bob;
   art.body.rotation = stride * (heroId === "eira" ? 0.025 : heroId === "grak" ? 0.018 : heroId === "morna" ? 0.022 : 0.014);
-  art.body.scaleX = 1 + Math.sin(phase * 0.42) * 0.012;
+  const facingScale = heroId === "eira" ? facing : 1;
+  art.body.scaleX = facingScale * (1 + Math.sin(phase * 0.42) * 0.012);
   art.body.scaleY = 1 - Math.sin(phase * 0.42) * 0.009;
   art.weapon.y = art.body.y;
   const weaponSwing = heroId === "eira" ? -0.18 : heroId === "grak" ? -1.02 : heroId === "morna" ? -0.26 : -0.72;
   const weaponStretch = heroId === "eira" ? 0.03 : heroId === "grak" ? 0.12 : heroId === "morna" ? 0.05 : 0.08;
   art.weapon.rotation = rig.weaponHomeRotation + weaponSwing * swing;
-  art.weapon.scaleX = 1 + swing * weaponStretch;
+  art.weapon.scaleX = facingScale * (1 + swing * weaponStretch);
+  const eiraSprite = eiraBattleSprites.get(art.body);
+  if (eiraSprite) {
+    const nextFrame = selectEiraBattleFrame(safeTime, attack);
+    if (Number(eiraSprite.frame.name) !== nextFrame) eiraSprite.setFrame(nextFrame);
+  }
 }
 
 export function moveHeroArt(art: HeroArt, point: Point): void {
@@ -624,6 +649,26 @@ function drawEira(
   const arrow = scene.add.rectangle(8, -5, 28, 2, 0xf3df9b, 1).setOrigin(0.42, 0.5);
   const arrowHead = scene.add.triangle(24, -5, 0, 0, -6, -4, -6, 4, 0xe6c665, 1);
   weapon.add([bow, arrow, arrowHead]);
+}
+
+function drawEiraBattle(
+  scene: Phaser.Scene,
+  body: Phaser.GameObjects.Container,
+  weapon: Phaser.GameObjects.Container,
+): void {
+  const textureReady = scene.textures.exists(EIRA_BATTLE_ATLAS_SPEC.textureKey)
+    && scene.textures.get(EIRA_BATTLE_ATLAS_SPEC.textureKey).frameTotal >= EIRA_BATTLE_ATLAS_SPEC.frameCount + 1;
+  if (!textureReady) {
+    drawEira(scene, body, weapon);
+    return;
+  }
+
+  const scale = EIRA_BATTLE_ATLAS_SPEC.displayHeight / EIRA_BATTLE_ATLAS_SPEC.frameHeight;
+  const sprite = scene.add.sprite(0, 20, EIRA_BATTLE_ATLAS_SPEC.textureKey, EIRA_BATTLE_FRAMES.idleA)
+    .setOrigin(0.5, 1)
+    .setDisplaySize(EIRA_BATTLE_ATLAS_SPEC.frameWidth * scale, EIRA_BATTLE_ATLAS_SPEC.displayHeight);
+  eiraBattleSprites.set(body, sprite);
+  body.add(sprite);
 }
 
 function drawToren(
