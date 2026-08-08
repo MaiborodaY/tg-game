@@ -57,6 +57,7 @@ import {
   AVALANCHE_ZONE_HIT_SIZE,
   createAvalancheZoneArt,
   playAvalancheCollapse,
+  preloadEmberMageTowerAtlas,
   sampleAvalancheRouteSegment,
   selectAvalancheMarkerPoint,
   createSummonBurst,
@@ -288,6 +289,7 @@ export class TowerDefenseScene extends Phaser.Scene {
 
   preload(): void {
     preloadHeroBattleAtlas(this, this.simulation.readView().hero.id);
+    preloadEmberMageTowerAtlas(this);
   }
 
   create(): void {
@@ -1594,7 +1596,14 @@ export class TowerDefenseScene extends Phaser.Scene {
         this.projectileViews.set(projectile.id, view);
         const tower = this.towerViews.get(projectile.originPadId);
         const origin = this.level.buildPads[projectile.originPadId];
-        if (target && targetArt && tower && origin && tower.placement.type !== "frost") {
+        if (
+          target
+          && targetArt
+          && tower
+          && origin
+          && tower.placement.type !== "frost"
+          && tower.placement.type !== "ember"
+        ) {
           tower.art.head.setRotation(Math.atan2(targetArt.y - origin.y, targetArt.x - origin.x));
         }
         if (targetArt) object.setRotation(Math.atan2(targetArt.y - renderY, targetArt.x - renderX));

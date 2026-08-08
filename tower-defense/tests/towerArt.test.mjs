@@ -25,7 +25,7 @@ test("tower tier profiles create four increasingly substantial silhouettes", () 
 
 test("each tower family gains authored tier details beyond level dots", () => {
   for (const functionName of ["drawRanger", "drawFrost", "drawEmber", "drawStorm"]) {
-    const start = artSource.indexOf(`function ${functionName}`);
+    const start = artSource.indexOf(`function ${functionName}(`);
     const next = artSource.indexOf("\nfunction ", start + 1);
     const source = artSource.slice(start, next === -1 ? undefined : next);
     assert.match(source, /level >= 2/);
@@ -34,6 +34,16 @@ test("each tower family gains authored tier details beyond level dots", () => {
   }
   assert.match(artSource, /drawTowerTierBase\(base, profile, level\)/);
   assert.doesNotMatch(artSource, /for \(let index = 0; index < level; index \+= 1\)[\s\S]*fillCircle\(-6 \+ index \* 6, 11, 2\)/);
+});
+
+test("Embermage replaces perpetual flame motion with one static tier sprite", () => {
+  const emberEntry = artSource.slice(
+    artSource.indexOf("function drawEmberTower"),
+    artSource.indexOf("function drawEmber", artSource.indexOf("function drawEmberTower") + 1),
+  );
+  assert.match(emberEntry, /createEmberMageTierSprite/);
+  assert.doesNotMatch(emberEntry, /scene\.tweens|repeat:\s*-1/);
+  assert.match(sceneSource, /tower\.placement\.type !== "ember"/);
 });
 
 test("successful build and upgrade commands play one bounded Phaser feedback effect", () => {

@@ -13,8 +13,13 @@ import {
   type TowerTierVisualProfile,
   type WorldVisualTheme,
 } from "./worldThemes.ts";
+import {
+  createEmberMageTierSprite,
+  preloadEmberMageTowerAtlas,
+} from "./emberMageTowerArt.ts";
 
 export { drawWorld, setWorldAct, setWorldRoute, type WorldArt, type WorldDefinition };
+export { preloadEmberMageTowerAtlas };
 export {
   AVALANCHE_ZONE_HIT_SIZE,
   createAvalancheZoneArt,
@@ -126,7 +131,7 @@ export function createTowerArt(
   let aura: Phaser.GameObjects.Arc | undefined;
   if (type === "ranger") drawRanger(scene, head, level);
   if (type === "frost") aura = drawFrost(scene, head, level);
-  if (type === "ember") aura = drawEmber(scene, head, level);
+  if (type === "ember") aura = drawEmberTower(scene, head, level);
   if (type === "storm") aura = drawStorm(scene, head, level);
   container.add([shadow, masteryHalo, base]);
   if (aura) container.add(aura);
@@ -552,6 +557,16 @@ function drawFrost(scene: Phaser.Scene, head: Phaser.GameObjects.Container, leve
   scene.tweens.add({ targets: [crystal, core], y: "-=3", duration: 880, yoyo: true, repeat: -1, ease: "Sine.InOut" });
   scene.tweens.add({ targets: aura, alpha: 0.2, scale: 1.2, duration: 1_100, yoyo: true, repeat: -1 });
   return aura;
+}
+
+function drawEmberTower(
+  scene: Phaser.Scene,
+  head: Phaser.GameObjects.Container,
+  level: TowerLevel,
+): Phaser.GameObjects.Arc | undefined {
+  return createEmberMageTierSprite(scene, head, level)
+    ? undefined
+    : drawEmber(scene, head, level);
 }
 
 function drawEmber(scene: Phaser.Scene, head: Phaser.GameObjects.Container, level: number): Phaser.GameObjects.Arc {
