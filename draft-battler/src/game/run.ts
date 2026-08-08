@@ -9,6 +9,7 @@ import {
 } from "./draft";
 import { resolveCombat } from "./combat";
 import {
+  FREE_REROLLS_PER_ROUND,
   MAX_RUN_ROUNDS,
   PLAYER_STARTING_HP,
   type BoardSlot,
@@ -46,6 +47,10 @@ export function chooseDraftCards(state: RunState, boardSlots: readonly BoardSlot
 export function rerollDraftCards(state: RunState): RunState {
   assertStatus(state, "draft");
 
+  if (!canRerollDraftCards(state)) {
+    throw new Error("The free reroll for this round has already been used.");
+  }
+
   const draftRerollCount = state.draftRerollCount + 1;
 
   return {
@@ -53,6 +58,10 @@ export function rerollDraftCards(state: RunState): RunState {
     draftRerollCount,
     draftOptions: createDraftOptions(state.seed, state.round, draftRerollCount),
   };
+}
+
+export function canRerollDraftCards(state: RunState): boolean {
+  return state.status === "draft" && state.draftRerollCount < FREE_REROLLS_PER_ROUND;
 }
 
 export function applyDraftSelectionToBoard(state: RunState, selection: readonly CardId[]): BoardSlot[] {

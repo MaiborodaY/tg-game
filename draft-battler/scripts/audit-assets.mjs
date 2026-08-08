@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { getDynamicPublicAssetPaths, readRuntimeAssetContract } from "./runtime-asset-contract.mjs";
 
 const repoRoot = process.cwd();
 const assetRoots = readPathArgs("--assets-root", [
@@ -8,6 +9,11 @@ const assetRoots = readPathArgs("--assets-root", [
   path.join(repoRoot, "draft-battler", "public", "assets"),
 ]);
 const sourceRoot = readPathArg("--source-root", path.join(repoRoot, "draft-battler", "src"));
+const indexPath = readPathArg("--index", path.join(path.dirname(sourceRoot), "index.html"));
+const assetContractPath = readPathArg(
+  "--asset-contract",
+  path.join(repoRoot, "draft-battler", "runtime-assets.json"),
+);
 const topLimit = readNumberArg("--top", 30);
 const largeSideLimit = readNumberArg("--large-side", 1024);
 const assetExtensions = new Set([".avif", ".jpeg", ".jpg", ".png", ".svg", ".webp"]);
@@ -22,17 +28,23 @@ const assetFiles = (
 ).flat();
 const sourceFiles = [
   ...await listFiles(sourceRoot, (filePath) => sourceExtensions.has(path.extname(filePath).toLowerCase())),
-  path.join(repoRoot, "draft-battler", "index.html"),
+  indexPath,
 ].filter((filePath, index, files) => files.indexOf(filePath) === index);
 
-const references = await collectAssetReferences(sourceFiles, assetFiles);
-const records = await Promise.all(assetFiles.map((assetFile) => createAssetRecord(assetFile, references)));
+const runtimeAssetContract = await readRuntimeAssetContract(assetContractPath);
+const references = await collectAssetReferences(sourceFiles, runtimeAssetContract);
+const records = [];
+for (const assetFile of assetFiles) {
+  // Decode sequentially so corrupt files fail closed without retaining many large raster buffers at once.
+  records.push(await createAssetRecord(assetFile, references));
+}
 records.sort(compareAssetRecords);
 
 const referencedAssets = records.filter((record) => record.referenced);
 const unreferencedAssets = records.filter((record) => !record.referenced);
 const sourceLikeAssets = records.filter((record) => record.sourceLike);
 const largeReferencedAssets = referencedAssets.filter((record) => Math.max(record.width ?? 0, record.height ?? 0) > largeSideLimit);
+const invalidAssets = records.filter((record) => record.validationError);
 const missingReferences = [...references.keys()]
   .filter((reference) => !records.some((record) => record.assetPath === reference))
   .sort();
@@ -48,10 +60,18 @@ console.log(`Referenced raster decoded memory: ${formatBytes(sum(referencedAsset
 console.log(`Asset files on disk: ${formatBytes(sum(records, (record) => record.fileBytes))}`);
 console.log(`Referenced assets over ${largeSideLimit}px side: ${largeReferencedAssets.length}`);
 
+if (invalidAssets.length > 0) {
+  console.log("");
+  console.log("Invalid image assets");
+  invalidAssets.forEach((record) => console.log(`- ${record.path}: ${record.validationError}`));
+  process.exitCode = 1;
+}
+
 if (missingReferences.length > 0) {
   console.log("");
   console.log("Missing referenced assets");
   missingReferences.forEach((reference) => console.log(`- ${reference}`));
+  process.exitCode = 1;
 }
 
 printSection(
@@ -82,7 +102,7 @@ async function createAssetRecord({ filePath, root }, references) {
   const assetPath = formatPath(path.relative(root, filePath));
   const fileStat = await stat(filePath);
   const extension = path.extname(filePath).toLowerCase().slice(1);
-  const metadata = await readImageMetadata(filePath);
+  const { metadata, validationError } = await readImageMetadata(filePath);
   const width = metadata?.width;
   const height = metadata?.height;
   const isRaster = extension !== "svg";
@@ -99,14 +119,17 @@ async function createAssetRecord({ filePath, root }, references) {
     referenced: referenceSources.length > 0,
     referenceSources,
     sourceLike: isSourceLikeAsset(assetPath),
+    validationError,
     width,
   };
 }
 
-async function collectAssetReferences(files, assetFiles) {
+async function collectAssetReferences(files, assetContract) {
   const references = new Map();
-  const assetPaths = assetFiles.map(({ filePath, root }) => formatPath(path.relative(root, filePath)));
-  const assetPathSet = new Set(assetPaths);
+
+  for (const assetPath of getDynamicPublicAssetPaths(assetContract)) {
+    addReference(references, assetPath, "runtime asset contract");
+  }
 
   for (const filePath of files) {
     const content = await readFile(filePath, "utf8");
@@ -127,28 +150,9 @@ async function collectAssetReferences(files, assetFiles) {
       }
     }
 
-    if (content.includes("assets/ui/cards/abilities/ability-${abilityId}.svg")) {
-      addFamilyReferences(references, assetPaths, /^ui\/cards\/abilities\/ability-.+\.svg$/, `${sourceLabel} dynamic ability icon`);
-    }
-
-    if (content.includes("assets/ui/cards/archetypes/archetype-${archetype}.svg")) {
-      addFamilyReferences(references, assetPaths, /^ui\/cards\/archetypes\/archetype-.+\.svg$/, `${sourceLabel} dynamic archetype icon`);
-    }
-  }
-
-  for (const assetPath of [...references.keys()]) {
-    if (!assetPathSet.has(assetPath)) {
-      references.set(assetPath, references.get(assetPath) ?? new Set());
-    }
   }
 
   return references;
-}
-
-function addFamilyReferences(references, assetPaths, pattern, sourceLabel) {
-  assetPaths
-    .filter((assetPath) => pattern.test(assetPath))
-    .forEach((assetPath) => addReference(references, assetPath, sourceLabel));
 }
 
 function addReference(references, assetPath, sourceLabel) {
@@ -169,14 +173,12 @@ function normalizeRuntimeAssetPath(value) {
 }
 
 async function readImageMetadata(filePath) {
-  if (path.extname(filePath).toLowerCase() === ".svg") {
-    return undefined;
-  }
-
   try {
-    return await sharp(filePath).metadata();
-  } catch {
-    return undefined;
+    const { info } = await sharp(filePath).raw().toBuffer({ resolveWithObject: true });
+    return { metadata: info, validationError: undefined };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { metadata: undefined, validationError: message };
   }
 }
 

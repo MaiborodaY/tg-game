@@ -11,8 +11,16 @@ import {
   type CardId,
   type CombatResult,
 } from "../../../draft-battler/src/game";
+import {
+  getEnabledPvpBinding,
+  isPvpEnabled,
+  type PvpFeatureEnvironment,
+} from "./releasePolicy";
 
-export interface Env {
+export { getEnabledPvpBinding, isPvpEnabled } from "./releasePolicy";
+export type { PvpEnabledFlag, PvpFeatureEnvironment } from "./releasePolicy";
+
+export interface Env extends PvpFeatureEnvironment {
   DRAFT_PVP_ROOM: DurableObjectNamespace<DraftPvpRoom>;
 }
 
@@ -542,6 +550,7 @@ export default {
         ok: true,
         service: WORKER_NAME,
         apiPrefix: API_PREFIX,
+        pvpEnabled: isPvpEnabled(env),
         serverNow: Date.now(),
       });
     }
@@ -551,7 +560,12 @@ export default {
       return json({ ok: false, error: "Not found." }, 404);
     }
 
-    const stub = env.DRAFT_PVP_ROOM.getByName(route.roomId);
+    const roomNamespace = getEnabledPvpBinding(env);
+    if (!roomNamespace) {
+      return json({ ok: false, error: "PvP is disabled for this release.", code: "pvp_disabled" }, 404);
+    }
+
+    const stub = roomNamespace.getByName(route.roomId);
     return stub.fetch(request);
   },
 };

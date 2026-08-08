@@ -79,17 +79,22 @@ export function createEnemyBoardSlots(seed: string, round: number): BoardSlot[] 
   const rng = new SeededRandom(`${seed}:enemy:${round}`);
   const pool = CARD_DEFINITIONS.filter((card) => isCardAvailableForRound(card, round));
   const shuffled = rng.shuffle(pool);
-  const picks = shuffled.slice(0, getEnemyBoardSizeForRound(round));
-
+  const targetSize = getEnemyBoardSizeForRound(round);
   const slots = createEmptyBoardSlots();
+  let filledSlots = 0;
 
-  picks.forEach((card) => {
+  for (const card of shuffled) {
+    if (filledSlots >= targetSize) {
+      break;
+    }
+
     const targetSlot = slots.find((slot) => slot.cardId === null && isCardAllowedInSlot(card.id, slot.slotIndex));
 
     if (targetSlot) {
       targetSlot.cardId = card.id;
+      filledSlots += 1;
     }
-  });
+  }
 
   return slots;
 }

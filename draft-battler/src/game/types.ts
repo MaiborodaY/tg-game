@@ -2,6 +2,7 @@ export const PLAYER_STARTING_HP = 20;
 export const MAX_RUN_ROUNDS = 10;
 export const BOARD_SLOT_COUNT = 6;
 export const DRAFT_OPTION_COUNT = 3;
+export const FREE_REROLLS_PER_ROUND = 1;
 export const MAX_UPGRADE_LEVEL = 1;
 export const UPGRADE_STAT_MULTIPLIER = 2;
 

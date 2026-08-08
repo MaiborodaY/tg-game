@@ -1,0 +1,22 @@
+{
+  "abilityIds": [
+    "none",
+    "shield_wall",
+    "bulwark",
+    "battle_banner",
+    "charge",
+    "backstab",
+    "snipe",
+    "fireball",
+    "frost_hex",
+    "bone_pact",
+    "heal_ally",
+    "heal_only",
+    "pack_hunter",
+    "thorn_guard",
+    "stone_skin",
+    "pyro_splash",
+    "riposte"
+  ],
+  "cardArchetypes": ["tank", "damage", "support"]
+}

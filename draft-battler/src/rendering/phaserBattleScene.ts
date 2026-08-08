@@ -76,6 +76,7 @@ const FPS_TARGET = 60;
 export interface PlayBattleInput {
   timeline: BattleTimeline;
   onFinished?: () => void;
+  onError?: (error: unknown) => void;
 }
 
 export interface ShowDraftInput {
@@ -84,7 +85,7 @@ export interface ShowDraftInput {
 
 type SceneCommand =
   | { type: "draft"; playerCastleHp: number }
-  | { type: "battle"; timeline: BattleTimeline; onFinished?: () => void };
+  | { type: "battle"; timeline: BattleTimeline; onFinished?: () => void; onError?: (error: unknown) => void };
 
 export interface BattlefieldController {
   showDraft: (input: ShowDraftInput) => void;
@@ -225,7 +226,12 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   playBattle(input: PlayBattleInput): void {
-    this.setCommand({ type: "battle", timeline: input.timeline, onFinished: input.onFinished });
+    this.setCommand({
+      type: "battle",
+      timeline: input.timeline,
+      onFinished: input.onFinished,
+      onError: input.onError,
+    });
   }
 
   private setCommand(command: SceneCommand): void {
@@ -242,7 +248,7 @@ class CastleBattleScene extends Phaser.Scene {
     this.playToken += 1;
     this.clearScene();
     this.layout = createFieldLayout(this.scale.width, this.scale.height);
-    this.drawField(command.type);
+    this.drawField();
 
     if (command.type === "draft") {
       this.getDraftCastles(command.playerCastleHp).forEach((castle) => this.createCastle(castle));
@@ -254,7 +260,9 @@ class CastleBattleScene extends Phaser.Scene {
     command.timeline.castles.forEach((castle) => this.createCastle(castle));
     command.timeline.units.forEach((unit) => this.createUnit(unit));
     this.wrapSceneInPresentationLayer();
-    void this.playTimeline(command.timeline, this.playToken, command.onFinished);
+    void this.playTimeline(command.timeline, this.playToken, command.onFinished).catch((error: unknown) => {
+      command.onError?.(error);
+    });
   }
 
   private clearScene(): void {
@@ -297,7 +305,7 @@ class CastleBattleScene extends Phaser.Scene {
     camera.centerOn(this.layout.width / 2, this.layout.height / 2);
   }
 
-  private drawField(mode: SceneCommand["type"]): void {
+  private drawField(): void {
     const { width, centerY, fieldTopY, fieldBottomY, laneFractions } = this.layout;
     const hasDomEnvironment = USE_DOM_BATTLEFIELD_ENVIRONMENT;
     const hasBattlefieldBase = !hasDomEnvironment && this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);

@@ -160,7 +160,7 @@ function applyTagSynergies(units: TimelineUnit[], events: CombatEvent[]): void {
         continue;
       }
 
-      if (tag === "warrior" || tag === "beast") {
+      if (tag === "warrior" || tag === "beast" || tag === "rogue") {
         taggedUnits.forEach((unit) => {
           unit.attack += 1;
         });
@@ -225,7 +225,7 @@ function takeAction(actor: TimelineUnit, units: TimelineUnit[], events: CombatEv
   if (actor.abilityId === "fireball" || actor.abilityId === "pyro_splash") {
     const splashDamage = actor.abilityId === "pyro_splash" ? 2 : 1;
     const adjacentTargets = getLivingUnits(units, getEnemyOwner(actor.owner)).filter(
-      (unit) => unit.instanceId !== target.instanceId && Math.abs(getSlotColumn(unit.slotIndex) - getSlotColumn(target.slotIndex)) <= 1,
+      (unit) => unit.instanceId !== target.instanceId && getSlotManhattanDistance(unit.slotIndex, target.slotIndex) === 1,
     );
 
     adjacentTargets.forEach((unit) => {
@@ -446,6 +446,11 @@ function getSlotColumn(slotIndex: number): number {
 
 function getSlotRow(slotIndex: number): number {
   return slotIndex < 3 ? 0 : 1;
+}
+
+function getSlotManhattanDistance(leftSlotIndex: number, rightSlotIndex: number): number {
+  return Math.abs(getSlotColumn(leftSlotIndex) - getSlotColumn(rightSlotIndex)) +
+    Math.abs(getSlotRow(leftSlotIndex) - getSlotRow(rightSlotIndex));
 }
 
 function getWinner(playerUnits: readonly TimelineUnit[], enemyUnits: readonly TimelineUnit[]): CombatResult["winner"] {

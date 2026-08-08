@@ -2,6 +2,7 @@ import "./styles.css";
 import type { BattlefieldController } from "./rendering/phaserBattleScene";
 import {
   BOARD_SLOT_COUNT,
+  canRerollDraftCards,
   cloneBoardSlots,
   createBattleTimeline,
   createDraftOptions,
@@ -14,8 +15,8 @@ import {
   rerollDraftCards,
   resolveRound,
   isCardAllowedInSlot,
+  MAX_RUN_ROUNDS,
   PLAYER_STARTING_HP,
-  type AbilityId,
   type BoardSlot,
   type CardDefinition,
   type CardId,
@@ -41,11 +42,15 @@ import {
   projectDraftPoint,
   type FieldLayout,
 } from "./fieldLayout";
+import {
+  getAbilityIconPath,
+  getCardArchetypeIconPath,
+  type CardArchetype,
+} from "./cardAssetContract";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
 
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
 type PlayMode = "solo" | "online";
-type CardArchetype = "tank" | "damage" | "support";
 type CardRarity = "common" | "uncommon" | "rare";
 type PvpConnectionStatus = "idle" | "connecting" | "connected" | "error";
 type PvpPlayerRole = "host" | "guest";
@@ -68,8 +73,10 @@ interface UiState {
   playMode: PlayMode;
   draftBoardSlots: BoardSlot[];
   cardPickedThisRound: boolean;
+  selectedDraftCardId?: CardId;
   selectedCardInfoId?: CardId;
   battleFinished: boolean;
+  battlePresentationNotice?: string;
   logsOpen: boolean;
   selectedLogRound?: number;
   lastRound: number;
@@ -165,10 +172,14 @@ let battlefieldController: BattlefieldController | undefined;
 let battlefieldMountRequested = false;
 let latestBattlefieldCommand: BattlefieldCommand | undefined;
 let appliedBattlefieldCommandKey: string | undefined;
+let battlefieldPresentationDisabled = false;
 const POINTER_DRAG_START_DISTANCE = 8;
 const FIELD_SLOT_HIT_PADDING = 12;
 const FIELD_SLOT_TOUCH_HIT_PADDING = 30;
 const DRAG_GHOST_FOOT_HIT_INSET = 12;
+const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
+const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
+const PVP_UI_ENABLED: boolean = false;
 const PVP_WORKER_ORIGIN = "https://draft-battler-pvp.mr-maybik.workers.dev";
 const PVP_ROOM_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{2,47}$/;
 const PVP_ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -214,6 +225,8 @@ let activeFieldSlotDropTarget: FieldSlotDropTargetState = { isValid: true };
 let suppressNextCardClick = false;
 let pvpSocket: WebSocket | undefined;
 let pvpSocketCloseExpected = false;
+let battlePresentationWatchdog: number | undefined;
+let battlePresentationWatchdogKey: string | undefined;
 
 render();
 window.addEventListener("beforeunload", () => closePvpSocket());
@@ -336,23 +349,30 @@ function createMainMenuOverlay(): HTMLElement {
   title.className = "main-menu__title";
   title.textContent = "Draft Battler";
 
+  const subtitle = document.createElement("p");
+  subtitle.className = "main-menu__subtitle";
+  subtitle.textContent = "Соберите отряд и пройдите 10 раундов.";
+
   const actions = document.createElement("div");
   actions.className = "main-menu__actions";
 
   const soloButton = document.createElement("button");
   soloButton.className = "main-menu__button main-menu__button--primary";
   soloButton.type = "button";
-  soloButton.textContent = "Соло";
+  soloButton.textContent = "Начать забег";
   soloButton.addEventListener("click", startSoloRun);
 
-  const onlineButton = document.createElement("button");
-  onlineButton.className = "main-menu__button";
-  onlineButton.type = "button";
-  onlineButton.textContent = "Онлайн";
-  onlineButton.addEventListener("click", startOnlineLobby);
+  actions.append(soloButton);
+  if (PVP_UI_ENABLED) {
+    const onlineButton = document.createElement("button");
+    onlineButton.className = "main-menu__button";
+    onlineButton.type = "button";
+    onlineButton.textContent = "Онлайн";
+    onlineButton.addEventListener("click", startOnlineLobby);
+    actions.append(onlineButton);
+  }
 
-  actions.append(soloButton, onlineButton);
-  panel.append(title, actions);
+  panel.append(title, subtitle, actions);
   overlay.append(panel);
 
   return overlay;
@@ -360,8 +380,17 @@ function createMainMenuOverlay(): HTMLElement {
 
 function startSoloRun(): void {
   activePointerDrag?.cleanup();
+  clearBattlePresentationWatchdog();
   closePvpSocket();
   uiState = createInitialUiState(createSeed(), "solo", "draft");
+  render();
+}
+
+function returnToMainMenu(): void {
+  activePointerDrag?.cleanup();
+  clearBattlePresentationWatchdog();
+  closePvpSocket();
+  uiState = createInitialUiState();
   render();
 }
 
@@ -379,16 +408,21 @@ function createDraftOverlay(): HTMLElement {
   const overlay = document.createElement("div");
   overlay.className = "draft-overlay";
   const isWaitingForOnlineMatch = uiState.playMode === "online" && !uiState.pvp.match;
+  const selectedDraftCardId = getSelectedDraftCardId();
 
   if (!isWaitingForOnlineMatch) {
     overlay.append(createFieldSlotsLayer(), createFieldActionBar());
+
+    if (selectedDraftCardId && !uiState.cardPickedThisRound) {
+      overlay.append(createTapPlacementPanel(selectedDraftCardId));
+    }
   }
 
   if (uiState.pvp.panelOpen || isWaitingForOnlineMatch) {
     overlay.append(createPvpPanel());
   }
 
-  if (!isWaitingForOnlineMatch && !uiState.cardPickedThisRound) {
+  if (!isWaitingForOnlineMatch && !uiState.cardPickedThisRound && !selectedDraftCardId) {
     overlay.append(createDraftPanel());
   }
 
@@ -404,7 +438,7 @@ function createBattleOverlay(): HTMLElement {
   overlay.className = "battle-overlay";
 
   if (uiState.battleFinished) {
-    overlay.append(createBattleActionPanel());
+    overlay.append(uiState.mode === "finished" && uiState.playMode === "solo" ? createSoloTerminalResult() : createBattleActionPanel());
   }
 
   return overlay;
@@ -413,9 +447,91 @@ function createBattleOverlay(): HTMLElement {
 function createBattleActionPanel(): HTMLElement {
   const panel = document.createElement("div");
   panel.className = "battle-action-panel";
+
+  if (uiState.battlePresentationNotice) {
+    panel.append(createBattlePresentationNotice(uiState.battlePresentationNotice));
+  }
+
   panel.append(createActionBar());
 
   return panel;
+}
+
+function createBattlePresentationNotice(message: string): HTMLElement {
+  const notice = document.createElement("p");
+  notice.className = "battle-presentation-notice";
+  notice.textContent = message;
+
+  return notice;
+}
+
+function createSoloTerminalResult(): HTMLElement {
+  const completedRounds = uiState.run.roundHistory.length;
+  const victory = uiState.run.playerHp > 0 && completedRounds >= MAX_RUN_ROUNDS;
+  const panel = document.createElement("section");
+  panel.className = `terminal-result terminal-result--${victory ? "victory" : "defeat"}`;
+
+  const eyebrow = document.createElement("span");
+  eyebrow.className = "terminal-result__eyebrow";
+  eyebrow.textContent = "Забег завершён";
+
+  const title = document.createElement("h1");
+  title.className = "terminal-result__title";
+  title.textContent = victory ? "Победа!" : "Поражение";
+
+  const detail = document.createElement("p");
+  detail.className = "terminal-result__detail";
+  detail.textContent = victory
+    ? `Вы выдержали все ${MAX_RUN_ROUNDS} раундов.`
+    : `Крепость пала на раунде ${Math.max(1, completedRounds)}.`;
+
+  const metrics = document.createElement("div");
+  metrics.className = "terminal-result__metrics";
+  metrics.append(
+    createTerminalMetric("Раунды", `${completedRounds}/${MAX_RUN_ROUNDS}`),
+    createTerminalMetric("HP", String(uiState.run.playerHp)),
+  );
+
+  const actions = document.createElement("div");
+  actions.className = "terminal-result__actions";
+
+  const restartButton = document.createElement("button");
+  restartButton.className = "primary-button";
+  restartButton.type = "button";
+  restartButton.textContent = "Ещё раз";
+  restartButton.addEventListener("click", startSoloRun);
+
+  const menuButton = document.createElement("button");
+  menuButton.className = "terminal-result__secondary-button";
+  menuButton.type = "button";
+  menuButton.textContent = "В меню";
+  menuButton.addEventListener("click", returnToMainMenu);
+
+  actions.append(restartButton, menuButton);
+  panel.append(eyebrow, title, detail, metrics);
+
+  if (uiState.battlePresentationNotice) {
+    panel.append(createBattlePresentationNotice(uiState.battlePresentationNotice));
+  }
+
+  panel.append(actions);
+
+  return panel;
+}
+
+function createTerminalMetric(label: string, value: string): HTMLElement {
+  const metric = document.createElement("div");
+  metric.className = "terminal-result__metric";
+
+  const labelElement = document.createElement("span");
+  labelElement.textContent = label;
+
+  const valueElement = document.createElement("strong");
+  valueElement.textContent = value;
+
+  metric.append(labelElement, valueElement);
+
+  return metric;
 }
 
 function createLogsOverlay(): HTMLElement {
@@ -543,9 +659,23 @@ function getSelectedRoundLog(logs: readonly RoundRecord[]): RoundRecord | undefi
 function createDraftPanel(): HTMLElement {
   const draftPanel = document.createElement("section");
   draftPanel.className = "draft-panel";
-  draftPanel.append(createDraftHeader(), createDraftGrid());
+  draftPanel.append(createDraftHeader());
+
+  if (uiState.run.round === 1 && getFilledSlotCount() === 0) {
+    draftPanel.append(createDraftOnboarding());
+  }
+
+  draftPanel.append(createDraftGrid());
 
   return draftPanel;
+}
+
+function createDraftOnboarding(): HTMLElement {
+  const hint = document.createElement("p");
+  hint.className = "draft-onboarding";
+  hint.textContent = "Коснитесь карты и позиции на поле — или перетащите карту.";
+
+  return hint;
 }
 
 function createDraftHeader(): HTMLElement {
@@ -553,11 +683,11 @@ function createDraftHeader(): HTMLElement {
   header.className = "panel-header";
 
   const title = document.createElement("h1");
-  title.textContent = "Pick one card or upgrade existing";
+  title.textContent = "Выберите одну карту";
 
   const caption = document.createElement("span");
   caption.className = "panel-caption";
-  caption.textContent = `Slots ${getFilledSlotCount()}/${getBoardCapacity()}`;
+  caption.textContent = `Места ${getFilledSlotCount()}/${getBoardCapacity()}`;
 
   header.append(title, caption);
 
@@ -582,6 +712,9 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   const placeable = canPlaceDraftCard(option.cardId);
   const button = document.createElement("button");
   const cardClasses = ["unit-card", `unit-card--${meta.archetype}`, `unit-card--${meta.rarity}`];
+  if (uiState.selectedDraftCardId === option.cardId) {
+    cardClasses.push("unit-card--selected");
+  }
   if (uiState.selectedCardInfoId === option.cardId) {
     cardClasses.push("unit-card--inspected");
   }
@@ -592,6 +725,7 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   button.draggable = false;
   button.title = card.summary;
   button.dataset.cardId = option.cardId;
+  button.setAttribute("aria-pressed", String(uiState.selectedDraftCardId === option.cardId));
 
   button.append(
     createCardFrame(),
@@ -599,8 +733,8 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
     createCardBody(card, meta),
   );
 
-  button.addEventListener("click", () => handleDraftCardInfoClick(option.cardId));
-    button.addEventListener("pointerdown", (event) => startPointerDraftDrag(option.cardId, event));
+  button.addEventListener("click", () => handleDraftCardClick(option.cardId));
+  button.addEventListener("pointerdown", (event) => startPointerDraftDrag(option.cardId, event));
 
   return button;
 }
@@ -657,10 +791,48 @@ function createRerollButton(): HTMLButtonElement {
   const button = document.createElement("button");
   button.className = "reroll-button";
   button.type = "button";
-  button.textContent = uiState.run.draftRerollCount > 0 ? `Reroll ${uiState.run.draftRerollCount}` : "Reroll";
+  button.disabled = !canRerollDraftCards(uiState.run);
+  button.textContent = button.disabled ? "Обновлено" : "Обновить";
   button.addEventListener("click", rerollCurrentDraftCards);
 
   return button;
+}
+
+function createTapPlacementPanel(cardId: CardId): HTMLElement {
+  const card = getCardDefinition(cardId);
+  const upgradeSlot = getUpgradeableBoardSlot(cardId);
+  const panel = document.createElement("section");
+  panel.className = "tap-placement-panel";
+
+  const copy = document.createElement("div");
+  copy.className = "tap-placement-panel__copy";
+
+  const title = document.createElement("strong");
+  title.textContent = `Выбран: ${card.name}`;
+
+  const hint = document.createElement("span");
+  hint.textContent = upgradeSlot
+    ? "Коснитесь поля — существующий боец улучшится."
+    : "Коснитесь подходящей позиции на поле.";
+  copy.append(title, hint);
+
+  const actions = document.createElement("div");
+  actions.className = "tap-placement-panel__actions";
+
+  const infoButton = document.createElement("button");
+  infoButton.type = "button";
+  infoButton.textContent = "О карте";
+  infoButton.addEventListener("click", () => openCardInfo(cardId));
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.textContent = "Отмена";
+  cancelButton.addEventListener("click", cancelDraftCardSelection);
+
+  actions.append(infoButton, cancelButton);
+  panel.append(copy, actions);
+
+  return panel;
 }
 
 function createPvpPanel(): HTMLElement {
@@ -1008,10 +1180,6 @@ function createCardAbility(card: CardDefinition): HTMLElement {
   return ability;
 }
 
-function getAbilityIconPath(abilityId: AbilityId): string {
-  return `assets/ui/cards/abilities/ability-${abilityId}.svg`;
-}
-
 function createStat(label: string, value: number): HTMLElement {
   const stat = document.createElement("span");
   stat.className = "unit-card__stat";
@@ -1064,10 +1232,6 @@ function getCardRarity(card: CardDefinition): CardRarity {
   }
 
   return "rare";
-}
-
-function getCardArchetypeIconPath(archetype: CardArchetype): string {
-  return `assets/ui/cards/archetypes/archetype-${archetype}.svg`;
 }
 
 function getCardArchetypeLabel(archetype: CardArchetype): string {
@@ -1142,6 +1306,8 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   const slotState = getDraftBoardSlot(slotIndex);
   const cardId = slotState?.cardId ?? null;
   const card = cardId ? getCardDefinition(cardId) : undefined;
+  const selectedDraftCardId = getSelectedDraftCardId();
+  const upgradeSlot = selectedDraftCardId ? getUpgradeableBoardSlot(selectedDraftCardId) : undefined;
   const slot = document.createElement("button");
   const classes = ["field-slot"];
   if (card) {
@@ -1150,6 +1316,12 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   }
   if (slotState?.upgradeLevel) {
     classes.push("field-slot--upgraded");
+  }
+  if (selectedDraftCardId) {
+    classes.push(canApplyDraftCardAtSlot(selectedDraftCardId, slotIndex) ? "field-slot--tap-target" : "field-slot--tap-invalid");
+  }
+  if (upgradeSlot?.slotIndex === slotIndex) {
+    classes.push("field-slot--tap-upgrade");
   }
   slot.className = classes.join(" ");
   slot.type = "button";
@@ -1161,16 +1333,30 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   slot.style.setProperty("--slot-scale", `${slotPosition.scale}`);
   slot.style.setProperty("--slot-depth", `${slotPosition.depth}`);
 
-  if (card) {
-    const unit = createFieldSlotUnit(card, slotState ?? createEmptyDraftBoardSlot(slotIndex));
+  if (selectedDraftCardId) {
+    const selectedCard = getCardDefinition(selectedDraftCardId);
+    slot.title = upgradeSlot
+      ? `Улучшить ${selectedCard.name}`
+      : canApplyDraftCardAtSlot(selectedDraftCardId, slotIndex)
+        ? `Поставить ${selectedCard.name} на позицию ${slotIndex + 1}`
+        : `${selectedCard.name} нельзя поставить на позицию ${slotIndex + 1}`;
+    slot.setAttribute("aria-label", slot.title);
+  } else if (card) {
     slot.title = slotState?.upgradeLevel ? `${card.name} upgraded` : `${card.name}`;
     slot.setAttribute("aria-label", slot.title);
-    slot.append(unit);
-    slot.addEventListener("click", () => handleFieldSlotInfoClick(card.id));
-    slot.addEventListener("pointerdown", (event) => startPointerFieldUnitDrag(slotIndex, unit, event));
   } else {
     slot.title = `Empty slot ${slotIndex + 1}`;
     slot.setAttribute("aria-label", slot.title);
+  }
+
+  slot.addEventListener("click", () => handleFieldSlotClick(slotIndex, card?.id));
+
+  if (card) {
+    const unit = createFieldSlotUnit(card, slotState ?? createEmptyDraftBoardSlot(slotIndex));
+    slot.append(unit);
+    if (!selectedDraftCardId) {
+      slot.addEventListener("pointerdown", (event) => startPointerFieldUnitDrag(slotIndex, unit, event));
+    }
   }
 
   return slot;
@@ -1238,12 +1424,8 @@ function createActionBar(): HTMLElement {
     const newRunButton = document.createElement("button");
     newRunButton.className = "primary-button";
     newRunButton.type = "button";
-    newRunButton.textContent = "Menu";
-    newRunButton.addEventListener("click", () => {
-      closePvpSocket();
-      uiState = createInitialUiState();
-      render();
-    });
+    newRunButton.textContent = "В меню";
+    newRunButton.addEventListener("click", returnToMainMenu);
     actions.append(newRunButton);
   }
 
@@ -1252,7 +1434,7 @@ function createActionBar(): HTMLElement {
 
 function getDraftActionLabel(): string {
   if (uiState.playMode !== "online") {
-    return "Fight";
+    return "В бой";
   }
 
   if (isCurrentPvpPlayerSubmitted()) {
@@ -1263,15 +1445,13 @@ function getDraftActionLabel(): string {
 }
 
 function getBattleActionLabel(): string {
-  return isPvpMatchFinished() ? "Menu" : "Next Round";
+  return isPvpMatchFinished() ? "В меню" : "Следующий раунд";
 }
 
 function goToNextRound(): void {
   if (uiState.playMode === "online") {
     if (isPvpMatchFinished()) {
-      closePvpSocket();
-      uiState = createInitialUiState();
-      render();
+      returnToMainMenu();
       return;
     }
 
@@ -1284,8 +1464,10 @@ function goToNextRound(): void {
     mode: "draft",
     draftBoardSlots: cloneBoardSlots(uiState.run.boardSlots),
     cardPickedThisRound: false,
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
     battleFinished: false,
+    battlePresentationNotice: undefined,
     logsOpen: false,
   };
   render();
@@ -1324,6 +1506,18 @@ function syncBattlefield(): void {
   latestBattlefieldCommand = command;
 
   if (!command) {
+    clearBattlePresentationWatchdog();
+    return;
+  }
+
+  if (command.type === "battle" && !uiState.battleFinished) {
+    ensureBattlePresentationWatchdog(command.key);
+  } else {
+    clearBattlePresentationWatchdog();
+  }
+
+  if (FORCE_RENDERER_FAILURE || battlefieldPresentationDisabled) {
+    showBattlefieldFallback("Анимация боя отключена для проверки. Результат рассчитан, можно продолжить.");
     return;
   }
 
@@ -1386,10 +1580,7 @@ function mountBattlefield(): void {
       .catch((error: unknown) => {
         battlefieldMountRequested = false;
         console.error("Failed to mount Phaser battlefield", error);
-
-        if (phaserHost.isConnected) {
-          phaserHost.replaceChildren(createSceneCanvasMessage("Scene renderer failed."));
-        }
+        showBattlefieldFallback("Анимация боя недоступна. Результат рассчитан, можно продолжить.");
       });
   });
 }
@@ -1401,15 +1592,33 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
 
   appliedBattlefieldCommandKey = command.key;
 
-  if (command.type === "draft") {
-    battlefieldController?.showDraft({ playerCastleHp: command.playerCastleHp });
-    return;
-  }
+  try {
+    if (command.type === "draft") {
+      battlefieldController?.showDraft({ playerCastleHp: command.playerCastleHp });
+      return;
+    }
 
-  battlefieldController?.playBattle({ timeline: command.timeline, onFinished: handleBattlefieldFinished });
+    battlefieldController?.playBattle({
+      timeline: command.timeline,
+      onFinished: handleBattlefieldFinished,
+      onError: handleBattlefieldError,
+    });
+  } catch (error: unknown) {
+    console.error("Failed to apply Phaser battlefield command", error);
+    showBattlefieldFallback("Анимация боя прервалась. Результат рассчитан, можно продолжить.");
+  }
 }
 
 function handleBattlefieldFinished(): void {
+  completeBattlePresentation();
+}
+
+function handleBattlefieldError(error: unknown): void {
+  console.error("Phaser battle presentation failed", error);
+  showBattlefieldFallback("Анимация боя прервалась. Результат рассчитан, можно продолжить.");
+}
+
+function completeBattlePresentation(notice?: string): void {
   if (uiState.mode !== "battle" && uiState.mode !== "finished") {
     return;
   }
@@ -1418,12 +1627,67 @@ function handleBattlefieldFinished(): void {
     return;
   }
 
+  clearBattlePresentationWatchdog();
+
   uiState = {
     ...uiState,
     battleFinished: true,
+    battlePresentationNotice: notice,
     selectedLogRound: uiState.lastRound,
   };
   render();
+}
+
+function showBattlefieldFallback(message: string): void {
+  battlefieldPresentationDisabled = true;
+  if (battlefieldController) {
+    try {
+      battlefieldController.destroy();
+    } catch (error: unknown) {
+      console.error("Failed to destroy Phaser battlefield after a presentation error", error);
+    }
+  }
+
+  battlefieldController = undefined;
+  battlefieldMountRequested = false;
+  appliedBattlefieldCommandKey = undefined;
+
+  const phaserHost = getScenePhaserHost();
+  if (phaserHost.isConnected) {
+    const placeholder = latestBattlefieldCommand?.type === "battle"
+      ? "Результат боя готов."
+      : "Поле боя недоступно. Драфт продолжает работать.";
+    phaserHost.replaceChildren(createSceneCanvasMessage(placeholder));
+  }
+
+  if (latestBattlefieldCommand?.type === "battle" && !uiState.battleFinished) {
+    queueMicrotask(() => completeBattlePresentation(message));
+  }
+}
+
+function ensureBattlePresentationWatchdog(commandKey: string): void {
+  if (battlePresentationWatchdogKey === commandKey && battlePresentationWatchdog !== undefined) {
+    return;
+  }
+
+  clearBattlePresentationWatchdog();
+  battlePresentationWatchdogKey = commandKey;
+  battlePresentationWatchdog = window.setTimeout(() => {
+    if (latestBattlefieldCommand?.type !== "battle" || latestBattlefieldCommand.key !== commandKey) {
+      return;
+    }
+
+    completeBattlePresentation("Анимация заняла слишком много времени. Результат рассчитан, можно продолжить.");
+  }, BATTLE_PRESENTATION_WATCHDOG_MS);
+}
+
+function clearBattlePresentationWatchdog(): void {
+  if (battlePresentationWatchdog !== undefined) {
+    window.clearTimeout(battlePresentationWatchdog);
+  }
+
+  battlePresentationWatchdog = undefined;
+  battlePresentationWatchdogKey = undefined;
 }
 
 function createBattleSummary(log: RoundRecord): HTMLElement {
@@ -1523,12 +1787,22 @@ function getDraftBoardSlot(slotIndex: number): BoardSlot | undefined {
   return uiState.draftBoardSlots.find((slot) => slot.slotIndex === slotIndex);
 }
 
+function getSelectedDraftCardId(): CardId | undefined {
+  const cardId = uiState.selectedDraftCardId;
+
+  return cardId && getCurrentDraftOption(cardId) ? cardId : undefined;
+}
+
+function getUpgradeableBoardSlot(cardId: CardId, slots = uiState.draftBoardSlots): BoardSlot | undefined {
+  return slots.find((slot) => slot.cardId === cardId && slot.upgradeLevel === 0);
+}
+
 function createEmptyDraftBoardSlot(slotIndex: number): BoardSlot {
   return { slotIndex, cardId: null, upgradeLevel: 0 };
 }
 
 function canFightRound(): boolean {
-  if (uiState.mode !== "draft" || getFilledSlotCount() === 0) {
+  if (uiState.mode !== "draft" || getFilledSlotCount() === 0 || getSelectedDraftCardId()) {
     return false;
   }
 
@@ -1551,30 +1825,30 @@ function applyDraftCardToSlot(
   cardId: CardId,
   slotIndex: number,
 ): BoardSlot[] | undefined {
+  if (!canDropIntoSlot(slotIndex)) {
+    return undefined;
+  }
+
+  const nextSlots = cloneBoardSlots(slots);
+  const upgradeSlot = getUpgradeableBoardSlot(cardId, nextSlots);
+  if (upgradeSlot) {
+    upgradeSlot.upgradeLevel = 1;
+    return nextSlots;
+  }
+
   if (!canDropCardIntoSlot(cardId, slotIndex)) {
     return undefined;
   }
 
-  let changed = false;
-  const nextSlots = cloneBoardSlots(slots).map((slot) => {
-    if (slot.slotIndex !== slotIndex) {
-      return slot;
-    }
+  const targetSlot = nextSlots.find((slot) => slot.slotIndex === slotIndex);
+  if (!targetSlot) {
+    return undefined;
+  }
 
-    if (slot.cardId === cardId) {
-      if (slot.upgradeLevel >= 1) {
-        return slot;
-      }
+  targetSlot.cardId = cardId;
+  targetSlot.upgradeLevel = 0;
 
-      changed = true;
-      return { ...slot, upgradeLevel: 1 as const };
-    }
-
-    changed = true;
-    return { ...slot, cardId, upgradeLevel: 0 as const };
-  });
-
-  return changed ? nextSlots : undefined;
+  return nextSlots;
 }
 
 function getCurrentDraftOptions(): DraftOption[] {
@@ -1599,7 +1873,7 @@ function placeDraftCardInSlot(cardId: CardId, slotIndex: number): void {
   }
 
   const draftOption = getCurrentDraftOption(cardId);
-  if (!draftOption || !canDropCardIntoSlot(cardId, slotIndex)) {
+  if (!draftOption || !canApplyDraftCardAtSlot(cardId, slotIndex)) {
     return;
   }
 
@@ -1612,27 +1886,56 @@ function placeDraftCardInSlot(cardId: CardId, slotIndex: number): void {
     ...uiState,
     draftBoardSlots,
     cardPickedThisRound: true,
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
   };
   render();
 }
 
-function handleDraftCardInfoClick(cardId: CardId): void {
+function handleDraftCardClick(cardId: CardId): void {
   if (suppressNextCardClick) {
     suppressNextCardClick = false;
     return;
   }
 
-  openCardInfo(cardId);
+  if (!canPlaceDraftCard(cardId)) {
+    return;
+  }
+
+  uiState = {
+    ...uiState,
+    selectedDraftCardId: cardId,
+    selectedCardInfoId: undefined,
+  };
+  render();
 }
 
-function handleFieldSlotInfoClick(cardId: CardId): void {
+function handleFieldSlotClick(slotIndex: number, cardId?: CardId): void {
   if (suppressNextCardClick) {
     suppressNextCardClick = false;
     return;
   }
 
-  openCardInfo(cardId);
+  const selectedDraftCardId = getSelectedDraftCardId();
+  if (selectedDraftCardId) {
+    if (canApplyDraftCardAtSlot(selectedDraftCardId, slotIndex)) {
+      placeDraftCardInSlot(selectedDraftCardId, slotIndex);
+    }
+    return;
+  }
+
+  if (cardId) {
+    openCardInfo(cardId);
+  }
+}
+
+function cancelDraftCardSelection(): void {
+  uiState = {
+    ...uiState,
+    selectedDraftCardId: undefined,
+    selectedCardInfoId: undefined,
+  };
+  render();
 }
 
 function openCardInfo(cardId: CardId): void {
@@ -1660,13 +1963,14 @@ function hasBoardCard(cardId: CardId): boolean {
 }
 
 function rerollCurrentDraftCards(): void {
-  if (uiState.mode !== "draft" || uiState.cardPickedThisRound) {
+  if (uiState.mode !== "draft" || uiState.cardPickedThisRound || !canRerollDraftCards(uiState.run)) {
     return;
   }
 
   uiState = {
     ...uiState,
     run: rerollDraftCards(uiState.run),
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
   };
   render();
@@ -1765,7 +2069,7 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
     moveGhost(moveEvent.clientX, moveEvent.clientY);
     const dropPoint = getPointerDragDropPoint(moveEvent.clientX, moveEvent.clientY, isTouchDrag, touchFootOffsetY);
     const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
-    setFieldSlotDropTarget(slotIndex, canDropCardIntoSlot(cardId, slotIndex), slotHitTargets);
+    setFieldSlotDropTarget(slotIndex, canApplyDraftCardAtSlot(cardId, slotIndex), slotHitTargets);
   };
 
   handleUp = (upEvent: PointerEvent): void => {
@@ -2017,6 +2321,14 @@ function canDropCardIntoSlot(cardId: CardId, slotIndex: number | undefined): boo
   return slotIndex !== undefined && canDropIntoSlot(slotIndex) && isCardAllowedInSlot(cardId, slotIndex);
 }
 
+function canApplyDraftCardAtSlot(cardId: CardId, slotIndex: number | undefined): boolean {
+  if (slotIndex === undefined || !canDropIntoSlot(slotIndex)) {
+    return false;
+  }
+
+  return Boolean(getUpgradeableBoardSlot(cardId)) || canDropCardIntoSlot(cardId, slotIndex);
+}
+
 function canMoveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number | undefined): boolean {
   if (toSlotIndex === undefined || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
     return false;
@@ -2109,8 +2421,10 @@ function fightRound(): void {
     mode: nextRun.status === "finished" ? "finished" : "battle",
     draftBoardSlots: cloneBoardSlots(nextRun.boardSlots),
     cardPickedThisRound: false,
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
     battleFinished: false,
+    battlePresentationNotice: undefined,
     logsOpen: false,
     lastRound: playedRound,
     lastBattleTimeline,
@@ -2274,6 +2588,7 @@ function submitPvpBoard(): void {
   uiState = {
     ...uiState,
     cardPickedThisRound: true,
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
     pvp: {
       ...uiState.pvp,
@@ -2420,8 +2735,10 @@ function applyPvpDraftSnapshot(state: UiState, match: PvpMatchSnapshot): UiState
     mode: "draft",
     draftBoardSlots: cloneBoardSlots(boardSlots),
     cardPickedThisRound: currentPlayerSubmitted,
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
     battleFinished: false,
+    battlePresentationNotice: undefined,
     logsOpen: false,
     lastRound: match.round,
     lastBattleTimeline: undefined,
@@ -2477,8 +2794,10 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
     mode: "battle",
     draftBoardSlots: cloneBoardSlots(perspective.playerSlots),
     cardPickedThisRound: false,
+    selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
     battleFinished: false,
+    battlePresentationNotice: undefined,
     logsOpen: false,
     lastRound: match.round,
     lastBattleTimeline,
