@@ -96,6 +96,14 @@ export function createEnemyBoardSlots(seed: string, round: number): BoardSlot[] 
     }
   }
 
+  const upgradedEnemyCount = getEnemyUpgradeCountForRound(round);
+  slots
+    .filter((slot) => slot.cardId !== null)
+    .slice(0, upgradedEnemyCount)
+    .forEach((slot) => {
+      slot.upgradeLevel = 1;
+    });
+
   return slots;
 }
 
@@ -113,6 +121,10 @@ export function isCardAllowedInSlot(cardId: CardId, slotIndex: number): boolean 
 
 function getEnemyBoardSizeForRound(round: number): number {
   return Math.min(Math.max(1, round), BOARD_SLOT_COUNT);
+}
+
+function getEnemyUpgradeCountForRound(round: number): number {
+  return round >= 7 ? Math.min(BOARD_SLOT_COUNT, (round - 6) * 2) : 0;
 }
 
 function normalizeUpgradeLevel(upgradeLevel: BoardSlot["upgradeLevel"]): BoardSlot["upgradeLevel"] {

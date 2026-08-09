@@ -5,9 +5,9 @@ import {
   createEmptyBoardSlots,
   createEnemyBoardSlots,
   getBoardCapacityForRound,
-  isCardAllowedInSlot,
 } from "./draft";
 import { resolveCombat } from "./combat";
+import { applyDraftPlacement, classifyDraftPlacement } from "./placement";
 import {
   FREE_REROLLS_PER_ROUND,
   MAX_RUN_ROUNDS,
@@ -67,40 +67,23 @@ export function canRerollDraftCards(state: RunState): boolean {
 export function applyDraftSelectionToBoard(state: RunState, selection: readonly CardId[]): BoardSlot[] {
   assertStatus(state, "draft");
 
-  const boardSlots = cloneBoardSlots(state.boardSlots);
+  let boardSlots = cloneBoardSlots(state.boardSlots);
   const capacity = getBoardCapacityForRound(state.round);
   const picks = selection.slice(0, 1);
-  let replacementCursor = 0;
 
   picks.forEach((cardId) => {
-    const upgradeSlot = boardSlots.find(
-      (slot) =>
-        slot.slotIndex < capacity &&
-        slot.cardId === cardId &&
-        slot.upgradeLevel === 0 &&
-        isCardAllowedInSlot(cardId, slot.slotIndex),
-    );
-    if (upgradeSlot) {
-      upgradeSlot.upgradeLevel = 1;
+    const placements = boardSlots
+      .filter((slot) => slot.slotIndex < capacity)
+      .map((slot) => classifyDraftPlacement(boardSlots, cardId, slot.slotIndex));
+    const placement = placements.find((candidate) => candidate.kind === "upgrade")
+      ?? placements.find((candidate) => candidate.kind === "place")
+      ?? placements.find((candidate) => candidate.kind === "replace");
+    if (!placement) {
       return;
     }
 
-    const emptySlot = boardSlots.find(
-      (slot) => slot.slotIndex < capacity && slot.cardId === null && isCardAllowedInSlot(cardId, slot.slotIndex),
-    );
-    if (emptySlot) {
-      emptySlot.cardId = cardId;
-      emptySlot.upgradeLevel = 0;
-      return;
-    }
-
-    const replacementSlots = boardSlots.filter((slot) => slot.slotIndex < capacity && isCardAllowedInSlot(cardId, slot.slotIndex));
-    const targetSlot = replacementSlots[replacementCursor % replacementSlots.length];
-    replacementCursor += 1;
-    if (targetSlot) {
-      targetSlot.cardId = cardId;
-      targetSlot.upgradeLevel = 0;
-    }
+    const result = applyDraftPlacement(boardSlots, cardId, placement.targetSlotIndex, { allowReplacement: true });
+    boardSlots = result.applied ? result.boardSlots : boardSlots;
   });
 
   return boardSlots;

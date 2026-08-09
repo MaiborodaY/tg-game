@@ -7,6 +7,7 @@ import {
   type BattleTimelineEvent,
   type BattleTimelineUnit,
   type CombatStepEvent,
+  type CombatWinner,
   type Owner,
 } from "../game";
 import {
@@ -77,7 +78,10 @@ export interface PlayBattleInput {
   timeline: BattleTimeline;
   onFinished?: () => void;
   onError?: (error: unknown) => void;
+  resultLabels: BattleResultLabels;
 }
+
+export type BattleResultLabels = Record<CombatWinner, string>;
 
 export interface ShowDraftInput {
   playerCastleHp: number;
@@ -183,6 +187,7 @@ class CastleBattleScene extends Phaser.Scene {
   private ready = false;
   private playToken = 0;
   private destroyed = false;
+  private resultLabels: BattleResultLabels = { player: "VICTORY", enemy: "DEFEAT", draw: "DRAW" };
 
   constructor() {
     super("CastleBattleScene");
@@ -226,6 +231,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   playBattle(input: PlayBattleInput): void {
+    this.resultLabels = input.resultLabels;
     this.setCommand({
       type: "battle",
       timeline: input.timeline,
@@ -1236,8 +1242,8 @@ class CastleBattleScene extends Phaser.Scene {
     this.strikePool.push(effect);
   }
 
-  private showResult(winner: string): void {
-    const label = winner === "player" ? "VICTORY" : winner === "enemy" ? "DEFEAT" : "DRAW";
+  private showResult(winner: CombatWinner): void {
+    const label = this.resultLabels[winner];
     const color = winner === "player" ? "#79c77a" : winner === "enemy" ? "#da6b58" : "#e4c15e";
     const text = this.add
       .text(this.layout.width / 2, this.layout.centerY, label, {

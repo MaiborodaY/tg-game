@@ -42,12 +42,45 @@ import {
   projectDraftPoint,
   type FieldLayout,
 } from "./fieldLayout";
+import { findNearestSlotHitTarget, type SlotHitTargetGeometry } from "./fieldHitTesting";
 import {
   getAbilityIconPath,
   getCardArchetypeIconPath,
   type CardArchetype,
 } from "./cardAssetContract";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
+import {
+  SUPPORTED_LOCALES,
+  formatMessage,
+  getArchetypeLabel,
+  getCombatEventLabel,
+  getLocalizedCard,
+  getRarityLabel,
+  getTagLabel,
+  getUiCopy,
+  hasSeenHowTo,
+  markHowToSeen,
+  readStoredLocale,
+  resolveInitialLocale,
+  saveLocale,
+  type KeyValueStorage,
+  type LocalizedCombatEvent,
+  type SupportedLocale,
+  type UiCopy,
+} from "./i18n";
+import {
+  clearSoloRunSnapshot,
+  loadSoloRunSnapshot,
+  saveSoloRunSnapshot,
+  type SoloRunCheckpoint,
+  type SoloRunSnapshot,
+  type SoloRunStorage,
+} from "./soloPersistence";
+import {
+  applyDraftPlacement,
+  classifyDraftPlacement,
+  type DraftPlacementClassification,
+} from "./game/placement";
 
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
 type PlayMode = "solo" | "online";
@@ -163,7 +196,15 @@ if (!app) {
 
 const appRoot = app;
 
-let uiState: UiState = createInitialUiState();
+const preferenceStorage = getPreferenceStorage();
+const soloRunStorage = getSoloRunStorage();
+const restoredSoloRun = loadSoloRunSnapshot(soloRunStorage);
+let soloPersistenceFailureReported = false;
+let activeLocale = resolveInitialLocale(readStoredLocale(preferenceStorage), navigator.language);
+let howToOpen = !hasSeenHowTo(preferenceStorage);
+document.documentElement.lang = activeLocale;
+
+let uiState: UiState = restoredSoloRun ? createRestoredSoloUiState(restoredSoloRun) : createInitialUiState();
 let shellElement: HTMLElement | undefined;
 let stageElement: HTMLElement | undefined;
 let sceneHostElement: HTMLElement | undefined;
@@ -177,6 +218,7 @@ const POINTER_DRAG_START_DISTANCE = 8;
 const FIELD_SLOT_HIT_PADDING = 12;
 const FIELD_SLOT_TOUCH_HIT_PADDING = 30;
 const DRAG_GHOST_FOOT_HIT_INSET = 12;
+const FIELD_SLOT_BASE_CENTER_FROM_BOTTOM_RATIO = 31 / 108;
 const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
 const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
 const PVP_UI_ENABLED: boolean = false;
@@ -204,24 +246,25 @@ interface FieldSlotPosition {
 interface FieldSlotHitTarget {
   slotIndex: number;
   element: HTMLElement;
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-  hitLeft: number;
-  hitTop: number;
-  hitRight: number;
-  hitBottom: number;
+  rect: SlotHitTargetGeometry["rect"];
+  hitRect: SlotHitTargetGeometry["hitRect"];
+  anchor: SlotHitTargetGeometry["anchor"];
 }
 
 interface FieldSlotDropTargetState {
   slotIndex?: number;
-  isValid: boolean;
+  kind?: DraftPlacementClassification["kind"];
   element?: HTMLElement;
 }
 
+interface PendingDraftReplacement {
+  cardId: CardId;
+  slotIndex: number;
+}
+
 let activePointerDrag: ActivePointerDrag | undefined;
-let activeFieldSlotDropTarget: FieldSlotDropTargetState = { isValid: true };
+let activeFieldSlotDropTarget: FieldSlotDropTargetState = {};
+let pendingDraftReplacement: PendingDraftReplacement | undefined;
 let suppressNextCardClick = false;
 let pvpSocket: WebSocket | undefined;
 let pvpSocketCloseExpected = false;
@@ -230,6 +273,13 @@ let battlePresentationWatchdogKey: string | undefined;
 
 render();
 window.addEventListener("beforeunload", () => closePvpSocket());
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && pendingDraftReplacement) {
+    cancelDraftReplacement();
+  } else if (event.key === "Escape" && howToOpen && uiState.mode === "menu") {
+    closeHowToPlay();
+  }
+});
 
 function createInitialUiState(seed = createSeed(), playMode: PlayMode = "solo", mode: ScreenMode = "menu"): UiState {
   const run = createRun(seed);
@@ -282,6 +332,21 @@ function render(): void {
     stage.append(createLogsOverlay());
   }
 
+  if (uiState.mode === "menu" && howToOpen) {
+    stage.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
+    stage.append(createHowToPlayOverlay());
+  }
+
+  if (uiState.mode === "draft" && pendingDraftReplacement) {
+    const replacementOverlay = createDraftReplacementOverlay(pendingDraftReplacement);
+    if (replacementOverlay) {
+      stage.querySelector<HTMLElement>(".draft-hud")?.setAttribute("inert", "");
+      stage.querySelector<HTMLElement>(".draft-overlay")?.setAttribute("inert", "");
+      stage.querySelector<HTMLElement>(".logs-overlay")?.setAttribute("inert", "");
+      stage.append(replacementOverlay);
+    }
+  }
+
   syncBattlefield();
 }
 
@@ -304,9 +369,8 @@ function getStageElement(): HTMLElement {
   return stageElement;
 }
 
-function createMetric(label: string, value: string): HTMLElement {
+function createMetric(label: string, value: string, metricKey: "hp" | "round" | "seed"): HTMLElement {
   const metric = document.createElement("div");
-  const metricKey = label.toLowerCase();
   metric.className = `metric metric--${metricKey}`;
 
   const icon = document.createElement("span");
@@ -327,18 +391,20 @@ function createMetric(label: string, value: string): HTMLElement {
 }
 
 function createDraftHud(): HTMLElement {
+  const copy = getCopy();
   const hud = document.createElement("div");
   hud.className = "draft-hud";
   hud.append(
-    createMetric("HP", String(uiState.run.playerHp)),
-    createMetric("Round", String(uiState.run.round)),
-    createMetric("Seed", uiState.run.seed.slice(-6)),
+    createMetric(copy.hp, String(uiState.run.playerHp), "hp"),
+    createMetric(copy.round, String(uiState.run.round), "round"),
+    createMetric(copy.seed, uiState.run.seed.slice(-6), "seed"),
   );
 
   return hud;
 }
 
 function createMainMenuOverlay(): HTMLElement {
+  const copy = getCopy();
   const overlay = document.createElement("div");
   overlay.className = "main-menu-overlay";
 
@@ -351,7 +417,9 @@ function createMainMenuOverlay(): HTMLElement {
 
   const subtitle = document.createElement("p");
   subtitle.className = "main-menu__subtitle";
-  subtitle.textContent = "Соберите отряд и пройдите 10 раундов.";
+  subtitle.textContent = copy.menuSubtitle;
+
+  const languageSelector = createLanguageSelector();
 
   const actions = document.createElement("div");
   actions.className = "main-menu__actions";
@@ -359,10 +427,16 @@ function createMainMenuOverlay(): HTMLElement {
   const soloButton = document.createElement("button");
   soloButton.className = "main-menu__button main-menu__button--primary";
   soloButton.type = "button";
-  soloButton.textContent = "Начать забег";
+  soloButton.textContent = copy.startRun;
   soloButton.addEventListener("click", startSoloRun);
 
-  actions.append(soloButton);
+  const howToButton = document.createElement("button");
+  howToButton.className = "main-menu__button";
+  howToButton.type = "button";
+  howToButton.textContent = copy.howToPlay;
+  howToButton.addEventListener("click", openHowToPlay);
+
+  actions.append(soloButton, howToButton);
   if (PVP_UI_ENABLED) {
     const onlineButton = document.createElement("button");
     onlineButton.className = "main-menu__button";
@@ -372,30 +446,144 @@ function createMainMenuOverlay(): HTMLElement {
     actions.append(onlineButton);
   }
 
-  panel.append(title, subtitle, actions);
+  panel.append(title, subtitle, languageSelector, actions);
   overlay.append(panel);
 
   return overlay;
 }
 
+function createLanguageSelector(): HTMLElement {
+  const copy = getCopy();
+  const selector = document.createElement("div");
+  selector.className = "language-selector";
+  selector.setAttribute("role", "group");
+  selector.setAttribute("aria-label", copy.language);
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const button = document.createElement("button");
+    button.className = locale === activeLocale ? "language-selector__button language-selector__button--active" : "language-selector__button";
+    button.type = "button";
+    button.lang = locale;
+    button.textContent = locale.toUpperCase();
+    button.title = getUiCopy(locale).localeName;
+    button.setAttribute("aria-label", getUiCopy(locale).localeName);
+    button.setAttribute("aria-pressed", String(locale === activeLocale));
+    button.addEventListener("click", () => selectLocale(locale));
+    selector.append(button);
+  });
+
+  return selector;
+}
+
+function createHowToPlayOverlay(): HTMLElement {
+  const copy = getCopy();
+  const overlay = document.createElement("div");
+  overlay.className = "how-to-overlay";
+
+  const panel = document.createElement("section");
+  panel.className = "how-to-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "draft-battler-how-to-title");
+
+  const header = document.createElement("div");
+  header.className = "how-to-panel__header";
+
+  const title = document.createElement("h2");
+  title.id = "draft-battler-how-to-title";
+  title.textContent = copy.howToTitle;
+  header.append(title, createLanguageSelector());
+
+  const intro = document.createElement("p");
+  intro.className = "how-to-panel__intro";
+  intro.textContent = copy.howToIntro;
+
+  const steps = document.createElement("ol");
+  steps.className = "how-to-panel__steps";
+  steps.append(
+    createHowToStep(copy.howToDraftTitle, copy.howToDraftBody),
+    createHowToStep(copy.howToPlaceTitle, copy.howToPlaceBody),
+    createHowToStep(copy.howToUpgradeTitle, copy.howToUpgradeBody),
+    createHowToStep(copy.howToWinTitle, copy.howToWinBody),
+  );
+
+  const notice = document.createElement("p");
+  notice.className = "how-to-panel__notice";
+  notice.textContent = copy.howToSessionNotice;
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "primary-button how-to-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = copy.gotIt;
+  closeButton.addEventListener("click", closeHowToPlay);
+
+  panel.append(header, intro, steps, notice, closeButton);
+  overlay.append(panel);
+  queueMicrotask(() => {
+    if (closeButton.isConnected) {
+      closeButton.focus();
+    }
+  });
+
+  return overlay;
+}
+
+function createHowToStep(title: string, body: string): HTMLLIElement {
+  const step = document.createElement("li");
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const detail = document.createElement("span");
+  detail.textContent = body;
+  step.append(heading, detail);
+
+  return step;
+}
+
+function openHowToPlay(): void {
+  howToOpen = true;
+  render();
+}
+
+function closeHowToPlay(): void {
+  howToOpen = false;
+  markHowToSeen(preferenceStorage);
+  render();
+  queueMicrotask(() => {
+    document.querySelector<HTMLButtonElement>(".main-menu__button--primary")?.focus();
+  });
+}
+
+function selectLocale(locale: SupportedLocale): void {
+  activeLocale = locale;
+  document.documentElement.lang = locale;
+  saveLocale(preferenceStorage, locale);
+  render();
+}
+
 function startSoloRun(): void {
   activePointerDrag?.cleanup();
+  pendingDraftReplacement = undefined;
   clearBattlePresentationWatchdog();
   closePvpSocket();
+  clearPersistedSoloRun();
   uiState = createInitialUiState(createSeed(), "solo", "draft");
+  persistSoloRun();
   render();
 }
 
 function returnToMainMenu(): void {
   activePointerDrag?.cleanup();
+  pendingDraftReplacement = undefined;
   clearBattlePresentationWatchdog();
   closePvpSocket();
+  clearPersistedSoloRun();
   uiState = createInitialUiState();
   render();
 }
 
 function startOnlineLobby(): void {
   activePointerDrag?.cleanup();
+  pendingDraftReplacement = undefined;
   closePvpSocket();
   uiState = {
     ...createInitialUiState(createSeed(), "online", "draft"),
@@ -466,6 +654,7 @@ function createBattlePresentationNotice(message: string): HTMLElement {
 }
 
 function createSoloTerminalResult(): HTMLElement {
+  const copy = getCopy();
   const completedRounds = uiState.run.roundHistory.length;
   const victory = uiState.run.playerHp > 0 && completedRounds >= MAX_RUN_ROUNDS;
   const panel = document.createElement("section");
@@ -473,23 +662,23 @@ function createSoloTerminalResult(): HTMLElement {
 
   const eyebrow = document.createElement("span");
   eyebrow.className = "terminal-result__eyebrow";
-  eyebrow.textContent = "Забег завершён";
+  eyebrow.textContent = copy.runFinished;
 
   const title = document.createElement("h1");
   title.className = "terminal-result__title";
-  title.textContent = victory ? "Победа!" : "Поражение";
+  title.textContent = victory ? copy.victory : copy.defeat;
 
   const detail = document.createElement("p");
   detail.className = "terminal-result__detail";
   detail.textContent = victory
-    ? `Вы выдержали все ${MAX_RUN_ROUNDS} раундов.`
-    : `Крепость пала на раунде ${Math.max(1, completedRounds)}.`;
+    ? formatMessage(copy.victoryDetail, { rounds: MAX_RUN_ROUNDS })
+    : formatMessage(copy.defeatDetail, { round: Math.max(1, completedRounds) });
 
   const metrics = document.createElement("div");
   metrics.className = "terminal-result__metrics";
   metrics.append(
-    createTerminalMetric("Раунды", `${completedRounds}/${MAX_RUN_ROUNDS}`),
-    createTerminalMetric("HP", String(uiState.run.playerHp)),
+    createTerminalMetric(copy.rounds, `${completedRounds}/${MAX_RUN_ROUNDS}`),
+    createTerminalMetric(copy.hp, String(uiState.run.playerHp)),
   );
 
   const actions = document.createElement("div");
@@ -498,13 +687,13 @@ function createSoloTerminalResult(): HTMLElement {
   const restartButton = document.createElement("button");
   restartButton.className = "primary-button";
   restartButton.type = "button";
-  restartButton.textContent = "Ещё раз";
+  restartButton.textContent = copy.again;
   restartButton.addEventListener("click", startSoloRun);
 
   const menuButton = document.createElement("button");
   menuButton.className = "terminal-result__secondary-button";
   menuButton.type = "button";
-  menuButton.textContent = "В меню";
+  menuButton.textContent = copy.menu;
   menuButton.addEventListener("click", returnToMainMenu);
 
   actions.append(restartButton, menuButton);
@@ -535,6 +724,7 @@ function createTerminalMetric(label: string, value: string): HTMLElement {
 }
 
 function createLogsOverlay(): HTMLElement {
+  const copy = getCopy();
   const overlay = document.createElement("div");
   overlay.className = "logs-overlay";
 
@@ -550,7 +740,7 @@ function createLogsOverlay(): HTMLElement {
   const button = document.createElement("button");
   button.className = uiState.logsOpen ? "logs-button logs-button--active" : "logs-button";
   button.type = "button";
-  button.textContent = "Logs";
+  button.textContent = copy.logs;
   button.addEventListener("click", () => {
     const nextOpen = !uiState.logsOpen;
     const selectedLog = getSelectedRoundLog(visibleLogs);
@@ -569,6 +759,7 @@ function createLogsOverlay(): HTMLElement {
 }
 
 function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
+  const copy = getCopy();
   const panel = document.createElement("section");
   panel.className = "logs-panel";
 
@@ -576,13 +767,13 @@ function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
   header.className = "logs-panel__header";
 
   const title = document.createElement("h2");
-  title.textContent = "Logs";
+  title.textContent = copy.logs;
 
   const closeButton = document.createElement("button");
   closeButton.className = "logs-panel__close";
   closeButton.type = "button";
-  closeButton.textContent = "x";
-  closeButton.setAttribute("aria-label", "Close logs");
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", copy.closeLogs);
   closeButton.addEventListener("click", () => {
     uiState = {
       ...uiState,
@@ -603,7 +794,7 @@ function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
         ? "logs-round-button logs-round-button--selected"
         : "logs-round-button";
     roundButton.type = "button";
-    roundButton.textContent = `Round ${log.round}`;
+    roundButton.textContent = formatMessage(copy.roundNumber, { round: log.round });
     roundButton.addEventListener("click", () => {
       uiState = {
         ...uiState,
@@ -629,11 +820,12 @@ function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
 }
 
 function createRoundLogReport(log: RoundRecord): HTMLElement {
+  const copy = getCopy();
   const report = document.createElement("div");
   report.className = "report report--log";
 
   const title = document.createElement("h2");
-  title.textContent = `Round ${log.round}`;
+  title.textContent = formatMessage(copy.roundNumber, { round: log.round });
 
   report.append(title, createBattleSummary(log), createMatchupList(log.playerSlots, log.enemySlots));
 
@@ -673,21 +865,25 @@ function createDraftPanel(): HTMLElement {
 function createDraftOnboarding(): HTMLElement {
   const hint = document.createElement("p");
   hint.className = "draft-onboarding";
-  hint.textContent = "Коснитесь карты и позиции на поле — или перетащите карту.";
+  hint.textContent = getCopy().onboarding;
 
   return hint;
 }
 
 function createDraftHeader(): HTMLElement {
+  const copy = getCopy();
   const header = document.createElement("div");
   header.className = "panel-header";
 
   const title = document.createElement("h1");
-  title.textContent = "Выберите одну карту";
+  title.textContent = copy.chooseCard;
 
   const caption = document.createElement("span");
   caption.className = "panel-caption";
-  caption.textContent = `Места ${getFilledSlotCount()}/${getBoardCapacity()}`;
+  caption.textContent = formatMessage(copy.slots, {
+    filled: getFilledSlotCount(),
+    capacity: getBoardCapacity(),
+  });
 
   header.append(title, caption);
 
@@ -708,6 +904,7 @@ function createDraftGrid(): HTMLElement {
 
 function createDraftCard(option: DraftOption): HTMLButtonElement {
   const card = getCardDefinition(option.cardId);
+  const localizedCard = getLocalizedCard(activeLocale, card);
   const meta = getCardDisplayMeta(card);
   const placeable = canPlaceDraftCard(option.cardId);
   const button = document.createElement("button");
@@ -723,7 +920,7 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   button.type = "button";
   button.disabled = uiState.mode !== "draft" || !placeable;
   button.draggable = false;
-  button.title = card.summary;
+  button.title = localizedCard.summary;
   button.dataset.cardId = option.cardId;
   button.setAttribute("aria-pressed", String(uiState.selectedDraftCardId === option.cardId));
 
@@ -748,7 +945,9 @@ function createCardFrame(): HTMLElement {
 }
 
 function createCardInfoPanel(cardId: CardId): HTMLElement {
+  const copy = getCopy();
   const card = getCardDefinition(cardId);
+  const localizedCard = getLocalizedCard(activeLocale, card);
   const meta = getCardDisplayMeta(card);
   const panel = document.createElement("aside");
   panel.className = `card-info-panel unit-card--${meta.archetype} unit-card--${meta.rarity}`;
@@ -756,13 +955,13 @@ function createCardInfoPanel(cardId: CardId): HTMLElement {
   const closeButton = document.createElement("button");
   closeButton.className = "card-info-panel__close";
   closeButton.type = "button";
-  closeButton.textContent = "x";
-  closeButton.setAttribute("aria-label", "Close card info");
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", copy.closeCardInfo);
   closeButton.addEventListener("click", closeCardInfo);
 
   const title = document.createElement("strong");
   title.className = "card-info-panel__title";
-  title.textContent = card.name;
+  title.textContent = localizedCard.name;
 
   const type = createCardMetaRow(meta);
   type.classList.add("card-info-panel__type");
@@ -774,13 +973,13 @@ function createCardInfoPanel(cardId: CardId): HTMLElement {
   tags.className = "card-info-panel__tags";
   card.tags.forEach((tag) => {
     const tagEl = document.createElement("span");
-    tagEl.textContent = tag;
+    tagEl.textContent = getTagLabel(activeLocale, tag);
     tags.append(tagEl);
   });
 
   const summary = document.createElement("p");
   summary.className = "card-info-panel__summary";
-  summary.textContent = card.summary;
+  summary.textContent = localizedCard.summary;
 
   panel.append(closeButton, title, type, createCardArt(card, meta), stats, tags, summary);
 
@@ -788,51 +987,140 @@ function createCardInfoPanel(cardId: CardId): HTMLElement {
 }
 
 function createRerollButton(): HTMLButtonElement {
+  const copy = getCopy();
   const button = document.createElement("button");
   button.className = "reroll-button";
   button.type = "button";
   button.disabled = !canRerollDraftCards(uiState.run);
-  button.textContent = button.disabled ? "Обновлено" : "Обновить";
+  button.textContent = button.disabled ? copy.rerollUsed : copy.reroll;
   button.addEventListener("click", rerollCurrentDraftCards);
 
   return button;
 }
 
 function createTapPlacementPanel(cardId: CardId): HTMLElement {
+  const copy = getCopy();
   const card = getCardDefinition(cardId);
-  const upgradeSlot = getUpgradeableBoardSlot(cardId);
+  const localizedCard = getLocalizedCard(activeLocale, card);
+  const placementKinds = getDraftPlacementClassifications(cardId).map((placement) => placement.kind);
   const panel = document.createElement("section");
   panel.className = "tap-placement-panel";
 
-  const copy = document.createElement("div");
-  copy.className = "tap-placement-panel__copy";
+  const copyContainer = document.createElement("div");
+  copyContainer.className = "tap-placement-panel__copy";
 
   const title = document.createElement("strong");
-  title.textContent = `Выбран: ${card.name}`;
+  title.textContent = formatMessage(copy.selectedCard, { card: localizedCard.name });
 
   const hint = document.createElement("span");
-  hint.textContent = upgradeSlot
-    ? "Коснитесь поля — существующий боец улучшится."
-    : "Коснитесь подходящей позиции на поле.";
-  copy.append(title, hint);
+  hint.textContent = placementKinds.includes("upgrade")
+    ? copy.upgradeHint
+    : placementKinds.includes("place")
+      ? copy.placeHint
+      : placementKinds.includes("replace")
+        ? copy.replacementHint
+        : copy.makeRoomHint;
+  copyContainer.append(title, hint);
 
   const actions = document.createElement("div");
   actions.className = "tap-placement-panel__actions";
 
   const infoButton = document.createElement("button");
   infoButton.type = "button";
-  infoButton.textContent = "О карте";
+  infoButton.textContent = copy.cardInfo;
   infoButton.addEventListener("click", () => openCardInfo(cardId));
 
   const cancelButton = document.createElement("button");
   cancelButton.type = "button";
-  cancelButton.textContent = "Отмена";
+  cancelButton.textContent = copy.cancel;
   cancelButton.addEventListener("click", cancelDraftCardSelection);
 
   actions.append(infoButton, cancelButton);
-  panel.append(copy, actions);
+  panel.append(copyContainer, actions);
 
   return panel;
+}
+
+function createDraftReplacementOverlay(pending: PendingDraftReplacement): HTMLElement | undefined {
+  const placement = classifyDraftPlacement(uiState.draftBoardSlots, pending.cardId, pending.slotIndex);
+  if (placement.kind !== "replace") {
+    pendingDraftReplacement = undefined;
+    return undefined;
+  }
+
+  const copy = getCopy();
+  const nextCard = getLocalizedCard(activeLocale, getCardDefinition(placement.cardId));
+  const replacedCard = getLocalizedCard(activeLocale, getCardDefinition(placement.replacedCardId));
+  const replacedName = placement.replacedUpgradeLevel ? `${replacedCard.name} ★` : replacedCard.name;
+  const overlay = document.createElement("div");
+  overlay.className = "draft-replacement-overlay";
+
+  const panel = document.createElement("section");
+  panel.className = "draft-replacement-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "draft-replacement-title");
+  panel.setAttribute("aria-describedby", "draft-replacement-body");
+
+  const title = document.createElement("h2");
+  title.id = "draft-replacement-title";
+  title.textContent = copy.replacementTitle;
+
+  const body = document.createElement("p");
+  body.id = "draft-replacement-body";
+  body.textContent = formatMessage(copy.replacementBody, {
+    old: replacedName,
+    card: nextCard.name,
+  });
+
+  const matchup = document.createElement("div");
+  matchup.className = "draft-replacement-panel__matchup";
+  matchup.append(
+    createDraftReplacementName(replacedName, "old"),
+    createDraftReplacementArrow(),
+    createDraftReplacementName(nextCard.name, "new"),
+  );
+
+  const actions = document.createElement("div");
+  actions.className = "draft-replacement-panel__actions";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "draft-replacement-panel__cancel";
+  cancelButton.type = "button";
+  cancelButton.textContent = copy.cancel;
+  cancelButton.addEventListener("click", cancelDraftReplacement);
+
+  const confirmButton = document.createElement("button");
+  confirmButton.className = "draft-replacement-panel__confirm";
+  confirmButton.type = "button";
+  confirmButton.textContent = copy.confirmReplacement;
+  confirmButton.addEventListener("click", confirmDraftReplacement);
+
+  actions.append(cancelButton, confirmButton);
+  panel.append(title, body, matchup, actions);
+  overlay.append(panel);
+  queueMicrotask(() => {
+    if (cancelButton.isConnected) {
+      cancelButton.focus();
+    }
+  });
+
+  return overlay;
+}
+
+function createDraftReplacementName(name: string, variant: "old" | "new"): HTMLElement {
+  const label = document.createElement("strong");
+  label.className = `draft-replacement-panel__unit draft-replacement-panel__unit--${variant}`;
+  label.textContent = name;
+  return label;
+}
+
+function createDraftReplacementArrow(): HTMLElement {
+  const arrow = document.createElement("span");
+  arrow.className = "draft-replacement-panel__arrow";
+  arrow.textContent = "→";
+  arrow.setAttribute("aria-hidden", "true");
+  return arrow;
 }
 
 function createPvpPanel(): HTMLElement {
@@ -1015,7 +1303,7 @@ function createPvpPlayerSlot(player: PvpPlayerSlot): HTMLElement {
 function createCardName(card: CardDefinition): HTMLElement {
   const name = document.createElement("strong");
   name.className = "unit-card__name";
-  name.textContent = card.name;
+  name.textContent = getLocalizedCard(activeLocale, card).name;
 
   return name;
 }
@@ -1088,6 +1376,7 @@ function createCardMetaRow(meta: CardDisplayMeta): HTMLElement {
 }
 
 function createCardArt(card: CardDefinition, meta: CardDisplayMeta): HTMLElement {
+  const localizedName = getLocalizedCard(activeLocale, card).name;
   const art = document.createElement("div");
   art.className = `unit-card__art unit-card__art--${meta.archetype} unit-card__art--${meta.rarity}`;
 
@@ -1095,14 +1384,14 @@ function createCardArt(card: CardDefinition, meta: CardDisplayMeta): HTMLElement
   if (assetPath) {
     const sprite = document.createElement("img");
     sprite.className = "unit-card__sprite";
-    sprite.alt = card.name;
+    sprite.alt = localizedName;
     sprite.decoding = "async";
     sprite.src = assetPath;
     art.append(sprite);
   } else {
     const placeholder = document.createElement("div");
     placeholder.className = "unit-card__image-placeholder";
-    placeholder.textContent = createCardInitials(card.name);
+    placeholder.textContent = createCardInitials(localizedName);
     art.append(placeholder);
   }
 
@@ -1111,6 +1400,7 @@ function createCardArt(card: CardDefinition, meta: CardDisplayMeta): HTMLElement
 
 function createDraftUnitDragGhost(cardId: CardId): HTMLElement {
   const card = getCardDefinition(cardId);
+  const localizedName = getLocalizedCard(activeLocale, card).name;
   const assetPath = getUnitAssetPath(card.id);
   const ghost = document.createElement("div");
   ghost.className = assetPath ? "draft-unit-drag-ghost draft-unit-drag-ghost--sprite" : "draft-unit-drag-ghost";
@@ -1127,7 +1417,7 @@ function createDraftUnitDragGhost(cardId: CardId): HTMLElement {
   } else {
     const avatar = document.createElement("span");
     avatar.className = `draft-unit-drag-ghost__avatar field-unit__avatar field-unit__avatar--${card.role}`;
-    avatar.textContent = createCardInitials(card.name);
+    avatar.textContent = createCardInitials(localizedName);
     ghost.append(avatar);
   }
 
@@ -1148,19 +1438,21 @@ function createCardInitials(name: string): string {
 }
 
 function createCardStats(card: CardDefinition): HTMLElement {
+  const copy = getCopy();
   const stats = document.createElement("div");
   stats.className = "unit-card__stats";
 
   stats.append(
-    createStat("ATK", card.stats.attack),
-    createStat("HP", card.stats.hp),
-    createStat("SPD", card.stats.speed),
+    createStat(copy.attack, card.stats.attack),
+    createStat(copy.hp, card.stats.hp),
+    createStat(copy.speed, card.stats.speed),
   );
 
   return stats;
 }
 
 function createCardAbility(card: CardDefinition): HTMLElement {
+  const localizedCard = getLocalizedCard(activeLocale, card);
   const ability = document.createElement("p");
   ability.className = "unit-card__ability";
 
@@ -1174,7 +1466,7 @@ function createCardAbility(card: CardDefinition): HTMLElement {
 
   const text = document.createElement("span");
   text.className = "unit-card__ability-text";
-  text.textContent = card.cardText ?? card.summary;
+  text.textContent = localizedCard.text;
   ability.append(text);
 
   return ability;
@@ -1204,9 +1496,9 @@ function getCardDisplayMeta(card: CardDefinition): CardDisplayMeta {
   return {
     archetype,
     archetypeIconPath: getCardArchetypeIconPath(archetype),
-    archetypeLabel: getCardArchetypeLabel(archetype),
+    archetypeLabel: getArchetypeLabel(activeLocale, archetype),
     rarity,
-    rarityLabel: getCardRarityLabel(rarity),
+    rarityLabel: getRarityLabel(activeLocale, rarity),
   };
 }
 
@@ -1232,30 +1524,6 @@ function getCardRarity(card: CardDefinition): CardRarity {
   }
 
   return "rare";
-}
-
-function getCardArchetypeLabel(archetype: CardArchetype): string {
-  if (archetype === "tank") {
-    return "Tank";
-  }
-
-  if (archetype === "support") {
-    return "Support";
-  }
-
-  return "Damage";
-}
-
-function getCardRarityLabel(rarity: CardRarity): string {
-  if (rarity === "uncommon") {
-    return "Uncommon";
-  }
-
-  if (rarity === "rare") {
-    return "Rare";
-  }
-
-  return "Common";
 }
 
 function createFieldSlotsLayer(): HTMLElement {
@@ -1303,11 +1571,14 @@ function createFieldActionBar(): HTMLElement {
 }
 
 function createFieldSlot(slotIndex: number): HTMLButtonElement {
+  const copy = getCopy();
   const slotState = getDraftBoardSlot(slotIndex);
   const cardId = slotState?.cardId ?? null;
   const card = cardId ? getCardDefinition(cardId) : undefined;
   const selectedDraftCardId = getSelectedDraftCardId();
-  const upgradeSlot = selectedDraftCardId ? getUpgradeableBoardSlot(selectedDraftCardId) : undefined;
+  const placement = selectedDraftCardId
+    ? classifyDraftPlacement(uiState.draftBoardSlots, selectedDraftCardId, slotIndex)
+    : undefined;
   const slot = document.createElement("button");
   const classes = ["field-slot"];
   if (card) {
@@ -1317,11 +1588,8 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   if (slotState?.upgradeLevel) {
     classes.push("field-slot--upgraded");
   }
-  if (selectedDraftCardId) {
-    classes.push(canApplyDraftCardAtSlot(selectedDraftCardId, slotIndex) ? "field-slot--tap-target" : "field-slot--tap-invalid");
-  }
-  if (upgradeSlot?.slotIndex === slotIndex) {
-    classes.push("field-slot--tap-upgrade");
+  if (placement) {
+    classes.push(placement.kind === "invalid" ? "field-slot--tap-invalid" : `field-slot--tap-${placement.kind}`);
   }
   slot.className = classes.join(" ");
   slot.type = "button";
@@ -1335,21 +1603,34 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
 
   if (selectedDraftCardId) {
     const selectedCard = getCardDefinition(selectedDraftCardId);
-    slot.title = upgradeSlot
-      ? `Улучшить ${selectedCard.name}`
-      : canApplyDraftCardAtSlot(selectedDraftCardId, slotIndex)
-        ? `Поставить ${selectedCard.name} на позицию ${slotIndex + 1}`
-        : `${selectedCard.name} нельзя поставить на позицию ${slotIndex + 1}`;
+    const selectedName = getLocalizedCard(activeLocale, selectedCard).name;
+    slot.title = placement?.kind === "upgrade"
+      ? formatMessage(copy.upgradeCard, { card: selectedName })
+      : placement?.kind === "place"
+        ? formatMessage(copy.placeCard, { card: selectedName, slot: slotIndex + 1 })
+        : placement?.kind === "replace"
+          ? formatMessage(copy.replaceCard, {
+            old: getLocalizedCard(activeLocale, getCardDefinition(placement.replacedCardId)).name,
+            card: selectedName,
+            slot: slotIndex + 1,
+          })
+          : formatMessage(copy.invalidPlacement, { card: selectedName, slot: slotIndex + 1 });
     slot.setAttribute("aria-label", slot.title);
   } else if (card) {
-    slot.title = slotState?.upgradeLevel ? `${card.name} upgraded` : `${card.name}`;
+    const localizedName = getLocalizedCard(activeLocale, card).name;
+    slot.title = slotState?.upgradeLevel ? formatMessage(copy.upgradedCard, { card: localizedName }) : localizedName;
     slot.setAttribute("aria-label", slot.title);
   } else {
-    slot.title = `Empty slot ${slotIndex + 1}`;
+    slot.title = formatMessage(copy.emptySlot, { slot: slotIndex + 1 });
     slot.setAttribute("aria-label", slot.title);
   }
 
-  slot.addEventListener("click", () => handleFieldSlotClick(slotIndex, card?.id));
+  slot.addEventListener("click", (event) => {
+    const resolvedSlotIndex = getSelectedDraftCardId()
+      ? getFieldSlotIndexForClick(event, slotIndex)
+      : slotIndex;
+    handleFieldSlotClick(resolvedSlotIndex, card?.id);
+  });
 
   if (card) {
     const unit = createFieldSlotUnit(card, slotState ?? createEmptyDraftBoardSlot(slotIndex));
@@ -1359,20 +1640,39 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
     }
   }
 
+  if (placement && placement.kind !== "invalid") {
+    slot.append(createFieldSlotTargetLabel(placement.kind));
+  }
+
   return slot;
 }
 
+function createFieldSlotTargetLabel(kind: Exclude<DraftPlacementClassification["kind"], "invalid">): HTMLElement {
+  const copy = getCopy();
+  const label = document.createElement("span");
+  label.className = `field-slot__target-label field-slot__target-label--${kind}`;
+  label.textContent = kind === "upgrade"
+    ? copy.upgradeTarget
+    : kind === "replace"
+      ? copy.replaceTarget
+      : copy.placeTarget;
+  label.setAttribute("aria-hidden", "true");
+  return label;
+}
+
 function createFieldSlotUnit(card: CardDefinition, slot: BoardSlot): HTMLElement {
+  const copy = getCopy();
+  const localizedName = getLocalizedCard(activeLocale, card).name;
   const assetPath = getUnitAssetPath(card.id);
   const unit = document.createElement("div");
   unit.className = assetPath ? "field-unit field-unit--sprite" : "field-unit";
-  unit.title = slot.upgradeLevel ? `${card.name} upgraded` : card.name;
+  unit.title = slot.upgradeLevel ? formatMessage(copy.upgradedCard, { card: localizedName }) : localizedName;
 
   let marker: HTMLElement;
   if (assetPath) {
     const sprite = document.createElement("img");
     sprite.className = "field-unit__sprite";
-    sprite.alt = card.name;
+    sprite.alt = localizedName;
     sprite.decoding = "async";
     sprite.draggable = false;
     sprite.src = assetPath;
@@ -1380,7 +1680,7 @@ function createFieldSlotUnit(card: CardDefinition, slot: BoardSlot): HTMLElement
   } else {
     marker = document.createElement("span");
     marker.className = `field-unit__avatar field-unit__avatar--${card.role}`;
-    marker.textContent = createCardInitials(card.name);
+    marker.textContent = createCardInitials(localizedName);
   }
 
   unit.append(marker);
@@ -1424,7 +1724,7 @@ function createActionBar(): HTMLElement {
     const newRunButton = document.createElement("button");
     newRunButton.className = "primary-button";
     newRunButton.type = "button";
-    newRunButton.textContent = "В меню";
+    newRunButton.textContent = getCopy().menu;
     newRunButton.addEventListener("click", returnToMainMenu);
     actions.append(newRunButton);
   }
@@ -1434,7 +1734,7 @@ function createActionBar(): HTMLElement {
 
 function getDraftActionLabel(): string {
   if (uiState.playMode !== "online") {
-    return "В бой";
+    return getCopy().fight;
   }
 
   if (isCurrentPvpPlayerSubmitted()) {
@@ -1445,10 +1745,11 @@ function getDraftActionLabel(): string {
 }
 
 function getBattleActionLabel(): string {
-  return isPvpMatchFinished() ? "В меню" : "Следующий раунд";
+  return isPvpMatchFinished() ? getCopy().menu : getCopy().nextRound;
 }
 
 function goToNextRound(): void {
+  pendingDraftReplacement = undefined;
   if (uiState.playMode === "online") {
     if (isPvpMatchFinished()) {
       returnToMainMenu();
@@ -1470,6 +1771,7 @@ function goToNextRound(): void {
     battlePresentationNotice: undefined,
     logsOpen: false,
   };
+  persistSoloRun();
   render();
 }
 
@@ -1487,7 +1789,7 @@ function getScenePhaserHost(): HTMLElement {
   if (!scenePhaserHostElement) {
     scenePhaserHostElement = document.createElement("div");
     scenePhaserHostElement.className = "scene-phaser-host";
-    scenePhaserHostElement.append(createSceneCanvasMessage("Loading scene..."));
+    scenePhaserHostElement.append(createSceneCanvasMessage(getCopy().sceneLoading));
   }
 
   return scenePhaserHostElement;
@@ -1517,7 +1819,7 @@ function syncBattlefield(): void {
   }
 
   if (FORCE_RENDERER_FAILURE || battlefieldPresentationDisabled) {
-    showBattlefieldFallback("Анимация боя отключена для проверки. Результат рассчитан, можно продолжить.");
+    showBattlefieldFallback(getCopy().rendererForced);
     return;
   }
 
@@ -1545,7 +1847,38 @@ function createBattlefieldCommand(): BattlefieldCommand | undefined {
   return {
     type: "battle",
     key: `battle:${uiState.run.seed}:${uiState.lastRound}:${uiState.lastBattleTimeline.events.length}:${uiState.lastBattleTimeline.winner}`,
-    timeline: uiState.lastBattleTimeline,
+    timeline: localizeBattleTimeline(uiState.lastBattleTimeline),
+  };
+}
+
+function createRestoredSoloUiState(snapshot: SoloRunSnapshot): UiState {
+  const mode: ScreenMode = snapshot.checkpoint === "finished"
+    ? "finished"
+    : snapshot.checkpoint === "battle_result"
+      ? "battle"
+      : "draft";
+  const lastRoundRecord = snapshot.checkpoint === "draft" ? undefined : getLastRoundRecord(snapshot.run);
+
+  return {
+    ...createInitialUiState(snapshot.run.seed, "solo", mode),
+    run: snapshot.run,
+    mode,
+    draftBoardSlots: cloneBoardSlots(snapshot.draftBoardSlots),
+    cardPickedThisRound: snapshot.cardPickedThisRound,
+    battleFinished: snapshot.checkpoint !== "draft",
+    selectedLogRound: lastRoundRecord?.round,
+    lastRound: snapshot.lastRound,
+    lastBattleTimeline: createTimelineForRoundRecord(lastRoundRecord),
+  };
+}
+
+function localizeBattleTimeline(timeline: BattleTimeline): BattleTimeline {
+  return {
+    ...timeline,
+    units: timeline.units.map((unit) => ({
+      ...unit,
+      name: getLocalizedCard(activeLocale, getCardDefinition(unit.cardId)).name,
+    })),
   };
 }
 
@@ -1580,7 +1913,7 @@ function mountBattlefield(): void {
       .catch((error: unknown) => {
         battlefieldMountRequested = false;
         console.error("Failed to mount Phaser battlefield", error);
-        showBattlefieldFallback("Анимация боя недоступна. Результат рассчитан, можно продолжить.");
+        showBattlefieldFallback(getCopy().rendererUnavailable);
       });
   });
 }
@@ -1602,10 +1935,15 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
       timeline: command.timeline,
       onFinished: handleBattlefieldFinished,
       onError: handleBattlefieldError,
+      resultLabels: {
+        player: getCopy().victory,
+        enemy: getCopy().defeat,
+        draw: getCopy().draw,
+      },
     });
   } catch (error: unknown) {
     console.error("Failed to apply Phaser battlefield command", error);
-    showBattlefieldFallback("Анимация боя прервалась. Результат рассчитан, можно продолжить.");
+    showBattlefieldFallback(getCopy().rendererInterrupted);
   }
 }
 
@@ -1615,7 +1953,7 @@ function handleBattlefieldFinished(): void {
 
 function handleBattlefieldError(error: unknown): void {
   console.error("Phaser battle presentation failed", error);
-  showBattlefieldFallback("Анимация боя прервалась. Результат рассчитан, можно продолжить.");
+  showBattlefieldFallback(getCopy().rendererInterrupted);
 }
 
 function completeBattlePresentation(notice?: string): void {
@@ -1655,8 +1993,8 @@ function showBattlefieldFallback(message: string): void {
   const phaserHost = getScenePhaserHost();
   if (phaserHost.isConnected) {
     const placeholder = latestBattlefieldCommand?.type === "battle"
-      ? "Результат боя готов."
-      : "Поле боя недоступно. Драфт продолжает работать.";
+      ? getCopy().battleResultReady
+      : getCopy().battlefieldUnavailable;
     phaserHost.replaceChildren(createSceneCanvasMessage(placeholder));
   }
 
@@ -1677,7 +2015,7 @@ function ensureBattlePresentationWatchdog(commandKey: string): void {
       return;
     }
 
-    completeBattlePresentation("Анимация заняла слишком много времени. Результат рассчитан, можно продолжить.");
+    completeBattlePresentation(getCopy().rendererTimeout);
   }, BATTLE_PRESENTATION_WATCHDOG_MS);
 }
 
@@ -1691,12 +2029,13 @@ function clearBattlePresentationWatchdog(): void {
 }
 
 function createBattleSummary(log: RoundRecord): HTMLElement {
+  const copy = getCopy();
   const combat = log.combatResult;
   const summary = document.createElement("div");
   summary.className = `battle-summary battle-summary--${combat.winner}`;
 
   const winner = document.createElement("strong");
-  winner.textContent = combat.winner === "player" ? "Victory" : combat.winner === "enemy" ? "Defeat" : "Draw";
+  winner.textContent = combat.winner === "player" ? copy.victory : combat.winner === "enemy" ? copy.defeat : copy.draw;
 
   const detail = document.createElement("span");
   detail.textContent = getBattleSummaryDetail(log);
@@ -1707,14 +2046,15 @@ function createBattleSummary(log: RoundRecord): HTMLElement {
 }
 
 function getBattleSummaryDetail(log: RoundRecord): string {
+  const copy = getCopy();
   const playerHpLoss = Math.max(0, log.playerHpBefore - log.playerHpAfter);
   if (typeof log.enemyHpBefore === "number" && typeof log.enemyHpAfter === "number") {
     const enemyHpLoss = Math.max(0, log.enemyHpBefore - log.enemyHpAfter);
 
-    return `Your HP -${playerHpLoss} | Enemy HP -${enemyHpLoss} | ${log.combatResult.actions} actions`;
+    return `${copy.yourHp} -${playerHpLoss} | ${copy.enemyHp} -${enemyHpLoss} | ${log.combatResult.actions} ${copy.actions}`;
   }
 
-  return `HP loss ${log.combatResult.hpLoss} | ${log.combatResult.actions} actions`;
+  return `${copy.hpLoss} ${log.combatResult.hpLoss} | ${log.combatResult.actions} ${copy.actions}`;
 }
 
 function createEventPills(combat: CombatResult): HTMLElement {
@@ -1724,7 +2064,7 @@ function createEventPills(combat: CombatResult): HTMLElement {
   const counts = countEvents(combat);
   Object.entries(counts).forEach(([type, count]) => {
     const pill = document.createElement("span");
-    pill.textContent = `${type.replace("unit_", "")} ${count}`;
+    pill.textContent = `${getCombatEventLabel(activeLocale, type as LocalizedCombatEvent)} ${count}`;
     pills.append(pill);
   });
 
@@ -1732,16 +2072,17 @@ function createEventPills(combat: CombatResult): HTMLElement {
 }
 
 function createMatchupList(playerSlots: readonly BoardSlot[], enemySlots: readonly BoardSlot[]): HTMLElement {
+  const copy = getCopy();
   const matchup = document.createElement("div");
   matchup.className = "matchup";
 
   const player = document.createElement("div");
   player.className = "matchup__side";
-  player.append(createMatchupTitle("You"), createCompactCards(playerSlots));
+  player.append(createMatchupTitle(copy.you), createCompactCards(playerSlots));
 
   const enemy = document.createElement("div");
   enemy.className = "matchup__side";
-  enemy.append(createMatchupTitle("Bot"), createCompactCards(enemySlots));
+  enemy.append(createMatchupTitle(copy.bot), createCompactCards(enemySlots));
 
   matchup.append(player, enemy);
 
@@ -1765,10 +2106,11 @@ function createCompactCards(slots: readonly BoardSlot[]): HTMLElement {
     }
 
     const card = getCardDefinition(slot.cardId);
+    const localizedCard = getLocalizedCard(activeLocale, card);
     const stats = getCardStatsForUpgrade(card, slot.upgradeLevel);
     const item = document.createElement("div");
     item.className = "compact-card";
-    item.textContent = `${card.name}${slot.upgradeLevel ? " ★" : ""} ${stats.attack}/${stats.hp}`;
+    item.textContent = `${localizedCard.name}${slot.upgradeLevel ? " ★" : ""} ${stats.attack}/${stats.hp}`;
     list.append(item);
   });
 
@@ -1791,10 +2133,6 @@ function getSelectedDraftCardId(): CardId | undefined {
   const cardId = uiState.selectedDraftCardId;
 
   return cardId && getCurrentDraftOption(cardId) ? cardId : undefined;
-}
-
-function getUpgradeableBoardSlot(cardId: CardId, slots = uiState.draftBoardSlots): BoardSlot | undefined {
-  return slots.find((slot) => slot.cardId === cardId && slot.upgradeLevel === 0);
 }
 
 function createEmptyDraftBoardSlot(slotIndex: number): BoardSlot {
@@ -1820,37 +2158,6 @@ function getCurrentDraftOption(cardId: CardId): DraftOption | undefined {
   return getCurrentDraftOptions().find((option) => option.cardId === cardId);
 }
 
-function applyDraftCardToSlot(
-  slots: readonly BoardSlot[],
-  cardId: CardId,
-  slotIndex: number,
-): BoardSlot[] | undefined {
-  if (!canDropIntoSlot(slotIndex)) {
-    return undefined;
-  }
-
-  const nextSlots = cloneBoardSlots(slots);
-  const upgradeSlot = getUpgradeableBoardSlot(cardId, nextSlots);
-  if (upgradeSlot) {
-    upgradeSlot.upgradeLevel = 1;
-    return nextSlots;
-  }
-
-  if (!canDropCardIntoSlot(cardId, slotIndex)) {
-    return undefined;
-  }
-
-  const targetSlot = nextSlots.find((slot) => slot.slotIndex === slotIndex);
-  if (!targetSlot) {
-    return undefined;
-  }
-
-  targetSlot.cardId = cardId;
-  targetSlot.upgradeLevel = 0;
-
-  return nextSlots;
-}
-
 function getCurrentDraftOptions(): DraftOption[] {
   if (uiState.cardPickedThisRound) {
     return [];
@@ -1867,29 +2174,80 @@ function canPlaceDraftCard(cardId: CardId): boolean {
   return getCurrentDraftOptions().some((option) => option.cardId === cardId);
 }
 
-function placeDraftCardInSlot(cardId: CardId, slotIndex: number): void {
+function getDraftPlacementClassifications(cardId: CardId): DraftPlacementClassification[] {
+  return uiState.draftBoardSlots.map((slot) => classifyDraftPlacement(uiState.draftBoardSlots, cardId, slot.slotIndex));
+}
+
+function requestDraftPlacement(cardId: CardId, slotIndex: number): void {
   if (uiState.mode !== "draft") {
     return;
   }
 
   const draftOption = getCurrentDraftOption(cardId);
-  if (!draftOption || !canApplyDraftCardAtSlot(cardId, slotIndex)) {
+  if (!draftOption) {
     return;
   }
 
-  const draftBoardSlots = applyDraftCardToSlot(uiState.draftBoardSlots, cardId, slotIndex);
-  if (!draftBoardSlots) {
+  const placement = classifyDraftPlacement(uiState.draftBoardSlots, cardId, slotIndex);
+  if (placement.kind === "replace") {
+    pendingDraftReplacement = { cardId, slotIndex };
+    render();
     return;
   }
 
+  applyDraftCardInSlot(cardId, slotIndex, false);
+}
+
+function applyDraftCardInSlot(cardId: CardId, slotIndex: number, allowReplacement: boolean): void {
+  if (uiState.mode !== "draft" || !getCurrentDraftOption(cardId)) {
+    if (allowReplacement) {
+      pendingDraftReplacement = undefined;
+      render();
+    }
+    return;
+  }
+
+  const result = applyDraftPlacement(uiState.draftBoardSlots, cardId, slotIndex, { allowReplacement });
+  if (!result.applied) {
+    if (allowReplacement) {
+      pendingDraftReplacement = undefined;
+      render();
+    }
+    return;
+  }
+
+  pendingDraftReplacement = undefined;
   uiState = {
     ...uiState,
-    draftBoardSlots,
+    draftBoardSlots: result.boardSlots,
     cardPickedThisRound: true,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
   };
+  persistSoloRun();
   render();
+}
+
+function confirmDraftReplacement(): void {
+  const pending = pendingDraftReplacement;
+  if (!pending) {
+    return;
+  }
+
+  applyDraftCardInSlot(pending.cardId, pending.slotIndex, true);
+}
+
+function cancelDraftReplacement(): void {
+  const pending = pendingDraftReplacement;
+  if (!pending) {
+    return;
+  }
+
+  pendingDraftReplacement = undefined;
+  render();
+  queueMicrotask(() => {
+    document.querySelector<HTMLElement>(`[data-field-slot-index="${pending.slotIndex}"]`)?.focus();
+  });
 }
 
 function handleDraftCardClick(cardId: CardId): void {
@@ -1902,6 +2260,7 @@ function handleDraftCardClick(cardId: CardId): void {
     return;
   }
 
+  pendingDraftReplacement = undefined;
   uiState = {
     ...uiState,
     selectedDraftCardId: cardId,
@@ -1918,9 +2277,7 @@ function handleFieldSlotClick(slotIndex: number, cardId?: CardId): void {
 
   const selectedDraftCardId = getSelectedDraftCardId();
   if (selectedDraftCardId) {
-    if (canApplyDraftCardAtSlot(selectedDraftCardId, slotIndex)) {
-      placeDraftCardInSlot(selectedDraftCardId, slotIndex);
-    }
+    requestDraftPlacement(selectedDraftCardId, slotIndex);
     return;
   }
 
@@ -1930,6 +2287,7 @@ function handleFieldSlotClick(slotIndex: number, cardId?: CardId): void {
 }
 
 function cancelDraftCardSelection(): void {
+  pendingDraftReplacement = undefined;
   uiState = {
     ...uiState,
     selectedDraftCardId: undefined,
@@ -1967,12 +2325,14 @@ function rerollCurrentDraftCards(): void {
     return;
   }
 
+  pendingDraftReplacement = undefined;
   uiState = {
     ...uiState,
     run: rerollDraftCards(uiState.run),
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
   };
+  persistSoloRun();
   render();
 }
 
@@ -2069,7 +2429,10 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
     moveGhost(moveEvent.clientX, moveEvent.clientY);
     const dropPoint = getPointerDragDropPoint(moveEvent.clientX, moveEvent.clientY, isTouchDrag, touchFootOffsetY);
     const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
-    setFieldSlotDropTarget(slotIndex, canApplyDraftCardAtSlot(cardId, slotIndex), slotHitTargets);
+    const placementKind = slotIndex === undefined
+      ? undefined
+      : classifyDraftPlacement(uiState.draftBoardSlots, cardId, slotIndex).kind;
+    setFieldSlotDropTarget(slotIndex, placementKind, slotHitTargets);
   };
 
   handleUp = (upEvent: PointerEvent): void => {
@@ -2089,7 +2452,7 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
     cleanup();
 
     if (slotIndex !== undefined) {
-      placeDraftCardInSlot(cardId, slotIndex);
+      requestDraftPlacement(cardId, slotIndex);
     }
   };
 
@@ -2138,6 +2501,7 @@ function moveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number): void {
     draftBoardSlots,
     selectedCardInfoId: undefined,
   };
+  persistSoloRun();
   render();
 }
 
@@ -2214,7 +2578,12 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
     moveGhost(moveEvent.clientX, moveEvent.clientY);
     const dropPoint = getPointerDragDropPoint(moveEvent.clientX, moveEvent.clientY, isTouchDrag, touchFootOffsetY);
     const slotIndex = getFieldSlotIndexAtPoint(dropPoint.clientX, dropPoint.clientY, slotHitTargets);
-    setFieldSlotDropTarget(slotIndex, canMoveBoardSlotUnit(fromSlotIndex, slotIndex), slotHitTargets);
+    const moveKind = slotIndex === undefined
+      ? undefined
+      : canMoveBoardSlotUnit(fromSlotIndex, slotIndex)
+        ? "place"
+        : "invalid";
+    setFieldSlotDropTarget(slotIndex, moveKind, slotHitTargets);
   };
 
   handleUp = (upEvent: PointerEvent): void => {
@@ -2272,14 +2641,22 @@ function createFieldSlotHitTargets(isTouchDrag = false): FieldSlotHitTarget[] {
     targets.push({
       slotIndex,
       element: fieldSlot,
-      left: rect.left,
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom,
-      hitLeft: rect.left - hitPadding,
-      hitTop: rect.top - hitPadding,
-      hitRight: rect.right + hitPadding,
-      hitBottom: rect.bottom + hitPadding,
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      },
+      hitRect: {
+        left: rect.left - hitPadding,
+        top: rect.top - hitPadding,
+        right: rect.right + hitPadding,
+        bottom: rect.bottom + hitPadding,
+      },
+      anchor: {
+        x: (rect.left + rect.right) / 2,
+        y: rect.bottom - rect.height * FIELD_SLOT_BASE_CENTER_FROM_BOTTOM_RATIO,
+      },
     });
   });
 
@@ -2291,42 +2668,23 @@ function getFieldSlotIndexAtPoint(
   clientY: number,
   targets: readonly FieldSlotHitTarget[],
 ): number | undefined {
-  const exactTarget = targets.find((target) => isPointInsideFieldSlotHitTarget(clientX, clientY, target, false));
-  if (exactTarget) {
-    return exactTarget.slotIndex;
-  }
-
-  return targets.find((target) => isPointInsideFieldSlotHitTarget(clientX, clientY, target, true))?.slotIndex;
+  return findNearestSlotHitTarget({ x: clientX, y: clientY }, targets)?.slotIndex;
 }
 
-function isPointInsideFieldSlotHitTarget(
-  clientX: number,
-  clientY: number,
-  target: FieldSlotHitTarget,
-  useHitPadding: boolean,
-): boolean {
-  const left = useHitPadding ? target.hitLeft : target.left;
-  const top = useHitPadding ? target.hitTop : target.top;
-  const right = useHitPadding ? target.hitRight : target.right;
-  const bottom = useHitPadding ? target.hitBottom : target.bottom;
+function getFieldSlotIndexForClick(event: MouseEvent, fallbackSlotIndex: number): number {
+  if (event.detail === 0 && event.clientX === 0 && event.clientY === 0) {
+    return fallbackSlotIndex;
+  }
 
-  return clientX >= left && clientX <= right && clientY >= top && clientY <= bottom;
+  return getFieldSlotIndexAtPoint(
+    event.clientX,
+    event.clientY,
+    createFieldSlotHitTargets(false),
+  ) ?? fallbackSlotIndex;
 }
 
 function canDropIntoSlot(slotIndex: number): boolean {
   return Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < BOARD_SLOT_COUNT;
-}
-
-function canDropCardIntoSlot(cardId: CardId, slotIndex: number | undefined): boolean {
-  return slotIndex !== undefined && canDropIntoSlot(slotIndex) && isCardAllowedInSlot(cardId, slotIndex);
-}
-
-function canApplyDraftCardAtSlot(cardId: CardId, slotIndex: number | undefined): boolean {
-  if (slotIndex === undefined || !canDropIntoSlot(slotIndex)) {
-    return false;
-  }
-
-  return Boolean(getUpgradeableBoardSlot(cardId)) || canDropCardIntoSlot(cardId, slotIndex);
 }
 
 function canMoveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number | undefined): boolean {
@@ -2354,19 +2712,25 @@ function canSwapBoardSlots(source: BoardSlot, target: BoardSlot): boolean {
 
 function setFieldSlotDropTarget(
   slotIndex: number | undefined,
-  isValid = true,
+  kind?: DraftPlacementClassification["kind"],
   targets: readonly FieldSlotHitTarget[] = [],
 ): void {
   const nextSlotIndex = slotIndex !== undefined && canDropIntoSlot(slotIndex) ? slotIndex : undefined;
-  const nextIsValid = nextSlotIndex === undefined ? true : isValid;
-  if (activeFieldSlotDropTarget.slotIndex === nextSlotIndex && activeFieldSlotDropTarget.isValid === nextIsValid) {
+  const nextKind = nextSlotIndex === undefined ? undefined : (kind ?? "invalid");
+  if (activeFieldSlotDropTarget.slotIndex === nextSlotIndex && activeFieldSlotDropTarget.kind === nextKind) {
     return;
   }
 
-  activeFieldSlotDropTarget.element?.classList.remove("field-slot--drop-target", "field-slot--drop-invalid");
-  activeFieldSlotDropTarget = { isValid: true };
+  activeFieldSlotDropTarget.element?.classList.remove(
+    "field-slot--drop-place",
+    "field-slot--drop-upgrade",
+    "field-slot--drop-replace",
+    "field-slot--drop-invalid",
+  );
+  activeFieldSlotDropTarget.element?.querySelector(":scope > .field-slot__drop-label")?.remove();
+  activeFieldSlotDropTarget = {};
 
-  if (nextSlotIndex === undefined) {
+  if (nextSlotIndex === undefined || nextKind === undefined) {
     return;
   }
 
@@ -2379,8 +2743,13 @@ function setFieldSlotDropTarget(
     return;
   }
 
-  element.classList.add(nextIsValid ? "field-slot--drop-target" : "field-slot--drop-invalid");
-  activeFieldSlotDropTarget = { slotIndex: nextSlotIndex, isValid: nextIsValid, element };
+  element.classList.add(`field-slot--drop-${nextKind}`);
+  if (nextKind !== "invalid") {
+    const label = createFieldSlotTargetLabel(nextKind);
+    label.classList.add("field-slot__drop-label");
+    element.append(label);
+  }
+  activeFieldSlotDropTarget = { slotIndex: nextSlotIndex, kind: nextKind, element };
 }
 
 function setDraftDragging(isDragging: boolean): void {
@@ -2397,23 +2766,16 @@ function fightRound(): void {
     return;
   }
 
-  if (!uiState.cardPickedThisRound && !window.confirm("You can still pick one card this round. Fight anyway?")) {
+  if (!uiState.cardPickedThisRound && !window.confirm(getCopy().skipPickConfirm)) {
     return;
   }
 
+  pendingDraftReplacement = undefined;
   const playedRound = uiState.run.round;
   const combatReadyRun = chooseDraftCards(uiState.run, uiState.draftBoardSlots);
   const nextRun = resolveRound(combatReadyRun);
   const lastRoundRecord = getLastRoundRecord(nextRun);
-  const lastBattleTimeline = lastRoundRecord
-    ? createBattleTimeline({
-        playerSlots: lastRoundRecord.playerSlots,
-        enemySlots: lastRoundRecord.enemySlots,
-        combat: lastRoundRecord.combatResult,
-        playerCastleHpBefore: lastRoundRecord.playerHpBefore,
-        playerCastleHpAfter: lastRoundRecord.playerHpAfter,
-      })
-    : undefined;
+  const lastBattleTimeline = createTimelineForRoundRecord(lastRoundRecord);
 
   uiState = {
     ...uiState,
@@ -2429,11 +2791,26 @@ function fightRound(): void {
     lastRound: playedRound,
     lastBattleTimeline,
   };
+  persistSoloRun();
   render();
 }
 
 function getLastRoundRecord(run: RunState): RoundRecord | undefined {
   return run.roundHistory[run.roundHistory.length - 1];
+}
+
+function createTimelineForRoundRecord(record: RoundRecord | undefined): BattleTimeline | undefined {
+  if (!record) {
+    return undefined;
+  }
+
+  return createBattleTimeline({
+    playerSlots: record.playerSlots,
+    enemySlots: record.enemySlots,
+    combat: record.combatResult,
+    playerCastleHpBefore: record.playerHpBefore,
+    playerCastleHpAfter: record.playerHpAfter,
+  });
 }
 
 function countEvents(combat: CombatResult): Record<string, number> {
@@ -3261,6 +3638,65 @@ function getPvpStatusLabel(): string {
   }
 
   return "Idle";
+}
+
+function getCopy(): UiCopy {
+  return getUiCopy(activeLocale);
+}
+
+function getPreferenceStorage(): KeyValueStorage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function getSoloRunStorage(): SoloRunStorage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function persistSoloRun(): void {
+  if (uiState.playMode !== "solo" || uiState.mode === "menu") {
+    return;
+  }
+
+  const checkpoint: SoloRunCheckpoint = uiState.run.status === "finished"
+    ? "finished"
+    : uiState.mode === "battle"
+      ? "battle_result"
+      : "draft";
+
+  const saved = saveSoloRunSnapshot(soloRunStorage, {
+    checkpoint,
+    run: uiState.run,
+    draftBoardSlots: uiState.draftBoardSlots,
+    cardPickedThisRound: uiState.cardPickedThisRound,
+    lastRound: uiState.lastRound,
+  });
+
+  if (!saved) {
+    reportSoloPersistenceFailure("save");
+  }
+}
+
+function clearPersistedSoloRun(): void {
+  if (!clearSoloRunSnapshot(soloRunStorage)) {
+    reportSoloPersistenceFailure("clear");
+  }
+}
+
+function reportSoloPersistenceFailure(action: "save" | "clear"): void {
+  if (soloPersistenceFailureReported) {
+    return;
+  }
+
+  soloPersistenceFailureReported = true;
+  console.warn(`Unable to ${action} the local solo run. Progress may not survive a reload.`);
 }
 
 function createSeed(): string {

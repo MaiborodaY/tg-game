@@ -53,8 +53,8 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
     tier: 1,
     stats: { attack: 3, hp: 9, speed: 5, range: 2 },
     abilityId: "none",
-    cardText: "Simple reach fighter.",
-    summary: "Simple reach fighter.",
+    cardText: "Simple and reliable fighter.",
+    summary: "Simple and reliable fighter.",
   },
   {
     id: "longbow_hunter",

@@ -53,6 +53,27 @@ test("enemy boards always fill their round capacity with legal placements", () =
   }
 });
 
+test("enemy boards add 0/2/4/6 upgraded units across rounds 6-9", () => {
+  const expectedUpgradeCounts = new Map([
+    [6, 0],
+    [7, 2],
+    [8, 4],
+    [9, 6],
+    [10, 6],
+  ]);
+
+  for (const [round, expectedUpgradeCount] of expectedUpgradeCounts) {
+    const first = createEnemyBoardSlots("late-game-scaling", round);
+    const repeated = createEnemyBoardSlots("late-game-scaling", round);
+
+    assert.deepEqual(first, repeated);
+    assert.equal(
+      first.filter((slot) => slot.cardId !== null && slot.upgradeLevel === 1).length,
+      expectedUpgradeCount,
+    );
+  }
+});
+
 test("a duplicate upgrades an existing level-zero copy before using an empty slot", () => {
   const state = createRun("p0-duplicate-seed");
   state.boardSlots[0] = { slotIndex: 0, cardId: "sneakblade", upgradeLevel: 1 };
