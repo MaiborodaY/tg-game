@@ -17,10 +17,16 @@ test("battle HUD and playback controls stay wired to live renderer state", () =>
 
 test("draft UI exposes enemy intelligence, synergy forecasts, and keyboard movement", () => {
   assert.match(mainSource, /getLastKnownEnemyArmy\(uiState\.run\)/);
+  assert.match(mainSource, /openEnemyCardInfo\(slot\.slotIndex\)/);
+  assert.match(mainSource, /createCardInfoPanel\(inspectedEnemyUnit\.cardId, inspectedEnemyUnit, "enemy"\)/);
+  assert.match(mainSource, /overlayClasses\.push\("draft-overlay--card-info-open"\)/);
   assert.match(mainSource, /getDraftOptionSynergyPresentation\(option, uiState\.draftBoardSlots\)/);
+  assert.match(mainSource, /createCardDragHandle\(\)/);
   assert.match(mainSource, /startKeyboardBoardMove\(boardUnit\.slotIndex\)/);
   assert.match(mainSource, /canMoveBoardSlotUnit\(keyboardMoveSourceSlotIndex, slotIndex\)/);
+  assert.match(mainSource, /handleFieldSlotClick\(getFieldSlotIndexForClick\(event, slotIndex\)\)/);
   assert.match(styles, /\.enemy-army-intel\s*\{/);
+  assert.match(styles, /\.draft-overlay--card-info-open\s*\{[^}]*z-index:\s*4/s);
   assert.match(styles, /\.unit-card__synergy-forecast\s*\{/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{/);
 });

@@ -16,6 +16,16 @@ export interface SlotHitTargetGeometry {
   anchor: FieldHitPoint;
 }
 
+export interface IndexedSlotHitTargetGeometry extends SlotHitTargetGeometry {
+  slotIndex: number;
+}
+
+export interface FieldSlotClickActivation {
+  clientX: number;
+  clientY: number;
+  detail: number;
+}
+
 export function findNearestSlotHitTarget<T extends SlotHitTargetGeometry>(
   point: FieldHitPoint,
   targets: readonly T[],
@@ -34,6 +44,21 @@ export function findNearestSlotHitTarget<T extends SlotHitTargetGeometry>(
       ? candidate
       : nearest;
   }, undefined);
+}
+
+export function resolveFieldSlotIndexForClick<T extends IndexedSlotHitTargetGeometry>(
+  activation: FieldSlotClickActivation,
+  suppliedSlotIndex: number,
+  targets: readonly T[],
+): number {
+  if (activation.detail === 0 && activation.clientX === 0 && activation.clientY === 0) {
+    return suppliedSlotIndex;
+  }
+
+  return findNearestSlotHitTarget(
+    { x: activation.clientX, y: activation.clientY },
+    targets,
+  )?.slotIndex ?? suppliedSlotIndex;
 }
 
 function containsPoint(rect: FieldHitRect, point: FieldHitPoint): boolean {

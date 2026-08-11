@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { findNearestSlotHitTarget } from "../src/fieldHitTesting.ts";
+import {
+  findNearestSlotHitTarget,
+  resolveFieldSlotIndexForClick,
+} from "../src/fieldHitTesting.ts";
 
 function createTarget(slotIndex, rect, hitRect, anchor) {
   return { slotIndex, rect, hitRect, anchor };
@@ -46,4 +49,34 @@ test("a point outside every exact and padded rectangle returns undefined", () =>
   );
 
   assert.equal(findNearestSlotHitTarget({ x: 30, y: 30 }, [target]), undefined);
+});
+
+test("pointer clicks resolve overlapping rows by the visual anchor instead of the DOM target", () => {
+  const targets = [
+    createTarget(0, { left: 20, top: 55, right: 100, bottom: 135 }, { left: 12, top: 47, right: 108, bottom: 143 }, { x: 60, y: 112 }),
+    createTarget(3, { left: 20, top: 20, right: 100, bottom: 100 }, { left: 12, top: 12, right: 108, bottom: 108 }, { x: 60, y: 72 }),
+  ];
+
+  const resolvedSlotIndex = resolveFieldSlotIndexForClick(
+    { clientX: 60, clientY: 95, detail: 1 },
+    3,
+    targets,
+  );
+
+  assert.equal(resolvedSlotIndex, 0);
+});
+
+test("keyboard and programmatic clicks preserve the supplied DOM slot", () => {
+  const targets = [
+    createTarget(0, { left: -20, top: -20, right: 20, bottom: 20 }, { left: -30, top: -30, right: 30, bottom: 30 }, { x: 0, y: 0 }),
+    createTarget(3, { left: 20, top: 20, right: 100, bottom: 100 }, { left: 12, top: 12, right: 108, bottom: 108 }, { x: 60, y: 72 }),
+  ];
+
+  const resolvedSlotIndex = resolveFieldSlotIndexForClick(
+    { clientX: 0, clientY: 0, detail: 0 },
+    3,
+    targets,
+  );
+
+  assert.equal(resolvedSlotIndex, 3);
 });

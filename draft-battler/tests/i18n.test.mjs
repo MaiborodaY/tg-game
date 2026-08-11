@@ -188,7 +188,16 @@ test("battle HUD, spatial positions, and draft forecasts are complete in every l
       assert.match(value, /\S/, `${locale}:new HUD copy is non-empty`);
       assert.doesNotMatch(value, /\{[^}]+\}/, `${locale}:new HUD copy has no unresolved placeholders`);
     });
-    [copy.enemyArmy, copy.enemyArmyHint, copy.moveUnit, copy.chooseMoveTarget, copy.battleSpeed, copy.skipBattle]
+    [
+      copy.enemyArmy,
+      copy.enemyArmyHint,
+      copy.frontRowShort,
+      copy.backRowShort,
+      copy.moveUnit,
+      copy.chooseMoveTarget,
+      copy.battleSpeed,
+      copy.skipBattle,
+    ]
       .forEach((value) => assert.match(value, /\S/, `${locale}:new control copy`));
   });
 });

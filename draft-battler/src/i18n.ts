@@ -94,6 +94,8 @@ export interface UiCopy {
   fieldPosition: string;
   frontRow: string;
   backRow: string;
+  frontRowShort: string;
+  backRowShort: string;
   leftColumn: string;
   centerColumn: string;
   rightColumn: string;
@@ -206,6 +208,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     fieldPosition: "{row}, {column}",
     frontRow: "передний ряд",
     backRow: "задний ряд",
+    frontRowShort: "Перед",
+    backRowShort: "Тыл",
     leftColumn: "слева",
     centerColumn: "центр",
     rightColumn: "справа",
@@ -310,6 +314,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     fieldPosition: "{row}, {column}",
     frontRow: "передній ряд",
     backRow: "задній ряд",
+    frontRowShort: "Перед",
+    backRowShort: "Тил",
     leftColumn: "ліворуч",
     centerColumn: "центр",
     rightColumn: "праворуч",
@@ -414,6 +420,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     fieldPosition: "{row}, {column}",
     frontRow: "front row",
     backRow: "back row",
+    frontRowShort: "Front",
+    backRowShort: "Back",
     leftColumn: "left",
     centerColumn: "center",
     rightColumn: "right",

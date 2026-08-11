@@ -20,10 +20,14 @@ import {
   getFieldSlotRow,
   getLaneX,
   getSlotLaneX,
-  getUnitPerspectiveScale,
   type FieldLayout,
 } from "../fieldLayout";
 import { getUnitAsset, getUnitAssets } from "../unitAssets";
+import {
+  BATTLE_CAMERA_CLOSE_ZOOM,
+  BATTLE_CAMERA_ZOOM,
+  getUnitPresentationScale,
+} from "./battlePresentationLayout";
 import {
   BattlePlaybackClock,
   BattlePlaybackCompletion,
@@ -37,7 +41,6 @@ const GAME_HEIGHT = 720;
 const UNIT_HP_BAR_WIDTH = 42;
 const CASTLE_HP_BAR_WIDTH = 132;
 const CASTLE_MAX_HP = PLAYER_STARTING_HP;
-const UNIT_PRESENTATION_SCALE = 0.86;
 const UNIT_SPRITE_DISPLAY_WIDTH = 56;
 const UNIT_SPRITE_DISPLAY_HEIGHT = 68;
 const UNIT_SPRITE_SHEET_DISPLAY_SIZE = 96;
@@ -50,8 +53,6 @@ const BATTLE_PRESENTATION_TIME_SCALE = 2;
 const COMBAT_TICK_DURATION_MS = 30;
 const COMBAT_STEP_RESULT_DELAY_MS = 110;
 const COMBAT_STEP_FLOAT_TEXT_LIMIT = 1;
-const BATTLE_CAMERA_ZOOM = 1.18;
-const BATTLE_CAMERA_CLOSE_ZOOM = 1.32;
 const BATTLE_CASTLE_CAMERA_ZOOM = 1.28;
 const ENEMY_CASTLE_APPROACH_CAMERA_ZOOM = 1.14;
 const PLAYER_KEEP_TEXTURE_KEY = "environment:player-keep";
@@ -430,7 +431,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private drawField(): void {
-    const { width, centerY, fieldTopY, fieldBottomY, laneFractions } = this.layout;
+    const { centerY, fieldTopY, fieldBottomY, laneFractions } = this.layout;
     const hasDomEnvironment = USE_DOM_BATTLEFIELD_ENVIRONMENT;
     const hasBattlefieldBase = !hasDomEnvironment && this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
 
@@ -478,18 +479,6 @@ class CastleBattleScene extends Phaser.Scene {
         drawPerspectiveLine(lines, getFieldLeftX(this.layout, y) + 14, y, getFieldRightX(this.layout, y) - 14, y);
       });
     }
-
-    this.add
-      .text(width / 2, centerY - 88, "CLASH", {
-        color: "#e4c15e",
-        fontFamily: "Arial",
-        fontSize: "11px",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(-5)
-      .setAlpha(0.82);
-
   }
 
   private drawParallaxBackdrop(): void {
@@ -1521,7 +1510,7 @@ class CastleBattleScene extends Phaser.Scene {
   private updateUnitSpatialStyle(view: UnitView, force = false): void {
     const { container } = view;
     const nextDepthBucket = Math.round(container.y / UNIT_DEPTH_BUCKET_SIZE) * UNIT_DEPTH_BUCKET_SIZE;
-    const nextScale = getUnitPerspectiveScale(this.layout, container.y) * UNIT_PRESENTATION_SCALE;
+    const nextScale = getUnitPresentationScale(this.layout, container.y, this.command.type);
 
     if (force || view.depthBucket !== nextDepthBucket) {
       container.setDepth(nextDepthBucket);
