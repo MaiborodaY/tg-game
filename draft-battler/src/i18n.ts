@@ -69,6 +69,9 @@ export interface UiCopy {
   closeCardInfo: string;
   reroll: string;
   rerollUsed: string;
+  rerollCounter: string;
+  collapseDraftChoices: string;
+  expandDraftChoices: string;
   selectedCard: string;
   upgradeHint: string;
   placeHint: string;
@@ -108,6 +111,8 @@ export interface UiCopy {
   nextRound: string;
   battleSpeed: string;
   skipBattle: string;
+  abandonRun: string;
+  abandonRunConfirm: string;
   battleInProgress: string;
   roundResultDetail: string;
   sceneLoading: string;
@@ -183,6 +188,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeCardInfo: "Закрыть описание карты",
     reroll: "Обновить",
     rerollUsed: "Обновлено",
+    rerollCounter: "Обновление {remaining}/1",
+    collapseDraftChoices: "Свернуть выбор карт",
+    expandDraftChoices: "Развернуть выбор карт",
     selectedCard: "Выбран: {card}",
     upgradeHint: "Коснитесь поля — существующий боец улучшится.",
     placeHint: "Коснитесь подходящей пустой позиции на поле.",
@@ -222,6 +230,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     nextRound: "Следующий раунд",
     battleSpeed: "Скорость боя",
     skipBattle: "Пропустить бой",
+    abandonRun: "Завершить",
+    abandonRunConfirm: "Завершить текущую партию? Сохранённый прогресс будет удалён.",
     battleInProgress: "Идёт бой, раунд {round} из {maxRounds}.",
     roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
     sceneLoading: "Загрузка поля…",
@@ -289,6 +299,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeCardInfo: "Закрити опис карти",
     reroll: "Оновити",
     rerollUsed: "Оновлено",
+    rerollCounter: "Оновлення {remaining}/1",
+    collapseDraftChoices: "Згорнути вибір карт",
+    expandDraftChoices: "Розгорнути вибір карт",
     selectedCard: "Обрано: {card}",
     upgradeHint: "Торкніться поля — наявний боєць покращиться.",
     placeHint: "Торкніться відповідної порожньої позиції на полі.",
@@ -328,6 +341,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     nextRound: "Наступний раунд",
     battleSpeed: "Швидкість бою",
     skipBattle: "Пропустити бій",
+    abandonRun: "Завершити",
+    abandonRunConfirm: "Завершити поточну партію? Збережений прогрес буде видалено.",
     battleInProgress: "Триває бій, раунд {round} із {maxRounds}.",
     roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
     sceneLoading: "Завантаження поля…",
@@ -395,6 +410,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeCardInfo: "Close card details",
     reroll: "Refresh",
     rerollUsed: "Refreshed",
+    rerollCounter: "Refresh {remaining}/1",
+    collapseDraftChoices: "Collapse card choices",
+    expandDraftChoices: "Expand card choices",
     selectedCard: "Selected: {card}",
     upgradeHint: "Tap the field to upgrade your existing fighter.",
     placeHint: "Tap a valid empty position on the field.",
@@ -434,6 +452,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     nextRound: "Next round",
     battleSpeed: "Battle speed",
     skipBattle: "Skip battle",
+    abandonRun: "End run",
+    abandonRunConfirm: "End the current run? Saved progress will be deleted.",
     battleInProgress: "Battle in progress, round {round} of {maxRounds}.",
     roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
     sceneLoading: "Loading field…",
@@ -458,8 +478,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
   ru: {
     iron_guard: {
       name: "Железный страж",
-      text: "Начинает бой со щитом.",
-      summary: "Начинает бой с небольшим запасом щита.",
+      text: "В начале боя получает 3 брони.",
+      summary: "В начале боя получает 3 единицы брони, которые поглощают входящий урон.",
     },
     shieldbearer: {
       name: "Щитоносец",
@@ -498,8 +518,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     grave_binder: {
       name: "Заклинатель могил",
-      text: "Возвращается в виде скелета.",
-      summary: "После гибели один раз возвращается слабым скелетом.",
+      text: "Возвращается скелетом 2/4; после улучшения — 3/6.",
+      summary: "После гибели один раз возвращается скелетом с 2 АТК и 4 HP; после улучшения — с 3 АТК и 6 HP.",
     },
     bone_soldier: {
       name: "Костяной солдат",
@@ -523,13 +543,13 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     thorn_druid: {
       name: "Друид шипов",
-      text: "В начале боя даёт союзникам щит.",
-      summary: "В начале боя накладывает щит на союзников.",
+      text: "В начале боя даёт союзникам 1 броню.",
+      summary: "В начале боя каждый союзник получает 1 броню.",
     },
     stone_golem: {
       name: "Каменный голем",
-      text: "Медленный и очень живучий.",
-      summary: "Очень медленный, но его крайне трудно уничтожить.",
+      text: "В начале боя получает 5 брони.",
+      summary: "Очень медленный и живучий; начинает бой с 5 бронёй.",
     },
     pyromancer: {
       name: "Пиромант",
@@ -538,8 +558,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     duelist: {
       name: "Дуэлянт",
-      text: "Начинает бой со щитом.",
-      summary: "Начинает бой со щитом и наносит большой урон.",
+      text: "В начале боя получает 2 брони.",
+      summary: "Броня поглощает первые 2 единицы урона; сам Дуэлянт сильно атакует.",
     },
     banner_knight: {
       name: "Рыцарь-знаменосец",
@@ -550,8 +570,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
   uk: {
     iron_guard: {
       name: "Залізний вартовий",
-      text: "Починає бій зі щитом.",
-      summary: "Починає бій із невеликим запасом щита.",
+      text: "На початку бою отримує 3 броні.",
+      summary: "На початку бою отримує 3 одиниці броні, що поглинають вхідну шкоду.",
     },
     shieldbearer: {
       name: "Щитоносець",
@@ -590,8 +610,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     grave_binder: {
       name: "Заклинач могил",
-      text: "Повертається у вигляді скелета.",
-      summary: "Після загибелі один раз повертається слабким скелетом.",
+      text: "Повертається скелетом 2/4; після покращення — 3/6.",
+      summary: "Після загибелі один раз повертається скелетом із 2 АТК і 4 HP; після покращення — із 3 АТК і 6 HP.",
     },
     bone_soldier: {
       name: "Кістяний воїн",
@@ -615,13 +635,13 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     thorn_druid: {
       name: "Терновий друїд",
-      text: "На початку бою дає союзникам щит.",
-      summary: "На початку бою накладає щит на союзників.",
+      text: "На початку бою дає союзникам 1 броню.",
+      summary: "На початку бою кожен союзник отримує 1 броню.",
     },
     stone_golem: {
       name: "Кам'яний голем",
-      text: "Повільний і дуже витривалий.",
-      summary: "Дуже повільний, але його вкрай важко знищити.",
+      text: "На початку бою отримує 5 броні.",
+      summary: "Дуже повільний і витривалий; починає бій із 5 броні.",
     },
     pyromancer: {
       name: "Піромант",
@@ -630,8 +650,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     duelist: {
       name: "Дуелянт",
-      text: "Починає бій зі щитом.",
-      summary: "Починає бій зі щитом і завдає великої шкоди.",
+      text: "На початку бою отримує 2 броні.",
+      summary: "Броня поглинає перші 2 одиниці шкоди; сам Дуелянт сильно атакує.",
     },
     banner_knight: {
       name: "Лицар-прапороносець",

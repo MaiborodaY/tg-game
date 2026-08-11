@@ -20,12 +20,13 @@ import {
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 4;
+export const SOLO_RUN_SNAPSHOT_VERSION = 5;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
 const LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v1",
   "draft-battler:solo-run:v2",
   "draft-battler:solo-run:v3",
+  "draft-battler:solo-run:v4",
 ] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";

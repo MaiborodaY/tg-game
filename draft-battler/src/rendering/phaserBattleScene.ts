@@ -35,6 +35,7 @@ import {
   type BattlePlaybackSpeed,
   type FinalBattlePresentation,
 } from "./battlePlayback";
+import { applyArmorDelta, formatArmorBadge, formatDamageFeedback } from "./armorPresentation";
 
 const GAME_WIDTH = 390;
 const GAME_HEIGHT = 720;
@@ -132,6 +133,8 @@ interface UnitView {
   container: Phaser.GameObjects.Container;
   hpFill: Phaser.GameObjects.Rectangle;
   hpLabel: Phaser.GameObjects.Text;
+  armorLabel: Phaser.GameObjects.Text;
+  armor: number;
   sprite?: Phaser.GameObjects.Sprite;
   facing: UnitFacing;
   currentFrame?: number;
@@ -139,6 +142,7 @@ interface UnitView {
   presentationScale?: number;
   hpFillWidth?: number;
   hpLabelText?: string;
+  armorLabelText?: string;
 }
 
 type UnitFacing = "south" | "north";
@@ -687,11 +691,24 @@ class CastleBattleScene extends Phaser.Scene {
         fontSize: "10px",
       })
       .setOrigin(0.5);
+    const armorLabel = this.add
+      .text(-22, -49, "", {
+        color: "#d8ecff",
+        backgroundColor: "#18354d",
+        fontFamily: "Arial",
+        fontSize: "9px",
+        fontStyle: "bold",
+        stroke: "#08131d",
+        strokeThickness: 2,
+      })
+      .setPadding(3, 1, 3, 1)
+      .setOrigin(0.5)
+      .setVisible(false);
     objects.push(contactShadow, ...unitArt.objects);
     if (upgradeBadge) {
       objects.push(upgradeBadge);
     }
-    objects.push(hpBack, hpFill, hpLabel);
+    objects.push(hpBack, hpFill, hpLabel, armorLabel);
     container.add(objects);
 
     if (unit.summonedBy) {
@@ -704,6 +721,8 @@ class CastleBattleScene extends Phaser.Scene {
       container,
       hpFill,
       hpLabel,
+      armorLabel,
+      armor: 0,
       sprite: unitArt.sprite,
       facing: getDefaultUnitFacing(unit.owner),
       currentFrame: unitArt.sprite ? getUnitFrame(getDefaultUnitFacing(unit.owner), "idle") : undefined,
@@ -711,6 +730,7 @@ class CastleBattleScene extends Phaser.Scene {
     this.unitViews.set(unit.unitId, view);
     this.updateUnitSpatialStyle(view, true);
     this.updateUnitHp(view, unit.startHp);
+    this.updateUnitArmor(view, 0);
   }
 
   private createUnitArt(unit: BattleTimelineUnit, sideColor: number, sideDarkColor: number, strokeColor: number): UnitArtResult {
@@ -881,10 +901,14 @@ class CastleBattleScene extends Phaser.Scene {
         return;
       }
 
+      if (event.shieldDelta) {
+        this.updateUnitArmor(view, applyArmorDelta(view.armor, event.shieldDelta));
+      }
+
       if (focusCamera) {
         this.focusCameraOnPoint(view.container.x, view.container.y, 170, BATTLE_CAMERA_CLOSE_ZOOM);
       }
-      await this.pulse(view.container, 0xe4c15e);
+      await this.pulse(view.container, event.shieldDelta ? 0x86a8ff : 0xe4c15e);
       return;
     }
 
@@ -899,8 +923,16 @@ class CastleBattleScene extends Phaser.Scene {
         return;
       }
 
+      if (event.shieldAbsorbed > 0) {
+        this.updateUnitArmor(view, applyArmorDelta(view.armor, -event.shieldAbsorbed));
+      }
       this.updateUnitHp(view, event.remainingHp);
-      this.floatText(view.container.x, view.container.y - 54, event.amount > 0 ? `-${event.amount}` : "shield", "#da6b58");
+      this.floatText(
+        view.container.x,
+        view.container.y - 54,
+        formatDamageFeedback(event.amount, event.shieldAbsorbed),
+        event.amount > 0 ? "#da6b58" : "#86a8ff",
+      );
       await this.flash(view.container, event.amount > 0 ? 0xda6b58 : 0x86a8ff);
       return;
     }
@@ -1061,6 +1093,7 @@ class CastleBattleScene extends Phaser.Scene {
     const visibleResultEvents = resultEvents.filter((event) => event.type !== "unit_die");
     const textLimit = COMBAT_STEP_FLOAT_TEXT_LIMIT;
     let emittedTextCount = 0;
+    const armorFeedbackTasks: Promise<void>[] = [];
 
     const emitText = (view: UnitView, label: string, color: string) => {
       if (emittedTextCount >= textLimit) {
@@ -1073,6 +1106,11 @@ class CastleBattleScene extends Phaser.Scene {
 
     visibleResultEvents.forEach((event) => {
       if (event.type === "unit_buff") {
+        const view = this.unitViews.get(event.unitId);
+        if (view && event.shieldDelta) {
+          this.updateUnitArmor(view, applyArmorDelta(view.armor, event.shieldDelta));
+          armorFeedbackTasks.push(this.flash(view.container, 0x86a8ff));
+        }
         return;
       }
 
@@ -1087,8 +1125,15 @@ class CastleBattleScene extends Phaser.Scene {
       if (event.type === "unit_damage") {
         const view = this.unitViews.get(event.unitId);
         if (view) {
+          if (event.shieldAbsorbed > 0) {
+            this.updateUnitArmor(view, applyArmorDelta(view.armor, -event.shieldAbsorbed));
+          }
           this.updateUnitHp(view, event.remainingHp);
-          emitText(view, event.amount > 0 ? `-${event.amount}` : "shield", "#da6b58");
+          emitText(
+            view,
+            formatDamageFeedback(event.amount, event.shieldAbsorbed),
+            event.amount > 0 ? "#da6b58" : "#86a8ff",
+          );
         }
         return;
       }
@@ -1102,7 +1147,10 @@ class CastleBattleScene extends Phaser.Scene {
       }
     });
 
-    await Promise.all(deathEvents.map((event) => this.playCombatStepDeath(event)));
+    await Promise.all([
+      ...armorFeedbackTasks,
+      ...deathEvents.map((event) => this.playCombatStepDeath(event)),
+    ]);
   }
 
   private async playCombatStepDeath(event: Extract<CombatStepEvent, { type: "unit_die" }>): Promise<void> {
@@ -1112,6 +1160,7 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     this.updateUnitHp(view, 0);
+    this.updateUnitArmor(view, 0);
     this.setUnitPose(view, "dead", view.facing);
     await this.tween({
       targets: view.container,
@@ -1326,6 +1375,7 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     this.updateUnitHp(view, 0);
+    this.updateUnitArmor(view, 0);
     this.setUnitPose(view, "dead", view.facing);
     await this.tween({
       targets: view.container,
@@ -1582,6 +1632,17 @@ class CastleBattleScene extends Phaser.Scene {
     if (view.hpLabelText !== hpLabelText) {
       view.hpLabel.setText(hpLabelText);
       view.hpLabelText = hpLabelText;
+    }
+  }
+
+  private updateUnitArmor(view: UnitView, armor: number): void {
+    const normalizedArmor = Math.max(0, Math.trunc(armor));
+    const armorLabelText = formatArmorBadge(normalizedArmor);
+    view.armor = normalizedArmor;
+
+    if (view.armorLabelText !== armorLabelText) {
+      view.armorLabel.setText(armorLabelText).setVisible(normalizedArmor > 0);
+      view.armorLabelText = armorLabelText;
     }
   }
 

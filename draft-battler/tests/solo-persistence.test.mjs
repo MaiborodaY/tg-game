@@ -24,6 +24,7 @@ const FIXED_SAVED_AT = 1_700_000_000_000;
 const LEGACY_V1_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v1";
 const LEGACY_V2_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v2";
 const LEGACY_V3_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v3";
+const LEGACY_V4_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v4";
 
 class MemoryStorage {
   values = new Map();
@@ -135,8 +136,8 @@ function cloneJson(value) {
 }
 
 test("draft, battle-result, and finished checkpoints round-trip without sharing mutable state", () => {
-  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 4);
-  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v4");
+  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 5);
+  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v5");
 
   const checkpoints = [
     createDraftCheckpoint(),
@@ -373,27 +374,33 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
   storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
   storage.setItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY, "legacy-old-combat-snapshot");
+  storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, "legacy-old-bone-pact-snapshot");
   assert.equal(saveSoloRunSnapshot(storage, state, FIXED_SAVED_AT), true);
   assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
   storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
   storage.setItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY, "legacy-old-combat-snapshot");
+  storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, "legacy-old-bone-pact-snapshot");
   assert.deepEqual(loadSoloRunSnapshot(storage), createSoloRunSnapshot(state, FIXED_SAVED_AT));
   assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
   storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
   storage.setItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY, "legacy-old-combat-snapshot");
+  storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, "legacy-old-bone-pact-snapshot");
   assert.equal(clearSoloRunSnapshot(storage), true);
   assert.equal(loadSoloRunSnapshot(storage), undefined);
   assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(SOLO_RUN_STORAGE_KEY, "corrupted");
   assert.equal(loadSoloRunSnapshot(storage), undefined);
@@ -424,6 +431,18 @@ test("a v3 snapshot from the previous combat rules is removed instead of restore
 
   assert.equal(loadSoloRunSnapshot(storage), undefined);
   assert.equal(storage.getItem(LEGACY_V3_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
+});
+
+test("a v4 snapshot from the previous Bone Pact rules is removed instead of restored", () => {
+  const storage = new MemoryStorage();
+  const legacy = encodedObject(createFinishedCheckpoint());
+  legacy.version = 4;
+
+  storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, JSON.stringify(legacy));
+
+  assert.equal(loadSoloRunSnapshot(storage), undefined);
+  assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
 });
 

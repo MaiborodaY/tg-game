@@ -39,23 +39,63 @@ test("compact layouts and reduced motion remain part of the stylesheet contract"
   assert.match(styles, /\.terminal-result__metrics\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
 });
 
-test("mobile draft intelligence and critical card copy remain readable", () => {
-  assert.match(
-    styles,
-    /\.enemy-army-intel__grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,[^}]*grid-template-rows:\s*repeat\(2,/s,
-  );
-  assert.match(styles, /\.enemy-army-intel__slot\[data-row-label\]::before\s*\{[^}]*content:\s*attr\(data-row-label\)/s);
-
+test("critical card copy remains readable", () => {
   for (const selector of [
     "unit-card__rarity",
     "unit-card__stat-label",
     "unit-card__ability",
-    "enemy-army-intel__slot-name",
     "unit-card__tag-row span",
     "unit-card__synergy-forecast",
   ]) {
     assert.match(styles, new RegExp(`\\.${selector.replace(" ", "\\s+")}\\s*\\{[^}]*font-size:\\s*9px`, "s"));
   }
+});
+
+test("draft choices keep all three vertical cards visible with readable copy", () => {
+  assert.match(
+    styles,
+    /\.draft-grid--triple\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)[^}]*overflow:\s*visible/s,
+  );
+  assert.match(
+    styles,
+    /\.draft-grid--triple \.unit-card\s*\{[^}]*height:\s*var\(--draft-triple-card-height\)[^}]*aspect-ratio:\s*auto[^}]*touch-action:\s*pan-y/s,
+  );
+  assert.match(
+    styles,
+    /\.draft-grid--triple \.unit-card__name\s*\{[^}]*font-size:\s*clamp\([^}]*text-transform:\s*none[^}]*-webkit-line-clamp:\s*3/s,
+  );
+  assert.match(styles, /\.draft-grid--triple \.unit-card__footer\s*\{[^}]*height:\s*74px[^}]*grid-template-rows:\s*24px 48px/s);
+  assert.match(styles, /\.draft-grid--triple \.unit-card__ability\s*\{[^}]*font-size:\s*clamp\(/s);
+  assert.match(styles, /\.draft-grid--triple \.unit-card__ability-text\s*\{[^}]*-webkit-line-clamp:\s*4/s);
+  assert.match(
+    styles,
+    /\.draft-grid--triple \.unit-card__drag-handle\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*touch-action:\s*none/s,
+  );
+  assert.match(styles, /\.panel-header--draft\s*\{[^}]*min-height:\s*34px[^}]*border-bottom:[^}]*box-shadow:\s*none/s);
+  assert.match(
+    styles,
+    /\.panel-header--draft \.reroll-button\s*\{[^}]*width:\s*auto[^}]*min-width:\s*88px[^}]*height:\s*32px[^}]*white-space:\s*nowrap/s,
+  );
+  assert.match(styles, /\.draft-choices-toggle\s*\{[^}]*width:\s*44px[^}]*height:\s*32px/s);
+  assert.match(styles, /\.draft-choices-toggle::after\s*\{[^}]*inset:\s*-6px 0/s);
+  assert.match(styles, /\.reroll-button\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s);
+  assert.match(
+    styles,
+    /\.draft-grid--triple\s*\{[^}]*--draft-triple-card-height:\s*clamp\(370px, 92cqw, 400px\)/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*720px\)[\s\S]*?\.draft-grid--triple\s*\{[^}]*--draft-triple-card-height:\s*330px/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-width:\s*360px\)[\s\S]*?\.panel-header--draft \.panel-caption\s*\{[^}]*display:\s*none/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.draft-onboarding\s*\{[^}]*display:\s*none/s,
+  );
+  assert.match(styles, /@media\s*\(max-width:\s*360px\)[\s\S]*?\.draft-grid--triple \.unit-card__ability-icon\s*\{[^}]*display:\s*none/s);
 });
 
 test("move mode uses one instruction panel and compact target markers", () => {

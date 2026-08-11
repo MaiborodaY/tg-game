@@ -112,6 +112,39 @@ test("all locales provide complete UI, taxonomy, and combat-log copy", () => {
   });
 });
 
+test("all locales warn that ending a run removes saved progress", () => {
+  const expectations = {
+    ru: ["Завершить", "прогресс", "удалён"],
+    uk: ["Завершити", "прогрес", "видалено"],
+    en: ["End", "progress", "deleted"],
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    assert.match(copy.abandonRun, /\S/, `${locale}:abandonRun`);
+    expectations[locale].forEach((fragment) => {
+      assert.ok(copy.abandonRunConfirm.includes(fragment), `${locale}:abandonRunConfirm:${fragment}`);
+    });
+  });
+});
+
+test("draft controls explain the single refresh and card-choice toggle", () => {
+  const expectations = {
+    ru: ["Обновление", "Свернуть", "Развернуть"],
+    uk: ["Оновлення", "Згорнути", "Розгорнути"],
+    en: ["Refresh", "Collapse", "Expand"],
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    assert.equal(formatMessage(copy.rerollCounter, { remaining: 1 }).endsWith("1/1"), true);
+    assert.equal(formatMessage(copy.rerollCounter, { remaining: 0 }).endsWith("0/1"), true);
+    assert.ok(copy.rerollCounter.includes(expectations[locale][0]), `${locale}:rerollCounter`);
+    assert.ok(copy.collapseDraftChoices.includes(expectations[locale][1]), `${locale}:collapseDraftChoices`);
+    assert.ok(copy.expandDraftChoices.includes(expectations[locale][2]), `${locale}:expandDraftChoices`);
+  });
+});
+
 test("solo copy fully explains the symmetric fifteen-round keep duel", () => {
   SUPPORTED_LOCALES.forEach((locale) => {
     const copy = getUiCopy(locale);
@@ -139,6 +172,41 @@ test("placement tutorial explains localized front, back, and range rules", () =>
     RANGE_COPY_EXPECTATIONS[locale].forEach((fragment) => {
       assert.ok(copy.howToPlaceBody.includes(fragment), `${locale}:howToPlaceBody:${fragment}`);
     });
+  });
+});
+
+test("armor-granting abilities expose exact values in every locale", () => {
+  const expectedArmorTerms = {
+    ru: "брон",
+    uk: "брон",
+    en: "armor",
+  };
+  const expectedAmounts = {
+    iron_guard: "3",
+    thorn_druid: "1",
+    stone_golem: "5",
+    duelist: "2",
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    Object.entries(expectedAmounts).forEach(([cardId, amount]) => {
+      const card = CARD_DEFINITIONS.find((definition) => definition.id === cardId);
+      assert.ok(card, cardId);
+      const localized = getLocalizedCard(locale, card);
+      assert.ok(localized.text.toLowerCase().includes(expectedArmorTerms[locale]), `${locale}:${cardId}:armor`);
+      assert.ok(localized.text.includes(amount), `${locale}:${cardId}:amount`);
+    });
+  });
+});
+
+test("Grave Binder copy explains both skeleton strength levels in every locale", () => {
+  const graveBinder = CARD_DEFINITIONS.find((definition) => definition.id === "grave_binder");
+  assert.ok(graveBinder);
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const localized = getLocalizedCard(locale, graveBinder);
+    assert.ok(localized.text.includes("2/4"), `${locale}:grave_binder:base`);
+    assert.ok(localized.text.includes("3/6"), `${locale}:grave_binder:upgraded`);
   });
 });
 

@@ -35,7 +35,6 @@ import {
   getBoardSynergyProgress,
   getBoardUnitInspection,
   getDraftOptionSynergyPresentation,
-  getLastKnownEnemyArmy,
   type BoardUnitInspection,
   type DraftTagSynergyForecast,
 } from "./draftPresentation";
@@ -290,6 +289,7 @@ let activePointerDrag: ActivePointerDrag | undefined;
 let activeFieldSlotDropTarget: FieldSlotDropTargetState = {};
 let pendingDraftReplacement: PendingDraftReplacement | undefined;
 let keyboardMoveSourceSlotIndex: number | undefined;
+let draftChoicesCollapsed = false;
 let pendingFocusKey: string | undefined;
 let suppressNextCardClick = false;
 let pvpSocket: WebSocket | undefined;
@@ -499,92 +499,9 @@ function createGameHud(): HTMLElement {
       hud.append(synergies);
     }
 
-    if (uiState.playMode === "solo") {
-      hud.append(createEnemyArmyIntel());
-    }
   }
 
   return hud;
-}
-
-function createEnemyArmyIntel(): HTMLElement {
-  const copy = getCopy();
-  const army = getLastKnownEnemyArmy(uiState.run);
-  const panel = document.createElement("section");
-  panel.className = "enemy-army-intel";
-  panel.setAttribute("aria-label", copy.enemyArmy);
-
-  const heading = document.createElement("div");
-  heading.className = "enemy-army-intel__heading";
-  const title = document.createElement("strong");
-  title.textContent = copy.enemyArmy;
-  const hint = document.createElement("span");
-  hint.textContent = copy.enemyArmyHint;
-  heading.append(title, hint);
-
-  const grid = document.createElement("div");
-  grid.className = "enemy-army-intel__grid";
-  grid.setAttribute("role", "group");
-  grid.setAttribute("aria-label", copy.enemyArmy);
-
-  army.forEach((slot) => {
-    const position = getFieldPositionLabel(slot.slotIndex);
-    const isSelected = uiState.selectedEnemyCardInfoSlotIndex === slot.slotIndex;
-    const item = slot.cardId ? document.createElement("button") : document.createElement("span");
-    item.className = slot.cardId
-      ? "enemy-army-intel__slot enemy-army-intel__slot--filled"
-      : "enemy-army-intel__slot";
-    if (isSelected) {
-      item.classList.add("enemy-army-intel__slot--inspected");
-    }
-    if (getFieldSlotColumn(slot.slotIndex) === 0) {
-      item.dataset.rowLabel = getFieldSlotRow(slot.slotIndex) === 0 ? copy.frontRowShort : copy.backRowShort;
-    }
-
-    if (!slot.cardId || !slot.stats) {
-      item.textContent = "·";
-      item.setAttribute("role", "img");
-      item.setAttribute("aria-label", `${formatMessage(copy.emptySlot, { slot: slot.slotIndex + 1 })}: ${position}`);
-      grid.append(item);
-      return;
-    }
-
-    if (!(item instanceof HTMLButtonElement)) {
-      return;
-    }
-    item.type = "button";
-    item.setAttribute("aria-pressed", String(isSelected));
-    setFocusKey(item, `enemy-army-slot-${slot.slotIndex}`);
-    const card = getCardDefinition(slot.cardId);
-    const localizedName = getLocalizedCard(activeLocale, card).name;
-    const assetPath = getUnitAssetPath(slot.cardId);
-    if (assetPath) {
-      const image = document.createElement("img");
-      image.alt = "";
-      image.decoding = "async";
-      image.src = assetPath;
-      item.append(image);
-    } else {
-      const initials = document.createElement("span");
-      initials.textContent = createCardInitials(localizedName);
-      item.append(initials);
-    }
-
-    const name = document.createElement("span");
-    name.className = "enemy-army-intel__slot-name";
-    name.textContent = localizedName;
-
-    const stats = document.createElement("small");
-    stats.textContent = `${slot.stats.attack}/${slot.stats.hp}${slot.upgradeLevel ? " ★" : ""}`;
-    item.append(name, stats);
-    item.title = `${localizedName}${slot.upgradeLevel ? " ★" : ""} · ${position} · ${copy.attack} ${slot.stats.attack} · ${copy.hp} ${slot.stats.hp}`;
-    item.setAttribute("aria-label", item.title);
-    item.addEventListener("click", () => openEnemyCardInfo(slot.slotIndex));
-    grid.append(item);
-  });
-
-  panel.append(heading, grid);
-  return panel;
 }
 
 function createDraftSynergies(): HTMLElement | undefined {
@@ -805,6 +722,7 @@ function startSoloRun(): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
+  draftChoicesCollapsed = false;
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
@@ -817,6 +735,7 @@ function returnToMainMenu(): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
+  draftChoicesCollapsed = false;
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
@@ -828,6 +747,7 @@ function startOnlineLobby(): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
+  draftChoicesCollapsed = false;
   closePvpSocket();
   uiState = {
     ...createInitialUiState(createSeed(), "online", "draft"),
@@ -839,9 +759,6 @@ function startOnlineLobby(): void {
 function createDraftOverlay(): HTMLElement {
   const overlay = document.createElement("div");
   const overlayClasses = ["draft-overlay"];
-  if (uiState.playMode === "solo") {
-    overlayClasses.push("draft-overlay--with-enemy-intel");
-  }
   if (
     uiState.selectedCardInfoId ||
     uiState.selectedCardInfoSlotIndex !== undefined ||
@@ -944,6 +861,9 @@ function createBattlePlaybackControls(): HTMLElement {
   skipButton.addEventListener("click", skipBattlePresentation);
 
   controls.append(speedButton, skipButton);
+  if (uiState.playMode === "solo") {
+    controls.append(createAbandonRunButton("battle-playback-controls__abandon"));
+  }
   return controls;
 }
 
@@ -960,6 +880,28 @@ function skipBattlePresentation(): void {
   if (!battlefieldController?.skipBattle()) {
     completeBattlePresentation();
   }
+}
+
+function createAbandonRunButton(className: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = className;
+  button.type = "button";
+  button.textContent = getCopy().abandonRun;
+  setFocusKey(button, "abandon-run");
+  button.addEventListener("click", requestAbandonSoloRun);
+  return button;
+}
+
+function requestAbandonSoloRun(): void {
+  if (uiState.playMode !== "solo" || uiState.mode === "menu") {
+    return;
+  }
+
+  if (!window.confirm(getCopy().abandonRunConfirm)) {
+    return;
+  }
+
+  returnToMainMenu();
 }
 
 function createRoundResultSummary(record: RoundRecord): HTMLElement {
@@ -1230,14 +1172,16 @@ function getSelectedRoundLog(logs: readonly RoundRecord[]): RoundRecord | undefi
 
 function createDraftPanel(): HTMLElement {
   const draftPanel = document.createElement("section");
-  draftPanel.className = "draft-panel";
+  draftPanel.className = draftChoicesCollapsed ? "draft-panel draft-panel--collapsed" : "draft-panel";
   draftPanel.append(createDraftHeader());
 
-  if (uiState.run.round === 1 && getFilledSlotCount() === 0) {
+  if (!draftChoicesCollapsed && uiState.run.round === 1 && getFilledSlotCount() === 0) {
     draftPanel.append(createDraftOnboarding());
   }
 
-  draftPanel.append(createDraftGrid());
+  const grid = createDraftGrid();
+  grid.hidden = draftChoicesCollapsed;
+  draftPanel.append(grid);
 
   return draftPanel;
 }
@@ -1253,7 +1197,7 @@ function createDraftOnboarding(): HTMLElement {
 function createDraftHeader(): HTMLElement {
   const copy = getCopy();
   const header = document.createElement("div");
-  header.className = "panel-header";
+  header.className = "panel-header panel-header--draft";
 
   const title = document.createElement("h1");
   title.textContent = copy.chooseCard;
@@ -1265,19 +1209,24 @@ function createDraftHeader(): HTMLElement {
     capacity: getBoardCapacity(),
   });
 
-  header.append(title, caption);
+  const actions = document.createElement("div");
+  actions.className = "draft-header-actions";
+  actions.append(caption, createRerollButton(), createDraftChoicesToggle());
+
+  header.append(title, actions);
 
   return header;
 }
 
 function createDraftGrid(): HTMLElement {
   const grid = document.createElement("div");
-  grid.className = "draft-grid";
+  grid.className = "draft-grid draft-grid--triple";
+  grid.id = "draft-options-grid";
+  grid.setAttribute("aria-label", getCopy().chooseCard);
 
   getCurrentDraftOptions().forEach((option) => {
     grid.append(createDraftCard(option));
   });
-  grid.append(createRerollButton());
 
   return grid;
 }
@@ -1420,14 +1369,42 @@ function createBoardUnitContext(boardUnit: BoardUnitInspection, owner: "player" 
 function createRerollButton(): HTMLButtonElement {
   const copy = getCopy();
   const button = document.createElement("button");
-  button.className = "reroll-button";
+  button.className = "reroll-button reroll-button--header";
   button.type = "button";
   button.disabled = !canRerollDraftCards(uiState.run);
-  button.textContent = button.disabled ? copy.rerollUsed : copy.reroll;
+  const label = button.disabled ? copy.rerollUsed : copy.reroll;
+  const counterLabel = formatMessage(copy.rerollCounter, {
+    remaining: button.disabled ? 0 : 1,
+  });
+  button.textContent = counterLabel;
+  button.title = label;
+  button.setAttribute("aria-label", `${label}. ${counterLabel}`);
   setFocusKey(button, "reroll");
   button.addEventListener("click", rerollCurrentDraftCards);
 
   return button;
+}
+
+function createDraftChoicesToggle(): HTMLButtonElement {
+  const copy = getCopy();
+  const button = document.createElement("button");
+  const label = draftChoicesCollapsed ? copy.expandDraftChoices : copy.collapseDraftChoices;
+  button.className = "draft-choices-toggle";
+  button.type = "button";
+  button.textContent = draftChoicesCollapsed ? "▾" : "▴";
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.setAttribute("aria-expanded", String(!draftChoicesCollapsed));
+  button.setAttribute("aria-controls", "draft-options-grid");
+  setFocusKey(button, "draft-choices-toggle");
+  button.addEventListener("click", toggleDraftChoices);
+  return button;
+}
+
+function toggleDraftChoices(): void {
+  draftChoicesCollapsed = !draftChoicesCollapsed;
+  requestFocusAfterRender("draft-choices-toggle");
+  render();
 }
 
 function createTapPlacementPanel(cardId: CardId, hasVisibleSynergies: boolean): HTMLElement {
@@ -2305,6 +2282,11 @@ function createActionBar(): HTMLElement {
     actions.append(newRunButton);
   }
 
+  if (uiState.playMode === "solo" && uiState.mode !== "finished") {
+    actions.classList.add("action-bar--with-abandon");
+    actions.append(createAbandonRunButton("action-bar__abandon"));
+  }
+
   return actions;
 }
 
@@ -2327,6 +2309,7 @@ function getBattleActionLabel(): string {
 function goToNextRound(): void {
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
+  draftChoicesCollapsed = false;
   if (uiState.playMode === "online") {
     if (isPvpMatchFinished()) {
       returnToMainMenu();
@@ -2992,21 +2975,6 @@ function getSelectedBoardUnitInspection(): BoardUnitInspection | undefined {
   }
 
   return getBoardUnitInspection(uiState.draftBoardSlots, uiState.selectedCardInfoSlotIndex);
-}
-
-function openEnemyCardInfo(slotIndex: number): void {
-  if (uiState.playMode !== "solo" || !getBoardUnitInspection(uiState.run.enemyBoardSlots, slotIndex)) {
-    return;
-  }
-
-  uiState = {
-    ...uiState,
-    selectedCardInfoId: undefined,
-    selectedCardInfoSlotIndex: undefined,
-    selectedEnemyCardInfoSlotIndex: slotIndex,
-  };
-  requestFocusAfterRender("card-info-close");
-  render();
 }
 
 function getSelectedEnemyUnitInspection(): BoardUnitInspection | undefined {

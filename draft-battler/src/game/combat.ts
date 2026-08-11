@@ -12,6 +12,10 @@ import {
 
 const MAX_COMBAT_ACTIONS = 80;
 const ACTION_TIME_EPSILON = 1e-9;
+const BONE_PACT_SKELETON_STATS = {
+  base: { attack: 2, hp: 4 },
+  upgraded: { attack: 3, hp: 6 },
+} as const;
 
 interface TimelineUnit extends CombatUnit {
   actionScheduleOrigin: number;
@@ -438,6 +442,9 @@ function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], even
   }
 
   deadUnit.bonePactUsed = true;
+  const skeletonStats = deadUnit.upgradeLevel > 0
+    ? BONE_PACT_SKELETON_STATS.upgraded
+    : BONE_PACT_SKELETON_STATS.base;
 
   const skeleton: TimelineUnit = {
     ...deadUnit,
@@ -447,10 +454,10 @@ function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], even
     role: "striker",
     tags: ["undead"],
     abilityId: "none",
-    upgradeLevel: 0,
-    attack: 2,
-    maxHp: 4,
-    hp: 4,
+    upgradeLevel: deadUnit.upgradeLevel,
+    attack: skeletonStats.attack,
+    maxHp: skeletonStats.hp,
+    hp: skeletonStats.hp,
     speed: 4,
     range: 1,
     shield: 0,

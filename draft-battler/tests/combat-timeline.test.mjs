@@ -35,6 +35,31 @@ test("combat is deterministic, finite, and produces ordered events", () => {
   assert.equal(first.events.at(-1).type, "combat_finished");
 });
 
+test("Duelist armor absorbs exactly two damage before HP", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "duelist"]]),
+    createBoard([[0, "iron_guard"]]),
+    1,
+  );
+  const armorGain = combat.events.find(
+    (event) => event.type === "unit_buffed" && event.unitId === "player-0-duelist",
+  );
+  const hits = combat.events.filter(
+    (event) => event.type === "unit_damaged" && event.unitId === "player-0-duelist",
+  );
+
+  assert.ok(armorGain);
+  assert.equal(armorGain.type, "unit_buffed");
+  assert.equal(armorGain.shieldDelta, 2);
+  assert.deepEqual(
+    hits.slice(0, 2).map(({ amount, remainingHp, shieldAbsorbed }) => ({ amount, remainingHp, shieldAbsorbed })),
+    [
+      { amount: 0, remainingHp: 8, shieldAbsorbed: 2 },
+      { amount: 2, remainingHp: 6, shieldAbsorbed: 0 },
+    ],
+  );
+});
+
 test("equal-time actors resolve simultaneously, including mutual lethal attacks", () => {
   const board = createBoard([[0, "sneakblade"]]);
   const first = resolveCombat(board, board, 1);
@@ -196,6 +221,30 @@ test("multiple same-tick lethal intents produce one death and one Bone Pact summ
 
   assert.equal(graveBinderDeaths.length, 1);
   assert.equal(graveBinderSummons.length, 1);
+});
+
+test("an upgraded Grave Binder summons a stronger skeleton", () => {
+  const attackers = createBoard([[0, "boar_rider"], [1, "boar_rider"]]);
+  const cases = [
+    { upgradeLevel: 0, attack: 2, hp: 4 },
+    { upgradeLevel: 1, attack: 3, hp: 6 },
+  ];
+
+  cases.forEach(({ upgradeLevel, attack, hp }) => {
+    const combat = resolveCombat(
+      attackers,
+      createBoard([[0, "grave_binder", upgradeLevel]]),
+      1,
+    );
+    const spawn = combat.events.find(
+      (event) => event.type === "unit_spawned" && event.unit.summonedBy === "enemy-0-grave_binder",
+    );
+
+    assert.ok(spawn);
+    assert.equal(spawn.unit.upgradeLevel, upgradeLevel);
+    assert.equal(spawn.unit.attack, attack);
+    assert.equal(spawn.unit.maxHp, hp);
+  });
 });
 
 test("a late Bone Pact summon keeps a monotonic cadence from its spawn time", () => {
