@@ -7,7 +7,6 @@ import {
   type BattleTimelineEvent,
   type BattleTimelineUnit,
   type CombatStepEvent,
-  type CombatWinner,
   type Owner,
 } from "../game";
 import {
@@ -93,10 +92,9 @@ export interface PlayBattleInput {
   onFinished?: () => void;
   onError?: (error: unknown) => void;
   onCastleHpChanged?: (owner: Owner, hp: number) => void;
-  resultLabels: BattleResultLabels;
+  blockLabel: string;
+  reducedMotion?: boolean;
 }
-
-export type BattleResultLabels = Record<CombatWinner, string>;
 
 export interface ShowDraftInput {
   playerCastleHp: number;
@@ -111,6 +109,8 @@ type SceneCommand =
       onFinished?: () => void;
       onError?: (error: unknown) => void;
       onCastleHpChanged?: (owner: Owner, hp: number) => void;
+      blockLabel: string;
+      reducedMotion: boolean;
     };
 
 export interface BattlefieldController {
@@ -228,7 +228,7 @@ class CastleBattleScene extends Phaser.Scene {
   private ready = false;
   private playToken = 0;
   private destroyed = false;
-  private resultLabels: BattleResultLabels = { player: "VICTORY", enemy: "DEFEAT", draw: "DRAW" };
+  private blockLabel = "BLOCK";
   private battleSpeed: BattlePlaybackSpeed = 1;
   private readonly playbackClock = new BattlePlaybackClock(this.battleSpeed);
   private activeBattle?: ActiveBattlePlayback;
@@ -281,13 +281,14 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   playBattle(input: PlayBattleInput): void {
-    this.resultLabels = input.resultLabels;
     this.setCommand({
       type: "battle",
       timeline: input.timeline,
       onFinished: input.onFinished,
       onError: input.onError,
       onCastleHpChanged: input.onCastleHpChanged,
+      blockLabel: input.blockLabel,
+      reducedMotion: input.reducedMotion === true,
     });
   }
 
@@ -309,7 +310,11 @@ class CastleBattleScene extends Phaser.Scene {
       return false;
     }
 
-    const skipped = completeSkippedBattle(activeBattle.completion, activeBattle.timeline, (presentation) => {
+    return this.completeBattleImmediately(activeBattle);
+  }
+
+  private completeBattleImmediately(activeBattle: ActiveBattlePlayback): boolean {
+    return completeSkippedBattle(activeBattle.completion, activeBattle.timeline, (presentation) => {
       this.playToken += 1;
       this.playbackClock.stop();
       this.clearScene();
@@ -318,8 +323,6 @@ class CastleBattleScene extends Phaser.Scene {
         this.activeBattle = undefined;
       }
     });
-
-    return skipped;
   }
 
   private setCommand(command: SceneCommand): void {
@@ -349,6 +352,7 @@ class CastleBattleScene extends Phaser.Scene {
 
     command.timeline.castles.forEach((castle) => this.createCastle(castle));
     command.timeline.units.forEach((unit) => this.createUnit(unit));
+    this.blockLabel = command.blockLabel;
     this.wrapSceneInPresentationLayer();
     const activeBattle: ActiveBattlePlayback = {
       token: this.playToken,
@@ -362,6 +366,10 @@ class CastleBattleScene extends Phaser.Scene {
     this.activeBattle = activeBattle;
     command.timeline.castles.forEach((castle) => activeBattle.completion.emitCastleHp(castle.owner, castle.startHp));
     if (this.activeBattle !== activeBattle || !activeBattle.completion.isActive()) {
+      return;
+    }
+    if (command.reducedMotion) {
+      this.completeBattleImmediately(activeBattle);
       return;
     }
 
@@ -1008,9 +1016,7 @@ class CastleBattleScene extends Phaser.Scene {
 
     if (event.type === "battle_finished") {
       this.focusCameraOnPoint(this.layout.width / 2, this.layout.centerY + 12, 220, 1.08);
-      await this.delay(120);
-      this.showResult(event.winner);
-      await this.delay(420);
+      await this.delay(180);
       if (playToken === this.playToken && this.activeBattle === activeBattle) {
         this.playbackClock.stop();
         this.activeBattle = undefined;
@@ -1117,7 +1123,7 @@ class CastleBattleScene extends Phaser.Scene {
       if (event.type === "unit_block") {
         const view = this.unitViews.get(event.unitId);
         if (view) {
-          emitText(view, "block", "#86a8ff");
+          emitText(view, this.blockLabel, "#86a8ff");
         }
         return;
       }
@@ -1270,7 +1276,7 @@ class CastleBattleScene extends Phaser.Scene {
     });
     this.updateUnitSpatialStyle(defender, true);
 
-    this.floatText(defender.container.x, defender.container.y - 54, "block", "#86a8ff");
+    this.floatText(defender.container.x, defender.container.y - 54, this.blockLabel, "#86a8ff");
     await this.flash(defender.container, 0x86a8ff);
     this.setUnitPose(defender, "idle", attackFacing);
   }
@@ -1463,33 +1469,6 @@ class CastleBattleScene extends Phaser.Scene {
 
     this.wrapSceneInPresentationLayer();
     this.setPresentationCamera(this.layout.width / 2, this.layout.centerY + 12, 1.08);
-    this.showResult(presentation.winner, false);
-  }
-
-  private showResult(winner: CombatWinner, animate = true): void {
-    const label = this.resultLabels[winner];
-    const color = winner === "player" ? "#79c77a" : winner === "enemy" ? "#da6b58" : "#e4c15e";
-    const text = this.add
-      .text(this.layout.width / 2, this.layout.centerY, label, {
-        color,
-        fontFamily: "Arial",
-        fontSize: "34px",
-        fontStyle: "bold",
-        stroke: "#10130f",
-        strokeThickness: 6,
-      })
-      .setOrigin(0.5)
-      .setDepth(1000)
-      .setAlpha(animate ? 0 : 1);
-
-    if (animate) {
-      this.tweens.add({
-        targets: text,
-        alpha: 1,
-        duration: scaleBattleDuration(180),
-        ease: "Sine.easeOut",
-      });
-    }
   }
 
   private async moveUnitTo(view: UnitView, position: { x: number; y: number }, duration: number): Promise<void> {

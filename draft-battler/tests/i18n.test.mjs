@@ -128,6 +128,20 @@ test("all locales warn that ending a run removes saved progress", () => {
   });
 });
 
+test("draft skip and battle block feedback are explicit in every locale", () => {
+  const expectations = {
+    ru: { skip: "Без карты", block: "БЛОК" },
+    uk: { skip: "Без карти", block: "БЛОК" },
+    en: { skip: "Skip card", block: "BLOCK" },
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    assert.ok(copy.skipPickAndFight.includes(expectations[locale].skip), `${locale}:skipPickAndFight`);
+    assert.equal(copy.blockFeedback, expectations[locale].block, `${locale}:blockFeedback`);
+  });
+});
+
 test("draft controls explain the single refresh and card-choice toggle", () => {
   const expectations = {
     ru: ["Обновление", "Свернуть", "Развернуть"],

@@ -1368,11 +1368,12 @@ h3 {
 
 .card-info-panel {
   position: absolute;
+  top: max(58px, calc(var(--safe-top) + 50px));
   left: max(14px, calc(var(--safe-left) + 14px));
   right: max(14px, calc(var(--safe-right) + 14px));
-  bottom: 126px;
+  bottom: max(14px, calc(var(--safe-bottom) + 14px));
   z-index: 4;
-  max-height: min(430px, 62vh);
+  max-height: none;
   padding: 14px;
   display: grid;
   gap: 10px;
@@ -1429,8 +1430,22 @@ h3 {
   justify-content: flex-start;
 }
 
-.card-info-panel .unit-card__art {
-  min-height: 180px;
+.card-info-panel__art {
+  width: min(64vw, 240px);
+  height: auto;
+  min-height: 0;
+  margin-inline: auto;
+  aspect-ratio: 2 / 3;
+  flex: 0 0 auto;
+}
+
+.card-info-panel__art .unit-card__sprite {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 .card-info-panel__tags {
@@ -3145,11 +3160,6 @@ h3 {
     height: 18px;
   }
 
-  .card-info-panel {
-    bottom: 112px;
-    max-height: min(390px, 64vh);
-  }
-
   .field-slot {
     width: 76px;
     height: 108px;
@@ -3366,10 +3376,6 @@ h3 {
   .unit-card__ability-icon {
     width: 15px;
     height: 15px;
-  }
-
-  .card-info-panel {
-    bottom: max(112px, calc(var(--safe-bottom) + 78px));
   }
 
   .draft-grid--triple {

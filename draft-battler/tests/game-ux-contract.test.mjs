@@ -4,6 +4,7 @@ import test from "node:test";
 
 const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+const rendererSource = await readFile(new URL("../src/rendering/phaserBattleScene.ts", import.meta.url), "utf8");
 
 test("battle HUD and playback controls stay wired to live renderer state", () => {
   assert.match(mainSource, /createGameHud\(\), createBattleOverlay\(\)/);
@@ -61,4 +62,32 @@ test("draft UI prioritizes large card choices, synergy forecasts, and keyboard m
   assert.match(styles, /\.draft-grid--triple\[hidden\]\s*\{[^}]*display:\s*none/s);
   assert.match(styles, /\.unit-card__synergy-forecast\s*\{/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{/);
+});
+
+test("draft actions and card details communicate state without duplicate battle results", () => {
+  assert.match(
+    mainSource,
+    /return uiState\.cardPickedThisRound \? getCopy\(\)\.fight : getCopy\(\)\.skipPickAndFight/,
+  );
+  assert.match(mainSource, /panel\.setAttribute\("aria-modal", "true"\)/);
+  assert.match(mainSource, /art\.classList\.add\("card-info-panel__art"\)/);
+  assert.match(mainSource, /if \(uiState\.mode === "draft" && isCardInfoOpen\(\)\)/);
+  assert.match(mainSource, /child\.setAttribute\("inert", ""\)/);
+  assert.match(mainSource, /blockLabel: getCopy\(\)\.blockFeedback/);
+  assert.doesNotMatch(rendererSource, /showResult\(/);
+  assert.doesNotMatch(rendererSource, /resultLabels/);
+  assert.match(rendererSource, /emitText\(view, this\.blockLabel, "#86a8ff"\)/);
+  assert.match(
+    styles,
+    /\.card-info-panel__art\s*\{[^}]*width:\s*min\(64vw, 240px\)[^}]*aspect-ratio:\s*2 \/ 3/s,
+  );
+  assert.match(
+    styles,
+    /\.card-info-panel__art \.unit-card__sprite\s*\{[^}]*width:\s*auto[^}]*height:\s*auto[^}]*max-width:\s*100%[^}]*max-height:\s*100%[^}]*object-fit:\s*contain/s,
+  );
+  assert.match(
+    styles,
+    /\.card-info-panel\s*\{[^}]*top:\s*max\(58px, calc\(var\(--safe-top\) \+ 50px\)\)[^}]*bottom:\s*max\(14px, calc\(var\(--safe-bottom\) \+ 14px\)\)[^}]*max-height:\s*none/s,
+  );
+  assert.doesNotMatch(styles, /\.card-info-panel\s*\{[^}]*max-height:\s*min\(/s);
 });

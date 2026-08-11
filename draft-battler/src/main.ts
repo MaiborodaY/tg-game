@@ -1,5 +1,6 @@
 import "./styles.css";
 import type { BattlefieldController } from "./rendering/phaserBattleScene";
+import { prefersReducedBattleMotion } from "./rendering/motionPreference";
 import {
   BOARD_SLOT_COUNT,
   canRerollDraftCards,
@@ -307,9 +308,7 @@ window.addEventListener("keydown", (event) => {
   } else if (
     event.key === "Escape" &&
     (
-      uiState.selectedCardInfoId ||
-      uiState.selectedCardInfoSlotIndex !== undefined ||
-      uiState.selectedEnemyCardInfoSlotIndex !== undefined
+      isCardInfoOpen()
     )
   ) {
     closeCardInfo();
@@ -376,6 +375,18 @@ function render(): void {
 
   if (uiState.mode !== "menu") {
     stageUi.append(createLogsOverlay(), createGameLiveRegion());
+  }
+
+  if (uiState.mode === "draft" && isCardInfoOpen()) {
+    const draftOverlay = stageUi.querySelector<HTMLElement>(".draft-overlay");
+    const cardInfoPanel = draftOverlay?.querySelector<HTMLElement>(".card-info-panel");
+    stageUi.querySelector<HTMLElement>(".draft-hud")?.setAttribute("inert", "");
+    stageUi.querySelector<HTMLElement>(".logs-overlay")?.setAttribute("inert", "");
+    [...(draftOverlay?.children ?? [])].forEach((child) => {
+      if (child !== cardInfoPanel) {
+        child.setAttribute("inert", "");
+      }
+    });
   }
 
   if (uiState.mode === "menu" && howToOpen) {
@@ -759,11 +770,7 @@ function startOnlineLobby(): void {
 function createDraftOverlay(): HTMLElement {
   const overlay = document.createElement("div");
   const overlayClasses = ["draft-overlay"];
-  if (
-    uiState.selectedCardInfoId ||
-    uiState.selectedCardInfoSlotIndex !== undefined ||
-    uiState.selectedEnemyCardInfoSlotIndex !== undefined
-  ) {
+  if (isCardInfoOpen()) {
     overlayClasses.push("draft-overlay--card-info-open");
   }
   overlay.className = overlayClasses.join(" ");
@@ -1296,6 +1303,7 @@ function createCardInfoPanel(
   const panel = document.createElement("aside");
   panel.className = `card-info-panel unit-card--${meta.archetype} unit-card--${meta.rarity}`;
   panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-labelledby", "draft-card-info-title");
 
   const closeButton = document.createElement("button");
@@ -1319,6 +1327,9 @@ function createCardInfoPanel(
   const stats = createCardStats(card, boardUnit?.upgradeLevel ?? 0);
   stats.classList.add("card-info-panel__stats");
 
+  const art = createCardArt(card, meta);
+  art.classList.add("card-info-panel__art");
+
   const tags = document.createElement("div");
   tags.className = "card-info-panel__tags";
   card.tags.forEach((tag) => {
@@ -1335,7 +1346,7 @@ function createCardInfoPanel(
   if (context) {
     panel.append(context);
   }
-  panel.append(type, createCardArt(card, meta), stats, tags, summary);
+  panel.append(type, art, stats, tags, summary);
 
   if (boardUnit && owner === "player" && uiState.mode === "draft") {
     const moveButton = document.createElement("button");
@@ -2292,7 +2303,7 @@ function createActionBar(): HTMLElement {
 
 function getDraftActionLabel(): string {
   if (uiState.playMode !== "online") {
-    return getCopy().fight;
+    return uiState.cardPickedThisRound ? getCopy().fight : getCopy().skipPickAndFight;
   }
 
   if (isCurrentPvpPlayerSubmitted()) {
@@ -2504,11 +2515,8 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
       onFinished: handleBattlefieldFinished,
       onError: handleBattlefieldError,
       onCastleHpChanged: handleBattleCastleHpChanged,
-      resultLabels: {
-        player: getCopy().roundVictory,
-        enemy: getCopy().roundDefeat,
-        draw: getCopy().roundDraw,
-      },
+      blockLabel: getCopy().blockFeedback,
+      reducedMotion: prefersReducedBattleMotion(window),
     });
   } catch (error: unknown) {
     console.error("Failed to apply Phaser battlefield command", error);
@@ -3003,6 +3011,14 @@ function closeCardInfo(): void {
     requestFocusAfterRender(`draft-card-${draftCardId}`);
   }
   render();
+}
+
+function isCardInfoOpen(): boolean {
+  return Boolean(
+    uiState.selectedCardInfoId ||
+    uiState.selectedCardInfoSlotIndex !== undefined ||
+    uiState.selectedEnemyCardInfoSlotIndex !== undefined
+  );
 }
 
 function startKeyboardBoardMove(sourceSlotIndex: number): void {

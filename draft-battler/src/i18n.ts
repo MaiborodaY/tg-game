@@ -108,6 +108,7 @@ export interface UiCopy {
   moveUnitHint: string;
   chooseMoveTarget: string;
   fight: string;
+  skipPickAndFight: string;
   nextRound: string;
   battleSpeed: string;
   skipBattle: string;
@@ -129,6 +130,7 @@ export interface UiCopy {
   hpLoss: string;
   you: string;
   bot: string;
+  blockFeedback: string;
   skipPickConfirm: string;
 }
 
@@ -227,6 +229,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     moveUnitHint: "Перемещение: {card}",
     chooseMoveTarget: "Выберите новую позицию на поле.",
     fight: "В бой",
+    skipPickAndFight: "Без карты — в бой",
     nextRound: "Следующий раунд",
     battleSpeed: "Скорость боя",
     skipBattle: "Пропустить бой",
@@ -248,6 +251,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     hpLoss: "Потеря HP",
     you: "Вы",
     bot: "Бот",
+    blockFeedback: "БЛОК",
     skipPickConfirm: "Вы ещё можете выбрать одну карту в этом раунде. Всё равно начать бой?",
   },
   uk: {
@@ -338,6 +342,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     moveUnitHint: "Переміщення: {card}",
     chooseMoveTarget: "Виберіть нову позицію на полі.",
     fight: "У бій",
+    skipPickAndFight: "Без карти — у бій",
     nextRound: "Наступний раунд",
     battleSpeed: "Швидкість бою",
     skipBattle: "Пропустити бій",
@@ -359,6 +364,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     hpLoss: "Втрата HP",
     you: "Ви",
     bot: "Бот",
+    blockFeedback: "БЛОК",
     skipPickConfirm: "Ви ще можете вибрати одну карту в цьому раунді. Усе одно почати бій?",
   },
   en: {
@@ -449,6 +455,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     moveUnitHint: "Moving: {card}",
     chooseMoveTarget: "Choose a new field position.",
     fight: "Fight",
+    skipPickAndFight: "Skip card & fight",
     nextRound: "Next round",
     battleSpeed: "Battle speed",
     skipBattle: "Skip battle",
@@ -470,6 +477,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     hpLoss: "HP loss",
     you: "You",
     bot: "Bot",
+    blockFeedback: "BLOCK",
     skipPickConfirm: "You can still choose one card this round. Fight anyway?",
   },
 };
