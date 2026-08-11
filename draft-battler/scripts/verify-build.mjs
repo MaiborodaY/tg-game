@@ -1,6 +1,7 @@
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { assertNoAuthoringAssetsInBuild } from "./build-asset-policy.mjs";
 import { getDynamicPublicAssetPaths, readRuntimeAssetContract } from "./runtime-asset-contract.mjs";
 
 const repoRoot = process.cwd();
@@ -23,6 +24,7 @@ await Promise.all(requiredPublicAssets.map(assertFile));
 
 const files = await listFiles(buildRoot);
 const relativeFiles = new Set(files.map((filePath) => normalizePath(path.relative(buildRoot, filePath))));
+assertNoAuthoringAssetsInBuild(relativeFiles);
 const jsFiles = [...relativeFiles].filter((filePath) => filePath.endsWith(".js"));
 const cssFiles = [...relativeFiles].filter((filePath) => filePath.endsWith(".css"));
 

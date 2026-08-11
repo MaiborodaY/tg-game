@@ -30,7 +30,7 @@ test("asset audit fully decodes and rejects a parseable but truncated image", as
   const sourceRoot = path.join(fixtureRoot, "src");
   const assetRoot = path.join(fixtureRoot, "assets");
   const brokenAssetPath = path.join(assetRoot, "broken.png");
-  const sourceImage = await readFile(path.join(repoRoot, "draft-battler", "public", "assets", "units", "wolfhound", "unit.png"));
+  const sourceImage = await readFile(path.join(repoRoot, "draft-battler", "assets-source", "units", "wolfhound", "unit.png"));
 
   await writeFile(path.join(sourceRoot, "main.ts"), 'const image = "assets/broken.png";\n', "utf8");
   await writeFile(brokenAssetPath, sourceImage.subarray(0, 128));

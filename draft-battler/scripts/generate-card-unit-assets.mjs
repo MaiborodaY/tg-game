@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-const UNITS_ROOT = path.resolve("draft-battler/public/assets/units");
+const UNITS_ROOT = path.resolve("draft-battler/assets-source/units");
 const PREVIEW_PATH = path.resolve(".tmp/draft-battler-card-unit-preview.png");
 
 const ALPHA_THRESHOLD = 12;
