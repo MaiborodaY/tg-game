@@ -163,6 +163,36 @@ test("synergy status templates expose progress, activation, and localized effect
   });
 });
 
+test("battle HUD, spatial positions, and draft forecasts are complete in every locale", () => {
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    const position = formatMessage(copy.fieldPosition, {
+      row: copy.frontRow,
+      column: copy.leftColumn,
+    });
+    const forecast = formatMessage(copy.synergyWillActivate, {
+      tag: getTagLabel(locale, "guardian"),
+      before: 1,
+      after: 2,
+    });
+    const result = formatMessage(copy.roundResultDetail, {
+      yourHp: copy.yourHp,
+      playerHp: 17,
+      playerLoss: 3,
+      enemyHp: copy.enemyHp,
+      enemyHpValue: 14,
+      enemyLoss: 6,
+    });
+
+    [position, forecast, result].forEach((value) => {
+      assert.match(value, /\S/, `${locale}:new HUD copy is non-empty`);
+      assert.doesNotMatch(value, /\{[^}]+\}/, `${locale}:new HUD copy has no unresolved placeholders`);
+    });
+    [copy.enemyArmy, copy.enemyArmyHint, copy.moveUnit, copy.chooseMoveTarget, copy.battleSpeed, copy.skipBattle]
+      .forEach((value) => assert.match(value, /\S/, `${locale}:new control copy`));
+  });
+});
+
 test("all 18 core cards have complete presentation text in every locale", () => {
   assert.equal(CARD_DEFINITIONS.length, 18);
 

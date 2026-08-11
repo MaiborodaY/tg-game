@@ -24,6 +24,13 @@ import {
   type FieldLayout,
 } from "../fieldLayout";
 import { getUnitAsset, getUnitAssets } from "../unitAssets";
+import {
+  BattlePlaybackClock,
+  BattlePlaybackCompletion,
+  completeSkippedBattle,
+  type BattlePlaybackSpeed,
+  type FinalBattlePresentation,
+} from "./battlePlayback";
 
 const GAME_WIDTH = 390;
 const GAME_HEIGHT = 720;
@@ -83,6 +90,7 @@ export interface PlayBattleInput {
   timeline: BattleTimeline;
   onFinished?: () => void;
   onError?: (error: unknown) => void;
+  onCastleHpChanged?: (owner: Owner, hp: number) => void;
   resultLabels: BattleResultLabels;
 }
 
@@ -95,12 +103,27 @@ export interface ShowDraftInput {
 
 type SceneCommand =
   | { type: "draft"; playerCastleHp: number; enemyCastleHp: number }
-  | { type: "battle"; timeline: BattleTimeline; onFinished?: () => void; onError?: (error: unknown) => void };
+  | {
+      type: "battle";
+      timeline: BattleTimeline;
+      onFinished?: () => void;
+      onError?: (error: unknown) => void;
+      onCastleHpChanged?: (owner: Owner, hp: number) => void;
+    };
 
 export interface BattlefieldController {
   showDraft: (input: ShowDraftInput) => void;
   playBattle: (input: PlayBattleInput) => void;
+  setBattleSpeed: (speed: BattlePlaybackSpeed) => void;
+  skipBattle: () => boolean;
   destroy: () => void;
+}
+
+interface ActiveBattlePlayback {
+  token: number;
+  timeline: BattleTimeline;
+  completion: BattlePlaybackCompletion;
+  onError?: (error: unknown) => void;
 }
 
 interface UnitView {
@@ -175,6 +198,8 @@ export function mountBattlefield(parent: HTMLElement): BattlefieldController {
   return {
     showDraft: (input) => scene.showDraft(input),
     playBattle: (input) => scene.playBattle(input),
+    setBattleSpeed: (speed) => scene.setBattleSpeed(speed),
+    skipBattle: () => scene.skipBattle(),
     destroy: () => game.destroy(true),
   };
 }
@@ -184,6 +209,7 @@ class CastleBattleScene extends Phaser.Scene {
   private readonly castleViews = new Map<Owner, CastleView>();
   private readonly activeCombatPresentation = new Set<Promise<void>>();
   private readonly activeWalkTimers = new Set<Phaser.Time.TimerEvent>();
+  private readonly activeDelayTimers = new Set<Phaser.Time.TimerEvent>();
   private readonly strikePool: StrikeEffect[] = [];
   private readonly floatTextPool: Phaser.GameObjects.Text[] = [];
   private readonly glowPool: Phaser.GameObjects.Ellipse[] = [];
@@ -198,6 +224,9 @@ class CastleBattleScene extends Phaser.Scene {
   private playToken = 0;
   private destroyed = false;
   private resultLabels: BattleResultLabels = { player: "VICTORY", enemy: "DEFEAT", draw: "DRAW" };
+  private battleSpeed: BattlePlaybackSpeed = 1;
+  private readonly playbackClock = new BattlePlaybackClock(this.battleSpeed);
+  private activeBattle?: ActiveBattlePlayback;
 
   constructor() {
     super("CastleBattleScene");
@@ -231,6 +260,8 @@ class CastleBattleScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.destroyed = true;
       this.ready = false;
+      this.cancelActiveBattle();
+      this.playToken += 1;
     });
 
     this.applyCommand(this.command);
@@ -251,7 +282,39 @@ class CastleBattleScene extends Phaser.Scene {
       timeline: input.timeline,
       onFinished: input.onFinished,
       onError: input.onError,
+      onCastleHpChanged: input.onCastleHpChanged,
     });
+  }
+
+  setBattleSpeed(speed: BattlePlaybackSpeed): void {
+    if (this.battleSpeed === speed) {
+      return;
+    }
+
+    if (this.ready && !this.destroyed) {
+      this.playbackClock.setSpeed(speed, this.time.now);
+    }
+    this.battleSpeed = speed;
+    this.applyBattleSpeed();
+  }
+
+  skipBattle(): boolean {
+    const activeBattle = this.activeBattle;
+    if (!this.ready || this.destroyed || !activeBattle) {
+      return false;
+    }
+
+    const skipped = completeSkippedBattle(activeBattle.completion, activeBattle.timeline, (presentation) => {
+      this.playToken += 1;
+      this.playbackClock.stop();
+      this.clearScene();
+      this.renderFinalBattlePresentation(activeBattle.timeline, presentation);
+      if (this.activeBattle === activeBattle) {
+        this.activeBattle = undefined;
+      }
+    });
+
+    return skipped;
   }
 
   private setCommand(command: SceneCommand): void {
@@ -265,7 +328,9 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private applyCommand(command: SceneCommand): void {
+    this.cancelActiveBattle();
     this.playToken += 1;
+    this.playbackClock.stop();
     this.clearScene();
     this.layout = createFieldLayout(this.scale.width, this.scale.height);
     this.drawField();
@@ -280,8 +345,29 @@ class CastleBattleScene extends Phaser.Scene {
     command.timeline.castles.forEach((castle) => this.createCastle(castle));
     command.timeline.units.forEach((unit) => this.createUnit(unit));
     this.wrapSceneInPresentationLayer();
-    void this.playTimeline(command.timeline, this.playToken, command.onFinished).catch((error: unknown) => {
-      command.onError?.(error);
+    const activeBattle: ActiveBattlePlayback = {
+      token: this.playToken,
+      timeline: command.timeline,
+      completion: new BattlePlaybackCompletion({
+        onFinished: command.onFinished,
+        onCastleHpChanged: command.onCastleHpChanged,
+      }),
+      onError: command.onError,
+    };
+    this.activeBattle = activeBattle;
+    command.timeline.castles.forEach((castle) => activeBattle.completion.emitCastleHp(castle.owner, castle.startHp));
+    if (this.activeBattle !== activeBattle || !activeBattle.completion.isActive()) {
+      return;
+    }
+
+    void this.playTimeline(command.timeline, activeBattle).catch((error: unknown) => {
+      if (this.activeBattle !== activeBattle || !activeBattle.completion.isActive()) {
+        return;
+      }
+
+      this.activeBattle = undefined;
+      activeBattle.completion.cancel();
+      activeBattle.onError?.(error);
     });
   }
 
@@ -289,6 +375,9 @@ class CastleBattleScene extends Phaser.Scene {
     this.tweens.killAll();
     this.activeWalkTimers.forEach((timer) => timer.remove(false));
     this.activeWalkTimers.clear();
+    this.activeDelayTimers.forEach((timer) => timer.remove(false));
+    this.activeDelayTimers.clear();
+    this.time.removeAllEvents();
     [...this.children.list].forEach((child) => child.destroy());
     this.presentationLayer = undefined;
     this.unitViews.clear();
@@ -297,6 +386,21 @@ class CastleBattleScene extends Phaser.Scene {
     this.strikePool.length = 0;
     this.floatTextPool.length = 0;
     this.glowPool.length = 0;
+    this.applyBattleSpeed();
+  }
+
+  private applyBattleSpeed(): void {
+    if (!this.ready || this.destroyed) {
+      return;
+    }
+
+    this.time.timeScale = this.battleSpeed;
+    this.tweens.timeScale = this.battleSpeed;
+  }
+
+  private cancelActiveBattle(): void {
+    this.activeBattle?.completion.cancel();
+    this.activeBattle = undefined;
   }
 
   private wrapSceneInPresentationLayer(): void {
@@ -656,24 +760,30 @@ class CastleBattleScene extends Phaser.Scene {
     return { objects: [shade, body, head, initials] };
   }
 
-  private async playTimeline(timeline: BattleTimeline, playToken: number, onFinished?: () => void): Promise<void> {
+  private async playTimeline(timeline: BattleTimeline, activeBattle: ActiveBattlePlayback): Promise<void> {
+    const { token: playToken } = activeBattle;
+    if (this.destroyed || playToken !== this.playToken || this.activeBattle !== activeBattle) {
+      return;
+    }
+
     this.startBattleCamera();
     await this.delay(260);
-    let clockStartedAt: number | undefined;
 
     for (const event of timeline.events) {
-      if (this.destroyed || playToken !== this.playToken) {
+      if (this.destroyed || playToken !== this.playToken || this.activeBattle !== activeBattle) {
         return;
       }
 
       if (event.type !== "teams_enter") {
-        clockStartedAt ??= this.time.now;
         const targetElapsedMs = scaleBattleDuration(event.time * COMBAT_TICK_DURATION_MS);
-        const currentElapsedMs = this.time.now - clockStartedAt;
-        const waitMs = Math.max(0, targetElapsedMs - currentElapsedMs);
+        const waitMs = this.playbackClock.getDelayUntil(targetElapsedMs, this.time.now);
         if (waitMs > 0) {
           await this.delayRaw(waitMs);
         }
+      }
+
+      if (this.destroyed || playToken !== this.playToken || this.activeBattle !== activeBattle) {
+        return;
       }
 
       if (isConcurrentCombatEvent(event)) {
@@ -682,10 +792,10 @@ class CastleBattleScene extends Phaser.Scene {
       }
 
       await this.waitForActiveCombatPresentation();
-      await this.playEvent(event, playToken, onFinished);
+      await this.playEvent(event, playToken, activeBattle);
 
       if (event.type === "teams_enter") {
-        clockStartedAt = this.time.now;
+        this.playbackClock.start(this.time.now);
       }
     }
   }
@@ -719,7 +829,7 @@ class CastleBattleScene extends Phaser.Scene {
   private async playEvent(
     event: BattleTimelineEvent,
     playToken: number,
-    onFinished?: () => void,
+    activeBattle?: ActiveBattlePlayback,
     options: { focusCamera?: boolean } = {},
   ): Promise<void> {
     if (this.destroyed || playToken !== this.playToken) {
@@ -859,7 +969,14 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     if (event.type === "castle_hit") {
-      await this.playCastleHit(event.owner, event.attackerId, event.damage, event.remainingHp);
+      await this.playCastleHit(event.owner, event.attackerId, event.damage, event.remainingHp, () => {
+        if (playToken === this.playToken && this.activeBattle === activeBattle) {
+          activeBattle?.completion.emitCastleHp(event.owner, event.remainingHp);
+          return playToken === this.playToken && this.activeBattle === activeBattle;
+        }
+
+        return false;
+      });
       return;
     }
 
@@ -873,8 +990,10 @@ class CastleBattleScene extends Phaser.Scene {
       await this.delay(120);
       this.showResult(event.winner);
       await this.delay(420);
-      if (playToken === this.playToken) {
-        onFinished?.();
+      if (playToken === this.playToken && this.activeBattle === activeBattle) {
+        this.playbackClock.stop();
+        this.activeBattle = undefined;
+        activeBattle?.completion.finish();
       }
     }
   }
@@ -1175,7 +1294,13 @@ class CastleBattleScene extends Phaser.Scene {
     this.setUnitPose(attacker, "idle", attackFacing);
   }
 
-  private async playCastleHit(owner: Owner, attackerId: string, damage: number, remainingHp: number): Promise<void> {
+  private async playCastleHit(
+    owner: Owner,
+    attackerId: string,
+    damage: number,
+    remainingHp: number,
+    onHpChanged?: () => boolean,
+  ): Promise<void> {
     const castle = this.castleViews.get(owner);
     const attacker = this.unitViews.get(attackerId);
     if (!castle || !attacker) {
@@ -1197,6 +1322,9 @@ class CastleBattleScene extends Phaser.Scene {
     this.updateUnitSpatialStyle(attacker, true);
 
     this.updateCastleHp(owner, remainingHp);
+    if (onHpChanged && !onHpChanged()) {
+      return;
+    }
     this.floatText(castle.container.x, castle.container.y + (owner === "player" ? -72 : 82), `-${damage}`, "#da6b58");
     await this.flash(castle.container, 0xda6b58);
     this.setUnitPose(attacker, "idle", attackFacing);
@@ -1268,7 +1396,38 @@ class CastleBattleScene extends Phaser.Scene {
     this.strikePool.push(effect);
   }
 
-  private showResult(winner: CombatWinner): void {
+  private renderFinalBattlePresentation(timeline: BattleTimeline, presentation: FinalBattlePresentation): void {
+    this.layout = createFieldLayout(this.scale.width, this.scale.height);
+    this.drawField();
+
+    timeline.castles.forEach((castle) => {
+      this.createCastle({ ...castle, startHp: presentation.castles[castle.owner] });
+    });
+    timeline.units.forEach((unit) => {
+      const finalUnit = presentation.units.get(unit.unitId);
+      if (!finalUnit) {
+        return;
+      }
+
+      this.createUnit({ ...unit, startHp: finalUnit.hp });
+      const view = this.unitViews.get(unit.unitId);
+      if (!view) {
+        return;
+      }
+
+      const clashPosition = this.getClashPosition(unit.owner, unit.slotIndex);
+      view.container.setPosition(clashPosition.x, clashPosition.y).setAlpha(1).setAngle(0).setVisible(finalUnit.visible);
+      this.updateUnitSpatialStyle(view, true);
+      this.updateUnitHp(view, finalUnit.hp);
+      this.setUnitPose(view, "idle", getDefaultUnitFacing(unit.owner));
+    });
+
+    this.wrapSceneInPresentationLayer();
+    this.setPresentationCamera(this.layout.width / 2, this.layout.centerY + 12, 1.08);
+    this.showResult(presentation.winner, false);
+  }
+
+  private showResult(winner: CombatWinner, animate = true): void {
     const label = this.resultLabels[winner];
     const color = winner === "player" ? "#79c77a" : winner === "enemy" ? "#da6b58" : "#e4c15e";
     const text = this.add
@@ -1282,14 +1441,16 @@ class CastleBattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(1000)
-      .setAlpha(0);
+      .setAlpha(animate ? 0 : 1);
 
-    this.tweens.add({
-      targets: text,
-      alpha: 1,
-      duration: scaleBattleDuration(180),
-      ease: "Sine.easeOut",
-    });
+    if (animate) {
+      this.tweens.add({
+        targets: text,
+        alpha: 1,
+        duration: scaleBattleDuration(180),
+        ease: "Sine.easeOut",
+      });
+    }
   }
 
   private async moveUnitTo(view: UnitView, position: { x: number; y: number }, duration: number): Promise<void> {
@@ -1588,22 +1749,24 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private delay(durationMs: number): Promise<void> {
-    if (durationMs <= 0 || this.destroyed) {
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      this.time.delayedCall(scaleBattleDuration(durationMs), () => resolve());
-    });
+    return this.scheduleDelay(scaleBattleDuration(durationMs));
   }
 
   private delayRaw(durationMs: number): Promise<void> {
+    return this.scheduleDelay(durationMs);
+  }
+
+  private scheduleDelay(durationMs: number): Promise<void> {
     if (durationMs <= 0 || this.destroyed) {
       return Promise.resolve();
     }
 
     return new Promise((resolve) => {
-      this.time.delayedCall(durationMs, () => resolve());
+      const timer = this.time.delayedCall(durationMs, () => {
+        this.activeDelayTimers.delete(timer);
+        resolve();
+      });
+      this.activeDelayTimers.add(timer);
     });
   }
 

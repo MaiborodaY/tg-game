@@ -34,8 +34,17 @@ import {
 import {
   getBoardSynergyProgress,
   getBoardUnitInspection,
+  getDraftOptionSynergyPresentation,
+  getLastKnownEnemyArmy,
   type BoardUnitInspection,
+  type DraftTagSynergyForecast,
 } from "./draftPresentation";
+import {
+  createGameHudSnapshot,
+  createRoundSummarySnapshot,
+  loadBattlePlaybackSpeed,
+  saveBattlePlaybackSpeed,
+} from "./battleUi";
 import {
   DRAFT_CAMERA_ZOOM,
   FIELD_FALLBACK_HEIGHT,
@@ -121,6 +130,7 @@ interface UiState {
   selectedLogRound?: number;
   lastRound: number;
   lastBattleTimeline?: BattleTimeline;
+  presentedCastleHp?: Record<Owner, number>;
   pvp: PvpState;
 }
 
@@ -209,6 +219,7 @@ const restoredSoloRun = loadSoloRunSnapshot(soloRunStorage);
 let soloPersistenceFailureReported = false;
 let activeLocale = resolveInitialLocale(readStoredLocale(preferenceStorage), navigator.language);
 let howToOpen = !hasSeenHowTo(preferenceStorage);
+let battlePlaybackSpeed = loadBattlePlaybackSpeed(preferenceStorage);
 document.documentElement.lang = activeLocale;
 
 let uiState: UiState = restoredSoloRun ? createRestoredSoloUiState(restoredSoloRun) : createInitialUiState();
@@ -273,6 +284,8 @@ interface PendingDraftReplacement {
 let activePointerDrag: ActivePointerDrag | undefined;
 let activeFieldSlotDropTarget: FieldSlotDropTargetState = {};
 let pendingDraftReplacement: PendingDraftReplacement | undefined;
+let keyboardMoveSourceSlotIndex: number | undefined;
+let pendingFocusKey: string | undefined;
 let suppressNextCardClick = false;
 let pvpSocket: WebSocket | undefined;
 let pvpSocketCloseExpected = false;
@@ -284,6 +297,13 @@ window.addEventListener("beforeunload", () => closePvpSocket());
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && pendingDraftReplacement) {
     cancelDraftReplacement();
+  } else if (event.key === "Escape" && keyboardMoveSourceSlotIndex !== undefined) {
+    cancelKeyboardBoardMove();
+  } else if (event.key === "Escape" && (uiState.selectedCardInfoId || uiState.selectedCardInfoSlotIndex !== undefined)) {
+    closeCardInfo();
+  } else if (event.key === "Escape" && uiState.logsOpen) {
+    uiState = { ...uiState, logsOpen: false };
+    render();
   } else if (event.key === "Escape" && howToOpen && uiState.mode === "menu") {
     closeHowToPlay();
   }
@@ -326,19 +346,24 @@ function createEmptyPvpPlayerSlots(): PvpPlayerSlot[] {
 function render(): void {
   const stage = getStageElement();
   const stageUi = getStageUiElement();
+  const activeFocusKey = document.activeElement instanceof HTMLElement
+    ? document.activeElement.dataset.focusKey
+    : undefined;
+  const focusKey = pendingFocusKey ?? activeFocusKey;
+  pendingFocusKey = undefined;
   stage.className = `stage stage--${uiState.mode}`;
   stageUi.replaceChildren();
 
   if (uiState.mode === "menu") {
     stageUi.append(createMainMenuOverlay());
   } else if (uiState.mode === "draft") {
-    stageUi.append(createDraftHud(), createDraftOverlay());
+    stageUi.append(createGameHud(), createDraftOverlay());
   } else {
-    stageUi.append(createBattleOverlay());
+    stageUi.append(createGameHud(), createBattleOverlay());
   }
 
   if (uiState.mode !== "menu") {
-    stageUi.append(createLogsOverlay());
+    stageUi.append(createLogsOverlay(), createGameLiveRegion());
   }
 
   if (uiState.mode === "menu" && howToOpen) {
@@ -357,6 +382,28 @@ function render(): void {
   }
 
   syncBattlefield();
+  restoreFocusAfterRender(focusKey);
+}
+
+function setFocusKey(element: HTMLElement, focusKey: string): void {
+  element.dataset.focusKey = focusKey;
+}
+
+function requestFocusAfterRender(focusKey: string): void {
+  pendingFocusKey = focusKey;
+}
+
+function restoreFocusAfterRender(focusKey: string | undefined): void {
+  if (!focusKey) {
+    return;
+  }
+
+  queueMicrotask(() => {
+    const target = document.querySelector<HTMLElement>(`[data-focus-key="${CSS.escape(focusKey)}"]`);
+    if (target?.isConnected) {
+      target.focus();
+    }
+  });
 }
 
 function getShellElement(): HTMLElement {
@@ -388,7 +435,11 @@ function getStageUiElement(): HTMLElement {
   return stageUiElement;
 }
 
-function createMetric(label: string, value: string, metricKey: "hp" | "round" | "seed"): HTMLElement {
+function createMetric(
+  label: string,
+  value: string,
+  metricKey: "player-hp" | "round" | "enemy-hp",
+): HTMLElement {
   const metric = document.createElement("div");
   metric.className = `metric metric--${metricKey}`;
 
@@ -403,32 +454,106 @@ function createMetric(label: string, value: string, metricKey: "hp" | "round" | 
   const valueEl = document.createElement("strong");
   valueEl.className = "metric__value";
   valueEl.textContent = value;
+  valueEl.dataset.hudMetric = metricKey;
 
   metric.append(icon, labelEl, valueEl);
 
   return metric;
 }
 
-function createDraftHud(): HTMLElement {
+function createGameHud(): HTMLElement {
   const copy = getCopy();
+  const shownHp = uiState.presentedCastleHp ?? {
+    player: uiState.run.playerHp,
+    enemy: uiState.run.enemyHp,
+  };
+  const shownRound = uiState.mode === "draft" ? uiState.run.round : uiState.lastRound;
+  const snapshot = createGameHudSnapshot(shownHp.player, shownHp.enemy, shownRound);
   const hud = document.createElement("div");
   hud.className = "draft-hud";
 
   const metrics = document.createElement("div");
   metrics.className = "draft-hud__metrics";
   metrics.append(
-    createMetric(copy.hp, String(uiState.run.playerHp), "hp"),
-    createMetric(copy.round, String(uiState.run.round), "round"),
-    createMetric(copy.seed, uiState.run.seed.slice(-6), "seed"),
+    createMetric(copy.yourHp, String(snapshot.playerHp), "player-hp"),
+    createMetric(copy.round, `${snapshot.round}/${snapshot.maxRounds}`, "round"),
+    createMetric(copy.enemyHp, String(snapshot.enemyHp), "enemy-hp"),
   );
   hud.append(metrics);
 
-  const synergies = createDraftSynergies();
-  if (synergies) {
-    hud.append(synergies);
+  if (uiState.mode === "draft") {
+    const synergies = createDraftSynergies();
+    if (synergies) {
+      hud.append(synergies);
+    }
+
+    if (uiState.playMode === "solo") {
+      hud.append(createEnemyArmyIntel());
+    }
   }
 
   return hud;
+}
+
+function createEnemyArmyIntel(): HTMLElement {
+  const copy = getCopy();
+  const army = getLastKnownEnemyArmy(uiState.run);
+  const panel = document.createElement("section");
+  panel.className = "enemy-army-intel";
+  panel.setAttribute("aria-label", copy.enemyArmy);
+
+  const heading = document.createElement("div");
+  heading.className = "enemy-army-intel__heading";
+  const title = document.createElement("strong");
+  title.textContent = copy.enemyArmy;
+  const hint = document.createElement("span");
+  hint.textContent = copy.enemyArmyHint;
+  heading.append(title, hint);
+
+  const grid = document.createElement("div");
+  grid.className = "enemy-army-intel__grid";
+  grid.setAttribute("role", "list");
+
+  army.forEach((slot) => {
+    const position = getFieldPositionLabel(slot.slotIndex);
+    const item = document.createElement("span");
+    item.className = slot.cardId
+      ? "enemy-army-intel__slot enemy-army-intel__slot--filled"
+      : "enemy-army-intel__slot";
+    item.setAttribute("role", "listitem");
+
+    if (!slot.cardId || !slot.stats) {
+      item.textContent = "·";
+      item.setAttribute("aria-label", `${formatMessage(copy.emptySlot, { slot: slot.slotIndex + 1 })}: ${position}`);
+      grid.append(item);
+      return;
+    }
+
+    const card = getCardDefinition(slot.cardId);
+    const localizedName = getLocalizedCard(activeLocale, card).name;
+    const assetPath = getUnitAssetPath(slot.cardId);
+    if (assetPath) {
+      const image = document.createElement("img");
+      image.alt = "";
+      image.decoding = "async";
+      image.src = assetPath;
+      item.append(image);
+    } else {
+      const initials = document.createElement("span");
+      initials.textContent = createCardInitials(localizedName);
+      item.append(initials);
+    }
+
+    const stats = document.createElement("small");
+    stats.textContent = `${slot.stats.attack}/${slot.stats.hp}${slot.upgradeLevel ? " ★" : ""}`;
+    item.append(stats);
+    item.title = `${localizedName}${slot.upgradeLevel ? " ★" : ""} · ${position} · ${copy.attack} ${slot.stats.attack} · ${copy.hp} ${slot.stats.hp}`;
+    item.setAttribute("aria-label", item.title);
+    grid.append(item);
+  });
+
+  panel.append(heading, grid);
+  return panel;
 }
 
 function createDraftSynergies(): HTMLElement | undefined {
@@ -648,6 +773,7 @@ function selectLocale(locale: SupportedLocale): void {
 function startSoloRun(): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
@@ -659,6 +785,7 @@ function startSoloRun(): void {
 function returnToMainMenu(): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
@@ -669,6 +796,7 @@ function returnToMainMenu(): void {
 function startOnlineLobby(): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
   closePvpSocket();
   uiState = {
     ...createInitialUiState(createSeed(), "online", "draft"),
@@ -679,7 +807,9 @@ function startOnlineLobby(): void {
 
 function createDraftOverlay(): HTMLElement {
   const overlay = document.createElement("div");
-  overlay.className = "draft-overlay";
+  overlay.className = uiState.playMode === "solo"
+    ? "draft-overlay draft-overlay--with-enemy-intel"
+    : "draft-overlay";
   const isWaitingForOnlineMatch = uiState.playMode === "online" && !uiState.pvp.match;
   const selectedDraftCardId = getSelectedDraftCardId();
 
@@ -689,6 +819,8 @@ function createDraftOverlay(): HTMLElement {
     if (selectedDraftCardId && !uiState.cardPickedThisRound) {
       const hasVisibleSynergies = getBoardSynergyProgress(uiState.draftBoardSlots).length > 0;
       overlay.append(createTapPlacementPanel(selectedDraftCardId, hasVisibleSynergies));
+    } else if (keyboardMoveSourceSlotIndex !== undefined) {
+      overlay.append(createKeyboardMovePanel(keyboardMoveSourceSlotIndex));
     }
   }
 
@@ -696,7 +828,12 @@ function createDraftOverlay(): HTMLElement {
     overlay.append(createPvpPanel());
   }
 
-  if (!isWaitingForOnlineMatch && !uiState.cardPickedThisRound && !selectedDraftCardId) {
+  if (
+    !isWaitingForOnlineMatch &&
+    !uiState.cardPickedThisRound &&
+    !selectedDraftCardId &&
+    keyboardMoveSourceSlotIndex === undefined
+  ) {
     overlay.append(createDraftPanel());
   }
 
@@ -716,6 +853,8 @@ function createBattleOverlay(): HTMLElement {
 
   if (uiState.battleFinished) {
     overlay.append(uiState.mode === "finished" && uiState.playMode === "solo" ? createSoloTerminalResult() : createBattleActionPanel());
+  } else {
+    overlay.append(createBattlePlaybackControls());
   }
 
   return overlay;
@@ -725,6 +864,11 @@ function createBattleActionPanel(): HTMLElement {
   const panel = document.createElement("div");
   panel.className = "battle-action-panel";
 
+  const lastRound = getLastRoundRecord(uiState.run);
+  if (lastRound) {
+    panel.append(createRoundResultSummary(lastRound));
+  }
+
   if (uiState.battlePresentationNotice) {
     panel.append(createBattlePresentationNotice(uiState.battlePresentationNotice));
   }
@@ -732,6 +876,98 @@ function createBattleActionPanel(): HTMLElement {
   panel.append(createActionBar());
 
   return panel;
+}
+
+function createBattlePlaybackControls(): HTMLElement {
+  const copy = getCopy();
+  const controls = document.createElement("div");
+  controls.className = "battle-playback-controls";
+
+  const speedButton = document.createElement("button");
+  speedButton.className = "battle-playback-controls__speed";
+  speedButton.type = "button";
+  speedButton.textContent = `×${battlePlaybackSpeed}`;
+  speedButton.title = copy.battleSpeed;
+  speedButton.setAttribute("aria-label", `${copy.battleSpeed}: ×${battlePlaybackSpeed}`);
+  speedButton.setAttribute("aria-pressed", String(battlePlaybackSpeed === 2));
+  setFocusKey(speedButton, "battle-speed");
+  speedButton.addEventListener("click", toggleBattlePlaybackSpeed);
+
+  const skipButton = document.createElement("button");
+  skipButton.className = "battle-playback-controls__skip";
+  skipButton.type = "button";
+  skipButton.textContent = copy.skipBattle;
+  setFocusKey(skipButton, "battle-skip");
+  skipButton.addEventListener("click", skipBattlePresentation);
+
+  controls.append(speedButton, skipButton);
+  return controls;
+}
+
+function toggleBattlePlaybackSpeed(): void {
+  battlePlaybackSpeed = battlePlaybackSpeed === 1 ? 2 : 1;
+  saveBattlePlaybackSpeed(preferenceStorage, battlePlaybackSpeed);
+  battlefieldController?.setBattleSpeed(battlePlaybackSpeed);
+  requestFocusAfterRender("battle-speed");
+  render();
+}
+
+function skipBattlePresentation(): void {
+  requestFocusAfterRender(uiState.mode === "finished" ? "terminal-result" : "next-round");
+  if (!battlefieldController?.skipBattle()) {
+    completeBattlePresentation();
+  }
+}
+
+function createRoundResultSummary(record: RoundRecord): HTMLElement {
+  const copy = getCopy();
+  const snapshot = createRoundSummarySnapshot(record);
+  const summary = document.createElement("section");
+  summary.className = `round-result-summary round-result-summary--${snapshot.winner}`;
+  summary.setAttribute("role", "status");
+  summary.setAttribute("aria-live", "polite");
+  summary.setAttribute("aria-atomic", "true");
+
+  const title = document.createElement("strong");
+  title.textContent = getRoundWinnerLabel(snapshot.winner);
+  const detail = document.createElement("span");
+  detail.textContent = formatMessage(copy.roundResultDetail, {
+    yourHp: copy.yourHp,
+    playerHp: snapshot.playerHpAfter,
+    playerLoss: snapshot.playerHpLoss,
+    enemyHp: copy.enemyHp,
+    enemyHpValue: snapshot.enemyHpAfter,
+    enemyLoss: snapshot.enemyHpLoss,
+  });
+  summary.append(title, detail);
+  return summary;
+}
+
+function getRoundWinnerLabel(winner: CombatWinner): string {
+  const copy = getCopy();
+  return winner === "player" ? copy.roundVictory : winner === "enemy" ? copy.roundDefeat : copy.roundDraw;
+}
+
+function createGameLiveRegion(): HTMLElement {
+  const liveRegion = document.createElement("p");
+  liveRegion.className = "game-live-status";
+  liveRegion.dataset.gameLiveStatus = "true";
+  liveRegion.setAttribute("aria-live", "polite");
+  liveRegion.setAttribute("aria-atomic", "true");
+
+  if ((uiState.mode === "battle" || uiState.mode === "finished") && !uiState.battleFinished) {
+    liveRegion.textContent = formatMessage(getCopy().battleInProgress, {
+      round: uiState.lastRound,
+      maxRounds: MAX_RUN_ROUNDS,
+    });
+  } else if (uiState.battleFinished) {
+    const record = getLastRoundRecord(uiState.run);
+    if (record) {
+      liveRegion.textContent = `${getRoundWinnerLabel(record.combatResult.winner)}. ${getBattleSummaryDetail(record)}`;
+    }
+  }
+
+  return liveRegion;
 }
 
 function createBattlePresentationNotice(message: string): HTMLElement {
@@ -752,6 +988,8 @@ function createSoloTerminalResult(): HTMLElement {
   const resultKind = outcome === "player" ? "victory" : outcome === "enemy" ? "defeat" : "draw";
   const panel = document.createElement("section");
   panel.className = `terminal-result terminal-result--${resultKind}`;
+  panel.tabIndex = -1;
+  setFocusKey(panel, "terminal-result");
 
   const eyebrow = document.createElement("span");
   eyebrow.className = "terminal-result__eyebrow";
@@ -785,12 +1023,14 @@ function createSoloTerminalResult(): HTMLElement {
   restartButton.className = "primary-button";
   restartButton.type = "button";
   restartButton.textContent = copy.again;
+  setFocusKey(restartButton, "restart-run");
   restartButton.addEventListener("click", startSoloRun);
 
   const menuButton = document.createElement("button");
   menuButton.className = "terminal-result__secondary-button";
   menuButton.type = "button";
   menuButton.textContent = copy.menu;
+  setFocusKey(menuButton, "return-menu");
   menuButton.addEventListener("click", returnToMainMenu);
 
   actions.append(restartButton, menuButton);
@@ -1019,12 +1259,13 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   button.draggable = false;
   button.title = localizedCard.summary;
   button.dataset.cardId = option.cardId;
+  setFocusKey(button, `draft-card-${option.cardId}`);
   button.setAttribute("aria-pressed", String(uiState.selectedDraftCardId === option.cardId));
 
   button.append(
     createCardFrame(),
     createCardArchetypeBadge(meta),
-    createCardBody(card, meta),
+    createCardBody(card, meta, option),
   );
 
   button.addEventListener("click", () => handleDraftCardClick(option.cardId));
@@ -1048,6 +1289,7 @@ function createCardInfoPanel(cardId: CardId, boardUnit?: BoardUnitInspection): H
   const meta = getCardDisplayMeta(card);
   const panel = document.createElement("aside");
   panel.className = `card-info-panel unit-card--${meta.archetype} unit-card--${meta.rarity}`;
+  panel.setAttribute("role", "dialog");
   panel.setAttribute("aria-labelledby", "draft-card-info-title");
 
   const closeButton = document.createElement("button");
@@ -1055,6 +1297,7 @@ function createCardInfoPanel(cardId: CardId, boardUnit?: BoardUnitInspection): H
   closeButton.type = "button";
   closeButton.textContent = "×";
   closeButton.setAttribute("aria-label", copy.closeCardInfo);
+  setFocusKey(closeButton, "card-info-close");
   closeButton.addEventListener("click", closeCardInfo);
 
   const title = document.createElement("strong");
@@ -1088,6 +1331,16 @@ function createCardInfoPanel(cardId: CardId, boardUnit?: BoardUnitInspection): H
   }
   panel.append(type, createCardArt(card, meta), stats, tags, summary);
 
+  if (boardUnit && uiState.mode === "draft") {
+    const moveButton = document.createElement("button");
+    moveButton.className = "card-info-panel__move";
+    moveButton.type = "button";
+    moveButton.textContent = copy.moveUnit;
+    setFocusKey(moveButton, "card-info-move");
+    moveButton.addEventListener("click", () => startKeyboardBoardMove(boardUnit.slotIndex));
+    panel.append(moveButton);
+  }
+
   return panel;
 }
 
@@ -1097,7 +1350,7 @@ function createBoardUnitContext(boardUnit: BoardUnitInspection): HTMLElement {
   context.className = boardUnit.upgradeLevel
     ? "card-info-panel__context card-info-panel__context--upgraded"
     : "card-info-panel__context";
-  const position = formatMessage(copy.boardPosition, { slot: boardUnit.slotIndex + 1 });
+  const position = getFieldPositionLabel(boardUnit.slotIndex);
   context.textContent = boardUnit.upgradeLevel ? `${position} · ${copy.upgradedStats}` : position;
 
   return context;
@@ -1110,6 +1363,7 @@ function createRerollButton(): HTMLButtonElement {
   button.type = "button";
   button.disabled = !canRerollDraftCards(uiState.run);
   button.textContent = button.disabled ? copy.rerollUsed : copy.reroll;
+  setFocusKey(button, "reroll");
   button.addEventListener("click", rerollCurrentDraftCards);
 
   return button;
@@ -1121,9 +1375,14 @@ function createTapPlacementPanel(cardId: CardId, hasVisibleSynergies: boolean): 
   const localizedCard = getLocalizedCard(activeLocale, card);
   const placementKinds = getDraftPlacementClassifications(cardId).map((placement) => placement.kind);
   const panel = document.createElement("section");
-  panel.className = hasVisibleSynergies
-    ? "tap-placement-panel tap-placement-panel--below-synergies"
-    : "tap-placement-panel";
+  const panelClasses = ["tap-placement-panel"];
+  if (hasVisibleSynergies) {
+    panelClasses.push("tap-placement-panel--below-synergies");
+  }
+  if (uiState.playMode === "solo") {
+    panelClasses.push("tap-placement-panel--below-enemy-intel");
+  }
+  panel.className = panelClasses.join(" ");
 
   const copyContainer = document.createElement("div");
   copyContainer.className = "tap-placement-panel__copy";
@@ -1147,16 +1406,46 @@ function createTapPlacementPanel(cardId: CardId, hasVisibleSynergies: boolean): 
   const infoButton = document.createElement("button");
   infoButton.type = "button";
   infoButton.textContent = copy.cardInfo;
+  setFocusKey(infoButton, "selected-card-info");
   infoButton.addEventListener("click", () => openCardInfo(cardId));
 
   const cancelButton = document.createElement("button");
   cancelButton.type = "button";
   cancelButton.textContent = copy.cancel;
+  setFocusKey(cancelButton, "selected-card-cancel");
   cancelButton.addEventListener("click", cancelDraftCardSelection);
 
   actions.append(infoButton, cancelButton);
   panel.append(copyContainer, actions);
 
+  return panel;
+}
+
+function createKeyboardMovePanel(sourceSlotIndex: number): HTMLElement {
+  const copy = getCopy();
+  const source = getDraftBoardSlot(sourceSlotIndex);
+  const panel = document.createElement("section");
+  panel.className = "keyboard-move-panel";
+  panel.setAttribute("role", "status");
+
+  const copyContainer = document.createElement("div");
+  copyContainer.className = "keyboard-move-panel__copy";
+  const title = document.createElement("strong");
+  const cardName = source?.cardId
+    ? getLocalizedCard(activeLocale, getCardDefinition(source.cardId)).name
+    : "";
+  title.textContent = formatMessage(copy.moveUnitHint, { card: cardName });
+  const hint = document.createElement("span");
+  hint.textContent = copy.chooseMoveTarget;
+  copyContainer.append(title, hint);
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.textContent = copy.cancel;
+  setFocusKey(cancelButton, "move-cancel");
+  cancelButton.addEventListener("click", cancelKeyboardBoardMove);
+
+  panel.append(copyContainer, cancelButton);
   return panel;
 }
 
@@ -1427,7 +1716,7 @@ function createCardName(card: CardDefinition): HTMLElement {
   return name;
 }
 
-function createCardBody(card: CardDefinition, meta: CardDisplayMeta): HTMLElement {
+function createCardBody(card: CardDefinition, meta: CardDisplayMeta, option?: DraftOption): HTMLElement {
   const body = document.createElement("div");
   body.className = "unit-card__body";
 
@@ -1438,10 +1727,64 @@ function createCardBody(card: CardDefinition, meta: CardDisplayMeta): HTMLElemen
   body.append(
     createCardArt(card, meta),
     createCardHeader(card, meta),
+    createCardTagRow(card),
     footer,
   );
 
+  if (option) {
+    const synergyForecast = createCardSynergyForecast(option);
+    if (synergyForecast) {
+      body.append(synergyForecast);
+    }
+  }
+
   return body;
+}
+
+function createCardTagRow(card: CardDefinition): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "unit-card__tag-row";
+  card.tags.forEach((tag) => {
+    const tagElement = document.createElement("span");
+    tagElement.textContent = getTagLabel(activeLocale, tag);
+    row.append(tagElement);
+  });
+  return row;
+}
+
+function createCardSynergyForecast(option: DraftOption): HTMLElement | undefined {
+  const presentation = getDraftOptionSynergyPresentation(option, uiState.draftBoardSlots);
+  if (presentation.placements.length === 0) {
+    return undefined;
+  }
+
+  const activation = findFirstSynergyActivation(presentation.placements.flatMap((placement) => placement.synergies));
+  if (!activation) {
+    return undefined;
+  }
+
+  const activationIsGuaranteed = presentation.placements.every((placement) =>
+    placement.synergies.some((synergy) => synergy.tag === activation.tag && synergy.activatesThreshold),
+  );
+  const label = document.createElement("span");
+  label.className = activationIsGuaranteed
+    ? "unit-card__synergy-forecast unit-card__synergy-forecast--guaranteed"
+    : "unit-card__synergy-forecast";
+  label.textContent = formatMessage(
+    activationIsGuaranteed ? getCopy().synergyWillActivate : getCopy().synergyMayActivate,
+    {
+      tag: getTagLabel(activeLocale, activation.tag),
+      before: activation.beforeCount,
+      after: activation.afterCount,
+    },
+  );
+  return label;
+}
+
+function findFirstSynergyActivation(
+  synergies: readonly DraftTagSynergyForecast[],
+): DraftTagSynergyForecast | undefined {
+  return synergies.find((synergy) => synergy.activatesThreshold);
 }
 
 function createCardArchetypeBadge(meta: CardDisplayMeta): HTMLElement {
@@ -1700,6 +2043,9 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   const placement = selectedDraftCardId
     ? classifyDraftPlacement(uiState.draftBoardSlots, selectedDraftCardId, slotIndex)
     : undefined;
+  const isKeyboardMoveSource = keyboardMoveSourceSlotIndex === slotIndex;
+  const isKeyboardMoveTarget = keyboardMoveSourceSlotIndex !== undefined &&
+    canMoveBoardSlotUnit(keyboardMoveSourceSlotIndex, slotIndex);
   const slot = document.createElement("button");
   const classes = ["field-slot"];
   if (card) {
@@ -1715,10 +2061,20 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   if (placement) {
     classes.push(placement.kind === "invalid" ? "field-slot--tap-invalid" : `field-slot--tap-${placement.kind}`);
   }
+  if (isKeyboardMoveSource) {
+    classes.push("field-slot--move-source");
+  } else if (keyboardMoveSourceSlotIndex !== undefined) {
+    classes.push(isKeyboardMoveTarget ? "field-slot--move-target" : "field-slot--move-invalid");
+  }
   slot.className = classes.join(" ");
   slot.type = "button";
   slot.disabled = false;
+  if (keyboardMoveSourceSlotIndex !== undefined && !isKeyboardMoveSource && !isKeyboardMoveTarget) {
+    slot.tabIndex = -1;
+    slot.setAttribute("aria-disabled", "true");
+  }
   slot.dataset.fieldSlotIndex = String(slotIndex);
+  setFocusKey(slot, `field-slot-${slotIndex}`);
   slot.setAttribute("aria-pressed", String(uiState.selectedCardInfoSlotIndex === slotIndex));
   const slotPosition = getPlayerFieldSlotPosition(slotIndex);
   slot.style.setProperty("--slot-x", `${slotPosition.xPercent}%`);
@@ -1726,6 +2082,7 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   slot.style.setProperty("--slot-scale", `${slotPosition.scale}`);
   slot.style.setProperty("--slot-depth", `${slotPosition.depth}`);
 
+  const positionLabel = getFieldPositionLabel(slotIndex);
   if (selectedDraftCardId) {
     const selectedCard = getCardDefinition(selectedDraftCardId);
     const selectedName = getLocalizedCard(activeLocale, selectedCard).name;
@@ -1740,18 +2097,26 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
             slot: slotIndex + 1,
           })
           : formatMessage(copy.invalidPlacement, { card: selectedName, slot: slotIndex + 1 });
-    slot.setAttribute("aria-label", slot.title);
+    slot.setAttribute("aria-label", `${slot.title}. ${positionLabel}`);
+  } else if (keyboardMoveSourceSlotIndex !== undefined) {
+    const localizedName = card
+      ? getLocalizedCard(activeLocale, card).name
+      : formatMessage(copy.emptySlot, { slot: slotIndex + 1 });
+    slot.title = isKeyboardMoveSource
+      ? formatMessage(copy.moveUnitHint, { card: localizedName })
+      : `${copy.chooseMoveTarget}: ${positionLabel}`;
+    slot.setAttribute("aria-label", `${slot.title}. ${localizedName}`);
   } else if (card) {
     const localizedName = getLocalizedCard(activeLocale, card).name;
     slot.title = slotState?.upgradeLevel ? formatMessage(copy.upgradedCard, { card: localizedName }) : localizedName;
-    slot.setAttribute("aria-label", slot.title);
+    slot.setAttribute("aria-label", `${slot.title}. ${positionLabel}`);
   } else {
     slot.title = formatMessage(copy.emptySlot, { slot: slotIndex + 1 });
-    slot.setAttribute("aria-label", slot.title);
+    slot.setAttribute("aria-label", `${slot.title}. ${positionLabel}`);
   }
 
   slot.addEventListener("click", (event) => {
-    const resolvedSlotIndex = getSelectedDraftCardId()
+    const resolvedSlotIndex = getSelectedDraftCardId() || keyboardMoveSourceSlotIndex !== undefined
       ? getFieldSlotIndexForClick(event, slotIndex)
       : slotIndex;
     handleFieldSlotClick(resolvedSlotIndex);
@@ -1760,16 +2125,35 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   if (card) {
     const unit = createFieldSlotUnit(card, slotState ?? createEmptyDraftBoardSlot(slotIndex));
     slot.append(unit);
-    if (!selectedDraftCardId) {
+    if (!selectedDraftCardId && keyboardMoveSourceSlotIndex === undefined) {
       slot.addEventListener("pointerdown", (event) => startPointerFieldUnitDrag(slotIndex, unit, event));
     }
   }
 
   if (placement && placement.kind !== "invalid") {
     slot.append(createFieldSlotTargetLabel(placement.kind));
+  } else if (isKeyboardMoveTarget) {
+    slot.append(createKeyboardMoveTargetLabel());
   }
 
   return slot;
+}
+
+function createKeyboardMoveTargetLabel(): HTMLElement {
+  const label = document.createElement("span");
+  label.className = "field-slot__target-label field-slot__target-label--move";
+  label.textContent = getCopy().moveUnit;
+  label.setAttribute("aria-hidden", "true");
+  return label;
+}
+
+function getFieldPositionLabel(slotIndex: number): string {
+  const copy = getCopy();
+  const row = getFieldSlotRow(slotIndex) === 0 ? copy.frontRow : copy.backRow;
+  const columns = [copy.leftColumn, copy.centerColumn, copy.rightColumn] as const;
+  const column = columns[getFieldSlotColumn(slotIndex)] ?? copy.centerColumn;
+
+  return formatMessage(copy.fieldPosition, { row, column });
 }
 
 function createFieldSlotTargetLabel(kind: Exclude<DraftPlacementClassification["kind"], "invalid">): HTMLElement {
@@ -1836,6 +2220,7 @@ function createActionBar(): HTMLElement {
     fightButton.type = "button";
     fightButton.disabled = !canFightRound();
     fightButton.textContent = getDraftActionLabel();
+    setFocusKey(fightButton, "fight");
     fightButton.addEventListener("click", fightRound);
     actions.append(fightButton);
   } else if (uiState.mode === "battle") {
@@ -1843,6 +2228,7 @@ function createActionBar(): HTMLElement {
     nextButton.className = "primary-button";
     nextButton.type = "button";
     nextButton.textContent = getBattleActionLabel();
+    setFocusKey(nextButton, "next-round");
     nextButton.addEventListener("click", goToNextRound);
     actions.append(nextButton);
   } else {
@@ -1850,6 +2236,7 @@ function createActionBar(): HTMLElement {
     newRunButton.className = "primary-button";
     newRunButton.type = "button";
     newRunButton.textContent = getCopy().menu;
+    setFocusKey(newRunButton, "return-menu");
     newRunButton.addEventListener("click", returnToMainMenu);
     actions.append(newRunButton);
   }
@@ -1875,6 +2262,7 @@ function getBattleActionLabel(): string {
 
 function goToNextRound(): void {
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
   if (uiState.playMode === "online") {
     if (isPvpMatchFinished()) {
       returnToMainMenu();
@@ -1895,6 +2283,7 @@ function goToNextRound(): void {
     selectedCardInfoSlotIndex: undefined,
     battleFinished: false,
     battlePresentationNotice: undefined,
+    presentedCastleHp: undefined,
     logsOpen: false,
   };
   persistSoloRun();
@@ -2053,6 +2442,7 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
   appliedBattlefieldCommandKey = command.key;
 
   try {
+    battlefieldController?.setBattleSpeed(battlePlaybackSpeed);
     if (command.type === "draft") {
       battlefieldController?.showDraft({
         playerCastleHp: command.playerCastleHp,
@@ -2065,6 +2455,7 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
       timeline: command.timeline,
       onFinished: handleBattlefieldFinished,
       onError: handleBattlefieldError,
+      onCastleHpChanged: handleBattleCastleHpChanged,
       resultLabels: {
         player: getCopy().roundVictory,
         enemy: getCopy().roundDefeat,
@@ -2074,6 +2465,36 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
   } catch (error: unknown) {
     console.error("Failed to apply Phaser battlefield command", error);
     showBattlefieldFallback(getCopy().rendererInterrupted);
+  }
+}
+
+function handleBattleCastleHpChanged(owner: Owner, hp: number): void {
+  if (uiState.mode !== "battle" && uiState.mode !== "finished") {
+    return;
+  }
+
+  const previous = uiState.presentedCastleHp ?? {
+    player: getTimelineCastleHp(uiState.lastBattleTimeline, "player", "start") ?? uiState.run.playerHp,
+    enemy: getTimelineCastleHp(uiState.lastBattleTimeline, "enemy", "start") ?? uiState.run.enemyHp,
+  };
+  const nextHp = Math.max(0, Math.trunc(hp));
+  uiState = {
+    ...uiState,
+    presentedCastleHp: {
+      ...previous,
+      [owner]: nextHp,
+    },
+  };
+
+  const metricKey = owner === "player" ? "player-hp" : "enemy-hp";
+  const metric = document.querySelector<HTMLElement>(`[data-hud-metric="${metricKey}"]`);
+  if (metric) {
+    metric.textContent = String(nextHp);
+  }
+
+  const liveRegion = document.querySelector<HTMLElement>("[data-game-live-status]");
+  if (liveRegion) {
+    liveRegion.textContent = `${owner === "player" ? getCopy().yourHp : getCopy().enemyHp}: ${nextHp}`;
   }
 }
 
@@ -2096,14 +2517,29 @@ function completeBattlePresentation(notice?: string): void {
   }
 
   clearBattlePresentationWatchdog();
+  const finalHp = {
+    player: getTimelineCastleHp(uiState.lastBattleTimeline, "player", "final") ?? uiState.run.playerHp,
+    enemy: getTimelineCastleHp(uiState.lastBattleTimeline, "enemy", "final") ?? uiState.run.enemyHp,
+  };
+  requestFocusAfterRender(uiState.mode === "finished" ? "terminal-result" : "next-round");
 
   uiState = {
     ...uiState,
     battleFinished: true,
     battlePresentationNotice: notice,
     selectedLogRound: uiState.lastRound,
+    presentedCastleHp: finalHp,
   };
   render();
+}
+
+function getTimelineCastleHp(
+  timeline: BattleTimeline | undefined,
+  owner: Owner,
+  phase: "start" | "final",
+): number | undefined {
+  const castle = timeline?.castles.find((candidate) => candidate.owner === owner);
+  return phase === "start" ? castle?.startHp : castle?.finalHp;
 }
 
 function showBattlefieldFallback(message: string): void {
@@ -2274,7 +2710,12 @@ function createEmptyDraftBoardSlot(slotIndex: number): BoardSlot {
 }
 
 function canFightRound(): boolean {
-  if (uiState.mode !== "draft" || getFilledSlotCount() === 0 || getSelectedDraftCardId()) {
+  if (
+    uiState.mode !== "draft" ||
+    getFilledSlotCount() === 0 ||
+    getSelectedDraftCardId() ||
+    keyboardMoveSourceSlotIndex !== undefined
+  ) {
     return false;
   }
 
@@ -2351,6 +2792,8 @@ function applyDraftCardInSlot(cardId: CardId, slotIndex: number, allowReplacemen
   }
 
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
+  requestFocusAfterRender("fight");
   uiState = {
     ...uiState,
     draftBoardSlots: result.boardSlots,
@@ -2396,6 +2839,11 @@ function handleDraftCardClick(cardId: CardId): void {
   }
 
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
+  const firstValidTarget = getDraftPlacementClassifications(cardId).find((placement) => placement.kind !== "invalid");
+  if (firstValidTarget) {
+    requestFocusAfterRender(`field-slot-${firstValidTarget.targetSlotIndex}`);
+  }
   uiState = {
     ...uiState,
     selectedDraftCardId: cardId,
@@ -2408,6 +2856,15 @@ function handleDraftCardClick(cardId: CardId): void {
 function handleFieldSlotClick(slotIndex: number): void {
   if (suppressNextCardClick) {
     suppressNextCardClick = false;
+    return;
+  }
+
+  if (keyboardMoveSourceSlotIndex !== undefined) {
+    if (slotIndex === keyboardMoveSourceSlotIndex) {
+      cancelKeyboardBoardMove();
+    } else {
+      moveBoardSlotUnit(keyboardMoveSourceSlotIndex, slotIndex);
+    }
     return;
   }
 
@@ -2441,6 +2898,7 @@ function openCardInfo(cardId: CardId): void {
     selectedCardInfoId: cardId,
     selectedCardInfoSlotIndex: undefined,
   };
+  requestFocusAfterRender("card-info-close");
   render();
 }
 
@@ -2454,6 +2912,7 @@ function openBoardCardInfo(slotIndex: number): void {
     selectedCardInfoId: undefined,
     selectedCardInfoSlotIndex: slotIndex,
   };
+  requestFocusAfterRender("card-info-close");
   render();
 }
 
@@ -2466,11 +2925,47 @@ function getSelectedBoardUnitInspection(): BoardUnitInspection | undefined {
 }
 
 function closeCardInfo(): void {
+  const boardSlotIndex = uiState.selectedCardInfoSlotIndex;
+  const draftCardId = uiState.selectedCardInfoId;
   uiState = {
     ...uiState,
     selectedCardInfoId: undefined,
     selectedCardInfoSlotIndex: undefined,
   };
+  if (boardSlotIndex !== undefined) {
+    requestFocusAfterRender(`field-slot-${boardSlotIndex}`);
+  } else if (draftCardId) {
+    requestFocusAfterRender(`draft-card-${draftCardId}`);
+  }
+  render();
+}
+
+function startKeyboardBoardMove(sourceSlotIndex: number): void {
+  if (uiState.mode !== "draft" || !getDraftBoardSlot(sourceSlotIndex)?.cardId) {
+    return;
+  }
+
+  const firstTarget = uiState.draftBoardSlots.find((slot) => canMoveBoardSlotUnit(sourceSlotIndex, slot.slotIndex));
+  keyboardMoveSourceSlotIndex = sourceSlotIndex;
+  pendingDraftReplacement = undefined;
+  uiState = {
+    ...uiState,
+    selectedDraftCardId: undefined,
+    selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
+  };
+  requestFocusAfterRender(firstTarget ? `field-slot-${firstTarget.slotIndex}` : `field-slot-${sourceSlotIndex}`);
+  render();
+}
+
+function cancelKeyboardBoardMove(): void {
+  const sourceSlotIndex = keyboardMoveSourceSlotIndex;
+  if (sourceSlotIndex === undefined) {
+    return;
+  }
+
+  keyboardMoveSourceSlotIndex = undefined;
+  requestFocusAfterRender(`field-slot-${sourceSlotIndex}`);
   render();
 }
 
@@ -2651,6 +3146,8 @@ function moveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number): void {
   target.cardId = sourceCardId;
   target.upgradeLevel = sourceUpgradeLevel;
 
+  keyboardMoveSourceSlotIndex = undefined;
+  requestFocusAfterRender(`field-slot-${toSlotIndex}`);
   uiState = {
     ...uiState,
     draftBoardSlots,
@@ -2927,11 +3424,16 @@ function fightRound(): void {
   }
 
   pendingDraftReplacement = undefined;
+  keyboardMoveSourceSlotIndex = undefined;
   const playedRound = uiState.run.round;
   const combatReadyRun = chooseDraftCards(uiState.run, uiState.draftBoardSlots);
   const nextRun = resolveRound(combatReadyRun);
   const lastRoundRecord = getLastRoundRecord(nextRun);
   const lastBattleTimeline = createTimelineForRoundRecord(lastRoundRecord);
+  const presentedCastleHp = {
+    player: getTimelineCastleHp(lastBattleTimeline, "player", "start") ?? combatReadyRun.playerHp,
+    enemy: getTimelineCastleHp(lastBattleTimeline, "enemy", "start") ?? combatReadyRun.enemyHp,
+  };
 
   uiState = {
     ...uiState,
@@ -2947,6 +3449,7 @@ function fightRound(): void {
     logsOpen: false,
     lastRound: playedRound,
     lastBattleTimeline,
+    presentedCastleHp,
   };
   persistSoloRun();
   render();
@@ -3277,6 +3780,7 @@ function applyPvpDraftSnapshot(state: UiState, match: PvpMatchSnapshot): UiState
     selectedCardInfoSlotIndex: undefined,
     battleFinished: false,
     battlePresentationNotice: undefined,
+    presentedCastleHp: undefined,
     logsOpen: false,
     lastRound: match.round,
     lastBattleTimeline: undefined,
@@ -3342,6 +3846,10 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
     logsOpen: false,
     lastRound: match.round,
     lastBattleTimeline,
+    presentedCastleHp: {
+      player: perspective.playerCastleHpBefore,
+      enemy: perspective.enemyCastleHpBefore,
+    },
     pvp: {
       ...state.pvp,
       match,

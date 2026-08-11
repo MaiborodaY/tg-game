@@ -59,6 +59,10 @@ export interface UiCopy {
   synergies: string;
   synergyActive: string;
   synergyProgress: string;
+  synergyWillActivate: string;
+  synergyMayActivate: string;
+  enemyArmy: string;
+  enemyArmyHint: string;
   onboarding: string;
   chooseCard: string;
   slots: string;
@@ -87,10 +91,23 @@ export interface UiCopy {
   confirmReplacement: string;
   upgradedCard: string;
   boardPosition: string;
+  fieldPosition: string;
+  frontRow: string;
+  backRow: string;
+  leftColumn: string;
+  centerColumn: string;
+  rightColumn: string;
   upgradedStats: string;
   emptySlot: string;
+  moveUnit: string;
+  moveUnitHint: string;
+  chooseMoveTarget: string;
   fight: string;
   nextRound: string;
+  battleSpeed: string;
+  skipBattle: string;
+  battleInProgress: string;
+  roundResultDetail: string;
   sceneLoading: string;
   battleResultReady: string;
   battlefieldUnavailable: string;
@@ -154,6 +171,10 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     synergies: "Синергии",
     synergyActive: "{tag}: {count}/{threshold}, активно, {effect}",
     synergyProgress: "{tag}: {count}/{threshold}, до активации {remaining}, {effect}",
+    synergyWillActivate: "Активирует: {tag} {before}→{after}",
+    synergyMayActivate: "Может активировать: {tag} {before}→{after}",
+    enemyArmy: "Известная армия врага",
+    enemyArmyHint: "+1 новая карта пока скрыта",
     onboarding: "Коснитесь карты и позиции на поле — или перетащите карту.",
     chooseCard: "Выберите одну карту",
     slots: "Места {filled}/{capacity}",
@@ -182,10 +203,23 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     confirmReplacement: "Заменить",
     upgradedCard: "{card}, улучшен",
     boardPosition: "Позиция {slot}",
+    fieldPosition: "{row}, {column}",
+    frontRow: "передний ряд",
+    backRow: "задний ряд",
+    leftColumn: "слева",
+    centerColumn: "центр",
+    rightColumn: "справа",
     upgradedStats: "Улучшенные характеристики",
     emptySlot: "Пустая позиция {slot}",
+    moveUnit: "Переместить",
+    moveUnitHint: "Перемещение: {card}",
+    chooseMoveTarget: "Выберите новую позицию на поле.",
     fight: "В бой",
     nextRound: "Следующий раунд",
+    battleSpeed: "Скорость боя",
+    skipBattle: "Пропустить бой",
+    battleInProgress: "Идёт бой, раунд {round} из {maxRounds}.",
+    roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
     sceneLoading: "Загрузка поля…",
     battleResultReady: "Результат боя готов.",
     battlefieldUnavailable: "Поле боя недоступно. Драфт продолжает работать.",
@@ -241,6 +275,10 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     synergies: "Синергії",
     synergyActive: "{tag}: {count}/{threshold}, активно, {effect}",
     synergyProgress: "{tag}: {count}/{threshold}, до активації {remaining}, {effect}",
+    synergyWillActivate: "Активує: {tag} {before}→{after}",
+    synergyMayActivate: "Може активувати: {tag} {before}→{after}",
+    enemyArmy: "Відома армія ворога",
+    enemyArmyHint: "+1 нова карта поки прихована",
     onboarding: "Торкніться карти й позиції на полі — або перетягніть карту.",
     chooseCard: "Виберіть одну карту",
     slots: "Місця {filled}/{capacity}",
@@ -269,10 +307,23 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     confirmReplacement: "Замінити",
     upgradedCard: "{card}, покращено",
     boardPosition: "Позиція {slot}",
+    fieldPosition: "{row}, {column}",
+    frontRow: "передній ряд",
+    backRow: "задній ряд",
+    leftColumn: "ліворуч",
+    centerColumn: "центр",
+    rightColumn: "праворуч",
     upgradedStats: "Покращені характеристики",
     emptySlot: "Порожня позиція {slot}",
+    moveUnit: "Перемістити",
+    moveUnitHint: "Переміщення: {card}",
+    chooseMoveTarget: "Виберіть нову позицію на полі.",
     fight: "У бій",
     nextRound: "Наступний раунд",
+    battleSpeed: "Швидкість бою",
+    skipBattle: "Пропустити бій",
+    battleInProgress: "Триває бій, раунд {round} із {maxRounds}.",
+    roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
     sceneLoading: "Завантаження поля…",
     battleResultReady: "Результат бою готовий.",
     battlefieldUnavailable: "Поле бою недоступне. Драфт продовжує працювати.",
@@ -328,6 +379,10 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     synergies: "Synergies",
     synergyActive: "{tag}: {count}/{threshold}, active, {effect}",
     synergyProgress: "{tag}: {count}/{threshold}, {remaining} more to activate, {effect}",
+    synergyWillActivate: "Activates: {tag} {before}→{after}",
+    synergyMayActivate: "Can activate: {tag} {before}→{after}",
+    enemyArmy: "Known enemy army",
+    enemyArmyHint: "+1 new card is still hidden",
     onboarding: "Tap a card and a field slot—or drag the card.",
     chooseCard: "Choose one card",
     slots: "Slots {filled}/{capacity}",
@@ -356,10 +411,23 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     confirmReplacement: "Replace",
     upgradedCard: "{card}, upgraded",
     boardPosition: "Position {slot}",
+    fieldPosition: "{row}, {column}",
+    frontRow: "front row",
+    backRow: "back row",
+    leftColumn: "left",
+    centerColumn: "center",
+    rightColumn: "right",
     upgradedStats: "Upgraded stats",
     emptySlot: "Empty position {slot}",
+    moveUnit: "Move",
+    moveUnitHint: "Moving: {card}",
+    chooseMoveTarget: "Choose a new field position.",
     fight: "Fight",
     nextRound: "Next round",
+    battleSpeed: "Battle speed",
+    skipBattle: "Skip battle",
+    battleInProgress: "Battle in progress, round {round} of {maxRounds}.",
+    roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
     sceneLoading: "Loading field…",
     battleResultReady: "Battle result ready.",
     battlefieldUnavailable: "Battlefield unavailable. Drafting still works.",
