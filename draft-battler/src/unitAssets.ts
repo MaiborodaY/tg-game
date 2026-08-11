@@ -14,7 +14,7 @@ export interface UnitAsset {
 
 const UNIT_SPRITE_FRAME_SIZE = 128;
 
-const UNIT_ASSETS: Partial<Record<CardId, UnitAsset>> = {
+const UNIT_ASSETS: Record<CardId, UnitAsset> = {
   iron_guard: {
     key: "unit:iron_guard",
     path: new URL("./assets/units/iron_guard/unit.webp", import.meta.url).href,
@@ -92,6 +92,17 @@ const UNIT_ASSETS: Partial<Record<CardId, UnitAsset>> = {
       frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
+  frost_acolyte: {
+    key: "unit:frost_acolyte",
+    path: new URL("./assets/units/frost_acolyte/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/frost_acolyte/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:frost_acolyte:poses",
+      path: new URL("./assets/units/frost_acolyte/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
+  },
   grave_binder: {
     key: "unit:grave_binder",
     path: new URL("./assets/units/grave_binder/unit.webp", import.meta.url).href,
@@ -125,6 +136,17 @@ const UNIT_ASSETS: Partial<Record<CardId, UnitAsset>> = {
       frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
+  witch_doctor: {
+    key: "unit:witch_doctor",
+    path: new URL("./assets/units/witch_doctor/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/witch_doctor/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:witch_doctor:poses",
+      path: new URL("./assets/units/witch_doctor/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
+  },
   field_cleric: {
     key: "unit:field_cleric",
     path: new URL("./assets/units/field_cleric/unit.webp", import.meta.url).href,
@@ -143,6 +165,50 @@ const UNIT_ASSETS: Partial<Record<CardId, UnitAsset>> = {
     spriteSheet: {
       key: "unit:wolfhound:poses",
       path: new URL("./assets/units/wolfhound/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
+  },
+  thorn_druid: {
+    key: "unit:thorn_druid",
+    path: new URL("./assets/units/thorn_druid/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/thorn_druid/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:thorn_druid:poses",
+      path: new URL("./assets/units/thorn_druid/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
+  },
+  stone_golem: {
+    key: "unit:stone_golem",
+    path: new URL("./assets/units/stone_golem/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/stone_golem/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:stone_golem:poses",
+      path: new URL("./assets/units/stone_golem/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
+  },
+  pyromancer: {
+    key: "unit:pyromancer",
+    path: new URL("./assets/units/pyromancer/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/pyromancer/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:pyromancer:poses",
+      path: new URL("./assets/units/pyromancer/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
+  },
+  banner_knight: {
+    key: "unit:banner_knight",
+    path: new URL("./assets/units/banner_knight/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/banner_knight/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:banner_knight:poses",
+      path: new URL("./assets/units/banner_knight/sprite-sheet.webp", import.meta.url).href,
       frameWidth: UNIT_SPRITE_FRAME_SIZE,
       frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },

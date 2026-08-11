@@ -29,8 +29,7 @@ const GAME_WIDTH = 390;
 const GAME_HEIGHT = 720;
 const UNIT_HP_BAR_WIDTH = 42;
 const CASTLE_HP_BAR_WIDTH = 132;
-const ENEMY_CASTLE_PREVIEW_HP = 16;
-const PLAYER_CASTLE_MAX_HP = PLAYER_STARTING_HP;
+const CASTLE_MAX_HP = PLAYER_STARTING_HP;
 const UNIT_PRESENTATION_SCALE = 0.86;
 const UNIT_SPRITE_DISPLAY_WIDTH = 56;
 const UNIT_SPRITE_DISPLAY_HEIGHT = 68;
@@ -51,9 +50,15 @@ const ENEMY_CASTLE_APPROACH_CAMERA_ZOOM = 1.14;
 const PLAYER_KEEP_TEXTURE_KEY = "environment:player-keep";
 const PLAYER_KEEP_ASSET_URL = new URL("../assets/environment/player_keep/keep.webp", import.meta.url).href;
 const PLAYER_KEEP_DISPLAY_WIDTH = 292;
+const PLAYER_KEEP_IMAGE_Y = -7;
 const ENEMY_KEEP_DISPLAY_WIDTH = 112;
 const ENEMY_CASTLE_HP_BAR_WIDTH = 106;
 const KEEP_ASSET_HEIGHT_RATIO = 113 / 190;
+const PLAYER_KEEP_DISPLAY_HEIGHT = PLAYER_KEEP_DISPLAY_WIDTH * KEEP_ASSET_HEIGHT_RATIO;
+const PLAYER_CASTLE_HP_BAR_Y = PLAYER_KEEP_IMAGE_Y - PLAYER_KEEP_DISPLAY_HEIGHT / 2 - 14;
+const PLAYER_CASTLE_HP_LABEL_Y = PLAYER_CASTLE_HP_BAR_Y - 14;
+const PLAYER_PROCEDURAL_CASTLE_HP_BAR_Y = -56;
+const PLAYER_PROCEDURAL_CASTLE_HP_LABEL_Y = -70;
 const BATTLEFIELD_BASE_TEXTURE_KEY = "environment:battlefield:common-forest:base";
 const BATTLEFIELD_BASE_ASSET_URL = new URL(
   "../assets/environment/battlefield/common_forest/battlefield_base.webp",
@@ -85,10 +90,11 @@ export type BattleResultLabels = Record<CombatWinner, string>;
 
 export interface ShowDraftInput {
   playerCastleHp: number;
+  enemyCastleHp: number;
 }
 
 type SceneCommand =
-  | { type: "draft"; playerCastleHp: number }
+  | { type: "draft"; playerCastleHp: number; enemyCastleHp: number }
   | { type: "battle"; timeline: BattleTimeline; onFinished?: () => void; onError?: (error: unknown) => void };
 
 export interface BattlefieldController {
@@ -153,7 +159,7 @@ export function mountBattlefield(parent: HTMLElement): BattlefieldController {
     render: {
       antialias: false,
       antialiasGL: false,
-      desynchronized: true,
+      desynchronized: false,
       powerPreference: "high-performance",
       roundPixels: true,
       transparent: false,
@@ -182,7 +188,11 @@ class CastleBattleScene extends Phaser.Scene {
   private readonly floatTextPool: Phaser.GameObjects.Text[] = [];
   private readonly glowPool: Phaser.GameObjects.Ellipse[] = [];
   private presentationLayer?: Phaser.GameObjects.Container;
-  private command: SceneCommand = { type: "draft", playerCastleHp: PLAYER_CASTLE_MAX_HP };
+  private command: SceneCommand = {
+    type: "draft",
+    playerCastleHp: CASTLE_MAX_HP,
+    enemyCastleHp: CASTLE_MAX_HP,
+  };
   private layout!: FieldLayout;
   private ready = false;
   private playToken = 0;
@@ -227,7 +237,11 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   showDraft(input: ShowDraftInput): void {
-    this.setCommand({ type: "draft", playerCastleHp: input.playerCastleHp });
+    this.setCommand({
+      type: "draft",
+      playerCastleHp: input.playerCastleHp,
+      enemyCastleHp: input.enemyCastleHp,
+    });
   }
 
   playBattle(input: PlayBattleInput): void {
@@ -257,7 +271,7 @@ class CastleBattleScene extends Phaser.Scene {
     this.drawField();
 
     if (command.type === "draft") {
-      this.getDraftCastles(command.playerCastleHp).forEach((castle) => this.createCastle(castle));
+      this.getDraftCastles(command.playerCastleHp, command.enemyCastleHp).forEach((castle) => this.createCastle(castle));
       this.wrapSceneInPresentationLayer();
       this.setDraftCamera();
       return;
@@ -495,8 +509,20 @@ class CastleBattleScene extends Phaser.Scene {
     }
     const hpBarWidth = castle.owner === "enemy" ? ENEMY_CASTLE_HP_BAR_WIDTH : CASTLE_HP_BAR_WIDTH;
     const hpBarHeight = castle.owner === "enemy" ? 6 : 8;
-    const hpBarY = useKeepLayout ? (castle.owner === "player" ? 58 : 49) : 43;
-    const hpLabelY = useKeepLayout ? (castle.owner === "player" ? 70 : 60) : 57;
+    const hpBarY = castle.owner === "player"
+      ? useKeepLayout
+        ? PLAYER_CASTLE_HP_BAR_Y
+        : PLAYER_PROCEDURAL_CASTLE_HP_BAR_Y
+      : useKeepLayout
+        ? 49
+        : 43;
+    const hpLabelY = castle.owner === "player"
+      ? useKeepLayout
+        ? PLAYER_CASTLE_HP_LABEL_Y
+        : PLAYER_PROCEDURAL_CASTLE_HP_LABEL_Y
+      : useKeepLayout
+        ? 60
+        : 57;
     const hpBack = this.add.rectangle(-hpBarWidth / 2, hpBarY, hpBarWidth, hpBarHeight, 0x3b1f1b, 0.9).setOrigin(0, 0.5);
     const hpFill = this.add.rectangle(-hpBarWidth / 2, hpBarY, hpBarWidth, hpBarHeight, color, 1).setOrigin(0, 0.5);
     const hpLabel = this.add
@@ -520,7 +546,7 @@ class CastleBattleScene extends Phaser.Scene {
     const isPlayer = owner === "player";
     const displayWidth = isPlayer ? PLAYER_KEEP_DISPLAY_WIDTH : ENEMY_KEEP_DISPLAY_WIDTH;
     const displayHeight = displayWidth * KEEP_ASSET_HEIGHT_RATIO;
-    const image = this.add.image(0, isPlayer ? -7 : -8, PLAYER_KEEP_TEXTURE_KEY).setDisplaySize(displayWidth, displayHeight);
+    const image = this.add.image(0, isPlayer ? PLAYER_KEEP_IMAGE_Y : -8, PLAYER_KEEP_TEXTURE_KEY).setDisplaySize(displayWidth, displayHeight);
 
     if (!isPlayer) {
       image.setTint(0xd88a68).setAlpha(0.86);
@@ -988,17 +1014,17 @@ class CastleBattleScene extends Phaser.Scene {
     });
   }
 
-  private getDraftCastles(playerCastleHp: number): BattleTimelineCastle[] {
+  private getDraftCastles(playerCastleHp: number, enemyCastleHp: number): BattleTimelineCastle[] {
     return [
       {
         owner: "enemy",
-        maxHp: ENEMY_CASTLE_PREVIEW_HP,
-        startHp: ENEMY_CASTLE_PREVIEW_HP,
-        finalHp: ENEMY_CASTLE_PREVIEW_HP,
+        maxHp: CASTLE_MAX_HP,
+        startHp: enemyCastleHp,
+        finalHp: enemyCastleHp,
       },
       {
         owner: "player",
-        maxHp: PLAYER_CASTLE_MAX_HP,
+        maxHp: CASTLE_MAX_HP,
         startHp: playerCastleHp,
         finalHp: playerCastleHp,
       },

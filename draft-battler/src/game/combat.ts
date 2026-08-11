@@ -55,13 +55,17 @@ export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: rea
   const survivingPlayerUnits = getLivingUnits(units, "player");
   const survivingEnemyUnits = getLivingUnits(units, "enemy");
   const winner = getWinner(survivingPlayerUnits, survivingEnemyUnits);
-  const hpLoss = winner === "enemy" ? survivingEnemyUnits.filter(canDamageCastle).length : 0;
+  const playerCastleDamage = winner === "enemy" ? survivingEnemyUnits.filter(canDamageCastle).length : 0;
+  const enemyCastleDamage = winner === "player" ? survivingPlayerUnits.filter(canDamageCastle).length : 0;
+  const hpLoss = playerCastleDamage;
 
   events.push({ type: "combat_finished", time: lastActionTime, winner, hpLoss, actions });
 
   return {
     winner,
     hpLoss,
+    playerCastleDamage,
+    enemyCastleDamage,
     actions,
     events,
     survivingPlayerUnits,

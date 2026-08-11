@@ -198,6 +198,13 @@ button {
   background: transparent;
 }
 
+.stage-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .scene-canvas-host {
   position: absolute;
   inset: 0;
@@ -2016,6 +2023,10 @@ h3 {
   border-color: rgba(218, 107, 88, 0.68);
 }
 
+.terminal-result--draw {
+  border-color: rgba(200, 183, 140, 0.68);
+}
+
 .terminal-result__eyebrow {
   color: #c8b78c;
   font-size: 10px;
@@ -2040,6 +2051,10 @@ h3 {
 
 .terminal-result--defeat .terminal-result__title {
   color: #ef9a8c;
+}
+
+.terminal-result--draw .terminal-result__title {
+  color: #d8d0b8;
 }
 
 .terminal-result__detail {

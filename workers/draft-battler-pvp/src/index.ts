@@ -11,6 +11,7 @@ import {
   type CardId,
   type CombatResult,
 } from "../../../draft-battler/src/game";
+import { getMatchCastleDamage } from "./combatHp";
 import {
   getEnabledPvpBinding,
   isPvpEnabled,
@@ -726,8 +727,9 @@ function createMatchCombatSnapshot(
   hostHpBefore: number,
   guestHpBefore: number,
 ): MatchCombatSnapshot {
-  const hostHpAfter = Math.max(0, hostHpBefore - getHostHpLoss(combat));
-  const guestHpAfter = Math.max(0, guestHpBefore - getGuestHpLoss(combat));
+  const { hostHpLoss, guestHpLoss } = getMatchCastleDamage(combat);
+  const hostHpAfter = Math.max(0, hostHpBefore - hostHpLoss);
+  const guestHpAfter = Math.max(0, guestHpBefore - guestHpLoss);
 
   return {
     round,
@@ -751,20 +753,6 @@ function getMatchGuestHp(match: Pick<MatchRecord, "guestHp" | "combat">): number
 
 function isMatchFinished(match: Pick<MatchRecord, "hostHp" | "guestHp" | "combat">): boolean {
   return getMatchHostHp(match) <= 0 || getMatchGuestHp(match) <= 0;
-}
-
-function getHostHpLoss(combat: CombatResult): number {
-  return combat.winner === "enemy" ? combat.hpLoss : 0;
-}
-
-function getGuestHpLoss(combat: CombatResult): number {
-  if (combat.winner !== "player") {
-    return 0;
-  }
-
-  return combat.survivingPlayerUnits.filter(
-    (unit) => unit.abilityId !== "bulwark" && unit.abilityId !== "heal_only",
-  ).length;
 }
 
 function createMatchSeed(roomId: string, now: number): string {

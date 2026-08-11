@@ -32,6 +32,24 @@ const COMBAT_EVENTS = [
   "synergy_applied",
 ];
 
+const DUEL_COPY_EXPECTATIONS = {
+  ru: {
+    intro: ["обе крепости", "20 HP", "по одной карте"],
+    draft: ["вы и соперник", "по одной карте"],
+    win: ["выжившие", "HP обеих крепостей сохраняется", "0 HP", "15-го раунда", "при равенстве", "ничья"],
+  },
+  uk: {
+    intro: ["обидві фортеці", "20 HP", "по одній карті"],
+    draft: ["ви та суперник", "по одній карті"],
+    win: ["що вижили", "HP обох фортець зберігається", "0 HP", "15-го раунду", "за рівності", "нічия"],
+  },
+  en: {
+    intro: ["both keeps", "20 HP", "one card per round"],
+    draft: ["You and your rival", "one card per round"],
+    win: ["survivors", "Both keeps retain their HP", "0 HP", "round 15", "equal HP", "draw"],
+  },
+};
+
 function createStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
   return {
@@ -85,6 +103,27 @@ test("all locales provide complete UI, taxonomy, and combat-log copy", () => {
     RARITIES.forEach((rarity) => assert.match(getRarityLabel(locale, rarity), /\S/));
     TAGS.forEach((tag) => assert.match(getTagLabel(locale, tag), /\S/));
     COMBAT_EVENTS.forEach((event) => assert.match(getCombatEventLabel(locale, event), /\S/));
+  });
+});
+
+test("solo copy fully explains the symmetric fifteen-round keep duel", () => {
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    const expected = DUEL_COPY_EXPECTATIONS[locale];
+
+    assert.match(copy.menuSubtitle, /15/, `${locale}:menuSubtitle:round limit`);
+    expected.intro.forEach((fragment) => assert.ok(copy.howToIntro.includes(fragment), `${locale}:howToIntro:${fragment}`));
+    expected.draft.forEach((fragment) => assert.ok(copy.howToDraftBody.includes(fragment), `${locale}:howToDraftBody:${fragment}`));
+    expected.win.forEach((fragment) => assert.ok(copy.howToWinBody.includes(fragment), `${locale}:howToWinBody:${fragment}`));
+
+    const resultValues = { round: 15, playerHp: 7, enemyHp: 3 };
+    [copy.victoryDetail, copy.defeatDetail, copy.drawDetail].forEach((template) => {
+      const result = formatMessage(template, resultValues);
+      assert.match(result, /15/, `${locale}:result:round`);
+      assert.match(result, /7/, `${locale}:result:playerHp`);
+      assert.match(result, /3/, `${locale}:result:enemyHp`);
+      assert.doesNotMatch(result, /\{[^}]+\}/, `${locale}:result:unresolved placeholder`);
+    });
   });
 });
 

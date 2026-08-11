@@ -89,7 +89,7 @@ type PvpConnectionStatus = "idle" | "connecting" | "connected" | "error";
 type PvpPlayerRole = "host" | "guest";
 type PvpPeerRole = PvpPlayerRole | "spectator";
 type BattlefieldCommand =
-  | { type: "draft"; key: string; playerCastleHp: number }
+  | { type: "draft"; key: string; playerCastleHp: number; enemyCastleHp: number }
   | { type: "battle"; key: string; timeline: BattleTimeline };
 
 interface CardDisplayMeta {
@@ -207,6 +207,7 @@ document.documentElement.lang = activeLocale;
 let uiState: UiState = restoredSoloRun ? createRestoredSoloUiState(restoredSoloRun) : createInitialUiState();
 let shellElement: HTMLElement | undefined;
 let stageElement: HTMLElement | undefined;
+let stageUiElement: HTMLElement | undefined;
 let sceneHostElement: HTMLElement | undefined;
 let scenePhaserHostElement: HTMLElement | undefined;
 let battlefieldController: BattlefieldController | undefined;
@@ -317,33 +318,34 @@ function createEmptyPvpPlayerSlots(): PvpPlayerSlot[] {
 
 function render(): void {
   const stage = getStageElement();
+  const stageUi = getStageUiElement();
   stage.className = `stage stage--${uiState.mode}`;
-  stage.replaceChildren(getSceneCanvasHost());
+  stageUi.replaceChildren();
 
   if (uiState.mode === "menu") {
-    stage.append(createMainMenuOverlay());
+    stageUi.append(createMainMenuOverlay());
   } else if (uiState.mode === "draft") {
-    stage.append(createDraftHud(), createDraftOverlay());
+    stageUi.append(createDraftHud(), createDraftOverlay());
   } else {
-    stage.append(createBattleOverlay());
+    stageUi.append(createBattleOverlay());
   }
 
   if (uiState.mode !== "menu") {
-    stage.append(createLogsOverlay());
+    stageUi.append(createLogsOverlay());
   }
 
   if (uiState.mode === "menu" && howToOpen) {
-    stage.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
-    stage.append(createHowToPlayOverlay());
+    stageUi.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
+    stageUi.append(createHowToPlayOverlay());
   }
 
   if (uiState.mode === "draft" && pendingDraftReplacement) {
     const replacementOverlay = createDraftReplacementOverlay(pendingDraftReplacement);
     if (replacementOverlay) {
-      stage.querySelector<HTMLElement>(".draft-hud")?.setAttribute("inert", "");
-      stage.querySelector<HTMLElement>(".draft-overlay")?.setAttribute("inert", "");
-      stage.querySelector<HTMLElement>(".logs-overlay")?.setAttribute("inert", "");
-      stage.append(replacementOverlay);
+      stageUi.querySelector<HTMLElement>(".draft-hud")?.setAttribute("inert", "");
+      stageUi.querySelector<HTMLElement>(".draft-overlay")?.setAttribute("inert", "");
+      stageUi.querySelector<HTMLElement>(".logs-overlay")?.setAttribute("inert", "");
+      stageUi.append(replacementOverlay);
     }
   }
 
@@ -363,10 +365,20 @@ function getShellElement(): HTMLElement {
 function getStageElement(): HTMLElement {
   if (!stageElement) {
     stageElement = document.createElement("section");
+    stageElement.append(getSceneCanvasHost(), getStageUiElement());
     getShellElement().append(stageElement);
   }
 
   return stageElement;
+}
+
+function getStageUiElement(): HTMLElement {
+  if (!stageUiElement) {
+    stageUiElement = document.createElement("div");
+    stageUiElement.className = "stage-ui";
+  }
+
+  return stageUiElement;
 }
 
 function createMetric(label: string, value: string, metricKey: "hp" | "round" | "seed"): HTMLElement {
@@ -656,9 +668,13 @@ function createBattlePresentationNotice(message: string): HTMLElement {
 function createSoloTerminalResult(): HTMLElement {
   const copy = getCopy();
   const completedRounds = uiState.run.roundHistory.length;
-  const victory = uiState.run.playerHp > 0 && completedRounds >= MAX_RUN_ROUNDS;
+  const outcome = uiState.run.outcome;
+  if (!outcome) {
+    throw new Error("Finished solo run is missing a terminal outcome.");
+  }
+  const resultKind = outcome === "player" ? "victory" : outcome === "enemy" ? "defeat" : "draw";
   const panel = document.createElement("section");
-  panel.className = `terminal-result terminal-result--${victory ? "victory" : "defeat"}`;
+  panel.className = `terminal-result terminal-result--${resultKind}`;
 
   const eyebrow = document.createElement("span");
   eyebrow.className = "terminal-result__eyebrow";
@@ -666,19 +682,23 @@ function createSoloTerminalResult(): HTMLElement {
 
   const title = document.createElement("h1");
   title.className = "terminal-result__title";
-  title.textContent = victory ? copy.victory : copy.defeat;
+  title.textContent = outcome === "player" ? copy.victory : outcome === "enemy" ? copy.defeat : copy.draw;
 
   const detail = document.createElement("p");
   detail.className = "terminal-result__detail";
-  detail.textContent = victory
-    ? formatMessage(copy.victoryDetail, { rounds: MAX_RUN_ROUNDS })
-    : formatMessage(copy.defeatDetail, { round: Math.max(1, completedRounds) });
+  const detailTemplate = outcome === "player" ? copy.victoryDetail : outcome === "enemy" ? copy.defeatDetail : copy.drawDetail;
+  detail.textContent = formatMessage(detailTemplate, {
+    round: Math.max(1, completedRounds),
+    playerHp: uiState.run.playerHp,
+    enemyHp: uiState.run.enemyHp,
+  });
 
   const metrics = document.createElement("div");
   metrics.className = "terminal-result__metrics";
   metrics.append(
     createTerminalMetric(copy.rounds, `${completedRounds}/${MAX_RUN_ROUNDS}`),
-    createTerminalMetric(copy.hp, String(uiState.run.playerHp)),
+    createTerminalMetric(copy.yourHp, String(uiState.run.playerHp)),
+    createTerminalMetric(copy.enemyHp, String(uiState.run.enemyHp)),
   );
 
   const actions = document.createElement("div");
@@ -1835,8 +1855,9 @@ function createBattlefieldCommand(): BattlefieldCommand | undefined {
   if (uiState.mode === "menu" || uiState.mode === "draft") {
     return {
       type: "draft",
-      key: `draft:${uiState.run.seed}:${uiState.run.round}:${uiState.run.playerHp}`,
+      key: `draft:${uiState.run.seed}:${uiState.run.round}:${uiState.run.playerHp}:${uiState.run.enemyHp}`,
       playerCastleHp: uiState.run.playerHp,
+      enemyCastleHp: uiState.run.enemyHp,
     };
   }
 
@@ -1927,7 +1948,10 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
 
   try {
     if (command.type === "draft") {
-      battlefieldController?.showDraft({ playerCastleHp: command.playerCastleHp });
+      battlefieldController?.showDraft({
+        playerCastleHp: command.playerCastleHp,
+        enemyCastleHp: command.enemyCastleHp,
+      });
       return;
     }
 
@@ -1936,9 +1960,9 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
       onFinished: handleBattlefieldFinished,
       onError: handleBattlefieldError,
       resultLabels: {
-        player: getCopy().victory,
-        enemy: getCopy().defeat,
-        draw: getCopy().draw,
+        player: getCopy().roundVictory,
+        enemy: getCopy().roundDefeat,
+        draw: getCopy().roundDraw,
       },
     });
   } catch (error: unknown) {
@@ -2035,7 +2059,11 @@ function createBattleSummary(log: RoundRecord): HTMLElement {
   summary.className = `battle-summary battle-summary--${combat.winner}`;
 
   const winner = document.createElement("strong");
-  winner.textContent = combat.winner === "player" ? copy.victory : combat.winner === "enemy" ? copy.defeat : copy.draw;
+  winner.textContent = combat.winner === "player"
+    ? copy.roundVictory
+    : combat.winner === "enemy"
+      ? copy.roundDefeat
+      : copy.roundDraw;
 
   const detail = document.createElement("span");
   detail.textContent = getBattleSummaryDetail(log);
@@ -2810,6 +2838,8 @@ function createTimelineForRoundRecord(record: RoundRecord | undefined): BattleTi
     combat: record.combatResult,
     playerCastleHpBefore: record.playerHpBefore,
     playerCastleHpAfter: record.playerHpAfter,
+    enemyCastleHpBefore: record.enemyHpBefore,
+    enemyCastleHpAfter: record.enemyHpAfter,
   });
 }
 
@@ -3159,6 +3189,8 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
     seed: match.seed,
     round: match.round,
     playerHp: perspective.playerCastleHpAfter,
+    enemyHp: perspective.enemyCastleHpAfter,
+    outcome: null,
     status: "draft" as const,
     boardSlots: cloneBoardSlots(perspective.playerSlots),
     enemyBoardSlots: cloneBoardSlots(perspective.enemySlots),
@@ -3204,6 +3236,8 @@ function createPvpDraftRun(state: UiState, match: PvpMatchSnapshot, boardSlots: 
     ...createRun(match.seed),
     round: match.round,
     playerHp: getPvpPlayerHp(match, state.pvp.role),
+    enemyHp: getPvpEnemyHp(match, state.pvp.role),
+    outcome: null,
     status: "draft",
     draftOptions: createDraftOptions(match.seed, match.round, draftRerollCount),
     draftRerollCount,
@@ -3219,6 +3253,14 @@ function getPvpPlayerHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined):
   }
 
   return match.hostHp;
+}
+
+function getPvpEnemyHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined): number {
+  if (role === "guest") {
+    return match.hostHp;
+  }
+
+  return match.guestHp;
 }
 
 function isPvpMatchFinished(): boolean {
@@ -3243,12 +3285,13 @@ function createPvpBattlePerspective(
   role: PvpPeerRole | undefined,
 ): PvpBattlePerspective {
   if (role === "guest") {
-    const hpLoss = Math.max(0, combatSnapshot.guestHpBefore - combatSnapshot.guestHpAfter);
+    const playerCastleDamage = Math.max(0, combatSnapshot.guestHpBefore - combatSnapshot.guestHpAfter);
+    const enemyCastleDamage = Math.max(0, combatSnapshot.hostHpBefore - combatSnapshot.hostHpAfter);
 
     return {
       playerSlots: cloneBoardSlots(combatSnapshot.guestSlots),
       enemySlots: cloneBoardSlots(combatSnapshot.hostSlots),
-      combat: mirrorCombatResult(combatSnapshot.combat, hpLoss),
+      combat: mirrorCombatResult(combatSnapshot.combat, playerCastleDamage, enemyCastleDamage),
       playerCastleHpBefore: combatSnapshot.guestHpBefore,
       playerCastleHpAfter: combatSnapshot.guestHpAfter,
       enemyCastleHpBefore: combatSnapshot.hostHpBefore,
@@ -3256,10 +3299,13 @@ function createPvpBattlePerspective(
     };
   }
 
+  const playerCastleDamage = Math.max(0, combatSnapshot.hostHpBefore - combatSnapshot.hostHpAfter);
+  const enemyCastleDamage = Math.max(0, combatSnapshot.guestHpBefore - combatSnapshot.guestHpAfter);
+
   return {
     playerSlots: cloneBoardSlots(combatSnapshot.hostSlots),
     enemySlots: cloneBoardSlots(combatSnapshot.guestSlots),
-    combat: combatSnapshot.combat,
+    combat: normalizeCombatCastleDamage(combatSnapshot.combat, playerCastleDamage, enemyCastleDamage),
     playerCastleHpBefore: combatSnapshot.hostHpBefore,
     playerCastleHpAfter: combatSnapshot.hostHpAfter,
     enemyCastleHpBefore: combatSnapshot.guestHpBefore,
@@ -3290,12 +3336,34 @@ function mergePvpRoundRecord(roundHistory: readonly RoundRecord[], record: Round
   return [...roundHistory.filter((roundRecord) => roundRecord.round !== record.round), record];
 }
 
-function mirrorCombatResult(combat: CombatResult, hpLoss: number): CombatResult {
+function normalizeCombatCastleDamage(
+  combat: CombatResult,
+  playerCastleDamage: number,
+  enemyCastleDamage: number,
+): CombatResult {
+  return {
+    ...combat,
+    hpLoss: playerCastleDamage,
+    playerCastleDamage,
+    enemyCastleDamage,
+    events: combat.events.map((event) =>
+      event.type === "combat_finished" ? { ...event, hpLoss: playerCastleDamage } : event,
+    ),
+  };
+}
+
+function mirrorCombatResult(
+  combat: CombatResult,
+  playerCastleDamage: number,
+  enemyCastleDamage: number,
+): CombatResult {
   return {
     winner: mirrorCombatWinner(combat.winner),
-    hpLoss,
+    hpLoss: playerCastleDamage,
+    playerCastleDamage,
+    enemyCastleDamage,
     actions: combat.actions,
-    events: combat.events.map((event) => mirrorCombatEvent(event, hpLoss)),
+    events: combat.events.map((event) => mirrorCombatEvent(event, playerCastleDamage)),
     survivingPlayerUnits: combat.survivingEnemyUnits.map(mirrorCombatUnit),
     survivingEnemyUnits: combat.survivingPlayerUnits.map(mirrorCombatUnit),
   };

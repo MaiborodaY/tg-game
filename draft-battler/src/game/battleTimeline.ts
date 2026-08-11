@@ -9,7 +9,6 @@ import {
   type Owner,
 } from "./types";
 
-const ENEMY_CASTLE_MAX_HP = 16;
 const CASTLE_EXCHANGE_START_DELAY = 18;
 const CASTLE_EXCHANGE_ATTACK_INTERVAL = 12;
 
@@ -70,8 +69,8 @@ interface CreateBattleTimelineInput {
   combat: CombatResult;
   playerCastleHpBefore: number;
   playerCastleHpAfter: number;
-  enemyCastleHpBefore?: number;
-  enemyCastleHpAfter?: number;
+  enemyCastleHpBefore: number;
+  enemyCastleHpAfter: number;
 }
 
 interface MutableTimelineUnit extends BattleTimelineUnit {
@@ -84,8 +83,8 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
   const playerCastle = createCastle("player", input.playerCastleHpBefore, input.playerCastleHpAfter);
   const enemyCastle = createCastle(
     "enemy",
-    input.enemyCastleHpBefore ?? ENEMY_CASTLE_MAX_HP,
-    input.enemyCastleHpAfter ?? ENEMY_CASTLE_MAX_HP,
+    input.enemyCastleHpBefore,
+    input.enemyCastleHpAfter,
   );
 
   createUnitsFromSlots("player", input.playerSlots).forEach((unit) => units.set(unit.unitId, unit));
@@ -269,8 +268,7 @@ function createUnitFromCombatUnit(unit: CombatUnit): MutableTimelineUnit {
 }
 
 function createCastle(owner: Owner, startHp: number, finalHp: number): BattleTimelineCastle {
-  const baseMaxHp = owner === "enemy" ? ENEMY_CASTLE_MAX_HP : PLAYER_STARTING_HP;
-  const maxHp = Math.max(startHp, finalHp, baseMaxHp);
+  const maxHp = Math.max(startHp, finalHp, PLAYER_STARTING_HP);
 
   return {
     owner,

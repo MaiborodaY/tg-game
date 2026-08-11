@@ -1,14 +1,15 @@
 import {
+  advanceEnemyBoardSlots,
   cloneBoardSlots,
   createBoardFromSlots,
   createDraftOptions,
   createEmptyBoardSlots,
-  createEnemyBoardSlots,
   getBoardCapacityForRound,
 } from "./draft";
 import { resolveCombat } from "./combat";
 import { applyDraftPlacement, classifyDraftPlacement } from "./placement";
 import {
+  ENEMY_STARTING_HP,
   FREE_REROLLS_PER_ROUND,
   MAX_RUN_ROUNDS,
   PLAYER_STARTING_HP,
@@ -24,6 +25,8 @@ export function createRun(seed: string): RunState {
     seed,
     round: 1,
     playerHp: PLAYER_STARTING_HP,
+    enemyHp: ENEMY_STARTING_HP,
+    outcome: null,
     status: "draft",
     draftOptions: createDraftOptions(seed, 1),
     draftRerollCount: 0,
@@ -40,7 +43,7 @@ export function chooseDraftCards(state: RunState, boardSlots: readonly BoardSlot
     ...state,
     status: "combat_ready",
     boardSlots: createBoardFromSlots(boardSlots, getBoardCapacityForRound(state.round)),
-    enemyBoardSlots: createEnemyBoardSlots(state.seed, state.round),
+    enemyBoardSlots: advanceEnemyBoardSlots(state.seed, state.round, state.enemyBoardSlots).boardSlots,
   };
 }
 
@@ -93,14 +96,18 @@ export function resolveRound(state: RunState): RunState {
   assertStatus(state, "combat_ready");
 
   const combatResult = resolveCombat(state.boardSlots, state.enemyBoardSlots, state.round);
-  const nextHp = Math.max(0, state.playerHp - combatResult.hpLoss);
-  const roundRecord = createRoundRecord(state, nextHp, combatResult);
-  const finished = nextHp <= 0 || state.round >= MAX_RUN_ROUNDS;
+  const nextPlayerHp = Math.max(0, state.playerHp - combatResult.playerCastleDamage);
+  const nextEnemyHp = Math.max(0, state.enemyHp - combatResult.enemyCastleDamage);
+  const outcome = getTerminalRunOutcome(nextPlayerHp, nextEnemyHp, state.round);
+  const roundRecord = createRoundRecord(state, nextPlayerHp, nextEnemyHp, combatResult);
+  const finished = outcome !== null;
 
   if (finished) {
     return {
       ...state,
-      playerHp: nextHp,
+      playerHp: nextPlayerHp,
+      enemyHp: nextEnemyHp,
+      outcome,
       status: "finished",
       roundHistory: [...state.roundHistory, roundRecord],
     };
@@ -111,12 +118,14 @@ export function resolveRound(state: RunState): RunState {
   return {
     ...state,
     round: nextRound,
-    playerHp: nextHp,
+    playerHp: nextPlayerHp,
+    enemyHp: nextEnemyHp,
+    outcome: null,
     status: "draft",
     draftOptions: createDraftOptions(state.seed, nextRound),
     draftRerollCount: 0,
     boardSlots: cloneBoardSlots(state.boardSlots),
-    enemyBoardSlots: createEmptyBoardSlots(),
+    enemyBoardSlots: cloneBoardSlots(state.enemyBoardSlots),
     roundHistory: [...state.roundHistory, roundRecord],
   };
 }
@@ -136,17 +145,48 @@ export function getLastCombatResult(state: RunState): CombatResult | undefined {
   return state.roundHistory[state.roundHistory.length - 1]?.combatResult;
 }
 
+export function getTerminalRunOutcome(
+  playerHp: number,
+  enemyHp: number,
+  round: number,
+): RunState["outcome"] {
+  if (playerHp <= 0 || enemyHp <= 0) {
+    if (playerHp <= 0 && enemyHp <= 0) {
+      return "draw";
+    }
+
+    return playerHp <= 0 ? "enemy" : "player";
+  }
+
+  if (round < MAX_RUN_ROUNDS) {
+    return null;
+  }
+
+  if (playerHp === enemyHp) {
+    return "draw";
+  }
+
+  return playerHp > enemyHp ? "player" : "enemy";
+}
+
 function assertStatus(state: RunState, expectedStatus: RunState["status"]): void {
   if (state.status !== expectedStatus) {
     throw new Error(`Expected run status ${expectedStatus}, got ${state.status}.`);
   }
 }
 
-function createRoundRecord(state: RunState, playerHpAfter: number, combatResult: CombatResult): RoundRecord {
+function createRoundRecord(
+  state: RunState,
+  playerHpAfter: number,
+  enemyHpAfter: number,
+  combatResult: CombatResult,
+): RoundRecord {
   return {
     round: state.round,
     playerHpBefore: state.playerHp,
     playerHpAfter,
+    enemyHpBefore: state.enemyHp,
+    enemyHpAfter,
     draftOptions: state.draftOptions.map((option) => ({ ...option })),
     draftRerollCount: state.draftRerollCount,
     playerSlots: cloneBoardSlots(state.boardSlots),

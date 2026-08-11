@@ -1,4 +1,5 @@
-import { CARD_DEFINITIONS } from "./cards";
+import { CARD_DEFINITIONS, getCardStatsForUpgrade } from "./cards";
+import { applyDraftPlacement, classifyDraftPlacement, type DraftPlacementClassification } from "./placement";
 import { SeededRandom } from "./random";
 import {
   BOARD_SLOT_COUNT,
@@ -11,6 +12,13 @@ import {
 } from "./types";
 
 const FIRST_ROUND_HIDDEN_CARD_IDS = new Set<CardId>(["field_cleric", "shieldbearer"]);
+
+export interface EnemyDraftResult {
+  draftOptions: DraftOption[];
+  pickedCardId: CardId;
+  targetSlotIndex: number;
+  boardSlots: BoardSlot[];
+}
 
 export function createEmptyBoardSlots(): BoardSlot[] {
   return Array.from({ length: BOARD_SLOT_COUNT }, (_, slotIndex) => ({ slotIndex, cardId: null, upgradeLevel: 0 }));
@@ -59,6 +67,10 @@ export function createDraftOptions(seed: string, round: number, rerollCount = 0)
   return options;
 }
 
+export function createEnemyDraftOptions(seed: string, round: number): DraftOption[] {
+  return createDraftOptions(`${seed}:enemy`, round);
+}
+
 export function createBoardFromSlots(slots: readonly BoardSlot[], capacity: number): BoardSlot[] {
   const normalizedSlots = cloneBoardSlots(slots);
 
@@ -76,35 +88,62 @@ export function createBoardFromSlots(slots: readonly BoardSlot[], capacity: numb
 }
 
 export function createEnemyBoardSlots(seed: string, round: number): BoardSlot[] {
-  const rng = new SeededRandom(`${seed}:enemy:${round}`);
-  const pool = CARD_DEFINITIONS.filter((card) => isCardAvailableForRound(card, round));
-  const shuffled = rng.shuffle(pool);
-  const targetSize = getEnemyBoardSizeForRound(round);
-  const slots = createEmptyBoardSlots();
-  let filledSlots = 0;
+  let boardSlots = createEmptyBoardSlots();
 
-  for (const card of shuffled) {
-    if (filledSlots >= targetSize) {
-      break;
-    }
-
-    const targetSlot = slots.find((slot) => slot.cardId === null && isCardAllowedInSlot(card.id, slot.slotIndex));
-
-    if (targetSlot) {
-      targetSlot.cardId = card.id;
-      filledSlots += 1;
-    }
+  for (let currentRound = 1; currentRound <= round; currentRound += 1) {
+    boardSlots = advanceEnemyBoardSlots(seed, currentRound, boardSlots).boardSlots;
   }
 
-  const upgradedEnemyCount = getEnemyUpgradeCountForRound(round);
-  slots
-    .filter((slot) => slot.cardId !== null)
-    .slice(0, upgradedEnemyCount)
-    .forEach((slot) => {
-      slot.upgradeLevel = 1;
-    });
+  return boardSlots;
+}
 
-  return slots;
+export function advanceEnemyBoardSlots(
+  seed: string,
+  round: number,
+  previousSlots: readonly BoardSlot[],
+): EnemyDraftResult {
+  const capacity = getBoardCapacityForRound(round);
+  const boardSlots = createBoardFromSlots(previousSlots, capacity);
+  const draftOptions = createEnemyDraftOptions(seed, round);
+  const candidates = new SeededRandom(`${seed}:enemy-pick:${round}`)
+    .shuffle(draftOptions)
+    .map((option) => boardSlots.filter((slot) => slot.slotIndex < capacity).flatMap((slot) => {
+      const placement = classifyDraftPlacement(boardSlots, option.cardId, slot.slotIndex);
+      if (placement.kind === "invalid") {
+        return [];
+      }
+
+      const result = applyDraftPlacement(boardSlots, option.cardId, slot.slotIndex, { allowReplacement: true });
+      if (!result.applied) {
+        return [];
+      }
+
+      return [{
+        cardId: option.cardId,
+        targetSlotIndex: slot.slotIndex,
+        placement,
+        boardSlots: result.boardSlots,
+        score: scoreEnemyBoard(result.boardSlots, placement),
+      }];
+    }))
+    .find((optionCandidates) => optionCandidates.length > 0)
+    ?.sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.targetSlotIndex - right.targetSlotIndex,
+    ) ?? [];
+
+  const choice = candidates[0];
+  if (!choice) {
+    throw new Error(`Enemy has no legal draft placement in round ${round}.`);
+  }
+
+  return {
+    draftOptions: draftOptions.map((option) => ({ ...option })),
+    pickedCardId: choice.cardId,
+    targetSlotIndex: choice.targetSlotIndex,
+    boardSlots: choice.boardSlots,
+  };
 }
 
 export function isFrontRowSlot(slotIndex: number): boolean {
@@ -119,12 +158,63 @@ export function isCardAllowedInSlot(cardId: CardId, slotIndex: number): boolean 
   return !isFrontRowOnlyCard(cardId) || isFrontRowSlot(slotIndex);
 }
 
-function getEnemyBoardSizeForRound(round: number): number {
-  return Math.min(Math.max(1, round), BOARD_SLOT_COUNT);
+function scoreEnemyBoard(slots: readonly BoardSlot[], placement: DraftPlacementClassification): number {
+  let score = placement.kind === "upgrade" ? 12 : 0;
+  const tagCounts = new Map<string, number>();
+
+  slots.forEach((slot) => {
+    if (!slot.cardId) {
+      return;
+    }
+
+    const card = CARD_DEFINITIONS.find((candidate) => candidate.id === slot.cardId);
+    if (!card) {
+      return;
+    }
+
+    const stats = getCardStatsForUpgrade(card, slot.upgradeLevel);
+    score += stats.attack * 6 + stats.hp * 2 + stats.speed + stats.range * 2 + card.tier * 4;
+    score += getAbilityDraftScore(card.abilityId);
+    score += getRolePositionScore(card, slot.slotIndex);
+    card.tags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1));
+  });
+
+  tagCounts.forEach((count) => {
+    if (count >= 2) {
+      score += count * 5;
+    }
+  });
+
+  return score;
 }
 
-function getEnemyUpgradeCountForRound(round: number): number {
-  return round >= 7 ? Math.min(BOARD_SLOT_COUNT, (round - 6) * 2) : 0;
+function getAbilityDraftScore(abilityId: CardDefinition["abilityId"]): number {
+  if (abilityId === "bulwark" || abilityId === "battle_banner" || abilityId === "thorn_guard") {
+    return 12;
+  }
+
+  if (abilityId === "heal_ally" || abilityId === "heal_only" || abilityId === "stone_skin") {
+    return 9;
+  }
+
+  if (abilityId === "fireball" || abilityId === "pyro_splash" || abilityId === "bone_pact") {
+    return 7;
+  }
+
+  return abilityId === "none" ? 0 : 4;
+}
+
+function getRolePositionScore(card: CardDefinition, slotIndex: number): number {
+  const frontRow = isFrontRowSlot(slotIndex);
+  if (card.role === "tank") {
+    return frontRow ? 5 : -3;
+  }
+
+  if (card.role === "ranged" || card.role === "caster" || card.role === "support") {
+    return frontRow ? -2 : 4;
+  }
+
+  return frontRow ? 2 : 0;
 }
 
 function normalizeUpgradeLevel(upgradeLevel: BoardSlot["upgradeLevel"]): BoardSlot["upgradeLevel"] {

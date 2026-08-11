@@ -6,6 +6,7 @@ import {
   PLAYER_STARTING_HP,
   autoplayRun,
   createBattleTimeline,
+  createEnemyBoardSlots,
 } from "../src/game/index.ts";
 
 test("a complete seeded run reaches a valid terminal state", () => {
@@ -18,11 +19,14 @@ test("a complete seeded run reaches a valid terminal state", () => {
   assert.ok(first.roundHistory.length >= 1 && first.roundHistory.length <= MAX_RUN_ROUNDS);
   assert.equal(first.roundHistory.at(-1).round, first.round);
   assert.ok(first.playerHp >= 0 && first.playerHp <= PLAYER_STARTING_HP);
-  assert.ok(first.playerHp === 0 || first.round === MAX_RUN_ROUNDS);
+  assert.ok(first.enemyHp >= 0 && first.enemyHp <= PLAYER_STARTING_HP);
+  assert.ok(["player", "enemy", "draw"].includes(first.outcome));
+  assert.ok(first.playerHp === 0 || first.enemyHp === 0 || first.round === MAX_RUN_ROUNDS);
 
   first.roundHistory.forEach((record) => {
-    assert.equal(record.enemySlots.filter((slot) => slot.cardId !== null).length, Math.min(record.round, 6));
-    assert.equal(record.playerHpAfter, Math.max(0, record.playerHpBefore - record.combatResult.hpLoss));
+    assert.deepEqual(record.enemySlots, createEnemyBoardSlots(first.seed, record.round));
+    assert.equal(record.playerHpAfter, Math.max(0, record.playerHpBefore - record.combatResult.playerCastleDamage));
+    assert.equal(record.enemyHpAfter, Math.max(0, record.enemyHpBefore - record.combatResult.enemyCastleDamage));
     assert.equal(record.combatResult.events[0].type, "combat_started");
     assert.equal(record.combatResult.events.at(-1).type, "combat_finished");
 
@@ -32,6 +36,8 @@ test("a complete seeded run reaches a valid terminal state", () => {
       combat: record.combatResult,
       playerCastleHpBefore: record.playerHpBefore,
       playerCastleHpAfter: record.playerHpAfter,
+      enemyCastleHpBefore: record.enemyHpBefore,
+      enemyCastleHpAfter: record.enemyHpAfter,
     });
     assert.equal(timeline.winner, record.combatResult.winner);
     assert.equal(timeline.events.at(-1).type, "battle_finished");

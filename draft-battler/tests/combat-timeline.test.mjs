@@ -22,7 +22,9 @@ test("combat is deterministic, finite, and produces ordered events", () => {
   assert.deepEqual(first, second);
   assert.ok(first.actions >= 0 && first.actions <= 80);
   assert.ok(["player", "enemy", "draw"].includes(first.winner));
-  assert.ok(first.hpLoss >= 0);
+  assert.equal(first.hpLoss, first.playerCastleDamage);
+  assert.ok(first.playerCastleDamage >= 0);
+  assert.ok(first.enemyCastleDamage >= 0);
   first.events.forEach((event, index) => {
     assert.ok(Number.isFinite(event.time));
     if (index > 0) {
@@ -31,6 +33,38 @@ test("combat is deterministic, finite, and produces ordered events", () => {
   });
   assert.equal(first.events[0].type, "combat_started");
   assert.equal(first.events.at(-1).type, "combat_finished");
+});
+
+test("only the combat winner's damage-capable survivors damage the opposing castle", () => {
+  const playerWin = resolveCombat(
+    createBoard([[0, "boar_rider"], [1, "spear_recruit"]]),
+    createBoard([[0, "field_cleric"]]),
+    2,
+  );
+  assert.equal(playerWin.winner, "player");
+  assert.equal(playerWin.playerCastleDamage, 0);
+  assert.equal(
+    playerWin.enemyCastleDamage,
+    playerWin.survivingPlayerUnits.filter((unit) => unit.abilityId !== "bulwark" && unit.abilityId !== "heal_only").length,
+  );
+
+  const enemyWin = resolveCombat(
+    createBoard([[0, "field_cleric"]]),
+    createBoard([[0, "boar_rider"], [1, "spear_recruit"]]),
+    2,
+  );
+  assert.equal(enemyWin.winner, "enemy");
+  assert.equal(enemyWin.enemyCastleDamage, 0);
+  assert.equal(enemyWin.playerCastleDamage, enemyWin.hpLoss);
+  assert.equal(
+    enemyWin.playerCastleDamage,
+    enemyWin.survivingEnemyUnits.filter((unit) => unit.abilityId !== "bulwark" && unit.abilityId !== "heal_only").length,
+  );
+
+  const draw = resolveCombat(createBoard([[0, "field_cleric"]]), createBoard([[0, "field_cleric"]]), 2);
+  assert.equal(draw.winner, "draw");
+  assert.equal(draw.playerCastleDamage, 0);
+  assert.equal(draw.enemyCastleDamage, 0);
 });
 
 test("two rogues receive the real +1 attack synergy", () => {
@@ -78,13 +112,17 @@ test("battle timeline preserves the combat outcome and terminal castle state", (
   const enemy = createBoard([[0, "bone_soldier"]]);
   const combat = resolveCombat(player, enemy, 3);
   const playerHpBefore = 20;
-  const playerHpAfter = playerHpBefore - combat.hpLoss;
+  const enemyHpBefore = 20;
+  const playerHpAfter = playerHpBefore - combat.playerCastleDamage;
+  const enemyHpAfter = enemyHpBefore - combat.enemyCastleDamage;
   const timeline = createBattleTimeline({
     playerSlots: player,
     enemySlots: enemy,
     combat,
     playerCastleHpBefore: playerHpBefore,
     playerCastleHpAfter: playerHpAfter,
+    enemyCastleHpBefore: enemyHpBefore,
+    enemyCastleHpAfter: enemyHpAfter,
   });
 
   assert.equal(timeline.winner, combat.winner);
@@ -93,9 +131,52 @@ test("battle timeline preserves the combat outcome and terminal castle state", (
   assert.equal(finished.type, "battle_finished");
   assert.equal(finished.winner, combat.winner);
   assert.equal(finished.playerCastleHp, playerHpAfter);
+  assert.equal(finished.enemyCastleHp, enemyHpAfter);
+  assert.equal(
+    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "player").length,
+    combat.playerCastleDamage,
+  );
+  assert.equal(
+    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "enemy").length,
+    combat.enemyCastleDamage,
+  );
   timeline.events.forEach((event, index) => {
     if (index > 0) {
       assert.ok(event.time >= timeline.events[index - 1].time);
     }
   });
+});
+
+test("battle timeline applies an enemy victory to the player castle", () => {
+  const player = createBoard([[0, "field_cleric"]]);
+  const enemy = createBoard([[0, "boar_rider"], [1, "spear_recruit"]]);
+  const combat = resolveCombat(player, enemy, 3);
+  const playerHpBefore = 12;
+  const enemyHpBefore = 9;
+  const playerHpAfter = playerHpBefore - combat.playerCastleDamage;
+  const enemyHpAfter = enemyHpBefore - combat.enemyCastleDamage;
+
+  assert.equal(combat.winner, "enemy");
+  const timeline = createBattleTimeline({
+    playerSlots: player,
+    enemySlots: enemy,
+    combat,
+    playerCastleHpBefore: playerHpBefore,
+    playerCastleHpAfter: playerHpAfter,
+    enemyCastleHpBefore: enemyHpBefore,
+    enemyCastleHpAfter: enemyHpAfter,
+  });
+  const finished = timeline.events.at(-1);
+
+  assert.equal(finished.type, "battle_finished");
+  assert.equal(finished.playerCastleHp, playerHpAfter);
+  assert.equal(finished.enemyCastleHp, enemyHpAfter);
+  assert.equal(
+    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "player").length,
+    combat.playerCastleDamage,
+  );
+  assert.equal(
+    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "enemy").length,
+    0,
+  );
 });

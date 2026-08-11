@@ -18,4 +18,4 @@ Current profiles:
 - keep: max 384x256, quality 82, alpha 88
 - card-template: max 302x720, quality 82, alpha 88
 
-Last generated assets: 42
+Last generated assets: 60

@@ -30,8 +30,8 @@ artifact, not the Vite development server.
 5. Verify card drag placement and the tap-select/tap-slot fallback.
 6. Verify invalid placement leaves the board unchanged.
 7. Start a battle and confirm it always reaches the result controls.
-8. Repeat through round 10 or until player HP reaches zero.
-9. Confirm the terminal screen reports the full-run result, rounds, and remaining HP.
+8. Repeat through round 15 or until either keep reaches zero HP.
+9. Confirm the terminal screen reports the duel result, rounds, and both remaining HP values.
 10. Start another run, then return to the menu and confirm clean state.
 11. Open the build with `?draftRendererFail=1`, start a battle, and confirm the static
     fallback still allows progress.

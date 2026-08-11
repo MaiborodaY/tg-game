@@ -1,5 +1,6 @@
 export const PLAYER_STARTING_HP = 20;
-export const MAX_RUN_ROUNDS = 10;
+export const ENEMY_STARTING_HP = PLAYER_STARTING_HP;
+export const MAX_RUN_ROUNDS = 15;
 export const BOARD_SLOT_COUNT = 6;
 export const DRAFT_OPTION_COUNT = 3;
 export const FREE_REROLLS_PER_ROUND = 1;
@@ -119,7 +120,10 @@ export type CombatEvent = CombatEventPayload & { time: number };
 
 export interface CombatResult {
   winner: CombatWinner;
+  /** @deprecated Use playerCastleDamage. */
   hpLoss: number;
+  playerCastleDamage: number;
+  enemyCastleDamage: number;
   actions: number;
   events: CombatEvent[];
   survivingPlayerUnits: CombatUnit[];
@@ -130,8 +134,8 @@ export interface RoundRecord {
   round: number;
   playerHpBefore: number;
   playerHpAfter: number;
-  enemyHpBefore?: number;
-  enemyHpAfter?: number;
+  enemyHpBefore: number;
+  enemyHpAfter: number;
   draftOptions: DraftOption[];
   draftRerollCount: number;
   playerSlots: BoardSlot[];
@@ -145,6 +149,8 @@ export interface RunState {
   seed: string;
   round: number;
   playerHp: number;
+  enemyHp: number;
+  outcome: CombatWinner | null;
   status: RunStatus;
   draftOptions: DraftOption[];
   draftRerollCount: number;

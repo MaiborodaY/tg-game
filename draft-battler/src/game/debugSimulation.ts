@@ -36,6 +36,8 @@ export interface DebugCardSnapshot {
 export interface DebugCombatSummary {
   winner: CombatResult["winner"];
   hpLoss: number;
+  playerCastleDamage: number;
+  enemyCastleDamage: number;
   actions: number;
   eventCounts: Record<string, number>;
   attackSamples: string[];
@@ -47,6 +49,8 @@ export interface DebugRoundReport {
   round: number;
   playerHpBefore: number;
   playerHpAfter: number;
+  enemyHpBefore: number;
+  enemyHpAfter: number;
   draftOptions: DebugCardSnapshot[];
   draftRerollCount: number;
   selectedCards: DebugCardSnapshot[];
@@ -58,7 +62,9 @@ export interface DebugRunReport {
   seed: string;
   strategy: string;
   finalStatus: RunState["status"];
-  finalHp: number;
+  finalPlayerHp: number;
+  finalEnemyHp: number;
+  outcome: RunState["outcome"];
   rounds: DebugRoundReport[];
 }
 
@@ -93,7 +99,9 @@ export function simulateDebugRun(options: DebugRunOptions = {}): DebugRunReport 
     seed,
     strategy: strategyName,
     finalStatus: state.status,
-    finalHp: state.playerHp,
+    finalPlayerHp: state.playerHp,
+    finalEnemyHp: state.enemyHp,
+    outcome: state.outcome,
     rounds,
   };
 }
@@ -103,17 +111,21 @@ export function formatDebugRunReport(report: DebugRunReport): string {
     `Draft Battler debug run`,
     `Seed: ${report.seed}`,
     `Strategy: ${report.strategy}`,
-    `Final: ${report.finalStatus}, HP ${report.finalHp}`,
+    `Final: ${report.finalStatus}, outcome ${report.outcome}, HP ${report.finalPlayerHp}:${report.finalEnemyHp}`,
     "",
   ];
 
   for (const round of report.rounds) {
-    lines.push(`Round ${round.round}: HP ${round.playerHpBefore} -> ${round.playerHpAfter}`);
+    lines.push(
+      `Round ${round.round}: player HP ${round.playerHpBefore} -> ${round.playerHpAfter}, ` +
+        `enemy HP ${round.enemyHpBefore} -> ${round.enemyHpAfter}`,
+    );
     lines.push(`  Cards: ${formatCards(round.draftOptions)}${round.draftRerollCount > 0 ? ` (rerolls ${round.draftRerollCount})` : ""}`);
     lines.push(`  Pick:  ${formatCards(round.selectedCards)}`);
     lines.push(`  Enemy: ${formatCards(round.enemyCards)}`);
     lines.push(
-      `  Combat: ${round.combat.winner}, HP loss ${round.combat.hpLoss}, actions ${round.combat.actions}`,
+      `  Combat: ${round.combat.winner}, castle damage ${round.combat.playerCastleDamage}:${round.combat.enemyCastleDamage}, ` +
+        `actions ${round.combat.actions}`,
     );
     lines.push(`  Events: ${formatEventCounts(round.combat.eventCounts)}`);
 
@@ -197,10 +209,16 @@ function sanitizeSelection(selection: readonly CardId[], state: RunState): CardI
 }
 
 function createRoundReport(roundRecord: RoundRecord): DebugRoundReport {
+  if (typeof roundRecord.enemyHpBefore !== "number" || typeof roundRecord.enemyHpAfter !== "number") {
+    throw new Error("Solo round record is missing enemy castle HP.");
+  }
+
   return {
     round: roundRecord.round,
     playerHpBefore: roundRecord.playerHpBefore,
     playerHpAfter: roundRecord.playerHpAfter,
+    enemyHpBefore: roundRecord.enemyHpBefore,
+    enemyHpAfter: roundRecord.enemyHpAfter,
     draftOptions: roundRecord.draftOptions.map((option) => createCardSnapshot(option.cardId)),
     draftRerollCount: roundRecord.draftRerollCount,
     selectedCards: roundRecord.playerSlots.flatMap((slot) => (slot.cardId ? [createCardSnapshot(slot.cardId)] : [])),
@@ -253,6 +271,8 @@ function summarizeCombat(combatResult: CombatResult): DebugCombatSummary {
   return {
     winner: combatResult.winner,
     hpLoss: combatResult.hpLoss,
+    playerCastleDamage: combatResult.playerCastleDamage,
+    enemyCastleDamage: combatResult.enemyCastleDamage,
     actions: combatResult.actions,
     eventCounts,
     attackSamples,

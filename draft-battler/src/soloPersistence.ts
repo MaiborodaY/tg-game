@@ -1,27 +1,31 @@
 import { CARD_DEFINITIONS } from "./game/cards";
 import {
   createDraftOptions,
-  createEmptyBoardSlots,
-  createEnemyBoardSlots,
   isCardAllowedInSlot,
 } from "./game/draft";
-import { resolveCombat } from "./game/combat";
+import { chooseDraftCards, createRun, resolveRound } from "./game/run";
 import {
   BOARD_SLOT_COUNT,
+  ENEMY_STARTING_HP,
   FREE_REROLLS_PER_ROUND,
   MAX_RUN_ROUNDS,
   MAX_UPGRADE_LEVEL,
   PLAYER_STARTING_HP,
   type BoardSlot,
   type CardId,
+  type CombatWinner,
   type DraftOption,
   type RoundRecord,
   type RunState,
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 1;
+export const SOLO_RUN_SNAPSHOT_VERSION = 3;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
+const LEGACY_SOLO_RUN_STORAGE_KEYS = [
+  "draft-battler:solo-run:v1",
+  "draft-battler:solo-run:v2",
+] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";
 
@@ -58,7 +62,9 @@ const RUN_KEYS = [
   "seed",
   "round",
   "playerHp",
+  "enemyHp",
   "status",
+  "outcome",
   "draftOptions",
   "draftRerollCount",
   "boardSlots",
@@ -69,6 +75,8 @@ const ROUND_RECORD_KEYS = [
   "round",
   "playerHpBefore",
   "playerHpAfter",
+  "enemyHpBefore",
+  "enemyHpAfter",
   "draftOptions",
   "draftRerollCount",
   "playerSlots",
@@ -120,6 +128,7 @@ export function saveSoloRunSnapshot(
     }
 
     storage.setItem(SOLO_RUN_STORAGE_KEY, serialized);
+    removeLegacySoloRunSnapshots(storage);
     return true;
   } catch {
     return false;
@@ -130,6 +139,8 @@ export function loadSoloRunSnapshot(storage: SoloRunStorage | null | undefined):
   if (!storage) {
     return undefined;
   }
+
+  removeLegacySoloRunSnapshots(storage);
 
   let serialized: string | null;
   try {
@@ -155,11 +166,25 @@ export function clearSoloRunSnapshot(storage: SoloRunStorage | null | undefined)
     return false;
   }
 
-  try {
-    storage.removeItem(SOLO_RUN_STORAGE_KEY);
-    return true;
-  } catch {
-    return false;
+  let cleared = true;
+  for (const key of [SOLO_RUN_STORAGE_KEY, ...LEGACY_SOLO_RUN_STORAGE_KEYS]) {
+    try {
+      storage.removeItem(key);
+    } catch {
+      cleared = false;
+    }
+  }
+
+  return cleared;
+}
+
+function removeLegacySoloRunSnapshots(storage: SoloRunStorage): void {
+  for (const key of LEGACY_SOLO_RUN_STORAGE_KEYS) {
+    try {
+      storage.removeItem(key);
+    } catch {
+      // Legacy cleanup is best-effort and must not block a valid v3 save or load.
+    }
   }
 }
 
@@ -208,7 +233,9 @@ function readRunState(value: unknown): RunState | undefined {
   const seed = readString(run.seed, 1, 256);
   const round = readInteger(run.round, 1, MAX_RUN_ROUNDS);
   const playerHp = readInteger(run.playerHp, 0, PLAYER_STARTING_HP);
+  const enemyHp = readInteger(run.enemyHp, 0, ENEMY_STARTING_HP);
   const status = run.status === "draft" || run.status === "finished" ? run.status : undefined;
+  const outcome = readCombatWinnerOrNull(run.outcome);
   const draftRerollCount = readInteger(run.draftRerollCount, 0, FREE_REROLLS_PER_ROUND);
   const boardSlots = readBoardSlots(run.boardSlots);
   const enemyBoardSlots = readBoardSlots(run.enemyBoardSlots);
@@ -217,7 +244,9 @@ function readRunState(value: unknown): RunState | undefined {
     !seed ||
     round === undefined ||
     playerHp === undefined ||
+    enemyHp === undefined ||
     !status ||
+    outcome === undefined ||
     draftRerollCount === undefined ||
     !boardSlots ||
     !enemyBoardSlots
@@ -227,108 +256,120 @@ function readRunState(value: unknown): RunState | undefined {
 
   const draftOptions = readExpectedDraftOptions(run.draftOptions, seed, round, draftRerollCount);
   const expectedHistoryLength = status === "finished" ? round : round - 1;
-  const roundHistory = readRoundHistory(run.roundHistory, seed, expectedHistoryLength);
-  if (!draftOptions || !roundHistory) {
+  const replay = readRoundHistory(run.roundHistory, seed, expectedHistoryLength);
+  if (!draftOptions || !replay) {
     return undefined;
   }
 
-  const lastRecord = roundHistory.at(-1);
-  const expectedPlayerHp = lastRecord?.playerHpAfter ?? PLAYER_STARTING_HP;
-  const expectedBoardSlots = lastRecord?.playerSlots ?? createEmptyBoardSlots();
-  if (playerHp !== expectedPlayerHp || !stableEqual(boardSlots, expectedBoardSlots)) {
-    return undefined;
-  }
-
-  if (status === "draft") {
-    if (playerHp <= 0 || !stableEqual(enemyBoardSlots, createEmptyBoardSlots())) {
-      return undefined;
-    }
-  } else {
-    if (
-      (playerHp > 0 && round !== MAX_RUN_ROUNDS) ||
-      !lastRecord ||
-      !stableEqual(enemyBoardSlots, lastRecord.enemySlots)
-    ) {
-      return undefined;
-    }
-  }
-
-  return {
+  const normalizedRun: RunState = {
     seed,
     round,
     playerHp,
+    enemyHp,
     status,
+    outcome,
     draftOptions,
     draftRerollCount,
     boardSlots,
     enemyBoardSlots,
-    roundHistory,
+    roundHistory: replay.records,
   };
+
+  const expectedRun = replay.run.status === "draft"
+    ? { ...replay.run, draftOptions, draftRerollCount }
+    : replay.run;
+
+  return stableEqual(normalizedRun, expectedRun) ? normalizedRun : undefined;
 }
 
-function readRoundHistory(value: unknown, seed: string, expectedLength: number): RoundRecord[] | undefined {
+interface ReplayedRoundHistory {
+  records: RoundRecord[];
+  run: RunState;
+}
+
+function readRoundHistory(value: unknown, seed: string, expectedLength: number): ReplayedRoundHistory | undefined {
   if (!Array.isArray(value) || value.length !== expectedLength) {
     return undefined;
   }
 
   const history: RoundRecord[] = [];
-  let expectedHpBefore = PLAYER_STARTING_HP;
+  let replayedRun = createRun(seed);
 
   for (let index = 0; index < value.length; index += 1) {
-    const record = readRoundRecord(value[index], seed, index + 1, expectedHpBefore);
-    if (!record) {
+    const replay = readRoundRecord(value[index], replayedRun, history);
+    if (!replay) {
       return undefined;
     }
 
-    history.push(record);
-    expectedHpBefore = record.playerHpAfter;
+    history.push(replay.record);
+    replayedRun = replay.run;
   }
 
-  return history;
+  return { records: history, run: replayedRun };
+}
+
+interface ReplayedRound {
+  record: RoundRecord;
+  run: RunState;
 }
 
 function readRoundRecord(
   value: unknown,
-  seed: string,
-  expectedRound: number,
-  expectedHpBefore: number,
-): RoundRecord | undefined {
+  draftRun: RunState,
+  history: readonly RoundRecord[],
+): ReplayedRound | undefined {
   const record = readExactRecord(value, ROUND_RECORD_KEYS);
-  if (!record || record.round !== expectedRound || record.playerHpBefore !== expectedHpBefore) {
+  if (!record || draftRun.status !== "draft" || record.round !== draftRun.round) {
     return undefined;
   }
 
   const draftRerollCount = readInteger(record.draftRerollCount, 0, FREE_REROLLS_PER_ROUND);
   const playerSlots = readBoardSlots(record.playerSlots);
   const enemySlots = readBoardSlots(record.enemySlots);
+  const playerHpBefore = readInteger(record.playerHpBefore, 0, PLAYER_STARTING_HP);
   const playerHpAfter = readInteger(record.playerHpAfter, 0, PLAYER_STARTING_HP);
-  if (draftRerollCount === undefined || !playerSlots || !enemySlots || playerHpAfter === undefined) {
-    return undefined;
-  }
-
-  const draftOptions = readExpectedDraftOptions(record.draftOptions, seed, expectedRound, draftRerollCount);
-  const expectedEnemySlots = createEnemyBoardSlots(seed, expectedRound);
-  const combatResult = resolveCombat(playerSlots, expectedEnemySlots, expectedRound);
-  const expectedHpAfter = Math.max(0, expectedHpBefore - combatResult.hpLoss);
+  const enemyHpBefore = readInteger(record.enemyHpBefore, 0, ENEMY_STARTING_HP);
+  const enemyHpAfter = readInteger(record.enemyHpAfter, 0, ENEMY_STARTING_HP);
   if (
-    !draftOptions ||
-    !stableEqual(enemySlots, expectedEnemySlots) ||
-    !stableEqual(record.combatResult, combatResult) ||
-    playerHpAfter !== expectedHpAfter
+    draftRerollCount === undefined ||
+    !playerSlots ||
+    !enemySlots ||
+    playerHpBefore === undefined ||
+    playerHpAfter === undefined ||
+    enemyHpBefore === undefined ||
+    enemyHpAfter === undefined
   ) {
     return undefined;
   }
 
-  return {
-    round: expectedRound,
-    playerHpBefore: expectedHpBefore,
-    playerHpAfter,
+  const draftOptions = readExpectedDraftOptions(
+    record.draftOptions,
+    draftRun.seed,
+    draftRun.round,
+    draftRerollCount,
+  );
+  if (!draftOptions || !isValidRoundPlayerBoard(draftRun.boardSlots, playerSlots, draftOptions)) {
+    return undefined;
+  }
+
+  const preparedDraftRun: RunState = {
+    ...draftRun,
     draftOptions,
     draftRerollCount,
-    playerSlots,
-    enemySlots,
-    combatResult,
+    roundHistory: [...history],
   };
+  const combatReadyRun = chooseDraftCards(preparedDraftRun, playerSlots);
+  if (!stableEqual(combatReadyRun.enemyBoardSlots, enemySlots)) {
+    return undefined;
+  }
+
+  const resolvedRun = resolveRound(combatReadyRun);
+  const expectedRecord = resolvedRun.roundHistory.at(-1);
+  if (!expectedRecord || !stableEqual(record, expectedRecord)) {
+    return undefined;
+  }
+
+  return { record: expectedRecord, run: resolvedRun };
 }
 
 function readExpectedDraftOptions(
@@ -408,6 +449,18 @@ function isValidDraftBoard(run: RunState, draftBoardSlots: BoardSlot[], cardPick
   return run.draftOptions.some((option) => isValidPickedBoard(run.boardSlots, draftBoardSlots, option.cardId));
 }
 
+function isValidRoundPlayerBoard(
+  before: readonly BoardSlot[],
+  after: readonly BoardSlot[],
+  options: readonly DraftOption[],
+): boolean {
+  if (stableEqual(getBoardUnitMultiset(before), getBoardUnitMultiset(after))) {
+    return true;
+  }
+
+  return options.some((option) => isValidPickedBoard(before, after, option.cardId));
+}
+
 function isValidPickedBoard(before: readonly BoardSlot[], after: readonly BoardSlot[], pickedCardId: CardId): boolean {
   const beforeUnits = getBoardUnitMultiset(before);
   const afterUnits = getBoardUnitMultiset(after);
@@ -444,6 +497,10 @@ function getBoardUnitKey(cardId: CardId, upgradeLevel: BoardSlot["upgradeLevel"]
 
 function readCheckpoint(value: unknown): SoloRunCheckpoint | undefined {
   return value === "draft" || value === "battle_result" || value === "finished" ? value : undefined;
+}
+
+function readCombatWinnerOrNull(value: unknown): CombatWinner | null | undefined {
+  return value === null || value === "player" || value === "enemy" || value === "draw" ? value : undefined;
 }
 
 function readCardId(value: unknown): CardId | undefined {

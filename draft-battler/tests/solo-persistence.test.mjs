@@ -21,6 +21,8 @@ import {
 } from "../src/soloPersistence.ts";
 
 const FIXED_SAVED_AT = 1_700_000_000_000;
+const LEGACY_V1_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v1";
+const LEGACY_V2_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v2";
 
 class MemoryStorage {
   values = new Map();
@@ -132,6 +134,9 @@ function cloneJson(value) {
 }
 
 test("draft, battle-result, and finished checkpoints round-trip without sharing mutable state", () => {
+  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 3);
+  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v3");
+
   const checkpoints = [
     createDraftCheckpoint(),
     createBattleResultCheckpoint(),
@@ -167,6 +172,19 @@ test("snapshot creation deep-clones input boards and combat history", () => {
 
   assert.equal(snapshot.run.boardSlots[0].cardId, originalCard);
   assert.equal(snapshot.run.roundHistory[0].combatResult.winner, originalWinner);
+});
+
+test("battle-result snapshots retain both castle HP values and the persistent enemy board", () => {
+  const state = createBattleResultCheckpoint();
+  const lastRecord = state.run.roundHistory.at(-1);
+  const snapshot = createSoloRunSnapshot(state, FIXED_SAVED_AT);
+
+  assert.ok(lastRecord);
+  assert.ok(snapshot);
+  assert.equal(snapshot.run.playerHp, lastRecord.playerHpAfter);
+  assert.equal(snapshot.run.enemyHp, lastRecord.enemyHpAfter);
+  assert.deepEqual(snapshot.run.enemyBoardSlots, lastRecord.enemySlots);
+  assert.equal(snapshot.run.outcome, null);
 });
 
 test("combat_ready is an unsafe transient status and is never persisted", () => {
@@ -225,6 +243,8 @@ test("decoder fails closed on corruption, incompatible versions, and tampering",
   const cases = [
     "not-json",
     JSON.stringify({}),
+    JSON.stringify({ ...draft, version: 1 }),
+    JSON.stringify({ ...draft, version: 2 }),
     JSON.stringify({ ...draft, version: SOLO_RUN_SNAPSHOT_VERSION + 1 }),
     JSON.stringify({ ...draft, savedAt: -1 }),
     JSON.stringify({ ...draft, pvp: { roomId: "online-data" } }),
@@ -234,6 +254,8 @@ test("decoder fails closed on corruption, incompatible versions, and tampering",
     JSON.stringify({ ...draft, run: { ...draft.run, status: "combat_ready" } }),
     JSON.stringify({ ...draft, run: { ...draft.run, round: 11 } }),
     JSON.stringify({ ...draft, run: { ...draft.run, playerHp: 21 } }),
+    JSON.stringify({ ...draft, run: { ...draft.run, enemyHp: 21 } }),
+    JSON.stringify({ ...draft, run: { ...draft.run, outcome: "player" } }),
   ];
 
   const invalidCard = cloneJson(draft);
@@ -260,9 +282,19 @@ test("decoder fails closed on corruption, incompatible versions, and tampering",
   forgedCombat.run.roundHistory[0].combatResult.hpLoss += 1;
   cases.push(JSON.stringify(forgedCombat));
 
-  const onlineRoundData = cloneJson(finished);
-  onlineRoundData.run.roundHistory[0].enemyHpBefore = 20;
-  cases.push(JSON.stringify(onlineRoundData));
+  const missingEnemyHp = cloneJson(finished);
+  delete missingEnemyHp.run.roundHistory[0].enemyHpBefore;
+  cases.push(JSON.stringify(missingEnemyHp));
+
+  const forgedEnemyHp = cloneJson(finished);
+  forgedEnemyHp.run.enemyHp = forgedEnemyHp.run.enemyHp === 0 ? 1 : forgedEnemyHp.run.enemyHp - 1;
+  cases.push(JSON.stringify(forgedEnemyHp));
+
+  const forgedEnemyPick = cloneJson(finished);
+  const extraEnemySlot = forgedEnemyPick.run.roundHistory[0].enemySlots.find((slot) => slot.cardId === null);
+  assert.ok(extraEnemySlot);
+  extraEnemySlot.cardId = "sneakblade";
+  cases.push(JSON.stringify(forgedEnemyPick));
 
   const wrongFinishedRound = cloneJson(finished);
   wrongFinishedRound.lastRound -= 1;
@@ -337,13 +369,42 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   const storage = new MemoryStorage();
   const state = createDraftCheckpoint();
 
+  storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
+  storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
   assert.equal(saveSoloRunSnapshot(storage, state, FIXED_SAVED_AT), true);
+  assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
+
+  storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
+  storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
   assert.deepEqual(loadSoloRunSnapshot(storage), createSoloRunSnapshot(state, FIXED_SAVED_AT));
+  assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
+
+  storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
+  storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
   assert.equal(clearSoloRunSnapshot(storage), true);
   assert.equal(loadSoloRunSnapshot(storage), undefined);
+  assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(SOLO_RUN_STORAGE_KEY, "corrupted");
   assert.equal(loadSoloRunSnapshot(storage), undefined);
+  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
+});
+
+test("a v2 run finished under the old round-ten rule is removed instead of restored", () => {
+  const storage = new MemoryStorage();
+  const legacy = encodedObject(createFinishedCheckpoint());
+  legacy.version = 2;
+  legacy.lastRound = 10;
+  legacy.run.round = 10;
+  legacy.run.status = "finished";
+
+  storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, JSON.stringify(legacy));
+
+  assert.equal(loadSoloRunSnapshot(storage), undefined);
+  assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
 });
 
