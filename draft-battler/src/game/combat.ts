@@ -1,4 +1,5 @@
 import { getCardDefinition, getCardStatsForUpgrade } from "./cards";
+import { SYNERGY_RULES, SYNERGY_TAG_ORDER, isRoleEligibleForSynergy } from "./synergies";
 import {
   type BoardSlot,
   type CardDefinition,
@@ -10,10 +11,30 @@ import {
 } from "./types";
 
 const MAX_COMBAT_ACTIONS = 80;
+const ACTION_TIME_EPSILON = 1e-9;
 
 interface TimelineUnit extends CombatUnit {
+  actionScheduleOrigin: number;
   nextActionAt: number;
   bonePactUsed?: boolean;
+}
+
+interface PlannedDamage {
+  target: TimelineUnit;
+  amount: number;
+  blocked: boolean;
+}
+
+interface PlannedAttack {
+  primary: PlannedDamage;
+  splash: PlannedDamage[];
+  applyFrostHex: boolean;
+}
+
+interface PlannedAction {
+  actor: TimelineUnit;
+  healTarget?: TimelineUnit;
+  attack?: PlannedAttack;
 }
 
 export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: readonly BoardSlot[], _round: number): CombatResult {
@@ -39,17 +60,23 @@ export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: rea
       break;
     }
 
-    const actor = findNextActor(units);
-    if (!actor) {
+    const actors = findNextActors(units);
+    if (actors.length === 0 || (actions > 0 && actions + actors.length > MAX_COMBAT_ACTIONS)) {
       break;
     }
 
-    const actionTime = actor.nextActionAt;
-    takeAction(actor, units, events, actionTime);
-    actor.acted += 1;
-    actor.nextActionAt += getActionDelay(actor);
+    const actionTime = Math.min(...actors.map((actor) => actor.nextActionAt));
+    // Every intent is planned from one tick snapshot, so lethal ties cannot cancel the other side's action.
+    const plannedActions = actors.map((actor) => planAction(actor, units, actionTime));
+
+    actors.forEach((actor) => {
+      actor.acted += 1;
+      actor.nextActionAt = getScheduledActionTime(actor, actor.acted + 1);
+    });
+
+    resolvePlannedActions(plannedActions, units, events, actionTime);
     lastActionTime = Math.max(lastActionTime, actionTime);
-    actions += 1;
+    actions += actors.length;
   }
 
   const survivingPlayerUnits = getLivingUnits(units, "player");
@@ -106,6 +133,7 @@ function createUnitFromCard(owner: Owner, card: CardDefinition, slot: BoardSlot,
     range: stats.range,
     shield: 0,
     acted: 0,
+    actionScheduleOrigin: 0,
     nextActionAt: 100 / stats.speed,
     summonedBy,
   };
@@ -157,74 +185,62 @@ function applyStartOfCombatEffects(units: TimelineUnit[], events: CombatEvent[])
 
 function applyTagSynergies(units: TimelineUnit[], events: CombatEvent[]): void {
   for (const owner of ["player", "enemy"] as const) {
-    for (const tag of ["warrior", "beast", "mage", "undead", "rogue", "guardian"] as const) {
+    for (const tag of SYNERGY_TAG_ORDER) {
+      const rule = SYNERGY_RULES[tag];
       const taggedUnits = getLivingUnits(units, owner).filter((unit) => unit.tags.includes(tag));
 
-      if (taggedUnits.length < 2) {
+      if (taggedUnits.length < rule.threshold) {
         continue;
       }
 
-      if (tag === "warrior" || tag === "beast" || tag === "rogue") {
-        taggedUnits.forEach((unit) => {
-          unit.attack += 1;
+      const affectedUnits = taggedUnits.filter((unit) => isRoleEligibleForSynergy(rule, unit.role));
+      if (rule.effect.stat === "attack") {
+        affectedUnits.forEach((unit) => {
+          unit.attack += rule.effect.value;
         });
-        events.push({ type: "synergy_applied", time: 0, owner, tag, unitIds: taggedUnits.map((unit) => unit.instanceId), attackBonus: 1 });
-      }
-
-      if (tag === "guardian" || tag === "undead") {
-        taggedUnits.forEach((unit) => {
-          unit.maxHp += 2;
-          unit.hp += 2;
+        events.push({
+          type: "synergy_applied",
+          time: 0,
+          owner,
+          tag,
+          unitIds: affectedUnits.map((unit) => unit.instanceId),
+          attackBonus: rule.effect.value,
         });
-        events.push({ type: "synergy_applied", time: 0, owner, tag, unitIds: taggedUnits.map((unit) => unit.instanceId), hpBonus: 2 });
-      }
-
-      if (tag === "mage") {
-        taggedUnits.forEach((unit) => {
-          if (unit.role === "caster" || unit.role === "support") {
-            unit.attack += 1;
-          }
+      } else {
+        affectedUnits.forEach((unit) => {
+          unit.maxHp += rule.effect.value;
+          unit.hp += rule.effect.value;
         });
-        events.push({ type: "synergy_applied", time: 0, owner, tag, unitIds: taggedUnits.map((unit) => unit.instanceId), attackBonus: 1 });
+        events.push({
+          type: "synergy_applied",
+          time: 0,
+          owner,
+          tag,
+          unitIds: affectedUnits.map((unit) => unit.instanceId),
+          hpBonus: rule.effect.value,
+        });
       }
     }
   }
 }
 
-function takeAction(actor: TimelineUnit, units: TimelineUnit[], events: CombatEvent[], time: number): void {
-  if (actor.hp <= 0) {
-    return;
-  }
-
-  if (!canAct(actor)) {
-    return;
-  }
+function planAction(actor: TimelineUnit, units: readonly TimelineUnit[], time: number): PlannedAction {
+  const healTarget = actor.abilityId === "heal_only" || actor.abilityId === "heal_ally"
+    ? selectWeakestWoundedAlly(actor, units)
+    : undefined;
 
   if (actor.abilityId === "heal_only") {
-    healWeakestAlly(actor, units, events, time);
-    return;
-  }
-
-  if (actor.abilityId === "heal_ally") {
-    healWeakestAlly(actor, units, events, time);
+    return { actor, healTarget };
   }
 
   const target = selectTarget(actor, units);
   if (!target) {
-    return;
+    return { actor, healTarget };
   }
 
   const damage = calculateDamage(actor);
-  events.push({
-    type: "unit_attacked",
-    time,
-    attackerId: actor.instanceId,
-    targetId: target.instanceId,
-    abilityId: actor.abilityId,
-    damage,
-  });
-
-  dealDamage(target, damage, actor.instanceId, units, events, time);
+  const primary = planDamage(target, damage, actor.instanceId, time);
+  const splash: PlannedDamage[] = [];
 
   if (actor.abilityId === "fireball" || actor.abilityId === "pyro_splash") {
     const splashDamage = actor.abilityId === "pyro_splash" ? 2 : 1;
@@ -233,14 +249,73 @@ function takeAction(actor: TimelineUnit, units: TimelineUnit[], events: CombatEv
     );
 
     adjacentTargets.forEach((unit) => {
-      dealDamage(unit, splashDamage, actor.instanceId, units, events, time);
+      splash.push(planDamage(unit, splashDamage, actor.instanceId, time));
     });
   }
 
-  if (actor.abilityId === "frost_hex" && actor.acted === 0 && target.hp > 0) {
-    target.attack = Math.max(1, target.attack - 1);
-    events.push({ type: "unit_buffed", time, unitId: target.instanceId, attackDelta: -1, source: "frost_hex" });
-  }
+  return {
+    actor,
+    healTarget,
+    attack: {
+      primary,
+      splash,
+      applyFrostHex: actor.abilityId === "frost_hex" && actor.acted === 0,
+    },
+  };
+}
+
+function resolvePlannedActions(
+  plannedActions: readonly PlannedAction[],
+  units: TimelineUnit[],
+  events: CombatEvent[],
+  time: number,
+): void {
+  // Healing is the first phase of a simultaneous tick; all attack damage was already fixed by the snapshot.
+  plannedActions.forEach((action) => {
+    if (action.healTarget) {
+      applyPlannedHealing(action.actor, action.healTarget, events, time);
+    }
+  });
+
+  plannedActions.forEach((action) => {
+    if (!action.attack) {
+      return;
+    }
+
+    const { actor, attack } = action;
+    events.push({
+      type: "unit_attacked",
+      time,
+      attackerId: actor.instanceId,
+      targetId: attack.primary.target.instanceId,
+      abilityId: actor.abilityId,
+      damage: attack.primary.amount,
+    });
+  });
+
+  plannedActions.forEach((action) => {
+    if (!action.attack) {
+      return;
+    }
+
+    const { actor, attack } = action;
+
+    applyPlannedDamage(attack.primary, actor.instanceId, units, events, time);
+    attack.splash.forEach((damage) => {
+      applyPlannedDamage(damage, actor.instanceId, units, events, time);
+    });
+
+    if (attack.applyFrostHex && attack.primary.target.hp > 0) {
+      attack.primary.target.attack = Math.max(1, attack.primary.target.attack - 1);
+      events.push({
+        type: "unit_buffed",
+        time,
+        unitId: attack.primary.target.instanceId,
+        attackDelta: -1,
+        source: "frost_hex",
+      });
+    }
+  });
 }
 
 function selectTarget(actor: TimelineUnit, units: readonly TimelineUnit[]): TimelineUnit | undefined {
@@ -254,15 +329,41 @@ function selectTarget(actor: TimelineUnit, units: readonly TimelineUnit[]): Time
     return [...enemies].sort((left, right) => left.hp - right.hp || left.slotIndex - right.slotIndex)[0];
   }
 
-  return [...enemies].sort(
+  const tauntingBulwarks = enemies.filter(isBulwarkTauntTarget);
+  const targetableEnemies = tauntingBulwarks.length > 0
+    ? tauntingBulwarks
+    : enemies.filter((enemy) => isInNormalAttackRange(actor, enemy, enemies));
+
+  return [...targetableEnemies].sort(
     (left, right) =>
-      Number(isBulwarkTauntTarget(right)) - Number(isBulwarkTauntTarget(left)) ||
-      getSlotRow(left.slotIndex) - getSlotRow(right.slotIndex) ||
       Math.abs(getSlotColumn(left.slotIndex) - getSlotColumn(actor.slotIndex)) -
         Math.abs(getSlotColumn(right.slotIndex) - getSlotColumn(actor.slotIndex)) ||
+      getSlotRow(left.slotIndex) - getSlotRow(right.slotIndex) ||
       left.hp - right.hp ||
       left.slotIndex - right.slotIndex,
   )[0];
+}
+
+function isInNormalAttackRange(
+  actor: TimelineUnit,
+  target: TimelineUnit,
+  livingEnemies: readonly TimelineUnit[],
+): boolean {
+  if (actor.range >= 3 || getSlotRow(target.slotIndex) === 0) {
+    return true;
+  }
+
+  const livingFrontColumns = new Set(
+    livingEnemies
+      .filter((enemy) => getSlotRow(enemy.slotIndex) === 0)
+      .map((enemy) => getSlotColumn(enemy.slotIndex)),
+  );
+
+  if (actor.range === 2) {
+    return !livingFrontColumns.has(getSlotColumn(target.slotIndex));
+  }
+
+  return livingFrontColumns.size === 0;
 }
 
 function calculateDamage(actor: TimelineUnit): number {
@@ -279,28 +380,41 @@ function calculateDamage(actor: TimelineUnit): number {
   return Math.max(1, damage);
 }
 
-function dealDamage(
-  target: TimelineUnit,
-  amount: number,
+function planDamage(target: TimelineUnit, amount: number, sourceUnitId: string, time: number): PlannedDamage {
+  return {
+    target,
+    amount,
+    blocked: shouldBulwarkBlock(target, amount, sourceUnitId, time),
+  };
+}
+
+function applyPlannedDamage(
+  plannedDamage: PlannedDamage,
   sourceUnitId: string,
   units: TimelineUnit[],
   events: CombatEvent[],
   time: number,
 ): void {
-  if (shouldBulwarkBlock(target, amount, sourceUnitId, time)) {
+  const { target } = plannedDamage;
+
+  if (target.hp <= 0) {
+    return;
+  }
+
+  if (plannedDamage.blocked) {
     events.push({
       type: "unit_blocked",
       time,
       unitId: target.instanceId,
       attackerId: sourceUnitId,
-      amount,
+      amount: plannedDamage.amount,
     });
     return;
   }
 
-  const shieldAbsorbed = Math.min(target.shield, amount);
+  const shieldAbsorbed = Math.min(target.shield, plannedDamage.amount);
   target.shield -= shieldAbsorbed;
-  const damageAfterShield = amount - shieldAbsorbed;
+  const damageAfterShield = plannedDamage.amount - shieldAbsorbed;
   target.hp = Math.max(0, target.hp - damageAfterShield);
 
   events.push({
@@ -341,7 +455,8 @@ function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], even
     range: 1,
     shield: 0,
     acted: 0,
-    nextActionAt: deadUnit.nextActionAt + 1,
+    actionScheduleOrigin: time + 1 - 100 / 4,
+    nextActionAt: time + 1,
     summonedBy: deadUnit.instanceId,
   };
 
@@ -349,17 +464,30 @@ function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], even
   events.push({ type: "unit_spawned", time, unit: skeleton });
 }
 
-function healWeakestAlly(actor: TimelineUnit, units: TimelineUnit[], events: CombatEvent[], time: number): void {
-  const woundedAllies = getLivingUnits(units, actor.owner)
+function selectWeakestWoundedAlly(
+  actor: TimelineUnit,
+  units: readonly TimelineUnit[],
+): TimelineUnit | undefined {
+  return getLivingUnits(units, actor.owner)
     .filter((unit) => unit.hp < unit.maxHp)
-    .sort((left, right) => left.hp - right.hp || left.slotIndex - right.slotIndex);
+    .sort((left, right) => left.hp - right.hp || left.slotIndex - right.slotIndex)[0];
+}
 
-  const target = woundedAllies[0];
-  if (!target) {
+function applyPlannedHealing(
+  actor: TimelineUnit,
+  target: TimelineUnit,
+  events: CombatEvent[],
+  time: number,
+): void {
+  if (target.hp <= 0) {
     return;
   }
 
   const amount = Math.min(2, target.maxHp - target.hp);
+  if (amount <= 0) {
+    return;
+  }
+
   target.hp += amount;
 
   events.push({ type: "unit_healed", time, unitId: target.instanceId, amount, remainingHp: target.hp, source: actor.instanceId });
@@ -370,19 +498,25 @@ function addShield(unit: TimelineUnit, amount: number, source: string, events: C
   events.push({ type: "unit_buffed", time, unitId: unit.instanceId, shieldDelta: amount, source });
 }
 
-function findNextActor(units: readonly TimelineUnit[]): TimelineUnit | undefined {
-  return getLivingUnits(units)
-    .filter(canAct)
+function findNextActors(units: readonly TimelineUnit[]): TimelineUnit[] {
+  const eligibleUnits = getLivingUnits(units).filter(canAct);
+  const nextActionAt = Math.min(...eligibleUnits.map((unit) => unit.nextActionAt));
+
+  if (!Number.isFinite(nextActionAt)) {
+    return [];
+  }
+
+  return eligibleUnits
+    .filter((unit) => Math.abs(unit.nextActionAt - nextActionAt) <= ACTION_TIME_EPSILON)
     .sort(
       (left, right) =>
-        left.nextActionAt - right.nextActionAt ||
         getOwnerSort(left.owner) - getOwnerSort(right.owner) ||
         left.slotIndex - right.slotIndex,
-    )[0];
+    );
 }
 
-function getActionDelay(unit: TimelineUnit): number {
-  return 100 / Math.max(1, unit.speed);
+function getScheduledActionTime(unit: TimelineUnit, actionNumber: number): number {
+  return unit.actionScheduleOrigin + actionNumber * 100 / Math.max(1, unit.speed);
 }
 
 function getLivingUnits(units: readonly TimelineUnit[], owner?: Owner): TimelineUnit[] {
@@ -418,10 +552,21 @@ function shouldBulwarkBlock(target: TimelineUnit, amount: number, sourceUnitId: 
     return false;
   }
 
-  return getDeterministicPercent(`${sourceUnitId}:${target.instanceId}:${time}:${target.hp}:${target.acted}`) < 50;
+  const sourceEntropyId = getOwnerNeutralInstanceId(sourceUnitId);
+  const targetEntropyId = getOwnerNeutralInstanceId(target.instanceId);
+
+  return getDeterministicPercent(`${sourceEntropyId}:${targetEntropyId}:${time}:${target.hp}:${target.acted}`) < 50;
+}
+
+function getOwnerNeutralInstanceId(instanceId: string): string {
+  return instanceId.replace(/^(?:player|enemy)-/, "");
 }
 
 function getDeterministicPercent(input: string): number {
+  return getDeterministicHash(input) % 100;
+}
+
+function getDeterministicHash(input: string): number {
   let hash = 2166136261;
 
   for (let index = 0; index < input.length; index += 1) {
@@ -429,7 +574,7 @@ function getDeterministicPercent(input: string): number {
     hash = Math.imul(hash, 16777619);
   }
 
-  return (hash >>> 0) % 100;
+  return hash >>> 0;
 }
 
 function countLivingTaggedAllies(units: readonly TimelineUnit[], owner: Owner, tag: UnitTag): number {

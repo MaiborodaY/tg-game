@@ -29,7 +29,13 @@ import {
   type Owner,
   type RoundRecord,
   type RunState,
+  type UnitStats,
 } from "./game";
+import {
+  getBoardSynergyProgress,
+  getBoardUnitInspection,
+  type BoardUnitInspection,
+} from "./draftPresentation";
 import {
   DRAFT_CAMERA_ZOOM,
   FIELD_FALLBACK_HEIGHT,
@@ -108,6 +114,7 @@ interface UiState {
   cardPickedThisRound: boolean;
   selectedDraftCardId?: CardId;
   selectedCardInfoId?: CardId;
+  selectedCardInfoSlotIndex?: number;
   battleFinished: boolean;
   battlePresentationNotice?: string;
   logsOpen: boolean;
@@ -406,13 +413,79 @@ function createDraftHud(): HTMLElement {
   const copy = getCopy();
   const hud = document.createElement("div");
   hud.className = "draft-hud";
-  hud.append(
+
+  const metrics = document.createElement("div");
+  metrics.className = "draft-hud__metrics";
+  metrics.append(
     createMetric(copy.hp, String(uiState.run.playerHp), "hp"),
     createMetric(copy.round, String(uiState.run.round), "round"),
     createMetric(copy.seed, uiState.run.seed.slice(-6), "seed"),
   );
+  hud.append(metrics);
+
+  const synergies = createDraftSynergies();
+  if (synergies) {
+    hud.append(synergies);
+  }
 
   return hud;
+}
+
+function createDraftSynergies(): HTMLElement | undefined {
+  const copy = getCopy();
+  const progress = getBoardSynergyProgress(uiState.draftBoardSlots);
+  if (progress.length === 0) {
+    return undefined;
+  }
+
+  const strip = document.createElement("div");
+  strip.className = "synergy-strip";
+  strip.setAttribute("role", "list");
+  strip.setAttribute("aria-label", copy.synergies);
+  strip.tabIndex = 0;
+
+  progress.forEach((synergy) => {
+    const tag = getTagLabel(activeLocale, synergy.tag);
+    const stat = synergy.effect.stat === "attack" ? copy.attack : copy.hp;
+    const effect = `+${synergy.effect.value} ${stat}`;
+    const remaining = Math.max(0, synergy.threshold - synergy.count);
+    const accessibleLabel = formatMessage(
+      synergy.active ? copy.synergyActive : copy.synergyProgress,
+      {
+        tag,
+        count: synergy.count,
+        threshold: synergy.threshold,
+        remaining,
+        effect,
+      },
+    );
+    const chip = document.createElement("span");
+    chip.className = synergy.active ? "synergy-chip synergy-chip--active" : "synergy-chip";
+    chip.setAttribute("role", "listitem");
+    chip.setAttribute("aria-label", accessibleLabel);
+    chip.title = accessibleLabel;
+
+    const status = document.createElement("span");
+    status.className = "synergy-chip__status";
+    status.textContent = synergy.active ? "✓" : "·";
+    status.setAttribute("aria-hidden", "true");
+
+    const label = document.createElement("strong");
+    label.textContent = tag;
+
+    const count = document.createElement("span");
+    count.className = "synergy-chip__count";
+    count.textContent = `${synergy.count}/${synergy.threshold}`;
+
+    const effectLabel = document.createElement("span");
+    effectLabel.className = "synergy-chip__effect";
+    effectLabel.textContent = effect;
+
+    chip.append(status, label, count, effectLabel);
+    strip.append(chip);
+  });
+
+  return strip;
 }
 
 function createMainMenuOverlay(): HTMLElement {
@@ -614,7 +687,8 @@ function createDraftOverlay(): HTMLElement {
     overlay.append(createFieldSlotsLayer(), createFieldActionBar());
 
     if (selectedDraftCardId && !uiState.cardPickedThisRound) {
-      overlay.append(createTapPlacementPanel(selectedDraftCardId));
+      const hasVisibleSynergies = getBoardSynergyProgress(uiState.draftBoardSlots).length > 0;
+      overlay.append(createTapPlacementPanel(selectedDraftCardId, hasVisibleSynergies));
     }
   }
 
@@ -626,7 +700,10 @@ function createDraftOverlay(): HTMLElement {
     overlay.append(createDraftPanel());
   }
 
-  if (uiState.selectedCardInfoId) {
+  const inspectedBoardUnit = getSelectedBoardUnitInspection();
+  if (inspectedBoardUnit) {
+    overlay.append(createCardInfoPanel(inspectedBoardUnit.cardId, inspectedBoardUnit));
+  } else if (uiState.selectedCardInfoId) {
     overlay.append(createCardInfoPanel(uiState.selectedCardInfoId));
   }
 
@@ -932,7 +1009,7 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   if (uiState.selectedDraftCardId === option.cardId) {
     cardClasses.push("unit-card--selected");
   }
-  if (uiState.selectedCardInfoId === option.cardId) {
+  if (uiState.selectedCardInfoSlotIndex === undefined && uiState.selectedCardInfoId === option.cardId) {
     cardClasses.push("unit-card--inspected");
   }
 
@@ -964,13 +1041,14 @@ function createCardFrame(): HTMLElement {
   return frame;
 }
 
-function createCardInfoPanel(cardId: CardId): HTMLElement {
+function createCardInfoPanel(cardId: CardId, boardUnit?: BoardUnitInspection): HTMLElement {
   const copy = getCopy();
   const card = getCardDefinition(cardId);
   const localizedCard = getLocalizedCard(activeLocale, card);
   const meta = getCardDisplayMeta(card);
   const panel = document.createElement("aside");
   panel.className = `card-info-panel unit-card--${meta.archetype} unit-card--${meta.rarity}`;
+  panel.setAttribute("aria-labelledby", "draft-card-info-title");
 
   const closeButton = document.createElement("button");
   closeButton.className = "card-info-panel__close";
@@ -981,12 +1059,15 @@ function createCardInfoPanel(cardId: CardId): HTMLElement {
 
   const title = document.createElement("strong");
   title.className = "card-info-panel__title";
-  title.textContent = localizedCard.name;
+  title.id = "draft-card-info-title";
+  title.textContent = `${localizedCard.name}${boardUnit?.upgradeLevel ? " ★" : ""}`;
+
+  const context = boardUnit ? createBoardUnitContext(boardUnit) : undefined;
 
   const type = createCardMetaRow(meta);
   type.classList.add("card-info-panel__type");
 
-  const stats = createCardStats(card);
+  const stats = createCardStats(card, boardUnit?.upgradeLevel ?? 0);
   stats.classList.add("card-info-panel__stats");
 
   const tags = document.createElement("div");
@@ -1001,9 +1082,25 @@ function createCardInfoPanel(cardId: CardId): HTMLElement {
   summary.className = "card-info-panel__summary";
   summary.textContent = localizedCard.summary;
 
-  panel.append(closeButton, title, type, createCardArt(card, meta), stats, tags, summary);
+  panel.append(closeButton, title);
+  if (context) {
+    panel.append(context);
+  }
+  panel.append(type, createCardArt(card, meta), stats, tags, summary);
 
   return panel;
+}
+
+function createBoardUnitContext(boardUnit: BoardUnitInspection): HTMLElement {
+  const copy = getCopy();
+  const context = document.createElement("span");
+  context.className = boardUnit.upgradeLevel
+    ? "card-info-panel__context card-info-panel__context--upgraded"
+    : "card-info-panel__context";
+  const position = formatMessage(copy.boardPosition, { slot: boardUnit.slotIndex + 1 });
+  context.textContent = boardUnit.upgradeLevel ? `${position} · ${copy.upgradedStats}` : position;
+
+  return context;
 }
 
 function createRerollButton(): HTMLButtonElement {
@@ -1018,13 +1115,15 @@ function createRerollButton(): HTMLButtonElement {
   return button;
 }
 
-function createTapPlacementPanel(cardId: CardId): HTMLElement {
+function createTapPlacementPanel(cardId: CardId, hasVisibleSynergies: boolean): HTMLElement {
   const copy = getCopy();
   const card = getCardDefinition(cardId);
   const localizedCard = getLocalizedCard(activeLocale, card);
   const placementKinds = getDraftPlacementClassifications(cardId).map((placement) => placement.kind);
   const panel = document.createElement("section");
-  panel.className = "tap-placement-panel";
+  panel.className = hasVisibleSynergies
+    ? "tap-placement-panel tap-placement-panel--below-synergies"
+    : "tap-placement-panel";
 
   const copyContainer = document.createElement("div");
   copyContainer.className = "tap-placement-panel__copy";
@@ -1457,15 +1556,17 @@ function createCardInitials(name: string): string {
     .toUpperCase();
 }
 
-function createCardStats(card: CardDefinition): HTMLElement {
+function createCardStats(card: CardDefinition, upgradeLevel: BoardSlot["upgradeLevel"] = 0): HTMLElement {
   const copy = getCopy();
+  const cardStats: UnitStats = getCardStatsForUpgrade(card, upgradeLevel);
   const stats = document.createElement("div");
   stats.className = "unit-card__stats";
 
   stats.append(
-    createStat(copy.attack, card.stats.attack),
-    createStat(copy.hp, card.stats.hp),
-    createStat(copy.speed, card.stats.speed),
+    createStat(copy.attack, cardStats.attack),
+    createStat(copy.hp, cardStats.hp),
+    createStat(copy.speed, cardStats.speed),
+    createStat(copy.range, cardStats.range),
   );
 
   return stats;
@@ -1608,6 +1709,9 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   if (slotState?.upgradeLevel) {
     classes.push("field-slot--upgraded");
   }
+  if (uiState.selectedCardInfoSlotIndex === slotIndex) {
+    classes.push("field-slot--inspected");
+  }
   if (placement) {
     classes.push(placement.kind === "invalid" ? "field-slot--tap-invalid" : `field-slot--tap-${placement.kind}`);
   }
@@ -1615,6 +1719,7 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   slot.type = "button";
   slot.disabled = false;
   slot.dataset.fieldSlotIndex = String(slotIndex);
+  slot.setAttribute("aria-pressed", String(uiState.selectedCardInfoSlotIndex === slotIndex));
   const slotPosition = getPlayerFieldSlotPosition(slotIndex);
   slot.style.setProperty("--slot-x", `${slotPosition.xPercent}%`);
   slot.style.setProperty("--slot-y", `${slotPosition.yFromBottom}px`);
@@ -1649,7 +1754,7 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
     const resolvedSlotIndex = getSelectedDraftCardId()
       ? getFieldSlotIndexForClick(event, slotIndex)
       : slotIndex;
-    handleFieldSlotClick(resolvedSlotIndex, card?.id);
+    handleFieldSlotClick(resolvedSlotIndex);
   });
 
   if (card) {
@@ -1787,6 +1892,7 @@ function goToNextRound(): void {
     cardPickedThisRound: false,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
     battleFinished: false,
     battlePresentationNotice: undefined,
     logsOpen: false,
@@ -2251,6 +2357,7 @@ function applyDraftCardInSlot(cardId: CardId, slotIndex: number, allowReplacemen
     cardPickedThisRound: true,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
   };
   persistSoloRun();
   render();
@@ -2293,11 +2400,12 @@ function handleDraftCardClick(cardId: CardId): void {
     ...uiState,
     selectedDraftCardId: cardId,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
   };
   render();
 }
 
-function handleFieldSlotClick(slotIndex: number, cardId?: CardId): void {
+function handleFieldSlotClick(slotIndex: number): void {
   if (suppressNextCardClick) {
     suppressNextCardClick = false;
     return;
@@ -2309,9 +2417,7 @@ function handleFieldSlotClick(slotIndex: number, cardId?: CardId): void {
     return;
   }
 
-  if (cardId) {
-    openCardInfo(cardId);
-  }
+  openBoardCardInfo(slotIndex);
 }
 
 function cancelDraftCardSelection(): void {
@@ -2320,32 +2426,52 @@ function cancelDraftCardSelection(): void {
     ...uiState,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
   };
   render();
 }
 
 function openCardInfo(cardId: CardId): void {
-  if (!getCurrentDraftOption(cardId) && !hasBoardCard(cardId)) {
+  if (!getCurrentDraftOption(cardId)) {
     return;
   }
 
   uiState = {
     ...uiState,
     selectedCardInfoId: cardId,
+    selectedCardInfoSlotIndex: undefined,
   };
   render();
+}
+
+function openBoardCardInfo(slotIndex: number): void {
+  if (!getBoardUnitInspection(uiState.draftBoardSlots, slotIndex)) {
+    return;
+  }
+
+  uiState = {
+    ...uiState,
+    selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: slotIndex,
+  };
+  render();
+}
+
+function getSelectedBoardUnitInspection(): BoardUnitInspection | undefined {
+  if (uiState.selectedCardInfoSlotIndex === undefined) {
+    return undefined;
+  }
+
+  return getBoardUnitInspection(uiState.draftBoardSlots, uiState.selectedCardInfoSlotIndex);
 }
 
 function closeCardInfo(): void {
   uiState = {
     ...uiState,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
   };
   render();
-}
-
-function hasBoardCard(cardId: CardId): boolean {
-  return uiState.draftBoardSlots.some((slot) => slot.cardId === cardId);
 }
 
 function rerollCurrentDraftCards(): void {
@@ -2359,6 +2485,7 @@ function rerollCurrentDraftCards(): void {
     run: rerollDraftCards(uiState.run),
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
   };
   persistSoloRun();
   render();
@@ -2528,6 +2655,7 @@ function moveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number): void {
     ...uiState,
     draftBoardSlots,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
   };
   persistSoloRun();
   render();
@@ -2813,6 +2941,7 @@ function fightRound(): void {
     cardPickedThisRound: false,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
     battleFinished: false,
     battlePresentationNotice: undefined,
     logsOpen: false,
@@ -2997,6 +3126,7 @@ function submitPvpBoard(): void {
     cardPickedThisRound: true,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
     pvp: {
       ...uiState.pvp,
       match: markPvpSubmission(match, uiState.pvp.role),
@@ -3144,6 +3274,7 @@ function applyPvpDraftSnapshot(state: UiState, match: PvpMatchSnapshot): UiState
     cardPickedThisRound: currentPlayerSubmitted,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
     battleFinished: false,
     battlePresentationNotice: undefined,
     logsOpen: false,
@@ -3205,6 +3336,7 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
     cardPickedThisRound: false,
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
+    selectedCardInfoSlotIndex: undefined,
     battleFinished: false,
     battlePresentationNotice: undefined,
     logsOpen: false,

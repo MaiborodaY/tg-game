@@ -50,6 +50,12 @@ const DUEL_COPY_EXPECTATIONS = {
   },
 };
 
+const RANGE_COPY_EXPECTATIONS = {
+  ru: ["Передний ряд", "задний", "ДАЛ 1", "ДАЛ 2", "ДАЛ 3", "Щитоносец", "одновременно"],
+  uk: ["Передній ряд", "задній", "ДАЛ 1", "ДАЛ 2", "ДАЛ 3", "Щитоносець", "одночасно"],
+  en: ["front row", "back", "RNG 1", "RNG 2", "RNG 3", "Shieldbearer", "simultaneously"],
+};
+
 function createStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
   return {
@@ -123,6 +129,36 @@ test("solo copy fully explains the symmetric fifteen-round keep duel", () => {
       assert.match(result, /7/, `${locale}:result:playerHp`);
       assert.match(result, /3/, `${locale}:result:enemyHp`);
       assert.doesNotMatch(result, /\{[^}]+\}/, `${locale}:result:unresolved placeholder`);
+    });
+  });
+});
+
+test("placement tutorial explains localized front, back, and range rules", () => {
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    RANGE_COPY_EXPECTATIONS[locale].forEach((fragment) => {
+      assert.ok(copy.howToPlaceBody.includes(fragment), `${locale}:howToPlaceBody:${fragment}`);
+    });
+  });
+});
+
+test("synergy status templates expose progress, activation, and localized effects", () => {
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    const values = {
+      tag: getTagLabel(locale, "warrior"),
+      count: 2,
+      threshold: 2,
+      remaining: 0,
+      effect: `+1 ${copy.attack}`,
+    };
+
+    [copy.synergyActive, copy.synergyProgress].forEach((template) => {
+      const result = formatMessage(template, values);
+      assert.ok(result.includes(values.tag), `${locale}:synergy:tag`);
+      assert.ok(result.includes("2/2"), `${locale}:synergy:count`);
+      assert.ok(result.includes(values.effect), `${locale}:synergy:effect`);
+      assert.doesNotMatch(result, /\{[^}]+\}/, `${locale}:synergy:unresolved placeholder`);
     });
   });
 });

@@ -20,11 +20,12 @@ import {
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 3;
+export const SOLO_RUN_SNAPSHOT_VERSION = 4;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
 const LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v1",
   "draft-battler:solo-run:v2",
+  "draft-battler:solo-run:v3",
 ] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";
@@ -183,7 +184,7 @@ function removeLegacySoloRunSnapshots(storage: SoloRunStorage): void {
     try {
       storage.removeItem(key);
     } catch {
-      // Legacy cleanup is best-effort and must not block a valid v3 save or load.
+      // Legacy cleanup is best-effort and must not block a valid current save or load.
     }
   }
 }

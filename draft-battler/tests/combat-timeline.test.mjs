@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createBattleTimeline, resolveCombat } from "../src/game/index.ts";
+import { CARD_DEFINITIONS, createBattleTimeline, resolveCombat } from "../src/game/index.ts";
 
 function createBoard(entries) {
   const cardsBySlot = new Map(entries.map(([slotIndex, cardId, upgradeLevel = 0]) => [slotIndex, { cardId, upgradeLevel }]));
@@ -33,6 +33,233 @@ test("combat is deterministic, finite, and produces ordered events", () => {
   });
   assert.equal(first.events[0].type, "combat_started");
   assert.equal(first.events.at(-1).type, "combat_finished");
+});
+
+test("equal-time actors resolve simultaneously, including mutual lethal attacks", () => {
+  const board = createBoard([[0, "sneakblade"]]);
+  const first = resolveCombat(board, board, 1);
+  const repeated = resolveCombat(board, board, 1);
+  const finalAttacks = first.events.filter(
+    (event) => event.type === "unit_attacked" && event.time === 200 / 7,
+  );
+
+  assert.deepEqual(first, repeated);
+  assert.equal(first.winner, "draw");
+  assert.equal(first.actions, 4);
+  assert.deepEqual(finalAttacks.map((event) => event.attackerId), [
+    "player-0-sneakblade",
+    "enemy-0-sneakblade",
+  ]);
+});
+
+test("every single-card mirror is side-neutral", () => {
+  CARD_DEFINITIONS.forEach((card) => {
+    const board = createBoard([[0, card.id]]);
+    const combat = resolveCombat(board, board, 1);
+
+    assert.equal(combat.winner, "draw", card.id);
+    assert.equal(combat.playerCastleDamage, 0, card.id);
+    assert.equal(combat.enemyCastleDamage, 0, card.id);
+  });
+});
+
+test("mixed speeds share one simultaneous tick at their mathematical convergence", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "banner_knight"], [1, "longbow_hunter"]]),
+    createBoard([[0, "shieldbearer", 1]]),
+    1,
+  );
+  const attacksAtConvergence = combat.events
+    .filter((event) => event.type === "unit_attacked" && event.time === 100)
+    .map((event) => event.attackerId);
+
+  assert.deepEqual(attacksAtConvergence, [
+    "player-0-banner_knight",
+    "player-1-longbow_hunter",
+  ]);
+});
+
+test("normal range one must clear the enemy front row before attacking the back row", () => {
+  const combat = resolveCombat(
+    createBoard([[4, "boar_rider"]]),
+    createBoard([[0, "ember_mage"], [4, "field_cleric"]]),
+    1,
+  );
+  const attacks = combat.events.filter(
+    (event) => event.type === "unit_attacked" && event.attackerId === "player-4-boar_rider",
+  );
+
+  assert.equal(attacks[0]?.targetId, "enemy-0-ember_mage");
+  assert.equal(attacks[1]?.targetId, "enemy-4-field_cleric");
+});
+
+test("normal range two can attack an exposed paired back slot but not a protected one", () => {
+  const exposed = resolveCombat(
+    createBoard([[4, "spear_recruit"]]),
+    createBoard([[0, "iron_guard"], [4, "field_cleric"]]),
+    1,
+  );
+  const protectedBack = resolveCombat(
+    createBoard([[4, "spear_recruit"]]),
+    createBoard([[0, "iron_guard"], [1, "bone_soldier"], [4, "field_cleric"]]),
+    1,
+  );
+  const exposedAttack = exposed.events.find(
+    (event) => event.type === "unit_attacked" && event.attackerId === "player-4-spear_recruit",
+  );
+  const protectedAttack = protectedBack.events.find(
+    (event) => event.type === "unit_attacked" && event.attackerId === "player-4-spear_recruit",
+  );
+
+  assert.ok(exposedAttack);
+  assert.ok(protectedAttack);
+  assert.equal(exposedAttack.targetId, "enemy-4-field_cleric");
+  assert.equal(protectedAttack.targetId, "enemy-1-bone_soldier");
+});
+
+test("normal range three can reach the back row while snipe remains weakest-anywhere", () => {
+  const normal = resolveCombat(
+    createBoard([[4, "ember_mage"]]),
+    createBoard([[0, "field_cleric"], [4, "stone_golem"]]),
+    1,
+  );
+  const snipe = resolveCombat(
+    createBoard([[4, "longbow_hunter"]]),
+    createBoard([[0, "stone_golem"], [5, "field_cleric"]]),
+    1,
+  );
+  const normalAttack = normal.events.find(
+    (event) => event.type === "unit_attacked" && event.attackerId === "player-4-ember_mage",
+  );
+  const snipeAttack = snipe.events.find(
+    (event) => event.type === "unit_attacked" && event.attackerId === "player-4-longbow_hunter",
+  );
+
+  assert.ok(normalAttack);
+  assert.ok(snipeAttack);
+  assert.equal(normalAttack.targetId, "enemy-4-stone_golem");
+  assert.equal(snipeAttack.targetId, "enemy-5-field_cleric");
+});
+
+test("front-row bulwark taunts normal attacks but not backstab or snipe", () => {
+  for (const [attackerCardId, ignoresTaunt] of [
+    ["ember_mage", false],
+    ["sneakblade", true],
+    ["longbow_hunter", true],
+  ]) {
+    const combat = resolveCombat(
+      createBoard([[4, attackerCardId]]),
+      createBoard([[0, "shieldbearer"], [4, "field_cleric"]]),
+      1,
+    );
+    const attack = combat.events.find(
+      (event) => event.type === "unit_attacked" && event.attackerId === `player-4-${attackerCardId}`,
+    );
+
+    assert.ok(attack);
+    assert.equal(attack.targetId, ignoresTaunt ? "enemy-4-field_cleric" : "enemy-0-shieldbearer");
+  }
+});
+
+test("mirrored bulwarks make the same block decision regardless of owner prefixes", () => {
+  const board = createBoard([[0, "spear_recruit"], [1, "shieldbearer"]]);
+  const combat = resolveCombat(board, board, 1);
+  const firstAttackTime = combat.events.find((event) => event.type === "unit_attacked")?.time;
+  const attackersAtFirstTick = combat.events
+    .filter((event) => event.type === "unit_attacked" && event.time === firstAttackTime)
+    .map((event) => event.attackerId);
+  const blockedAttackers = new Set(
+    combat.events
+      .filter((event) => event.type === "unit_blocked" && event.time === firstAttackTime)
+      .map((event) => event.attackerId),
+  );
+
+  assert.deepEqual(attackersAtFirstTick, ["player-0-spear_recruit", "enemy-0-spear_recruit"]);
+  assert.equal(
+    blockedAttackers.has("player-0-spear_recruit"),
+    blockedAttackers.has("enemy-0-spear_recruit"),
+  );
+});
+
+test("multiple same-tick lethal intents produce one death and one Bone Pact summon", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "boar_rider"], [1, "boar_rider"]]),
+    createBoard([[0, "grave_binder"]]),
+    1,
+  );
+  const graveBinderDeaths = combat.events.filter(
+    (event) => event.type === "unit_died" && event.unitId === "enemy-0-grave_binder",
+  );
+  const graveBinderSummons = combat.events.filter(
+    (event) => event.type === "unit_spawned" && event.unit.summonedBy === "enemy-0-grave_binder",
+  );
+
+  assert.equal(graveBinderDeaths.length, 1);
+  assert.equal(graveBinderSummons.length, 1);
+});
+
+test("a late Bone Pact summon keeps a monotonic cadence from its spawn time", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "iron_guard"]]),
+    createBoard([[0, "grave_binder"]]),
+    1,
+  );
+  const spawn = combat.events.find(
+    (event) => event.type === "unit_spawned" && event.unit.summonedBy === "enemy-0-grave_binder",
+  );
+  const skeletonAttackTimes = combat.events
+    .filter((event) => event.type === "unit_attacked" && event.attackerId === "enemy-0-bone_pact_skeleton")
+    .map((event) => event.time);
+
+  assert.ok(spawn);
+  assert.deepEqual(skeletonAttackTimes.slice(0, 2), [spawn.time + 1, spawn.time + 26]);
+  combat.events.forEach((event, index) => {
+    if (index > 0) {
+      assert.ok(event.time >= combat.events[index - 1].time);
+    }
+  });
+});
+
+test("healing resolves before damage within a simultaneous tick", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "iron_guard"], [4, "field_cleric"]]),
+    createBoard([[0, "wolfhound"]]),
+    1,
+  );
+  const healEventIndex = combat.events.findIndex(
+    (event) => event.type === "unit_healed" && event.time === 25 && event.unitId === "player-0-iron_guard",
+  );
+  const damageEventIndex = combat.events.findIndex(
+    (event) => event.type === "unit_damaged" && event.time === 25 && event.unitId === "player-0-iron_guard",
+  );
+  const damageEvent = combat.events[damageEventIndex];
+
+  assert.ok(healEventIndex >= 0);
+  assert.ok(damageEventIndex > healEventIndex);
+  assert.ok(damageEvent);
+  assert.equal(damageEvent.type, "unit_damaged");
+  assert.equal(damageEvent.remainingHp, 12);
+});
+
+test("the action cap stops before a simultaneous group instead of resolving half a tie", () => {
+  const board = createBoard([[0, "stone_golem"], [1, "stone_golem"], [2, "stone_golem"]]);
+  const combat = resolveCombat(board, board, 2);
+  const attackEvents = combat.events.filter((event) => event.type === "unit_attacked");
+  const lastAttackTime = Math.max(...attackEvents.map((event) => event.time));
+  const finalTickAttackers = attackEvents
+    .filter((event) => event.time === lastAttackTime)
+    .map((event) => event.attackerId);
+
+  assert.equal(combat.winner, "draw");
+  assert.equal(combat.actions, 78);
+  assert.deepEqual(finalTickAttackers, [
+    "player-0-stone_golem",
+    "player-1-stone_golem",
+    "player-2-stone_golem",
+    "enemy-0-stone_golem",
+    "enemy-1-stone_golem",
+    "enemy-2-stone_golem",
+  ]);
 });
 
 test("only the combat winner's damage-capable survivors damage the opposing castle", () => {

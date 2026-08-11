@@ -56,6 +56,9 @@ export interface UiCopy {
   logs: string;
   closeLogs: string;
   roundNumber: string;
+  synergies: string;
+  synergyActive: string;
+  synergyProgress: string;
   onboarding: string;
   chooseCard: string;
   slots: string;
@@ -83,6 +86,8 @@ export interface UiCopy {
   replacementBody: string;
   confirmReplacement: string;
   upgradedCard: string;
+  boardPosition: string;
+  upgradedStats: string;
   emptySlot: string;
   fight: string;
   nextRound: string;
@@ -121,7 +126,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     howToDraftTitle: "1. Выберите карту",
     howToDraftBody: "В каждом раунде вы и соперник получаете по одной карте. Вы выбираете одну из трёх и можете один раз бесплатно обновить выбор.",
     howToPlaceTitle: "2. Поставьте бойца",
-    howToPlaceBody: "Коснитесь карты, затем позиции на поле — или перетащите карту. Щитоносец ставится только в первый ряд.",
+    howToPlaceBody: "Коснитесь карты, затем позиции на поле — или перетащите карту. Передний ряд прикрывает задний: ДАЛ 1 сначала пробивает передний ряд, ДАЛ 2 может бить открытую заднюю позицию, а ДАЛ 3 достаёт оба ряда. Некоторые способности обходят ряды; Щитоносец ставится только спереди. Бойцы с одинаковым временем хода действуют одновременно.",
     howToUpgradeTitle: "3. Собирайте дубликаты",
     howToUpgradeBody: "Повторная карта улучшает бойца. Перед боем можно менять бойцов местами; замена на полном поле требует подтверждения.",
     howToWinTitle: "4. Разрушьте крепость",
@@ -146,6 +151,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     logs: "Итоги",
     closeLogs: "Закрыть итоги",
     roundNumber: "Раунд {round}",
+    synergies: "Синергии",
+    synergyActive: "{tag}: {count}/{threshold}, активно, {effect}",
+    synergyProgress: "{tag}: {count}/{threshold}, до активации {remaining}, {effect}",
     onboarding: "Коснитесь карты и позиции на поле — или перетащите карту.",
     chooseCard: "Выберите одну карту",
     slots: "Места {filled}/{capacity}",
@@ -173,6 +181,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     replacementBody: "{old} исчезнет, а его место займёт {card}.",
     confirmReplacement: "Заменить",
     upgradedCard: "{card}, улучшен",
+    boardPosition: "Позиция {slot}",
+    upgradedStats: "Улучшенные характеристики",
     emptySlot: "Пустая позиция {slot}",
     fight: "В бой",
     nextRound: "Следующий раунд",
@@ -203,7 +213,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     howToDraftTitle: "1. Виберіть карту",
     howToDraftBody: "У кожному раунді ви та суперник отримуєте по одній карті. Ви обираєте одну з трьох і можете один раз безкоштовно оновити вибір.",
     howToPlaceTitle: "2. Поставте бійця",
-    howToPlaceBody: "Торкніться карти, потім позиції на полі — або перетягніть карту. Щитоносець стає лише в перший ряд.",
+    howToPlaceBody: "Торкніться карти, потім позиції на полі — або перетягніть карту. Передній ряд прикриває задній: ДАЛ 1 спершу долає передній ряд, ДАЛ 2 може бити відкриту задню позицію, а ДАЛ 3 дістає обидва ряди. Деякі здібності обходять ряди; Щитоносець стає лише попереду. Бійці з однаковим часом ходу діють одночасно.",
     howToUpgradeTitle: "3. Збирайте дублікати",
     howToUpgradeBody: "Повторна карта покращує бійця. Перед боєм можна міняти бійців місцями; заміна на повному полі потребує підтвердження.",
     howToWinTitle: "4. Зруйнуйте фортецю",
@@ -228,6 +238,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     logs: "Підсумки",
     closeLogs: "Закрити підсумки",
     roundNumber: "Раунд {round}",
+    synergies: "Синергії",
+    synergyActive: "{tag}: {count}/{threshold}, активно, {effect}",
+    synergyProgress: "{tag}: {count}/{threshold}, до активації {remaining}, {effect}",
     onboarding: "Торкніться карти й позиції на полі — або перетягніть карту.",
     chooseCard: "Виберіть одну карту",
     slots: "Місця {filled}/{capacity}",
@@ -255,6 +268,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     replacementBody: "{old} зникне, а його місце займе {card}.",
     confirmReplacement: "Замінити",
     upgradedCard: "{card}, покращено",
+    boardPosition: "Позиція {slot}",
+    upgradedStats: "Покращені характеристики",
     emptySlot: "Порожня позиція {slot}",
     fight: "У бій",
     nextRound: "Наступний раунд",
@@ -285,7 +300,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     howToDraftTitle: "1. Choose a card",
     howToDraftBody: "You and your rival each receive one card per round. Choose one of three cards and refresh the offer once for free.",
     howToPlaceTitle: "2. Place the fighter",
-    howToPlaceBody: "Tap a card, then a field slot—or drag it. Shieldbearer can only use the front row.",
+    howToPlaceBody: "Tap a card, then a field slot—or drag it. The front row protects the back: RNG 1 clears the front row first, RNG 2 can hit an exposed back slot, and RNG 3 reaches both rows. Some abilities bypass rows; Shieldbearer is front-only. Fighters with the same action time act simultaneously.",
     howToUpgradeTitle: "3. Collect duplicates",
     howToUpgradeBody: "A duplicate upgrades a fighter. You may rearrange fighters before battle; full-field replacement requires confirmation.",
     howToWinTitle: "4. Destroy the rival keep",
@@ -310,6 +325,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     logs: "Results",
     closeLogs: "Close results",
     roundNumber: "Round {round}",
+    synergies: "Synergies",
+    synergyActive: "{tag}: {count}/{threshold}, active, {effect}",
+    synergyProgress: "{tag}: {count}/{threshold}, {remaining} more to activate, {effect}",
     onboarding: "Tap a card and a field slot—or drag the card.",
     chooseCard: "Choose one card",
     slots: "Slots {filled}/{capacity}",
@@ -337,6 +355,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     replacementBody: "{old} will be removed and {card} will take its place.",
     confirmReplacement: "Replace",
     upgradedCard: "{card}, upgraded",
+    boardPosition: "Position {slot}",
+    upgradedStats: "Upgraded stats",
     emptySlot: "Empty position {slot}",
     fight: "Fight",
     nextRound: "Next round",

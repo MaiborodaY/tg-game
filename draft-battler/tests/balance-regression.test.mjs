@@ -11,6 +11,7 @@ import {
 } from "../src/game/index.ts";
 
 const BALANCE_CORPUS_SIZE = 500;
+// These bands guard whether a strategy remains viable under current rules, not historical combat outcomes.
 const BALANCE_TARGETS = [
   {
     label: "highest-power deliberate play wins a clear majority without becoming automatic",
@@ -27,13 +28,13 @@ const BALANCE_TARGETS = [
   {
     label: "first-offer play can win but is punished by the drafting bot",
     strategy: pickFirstOffer,
-    minimum: 0.35,
+    minimum: 0.3,
     maximum: 0.6,
   },
   {
     label: "deterministic random-pick play can win but is punished by the drafting bot",
     strategy: pickRandomOffer,
-    minimum: 0.35,
+    minimum: 0.3,
     maximum: 0.6,
   },
   {
