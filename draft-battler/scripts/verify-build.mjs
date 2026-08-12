@@ -33,6 +33,9 @@ if (jsFiles.length === 0 || cssFiles.length === 0) {
 }
 
 const indexHtml = await readFile(path.join(buildRoot, "index.html"), "utf8");
+if (!indexHtml.includes("https://telegram.org/js/telegram-web-app.js")) {
+  throw new Error("Draft Battler build is missing the Telegram Mini App SDK.");
+}
 const documentReferences = [...indexHtml.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/g)]
   .map((match) => normalizeDocumentReference(match[1]))
   .filter(Boolean);

@@ -100,6 +100,7 @@ import {
   classifyDraftPlacement,
   type DraftPlacementClassification,
 } from "./game/placement";
+import { setupTelegramMiniApp } from "./telegram";
 
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
 type PlayMode = "solo" | "online";
@@ -217,12 +218,16 @@ if (!app) {
 }
 
 const appRoot = app;
+const telegram = setupTelegramMiniApp();
 
 const preferenceStorage = getPreferenceStorage();
 const soloRunStorage = getSoloRunStorage();
 const restoredSoloRun = loadSoloRunSnapshot(soloRunStorage);
 let soloPersistenceFailureReported = false;
-let activeLocale = resolveInitialLocale(readStoredLocale(preferenceStorage), navigator.language);
+let activeLocale = resolveInitialLocale(
+  readStoredLocale(preferenceStorage),
+  telegram.languageCode ?? navigator.language,
+);
 let howToOpen = !hasSeenHowTo(preferenceStorage);
 let battlePlaybackSpeed = loadBattlePlaybackSpeed(preferenceStorage);
 document.documentElement.lang = activeLocale;
@@ -299,26 +304,50 @@ let battlePresentationWatchdog: number | undefined;
 let battlePresentationWatchdogKey: string | undefined;
 
 render();
-window.addEventListener("beforeunload", () => closePvpSocket());
+telegram.ready();
+window.addEventListener("beforeunload", () => {
+  closePvpSocket();
+  telegram.destroy();
+});
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && pendingDraftReplacement) {
-    cancelDraftReplacement();
-  } else if (event.key === "Escape" && keyboardMoveSourceSlotIndex !== undefined) {
-    cancelKeyboardBoardMove();
-  } else if (
-    event.key === "Escape" &&
-    (
-      isCardInfoOpen()
-    )
-  ) {
-    closeCardInfo();
-  } else if (event.key === "Escape" && uiState.logsOpen) {
-    uiState = { ...uiState, logsOpen: false };
-    render();
-  } else if (event.key === "Escape" && howToOpen && uiState.mode === "menu") {
-    closeHowToPlay();
+  if (event.key === "Escape") {
+    closeTopOverlay();
   }
 });
+
+function closeTopOverlay(): boolean {
+  if (pendingDraftReplacement) {
+    cancelDraftReplacement();
+    return true;
+  }
+  if (keyboardMoveSourceSlotIndex !== undefined) {
+    cancelKeyboardBoardMove();
+    return true;
+  }
+  if (isCardInfoOpen()) {
+    closeCardInfo();
+    return true;
+  }
+  if (uiState.logsOpen) {
+    uiState = { ...uiState, logsOpen: false };
+    render();
+    return true;
+  }
+  if (howToOpen && uiState.mode === "menu") {
+    closeHowToPlay();
+    return true;
+  }
+  return false;
+}
+
+function handleTelegramBack(): void {
+  if (closeTopOverlay()) return;
+  if (uiState.mode === "finished") {
+    returnToMainMenu();
+  } else if (uiState.mode !== "menu") {
+    requestAbandonSoloRun();
+  }
+}
 
 function createInitialUiState(seed = createSeed(), playMode: PlayMode = "solo", mode: ScreenMode = "menu"): UiState {
   const run = createRun(seed);
@@ -355,6 +384,7 @@ function createEmptyPvpPlayerSlots(): PvpPlayerSlot[] {
 }
 
 function render(): void {
+  syncTelegramMiniApp();
   const stage = getStageElement();
   const stageUi = getStageUiElement();
   const activeFocusKey = document.activeElement instanceof HTMLElement
@@ -406,6 +436,12 @@ function render(): void {
 
   syncBattlefield();
   restoreFocusAfterRender(focusKey);
+}
+
+function syncTelegramMiniApp(): void {
+  const gameInProgress = uiState.mode !== "menu" && uiState.run.status !== "finished";
+  telegram.setGameInProgress(gameInProgress);
+  telegram.setBackHandler(uiState.mode !== "menu" || howToOpen ? handleTelegramBack : undefined);
 }
 
 function setFocusKey(element: HTMLElement, focusKey: string): void {

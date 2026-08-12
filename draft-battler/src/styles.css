@@ -49,7 +49,7 @@ button:focus-visible,
 .app-shell {
   width: min(430px, 100vw);
   height: 100vh;
-  height: 100dvh;
+  height: var(--tg-viewport-stable-height, 100dvh);
   margin: 0 auto;
   padding: 0;
 }

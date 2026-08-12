@@ -15,13 +15,13 @@ authoritative draft, reconnect, room lifecycle, and protocol tests are implement
 - `git diff --check`
 
 The build command must finish with the `Verified Draft Battler build` message.
-Pushes to `main` validate and upload a release-candidate artifact, but do not deploy it.
+The current workflow builds and deploys every matching push to `main`. Run the full gate above
+before pushing; GitHub repeats the frontend typecheck/build and PvP Worker typecheck before deploy.
 
-## Release-candidate mobile smoke
+## Mobile and Telegram smoke
 
-Download the `draft-battler-client-<commit>` artifact produced for the candidate commit
-and record both its commit SHA and workflow run ID. Run this checklist against that
-artifact, not the Vite development server.
+Record the commit SHA, then run this checklist locally before push and repeat the critical path
+against the deployed URL after the automatic deployment.
 
 1. Open from a cold start on an Android viewport around 360 px wide.
 2. Open from a cold start on an iPhone viewport around 390 px wide.
@@ -37,14 +37,16 @@ artifact, not the Vite development server.
     fallback still allows progress.
 12. Confirm there are no uncaught errors, missing runtime assets, blocked buttons, or horizontal scrolling.
 
-If Telegram WebView is the launch surface, repeat the full run there and verify the header,
-safe areas, background/foreground transition, and touch controls.
+13. Launch the deployed URL from the configured Telegram bot entry point.
+14. Verify Telegram safe areas and stable viewport in portrait mode.
+15. Open a card/modal and confirm Telegram Back closes the top layer first.
+16. During an unfinished run, confirm Telegram Back offers to abandon the run and closing the
+    Mini App asks for confirmation. On the main menu, neither warning should appear.
+17. Verify background/foreground transition and touch controls in the Telegram WebView.
 
 ## Rollback record
 
-Before deployment, record the release commit and the last-known-good Cloudflare deployment.
-Manually dispatch `Deploy Draft Battler App Worker` with the exact full candidate commit SHA
-and candidate workflow run ID only after the smoke checklist passes. The workflow requires a
-successful `main` push run and deploys its immutable artifact instead of rebuilding the client.
-After deployment, the workflow verifies the live health and fail-closed PvP room routes.
+Before push, record the release commit and the last-known-good Cloudflare deployment.
+If the automatic deployment is bad, revert the release commit (or restore the last-known-good
+source), rerun the gate, and push the rollback commit to `main`.
 After rollback, verify `/health`, the home page, one runtime asset, and one complete solo round.
