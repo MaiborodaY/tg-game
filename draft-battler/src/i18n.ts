@@ -25,6 +25,64 @@ export interface UiCopy {
   localeName: string;
   menuSubtitle: string;
   startRun: string;
+  botDifficulty: string;
+  botDifficultyStandard: string;
+  botDifficultyStrong: string;
+  botDifficultyStandardHint: string;
+  botDifficultyStrongHint: string;
+  onlineMode: string;
+  pvpLobbyTitle: string;
+  pvpLobbySubtitle: string;
+  pvpCreateRoom: string;
+  pvpJoinRoom: string;
+  pvpRoomCode: string;
+  pvpRoomCodePlaceholder: string;
+  pvpCopyCode: string;
+  pvpCodeCopied: string;
+  pvpInviteHint: string;
+  pvpReady: string;
+  pvpCancelReady: string;
+  pvpWaitingForOpponent: string;
+  pvpWaitingForOpponentReady: string;
+  pvpReconnect: string;
+  pvpReconnecting: string;
+  pvpLeaveRoom: string;
+  pvpLeaveRoomConfirm: string;
+  pvpForfeit: string;
+  pvpForfeitConfirm: string;
+  pvpReadyForNextRound: string;
+  pvpWaitingForNextRound: string;
+  pvpRematch: string;
+  pvpRematchRequested: string;
+  pvpWaitingForRematch: string;
+  pvpPlayer: string;
+  pvpOpponent: string;
+  pvpSpectator: string;
+  pvpStatusIdle: string;
+  pvpStatusConnecting: string;
+  pvpStatusConnected: string;
+  pvpStatusError: string;
+  pvpSlotOpen: string;
+  pvpSlotJoined: string;
+  pvpSlotReady: string;
+  pvpCloseLobby: string;
+  pvpErrorInvalidCode: string;
+  pvpErrorConnectionClosed: string;
+  pvpErrorConnectionFailed: string;
+  pvpErrorBadMessage: string;
+  pvpErrorRoom: string;
+  pvpErrorRoomFull: string;
+  pvpErrorRoomNotFound: string;
+  pvpErrorStaleMatch: string;
+  pvpErrorActionRejected: string;
+  pvpErrorReconnectFailed: string;
+  pvpErrorCopyFailed: string;
+  pvpErrorInvalidToken: string;
+  pvpErrorRateLimited: string;
+  pvpErrorDisabled: string;
+  pvpErrorOriginForbidden: string;
+  pvpErrorInternal: string;
+  pvpErrorBadRequest: string;
   howToPlay: string;
   howToTitle: string;
   howToIntro: string;
@@ -146,6 +204,64 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     localeName: "Русский",
     menuSubtitle: "Соберите отряд и разрушьте крепость соперника за 15 раундов.",
     startRun: "Начать дуэль",
+    botDifficulty: "Сложность бота",
+    botDifficultyStandard: "Обычный",
+    botDifficultyStrong: "Сильный",
+    botDifficultyStandardHint: "Выбирает один из доступных вариантов и разумно размещает его.",
+    botDifficultyStrongHint: "Сравнивает все три карты и выбирает сильнейшее усиление армии.",
+    onlineMode: "Онлайн",
+    pvpLobbyTitle: "Дуэль с игроком",
+    pvpLobbySubtitle: "Создайте комнату и отправьте код сопернику или войдите по его коду.",
+    pvpCreateRoom: "Создать комнату",
+    pvpJoinRoom: "Войти",
+    pvpRoomCode: "Код комнаты",
+    pvpRoomCodePlaceholder: "Введите код",
+    pvpCopyCode: "Копировать код",
+    pvpCodeCopied: "Код скопирован",
+    pvpInviteHint: "Отправьте этот код сопернику.",
+    pvpReady: "Готов к бою",
+    pvpCancelReady: "Отменить готовность",
+    pvpWaitingForOpponent: "Ждём соперника…",
+    pvpWaitingForOpponentReady: "Ждём готовности соперника…",
+    pvpReconnect: "Переподключиться",
+    pvpReconnecting: "Восстанавливаем соединение…",
+    pvpLeaveRoom: "Выйти из комнаты",
+    pvpLeaveRoomConfirm: "Выйти из комнаты? Текущий матч будет покинут.",
+    pvpForfeit: "Сдаться",
+    pvpForfeitConfirm: "Сдаться и завершить матч поражением?",
+    pvpReadyForNextRound: "Готов к следующему раунду",
+    pvpWaitingForNextRound: "Ждём готовности соперника к следующему раунду…",
+    pvpRematch: "Реванш",
+    pvpRematchRequested: "Запрос на реванш отправлен.",
+    pvpWaitingForRematch: "Ждём ответа соперника…",
+    pvpPlayer: "Вы",
+    pvpOpponent: "Соперник",
+    pvpSpectator: "Наблюдатель",
+    pvpStatusIdle: "Не подключено",
+    pvpStatusConnecting: "Подключение…",
+    pvpStatusConnected: "В комнате",
+    pvpStatusError: "Ошибка",
+    pvpSlotOpen: "Свободно",
+    pvpSlotJoined: "Подключён",
+    pvpSlotReady: "Готов",
+    pvpCloseLobby: "Закрыть PvP",
+    pvpErrorInvalidCode: "Введите код из 3–48 букв или цифр.",
+    pvpErrorConnectionClosed: "Соединение закрыто.",
+    pvpErrorConnectionFailed: "Не удалось подключиться.",
+    pvpErrorBadMessage: "Сервер прислал некорректный ответ.",
+    pvpErrorRoom: "Ошибка комнаты.",
+    pvpErrorRoomFull: "В комнате уже два игрока.",
+    pvpErrorRoomNotFound: "Комната не найдена.",
+    pvpErrorStaleMatch: "Матч уже изменился. Состояние обновлено.",
+    pvpErrorActionRejected: "Действие недоступно в текущем состоянии матча.",
+    pvpErrorReconnectFailed: "Не удалось вернуться в комнату.",
+    pvpErrorCopyFailed: "Не удалось скопировать код.",
+    pvpErrorInvalidToken: "Сессия комнаты устарела. Войдите заново.",
+    pvpErrorRateLimited: "Слишком много действий. Подождите немного.",
+    pvpErrorDisabled: "Онлайн-режим временно недоступен.",
+    pvpErrorOriginForbidden: "Подключение с этого адреса запрещено.",
+    pvpErrorInternal: "Ошибка сервера. Попробуйте ещё раз.",
+    pvpErrorBadRequest: "Сервер не принял запрос.",
     howToPlay: "Как играть",
     howToTitle: "Как играть",
     howToIntro: "Симметричная дуэль: обе крепости начинают с 20 HP, а каждый соперник получает по одной карте за раунд.",
@@ -259,6 +375,64 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     localeName: "Українська",
     menuSubtitle: "Зберіть загін і зруйнуйте фортецю суперника за 15 раундів.",
     startRun: "Почати дуель",
+    botDifficulty: "Складність бота",
+    botDifficultyStandard: "Звичайний",
+    botDifficultyStrong: "Сильний",
+    botDifficultyStandardHint: "Обирає один із доступних варіантів і розумно розміщує його.",
+    botDifficultyStrongHint: "Порівнює всі три карти й обирає найсильніше посилення армії.",
+    onlineMode: "Онлайн",
+    pvpLobbyTitle: "Дуель із гравцем",
+    pvpLobbySubtitle: "Створіть кімнату й надішліть код супернику або увійдіть за його кодом.",
+    pvpCreateRoom: "Створити кімнату",
+    pvpJoinRoom: "Увійти",
+    pvpRoomCode: "Код кімнати",
+    pvpRoomCodePlaceholder: "Введіть код",
+    pvpCopyCode: "Копіювати код",
+    pvpCodeCopied: "Код скопійовано",
+    pvpInviteHint: "Надішліть цей код супернику.",
+    pvpReady: "Готовий до бою",
+    pvpCancelReady: "Скасувати готовність",
+    pvpWaitingForOpponent: "Чекаємо на суперника…",
+    pvpWaitingForOpponentReady: "Чекаємо на готовність суперника…",
+    pvpReconnect: "Підключитися знову",
+    pvpReconnecting: "Відновлюємо з’єднання…",
+    pvpLeaveRoom: "Вийти з кімнати",
+    pvpLeaveRoomConfirm: "Вийти з кімнати? Поточний матч буде залишено.",
+    pvpForfeit: "Здатися",
+    pvpForfeitConfirm: "Здатися й завершити матч поразкою?",
+    pvpReadyForNextRound: "Готовий до наступного раунду",
+    pvpWaitingForNextRound: "Чекаємо на готовність суперника до наступного раунду…",
+    pvpRematch: "Реванш",
+    pvpRematchRequested: "Запит на реванш надіслано.",
+    pvpWaitingForRematch: "Чекаємо на відповідь суперника…",
+    pvpPlayer: "Ви",
+    pvpOpponent: "Суперник",
+    pvpSpectator: "Спостерігач",
+    pvpStatusIdle: "Не підключено",
+    pvpStatusConnecting: "Підключення…",
+    pvpStatusConnected: "У кімнаті",
+    pvpStatusError: "Помилка",
+    pvpSlotOpen: "Вільно",
+    pvpSlotJoined: "Підключено",
+    pvpSlotReady: "Готовий",
+    pvpCloseLobby: "Закрити PvP",
+    pvpErrorInvalidCode: "Введіть код із 3–48 літер або цифр.",
+    pvpErrorConnectionClosed: "З’єднання закрито.",
+    pvpErrorConnectionFailed: "Не вдалося підключитися.",
+    pvpErrorBadMessage: "Сервер надіслав некоректну відповідь.",
+    pvpErrorRoom: "Помилка кімнати.",
+    pvpErrorRoomFull: "У кімнаті вже два гравці.",
+    pvpErrorRoomNotFound: "Кімнату не знайдено.",
+    pvpErrorStaleMatch: "Матч уже змінився. Стан оновлено.",
+    pvpErrorActionRejected: "Дія недоступна в поточному стані матчу.",
+    pvpErrorReconnectFailed: "Не вдалося повернутися до кімнати.",
+    pvpErrorCopyFailed: "Не вдалося скопіювати код.",
+    pvpErrorInvalidToken: "Сесія кімнати застаріла. Увійдіть знову.",
+    pvpErrorRateLimited: "Забагато дій. Трохи зачекайте.",
+    pvpErrorDisabled: "Онлайн-режим тимчасово недоступний.",
+    pvpErrorOriginForbidden: "Підключення з цієї адреси заборонено.",
+    pvpErrorInternal: "Помилка сервера. Спробуйте ще раз.",
+    pvpErrorBadRequest: "Сервер не прийняв запит.",
     howToPlay: "Як грати",
     howToTitle: "Як грати",
     howToIntro: "Симетрична дуель: обидві фортеці починають із 20 HP, а кожен суперник отримує по одній карті щораунду.",
@@ -372,6 +546,64 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     localeName: "English",
     menuSubtitle: "Build a squad and destroy the rival keep within 15 rounds.",
     startRun: "Start duel",
+    botDifficulty: "Bot difficulty",
+    botDifficultyStandard: "Normal",
+    botDifficultyStrong: "Strong",
+    botDifficultyStandardHint: "Chooses one available option and places it sensibly.",
+    botDifficultyStrongHint: "Compares all three cards and chooses the strongest army upgrade.",
+    onlineMode: "Online",
+    pvpLobbyTitle: "Player duel",
+    pvpLobbySubtitle: "Create a room and send its code to your opponent, or join with their code.",
+    pvpCreateRoom: "Create room",
+    pvpJoinRoom: "Join",
+    pvpRoomCode: "Room code",
+    pvpRoomCodePlaceholder: "Enter code",
+    pvpCopyCode: "Copy code",
+    pvpCodeCopied: "Code copied",
+    pvpInviteHint: "Send this code to your opponent.",
+    pvpReady: "Ready to fight",
+    pvpCancelReady: "Cancel ready",
+    pvpWaitingForOpponent: "Waiting for opponent…",
+    pvpWaitingForOpponentReady: "Waiting for opponent to be ready…",
+    pvpReconnect: "Reconnect",
+    pvpReconnecting: "Restoring connection…",
+    pvpLeaveRoom: "Leave room",
+    pvpLeaveRoomConfirm: "Leave the room? You will exit the current match.",
+    pvpForfeit: "Forfeit",
+    pvpForfeitConfirm: "Forfeit and end the match with a loss?",
+    pvpReadyForNextRound: "Ready for next round",
+    pvpWaitingForNextRound: "Waiting for opponent to be ready for the next round…",
+    pvpRematch: "Rematch",
+    pvpRematchRequested: "Rematch request sent.",
+    pvpWaitingForRematch: "Waiting for opponent’s answer…",
+    pvpPlayer: "You",
+    pvpOpponent: "Opponent",
+    pvpSpectator: "Spectator",
+    pvpStatusIdle: "Not connected",
+    pvpStatusConnecting: "Connecting…",
+    pvpStatusConnected: "In room",
+    pvpStatusError: "Error",
+    pvpSlotOpen: "Open",
+    pvpSlotJoined: "Joined",
+    pvpSlotReady: "Ready",
+    pvpCloseLobby: "Close PvP",
+    pvpErrorInvalidCode: "Enter a code with 3–48 letters or numbers.",
+    pvpErrorConnectionClosed: "Connection closed.",
+    pvpErrorConnectionFailed: "Could not connect.",
+    pvpErrorBadMessage: "The server sent an invalid response.",
+    pvpErrorRoom: "Room error.",
+    pvpErrorRoomFull: "The room already has two players.",
+    pvpErrorRoomNotFound: "Room not found.",
+    pvpErrorStaleMatch: "The match has changed. Its state was refreshed.",
+    pvpErrorActionRejected: "That action is unavailable in the current match state.",
+    pvpErrorReconnectFailed: "Could not return to the room.",
+    pvpErrorCopyFailed: "Could not copy the code.",
+    pvpErrorInvalidToken: "The room session expired. Join again.",
+    pvpErrorRateLimited: "Too many actions. Wait a moment.",
+    pvpErrorDisabled: "Online mode is temporarily unavailable.",
+    pvpErrorOriginForbidden: "Connections from this address are not allowed.",
+    pvpErrorInternal: "Server error. Try again.",
+    pvpErrorBadRequest: "The server rejected the request.",
     howToPlay: "How to play",
     howToTitle: "How to play",
     howToIntro: "A symmetric duel: both keeps start at 20 HP, and each rival receives one card per round.",

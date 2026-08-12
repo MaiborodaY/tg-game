@@ -1,7 +1,7 @@
 # Draft Battler MVP release checklist
 
-The first public MVP is solo-only. PvP must remain disabled until its authentication,
-authoritative draft, reconnect, room lifecycle, and protocol tests are implemented.
+The public MVP includes Solo and invite-code PvP. PvP uses server-authoritative drafting,
+private player snapshots, reconnect grace, room expiry, and strict protocol validation.
 
 ## Automated gate
 
@@ -25,7 +25,7 @@ against the deployed URL after the automatic deployment.
 
 1. Open from a cold start on an Android viewport around 360 px wide.
 2. Open from a cold start on an iPhone viewport around 390 px wide.
-3. Confirm that only the Solo entry point is available.
+3. Confirm that both Solo and Online entry points are available.
 4. Start Solo and place the first card without external instructions.
 5. Verify card drag placement and the tap-select/tap-slot fallback.
 6. Verify invalid placement leaves the board unchanged.
@@ -43,6 +43,12 @@ against the deployed URL after the automatic deployment.
 16. During an unfinished run, confirm Telegram Back offers to abandon the run and closing the
     Mini App asks for confirmation. On the main menu, neither warning should appear.
 17. Verify background/foreground transition and touch controls in the Telegram WebView.
+
+18. Open Online in two isolated browser or Telegram sessions.
+19. Create a room, join by code, and confirm each player sees only their own draft offers.
+20. Confirm both players must lock before battle and both must continue before the next round.
+21. Disconnect one session, reconnect within the grace period, and confirm the same seat and state return.
+22. Finish or forfeit a match, then confirm rematch requires both players.
 
 ## Rollback record
 

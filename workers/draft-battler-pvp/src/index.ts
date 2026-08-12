@@ -1,795 +1,831 @@
 import { DurableObject } from "cloudflare:workers";
 import {
-  BOARD_SLOT_COUNT,
-  CARD_DEFINITIONS,
-  PLAYER_STARTING_HP,
-  createBoardFromSlots,
-  createEmptyBoardSlots,
-  isCardAllowedInSlot,
-  resolveCombat,
-  type BoardSlot,
-  type CardId,
-  type CombatResult,
-} from "../../../draft-battler/src/game";
-import { getMatchCastleDamage } from "./combatHp";
+  getExpiryReconciliation,
+  type ExpiryReconciliation,
+} from "./expiryLifecycle";
+import {
+  RULESET_VERSION,
+  MatchDomainError,
+  applyMatchIntent,
+  areSeatsReady,
+  claimSeat,
+  createMatch,
+  createPlayerMatchSnapshot,
+  createRoom,
+  createRoomSnapshot,
+  disconnectSeat,
+  expireMatch,
+  forfeitDisconnectedPlayer,
+  getDisconnectedSeatReleaseRole,
+  getDisconnectForfeitRole,
+  isMatchExpired,
+  isRematchReady,
+  releaseDisconnectedSeat,
+  setSeatReady,
+  startRematch,
+  touchSeat,
+  type MatchIntent,
+  type MatchState,
+  type PlayerRole,
+  type PlayerMatchSnapshot,
+  type RoomSnapshot,
+  type RoomState,
+} from "./matchDomain";
+import {
+  MAX_SOCKET_MESSAGE_BYTES,
+  consumeRateLimit,
+  createRoomCode,
+  createSeatToken,
+  createSocketTicket,
+  hashSeatToken,
+  isAllowedOrigin,
+  isSocketTicketValid,
+  normalizeRoomId,
+  parseClientMessage,
+  readJsonBody,
+  readSeatToken,
+  tokensMatch,
+  type PvpClientMessage,
+  type PvpErrorCode,
+  type SocketTicketRecord,
+} from "./protocol";
 import {
   getEnabledPvpBinding,
   isPvpEnabled,
   type PvpFeatureEnvironment,
 } from "./releasePolicy";
+import { settleExpiredOpponentAfterReconnect } from "./reconnectLifecycle";
+import { getNextRoomAlarmAt } from "./roomAlarm";
 
 export { getEnabledPvpBinding, isPvpEnabled } from "./releasePolicy";
 export type { PvpEnabledFlag, PvpFeatureEnvironment } from "./releasePolicy";
 
 export interface Env extends PvpFeatureEnvironment {
   DRAFT_PVP_ROOM: DurableObjectNamespace<DraftPvpRoom>;
-}
-
-interface RoomSnapshot {
-  roomId: string;
-  status: "waiting" | "ready";
-  connectedPeers: number;
-  players: RoomPlayerSlot[];
-  match?: MatchSnapshot;
-  createdAt: number;
-  updatedAt: number;
-  serverNow: number;
-}
-
-interface RoomRecord {
-  roomId: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-type PlayerRole = "host" | "guest";
-type PeerRole = PlayerRole | "spectator";
-
-interface RoomPlayerSlot {
-  role: PlayerRole;
-  peerId: string | null;
-  connected: boolean;
-  ready: boolean;
-  joinedAt: number | null;
-}
-
-type MatchPhase = "draft" | "battle";
-
-interface MatchSnapshot {
-  matchId: string;
-  seed: string;
-  round: number;
-  phase: MatchPhase;
-  hostHp: number;
-  guestHp: number;
-  submissions: MatchSubmissionSnapshot[];
-  combat?: MatchCombatSnapshot;
-  updatedAt: number;
-}
-
-interface MatchRecord {
-  matchId: string;
-  seed: string;
-  round: number;
-  phase: MatchPhase;
-  hostHp: number;
-  guestHp: number;
-  createdAt: number;
-  updatedAt: number;
-  submissions: Partial<Record<PlayerRole, MatchSubmissionRecord>>;
-  combat?: MatchCombatSnapshot;
-}
-
-interface MatchSubmissionRecord {
-  slots: BoardSlot[];
-  submittedAt: number;
-}
-
-interface MatchSubmissionSnapshot {
-  role: PlayerRole;
-  submitted: boolean;
-  submittedAt: number | null;
-}
-
-interface MatchCombatSnapshot {
-  round: number;
-  hostSlots: BoardSlot[];
-  guestSlots: BoardSlot[];
-  combat: CombatResult;
-  hostHpBefore: number;
-  hostHpAfter: number;
-  guestHpBefore: number;
-  guestHpAfter: number;
+  PVP_ALLOWED_ORIGINS?: string;
+  ENVIRONMENT?: string;
 }
 
 interface SocketAttachment {
-  peerId: string;
-  role: PeerRole;
-  joinedAt: number;
-  ready: boolean;
+  role: PlayerRole;
+  tokenHash: string;
+  connectionId: string;
+  windowStartedAt: number;
+  messageCount: number;
 }
 
-interface ClientMessage {
-  type?: string;
-  payload?: unknown;
-}
-
-interface ServerMessage {
-  type: string;
+interface RoomSessionResponse {
+  ok: true;
   roomId: string;
-  peerId?: string;
-  role?: PeerRole;
-  connectedPeers?: number;
-  payload?: unknown;
-  serverNow: number;
+  seat: PlayerRole;
+  seatToken: string;
+  socketTicket: string;
+  snapshot: ViewerRoomSnapshot;
+}
+
+type ViewerRoomSnapshot = RoomSnapshot & { match?: PlayerMatchSnapshot };
+
+interface ServerSnapshotMessage {
+  type: "connected" | "snapshot";
+  roomId: string;
+  seat?: PlayerRole;
+  snapshot: ViewerRoomSnapshot;
+}
+
+interface ServerErrorMessage {
+  type: "error";
+  code: PvpErrorCode;
+  message: string;
 }
 
 const API_PREFIX = "/api/pvp";
 const WORKER_NAME = "draft-battler-pvp";
-const ROOM_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{2,47}$/;
-const MATCH_STORAGE_KEY = "match:v1";
-const VALID_CARD_IDS = new Set<CardId>(CARD_DEFINITIONS.map((card) => card.id));
+const ROOM_STORAGE_KEY = "room:v2";
+const MATCH_STORAGE_KEY = "match:v2";
+const SOCKET_TICKET_STORAGE_PREFIX = "socket-ticket:v1:";
+const INTERNAL_CREATE_PATH = "/internal/create";
+const CREATE_ROOM_ATTEMPTS = 4;
 
 export class DraftPvpRoom extends DurableObject<Env> {
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-    ctx.blockConcurrencyWhile(async () => {
-      this.ctx.storage.sql.exec(`
-        CREATE TABLE IF NOT EXISTS room_records (
-          id INTEGER PRIMARY KEY CHECK (id = 1),
-          room_id TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL
-        )
-      `);
-    });
-  }
-
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    const route = parseRoomRoute(url.pathname);
 
+    if (url.pathname === INTERNAL_CREATE_PATH && request.method === "POST") {
+      return this.createHostSession(request.headers.get("x-pvp-room-id") ?? "");
+    }
+
+    const route = parseRoomRoute(url.pathname);
     if (!route) {
-      return json({ ok: false, error: "Unknown room route." }, 404);
+      return errorResponse("room_not_found", "Room not found.", 404);
     }
 
     if (route.action === "socket") {
       return this.handleSocket(request, route.roomId);
     }
 
-    if (request.method !== "GET") {
-      return json({ ok: false, error: "Method not allowed." }, 405);
+    if (request.method !== "POST") {
+      return errorResponse("bad_request", "Method not allowed.", 405);
     }
 
-    return json({ ok: true, room: await this.getSnapshot(route.roomId) });
+    const body = await readJsonBody(request);
+    if (!body) {
+      return errorResponse("bad_request", "Invalid request body.", 400);
+    }
+
+    if (route.action === "join" && hasExactKeys(body, [])) {
+      return this.createGuestSession(route.roomId);
+    }
+
+    if ((route.action === "reconnect" || route.action === "socket_ticket") && hasExactKeys(body, ["seatToken"])) {
+      const seatToken = readSeatToken(body.seatToken);
+      return seatToken
+        ? this.reconnectSession(route.roomId, seatToken)
+        : errorResponse("invalid_token", "Invalid room token.", 403);
+    }
+
+    return errorResponse("bad_request", "Invalid room action.", 400);
   }
 
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+  async webSocketMessage(ws: WebSocket, rawMessage: string | ArrayBuffer): Promise<void> {
     const attachment = getSocketAttachment(ws);
-    const room = await this.readOrCreateRoom();
-
-    if (!attachment || typeof message !== "string") {
-      sendSocketMessage(ws, {
-        type: "error",
-        roomId: room.roomId,
-        payload: { error: "Bad message." },
-        serverNow: Date.now(),
-      });
+    if (!attachment) {
+      sendSocketError(ws, "invalid_token", "Socket is not authenticated.");
+      ws.close(1008, "Unauthenticated socket");
       return;
     }
 
-    let data: ClientMessage;
+    const now = Date.now();
+    const nextRate = consumeRateLimit(attachment, now);
+    ws.serializeAttachment({ ...attachment, ...nextRate } satisfies SocketAttachment);
+    if (!nextRate.allowed) {
+      sendSocketError(ws, "rate_limited", "Too many messages.");
+      ws.close(1008, "Rate limit exceeded");
+      return;
+    }
+
+    if (typeof rawMessage !== "string"
+      || rawMessage.length > MAX_SOCKET_MESSAGE_BYTES
+      || new TextEncoder().encode(rawMessage).byteLength > MAX_SOCKET_MESSAGE_BYTES) {
+      sendSocketError(ws, "message_too_large", "Message is too large.");
+      return;
+    }
+
+    const message = parseClientMessage(rawMessage);
+    if (!message) {
+      sendSocketError(ws, "bad_request", "Invalid message.");
+      return;
+    }
+
     try {
-      data = JSON.parse(message) as ClientMessage;
-    } catch {
-      sendSocketMessage(ws, {
-        type: "error",
-        roomId: room.roomId,
-        peerId: attachment.peerId,
-        payload: { error: "Bad JSON." },
-        serverNow: Date.now(),
-      });
-      return;
+      await this.handleClientMessage(ws, attachment, message, now);
+    } catch (error) {
+      const code = readDomainErrorCode(error);
+      sendSocketError(ws, code, error instanceof Error ? error.message : "Action rejected.");
     }
-
-    if (data.type === "ping") {
-      sendSocketMessage(ws, {
-        type: "pong",
-        roomId: room.roomId,
-        peerId: attachment.peerId,
-        role: attachment.role,
-        connectedPeers: this.ctx.getWebSockets().length,
-        serverNow: Date.now(),
-      });
-      return;
-    }
-
-    if (data.type === "set_ready") {
-      const ready = readReadyPayload(data.payload);
-      const nextAttachment = { ...attachment, ready };
-      ws.serializeAttachment(nextAttachment satisfies SocketAttachment);
-      const updatedRoom = this.touchRoom(room);
-      await this.maybeStartMatch(updatedRoom);
-      await this.broadcastRoomState(updatedRoom, attachment);
-      return;
-    }
-
-    if (data.type === "submit_board") {
-      await this.handleSubmitBoard(ws, attachment, room, data.payload);
-      return;
-    }
-
-    if (data.type === "next_round") {
-      await this.handleNextRound(ws, attachment, room, data.payload);
-      return;
-    }
-
-    this.broadcast({
-      type: "peer_message",
-      roomId: room.roomId,
-      peerId: attachment.peerId,
-      role: attachment.role,
-      connectedPeers: this.ctx.getWebSockets().length,
-      payload: data.payload,
-      serverNow: Date.now(),
-    });
   }
 
-  async webSocketClose(): Promise<void> {
-    const room = this.touchRoom(await this.readOrCreateRoom());
-    await this.broadcastRoomState(room, undefined, "peer_left");
+  async webSocketClose(ws: WebSocket): Promise<void> {
+    await this.handleSocketDisconnect(ws);
   }
 
-  async webSocketError(): Promise<void> {
-    const room = this.touchRoom(await this.readOrCreateRoom());
-    await this.broadcastRoomState(room, undefined, "peer_error");
+  async webSocketError(ws: WebSocket): Promise<void> {
+    await this.handleSocketDisconnect(ws);
   }
 
-  private async handleSocket(request: Request, roomId: string): Promise<Response> {
-    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-      return json({ ok: false, error: "Expected WebSocket upgrade." }, 426);
-    }
-
-    const record = this.touchRoom(await this.readOrCreateRoom(roomId));
-    const peerId = crypto.randomUUID();
-    const role = this.assignPeerRole();
-    const pair = new WebSocketPair();
-    const client = pair[0];
-    const server = pair[1];
-
-    server.serializeAttachment({ peerId, role, joinedAt: Date.now(), ready: false } satisfies SocketAttachment);
-    this.ctx.acceptWebSocket(server);
-    sendSocketMessage(server, {
-      type: "connected",
-      roomId: record.roomId,
-      peerId,
-      role,
-      connectedPeers: this.ctx.getWebSockets().length,
-      payload: await this.createSnapshot(record),
-      serverNow: Date.now(),
-    });
-    await this.broadcastRoomState(record, { peerId, role }, "room_state", server);
-
-    return new Response(null, { status: 101, webSocket: client });
-  }
-
-  private async getSnapshot(roomId: string): Promise<RoomSnapshot> {
-    return this.createSnapshot(await this.readOrCreateRoom(roomId));
-  }
-
-  private async readOrCreateRoom(roomId?: string): Promise<RoomRecord> {
-    const stored = this.ctx.storage.sql
-      .exec<{
-        roomId: string;
-        createdAt: number;
-        updatedAt: number;
-      }>("SELECT room_id AS roomId, created_at AS createdAt, updated_at AS updatedAt FROM room_records WHERE id = 1")
-      .toArray()[0];
-
-    if (stored) {
-      return stored;
-    }
-
+  async alarm(): Promise<void> {
     const now = Date.now();
-    const record: RoomRecord = {
-      roomId: roomId ?? "unknown",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.ctx.storage.sql.exec(
-      "INSERT INTO room_records (id, room_id, created_at, updated_at) VALUES (1, ?, ?, ?)",
-      record.roomId,
-      record.createdAt,
-      record.updatedAt,
-    );
-
-    return record;
-  }
-
-  private async createSnapshot(record: RoomRecord): Promise<RoomSnapshot> {
-    const players = this.createPlayerSlots();
-    const match = await this.readMatch();
-
-    return {
-      roomId: record.roomId,
-      status: players.every((player) => player.connected && player.ready) ? "ready" : "waiting",
-      connectedPeers: this.ctx.getWebSockets().length,
-      players,
-      match: match ? createMatchSnapshot(match) : undefined,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      serverNow: Date.now(),
-    };
-  }
-
-  private async broadcastRoomState(
-    record: RoomRecord,
-    actor?: Pick<SocketAttachment, "peerId" | "role">,
-    type = "room_state",
-    except?: WebSocket,
-  ): Promise<void> {
-    this.broadcast(
-      {
-        type,
-        roomId: record.roomId,
-        peerId: actor?.peerId,
-        role: actor?.role,
-        connectedPeers: this.ctx.getWebSockets().length,
-        payload: await this.createSnapshot(record),
-        serverNow: Date.now(),
-      },
-      except,
-    );
-  }
-
-  private async maybeStartMatch(record: RoomRecord): Promise<void> {
-    const players = this.createPlayerSlots();
-    if (!players.every((player) => player.connected && player.ready)) {
+    let room = await this.readRoom();
+    let match = await this.readMatch();
+    if (!room) {
+      await this.ctx.storage.deleteAlarm();
       return;
     }
 
-    if (await this.readMatch()) {
-      return;
+    const disconnectedRole = match?.phase !== "finished" ? getDisconnectForfeitRole(room, now) : undefined;
+    if (match && disconnectedRole) {
+      match = forfeitDisconnectedPlayer(match, disconnectedRole, now);
+      await this.writeMatch(match);
     }
 
-    const now = Date.now();
-    await this.writeMatch({
-      matchId: crypto.randomUUID(),
-      seed: createMatchSeed(record.roomId, now),
-      round: 1,
-      phase: "draft",
-      hostHp: PLAYER_STARTING_HP,
-      guestHp: PLAYER_STARTING_HP,
-      createdAt: now,
-      updatedAt: now,
-      submissions: {},
-    });
-  }
-
-  private async handleSubmitBoard(
-    ws: WebSocket,
-    attachment: SocketAttachment,
-    room: RoomRecord,
-    payload: unknown,
-  ): Promise<void> {
-    if (attachment.role === "spectator") {
-      sendRoomError(ws, room.roomId, "Spectators cannot submit boards.");
-      return;
-    }
-
-    const match = await this.readMatch();
-    if (!match || match.phase !== "draft") {
-      sendRoomError(ws, room.roomId, "Match is not accepting boards.");
-      return;
-    }
-
-    const submittedSlots = readSubmitBoardPayload(payload, match);
-    if (!submittedSlots) {
-      sendRoomError(ws, room.roomId, "Bad board submission.");
-      return;
-    }
-
-    const now = Date.now();
-    const submissions = {
-      ...match.submissions,
-      [attachment.role]: {
-        slots: submittedSlots,
-        submittedAt: now,
-      },
-    } satisfies MatchRecord["submissions"];
-
-    let nextMatch: MatchRecord = {
-      ...match,
-      submissions,
-      updatedAt: now,
-    };
-
-    if (submissions.host && submissions.guest) {
-      const combat = resolveCombat(submissions.host.slots, submissions.guest.slots, match.round);
-      const combatSnapshot = createMatchCombatSnapshot(
-        match.round,
-        submissions.host.slots,
-        submissions.guest.slots,
-        combat,
-        getMatchHostHp(match),
-        getMatchGuestHp(match),
-      );
-      nextMatch = {
-        ...nextMatch,
-        phase: "battle",
-        hostHp: combatSnapshot.hostHpAfter,
-        guestHp: combatSnapshot.guestHpAfter,
-        combat: combatSnapshot,
-      };
-    }
-
-    await this.writeMatch(nextMatch);
-    await this.broadcastRoomState(this.touchRoom(room), attachment);
-  }
-
-  private async handleNextRound(
-    ws: WebSocket,
-    attachment: SocketAttachment,
-    room: RoomRecord,
-    payload: unknown,
-  ): Promise<void> {
-    if (attachment.role === "spectator") {
-      sendRoomError(ws, room.roomId, "Spectators cannot advance rounds.");
-      return;
-    }
-
-    const match = await this.readMatch();
-    if (!match || match.phase !== "battle") {
-      sendRoomError(ws, room.roomId, "Match is not ready for the next round.");
-      return;
-    }
-
-    if (!readNextRoundPayload(payload, match)) {
-      sendRoomError(ws, room.roomId, "Bad next round request.");
-      return;
-    }
-
-    if (isMatchFinished(match)) {
-      sendRoomError(ws, room.roomId, "Match is finished.");
-      return;
-    }
-
-    const now = Date.now();
-    await this.writeMatch({
-      matchId: match.matchId,
-      seed: match.seed,
-      round: match.round + 1,
-      phase: "draft",
-      hostHp: getMatchHostHp(match),
-      guestHp: getMatchGuestHp(match),
-      createdAt: match.createdAt,
-      updatedAt: now,
-      submissions: {},
-    });
-    await this.broadcastRoomState(this.touchRoom(room), attachment);
-  }
-
-  private async readMatch(): Promise<MatchRecord | undefined> {
-    return this.ctx.storage.get<MatchRecord>(MATCH_STORAGE_KEY);
-  }
-
-  private async writeMatch(match: MatchRecord): Promise<void> {
-    await this.ctx.storage.put(MATCH_STORAGE_KEY, match);
-  }
-
-  private touchRoom(record: RoomRecord): RoomRecord {
-    const updatedAt = Date.now();
-    this.ctx.storage.sql.exec("UPDATE room_records SET updated_at = ? WHERE id = 1", updatedAt);
-
-    return { ...record, updatedAt };
-  }
-
-  private assignPeerRole(): PeerRole {
-    const occupiedRoles = new Set<PeerRole>();
-    this.ctx.getWebSockets().forEach((ws) => {
-      const attachment = getSocketAttachment(ws);
-      if (attachment) {
-        occupiedRoles.add(attachment.role);
-      }
-    });
-
-    if (!occupiedRoles.has("host")) {
-      return "host";
-    }
-
-    if (!occupiedRoles.has("guest")) {
-      return "guest";
-    }
-
-    return "spectator";
-  }
-
-  private createPlayerSlots(): RoomPlayerSlot[] {
-    const slots: RoomPlayerSlot[] = [
-      { role: "host", peerId: null, connected: false, ready: false, joinedAt: null },
-      { role: "guest", peerId: null, connected: false, ready: false, joinedAt: null },
-    ];
-
-    this.ctx.getWebSockets().forEach((ws) => {
-      const attachment = getSocketAttachment(ws);
-      if (!attachment || attachment.role === "spectator") {
+    if (match && isMatchExpired(match, now)) {
+      if (match.phase === "finished") {
+        await this.deleteRoom("Room expired.");
         return;
       }
 
-      const slot = slots.find((player) => player.role === attachment.role);
-      if (slot && !slot.connected) {
-        slot.peerId = attachment.peerId;
-        slot.connected = true;
-        slot.ready = attachment.ready;
-        slot.joinedAt = attachment.joinedAt;
-      }
-    });
+      match = expireMatch(match, now);
+      await this.writeMatch(match);
+    }
 
-    return slots;
+    if (!match) {
+      const releaseRole = getDisconnectedSeatReleaseRole(room, now);
+      if (releaseRole === "host" || now >= room.expiresAt) {
+        await this.deleteRoom("Room expired.");
+        return;
+      }
+      if (releaseRole === "guest") {
+        room = releaseDisconnectedSeat(room, releaseRole, now);
+        await this.writeRoom(room);
+      }
+    }
+
+    room = await this.readRoom();
+    if (room) {
+      await this.scheduleAlarm(room, match);
+      await this.broadcastSnapshots(room, match);
+    }
   }
 
-  private broadcast(message: ServerMessage, except?: WebSocket): void {
-    this.ctx.getWebSockets().forEach((ws) => {
-      if (ws !== except) {
-        sendSocketMessage(ws, message);
+  private async createHostSession(rawRoomId: string): Promise<Response> {
+    const roomId = normalizeRoomId(rawRoomId);
+    if (!roomId || await this.readRoom()) {
+      return errorResponse("action_rejected", "Room code collision.", 409);
+    }
+
+    const now = Date.now();
+    const seatToken = createSeatToken();
+    const tokenHash = await hashSeatToken(seatToken);
+    const connectionId = `http:${crypto.randomUUID()}`;
+    let room = createRoom({ roomId, now });
+    const claim = claimSeat(room, { issuedTokenHash: tokenHash, connectionId, now });
+    room = disconnectSeat(claim.room, { role: claim.role, tokenHash, connectionId, now });
+    await this.writeRoom(room);
+    await this.scheduleAlarm(room);
+
+    return json(await this.createSessionResponse(room, undefined, claim.role, seatToken));
+  }
+
+  private async createGuestSession(roomId: string): Promise<Response> {
+    let room = await this.readRoom();
+    if (!room || room.roomId !== roomId || Date.now() >= room.expiresAt) {
+      return errorResponse("room_not_found", "Room not found.", 404);
+    }
+
+    const now = Date.now();
+    const seatToken = createSeatToken();
+    const tokenHash = await hashSeatToken(seatToken);
+    const connectionId = `http:${crypto.randomUUID()}`;
+    try {
+      const claim = claimSeat(room, { issuedTokenHash: tokenHash, connectionId, now });
+      if (claim.role !== "guest" || claim.reconnected) {
+        return errorResponse("room_full", "Room is full.", 409);
       }
+      room = disconnectSeat(claim.room, { role: claim.role, tokenHash, connectionId, now });
+      await this.writeRoom(room);
+      await this.scheduleAlarm(room);
+      await this.broadcastSnapshots(room, await this.readMatch());
+      return json(await this.createSessionResponse(room, await this.readMatch(), claim.role, seatToken));
+    } catch {
+      return errorResponse("room_full", "Room is full.", 409);
+    }
+  }
+
+  private async reconnectSession(roomId: string, seatToken: string): Promise<Response> {
+    const expiry = await this.reconcileExpiry(Date.now());
+    const room = expiry.status === "missing" ? undefined : expiry.room;
+    const match = expiry.status === "missing" ? undefined : expiry.match;
+    if (!room || room.roomId !== roomId) {
+      return errorResponse("room_not_found", "Room not found.", 404);
+    }
+
+    const tokenHash = await hashSeatToken(seatToken);
+    const role = findSeatRoleByTokenHash(room, tokenHash);
+    if (!role) {
+      return errorResponse("invalid_token", "Invalid room token.", 403);
+    }
+
+    // Reconnect bootstrap is deliberately read-only. The existing socket remains authoritative
+    // until the replacement WebSocket has authenticated and atomically claimed the seat.
+    return json(await this.createSessionResponse(room, match, role, seatToken));
+  }
+
+  private async handleSocket(request: Request, roomId: string): Promise<Response> {
+    if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
+      return errorResponse("bad_request", "Expected WebSocket upgrade.", 426);
+    }
+
+    const now = Date.now();
+    const expiry = await this.reconcileExpiry(now);
+    const socketTicket = readSeatToken(new URL(request.url).searchParams.get("ticket"));
+    let room = expiry.status === "missing" ? undefined : expiry.room;
+    let match = expiry.status === "missing" ? undefined : expiry.match;
+    if (!socketTicket || !room || room.roomId !== roomId) {
+      return errorResponse("invalid_token", "Invalid room token.", 403);
+    }
+
+    const presentedTicketHash = await hashSeatToken(socketTicket);
+    let ticketRecord: SocketTicketRecord | undefined;
+    let ticketStorageKey: string | undefined;
+    for (const role of ["host", "guest"] as const) {
+      const candidate = await this.ctx.storage.get<SocketTicketRecord>(getSocketTicketStorageKey(role));
+      if (candidate && tokensMatch(candidate.ticketHash, presentedTicketHash)) {
+        ticketRecord = candidate;
+        ticketStorageKey = getSocketTicketStorageKey(role);
+        break;
+      }
+    }
+    if (!ticketRecord || !ticketStorageKey) {
+      return errorResponse("invalid_token", "Invalid or expired socket ticket.", 403);
+    }
+    // A matching credential is consumed before validation, including an expired replay.
+    await this.ctx.storage.delete(ticketStorageKey);
+    if (!await isSocketTicketValid(ticketRecord, socketTicket, now)) {
+      return errorResponse("invalid_token", "Invalid or expired socket ticket.", 403);
+    }
+
+    const { role, tokenHash } = ticketRecord;
+    const seat = room.seats[role];
+    const reconnectGraceExpired = match?.phase !== "finished"
+      && seat?.connected === false
+      && seat.disconnectDeadline !== undefined
+      && now >= seat.disconnectDeadline;
+    if (!seat || !tokensMatch(seat.tokenHash, tokenHash) || reconnectGraceExpired) {
+      return errorResponse("invalid_token", "Invalid room token.", 403);
+    }
+    const connectionId = crypto.randomUUID();
+    try {
+      const claim = claimSeat(room, {
+        presentedTokenHash: tokenHash,
+        issuedTokenHash: tokenHash,
+        connectionId,
+        now,
+      });
+      if (!claim.reconnected) {
+        return errorResponse("invalid_token", "Invalid room token.", 403);
+      }
+      if (claim.role !== role) {
+        return errorResponse("invalid_token", "Socket ticket belongs to another seat.", 403);
+      }
+      room = claim.room;
+    } catch {
+      return errorResponse("invalid_token", "Invalid room token.", 403);
+    }
+
+    const pair = new WebSocketPair();
+    const client = pair[0];
+    const server = pair[1];
+    server.serializeAttachment({
+      role,
+      tokenHash,
+      connectionId,
+      windowStartedAt: now,
+      messageCount: 0,
+    } satisfies SocketAttachment);
+    this.ctx.acceptWebSocket(server);
+    await this.writeRoom(room);
+    const reconnectSettlement = settleExpiredOpponentAfterReconnect(room, match, now);
+    match = reconnectSettlement.match;
+    if (reconnectSettlement.forfeitedRole && match) {
+      await this.writeMatch(match);
+    }
+    await this.scheduleAlarm(room, match);
+    // Retire the old connection only after the replacement is accepted and durable seat ownership
+    // points at it. A failed replacement handshake must not evict the still-working socket.
+    closePreviousSeatSockets(this.ctx.getWebSockets(), role, connectionId);
+    sendSocketMessage(server, {
+      type: "connected",
+      roomId,
+      seat: role,
+      snapshot: await this.createViewerSnapshot(room, match, role),
     });
+    await this.broadcastSnapshots(room, match, server);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  private async handleClientMessage(
+    ws: WebSocket,
+    attachment: SocketAttachment,
+    message: PvpClientMessage,
+    now: number,
+  ): Promise<void> {
+    const expiry = await this.reconcileExpiry(now);
+    if (expiry.status === "missing") {
+      throw new Error("Room expired before the action was received.");
+    }
+    if (expiry.status === "match_expired") {
+      throw new Error("Match expired before the action was received.");
+    }
+
+    let room = await this.requireAuthenticatedRoom(attachment, now, expiry.room);
+    let match = expiry.match;
+
+    if (message.type === "ping") {
+      sendSocketMessage(ws, { type: "pong", serverNow: now });
+      return;
+    }
+
+    if (message.type === "leave") {
+      if (match && match.phase !== "finished") {
+        match = applyMatchIntent(match, attachment.role, {
+          type: "forfeit",
+          matchId: match.matchId,
+          round: match.round,
+        }, now).state;
+        await this.writeMatch(match);
+      }
+      await this.writeRoom(disconnectSeat(room, {
+        role: attachment.role,
+        tokenHash: attachment.tokenHash,
+        connectionId: attachment.connectionId,
+        now,
+      }));
+      await this.broadcastSnapshots(await this.requireRoom(), match);
+      ws.close(1000, "Left room");
+      return;
+    }
+
+    if (message.type === "set_ready") {
+      if (match) {
+        throw new Error("Match has already started.");
+      }
+      room = setSeatReady(room, {
+        role: attachment.role,
+        tokenHash: attachment.tokenHash,
+        connectionId: attachment.connectionId,
+        ready: message.ready,
+        now,
+      });
+      if (areSeatsReady(room)) {
+        match = createMatch({ matchId: createMatchId(), seed: createMatchSeed(room.roomId), now });
+        await this.writeMatch(match);
+      }
+      await this.writeRoom(room);
+      await this.scheduleAlarm(room, match);
+      await this.broadcastSnapshots(room, match);
+      return;
+    }
+
+    if (!match) {
+      throw new Error("Match has not started.");
+    }
+
+    assertCurrentMatch(message, match);
+    const intent = toMatchIntent(message);
+    match = applyMatchIntent(match, attachment.role, intent, now).state;
+    if (message.type === "rematch" && isRematchReady(match)) {
+      match = startRematch(match, { matchId: createMatchId(), seed: createMatchSeed(room.roomId), now });
+    }
+
+    await this.writeMatch(match);
+    await this.scheduleAlarm(room, match);
+    await this.broadcastSnapshots(room, match);
+  }
+
+  private async handleSocketDisconnect(ws: WebSocket): Promise<void> {
+    const attachment = getSocketAttachment(ws);
+    const room = await this.readRoom();
+    if (!attachment || !room) {
+      return;
+    }
+
+    const now = Date.now();
+    const nextRoom = disconnectSeat(room, {
+      role: attachment.role,
+      tokenHash: attachment.tokenHash,
+      connectionId: attachment.connectionId,
+      now,
+    });
+    // A replaced socket may close after the new connection is stored. In that case the domain
+    // keeps the newer seat connected, and the stale close must not broadcast a false disconnect.
+    const nextSeat = nextRoom.seats[attachment.role];
+    if (nextSeat?.connected || nextSeat?.connectionId !== attachment.connectionId) {
+      return;
+    }
+    await this.writeRoom(nextRoom);
+    const match = await this.readMatch();
+    await this.scheduleAlarm(nextRoom, match);
+    await this.broadcastSnapshots(nextRoom, match);
+  }
+
+  private async requireAuthenticatedRoom(
+    attachment: SocketAttachment,
+    now: number,
+    currentRoom?: RoomState,
+  ): Promise<RoomState> {
+    const room = currentRoom ?? await this.requireRoom();
+    const seat = room.seats[attachment.role];
+    if (!seat || !tokensMatch(seat.tokenHash, attachment.tokenHash)) {
+      throw new Error("Invalid room token.");
+    }
+
+    const nextRoom = touchSeat(room, {
+      role: attachment.role,
+      tokenHash: attachment.tokenHash,
+      connectionId: attachment.connectionId,
+      now,
+    });
+    await this.writeRoom(nextRoom);
+    return nextRoom;
+  }
+
+  private async requireRoom(): Promise<RoomState> {
+    const room = await this.readRoom();
+    if (!room) {
+      throw new Error("Room not found.");
+    }
+    return room;
+  }
+
+  private async createSessionResponse(
+    room: RoomState,
+    match: MatchState | undefined,
+    role: PlayerRole,
+    seatToken: string,
+  ): Promise<RoomSessionResponse> {
+    const issuedTicket = await createSocketTicket(role, await hashSeatToken(seatToken), Date.now());
+    await this.ctx.storage.put(getSocketTicketStorageKey(role), issuedTicket.record);
+    return {
+      ok: true,
+      roomId: room.roomId,
+      seat: role,
+      seatToken,
+      socketTicket: issuedTicket.ticket,
+      snapshot: await this.createViewerSnapshot(room, match, role),
+    };
+  }
+
+  private async createViewerSnapshot(
+    room: RoomState,
+    match: MatchState | undefined,
+    role: PlayerRole,
+  ): Promise<ViewerRoomSnapshot> {
+    const now = Date.now();
+    const roomSnapshot = createRoomSnapshot(room, role, now, match?.phase);
+    return {
+      ...roomSnapshot,
+      rulesetVersion: RULESET_VERSION,
+      match: match ? createPlayerMatchSnapshot(match, role, now) : undefined,
+      serverNow: now,
+    };
+  }
+
+  private async broadcastSnapshots(room: RoomState, match?: MatchState, except?: WebSocket): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws === except) {
+        continue;
+      }
+      const attachment = getSocketAttachment(ws);
+      if (!attachment) {
+        continue;
+      }
+      sendSocketMessage(ws, {
+        type: "snapshot",
+        roomId: room.roomId,
+        snapshot: await this.createViewerSnapshot(room, match, attachment.role),
+      });
+    }
+  }
+
+  private async readRoom(): Promise<RoomState | undefined> {
+    return this.ctx.storage.get<RoomState>(ROOM_STORAGE_KEY);
+  }
+
+  private async writeRoom(room: RoomState): Promise<void> {
+    await this.ctx.storage.put(ROOM_STORAGE_KEY, room);
+  }
+
+  private async readMatch(): Promise<MatchState | undefined> {
+    return this.ctx.storage.get<MatchState>(MATCH_STORAGE_KEY);
+  }
+
+  private async writeMatch(match: MatchState): Promise<void> {
+    await this.ctx.storage.put(MATCH_STORAGE_KEY, match);
+  }
+
+  private async reconcileExpiry(now: number): Promise<ExpiryReconciliation> {
+    const expiry = getExpiryReconciliation(await this.readRoom(), await this.readMatch(), now);
+    if (expiry.status === "delete") {
+      await this.deleteRoom("Room expired.");
+      return { status: "missing" };
+    }
+    if (expiry.status === "match_expired") {
+      await this.writeMatch(expiry.match);
+      await this.scheduleAlarm(expiry.room, expiry.match);
+      await this.broadcastSnapshots(expiry.room, expiry.match);
+    }
+    return expiry;
+  }
+
+  private async scheduleAlarm(room: RoomState, match?: MatchState): Promise<void> {
+    const now = Date.now();
+    const nextAlarmAt = getNextRoomAlarmAt(room, match, now);
+    if (Number.isFinite(nextAlarmAt)) {
+      await this.ctx.storage.setAlarm(nextAlarmAt);
+    } else {
+      await this.ctx.storage.deleteAlarm();
+    }
+  }
+
+  private async deleteRoom(message: string): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) {
+      ws.close(1000, message);
+    }
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
   }
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders() });
-    }
-
     const url = new URL(request.url);
-
     if (url.pathname === "/" || url.pathname === "/health" || url.pathname === `${API_PREFIX}/health`) {
       return json({
         ok: true,
         service: WORKER_NAME,
         apiPrefix: API_PREFIX,
+        rulesetVersion: RULESET_VERSION,
         pvpEnabled: isPvpEnabled(env),
         serverNow: Date.now(),
       });
     }
 
-    const route = parseRoomRoute(url.pathname);
-    if (!route) {
-      return json({ ok: false, error: "Not found." }, 404);
+    if (!isAllowedOrigin(request, env.PVP_ALLOWED_ORIGINS, env.ENVIRONMENT === "development")) {
+      return errorResponse("origin_forbidden", "Origin is not allowed.", 403);
+    }
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
     const roomNamespace = getEnabledPvpBinding(env);
     if (!roomNamespace) {
-      return json({ ok: false, error: "PvP is disabled for this release.", code: "pvp_disabled" }, 404);
+      return errorResponse("pvp_disabled", "PvP is disabled for this release.", 404, request);
     }
 
-    const stub = roomNamespace.getByName(route.roomId);
-    return stub.fetch(request);
+    if (request.method === "POST" && url.pathname === `${API_PREFIX}/rooms`) {
+      const body = await readJsonBody(request);
+      if (!body || !hasExactKeys(body, [])) {
+        return errorResponse("bad_request", "Invalid create-room request.", 400, request);
+      }
+
+      for (let attempt = 0; attempt < CREATE_ROOM_ATTEMPTS; attempt += 1) {
+        const roomId = createRoomCode();
+        const response = await roomNamespace.getByName(roomId).fetch(new Request(`https://room.invalid${INTERNAL_CREATE_PATH}`, {
+          method: "POST",
+          headers: { "x-pvp-room-id": roomId },
+        }));
+        if (response.status !== 409) {
+          return withCors(response, request);
+        }
+      }
+      return errorResponse("action_rejected", "Could not allocate a room.", 503, request);
+    }
+
+    const route = parseRoomRoute(url.pathname);
+    if (!route) {
+      return errorResponse("room_not_found", "Room not found.", 404, request);
+    }
+
+    const response = await roomNamespace.getByName(route.roomId).fetch(request);
+    return route.action === "socket" ? response : withCors(response, request);
   },
 };
 
-function parseRoomRoute(pathname: string): { roomId: string; action: "snapshot" | "socket" } | undefined {
+function parseRoomRoute(pathname: string): { roomId: string; action: "join" | "reconnect" | "socket_ticket" | "socket" } | undefined {
   const parts = pathname.split("/").filter(Boolean);
-  if (parts.length < 3 || parts[0] !== "api" || parts[1] !== "pvp" || parts[2] !== "rooms") {
+  if (parts.length !== 5 || parts[0] !== "api" || parts[1] !== "pvp" || parts[2] !== "rooms") {
     return undefined;
   }
 
   const roomId = normalizeRoomId(parts[3]);
-  if (!roomId) {
-    return undefined;
-  }
-
-  return {
-    roomId,
-    action: parts[4] === "socket" ? "socket" : "snapshot",
-  };
-}
-
-function normalizeRoomId(roomId: string | undefined): string | undefined {
-  const normalized = roomId?.trim().toLowerCase();
-  return normalized && ROOM_ID_PATTERN.test(normalized) ? normalized : undefined;
-}
-
-function getSocketAttachment(ws: WebSocket): SocketAttachment | undefined {
-  const attachment = ws.deserializeAttachment() as Partial<SocketAttachment> | undefined;
-  return typeof attachment?.peerId === "string" &&
-    isPeerRole(attachment.role) &&
-    typeof attachment.joinedAt === "number"
-    ? { peerId: attachment.peerId, role: attachment.role, joinedAt: attachment.joinedAt, ready: attachment.ready === true }
+  const action = parts[4];
+  const normalizedAction = action === "socket-ticket" ? "socket_ticket" : action;
+  return roomId && (normalizedAction === "join" || normalizedAction === "reconnect" || normalizedAction === "socket_ticket" || normalizedAction === "socket")
+    ? { roomId, action: normalizedAction }
     : undefined;
 }
 
-function isPeerRole(role: unknown): role is PeerRole {
-  return role === "host" || role === "guest" || role === "spectator";
+function toMatchIntent(message: Exclude<PvpClientMessage, { type: "ping" | "set_ready" | "leave" }>): MatchIntent {
+  const base = { matchId: message.matchId, round: message.round };
+  switch (message.type) {
+    case "pick":
+      return {
+        ...base,
+        type: "pick",
+        cardId: message.cardId,
+        targetSlotIndex: message.targetSlotIndex,
+        allowReplacement: message.allowReplacement,
+      };
+    case "move":
+      return {
+        ...base,
+        type: "move",
+        sourceSlotIndex: message.sourceSlotIndex,
+        targetSlotIndex: message.targetSlotIndex,
+      };
+    case "reroll":
+    case "lock":
+    case "next_ready":
+    case "forfeit":
+    case "rematch":
+      return { ...base, type: message.type };
+  }
 }
 
-function readReadyPayload(payload: unknown): boolean {
-  if (!payload || typeof payload !== "object" || !("ready" in payload)) {
-    return false;
+function assertCurrentMatch(
+  message: Exclude<PvpClientMessage, { type: "ping" | "set_ready" | "leave" }>,
+  match: MatchState,
+): void {
+  if (message.matchId !== match.matchId || ("round" in message && message.round !== match.round)) {
+    const error = new Error("Match state is stale.");
+    error.name = "stale_match";
+    throw error;
   }
-
-  return (payload as { ready?: unknown }).ready === true;
 }
 
-function readNextRoundPayload(payload: unknown, match: MatchRecord): boolean {
-  if (!payload || typeof payload !== "object") {
-    return false;
-  }
-
-  const request = payload as { matchId?: unknown; round?: unknown };
-  return request.matchId === match.matchId && request.round === match.round;
+function getSocketAttachment(ws: WebSocket): SocketAttachment | undefined {
+  const value = ws.deserializeAttachment() as Partial<SocketAttachment> | undefined;
+  return value
+    && (value.role === "host" || value.role === "guest")
+    && typeof value.tokenHash === "string"
+    && typeof value.connectionId === "string"
+    && typeof value.windowStartedAt === "number"
+    && typeof value.messageCount === "number"
+    ? value as SocketAttachment
+    : undefined;
 }
 
-function readSubmitBoardPayload(payload: unknown, match: MatchRecord): BoardSlot[] | undefined {
-  if (!payload || typeof payload !== "object") {
-    return undefined;
-  }
-
-  const submission = payload as { matchId?: unknown; round?: unknown; boardSlots?: unknown };
-  if (submission.matchId !== match.matchId || submission.round !== match.round) {
-    return undefined;
-  }
-
-  return readBoardSlots(submission.boardSlots);
-}
-
-function readBoardSlots(value: unknown): BoardSlot[] | undefined {
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
-
-  const slots = createEmptyBoardSlots();
-  const seenSlotIndexes = new Set<number>();
-
-  for (const item of value) {
-    if (!item || typeof item !== "object") {
-      return undefined;
+function closePreviousSeatSockets(sockets: WebSocket[], role: PlayerRole, nextConnectionId: string): void {
+  for (const socket of sockets) {
+    const attachment = getSocketAttachment(socket);
+    if (attachment?.role === role && attachment.connectionId !== nextConnectionId) {
+      socket.close(1000, "Reconnected from another client");
     }
-
-    const slot = item as { slotIndex?: unknown; cardId?: unknown; upgradeLevel?: unknown };
-    const slotIndex = typeof slot.slotIndex === "number" && Number.isInteger(slot.slotIndex) ? slot.slotIndex : -1;
-    if (slotIndex < 0 || slotIndex >= BOARD_SLOT_COUNT) {
-      return undefined;
-    }
-
-    if (seenSlotIndexes.has(slotIndex)) {
-      return undefined;
-    }
-    seenSlotIndexes.add(slotIndex);
-
-    const cardId = readCardId(slot.cardId);
-    if (cardId === undefined) {
-      return undefined;
-    }
-
-    if (cardId && !isCardAllowedInSlot(cardId, slotIndex)) {
-      return undefined;
-    }
-
-    slots[slotIndex] = {
-      slotIndex,
-      cardId,
-      upgradeLevel: cardId && slot.upgradeLevel === 1 ? 1 : 0,
-    };
-  }
-
-  try {
-    return createBoardFromSlots(slots, BOARD_SLOT_COUNT);
-  } catch {
-    return undefined;
   }
 }
 
-function readCardId(value: unknown): CardId | null | undefined {
-  if (value === null) {
-    return null;
-  }
-
-  if (typeof value === "string" && VALID_CARD_IDS.has(value as CardId)) {
-    return value as CardId;
-  }
-
-  return undefined;
-}
-
-function createMatchSnapshot(match: MatchRecord): MatchSnapshot {
-  return {
-    matchId: match.matchId,
-    seed: match.seed,
-    round: match.round,
-    phase: match.phase,
-    hostHp: getMatchHostHp(match),
-    guestHp: getMatchGuestHp(match),
-    submissions: createSubmissionSnapshots(match.submissions),
-    combat: match.combat,
-    updatedAt: match.updatedAt,
-  };
-}
-
-function createSubmissionSnapshots(
-  submissions: MatchRecord["submissions"],
-): MatchSubmissionSnapshot[] {
-  return (["host", "guest"] as const).map((role) => ({
-    role,
-    submitted: Boolean(submissions[role]),
-    submittedAt: submissions[role]?.submittedAt ?? null,
-  }));
-}
-
-function createMatchCombatSnapshot(
-  round: number,
-  hostSlots: BoardSlot[],
-  guestSlots: BoardSlot[],
-  combat: CombatResult,
-  hostHpBefore: number,
-  guestHpBefore: number,
-): MatchCombatSnapshot {
-  const { hostHpLoss, guestHpLoss } = getMatchCastleDamage(combat);
-  const hostHpAfter = Math.max(0, hostHpBefore - hostHpLoss);
-  const guestHpAfter = Math.max(0, guestHpBefore - guestHpLoss);
-
-  return {
-    round,
-    hostSlots,
-    guestSlots,
-    combat,
-    hostHpBefore,
-    hostHpAfter,
-    guestHpBefore,
-    guestHpAfter,
-  };
-}
-
-function getMatchHostHp(match: Pick<MatchRecord, "hostHp" | "combat">): number {
-  return match.hostHp ?? match.combat?.hostHpAfter ?? PLAYER_STARTING_HP;
-}
-
-function getMatchGuestHp(match: Pick<MatchRecord, "guestHp" | "combat">): number {
-  return match.guestHp ?? match.combat?.guestHpAfter ?? PLAYER_STARTING_HP;
-}
-
-function isMatchFinished(match: Pick<MatchRecord, "hostHp" | "guestHp" | "combat">): boolean {
-  return getMatchHostHp(match) <= 0 || getMatchGuestHp(match) <= 0;
-}
-
-function createMatchSeed(roomId: string, now: number): string {
-  return `pvp-${roomId}-${now.toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
-}
-
-function sendRoomError(ws: WebSocket, roomId: string, error: string): void {
-  sendSocketMessage(ws, {
-    type: "error",
-    roomId,
-    payload: { error },
-    serverNow: Date.now(),
+function findSeatRoleByTokenHash(room: RoomState, tokenHash: string): PlayerRole | undefined {
+  return (["host", "guest"] as const).find((role) => {
+    const storedHash = room.seats[role]?.tokenHash;
+    return storedHash ? tokensMatch(storedHash, tokenHash) : false;
   });
 }
 
-function sendSocketMessage(ws: WebSocket, message: ServerMessage): void {
+function getSocketTicketStorageKey(role: PlayerRole): string {
+  return `${SOCKET_TICKET_STORAGE_PREFIX}${role}`;
+}
+
+function readDomainErrorCode(error: unknown): PvpErrorCode {
+  if (error instanceof MatchDomainError && (error.code === "stale_match" || error.code === "stale_round")) {
+    return "stale_match";
+  }
+  return "action_rejected";
+}
+
+function createMatchId(): string {
+  return `match-${crypto.randomUUID()}`;
+}
+
+function createMatchSeed(roomId: string): string {
+  return `pvp-${roomId}-${crypto.randomUUID()}`;
+}
+
+function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  const actualKeys = Object.keys(value);
+  return actualKeys.length === keys.length && keys.every((key) => actualKeys.includes(key));
+}
+
+function sendSocketMessage(ws: WebSocket, message: ServerSnapshotMessage | ServerErrorMessage | { type: "pong"; serverNow: number }): void {
   try {
     ws.send(JSON.stringify(message));
   } catch {
-    // Closed sockets are cleaned up by the runtime; broadcast stays best-effort.
+    // The runtime removes closed sockets; broadcasts stay best-effort.
   }
 }
 
-function json(payload: unknown, status = 200): Response {
+function sendSocketError(ws: WebSocket, code: PvpErrorCode, message: string): void {
+  sendSocketMessage(ws, { type: "error", code, message });
+}
+
+function errorResponse(code: PvpErrorCode, message: string, status: number, request?: Request): Response {
+  return json({ ok: false, code, message }, status, request);
+}
+
+function json(payload: unknown, status = 200, request?: Request): Response {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      ...corsHeaders(),
+      "cache-control": "no-store",
+      ...(request ? corsHeaders(request) : {}),
     },
   });
 }
 
-function corsHeaders(): HeadersInit {
+function withCors(response: Response, request: Request): Response {
+  const headers = new Headers(response.headers);
+  Object.entries(corsHeaders(request)).forEach(([key, value]) => headers.set(key, value));
+  headers.set("cache-control", "no-store");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+function corsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   return {
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-origin": origin,
+    "access-control-allow-methods": "POST, OPTIONS",
     "access-control-allow-headers": "content-type",
+    "access-control-max-age": "600",
+    vary: "Origin",
   };
 }

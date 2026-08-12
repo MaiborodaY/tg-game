@@ -12,6 +12,7 @@ import {
   MAX_UPGRADE_LEVEL,
   PLAYER_STARTING_HP,
   type BoardSlot,
+  type BotDifficulty,
   type CardId,
   type CombatWinner,
   type DraftOption,
@@ -20,13 +21,18 @@ import {
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 5;
+export const SOLO_RUN_SNAPSHOT_VERSION = 6;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
-const LEGACY_SOLO_RUN_STORAGE_KEYS = [
+const INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v1",
   "draft-battler:solo-run:v2",
   "draft-battler:solo-run:v3",
   "draft-battler:solo-run:v4",
+] as const;
+const LEGACY_V5_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v5";
+const LEGACY_SOLO_RUN_STORAGE_KEYS = [
+  ...INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS,
+  LEGACY_V5_SOLO_RUN_STORAGE_KEY,
 ] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";
@@ -62,6 +68,7 @@ const SNAPSHOT_KEYS = [
 ] as const;
 const RUN_KEYS = [
   "seed",
+  "botDifficulty",
   "round",
   "playerHp",
   "enemyHp",
@@ -73,6 +80,8 @@ const RUN_KEYS = [
   "enemyBoardSlots",
   "roundHistory",
 ] as const;
+// Snapshots stored as v5 predate difficulty; their unchanged bot policy is Standard.
+const LEGACY_STANDARD_RUN_KEYS = RUN_KEYS.filter((key) => key !== "botDifficulty");
 const ROUND_RECORD_KEYS = [
   "round",
   "playerHpBefore",
@@ -142,7 +151,7 @@ export function loadSoloRunSnapshot(storage: SoloRunStorage | null | undefined):
     return undefined;
   }
 
-  removeLegacySoloRunSnapshots(storage);
+  removeStoredSnapshots(storage, INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS);
 
   let serialized: string | null;
   try {
@@ -151,16 +160,35 @@ export function loadSoloRunSnapshot(storage: SoloRunStorage | null | undefined):
     return undefined;
   }
 
-  if (serialized === null) {
+  if (serialized !== null) {
+    const snapshot = decodeSoloRunSnapshot(serialized);
+    if (snapshot) {
+      removeStoredSnapshots(storage, [LEGACY_V5_SOLO_RUN_STORAGE_KEY]);
+      return snapshot;
+    }
+
+    removeStoredSnapshots(storage, [SOLO_RUN_STORAGE_KEY]);
+  }
+
+  let legacySerialized: string | null;
+  try {
+    legacySerialized = storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY);
+  } catch {
     return undefined;
   }
 
-  const snapshot = decodeSoloRunSnapshot(serialized);
-  if (!snapshot) {
-    clearSoloRunSnapshot(storage);
+  if (legacySerialized === null) {
+    return undefined;
   }
 
-  return snapshot;
+  const migrated = decodeLegacyV5SoloRunSnapshot(legacySerialized);
+  if (!migrated) {
+    removeStoredSnapshots(storage, [LEGACY_V5_SOLO_RUN_STORAGE_KEY]);
+    return undefined;
+  }
+
+  saveSoloRunSnapshot(storage, migrated, migrated.savedAt);
+  return migrated;
 }
 
 export function clearSoloRunSnapshot(storage: SoloRunStorage | null | undefined): boolean {
@@ -181,7 +209,11 @@ export function clearSoloRunSnapshot(storage: SoloRunStorage | null | undefined)
 }
 
 function removeLegacySoloRunSnapshots(storage: SoloRunStorage): void {
-  for (const key of LEGACY_SOLO_RUN_STORAGE_KEYS) {
+  removeStoredSnapshots(storage, LEGACY_SOLO_RUN_STORAGE_KEYS);
+}
+
+function removeStoredSnapshots(storage: SoloRunStorage, keys: readonly string[]): void {
+  for (const key of keys) {
     try {
       storage.removeItem(key);
     } catch {
@@ -196,9 +228,26 @@ function readSnapshot(value: unknown): SoloRunSnapshot | undefined {
     return undefined;
   }
 
+  return readSnapshotRecord(snapshot, false);
+}
+
+function decodeLegacyV5SoloRunSnapshot(serialized: string): SoloRunSnapshot | undefined {
+  try {
+    const snapshot = readExactRecord(JSON.parse(serialized) as unknown, SNAPSHOT_KEYS);
+    return snapshot?.version === 5 ? readSnapshotRecord(snapshot, true) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function readSnapshotRecord(
+  snapshot: Record<(typeof SNAPSHOT_KEYS)[number], unknown>,
+  isLegacyV5: boolean,
+): SoloRunSnapshot | undefined {
+
   const savedAt = readInteger(snapshot.savedAt, 0, Number.MAX_SAFE_INTEGER);
   const checkpoint = readCheckpoint(snapshot.checkpoint);
-  const run = readRunState(snapshot.run);
+  const run = readRunState(snapshot.run, isLegacyV5);
   const draftBoardSlots = readBoardSlots(snapshot.draftBoardSlots);
   const cardPickedThisRound = readBoolean(snapshot.cardPickedThisRound);
   const lastRound = readInteger(snapshot.lastRound, 1, MAX_RUN_ROUNDS);
@@ -226,13 +275,18 @@ function readSnapshot(value: unknown): SoloRunSnapshot | undefined {
   };
 }
 
-function readRunState(value: unknown): RunState | undefined {
-  const run = readExactRecord(value, RUN_KEYS);
+function readRunState(value: unknown, isLegacyV5 = false): RunState | undefined {
+  const run = isLegacyV5
+    ? readExactRecord(value, LEGACY_STANDARD_RUN_KEYS)
+    : readExactRecord(value, RUN_KEYS);
   if (!run) {
     return undefined;
   }
 
   const seed = readString(run.seed, 1, 256);
+  const botDifficulty = isLegacyV5
+    ? "standard"
+    : "botDifficulty" in run ? readBotDifficulty(run.botDifficulty) : undefined;
   const round = readInteger(run.round, 1, MAX_RUN_ROUNDS);
   const playerHp = readInteger(run.playerHp, 0, PLAYER_STARTING_HP);
   const enemyHp = readInteger(run.enemyHp, 0, ENEMY_STARTING_HP);
@@ -244,6 +298,7 @@ function readRunState(value: unknown): RunState | undefined {
 
   if (
     !seed ||
+    !botDifficulty ||
     round === undefined ||
     playerHp === undefined ||
     enemyHp === undefined ||
@@ -258,13 +313,14 @@ function readRunState(value: unknown): RunState | undefined {
 
   const draftOptions = readExpectedDraftOptions(run.draftOptions, seed, round, draftRerollCount);
   const expectedHistoryLength = status === "finished" ? round : round - 1;
-  const replay = readRoundHistory(run.roundHistory, seed, expectedHistoryLength);
+  const replay = readRoundHistory(run.roundHistory, seed, botDifficulty, expectedHistoryLength);
   if (!draftOptions || !replay) {
     return undefined;
   }
 
   const normalizedRun: RunState = {
     seed,
+    botDifficulty,
     round,
     playerHp,
     enemyHp,
@@ -289,13 +345,18 @@ interface ReplayedRoundHistory {
   run: RunState;
 }
 
-function readRoundHistory(value: unknown, seed: string, expectedLength: number): ReplayedRoundHistory | undefined {
+function readRoundHistory(
+  value: unknown,
+  seed: string,
+  botDifficulty: BotDifficulty,
+  expectedLength: number,
+): ReplayedRoundHistory | undefined {
   if (!Array.isArray(value) || value.length !== expectedLength) {
     return undefined;
   }
 
   const history: RoundRecord[] = [];
-  let replayedRun = createRun(seed);
+  let replayedRun = createRun(seed, botDifficulty);
 
   for (let index = 0; index < value.length; index += 1) {
     const replay = readRoundRecord(value[index], replayedRun, history);
@@ -503,6 +564,10 @@ function readCheckpoint(value: unknown): SoloRunCheckpoint | undefined {
 
 function readCombatWinnerOrNull(value: unknown): CombatWinner | null | undefined {
   return value === null || value === "player" || value === "enemy" || value === "draw" ? value : undefined;
+}
+
+function readBotDifficulty(value: unknown): BotDifficulty | undefined {
+  return value === "standard" || value === "strong" ? value : undefined;
 }
 
 function readCardId(value: unknown): CardId | undefined {

@@ -9,6 +9,8 @@ export const UPGRADE_STAT_MULTIPLIER = 2;
 
 export type Owner = "player" | "enemy";
 
+export type BotDifficulty = "standard" | "strong";
+
 export type UnitRole = "tank" | "striker" | "ranged" | "caster" | "support";
 
 export type UnitTag = "warrior" | "beast" | "mage" | "undead" | "rogue" | "guardian";
@@ -147,6 +149,7 @@ export type RunStatus = "draft" | "combat_ready" | "finished";
 
 export interface RunState {
   seed: string;
+  botDifficulty: BotDifficulty;
   round: number;
   playerHp: number;
   enemyHp: number;

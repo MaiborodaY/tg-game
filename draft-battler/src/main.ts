@@ -6,7 +6,6 @@ import {
   canRerollDraftCards,
   cloneBoardSlots,
   createBattleTimeline,
-  createDraftOptions,
   createEmptyBoardSlots,
   getBoardCapacityForRound,
   getCardDefinition,
@@ -14,11 +13,13 @@ import {
   chooseDraftCards,
   createRun,
   rerollDraftCards,
+  resolveCombat,
   resolveRound,
   isCardAllowedInSlot,
   MAX_RUN_ROUNDS,
   PLAYER_STARTING_HP,
   type BoardSlot,
+  type BotDifficulty,
   type CardDefinition,
   type CardId,
   type BattleTimeline,
@@ -101,13 +102,28 @@ import {
   type DraftPlacementClassification,
 } from "./game/placement";
 import { setupTelegramMiniApp } from "./telegram";
+import {
+  PvpRequestError,
+  clearPvpSession,
+  createPvpRoom,
+  createPvpSocketUrl,
+  joinPvpRoom,
+  loadPvpSession,
+  normalizePvpApiOrigin,
+  normalizePvpRoomId,
+  reconnectPvpRoom,
+  savePvpSession,
+  type PvpBootstrapResponse,
+  type PvpSeat,
+  type PvpSessionCredentials,
+  type PvpSessionStorage,
+} from "./pvpSession";
 
 type ScreenMode = "menu" | "draft" | "battle" | "finished";
 type PlayMode = "solo" | "online";
 type CardRarity = "common" | "uncommon" | "rare";
 type PvpConnectionStatus = "idle" | "connecting" | "connected" | "error";
-type PvpPlayerRole = "host" | "guest";
-type PvpPeerRole = PvpPlayerRole | "spectator";
+type PvpPlayerRole = PvpSeat;
 type BattlefieldCommand =
   | { type: "draft"; key: string; playerCastleHp: number; enemyCastleHp: number }
   | { type: "battle"; key: string; timeline: BattleTimeline };
@@ -145,8 +161,7 @@ interface PvpState {
   status: PvpConnectionStatus;
   roomId: string;
   roomInput: string;
-  peerId?: string;
-  role?: PvpPeerRole;
+  role?: PvpPlayerRole;
   connectedPeers: number;
   players: PvpPlayerSlot[];
   match?: PvpMatchSnapshot;
@@ -155,25 +170,54 @@ interface PvpState {
 
 interface PvpRoomSnapshot {
   roomId: string;
-  status: "waiting" | "ready";
+  status: "waiting" | "ready" | "playing" | "finished";
   connectedPeers: number;
   players: PvpPlayerSlot[];
   match?: PvpMatchSnapshot;
   serverNow: number;
 }
 
-type PvpMatchPhase = "draft" | "battle";
+type PvpMatchPhase = "draft" | "battle" | "finished";
 
 interface PvpMatchSnapshot {
   matchId: string;
-  seed: string;
   round: number;
   phase: PvpMatchPhase;
   hostHp: number;
   guestHp: number;
   submissions: PvpSubmissionSnapshot[];
   combat?: PvpCombatSnapshot;
+  self: PvpSelfMatchSnapshot;
+  opponent: PvpOpponentMatchSnapshot;
+  outcome?: PvpMatchOutcome;
   updatedAt: number;
+}
+
+interface PvpSelfMatchSnapshot {
+  role: PvpPlayerRole;
+  boardSlots: BoardSlot[];
+  draftOptions: DraftOption[];
+  draftRerollCount: number;
+  pendingBoardSlots?: BoardSlot[];
+  pickedCardId?: CardId;
+  locked: boolean;
+  nextRoundReady: boolean;
+  rematchReady: boolean;
+}
+
+interface PvpOpponentMatchSnapshot {
+  role: PvpPlayerRole;
+  locked: boolean;
+  nextRoundReady: boolean;
+  rematchReady: boolean;
+  boardSlots?: BoardSlot[];
+}
+
+interface PvpMatchOutcome {
+  winner: PvpPlayerRole | "draw";
+  reason: "castle" | "round_limit" | "forfeit" | "disconnect" | "expired";
+  finishedAt: number;
+  forfeitedRole?: PvpPlayerRole;
 }
 
 interface PvpSubmissionSnapshot {
@@ -195,21 +239,27 @@ interface PvpCombatSnapshot {
 
 interface PvpPlayerSlot {
   role: PvpPlayerRole;
-  peerId: string | null;
+  claimed: boolean;
   connected: boolean;
   ready: boolean;
-  joinedAt: number | null;
 }
 
 interface PvpServerMessage {
   type?: string;
   roomId?: string;
-  peerId?: string;
-  role?: PvpPeerRole;
-  connectedPeers?: number;
-  payload?: unknown;
-  serverNow?: number;
+  seat?: PvpPlayerRole;
+  snapshot?: unknown;
+  code?: string;
+  message?: string;
 }
+
+type PvpClientIntent =
+  | { type: "ping" | "leave" }
+  | { type: "set_ready"; ready: boolean }
+  | { type: "pick"; matchId: string; round: number; cardId: CardId; targetSlotIndex: number; allowReplacement: boolean }
+  | { type: "move"; matchId: string; round: number; sourceSlotIndex: number; targetSlotIndex: number }
+  | { type: "reroll" | "lock" | "next_ready"; matchId: string; round: number }
+  | { type: "forfeit" | "rematch"; matchId: string; round: number };
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -222,6 +272,7 @@ const telegram = setupTelegramMiniApp();
 
 const preferenceStorage = getPreferenceStorage();
 const soloRunStorage = getSoloRunStorage();
+const pvpSessionStorage = getPvpSessionStorage();
 const restoredSoloRun = loadSoloRunSnapshot(soloRunStorage);
 let soloPersistenceFailureReported = false;
 let activeLocale = resolveInitialLocale(
@@ -250,11 +301,9 @@ const DRAG_GHOST_FOOT_HIT_INSET = 12;
 const FIELD_SLOT_BASE_CENTER_FROM_BOTTOM_RATIO = 31 / 108;
 const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
 const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
-const PVP_UI_ENABLED: boolean = false;
-const PVP_WORKER_ORIGIN = "https://draft-battler-pvp.mr-maybik.workers.dev";
-const PVP_ROOM_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{2,47}$/;
-const PVP_ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const PVP_ROOM_CODE_LENGTH = 6;
+const PVP_UI_ENABLED = import.meta.env.VITE_DRAFT_BATTLER_PVP_ENABLED === "true";
+const PVP_API_ORIGIN = normalizePvpApiOrigin(import.meta.env.VITE_DRAFT_BATTLER_PVP_ORIGIN);
+const PVP_RULESET_VERSION = "draft-battler-pvp-v1";
 
 interface ActivePointerDrag {
   cleanup: () => void;
@@ -300,6 +349,8 @@ let pendingFocusKey: string | undefined;
 let suppressNextCardClick = false;
 let pvpSocket: WebSocket | undefined;
 let pvpSocketCloseExpected = false;
+let activePvpSession = loadPvpSession(pvpSessionStorage);
+let pvpAutomaticReconnectUsed = false;
 let battlePresentationWatchdog: number | undefined;
 let battlePresentationWatchdogKey: string | undefined;
 
@@ -337,6 +388,10 @@ function closeTopOverlay(): boolean {
     closeHowToPlay();
     return true;
   }
+  if (uiState.playMode === "online") {
+    requestLeavePvpRoom();
+    return true;
+  }
   return false;
 }
 
@@ -349,8 +404,13 @@ function handleTelegramBack(): void {
   }
 }
 
-function createInitialUiState(seed = createSeed(), playMode: PlayMode = "solo", mode: ScreenMode = "menu"): UiState {
-  const run = createRun(seed);
+function createInitialUiState(
+  seed = createSeed(),
+  playMode: PlayMode = "solo",
+  mode: ScreenMode = "menu",
+  botDifficulty: BotDifficulty = "standard",
+): UiState {
+  const run = createRun(seed, botDifficulty);
 
   return {
     run,
@@ -378,8 +438,8 @@ function createInitialPvpState(panelOpen = false): PvpState {
 
 function createEmptyPvpPlayerSlots(): PvpPlayerSlot[] {
   return [
-    { role: "host", peerId: null, connected: false, ready: false, joinedAt: null },
-    { role: "guest", peerId: null, connected: false, ready: false, joinedAt: null },
+    { role: "host", claimed: false, connected: false, ready: false },
+    { role: "guest", claimed: false, connected: false, ready: false },
   ];
 }
 
@@ -533,10 +593,13 @@ function createGameHud(): HTMLElement {
 
   const metrics = document.createElement("div");
   metrics.className = "draft-hud__metrics";
+  const enemyMetricLabel = uiState.playMode === "solo"
+    ? `${copy.bot} · ${getBotDifficultyLabel(uiState.run.botDifficulty)}`
+    : copy.enemyHp;
   metrics.append(
     createMetric(copy.yourHp, String(snapshot.playerHp), "player-hp"),
     createMetric(copy.round, `${snapshot.round}/${snapshot.maxRounds}`, "round"),
-    createMetric(copy.enemyHp, String(snapshot.enemyHp), "enemy-hp"),
+    createMetric(enemyMetricLabel, String(snapshot.enemyHp), "enemy-hp"),
   );
   hud.append(metrics);
 
@@ -629,11 +692,19 @@ function createMainMenuOverlay(): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "main-menu__actions";
 
-  const soloButton = document.createElement("button");
-  soloButton.className = "main-menu__button main-menu__button--primary";
-  soloButton.type = "button";
-  soloButton.textContent = copy.startRun;
-  soloButton.addEventListener("click", startSoloRun);
+  const difficultyLabel = document.createElement("span");
+  difficultyLabel.className = "main-menu__difficulty-label";
+  difficultyLabel.id = "bot-difficulty-label";
+  difficultyLabel.textContent = copy.botDifficulty;
+
+  const duelButtons = document.createElement("div");
+  duelButtons.className = "main-menu__duel-buttons";
+  duelButtons.setAttribute("role", "group");
+  duelButtons.setAttribute("aria-labelledby", difficultyLabel.id);
+  duelButtons.append(
+    createBotDifficultyButton("standard"),
+    createBotDifficultyButton("strong"),
+  );
 
   const howToButton = document.createElement("button");
   howToButton.className = "main-menu__button";
@@ -641,12 +712,12 @@ function createMainMenuOverlay(): HTMLElement {
   howToButton.textContent = copy.howToPlay;
   howToButton.addEventListener("click", openHowToPlay);
 
-  actions.append(soloButton, howToButton);
+  actions.append(difficultyLabel, duelButtons, howToButton);
   if (PVP_UI_ENABLED) {
     const onlineButton = document.createElement("button");
     onlineButton.className = "main-menu__button";
     onlineButton.type = "button";
-    onlineButton.textContent = "Онлайн";
+    onlineButton.textContent = copy.onlineMode;
     onlineButton.addEventListener("click", startOnlineLobby);
     actions.append(onlineButton);
   }
@@ -655,6 +726,31 @@ function createMainMenuOverlay(): HTMLElement {
   overlay.append(panel);
 
   return overlay;
+}
+
+function createBotDifficultyButton(botDifficulty: BotDifficulty): HTMLButtonElement {
+  const copy = getCopy();
+  const button = document.createElement("button");
+  button.className = botDifficulty === "strong"
+    ? "main-menu__button main-menu__difficulty-button main-menu__difficulty-button--strong"
+    : "main-menu__button main-menu__button--primary main-menu__difficulty-button";
+  button.type = "button";
+  button.dataset.botDifficulty = botDifficulty;
+
+  const label = document.createElement("strong");
+  label.textContent = getBotDifficultyLabel(botDifficulty);
+  const hint = document.createElement("span");
+  hint.textContent = botDifficulty === "strong"
+    ? copy.botDifficultyStrongHint
+    : copy.botDifficultyStandardHint;
+  button.append(label, hint);
+  button.addEventListener("click", () => startSoloRun(botDifficulty));
+  return button;
+}
+
+function getBotDifficultyLabel(botDifficulty: BotDifficulty): string {
+  const copy = getCopy();
+  return botDifficulty === "strong" ? copy.botDifficultyStrong : copy.botDifficultyStandard;
 }
 
 function createLanguageSelector(): HTMLElement {
@@ -765,7 +861,7 @@ function selectLocale(locale: SupportedLocale): void {
   render();
 }
 
-function startSoloRun(): void {
+function startSoloRun(botDifficulty: BotDifficulty): void {
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
@@ -773,7 +869,7 @@ function startSoloRun(): void {
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
-  uiState = createInitialUiState(createSeed(), "solo", "draft");
+  uiState = createInitialUiState(createSeed(), "solo", "draft", botDifficulty);
   persistSoloRun();
   render();
 }
@@ -796,11 +892,15 @@ function startOnlineLobby(): void {
   keyboardMoveSourceSlotIndex = undefined;
   draftChoicesCollapsed = false;
   closePvpSocket();
+  pvpAutomaticReconnectUsed = false;
   uiState = {
     ...createInitialUiState(createSeed(), "online", "draft"),
     pvp: createInitialPvpState(true),
   };
   render();
+  if (activePvpSession) {
+    void reconnectSavedPvpSession();
+  }
 }
 
 function createDraftOverlay(): HTMLElement {
@@ -855,9 +955,17 @@ function createBattleOverlay(): HTMLElement {
   overlay.className = "battle-overlay";
 
   if (uiState.battleFinished) {
-    overlay.append(uiState.mode === "finished" && uiState.playMode === "solo" ? createSoloTerminalResult() : createBattleActionPanel());
+    overlay.append(
+      uiState.mode === "finished"
+        ? (uiState.playMode === "solo" ? createSoloTerminalResult() : createPvpTerminalResult())
+        : createBattleActionPanel(),
+    );
   } else {
     overlay.append(createBattlePlaybackControls());
+  }
+
+  if (uiState.playMode === "online" && uiState.pvp.panelOpen) {
+    overlay.append(createPvpPanel());
   }
 
   return overlay;
@@ -906,6 +1014,10 @@ function createBattlePlaybackControls(): HTMLElement {
   controls.append(speedButton, skipButton);
   if (uiState.playMode === "solo") {
     controls.append(createAbandonRunButton("battle-playback-controls__abandon"));
+  } else {
+    const exitButton = createPvpExitButton();
+    exitButton.classList.add("battle-playback-controls__abandon");
+    controls.append(exitButton);
   }
   return controls;
 }
@@ -1021,7 +1133,7 @@ function createSoloTerminalResult(): HTMLElement {
 
   const eyebrow = document.createElement("span");
   eyebrow.className = "terminal-result__eyebrow";
-  eyebrow.textContent = copy.runFinished;
+  eyebrow.textContent = `${copy.runFinished} · ${getBotDifficultyLabel(uiState.run.botDifficulty)}`;
 
   const title = document.createElement("h1");
   title.className = "terminal-result__title";
@@ -1052,7 +1164,7 @@ function createSoloTerminalResult(): HTMLElement {
   restartButton.type = "button";
   restartButton.textContent = copy.again;
   setFocusKey(restartButton, "restart-run");
-  restartButton.addEventListener("click", startSoloRun);
+  restartButton.addEventListener("click", () => startSoloRun(uiState.run.botDifficulty));
 
   const menuButton = document.createElement("button");
   menuButton.className = "terminal-result__secondary-button";
@@ -1070,6 +1182,67 @@ function createSoloTerminalResult(): HTMLElement {
 
   panel.append(actions);
 
+  return panel;
+}
+
+function createPvpTerminalResult(): HTMLElement {
+  const copy = getCopy();
+  const match = uiState.pvp.match;
+  if (!match?.outcome) {
+    return createBattleActionPanel();
+  }
+
+  const outcome = match.outcome.winner === "draw"
+    ? "draw"
+    : match.outcome.winner === match.self.role
+      ? "player"
+      : "enemy";
+  const resultKind = outcome === "player" ? "victory" : outcome === "enemy" ? "defeat" : "draw";
+  const panel = document.createElement("section");
+  panel.className = `terminal-result terminal-result--${resultKind}`;
+  panel.tabIndex = -1;
+  setFocusKey(panel, "terminal-result");
+
+  const eyebrow = document.createElement("span");
+  eyebrow.className = "terminal-result__eyebrow";
+  eyebrow.textContent = `${copy.runFinished} · ${copy.onlineMode}`;
+
+  const title = document.createElement("h1");
+  title.className = "terminal-result__title";
+  title.textContent = outcome === "player" ? copy.victory : outcome === "enemy" ? copy.defeat : copy.draw;
+
+  const detail = document.createElement("p");
+  detail.className = "terminal-result__detail";
+  const detailTemplate = outcome === "player" ? copy.victoryDetail : outcome === "enemy" ? copy.defeatDetail : copy.drawDetail;
+  detail.textContent = formatMessage(detailTemplate, {
+    round: match.round,
+    playerHp: uiState.run.playerHp,
+    enemyHp: uiState.run.enemyHp,
+  });
+
+  const metrics = document.createElement("div");
+  metrics.className = "terminal-result__metrics";
+  metrics.append(
+    createTerminalMetric(copy.rounds, `${match.round}/${MAX_RUN_ROUNDS}`),
+    createTerminalMetric(copy.yourHp, String(uiState.run.playerHp)),
+    createTerminalMetric(copy.enemyHp, String(uiState.run.enemyHp)),
+  );
+
+  const actions = document.createElement("div");
+  actions.className = "terminal-result__actions";
+  const rematchButton = document.createElement("button");
+  rematchButton.className = "primary-button";
+  rematchButton.type = "button";
+  rematchButton.disabled = match.self.rematchReady;
+  rematchButton.textContent = match.self.rematchReady ? copy.pvpWaitingForRematch : copy.pvpRematch;
+  rematchButton.addEventListener("click", sendPvpRematch);
+  const leaveButton = document.createElement("button");
+  leaveButton.className = "terminal-result__secondary-button";
+  leaveButton.type = "button";
+  leaveButton.textContent = copy.pvpLeaveRoom;
+  leaveButton.addEventListener("click", requestLeavePvpRoom);
+  actions.append(rematchButton, leaveButton);
+  panel.append(eyebrow, title, detail, metrics, actions);
   return panel;
 }
 
@@ -1384,7 +1557,7 @@ function createCardInfoPanel(
   }
   panel.append(type, art, stats, tags, summary);
 
-  if (boardUnit && owner === "player" && uiState.mode === "draft") {
+  if (boardUnit && owner === "player" && uiState.mode === "draft" && !isPvpBoardEditingLocked()) {
     const moveButton = document.createElement("button");
     moveButton.className = "card-info-panel__move";
     moveButton.type = "button";
@@ -1418,7 +1591,7 @@ function createRerollButton(): HTMLButtonElement {
   const button = document.createElement("button");
   button.className = "reroll-button reroll-button--header";
   button.type = "button";
-  button.disabled = !canRerollDraftCards(uiState.run);
+  button.disabled = !canRerollDraftCards(uiState.run) || isPvpBoardEditingLocked();
   const label = button.disabled ? copy.rerollUsed : copy.reroll;
   const counterLabel = formatMessage(copy.rerollCounter, {
     remaining: button.disabled ? 0 : 1,
@@ -1617,6 +1790,7 @@ function createDraftReplacementArrow(): HTMLElement {
 }
 
 function createPvpPanel(): HTMLElement {
+  const copy = getCopy();
   const panel = document.createElement("section");
   panel.className = `pvp-panel pvp-panel--${uiState.pvp.status}`;
 
@@ -1624,7 +1798,7 @@ function createPvpPanel(): HTMLElement {
   header.className = "pvp-panel__header";
 
   const title = document.createElement("h2");
-  title.textContent = "PvP Room";
+  title.textContent = copy.pvpLobbyTitle;
 
   const status = document.createElement("span");
   status.className = `pvp-status pvp-status--${uiState.pvp.status}`;
@@ -1633,9 +1807,9 @@ function createPvpPanel(): HTMLElement {
   const closeButton = document.createElement("button");
   closeButton.className = "pvp-panel__close";
   closeButton.type = "button";
-  closeButton.textContent = "x";
-  closeButton.setAttribute("aria-label", "Close PvP room");
-  closeButton.addEventListener("click", () => setPvpPanelOpen(false));
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", copy.pvpCloseLobby);
+  closeButton.addEventListener("click", requestLeavePvpRoom);
 
   header.append(title, status, closeButton);
   panel.append(header);
@@ -1652,6 +1826,7 @@ function createPvpPanel(): HTMLElement {
 }
 
 function createPvpJoinView(): HTMLElement {
+  const copy = getCopy();
   const body = document.createElement("div");
   body.className = "pvp-panel__body";
 
@@ -1662,6 +1837,11 @@ function createPvpJoinView(): HTMLElement {
     body.append(error);
   }
 
+  const intro = document.createElement("p");
+  intro.className = "pvp-panel__intro";
+  intro.textContent = copy.pvpLobbySubtitle;
+  body.append(intro);
+
   const controls = document.createElement("div");
   controls.className = "pvp-room-controls";
 
@@ -1671,8 +1851,9 @@ function createPvpJoinView(): HTMLElement {
   input.inputMode = "text";
   input.autocomplete = "off";
   input.spellcheck = false;
-  input.maxLength = 48;
-  input.placeholder = "Room code";
+  input.maxLength = 8;
+  input.placeholder = copy.pvpRoomCodePlaceholder;
+  input.setAttribute("aria-label", copy.pvpRoomCode);
   input.value = uiState.pvp.roomInput;
   input.addEventListener("input", () => {
     uiState = {
@@ -1688,22 +1869,31 @@ function createPvpJoinView(): HTMLElement {
   const joinButton = document.createElement("button");
   joinButton.className = "pvp-panel__button";
   joinButton.type = "button";
-  joinButton.textContent = "Join";
-  joinButton.addEventListener("click", () => connectPvpRoom(input.value));
+  joinButton.textContent = copy.pvpJoinRoom;
+  joinButton.addEventListener("click", () => void joinPvpRoomFromInput(input.value));
 
   const createButton = document.createElement("button");
   createButton.className = "pvp-panel__button pvp-panel__button--primary";
   createButton.type = "button";
-  createButton.textContent = "Create";
-  createButton.addEventListener("click", () => connectPvpRoom(createPvpRoomCode()));
+  createButton.textContent = copy.pvpCreateRoom;
+  createButton.addEventListener("click", () => void createNewPvpRoom());
 
   controls.append(input, joinButton, createButton);
+  if (activePvpSession) {
+    const reconnectButton = document.createElement("button");
+    reconnectButton.className = "pvp-panel__button";
+    reconnectButton.type = "button";
+    reconnectButton.textContent = copy.pvpReconnect;
+    reconnectButton.addEventListener("click", () => void reconnectSavedPvpSession());
+    controls.append(reconnectButton);
+  }
   body.append(controls);
 
   return body;
 }
 
 function createPvpConnectingView(): HTMLElement {
+  const copy = getCopy();
   const body = document.createElement("div");
   body.className = "pvp-panel__body";
 
@@ -1711,20 +1901,32 @@ function createPvpConnectingView(): HTMLElement {
   room.className = "pvp-room-summary";
   room.append(createPvpRoomCodeElement(uiState.pvp.roomId), createPvpPeerCount());
 
+  const notice = document.createElement("p");
+  notice.className = "pvp-connection-banner";
+  notice.textContent = copy.pvpReconnecting;
+
   const leaveButton = document.createElement("button");
   leaveButton.className = "pvp-panel__button";
   leaveButton.type = "button";
-  leaveButton.textContent = "Cancel";
-  leaveButton.addEventListener("click", disconnectPvpRoom);
+  leaveButton.textContent = copy.cancel;
+  leaveButton.addEventListener("click", requestLeavePvpRoom);
 
-  body.append(room, leaveButton);
+  body.append(room, notice, leaveButton);
 
   return body;
 }
 
 function createPvpConnectedView(): HTMLElement {
+  const copy = getCopy();
   const body = document.createElement("div");
   body.className = "pvp-panel__body";
+
+  if (uiState.pvp.error) {
+    const error = document.createElement("p");
+    error.className = "pvp-connection-banner pvp-connection-banner--error";
+    error.textContent = uiState.pvp.error;
+    body.append(error);
+  }
 
   const room = document.createElement("div");
   room.className = "pvp-room-summary";
@@ -1744,15 +1946,15 @@ function createPvpConnectedView(): HTMLElement {
     ? "pvp-panel__button pvp-panel__button--ready"
     : "pvp-panel__button pvp-panel__button--primary";
   readyButton.type = "button";
-  readyButton.disabled = uiState.pvp.role === "spectator";
-  readyButton.textContent = getCurrentPvpPlayer()?.ready ? "Ready" : "Set Ready";
+  readyButton.textContent = getCurrentPvpPlayer()?.ready ? copy.pvpCancelReady : copy.pvpReady;
   readyButton.addEventListener("click", () => setPvpReady(!(getCurrentPvpPlayer()?.ready ?? false)));
 
   const leaveButton = document.createElement("button");
-  leaveButton.className = "pvp-panel__button";
+  leaveButton.className = "pvp-panel__button pvp-panel__button--danger";
   leaveButton.type = "button";
-  leaveButton.textContent = "Leave";
-  leaveButton.addEventListener("click", disconnectPvpRoom);
+  const canForfeit = Boolean(uiState.pvp.match) && !isPvpMatchFinished();
+  leaveButton.textContent = canForfeit ? copy.pvpForfeit : copy.pvpLeaveRoom;
+  leaveButton.addEventListener("click", canForfeit ? requestPvpForfeit : requestLeavePvpRoom);
 
   actions.append(readyButton, leaveButton);
   body.append(room, players, actions);
@@ -1761,11 +1963,27 @@ function createPvpConnectedView(): HTMLElement {
 }
 
 function createPvpRoomCodeElement(roomId: string): HTMLElement {
+  const copy = getCopy();
+  const row = document.createElement("div");
+  row.className = "pvp-room-code-row";
+
+  const label = document.createElement("span");
+  label.className = "pvp-room-code-label";
+  label.textContent = copy.pvpRoomCode;
+
   const code = document.createElement("strong");
   code.className = "pvp-room-code";
   code.textContent = roomId ? roomId.toUpperCase() : "------";
 
-  return code;
+  const copyButton = document.createElement("button");
+  copyButton.className = "pvp-copy-button";
+  copyButton.type = "button";
+  copyButton.disabled = !roomId;
+  copyButton.textContent = copy.pvpCopyCode;
+  copyButton.addEventListener("click", () => void copyPvpRoomCode(roomId, copyButton));
+
+  row.append(label, code, copyButton);
+  return row;
 }
 
 function createPvpPeerCount(): HTMLElement {
@@ -1782,11 +2000,13 @@ function createPvpPlayerSlot(player: PvpPlayerSlot): HTMLElement {
 
   const role = document.createElement("span");
   role.className = "pvp-player-slot__role";
-  role.textContent = player.role;
+  role.textContent = player.role === uiState.pvp.role ? getCopy().pvpPlayer : getCopy().pvpOpponent;
 
   const state = document.createElement("strong");
   state.className = "pvp-player-slot__state";
-  state.textContent = player.connected ? (player.ready ? "Ready" : "Joined") : "Open";
+  state.textContent = player.connected
+    ? (player.ready ? getCopy().pvpSlotReady : getCopy().pvpSlotJoined)
+    : getCopy().pvpSlotOpen;
 
   slot.append(role, state);
 
@@ -2315,6 +2535,9 @@ function createActionBar(): HTMLElement {
     const nextButton = document.createElement("button");
     nextButton.className = "primary-button";
     nextButton.type = "button";
+    nextButton.disabled = uiState.playMode === "online" && Boolean(
+      isPvpMatchFinished() ? uiState.pvp.match?.self.rematchReady : uiState.pvp.match?.self.nextRoundReady,
+    );
     nextButton.textContent = getBattleActionLabel();
     setFocusKey(nextButton, "next-round");
     nextButton.addEventListener("click", goToNextRound);
@@ -2323,18 +2546,38 @@ function createActionBar(): HTMLElement {
     const newRunButton = document.createElement("button");
     newRunButton.className = "primary-button";
     newRunButton.type = "button";
-    newRunButton.textContent = getCopy().menu;
-    setFocusKey(newRunButton, "return-menu");
-    newRunButton.addEventListener("click", returnToMainMenu);
+    if (uiState.playMode === "online") {
+      newRunButton.disabled = uiState.pvp.match?.self.rematchReady === true;
+      newRunButton.textContent = getBattleActionLabel();
+      setFocusKey(newRunButton, "pvp-rematch");
+      newRunButton.addEventListener("click", sendPvpRematch);
+    } else {
+      newRunButton.textContent = getCopy().menu;
+      setFocusKey(newRunButton, "return-menu");
+      newRunButton.addEventListener("click", returnToMainMenu);
+    }
     actions.append(newRunButton);
   }
 
   if (uiState.playMode === "solo" && uiState.mode !== "finished") {
     actions.classList.add("action-bar--with-abandon");
     actions.append(createAbandonRunButton("action-bar__abandon"));
+  } else if (uiState.playMode === "online") {
+    actions.classList.add("action-bar--with-abandon");
+    actions.append(createPvpExitButton());
   }
 
   return actions;
+}
+
+function createPvpExitButton(): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = "action-bar__abandon pvp-panel__button--danger";
+  button.type = "button";
+  const canForfeit = Boolean(uiState.pvp.match) && !isPvpMatchFinished();
+  button.textContent = canForfeit ? getCopy().pvpForfeit : getCopy().pvpLeaveRoom;
+  button.addEventListener("click", canForfeit ? requestPvpForfeit : requestLeavePvpRoom);
+  return button;
 }
 
 function getDraftActionLabel(): string {
@@ -2343,14 +2586,24 @@ function getDraftActionLabel(): string {
   }
 
   if (isCurrentPvpPlayerSubmitted()) {
-    return "Waiting";
+    return getCopy().pvpWaitingForOpponent;
   }
 
-  return "Lock";
+  return getCopy().fight;
 }
 
 function getBattleActionLabel(): string {
-  return isPvpMatchFinished() ? getCopy().menu : getCopy().nextRound;
+  if (uiState.playMode !== "online") {
+    return getCopy().nextRound;
+  }
+
+  if (isPvpMatchFinished()) {
+    return uiState.pvp.match?.self.rematchReady ? getCopy().pvpWaitingForRematch : getCopy().pvpRematch;
+  }
+
+  return uiState.pvp.match?.self.nextRoundReady
+    ? getCopy().pvpWaitingForNextRound
+    : getCopy().pvpReadyForNextRound;
 }
 
 function goToNextRound(): void {
@@ -2359,7 +2612,7 @@ function goToNextRound(): void {
   draftChoicesCollapsed = false;
   if (uiState.playMode === "online") {
     if (isPvpMatchFinished()) {
-      returnToMainMenu();
+      sendPvpRematch();
       return;
     }
 
@@ -2471,7 +2724,7 @@ function createRestoredSoloUiState(snapshot: SoloRunSnapshot): UiState {
   const lastRoundRecord = snapshot.checkpoint === "draft" ? undefined : getLastRoundRecord(snapshot.run);
 
   return {
-    ...createInitialUiState(snapshot.run.seed, "solo", mode),
+    ...createInitialUiState(snapshot.run.seed, "solo", mode, snapshot.run.botDifficulty),
     run: snapshot.run,
     mode,
     draftBoardSlots: cloneBoardSlots(snapshot.draftBoardSlots),
@@ -2744,7 +2997,10 @@ function createMatchupList(playerSlots: readonly BoardSlot[], enemySlots: readon
 
   const enemy = document.createElement("div");
   enemy.className = "matchup__side";
-  enemy.append(createMatchupTitle(copy.bot), createCompactCards(enemySlots));
+  const enemyTitle = uiState.playMode === "solo"
+    ? `${copy.bot} · ${getBotDifficultyLabel(uiState.run.botDifficulty)}`
+    : copy.bot;
+  enemy.append(createMatchupTitle(enemyTitle), createCompactCards(enemySlots));
 
   matchup.append(player, enemy);
 
@@ -2817,7 +3073,6 @@ function canFightRound(): boolean {
 
   return uiState.pvp.status === "connected" &&
     uiState.pvp.match?.phase === "draft" &&
-    uiState.pvp.role !== "spectator" &&
     !isCurrentPvpPlayerSubmitted();
 }
 
@@ -2833,8 +3088,12 @@ function getCurrentDraftOptions(): DraftOption[] {
   return uiState.run.draftOptions;
 }
 
+function isPvpBoardEditingLocked(): boolean {
+  return uiState.playMode === "online" && uiState.pvp.match?.self.locked === true;
+}
+
 function canPlaceDraftCard(cardId: CardId): boolean {
-  if (uiState.mode !== "draft" || uiState.cardPickedThisRound) {
+  if (uiState.mode !== "draft" || uiState.cardPickedThisRound || isPvpBoardEditingLocked()) {
     return false;
   }
 
@@ -2846,7 +3105,7 @@ function getDraftPlacementClassifications(cardId: CardId): DraftPlacementClassif
 }
 
 function requestDraftPlacement(cardId: CardId, slotIndex: number): void {
-  if (uiState.mode !== "draft") {
+  if (uiState.mode !== "draft" || isPvpBoardEditingLocked()) {
     return;
   }
 
@@ -2866,7 +3125,7 @@ function requestDraftPlacement(cardId: CardId, slotIndex: number): void {
 }
 
 function applyDraftCardInSlot(cardId: CardId, slotIndex: number, allowReplacement: boolean): void {
-  if (uiState.mode !== "draft" || !getCurrentDraftOption(cardId)) {
+  if (uiState.mode !== "draft" || isPvpBoardEditingLocked() || !getCurrentDraftOption(cardId)) {
     if (allowReplacement) {
       pendingDraftReplacement = undefined;
       render();
@@ -2880,6 +3139,23 @@ function applyDraftCardInSlot(cardId: CardId, slotIndex: number, allowReplacemen
       pendingDraftReplacement = undefined;
       render();
     }
+    return;
+  }
+
+  if (uiState.playMode === "online") {
+    const context = getPvpMatchIntentContext();
+    if (!context) {
+      return;
+    }
+    sendPvpIntent({
+      type: "pick",
+      ...context,
+      cardId,
+      targetSlotIndex: slotIndex,
+      allowReplacement,
+    });
+    pendingDraftReplacement = undefined;
+    keyboardMoveSourceSlotIndex = undefined;
     return;
   }
 
@@ -3058,7 +3334,7 @@ function isCardInfoOpen(): boolean {
 }
 
 function startKeyboardBoardMove(sourceSlotIndex: number): void {
-  if (uiState.mode !== "draft" || !getDraftBoardSlot(sourceSlotIndex)?.cardId) {
+  if (uiState.mode !== "draft" || isPvpBoardEditingLocked() || !getDraftBoardSlot(sourceSlotIndex)?.cardId) {
     return;
   }
 
@@ -3088,11 +3364,19 @@ function cancelKeyboardBoardMove(): void {
 }
 
 function rerollCurrentDraftCards(): void {
-  if (uiState.mode !== "draft" || uiState.cardPickedThisRound || !canRerollDraftCards(uiState.run)) {
+  if (uiState.mode !== "draft" || uiState.cardPickedThisRound || isPvpBoardEditingLocked() || !canRerollDraftCards(uiState.run)) {
     return;
   }
 
   pendingDraftReplacement = undefined;
+  if (uiState.playMode === "online") {
+    const context = getPvpMatchIntentContext();
+    if (context) {
+      sendPvpIntent({ type: "reroll", ...context });
+    }
+    return;
+  }
+
   uiState = {
     ...uiState,
     run: rerollDraftCards(uiState.run),
@@ -3238,7 +3522,7 @@ function startPointerDraftDrag(cardId: CardId, event: PointerEvent): void {
 }
 
 function moveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number): void {
-  if (uiState.mode !== "draft" || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
+  if (uiState.mode !== "draft" || isPvpBoardEditingLocked() || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
     return;
   }
 
@@ -3255,6 +3539,22 @@ function moveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number): void {
   }
 
   if (!canSwapBoardSlots(source, target)) {
+    return;
+  }
+
+
+  if (uiState.playMode === "online") {
+    const context = getPvpMatchIntentContext();
+    if (!context) {
+      return;
+    }
+    sendPvpIntent({
+      type: "move",
+      ...context,
+      sourceSlotIndex: fromSlotIndex,
+      targetSlotIndex: toSlotIndex,
+    });
+    keyboardMoveSourceSlotIndex = undefined;
     return;
   }
 
@@ -3283,7 +3583,7 @@ function startPointerFieldUnitDrag(fromSlotIndex: number, source: HTMLElement, e
     return;
   }
 
-  if (uiState.mode !== "draft" || !getDraftBoardSlot(fromSlotIndex)?.cardId) {
+  if (uiState.mode !== "draft" || isPvpBoardEditingLocked() || !getDraftBoardSlot(fromSlotIndex)?.cardId) {
     return;
   }
 
@@ -3457,7 +3757,7 @@ function canDropIntoSlot(slotIndex: number): boolean {
 }
 
 function canMoveBoardSlotUnit(fromSlotIndex: number, toSlotIndex: number | undefined): boolean {
-  if (toSlotIndex === undefined || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
+  if (isPvpBoardEditingLocked() || toSlotIndex === undefined || fromSlotIndex === toSlotIndex || !canDropIntoSlot(toSlotIndex)) {
     return false;
   }
 
@@ -3610,17 +3910,6 @@ function countEvents(combat: CombatResult): Record<string, number> {
   return counts;
 }
 
-function setPvpPanelOpen(panelOpen: boolean): void {
-  uiState = {
-    ...uiState,
-    pvp: {
-      ...uiState.pvp,
-      panelOpen,
-    },
-  };
-  render();
-}
-
 function updatePvpState(pvp: Partial<PvpState>): void {
   uiState = {
     ...uiState,
@@ -3632,39 +3921,134 @@ function updatePvpState(pvp: Partial<PvpState>): void {
   render();
 }
 
-function connectPvpRoom(rawRoomId: string): void {
+async function createNewPvpRoom(): Promise<void> {
+  pvpAutomaticReconnectUsed = false;
+  updatePvpState({ panelOpen: true, status: "connecting", error: undefined });
+  try {
+    await acceptPvpBootstrap(await createPvpRoom(PVP_API_ORIGIN));
+  } catch (error) {
+    handlePvpRequestError(error);
+  }
+}
+
+async function joinPvpRoomFromInput(rawRoomId: string): Promise<void> {
   const roomId = normalizePvpRoomId(rawRoomId);
   if (!roomId) {
-    updatePvpState({
-      panelOpen: true,
-      status: "error",
-      error: "Use 3-48 letters or numbers.",
-    });
+    updatePvpState({ panelOpen: true, status: "error", error: getCopy().pvpErrorInvalidCode });
     return;
   }
 
-  closePvpSocket();
+  pvpAutomaticReconnectUsed = false;
+
   updatePvpState({
     panelOpen: true,
     status: "connecting",
     roomId,
     roomInput: roomId.toUpperCase(),
-    peerId: undefined,
-    role: undefined,
-    connectedPeers: 0,
-    players: createEmptyPvpPlayerSlots(),
-    match: undefined,
     error: undefined,
   });
+  try {
+    await acceptPvpBootstrap(await joinPvpRoom(PVP_API_ORIGIN, roomId));
+  } catch (error) {
+    handlePvpRequestError(error);
+  }
+}
 
-  const socket = new WebSocket(getPvpSocketUrl(roomId));
+async function reconnectSavedPvpSession(automatic = false): Promise<void> {
+  const session = loadPvpSession(pvpSessionStorage);
+  if (!session) {
+    return;
+  }
+  if (!automatic) {
+    pvpAutomaticReconnectUsed = false;
+  }
+
+  updatePvpState({
+    panelOpen: true,
+    status: "connecting",
+    roomId: session.roomId,
+    roomInput: session.roomId.toUpperCase(),
+    role: session.seat,
+    error: undefined,
+  });
+  try {
+    await acceptPvpBootstrap(await reconnectPvpRoom(PVP_API_ORIGIN, session));
+  } catch (error) {
+    if (error instanceof PvpRequestError && ["invalid_token", "room_not_found"].includes(error.code)) {
+      activePvpSession = undefined;
+      clearPvpSession(pvpSessionStorage);
+    }
+    handlePvpRequestError(error, true);
+  }
+}
+
+async function acceptPvpBootstrap(bootstrap: PvpBootstrapResponse): Promise<void> {
+  if (hasUnsupportedPvpRuleset(bootstrap.snapshot)) {
+    throw new PvpRequestError("stale_match", 200);
+  }
+  const snapshot = readPvpRoomSnapshot(bootstrap.snapshot);
+  if (!snapshot) {
+    throw new PvpRequestError("bad_response", 200);
+  }
+  const session: PvpSessionCredentials = {
+    version: 1,
+    roomId: bootstrap.roomId,
+    seat: bootstrap.seat,
+    seatToken: bootstrap.seatToken,
+  };
+  activePvpSession = session;
+  savePvpSession(pvpSessionStorage, session);
+  applyPvpServerState({
+    panelOpen: true,
+    status: "connecting",
+    roomId: session.roomId,
+    roomInput: session.roomId.toUpperCase(),
+    role: session.seat,
+    error: undefined,
+  }, snapshot);
+  connectPvpSocket(session, bootstrap.socketTicket);
+}
+
+function handlePvpRequestError(error: unknown, reconnecting = false): void {
+  const code = error instanceof PvpRequestError ? error.code : "internal_error";
+  updatePvpState({
+    panelOpen: true,
+    status: "error",
+    error: reconnecting && code === "connection_failed" ? getCopy().pvpErrorReconnectFailed : getPvpErrorCopy(code),
+  });
+}
+
+function getPvpErrorCopy(code: string | undefined): string {
+  const copy = getCopy();
+  const messages: Record<string, string> = {
+    bad_request: copy.pvpErrorBadRequest,
+    bad_response: copy.pvpErrorBadMessage,
+    invalid_room_code: copy.pvpErrorInvalidCode,
+    room_not_found: copy.pvpErrorRoomNotFound,
+    room_full: copy.pvpErrorRoomFull,
+    invalid_token: copy.pvpErrorInvalidToken,
+    stale_match: copy.pvpErrorStaleMatch,
+    action_rejected: copy.pvpErrorActionRejected,
+    rate_limited: copy.pvpErrorRateLimited,
+    message_too_large: copy.pvpErrorBadRequest,
+    pvp_disabled: copy.pvpErrorDisabled,
+    origin_forbidden: copy.pvpErrorOriginForbidden,
+    connection_failed: copy.pvpErrorConnectionFailed,
+    internal_error: copy.pvpErrorInternal,
+  };
+  return messages[code ?? ""] ?? copy.pvpErrorRoom;
+}
+
+function connectPvpSocket(session: PvpSessionCredentials, socketTicket: string): void {
+  closePvpSocket();
+  const socket = new WebSocket(createPvpSocketUrl(session.roomId, socketTicket, PVP_API_ORIGIN, window.location.origin));
   pvpSocket = socket;
   pvpSocketCloseExpected = false;
 
   socket.addEventListener("message", handlePvpSocketMessage);
   socket.addEventListener("open", () => {
     if (pvpSocket === socket) {
-      socket.send(JSON.stringify({ type: "ping" }));
+      sendPvpIntent({ type: "ping" });
     }
   });
   socket.addEventListener("close", () => {
@@ -3678,26 +4062,66 @@ function connectPvpRoom(rawRoomId: string): void {
       return;
     }
 
+    const shouldReconnect = Boolean(activePvpSession) && !pvpAutomaticReconnectUsed;
     updatePvpState({
-      status: "error",
+      panelOpen: true,
+      status: shouldReconnect ? "connecting" : "error",
       connectedPeers: 0,
       players: createEmptyPvpPlayerSlots(),
-      error: "Connection closed.",
+      error: getCopy().pvpErrorConnectionClosed,
     });
+    if (shouldReconnect) {
+      pvpAutomaticReconnectUsed = true;
+      void reconnectSavedPvpSession(true);
+    }
   });
   socket.addEventListener("error", () => {
     if (pvpSocket === socket) {
-      updatePvpState({
-        status: "error",
-        error: "Could not connect.",
-      });
+      updatePvpState({ error: getCopy().pvpErrorConnectionFailed });
     }
   });
 }
 
-function disconnectPvpRoom(): void {
+function disconnectPvpRoom(clearSession = false): void {
   closePvpSocket();
+  if (clearSession) {
+    activePvpSession = undefined;
+    clearPvpSession(pvpSessionStorage);
+  }
   updatePvpState(createInitialPvpState(true));
+}
+
+function requestLeavePvpRoom(): void {
+  const copy = getCopy();
+  if (uiState.pvp.match && !isPvpMatchFinished() && !window.confirm(copy.pvpLeaveRoomConfirm)) {
+    return;
+  }
+
+  sendPvpIntent({ type: "leave" });
+  disconnectPvpRoom(true);
+  returnToMainMenu();
+}
+
+function requestPvpForfeit(): void {
+  const match = uiState.pvp.match;
+  if (!match || !window.confirm(getCopy().pvpForfeitConfirm)) {
+    return;
+  }
+
+  sendPvpIntent({ type: "forfeit", matchId: match.matchId, round: match.round });
+}
+
+async function copyPvpRoomCode(roomId: string, button: HTMLButtonElement): Promise<void> {
+  if (!roomId) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(roomId.toUpperCase());
+    button.textContent = getCopy().pvpCodeCopied;
+  } catch {
+    updatePvpState({ error: getCopy().pvpErrorCopyFailed });
+  }
 }
 
 function closePvpSocket(): void {
@@ -3711,11 +4135,7 @@ function closePvpSocket(): void {
 }
 
 function setPvpReady(ready: boolean): void {
-  if (!pvpSocket || pvpSocket.readyState !== WebSocket.OPEN || uiState.pvp.role === "spectator") {
-    return;
-  }
-
-  pvpSocket.send(JSON.stringify({ type: "set_ready", payload: { ready } }));
+  sendPvpIntent({ type: "set_ready", ready });
 }
 
 function submitPvpBoard(): void {
@@ -3724,83 +4144,42 @@ function submitPvpBoard(): void {
     !match ||
     match.phase !== "draft" ||
     !pvpSocket ||
-    pvpSocket.readyState !== WebSocket.OPEN ||
-    uiState.pvp.role === "spectator"
+    pvpSocket.readyState !== WebSocket.OPEN
   ) {
     return;
   }
 
-  pvpSocket.send(
-    JSON.stringify({
-      type: "submit_board",
-      payload: {
-        matchId: match.matchId,
-        round: match.round,
-        boardSlots: cloneBoardSlots(uiState.draftBoardSlots),
-      },
-    }),
-  );
-
-  uiState = {
-    ...uiState,
-    cardPickedThisRound: true,
-    selectedDraftCardId: undefined,
-    selectedCardInfoId: undefined,
-    selectedCardInfoSlotIndex: undefined,
-    selectedEnemyCardInfoSlotIndex: undefined,
-    pvp: {
-      ...uiState.pvp,
-      match: markPvpSubmission(match, uiState.pvp.role),
-    },
-  };
-  render();
+  sendPvpIntent({ type: "lock", matchId: match.matchId, round: match.round });
 }
 
 function sendPvpNextRound(): void {
   const match = uiState.pvp.match;
-  if (!match || !pvpSocket || pvpSocket.readyState !== WebSocket.OPEN || uiState.pvp.role === "spectator") {
+  if (!match) {
     return;
   }
 
-  pvpSocket.send(
-    JSON.stringify({
-      type: "next_round",
-      payload: {
-        matchId: match.matchId,
-        round: match.round,
-      },
-    }),
-  );
+  sendPvpIntent({ type: "next_ready", matchId: match.matchId, round: match.round });
 }
 
-function markPvpSubmission(match: PvpMatchSnapshot, role: PvpPeerRole | undefined): PvpMatchSnapshot {
-  if (!isPvpPlayerRole(role)) {
-    return match;
+function sendPvpRematch(): void {
+  const match = uiState.pvp.match;
+  if (match) {
+    sendPvpIntent({ type: "rematch", matchId: match.matchId, round: match.round });
   }
-
-  return {
-    ...match,
-    submissions: mergePvpSubmissions(match.submissions, {
-      role,
-      submitted: true,
-      submittedAt: Date.now(),
-    }),
-  };
 }
 
-function mergePvpSubmissions(
-  submissions: readonly PvpSubmissionSnapshot[],
-  nextSubmission: PvpSubmissionSnapshot,
-): PvpSubmissionSnapshot[] {
-  const nextSubmissions = createEmptyPvpSubmissionSnapshots().map(
-    (emptySubmission) => submissions.find((submission) => submission.role === emptySubmission.role) ?? emptySubmission,
-  );
-  const index = nextSubmissions.findIndex((submission) => submission.role === nextSubmission.role);
-  if (index >= 0) {
-    nextSubmissions[index] = nextSubmission;
+function getPvpMatchIntentContext(): { matchId: string; round: number } | undefined {
+  const match = uiState.pvp.match;
+  return match ? { matchId: match.matchId, round: match.round } : undefined;
+}
+
+function sendPvpIntent(intent: PvpClientIntent): boolean {
+  if (!pvpSocket || pvpSocket.readyState !== WebSocket.OPEN) {
+    return false;
   }
 
-  return nextSubmissions;
+  pvpSocket.send(JSON.stringify(intent));
+  return true;
 }
 
 function handlePvpSocketMessage(event: MessageEvent): void {
@@ -3812,25 +4191,25 @@ function handlePvpSocketMessage(event: MessageEvent): void {
   try {
     message = JSON.parse(event.data) as PvpServerMessage;
   } catch {
-    updatePvpState({ status: "error", error: "Bad server message." });
+    updatePvpState({ status: "error", error: getCopy().pvpErrorBadMessage });
     return;
   }
 
   if (message.type === "error") {
-    updatePvpState({ status: "error", error: "Room error." });
+    updatePvpState({ error: getPvpErrorCopy(message.code) });
     return;
   }
 
-  const snapshot = readPvpRoomSnapshot(message.payload);
-  const nextState: Partial<PvpState> = {};
-  const isIdentityMessage = message.type === "connected" || message.type === "pong";
-
-  if (isIdentityMessage && typeof message.peerId === "string") {
-    nextState.peerId = message.peerId;
+  if (hasUnsupportedPvpRuleset(message.snapshot)) {
+    closePvpSocket();
+    updatePvpState({ panelOpen: true, status: "error", error: getCopy().pvpErrorStaleMatch });
+    return;
   }
 
-  if (isIdentityMessage && isPvpPeerRole(message.role)) {
-    nextState.role = message.role;
+  const snapshot = readPvpRoomSnapshot(message.snapshot);
+  const nextState: Partial<PvpState> = {};
+  if ((message.type === "connected" || message.type === "snapshot") && isPvpPlayerRole(message.seat)) {
+    nextState.role = message.seat;
   }
 
   if (snapshot) {
@@ -3840,9 +4219,6 @@ function handlePvpSocketMessage(event: MessageEvent): void {
     nextState.connectedPeers = snapshot.connectedPeers;
     nextState.players = snapshot.players;
     nextState.match = snapshot.match;
-    nextState.error = undefined;
-  } else if (message.type === "pong" && uiState.pvp.status === "connecting") {
-    nextState.status = "connected";
     nextState.error = undefined;
   }
 
@@ -3869,6 +4245,10 @@ function applyPvpServerState(pvpPatch: Partial<PvpState>, snapshot?: PvpRoomSnap
 }
 
 function applyPvpMatchSnapshot(state: UiState, match: PvpMatchSnapshot): UiState {
+  if (match.phase === "finished") {
+    return applyPvpFinishedSnapshot(state, match);
+  }
+
   if (match.phase === "battle" && match.combat) {
     return applyPvpBattleSnapshot(state, match);
   }
@@ -3877,14 +4257,12 @@ function applyPvpMatchSnapshot(state: UiState, match: PvpMatchSnapshot): UiState
 }
 
 function applyPvpDraftSnapshot(state: UiState, match: PvpMatchSnapshot): UiState {
-  const previousMatch = uiState.pvp.match;
-  const isNewDraft =
-    !previousMatch ||
-    previousMatch.matchId !== match.matchId ||
-    previousMatch.round !== match.round ||
-    previousMatch.phase !== "draft";
-  const currentPlayerSubmitted = isPvpPlayerSubmitted(match, state.pvp.role);
-  const boardSlots = isNewDraft ? getPvpDraftBoardSlotsForRound(state, match) : state.draftBoardSlots;
+  if (match.self.locked) {
+    activePointerDrag?.cleanup();
+    pendingDraftReplacement = undefined;
+    keyboardMoveSourceSlotIndex = undefined;
+  }
+  const boardSlots = cloneBoardSlots(match.self.pendingBoardSlots ?? match.self.boardSlots);
   const run = createPvpDraftRun(state, match, boardSlots);
 
   return {
@@ -3892,7 +4270,7 @@ function applyPvpDraftSnapshot(state: UiState, match: PvpMatchSnapshot): UiState
     run,
     mode: "draft",
     draftBoardSlots: cloneBoardSlots(boardSlots),
-    cardPickedThisRound: currentPlayerSubmitted,
+    cardPickedThisRound: Boolean(match.self.pickedCardId),
     selectedDraftCardId: undefined,
     selectedCardInfoId: undefined,
     selectedCardInfoSlotIndex: undefined,
@@ -3940,7 +4318,7 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
   const roundRecord = createPvpRoundRecord(state, match, perspective);
   const nextRun = {
     ...state.run,
-    seed: match.seed,
+    seed: state.run.seed,
     round: match.round,
     playerHp: perspective.playerCastleHpAfter,
     enemyHp: perspective.enemyCastleHpAfter,
@@ -3989,25 +4367,23 @@ interface PvpBattlePerspective {
 }
 
 function createPvpDraftRun(state: UiState, match: PvpMatchSnapshot, boardSlots: readonly BoardSlot[]): RunState {
-  const sameMatchRound = state.run.seed === match.seed && state.run.round === match.round;
-  const draftRerollCount = sameMatchRound ? state.run.draftRerollCount : 0;
-
+  const localSeed = `pvp:${match.matchId}:${match.self.role}`;
   return {
-    ...createRun(match.seed),
+    ...createRun(localSeed),
     round: match.round,
     playerHp: getPvpPlayerHp(match, state.pvp.role),
     enemyHp: getPvpEnemyHp(match, state.pvp.role),
     outcome: null,
     status: "draft",
-    draftOptions: createDraftOptions(match.seed, match.round, draftRerollCount),
-    draftRerollCount,
+    draftOptions: match.self.draftOptions.map((option) => ({ ...option })),
+    draftRerollCount: match.self.draftRerollCount,
     boardSlots: cloneBoardSlots(boardSlots),
-    enemyBoardSlots: createEmptyBoardSlots(),
-    roundHistory: state.run.seed === match.seed ? state.run.roundHistory : [],
+    enemyBoardSlots: match.opponent.boardSlots ? cloneBoardSlots(match.opponent.boardSlots) : createEmptyBoardSlots(),
+    roundHistory: state.run.seed === localSeed ? state.run.roundHistory : [],
   };
 }
 
-function getPvpPlayerHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined): number {
+function getPvpPlayerHp(match: PvpMatchSnapshot, role: PvpPlayerRole | undefined): number {
   if (role === "guest") {
     return match.guestHp;
   }
@@ -4015,7 +4391,7 @@ function getPvpPlayerHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined):
   return match.hostHp;
 }
 
-function getPvpEnemyHp(match: PvpMatchSnapshot, role: PvpPeerRole | undefined): number {
+function getPvpEnemyHp(match: PvpMatchSnapshot, role: PvpPlayerRole | undefined): number {
   if (role === "guest") {
     return match.hostHp;
   }
@@ -4029,20 +4405,12 @@ function isPvpMatchFinished(): boolean {
     return false;
   }
 
-  return match.hostHp <= 0 || match.guestHp <= 0;
-}
-
-function getPvpDraftBoardSlotsForRound(state: UiState, match: PvpMatchSnapshot): BoardSlot[] {
-  if (state.run.seed !== match.seed) {
-    return createEmptyBoardSlots();
-  }
-
-  return cloneBoardSlots(state.run.boardSlots);
+  return match.phase === "finished" || Boolean(match.outcome);
 }
 
 function createPvpBattlePerspective(
   combatSnapshot: PvpCombatSnapshot,
-  role: PvpPeerRole | undefined,
+  role: PvpPlayerRole | undefined,
 ): PvpBattlePerspective {
   if (role === "guest") {
     const playerCastleDamage = Math.max(0, combatSnapshot.guestHpBefore - combatSnapshot.guestHpAfter);
@@ -4109,6 +4477,32 @@ function normalizeCombatCastleDamage(
     events: combat.events.map((event) =>
       event.type === "combat_finished" ? { ...event, hpLoss: playerCastleDamage } : event,
     ),
+  };
+}
+
+function applyPvpFinishedSnapshot(state: UiState, match: PvpMatchSnapshot): UiState {
+  const nextState = match.combat ? applyPvpBattleSnapshot(state, match) : state;
+  if (!match.outcome) {
+    throw new Error("Finished PvP match is missing a terminal outcome.");
+  }
+  const outcome: CombatWinner = match.outcome.winner === "draw"
+    ? "draw"
+    : match.outcome.winner === match.self.role
+      ? "player"
+      : "enemy";
+  return {
+    ...nextState,
+    run: {
+      ...nextState.run,
+      round: match.round,
+      playerHp: getPvpPlayerHp(match, match.self.role),
+      enemyHp: getPvpEnemyHp(match, match.self.role),
+      outcome,
+      status: "finished",
+    },
+    mode: "finished",
+    battleFinished: match.combat ? nextState.battleFinished : true,
+    pvp: { ...nextState.pvp, match, panelOpen: false },
   };
 }
 
@@ -4248,162 +4642,288 @@ function mirrorUnitSource(source: string): string {
   return source.startsWith("player-") || source.startsWith("enemy-") ? mirrorUnitId(source) : source;
 }
 
-function getPvpSocketUrl(roomId: string): string {
-  return `${PVP_WORKER_ORIGIN.replace(/^http/, "ws")}/api/pvp/rooms/${roomId}/socket`;
-}
-
-function normalizePvpRoomId(roomId: string): string | undefined {
-  const normalized = roomId.trim().toLowerCase();
-  return PVP_ROOM_ID_PATTERN.test(normalized) ? normalized : undefined;
-}
-
-function createPvpRoomCode(): string {
-  const bytes = new Uint8Array(PVP_ROOM_CODE_LENGTH);
-  crypto.getRandomValues(bytes);
-
-  return [...bytes]
-    .map((byte) => PVP_ROOM_CODE_ALPHABET[byte % PVP_ROOM_CODE_ALPHABET.length])
-    .join("")
-    .toLowerCase();
-}
-
 function readPvpRoomSnapshot(payload: unknown): PvpRoomSnapshot | undefined {
-  if (!payload || typeof payload !== "object") {
-    return undefined;
-  }
-
-  const snapshot = payload as Partial<PvpRoomSnapshot>;
   if (
-    typeof snapshot.roomId !== "string" ||
-    typeof snapshot.connectedPeers !== "number" ||
-    !Array.isArray(snapshot.players)
+    !isPvpRecord(payload) ||
+    payload.rulesetVersion !== PVP_RULESET_VERSION ||
+    typeof payload.roomId !== "string" ||
+    !normalizePvpRoomId(payload.roomId)
   ) {
     return undefined;
   }
 
-  const players = snapshot.players.map(readPvpPlayerSlot).filter((player): player is PvpPlayerSlot => Boolean(player));
+  if (!isPvpRoomStatus(payload.status) || !Array.isArray(payload.seats)) {
+    return undefined;
+  }
+
+  const players = payload.seats
+    .map(readPvpPlayerSlot)
+    .filter((player): player is PvpPlayerSlot => Boolean(player));
+  if (players.length !== 2 || new Set(players.map((player) => player.role)).size !== 2) {
+    return undefined;
+  }
+
+  const match = payload.match === undefined ? undefined : readPvpMatchSnapshot(payload.match);
+  if (payload.match !== undefined && !match) {
+    return undefined;
+  }
 
   return {
-    roomId: snapshot.roomId,
-    status: snapshot.status === "ready" ? "ready" : "waiting",
-    connectedPeers: snapshot.connectedPeers,
+    roomId: payload.roomId,
+    status: payload.status,
+    connectedPeers: players.filter((player) => player.connected).length,
     players: mergePvpPlayerSlots(players),
-    match: readPvpMatchSnapshot(snapshot.match),
-    serverNow: typeof snapshot.serverNow === "number" ? snapshot.serverNow : Date.now(),
+    match,
+    serverNow: readPvpTimestamp(payload.serverNow) ?? Date.now(),
   };
+}
+
+function hasUnsupportedPvpRuleset(payload: unknown): boolean {
+  if (!isPvpRecord(payload)) {
+    return false;
+  }
+  if (payload.rulesetVersion !== PVP_RULESET_VERSION) {
+    return true;
+  }
+  return isPvpRecord(payload.match) &&
+    payload.match.rulesetVersion !== PVP_RULESET_VERSION;
 }
 
 function readPvpMatchSnapshot(match: unknown): PvpMatchSnapshot | undefined {
-  if (!match || typeof match !== "object") {
+  if (!isPvpRecord(match)) {
     return undefined;
   }
 
-  const snapshot = match as Partial<PvpMatchSnapshot>;
   if (
-    typeof snapshot.matchId !== "string" ||
-    typeof snapshot.seed !== "string" ||
-    typeof snapshot.round !== "number" ||
-    !isPvpMatchPhase(snapshot.phase)
+    match.rulesetVersion !== PVP_RULESET_VERSION ||
+    typeof match.matchId !== "string" ||
+    !isPvpRound(match.round) ||
+    !isPvpMatchPhase(match.phase)
   ) {
     return undefined;
   }
 
-  const combat = readPvpCombatSnapshot(snapshot.combat);
-  if (snapshot.phase === "battle" && !combat) {
+  const self = readPvpSelfMatchSnapshot(match.self);
+  const opponent = readPvpOpponentMatchSnapshot(match.opponent);
+  if (!self || !opponent || self.role === opponent.role) {
+    return undefined;
+  }
+
+  const combat = readPvpCombatSnapshot(match.combat);
+  if ((match.phase === "battle" || (match.phase === "finished" && match.combat !== undefined)) && !combat) {
+    return undefined;
+  }
+
+  const outcome = match.outcome === undefined ? undefined : readPvpMatchOutcome(match.outcome);
+  if (match.phase === "finished" && !outcome) {
+    return undefined;
+  }
+  const hostHp = readPvpHp(match.hostHp);
+  const guestHp = readPvpHp(match.guestHp);
+  if (hostHp === undefined || guestHp === undefined) {
     return undefined;
   }
 
   return {
-    matchId: snapshot.matchId,
-    seed: snapshot.seed,
-    round: snapshot.round,
-    phase: snapshot.phase,
-    hostHp: readPvpHp(snapshot.hostHp),
-    guestHp: readPvpHp(snapshot.guestHp),
-    submissions: readPvpSubmissionSnapshots(snapshot.submissions),
+    matchId: match.matchId,
+    round: match.round,
+    phase: match.phase,
+    hostHp,
+    guestHp,
+    submissions: [self, opponent].map((player) => ({
+      role: player.role,
+      submitted: player.locked,
+      submittedAt: null,
+    })),
+    self,
+    opponent,
     combat,
-    updatedAt: typeof snapshot.updatedAt === "number" ? snapshot.updatedAt : Date.now(),
+    outcome,
+    updatedAt: readPvpTimestamp(match.serverNow) ?? Date.now(),
   };
 }
 
-function readPvpHp(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value)
-    ? Math.max(0, Math.min(PLAYER_STARTING_HP, value))
-    : PLAYER_STARTING_HP;
+function readPvpHp(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= PLAYER_STARTING_HP
+    ? value
+    : undefined;
 }
 
-function readPvpSubmissionSnapshots(value: unknown): PvpSubmissionSnapshot[] {
-  if (!Array.isArray(value)) {
-    return createEmptyPvpSubmissionSnapshots();
-  }
-
-  const submissions = value
-    .map(readPvpSubmissionSnapshot)
-    .filter((submission): submission is PvpSubmissionSnapshot => Boolean(submission));
-
-  return mergePvpSubmissionSlots(submissions);
-}
-
-function readPvpSubmissionSnapshot(value: unknown): PvpSubmissionSnapshot | undefined {
-  if (!value || typeof value !== "object") {
+function readPvpSelfMatchSnapshot(value: unknown): PvpSelfMatchSnapshot | undefined {
+  if (!isPvpRecord(value) || !isPvpPlayerRole(value.role)) {
     return undefined;
   }
 
-  const submission = value as Partial<PvpSubmissionSnapshot>;
-  if (!isPvpPlayerRole(submission.role)) {
+  const boardSlots = readPvpBoardSlots(value.boardSlots);
+  const draftOptions = readPvpDraftOptions(value.draftOptions);
+  const pendingBoardSlots = value.pendingBoardSlots === undefined ? undefined : readPvpBoardSlots(value.pendingBoardSlots);
+  const pickedCardId = value.pickedCardId === undefined ? undefined : readPvpCardId(value.pickedCardId);
+  if (!boardSlots || !draftOptions || (value.pendingBoardSlots !== undefined && !pendingBoardSlots) ||
+      (value.pickedCardId !== undefined && !pickedCardId)) {
     return undefined;
   }
 
   return {
-    role: submission.role,
-    submitted: submission.submitted === true,
-    submittedAt: typeof submission.submittedAt === "number" ? submission.submittedAt : null,
+    role: value.role,
+    boardSlots,
+    draftOptions,
+    draftRerollCount: Number.isInteger(value.draftRerollCount) && Number(value.draftRerollCount) >= 0
+      ? Number(value.draftRerollCount)
+      : 0,
+    pendingBoardSlots,
+    pickedCardId,
+    locked: value.locked === true,
+    nextRoundReady: value.nextRoundReady === true,
+    rematchReady: value.rematchReady === true,
+  };
+}
+
+function readPvpOpponentMatchSnapshot(value: unknown): PvpOpponentMatchSnapshot | undefined {
+  if (!isPvpRecord(value) || !isPvpPlayerRole(value.role)) {
+    return undefined;
+  }
+
+  const boardSlots = value.boardSlots === undefined ? undefined : readPvpBoardSlots(value.boardSlots);
+  if (value.boardSlots !== undefined && !boardSlots) {
+    return undefined;
+  }
+
+  return {
+    role: value.role,
+    locked: value.locked === true,
+    nextRoundReady: value.nextRoundReady === true,
+    rematchReady: value.rematchReady === true,
+    boardSlots,
+  };
+}
+
+function readPvpBoardSlots(value: unknown): BoardSlot[] | undefined {
+  if (!Array.isArray(value) || value.length !== BOARD_SLOT_COUNT) {
+    return undefined;
+  }
+
+  const slots: BoardSlot[] = [];
+  for (const rawSlot of value) {
+    if (!isPvpRecord(rawSlot) || !Number.isInteger(rawSlot.slotIndex) ||
+        Number(rawSlot.slotIndex) < 0 || Number(rawSlot.slotIndex) >= BOARD_SLOT_COUNT ||
+        (rawSlot.upgradeLevel !== 0 && rawSlot.upgradeLevel !== 1)) {
+      return undefined;
+    }
+    let cardId: CardId | null = null;
+    if (rawSlot.cardId !== null) {
+      const parsedCardId = readPvpCardId(rawSlot.cardId);
+      if (!parsedCardId) {
+        return undefined;
+      }
+      cardId = parsedCardId;
+    }
+    slots.push({ slotIndex: Number(rawSlot.slotIndex), cardId, upgradeLevel: rawSlot.upgradeLevel });
+  }
+
+  return new Set(slots.map((slot) => slot.slotIndex)).size === BOARD_SLOT_COUNT
+    ? slots.sort((left, right) => left.slotIndex - right.slotIndex)
+    : undefined;
+}
+
+function readPvpDraftOptions(value: unknown): DraftOption[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const options: DraftOption[] = [];
+  for (const rawOption of value) {
+    if (!isPvpRecord(rawOption) || typeof rawOption.optionId !== "string") {
+      return undefined;
+    }
+    const cardId = readPvpCardId(rawOption.cardId);
+    if (!cardId) {
+      return undefined;
+    }
+    options.push({ optionId: rawOption.optionId, cardId });
+  }
+  return options;
+}
+
+function readPvpCardId(value: unknown): CardId | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  return getCardDefinition(value as CardId)?.id;
+}
+
+function readPvpMatchOutcome(value: unknown): PvpMatchOutcome | undefined {
+  if (!isPvpRecord(value) ||
+      (value.winner !== "host" && value.winner !== "guest" && value.winner !== "draw") ||
+      !["castle", "round_limit", "forfeit", "disconnect", "expired"].includes(String(value.reason)) ||
+      !readPvpTimestamp(value.finishedAt)) {
+    return undefined;
+  }
+
+  const forfeitedRole = value.forfeitedRole === undefined ? undefined : value.forfeitedRole;
+  if (forfeitedRole !== undefined && !isPvpPlayerRole(forfeitedRole)) {
+    return undefined;
+  }
+
+  return {
+    winner: value.winner,
+    reason: value.reason as PvpMatchOutcome["reason"],
+    finishedAt: Number(value.finishedAt),
+    forfeitedRole,
   };
 }
 
 function readPvpCombatSnapshot(value: unknown): PvpCombatSnapshot | undefined {
-  if (!value || typeof value !== "object") {
+  if (!isPvpRecord(value)) {
     return undefined;
   }
 
-  const combat = value as Partial<PvpCombatSnapshot>;
+  const hostSlots = readPvpBoardSlots(value.hostSlots);
+  const guestSlots = readPvpBoardSlots(value.guestSlots);
+  const hostHpBefore = readPvpHp(value.hostHpBefore);
+  const hostHpAfter = readPvpHp(value.hostHpAfter);
+  const guestHpBefore = readPvpHp(value.guestHpBefore);
+  const guestHpAfter = readPvpHp(value.guestHpAfter);
+  if (!isPvpRound(value.round) || !hostSlots || !guestSlots || !isPvpRecord(value.combat) ||
+      hostHpBefore === undefined || hostHpAfter === undefined || guestHpBefore === undefined || guestHpAfter === undefined) {
+    return undefined;
+  }
+
+  const combat = resolveCombat(hostSlots, guestSlots, value.round);
+  const serverWinner = value.combat.winner;
+  const serverActions = value.combat.actions;
   if (
-    typeof combat.round !== "number" ||
-    !Array.isArray(combat.hostSlots) ||
-    !Array.isArray(combat.guestSlots) ||
-    !combat.combat
+    serverWinner !== combat.winner ||
+    serverActions !== combat.actions ||
+    (value.combat.playerCastleDamage !== undefined && value.combat.playerCastleDamage !== combat.playerCastleDamage) ||
+    (value.combat.enemyCastleDamage !== undefined && value.combat.enemyCastleDamage !== combat.enemyCastleDamage) ||
+    hostHpAfter !== Math.max(0, hostHpBefore - combat.playerCastleDamage) ||
+    guestHpAfter !== Math.max(0, guestHpBefore - combat.enemyCastleDamage)
   ) {
     return undefined;
   }
 
   return {
-    round: combat.round,
-    hostSlots: cloneBoardSlots(combat.hostSlots),
-    guestSlots: cloneBoardSlots(combat.guestSlots),
-    combat: combat.combat,
-    hostHpBefore: typeof combat.hostHpBefore === "number" ? combat.hostHpBefore : PLAYER_STARTING_HP,
-    hostHpAfter: typeof combat.hostHpAfter === "number" ? combat.hostHpAfter : PLAYER_STARTING_HP,
-    guestHpBefore: typeof combat.guestHpBefore === "number" ? combat.guestHpBefore : PLAYER_STARTING_HP,
-    guestHpAfter: typeof combat.guestHpAfter === "number" ? combat.guestHpAfter : PLAYER_STARTING_HP,
+    round: value.round,
+    hostSlots,
+    guestSlots,
+    combat,
+    hostHpBefore,
+    hostHpAfter,
+    guestHpBefore,
+    guestHpAfter,
   };
 }
 
 function readPvpPlayerSlot(player: unknown): PvpPlayerSlot | undefined {
-  if (!player || typeof player !== "object") {
-    return undefined;
-  }
-
-  const slot = player as Partial<PvpPlayerSlot>;
-  if (!isPvpPlayerRole(slot.role)) {
+  if (!isPvpRecord(player) || !isPvpPlayerRole(player.role)) {
     return undefined;
   }
 
   return {
-    role: slot.role,
-    peerId: typeof slot.peerId === "string" ? slot.peerId : null,
-    connected: slot.connected === true,
-    ready: slot.ready === true,
-    joinedAt: typeof slot.joinedAt === "number" ? slot.joinedAt : null,
+    role: player.role,
+    claimed: player.claimed === true,
+    connected: player.connected === true,
+    ready: player.ready === true,
   };
 }
 
@@ -4411,61 +4931,53 @@ function mergePvpPlayerSlots(players: PvpPlayerSlot[]): PvpPlayerSlot[] {
   return createEmptyPvpPlayerSlots().map((emptySlot) => players.find((player) => player.role === emptySlot.role) ?? emptySlot);
 }
 
-function createEmptyPvpSubmissionSnapshots(): PvpSubmissionSnapshot[] {
-  return [
-    { role: "host", submitted: false, submittedAt: null },
-    { role: "guest", submitted: false, submittedAt: null },
-  ];
-}
-
-function mergePvpSubmissionSlots(submissions: PvpSubmissionSnapshot[]): PvpSubmissionSnapshot[] {
-  return createEmptyPvpSubmissionSnapshots().map(
-    (emptySubmission) => submissions.find((submission) => submission.role === emptySubmission.role) ?? emptySubmission,
-  );
-}
-
 function isPvpPlayerRole(role: unknown): role is PvpPlayerRole {
   return role === "host" || role === "guest";
 }
 
-function isPvpPeerRole(role: unknown): role is PvpPeerRole {
-  return isPvpPlayerRole(role) || role === "spectator";
-}
-
 function isPvpMatchPhase(phase: unknown): phase is PvpMatchPhase {
-  return phase === "draft" || phase === "battle";
+  return phase === "draft" || phase === "battle" || phase === "finished";
 }
 
 function getCurrentPvpPlayer(): PvpPlayerSlot | undefined {
-  if (!uiState.pvp.peerId) {
-    return undefined;
-  }
-
-  return uiState.pvp.players.find((player) => player.peerId === uiState.pvp.peerId);
+  return uiState.pvp.players.find((player) => player.role === uiState.pvp.role);
 }
 
 function isCurrentPvpPlayerSubmitted(): boolean {
-  return isPvpPlayerSubmitted(uiState.pvp.match, uiState.pvp.role);
-}
-
-function isPvpPlayerSubmitted(match: PvpMatchSnapshot | undefined, role: PvpPeerRole | undefined): boolean {
-  return isPvpPlayerRole(role) && match?.submissions.some((submission) => submission.role === role && submission.submitted) === true;
+  return uiState.pvp.match?.self.locked === true;
 }
 
 function getPvpStatusLabel(): string {
+  const copy = getCopy();
   if (uiState.pvp.status === "connecting") {
-    return "Connecting";
+    return copy.pvpStatusConnecting;
   }
 
   if (uiState.pvp.status === "connected") {
-    return uiState.pvp.role === "spectator" ? "Spectator" : "Online";
+    return copy.pvpStatusConnected;
   }
 
   if (uiState.pvp.status === "error") {
-    return "Offline";
+    return copy.pvpStatusError;
   }
 
-  return "Idle";
+  return copy.pvpStatusIdle;
+}
+
+function isPvpRoomStatus(value: unknown): value is PvpRoomSnapshot["status"] {
+  return value === "waiting" || value === "ready" || value === "playing" || value === "finished";
+}
+
+function isPvpRound(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= MAX_RUN_ROUNDS;
+}
+
+function readPvpTimestamp(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function isPvpRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function getCopy(): UiCopy {
@@ -4481,6 +4993,14 @@ function getPreferenceStorage(): KeyValueStorage | undefined {
 }
 
 function getSoloRunStorage(): SoloRunStorage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function getPvpSessionStorage(): PvpSessionStorage | undefined {
   try {
     return window.localStorage;
   } catch {

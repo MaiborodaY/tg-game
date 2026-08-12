@@ -1,19 +1,33 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { verifySoloDeployment } from "../scripts/verify-solo-deployment.mjs";
+import { verifyDeployment } from "../scripts/verify-solo-deployment.mjs";
 
-test("deployment gate accepts only a disabled health flag and fail-closed room route", async () => {
+test("deployment gate accepts a PvP-enabled health flag and the app shell", async () => {
   const requestedPaths = [];
-  const request = async (input) => {
+  const request = async (input, init) => {
     const url = new URL(input);
     requestedPaths.push(url.pathname);
 
     if (url.pathname === "/health") {
-      return jsonResponse(200, { ok: true, pvpEnabled: false });
+      return jsonResponse(200, {
+        ok: true,
+        pvpEnabled: true,
+        rulesetVersion: "draft-battler-pvp-v1",
+      });
     }
 
-    if (url.pathname === "/api/pvp/rooms/release-policy-smoke") {
-      return jsonResponse(404, { ok: false, code: "pvp_disabled" });
+    if (url.pathname === "/api/pvp/rooms") {
+      assert.equal(init?.method, "POST");
+      assert.equal(init?.headers?.origin, "https://draft.example");
+      assert.equal(init?.body, "{}");
+      return jsonResponse(200, {
+        ok: true,
+        roomId: "ABC123",
+        seat: "host",
+        seatToken: "seat-token",
+        socketTicket: "socket-ticket",
+        snapshot: { rulesetVersion: "draft-battler-pvp-v1" },
+      });
     }
 
     return url.pathname === "/"
@@ -21,35 +35,38 @@ test("deployment gate accepts only a disabled health flag and fail-closed room r
       : textResponse(200, '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
   };
 
-  await verifySoloDeployment("https://draft.example", request);
+  await verifyDeployment("https://draft.example", request);
   assert.deepEqual(requestedPaths, [
     "/health",
-    "/api/pvp/rooms/release-policy-smoke",
     "/",
     "/assets/ui/cards/frames/card-frame-common.svg",
+    "/api/pvp/rooms",
   ]);
 });
 
-test("deployment gate rejects an enabled PvP health flag", async () => {
-  const request = async () => jsonResponse(200, { ok: true, pvpEnabled: true });
+test("deployment gate rejects a disabled PvP health flag", async () => {
+  const request = async () => jsonResponse(200, {
+    ok: true,
+    pvpEnabled: false,
+    rulesetVersion: "draft-battler-pvp-v1",
+  });
 
   await assert.rejects(
-    verifySoloDeployment("https://draft.example", request),
-    /does not report pvpEnabled=false/,
+    verifyDeployment("https://draft.example", request),
+    /does not report pvpEnabled=true/,
   );
 });
 
-test("deployment gate rejects a room route that reaches the PvP service", async () => {
-  const request = async (input) => {
-    const url = new URL(input);
-    return url.pathname === "/health"
-      ? jsonResponse(200, { ok: true, pvpEnabled: false })
-      : jsonResponse(200, { ok: true });
-  };
+test("deployment gate rejects a stale PvP ruleset", async () => {
+  const request = async () => jsonResponse(200, {
+    ok: true,
+    pvpEnabled: true,
+    rulesetVersion: "stale-rules",
+  });
 
   await assert.rejects(
-    verifySoloDeployment("https://draft.example", request),
-    /room route is not fail-closed/,
+    verifyDeployment("https://draft.example", request),
+    /unsupported ruleset/,
   );
 });
 
@@ -57,17 +74,43 @@ test("deployment gate rejects a missing app shell", async () => {
   const request = async (input) => {
     const url = new URL(input);
     if (url.pathname === "/health") {
-      return jsonResponse(200, { ok: true, pvpEnabled: false });
-    }
-    if (url.pathname === "/api/pvp/rooms/release-policy-smoke") {
-      return jsonResponse(404, { ok: false, code: "pvp_disabled" });
+      return jsonResponse(200, {
+        ok: true,
+        pvpEnabled: true,
+        rulesetVersion: "draft-battler-pvp-v1",
+      });
     }
     return textResponse(503, "unavailable");
   };
 
   await assert.rejects(
-    verifySoloDeployment("https://draft.example", request),
+    verifyDeployment("https://draft.example", request),
     /homepage is not serving the app shell/,
+  );
+});
+
+test("deployment gate rejects a room creation failure", async () => {
+  const request = async (input) => {
+    const url = new URL(input);
+    if (url.pathname === "/health") {
+      return jsonResponse(200, {
+        ok: true,
+        pvpEnabled: true,
+        rulesetVersion: "draft-battler-pvp-v1",
+      });
+    }
+    if (url.pathname === "/") {
+      return textResponse(200, '<div id="app"></div>');
+    }
+    if (url.pathname.includes("card-frame-common.svg")) {
+      return textResponse(200, '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    }
+    return jsonResponse(503, { ok: false, code: "internal_error" });
+  };
+
+  await assert.rejects(
+    verifyDeployment("https://draft.example", request),
+    /room creation smoke failed/,
   );
 });
 

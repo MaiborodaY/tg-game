@@ -14,15 +14,17 @@ import {
   MAX_RUN_ROUNDS,
   PLAYER_STARTING_HP,
   type BoardSlot,
+  type BotDifficulty,
   type CardId,
   type CombatResult,
   type RoundRecord,
   type RunState,
 } from "./types";
 
-export function createRun(seed: string): RunState {
+export function createRun(seed: string, botDifficulty: BotDifficulty = "standard"): RunState {
   return {
     seed,
+    botDifficulty,
     round: 1,
     playerHp: PLAYER_STARTING_HP,
     enemyHp: ENEMY_STARTING_HP,
@@ -43,7 +45,12 @@ export function chooseDraftCards(state: RunState, boardSlots: readonly BoardSlot
     ...state,
     status: "combat_ready",
     boardSlots: createBoardFromSlots(boardSlots, getBoardCapacityForRound(state.round)),
-    enemyBoardSlots: advanceEnemyBoardSlots(state.seed, state.round, state.enemyBoardSlots).boardSlots,
+    enemyBoardSlots: advanceEnemyBoardSlots(
+      state.seed,
+      state.round,
+      state.enemyBoardSlots,
+      state.botDifficulty,
+    ).boardSlots,
   };
 }
 
@@ -130,8 +137,12 @@ export function resolveRound(state: RunState): RunState {
   };
 }
 
-export function autoplayRun(seed: string, pickStrategy: (state: RunState) => readonly CardId[]): RunState {
-  let state = createRun(seed);
+export function autoplayRun(
+  seed: string,
+  pickStrategy: (state: RunState) => readonly CardId[],
+  botDifficulty: BotDifficulty = "standard",
+): RunState {
+  let state = createRun(seed, botDifficulty);
 
   while (state.status !== "finished") {
     state = chooseDraftCards(state, applyDraftSelectionToBoard(state, pickStrategy(state)));

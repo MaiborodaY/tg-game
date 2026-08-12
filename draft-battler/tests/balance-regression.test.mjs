@@ -45,6 +45,39 @@ const BALANCE_TARGETS = [
   },
 ];
 
+const STRONG_BALANCE_TARGETS = [
+  {
+    label: "highest-power deliberate play remains competitive against the strong bot",
+    strategy: pickHighestPowerCards,
+    minimum: 0.4,
+    maximum: 0.6,
+  },
+  {
+    label: "synergy play can beat the strong bot without becoming favored",
+    strategy: pickSynergyCards,
+    minimum: 0.25,
+    maximum: 0.5,
+  },
+  {
+    label: "first-offer play is heavily punished by the strong bot",
+    strategy: pickFirstOffer,
+    minimum: 0.05,
+    maximum: 0.2,
+  },
+  {
+    label: "random-pick play is heavily punished by the strong bot",
+    strategy: pickRandomOffer,
+    minimum: 0.05,
+    maximum: 0.2,
+  },
+  {
+    label: "lowest-power play only rarely beats the strong bot",
+    strategy: pickLowestPower,
+    minimum: 0,
+    maximum: 0.08,
+  },
+];
+
 for (const target of BALANCE_TARGETS) {
   test(`solo balance over ${BALANCE_CORPUS_SIZE} seeds: ${target.label}`, () => {
     let playerWins = 0;
@@ -59,6 +92,27 @@ for (const target of BALANCE_TARGETS) {
       if (state.outcome === "draw") {
         draws += 1;
       }
+    }
+
+    const winRate = playerWins / BALANCE_CORPUS_SIZE;
+    assert.ok(
+      winRate >= target.minimum && winRate <= target.maximum,
+      `${playerWins}/${BALANCE_CORPUS_SIZE} won (${formatPercent(winRate)}); ` +
+        `expected ${formatPercent(target.minimum)}-${formatPercent(target.maximum)}.`,
+    );
+    assert.ok(draws / BALANCE_CORPUS_SIZE <= 0.05, `${draws}/${BALANCE_CORPUS_SIZE} draws exceeds 5%.`);
+  });
+}
+
+for (const target of STRONG_BALANCE_TARGETS) {
+  test(`strong bot balance over ${BALANCE_CORPUS_SIZE} seeds: ${target.label}`, () => {
+    let playerWins = 0;
+    let draws = 0;
+
+    for (let seedIndex = 0; seedIndex < BALANCE_CORPUS_SIZE; seedIndex += 1) {
+      const state = autoplayRun(`balance-large-${seedIndex}`, target.strategy, "strong");
+      playerWins += state.outcome === "player" ? 1 : 0;
+      draws += state.outcome === "draw" ? 1 : 0;
     }
 
     const winRate = playerWins / BALANCE_CORPUS_SIZE;

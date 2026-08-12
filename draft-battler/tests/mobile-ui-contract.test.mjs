@@ -29,6 +29,22 @@ test("mobile controls preserve safe-area offsets and accessible touch targets", 
   }
 });
 
+test("PvP lobby remains usable on narrow safe-area viewports", () => {
+  assert.match(
+    styles,
+    /\.pvp-panel\s*\{[^}]*var\(--safe-right\)[^}]*var\(--safe-left\)[^}]*max-height:[^}]*var\(--safe-top\)[^}]*var\(--safe-bottom\)[^}]*overflow-y:\s*auto/s,
+  );
+  assert.match(styles, /\.pvp-panel__close\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s);
+  assert.match(styles, /\.pvp-room-input\s*\{[^}]*height:\s*44px/s);
+  assert.match(styles, /\.pvp-panel__button\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(styles, /\.pvp-copy-button\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s);
+  assert.match(styles, /\.pvp-panel__actions\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(
+    styles,
+    /@media\s*\(max-width:\s*360px\)[\s\S]*?\.pvp-room-controls \.pvp-room-input\s*\{[^}]*flex-basis:\s*100%/s,
+  );
+});
+
 test("compact layouts and reduced motion remain part of the stylesheet contract", () => {
   assert.match(styles, /@media\s*\(max-width:\s*360px\)/);
   assert.match(styles, /@media\s*\(max-height:\s*720px\)/);

@@ -9,8 +9,9 @@ import {
   createEnemyBoardSlots,
 } from "../src/game/index.ts";
 
+const pickFirstOption = (state) => [state.draftOptions[0].cardId];
+
 test("a complete seeded run reaches a valid terminal state", () => {
-  const pickFirstOption = (state) => [state.draftOptions[0].cardId];
   const first = autoplayRun("p0-complete-run", pickFirstOption);
   const repeated = autoplayRun("p0-complete-run", pickFirstOption);
 
@@ -42,4 +43,14 @@ test("a complete seeded run reaches a valid terminal state", () => {
     assert.equal(timeline.winner, record.combatResult.winner);
     assert.equal(timeline.events.at(-1).type, "battle_finished");
   });
+});
+
+test("a strong-bot run is deterministic and retains its difficulty", () => {
+  const first = autoplayRun("strong-complete-run", pickFirstOption, "strong");
+  const repeated = autoplayRun("strong-complete-run", pickFirstOption, "strong");
+
+  assert.deepEqual(first, repeated);
+  assert.equal(first.botDifficulty, "strong");
+  assert.equal(first.status, "finished");
+  assert.ok(["player", "enemy", "draw"].includes(first.outcome));
 });

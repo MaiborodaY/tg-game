@@ -112,6 +112,116 @@ test("all locales provide complete UI, taxonomy, and combat-log copy", () => {
   });
 });
 
+test("bot difficulty choices are explicit in every locale", () => {
+  const expectations = {
+    ru: ["Сложность", "Обычный", "Сильный", "три карты"],
+    uk: ["Складність", "Звичайний", "Сильний", "три карти"],
+    en: ["difficulty", "Normal", "Strong", "three cards"],
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    const combined = [
+      copy.botDifficulty,
+      copy.botDifficultyStandard,
+      copy.botDifficultyStrong,
+      copy.botDifficultyStrongHint,
+    ].join(" ");
+    expectations[locale].forEach((fragment) => {
+      assert.ok(combined.includes(fragment), `${locale}:botDifficulty:${fragment}`);
+    });
+  });
+});
+
+test("PvP lobby and match controls are localized completely", () => {
+  const pvpKeys = [
+    "onlineMode",
+    "pvpLobbyTitle",
+    "pvpLobbySubtitle",
+    "pvpCreateRoom",
+    "pvpJoinRoom",
+    "pvpRoomCode",
+    "pvpRoomCodePlaceholder",
+    "pvpCopyCode",
+    "pvpCodeCopied",
+    "pvpInviteHint",
+    "pvpReady",
+    "pvpCancelReady",
+    "pvpWaitingForOpponent",
+    "pvpWaitingForOpponentReady",
+    "pvpReconnect",
+    "pvpReconnecting",
+    "pvpLeaveRoom",
+    "pvpLeaveRoomConfirm",
+    "pvpForfeit",
+    "pvpForfeitConfirm",
+    "pvpReadyForNextRound",
+    "pvpWaitingForNextRound",
+    "pvpRematch",
+    "pvpRematchRequested",
+    "pvpWaitingForRematch",
+    "pvpPlayer",
+    "pvpOpponent",
+    "pvpSpectator",
+    "pvpStatusIdle",
+    "pvpStatusConnecting",
+    "pvpStatusConnected",
+    "pvpStatusError",
+    "pvpSlotOpen",
+    "pvpSlotJoined",
+    "pvpSlotReady",
+    "pvpCloseLobby",
+    "pvpErrorInvalidCode",
+    "pvpErrorConnectionClosed",
+    "pvpErrorConnectionFailed",
+    "pvpErrorBadMessage",
+    "pvpErrorRoom",
+    "pvpErrorRoomFull",
+    "pvpErrorRoomNotFound",
+    "pvpErrorStaleMatch",
+    "pvpErrorActionRejected",
+    "pvpErrorReconnectFailed",
+    "pvpErrorCopyFailed",
+    "pvpErrorInvalidToken",
+    "pvpErrorRateLimited",
+    "pvpErrorDisabled",
+    "pvpErrorOriginForbidden",
+    "pvpErrorInternal",
+    "pvpErrorBadRequest",
+  ];
+  const expectations = {
+    ru: {
+      pvpLobbyTitle: "Дуэль с игроком",
+      pvpCreateRoom: "Создать комнату",
+      pvpReadyForNextRound: "Готов к следующему раунду",
+      pvpSpectator: "Наблюдатель",
+      pvpErrorRoomFull: "В комнате уже два игрока.",
+    },
+    uk: {
+      pvpLobbyTitle: "Дуель із гравцем",
+      pvpCreateRoom: "Створити кімнату",
+      pvpReadyForNextRound: "Готовий до наступного раунду",
+      pvpSpectator: "Спостерігач",
+      pvpErrorRoomFull: "У кімнаті вже два гравці.",
+    },
+    en: {
+      pvpLobbyTitle: "Player duel",
+      pvpCreateRoom: "Create room",
+      pvpReadyForNextRound: "Ready for next round",
+      pvpSpectator: "Spectator",
+      pvpErrorRoomFull: "The room already has two players.",
+    },
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    pvpKeys.forEach((key) => assert.match(copy[key], /\S/, `${locale}:${key}`));
+    Object.entries(expectations[locale]).forEach(([key, value]) => {
+      assert.equal(copy[key], value, `${locale}:${key}`);
+    });
+  });
+});
+
 test("all locales warn that ending a run removes saved progress", () => {
   const expectations = {
     ru: ["Завершить", "прогресс", "удалён"],

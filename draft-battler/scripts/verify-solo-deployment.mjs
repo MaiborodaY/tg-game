@@ -5,11 +5,11 @@ import { setTimeout as delay } from "node:timers/promises";
 const MAX_ATTEMPTS = 4;
 const RETRY_DELAY_MS = 2_000;
 const REQUEST_TIMEOUT_MS = 5_000;
+const PVP_RULESET_VERSION = "draft-battler-pvp-v1";
 
-export async function verifySoloDeployment(origin, request = fetch) {
+export async function verifyDeployment(origin, request = fetch) {
   const baseUrl = new URL(origin);
   const healthUrl = new URL("/health", baseUrl);
-  const roomUrl = new URL("/api/pvp/rooms/release-policy-smoke", baseUrl);
   const homeUrl = new URL("/", baseUrl);
   const assetUrl = new URL("/assets/ui/cards/frames/card-frame-common.svg", baseUrl);
 
@@ -19,14 +19,11 @@ export async function verifySoloDeployment(origin, request = fetch) {
   }
 
   const health = await healthResponse.json();
-  if (health?.pvpEnabled !== false) {
-    throw new Error("Draft Battler deployment does not report pvpEnabled=false.");
+  if (health?.pvpEnabled !== true) {
+    throw new Error("Draft Battler deployment does not report pvpEnabled=true.");
   }
-
-  const roomResponse = await requestWithTimeout(request, roomUrl, "application/json");
-  const room = await roomResponse.json();
-  if (roomResponse.status !== 404 || room?.code !== "pvp_disabled") {
-    throw new Error(`Draft Battler room route is not fail-closed (HTTP ${roomResponse.status}, code ${String(room?.code)}).`);
+  if (health?.rulesetVersion !== PVP_RULESET_VERSION) {
+    throw new Error(`Draft Battler deployment reports unsupported ruleset ${String(health?.rulesetVersion)}.`);
   }
 
   const homeResponse = await requestWithTimeout(request, homeUrl, "text/html");
@@ -41,13 +38,38 @@ export async function verifySoloDeployment(origin, request = fetch) {
     throw new Error(`Draft Battler runtime asset is unavailable (HTTP ${assetResponse.status}).`);
   }
 
-  return { health, room };
+  const roomResponse = await requestWithTimeout(request, new URL("/api/pvp/rooms", baseUrl), "application/json", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: baseUrl.origin,
+    },
+    body: "{}",
+  });
+  const room = await roomResponse.json();
+  if (
+    !roomResponse.ok ||
+    room?.ok !== true ||
+    room?.seat !== "host" ||
+    typeof room?.roomId !== "string" ||
+    typeof room?.seatToken !== "string" ||
+    typeof room?.socketTicket !== "string" ||
+    room?.snapshot?.rulesetVersion !== PVP_RULESET_VERSION
+  ) {
+    throw new Error(`Draft Battler room creation smoke failed (HTTP ${roomResponse.status}).`);
+  }
+
+  return { health, roomId: room.roomId };
 }
 
-function requestWithTimeout(request, url, accept) {
+// Backward-compatible export for existing local tooling; the release policy is now PvP-enabled.
+export const verifySoloDeployment = verifyDeployment;
+
+function requestWithTimeout(request, url, accept, init = {}) {
   return request(url, {
+    ...init,
     cache: "no-store",
-    headers: { accept },
+    headers: { accept, ...init.headers },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 }
@@ -57,11 +79,11 @@ async function verifyWithRetry(origin) {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
-      return await verifySoloDeployment(origin);
+      return await verifyDeployment(origin);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt < MAX_ATTEMPTS) {
-        console.warn(`Solo deployment check ${attempt}/${MAX_ATTEMPTS} failed; retrying.`);
+        console.warn(`Deployment check ${attempt}/${MAX_ATTEMPTS} failed; retrying.`);
         await delay(RETRY_DELAY_MS);
       }
     }
@@ -82,7 +104,7 @@ if (isEntrypoint()) {
   } else {
     try {
       await verifyWithRetry(origin);
-      console.log(`Verified solo-only Draft Battler deployment at ${new URL(origin).origin}.`);
+      console.log(`Verified Draft Battler deployment at ${new URL(origin).origin}.`);
     } catch (error) {
       console.error(error);
       process.exitCode = 1;

@@ -27,11 +27,30 @@ test("a new run starts in a complete round-one draft state", () => {
   assert.equal(state.playerHp, 20);
   assert.equal(state.enemyHp, 20);
   assert.equal(state.outcome, null);
+  assert.equal(state.botDifficulty, "standard");
   assert.equal(state.draftOptions.length, 3);
   assert.equal(state.draftRerollCount, 0);
   assert.equal(state.boardSlots.length, 6);
   assert.equal(state.boardSlots.every((slot) => slot.cardId === null), true);
   assert.deepEqual(state.roundHistory, []);
+});
+
+test("strong difficulty compares all three offers while standard preserves the original pick", () => {
+  const seed = "strong-fixture-0";
+  const emptyBoard = createEmptyBoardSlots();
+  const standard = advanceEnemyBoardSlots(seed, 1, emptyBoard);
+  const explicitStandard = advanceEnemyBoardSlots(seed, 1, emptyBoard, "standard");
+  const strong = advanceEnemyBoardSlots(seed, 1, emptyBoard, "strong");
+
+  assert.deepEqual(standard, explicitStandard);
+  assert.deepEqual(standard.draftOptions.map((option) => option.cardId), [
+    "wolfhound",
+    "boar_rider",
+    "spear_recruit",
+  ]);
+  assert.equal(standard.pickedCardId, "spear_recruit");
+  assert.equal(strong.pickedCardId, "boar_rider");
+  assert.ok(strong.draftOptions.some((option) => option.cardId === strong.pickedCardId));
 });
 
 test("a solo duel is capped at fifteen rounds", () => {
@@ -50,30 +69,32 @@ test("draft options are deterministic, unique, and reroll-specific", () => {
 });
 
 test("enemy drafts exactly one deterministic legal card onto its persistent board each round", () => {
-  for (let seedIndex = 0; seedIndex < 80; seedIndex += 1) {
-    const seed = `enemy-persistent-${seedIndex}`;
-    let board = createEmptyBoardSlots();
+  for (const botDifficulty of ["standard", "strong"]) {
+    for (let seedIndex = 0; seedIndex < 80; seedIndex += 1) {
+      const seed = `enemy-persistent-${seedIndex}`;
+      let board = createEmptyBoardSlots();
 
-    for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
-      const capacity = getBoardCapacityForRound(round);
-      const first = advanceEnemyBoardSlots(seed, round, board);
-      const repeated = advanceEnemyBoardSlots(seed, round, board);
-      const pickedOption = first.draftOptions.find((option) => option.cardId === first.pickedCardId);
-      const expected = applyDraftPlacement(board, first.pickedCardId, first.targetSlotIndex, {
-        allowReplacement: true,
-      });
+      for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
+        const capacity = getBoardCapacityForRound(round);
+        const first = advanceEnemyBoardSlots(seed, round, board, botDifficulty);
+        const repeated = advanceEnemyBoardSlots(seed, round, board, botDifficulty);
+        const pickedOption = first.draftOptions.find((option) => option.cardId === first.pickedCardId);
+        const expected = applyDraftPlacement(board, first.pickedCardId, first.targetSlotIndex, {
+          allowReplacement: true,
+        });
 
-      assert.deepEqual(first, repeated, `round ${round}, seed ${seedIndex}`);
-      assert.ok(pickedOption, `round ${round}, seed ${seedIndex}`);
-      assert.equal(expected.applied, true, `round ${round}, seed ${seedIndex}`);
-      assert.deepEqual(first.boardSlots, expected.boardSlots, `round ${round}, seed ${seedIndex}`);
-      first.boardSlots.filter((slot) => slot.cardId !== null).forEach((slot) => {
-        assert.ok(slot.slotIndex < capacity);
-        assert.equal(isCardAllowedInSlot(slot.cardId, slot.slotIndex), true);
-      });
+        assert.deepEqual(first, repeated, `${botDifficulty}, round ${round}, seed ${seedIndex}`);
+        assert.ok(pickedOption, `${botDifficulty}, round ${round}, seed ${seedIndex}`);
+        assert.equal(expected.applied, true, `${botDifficulty}, round ${round}, seed ${seedIndex}`);
+        assert.deepEqual(first.boardSlots, expected.boardSlots, `${botDifficulty}, round ${round}, seed ${seedIndex}`);
+        first.boardSlots.filter((slot) => slot.cardId !== null).forEach((slot) => {
+          assert.ok(slot.slotIndex < capacity);
+          assert.equal(isCardAllowedInSlot(slot.cardId, slot.slotIndex), true);
+        });
 
-      board = first.boardSlots;
-      assert.deepEqual(createEnemyBoardSlots(seed, round), board);
+        board = first.boardSlots;
+        assert.deepEqual(createEnemyBoardSlots(seed, round, botDifficulty), board);
+      }
     }
   }
 });

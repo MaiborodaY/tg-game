@@ -4,10 +4,11 @@ import test from "node:test";
 import { formatDebugRunReport, simulateDebugRun } from "../src/game/index.ts";
 
 test("debug simulation reports a deterministic two-castle duel", () => {
-  const first = simulateDebugRun({ seed: "debug-duel", strategy: "synergy" });
-  const repeated = simulateDebugRun({ seed: "debug-duel", strategy: "synergy" });
+  const first = simulateDebugRun({ seed: "debug-duel", strategy: "synergy", botDifficulty: "strong" });
+  const repeated = simulateDebugRun({ seed: "debug-duel", strategy: "synergy", botDifficulty: "strong" });
 
   assert.deepEqual(first, repeated);
+  assert.equal(first.botDifficulty, "strong");
   assert.equal(first.finalStatus, "finished");
   assert.ok(["player", "enemy", "draw"].includes(first.outcome));
   assert.ok(first.finalPlayerHp >= 0 && first.finalPlayerHp <= 20);

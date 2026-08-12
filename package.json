@@ -37,7 +37,7 @@
         "draft-battler:typecheck": "tsc --noEmit --project draft-battler/tsconfig.json",
         "draft-battler:pvp:dev": "npx wrangler dev --config workers/draft-battler-pvp/wrangler.jsonc",
         "draft-battler:pvp:deploy": "npx wrangler deploy --config workers/draft-battler-pvp/wrangler.jsonc",
-        "draft-battler:pvp:test": "node --experimental-strip-types --test workers/draft-battler-pvp/tests/*.test.mjs",
+        "draft-battler:pvp:test": "node --experimental-strip-types --import ./draft-battler/tests/register-typescript-loader.mjs --test workers/draft-battler-pvp/tests/*.test.mjs",
         "draft-battler:pvp:typecheck": "tsc --noEmit --project workers/draft-battler-pvp/tsconfig.json",
         "bridge:dev": "vite bridge --config bridge/vite.config.ts --host 0.0.0.0",
         "bridge:build": "vite build bridge --config bridge/vite.config.ts && npm run bridge:verify-build",

@@ -6,6 +6,7 @@ import {
   DRAFT_OPTION_COUNT,
   MAX_UPGRADE_LEVEL,
   type BoardSlot,
+  type BotDifficulty,
   type CardDefinition,
   type CardId,
   type DraftOption,
@@ -87,11 +88,15 @@ export function createBoardFromSlots(slots: readonly BoardSlot[], capacity: numb
   return normalizedSlots;
 }
 
-export function createEnemyBoardSlots(seed: string, round: number): BoardSlot[] {
+export function createEnemyBoardSlots(
+  seed: string,
+  round: number,
+  botDifficulty: BotDifficulty = "standard",
+): BoardSlot[] {
   let boardSlots = createEmptyBoardSlots();
 
   for (let currentRound = 1; currentRound <= round; currentRound += 1) {
-    boardSlots = advanceEnemyBoardSlots(seed, currentRound, boardSlots).boardSlots;
+    boardSlots = advanceEnemyBoardSlots(seed, currentRound, boardSlots, botDifficulty).boardSlots;
   }
 
   return boardSlots;
@@ -101,13 +106,14 @@ export function advanceEnemyBoardSlots(
   seed: string,
   round: number,
   previousSlots: readonly BoardSlot[],
+  botDifficulty: BotDifficulty = "standard",
 ): EnemyDraftResult {
   const capacity = getBoardCapacityForRound(round);
   const boardSlots = createBoardFromSlots(previousSlots, capacity);
   const draftOptions = createEnemyDraftOptions(seed, round);
-  const candidates = new SeededRandom(`${seed}:enemy-pick:${round}`)
-    .shuffle(draftOptions)
-    .map((option) => boardSlots.filter((slot) => slot.slotIndex < capacity).flatMap((slot) => {
+  const createCandidates = (option: DraftOption) => boardSlots
+    .filter((slot) => slot.slotIndex < capacity)
+    .flatMap((slot) => {
       const placement = classifyDraftPlacement(boardSlots, option.cardId, slot.slotIndex);
       if (placement.kind === "invalid") {
         return [];
@@ -125,13 +131,23 @@ export function advanceEnemyBoardSlots(
         boardSlots: result.boardSlots,
         score: scoreEnemyBoard(result.boardSlots, placement),
       }];
-    }))
-    .find((optionCandidates) => optionCandidates.length > 0)
-    ?.sort(
-      (left, right) =>
-        right.score - left.score ||
-        left.targetSlotIndex - right.targetSlotIndex,
-    ) ?? [];
+    });
+  const compareCandidates = (
+    left: ReturnType<typeof createCandidates>[number],
+    right: ReturnType<typeof createCandidates>[number],
+  ) => right.score - left.score ||
+    left.targetSlotIndex - right.targetSlotIndex ||
+    left.cardId.localeCompare(right.cardId);
+
+  // Standard deliberately preserves the original first-legal-card policy. Strong remains fair:
+  // it sees the same three offers, but evaluates every legal card and position before choosing.
+  const candidates = botDifficulty === "strong"
+    ? draftOptions.flatMap(createCandidates).sort(compareCandidates)
+    : new SeededRandom(`${seed}:enemy-pick:${round}`)
+      .shuffle(draftOptions)
+      .map(createCandidates)
+      .find((optionCandidates) => optionCandidates.length > 0)
+      ?.sort(compareCandidates) ?? [];
 
   const choice = candidates[0];
   if (!choice) {

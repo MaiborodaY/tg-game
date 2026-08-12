@@ -2,6 +2,7 @@ import { getCardDefinition } from "./cards";
 import { applyDraftSelectionToBoard, chooseDraftCards, createRun, resolveRound } from "./run";
 import {
   type CardDefinition,
+  type BotDifficulty,
   type CardId,
   type CombatResult,
   type DraftOption,
@@ -19,6 +20,7 @@ export type DebugPickStrategy = (state: RunState) => readonly CardId[];
 export interface DebugRunOptions {
   seed?: string;
   strategy?: DebugPickStrategyId | DebugPickStrategy;
+  botDifficulty?: BotDifficulty;
   maxRounds?: number;
 }
 
@@ -61,6 +63,7 @@ export interface DebugRoundReport {
 export interface DebugRunReport {
   seed: string;
   strategy: string;
+  botDifficulty: BotDifficulty;
   finalStatus: RunState["status"];
   finalPlayerHp: number;
   finalEnemyHp: number;
@@ -79,7 +82,7 @@ export function simulateDebugRun(options: DebugRunOptions = {}): DebugRunReport 
   const { strategy, strategyName } = resolvePickStrategy(options.strategy);
   const maxRounds = options.maxRounds ?? Number.POSITIVE_INFINITY;
   const rounds: DebugRoundReport[] = [];
-  let state = createRun(seed);
+  let state = createRun(seed, options.botDifficulty);
 
   while (state.status !== "finished" && rounds.length < maxRounds) {
     const selection = sanitizeSelection(strategy(state), state);
@@ -98,6 +101,7 @@ export function simulateDebugRun(options: DebugRunOptions = {}): DebugRunReport 
   return {
     seed,
     strategy: strategyName,
+    botDifficulty: state.botDifficulty,
     finalStatus: state.status,
     finalPlayerHp: state.playerHp,
     finalEnemyHp: state.enemyHp,

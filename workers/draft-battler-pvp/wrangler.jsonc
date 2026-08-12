@@ -5,7 +5,9 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-05",
   "vars": {
-    "PVP_ENABLED": "false"
+    "PVP_ENABLED": "true",
+    "ENVIRONMENT": "production",
+    "PVP_ALLOWED_ORIGINS": "https://draft-battler-pvp.mr-maybik.workers.dev"
   },
   "assets": {
     "directory": "./dist/client",

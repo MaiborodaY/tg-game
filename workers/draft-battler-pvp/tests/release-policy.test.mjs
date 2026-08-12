@@ -49,9 +49,20 @@ test("enabled PvP returns the Durable Object binding", () => {
   assert.equal(bindingReads, 1);
 });
 
-test("the production release config explicitly disables PvP", async () => {
+test("the production release config explicitly enables PvP for the public MVP", async () => {
   const configText = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
   const config = JSON.parse(configText);
 
-  assert.equal(config.vars?.PVP_ENABLED, "false");
+  assert.equal(config.vars?.PVP_ENABLED, "true");
+  assert.equal(config.vars?.ENVIRONMENT, "production");
+  assert.equal(
+    config.vars?.PVP_ALLOWED_ORIGINS,
+    "https://draft-battler-pvp.mr-maybik.workers.dev",
+  );
+
+  const productionEnvironment = await readFile(
+    new URL("../../../draft-battler/.env.production", import.meta.url),
+    "utf8",
+  );
+  assert.match(productionEnvironment, /^VITE_DRAFT_BATTLER_PVP_ENABLED=true\s*$/m);
 });

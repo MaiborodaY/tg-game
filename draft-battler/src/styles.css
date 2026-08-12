@@ -412,7 +412,22 @@ button:focus-visible,
 
 .main-menu__actions {
   display: grid;
-  gap: 9px;
+  gap: 7px;
+}
+
+.main-menu__difficulty-label {
+  color: #c8b78c;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.main-menu__duel-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .main-menu__button {
@@ -495,6 +510,55 @@ button:focus-visible,
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.66),
     0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.main-menu__difficulty-button {
+  min-height: 68px;
+  padding: 8px 7px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  text-transform: none;
+}
+
+.main-menu__difficulty-button strong {
+  font-size: 15px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.main-menu__difficulty-button span {
+  color: inherit;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.main-menu__difficulty-button--strong {
+  border-color: rgba(218, 107, 88, 0.82);
+  background:
+    linear-gradient(180deg, rgba(255, 190, 131, 0.15), transparent 46%),
+    rgba(43, 17, 12, 0.94);
+  color: #ffd4b4;
+}
+
+@media (max-height: 600px) {
+  .main-menu-overlay {
+    padding-top: max(58px, calc(var(--safe-top) + 12px));
+    padding-bottom: max(72px, calc(var(--safe-bottom) + 12px));
+  }
+
+  .main-menu {
+    gap: 9px;
+    max-height: 100%;
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .main-menu__difficulty-button {
+    min-height: 60px;
+  }
 }
 
 .draft-overlay--with-enemy-intel {
@@ -1574,6 +1638,7 @@ h3 {
   left: max(10px, calc(var(--safe-left) + 10px));
   z-index: 4;
   max-width: 360px;
+  max-height: calc(100% - 136px - var(--safe-top) - var(--safe-bottom));
   margin: 0 auto;
   padding: 9px;
   display: grid;
@@ -1589,6 +1654,8 @@ h3 {
     0 18px 44px rgba(0, 0, 0, 0.52);
   pointer-events: auto;
   backdrop-filter: blur(2px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .pvp-panel__header,
@@ -1614,6 +1681,26 @@ h3 {
   line-height: 1;
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9);
+}
+
+.pvp-panel__intro,
+.pvp-panel__notice,
+.pvp-match-wait {
+  margin: 0;
+  color: #c8bfa9;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.pvp-panel__notice,
+.pvp-match-wait {
+  padding: 8px 9px;
+  border: 1px solid rgba(228, 193, 94, 0.22);
+  border-radius: 6px;
+  background: rgba(34, 31, 20, 0.68);
+  color: #e8d9aa;
+  text-align: center;
 }
 
 .pvp-status,
@@ -1647,8 +1734,8 @@ h3 {
 
 .pvp-panel__close {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  width: 44px;
+  height: 44px;
   border: 1px solid rgba(243, 240, 221, 0.14);
   border-radius: 7px;
   background: rgba(22, 26, 20, 0.9);
@@ -1661,14 +1748,23 @@ h3 {
   gap: 8px;
 }
 
+.pvp-panel__actions {
+  flex-wrap: wrap;
+}
+
+.pvp-panel__actions .pvp-panel__button {
+  flex: 1 1 132px;
+}
+
 .pvp-room-controls {
   align-items: stretch;
+  flex-wrap: wrap;
 }
 
 .pvp-room-input {
   min-width: 0;
   flex: 1 1 auto;
-  height: 34px;
+  height: 44px;
   padding: 0 9px;
   border: 1px solid rgba(184, 139, 66, 0.46);
   border-radius: 6px;
@@ -1686,7 +1782,7 @@ h3 {
 }
 
 .pvp-panel__button {
-  min-height: 34px;
+  min-height: 44px;
   padding: 0 10px;
   border: 1px solid rgba(184, 139, 66, 0.5);
   border-radius: 6px;
@@ -1709,6 +1805,14 @@ h3 {
   color: #c9f0bb;
 }
 
+.pvp-panel__button--danger {
+  border-color: rgba(218, 107, 88, 0.62);
+  background:
+    linear-gradient(180deg, rgba(218, 107, 88, 0.15), transparent 46%),
+    rgba(42, 16, 13, 0.92);
+  color: #f3b0a4;
+}
+
 .pvp-panel__button:disabled {
   cursor: default;
   opacity: 0.48;
@@ -1716,6 +1820,23 @@ h3 {
 
 .pvp-room-summary {
   justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.pvp-room-code-row {
+  min-width: 0;
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 7px;
+}
+
+.pvp-room-code-label {
+  flex: 1 1 auto;
+  color: #a79d85;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .pvp-room-code {
@@ -1726,6 +1847,20 @@ h3 {
   letter-spacing: 0;
   overflow-wrap: anywhere;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9);
+}
+
+.pvp-copy-button {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid rgba(184, 139, 66, 0.5);
+  border-radius: 6px;
+  background: rgba(16, 19, 15, 0.92);
+  color: #eadcb8;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .pvp-player-slots {
@@ -1767,9 +1902,49 @@ h3 {
 }
 
 .pvp-panel__error {
+  margin: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(218, 107, 88, 0.32);
+  border-radius: 6px;
+  background: rgba(56, 18, 14, 0.62);
   color: #ef9a8c;
   font-size: 11px;
   line-height: 1.2;
+}
+
+.pvp-connection-banner {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(228, 193, 94, 0.34);
+  border-radius: 6px;
+  background: rgba(45, 38, 18, 0.88);
+  color: #ead37e;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.pvp-connection-banner--error {
+  border-color: rgba(218, 107, 88, 0.42);
+  background: rgba(56, 18, 14, 0.82);
+  color: #ef9a8c;
+}
+
+@media (max-width: 360px) {
+  .pvp-panel {
+    right: max(6px, calc(var(--safe-right) + 6px));
+    left: max(6px, calc(var(--safe-left) + 6px));
+    padding: 8px;
+  }
+
+  .pvp-room-controls .pvp-room-input {
+    flex-basis: 100%;
+  }
+
+  .pvp-room-controls .pvp-panel__button {
+    flex: 1 1 calc(50% - 4px);
+  }
 }
 
 .field-action-bar .primary-button::after {
