@@ -6,6 +6,7 @@ import {
   SYNERGY_THRESHOLD,
   getBoardSynergyProgress,
   getBoardUnitInspection,
+  getDraftOptionBoardStatus,
   getDraftOptionPlacementSynergyForecast,
   getDraftOptionSynergyPresentation,
   getLastKnownEnemyArmy,
@@ -109,6 +110,17 @@ test("board inspection resolves the exact duplicate slot and its upgraded stats"
     },
   });
   assert.equal(getBoardUnitInspection(slots, 0), undefined);
+});
+
+test("draft options distinguish an available upgrade from an already fielded max-level copy", () => {
+  assert.equal(getDraftOptionBoardStatus("iron_guard", board()), undefined);
+  assert.equal(getDraftOptionBoardStatus("iron_guard", board(slot(0, "iron_guard", 0))), "upgrade");
+  assert.equal(getDraftOptionBoardStatus("iron_guard", board(slot(0, "iron_guard", 1))), "maxed");
+  assert.equal(
+    getDraftOptionBoardStatus("iron_guard", board(slot(0, "iron_guard", 1), slot(1, "iron_guard", 0))),
+    "upgrade",
+  );
+  assert.equal(getDraftOptionBoardStatus("iron_guard", [slot(0, "iron_guard", 0)]), undefined);
 });
 
 test("last known enemy army preserves all six positions and resolves upgraded stats", () => {

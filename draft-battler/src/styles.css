@@ -700,12 +700,13 @@ button:focus-visible,
   inset: 0;
   z-index: 12;
   padding:
-    max(12px, calc(var(--safe-top) + 8px))
+    max(82px, calc(var(--safe-top) + 70px))
     max(12px, calc(var(--safe-right) + 8px))
     max(12px, calc(var(--safe-bottom) + 8px))
     max(12px, calc(var(--safe-left) + 8px));
   display: grid;
-  place-items: center;
+  place-items: start center;
+  overflow-y: auto;
   background: rgba(4, 6, 4, 0.78);
   pointer-events: auto;
   backdrop-filter: blur(4px);
@@ -1059,6 +1060,44 @@ h3 {
 
 .unit-card__drag-handle {
   display: none;
+}
+
+.unit-card__board-status {
+  position: absolute;
+  top: calc(var(--unit-card-header-top) + var(--unit-card-header-height) + 22px);
+  left: 50%;
+  z-index: 10;
+  max-width: calc(100% - 16px);
+  padding: 3px 7px;
+  overflow: hidden;
+  transform: translateX(-50%);
+  border: 1px solid rgba(218, 199, 132, 0.46);
+  border-radius: 999px;
+  background: rgba(7, 10, 7, 0.9);
+  color: #ded5b5;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9);
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.38);
+}
+
+.unit-card__board-status--upgrade {
+  border-color: rgba(151, 219, 111, 0.72);
+  background: rgba(20, 48, 18, 0.94);
+  color: #c9f3a8;
+  box-shadow:
+    0 0 8px rgba(121, 199, 122, 0.28),
+    0 3px 8px rgba(0, 0, 0, 0.42);
+}
+
+.unit-card__board-status--maxed {
+  border-color: rgba(218, 199, 132, 0.5);
+  color: #e5dcbf;
 }
 
 .unit-card--selected .unit-card__frame {
@@ -3017,6 +3056,12 @@ h3 {
   text-overflow: clip;
 }
 
+.draft-grid--triple .unit-card__board-status {
+  top: 119px;
+  padding-inline: 5px;
+  font-size: clamp(7px, 1.8cqw, 8.5px);
+}
+
 .draft-grid--triple .unit-card > .unit-card__body > .unit-card__art {
   top: 103px;
   right: 3px;
@@ -3577,6 +3622,10 @@ h3 {
 
   .draft-grid--triple .unit-card__tag-row span {
     padding: 2px;
+  }
+
+  .draft-grid--triple .unit-card__board-status {
+    top: 105px;
   }
 
   .draft-grid--triple .unit-card > .unit-card__body > .unit-card__art {

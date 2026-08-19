@@ -36,8 +36,10 @@ import {
 import {
   getBoardSynergyProgress,
   getBoardUnitInspection,
+  getDraftOptionBoardStatus,
   getDraftOptionSynergyPresentation,
   type BoardUnitInspection,
+  type DraftOptionBoardStatus,
   type DraftTagSynergyForecast,
 } from "./draftPresentation";
 import {
@@ -1285,7 +1287,15 @@ function createTerminalMetric(label: string, value: string): HTMLElement {
   return metric;
 }
 
+function canShowLogsInCurrentMode(): boolean {
+  return uiState.mode === "draft" || uiState.battleFinished;
+}
+
 function createLogsButton(): HTMLButtonElement | undefined {
+  if (!canShowLogsInCurrentMode()) {
+    return undefined;
+  }
+
   const visibleLogs = getVisibleRoundLogs();
   if (visibleLogs.length === 0) {
     return undefined;
@@ -1316,6 +1326,10 @@ function createLogsButton(): HTMLButtonElement | undefined {
 }
 
 function createLogsOverlay(): HTMLElement | undefined {
+  if (!canShowLogsInCurrentMode()) {
+    return undefined;
+  }
+
   const visibleLogs = getVisibleRoundLogs();
   if (!uiState.logsOpen || visibleLogs.length === 0) {
     return undefined;
@@ -1485,6 +1499,7 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   const localizedCard = getLocalizedCard(activeLocale, card);
   const meta = getCardDisplayMeta(card);
   const placeable = canPlaceDraftCard(option.cardId);
+  const boardStatus = getDraftOptionBoardStatus(option.cardId, uiState.draftBoardSlots);
   const button = document.createElement("button");
   const cardClasses = ["unit-card", `unit-card--${meta.archetype}`, `unit-card--${meta.rarity}`];
   if (uiState.selectedDraftCardId === option.cardId) {
@@ -1503,12 +1518,11 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   setFocusKey(button, `draft-card-${option.cardId}`);
   button.setAttribute("aria-pressed", String(uiState.selectedDraftCardId === option.cardId));
 
-  button.append(
-    createCardFrame(),
-    createCardArchetypeBadge(meta),
-    createCardBody(card, meta, option),
-    createCardDragHandle(),
-  );
+  button.append(createCardFrame(), createCardArchetypeBadge(meta), createCardBody(card, meta, option));
+  if (boardStatus) {
+    button.append(createDraftCardBoardStatus(boardStatus, localizedCard.name));
+  }
+  button.append(createCardDragHandle());
 
   button.addEventListener("click", () => handleDraftCardClick(option.cardId));
   button.addEventListener("pointerdown", (event) => startPointerDraftDrag(option.cardId, event));
@@ -1636,6 +1650,24 @@ function createRerollButton(): HTMLButtonElement {
   button.addEventListener("click", rerollCurrentDraftCards);
 
   return button;
+}
+
+function createDraftCardBoardStatus(status: DraftOptionBoardStatus, cardName: string): HTMLElement {
+  const marker = document.createElement("span");
+  marker.className = `unit-card__board-status unit-card__board-status--${status}`;
+  marker.textContent = status === "upgrade"
+    ? `↑ ${getCopy().draftUpgradeAvailable}`
+    : `${getCopy().draftAlreadyOnField} ★`;
+  marker.setAttribute(
+    "aria-label",
+    formatMessage(
+      status === "upgrade"
+        ? getCopy().draftUpgradeAvailableDescription
+        : getCopy().draftAlreadyOnFieldDescription,
+      { card: cardName },
+    ),
+  );
+  return marker;
 }
 
 function createDraftChoicesToggle(): HTMLButtonElement {

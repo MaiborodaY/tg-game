@@ -1,6 +1,6 @@
 import { getCardDefinition, getCardStatsForUpgrade } from "./game/cards";
 import { createBoardFromSlots } from "./game/draft";
-import { applyDraftPlacement } from "./game/placement";
+import { applyDraftPlacement, classifyDraftPlacement } from "./game/placement";
 import {
   SYNERGY_RULES,
   SYNERGY_TAG_ORDER,
@@ -62,6 +62,8 @@ export interface DraftOptionSynergyPresentation {
   placements: DraftOptionPlacementSynergyForecast[];
 }
 
+export type DraftOptionBoardStatus = "upgrade" | "maxed";
+
 export function getBoardSynergyProgress(slots: readonly BoardSlot[]): BoardSynergyProgress[] {
   const counts = new Map<UnitTag, number>();
 
@@ -109,6 +111,24 @@ export function getBoardUnitInspection(
     upgradeLevel: slot.upgradeLevel,
     stats: getCardStatsForUpgrade(card, slot.upgradeLevel),
   };
+}
+
+export function getDraftOptionBoardStatus(
+  cardId: CardId,
+  slots: readonly BoardSlot[],
+): DraftOptionBoardStatus | undefined {
+  if (!slots.some((slot) => slot.cardId === cardId)) {
+    return undefined;
+  }
+
+  const classifications = Array.from({ length: BOARD_SLOT_COUNT }, (_, targetSlotIndex) =>
+    classifyDraftPlacement(slots, cardId, targetSlotIndex),
+  );
+  if (classifications.every((placement) => placement.kind === "invalid" && placement.reason === "invalid_board")) {
+    return undefined;
+  }
+
+  return classifications.some((placement) => placement.kind === "upgrade") ? "upgrade" : "maxed";
 }
 
 export function getLastKnownEnemyArmy(

@@ -269,6 +269,25 @@ test("draft controls explain the single refresh and card-choice toggle", () => {
   });
 });
 
+test("draft-card field markers distinguish an upgrade from an already maxed copy", () => {
+  const expectedLabels = {
+    ru: ["Улучшить", "На поле"],
+    uk: ["Покращити", "На полі"],
+    en: ["Upgrade", "On field"],
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    assert.deepEqual(
+      [copy.draftUpgradeAvailable, copy.draftAlreadyOnField],
+      expectedLabels[locale],
+      `${locale}:draft-card status labels`,
+    );
+    assert.ok(copy.draftUpgradeAvailableDescription.includes("{card}"), `${locale}:upgrade description`);
+    assert.ok(copy.draftAlreadyOnFieldDescription.includes("{card}"), `${locale}:maxed description`);
+  });
+});
+
 test("solo copy fully explains the symmetric fifteen-round keep duel", () => {
   SUPPORTED_LOCALES.forEach((locale) => {
     const copy = getUiCopy(locale);

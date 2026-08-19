@@ -4,6 +4,7 @@ import test from "node:test";
 import { getUiCopy } from "../src/i18n.ts";
 
 const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("placement and keyboard move modes replace the regular field action bar", () => {
   const createDraftOverlay = mainSource.match(/function createDraftOverlay[\s\S]*?\n\}/)?.[0] ?? "";
@@ -53,10 +54,33 @@ test("results trigger lives in the HUD utility row while the overlay renders onl
   assert.doesNotMatch(createLogsOverlay, /createLogsButton/);
 });
 
+test("results stay hidden while battle playback controls are active", () => {
+  assert.match(
+    mainSource,
+    /function canShowLogsInCurrentMode\(\): boolean \{\s*return uiState\.mode === "draft" \|\| uiState\.battleFinished;\s*\}/,
+  );
+  assert.equal(
+    mainSource.match(/if \(!canShowLogsInCurrentMode\(\)\) \{\s*return undefined;\s*\}/g)?.length,
+    2,
+  );
+  assert.match(
+    mainSource,
+    /if \(uiState\.battleFinished\) \{[\s\S]*?\} else \{\s*overlay\.append\(createBattlePlaybackControls\(\)\)/,
+  );
+});
+
 test("opening card details closes results so the overlays cannot collide", () => {
   const openCardInfo = mainSource.match(/function openCardInfo[\s\S]*?\n\}/)?.[0] ?? "";
   const openBoardCardInfo = mainSource.match(/function openBoardCardInfo[\s\S]*?\n\}/)?.[0] ?? "";
 
   assert.match(openCardInfo, /selectedCardInfoId: cardId,[\s\S]*?logsOpen: false/);
   assert.match(openBoardCardInfo, /selectedCardInfoSlotIndex: slotIndex,[\s\S]*?logsOpen: false/);
+});
+
+test("replacement confirmation opens in the upper safe area away from field taps", () => {
+  const overlayRule = styles.match(/\.draft-replacement-overlay\s*\{[^}]*\}/s)?.[0] ?? "";
+
+  assert.match(overlayRule, /max\(82px, calc\(var\(--safe-top\) \+ 70px\)\)/);
+  assert.match(overlayRule, /place-items:\s*start center/);
+  assert.match(overlayRule, /overflow-y:\s*auto/);
 });

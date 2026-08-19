@@ -122,6 +122,8 @@ test("draft UI prioritizes large card choices, synergy forecasts, and keyboard m
   assert.doesNotMatch(mainSource, /hud\.append\(createEnemyArmyIntel\(\)\)/);
   assert.match(mainSource, /overlayClasses\.push\("draft-overlay--card-info-open"\)/);
   assert.match(mainSource, /getDraftOptionSynergyPresentation\(option, uiState\.draftBoardSlots\)/);
+  assert.match(mainSource, /getDraftOptionBoardStatus\(option\.cardId, uiState\.draftBoardSlots\)/);
+  assert.match(mainSource, /unit-card__board-status--\$\{status\}/);
   assert.match(mainSource, /createCardDragHandle\(\)/);
   assert.match(mainSource, /startKeyboardBoardMove\(boardUnit\.slotIndex\)/);
   assert.match(mainSource, /canMoveBoardSlotUnit\(keyboardMoveSourceSlotIndex, slotIndex\)/);
@@ -151,6 +153,8 @@ test("draft UI prioritizes large card choices, synergy forecasts, and keyboard m
   assert.match(styles, /\.draft-panel--collapsed\s*\{[^}]*align-self:\s*start/s);
   assert.match(styles, /\.draft-grid--triple\[hidden\]\s*\{[^}]*display:\s*none/s);
   assert.match(styles, /\.unit-card__synergy-forecast\s*\{/);
+  assert.match(styles, /\.unit-card__board-status--upgrade\s*\{/);
+  assert.match(styles, /\.unit-card__board-status--maxed\s*\{/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{/);
 });
 

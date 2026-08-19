@@ -131,6 +131,10 @@ export interface UiCopy {
   collapseDraftChoices: string;
   expandDraftChoices: string;
   selectedCard: string;
+  draftUpgradeAvailable: string;
+  draftAlreadyOnField: string;
+  draftUpgradeAvailableDescription: string;
+  draftAlreadyOnFieldDescription: string;
   upgradeHint: string;
   placeHint: string;
   replacementHint: string;
@@ -312,6 +316,10 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     collapseDraftChoices: "Свернуть выбор карт",
     expandDraftChoices: "Развернуть выбор карт",
     selectedCard: "Выбран: {card}",
+    draftUpgradeAvailable: "Улучшить",
+    draftAlreadyOnField: "На поле",
+    draftUpgradeAvailableDescription: "{card} уже на поле. Выбор этой карты улучшит бойца.",
+    draftAlreadyOnFieldDescription: "{card} уже на поле на максимальном уровне. Эта карта не улучшит существующего бойца.",
     upgradeHint: "Коснитесь поля — существующий боец улучшится.",
     placeHint: "Коснитесь подходящей пустой позиции на поле.",
     replacementHint: "Поле заполнено. Выберите бойца, которого хотите заменить.",
@@ -485,6 +493,10 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     collapseDraftChoices: "Згорнути вибір карт",
     expandDraftChoices: "Розгорнути вибір карт",
     selectedCard: "Обрано: {card}",
+    draftUpgradeAvailable: "Покращити",
+    draftAlreadyOnField: "На полі",
+    draftUpgradeAvailableDescription: "{card} вже на полі. Вибір цієї карти покращить бійця.",
+    draftAlreadyOnFieldDescription: "{card} вже на полі на максимальному рівні. Ця карта не покращить наявного бійця.",
     upgradeHint: "Торкніться поля — наявний боєць покращиться.",
     placeHint: "Торкніться відповідної порожньої позиції на полі.",
     replacementHint: "Поле заповнене. Виберіть бійця, якого хочете замінити.",
@@ -658,6 +670,10 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     collapseDraftChoices: "Collapse card choices",
     expandDraftChoices: "Expand card choices",
     selectedCard: "Selected: {card}",
+    draftUpgradeAvailable: "Upgrade",
+    draftAlreadyOnField: "On field",
+    draftUpgradeAvailableDescription: "{card} is already on the field. Choosing this card upgrades that fighter.",
+    draftAlreadyOnFieldDescription: "{card} is already on the field at max level. This card will not upgrade the existing fighter.",
     upgradeHint: "Tap the field to upgrade your existing fighter.",
     placeHint: "Tap a valid empty position on the field.",
     replacementHint: "The field is full. Choose the fighter you want to replace.",
