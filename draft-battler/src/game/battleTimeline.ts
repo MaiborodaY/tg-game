@@ -10,7 +10,7 @@ import {
 } from "./types";
 
 const CASTLE_EXCHANGE_START_DELAY = 18;
-const CASTLE_EXCHANGE_ATTACK_INTERVAL = 12;
+const CASTLE_ASSAULT_FINISH_DELAY = 12;
 
 export interface BattleTimelineUnit {
   unitId: string;
@@ -49,9 +49,7 @@ type BattleTimelineEventPayload =
   | { type: "teams_enter" }
   | CombatStepEventPayload
   | { type: "combat_step"; events: CombatStepEvent[] }
-  | { type: "unit_move_to_castle"; unitId: string; targetOwner: Owner }
-  | { type: "castle_hit"; owner: Owner; attackerId: string; damage: number; remainingHp: number }
-  | { type: "unit_sacrifice"; unitId: string }
+  | { type: "castle_assault"; owner: Owner; attackerIds: string[]; damage: number; remainingHp: number }
   | { type: "battle_finished"; winner: CombatWinner; playerCastleHp: number; enemyCastleHp: number };
 
 export type BattleTimelineEvent = BattleTimelineEventPayload & { time: number };
@@ -207,7 +205,7 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
 
   events.push({
     type: "battle_finished",
-    time: battleFinishedTime + CASTLE_EXCHANGE_ATTACK_INTERVAL,
+    time: battleFinishedTime + CASTLE_ASSAULT_FINISH_DELAY,
     winner: input.combat.winner,
     playerCastleHp: playerCastle.finalHp,
     enemyCastleHp: enemyCastle.finalHp,
@@ -305,35 +303,30 @@ function applyCastleDamage(
   targetCastle: BattleTimelineCastle,
   startTime: number,
 ): number {
-  let currentHp = targetCastle.startHp;
-  let lastEventTime = startTime;
+  if (attackers.length === 0) {
+    targetCastle.finalHp = targetCastle.startHp;
+    return startTime;
+  }
 
-  attackers.forEach((unit, index) => {
-    const time = startTime + index * CASTLE_EXCHANGE_ATTACK_INTERVAL;
-    lastEventTime = time;
-    events.push({ type: "unit_move_to_castle", time, unitId: unit.unitId, targetOwner });
+  const damage = Math.min(attackers.length, Math.max(0, targetCastle.startHp));
+  const remainingHp = Math.max(0, targetCastle.startHp - damage);
 
-    if (currentHp > 0) {
-      const damage = 1;
-      currentHp = Math.max(0, currentHp - damage);
-
-      events.push({
-        type: "castle_hit",
-        time,
-        owner: targetOwner,
-        attackerId: unit.unitId,
-        damage,
-        remainingHp: currentHp,
-      });
-    }
-
-    unit.currentHp = 0;
-    events.push({ type: "unit_sacrifice", time, unitId: unit.unitId });
+  events.push({
+    type: "castle_assault",
+    time: startTime,
+    owner: targetOwner,
+    attackerIds: attackers.map((unit) => unit.unitId),
+    damage,
+    remainingHp,
   });
 
-  targetCastle.finalHp = currentHp;
+  attackers.forEach((unit) => {
+    unit.currentHp = 0;
+  });
 
-  return lastEventTime;
+  targetCastle.finalHp = remainingHp;
+
+  return startTime;
 }
 
 function getCombatEndTime(combat: CombatResult): number {

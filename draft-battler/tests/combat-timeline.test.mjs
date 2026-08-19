@@ -408,14 +408,11 @@ test("battle timeline preserves the combat outcome and terminal castle state", (
   assert.equal(finished.winner, combat.winner);
   assert.equal(finished.playerCastleHp, playerHpAfter);
   assert.equal(finished.enemyCastleHp, enemyHpAfter);
-  assert.equal(
-    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "player").length,
-    combat.playerCastleDamage,
-  );
-  assert.equal(
-    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "enemy").length,
-    combat.enemyCastleDamage,
-  );
+  const assault = timeline.events.find((event) => event.type === "castle_assault");
+  assert.ok(assault);
+  assert.equal(assault.owner, "enemy");
+  assert.equal(assault.damage, combat.enemyCastleDamage);
+  assert.equal(assault.remainingHp, enemyHpAfter);
   timeline.events.forEach((event, index) => {
     if (index > 0) {
       assert.ok(event.time >= timeline.events[index - 1].time);
@@ -447,12 +444,152 @@ test("battle timeline applies an enemy victory to the player castle", () => {
   assert.equal(finished.type, "battle_finished");
   assert.equal(finished.playerCastleHp, playerHpAfter);
   assert.equal(finished.enemyCastleHp, enemyHpAfter);
-  assert.equal(
-    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "player").length,
-    combat.playerCastleDamage,
+  const assault = timeline.events.find((event) => event.type === "castle_assault");
+  assert.ok(assault);
+  assert.equal(assault.owner, "player");
+  assert.equal(assault.damage, combat.playerCastleDamage);
+  assert.equal(assault.remainingHp, playerHpAfter);
+});
+
+test("battle timeline groups one or six survivors into a count-independent castle assault", () => {
+  const createWonCombat = (enemyCastleDamage) => ({
+    winner: "player",
+    hpLoss: 0,
+    playerCastleDamage: 0,
+    enemyCastleDamage,
+    actions: 0,
+    events: [
+      { type: "combat_started", time: 0, playerUnits: [], enemyUnits: [] },
+      { type: "combat_finished", time: 10, winner: "player", hpLoss: 0, actions: 0 },
+    ],
+    survivingPlayerUnits: [],
+    survivingEnemyUnits: [],
+  });
+  const onePlayer = createBoard([[0, "spear_recruit"]]);
+  const sixPlayers = createBoard(Array.from({ length: 6 }, (_, slotIndex) => [slotIndex, "spear_recruit"]));
+  const emptyEnemy = createBoard([]);
+  const one = createBattleTimeline({
+    playerSlots: onePlayer,
+    enemySlots: emptyEnemy,
+    combat: createWonCombat(1),
+    playerCastleHpBefore: 20,
+    playerCastleHpAfter: 20,
+    enemyCastleHpBefore: 20,
+    enemyCastleHpAfter: 19,
+  });
+  const six = createBattleTimeline({
+    playerSlots: sixPlayers,
+    enemySlots: emptyEnemy,
+    combat: createWonCombat(6),
+    playerCastleHpBefore: 20,
+    playerCastleHpAfter: 20,
+    enemyCastleHpBefore: 20,
+    enemyCastleHpAfter: 14,
+  });
+  const oneAssault = one.events.find((event) => event.type === "castle_assault");
+  const sixAssault = six.events.find((event) => event.type === "castle_assault");
+
+  assert.ok(oneAssault);
+  assert.ok(sixAssault);
+  assert.deepEqual(oneAssault.attackerIds, ["player-0-spear_recruit"]);
+  assert.deepEqual(
+    sixAssault.attackerIds,
+    Array.from({ length: 6 }, (_, slotIndex) => `player-${slotIndex}-spear_recruit`),
   );
-  assert.equal(
-    timeline.events.filter((event) => event.type === "castle_hit" && event.owner === "enemy").length,
-    0,
+  assert.equal(oneAssault.damage, 1);
+  assert.equal(sixAssault.damage, 6);
+  assert.equal(oneAssault.time, sixAssault.time);
+  assert.equal(one.events.at(-1).time, six.events.at(-1).time);
+});
+
+test("battle timeline excludes non-damaging survivors from the castle assault", () => {
+  const player = createBoard([
+    [0, "shieldbearer"],
+    [1, "field_cleric"],
+    [2, "spear_recruit"],
+  ]);
+  const combat = {
+    winner: "player",
+    hpLoss: 0,
+    playerCastleDamage: 0,
+    enemyCastleDamage: 1,
+    actions: 0,
+    events: [
+      { type: "combat_started", time: 0, playerUnits: [], enemyUnits: [] },
+      { type: "combat_finished", time: 10, winner: "player", hpLoss: 0, actions: 0 },
+    ],
+    survivingPlayerUnits: [],
+    survivingEnemyUnits: [],
+  };
+  const timeline = createBattleTimeline({
+    playerSlots: player,
+    enemySlots: createBoard([]),
+    combat,
+    playerCastleHpBefore: 20,
+    playerCastleHpAfter: 20,
+    enemyCastleHpBefore: 20,
+    enemyCastleHpAfter: 19,
+  });
+  const assault = timeline.events.find((event) => event.type === "castle_assault");
+
+  assert.ok(assault);
+  assert.deepEqual(assault.attackerIds, ["player-2-spear_recruit"]);
+  assert.equal(timeline.units.find((unit) => unit.unitId === "player-0-shieldbearer")?.defeated, false);
+  assert.equal(timeline.units.find((unit) => unit.unitId === "player-1-field_cleric")?.defeated, false);
+  assert.equal(timeline.units.find((unit) => unit.unitId === "player-2-spear_recruit")?.defeated, true);
+});
+
+test("battle timeline clamps an enemy castle assault to the player's remaining HP", () => {
+  const enemy = createBoard(Array.from({ length: 6 }, (_, slotIndex) => [slotIndex, "spear_recruit"]));
+  const combat = {
+    winner: "enemy",
+    hpLoss: 6,
+    playerCastleDamage: 6,
+    enemyCastleDamage: 0,
+    actions: 0,
+    events: [
+      { type: "combat_started", time: 0, playerUnits: [], enemyUnits: [] },
+      { type: "combat_finished", time: 10, winner: "enemy", hpLoss: 6, actions: 0 },
+    ],
+    survivingPlayerUnits: [],
+    survivingEnemyUnits: [],
+  };
+  const timeline = createBattleTimeline({
+    playerSlots: createBoard([]),
+    enemySlots: enemy,
+    combat,
+    playerCastleHpBefore: 2,
+    playerCastleHpAfter: 0,
+    enemyCastleHpBefore: 20,
+    enemyCastleHpAfter: 20,
+  });
+  const assault = timeline.events.find((event) => event.type === "castle_assault");
+
+  assert.ok(assault);
+  assert.equal(assault.owner, "player");
+  assert.equal(assault.attackerIds.length, 6);
+  assert.equal(assault.damage, 2);
+  assert.equal(assault.remainingHp, 0);
+  assert.ok(
+    timeline.units
+      .filter((unit) => unit.owner === "enemy")
+      .every((unit) => unit.defeated),
   );
+});
+
+test("battle timeline does not create a castle assault for a draw", () => {
+  const board = createBoard([[0, "spear_recruit"]]);
+  const combat = resolveCombat(board, board, 1);
+  const timeline = createBattleTimeline({
+    playerSlots: board,
+    enemySlots: board,
+    combat,
+    playerCastleHpBefore: 20,
+    playerCastleHpAfter: 20,
+    enemyCastleHpBefore: 20,
+    enemyCastleHpAfter: 20,
+  });
+
+  assert.equal(combat.winner, "draw");
+  assert.equal(timeline.events.some((event) => event.type === "castle_assault"), false);
 });

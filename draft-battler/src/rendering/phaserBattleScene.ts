@@ -28,6 +28,13 @@ import {
   getUnitPresentationScale,
 } from "./battlePresentationLayout";
 import {
+  CASTLE_ASSAULT_APPROACH_MS,
+  CASTLE_ASSAULT_FADE_MS,
+  CASTLE_ASSAULT_FLASH_MS,
+  CASTLE_ASSAULT_LUNGE_MS,
+  createCastleAssaultPlan,
+} from "./castleAssaultPresentation";
+import {
   BattlePlaybackClock,
   BattlePlaybackCompletion,
   completeSkippedBattle,
@@ -985,32 +992,8 @@ class CastleBattleScene extends Phaser.Scene {
       return;
     }
 
-    if (event.type === "unit_move_to_castle") {
-      const view = this.unitViews.get(event.unitId);
-      if (!view || !view.container.visible) {
-        return;
-      }
-
-      const castleApproach = this.getCastleApproachPosition(event.targetOwner, view.unit.slotIndex);
-      this.focusCameraForCastleApproach(event.targetOwner, 320);
-      await this.moveUnitTo(view, castleApproach, 420);
-      return;
-    }
-
-    if (event.type === "castle_hit") {
-      await this.playCastleHit(event.owner, event.attackerId, event.damage, event.remainingHp, () => {
-        if (playToken === this.playToken && this.activeBattle === activeBattle) {
-          activeBattle?.completion.emitCastleHp(event.owner, event.remainingHp);
-          return playToken === this.playToken && this.activeBattle === activeBattle;
-        }
-
-        return false;
-      });
-      return;
-    }
-
-    if (event.type === "unit_sacrifice") {
-      await this.playUnitSacrifice(event.unitId);
+    if (event.type === "castle_assault") {
+      await this.playCastleAssault(event, playToken, activeBattle);
       return;
     }
 
@@ -1338,45 +1321,110 @@ class CastleBattleScene extends Phaser.Scene {
     this.setUnitPose(attacker, "idle", attackFacing);
   }
 
-  private async playCastleHit(
-    owner: Owner,
-    attackerId: string,
-    damage: number,
-    remainingHp: number,
-    onHpChanged?: () => boolean,
+  private async playCastleAssault(
+    event: Extract<BattleTimelineEvent, { type: "castle_assault" }>,
+    playToken: number,
+    activeBattle?: ActiveBattlePlayback,
   ): Promise<void> {
-    const castle = this.castleViews.get(owner);
-    const attacker = this.unitViews.get(attackerId);
-    if (!castle || !attacker) {
+    const castle = this.castleViews.get(event.owner);
+    if (!castle) {
       return;
     }
 
-    this.focusCameraForCastleApproach(owner, 120);
-    const startY = attacker.container.y;
-    const attackFacing = owner === "enemy" ? "north" : "south";
-    this.setUnitPose(attacker, "attack", attackFacing);
-    await this.tween({
-      targets: attacker.container,
-      y: startY + (owner === "player" ? 18 : -18),
-      duration: 105,
-      yoyo: true,
-      ease: "Sine.easeOut",
-      onUpdate: () => this.updateUnitSpatialStyle(attacker),
-    });
-    this.updateUnitSpatialStyle(attacker, true);
+    const attackers = event.attackerIds
+      .map((unitId) => this.unitViews.get(unitId))
+      .filter((view): view is UnitView => Boolean(view?.container.visible));
 
-    this.updateCastleHp(owner, remainingHp);
-    if (onHpChanged && !onHpChanged()) {
+    this.focusCameraForCastleApproach(event.owner, CASTLE_ASSAULT_APPROACH_MS);
+    await Promise.all(
+      attackers.map((view) =>
+        this.moveUnitTo(
+          view,
+          this.getCastleApproachPosition(event.owner, view.unit.slotIndex),
+          CASTLE_ASSAULT_APPROACH_MS,
+        ),
+      ),
+    );
+
+    if (!this.isCurrentBattle(playToken, activeBattle)) {
       return;
     }
-    this.floatText(castle.container.x, castle.container.y + (owner === "player" ? -72 : 82), `-${damage}`, "#da6b58");
-    await this.flash(castle.container, 0xda6b58);
-    this.setUnitPose(attacker, "idle", attackFacing);
+
+    const attackerById = new Map(attackers.map((view) => [view.unit.unitId, view]));
+    await Promise.all(
+      createCastleAssaultPlan(event.attackerIds, event.damage, event.remainingHp).map(async (hit) => {
+        const { attackerId, delayMs, remainingHpAfterHit } = hit;
+        const attacker = attackerById.get(attackerId);
+        await this.delay(delayMs);
+
+        const attackFacing = event.owner === "enemy" ? "north" : "south";
+        const startY = attacker?.container.y;
+        if (attacker && startY !== undefined) {
+          this.setUnitPose(attacker, "attack", attackFacing);
+          await this.tween({
+            targets: attacker.container,
+            y: startY + (event.owner === "player" ? 18 : -18),
+            duration: CASTLE_ASSAULT_LUNGE_MS,
+            ease: "Sine.easeOut",
+            onUpdate: () => this.updateUnitSpatialStyle(attacker),
+          });
+          this.updateUnitSpatialStyle(attacker, true);
+        } else {
+          await this.delay(CASTLE_ASSAULT_LUNGE_MS);
+        }
+
+        if (!this.isCurrentBattle(playToken, activeBattle)) {
+          return;
+        }
+
+        if (remainingHpAfterHit !== undefined) {
+          this.updateCastleHp(event.owner, remainingHpAfterHit);
+          activeBattle?.completion.emitCastleHp(event.owner, remainingHpAfterHit);
+        }
+
+        if (attacker && startY !== undefined) {
+          await this.tween({
+            targets: attacker.container,
+            y: startY,
+            duration: CASTLE_ASSAULT_LUNGE_MS,
+            ease: "Sine.easeIn",
+            onUpdate: () => this.updateUnitSpatialStyle(attacker),
+          });
+          this.updateUnitSpatialStyle(attacker, true);
+          this.setUnitPose(attacker, "idle", attackFacing);
+        } else {
+          await this.delay(CASTLE_ASSAULT_LUNGE_MS);
+        }
+      }),
+    );
+
+    if (!this.isCurrentBattle(playToken, activeBattle)) {
+      return;
+    }
+
+    this.floatText(
+      castle.container.x,
+      castle.container.y + (event.owner === "player" ? -72 : 82),
+      `-${event.damage}`,
+      "#da6b58",
+      1.35,
+    );
+    await Promise.all([
+      this.flash(castle.container, 0xda6b58, CASTLE_ASSAULT_FLASH_MS),
+      ...attackers.map((view) => this.playUnitSacrifice(view, CASTLE_ASSAULT_FADE_MS)),
+    ]);
   }
 
-  private async playUnitSacrifice(unitId: string): Promise<void> {
-    const view = this.unitViews.get(unitId);
-    if (!view || !view.container.visible) {
+  private isCurrentBattle(playToken: number, activeBattle?: ActiveBattlePlayback): boolean {
+    return (
+      !this.destroyed &&
+      playToken === this.playToken &&
+      (!activeBattle || (this.activeBattle === activeBattle && activeBattle.completion.isActive()))
+    );
+  }
+
+  private async playUnitSacrifice(view: UnitView, duration: number): Promise<void> {
+    if (!view.container.visible) {
       return;
     }
 
@@ -1387,7 +1435,7 @@ class CastleBattleScene extends Phaser.Scene {
       targets: view.container,
       alpha: 0,
       scale: 0.76,
-      duration: 170,
+      duration,
       ease: "Sine.easeIn",
     });
     view.container.setVisible(false);
@@ -1646,10 +1694,10 @@ class CastleBattleScene extends Phaser.Scene {
     }
   }
 
-  private floatText(x: number, y: number, label: string, color: string): void {
+  private floatText(x: number, y: number, label: string, color: string, scale = 1): void {
     const text = this.acquireFloatText();
 
-    text.setPosition(x, y).setText(label).setColor(color).setDepth(980);
+    text.setPosition(x, y).setText(label).setColor(color).setScale(scale).setDepth(980);
 
     this.tweens.add({
       targets: text,
@@ -1692,14 +1740,14 @@ class CastleBattleScene extends Phaser.Scene {
     this.floatTextPool.push(text);
   }
 
-  private async flash(target: Phaser.GameObjects.Container, color: number): Promise<void> {
+  private async flash(target: Phaser.GameObjects.Container, color: number, duration = 180): Promise<void> {
     const glow = this.acquireGlow(target.x, target.y - 8, 74, 74, color, 0.32).setDepth(target.depth + 1);
 
     await this.tween({
       targets: glow,
       alpha: 0,
       scale: 1.35,
-      duration: 180,
+      duration,
       ease: "Sine.easeOut",
     });
 
@@ -1769,7 +1817,9 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private getCastleApproachPosition(owner: Owner, slotIndex: number): { x: number; y: number } {
-    const y = this.layout.castleApproachY[owner];
+    const row = getFieldSlotRow(slotIndex);
+    // Keep both battlefield rows visible when the whole army arrives together.
+    const y = this.layout.castleApproachY[owner] + row * (owner === "enemy" ? 22 : -22);
 
     return {
       x: getLaneX(this.layout, getFieldSlotColumn(slotIndex), y),
