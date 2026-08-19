@@ -102,6 +102,10 @@ test("PvP frontend is opt-in, authenticated, and sends only action intents", () 
   const completeBattlePresentation = mainSource.match(/function completeBattlePresentation[\s\S]*?\n\}/)?.[0] ?? "";
   assert.doesNotMatch(completeBattlePresentation, /reconnectSavedPvpSession/);
   assert.match(mainSource, /function applyPvpFinishedSnapshot[\s\S]*?outcome,\s*status: "finished"/);
+  assert.match(
+    mainSource,
+    /const previousMatch = uiState\.pvp\.match;[\s\S]*?isSamePresentedPvpBattle\(state\.mode, previousMatch, match\)/,
+  );
   assert.match(mainSource, /const PVP_RULESET_VERSION = "draft-battler-pvp-v1"/);
   assert.match(mainSource, /payload\.rulesetVersion !== PVP_RULESET_VERSION/);
   assert.match(mainSource, /match\.rulesetVersion !== PVP_RULESET_VERSION/);

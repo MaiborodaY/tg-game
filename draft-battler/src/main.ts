@@ -98,6 +98,7 @@ import {
   type SoloRunSnapshot,
   type SoloRunStorage,
 } from "./soloPersistence";
+import { isSamePresentedPvpBattle } from "./pvpPresentation";
 import {
   applyDraftPlacement,
   classifyDraftPlacement,
@@ -4370,8 +4371,9 @@ function applyPvpBattleSnapshot(state: UiState, match: PvpMatchSnapshot): UiStat
     return state;
   }
 
+  // `state` already contains the incoming server patch; `uiState` is the last rendered snapshot.
   const previousMatch = uiState.pvp.match;
-  if (state.mode === "battle" && previousMatch?.matchId === match.matchId && previousMatch.round === match.round) {
+  if (isSamePresentedPvpBattle(state.mode, previousMatch, match)) {
     return {
       ...state,
       pvp: {
