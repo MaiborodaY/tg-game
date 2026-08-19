@@ -49,6 +49,38 @@ test("PvP lobby remains usable on narrow safe-area viewports", () => {
   );
 });
 
+test("retention controls and history modal remain accessible on 320 by 568 screens", () => {
+  assert.match(styles, /\.daily-challenge-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s);
+  assert.match(
+    styles,
+    /\.daily-challenge-card__button,\s*\.main-menu__history-button\s*\{[^}]*min-height:\s*44px/s,
+  );
+  assert.match(
+    styles,
+    /\.run-history-overlay\s*\{[^}]*var\(--safe-top\)[^}]*var\(--safe-right\)[^}]*var\(--safe-bottom\)[^}]*var\(--safe-left\)/s,
+  );
+  assert.match(
+    styles,
+    /\.run-history-panel\s*\{[^}]*height:\s*100%[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\)[^}]*overflow:\s*hidden/s,
+  );
+  assert.match(styles, /\.run-history-panel__content\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s);
+  assert.match(styles, /\.run-history-panel__close\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s);
+  assert.match(styles, /\.run-history-entry__replay\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(
+    styles,
+    /\.terminal-result__actions\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s,
+  );
+  assert.match(styles, /\.terminal-result__actions > button\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(
+    styles,
+    /@media\s*\(max-width:\s*360px\)\s*and\s*\(max-height:\s*600px\)[\s\S]*?\.run-history-overlay\s*\{/s,
+  );
+  assert.match(
+    styles,
+    /\.run-history-panel__close:focus-visible,[\s\S]*?\.run-history-entry__replay:focus-visible,[\s\S]*?outline:\s*3px/s,
+  );
+});
+
 test("compact layouts and reduced motion remain part of the stylesheet contract", () => {
   assert.match(styles, /@media\s*\(max-width:\s*360px\)/);
   assert.match(styles, /@media\s*\(max-height:\s*720px\)/);

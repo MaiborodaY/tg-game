@@ -31,6 +31,7 @@ type TelegramWebApp = {
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   setBottomBarColor?: (color: string) => void;
+  openTelegramLink?: (url: string) => void;
   onEvent?: (name: string, callback: () => void) => void;
   offEvent?: (name: string, callback: () => void) => void;
   BackButton?: TelegramBackButton;
@@ -58,6 +59,7 @@ export type TelegramMiniAppBridge = Readonly<{
   ready(): void;
   setGameInProgress(active: boolean): void;
   setBackHandler(handler: (() => void) | undefined): void;
+  share(text: string, url: string): boolean;
   destroy(): void;
 }>;
 
@@ -204,6 +206,19 @@ export function setupTelegramMiniApp(
     applyBackHandler();
   };
 
+  const share = (text: string, url: string): boolean => {
+    if (destroyed || !webApp?.openTelegramLink) {
+      return false;
+    }
+
+    try {
+      webApp.openTelegramLink(createTelegramShareUrl(text, url));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const destroy = () => {
     if (destroyed) return;
     if (supportsTelegramVersion(webApp, "6.2") && gameInProgress) {
@@ -231,8 +246,19 @@ export function setupTelegramMiniApp(
     ready,
     setGameInProgress,
     setBackHandler,
+    share,
     destroy,
   });
+}
+
+export function createTelegramShareUrl(text: string, url: string): string {
+  const parameters = new URLSearchParams();
+  const safeUrl = sanitizeSharedPageUrl(url);
+  if (safeUrl) {
+    parameters.set("url", safeUrl);
+  }
+  parameters.set("text", text.trim().slice(0, 1024));
+  return `https://t.me/share/url?${parameters.toString()}`;
 }
 
 export function getTelegramLanguageCode(
@@ -277,5 +303,29 @@ function callTelegramApi(action: () => void): void {
     action();
   } catch {
     // Telegram APIs are optional; standalone browser play must remain available.
+  }
+}
+
+export function sanitizeSharedPageUrl(value: string): string {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return "";
+    }
+
+    parsed.username = "";
+    parsed.password = "";
+    parsed.search = "";
+    parsed.hash = "";
+    const sanitized = parsed.toString();
+    if (sanitized.length <= 2048) {
+      return sanitized;
+    }
+
+    // Keep an oversized URL valid instead of cutting through an encoded path.
+    const originOnly = `${parsed.origin}/`;
+    return originOnly.length <= 2048 ? originOnly : "";
+  } catch {
+    return "";
   }
 }

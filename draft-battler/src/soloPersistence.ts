@@ -4,6 +4,7 @@ import {
   isCardAllowedInSlot,
 } from "./game/draft";
 import { chooseDraftCards, createRun, resolveRound } from "./game/run";
+import type { RunSource } from "./dailyChallenge";
 import {
   BOARD_SLOT_COUNT,
   ENEMY_STARTING_HP,
@@ -21,8 +22,10 @@ import {
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 6;
+export const SOLO_RUN_SNAPSHOT_VERSION = 7;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
+export const SOLO_RUN_RULESET_VERSION = "draft-battler-solo-v1";
+export const SOLO_RUN_ID_MAX_LENGTH = 160;
 const INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v1",
   "draft-battler:solo-run:v2",
@@ -30,14 +33,33 @@ const INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v4",
 ] as const;
 const LEGACY_V5_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v5";
+const LEGACY_V6_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v6";
 const LEGACY_SOLO_RUN_STORAGE_KEYS = [
   ...INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS,
   LEGACY_V5_SOLO_RUN_STORAGE_KEY,
+  LEGACY_V6_SOLO_RUN_STORAGE_KEY,
 ] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";
 
+export interface SoloRunSession {
+  readonly runId: string;
+  readonly source: RunSource;
+  readonly dailyDateKey: string | null;
+  readonly rulesetVersion: typeof SOLO_RUN_RULESET_VERSION;
+  readonly startedAt: number;
+  readonly completedAt: number | null;
+}
+
+export interface CreateSoloRunSessionOptions {
+  source: RunSource;
+  dailyDateKey?: string | null;
+  now?: number;
+  runId?: string;
+}
+
 export interface SoloRunSnapshotState {
+  session: SoloRunSession;
   checkpoint: SoloRunCheckpoint;
   run: RunState;
   draftBoardSlots: BoardSlot[];
@@ -60,11 +82,21 @@ const VALID_CARD_IDS = new Set<CardId>(CARD_DEFINITIONS.map((card) => card.id));
 const SNAPSHOT_KEYS = [
   "version",
   "savedAt",
+  "session",
   "checkpoint",
   "run",
   "draftBoardSlots",
   "cardPickedThisRound",
   "lastRound",
+] as const;
+const LEGACY_SNAPSHOT_KEYS = SNAPSHOT_KEYS.filter((key) => key !== "session");
+const SESSION_KEYS = [
+  "runId",
+  "source",
+  "dailyDateKey",
+  "rulesetVersion",
+  "startedAt",
+  "completedAt",
 ] as const;
 const RUN_KEYS = [
   "seed",
@@ -95,6 +127,42 @@ const ROUND_RECORD_KEYS = [
   "combatResult",
 ] as const;
 const BOARD_SLOT_KEYS = ["slotIndex", "cardId", "upgradeLevel"] as const;
+const UTC_DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
+const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
+
+export function createSoloRunSession(options: CreateSoloRunSessionOptions): SoloRunSession {
+  const startedAt = options.now ?? Date.now();
+  const session = readSoloRunSession({
+    runId: options.runId ?? createGeneratedRunId(startedAt),
+    source: options.source,
+    dailyDateKey: options.dailyDateKey ?? null,
+    rulesetVersion: SOLO_RUN_RULESET_VERSION,
+    startedAt,
+    completedAt: null,
+  });
+  if (!session) {
+    throw new RangeError("Invalid solo run session metadata.");
+  }
+
+  return session;
+}
+
+export function completeSoloRunSession(session: SoloRunSession, now = Date.now()): SoloRunSession {
+  const current = readSoloRunSession(session);
+  if (!current) {
+    throw new RangeError("Invalid solo run session metadata.");
+  }
+  if (current.completedAt !== null) {
+    return current;
+  }
+
+  const completed = readSoloRunSession({ ...current, completedAt: now });
+  if (!completed) {
+    throw new RangeError("Solo run completion cannot precede its start.");
+  }
+
+  return completed;
+}
 
 export function createSoloRunSnapshot(
   state: SoloRunSnapshotState,
@@ -163,11 +231,28 @@ export function loadSoloRunSnapshot(storage: SoloRunStorage | null | undefined):
   if (serialized !== null) {
     const snapshot = decodeSoloRunSnapshot(serialized);
     if (snapshot) {
-      removeStoredSnapshots(storage, [LEGACY_V5_SOLO_RUN_STORAGE_KEY]);
+      removeStoredSnapshots(storage, [LEGACY_V5_SOLO_RUN_STORAGE_KEY, LEGACY_V6_SOLO_RUN_STORAGE_KEY]);
       return snapshot;
     }
 
     removeStoredSnapshots(storage, [SOLO_RUN_STORAGE_KEY]);
+  }
+
+  let legacyV6Serialized: string | null;
+  try {
+    legacyV6Serialized = storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY);
+  } catch {
+    return undefined;
+  }
+
+  if (legacyV6Serialized !== null) {
+    const migrated = decodeLegacyV6SoloRunSnapshot(legacyV6Serialized);
+    if (migrated) {
+      saveSoloRunSnapshot(storage, migrated, migrated.savedAt);
+      return migrated;
+    }
+
+    removeStoredSnapshots(storage, [LEGACY_V6_SOLO_RUN_STORAGE_KEY]);
   }
 
   let legacySerialized: string | null;
@@ -228,38 +313,53 @@ function readSnapshot(value: unknown): SoloRunSnapshot | undefined {
     return undefined;
   }
 
-  return readSnapshotRecord(snapshot, false);
+  return readSnapshotRecord(snapshot, "current");
+}
+
+function decodeLegacyV6SoloRunSnapshot(serialized: string): SoloRunSnapshot | undefined {
+  try {
+    const snapshot = readExactRecord(JSON.parse(serialized) as unknown, LEGACY_SNAPSHOT_KEYS);
+    return snapshot?.version === 6 ? readSnapshotRecord(snapshot, "v6") : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function decodeLegacyV5SoloRunSnapshot(serialized: string): SoloRunSnapshot | undefined {
   try {
-    const snapshot = readExactRecord(JSON.parse(serialized) as unknown, SNAPSHOT_KEYS);
-    return snapshot?.version === 5 ? readSnapshotRecord(snapshot, true) : undefined;
+    const snapshot = readExactRecord(JSON.parse(serialized) as unknown, LEGACY_SNAPSHOT_KEYS);
+    return snapshot?.version === 5 ? readSnapshotRecord(snapshot, "v5") : undefined;
   } catch {
     return undefined;
   }
 }
 
 function readSnapshotRecord(
-  snapshot: Record<(typeof SNAPSHOT_KEYS)[number], unknown>,
-  isLegacyV5: boolean,
+  snapshot: Record<string, unknown>,
+  version: "current" | "v6" | "v5",
 ): SoloRunSnapshot | undefined {
-
   const savedAt = readInteger(snapshot.savedAt, 0, Number.MAX_SAFE_INTEGER);
   const checkpoint = readCheckpoint(snapshot.checkpoint);
-  const run = readRunState(snapshot.run, isLegacyV5);
+  const run = readRunState(snapshot.run, version === "v5");
   const draftBoardSlots = readBoardSlots(snapshot.draftBoardSlots);
   const cardPickedThisRound = readBoolean(snapshot.cardPickedThisRound);
   const lastRound = readInteger(snapshot.lastRound, 1, MAX_RUN_ROUNDS);
+  const session = version === "current"
+    ? readSoloRunSession(snapshot.session)
+    : savedAt !== undefined && checkpoint && run
+      ? createLegacySoloRunSession(version, run, checkpoint, savedAt)
+      : undefined;
 
   if (
     savedAt === undefined ||
+    !session ||
     !checkpoint ||
     !run ||
     !draftBoardSlots ||
     cardPickedThisRound === undefined ||
     lastRound === undefined ||
-    !hasValidCheckpointState(checkpoint, run, draftBoardSlots, cardPickedThisRound, lastRound)
+    !hasValidCheckpointState(checkpoint, run, draftBoardSlots, cardPickedThisRound, lastRound) ||
+    !hasValidSessionCheckpoint(session, checkpoint)
   ) {
     return undefined;
   }
@@ -267,6 +367,7 @@ function readSnapshotRecord(
   return {
     version: SOLO_RUN_SNAPSHOT_VERSION,
     savedAt,
+    session,
     checkpoint,
     run,
     draftBoardSlots,
@@ -556,6 +657,103 @@ function getBoardUnitMultiset(slots: readonly BoardSlot[]): string[] {
 
 function getBoardUnitKey(cardId: CardId, upgradeLevel: BoardSlot["upgradeLevel"]): string {
   return `${cardId}:${upgradeLevel}`;
+}
+
+function readSoloRunSession(value: unknown): SoloRunSession | undefined {
+  const session = readExactRecord(value, SESSION_KEYS);
+  if (!session) {
+    return undefined;
+  }
+
+  const runId = readTrimmedString(session.runId, 1, SOLO_RUN_ID_MAX_LENGTH);
+  const source = readRunSource(session.source);
+  const dailyDateKey = session.dailyDateKey === null ? null : readDailyDateKey(session.dailyDateKey);
+  const startedAt = readInteger(session.startedAt, 1, MAX_DATE_TIMESTAMP);
+  const completedAt = session.completedAt === null
+    ? null
+    : readInteger(session.completedAt, 1, MAX_DATE_TIMESTAMP);
+  if (
+    !runId ||
+    !source ||
+    dailyDateKey === undefined ||
+    session.rulesetVersion !== SOLO_RUN_RULESET_VERSION ||
+    startedAt === undefined ||
+    completedAt === undefined ||
+    (source === "daily" ? dailyDateKey === null : dailyDateKey !== null) ||
+    (completedAt !== null && completedAt < startedAt)
+  ) {
+    return undefined;
+  }
+
+  return {
+    runId,
+    source,
+    dailyDateKey,
+    rulesetVersion: SOLO_RUN_RULESET_VERSION,
+    startedAt,
+    completedAt,
+  };
+}
+
+function createLegacySoloRunSession(
+  version: "v6" | "v5",
+  run: RunState,
+  checkpoint: SoloRunCheckpoint,
+  savedAt: number,
+): SoloRunSession {
+  const timestamp = Math.max(1, savedAt);
+  const session = createSoloRunSession({
+    source: "standard",
+    now: timestamp,
+    runId: `legacy-${version}-${timestamp.toString(36)}-${stableHash(run.seed).toString(36)}`,
+  });
+  return checkpoint === "finished" ? completeSoloRunSession(session, timestamp) : session;
+}
+
+function hasValidSessionCheckpoint(session: SoloRunSession, checkpoint: SoloRunCheckpoint): boolean {
+  return checkpoint === "finished" ? session.completedAt !== null : session.completedAt === null;
+}
+
+function readRunSource(value: unknown): RunSource | undefined {
+  return value === "standard" || value === "daily" ? value : undefined;
+}
+
+function readDailyDateKey(value: unknown): string | undefined {
+  if (typeof value !== "string" || !UTC_DATE_KEY_PATTERN.test(value)) {
+    return undefined;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+    ? value
+    : undefined;
+}
+
+function readTrimmedString(value: unknown, minLength: number, maxLength: number): string | undefined {
+  return typeof value === "string" &&
+    value === value.trim() &&
+    value.length >= minLength &&
+    value.length <= maxLength
+    ? value
+    : undefined;
+}
+
+function createGeneratedRunId(startedAt: number): string {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) {
+    return uuid;
+  }
+
+  return `solo-${startedAt.toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function readCheckpoint(value: unknown): SoloRunCheckpoint | undefined {

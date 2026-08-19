@@ -25,6 +25,26 @@ export interface UiCopy {
   localeName: string;
   menuSubtitle: string;
   startRun: string;
+  dailyChallengeTitle: string;
+  dailyChallengeHint: string;
+  dailyChallengePlay: string;
+  runHistoryButton: string;
+  runHistoryTitle: string;
+  runHistoryIntro: string;
+  runHistoryEmpty: string;
+  runHistoryReplay: string;
+  runHistoryReplayCurrentRules: string;
+  runHistorySaveFailed: string;
+  runHistoryDiscardConfirm: string;
+  closeRunHistory: string;
+  runSourceStandard: string;
+  runSourceDaily: string;
+  newLayout: string;
+  sameLayout: string;
+  shareResult: string;
+  shareCopied: string;
+  shareFailed: string;
+  shareResultText: string;
   botDifficulty: string;
   botDifficultyStandard: string;
   botDifficultyStrong: string;
@@ -233,6 +253,26 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     localeName: "Русский",
     menuSubtitle: "Соберите отряд и разрушьте крепость соперника за 15 раундов.",
     startRun: "Начать дуэль",
+    dailyChallengeTitle: "Испытание дня",
+    dailyChallengeHint: "Один расклад на сегодня · сильный бот · обновление в 00:00 UTC.",
+    dailyChallengePlay: "Играть",
+    runHistoryButton: "История · {count}/{limit}",
+    runHistoryTitle: "Последние матчи",
+    runHistoryIntro: "Хранятся локально на этом устройстве, до {limit} матчей.",
+    runHistoryEmpty: "Здесь появятся завершённые матчи на этом устройстве.",
+    runHistoryReplay: "Играть этот расклад",
+    runHistoryReplayCurrentRules: "Играть этот расклад по текущим правилам",
+    runHistorySaveFailed: "Не удалось сохранить результат. Освободите место в хранилище и попробуйте снова.",
+    runHistoryDiscardConfirm: "Не удалось сохранить результат в историю. Продолжить без сохранения этого результата?",
+    closeRunHistory: "Закрыть историю матчей",
+    runSourceStandard: "Обычный матч",
+    runSourceDaily: "Испытание дня",
+    newLayout: "Новый расклад",
+    sameLayout: "Тот же расклад",
+    shareResult: "Поделиться",
+    shareCopied: "Результат скопирован",
+    shareFailed: "Не удалось поделиться — скопируйте результат вручную.",
+    shareResultText: "⚔️ Bro Battler\n{outcome} · {difficulty}\nРаунды: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}",
     botDifficulty: "Сложность бота",
     botDifficultyStandard: "Обычный",
     botDifficultyStrong: "Сильный",
@@ -433,6 +473,26 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     localeName: "Українська",
     menuSubtitle: "Зберіть загін і зруйнуйте фортецю суперника за 15 раундів.",
     startRun: "Почати дуель",
+    dailyChallengeTitle: "Випробування дня",
+    dailyChallengeHint: "Один розклад на сьогодні · сильний бот · оновлення о 00:00 UTC.",
+    dailyChallengePlay: "Грати",
+    runHistoryButton: "Історія · {count}/{limit}",
+    runHistoryTitle: "Останні матчі",
+    runHistoryIntro: "Зберігаються локально на цьому пристрої, до {limit} матчів.",
+    runHistoryEmpty: "Тут з’являться завершені матчі на цьому пристрої.",
+    runHistoryReplay: "Грати цей розклад",
+    runHistoryReplayCurrentRules: "Грати цей розклад за поточними правилами",
+    runHistorySaveFailed: "Не вдалося зберегти результат. Звільніть місце у сховищі та спробуйте ще раз.",
+    runHistoryDiscardConfirm: "Не вдалося зберегти результат в історії. Продовжити без збереження цього результату?",
+    closeRunHistory: "Закрити історію матчів",
+    runSourceStandard: "Звичайний матч",
+    runSourceDaily: "Випробування дня",
+    newLayout: "Новий розклад",
+    sameLayout: "Той самий розклад",
+    shareResult: "Поділитися",
+    shareCopied: "Результат скопійовано",
+    shareFailed: "Не вдалося поділитися — скопіюйте результат вручну.",
+    shareResultText: "⚔️ Bro Battler\n{outcome} · {difficulty}\nРаунди: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}",
     botDifficulty: "Складність бота",
     botDifficultyStandard: "Звичайний",
     botDifficultyStrong: "Сильний",
@@ -633,6 +693,26 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     localeName: "English",
     menuSubtitle: "Build a squad and destroy the rival keep within 15 rounds.",
     startRun: "Start duel",
+    dailyChallengeTitle: "Daily challenge",
+    dailyChallengeHint: "One layout today · strong bot · resets at 00:00 UTC.",
+    dailyChallengePlay: "Play",
+    runHistoryButton: "History · {count}/{limit}",
+    runHistoryTitle: "Recent matches",
+    runHistoryIntro: "Stored locally on this device, up to {limit} matches.",
+    runHistoryEmpty: "Completed matches on this device will appear here.",
+    runHistoryReplay: "Play this layout",
+    runHistoryReplayCurrentRules: "Play this layout with current rules",
+    runHistorySaveFailed: "Could not save the result. Free storage space and try again.",
+    runHistoryDiscardConfirm: "Could not save the result to history. Continue without saving this result?",
+    closeRunHistory: "Close match history",
+    runSourceStandard: "Standard match",
+    runSourceDaily: "Daily challenge",
+    newLayout: "New layout",
+    sameLayout: "Same layout",
+    shareResult: "Share",
+    shareCopied: "Result copied",
+    shareFailed: "Could not share — copy the result manually.",
+    shareResultText: "⚔️ Bro Battler\n{outcome} · {difficulty}\nRounds: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}",
     botDifficulty: "Bot difficulty",
     botDifficultyStandard: "Normal",
     botDifficultyStrong: "Strong",

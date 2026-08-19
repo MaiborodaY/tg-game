@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createTelegramShareUrl,
   getTelegramLanguageCode,
   setupTelegramMiniApp,
   supportsTelegramVersion,
@@ -55,6 +56,7 @@ function createWebApp() {
     headerColors: [],
     backgroundColors: [],
     bottomBarColors: [],
+    telegramLinks: [],
   };
 
   return {
@@ -75,6 +77,7 @@ function createWebApp() {
     setHeaderColor(color) { calls.headerColors.push(color); },
     setBackgroundColor(color) { calls.backgroundColors.push(color); },
     setBottomBarColor(color) { calls.bottomBarColors.push(color); },
+    openTelegramLink(url) { calls.telegramLinks.push(url); },
     onEvent(name, callback) {
       const callbacks = eventListeners.get(name) ?? new Set();
       callbacks.add(callback);
@@ -111,6 +114,7 @@ test("standalone browser fallback stays operational without Telegram", () => {
     bridge.ready();
     bridge.setGameInProgress(true);
     bridge.setBackHandler(() => {});
+    assert.equal(bridge.share("Result", "https://example.com/game?secret=1#private"), false);
     bridge.destroy();
   });
   assert.equal(cssVariables.values.size, 0);
@@ -155,6 +159,9 @@ test("Telegram startup applies viewport, safe area, locale and lifecycle control
   webApp.BackButton.click();
   assert.equal(backCount, 1);
   assert.equal(webApp.calls.hideBackButton, 1);
+
+  assert.equal(bridge.share("  Victory  ", "https://example.com/game?tgWebAppData=secret#private"), true);
+  assert.deepEqual(webApp.calls.telegramLinks, ["https://t.me/share/url?url=https%3A%2F%2Fexample.com%2Fgame&text=Victory"]);
 });
 
 test("Telegram events refresh layout and destroy removes every binding", () => {
@@ -192,4 +199,15 @@ test("Telegram language and version helpers fail closed on malformed clients", (
   assert.equal(supportsTelegramVersion(undefined, "8.0"), false);
   assert.equal(supportsTelegramVersion({ isVersionAtLeast: () => false }, "8.0"), false);
   assert.equal(supportsTelegramVersion({ isVersionAtLeast: () => { throw new Error("old client"); } }, "8.0"), false);
+});
+
+test("Telegram share URLs strip Mini App credentials and reject non-web page URLs", () => {
+  assert.equal(
+    createTelegramShareUrl("Bro Battler", "https://user:pass@example.com/play?tgWebAppData=secret#hash"),
+    "https://t.me/share/url?url=https%3A%2F%2Fexample.com%2Fplay&text=Bro+Battler",
+  );
+  assert.equal(
+    createTelegramShareUrl("Bro Battler", "javascript:alert(1)"),
+    "https://t.me/share/url?text=Bro+Battler",
+  );
 });

@@ -13,7 +13,10 @@ test("main menu exposes an accessible cards and synergies compendium", () => {
   assert.match(mainSource, /compendiumButton\.textContent = copy\.compendium/);
   assert.match(mainSource, /panel\.setAttribute\("aria-modal", "true"\)/);
   assert.match(mainSource, /compendiumOpen && uiState\.mode === "menu"/);
-  assert.match(mainSource, /telegram\.setBackHandler\(uiState\.mode !== "menu" \|\| howToOpen \|\| compendiumOpen/);
+  assert.match(
+    mainSource,
+    /telegram\.setBackHandler\([\s\S]*?uiState\.mode !== "menu" \|\| howToOpen \|\| compendiumOpen \|\| runHistoryOpen/,
+  );
   assert.match(styles, /\.compendium-panel\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\)[^}]*overflow:\s*hidden/s);
   assert.match(styles, /\.compendium-panel__content\s*\{[^}]*overflow-y:\s*auto/s);
   assert.match(mainSource, /content\.tabIndex = 0/);

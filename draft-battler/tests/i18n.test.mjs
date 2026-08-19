@@ -133,6 +133,72 @@ test("bot difficulty choices are explicit in every locale", () => {
   });
 });
 
+test("daily challenge, local history, replay, and sharing copy is complete", () => {
+  const retentionKeys = [
+    "dailyChallengeTitle",
+    "dailyChallengeHint",
+    "dailyChallengePlay",
+    "runHistoryButton",
+    "runHistoryTitle",
+    "runHistoryIntro",
+    "runHistoryEmpty",
+    "runHistoryReplay",
+    "runHistoryReplayCurrentRules",
+    "runHistorySaveFailed",
+    "runHistoryDiscardConfirm",
+    "closeRunHistory",
+    "runSourceStandard",
+    "runSourceDaily",
+    "newLayout",
+    "sameLayout",
+    "shareResult",
+    "shareCopied",
+    "shareFailed",
+    "shareResultText",
+  ];
+  const dailyExpectations = {
+    ru: ["сегодня", "сильный бот", "00:00 UTC"],
+    uk: ["сьогодні", "сильний бот", "00:00 UTC"],
+    en: ["today", "strong bot", "00:00 UTC"],
+  };
+  const sharePlaceholders = [
+    "difficulty",
+    "enemyHp",
+    "maxRounds",
+    "outcome",
+    "playerHp",
+    "round",
+  ];
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    retentionKeys.forEach((key) => assert.match(copy[key], /\S/, `${locale}:${key}`));
+    dailyExpectations[locale].forEach((fragment) => {
+      assert.ok(copy.dailyChallengeHint.includes(fragment), `${locale}:dailyChallengeHint:${fragment}`);
+    });
+    assert.deepEqual(
+      [...copy.shareResultText.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]).sort(),
+      sharePlaceholders,
+      `${locale}:shareResultText placeholders`,
+    );
+    assert.match(copy.runHistoryButton, /\{count\}.*\{limit\}/, `${locale}:runHistoryButton placeholders`);
+    assert.match(copy.runHistoryIntro, /\{limit\}/, `${locale}:runHistoryIntro limit`);
+
+    const formattedShare = formatMessage(copy.shareResultText, {
+      outcome: copy.victory,
+      difficulty: copy.botDifficultyStrong,
+      round: 15,
+      maxRounds: 15,
+      playerHp: 9,
+      enemyHp: 0,
+    });
+    assert.match(formattedShare, /Bro Battler/);
+    assert.match(formattedShare, /15\/15/);
+    assert.match(formattedShare, /9:0/);
+    assert.doesNotMatch(formattedShare, /\{[^}]+\}/, `${locale}:shareResultText unresolved placeholder`);
+  });
+});
+
 test("PvP lobby and match controls are localized completely", () => {
   const pvpKeys = [
     "onlineMode",

@@ -32,9 +32,9 @@ test("main menu exposes fair standard and strong bot modes", () => {
   assert.match(mainSource, /createBotDifficultyButton\("standard"\)/);
   assert.match(mainSource, /createBotDifficultyButton\("strong"\)/);
   assert.match(mainSource, /duelButtons\.setAttribute\("role", "group"\)/);
-  assert.match(mainSource, /button\.addEventListener\("click", \(\) => startSoloRun\(botDifficulty\)\)/);
+  assert.match(mainSource, /button\.addEventListener\("click", \(\) => startNewSoloRun\(botDifficulty\)\)/);
   assert.match(mainSource, /createRun\(seed, botDifficulty\)/);
-  assert.match(mainSource, /startSoloRun\(uiState\.run\.botDifficulty\)/);
+  assert.match(mainSource, /function startNewSoloRun\(botDifficulty: BotDifficulty\): void/);
   assert.match(mainSource, /snapshot\.run\.botDifficulty/);
   assert.match(styles, /\.main-menu__duel-buttons\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
   assert.match(styles, /\.main-menu__difficulty-button\s*\{[^}]*min-height:\s*68px/s);

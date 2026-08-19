@@ -53,6 +53,17 @@ import {
   type CompendiumCardPresentation,
 } from "./compendiumPresentation";
 import { createRoundInsights } from "./roundInsights";
+import { createTodayDailyChallenge, type RunSource } from "./dailyChallenge";
+import {
+  SOLO_RUN_HISTORY_LIMIT,
+  flushQueuedSoloRunSummaries,
+  loadSoloRunHistory,
+  queueSoloRunSummary,
+  recordSoloRunSummary,
+  type RunHistoryStorageLike,
+  type SoloRunSummary,
+} from "./runHistory";
+import { shareResult } from "./resultSharing";
 import {
   DRAFT_CAMERA_ZOOM,
   FIELD_FALLBACK_HEIGHT,
@@ -97,9 +108,13 @@ import {
 } from "./i18n";
 import {
   clearSoloRunSnapshot,
+  completeSoloRunSession,
+  createSoloRunSession,
   loadSoloRunSnapshot,
   saveSoloRunSnapshot,
+  SOLO_RUN_RULESET_VERSION,
   type SoloRunCheckpoint,
+  type SoloRunSession,
   type SoloRunSnapshot,
   type SoloRunStorage,
 } from "./soloPersistence";
@@ -161,7 +176,15 @@ interface UiState {
   lastRound: number;
   lastBattleTimeline?: BattleTimeline;
   presentedCastleHp?: Record<Owner, number>;
+  soloSession?: SoloRunSession;
   pvp: PvpState;
+}
+
+interface SoloRunStartRequest {
+  seed: string;
+  botDifficulty: BotDifficulty;
+  source: RunSource;
+  dailyDateKey: string | null;
 }
 
 interface PvpState {
@@ -280,15 +303,20 @@ const telegram = setupTelegramMiniApp();
 
 const preferenceStorage = getPreferenceStorage();
 const soloRunStorage = getSoloRunStorage();
+const runHistoryStorage = getRunHistoryStorage();
 const pvpSessionStorage = getPvpSessionStorage();
 const restoredSoloRun = loadSoloRunSnapshot(soloRunStorage);
 let soloPersistenceFailureReported = false;
+let soloHistoryFailureReported = false;
 let activeLocale = resolveInitialLocale(
   readStoredLocale(preferenceStorage),
   telegram.languageCode ?? navigator.language,
 );
 let howToOpen = !hasSeenHowTo(preferenceStorage);
 let compendiumOpen = false;
+let runHistoryOpen = false;
+flushQueuedSoloRunSummaries(runHistoryStorage);
+let soloRunHistory = loadSoloRunHistory(runHistoryStorage);
 let battlePlaybackSpeed = loadBattlePlaybackSpeed(preferenceStorage);
 document.documentElement.lang = activeLocale;
 
@@ -363,6 +391,10 @@ let pvpAutomaticReconnectUsed = false;
 let battlePresentationWatchdog: number | undefined;
 let battlePresentationWatchdogKey: string | undefined;
 
+if (restoredSoloRun?.checkpoint === "finished") {
+  ensureFinishedSoloRunRecorded();
+}
+
 render();
 telegram.ready();
 window.addEventListener("beforeunload", () => {
@@ -372,6 +404,11 @@ window.addEventListener("beforeunload", () => {
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeTopOverlay();
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && uiState.mode === "menu") {
+    render();
   }
 });
 
@@ -401,6 +438,10 @@ function closeTopOverlay(): boolean {
     closeCompendium();
     return true;
   }
+  if (runHistoryOpen && uiState.mode === "menu") {
+    closeRunHistory();
+    return true;
+  }
   if (uiState.playMode === "online") {
     requestLeavePvpRoom();
     return true;
@@ -422,6 +463,7 @@ function createInitialUiState(
   playMode: PlayMode = "solo",
   mode: ScreenMode = "menu",
   botDifficulty: BotDifficulty = "standard",
+  soloSession?: SoloRunSession,
 ): UiState {
   const run = createRun(seed, botDifficulty);
 
@@ -434,6 +476,7 @@ function createInitialUiState(
     battleFinished: false,
     logsOpen: false,
     lastRound: 1,
+    soloSession,
     pvp: createInitialPvpState(),
   };
 }
@@ -502,6 +545,9 @@ function render(): void {
   } else if (uiState.mode === "menu" && compendiumOpen) {
     stageUi.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
     stageUi.append(createCompendiumOverlay());
+  } else if (uiState.mode === "menu" && runHistoryOpen) {
+    stageUi.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
+    stageUi.append(createRunHistoryOverlay());
   }
 
   if (uiState.mode === "draft" && pendingDraftReplacement) {
@@ -521,7 +567,11 @@ function render(): void {
 function syncTelegramMiniApp(): void {
   const gameInProgress = uiState.mode !== "menu" && uiState.run.status !== "finished";
   telegram.setGameInProgress(gameInProgress);
-  telegram.setBackHandler(uiState.mode !== "menu" || howToOpen || compendiumOpen ? handleTelegramBack : undefined);
+  telegram.setBackHandler(
+    uiState.mode !== "menu" || howToOpen || compendiumOpen || runHistoryOpen
+      ? handleTelegramBack
+      : undefined,
+  );
 }
 
 function setFocusKey(element: HTMLElement, focusKey: string): void {
@@ -759,7 +809,11 @@ function createMainMenuOverlay(): HTMLElement {
   referenceActions.className = "main-menu__reference-actions";
   referenceActions.append(howToButton, compendiumButton);
 
-  actions.append(difficultyLabel, duelButtons, referenceActions);
+  const retentionActions = document.createElement("div");
+  retentionActions.className = "main-menu__retention-actions";
+  retentionActions.append(createDailyChallengeCard(), createRunHistoryButton());
+
+  actions.append(difficultyLabel, duelButtons, retentionActions, referenceActions);
   if (PVP_UI_ENABLED) {
     const onlineButton = document.createElement("button");
     onlineButton.className = "main-menu__button";
@@ -773,6 +827,46 @@ function createMainMenuOverlay(): HTMLElement {
   overlay.append(panel);
 
   return overlay;
+}
+
+function createDailyChallengeCard(): HTMLElement {
+  const copy = getCopy();
+  const card = document.createElement("section");
+  card.className = "daily-challenge-card";
+
+  const body = document.createElement("div");
+  body.className = "daily-challenge-card__copy";
+  const title = document.createElement("strong");
+  title.className = "daily-challenge-card__title";
+  title.textContent = copy.dailyChallengeTitle;
+  const hint = document.createElement("span");
+  hint.className = "daily-challenge-card__hint";
+  hint.textContent = copy.dailyChallengeHint;
+  body.append(title, hint);
+
+  const playButton = document.createElement("button");
+  playButton.className = "daily-challenge-card__button";
+  playButton.type = "button";
+  playButton.textContent = copy.dailyChallengePlay;
+  setFocusKey(playButton, "daily-challenge-play");
+  playButton.addEventListener("click", startDailyChallenge);
+
+  card.append(body, playButton);
+  return card;
+}
+
+function createRunHistoryButton(): HTMLButtonElement {
+  const copy = getCopy();
+  const button = document.createElement("button");
+  button.className = "main-menu__history-button";
+  button.type = "button";
+  button.textContent = formatMessage(copy.runHistoryButton, {
+    count: soloRunHistory.length,
+    limit: SOLO_RUN_HISTORY_LIMIT,
+  });
+  setFocusKey(button, "run-history-open");
+  button.addEventListener("click", openRunHistory);
+  return button;
 }
 
 function createBotDifficultyButton(botDifficulty: BotDifficulty): HTMLButtonElement {
@@ -791,7 +885,7 @@ function createBotDifficultyButton(botDifficulty: BotDifficulty): HTMLButtonElem
     ? copy.botDifficultyStrongHint
     : copy.botDifficultyStandardHint;
   button.append(label, hint);
-  button.addEventListener("click", () => startSoloRun(botDifficulty));
+  button.addEventListener("click", () => startNewSoloRun(botDifficulty));
   return button;
 }
 
@@ -1040,6 +1134,7 @@ function createCompendiumStat(label: string, baseValue: number, upgradedValue: n
 
 function openHowToPlay(): void {
   compendiumOpen = false;
+  runHistoryOpen = false;
   howToOpen = true;
   render();
 }
@@ -1055,6 +1150,7 @@ function closeHowToPlay(): void {
 
 function openCompendium(): void {
   howToOpen = false;
+  runHistoryOpen = false;
   compendiumOpen = true;
   render();
 }
@@ -1065,6 +1161,154 @@ function closeCompendium(): void {
   render();
 }
 
+function createRunHistoryOverlay(): HTMLElement {
+  const copy = getCopy();
+  const overlay = document.createElement("div");
+  overlay.className = "run-history-overlay";
+
+  const panel = document.createElement("section");
+  panel.className = "run-history-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "draft-battler-run-history-title");
+  panel.addEventListener("keydown", (event) => trapModalFocus(panel, event));
+
+  const header = document.createElement("div");
+  header.className = "run-history-panel__header";
+  const heading = document.createElement("div");
+  const title = document.createElement("h2");
+  title.id = "draft-battler-run-history-title";
+  title.textContent = copy.runHistoryTitle;
+  const intro = document.createElement("p");
+  intro.textContent = formatMessage(copy.runHistoryIntro, { limit: SOLO_RUN_HISTORY_LIMIT });
+  heading.append(title, intro);
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "run-history-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", copy.closeRunHistory);
+  closeButton.addEventListener("click", closeRunHistory);
+  header.append(heading, closeButton);
+
+  const content = document.createElement("div");
+  content.className = "run-history-panel__content";
+  content.tabIndex = 0;
+  if (soloRunHistory.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "run-history-panel__empty";
+    empty.textContent = copy.runHistoryEmpty;
+    content.append(empty);
+  } else {
+    const list = document.createElement("div");
+    list.className = "run-history-list";
+    list.setAttribute("role", "list");
+    soloRunHistory.forEach((summary) => list.append(createRunHistoryEntry(summary)));
+    content.append(list);
+  }
+
+  panel.append(header, content);
+  overlay.append(panel);
+  queueMicrotask(() => {
+    if (closeButton.isConnected) {
+      closeButton.focus();
+    }
+  });
+  return overlay;
+}
+
+function createRunHistoryEntry(summary: SoloRunSummary): HTMLElement {
+  const copy = getCopy();
+  const kind = summary.outcome === "player" ? "victory" : summary.outcome === "enemy" ? "defeat" : "draw";
+  const entry = document.createElement("article");
+  entry.className = "run-history-entry";
+  entry.setAttribute("role", "listitem");
+
+  const topLine = document.createElement("div");
+  topLine.className = "run-history-entry__topline";
+  const outcome = document.createElement("strong");
+  outcome.className = `run-history-entry__outcome run-history-entry__outcome--${kind}`;
+  outcome.textContent = summary.outcome === "player" ? copy.victory : summary.outcome === "enemy" ? copy.defeat : copy.draw;
+  const date = document.createElement("time");
+  date.dateTime = new Date(summary.completedAt).toISOString();
+  date.textContent = formatRunHistoryDate(summary.completedAt);
+  topLine.append(outcome, date);
+
+  const meta = document.createElement("p");
+  meta.className = "run-history-entry__meta";
+  const source = summary.source === "daily" ? copy.runSourceDaily : copy.runSourceStandard;
+  const sourceDetail = summary.dailyDateKey ? `${source} · ${summary.dailyDateKey}` : source;
+  meta.textContent = `${sourceDetail} · ${getBotDifficultyLabel(summary.botDifficulty)}`;
+
+  const score = document.createElement("p");
+  score.className = "run-history-entry__score";
+  score.textContent = `${copy.rounds}: ${summary.round}/${MAX_RUN_ROUNDS} · HP: ${summary.playerHp}:${summary.enemyHp}`;
+
+  const replayButton = document.createElement("button");
+  replayButton.className = "run-history-entry__replay";
+  replayButton.type = "button";
+  replayButton.textContent = summary.rulesetVersion === SOLO_RUN_RULESET_VERSION
+    ? copy.runHistoryReplay
+    : copy.runHistoryReplayCurrentRules;
+  replayButton.setAttribute(
+    "aria-label",
+    `${replayButton.textContent}: ${outcome.textContent}, ${date.textContent}, ${getBotDifficultyLabel(summary.botDifficulty)}, ${score.textContent}`,
+  );
+  replayButton.addEventListener("click", () => replaySoloRun(summary));
+
+  entry.append(topLine, meta, score, replayButton);
+  return entry;
+}
+
+function formatRunHistoryDate(timestamp: number): string {
+  try {
+    return new Intl.DateTimeFormat(activeLocale, { dateStyle: "medium" }).format(timestamp);
+  } catch {
+    return new Date(timestamp).toISOString().slice(0, 10);
+  }
+}
+
+function trapModalFocus(panel: HTMLElement, event: KeyboardEvent): void {
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const focusable = [...panel.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )].filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+  if (focusable.length === 0) {
+    event.preventDefault();
+    panel.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || !panel.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !panel.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function openRunHistory(): void {
+  howToOpen = false;
+  compendiumOpen = false;
+  flushQueuedSoloRunSummaries(runHistoryStorage);
+  soloRunHistory = loadSoloRunHistory(runHistoryStorage);
+  runHistoryOpen = true;
+  render();
+}
+
+function closeRunHistory(): void {
+  runHistoryOpen = false;
+  requestFocusAfterRender("run-history-open");
+  render();
+}
+
 function selectLocale(locale: SupportedLocale): void {
   activeLocale = locale;
   document.documentElement.lang = locale;
@@ -1072,7 +1316,39 @@ function selectLocale(locale: SupportedLocale): void {
   render();
 }
 
-function startSoloRun(botDifficulty: BotDifficulty): void {
+function startNewSoloRun(botDifficulty: BotDifficulty): void {
+  startSoloRun({
+    seed: createSeed(),
+    botDifficulty,
+    source: "standard",
+    dailyDateKey: null,
+  });
+}
+
+function startDailyChallenge(): void {
+  const challenge = createTodayDailyChallenge();
+  startSoloRun({
+    seed: challenge.seed,
+    botDifficulty: "strong",
+    source: challenge.source,
+    dailyDateKey: challenge.dateKey,
+  });
+}
+
+function replaySoloRun(summary: SoloRunSummary): void {
+  startSoloRun({
+    seed: summary.seed,
+    botDifficulty: summary.botDifficulty,
+    source: summary.source,
+    dailyDateKey: summary.dailyDateKey,
+  });
+}
+
+function startSoloRun(request: SoloRunStartRequest): void {
+  if (!confirmFinishedSoloRunDiscard()) {
+    return;
+  }
+
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
@@ -1080,12 +1356,26 @@ function startSoloRun(botDifficulty: BotDifficulty): void {
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
-  uiState = createInitialUiState(createSeed(), "solo", "draft", botDifficulty);
+  runHistoryOpen = false;
+  uiState = createInitialUiState(
+    request.seed,
+    "solo",
+    "draft",
+    request.botDifficulty,
+    createSoloRunSession({
+      source: request.source,
+      dailyDateKey: request.dailyDateKey,
+    }),
+  );
   persistSoloRun();
   render();
 }
 
 function returnToMainMenu(): void {
+  if (!confirmFinishedSoloRunDiscard()) {
+    return;
+  }
+
   activePointerDrag?.cleanup();
   pendingDraftReplacement = undefined;
   keyboardMoveSourceSlotIndex = undefined;
@@ -1093,6 +1383,7 @@ function returnToMainMenu(): void {
   clearBattlePresentationWatchdog();
   closePvpSocket();
   clearPersistedSoloRun();
+  runHistoryOpen = false;
   uiState = createInitialUiState();
   render();
 }
@@ -1387,9 +1678,10 @@ function createBattlePresentationNotice(message: string): HTMLElement {
 function createSoloTerminalResult(): HTMLElement {
   const copy = getCopy();
   const completedRounds = uiState.run.roundHistory.length;
+  const session = uiState.soloSession;
   const outcome = uiState.run.outcome;
-  if (!outcome) {
-    throw new Error("Finished solo run is missing a terminal outcome.");
+  if (!outcome || !session?.completedAt) {
+    throw new Error("Finished solo run is missing terminal metadata.");
   }
   const resultKind = outcome === "player" ? "victory" : outcome === "enemy" ? "defeat" : "draw";
   const panel = document.createElement("section");
@@ -1399,7 +1691,8 @@ function createSoloTerminalResult(): HTMLElement {
 
   const eyebrow = document.createElement("span");
   eyebrow.className = "terminal-result__eyebrow";
-  eyebrow.textContent = `${copy.runFinished} · ${getBotDifficultyLabel(uiState.run.botDifficulty)}`;
+  const sourceLabel = session.source === "daily" ? copy.runSourceDaily : copy.runSourceStandard;
+  eyebrow.textContent = `${copy.runFinished} · ${sourceLabel} · ${getBotDifficultyLabel(uiState.run.botDifficulty)}`;
 
   const title = document.createElement("h1");
   title.className = "terminal-result__title";
@@ -1425,12 +1718,37 @@ function createSoloTerminalResult(): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "terminal-result__actions";
 
-  const restartButton = document.createElement("button");
-  restartButton.className = "primary-button";
-  restartButton.type = "button";
-  restartButton.textContent = copy.again;
-  setFocusKey(restartButton, "restart-run");
-  restartButton.addEventListener("click", () => startSoloRun(uiState.run.botDifficulty));
+  const newLayoutButton = document.createElement("button");
+  newLayoutButton.className = session.source === "daily" ? "terminal-result__secondary-button" : "primary-button";
+  newLayoutButton.type = "button";
+  newLayoutButton.textContent = copy.newLayout;
+  setFocusKey(newLayoutButton, "restart-run");
+  const replayDifficulty = uiState.run.botDifficulty;
+  newLayoutButton.addEventListener("click", () => startNewSoloRun(replayDifficulty));
+
+  const sameLayoutButton = document.createElement("button");
+  sameLayoutButton.className = session.source === "daily" ? "primary-button" : "terminal-result__secondary-button";
+  sameLayoutButton.type = "button";
+  sameLayoutButton.textContent = copy.sameLayout;
+  const replayRequest: SoloRunStartRequest = {
+    seed: uiState.run.seed,
+    botDifficulty: uiState.run.botDifficulty,
+    source: session.source,
+    dailyDateKey: session.dailyDateKey,
+  };
+  sameLayoutButton.addEventListener("click", () => startSoloRun(replayRequest));
+
+  const shareButton = document.createElement("button");
+  shareButton.className = "terminal-result__secondary-button";
+  shareButton.type = "button";
+  shareButton.textContent = copy.shareResult;
+
+  const shareStatus = document.createElement("p");
+  shareStatus.className = "terminal-result__share-status";
+  shareStatus.setAttribute("aria-live", "polite");
+  shareButton.addEventListener("click", () => {
+    void shareSoloRunResult(shareButton, shareStatus);
+  });
 
   const menuButton = document.createElement("button");
   menuButton.className = "terminal-result__secondary-button";
@@ -1439,16 +1757,76 @@ function createSoloTerminalResult(): HTMLElement {
   setFocusKey(menuButton, "return-menu");
   menuButton.addEventListener("click", returnToMainMenu);
 
-  actions.append(restartButton, menuButton);
+  if (session.source === "daily") {
+    actions.append(sameLayoutButton, newLayoutButton, shareButton, menuButton);
+  } else {
+    actions.append(newLayoutButton, sameLayoutButton, shareButton, menuButton);
+  }
   panel.append(eyebrow, title, detail, metrics);
 
   if (uiState.battlePresentationNotice) {
     panel.append(createBattlePresentationNotice(uiState.battlePresentationNotice));
   }
 
-  panel.append(actions);
+  panel.append(actions, shareStatus);
 
   return panel;
+}
+
+async function shareSoloRunResult(
+  button: HTMLButtonElement,
+  status: HTMLElement,
+): Promise<void> {
+  const copy = getCopy();
+  const outcome = uiState.run.outcome;
+  if (uiState.playMode !== "solo" || !outcome || uiState.run.status !== "finished") {
+    return;
+  }
+
+  const resultLabel = outcome === "player" ? copy.victory : outcome === "enemy" ? copy.defeat : copy.draw;
+  const text = formatMessage(copy.shareResultText, {
+    outcome: resultLabel,
+    difficulty: getBotDifficultyLabel(uiState.run.botDifficulty),
+    round: uiState.run.roundHistory.length,
+    maxRounds: MAX_RUN_ROUNDS,
+    playerHp: uiState.run.playerHp,
+    enemyHp: uiState.run.enemyHp,
+  });
+
+  const restoreButtonFocus = button.matches(":focus");
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  status.textContent = "";
+  status.className = "terminal-result__share-status";
+  try {
+    const result = await shareResult(
+      { title: "Bro Battler", text, url: window.location.href },
+      {
+        telegramShare: (sharedText, sharedUrl) => telegram.share(sharedText, sharedUrl),
+        nativeShare: typeof navigator.share === "function"
+          ? (data) => navigator.share(data)
+          : undefined,
+        writeClipboard: navigator.clipboard?.writeText
+          ? (value) => navigator.clipboard.writeText(value)
+          : undefined,
+      },
+    );
+    if (result.kind === "clipboard") {
+      status.classList.add("terminal-result__share-status--success");
+      status.textContent = copy.shareCopied;
+    } else if (result.kind === "failed") {
+      status.classList.add("terminal-result__share-status--error");
+      status.textContent = copy.shareFailed;
+    }
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      if (restoreButtonFocus) {
+        button.focus({ preventScroll: true });
+      }
+    }
+  }
 }
 
 function createPvpTerminalResult(): HTMLElement {
@@ -3032,7 +3410,7 @@ function createRestoredSoloUiState(snapshot: SoloRunSnapshot): UiState {
   const lastRoundRecord = snapshot.checkpoint === "draft" ? undefined : getLastRoundRecord(snapshot.run);
 
   return {
-    ...createInitialUiState(snapshot.run.seed, "solo", mode, snapshot.run.botDifficulty),
+    ...createInitialUiState(snapshot.run.seed, "solo", mode, snapshot.run.botDifficulty, snapshot.session),
     run: snapshot.run,
     mode,
     draftBoardSlots: cloneBoardSlots(snapshot.draftBoardSlots),
@@ -3041,6 +3419,7 @@ function createRestoredSoloUiState(snapshot: SoloRunSnapshot): UiState {
     selectedLogRound: lastRoundRecord?.round,
     lastRound: snapshot.lastRound,
     lastBattleTimeline: createTimelineForRoundRecord(lastRoundRecord),
+    soloSession: snapshot.session,
   };
 }
 
@@ -4181,6 +4560,10 @@ function fightRound(): void {
     player: getTimelineCastleHp(lastBattleTimeline, "player", "start") ?? combatReadyRun.playerHp,
     enemy: getTimelineCastleHp(lastBattleTimeline, "enemy", "start") ?? combatReadyRun.enemyHp,
   };
+  const currentSoloSession = requireSoloRunSession();
+  const soloSession = nextRun.status === "finished"
+    ? completeSoloRunSession(currentSoloSession, Math.max(Date.now(), currentSoloSession.startedAt))
+    : currentSoloSession;
 
   uiState = {
     ...uiState,
@@ -4198,8 +4581,12 @@ function fightRound(): void {
     lastRound: playedRound,
     lastBattleTimeline,
     presentedCastleHp,
+    soloSession,
   };
   persistSoloRun();
+  if (nextRun.status === "finished") {
+    ensureFinishedSoloRunRecorded();
+  }
   render();
 }
 
@@ -5332,6 +5719,14 @@ function getSoloRunStorage(): SoloRunStorage | undefined {
   }
 }
 
+function getRunHistoryStorage(): RunHistoryStorageLike | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function getPvpSessionStorage(): PvpSessionStorage | undefined {
   try {
     return window.localStorage;
@@ -5350,8 +5745,14 @@ function persistSoloRun(): void {
     : uiState.mode === "battle"
       ? "battle_result"
       : "draft";
+  const session = uiState.soloSession;
+  if (!session) {
+    reportSoloPersistenceFailure("save");
+    return;
+  }
 
   const saved = saveSoloRunSnapshot(soloRunStorage, {
+    session,
     checkpoint,
     run: uiState.run,
     draftBoardSlots: uiState.draftBoardSlots,
@@ -5362,6 +5763,71 @@ function persistSoloRun(): void {
   if (!saved) {
     reportSoloPersistenceFailure("save");
   }
+}
+
+function requireSoloRunSession(): SoloRunSession {
+  if (uiState.playMode !== "solo" || !uiState.soloSession) {
+    throw new Error("Active solo run is missing session metadata.");
+  }
+  return uiState.soloSession;
+}
+
+function ensureFinishedSoloRunRecorded(): boolean {
+  if (
+    uiState.playMode !== "solo"
+    || uiState.run.status !== "finished"
+    || !uiState.run.outcome
+    || !uiState.soloSession?.completedAt
+  ) {
+    return true;
+  }
+
+  const summary: SoloRunSummary = {
+    id: uiState.soloSession.runId,
+    seed: uiState.run.seed,
+    botDifficulty: uiState.run.botDifficulty,
+    outcome: uiState.run.outcome,
+    round: uiState.run.roundHistory.length,
+    playerHp: uiState.run.playerHp,
+    enemyHp: uiState.run.enemyHp,
+    completedAt: uiState.soloSession.completedAt,
+    source: uiState.soloSession.source,
+    dailyDateKey: uiState.soloSession.dailyDateKey,
+    rulesetVersion: uiState.soloSession.rulesetVersion,
+  };
+  if (recordSoloRunSummary(runHistoryStorage, summary)) {
+    soloRunHistory = loadSoloRunHistory(runHistoryStorage);
+    return true;
+  }
+  if (queueSoloRunSummary(runHistoryStorage, summary)) {
+    return true;
+  }
+
+  if (!soloHistoryFailureReported) {
+    soloHistoryFailureReported = true;
+    console.warn("Unable to record the completed solo run in local history.");
+  }
+  return false;
+}
+
+function showSoloHistorySaveFailure(): void {
+  uiState = {
+    ...uiState,
+    battlePresentationNotice: getCopy().runHistorySaveFailed,
+  };
+  render();
+}
+
+function confirmFinishedSoloRunDiscard(): boolean {
+  if (ensureFinishedSoloRunRecorded()) {
+    return true;
+  }
+  if (window.confirm(getCopy().runHistoryDiscardConfirm)) {
+    return true;
+  }
+
+  showSoloHistorySaveFailure();
+  return false;
 }
 
 function clearPersistedSoloRun(): void {
