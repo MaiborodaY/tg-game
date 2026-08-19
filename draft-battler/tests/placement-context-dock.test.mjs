@@ -1,0 +1,62 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import { getUiCopy } from "../src/i18n.ts";
+
+const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+
+test("placement and keyboard move modes replace the regular field action bar", () => {
+  const createDraftOverlay = mainSource.match(/function createDraftOverlay[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.match(createDraftOverlay, /overlay\.append\(createFieldSlotsLayer\(\)\)/);
+  assert.match(
+    createDraftOverlay,
+    /if \(selectedDraftCardId && !uiState\.cardPickedThisRound\)[\s\S]*?createTapPlacementPanel\(selectedDraftCardId\)[\s\S]*?else if \(keyboardMoveSourceSlotIndex !== undefined\)[\s\S]*?createKeyboardMovePanel\(keyboardMoveSourceSlotIndex\)[\s\S]*?else \{\s*overlay\.append\(createFieldActionBar\(\)\)/,
+  );
+  assert.match(mainSource, /placement-context-dock placement-context-dock--selection/);
+  assert.match(mainSource, /placement-context-dock placement-context-dock--move/);
+  assert.match(mainSource, /copyContainer\.setAttribute\("aria-live", "polite"\)/);
+  assert.match(mainSource, /infoButton\.setAttribute\("aria-label", copy\.cardInfo\)/);
+});
+
+test("cancel controls explain their action and selection cancel restores the draft-card focus", () => {
+  const expected = {
+    ru: ["Отменить выбор", "Отменить перемещение"],
+    uk: ["Скасувати вибір", "Скасувати переміщення"],
+    en: ["Cancel selection", "Cancel move"],
+  };
+
+  Object.entries(expected).forEach(([locale, [cancelSelection, cancelMove]]) => {
+    const copy = getUiCopy(locale);
+    assert.equal(copy.cancelSelection, cancelSelection);
+    assert.equal(copy.cancelMove, cancelMove);
+  });
+
+  const cancelSelection = mainSource.match(/function cancelDraftCardSelection[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(cancelSelection, /const selectedDraftCardId = getSelectedDraftCardId\(\)/);
+  assert.match(cancelSelection, /requestFocusAfterRender\(`draft-card-\$\{selectedDraftCardId\}`\)/);
+
+  const closeCardInfo = mainSource.match(/function closeCardInfo[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(closeCardInfo, /getSelectedDraftCardId\(\) === draftCardId \? "selected-card-info"/);
+});
+
+test("results trigger lives in the HUD utility row while the overlay renders only an open panel", () => {
+  const createLogsOverlay = mainSource.match(/function createLogsOverlay[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.match(mainSource, /utilityRow\.className = "draft-hud__utility-row"/);
+  assert.match(mainSource, /button\.className = uiState\.logsOpen \? "logs-button logs-button--active" : "logs-button"/);
+  assert.match(mainSource, /setFocusKey\(button, "logs-toggle"\)/);
+  assert.equal(mainSource.match(/requestFocusAfterRender\("logs-toggle"\)/g)?.length, 2);
+  assert.match(mainSource, /overlayClasses\.push\("draft-overlay--has-logs"\)/);
+  assert.match(createLogsOverlay, /if \(!uiState\.logsOpen \|\| visibleLogs\.length === 0\) \{\s*return undefined/);
+  assert.match(createLogsOverlay, /overlay\.append\(createLogsPanel\(visibleLogs\)\)/);
+  assert.doesNotMatch(createLogsOverlay, /createLogsButton/);
+});
+
+test("opening card details closes results so the overlays cannot collide", () => {
+  const openCardInfo = mainSource.match(/function openCardInfo[\s\S]*?\n\}/)?.[0] ?? "";
+  const openBoardCardInfo = mainSource.match(/function openBoardCardInfo[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.match(openCardInfo, /selectedCardInfoId: cardId,[\s\S]*?logsOpen: false/);
+  assert.match(openBoardCardInfo, /selectedCardInfoSlotIndex: slotIndex,[\s\S]*?logsOpen: false/);
+});

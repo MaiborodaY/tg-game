@@ -464,7 +464,11 @@ function render(): void {
   }
 
   if (uiState.mode !== "menu") {
-    stageUi.append(createLogsOverlay(), createGameLiveRegion());
+    const logsOverlay = createLogsOverlay();
+    if (logsOverlay) {
+      stageUi.append(logsOverlay);
+    }
+    stageUi.append(createGameLiveRegion());
   }
 
   if (uiState.mode === "draft" && isCardInfoOpen()) {
@@ -605,10 +609,26 @@ function createGameHud(): HTMLElement {
 
   if (uiState.mode === "draft") {
     const synergies = createDraftSynergies();
-    if (synergies) {
-      hud.append(synergies);
+    const logsButton = createLogsButton();
+    if (synergies || logsButton) {
+      const utilityRow = document.createElement("div");
+      utilityRow.className = "draft-hud__utility-row";
+      if (synergies) {
+        utilityRow.append(synergies);
+      }
+      if (logsButton) {
+        utilityRow.append(logsButton);
+      }
+      hud.append(utilityRow);
     }
-
+  } else {
+    const logsButton = createLogsButton();
+    if (logsButton) {
+      const utilityRow = document.createElement("div");
+      utilityRow.className = "draft-hud__utility-row";
+      utilityRow.append(logsButton);
+      hud.append(utilityRow);
+    }
   }
 
   return hud;
@@ -909,18 +929,22 @@ function createDraftOverlay(): HTMLElement {
   if (isCardInfoOpen()) {
     overlayClasses.push("draft-overlay--card-info-open");
   }
+  if (getVisibleRoundLogs().length > 0) {
+    overlayClasses.push("draft-overlay--has-logs");
+  }
   overlay.className = overlayClasses.join(" ");
   const isWaitingForOnlineMatch = uiState.playMode === "online" && !uiState.pvp.match;
   const selectedDraftCardId = getSelectedDraftCardId();
 
   if (!isWaitingForOnlineMatch) {
-    overlay.append(createFieldSlotsLayer(), createFieldActionBar());
+    overlay.append(createFieldSlotsLayer());
 
     if (selectedDraftCardId && !uiState.cardPickedThisRound) {
-      const hasVisibleSynergies = getBoardSynergyProgress(uiState.draftBoardSlots).length > 0;
-      overlay.append(createTapPlacementPanel(selectedDraftCardId, hasVisibleSynergies));
+      overlay.append(createTapPlacementPanel(selectedDraftCardId));
     } else if (keyboardMoveSourceSlotIndex !== undefined) {
       overlay.append(createKeyboardMovePanel(keyboardMoveSourceSlotIndex));
+    } else {
+      overlay.append(createFieldActionBar());
     }
   }
 
@@ -1261,24 +1285,20 @@ function createTerminalMetric(label: string, value: string): HTMLElement {
   return metric;
 }
 
-function createLogsOverlay(): HTMLElement {
-  const copy = getCopy();
-  const overlay = document.createElement("div");
-  overlay.className = "logs-overlay";
-
+function createLogsButton(): HTMLButtonElement | undefined {
   const visibleLogs = getVisibleRoundLogs();
   if (visibleLogs.length === 0) {
-    return overlay;
+    return undefined;
   }
 
-  if (uiState.logsOpen) {
-    overlay.append(createLogsPanel(visibleLogs));
-  }
-
+  const copy = getCopy();
   const button = document.createElement("button");
   button.className = uiState.logsOpen ? "logs-button logs-button--active" : "logs-button";
   button.type = "button";
   button.textContent = copy.logs;
+  button.setAttribute("aria-expanded", String(uiState.logsOpen));
+  button.setAttribute("aria-controls", "logs-panel");
+  setFocusKey(button, "logs-toggle");
   button.addEventListener("click", () => {
     const nextOpen = !uiState.logsOpen;
     const selectedLog = getSelectedRoundLog(visibleLogs);
@@ -1288,11 +1308,22 @@ function createLogsOverlay(): HTMLElement {
       logsOpen: nextOpen,
       selectedLogRound: nextOpen ? selectedLog?.round : uiState.selectedLogRound,
     };
+    requestFocusAfterRender("logs-toggle");
     render();
   });
 
-  overlay.append(button);
+  return button;
+}
 
+function createLogsOverlay(): HTMLElement | undefined {
+  const visibleLogs = getVisibleRoundLogs();
+  if (!uiState.logsOpen || visibleLogs.length === 0) {
+    return undefined;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "logs-overlay";
+  overlay.append(createLogsPanel(visibleLogs));
   return overlay;
 }
 
@@ -1300,6 +1331,7 @@ function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
   const copy = getCopy();
   const panel = document.createElement("section");
   panel.className = "logs-panel";
+  panel.id = "logs-panel";
 
   const header = document.createElement("div");
   header.className = "logs-panel__header";
@@ -1317,6 +1349,7 @@ function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
       ...uiState,
       logsOpen: false,
     };
+    requestFocusAfterRender("logs-toggle");
     render();
   });
 
@@ -1627,23 +1660,19 @@ function toggleDraftChoices(): void {
   render();
 }
 
-function createTapPlacementPanel(cardId: CardId, hasVisibleSynergies: boolean): HTMLElement {
+function createTapPlacementPanel(cardId: CardId): HTMLElement {
   const copy = getCopy();
   const card = getCardDefinition(cardId);
   const localizedCard = getLocalizedCard(activeLocale, card);
   const placementKinds = getDraftPlacementClassifications(cardId).map((placement) => placement.kind);
   const panel = document.createElement("section");
-  const panelClasses = ["tap-placement-panel"];
-  if (hasVisibleSynergies) {
-    panelClasses.push("tap-placement-panel--below-synergies");
-  }
-  if (uiState.playMode === "solo") {
-    panelClasses.push("tap-placement-panel--below-enemy-intel");
-  }
-  panel.className = panelClasses.join(" ");
+  panel.className = "placement-context-dock placement-context-dock--selection";
 
   const copyContainer = document.createElement("div");
-  copyContainer.className = "tap-placement-panel__copy";
+  copyContainer.className = "placement-context-dock__copy";
+  copyContainer.setAttribute("role", "status");
+  copyContainer.setAttribute("aria-live", "polite");
+  copyContainer.setAttribute("aria-atomic", "true");
 
   const title = document.createElement("strong");
   title.textContent = formatMessage(copy.selectedCard, { card: localizedCard.name });
@@ -1659,17 +1688,21 @@ function createTapPlacementPanel(cardId: CardId, hasVisibleSynergies: boolean): 
   copyContainer.append(title, hint);
 
   const actions = document.createElement("div");
-  actions.className = "tap-placement-panel__actions";
+  actions.className = "placement-context-dock__actions";
 
   const infoButton = document.createElement("button");
+  infoButton.className = "placement-context-dock__info";
   infoButton.type = "button";
-  infoButton.textContent = copy.cardInfo;
+  infoButton.textContent = "i";
+  infoButton.title = copy.cardInfo;
+  infoButton.setAttribute("aria-label", copy.cardInfo);
   setFocusKey(infoButton, "selected-card-info");
   infoButton.addEventListener("click", () => openCardInfo(cardId));
 
   const cancelButton = document.createElement("button");
+  cancelButton.className = "placement-context-dock__cancel";
   cancelButton.type = "button";
-  cancelButton.textContent = copy.cancel;
+  cancelButton.textContent = copy.cancelSelection;
   setFocusKey(cancelButton, "selected-card-cancel");
   cancelButton.addEventListener("click", cancelDraftCardSelection);
 
@@ -1683,11 +1716,13 @@ function createKeyboardMovePanel(sourceSlotIndex: number): HTMLElement {
   const copy = getCopy();
   const source = getDraftBoardSlot(sourceSlotIndex);
   const panel = document.createElement("section");
-  panel.className = "keyboard-move-panel";
-  panel.setAttribute("role", "status");
+  panel.className = "placement-context-dock placement-context-dock--move";
 
   const copyContainer = document.createElement("div");
-  copyContainer.className = "keyboard-move-panel__copy";
+  copyContainer.className = "placement-context-dock__copy";
+  copyContainer.setAttribute("role", "status");
+  copyContainer.setAttribute("aria-live", "polite");
+  copyContainer.setAttribute("aria-atomic", "true");
   const title = document.createElement("strong");
   const cardName = source?.cardId
     ? getLocalizedCard(activeLocale, getCardDefinition(source.cardId)).name
@@ -1698,8 +1733,9 @@ function createKeyboardMovePanel(sourceSlotIndex: number): HTMLElement {
   copyContainer.append(title, hint);
 
   const cancelButton = document.createElement("button");
+  cancelButton.className = "placement-context-dock__cancel";
   cancelButton.type = "button";
-  cancelButton.textContent = copy.cancel;
+  cancelButton.textContent = copy.cancelMove;
   setFocusKey(cancelButton, "move-cancel");
   cancelButton.addEventListener("click", cancelKeyboardBoardMove);
 
@@ -3248,6 +3284,7 @@ function handleFieldSlotClick(slotIndex: number): void {
 }
 
 function cancelDraftCardSelection(): void {
+  const selectedDraftCardId = getSelectedDraftCardId();
   pendingDraftReplacement = undefined;
   uiState = {
     ...uiState,
@@ -3256,6 +3293,9 @@ function cancelDraftCardSelection(): void {
     selectedCardInfoSlotIndex: undefined,
     selectedEnemyCardInfoSlotIndex: undefined,
   };
+  if (selectedDraftCardId) {
+    requestFocusAfterRender(`draft-card-${selectedDraftCardId}`);
+  }
   render();
 }
 
@@ -3269,6 +3309,7 @@ function openCardInfo(cardId: CardId): void {
     selectedCardInfoId: cardId,
     selectedCardInfoSlotIndex: undefined,
     selectedEnemyCardInfoSlotIndex: undefined,
+    logsOpen: false,
   };
   requestFocusAfterRender("card-info-close");
   render();
@@ -3284,6 +3325,7 @@ function openBoardCardInfo(slotIndex: number): void {
     selectedCardInfoId: undefined,
     selectedCardInfoSlotIndex: slotIndex,
     selectedEnemyCardInfoSlotIndex: undefined,
+    logsOpen: false,
   };
   requestFocusAfterRender("card-info-close");
   render();
@@ -3320,7 +3362,9 @@ function closeCardInfo(): void {
   } else if (enemySlotIndex !== undefined) {
     requestFocusAfterRender(`enemy-army-slot-${enemySlotIndex}`);
   } else if (draftCardId) {
-    requestFocusAfterRender(`draft-card-${draftCardId}`);
+    requestFocusAfterRender(
+      getSelectedDraftCardId() === draftCardId ? "selected-card-info" : `draft-card-${draftCardId}`,
+    );
   }
   render();
 }

@@ -17,11 +17,15 @@ test("mobile controls preserve safe-area offsets and accessible touch targets", 
 
   assert.match(styles, /\.draft-hud\s*\{[^}]*var\(--safe-top\)[^}]*var\(--safe-left\)[^}]*var\(--safe-right\)/s);
   assert.match(styles, /\.field-action-bar\s*\{[^}]*var\(--safe-bottom\)/s);
-  assert.match(styles, /\.logs-button\s*\{[^}]*var\(--safe-right\)[^}]*var\(--safe-bottom\)/s);
+  assert.match(styles, /\.placement-context-dock\s*\{[^}]*bottom:\s*max\(8px,[^}]*var\(--safe-bottom\)[^}]*var\(--safe-right\)[^}]*var\(--safe-left\)/s);
+  assert.match(styles, /\.draft-hud__utility-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s);
+  assert.match(styles, /\.logs-button\s*\{[^}]*position:\s*static[^}]*min-height:\s*44px/s);
+  assert.match(styles, /\.logs-panel\s*\{[^}]*top:[^}]*var\(--safe-top\)/s);
 
   for (const selector of [
     "reroll-button",
     "card-info-panel__close",
+    "logs-button",
     "logs-panel__close",
     "logs-round-button",
   ]) {
@@ -114,11 +118,24 @@ test("draft choices keep all three vertical cards visible with readable copy", (
   assert.match(styles, /@media\s*\(max-width:\s*360px\)[\s\S]*?\.draft-grid--triple \.unit-card__ability-icon\s*\{[^}]*display:\s*none/s);
 });
 
-test("move mode uses one instruction panel and compact target markers", () => {
-  assert.match(styles, /\.keyboard-move-panel__copy span\s*\{[^}]*font-size:\s*10px/s);
+test("placement and move modes use one bottom context dock with compact target markers", () => {
+  assert.match(styles, /\.placement-context-dock__copy span\s*\{[^}]*font-size:\s*9px/s);
+  assert.match(styles, /\.placement-context-dock__info,\s*\.placement-context-dock__cancel\s*\{[^}]*height:\s*44px/s);
+  assert.match(styles, /\.placement-context-dock__info\s*\{[^}]*width:\s*44px/s);
+  assert.match(styles, /\.placement-context-dock__cancel\s*\{[^}]*width:\s*100%/s);
+  assert.match(styles, /\.placement-context-dock--move \.placement-context-dock__cancel\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+  assert.doesNotMatch(styles, /--draft-top-stack|tap-placement-panel|keyboard-move-panel/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{[^}]*border-color:[^}]*background:/s);
   assert.match(styles, /\.field-slot--move-swap::before\s*\{[^}]*border-color:[^}]*background:/s);
   assert.match(styles, /\.field-slot__target-label--move\s*\{[^}]*width:\s*24px[^}]*font-size:\s*0/s);
   assert.match(styles, /\.field-slot__target-label--move::before\s*\{[^}]*content:\s*"\\2192"/s);
   assert.match(styles, /\.field-slot__target-label--move-swap::before\s*\{[^}]*content:\s*"\\2194"/s);
+});
+
+test("short draft layouts reserve the HUD utility row when logs are available", () => {
+  assert.match(styles, /\.draft-overlay--has-logs\s*\{[^}]*padding-top:/s);
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*720px\)[\s\S]*?\.draft-overlay--has-logs\s*\{[^}]*--draft-short-top:/s,
+  );
 });

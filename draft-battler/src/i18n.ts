@@ -137,6 +137,8 @@ export interface UiCopy {
   makeRoomHint: string;
   cardInfo: string;
   cancel: string;
+  cancelSelection: string;
+  cancelMove: string;
   attack: string;
   speed: string;
   range: string;
@@ -316,6 +318,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     makeRoomHint: "Сначала освободите подходящую позицию, переместив бойца.",
     cardInfo: "О карте",
     cancel: "Отмена",
+    cancelSelection: "Отменить выбор",
+    cancelMove: "Отменить перемещение",
     attack: "АТК",
     speed: "СКР",
     range: "ДАЛ",
@@ -487,6 +491,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     makeRoomHint: "Спочатку звільніть відповідну позицію, перемістивши бійця.",
     cardInfo: "Про карту",
     cancel: "Скасувати",
+    cancelSelection: "Скасувати вибір",
+    cancelMove: "Скасувати переміщення",
     attack: "АТК",
     speed: "ШВК",
     range: "ДАЛ",
@@ -658,6 +664,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     makeRoomHint: "Move a fighter first to free a valid position.",
     cardInfo: "Card details",
     cancel: "Cancel",
+    cancelSelection: "Cancel selection",
+    cancelMove: "Cancel move",
     attack: "ATK",
     speed: "SPD",
     range: "RNG",

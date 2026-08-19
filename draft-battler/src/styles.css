@@ -78,6 +78,22 @@ button:focus-visible,
   min-width: 0;
 }
 
+.draft-hud__utility-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px;
+}
+
+.draft-hud__utility-row > .synergy-strip {
+  align-self: center;
+}
+
+.draft-hud__utility-row > .logs-button:only-child {
+  grid-column: 2;
+}
+
 .synergy-strip {
   min-width: 0;
   padding: 0 0 2px;
@@ -458,9 +474,6 @@ button:focus-visible,
 
 .draft-overlay {
   --draft-side-gap: clamp(4px, 1.2cqw, 8px);
-  --draft-top-stack-base: calc(var(--safe-top) + 50px);
-  --draft-top-stack-synergies: 31px;
-  --draft-top-stack-enemy-intel: 124px;
   display: grid;
   place-items: center;
   padding-block:
@@ -563,6 +576,14 @@ button:focus-visible,
 
 .draft-overlay--with-enemy-intel {
   padding-top: max(208px, calc(var(--safe-top) + 200px));
+}
+
+.draft-overlay--has-logs {
+  padding-top: max(104px, calc(var(--safe-top) + 96px));
+}
+
+.draft-overlay--with-enemy-intel.draft-overlay--has-logs {
+  padding-top: max(220px, calc(var(--safe-top) + 212px));
 }
 
 .draft-overlay--card-info-open {
@@ -1076,19 +1097,18 @@ h3 {
   transform: none;
 }
 
-.tap-placement-panel {
+.placement-context-dock {
   position: absolute;
-  top: var(--draft-top-stack-base);
+  bottom: max(8px, calc(var(--safe-bottom) + 8px));
   right: max(8px, calc(var(--safe-right) + 8px));
   left: max(8px, calc(var(--safe-left) + 8px));
   z-index: 4;
   max-width: 390px;
   margin: 0 auto;
-  padding: 8px 10px;
+  padding: 7px 9px 8px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
   border: 1px solid rgba(138, 202, 120, 0.58);
   border-radius: 8px;
   background:
@@ -1098,17 +1118,13 @@ h3 {
   pointer-events: auto;
 }
 
-.tap-placement-panel--below-synergies {
-  top: calc(var(--draft-top-stack-base) + var(--draft-top-stack-synergies));
-}
-
-.tap-placement-panel__copy {
+.placement-context-dock__copy {
   min-width: 0;
   display: grid;
   gap: 2px;
 }
 
-.tap-placement-panel__copy strong {
+.placement-context-dock__copy strong {
   overflow: hidden;
   color: #f3f0dd;
   font-size: 12px;
@@ -1116,26 +1132,47 @@ h3 {
   white-space: nowrap;
 }
 
-.tap-placement-panel__copy span {
+.placement-context-dock__copy span {
   color: #b9d9ac;
   font-size: 9px;
   line-height: 1.2;
 }
 
-.tap-placement-panel__actions {
-  display: flex;
+.placement-context-dock__actions {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
   gap: 5px;
 }
 
-.tap-placement-panel__actions button {
-  min-height: 44px;
-  padding: 0 8px;
+.placement-context-dock__info,
+.placement-context-dock__cancel {
+  height: 44px;
   border: 1px solid rgba(243, 240, 221, 0.16);
   border-radius: 6px;
   background: rgba(34, 40, 31, 0.92);
   color: #e8dcc0;
-  font-size: 10px;
   font-weight: 800;
+  cursor: pointer;
+}
+
+.placement-context-dock__info {
+  width: 44px;
+  padding: 0;
+  color: #ead58d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+}
+
+.placement-context-dock__cancel {
+  width: 100%;
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.placement-context-dock--move .placement-context-dock__cancel {
+  grid-column: 1 / -1;
 }
 
 .unit-card__archetype {
@@ -2463,16 +2500,16 @@ h3 {
 }
 
 .logs-button {
-  position: absolute;
-  right: calc(var(--safe-right) + 10px);
-  bottom: calc(var(--safe-bottom) + 10px);
+  position: static;
+  justify-self: end;
   width: 58px;
   min-height: 44px;
+  padding: 0 6px;
   border: 1px solid rgba(228, 193, 94, 0.34);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(16, 19, 15, 0.88);
   color: var(--text);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
   pointer-events: auto;
 }
@@ -2484,10 +2521,10 @@ h3 {
 
 .logs-panel {
   position: absolute;
+  top: calc(var(--safe-top) + 96px);
   right: calc(var(--safe-right) + 10px);
-  bottom: calc(var(--safe-bottom) + 62px);
   width: min(360px, calc(100% - var(--safe-left) - var(--safe-right) - 20px));
-  max-height: min(430px, 58vh);
+  max-height: min(430px, 58vh, calc(100% - var(--safe-top) - var(--safe-bottom) - 112px));
   padding: 10px;
   display: grid;
   gap: 10px;
@@ -3064,62 +3101,6 @@ h3 {
   touch-action: none;
 }
 
-.tap-placement-panel--below-enemy-intel {
-  top: calc(var(--draft-top-stack-base) + var(--draft-top-stack-enemy-intel));
-}
-
-.tap-placement-panel--below-enemy-intel.tap-placement-panel--below-synergies {
-  top: calc(
-    var(--draft-top-stack-base) + var(--draft-top-stack-synergies) + var(--draft-top-stack-enemy-intel)
-  );
-}
-
-.keyboard-move-panel {
-  position: absolute;
-  top: calc(
-    var(--draft-top-stack-base) + var(--draft-top-stack-synergies) + var(--draft-top-stack-enemy-intel)
-  );
-  right: max(8px, calc(var(--safe-right) + 8px));
-  left: max(8px, calc(var(--safe-left) + 8px));
-  z-index: 4;
-  max-width: 390px;
-  margin: 0 auto;
-  padding: 8px 10px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(121, 199, 122, 0.58);
-  border-radius: 8px;
-  background: rgba(8, 11, 8, 0.94);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.44);
-  pointer-events: auto;
-}
-
-.keyboard-move-panel__copy {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.keyboard-move-panel__copy strong,
-.keyboard-move-panel__copy span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.keyboard-move-panel__copy strong {
-  color: #f3f0dd;
-  font-size: 12px;
-}
-
-.keyboard-move-panel__copy span {
-  color: #b9d9ac;
-  font-size: 10px;
-}
-
-.keyboard-move-panel button,
 .card-info-panel__move {
   min-height: 44px;
   padding: 0 12px;
@@ -3462,6 +3443,14 @@ h3 {
 
   .draft-overlay--with-enemy-intel {
     --draft-short-top: max(214px, calc(var(--safe-top) + 206px));
+  }
+
+  .draft-overlay--has-logs {
+    --draft-short-top: max(104px, calc(var(--safe-top) + 96px));
+  }
+
+  .draft-overlay--with-enemy-intel.draft-overlay--has-logs {
+    --draft-short-top: max(226px, calc(var(--safe-top) + 218px));
   }
 
   .draft-panel {
