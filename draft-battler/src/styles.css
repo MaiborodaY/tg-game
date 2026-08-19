@@ -421,6 +421,7 @@ button:focus-visible,
 
 .language-selector__button:focus-visible,
 .how-to-panel__close:focus-visible,
+.compendium-panel__close:focus-visible,
 .main-menu__button:focus-visible {
   outline: 3px solid rgba(159, 224, 142, 0.9);
   outline-offset: 2px;
@@ -429,6 +430,18 @@ button:focus-visible,
 .main-menu__actions {
   display: grid;
   gap: 7px;
+}
+
+.main-menu__reference-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.main-menu__reference-actions .main-menu__button {
+  padding-inline: 8px;
+  font-size: 13px;
+  line-height: 1.1;
 }
 
 .main-menu__difficulty-label {
@@ -693,6 +706,237 @@ button:focus-visible,
 
 .how-to-panel__close {
   justify-self: stretch;
+}
+
+.compendium-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  padding:
+    max(10px, calc(var(--safe-top) + 6px))
+    max(10px, calc(var(--safe-right) + 6px))
+    max(10px, calc(var(--safe-bottom) + 6px))
+    max(10px, calc(var(--safe-left) + 6px));
+  display: grid;
+  place-items: center;
+  background: rgba(4, 6, 4, 0.82);
+  pointer-events: auto;
+  backdrop-filter: blur(5px);
+}
+
+.compendium-panel {
+  width: min(560px, 100%);
+  max-height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(228, 193, 94, 0.68);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(228, 193, 94, 0.12), transparent 24%),
+    rgba(8, 10, 8, 0.99);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.72),
+    0 24px 58px rgba(0, 0, 0, 0.66);
+}
+
+.compendium-panel__header {
+  min-width: 0;
+  padding: 14px 14px 11px;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(228, 193, 94, 0.22);
+}
+
+.compendium-panel__header h2,
+.compendium-section h3,
+.compendium-card h4 {
+  color: #f3f0dd;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.compendium-panel__header h2 {
+  font-size: 22px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.compendium-panel__header p {
+  margin-top: 6px;
+  color: #c8bfa8;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.compendium-panel__close {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid rgba(243, 240, 221, 0.2);
+  border-radius: 8px;
+  background: rgba(34, 40, 31, 0.88);
+  color: #d8d0b8;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.compendium-panel__content {
+  min-height: 0;
+  padding: 12px;
+  display: grid;
+  gap: 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.compendium-section {
+  display: grid;
+  gap: 8px;
+}
+
+.compendium-section h3 {
+  font-size: 17px;
+  text-transform: uppercase;
+}
+
+.compendium-section__note {
+  padding: 7px 9px;
+  border-left: 3px solid rgba(121, 199, 122, 0.72);
+  background: rgba(121, 199, 122, 0.08);
+  color: #c9f0bb;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.compendium-card-list,
+.compendium-synergy-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.compendium-card {
+  min-width: 0;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 9px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 8% 20%, var(--card-glow), transparent 34%),
+    rgba(22, 26, 20, 0.9);
+}
+
+.compendium-card__art {
+  width: 82px;
+  height: 112px;
+  align-self: center;
+  border-radius: 6px;
+}
+
+.compendium-card__art .unit-card__sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.compendium-card__body {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.compendium-card h4 {
+  font-size: 14px;
+  line-height: 1.05;
+}
+
+.compendium-card__meta,
+.compendium-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.compendium-card__meta span,
+.compendium-card__tags span {
+  padding: 2px 5px;
+  border: 1px solid rgba(243, 240, 221, 0.13);
+  border-radius: 999px;
+  background: rgba(10, 14, 10, 0.82);
+  color: #c9c1aa;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.compendium-card__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.compendium-card__stats > span {
+  min-width: 0;
+  padding: 4px 2px;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  border: 1px solid rgba(243, 240, 221, 0.1);
+  border-radius: 4px;
+  background: rgba(8, 11, 9, 0.76);
+}
+
+.compendium-card__stats small {
+  color: #a9a18b;
+  font-size: 10px;
+}
+
+.compendium-card__stats strong {
+  color: #f1e8d0;
+  font-size: 11px;
+}
+
+.compendium-card__description {
+  color: #d8d0b8;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.compendium-synergy {
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 3px 8px;
+  border: 1px solid rgba(121, 199, 122, 0.24);
+  border-radius: 7px;
+  background: rgba(26, 38, 24, 0.72);
+}
+
+.compendium-synergy strong {
+  color: #dff2ce;
+  font-size: 12px;
+}
+
+.compendium-synergy span {
+  color: #9fe08e;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.compendium-synergy p {
+  grid-column: 1 / -1;
+  color: #c4bda8;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .draft-replacement-overlay {
@@ -3259,6 +3503,39 @@ h3 {
   color: #d8d0b8;
   font-size: 10px;
   line-height: 1.25;
+}
+
+.round-result-insights {
+  margin-top: 3px;
+  padding-top: 6px;
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid rgba(243, 240, 221, 0.1);
+}
+
+.round-result-insights .round-result-insights__title {
+  color: #bdb499;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.round-result-insights__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.round-result-insights__grid span {
+  min-width: 0;
+  padding: 4px 5px;
+  border: 1px solid rgba(243, 240, 221, 0.09);
+  border-radius: 5px;
+  background: rgba(34, 40, 31, 0.62);
+  color: #d8d0b8;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .round-result-summary--player {

@@ -42,6 +42,11 @@ import {
   type FinalBattlePresentation,
 } from "./battlePlayback";
 import { applyArmorDelta, formatArmorBadge, formatDamageFeedback } from "./armorPresentation";
+import {
+  createBattleAbilityCalloutPlan,
+  type BattleAbilityCallout,
+  type BattleAbilityCalloutSource,
+} from "./battleAbilityPresentation";
 
 const GAME_WIDTH = 390;
 const GAME_HEIGHT = 720;
@@ -100,8 +105,11 @@ export interface PlayBattleInput {
   onError?: (error: unknown) => void;
   onCastleHpChanged?: (owner: Owner, hp: number) => void;
   blockLabel: string;
+  abilityCalloutLabels: BattleAbilityCalloutLabels;
   reducedMotion?: boolean;
 }
+
+export type BattleAbilityCalloutLabels = Readonly<Record<BattleAbilityCalloutSource, string>>;
 
 export interface ShowDraftInput {
   playerCastleHp: number;
@@ -117,6 +125,7 @@ type SceneCommand =
       onError?: (error: unknown) => void;
       onCastleHpChanged?: (owner: Owner, hp: number) => void;
       blockLabel: string;
+      abilityCalloutLabels: BattleAbilityCalloutLabels;
       reducedMotion: boolean;
     };
 
@@ -236,6 +245,16 @@ class CastleBattleScene extends Phaser.Scene {
   private playToken = 0;
   private destroyed = false;
   private blockLabel = "BLOCK";
+  private abilityCalloutLabels: BattleAbilityCalloutLabels = {
+    battle_banner: "BANNER: +{amount} ATK",
+    thorn_guard: "THORNS: +{amount} ARMOR",
+    pack_hunter: "PACK: +{amount} ATK",
+    frost_hex: "FROST: -{amount} ATK",
+    shield_wall: "ARMOR +{amount}",
+    stone_skin: "ARMOR +{amount}",
+    riposte: "ARMOR +{amount}",
+    bone_pact: "BONE PACT",
+  };
   private battleSpeed: BattlePlaybackSpeed = 1;
   private readonly playbackClock = new BattlePlaybackClock(this.battleSpeed);
   private activeBattle?: ActiveBattlePlayback;
@@ -295,6 +314,7 @@ class CastleBattleScene extends Phaser.Scene {
       onError: input.onError,
       onCastleHpChanged: input.onCastleHpChanged,
       blockLabel: input.blockLabel,
+      abilityCalloutLabels: input.abilityCalloutLabels,
       reducedMotion: input.reducedMotion === true,
     });
   }
@@ -360,6 +380,7 @@ class CastleBattleScene extends Phaser.Scene {
     command.timeline.castles.forEach((castle) => this.createCastle(castle));
     command.timeline.units.forEach((unit) => this.createUnit(unit));
     this.blockLabel = command.blockLabel;
+    this.abilityCalloutLabels = command.abilityCalloutLabels;
     this.wrapSceneInPresentationLayer();
     const activeBattle: ActiveBattlePlayback = {
       token: this.playToken,
@@ -907,6 +928,7 @@ class CastleBattleScene extends Phaser.Scene {
         this.updateUnitSpatialStyle(view, true);
         stopWalking();
       }
+      this.emitBattleAbilityCallouts([event]);
       return;
     }
 
@@ -924,6 +946,7 @@ class CastleBattleScene extends Phaser.Scene {
         this.focusCameraOnPoint(view.container.x, view.container.y, 170, BATTLE_CAMERA_CLOSE_ZOOM);
       }
       await this.pulse(view.container, event.shieldDelta ? 0x86a8ff : 0xe4c15e);
+      this.emitBattleAbilityCallouts([event]);
       return;
     }
 
@@ -1055,6 +1078,7 @@ class CastleBattleScene extends Phaser.Scene {
       this.updateUnitSpatialStyle(view, true);
       stopWalking();
     }
+    this.emitBattleAbilityCallouts([event]);
   }
 
   private async playCombatStepHealCast(event: Extract<CombatStepEvent, { type: "unit_heal" }>): Promise<void> {
@@ -1083,6 +1107,8 @@ class CastleBattleScene extends Phaser.Scene {
     const textLimit = COMBAT_STEP_FLOAT_TEXT_LIMIT;
     let emittedTextCount = 0;
     const armorFeedbackTasks: Promise<void>[] = [];
+
+    this.emitBattleAbilityCallouts(visibleResultEvents);
 
     const emitText = (view: UnitView, label: string, color: string) => {
       if (emittedTextCount >= textLimit) {
@@ -1140,6 +1166,22 @@ class CastleBattleScene extends Phaser.Scene {
       ...armorFeedbackTasks,
       ...deathEvents.map((event) => this.playCombatStepDeath(event)),
     ]);
+  }
+
+  private emitBattleAbilityCallouts(events: readonly CombatStepEvent[]): void {
+    const timelineUnits = this.activeBattle?.timeline.units ?? [];
+    const callouts = createBattleAbilityCalloutPlan(events, timelineUnits);
+
+    for (const callout of callouts) {
+      const view = this.unitViews.get(callout.anchorUnitId) ?? this.unitViews.get(callout.unitId);
+      if (!view) {
+        continue;
+      }
+
+      const labelTemplate = this.abilityCalloutLabels[callout.source];
+      const label = labelTemplate.replace("{amount}", String(callout.amount ?? ""));
+      this.floatText(view.container.x, view.container.y - 72, label, getAbilityCalloutColor(callout), 0.9);
+    }
   }
 
   private async playCombatStepDeath(event: Extract<CombatStepEvent, { type: "unit_die" }>): Promise<void> {
@@ -1915,6 +1957,20 @@ function isConcurrentCombatEvent(event: BattleTimelineEvent): boolean {
     event.type === "unit_heal" ||
     event.type === "unit_die"
   );
+}
+
+function getAbilityCalloutColor(callout: BattleAbilityCallout): string {
+  if (callout.tone === "armor") {
+    return "#9fc4ff";
+  }
+  if (callout.tone === "debuff") {
+    return "#b6a0ff";
+  }
+  if (callout.tone === "summon") {
+    return "#a7e68e";
+  }
+
+  return "#f1d67a";
 }
 
 function getBackdropDisplaySize(layout: FieldLayout, overscanY: number): { width: number; height: number } {

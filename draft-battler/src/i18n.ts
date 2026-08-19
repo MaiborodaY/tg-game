@@ -84,6 +84,16 @@ export interface UiCopy {
   pvpErrorInternal: string;
   pvpErrorBadRequest: string;
   howToPlay: string;
+  compendium: string;
+  compendiumTitle: string;
+  compendiumIntro: string;
+  compendiumCards: string;
+  compendiumSynergies: string;
+  compendiumUpgradeNote: string;
+  compendiumTier: string;
+  compendiumSynergyRule: string;
+  compendiumSynergyCards: string;
+  closeCompendium: string;
   howToTitle: string;
   howToIntro: string;
   howToDraftTitle: string;
@@ -180,6 +190,19 @@ export interface UiCopy {
   abandonRunConfirm: string;
   battleInProgress: string;
   roundResultDetail: string;
+  roundInsightsTitle: string;
+  roundInsightCastleDamage: string;
+  roundInsightSurvivors: string;
+  roundInsightHealing: string;
+  roundInsightBlocking: string;
+  roundInsightSummons: string;
+  roundInsightSynergies: string;
+  battleCalloutArmor: string;
+  battleCalloutBanner: string;
+  battleCalloutThorns: string;
+  battleCalloutPack: string;
+  battleCalloutFrost: string;
+  battleCalloutBonePact: string;
   sceneLoading: string;
   battleResultReady: string;
   battlefieldUnavailable: string;
@@ -269,6 +292,16 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorInternal: "Ошибка сервера. Попробуйте ещё раз.",
     pvpErrorBadRequest: "Сервер не принял запрос.",
     howToPlay: "Как играть",
+    compendium: "Карты и синергии",
+    compendiumTitle: "Карты и синергии",
+    compendiumIntro: "Изучите весь набор бойцов и точные бонусы синергий до начала дуэли.",
+    compendiumCards: "Карты",
+    compendiumSynergies: "Синергии",
+    compendiumUpgradeNote: "При улучшении АТК и HP удваиваются. Скорость и дальность не меняются.",
+    compendiumTier: "Тир {tier}",
+    compendiumSynergyRule: "{threshold} бойца: +{value} {stat}",
+    compendiumSynergyCards: "Получают бонус: {cards}",
+    closeCompendium: "Закрыть справочник",
     howToTitle: "Как играть",
     howToIntro: "Симметричная дуэль: обе крепости начинают с 20 HP, а каждый соперник получает по одной карте за раунд.",
     howToDraftTitle: "1. Выберите карту",
@@ -365,6 +398,19 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     abandonRunConfirm: "Завершить текущую партию? Сохранённый прогресс будет удалён.",
     battleInProgress: "Идёт бой, раунд {round} из {maxRounds}.",
     roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
+    roundInsightsTitle: "Ключевые итоги",
+    roundInsightCastleDamage: "Урон крепости: вы {player} · соперник {enemy}",
+    roundInsightSurvivors: "Выжившие: вы {player} · соперник {enemy}",
+    roundInsightHealing: "Лечение: вы {player} · соперник {enemy}",
+    roundInsightBlocking: "Предотвращено урона: вы {player} · соперник {enemy}",
+    roundInsightSummons: "Призывы: вы {player} · соперник {enemy}",
+    roundInsightSynergies: "Синергии: вы {player} · соперник {enemy}",
+    battleCalloutArmor: "БРОНЯ +{amount}",
+    battleCalloutBanner: "ЗНАМЯ: +{amount} АТК",
+    battleCalloutThorns: "ШИПЫ: +{amount} БРОНИ",
+    battleCalloutPack: "СТАЯ: +{amount} АТК",
+    battleCalloutFrost: "МОРОЗ: −{amount} АТК",
+    battleCalloutBonePact: "КОСТЯНОЙ ДОГОВОР",
     sceneLoading: "Загрузка поля…",
     battleResultReady: "Результат боя готов.",
     battlefieldUnavailable: "Поле боя недоступно. Драфт продолжает работать.",
@@ -446,6 +492,16 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorInternal: "Помилка сервера. Спробуйте ще раз.",
     pvpErrorBadRequest: "Сервер не прийняв запит.",
     howToPlay: "Як грати",
+    compendium: "Карти й синергії",
+    compendiumTitle: "Карти й синергії",
+    compendiumIntro: "Перегляньте весь набір бійців і точні бонуси синергій до початку дуелі.",
+    compendiumCards: "Карти",
+    compendiumSynergies: "Синергії",
+    compendiumUpgradeNote: "Після покращення АТК і HP подвоюються. Швидкість і дальність не змінюються.",
+    compendiumTier: "Тир {tier}",
+    compendiumSynergyRule: "{threshold} бійці: +{value} {stat}",
+    compendiumSynergyCards: "Отримують бонус: {cards}",
+    closeCompendium: "Закрити довідник",
     howToTitle: "Як грати",
     howToIntro: "Симетрична дуель: обидві фортеці починають із 20 HP, а кожен суперник отримує по одній карті щораунду.",
     howToDraftTitle: "1. Виберіть карту",
@@ -542,6 +598,19 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     abandonRunConfirm: "Завершити поточну партію? Збережений прогрес буде видалено.",
     battleInProgress: "Триває бій, раунд {round} із {maxRounds}.",
     roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
+    roundInsightsTitle: "Ключові підсумки",
+    roundInsightCastleDamage: "Шкода фортеці: ви {player} · суперник {enemy}",
+    roundInsightSurvivors: "Вижили: ви {player} · суперник {enemy}",
+    roundInsightHealing: "Лікування: ви {player} · суперник {enemy}",
+    roundInsightBlocking: "Відвернено шкоди: ви {player} · суперник {enemy}",
+    roundInsightSummons: "Заклики: ви {player} · суперник {enemy}",
+    roundInsightSynergies: "Синергії: ви {player} · суперник {enemy}",
+    battleCalloutArmor: "БРОНЯ +{amount}",
+    battleCalloutBanner: "ПРАПОР: +{amount} АТК",
+    battleCalloutThorns: "ШИПИ: +{amount} БРОНІ",
+    battleCalloutPack: "ЗГРАЯ: +{amount} АТК",
+    battleCalloutFrost: "МОРОЗ: −{amount} АТК",
+    battleCalloutBonePact: "КІСТЯНИЙ ДОГОВІР",
     sceneLoading: "Завантаження поля…",
     battleResultReady: "Результат бою готовий.",
     battlefieldUnavailable: "Поле бою недоступне. Драфт продовжує працювати.",
@@ -623,6 +692,16 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorInternal: "Server error. Try again.",
     pvpErrorBadRequest: "The server rejected the request.",
     howToPlay: "How to play",
+    compendium: "Cards & synergies",
+    compendiumTitle: "Cards & synergies",
+    compendiumIntro: "Review every fighter and the exact synergy bonuses before starting a duel.",
+    compendiumCards: "Cards",
+    compendiumSynergies: "Synergies",
+    compendiumUpgradeNote: "Upgrades double ATK and HP. Speed and range do not change.",
+    compendiumTier: "Tier {tier}",
+    compendiumSynergyRule: "{threshold} fighters: +{value} {stat}",
+    compendiumSynergyCards: "Bonus applies to: {cards}",
+    closeCompendium: "Close compendium",
     howToTitle: "How to play",
     howToIntro: "A symmetric duel: both keeps start at 20 HP, and each rival receives one card per round.",
     howToDraftTitle: "1. Choose a card",
@@ -719,6 +798,19 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     abandonRunConfirm: "End the current run? Saved progress will be deleted.",
     battleInProgress: "Battle in progress, round {round} of {maxRounds}.",
     roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
+    roundInsightsTitle: "Key results",
+    roundInsightCastleDamage: "Keep damage: you {player} · rival {enemy}",
+    roundInsightSurvivors: "Survivors: you {player} · rival {enemy}",
+    roundInsightHealing: "Healing: you {player} · rival {enemy}",
+    roundInsightBlocking: "Damage prevented: you {player} · rival {enemy}",
+    roundInsightSummons: "Summons: you {player} · rival {enemy}",
+    roundInsightSynergies: "Synergies: you {player} · rival {enemy}",
+    battleCalloutArmor: "ARMOR +{amount}",
+    battleCalloutBanner: "BANNER: +{amount} ATK",
+    battleCalloutThorns: "THORNS: +{amount} ARMOR",
+    battleCalloutPack: "PACK: +{amount} ATK",
+    battleCalloutFrost: "FROST: −{amount} ATK",
+    battleCalloutBonePact: "BONE PACT",
     sceneLoading: "Loading field…",
     battleResultReady: "Battle result ready.",
     battlefieldUnavailable: "Battlefield unavailable. Drafting still works.",

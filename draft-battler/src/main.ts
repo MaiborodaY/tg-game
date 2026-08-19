@@ -1,5 +1,5 @@
 import "./styles.css";
-import type { BattlefieldController } from "./rendering/phaserBattleScene";
+import type { BattleAbilityCalloutLabels, BattlefieldController } from "./rendering/phaserBattleScene";
 import { prefersReducedBattleMotion } from "./rendering/motionPreference";
 import {
   BOARD_SLOT_COUNT,
@@ -48,6 +48,11 @@ import {
   loadBattlePlaybackSpeed,
   saveBattlePlaybackSpeed,
 } from "./battleUi";
+import {
+  createCompendiumPresentation,
+  type CompendiumCardPresentation,
+} from "./compendiumPresentation";
+import { createRoundInsights } from "./roundInsights";
 import {
   DRAFT_CAMERA_ZOOM,
   FIELD_FALLBACK_HEIGHT,
@@ -283,6 +288,7 @@ let activeLocale = resolveInitialLocale(
   telegram.languageCode ?? navigator.language,
 );
 let howToOpen = !hasSeenHowTo(preferenceStorage);
+let compendiumOpen = false;
 let battlePlaybackSpeed = loadBattlePlaybackSpeed(preferenceStorage);
 document.documentElement.lang = activeLocale;
 
@@ -391,6 +397,10 @@ function closeTopOverlay(): boolean {
     closeHowToPlay();
     return true;
   }
+  if (compendiumOpen && uiState.mode === "menu") {
+    closeCompendium();
+    return true;
+  }
   if (uiState.playMode === "online") {
     requestLeavePvpRoom();
     return true;
@@ -489,6 +499,9 @@ function render(): void {
   if (uiState.mode === "menu" && howToOpen) {
     stageUi.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
     stageUi.append(createHowToPlayOverlay());
+  } else if (uiState.mode === "menu" && compendiumOpen) {
+    stageUi.querySelector<HTMLElement>(".main-menu-overlay")?.setAttribute("inert", "");
+    stageUi.append(createCompendiumOverlay());
   }
 
   if (uiState.mode === "draft" && pendingDraftReplacement) {
@@ -508,7 +521,7 @@ function render(): void {
 function syncTelegramMiniApp(): void {
   const gameInProgress = uiState.mode !== "menu" && uiState.run.status !== "finished";
   telegram.setGameInProgress(gameInProgress);
-  telegram.setBackHandler(uiState.mode !== "menu" || howToOpen ? handleTelegramBack : undefined);
+  telegram.setBackHandler(uiState.mode !== "menu" || howToOpen || compendiumOpen ? handleTelegramBack : undefined);
 }
 
 function setFocusKey(element: HTMLElement, focusKey: string): void {
@@ -735,7 +748,18 @@ function createMainMenuOverlay(): HTMLElement {
   howToButton.textContent = copy.howToPlay;
   howToButton.addEventListener("click", openHowToPlay);
 
-  actions.append(difficultyLabel, duelButtons, howToButton);
+  const compendiumButton = document.createElement("button");
+  compendiumButton.className = "main-menu__button";
+  compendiumButton.type = "button";
+  compendiumButton.textContent = copy.compendium;
+  setFocusKey(compendiumButton, "compendium-open");
+  compendiumButton.addEventListener("click", openCompendium);
+
+  const referenceActions = document.createElement("div");
+  referenceActions.className = "main-menu__reference-actions";
+  referenceActions.append(howToButton, compendiumButton);
+
+  actions.append(difficultyLabel, duelButtons, referenceActions);
   if (PVP_UI_ENABLED) {
     const onlineButton = document.createElement("button");
     onlineButton.className = "main-menu__button";
@@ -863,7 +887,159 @@ function createHowToStep(title: string, body: string): HTMLLIElement {
   return step;
 }
 
+function createCompendiumOverlay(): HTMLElement {
+  const copy = getCopy();
+  const presentation = createCompendiumPresentation();
+  const overlay = document.createElement("div");
+  overlay.className = "compendium-overlay";
+
+  const panel = document.createElement("section");
+  panel.className = "compendium-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "draft-battler-compendium-title");
+
+  const header = document.createElement("div");
+  header.className = "compendium-panel__header";
+
+  const heading = document.createElement("div");
+  const title = document.createElement("h2");
+  title.id = "draft-battler-compendium-title";
+  title.textContent = copy.compendiumTitle;
+  const intro = document.createElement("p");
+  intro.textContent = copy.compendiumIntro;
+  heading.append(title, intro);
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "compendium-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", copy.closeCompendium);
+  setFocusKey(closeButton, "compendium-close");
+  closeButton.addEventListener("click", closeCompendium);
+  header.append(heading, closeButton);
+
+  const content = document.createElement("div");
+  content.className = "compendium-panel__content";
+  content.tabIndex = 0;
+  content.setAttribute("aria-label", copy.compendiumTitle);
+
+  const cardSection = document.createElement("section");
+  cardSection.className = "compendium-section";
+  const cardTitle = document.createElement("h3");
+  cardTitle.textContent = copy.compendiumCards;
+  const upgradeNote = document.createElement("p");
+  upgradeNote.className = "compendium-section__note";
+  upgradeNote.textContent = copy.compendiumUpgradeNote;
+  const cardList = document.createElement("div");
+  cardList.className = "compendium-card-list";
+  presentation.cards.forEach((entry) => cardList.append(createCompendiumCard(entry)));
+  cardSection.append(cardTitle, upgradeNote, cardList);
+
+  const synergySection = document.createElement("section");
+  synergySection.className = "compendium-section";
+  const synergyTitle = document.createElement("h3");
+  synergyTitle.textContent = copy.compendiumSynergies;
+  const synergyList = document.createElement("div");
+  synergyList.className = "compendium-synergy-list";
+  presentation.synergies.forEach((synergy) => {
+    const item = document.createElement("article");
+    item.className = "compendium-synergy";
+    const name = document.createElement("strong");
+    name.textContent = getTagLabel(activeLocale, synergy.tag);
+    const stat = synergy.effect.stat === "attack" ? copy.attack : copy.hp;
+    const rule = document.createElement("span");
+    rule.textContent = formatMessage(copy.compendiumSynergyRule, {
+      threshold: synergy.threshold,
+      value: synergy.effect.value,
+      stat,
+    });
+    const cards = document.createElement("p");
+    cards.textContent = formatMessage(copy.compendiumSynergyCards, {
+      cards: synergy.relevantCardIds
+        .map((cardId) => getLocalizedCard(activeLocale, getCardDefinition(cardId)).name)
+        .join(", "),
+    });
+    item.append(name, rule, cards);
+    synergyList.append(item);
+  });
+  synergySection.append(synergyTitle, synergyList);
+
+  content.append(cardSection, synergySection);
+  panel.append(header, content);
+  overlay.append(panel);
+
+  queueMicrotask(() => {
+    if (closeButton.isConnected) {
+      closeButton.focus();
+    }
+  });
+
+  return overlay;
+}
+
+function createCompendiumCard(entry: CompendiumCardPresentation): HTMLElement {
+  const copy = getCopy();
+  const card = getCardDefinition(entry.id);
+  const localized = getLocalizedCard(activeLocale, card);
+  const meta = getCardDisplayMeta(card);
+  const item = document.createElement("article");
+  item.className = `compendium-card unit-card--${meta.archetype} unit-card--${meta.rarity}`;
+
+  const art = createCardArt(card, meta);
+  art.classList.add("compendium-card__art");
+
+  const body = document.createElement("div");
+  body.className = "compendium-card__body";
+  const title = document.createElement("h4");
+  title.textContent = localized.name;
+  const metaLine = document.createElement("div");
+  metaLine.className = "compendium-card__meta";
+  const tier = document.createElement("span");
+  tier.textContent = formatMessage(copy.compendiumTier, { tier: card.tier });
+  const rarity = document.createElement("span");
+  rarity.textContent = meta.rarityLabel;
+  const archetype = document.createElement("span");
+  archetype.textContent = meta.archetypeLabel;
+  metaLine.append(tier, rarity, archetype);
+
+  const tags = document.createElement("div");
+  tags.className = "compendium-card__tags";
+  card.tags.forEach((tag) => {
+    const tagLabel = document.createElement("span");
+    tagLabel.textContent = getTagLabel(activeLocale, tag);
+    tags.append(tagLabel);
+  });
+
+  const stats = document.createElement("div");
+  stats.className = "compendium-card__stats";
+  stats.append(
+    createCompendiumStat(copy.attack, entry.baseStats.attack, entry.upgradedStats.attack),
+    createCompendiumStat(copy.hp, entry.baseStats.hp, entry.upgradedStats.hp),
+    createCompendiumStat(copy.speed, entry.baseStats.speed, entry.upgradedStats.speed),
+    createCompendiumStat(copy.range, entry.baseStats.range, entry.upgradedStats.range),
+  );
+
+  const description = document.createElement("p");
+  description.className = "compendium-card__description";
+  description.textContent = localized.summary;
+  body.append(title, metaLine, tags, stats, description);
+  item.append(art, body);
+  return item;
+}
+
+function createCompendiumStat(label: string, baseValue: number, upgradedValue: number): HTMLElement {
+  const stat = document.createElement("span");
+  const labelElement = document.createElement("small");
+  labelElement.textContent = label;
+  const value = document.createElement("strong");
+  value.textContent = baseValue === upgradedValue ? String(baseValue) : `${baseValue}→${upgradedValue}`;
+  stat.append(labelElement, value);
+  return stat;
+}
+
 function openHowToPlay(): void {
+  compendiumOpen = false;
   howToOpen = true;
   render();
 }
@@ -875,6 +1051,18 @@ function closeHowToPlay(): void {
   queueMicrotask(() => {
     document.querySelector<HTMLButtonElement>(".main-menu__button--primary")?.focus();
   });
+}
+
+function openCompendium(): void {
+  howToOpen = false;
+  compendiumOpen = true;
+  render();
+}
+
+function closeCompendium(): void {
+  compendiumOpen = false;
+  requestFocusAfterRender("compendium-open");
+  render();
 }
 
 function selectLocale(locale: SupportedLocale): void {
@@ -1106,8 +1294,59 @@ function createRoundResultSummary(record: RoundRecord): HTMLElement {
     enemyHpValue: snapshot.enemyHpAfter,
     enemyLoss: snapshot.enemyHpLoss,
   });
-  summary.append(title, detail);
+  summary.append(title, detail, createRoundInsightsSummary(record));
   return summary;
+}
+
+function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
+  const copy = getCopy();
+  const insights = createRoundInsights(record);
+  const section = document.createElement("div");
+  section.className = "round-result-insights";
+
+  const title = document.createElement("span");
+  title.className = "round-result-insights__title";
+  title.textContent = copy.roundInsightsTitle;
+
+  const metrics = document.createElement("div");
+  metrics.className = "round-result-insights__grid";
+  const rows = [
+    formatRoundInsight(copy.roundInsightCastleDamage, insights.castles.enemy.damageTaken, insights.castles.player.damageTaken),
+    formatRoundInsight(copy.roundInsightSurvivors, insights.sides.player.survivors.length, insights.sides.enemy.survivors.length),
+  ];
+  const optionalRows = [
+    {
+      total: insights.sides.player.healing.amount + insights.sides.enemy.healing.amount,
+      label: formatRoundInsight(copy.roundInsightHealing, insights.sides.player.healing.amount, insights.sides.enemy.healing.amount),
+    },
+    {
+      total: insights.sides.player.blocking.amount + insights.sides.enemy.blocking.amount,
+      label: formatRoundInsight(copy.roundInsightBlocking, insights.sides.player.blocking.amount, insights.sides.enemy.blocking.amount),
+    },
+    {
+      total: insights.sides.player.summons.length + insights.sides.enemy.summons.length,
+      label: formatRoundInsight(copy.roundInsightSummons, insights.sides.player.summons.length, insights.sides.enemy.summons.length),
+    },
+    {
+      total: insights.sides.player.synergies.length + insights.sides.enemy.synergies.length,
+      label: formatRoundInsight(copy.roundInsightSynergies, insights.sides.player.synergies.length, insights.sides.enemy.synergies.length),
+    },
+  ]
+    .filter((row) => row.total > 0)
+    .slice(0, 2)
+    .map((row) => row.label);
+
+  [...rows, ...optionalRows].forEach((label) => {
+    const metric = document.createElement("span");
+    metric.textContent = label;
+    metrics.append(metric);
+  });
+  section.append(title, metrics);
+  return section;
+}
+
+function formatRoundInsight(template: string, player: number, enemy: number): string {
+  return formatMessage(template, { player, enemy });
 }
 
 function getRoundWinnerLabel(winner: CombatWinner): string {
@@ -2874,12 +3113,27 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
       onError: handleBattlefieldError,
       onCastleHpChanged: handleBattleCastleHpChanged,
       blockLabel: getCopy().blockFeedback,
+      abilityCalloutLabels: createBattleAbilityCalloutLabels(),
       reducedMotion: prefersReducedBattleMotion(window),
     });
   } catch (error: unknown) {
     console.error("Failed to apply Phaser battlefield command", error);
     showBattlefieldFallback(getCopy().rendererInterrupted);
   }
+}
+
+function createBattleAbilityCalloutLabels(): BattleAbilityCalloutLabels {
+  const copy = getCopy();
+  return {
+    battle_banner: copy.battleCalloutBanner,
+    thorn_guard: copy.battleCalloutThorns,
+    pack_hunter: copy.battleCalloutPack,
+    frost_hex: copy.battleCalloutFrost,
+    shield_wall: copy.battleCalloutArmor,
+    stone_skin: copy.battleCalloutArmor,
+    riposte: copy.battleCalloutArmor,
+    bone_pact: copy.battleCalloutBonePact,
+  };
 }
 
 function handleBattleCastleHpChanged(owner: Owner, hp: number): void {

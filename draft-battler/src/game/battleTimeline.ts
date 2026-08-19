@@ -36,7 +36,7 @@ export interface BattleTimelineCastle {
 
 type CombatStepEventPayload =
   | { type: "unit_spawn"; unitId: string }
-  | { type: "unit_buff"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number }
+  | { type: "unit_buff"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number; source: string }
   | { type: "unit_attack"; attackerId: string; targetId: string; damage: number }
   | { type: "unit_block"; unitId: string; attackerId: string; amount: number }
   | { type: "unit_damage"; unitId: string; amount: number; remainingHp: number; shieldAbsorbed: number }
@@ -130,6 +130,7 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
         attackDelta: event.attackDelta,
         hpDelta: event.hpDelta,
         shieldDelta: event.shieldDelta,
+        source: event.source,
       });
       continue;
     }
