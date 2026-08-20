@@ -1,3 +1,4 @@
+import { CARD_DEFINITIONS } from "../../../draft-battler/src/game/cards";
 import type { CardId } from "../../../draft-battler/src/game/types.ts";
 
 export const MAX_SOCKET_MESSAGE_BYTES = 4_096;
@@ -8,26 +9,7 @@ export const SOCKET_TICKET_TTL_MS = 30_000;
 export const SEAT_TOKEN_BYTES = 32;
 export const ROOM_CODE_LENGTH = 8;
 const BOARD_SLOT_COUNT = 6;
-const VALID_CARD_IDS = new Set<CardId>([
-  "iron_guard",
-  "shieldbearer",
-  "boar_rider",
-  "sneakblade",
-  "spear_recruit",
-  "longbow_hunter",
-  "ember_mage",
-  "frost_acolyte",
-  "grave_binder",
-  "bone_soldier",
-  "witch_doctor",
-  "field_cleric",
-  "wolfhound",
-  "thorn_druid",
-  "stone_golem",
-  "pyromancer",
-  "duelist",
-  "banner_knight",
-]);
+const VALID_CARD_IDS = new Set<CardId>(CARD_DEFINITIONS.map((card) => card.id));
 
 export type PlayerRole = "host" | "guest";
 

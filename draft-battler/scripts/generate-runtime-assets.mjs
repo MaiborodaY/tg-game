@@ -183,7 +183,7 @@ async function writeReadme(results) {
     "Do not edit generated WebP files by hand; update the source PNGs or generator profile instead.",
     "",
     "The repository keeps only the PNG inputs consumed by the current generators (`unit.png`,",
-    "`card.png`, `sprite-sheet.png`, environment images, and card templates). Intermediate",
+    "`card.png`, optional `sprite-sheet.png`, environment images, and card templates). Intermediate",
     "authoring exports such as raw pose sheets, previews, and individual animation frames are",
     "intentionally excluded from the working tree.",
     "",

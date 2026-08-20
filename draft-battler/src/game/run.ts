@@ -66,7 +66,7 @@ export function rerollDraftCards(state: RunState): RunState {
   return {
     ...state,
     draftRerollCount,
-    draftOptions: createDraftOptions(state.seed, state.round, draftRerollCount),
+    draftOptions: createDraftOptions(state.seed, state.round, draftRerollCount, state.boardSlots),
   };
 }
 
@@ -129,7 +129,7 @@ export function resolveRound(state: RunState): RunState {
     enemyHp: nextEnemyHp,
     outcome: null,
     status: "draft",
-    draftOptions: createDraftOptions(state.seed, nextRound),
+    draftOptions: createDraftOptions(state.seed, nextRound, 0, state.boardSlots),
     draftRerollCount: 0,
     boardSlots: cloneBoardSlots(state.boardSlots),
     enemyBoardSlots: cloneBoardSlots(state.enemyBoardSlots),

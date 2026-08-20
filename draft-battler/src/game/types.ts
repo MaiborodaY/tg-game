@@ -52,7 +52,31 @@ export type CardId =
   | "stone_golem"
   | "pyromancer"
   | "duelist"
-  | "banner_knight";
+  | "banner_knight"
+  | "bone_archer"
+  | "plague_rat"
+  | "rune_warden"
+  | "forest_skirmisher"
+  | "marsh_stalker"
+  | "crypt_keeper"
+  | "battle_alchemist"
+  | "night_warden"
+  | "grave_raider"
+  | "frost_wraith"
+  | "ironhide_bear"
+  | "soul_hunter"
+  | "city_crossbowman"
+  | "harpy_scout"
+  | "smoke_trickster"
+  | "war_mastiff"
+  | "grave_bellringer"
+  | "moon_priestess"
+  | "phantom_duelist"
+  | "siege_engineer"
+  | "bronze_minotaur"
+  | "headless_knight"
+  | "star_seer"
+  | "war_chaplain";
 
 export interface UnitStats {
   attack: number;

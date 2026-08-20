@@ -58,7 +58,7 @@ test("history round-trips through its own versioned key and returns immutable co
 
   assert.equal(saveSoloRunHistory(storage, [older, newer]), true);
   assert.equal(SOLO_RUN_HISTORY_STORAGE_KEY, `draft-battler:solo-run-history:v${SOLO_RUN_HISTORY_VERSION}`);
-  assert.equal(storage.values.has("draft-battler:solo-run:v7"), false);
+  assert.equal(storage.values.has("draft-battler:solo-run:v9"), false);
 
   const loaded = loadSoloRunHistory(storage);
   assert.deepEqual(loaded, [newer, older]);
@@ -181,11 +181,11 @@ test("storage failures stay nonfatal for load, save, record, and clear", () => {
 test("clear removes only the run-history key", () => {
   const storage = new MemoryStorage();
   storage.setItem(SOLO_RUN_HISTORY_STORAGE_KEY, encodeSoloRunHistory([createSummary()]));
-  storage.setItem("draft-battler:solo-run:v7", "active-run");
+  storage.setItem("draft-battler:solo-run:v9", "active-run");
 
   assert.equal(clearSoloRunHistory(storage), true);
   assert.equal(storage.getItem(SOLO_RUN_HISTORY_STORAGE_KEY), null);
-  assert.equal(storage.getItem("draft-battler:solo-run:v7"), "active-run");
+  assert.equal(storage.getItem("draft-battler:solo-run:v9"), "active-run");
 });
 
 test("a failed history write can durably queue the receipt and recover it exactly once", () => {

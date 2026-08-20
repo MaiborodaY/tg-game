@@ -11,6 +11,7 @@ import {
   createDraftOptions,
   createEmptyBoardSlots,
   createEnemyBoardSlots,
+  createEnemyDraftOptions,
   createRun,
   getBoardCapacityForRound,
   getTerminalRunOutcome,
@@ -36,7 +37,7 @@ test("a new run starts in a complete round-one draft state", () => {
 });
 
 test("strong difficulty compares all three offers while standard preserves the original pick", () => {
-  const seed = "strong-fixture-0";
+  const seed = "strong-fixture-1";
   const emptyBoard = createEmptyBoardSlots();
   const standard = advanceEnemyBoardSlots(seed, 1, emptyBoard);
   const explicitStandard = advanceEnemyBoardSlots(seed, 1, emptyBoard, "standard");
@@ -44,12 +45,12 @@ test("strong difficulty compares all three offers while standard preserves the o
 
   assert.deepEqual(standard, explicitStandard);
   assert.deepEqual(standard.draftOptions.map((option) => option.cardId), [
-    "wolfhound",
-    "boar_rider",
-    "spear_recruit",
+    "iron_guard",
+    "plague_rat",
+    "bone_archer",
   ]);
-  assert.equal(standard.pickedCardId, "spear_recruit");
-  assert.equal(strong.pickedCardId, "boar_rider");
+  assert.equal(standard.pickedCardId, "bone_archer");
+  assert.equal(strong.pickedCardId, "iron_guard");
   assert.ok(strong.draftOptions.some((option) => option.cardId === strong.pickedCardId));
 });
 
@@ -66,6 +67,59 @@ test("draft options are deterministic, unique, and reroll-specific", () => {
   assert.equal(original.length, 3);
   assert.equal(new Set(original.map((option) => option.cardId)).size, original.length);
   assert.notDeepEqual(original, rerolled);
+});
+
+test("an incumbent card gets one deterministic 3x weight boost regardless of duplicate copies", () => {
+  const oneCopy = createEmptyBoardSlots();
+  oneCopy[0] = { slotIndex: 0, cardId: "bone_archer", upgradeLevel: 0 };
+  const twoCopies = oneCopy.map((slot) => ({ ...slot }));
+  twoCopies[1] = { slotIndex: 1, cardId: "bone_archer", upgradeLevel: 1 };
+  let baselineOffers = 0;
+  let incumbentOffers = 0;
+
+  for (let seedIndex = 0; seedIndex < 500; seedIndex += 1) {
+    const seed = `incumbent-weight-${seedIndex}`;
+    const baseline = createDraftOptions(seed, 7);
+    const weighted = createDraftOptions(seed, 7, 0, oneCopy);
+    const duplicateWeighted = createDraftOptions(seed, 7, 0, twoCopies);
+
+    baselineOffers += baseline.some((option) => option.cardId === "bone_archer") ? 1 : 0;
+    incumbentOffers += weighted.some((option) => option.cardId === "bone_archer") ? 1 : 0;
+    assert.deepEqual(duplicateWeighted, weighted, seed);
+  }
+
+  assert.equal(baselineOffers, 25);
+  assert.equal(incumbentOffers, 80);
+});
+
+test("solo rerolls and next rounds use the player's incumbent board", () => {
+  let state = createRun("incumbent-solo-flow");
+  state.boardSlots[0] = { slotIndex: 0, cardId: "bone_archer", upgradeLevel: 0 };
+
+  const rerolled = rerollDraftCards(state);
+  assert.deepEqual(
+    rerolled.draftOptions,
+    createDraftOptions(state.seed, state.round, 1, state.boardSlots),
+  );
+
+  const selectedBoard = applyDraftSelectionToBoard(rerolled, [rerolled.draftOptions[0].cardId]);
+  const nextState = resolveRound(chooseDraftCards(rerolled, selectedBoard));
+  assert.equal(nextState.status, "draft");
+  assert.deepEqual(
+    nextState.draftOptions,
+    createDraftOptions(nextState.seed, nextState.round, 0, nextState.boardSlots),
+  );
+});
+
+test("enemy drafting uses the same incumbent weighting seam", () => {
+  const board = createEmptyBoardSlots();
+  board[0] = { slotIndex: 0, cardId: "plague_rat", upgradeLevel: 0 };
+  const result = advanceEnemyBoardSlots("incumbent-enemy-flow", 4, board, "strong");
+
+  assert.deepEqual(
+    result.draftOptions,
+    createEnemyDraftOptions("incumbent-enemy-flow", 4, board),
+  );
 });
 
 test("enemy drafts exactly one deterministic legal card onto its persistent board each round", () => {

@@ -340,7 +340,7 @@ const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
 const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
 const PVP_UI_ENABLED = import.meta.env.VITE_DRAFT_BATTLER_PVP_ENABLED === "true";
 const PVP_API_ORIGIN = normalizePvpApiOrigin(import.meta.env.VITE_DRAFT_BATTLER_PVP_ORIGIN);
-const PVP_RULESET_VERSION = "draft-battler-pvp-v1";
+const PVP_RULESET_VERSION = "draft-battler-pvp-v3";
 
 interface ActivePointerDrag {
   cleanup: () => void;

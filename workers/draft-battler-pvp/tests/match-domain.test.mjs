@@ -6,6 +6,7 @@ register("../../../draft-battler/tests/resolve-typescript.mjs", import.meta.url)
 
 const {
   CARD_DEFINITIONS,
+  createDraftOptions,
   createEmptyBoardSlots,
   isCardAllowedInSlot,
 } = await import("../../../draft-battler/src/game/index.ts");
@@ -26,6 +27,8 @@ const {
   forfeitDisconnectedPlayer,
   getDisconnectForfeitRole,
   getDisconnectedSeatReleaseRole,
+  isCurrentMatchState,
+  isCurrentRoomState,
   isMatchExpired,
   isRematchReady,
   releaseDisconnectedSeat,
@@ -82,6 +85,21 @@ test("match creation is deterministic but keeps each server offer private", () =
   assert.deepEqual(wireSnapshot.self.draftOptions, left.players.host.draftOptions);
 });
 
+test("persisted state compatibility gates reject stale rulesets and schemas", () => {
+  const room = createRoom({ roomId: "room-v2", now: NOW });
+  const match = createFixtureMatch();
+
+  assert.equal(RULESET_VERSION, "draft-battler-pvp-v3");
+  assert.equal(isCurrentRoomState(room), true);
+  assert.equal(isCurrentMatchState(match), true);
+  assert.equal(isCurrentRoomState({ ...room, rulesetVersion: "draft-battler-pvp-v2" }), false);
+  assert.equal(isCurrentMatchState({ ...match, rulesetVersion: "draft-battler-pvp-v2" }), false);
+  assert.equal(isCurrentRoomState({ ...room, schemaVersion: 0 }), false);
+  assert.equal(isCurrentMatchState({ ...match, schemaVersion: 0 }), false);
+  assert.equal(isCurrentRoomState(null), false);
+  assert.equal(isCurrentMatchState([]), false);
+});
+
 test("pick accepts only the player's current offer and derives the pending board on the server", () => {
   const match = createFixtureMatch();
   const offeredIds = new Set(match.players.host.draftOptions.map((option) => option.cardId));
@@ -136,6 +154,26 @@ test("reroll is server-generated, once per round, and unavailable after a pick",
     allowReplacement: false,
   });
   expectDomainError("reroll_unavailable", () => apply(picked, "guest", { type: "reroll" }));
+
+  let incumbentFixture;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const candidate = createFixtureMatch(`match-incumbent-${attempt}`, `incumbent-seed-${attempt}`);
+    candidate.players.host.boardSlots = boardWith("iron_guard", 0);
+    const weighted = createDraftOptions(
+      `${candidate.seed}:pvp:host`,
+      candidate.round,
+      1,
+      candidate.players.host.boardSlots,
+    );
+    const unweighted = createDraftOptions(`${candidate.seed}:pvp:host`, candidate.round, 1);
+    if (JSON.stringify(weighted) !== JSON.stringify(unweighted)) {
+      incumbentFixture = { candidate, weighted };
+      break;
+    }
+  }
+  assert.ok(incumbentFixture, "expected a deterministic seed where incumbent weighting changes the reroll");
+  const incumbentReroll = apply(incumbentFixture.candidate, "host", { type: "reroll" });
+  assert.deepEqual(incumbentReroll.players.host.draftOptions, incumbentFixture.weighted);
 });
 
 test("move and swap are server-authoritative and enforce front-row-only cards", () => {
@@ -198,6 +236,14 @@ test("the next round starts only after acknowledgements from both players and pr
   assert.equal(nextRound.phase, "draft");
   assert.equal(nextRound.players.host.boardSlots[0].cardId, "iron_guard");
   assert.equal(nextRound.players.host.draftRerollCount, 0);
+  assert.deepEqual(
+    nextRound.players.host.draftOptions,
+    createDraftOptions(`${nextRound.seed}:pvp:host`, 2, 0, nextRound.players.host.boardSlots),
+  );
+  assert.deepEqual(
+    nextRound.players.guest.draftOptions,
+    createDraftOptions(`${nextRound.seed}:pvp:guest`, 2, 0, nextRound.players.guest.boardSlots),
+  );
 
   const skippedPick = apply(nextRound, "host", { type: "lock" });
   assert.equal(skippedPick.players.host.locked, true);

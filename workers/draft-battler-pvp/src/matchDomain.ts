@@ -15,7 +15,7 @@ import {
 import { resolveCombat } from "../../../draft-battler/src/game/combat";
 import { getMatchCastleDamage } from "./combatHp";
 
-export const RULESET_VERSION = "draft-battler-pvp-v1";
+export const RULESET_VERSION = "draft-battler-pvp-v3";
 export const MATCH_SCHEMA_VERSION = 1;
 export const ROOM_SCHEMA_VERSION = 1;
 export const MATCH_MAX_ROUNDS = MAX_RUN_ROUNDS;
@@ -403,7 +403,7 @@ function applyReroll(current: MatchState, role: PlayerRole, now: number): ApplyM
   const state = cloneMatch(current);
   const nextPlayer = state.players[role];
   nextPlayer.draftRerollCount = 1;
-  nextPlayer.draftOptions = createRoleDraftOptions(state.seed, role, state.round, 1);
+  nextPlayer.draftOptions = createRoleDraftOptions(state.seed, role, state.round, 1, player.boardSlots);
   touchMatch(state, now);
   return { state, event: { type: "rerolled", role } };
 }
@@ -524,7 +524,7 @@ function createRoundPlayerState(
 ): MatchPlayerState {
   return {
     boardSlots: cloneSlots(boardSlots),
-    draftOptions: createRoleDraftOptions(seed, role, round, 0),
+    draftOptions: createRoleDraftOptions(seed, role, round, 0, boardSlots),
     draftRerollCount: 0,
     locked: false,
     nextRoundReady: false,
@@ -532,8 +532,14 @@ function createRoundPlayerState(
   };
 }
 
-function createRoleDraftOptions(seed: string, role: PlayerRole, round: number, rerollCount: number): DraftOption[] {
-  return createDraftOptions(`${seed}:pvp:${role}`, round, rerollCount);
+function createRoleDraftOptions(
+  seed: string,
+  role: PlayerRole,
+  round: number,
+  rerollCount: number,
+  incumbentSlots: readonly BoardSlot[],
+): DraftOption[] {
+  return createDraftOptions(`${seed}:pvp:${role}`, round, rerollCount, incumbentSlots);
 }
 
 function assertCurrentIntent(state: MatchState, intent: MatchIntent): void {
@@ -634,6 +640,18 @@ export interface RoomState {
   createdAt: number;
   updatedAt: number;
   expiresAt: number;
+}
+
+export function isCurrentRoomState(value: unknown): value is RoomState {
+  return isRecord(value)
+    && value.schemaVersion === ROOM_SCHEMA_VERSION
+    && value.rulesetVersion === RULESET_VERSION;
+}
+
+export function isCurrentMatchState(value: unknown): value is MatchState {
+  return isRecord(value)
+    && value.schemaVersion === MATCH_SCHEMA_VERSION
+    && value.rulesetVersion === RULESET_VERSION;
 }
 
 export interface ClaimSeatInput {
@@ -899,4 +917,8 @@ function cloneRoom(room: RoomState): RoomState {
       guest: room.seats.guest ? { ...room.seats.guest } : undefined,
     },
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

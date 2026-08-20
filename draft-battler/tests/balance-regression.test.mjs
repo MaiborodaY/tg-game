@@ -125,6 +125,65 @@ for (const target of STRONG_BALANCE_TARGETS) {
   });
 }
 
+// These bands record the 42-card pool with shared 3x incumbent weighting.
+const UPGRADE_RETENTION_TARGETS = [
+  {
+    label: "highest-power versus standard",
+    strategy: pickHighestPowerCards,
+    botDifficulty: "standard",
+    anyUpgrade: [0.94, 0.99],
+    averageUpgrades: [2.15, 2.5],
+  },
+  {
+    label: "highest-power versus strong",
+    strategy: pickHighestPowerCards,
+    botDifficulty: "strong",
+    anyUpgrade: [0.94, 0.99],
+    averageUpgrades: [2.2, 2.55],
+  },
+  {
+    label: "synergy versus standard",
+    strategy: pickSynergyCards,
+    botDifficulty: "standard",
+    anyUpgrade: [0.89, 0.96],
+    averageUpgrades: [1.8, 2.1],
+  },
+  {
+    label: "synergy versus strong",
+    strategy: pickSynergyCards,
+    botDifficulty: "strong",
+    anyUpgrade: [0.89, 0.96],
+    averageUpgrades: [1.8, 2.1],
+  },
+];
+
+for (const target of UPGRADE_RETENTION_TARGETS) {
+  test(`draft upgrade retention over ${BALANCE_CORPUS_SIZE} seeds: ${target.label}`, () => {
+    let runsWithUpgrade = 0;
+    let finalUpgrades = 0;
+
+    for (let seedIndex = 0; seedIndex < BALANCE_CORPUS_SIZE; seedIndex += 1) {
+      const state = autoplayRun(`balance-large-${seedIndex}`, target.strategy, target.botDifficulty);
+      const upgradedSlots = state.boardSlots.filter((slot) => slot.upgradeLevel === 1).length;
+      runsWithUpgrade += upgradedSlots > 0 ? 1 : 0;
+      finalUpgrades += upgradedSlots;
+    }
+
+    const anyUpgradeRate = runsWithUpgrade / BALANCE_CORPUS_SIZE;
+    const averageFinalUpgrades = finalUpgrades / BALANCE_CORPUS_SIZE;
+    assert.ok(
+      anyUpgradeRate >= target.anyUpgrade[0] && anyUpgradeRate <= target.anyUpgrade[1],
+      `${runsWithUpgrade}/${BALANCE_CORPUS_SIZE} runs retained an upgrade (${formatPercent(anyUpgradeRate)}); ` +
+        `expected ${formatPercent(target.anyUpgrade[0])}-${formatPercent(target.anyUpgrade[1])}.`,
+    );
+    assert.ok(
+      averageFinalUpgrades >= target.averageUpgrades[0] && averageFinalUpgrades <= target.averageUpgrades[1],
+      `${averageFinalUpgrades.toFixed(3)} final upgrades per run; ` +
+        `expected ${target.averageUpgrades[0]}-${target.averageUpgrades[1]}.`,
+    );
+  });
+}
+
 test(`solo balance over ${BALANCE_CORPUS_SIZE} seeds: r7/r8 do not become a first/random defeat cliff`, () => {
   for (const [label, strategy] of [
     ["first-offer", pickFirstOffer],

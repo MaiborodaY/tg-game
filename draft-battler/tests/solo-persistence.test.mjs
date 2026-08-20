@@ -5,6 +5,7 @@ import {
   applyDraftSelectionToBoard,
   autoplayRun,
   chooseDraftCards,
+  createDraftOptions,
   createRun,
   resolveRound,
 } from "../src/game/index.ts";
@@ -33,6 +34,8 @@ const LEGACY_V3_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v3";
 const LEGACY_V4_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v4";
 const LEGACY_V5_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v5";
 const LEGACY_V6_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v6";
+const LEGACY_V7_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v7";
+const LEGACY_V8_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v8";
 
 class MemoryStorage {
   values = new Map();
@@ -161,18 +164,10 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function assertMigratedLegacySession(snapshot, legacyVersion, checkpoint) {
-  assert.equal(snapshot.session.source, "standard");
-  assert.equal(snapshot.session.dailyDateKey, null);
-  assert.equal(snapshot.session.rulesetVersion, SOLO_RUN_RULESET_VERSION);
-  assert.equal(snapshot.session.startedAt, FIXED_SAVED_AT);
-  assert.equal(snapshot.session.completedAt, checkpoint === "finished" ? FIXED_SAVED_AT : null);
-  assert.match(snapshot.session.runId, new RegExp(`^legacy-v${legacyVersion}-`));
-}
-
 test("draft, battle-result, and finished checkpoints round-trip without sharing mutable state", () => {
-  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 7);
-  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v7");
+  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 9);
+  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v9");
+  assert.equal(SOLO_RUN_RULESET_VERSION, "draft-battler-solo-v3");
 
   const checkpoints = [
     createDraftCheckpoint(),
@@ -234,100 +229,62 @@ test("strong bot difficulty round-trips and replays at every durable checkpoint"
   }
 });
 
-test("existing v5 checkpoints migrate from storage as standard", () => {
-  for (const state of [
-    createDraftCheckpoint("standard"),
-    createBattleResultCheckpoint("standard"),
-    createFinishedCheckpoint("standard"),
-  ]) {
-    const legacyV5 = encodedObject(state);
-    legacyV5.version = 5;
-    delete legacyV5.session;
-    delete legacyV5.run.botDifficulty;
-    const storage = new MemoryStorage();
-    storage.setItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY, JSON.stringify(legacyV5));
-
-    const migrated = loadSoloRunSnapshot(storage);
-    assert.ok(migrated);
-    assert.equal(migrated.version, 7);
-    assert.equal(migrated.run.botDifficulty, "standard");
-    assert.deepEqual(migrated.run, state.run);
-    assertMigratedLegacySession(migrated, 5, state.checkpoint);
-    assert.equal(storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY), null);
-    assert.equal(typeof storage.getItem(SOLO_RUN_STORAGE_KEY), "string");
-  }
-});
-
-test("existing v6 checkpoints migrate with stable standard-session metadata", () => {
-  for (const state of [
-    createDraftCheckpoint("standard"),
-    createBattleResultCheckpoint("strong"),
-    createFinishedCheckpoint("strong"),
-  ]) {
-    const legacyV6 = encodedObject(state);
-    legacyV6.version = 6;
-    delete legacyV6.session;
-    const storage = new MemoryStorage();
-    storage.setItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY, JSON.stringify(legacyV6));
-
-    const migrated = loadSoloRunSnapshot(storage);
-    assert.ok(migrated);
-    assert.equal(migrated.version, 7);
-    assert.deepEqual(migrated.run, state.run);
-    assertMigratedLegacySession(migrated, 6, state.checkpoint);
-    assert.equal(storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY), null);
-    assert.equal(typeof storage.getItem(SOLO_RUN_STORAGE_KEY), "string");
-
-    const restored = loadSoloRunSnapshot(storage);
-    assert.ok(restored);
-    assert.deepEqual(restored.session, migrated.session);
-    assert.equal(restored.session.runId, migrated.session.runId);
-    assert.equal(restored.session.completedAt, migrated.session.completedAt);
-  }
-});
-
-test("a failed v5 migration write preserves the original save", () => {
-  const legacyV5 = encodedObject(createDraftCheckpoint("standard"));
-  legacyV5.version = 5;
-  delete legacyV5.session;
-  delete legacyV5.run.botDifficulty;
-  const serialized = JSON.stringify(legacyV5);
-  const storage = new MemoryStorage();
-  storage.setItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY, serialized);
-  storage.setItem = (key, value) => {
-    if (key === SOLO_RUN_STORAGE_KEY) {
-      throw new Error("quota exceeded");
+test("later-round snapshots replay draft offers with the pre-pick incumbent board", () => {
+  let state;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const firstRound = createRun(`solo-incumbent-weight-${attempt}`);
+    const pickedBoard = applyDraftSelectionToBoard(firstRound, [firstRound.draftOptions[0].cardId]);
+    const nextRound = resolveRound(chooseDraftCards(firstRound, pickedBoard));
+    if (
+      nextRound.status === "draft" &&
+      JSON.stringify(nextRound.draftOptions) !== JSON.stringify(createDraftOptions(nextRound.seed, nextRound.round))
+    ) {
+      state = {
+        session: createSession(`incumbent-weight-${attempt}`),
+        checkpoint: "battle_result",
+        run: nextRound,
+        draftBoardSlots: nextRound.boardSlots,
+        cardPickedThisRound: false,
+        lastRound: nextRound.round - 1,
+      };
+      break;
     }
-    storage.values.set(key, value);
-  };
+  }
 
-  const migrated = loadSoloRunSnapshot(storage);
-  assert.ok(migrated);
-  assert.equal(migrated.run.botDifficulty, "standard");
-  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
-  assert.equal(storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY), serialized);
+  assert.ok(state, "expected a deterministic seed where incumbent weighting changes the next offer");
+  const snapshot = createSoloRunSnapshot(state, FIXED_SAVED_AT);
+  assert.ok(snapshot);
+  assert.deepEqual(decodeSoloRunSnapshot(JSON.stringify(snapshot)), snapshot);
 });
 
-test("a failed v6 migration write preserves the current active save", () => {
-  const legacyV6 = encodedObject(createBattleResultCheckpoint("strong"));
-  legacyV6.version = 6;
-  delete legacyV6.session;
-  const serialized = JSON.stringify(legacyV6);
-  const storage = new MemoryStorage();
-  storage.setItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY, serialized);
-  storage.setItem = (key, value) => {
-    if (key === SOLO_RUN_STORAGE_KEY) {
-      throw new Error("quota exceeded");
-    }
-    storage.values.set(key, value);
-  };
+test("v5-v8 active checkpoints are discarded instead of crossing the solo-v3 ruleset boundary", () => {
+  const legacyCases = [
+    [5, LEGACY_V5_SOLO_RUN_STORAGE_KEY],
+    [6, LEGACY_V6_SOLO_RUN_STORAGE_KEY],
+    [7, LEGACY_V7_SOLO_RUN_STORAGE_KEY],
+    [8, LEGACY_V8_SOLO_RUN_STORAGE_KEY],
+  ];
 
-  const migrated = loadSoloRunSnapshot(storage);
-  assert.ok(migrated);
-  assert.equal(migrated.run.botDifficulty, "strong");
-  assertMigratedLegacySession(migrated, 6, "battle_result");
-  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
-  assert.equal(storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY), serialized);
+  for (const [version, storageKey] of legacyCases) {
+    const legacy = encodedObject(createDraftCheckpoint("standard"));
+    legacy.version = version;
+    if (version < 7) {
+      delete legacy.session;
+    } else {
+      legacy.session.rulesetVersion = version === 7
+        ? "draft-battler-solo-v1"
+        : "draft-battler-solo-v2";
+    }
+    if (version === 5) {
+      delete legacy.run.botDifficulty;
+    }
+    const storage = new MemoryStorage();
+    storage.setItem(storageKey, JSON.stringify(legacy));
+
+    assert.equal(loadSoloRunSnapshot(storage), undefined);
+    assert.equal(storage.getItem(storageKey), null);
+    assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
+  }
 });
 
 test("snapshot creation deep-clones input boards and combat history", () => {
@@ -575,6 +532,8 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, "legacy-old-bone-pact-snapshot");
   storage.setItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY, "corrupted-pre-difficulty-snapshot");
   storage.setItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY, "legacy-pre-session-snapshot");
+  storage.setItem(LEGACY_V7_SOLO_RUN_STORAGE_KEY, "legacy-solo-v1-snapshot");
+  storage.setItem(LEGACY_V8_SOLO_RUN_STORAGE_KEY, "legacy-solo-v2-snapshot");
   assert.equal(saveSoloRunSnapshot(storage, state, FIXED_SAVED_AT), true);
   assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
@@ -582,6 +541,8 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V7_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V8_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
   storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
@@ -589,6 +550,8 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, "legacy-old-bone-pact-snapshot");
   storage.setItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY, "corrupted-pre-difficulty-snapshot");
   storage.setItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY, "legacy-pre-session-snapshot");
+  storage.setItem(LEGACY_V7_SOLO_RUN_STORAGE_KEY, "legacy-solo-v1-snapshot");
+  storage.setItem(LEGACY_V8_SOLO_RUN_STORAGE_KEY, "legacy-solo-v2-snapshot");
   assert.deepEqual(loadSoloRunSnapshot(storage), createSoloRunSnapshot(state, FIXED_SAVED_AT));
   assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY), null);
@@ -596,6 +559,8 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V7_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V8_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY, "legacy-wave-snapshot");
   storage.setItem(LEGACY_V2_SOLO_RUN_STORAGE_KEY, "legacy-ten-round-snapshot");
@@ -603,6 +568,8 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   storage.setItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY, "legacy-old-bone-pact-snapshot");
   storage.setItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY, "corrupted-pre-difficulty-snapshot");
   storage.setItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY, "legacy-pre-session-snapshot");
+  storage.setItem(LEGACY_V7_SOLO_RUN_STORAGE_KEY, "legacy-solo-v1-snapshot");
+  storage.setItem(LEGACY_V8_SOLO_RUN_STORAGE_KEY, "legacy-solo-v2-snapshot");
   assert.equal(clearSoloRunSnapshot(storage), true);
   assert.equal(loadSoloRunSnapshot(storage), undefined);
   assert.equal(storage.getItem(LEGACY_V1_SOLO_RUN_STORAGE_KEY), null);
@@ -611,6 +578,8 @@ test("storage adapter saves, loads, clears, and removes invalid payloads", () =>
   assert.equal(storage.getItem(LEGACY_V4_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY), null);
   assert.equal(storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V7_SOLO_RUN_STORAGE_KEY), null);
+  assert.equal(storage.getItem(LEGACY_V8_SOLO_RUN_STORAGE_KEY), null);
 
   storage.setItem(SOLO_RUN_STORAGE_KEY, "corrupted");
   assert.equal(loadSoloRunSnapshot(storage), undefined);

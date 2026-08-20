@@ -22,22 +22,19 @@ import {
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 7;
+export const SOLO_RUN_SNAPSHOT_VERSION = 9;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
-export const SOLO_RUN_RULESET_VERSION = "draft-battler-solo-v1";
+export const SOLO_RUN_RULESET_VERSION = "draft-battler-solo-v3";
 export const SOLO_RUN_ID_MAX_LENGTH = 160;
-const INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS = [
+const LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v1",
   "draft-battler:solo-run:v2",
   "draft-battler:solo-run:v3",
   "draft-battler:solo-run:v4",
-] as const;
-const LEGACY_V5_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v5";
-const LEGACY_V6_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v6";
-const LEGACY_SOLO_RUN_STORAGE_KEYS = [
-  ...INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS,
-  LEGACY_V5_SOLO_RUN_STORAGE_KEY,
-  LEGACY_V6_SOLO_RUN_STORAGE_KEY,
+  "draft-battler:solo-run:v5",
+  "draft-battler:solo-run:v6",
+  "draft-battler:solo-run:v7",
+  "draft-battler:solo-run:v8",
 ] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";
@@ -89,7 +86,6 @@ const SNAPSHOT_KEYS = [
   "cardPickedThisRound",
   "lastRound",
 ] as const;
-const LEGACY_SNAPSHOT_KEYS = SNAPSHOT_KEYS.filter((key) => key !== "session");
 const SESSION_KEYS = [
   "runId",
   "source",
@@ -112,8 +108,6 @@ const RUN_KEYS = [
   "enemyBoardSlots",
   "roundHistory",
 ] as const;
-// Snapshots stored as v5 predate difficulty; their unchanged bot policy is Standard.
-const LEGACY_STANDARD_RUN_KEYS = RUN_KEYS.filter((key) => key !== "botDifficulty");
 const ROUND_RECORD_KEYS = [
   "round",
   "playerHpBefore",
@@ -219,7 +213,7 @@ export function loadSoloRunSnapshot(storage: SoloRunStorage | null | undefined):
     return undefined;
   }
 
-  removeStoredSnapshots(storage, INCOMPATIBLE_LEGACY_SOLO_RUN_STORAGE_KEYS);
+  removeLegacySoloRunSnapshots(storage);
 
   let serialized: string | null;
   try {
@@ -231,49 +225,12 @@ export function loadSoloRunSnapshot(storage: SoloRunStorage | null | undefined):
   if (serialized !== null) {
     const snapshot = decodeSoloRunSnapshot(serialized);
     if (snapshot) {
-      removeStoredSnapshots(storage, [LEGACY_V5_SOLO_RUN_STORAGE_KEY, LEGACY_V6_SOLO_RUN_STORAGE_KEY]);
       return snapshot;
     }
 
     removeStoredSnapshots(storage, [SOLO_RUN_STORAGE_KEY]);
   }
-
-  let legacyV6Serialized: string | null;
-  try {
-    legacyV6Serialized = storage.getItem(LEGACY_V6_SOLO_RUN_STORAGE_KEY);
-  } catch {
-    return undefined;
-  }
-
-  if (legacyV6Serialized !== null) {
-    const migrated = decodeLegacyV6SoloRunSnapshot(legacyV6Serialized);
-    if (migrated) {
-      saveSoloRunSnapshot(storage, migrated, migrated.savedAt);
-      return migrated;
-    }
-
-    removeStoredSnapshots(storage, [LEGACY_V6_SOLO_RUN_STORAGE_KEY]);
-  }
-
-  let legacySerialized: string | null;
-  try {
-    legacySerialized = storage.getItem(LEGACY_V5_SOLO_RUN_STORAGE_KEY);
-  } catch {
-    return undefined;
-  }
-
-  if (legacySerialized === null) {
-    return undefined;
-  }
-
-  const migrated = decodeLegacyV5SoloRunSnapshot(legacySerialized);
-  if (!migrated) {
-    removeStoredSnapshots(storage, [LEGACY_V5_SOLO_RUN_STORAGE_KEY]);
-    return undefined;
-  }
-
-  saveSoloRunSnapshot(storage, migrated, migrated.savedAt);
-  return migrated;
+  return undefined;
 }
 
 export function clearSoloRunSnapshot(storage: SoloRunStorage | null | undefined): boolean {
@@ -313,42 +270,17 @@ function readSnapshot(value: unknown): SoloRunSnapshot | undefined {
     return undefined;
   }
 
-  return readSnapshotRecord(snapshot, "current");
+  return readSnapshotRecord(snapshot);
 }
 
-function decodeLegacyV6SoloRunSnapshot(serialized: string): SoloRunSnapshot | undefined {
-  try {
-    const snapshot = readExactRecord(JSON.parse(serialized) as unknown, LEGACY_SNAPSHOT_KEYS);
-    return snapshot?.version === 6 ? readSnapshotRecord(snapshot, "v6") : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function decodeLegacyV5SoloRunSnapshot(serialized: string): SoloRunSnapshot | undefined {
-  try {
-    const snapshot = readExactRecord(JSON.parse(serialized) as unknown, LEGACY_SNAPSHOT_KEYS);
-    return snapshot?.version === 5 ? readSnapshotRecord(snapshot, "v5") : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function readSnapshotRecord(
-  snapshot: Record<string, unknown>,
-  version: "current" | "v6" | "v5",
-): SoloRunSnapshot | undefined {
+function readSnapshotRecord(snapshot: Record<string, unknown>): SoloRunSnapshot | undefined {
   const savedAt = readInteger(snapshot.savedAt, 0, Number.MAX_SAFE_INTEGER);
   const checkpoint = readCheckpoint(snapshot.checkpoint);
-  const run = readRunState(snapshot.run, version === "v5");
+  const run = readRunState(snapshot.run);
   const draftBoardSlots = readBoardSlots(snapshot.draftBoardSlots);
   const cardPickedThisRound = readBoolean(snapshot.cardPickedThisRound);
   const lastRound = readInteger(snapshot.lastRound, 1, MAX_RUN_ROUNDS);
-  const session = version === "current"
-    ? readSoloRunSession(snapshot.session)
-    : savedAt !== undefined && checkpoint && run
-      ? createLegacySoloRunSession(version, run, checkpoint, savedAt)
-      : undefined;
+  const session = readSoloRunSession(snapshot.session);
 
   if (
     savedAt === undefined ||
@@ -376,18 +308,14 @@ function readSnapshotRecord(
   };
 }
 
-function readRunState(value: unknown, isLegacyV5 = false): RunState | undefined {
-  const run = isLegacyV5
-    ? readExactRecord(value, LEGACY_STANDARD_RUN_KEYS)
-    : readExactRecord(value, RUN_KEYS);
+function readRunState(value: unknown): RunState | undefined {
+  const run = readExactRecord(value, RUN_KEYS);
   if (!run) {
     return undefined;
   }
 
   const seed = readString(run.seed, 1, 256);
-  const botDifficulty = isLegacyV5
-    ? "standard"
-    : "botDifficulty" in run ? readBotDifficulty(run.botDifficulty) : undefined;
+  const botDifficulty = "botDifficulty" in run ? readBotDifficulty(run.botDifficulty) : undefined;
   const round = readInteger(run.round, 1, MAX_RUN_ROUNDS);
   const playerHp = readInteger(run.playerHp, 0, PLAYER_STARTING_HP);
   const enemyHp = readInteger(run.enemyHp, 0, ENEMY_STARTING_HP);
@@ -412,10 +340,17 @@ function readRunState(value: unknown, isLegacyV5 = false): RunState | undefined 
     return undefined;
   }
 
-  const draftOptions = readExpectedDraftOptions(run.draftOptions, seed, round, draftRerollCount);
   const expectedHistoryLength = status === "finished" ? round : round - 1;
   const replay = readRoundHistory(run.roundHistory, seed, botDifficulty, expectedHistoryLength);
-  if (!draftOptions || !replay) {
+  if (!replay) {
+    return undefined;
+  }
+  const draftOptions = status === "draft"
+    ? readExpectedDraftOptions(run.draftOptions, seed, round, draftRerollCount, boardSlots)
+    : stableEqual(run.draftOptions, replay.run.draftOptions)
+      ? replay.run.draftOptions.map((option) => ({ ...option }))
+      : undefined;
+  if (!draftOptions) {
     return undefined;
   }
 
@@ -511,6 +446,7 @@ function readRoundRecord(
     draftRun.seed,
     draftRun.round,
     draftRerollCount,
+    draftRun.boardSlots,
   );
   if (!draftOptions || !isValidRoundPlayerBoard(draftRun.boardSlots, playerSlots, draftOptions)) {
     return undefined;
@@ -541,8 +477,9 @@ function readExpectedDraftOptions(
   seed: string,
   round: number,
   rerollCount: number,
+  incumbentSlots: readonly BoardSlot[],
 ): DraftOption[] | undefined {
-  const expected = createDraftOptions(seed, round, rerollCount);
+  const expected = createDraftOptions(seed, round, rerollCount, incumbentSlots);
   return stableEqual(value, expected) ? expected.map((option) => ({ ...option })) : undefined;
 }
 
@@ -695,21 +632,6 @@ function readSoloRunSession(value: unknown): SoloRunSession | undefined {
   };
 }
 
-function createLegacySoloRunSession(
-  version: "v6" | "v5",
-  run: RunState,
-  checkpoint: SoloRunCheckpoint,
-  savedAt: number,
-): SoloRunSession {
-  const timestamp = Math.max(1, savedAt);
-  const session = createSoloRunSession({
-    source: "standard",
-    now: timestamp,
-    runId: `legacy-${version}-${timestamp.toString(36)}-${stableHash(run.seed).toString(36)}`,
-  });
-  return checkpoint === "finished" ? completeSoloRunSession(session, timestamp) : session;
-}
-
 function hasValidSessionCheckpoint(session: SoloRunSession, checkpoint: SoloRunCheckpoint): boolean {
   return checkpoint === "finished" ? session.completedAt !== null : session.completedAt === null;
 }
@@ -745,15 +667,6 @@ function createGeneratedRunId(startedAt: number): string {
   }
 
   return `solo-${startedAt.toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
-}
-
-function stableHash(value: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
 }
 
 function readCheckpoint(value: unknown): SoloRunCheckpoint | undefined {

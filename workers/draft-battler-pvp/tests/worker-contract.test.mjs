@@ -38,6 +38,27 @@ test("worker schedules persistent TTL and disconnect lifecycle alarms", async ()
   assert.match(source, /deleteAll/);
 });
 
+test("worker deletes stale persisted rulesets before exposing room snapshots", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+  const viewerStart = source.indexOf("private async createViewerSnapshot");
+  const broadcastStart = source.indexOf("private async broadcastSnapshots", viewerStart);
+  const viewerSource = source.slice(viewerStart, broadcastStart);
+  const roomReadStart = source.indexOf("private async readRoom");
+  const roomWriteStart = source.indexOf("private async writeRoom", roomReadStart);
+  const roomReadSource = source.slice(roomReadStart, roomWriteStart);
+  const matchReadStart = source.indexOf("private async readMatch");
+  const matchWriteStart = source.indexOf("private async writeMatch", matchReadStart);
+  const matchReadSource = source.slice(matchReadStart, matchWriteStart);
+
+  assert.match(roomReadSource, /storage\.get<unknown>/);
+  assert.match(roomReadSource, /!isCurrentRoomState\(room\)/);
+  assert.match(roomReadSource, /deleteRoom\("Room belongs to an older game version\."\)/);
+  assert.match(matchReadSource, /storage\.get<unknown>/);
+  assert.match(matchReadSource, /!isCurrentMatchState\(match\)/);
+  assert.match(matchReadSource, /deleteRoom\("Match belongs to an older game version\."\)/);
+  assert.doesNotMatch(viewerSource, /rulesetVersion: RULESET_VERSION/);
+});
+
 test("HTTP reconnect verifies credentials without replacing or disconnecting a live socket", async () => {
   const source = await readFile(sourceUrl, "utf8");
   const reconnectStart = source.indexOf("private async reconnectSession");

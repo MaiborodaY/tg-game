@@ -213,6 +213,126 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
       frameHeight: UNIT_SPRITE_FRAME_SIZE,
     },
   },
+  bone_archer: {
+    key: "unit:bone_archer",
+    path: new URL("./assets/units/bone_archer/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/bone_archer/card.webp", import.meta.url).href,
+  },
+  plague_rat: {
+    key: "unit:plague_rat",
+    path: new URL("./assets/units/plague_rat/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/plague_rat/card.webp", import.meta.url).href,
+  },
+  rune_warden: {
+    key: "unit:rune_warden",
+    path: new URL("./assets/units/rune_warden/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/rune_warden/card.webp", import.meta.url).href,
+  },
+  forest_skirmisher: {
+    key: "unit:forest_skirmisher",
+    path: new URL("./assets/units/forest_skirmisher/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/forest_skirmisher/card.webp", import.meta.url).href,
+  },
+  marsh_stalker: {
+    key: "unit:marsh_stalker",
+    path: new URL("./assets/units/marsh_stalker/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/marsh_stalker/card.webp", import.meta.url).href,
+  },
+  crypt_keeper: {
+    key: "unit:crypt_keeper",
+    path: new URL("./assets/units/crypt_keeper/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/crypt_keeper/card.webp", import.meta.url).href,
+  },
+  battle_alchemist: {
+    key: "unit:battle_alchemist",
+    path: new URL("./assets/units/battle_alchemist/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/battle_alchemist/card.webp", import.meta.url).href,
+  },
+  night_warden: {
+    key: "unit:night_warden",
+    path: new URL("./assets/units/night_warden/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/night_warden/card.webp", import.meta.url).href,
+  },
+  grave_raider: {
+    key: "unit:grave_raider",
+    path: new URL("./assets/units/grave_raider/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/grave_raider/card.webp", import.meta.url).href,
+  },
+  frost_wraith: {
+    key: "unit:frost_wraith",
+    path: new URL("./assets/units/frost_wraith/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/frost_wraith/card.webp", import.meta.url).href,
+  },
+  ironhide_bear: {
+    key: "unit:ironhide_bear",
+    path: new URL("./assets/units/ironhide_bear/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/ironhide_bear/card.webp", import.meta.url).href,
+  },
+  soul_hunter: {
+    key: "unit:soul_hunter",
+    path: new URL("./assets/units/soul_hunter/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/soul_hunter/card.webp", import.meta.url).href,
+  },
+  city_crossbowman: {
+    key: "unit:city_crossbowman",
+    path: new URL("./assets/units/city_crossbowman/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/city_crossbowman/card.webp", import.meta.url).href,
+  },
+  harpy_scout: {
+    key: "unit:harpy_scout",
+    path: new URL("./assets/units/harpy_scout/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/harpy_scout/card.webp", import.meta.url).href,
+  },
+  smoke_trickster: {
+    key: "unit:smoke_trickster",
+    path: new URL("./assets/units/smoke_trickster/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/smoke_trickster/card.webp", import.meta.url).href,
+  },
+  war_mastiff: {
+    key: "unit:war_mastiff",
+    path: new URL("./assets/units/war_mastiff/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/war_mastiff/card.webp", import.meta.url).href,
+  },
+  grave_bellringer: {
+    key: "unit:grave_bellringer",
+    path: new URL("./assets/units/grave_bellringer/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/grave_bellringer/card.webp", import.meta.url).href,
+  },
+  moon_priestess: {
+    key: "unit:moon_priestess",
+    path: new URL("./assets/units/moon_priestess/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/moon_priestess/card.webp", import.meta.url).href,
+  },
+  phantom_duelist: {
+    key: "unit:phantom_duelist",
+    path: new URL("./assets/units/phantom_duelist/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/phantom_duelist/card.webp", import.meta.url).href,
+  },
+  siege_engineer: {
+    key: "unit:siege_engineer",
+    path: new URL("./assets/units/siege_engineer/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/siege_engineer/card.webp", import.meta.url).href,
+  },
+  bronze_minotaur: {
+    key: "unit:bronze_minotaur",
+    path: new URL("./assets/units/bronze_minotaur/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/bronze_minotaur/card.webp", import.meta.url).href,
+  },
+  headless_knight: {
+    key: "unit:headless_knight",
+    path: new URL("./assets/units/headless_knight/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/headless_knight/card.webp", import.meta.url).href,
+  },
+  star_seer: {
+    key: "unit:star_seer",
+    path: new URL("./assets/units/star_seer/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/star_seer/card.webp", import.meta.url).href,
+  },
+  war_chaplain: {
+    key: "unit:war_chaplain",
+    path: new URL("./assets/units/war_chaplain/unit.webp", import.meta.url).href,
+    cardPath: new URL("./assets/units/war_chaplain/card.webp", import.meta.url).href,
+  },
 };
 
 export function getUnitAsset(cardId: CardId): UnitAsset | undefined {

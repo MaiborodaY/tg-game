@@ -9,7 +9,7 @@ import { MAX_UPGRADE_LEVEL } from "../src/game/types.ts";
 test("compendium exposes every card in canonical order with base and upgraded stats", () => {
   const { cards } = createCompendiumPresentation();
 
-  assert.equal(cards.length, 18);
+  assert.equal(cards.length, CARD_DEFINITIONS.length);
   assert.deepEqual(cards.map((card) => card.id), CARD_DEFINITIONS.map((card) => card.id));
   assert.equal(new Set(cards.map((card) => card.id)).size, cards.length);
 

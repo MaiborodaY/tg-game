@@ -18,6 +18,8 @@ import {
   forfeitDisconnectedPlayer,
   getDisconnectedSeatReleaseRole,
   getDisconnectForfeitRole,
+  isCurrentMatchState,
+  isCurrentRoomState,
   isMatchExpired,
   isRematchReady,
   releaseDisconnectedSeat,
@@ -553,7 +555,6 @@ export class DraftPvpRoom extends DurableObject<Env> {
     const roomSnapshot = createRoomSnapshot(room, role, now, match?.phase);
     return {
       ...roomSnapshot,
-      rulesetVersion: RULESET_VERSION,
       match: match ? createPlayerMatchSnapshot(match, role, now) : undefined,
       serverNow: now,
     };
@@ -577,7 +578,12 @@ export class DraftPvpRoom extends DurableObject<Env> {
   }
 
   private async readRoom(): Promise<RoomState | undefined> {
-    return this.ctx.storage.get<RoomState>(ROOM_STORAGE_KEY);
+    const room = await this.ctx.storage.get<unknown>(ROOM_STORAGE_KEY);
+    if (room !== undefined && !isCurrentRoomState(room)) {
+      await this.deleteRoom("Room belongs to an older game version.");
+      return undefined;
+    }
+    return room;
   }
 
   private async writeRoom(room: RoomState): Promise<void> {
@@ -585,7 +591,12 @@ export class DraftPvpRoom extends DurableObject<Env> {
   }
 
   private async readMatch(): Promise<MatchState | undefined> {
-    return this.ctx.storage.get<MatchState>(MATCH_STORAGE_KEY);
+    const match = await this.ctx.storage.get<unknown>(MATCH_STORAGE_KEY);
+    if (match !== undefined && !isCurrentMatchState(match)) {
+      await this.deleteRoom("Match belongs to an older game version.");
+      throw new Error("Persisted match is incompatible with the current ruleset.");
+    }
+    return match;
   }
 
   private async writeMatch(match: MatchState): Promise<void> {

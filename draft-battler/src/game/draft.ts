@@ -13,6 +13,7 @@ import {
 } from "./types";
 
 const FIRST_ROUND_HIDDEN_CARD_IDS = new Set<CardId>(["field_cleric", "shieldbearer"]);
+const INCUMBENT_DRAFT_WEIGHT_MULTIPLIER = 3;
 
 export interface EnemyDraftResult {
   draftOptions: DraftOption[];
@@ -45,9 +46,14 @@ export function getBoardCapacityForRound(_round: number): number {
   return BOARD_SLOT_COUNT;
 }
 
-export function createDraftOptions(seed: string, round: number, rerollCount = 0): DraftOption[] {
+export function createDraftOptions(
+  seed: string,
+  round: number,
+  rerollCount = 0,
+  incumbentSlots: readonly BoardSlot[] = [],
+): DraftOption[] {
   const rng = new SeededRandom(`${seed}:draft:${round}:${rerollCount}`);
-  const weightedPool = createWeightedDraftPool(round);
+  const weightedPool = createWeightedDraftPool(round, incumbentSlots);
   const options: DraftOption[] = [];
   const used = new Set<string>();
 
@@ -68,8 +74,12 @@ export function createDraftOptions(seed: string, round: number, rerollCount = 0)
   return options;
 }
 
-export function createEnemyDraftOptions(seed: string, round: number): DraftOption[] {
-  return createDraftOptions(`${seed}:enemy`, round);
+export function createEnemyDraftOptions(
+  seed: string,
+  round: number,
+  incumbentSlots: readonly BoardSlot[] = [],
+): DraftOption[] {
+  return createDraftOptions(`${seed}:enemy`, round, 0, incumbentSlots);
 }
 
 export function createBoardFromSlots(slots: readonly BoardSlot[], capacity: number): BoardSlot[] {
@@ -110,7 +120,7 @@ export function advanceEnemyBoardSlots(
 ): EnemyDraftResult {
   const capacity = getBoardCapacityForRound(round);
   const boardSlots = createBoardFromSlots(previousSlots, capacity);
-  const draftOptions = createEnemyDraftOptions(seed, round);
+  const draftOptions = createEnemyDraftOptions(seed, round, boardSlots);
   const createCandidates = (option: DraftOption) => boardSlots
     .filter((slot) => slot.slotIndex < capacity)
     .flatMap((slot) => {
@@ -237,15 +247,19 @@ function normalizeUpgradeLevel(upgradeLevel: BoardSlot["upgradeLevel"]): BoardSl
   return upgradeLevel >= MAX_UPGRADE_LEVEL ? MAX_UPGRADE_LEVEL : 0;
 }
 
-function createWeightedDraftPool(round: number): CardDefinition[] {
+function createWeightedDraftPool(round: number, incumbentSlots: readonly BoardSlot[]): CardDefinition[] {
   const pool: CardDefinition[] = [];
+  const incumbentCardIds = new Set(
+    incumbentSlots.flatMap((slot) => slot.cardId ? [slot.cardId] : []),
+  );
 
   CARD_DEFINITIONS.forEach((card) => {
     if (!isCardAvailableForRound(card, round)) {
       return;
     }
 
-    const weight = getTierWeight(card.tier, round);
+    const incumbentMultiplier = incumbentCardIds.has(card.id) ? INCUMBENT_DRAFT_WEIGHT_MULTIPLIER : 1;
+    const weight = getTierWeight(card.tier, round) * incumbentMultiplier;
     for (let count = 0; count < weight; count += 1) {
       pool.push(card);
     }

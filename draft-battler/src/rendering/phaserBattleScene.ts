@@ -25,6 +25,7 @@ import { getUnitAsset, getUnitAssets } from "../unitAssets";
 import {
   BATTLE_CAMERA_CLOSE_ZOOM,
   BATTLE_CAMERA_ZOOM,
+  fitStaticUnitArtSize,
   getUnitPresentationScale,
 } from "./battlePresentationLayout";
 import {
@@ -782,7 +783,14 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     if (asset && this.textures.exists(asset.key)) {
-      const sprite = this.add.image(0, -12, asset.key).setDisplaySize(UNIT_SPRITE_DISPLAY_WIDTH, UNIT_SPRITE_DISPLAY_HEIGHT);
+      const sprite = this.add.image(0, -12, asset.key);
+      const displaySize = fitStaticUnitArtSize(
+        sprite.width,
+        sprite.height,
+        UNIT_SPRITE_DISPLAY_WIDTH,
+        UNIT_SPRITE_DISPLAY_HEIGHT,
+      );
+      sprite.setDisplaySize(displaySize.width, displaySize.height);
       if (unit.owner === "enemy") {
         sprite.setTint(0xf0a27c);
       }

@@ -395,6 +395,9 @@ test("armor-granting abilities expose exact values in every locale", () => {
     thorn_druid: "1",
     stone_golem: "5",
     duelist: "2",
+    rune_warden: "3",
+    night_warden: "2",
+    ironhide_bear: "1",
   };
 
   SUPPORTED_LOCALES.forEach((locale) => {
@@ -479,8 +482,8 @@ test("battle HUD, spatial positions, and draft forecasts are complete in every l
   });
 });
 
-test("all 18 core cards have complete presentation text in every locale", () => {
-  assert.equal(CARD_DEFINITIONS.length, 18);
+test("all 42 core cards have complete presentation text in every locale", () => {
+  assert.equal(CARD_DEFINITIONS.length, 42);
 
   SUPPORTED_LOCALES.forEach((locale) => {
     CARD_DEFINITIONS.forEach((card) => {

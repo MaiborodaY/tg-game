@@ -8,6 +8,7 @@ import {
   BATTLE_CAMERA_ZOOM,
   BATTLE_UNIT_PRESENTATION_SCALE,
   DRAFT_UNIT_PRESENTATION_SCALE,
+  fitStaticUnitArtSize,
   getUnitPresentationScale,
 } from "../src/rendering/battlePresentationLayout.ts";
 
@@ -39,4 +40,24 @@ test("close combat remains focused without over-zooming units", () => {
 
 test("battlefield renderer no longer exposes the temporary CLASH label", () => {
   assert.doesNotMatch(sceneSource, /["']CLASH["']/);
+});
+
+test("static unit art preserves square and humanoid aspect ratios inside the visual box", () => {
+  assert.deepEqual(fitStaticUnitArtSize(384, 384, 56, 68), { width: 56, height: 56 });
+
+  const humanoid = fitStaticUnitArtSize(384, 576, 56, 68);
+  assert.equal(humanoid.height, 68);
+  assert.ok(Math.abs(humanoid.width - 45.333333333333336) < 1e-9);
+});
+
+test("renderer aspect-fits only static art and keeps animated atlas sizing unchanged", () => {
+  assert.match(
+    sceneSource,
+    /fitStaticUnitArtSize\(\s*sprite\.width,\s*sprite\.height,\s*UNIT_SPRITE_DISPLAY_WIDTH,\s*UNIT_SPRITE_DISPLAY_HEIGHT,?\s*\)/,
+  );
+  assert.match(sceneSource, /sprite\.setDisplaySize\(displaySize\.width, displaySize\.height\)/);
+  assert.match(
+    sceneSource,
+    /\.sprite\(0, UNIT_SPRITE_SHEET_Y, asset\.spriteSheet\.key, frame\)[\s\S]*?\.setDisplaySize\(UNIT_SPRITE_SHEET_DISPLAY_SIZE, UNIT_SPRITE_SHEET_DISPLAY_SIZE\)/,
+  );
 });

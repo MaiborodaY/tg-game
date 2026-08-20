@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { CARD_DEFINITIONS } from "../../../draft-battler/src/game/cards.ts";
+
 const RequestCtor = globalThis.Request;
 
 import {
@@ -152,6 +154,21 @@ test("client protocol accepts only bounded exact intent schemas", () => {
   assert.equal(parseClientMessage("{"), undefined);
   assert.equal(parseClientMessage(new ArrayBuffer(2)), undefined);
   assert.equal(parseClientMessage(`{"type":"ping","padding":"${"x".repeat(MAX_SOCKET_MESSAGE_BYTES)}"}`), undefined);
+});
+
+test("client protocol accepts every canonical card id", () => {
+  for (const card of CARD_DEFINITIONS) {
+    const message = {
+      type: "pick",
+      matchId: "match-canonical-cards",
+      round: 1,
+      cardId: card.id,
+      targetSlotIndex: 0,
+      allowReplacement: false,
+    };
+
+    assert.equal(parseClientMessage(JSON.stringify(message))?.cardId, card.id);
+  }
 });
 
 test("socket rate limiting uses a fixed bounded window", () => {

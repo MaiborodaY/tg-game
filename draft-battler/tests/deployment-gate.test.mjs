@@ -12,7 +12,7 @@ test("deployment gate accepts a PvP-enabled health flag and the app shell", asyn
       return jsonResponse(200, {
         ok: true,
         pvpEnabled: true,
-        rulesetVersion: "draft-battler-pvp-v1",
+        rulesetVersion: "draft-battler-pvp-v3",
       });
     }
 
@@ -26,7 +26,7 @@ test("deployment gate accepts a PvP-enabled health flag and the app shell", asyn
         seat: "host",
         seatToken: "seat-token",
         socketTicket: "socket-ticket",
-        snapshot: { rulesetVersion: "draft-battler-pvp-v1" },
+        snapshot: { rulesetVersion: "draft-battler-pvp-v3" },
       });
     }
 
@@ -48,7 +48,7 @@ test("deployment gate rejects a disabled PvP health flag", async () => {
   const request = async () => jsonResponse(200, {
     ok: true,
     pvpEnabled: false,
-    rulesetVersion: "draft-battler-pvp-v1",
+    rulesetVersion: "draft-battler-pvp-v3",
   });
 
   await assert.rejects(
@@ -77,7 +77,7 @@ test("deployment gate rejects a missing app shell", async () => {
       return jsonResponse(200, {
         ok: true,
         pvpEnabled: true,
-        rulesetVersion: "draft-battler-pvp-v1",
+        rulesetVersion: "draft-battler-pvp-v3",
       });
     }
     return textResponse(503, "unavailable");
@@ -96,7 +96,7 @@ test("deployment gate rejects a room creation failure", async () => {
       return jsonResponse(200, {
         ok: true,
         pvpEnabled: true,
-        rulesetVersion: "draft-battler-pvp-v1",
+        rulesetVersion: "draft-battler-pvp-v3",
       });
     }
     if (url.pathname === "/") {
