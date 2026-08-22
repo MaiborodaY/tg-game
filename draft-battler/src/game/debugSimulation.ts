@@ -1,8 +1,10 @@
-import { getCardDefinition } from "./cards";
+import { getCardDefinition, getCardStatsForUpgrade } from "./cards";
 import { applyDraftSelectionToBoard, chooseDraftCards, createRun, resolveRound } from "./run";
+import { SYNERGY_RULES, getActiveSynergyTiers, getSynergyEffectScore } from "./synergies";
 import {
-  type CardDefinition,
   type BotDifficulty,
+  type BoardSlot,
+  type CardDefinition,
   type CardId,
   type CombatResult,
   type DraftOption,
@@ -166,10 +168,9 @@ export function pickBalancedCards(state: RunState): CardId[] {
 }
 
 export function pickSynergyCards(state: RunState): CardId[] {
-  const existingCards = state.boardSlots.flatMap((slot) => (slot.cardId ? [slot.cardId] : []));
   const rankedOptions = [...state.draftOptions].sort((left, right) => {
-    const leftScore = scoreTeam([...existingCards, left.cardId]);
-    const rightScore = scoreTeam([...existingCards, right.cardId]);
+    const leftScore = getDebugDraftOptionScore(state, left.cardId);
+    const rightScore = getDebugDraftOptionScore(state, right.cardId);
 
     return rightScore - leftScore || left.cardId.localeCompare(right.cardId);
   });
@@ -178,15 +179,25 @@ export function pickSynergyCards(state: RunState): CardId[] {
   return option ? [option.cardId] : pickHighestPowerCards(state);
 }
 
+export function getDebugDraftOptionScore(state: RunState, cardId: CardId): number {
+  const resultingBoard = applyDraftSelectionToBoard(state, [cardId]);
+
+  return getDebugBoardScore(resultingBoard);
+}
+
 export function getCardPowerScore(card: CardDefinition): number {
+  return getUnitPowerScore(card, card.stats);
+}
+
+function getUnitPowerScore(card: CardDefinition, stats: UnitStats): number {
   const abilityScore = getAbilityScore(card.abilityId);
   const roleScore = getRoleScore(card.role);
 
   return (
-    card.stats.attack * 2.2 +
-    card.stats.hp * 0.75 +
-    card.stats.speed * 0.45 +
-    card.stats.range * 0.5 +
+    stats.attack * 2.2 +
+    stats.hp * 0.75 +
+    stats.speed * 0.45 +
+    stats.range * 0.5 +
     card.tier * 1.5 +
     abilityScore +
     roleScore
@@ -293,22 +304,40 @@ function sortDraftOptionsByScore(options: readonly DraftOption[]): DraftOption[]
   );
 }
 
-function scoreTeam(cardIds: readonly CardId[]): number {
-  const cards = cardIds.map(getCardDefinition);
+export function getDebugTeamScore(cardIds: readonly CardId[]): number {
+  return scoreDebugUnits(cardIds.map((cardId) => {
+    const card = getCardDefinition(cardId);
+    return { card, stats: card.stats };
+  }));
+}
+
+export function getDebugBoardScore(slots: readonly BoardSlot[]): number {
+  return scoreDebugUnits(slots.flatMap((slot) => {
+    if (!slot.cardId) {
+      return [];
+    }
+
+    const card = getCardDefinition(slot.cardId);
+    return [{ card, stats: getCardStatsForUpgrade(card, slot.upgradeLevel) }];
+  }));
+}
+
+function scoreDebugUnits(units: readonly { card: CardDefinition; stats: UnitStats }[]): number {
   const tagCounts = new Map<UnitTag, number>();
   const roleCounts = new Map<UnitRole, number>();
-  let score = cards.reduce((total, card) => total + getCardPowerScore(card), 0);
+  let score = units.reduce((total, unit) => total + getUnitPowerScore(unit.card, unit.stats), 0);
 
-  for (const card of cards) {
+  for (const { card } of units) {
     roleCounts.set(card.role, (roleCounts.get(card.role) ?? 0) + 1);
     for (const tag of card.tags) {
       tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
     }
   }
 
-  for (const count of tagCounts.values()) {
-    if (count >= 2) {
-      score += 5 + count;
+  for (const [tag, count] of tagCounts) {
+    const activeTiers = getActiveSynergyTiers(SYNERGY_RULES[tag], count);
+    if (activeTiers.length > 0) {
+      score += count + activeTiers.reduce((total, tier) => total + getSynergyEffectScore(tier.effect), 0);
     }
   }
 

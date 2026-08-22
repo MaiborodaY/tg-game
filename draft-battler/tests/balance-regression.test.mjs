@@ -100,7 +100,7 @@ for (const target of BALANCE_TARGETS) {
       `${playerWins}/${BALANCE_CORPUS_SIZE} won (${formatPercent(winRate)}); ` +
         `expected ${formatPercent(target.minimum)}-${formatPercent(target.maximum)}.`,
     );
-    assert.ok(draws / BALANCE_CORPUS_SIZE <= 0.05, `${draws}/${BALANCE_CORPUS_SIZE} draws exceeds 5%.`);
+    assert.ok(draws / BALANCE_CORPUS_SIZE <= 0.02, `${draws}/${BALANCE_CORPUS_SIZE} draws exceeds 2%.`);
   });
 }
 
@@ -121,11 +121,11 @@ for (const target of STRONG_BALANCE_TARGETS) {
       `${playerWins}/${BALANCE_CORPUS_SIZE} won (${formatPercent(winRate)}); ` +
         `expected ${formatPercent(target.minimum)}-${formatPercent(target.maximum)}.`,
     );
-    assert.ok(draws / BALANCE_CORPUS_SIZE <= 0.05, `${draws}/${BALANCE_CORPUS_SIZE} draws exceeds 5%.`);
+    assert.ok(draws / BALANCE_CORPUS_SIZE <= 0.02, `${draws}/${BALANCE_CORPUS_SIZE} draws exceeds 2%.`);
   });
 }
 
-// These bands record the 42-card pool with shared 3x incumbent weighting.
+// These bands record the 42-card pool, shared 3x incumbent weighting, and actual-board tiered-synergy scoring.
 const UPGRADE_RETENTION_TARGETS = [
   {
     label: "highest-power versus standard",
@@ -146,14 +146,14 @@ const UPGRADE_RETENTION_TARGETS = [
     strategy: pickSynergyCards,
     botDifficulty: "standard",
     anyUpgrade: [0.89, 0.96],
-    averageUpgrades: [1.8, 2.1],
+    averageUpgrades: [2.15, 2.4],
   },
   {
     label: "synergy versus strong",
     strategy: pickSynergyCards,
     botDifficulty: "strong",
     anyUpgrade: [0.89, 0.96],
-    averageUpgrades: [1.8, 2.1],
+    averageUpgrades: [2.3, 2.6],
   },
 ];
 
@@ -182,6 +182,63 @@ for (const target of UPGRADE_RETENTION_TARGETS) {
         `expected ${target.averageUpgrades[0]}-${target.averageUpgrades[1]}.`,
     );
   });
+}
+
+const SYNERGY_MASTERY_TARGETS = [
+  {
+    label: "standard",
+    botDifficulty: "standard",
+    anyMastery: [0.58, 0.72],
+    finalMastery: [0.45, 0.6],
+  },
+  {
+    label: "strong",
+    botDifficulty: "strong",
+    anyMastery: [0.6, 0.74],
+    finalMastery: [0.45, 0.6],
+  },
+];
+
+for (const target of SYNERGY_MASTERY_TARGETS) {
+  test(`tier-four synergy retention over ${BALANCE_CORPUS_SIZE} seeds: deliberate synergy versus ${target.label}`, () => {
+    let runsWithMastery = 0;
+    let finalBoardsWithMastery = 0;
+
+    for (let seedIndex = 0; seedIndex < BALANCE_CORPUS_SIZE; seedIndex += 1) {
+      const state = autoplayRun(`balance-large-${seedIndex}`, pickSynergyCards, target.botDifficulty);
+      runsWithMastery += state.roundHistory.some((record) => hasTierFourSynergy(record.playerSlots)) ? 1 : 0;
+      finalBoardsWithMastery += hasTierFourSynergy(state.boardSlots) ? 1 : 0;
+    }
+
+    const anyMasteryRate = runsWithMastery / BALANCE_CORPUS_SIZE;
+    const finalMasteryRate = finalBoardsWithMastery / BALANCE_CORPUS_SIZE;
+    assert.ok(
+      anyMasteryRate >= target.anyMastery[0] && anyMasteryRate <= target.anyMastery[1],
+      `${runsWithMastery}/${BALANCE_CORPUS_SIZE} runs activated a tier-four synergy (${formatPercent(anyMasteryRate)}); ` +
+        `expected ${formatPercent(target.anyMastery[0])}-${formatPercent(target.anyMastery[1])}.`,
+    );
+    assert.ok(
+      finalMasteryRate >= target.finalMastery[0] && finalMasteryRate <= target.finalMastery[1],
+      `${finalBoardsWithMastery}/${BALANCE_CORPUS_SIZE} final boards retained a tier-four synergy ` +
+        `(${formatPercent(finalMasteryRate)}); expected ${formatPercent(target.finalMastery[0])}-` +
+        `${formatPercent(target.finalMastery[1])}.`,
+    );
+  });
+}
+
+function hasTierFourSynergy(slots) {
+  const tagCounts = new Map();
+  slots.forEach((slot) => {
+    if (!slot.cardId) {
+      return;
+    }
+
+    getCardDefinition(slot.cardId).tags.forEach((tag) => {
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+    });
+  });
+
+  return [...tagCounts.values()].some((count) => count >= 4);
 }
 
 test(`solo balance over ${BALANCE_CORPUS_SIZE} seeds: r7/r8 do not become a first/random defeat cliff`, () => {

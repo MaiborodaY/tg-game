@@ -1,5 +1,12 @@
 import { getCardDefinition, getCardStatsForUpgrade } from "./cards";
-import { SYNERGY_RULES, SYNERGY_TAG_ORDER, isRoleEligibleForSynergy } from "./synergies";
+import {
+  SYNERGY_RULES,
+  SYNERGY_TAG_ORDER,
+  getActiveSynergyTiers,
+  isRoleEligibleForSynergy,
+  type SynergyEffect,
+  type SynergyTier,
+} from "./synergies";
 import {
   type BoardSlot,
   type CardDefinition,
@@ -21,6 +28,12 @@ interface TimelineUnit extends CombatUnit {
   actionScheduleOrigin: number;
   nextActionAt: number;
   bonePactUsed?: boolean;
+  firstAttackSynergyDamage?: number;
+}
+
+interface SynergyCombatState {
+  openingDamageByOwner: Map<Owner, number>;
+  pendingUndeadDeathAttack: Set<Owner>;
 }
 
 interface PlannedDamage {
@@ -55,7 +68,7 @@ export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: rea
     enemyUnits: units.filter((unit) => unit.owner === "enemy").map((unit) => unit.instanceId),
   });
 
-  applyStartOfCombatEffects(units, events);
+  const synergyState = applyStartOfCombatEffects(units, events);
 
   let actions = 0;
   let lastActionTime = 0;
@@ -78,7 +91,7 @@ export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: rea
       actor.nextActionAt = getScheduledActionTime(actor, actor.acted + 1);
     });
 
-    resolvePlannedActions(plannedActions, units, events, actionTime);
+    resolvePlannedActions(plannedActions, units, events, actionTime, synergyState);
     lastActionTime = Math.max(lastActionTime, actionTime);
     actions += actors.length;
   }
@@ -143,8 +156,8 @@ function createUnitFromCard(owner: Owner, card: CardDefinition, slot: BoardSlot,
   };
 }
 
-function applyStartOfCombatEffects(units: TimelineUnit[], events: CombatEvent[]): void {
-  applyTagSynergies(units, events);
+function applyStartOfCombatEffects(units: TimelineUnit[], events: CombatEvent[]): SynergyCombatState {
+  const synergyState = applyTagSynergies(units, events);
 
   for (const unit of units) {
     if (unit.hp <= 0) {
@@ -185,47 +198,191 @@ function applyStartOfCombatEffects(units: TimelineUnit[], events: CombatEvent[])
       events.push({ type: "unit_buffed", time: 0, unitId: unit.instanceId, attackDelta: 1, source: "pack_hunter" });
     }
   }
+
+  // Both opening volleys use one post-armor snapshot, so owner iteration order cannot change the result.
+  applyOpeningSynergyDamage(units, events, synergyState);
+
+  return synergyState;
 }
 
-function applyTagSynergies(units: TimelineUnit[], events: CombatEvent[]): void {
+function applyTagSynergies(units: TimelineUnit[], events: CombatEvent[]): SynergyCombatState {
+  const synergyState: SynergyCombatState = {
+    openingDamageByOwner: new Map(),
+    pendingUndeadDeathAttack: new Set(),
+  };
+
   for (const owner of ["player", "enemy"] as const) {
     for (const tag of SYNERGY_TAG_ORDER) {
       const rule = SYNERGY_RULES[tag];
       const taggedUnits = getLivingUnits(units, owner).filter((unit) => unit.tags.includes(tag));
 
-      if (taggedUnits.length < rule.threshold) {
-        continue;
-      }
-
-      const affectedUnits = taggedUnits.filter((unit) => isRoleEligibleForSynergy(rule, unit.role));
-      if (rule.effect.stat === "attack") {
-        affectedUnits.forEach((unit) => {
-          unit.attack += rule.effect.value;
-        });
-        events.push({
-          type: "synergy_applied",
-          time: 0,
-          owner,
-          tag,
-          unitIds: affectedUnits.map((unit) => unit.instanceId),
-          attackBonus: rule.effect.value,
-        });
-      } else {
-        affectedUnits.forEach((unit) => {
-          unit.maxHp += rule.effect.value;
-          unit.hp += rule.effect.value;
-        });
-        events.push({
-          type: "synergy_applied",
-          time: 0,
-          owner,
-          tag,
-          unitIds: affectedUnits.map((unit) => unit.instanceId),
-          hpBonus: rule.effect.value,
-        });
+      for (const tier of getActiveSynergyTiers(rule, taggedUnits.length)) {
+        const affectedUnits = getSynergyAffectedUnits(tier, tag, owner, taggedUnits, units);
+        applySynergyTier(tier, owner, affectedUnits, synergyState);
+        events.push(createSynergyAppliedEvent(owner, tag, tier, affectedUnits));
       }
     }
   }
+
+  return synergyState;
+}
+
+function getSynergyAffectedUnits(
+  tier: SynergyTier,
+  tag: UnitTag,
+  owner: Owner,
+  taggedUnits: readonly TimelineUnit[],
+  units: readonly TimelineUnit[],
+): TimelineUnit[] {
+  if (tag === "guardian" && tier.threshold === 4) {
+    return getLivingUnits(units, owner);
+  }
+
+  if (tier.effect.kind === "opening_damage") {
+    return getLivingUnits(units, getEnemyOwner(owner));
+  }
+
+  return taggedUnits.filter((unit) => isRoleEligibleForSynergy(tier, unit.role));
+}
+
+function applySynergyTier(
+  tier: SynergyTier,
+  owner: Owner,
+  affectedUnits: readonly TimelineUnit[],
+  synergyState: SynergyCombatState,
+): void {
+  const { effect } = tier;
+  if (effect.kind === "stat") {
+    affectedUnits.forEach((unit) => applySynergyStat(unit, effect.stat, effect.value));
+    return;
+  }
+
+  if (effect.kind === "opening_damage") {
+    synergyState.openingDamageByOwner.set(owner, effect.value);
+    return;
+  }
+
+  if (effect.kind === "first_undead_death_attack") {
+    synergyState.pendingUndeadDeathAttack.add(owner);
+    return;
+  }
+
+  affectedUnits.forEach((unit) => {
+    unit.firstAttackSynergyDamage = effect.value;
+  });
+}
+
+function applySynergyStat(
+  unit: TimelineUnit,
+  stat: Extract<SynergyEffect, { kind: "stat" }>["stat"],
+  value: number,
+): void {
+  if (stat === "attack") {
+    unit.attack += value;
+    return;
+  }
+
+  if (stat === "hp") {
+    unit.maxHp += value;
+    unit.hp += value;
+    return;
+  }
+
+  if (stat === "speed") {
+    unit.speed += value;
+    unit.nextActionAt = getScheduledActionTime(unit, 1);
+    return;
+  }
+
+  unit.shield += value;
+}
+
+function createSynergyAppliedEvent(
+  owner: Owner,
+  tag: UnitTag,
+  tier: SynergyTier,
+  affectedUnits: readonly TimelineUnit[],
+): CombatEvent {
+  const event: CombatEvent = {
+    type: "synergy_applied",
+    time: 0,
+    owner,
+    tag,
+    threshold: tier.threshold,
+    effectKind: tier.effect.kind,
+    value: tier.effect.value,
+    unitIds: affectedUnits.map((unit) => unit.instanceId),
+  };
+
+  if (tier.effect.kind === "opening_damage") {
+    event.openingDamage = tier.effect.value;
+  } else if (tier.effect.kind === "first_attack_damage") {
+    event.firstAttackDamage = tier.effect.value;
+  } else if (tier.effect.kind === "stat") {
+    if (tier.effect.stat === "attack") {
+      event.attackBonus = tier.effect.value;
+    } else if (tier.effect.stat === "hp") {
+      event.hpBonus = tier.effect.value;
+    } else if (tier.effect.stat === "speed") {
+      event.speedBonus = tier.effect.value;
+    } else {
+      event.shieldBonus = tier.effect.value;
+    }
+  }
+
+  return event;
+}
+
+function applyOpeningSynergyDamage(
+  units: TimelineUnit[],
+  events: CombatEvent[],
+  synergyState: SynergyCombatState,
+): void {
+  const undeadDeaths = new Set<Owner>();
+  const plannedDamage = (["player", "enemy"] as const).flatMap((owner) => {
+    const amount = synergyState.openingDamageByOwner.get(owner) ?? 0;
+    if (amount <= 0) {
+      return [];
+    }
+
+    return getLivingUnits(units, getEnemyOwner(owner)).map((target) => ({
+      target,
+      amount,
+      shieldAbsorbed: Math.min(target.shield, amount),
+    }));
+  });
+
+  plannedDamage.forEach(({ target, amount, shieldAbsorbed }) => {
+    target.shield -= shieldAbsorbed;
+    target.hp = Math.max(0, target.hp - (amount - shieldAbsorbed));
+  });
+
+  plannedDamage.forEach(({ target, amount, shieldAbsorbed }) => {
+    events.push({
+      type: "unit_damaged",
+      time: 0,
+      unitId: target.instanceId,
+      amount: amount - shieldAbsorbed,
+      remainingHp: target.hp,
+      shieldAbsorbed,
+    });
+  });
+
+  plannedDamage
+    .filter(({ target }) => target.hp <= 0)
+    .forEach(({ target }) => {
+      events.push({ type: "unit_died", time: 0, unitId: target.instanceId });
+      maybeSummonSkeleton(target, units, events, 0);
+      if (target.tags.includes("undead")) {
+        undeadDeaths.add(target.owner);
+      }
+    });
+
+  (["player", "enemy"] as const).forEach((owner) => {
+    if (undeadDeaths.has(owner)) {
+      triggerUndeadMastery(owner, units, events, 0, synergyState);
+    }
+  });
 }
 
 function planAction(actor: TimelineUnit, units: readonly TimelineUnit[], time: number): PlannedAction {
@@ -273,7 +430,10 @@ function resolvePlannedActions(
   units: TimelineUnit[],
   events: CombatEvent[],
   time: number,
+  synergyState: SynergyCombatState,
 ): void {
+  const undeadDeaths = new Set<Owner>();
+
   // Healing is the first phase of a simultaneous tick; all attack damage was already fixed by the snapshot.
   plannedActions.forEach((action) => {
     if (action.healTarget) {
@@ -304,9 +464,9 @@ function resolvePlannedActions(
 
     const { actor, attack } = action;
 
-    applyPlannedDamage(attack.primary, actor.instanceId, units, events, time);
+    applyPlannedDamage(attack.primary, actor.instanceId, units, events, time, undeadDeaths);
     attack.splash.forEach((damage) => {
-      applyPlannedDamage(damage, actor.instanceId, units, events, time);
+      applyPlannedDamage(damage, actor.instanceId, units, events, time, undeadDeaths);
     });
 
     if (attack.applyFrostHex && attack.primary.target.hp > 0) {
@@ -318,6 +478,13 @@ function resolvePlannedActions(
         attackDelta: -1,
         source: "frost_hex",
       });
+    }
+  });
+
+  // Deaths at one action time are simultaneous. Resolve all summons first, then buff only final survivors.
+  (["player", "enemy"] as const).forEach((owner) => {
+    if (undeadDeaths.has(owner)) {
+      triggerUndeadMastery(owner, units, events, time, synergyState);
     }
   });
 }
@@ -373,6 +540,10 @@ function isInNormalAttackRange(
 function calculateDamage(actor: TimelineUnit): number {
   let damage = actor.attack;
 
+  if (actor.acted === 0) {
+    damage += actor.firstAttackSynergyDamage ?? 0;
+  }
+
   if (actor.abilityId === "charge" && actor.acted === 0) {
     damage += 2;
   }
@@ -398,6 +569,7 @@ function applyPlannedDamage(
   units: TimelineUnit[],
   events: CombatEvent[],
   time: number,
+  undeadDeaths: Set<Owner>,
 ): void {
   const { target } = plannedDamage;
 
@@ -433,6 +605,9 @@ function applyPlannedDamage(
   if (target.hp <= 0) {
     events.push({ type: "unit_died", time, unitId: target.instanceId, killerId: sourceUnitId });
     maybeSummonSkeleton(target, units, events, time);
+    if (target.tags.includes("undead")) {
+      undeadDeaths.add(target.owner);
+    }
   }
 }
 
@@ -468,7 +643,33 @@ function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], even
   };
 
   units.push(skeleton);
-  events.push({ type: "unit_spawned", time, unit: skeleton });
+  // Keep the spawn event as a point-in-time snapshot; later buffs must arrive as separate events.
+  events.push({ type: "unit_spawned", time, unit: { ...skeleton, tags: [...skeleton.tags] } });
+}
+
+function triggerUndeadMastery(
+  owner: Owner,
+  units: TimelineUnit[],
+  events: CombatEvent[],
+  time: number,
+  synergyState: SynergyCombatState,
+): void {
+  if (!synergyState.pendingUndeadDeathAttack.delete(owner)) {
+    return;
+  }
+
+  getLivingUnits(units, owner)
+    .filter((unit) => unit.tags.includes("undead"))
+    .forEach((unit) => {
+      unit.attack += 1;
+      events.push({
+        type: "unit_buffed",
+        time,
+        unitId: unit.instanceId,
+        attackDelta: 1,
+        source: "synergy_undead_4",
+      });
+    });
 }
 
 function selectWeakestWoundedAlly(

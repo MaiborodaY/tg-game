@@ -15,7 +15,7 @@ import {
 import { resolveCombat } from "../../../draft-battler/src/game/combat";
 import { getMatchCastleDamage } from "./combatHp";
 
-export const RULESET_VERSION = "draft-battler-pvp-v3";
+export const RULESET_VERSION = "draft-battler-pvp-v4";
 export const MATCH_SCHEMA_VERSION = 1;
 export const ROOM_SCHEMA_VERSION = 1;
 export const MATCH_MAX_ROUNDS = MAX_RUN_ROUNDS;

@@ -3,14 +3,19 @@ import test from "node:test";
 import { getCardDefinition } from "../src/game/cards.ts";
 import { createEmptyBoardSlots } from "../src/game/draft.ts";
 import {
-  SYNERGY_THRESHOLD,
   getBoardSynergyProgress,
   getBoardUnitInspection,
   getDraftOptionBoardStatus,
   getDraftOptionPlacementSynergyForecast,
   getDraftOptionSynergyPresentation,
   getLastKnownEnemyArmy,
+  summarizeDraftOptionSynergyPresentation,
 } from "../src/draftPresentation.ts";
+import {
+  SYNERGY_MASTERY_THRESHOLD,
+  SYNERGY_RULES,
+  SYNERGY_THRESHOLD,
+} from "../src/game/synergies.ts";
 
 function slot(slotIndex, cardId, upgradeLevel = 0) {
   return { slotIndex, cardId, upgradeLevel };
@@ -28,6 +33,39 @@ function option(cardId, optionId = `option-${cardId}`) {
   return { optionId, cardId };
 }
 
+function expectedProgress(tag, count) {
+  return {
+    tag,
+    count,
+    tiers: SYNERGY_RULES[tag].tiers.map((tier) => ({
+      threshold: tier.threshold,
+      active: count >= tier.threshold,
+      effect: { ...tier.effect },
+    })),
+  };
+}
+
+function expectedForecast(tag, beforeCount, afterCount) {
+  const tiers = SYNERGY_RULES[tag].tiers.map((tier) => ({
+    threshold: tier.threshold,
+    effect: { ...tier.effect },
+    activeBefore: beforeCount >= tier.threshold,
+    activeAfter: afterCount >= tier.threshold,
+  }));
+  return {
+    tag,
+    beforeCount,
+    afterCount,
+    tiers,
+    activatedThresholds: tiers
+      .filter((tier) => !tier.activeBefore && tier.activeAfter)
+      .map((tier) => tier.threshold),
+    deactivatedThresholds: tiers
+      .filter((tier) => tier.activeBefore && !tier.activeAfter)
+      .map((tier) => tier.threshold),
+  };
+}
+
 test("draft synergy progress shows only tags represented on the board", () => {
   const progress = getBoardSynergyProgress([
     slot(0, "iron_guard"),
@@ -35,11 +73,11 @@ test("draft synergy progress shows only tags represented on the board", () => {
     slot(2, null),
   ]);
 
-  assert.equal(SYNERGY_THRESHOLD, 2);
+  assert.deepEqual([SYNERGY_THRESHOLD, SYNERGY_MASTERY_THRESHOLD], [2, 4]);
   assert.deepEqual(progress, [
-    { tag: "warrior", count: 2, threshold: 2, active: true, effect: { stat: "attack", value: 1 } },
-    { tag: "beast", count: 1, threshold: 2, active: false, effect: { stat: "attack", value: 1 } },
-    { tag: "guardian", count: 1, threshold: 2, active: false, effect: { stat: "hp", value: 2 } },
+    expectedProgress("warrior", 2),
+    expectedProgress("beast", 1),
+    expectedProgress("guardian", 1),
   ]);
 });
 
@@ -54,18 +92,17 @@ test("draft synergy effects mirror the current attack and health rules", () => {
   ]);
   const byTag = Object.fromEntries(progress.map((synergy) => [synergy.tag, synergy]));
 
-  assert.deepEqual(byTag.guardian.effect, { stat: "hp", value: 2 });
-  assert.deepEqual(byTag.undead.effect, { stat: "hp", value: 2 });
-  assert.deepEqual(byTag.mage.effect, { stat: "attack", value: 1 });
-  assert.equal(byTag.guardian.active, true);
-  assert.equal(byTag.undead.active, true);
-  assert.equal(byTag.mage.active, true);
+  assert.deepEqual(byTag.guardian.tiers, expectedProgress("guardian", 2).tiers);
+  assert.deepEqual(byTag.undead.tiers, expectedProgress("undead", 2).tiers);
+  assert.deepEqual(byTag.mage.tiers, expectedProgress("mage", 2).tiers);
+  assert.equal(byTag.guardian.tiers[0].active, true);
+  assert.equal(byTag.guardian.tiers[1].active, false);
 });
 
 test("upgrades do not count as extra units for synergy progress", () => {
   assert.deepEqual(getBoardSynergyProgress([slot(0, "iron_guard", 1)]), [
-    { tag: "warrior", count: 1, threshold: 2, active: false, effect: { stat: "attack", value: 1 } },
-    { tag: "guardian", count: 1, threshold: 2, active: false, effect: { stat: "hp", value: 2 } },
+    expectedProgress("warrior", 1),
+    expectedProgress("guardian", 1),
   ]);
 });
 
@@ -75,13 +112,23 @@ test("rogue synergy reports the current attack bonus", () => {
     slot(1, "longbow_hunter"),
   ]).find((synergy) => synergy.tag === "rogue");
 
-  assert.deepEqual(rogue, {
-    tag: "rogue",
-    count: 2,
-    threshold: 2,
-    active: true,
-    effect: { stat: "attack", value: 1 },
-  });
+  assert.deepEqual(rogue, expectedProgress("rogue", 2));
+});
+
+test("mastery progress exposes both 2/4 tiers and the fourth-unit crossing", () => {
+  const slots = board(
+    slot(0, "iron_guard"),
+    slot(1, "boar_rider"),
+    slot(2, "spear_recruit"),
+  );
+  const warrior = getBoardSynergyProgress(slots).find((synergy) => synergy.tag === "warrior");
+  const forecast = getDraftOptionPlacementSynergyForecast(option("war_chaplain"), slots, 3);
+  const warriorForecast = forecast.synergies.find((synergy) => synergy.tag === "warrior");
+
+  assert.deepEqual(warrior, expectedProgress("warrior", 3));
+  assert.deepEqual(warrior.tiers.map((tier) => tier.active), [true, false]);
+  assert.deepEqual(warriorForecast, expectedForecast("warrior", 3, 4));
+  assert.deepEqual(warriorForecast.activatedThresholds, [4]);
 });
 
 test("board inspection resolves the exact duplicate slot and its upgraded stats", () => {
@@ -170,23 +217,32 @@ test("draft option presentation exposes card tags and every legal placement fore
   assert.deepEqual(presentation.placements.map((placement) => placement.targetSlotIndex), [1, 2, 3, 4, 5]);
   assert.ok(presentation.placements.every((placement) => placement.placementKind === "place"));
   assert.deepEqual(presentation.placements[0].synergies, [
-    {
-      tag: "warrior",
-      beforeCount: 1,
-      afterCount: 2,
-      threshold: 2,
-      activatesThreshold: true,
-      effect: { stat: "attack", value: 1 },
-    },
-    {
-      tag: "guardian",
-      beforeCount: 1,
-      afterCount: 2,
-      threshold: 2,
-      activatesThreshold: true,
-      effect: { stat: "hp", value: 2 },
-    },
+    expectedForecast("warrior", 1, 2),
+    expectedForecast("guardian", 1, 2),
   ]);
+  assert.deepEqual(summarizeDraftOptionSynergyPresentation(presentation), {
+    placementKind: "place",
+    outcomes: [
+      {
+        kind: "activates",
+        tag: "warrior",
+        beforeCount: 1,
+        afterCount: 2,
+        threshold: 2,
+        effect: { ...SYNERGY_RULES.warrior.tiers[0].effect },
+        guaranteed: true,
+      },
+      {
+        kind: "activates",
+        tag: "guardian",
+        beforeCount: 1,
+        afterCount: 2,
+        threshold: 2,
+        effect: { ...SYNERGY_RULES.guardian.tiers[0].effect },
+        guaranteed: true,
+      },
+    ],
+  });
 });
 
 test("duplicate upgrade forecast keeps unit tag counts unchanged", () => {
@@ -197,22 +253,8 @@ test("duplicate upgrade forecast keeps unit tag counts unchanged", () => {
   assert.equal(presentation.placements[0].targetSlotIndex, 2);
   assert.equal(presentation.placements[0].placementKind, "upgrade");
   assert.deepEqual(presentation.placements[0].synergies, [
-    {
-      tag: "warrior",
-      beforeCount: 1,
-      afterCount: 1,
-      threshold: 2,
-      activatesThreshold: false,
-      effect: { stat: "attack", value: 1 },
-    },
-    {
-      tag: "guardian",
-      beforeCount: 1,
-      afterCount: 1,
-      threshold: 2,
-      activatesThreshold: false,
-      effect: { stat: "hp", value: 2 },
-    },
+    expectedForecast("warrior", 1, 1),
+    expectedForecast("guardian", 1, 1),
   ]);
 });
 
@@ -232,25 +274,30 @@ test("full-board replacement forecasts both gained and lost tag counts", () => {
     targetSlotIndex: 1,
     placementKind: "replace",
     synergies: [
-      {
-        tag: "rogue",
-        beforeCount: 1,
-        afterCount: 2,
-        threshold: 2,
-        activatesThreshold: true,
-        effect: { stat: "attack", value: 1 },
-      },
-      {
-        tag: "guardian",
-        beforeCount: 2,
-        afterCount: 1,
-        threshold: 2,
-        activatesThreshold: false,
-        effect: { stat: "hp", value: 2 },
-      },
+      expectedForecast("rogue", 1, 2),
+      expectedForecast("guardian", 2, 1),
     ],
   });
+  const summary = summarizeDraftOptionSynergyPresentation(
+    getDraftOptionSynergyPresentation(option("sneakblade"), slots),
+  );
+  assert.equal(summary.placementKind, "replace");
+  assert.ok(summary.outcomes.some((outcome) =>
+    outcome.kind === "activates" && outcome.tag === "rogue" && outcome.threshold === 2 && !outcome.guaranteed));
+  assert.ok(summary.outcomes.some((outcome) =>
+    outcome.kind === "loses" && outcome.tag === "guardian" && outcome.threshold === 2 && !outcome.guaranteed));
+  assert.ok(summary.outcomes.some((outcome) =>
+    outcome.kind === "loses_tag" && outcome.tag === "beast" && outcome.beforeCount === 1 && outcome.afterCount === 0));
   assert.deepEqual(slots, originalSlots);
+});
+
+test("upgrade-only forecasts stay quiet because unit counts do not change", () => {
+  const presentation = getDraftOptionSynergyPresentation(
+    option("iron_guard"),
+    board(slot(0, "iron_guard")),
+  );
+
+  assert.equal(summarizeDraftOptionSynergyPresentation(presentation), undefined);
 });
 
 test("replacement forecast includes unchanged tags carried by both fighters", () => {
@@ -269,8 +316,8 @@ test("replacement forecast includes unchanged tags carried by both fighters", ()
   assert.equal(byTag.warrior.afterCount, 4);
   assert.equal(byTag.guardian.beforeCount, 1);
   assert.equal(byTag.guardian.afterCount, 1);
-  assert.equal(byTag.warrior.activatesThreshold, false);
-  assert.equal(byTag.guardian.activatesThreshold, false);
+  assert.deepEqual(byTag.warrior.activatedThresholds, []);
+  assert.deepEqual(byTag.guardian.activatedThresholds, []);
 });
 
 test("placement forecast fails closed for invalid boards and illegal targets", () => {

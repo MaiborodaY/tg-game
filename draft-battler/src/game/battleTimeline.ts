@@ -102,7 +102,18 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
 
         if (event.hpBonus) {
           unit.maxHp += event.hpBonus;
+          unit.startHp += event.hpBonus;
           unit.currentHp += event.hpBonus;
+        }
+
+        if (event.shieldBonus) {
+          events.push({
+            type: "unit_buff",
+            time: event.time,
+            unitId,
+            shieldDelta: event.shieldBonus,
+            source: `synergy_${event.tag}_${event.threshold}`,
+          });
         }
       });
       continue;

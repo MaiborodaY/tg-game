@@ -84,8 +84,22 @@ test("round insights expose only attributable combat facts in a localization-neu
           time: 0,
           owner: "player",
           tag: "guardian",
+          threshold: 2,
+          effectKind: "stat",
+          value: 2,
           unitIds: [playerGuard.instanceId, playerCleric.instanceId],
           hpBonus: 2,
+        },
+        {
+          type: "synergy_applied",
+          time: 0,
+          owner: "player",
+          tag: "guardian",
+          threshold: 4,
+          effectKind: "stat",
+          value: 1,
+          unitIds: [playerGuard.instanceId, playerCleric.instanceId],
+          shieldBonus: 1,
         },
         { type: "unit_healed", time: 4, unitId: playerGuard.instanceId, amount: 2, remainingHp: 7, source: playerCleric.instanceId },
         { type: "unit_healed", time: 8, unitId: playerGuard.instanceId, amount: 1, remainingHp: 8, source: playerCleric.instanceId },
@@ -158,8 +172,18 @@ test("round insights expose only attributable combat facts in a localization-neu
   assert.deepEqual(insights.sides.enemy.deaths.map((unit) => unit.cardId), ["grave_binder", "bone_soldier"]);
   assert.deepEqual(insights.sides.player.synergies, [{
     tag: "guardian",
+    threshold: 2,
+    effectKind: "stat",
+    value: 2,
     affectedUnitIds: [playerGuard.instanceId, playerCleric.instanceId],
     hpBonus: 2,
+  }, {
+    tag: "guardian",
+    threshold: 4,
+    effectKind: "stat",
+    value: 1,
+    affectedUnitIds: [playerGuard.instanceId, playerCleric.instanceId],
+    shieldBonus: 1,
   }]);
 
   assert.equal("damage" in insights.sides.player, false);

@@ -21,6 +21,36 @@ test("battle ability callouts map attack buffs and debuffs without player-facing
     getBattleAbilityCallout({ type: "unit_buff", time: 25, unitId: "target", source: "frost_hex", attackDelta: -1 }),
     { unitId: "target", source: "frost_hex", effect: "attack_down", tone: "debuff", amount: 1 },
   );
+  assert.deepEqual(
+    getBattleAbilityCallout({ type: "unit_buff", time: 50, unitId: "undead", source: "synergy_undead_4", attackDelta: 1 }),
+    { unitId: "undead", source: "synergy_undead_4", effect: "attack_up", tone: "buff", amount: 1 },
+  );
+});
+
+test("undead mastery callouts stay visible within the per-side quota", () => {
+  const units = [
+    createTimelineUnit("undead-a", "player", "bone_soldier"),
+    createTimelineUnit("undead-b", "player", "bone_archer"),
+    createTimelineUnit("ally", "player", "spear_recruit"),
+  ];
+  const plan = createBattleAbilityCalloutPlan(
+    [
+      { type: "unit_buff", time: 50, unitId: "undead-a", source: "synergy_undead_4", attackDelta: 1 },
+      { type: "unit_buff", time: 50, unitId: "undead-b", source: "synergy_undead_4", attackDelta: 1 },
+      { type: "unit_buff", time: 50, unitId: "ally", source: "battle_banner", attackDelta: 1 },
+      { type: "unit_buff", time: 50, unitId: "ally", source: "shield_wall", shieldDelta: 3 },
+    ],
+    units,
+  );
+
+  assert.deepEqual(
+    plan.map(({ source, anchorUnitId }) => ({ source, anchorUnitId })),
+    [
+      { source: "synergy_undead_4", anchorUnitId: "undead-a" },
+      { source: "battle_banner", anchorUnitId: "ally" },
+      { source: "shield_wall", anchorUnitId: "ally" },
+    ],
+  );
 });
 
 test("battle ability callouts distinguish every existing armor source", () => {

@@ -106,7 +106,7 @@ test("PvP frontend is opt-in, authenticated, and sends only action intents", () 
     mainSource,
     /const previousMatch = uiState\.pvp\.match;[\s\S]*?isSamePresentedPvpBattle\(state\.mode, previousMatch, match\)/,
   );
-  assert.match(mainSource, /const PVP_RULESET_VERSION = "draft-battler-pvp-v3"/);
+  assert.match(mainSource, /const PVP_RULESET_VERSION = "draft-battler-pvp-v4"/);
   assert.match(mainSource, /payload\.rulesetVersion !== PVP_RULESET_VERSION/);
   assert.match(mainSource, /match\.rulesetVersion !== PVP_RULESET_VERSION/);
   assert.match(mainSource, /const combat = resolveCombat\(hostSlots, guestSlots, value\.round\)/);
@@ -157,6 +157,18 @@ test("draft UI prioritizes large card choices, synergy forecasts, and keyboard m
   assert.match(styles, /\.draft-panel--collapsed\s*\{[^}]*align-self:\s*start/s);
   assert.match(styles, /\.draft-grid--triple\[hidden\]\s*\{[^}]*display:\s*none/s);
   assert.match(styles, /\.unit-card__synergy-forecast\s*\{/);
+  assert.match(mainSource, /summarizeDraftOptionSynergyPresentation\(presentation\)/);
+  assert.match(mainSource, /outcome\.kind === "activates"/);
+  assert.match(mainSource, /outcome\.kind === "loses"/);
+  assert.match(mainSource, /createCardSynergyForecast\(option, "dock"\)/);
+  assert.match(mainSource, /const visibleOutcomeLimit = variant === "card" \? 1 : 2/);
+  assert.match(mainSource, /const visibleOutcomes = summary\.outcomes\.slice\(0, visibleOutcomeLimit\)/);
+  assert.match(mainSource, /const omittedOutcomeCount = summary\.outcomes\.length - visibleOutcomes\.length/);
+  assert.match(mainSource, /const formattedOutcomes = summary\.outcomes\.map/);
+  assert.match(mainSource, /container\.setAttribute\("aria-label", accessibleDescription\)/);
+  assert.match(mainSource, /container\.title = accessibleDescription/);
+  assert.match(styles, /\.unit-card__synergy-forecast--dock\s*\{[^}]*position:\s*static[^}]*max-height:\s*56px[^}]*overflow:\s*hidden/s);
+  assert.match(styles, /\.unit-card__synergy-forecast--dock \.unit-card__synergy-forecast-line\s*\{[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s);
   assert.match(styles, /\.unit-card__board-status--upgrade\s*\{/);
   assert.match(styles, /\.unit-card__board-status--maxed\s*\{/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{/);

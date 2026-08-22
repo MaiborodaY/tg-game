@@ -1,5 +1,5 @@
 import { CARD_DEFINITIONS, getCardStatsForUpgrade } from "./game/cards";
-import { isRoleEligibleForSynergy, SYNERGY_RULES, SYNERGY_TAG_ORDER, type SynergyEffect } from "./game/synergies";
+import { SYNERGY_RULES, SYNERGY_TAG_ORDER, type SynergyEffect } from "./game/synergies";
 import {
   MAX_UPGRADE_LEVEL,
   type AbilityId,
@@ -23,12 +23,16 @@ export interface CompendiumCardPresentation {
   upgradedStats: Readonly<UnitStats>;
 }
 
-export interface CompendiumSynergyPresentation {
-  tag: UnitTag;
+export interface CompendiumSynergyTierPresentation {
   threshold: number;
   effect: Readonly<SynergyEffect>;
-  relevantCardIds: readonly CardId[];
-  relevantRoles: readonly UnitRole[];
+  contributorCardIds: readonly CardId[];
+  contributorRoles: readonly UnitRole[];
+}
+
+export interface CompendiumSynergyPresentation {
+  tag: UnitTag;
+  tiers: readonly CompendiumSynergyTierPresentation[];
 }
 
 export interface CompendiumPresentation {
@@ -58,16 +62,16 @@ function createCardPresentation(card: CardDefinition): CompendiumCardPresentatio
 
 function createSynergyPresentation(tag: UnitTag): CompendiumSynergyPresentation {
   const rule = SYNERGY_RULES[tag];
-  const relevantCards = CARD_DEFINITIONS.filter(
-    (card) => card.tags.includes(tag) && isRoleEligibleForSynergy(rule, card.role),
-  );
+  const contributors = CARD_DEFINITIONS.filter((card) => card.tags.includes(tag));
 
   return {
     tag,
-    threshold: rule.threshold,
-    effect: { ...rule.effect },
-    relevantCardIds: relevantCards.map((card) => card.id),
-    relevantRoles: [...new Set(relevantCards.map((card) => card.role))],
+    tiers: rule.tiers.map((tier) => ({
+      threshold: tier.threshold,
+      effect: { ...tier.effect },
+      contributorCardIds: contributors.map((card) => card.id),
+      contributorRoles: [...new Set(contributors.map((card) => card.role))],
+    })),
   };
 }
 

@@ -356,6 +356,46 @@ test("two rogues receive the real +1 attack synergy", () => {
   assert.equal(result.survivingPlayerUnits.find((unit) => unit.cardId === "longbow_hunter")?.attack, 4);
 });
 
+test("battle timeline presents tier-four Guardian armor before combat damage", () => {
+  const player = createBoard([
+    [0, "iron_guard"],
+    [1, "field_cleric"],
+    [2, "stone_golem"],
+    [4, "city_crossbowman"],
+  ]);
+  const enemy = createBoard([[0, "spear_recruit"]]);
+  const combat = resolveCombat(player, enemy, 1);
+  const timeline = createBattleTimeline({
+    playerSlots: player,
+    enemySlots: enemy,
+    combat,
+    playerCastleHpBefore: 20,
+    playerCastleHpAfter: 20 - combat.playerCastleDamage,
+    enemyCastleHpBefore: 20,
+    enemyCastleHpAfter: 20 - combat.enemyCastleDamage,
+  });
+  const combatSteps = timeline.events
+    .filter((event) => event.type === "combat_step")
+    .flatMap((event) => event.events);
+  const guardianArmor = combatSteps.filter(
+    (event) => event.type === "unit_buff" && event.source === "synergy_guardian_4",
+  );
+
+  assert.deepEqual(
+    guardianArmor.map((event) => ({ unitId: event.unitId, shieldDelta: event.shieldDelta })),
+    [
+      { unitId: "player-0-iron_guard", shieldDelta: 1 },
+      { unitId: "player-1-field_cleric", shieldDelta: 1 },
+      { unitId: "player-2-stone_golem", shieldDelta: 1 },
+      { unitId: "player-4-city_crossbowman", shieldDelta: 1 },
+    ],
+  );
+  assert.ok(guardianArmor.every((event) => event.time === 0));
+  const ironGuard = timeline.units.find((unit) => unit.unitId === "player-0-iron_guard");
+  assert.equal(ironGuard?.maxHp, 16);
+  assert.equal(ironGuard?.startHp, 16, "pre-combat HP synergy must not render as missing health");
+});
+
 for (const [cardId, splashDamage] of [["ember_mage", 1], ["pyromancer", 2]]) {
   test(`${cardId} splash damages only Manhattan-adjacent slots around the target`, () => {
     const player = createBoard([[1, cardId]]);

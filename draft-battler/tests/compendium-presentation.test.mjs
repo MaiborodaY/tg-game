@@ -45,15 +45,26 @@ test("compendium exposes every synergy in canonical order with relevant cards an
 
   synergies.forEach((synergy) => {
     const rule = SYNERGY_RULES[synergy.tag];
-    const relevantDefinitions = CARD_DEFINITIONS.filter(
-      (card) => card.tags.includes(synergy.tag) && (rule.eligibleRoles?.includes(card.role) ?? true),
-    );
+    assert.equal(synergy.tiers.length, 2);
+    assert.deepEqual(synergy.tiers.map((tier) => tier.threshold), [2, 4]);
+    synergy.tiers.forEach((tier, tierIndex) => {
+      const sourceTier = rule.tiers[tierIndex];
+      const contributors = CARD_DEFINITIONS.filter((card) => card.tags.includes(synergy.tag));
 
-    assert.equal(synergy.threshold, rule.threshold);
-    assert.deepEqual(synergy.effect, rule.effect);
-    assert.deepEqual(synergy.relevantCardIds, relevantDefinitions.map((card) => card.id));
-    assert.deepEqual(synergy.relevantRoles, [...new Set(relevantDefinitions.map((card) => card.role))]);
+      assert.deepEqual(tier.effect, sourceTier.effect);
+      assert.deepEqual(tier.contributorCardIds, contributors.map((card) => card.id));
+      assert.deepEqual(tier.contributorRoles, [...new Set(contributors.map((card) => card.role))]);
+    });
   });
+});
+
+test("compendium lists tag contributors independently for both effect tiers", () => {
+  const { synergies } = createCompendiumPresentation();
+  const mage = synergies.find((synergy) => synergy.tag === "mage");
+  const allMageCards = CARD_DEFINITIONS.filter((card) => card.tags.includes("mage")).map((card) => card.id);
+
+  assert.deepEqual(mage.tiers[0].contributorCardIds, allMageCards);
+  assert.deepEqual(mage.tiers[1].contributorCardIds, allMageCards);
 });
 
 test("compendium returns detached card tags, stats, and synergy effects", () => {
@@ -64,6 +75,8 @@ test("compendium returns detached card tags, stats, and synergy effects", () => 
   assert.notEqual(first.cards[0].tags, CARD_DEFINITIONS[0].tags);
   assert.notEqual(first.cards[0].baseStats, CARD_DEFINITIONS[0].stats);
   assert.notEqual(first.cards[0].tags, second.cards[0].tags);
-  assert.notEqual(first.synergies[0].effect, SYNERGY_RULES[first.synergies[0].tag].effect);
-  assert.notEqual(first.synergies[0].effect, second.synergies[0].effect);
+  assert.notEqual(first.synergies[0].tiers, SYNERGY_RULES[first.synergies[0].tag].tiers);
+  assert.notEqual(first.synergies[0].tiers, second.synergies[0].tiers);
+  assert.notEqual(first.synergies[0].tiers[0].effect, SYNERGY_RULES[first.synergies[0].tag].tiers[0].effect);
+  assert.notEqual(first.synergies[0].tiers[0].effect, second.synergies[0].tiers[0].effect);
 });

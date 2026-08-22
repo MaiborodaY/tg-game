@@ -13,6 +13,7 @@ import {
   createEnemyBoardSlots,
   createEnemyDraftOptions,
   createRun,
+  getCardDefinition,
   getBoardCapacityForRound,
   getTerminalRunOutcome,
   isCardAllowedInSlot,
@@ -52,6 +53,27 @@ test("strong difficulty compares all three offers while standard preserves the o
   assert.equal(standard.pickedCardId, "bone_archer");
   assert.equal(strong.pickedCardId, "iron_guard");
   assert.ok(strong.draftOptions.some((option) => option.cardId === strong.pickedCardId));
+});
+
+test("strong difficulty values crossing a four-unit synergy tier", () => {
+  const board = createEmptyBoardSlots();
+  board[0] = { slotIndex: 0, cardId: "sneakblade", upgradeLevel: 0 };
+  board[1] = { slotIndex: 1, cardId: "longbow_hunter", upgradeLevel: 0 };
+  board[2] = { slotIndex: 2, cardId: "bone_archer", upgradeLevel: 0 };
+
+  const result = advanceEnemyBoardSlots("tier4-flip-3", 7, board, "strong");
+
+  assert.deepEqual(result.draftOptions.map((option) => option.cardId), [
+    "marsh_stalker",
+    "crypt_keeper",
+    "longbow_hunter",
+  ]);
+  assert.equal(result.pickedCardId, "marsh_stalker");
+  assert.equal(result.targetSlotIndex, 3);
+  assert.equal(
+    result.boardSlots.filter((slot) => slot.cardId && getCardDefinition(slot.cardId).tags.includes("rogue")).length,
+    4,
+  );
 });
 
 test("a solo duel is capped at fifteen rounds", () => {

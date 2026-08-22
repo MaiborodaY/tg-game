@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CARD_DEFINITIONS } from "../src/game/cards.ts";
+import { SYNERGY_RULES, SYNERGY_TAG_ORDER } from "../src/game/synergies.ts";
 import {
   HOW_TO_SEEN_STORAGE_KEY,
   LOCALE_STORAGE_KEY,
@@ -10,6 +11,7 @@ import {
   getCombatEventLabel,
   getLocalizedCard,
   getRarityLabel,
+  getSynergyEffectLabel,
   getTagLabel,
   getUiCopy,
   hasSeenHowTo,
@@ -440,6 +442,75 @@ test("synergy status templates expose progress, activation, and localized effect
       assert.ok(result.includes(values.effect), `${locale}:synergy:effect`);
       assert.doesNotMatch(result, /\{[^}]+\}/, `${locale}:synergy:unresolved placeholder`);
     });
+  });
+});
+
+test("both synergy tiers have truthful localized effect and forecast copy", () => {
+  const expectedScopeCopy = {
+    ru: { contributor: "Карты синергии", mage: "заклинателям и поддержке", enemy: "каждому врагу", allies: "всем союзникам" },
+    uk: { contributor: "Карти синергії", mage: "заклиначам і підтримці", enemy: "кожному ворогу", allies: "всім союзникам" },
+    en: { contributor: "Synergy cards", mage: "casters and supports", enemy: "every enemy", allies: "all allies" },
+  };
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    SYNERGY_TAG_ORDER.forEach((tag) => {
+      SYNERGY_RULES[tag].tiers.forEach((tier) => {
+        const effect = getSynergyEffectLabel(locale, tag, tier.effect);
+        const compactEffect = getSynergyEffectLabel(locale, tag, tier.effect, "compact");
+        const status = formatMessage(copy.synergyTierProgress, {
+          threshold: tier.threshold,
+          remaining: tier.threshold,
+          effect,
+        });
+        const forecast = formatMessage(copy.synergyForecastActivates, {
+          tag: getTagLabel(locale, tag),
+          before: tier.threshold - 1,
+          after: tier.threshold,
+          threshold: tier.threshold,
+          effect,
+        });
+
+        assert.match(effect, new RegExp(String(tier.effect.value)), `${locale}:${tag}:${tier.threshold}:value`);
+        assert.match(compactEffect, new RegExp(String(tier.effect.value)), `${locale}:${tag}:${tier.threshold}:compact-value`);
+        assert.doesNotMatch(compactEffect, /\{[^}]+\}/, `${locale}:${tag}:${tier.threshold}:compact-resolved`);
+        assert.ok(status.includes(`${tier.threshold}/4`), `${locale}:${tag}:${tier.threshold}:status`);
+        assert.ok(forecast.includes(`${tier.threshold}/4`), `${locale}:${tag}:${tier.threshold}:forecast`);
+        assert.ok(status.includes(effect), `${locale}:${tag}:${tier.threshold}:status-effect`);
+        assert.ok(forecast.includes(effect), `${locale}:${tag}:${tier.threshold}:forecast-effect`);
+        assert.doesNotMatch(`${status} ${forecast}`, /\{[^}]+\}/, `${locale}:${tag}:${tier.threshold}:resolved`);
+      });
+    });
+    const lostTag = formatMessage(copy.synergyForecastLosesTag, {
+      tag: getTagLabel(locale, "beast"),
+      before: 1,
+      after: 0,
+    });
+    assert.ok(lostTag.includes("1→0"), `${locale}:synergy:lost-tag-count`);
+    assert.doesNotMatch(lostTag, /\{[^}]+\}/, `${locale}:synergy:lost-tag-resolved`);
+    assert.ok(copy.compendiumSynergyCards.includes(expectedScopeCopy[locale].contributor), `${locale}:contributors`);
+    assert.ok(getSynergyEffectLabel(locale, "mage", SYNERGY_RULES.mage.tiers[0].effect)
+      .includes(expectedScopeCopy[locale].mage), `${locale}:mage-recipients`);
+    assert.ok(getSynergyEffectLabel(locale, "mage", SYNERGY_RULES.mage.tiers[1].effect)
+      .includes(expectedScopeCopy[locale].enemy), `${locale}:mage-enemy-targets`);
+    assert.ok(getSynergyEffectLabel(locale, "guardian", SYNERGY_RULES.guardian.tiers[1].effect)
+      .includes(expectedScopeCopy[locale].allies), `${locale}:guardian-allies`);
+  });
+});
+
+test("undead mastery battle feedback is explicit in every locale", () => {
+  const expected = {
+    ru: ["НЕЖИТЬ", "4/4", "АТК"],
+    uk: ["НЕЖИТЬ", "4/4", "АТК"],
+    en: ["UNDEAD", "4/4", "ATK"],
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const label = formatMessage(getUiCopy(locale).battleCalloutUndeadMastery, { amount: 1 });
+    expected[locale].forEach((fragment) => {
+      assert.ok(label.includes(fragment), `${locale}:undead-mastery:${fragment}`);
+    });
+    assert.ok(label.includes("1"), `${locale}:undead-mastery:amount`);
+    assert.doesNotMatch(label, /\{[^}]+\}/, `${locale}:undead-mastery:resolved`);
   });
 });
 

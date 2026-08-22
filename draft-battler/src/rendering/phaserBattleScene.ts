@@ -254,6 +254,7 @@ class CastleBattleScene extends Phaser.Scene {
     shield_wall: "ARMOR +{amount}",
     stone_skin: "ARMOR +{amount}",
     riposte: "ARMOR +{amount}",
+    synergy_undead_4: "UNDEAD 4/4: +{amount} ATK",
     bone_pact: "BONE PACT",
   };
   private battleSpeed: BattlePlaybackSpeed = 1;

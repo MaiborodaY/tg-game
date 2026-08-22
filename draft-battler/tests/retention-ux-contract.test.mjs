@@ -37,6 +37,14 @@ test("solo completion persists its stable receipt before idempotent history reco
 test("history replay keeps the deterministic setup but start creates a fresh run receipt", () => {
   assert.match(
     mainSource,
+    /replayButton\.textContent = summary\.rulesetVersion === SOLO_RUN_RULESET_VERSION\s*\? copy\.runHistoryReplay\s*:\s*copy\.runHistoryReplayCurrentRules/,
+  );
+  assert.match(
+    mainSource,
+    /replayButton\.addEventListener\("click", \(\) => replaySoloRun\(summary\)\)/,
+  );
+  assert.match(
+    mainSource,
     /function replaySoloRun\(summary: SoloRunSummary\): void \{[\s\S]*?seed: summary\.seed[\s\S]*?botDifficulty: summary\.botDifficulty[\s\S]*?source: summary\.source[\s\S]*?dailyDateKey: summary\.dailyDateKey/,
   );
   assert.match(

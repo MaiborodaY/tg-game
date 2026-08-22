@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CARD_DEFINITIONS,
   applyDraftSelectionToBoard,
   autoplayRun,
   chooseDraftCards,
@@ -36,6 +37,7 @@ const LEGACY_V5_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v5";
 const LEGACY_V6_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v6";
 const LEGACY_V7_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v7";
 const LEGACY_V8_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v8";
+const LEGACY_V9_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v9";
 
 class MemoryStorage {
   values = new Map();
@@ -115,6 +117,41 @@ function createFinishedCheckpoint(botDifficulty = "standard") {
   };
 }
 
+function createMasteryCheckpoint(tag, seed) {
+  const taggedCardIds = new Set(
+    CARD_DEFINITIONS.filter((card) => card.tags.includes(tag)).map((card) => card.id),
+  );
+  const run = autoplayRun(seed, (state) => {
+    const occupiedCardIds = new Set(state.boardSlots.flatMap((slot) => slot.cardId ? [slot.cardId] : []));
+    const freshTaggedOption = state.draftOptions.find((option) =>
+      taggedCardIds.has(option.cardId) && !occupiedCardIds.has(option.cardId),
+    );
+    const taggedOption = freshTaggedOption ?? state.draftOptions.find((option) => taggedCardIds.has(option.cardId));
+    return taggedOption ? [taggedOption.cardId] : [];
+  });
+  const event = run.roundHistory
+    .flatMap((record) => record.combatResult.events)
+    .find((candidate) =>
+      candidate.type === "synergy_applied"
+        && candidate.owner === "player"
+        && candidate.tag === tag
+        && candidate.threshold === 4,
+    );
+  assert.ok(event, `expected ${tag} mastery in deterministic persistence fixture`);
+
+  return {
+    state: {
+      session: createSession(`mastery-${tag}`, true),
+      checkpoint: "finished",
+      run,
+      draftBoardSlots: run.boardSlots,
+      cardPickedThisRound: false,
+      lastRound: run.round,
+    },
+    event,
+  };
+}
+
 function createFullBoardReplacementCheckpoint() {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     let run = createRun(`solo-persistence-replacement-${attempt}`);
@@ -165,9 +202,9 @@ function cloneJson(value) {
 }
 
 test("draft, battle-result, and finished checkpoints round-trip without sharing mutable state", () => {
-  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 9);
-  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v9");
-  assert.equal(SOLO_RUN_RULESET_VERSION, "draft-battler-solo-v3");
+  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 10);
+  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v10");
+  assert.equal(SOLO_RUN_RULESET_VERSION, "draft-battler-solo-v4");
 
   const checkpoints = [
     createDraftCheckpoint(),
@@ -229,6 +266,64 @@ test("strong bot difficulty round-trips and replays at every durable checkpoint"
   }
 });
 
+test("every four-unit synergy effect round-trips through replay-validated persistence", () => {
+  const cases = [
+    ["warrior", "persist-tier4-warrior-0", { effectKind: "stat", value: 1, shieldBonus: 1 }],
+    ["beast", "persist-tier4-beast-0", { effectKind: "stat", value: 1, speedBonus: 1 }],
+    ["mage", "persist-tier4-mage-5", { effectKind: "opening_damage", value: 1, openingDamage: 1 }],
+    ["undead", "persist-tier4-undead-0", { effectKind: "first_undead_death_attack", value: 1 }],
+    ["rogue", "persist-tier4-rogue-0", { effectKind: "first_attack_damage", value: 2, firstAttackDamage: 2 }],
+    ["guardian", "persist-tier4-guardian-1", { effectKind: "stat", value: 1, shieldBonus: 1 }],
+  ];
+
+  for (const [tag, seed, expectedEffect] of cases) {
+    const fixture = createMasteryCheckpoint(tag, seed);
+    assert.deepEqual({
+      effectKind: fixture.event.effectKind,
+      value: fixture.event.value,
+      ...(fixture.event.speedBonus === undefined ? {} : { speedBonus: fixture.event.speedBonus }),
+      ...(fixture.event.shieldBonus === undefined ? {} : { shieldBonus: fixture.event.shieldBonus }),
+      ...(fixture.event.openingDamage === undefined ? {} : { openingDamage: fixture.event.openingDamage }),
+      ...(fixture.event.firstAttackDamage === undefined ? {} : { firstAttackDamage: fixture.event.firstAttackDamage }),
+    }, expectedEffect);
+
+    const snapshot = createSoloRunSnapshot(fixture.state, FIXED_SAVED_AT);
+    assert.ok(snapshot);
+    const decoded = decodeSoloRunSnapshot(JSON.stringify(snapshot));
+    assert.deepEqual(decoded, snapshot);
+    assert.ok(decoded.run.roundHistory.some((record) => record.combatResult.events.some((event) =>
+      event.type === "synergy_applied"
+        && event.owner === "player"
+        && event.tag === tag
+        && event.threshold === 4,
+    )));
+  }
+});
+
+test("persistence rejects missing, forged, and inconsistent four-unit synergy payloads", () => {
+  const { state } = createMasteryCheckpoint("beast", "persist-tier4-beast-0");
+  const mutateMasteryEvent = (mutate) => {
+    const snapshot = encodedObject(state);
+    const event = snapshot.run.roundHistory
+      .flatMap((record) => record.combatResult.events)
+      .find((candidate) =>
+        candidate.type === "synergy_applied"
+          && candidate.owner === "player"
+          && candidate.tag === "beast"
+          && candidate.threshold === 4,
+      );
+    assert.ok(event);
+    mutate(event);
+    return JSON.stringify(snapshot);
+  };
+
+  assert.equal(decodeSoloRunSnapshot(mutateMasteryEvent((event) => delete event.threshold)), undefined);
+  assert.equal(decodeSoloRunSnapshot(mutateMasteryEvent((event) => { event.effectKind = "opening_damage"; })), undefined);
+  assert.equal(decodeSoloRunSnapshot(mutateMasteryEvent((event) => { event.value = 2; })), undefined);
+  assert.equal(decodeSoloRunSnapshot(mutateMasteryEvent((event) => delete event.speedBonus)), undefined);
+  assert.equal(decodeSoloRunSnapshot(mutateMasteryEvent((event) => { event.openingDamage = 1; })), undefined);
+});
+
 test("later-round snapshots replay draft offers with the pre-pick incumbent board", () => {
   let state;
   for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -257,12 +352,13 @@ test("later-round snapshots replay draft offers with the pre-pick incumbent boar
   assert.deepEqual(decodeSoloRunSnapshot(JSON.stringify(snapshot)), snapshot);
 });
 
-test("v5-v8 active checkpoints are discarded instead of crossing the solo-v3 ruleset boundary", () => {
+test("v5-v9 active checkpoints are discarded instead of crossing the solo-v4 ruleset boundary", () => {
   const legacyCases = [
     [5, LEGACY_V5_SOLO_RUN_STORAGE_KEY],
     [6, LEGACY_V6_SOLO_RUN_STORAGE_KEY],
     [7, LEGACY_V7_SOLO_RUN_STORAGE_KEY],
     [8, LEGACY_V8_SOLO_RUN_STORAGE_KEY],
+    [9, LEGACY_V9_SOLO_RUN_STORAGE_KEY],
   ];
 
   for (const [version, storageKey] of legacyCases) {
@@ -273,7 +369,9 @@ test("v5-v8 active checkpoints are discarded instead of crossing the solo-v3 rul
     } else {
       legacy.session.rulesetVersion = version === 7
         ? "draft-battler-solo-v1"
-        : "draft-battler-solo-v2";
+        : version === 8
+          ? "draft-battler-solo-v2"
+          : "draft-battler-solo-v3";
     }
     if (version === 5) {
       delete legacy.run.botDifficulty;

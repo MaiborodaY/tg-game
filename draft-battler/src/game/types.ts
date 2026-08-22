@@ -15,6 +15,14 @@ export type UnitRole = "tank" | "striker" | "ranged" | "caster" | "support";
 
 export type UnitTag = "warrior" | "beast" | "mage" | "undead" | "rogue" | "guardian";
 
+export type SynergyThreshold = 2 | 4;
+
+export type SynergyEffectKind =
+  | "stat"
+  | "opening_damage"
+  | "first_undead_death_attack"
+  | "first_attack_damage";
+
 export type AbilityId =
   | "none"
   | "shield_wall"
@@ -132,7 +140,21 @@ export type CombatWinner = "player" | "enemy" | "draw";
 
 type CombatEventPayload =
   | { type: "combat_started"; playerUnits: string[]; enemyUnits: string[] }
-  | { type: "synergy_applied"; owner: Owner; tag: UnitTag; unitIds: string[]; attackBonus?: number; hpBonus?: number }
+  | {
+      type: "synergy_applied";
+      owner: Owner;
+      tag: UnitTag;
+      threshold: SynergyThreshold;
+      effectKind: SynergyEffectKind;
+      value: number;
+      unitIds: string[];
+      attackBonus?: number;
+      hpBonus?: number;
+      speedBonus?: number;
+      shieldBonus?: number;
+      openingDamage?: number;
+      firstAttackDamage?: number;
+    }
   | { type: "unit_spawned"; unit: CombatUnit }
   | { type: "unit_buffed"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number; source: string }
   | { type: "unit_attacked"; attackerId: string; targetId: string; abilityId: AbilityId; damage: number }

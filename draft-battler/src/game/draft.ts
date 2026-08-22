@@ -1,6 +1,7 @@
 import { CARD_DEFINITIONS, getCardStatsForUpgrade } from "./cards";
 import { applyDraftPlacement, classifyDraftPlacement, type DraftPlacementClassification } from "./placement";
 import { SeededRandom } from "./random";
+import { SYNERGY_RULES, getActiveSynergyTiers, getSynergyEffectScore } from "./synergies";
 import {
   BOARD_SLOT_COUNT,
   DRAFT_OPTION_COUNT,
@@ -10,6 +11,7 @@ import {
   type CardDefinition,
   type CardId,
   type DraftOption,
+  type UnitTag,
 } from "./types";
 
 const FIRST_ROUND_HIDDEN_CARD_IDS = new Set<CardId>(["field_cleric", "shieldbearer"]);
@@ -186,7 +188,7 @@ export function isCardAllowedInSlot(cardId: CardId, slotIndex: number): boolean 
 
 function scoreEnemyBoard(slots: readonly BoardSlot[], placement: DraftPlacementClassification): number {
   let score = placement.kind === "upgrade" ? 12 : 0;
-  const tagCounts = new Map<string, number>();
+  const tagCounts = new Map<UnitTag, number>();
 
   slots.forEach((slot) => {
     if (!slot.cardId) {
@@ -205,9 +207,13 @@ function scoreEnemyBoard(slots: readonly BoardSlot[], placement: DraftPlacementC
     card.tags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1));
   });
 
-  tagCounts.forEach((count) => {
-    if (count >= 2) {
+  tagCounts.forEach((count, tag) => {
+    const activeTiers = getActiveSynergyTiers(SYNERGY_RULES[tag], count);
+    if (activeTiers.length > 0) {
       score += count * 5;
+      score += activeTiers
+        .slice(1)
+        .reduce((total, tier) => total + getSynergyEffectScore(tier.effect), 0);
     }
   });
 

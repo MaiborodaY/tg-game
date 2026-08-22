@@ -5,6 +5,7 @@ import {
   SYNERGY_RULES,
   SYNERGY_TAG_ORDER,
   type SynergyEffect,
+  type SynergyTier,
 } from "./game/synergies";
 import {
   BOARD_SLOT_COUNT,
@@ -16,14 +17,16 @@ import {
   type UnitTag,
 } from "./game/types";
 
-export { SYNERGY_THRESHOLD } from "./game/synergies";
+export interface BoardSynergyTierProgress {
+  threshold: number;
+  active: boolean;
+  effect: SynergyEffect;
+}
 
 export interface BoardSynergyProgress {
   tag: UnitTag;
   count: number;
-  threshold: number;
-  active: boolean;
-  effect: SynergyEffect;
+  tiers: BoardSynergyTierProgress[];
 }
 
 export interface BoardUnitInspection {
@@ -44,9 +47,16 @@ export interface DraftTagSynergyForecast {
   tag: UnitTag;
   beforeCount: number;
   afterCount: number;
+  tiers: DraftSynergyTierForecast[];
+  activatedThresholds: number[];
+  deactivatedThresholds: number[];
+}
+
+export interface DraftSynergyTierForecast {
   threshold: number;
-  activatesThreshold: boolean;
   effect: SynergyEffect;
+  activeBefore: boolean;
+  activeAfter: boolean;
 }
 
 export interface DraftOptionPlacementSynergyForecast {
@@ -60,6 +70,27 @@ export interface DraftOptionSynergyPresentation {
   cardId: CardId;
   tags: UnitTag[];
   placements: DraftOptionPlacementSynergyForecast[];
+}
+
+interface DraftOptionSynergyOutcomeBase {
+  tag: UnitTag;
+  beforeCount: number;
+  afterCount: number;
+  guaranteed: boolean;
+}
+
+export type DraftOptionSynergyOutcome = DraftOptionSynergyOutcomeBase & (
+  | {
+      kind: "activates" | "progress" | "loses";
+      threshold: number;
+      effect: SynergyEffect;
+    }
+  | { kind: "loses_tag" }
+);
+
+export interface DraftOptionSynergyOutcomePresentation {
+  placementKind: "place" | "replace";
+  outcomes: DraftOptionSynergyOutcome[];
 }
 
 export type DraftOptionBoardStatus = "upgrade" | "maxed";
@@ -83,14 +114,14 @@ export function getBoardSynergyProgress(slots: readonly BoardSlot[]): BoardSyner
       return [];
     }
 
-    const rule = SYNERGY_RULES[tag];
-
     return [{
       tag,
       count,
-      threshold: rule.threshold,
-      active: count >= rule.threshold,
-      effect: rule.effect,
+      tiers: SYNERGY_RULES[tag].tiers.map((tier) => ({
+        threshold: tier.threshold,
+        active: count >= tier.threshold,
+        effect: cloneSynergyEffect(tier.effect),
+      })),
     }];
   });
 }
@@ -177,6 +208,65 @@ export function getDraftOptionSynergyPresentation(
   };
 }
 
+export function summarizeDraftOptionSynergyPresentation(
+  presentation: DraftOptionSynergyPresentation,
+): DraftOptionSynergyOutcomePresentation | undefined {
+  const placements = presentation.placements.filter((placement) => placement.placementKind !== "upgrade");
+  const placementKind = placements[0]?.placementKind;
+  if (!placementKind || placementKind === "upgrade") {
+    return undefined;
+  }
+
+  const outcomes = new Map<string, DraftOptionSynergyOutcome & { placementTargets: Set<number> }>();
+  placements.forEach((placement) => {
+    placement.synergies.forEach((synergy) => {
+      synergy.activatedThresholds.forEach((threshold) => {
+        const tier = synergy.tiers.find((candidate) => candidate.threshold === threshold);
+        if (tier) {
+          addSynergyOutcome(outcomes, "activates", synergy, tier, placement.targetSlotIndex);
+        }
+      });
+      synergy.deactivatedThresholds.forEach((threshold) => {
+        const tier = synergy.tiers.find((candidate) => candidate.threshold === threshold);
+        if (tier) {
+          addSynergyOutcome(outcomes, "loses", synergy, tier, placement.targetSlotIndex);
+        }
+      });
+
+      if (synergy.afterCount < synergy.beforeCount && synergy.deactivatedThresholds.length === 0) {
+        addSynergyTagLossOutcome(outcomes, synergy, placement.targetSlotIndex);
+      }
+
+      if (synergy.afterCount > synergy.beforeCount && synergy.activatedThresholds.length === 0) {
+        const nextTier = synergy.tiers.find((tier) => !tier.activeAfter);
+        if (nextTier) {
+          addSynergyOutcome(outcomes, "progress", synergy, nextTier, placement.targetSlotIndex);
+        }
+      }
+    });
+  });
+
+  if (outcomes.size === 0) {
+    return undefined;
+  }
+
+  const kindOrder: Record<DraftOptionSynergyOutcome["kind"], number> = {
+    activates: 0,
+    progress: 1,
+    loses: 2,
+    loses_tag: 3,
+  };
+  return {
+    placementKind,
+    outcomes: [...outcomes.values()]
+      .map(({ placementTargets, ...outcome }) => ({
+        ...outcome,
+        guaranteed: placementTargets.size === placements.length,
+      }))
+      .sort((left, right) => kindOrder[left.kind] - kindOrder[right.kind]),
+  };
+}
+
 export function getDraftOptionPlacementSynergyForecast(
   option: DraftOption,
   slots: readonly BoardSlot[],
@@ -208,17 +298,86 @@ export function getDraftOptionPlacementSynergyForecast(
 
       const beforeCount = beforeCounts.get(tag) ?? 0;
       const afterCount = afterCounts.get(tag) ?? 0;
-      const rule = SYNERGY_RULES[tag];
+      const tiers = SYNERGY_RULES[tag].tiers.map((tier) => createTierForecast(tier, beforeCount, afterCount));
       return [{
         tag,
         beforeCount,
         afterCount,
-        threshold: rule.threshold,
-        activatesThreshold: beforeCount < rule.threshold && afterCount >= rule.threshold,
-        effect: { ...rule.effect },
+        tiers,
+        activatedThresholds: tiers
+          .filter((tier) => !tier.activeBefore && tier.activeAfter)
+          .map((tier) => tier.threshold),
+        deactivatedThresholds: tiers
+          .filter((tier) => tier.activeBefore && !tier.activeAfter)
+          .map((tier) => tier.threshold),
       }];
     }),
   };
+}
+
+function createTierForecast(
+  tier: SynergyTier,
+  beforeCount: number,
+  afterCount: number,
+): DraftSynergyTierForecast {
+  return {
+    threshold: tier.threshold,
+    effect: cloneSynergyEffect(tier.effect),
+    activeBefore: beforeCount >= tier.threshold,
+    activeAfter: afterCount >= tier.threshold,
+  };
+}
+
+function addSynergyOutcome(
+  outcomes: Map<string, DraftOptionSynergyOutcome & { placementTargets: Set<number> }>,
+  kind: "activates" | "progress" | "loses",
+  synergy: DraftTagSynergyForecast,
+  tier: DraftSynergyTierForecast,
+  targetSlotIndex: number,
+): void {
+  const key = [kind, synergy.tag, synergy.beforeCount, synergy.afterCount, tier.threshold].join(":");
+  const existing = outcomes.get(key);
+  if (existing) {
+    existing.placementTargets.add(targetSlotIndex);
+    return;
+  }
+
+  outcomes.set(key, {
+    kind,
+    tag: synergy.tag,
+    beforeCount: synergy.beforeCount,
+    afterCount: synergy.afterCount,
+    threshold: tier.threshold,
+    effect: cloneSynergyEffect(tier.effect),
+    guaranteed: false,
+    placementTargets: new Set([targetSlotIndex]),
+  });
+}
+
+function addSynergyTagLossOutcome(
+  outcomes: Map<string, DraftOptionSynergyOutcome & { placementTargets: Set<number> }>,
+  synergy: DraftTagSynergyForecast,
+  targetSlotIndex: number,
+): void {
+  const key = ["loses_tag", synergy.tag, synergy.beforeCount, synergy.afterCount].join(":");
+  const existing = outcomes.get(key);
+  if (existing) {
+    existing.placementTargets.add(targetSlotIndex);
+    return;
+  }
+
+  outcomes.set(key, {
+    kind: "loses_tag",
+    tag: synergy.tag,
+    beforeCount: synergy.beforeCount,
+    afterCount: synergy.afterCount,
+    guaranteed: false,
+    placementTargets: new Set([targetSlotIndex]),
+  });
+}
+
+function cloneSynergyEffect(effect: SynergyEffect): SynergyEffect {
+  return { ...effect };
 }
 
 function countBoardTags(slots: readonly BoardSlot[]): Map<UnitTag, number> {

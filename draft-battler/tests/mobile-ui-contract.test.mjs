@@ -89,6 +89,10 @@ test("compact layouts and reduced motion remain part of the stylesheet contract"
   assert.match(styles, /\.unit-card__drag-handle\s*\{[^}]*height:\s*44px[^}]*touch-action:\s*none/s);
   assert.match(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.match(styles, /\.terminal-result__metrics\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
+  assert.match(styles, /\.synergy-strip\s*\{[^}]*overflow-x:\s*auto/s);
+  assert.match(styles, /\.synergy-chip__tiers\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
+  assert.match(styles, /\.unit-card__synergy-forecast--dock\s*\{[^}]*max-height:\s*56px[^}]*overflow:\s*hidden/s);
+  assert.match(styles, /\.unit-card__synergy-forecast--dock \.unit-card__synergy-forecast-line\s*\{[^}]*overflow:\s*hidden[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s);
 });
 
 test("critical card copy remains readable", () => {
@@ -137,7 +141,7 @@ test("draft choices keep all three vertical cards visible with readable copy", (
   );
   assert.match(
     styles,
-    /@media\s*\(max-height:\s*720px\)[\s\S]*?\.draft-grid--triple\s*\{[^}]*--draft-triple-card-height:\s*330px/s,
+    /@media\s*\(max-height:\s*720px\)[\s\S]*?\.draft-grid--triple\s*\{[^}]*--draft-triple-card-height:\s*clamp\(300px, calc\(100dvh - var\(--draft-short-top\) - var\(--draft-short-bottom\) - 42px\), 330px\)/s,
   );
   assert.match(
     styles,
@@ -165,6 +169,10 @@ test("placement and move modes use one bottom context dock with compact target m
 });
 
 test("short draft layouts reserve the HUD utility row when logs are available", () => {
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*720px\)[\s\S]*?\.draft-overlay\s*\{[^}]*--draft-short-top:\s*max\(96px, calc\(var\(--safe-top\) \+ 90px\)\)/s,
+  );
   assert.match(styles, /\.draft-overlay--has-logs\s*\{[^}]*padding-top:/s);
   assert.match(
     styles,

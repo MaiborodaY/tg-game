@@ -1,12 +1,15 @@
 import type {
   BoardSlot,
   CardId,
+  CombatEvent,
   CombatUnit,
   CombatWinner,
   Owner,
   RoundRecord,
   UnitTag,
 } from "./game/types";
+
+type SynergyAppliedCombatEvent = Extract<CombatEvent, { type: "synergy_applied" }>;
 
 export interface RoundInsightUnitRef {
   instanceId: string;
@@ -30,9 +33,16 @@ export interface RoundInsightActivity {
 
 export interface RoundInsightSynergy {
   tag: UnitTag;
+  threshold: SynergyAppliedCombatEvent["threshold"];
+  effectKind: SynergyAppliedCombatEvent["effectKind"];
+  value: number;
   affectedUnitIds: string[];
   attackBonus?: number;
   hpBonus?: number;
+  speedBonus?: number;
+  shieldBonus?: number;
+  openingDamage?: number;
+  firstAttackDamage?: number;
 }
 
 export interface RoundInsightSide {
@@ -82,6 +92,9 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
     if (event.type === "synergy_applied") {
       const synergy: RoundInsightSynergy = {
         tag: event.tag,
+        threshold: event.threshold,
+        effectKind: event.effectKind,
+        value: event.value,
         affectedUnitIds: [...event.unitIds],
       };
       if (event.attackBonus !== undefined) {
@@ -89,6 +102,18 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
       }
       if (event.hpBonus !== undefined) {
         synergy.hpBonus = event.hpBonus;
+      }
+      if (event.speedBonus !== undefined) {
+        synergy.speedBonus = event.speedBonus;
+      }
+      if (event.shieldBonus !== undefined) {
+        synergy.shieldBonus = event.shieldBonus;
+      }
+      if (event.openingDamage !== undefined) {
+        synergy.openingDamage = event.openingDamage;
+      }
+      if (event.firstAttackDamage !== undefined) {
+        synergy.firstAttackDamage = event.firstAttackDamage;
       }
       sides[event.owner].synergies.push(synergy);
       continue;

@@ -17,37 +17,60 @@ function createTagBoard(tag, count) {
 }
 
 function getEventEffect(event) {
-  if (event.attackBonus !== undefined) {
-    assert.equal(event.hpBonus, undefined);
-    return { stat: "attack", value: event.attackBonus };
+  if (event.effectKind !== "stat") {
+    return { kind: event.effectKind, value: event.value };
   }
 
-  assert.notEqual(event.hpBonus, undefined);
-  return { stat: "hp", value: event.hpBonus };
+  if (event.attackBonus !== undefined) {
+    return { kind: "stat", stat: "attack", value: event.attackBonus };
+  }
+
+  if (event.hpBonus !== undefined) {
+    return { kind: "stat", stat: "hp", value: event.hpBonus };
+  }
+
+  if (event.speedBonus !== undefined) {
+    return { kind: "stat", stat: "speed", value: event.speedBonus };
+  }
+
+  assert.notEqual(event.shieldBonus, undefined);
+  return { kind: "stat", stat: "armor", value: event.shieldBonus };
 }
 
-test("draft synergy progression matches the real combat effect for every tag", () => {
+test("draft synergy progression matches every real combat tier for every tag", () => {
   SYNERGY_TAG_ORDER.forEach((tag) => {
     const rule = SYNERGY_RULES[tag];
-    const inactiveBoard = createTagBoard(tag, rule.threshold - 1);
-    const inactiveProgress = getBoardSynergyProgress(inactiveBoard).find((entry) => entry.tag === tag);
-    const inactiveEvent = resolveCombat(inactiveBoard, [], 1).events.find(
-      (event) => event.type === "synergy_applied" && event.owner === "player" && event.tag === tag,
-    );
 
-    assert.equal(inactiveProgress?.active, false, `${tag} UI activates below its combat threshold`);
-    assert.equal(inactiveEvent, undefined, `${tag} combat activates below its UI threshold`);
+    rule.tiers.forEach((tier) => {
+      const inactiveBoard = createTagBoard(tag, tier.threshold - 1);
+      const inactiveProgress = getBoardSynergyProgress(inactiveBoard).find((entry) => entry.tag === tag);
+      const inactiveTier = inactiveProgress?.tiers.find((entry) => entry.threshold === tier.threshold);
+      const inactiveEvent = resolveCombat(inactiveBoard, [], 1).events.find(
+        (event) =>
+          event.type === "synergy_applied" &&
+          event.owner === "player" &&
+          event.tag === tag &&
+          event.threshold === tier.threshold,
+      );
 
-    const activeBoard = createTagBoard(tag, rule.threshold);
-    const activeProgress = getBoardSynergyProgress(activeBoard).find((entry) => entry.tag === tag);
-    const activeEvent = resolveCombat(activeBoard, [], 1).events.find(
-      (event) => event.type === "synergy_applied" && event.owner === "player" && event.tag === tag,
-    );
+      assert.equal(inactiveTier?.active, false, `${tag}/${tier.threshold} UI activates below combat threshold`);
+      assert.equal(inactiveEvent, undefined, `${tag}/${tier.threshold} combat activates below UI threshold`);
 
-    assert.ok(activeProgress, `${tag} is missing from the draft projection`);
-    assert.equal(activeProgress.threshold, rule.threshold);
-    assert.equal(activeProgress.active, true, `${tag} UI does not activate at its combat threshold`);
-    assert.ok(activeEvent, `${tag} combat event is missing at its UI threshold`);
-    assert.deepEqual(activeProgress.effect, getEventEffect(activeEvent));
+      const activeBoard = createTagBoard(tag, tier.threshold);
+      const activeProgress = getBoardSynergyProgress(activeBoard).find((entry) => entry.tag === tag);
+      const activeTier = activeProgress?.tiers.find((entry) => entry.threshold === tier.threshold);
+      const activeEvent = resolveCombat(activeBoard, [], 1).events.find(
+        (event) =>
+          event.type === "synergy_applied" &&
+          event.owner === "player" &&
+          event.tag === tag &&
+          event.threshold === tier.threshold,
+      );
+
+      assert.ok(activeTier, `${tag}/${tier.threshold} is missing from the draft projection`);
+      assert.equal(activeTier.active, true, `${tag}/${tier.threshold} UI does not activate at combat threshold`);
+      assert.ok(activeEvent, `${tag}/${tier.threshold} combat event is missing at UI threshold`);
+      assert.deepEqual(activeTier.effect, getEventEffect(activeEvent));
+    });
   });
 });

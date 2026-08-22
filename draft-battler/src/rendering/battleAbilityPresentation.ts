@@ -10,6 +10,7 @@ export type BattleAbilityCalloutSource =
   | "shield_wall"
   | "stone_skin"
   | "riposte"
+  | "synergy_undead_4"
   | "bone_pact";
 
 export type BattleAbilityCalloutEffect = "attack_up" | "armor_up" | "attack_down" | "summon";
@@ -30,13 +31,14 @@ export interface BattleAbilityCalloutPlanItem extends BattleAbilityCallout {
 
 const CALLOUT_SOURCE_PRIORITY: Readonly<Record<BattleAbilityCalloutSource, number>> = {
   frost_hex: 0,
-  bone_pact: 1,
-  pack_hunter: 2,
-  battle_banner: 3,
-  thorn_guard: 4,
-  shield_wall: 5,
-  stone_skin: 6,
-  riposte: 7,
+  synergy_undead_4: 1,
+  bone_pact: 2,
+  pack_hunter: 3,
+  battle_banner: 4,
+  thorn_guard: 5,
+  shield_wall: 6,
+  stone_skin: 7,
+  riposte: 8,
 };
 
 export const BATTLE_ABILITY_CALLOUT_LIMIT_PER_OWNER = 3;
@@ -54,7 +56,11 @@ export function getBattleAbilityCallout(
     return undefined;
   }
 
-  if (event.source === "battle_banner" || event.source === "pack_hunter") {
+  if (
+    event.source === "battle_banner" ||
+    event.source === "pack_hunter" ||
+    event.source === "synergy_undead_4"
+  ) {
     return createDeltaCallout(event.unitId, event.source, "attack_up", "buff", event.attackDelta, "positive");
   }
 

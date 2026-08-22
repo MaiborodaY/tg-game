@@ -1,3 +1,4 @@
+import type { SynergyEffect } from "./game/synergies";
 import type { CardDefinition, CardId, UnitTag } from "./game/types";
 
 export const SUPPORTED_LOCALES = ["ru", "uk", "en"] as const;
@@ -112,6 +113,7 @@ export interface UiCopy {
   compendiumUpgradeNote: string;
   compendiumTier: string;
   compendiumSynergyRule: string;
+  compendiumSynergyTier: string;
   compendiumSynergyCards: string;
   closeCompendium: string;
   howToTitle: string;
@@ -145,10 +147,20 @@ export interface UiCopy {
   closeLogs: string;
   roundNumber: string;
   synergies: string;
+  synergyCount: string;
   synergyActive: string;
   synergyProgress: string;
   synergyWillActivate: string;
   synergyMayActivate: string;
+  synergyTierActive: string;
+  synergyTierProgress: string;
+  synergyForecastPlace: string;
+  synergyForecastReplace: string;
+  synergyForecastPossible: string;
+  synergyForecastActivates: string;
+  synergyForecastProgress: string;
+  synergyForecastLoses: string;
+  synergyForecastLosesTag: string;
   enemyArmy: string;
   enemyArmyHint: string;
   onboarding: string;
@@ -222,6 +234,7 @@ export interface UiCopy {
   battleCalloutThorns: string;
   battleCalloutPack: string;
   battleCalloutFrost: string;
+  battleCalloutUndeadMastery: string;
   battleCalloutBonePact: string;
   sceneLoading: string;
   battleResultReady: string;
@@ -246,6 +259,110 @@ export interface LocalizedCardText {
   text: string;
   summary: string;
 }
+
+type SynergyEffectCopyKey =
+  | "warriorAttack"
+  | "warriorArmor"
+  | "beastAttack"
+  | "beastSpeed"
+  | "mageAttack"
+  | "openingDamage"
+  | "undeadHp"
+  | "undeadDeathAttack"
+  | "rogueAttack"
+  | "rogueFirstAttack"
+  | "guardianHp"
+  | "guardianArmor";
+
+const SYNERGY_EFFECT_COPY: Record<SupportedLocale, Record<SynergyEffectCopyKey, string>> = {
+  ru: {
+    warriorAttack: "+{value} АТК воинам",
+    warriorArmor: "+{value} брони воинам",
+    beastAttack: "+{value} АТК зверям",
+    beastSpeed: "+{value} скорости зверям",
+    mageAttack: "+{value} АТК магам-заклинателям и поддержке",
+    openingDamage: "В начале боя: {value} урона каждому врагу",
+    undeadHp: "+{value} HP нежити",
+    undeadDeathAttack: "После первой гибели союзной нежити: +{value} АТК выжившей нежити",
+    rogueAttack: "+{value} АТК разбойникам",
+    rogueFirstAttack: "+{value} к первой атаке каждого разбойника",
+    guardianHp: "+{value} HP стражам",
+    guardianArmor: "+{value} брони всем союзникам",
+  },
+  uk: {
+    warriorAttack: "+{value} АТК воїнам",
+    warriorArmor: "+{value} броні воїнам",
+    beastAttack: "+{value} АТК звірам",
+    beastSpeed: "+{value} швидкості звірам",
+    mageAttack: "+{value} АТК магам-заклиначам і підтримці",
+    openingDamage: "На початку бою: {value} шкоди кожному ворогу",
+    undeadHp: "+{value} HP нежиті",
+    undeadDeathAttack: "Після першої загибелі союзної нежиті: +{value} АТК нежиті, що вижила",
+    rogueAttack: "+{value} АТК розбійникам",
+    rogueFirstAttack: "+{value} до першої атаки кожного розбійника",
+    guardianHp: "+{value} HP вартовим",
+    guardianArmor: "+{value} броні всім союзникам",
+  },
+  en: {
+    warriorAttack: "+{value} ATK to Warriors",
+    warriorArmor: "+{value} armor to Warriors",
+    beastAttack: "+{value} ATK to Beasts",
+    beastSpeed: "+{value} speed to Beasts",
+    mageAttack: "+{value} ATK to Mage casters and supports",
+    openingDamage: "Battle start: {value} damage to every enemy",
+    undeadHp: "+{value} HP to Undead",
+    undeadDeathAttack: "After the first allied Undead death: +{value} ATK to surviving Undead",
+    rogueAttack: "+{value} ATK to Rogues",
+    rogueFirstAttack: "+{value} to every Rogue's first attack",
+    guardianHp: "+{value} HP to Guardians",
+    guardianArmor: "+{value} armor to all allies",
+  },
+};
+
+const SYNERGY_EFFECT_COMPACT_COPY: Record<SupportedLocale, Record<SynergyEffectCopyKey, string>> = {
+  ru: {
+    warriorAttack: "+{value} АТК воинам",
+    warriorArmor: "+{value} броня воинам",
+    beastAttack: "+{value} АТК зверям",
+    beastSpeed: "+{value} скорость зверям",
+    mageAttack: "+{value} АТК магам",
+    openingDamage: "В начале: {value} урон всем",
+    undeadHp: "+{value} HP нежити",
+    undeadDeathAttack: "1-я гибель: +{value} АТК",
+    rogueAttack: "+{value} АТК разбойникам",
+    rogueFirstAttack: "Первая атака: +{value}",
+    guardianHp: "+{value} HP стражам",
+    guardianArmor: "+{value} броня всем",
+  },
+  uk: {
+    warriorAttack: "+{value} АТК воїнам",
+    warriorArmor: "+{value} броня воїнам",
+    beastAttack: "+{value} АТК звірам",
+    beastSpeed: "+{value} швидкість звірам",
+    mageAttack: "+{value} АТК магам",
+    openingDamage: "На початку: {value} шкоди всім",
+    undeadHp: "+{value} HP нежиті",
+    undeadDeathAttack: "1-ша загибель: +{value} АТК",
+    rogueAttack: "+{value} АТК розбійникам",
+    rogueFirstAttack: "Перша атака: +{value}",
+    guardianHp: "+{value} HP вартовим",
+    guardianArmor: "+{value} броня всім",
+  },
+  en: {
+    warriorAttack: "+{value} ATK to Warriors",
+    warriorArmor: "+{value} armor to Warriors",
+    beastAttack: "+{value} ATK to Beasts",
+    beastSpeed: "+{value} speed to Beasts",
+    mageAttack: "+{value} ATK to Mages",
+    openingDamage: "Battle start: {value} to all",
+    undeadHp: "+{value} HP to Undead",
+    undeadDeathAttack: "First death: +{value} ATK",
+    rogueAttack: "+{value} ATK to Rogues",
+    rogueFirstAttack: "First attack: +{value}",
+    guardianHp: "+{value} HP to Guardians",
+    guardianArmor: "+{value} armor to all",
+  },
+};
 
 const UI_COPY: Record<SupportedLocale, UiCopy> = {
   ru: {
@@ -339,8 +456,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     compendiumSynergies: "Синергии",
     compendiumUpgradeNote: "При улучшении АТК и HP удваиваются. Скорость и дальность не меняются.",
     compendiumTier: "Тир {tier}",
-    compendiumSynergyRule: "{threshold} бойца: +{value} {stat}",
-    compendiumSynergyCards: "Получают бонус: {cards}",
+    compendiumSynergyRule: "Бонусы открываются на 2 и 4 бойцах.",
+    compendiumSynergyTier: "{threshold}/4 бойца: {effect}",
+    compendiumSynergyCards: "Карты синергии: {cards}",
     closeCompendium: "Закрыть справочник",
     howToTitle: "Как играть",
     howToIntro: "Симметричная дуэль: обе крепости начинают с 20 HP, а каждый соперник получает по одной карте за раунд.",
@@ -373,10 +491,20 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeLogs: "Закрыть итоги",
     roundNumber: "Раунд {round}",
     synergies: "Синергии",
+    synergyCount: "Бойцов: {count}",
     synergyActive: "{tag}: {count}/{threshold}, активно, {effect}",
     synergyProgress: "{tag}: {count}/{threshold}, до активации {remaining}, {effect}",
     synergyWillActivate: "Активирует: {tag} {before}→{after}",
     synergyMayActivate: "Может активировать: {tag} {before}→{after}",
+    synergyTierActive: "{threshold}/4 активно: {effect}",
+    synergyTierProgress: "{threshold}/4 — осталось {remaining}: {effect}",
+    synergyForecastPlace: "Размещение",
+    synergyForecastReplace: "Замена",
+    synergyForecastPossible: "зависит от позиции",
+    synergyForecastActivates: "{tag} {before}→{after}: открывает {threshold}/4 — {effect}",
+    synergyForecastProgress: "{tag} {before}→{after}: далее {threshold}/4 — {effect}",
+    synergyForecastLoses: "{tag} {before}→{after}: теряет {threshold}/4 — {effect}",
+    synergyForecastLosesTag: "{tag} {before}→{after}: бойцов этого типа станет меньше",
     enemyArmy: "Известная армия врага",
     enemyArmyHint: "+1 новая карта пока скрыта",
     onboarding: "Коснитесь карты и позиции на поле — или перетащите карту.",
@@ -450,6 +578,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     battleCalloutThorns: "ШИПЫ: +{amount} БРОНИ",
     battleCalloutPack: "СТАЯ: +{amount} АТК",
     battleCalloutFrost: "МОРОЗ: −{amount} АТК",
+    battleCalloutUndeadMastery: "НЕЖИТЬ 4/4: +{amount} АТК",
     battleCalloutBonePact: "КОСТЯНОЙ ДОГОВОР",
     sceneLoading: "Загрузка поля…",
     battleResultReady: "Результат боя готов.",
@@ -559,8 +688,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     compendiumSynergies: "Синергії",
     compendiumUpgradeNote: "Після покращення АТК і HP подвоюються. Швидкість і дальність не змінюються.",
     compendiumTier: "Тир {tier}",
-    compendiumSynergyRule: "{threshold} бійці: +{value} {stat}",
-    compendiumSynergyCards: "Отримують бонус: {cards}",
+    compendiumSynergyRule: "Бонуси відкриваються на 2 і 4 бійцях.",
+    compendiumSynergyTier: "{threshold}/4 бійці: {effect}",
+    compendiumSynergyCards: "Карти синергії: {cards}",
     closeCompendium: "Закрити довідник",
     howToTitle: "Як грати",
     howToIntro: "Симетрична дуель: обидві фортеці починають із 20 HP, а кожен суперник отримує по одній карті щораунду.",
@@ -593,10 +723,20 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeLogs: "Закрити підсумки",
     roundNumber: "Раунд {round}",
     synergies: "Синергії",
+    synergyCount: "Бійців: {count}",
     synergyActive: "{tag}: {count}/{threshold}, активно, {effect}",
     synergyProgress: "{tag}: {count}/{threshold}, до активації {remaining}, {effect}",
     synergyWillActivate: "Активує: {tag} {before}→{after}",
     synergyMayActivate: "Може активувати: {tag} {before}→{after}",
+    synergyTierActive: "{threshold}/4 активно: {effect}",
+    synergyTierProgress: "{threshold}/4 — залишилося {remaining}: {effect}",
+    synergyForecastPlace: "Розміщення",
+    synergyForecastReplace: "Заміна",
+    synergyForecastPossible: "залежить від позиції",
+    synergyForecastActivates: "{tag} {before}→{after}: відкриває {threshold}/4 — {effect}",
+    synergyForecastProgress: "{tag} {before}→{after}: далі {threshold}/4 — {effect}",
+    synergyForecastLoses: "{tag} {before}→{after}: втрачає {threshold}/4 — {effect}",
+    synergyForecastLosesTag: "{tag} {before}→{after}: бійців цього типу стане менше",
     enemyArmy: "Відома армія ворога",
     enemyArmyHint: "+1 нова карта поки прихована",
     onboarding: "Торкніться карти й позиції на полі — або перетягніть карту.",
@@ -670,6 +810,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     battleCalloutThorns: "ШИПИ: +{amount} БРОНІ",
     battleCalloutPack: "ЗГРАЯ: +{amount} АТК",
     battleCalloutFrost: "МОРОЗ: −{amount} АТК",
+    battleCalloutUndeadMastery: "НЕЖИТЬ 4/4: +{amount} АТК",
     battleCalloutBonePact: "КІСТЯНИЙ ДОГОВІР",
     sceneLoading: "Завантаження поля…",
     battleResultReady: "Результат бою готовий.",
@@ -779,8 +920,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     compendiumSynergies: "Synergies",
     compendiumUpgradeNote: "Upgrades double ATK and HP. Speed and range do not change.",
     compendiumTier: "Tier {tier}",
-    compendiumSynergyRule: "{threshold} fighters: +{value} {stat}",
-    compendiumSynergyCards: "Bonus applies to: {cards}",
+    compendiumSynergyRule: "Bonuses unlock at 2 and 4 fighters.",
+    compendiumSynergyTier: "{threshold}/4 fighters: {effect}",
+    compendiumSynergyCards: "Synergy cards: {cards}",
     closeCompendium: "Close compendium",
     howToTitle: "How to play",
     howToIntro: "A symmetric duel: both keeps start at 20 HP, and each rival receives one card per round.",
@@ -813,10 +955,20 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeLogs: "Close results",
     roundNumber: "Round {round}",
     synergies: "Synergies",
+    synergyCount: "Fighters: {count}",
     synergyActive: "{tag}: {count}/{threshold}, active, {effect}",
     synergyProgress: "{tag}: {count}/{threshold}, {remaining} more to activate, {effect}",
     synergyWillActivate: "Activates: {tag} {before}→{after}",
     synergyMayActivate: "Can activate: {tag} {before}→{after}",
+    synergyTierActive: "{threshold}/4 active: {effect}",
+    synergyTierProgress: "{threshold}/4 — {remaining} more: {effect}",
+    synergyForecastPlace: "Placement",
+    synergyForecastReplace: "Replacement",
+    synergyForecastPossible: "depends on position",
+    synergyForecastActivates: "{tag} {before}→{after}: unlocks {threshold}/4 — {effect}",
+    synergyForecastProgress: "{tag} {before}→{after}: next {threshold}/4 — {effect}",
+    synergyForecastLoses: "{tag} {before}→{after}: loses {threshold}/4 — {effect}",
+    synergyForecastLosesTag: "{tag} {before}→{after}: fewer fighters with this tag",
     enemyArmy: "Known enemy army",
     enemyArmyHint: "+1 new card is still hidden",
     onboarding: "Tap a card and a field slot—or drag the card.",
@@ -890,6 +1042,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     battleCalloutThorns: "THORNS: +{amount} ARMOR",
     battleCalloutPack: "PACK: +{amount} ATK",
     battleCalloutFrost: "FROST: −{amount} ATK",
+    battleCalloutUndeadMastery: "UNDEAD 4/4: +{amount} ATK",
     battleCalloutBonePact: "BONE PACT",
     sceneLoading: "Loading field…",
     battleResultReady: "Battle result ready.",
@@ -1453,6 +1606,45 @@ export function getRarityLabel(locale: SupportedLocale, rarity: CardRarity): str
 
 export function getTagLabel(locale: SupportedLocale, tag: UnitTag): string {
   return TAG_LABELS[locale][tag];
+}
+
+export function getSynergyEffectLabel(
+  locale: SupportedLocale,
+  tag: UnitTag,
+  effect: SynergyEffect,
+  variant: "full" | "compact" = "full",
+): string {
+  let copyKey: SynergyEffectCopyKey;
+  if (effect.kind === "opening_damage") {
+    copyKey = "openingDamage";
+  } else if (effect.kind === "first_undead_death_attack") {
+    copyKey = "undeadDeathAttack";
+  } else if (effect.kind === "first_attack_damage") {
+    copyKey = "rogueFirstAttack";
+  } else if (tag === "warrior" && effect.stat === "attack") {
+    copyKey = "warriorAttack";
+  } else if (tag === "warrior" && effect.stat === "armor") {
+    copyKey = "warriorArmor";
+  } else if (tag === "beast" && effect.stat === "attack") {
+    copyKey = "beastAttack";
+  } else if (tag === "beast" && effect.stat === "speed") {
+    copyKey = "beastSpeed";
+  } else if (tag === "mage" && effect.stat === "attack") {
+    copyKey = "mageAttack";
+  } else if (tag === "undead" && effect.stat === "hp") {
+    copyKey = "undeadHp";
+  } else if (tag === "rogue" && effect.stat === "attack") {
+    copyKey = "rogueAttack";
+  } else if (tag === "guardian" && effect.stat === "hp") {
+    copyKey = "guardianHp";
+  } else if (tag === "guardian" && effect.stat === "armor") {
+    copyKey = "guardianArmor";
+  } else {
+    throw new Error(`Unsupported ${tag} synergy effect: ${effect.kind}`);
+  }
+
+  const templates = variant === "compact" ? SYNERGY_EFFECT_COMPACT_COPY : SYNERGY_EFFECT_COPY;
+  return formatMessage(templates[locale][copyKey], { value: effect.value });
 }
 
 export function getCombatEventLabel(locale: SupportedLocale, event: LocalizedCombatEvent): string {

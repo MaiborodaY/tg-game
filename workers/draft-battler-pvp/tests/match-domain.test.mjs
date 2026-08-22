@@ -65,6 +65,16 @@ function boardWith(cardId, slotIndex = 0) {
   return board;
 }
 
+function boardWithCards(cardIds) {
+  const board = createEmptyBoardSlots();
+  for (const cardId of cardIds) {
+    const target = board.find((slot) => slot.cardId === null && isCardAllowedInSlot(cardId, slot.slotIndex));
+    assert.ok(target, `expected a legal slot for ${cardId}`);
+    target.cardId = cardId;
+  }
+  return board;
+}
+
 test("match creation is deterministic but keeps each server offer private", () => {
   const left = createFixtureMatch();
   const right = createFixtureMatch();
@@ -86,14 +96,14 @@ test("match creation is deterministic but keeps each server offer private", () =
 });
 
 test("persisted state compatibility gates reject stale rulesets and schemas", () => {
-  const room = createRoom({ roomId: "room-v2", now: NOW });
+  const room = createRoom({ roomId: "room-v4", now: NOW });
   const match = createFixtureMatch();
 
-  assert.equal(RULESET_VERSION, "draft-battler-pvp-v3");
+  assert.equal(RULESET_VERSION, "draft-battler-pvp-v4");
   assert.equal(isCurrentRoomState(room), true);
   assert.equal(isCurrentMatchState(match), true);
-  assert.equal(isCurrentRoomState({ ...room, rulesetVersion: "draft-battler-pvp-v2" }), false);
-  assert.equal(isCurrentMatchState({ ...match, rulesetVersion: "draft-battler-pvp-v2" }), false);
+  assert.equal(isCurrentRoomState({ ...room, rulesetVersion: "draft-battler-pvp-v3" }), false);
+  assert.equal(isCurrentMatchState({ ...match, rulesetVersion: "draft-battler-pvp-v3" }), false);
   assert.equal(isCurrentRoomState({ ...room, schemaVersion: 0 }), false);
   assert.equal(isCurrentMatchState({ ...match, schemaVersion: 0 }), false);
   assert.equal(isCurrentRoomState(null), false);
@@ -216,6 +226,39 @@ test("round one rejects an empty lock; both locks resolve and only then reveal a
   assert.equal(match.phase, "battle");
   assert.ok(match.combat);
   assert.deepEqual(createPlayerMatchSnapshot(match, "guest").opponent.boardSlots, match.players.host.boardSlots);
+});
+
+test("PvP snapshots preserve the current four-unit synergy tier on the wire", () => {
+  const warriorIds = CARD_DEFINITIONS
+    .filter((card) => card.tags.includes("warrior"))
+    .slice(0, 4)
+    .map((card) => card.id);
+  assert.equal(warriorIds.length, 4);
+
+  let match = createFixtureMatch("match-warrior-mastery", "warrior-mastery-secret");
+  match.players.host.boardSlots = boardWithCards(warriorIds);
+  match.players.guest.boardSlots = boardWith("iron_guard", 0);
+  match = apply(match, "host", { type: "lock" });
+  match = apply(match, "guest", { type: "lock" });
+
+  const wireSnapshot = JSON.parse(JSON.stringify(createPlayerMatchSnapshot(match, "host")));
+  const masteryEvent = wireSnapshot.combat.combat.events.find((event) =>
+    event.type === "synergy_applied"
+      && event.owner === "player"
+      && event.tag === "warrior"
+      && event.threshold === 4,
+  );
+  assert.deepEqual(masteryEvent && {
+    effectKind: masteryEvent.effectKind,
+    value: masteryEvent.value,
+    shieldBonus: masteryEvent.shieldBonus,
+    unitCount: masteryEvent.unitIds.length,
+  }, {
+    effectKind: "stat",
+    value: 1,
+    shieldBonus: 1,
+    unitCount: 4,
+  });
 });
 
 test("the next round starts only after acknowledgements from both players and preserves committed armies", () => {

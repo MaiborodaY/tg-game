@@ -23,6 +23,10 @@ test("main menu exposes an accessible cards and synergies compendium", () => {
   assert.match(mainSource, /metaLine\.append\(tier, rarity, archetype\)/);
   assert.match(styles, /\.compendium-card-list,[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(styles, /\.compendium-card__stats\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
+  assert.match(mainSource, /synergy\.tiers\.forEach\(\(tier\) =>/);
+  assert.match(mainSource, /copy\.compendiumSynergyTier/);
+  assert.match(styles, /\.compendium-synergy__tiers\s*\{/);
+  assert.match(styles, /\.compendium-synergy__tier:nth-child\(2\)/);
 });
 
 test("round result uses factual insight data and keeps the summary compact", () => {
@@ -41,6 +45,7 @@ test("battle renderer receives localized ability callouts without changing comba
     "battleCalloutThorns",
     "battleCalloutPack",
     "battleCalloutFrost",
+    "battleCalloutUndeadMastery",
     "battleCalloutBonePact",
   ]) {
     assert.match(mainSource, new RegExp(`copy\\.${key}\\b`), `main.ts uses ${key}`);
@@ -55,11 +60,15 @@ test("learning UI copy is complete and explicit in all locales", () => {
     "compendiumTitle",
     "compendiumIntro",
     "compendiumUpgradeNote",
+    "compendiumSynergyTier",
+    "synergyTierActive",
+    "synergyTierProgress",
     "roundInsightsTitle",
     "roundInsightCastleDamage",
     "roundInsightSurvivors",
     "battleCalloutArmor",
     "battleCalloutBanner",
+    "battleCalloutUndeadMastery",
     "battleCalloutBonePact",
   ];
 

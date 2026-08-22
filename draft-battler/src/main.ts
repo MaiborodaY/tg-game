@@ -38,9 +38,9 @@ import {
   getBoardUnitInspection,
   getDraftOptionBoardStatus,
   getDraftOptionSynergyPresentation,
+  summarizeDraftOptionSynergyPresentation,
   type BoardUnitInspection,
   type DraftOptionBoardStatus,
-  type DraftTagSynergyForecast,
 } from "./draftPresentation";
 import {
   createGameHudSnapshot,
@@ -94,6 +94,7 @@ import {
   getCombatEventLabel,
   getLocalizedCard,
   getRarityLabel,
+  getSynergyEffectLabel,
   getTagLabel,
   getUiCopy,
   hasSeenHowTo,
@@ -340,7 +341,7 @@ const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
 const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
 const PVP_UI_ENABLED = import.meta.env.VITE_DRAFT_BATTLER_PVP_ENABLED === "true";
 const PVP_API_ORIGIN = normalizePvpApiOrigin(import.meta.env.VITE_DRAFT_BATTLER_PVP_ORIGIN);
-const PVP_RULESET_VERSION = "draft-battler-pvp-v3";
+const PVP_RULESET_VERSION = "draft-battler-pvp-v4";
 
 interface ActivePointerDrag {
   cleanup: () => void;
@@ -715,28 +716,32 @@ function createDraftSynergies(): HTMLElement | undefined {
 
   progress.forEach((synergy) => {
     const tag = getTagLabel(activeLocale, synergy.tag);
-    const stat = synergy.effect.stat === "attack" ? copy.attack : copy.hp;
-    const effect = `+${synergy.effect.value} ${stat}`;
-    const remaining = Math.max(0, synergy.threshold - synergy.count);
-    const accessibleLabel = formatMessage(
-      synergy.active ? copy.synergyActive : copy.synergyProgress,
-      {
-        tag,
-        count: synergy.count,
-        threshold: synergy.threshold,
-        remaining,
+    const tierLabels = synergy.tiers.map((tier) => {
+      const effect = getSynergyEffectLabel(activeLocale, synergy.tag, tier.effect);
+      return formatMessage(tier.active ? copy.synergyTierActive : copy.synergyTierProgress, {
+        threshold: tier.threshold,
+        remaining: Math.max(0, tier.threshold - synergy.count),
         effect,
-      },
-    );
+      });
+    });
+    const activeTierCount = synergy.tiers.filter((tier) => tier.active).length;
+    const accessibleLabel = `${tag}. ${formatMessage(copy.synergyCount, { count: synergy.count })}. ${tierLabels.join(". ")}`;
     const chip = document.createElement("span");
-    chip.className = synergy.active ? "synergy-chip synergy-chip--active" : "synergy-chip";
+    chip.className = [
+      "synergy-chip",
+      activeTierCount > 0 ? "synergy-chip--active" : "",
+      activeTierCount === synergy.tiers.length ? "synergy-chip--mastered" : "",
+    ].filter(Boolean).join(" ");
     chip.setAttribute("role", "listitem");
     chip.setAttribute("aria-label", accessibleLabel);
     chip.title = accessibleLabel;
 
+    const summary = document.createElement("span");
+    summary.className = "synergy-chip__summary";
+
     const status = document.createElement("span");
     status.className = "synergy-chip__status";
-    status.textContent = synergy.active ? "✓" : "·";
+    status.textContent = activeTierCount === synergy.tiers.length ? "★" : activeTierCount > 0 ? "✓" : "·";
     status.setAttribute("aria-hidden", "true");
 
     const label = document.createElement("strong");
@@ -744,13 +749,28 @@ function createDraftSynergies(): HTMLElement | undefined {
 
     const count = document.createElement("span");
     count.className = "synergy-chip__count";
-    count.textContent = `${synergy.count}/${synergy.threshold}`;
+    count.textContent = `×${synergy.count}`;
 
-    const effectLabel = document.createElement("span");
-    effectLabel.className = "synergy-chip__effect";
-    effectLabel.textContent = effect;
+    summary.append(status, label, count);
 
-    chip.append(status, label, count, effectLabel);
+    const tiers = document.createElement("span");
+    tiers.className = "synergy-chip__tiers";
+    synergy.tiers.forEach((tier) => {
+      const tierLabel = document.createElement("span");
+      tierLabel.className = tier.active
+        ? "synergy-chip__tier synergy-chip__tier--active"
+        : "synergy-chip__tier";
+      tierLabel.setAttribute("aria-hidden", "true");
+
+      const threshold = document.createElement("b");
+      threshold.textContent = `${tier.threshold}${tier.active ? "✓" : "·"}`;
+      const effect = document.createElement("span");
+      effect.textContent = getSynergyEffectLabel(activeLocale, synergy.tag, tier.effect, "compact");
+      tierLabel.append(threshold, effect);
+      tiers.append(tierLabel);
+    });
+
+    chip.append(summary, tiers);
     strip.append(chip);
   });
 
@@ -1034,6 +1054,9 @@ function createCompendiumOverlay(): HTMLElement {
   synergySection.className = "compendium-section";
   const synergyTitle = document.createElement("h3");
   synergyTitle.textContent = copy.compendiumSynergies;
+  const synergyNote = document.createElement("p");
+  synergyNote.className = "compendium-section__note";
+  synergyNote.textContent = copy.compendiumSynergyRule;
   const synergyList = document.createElement("div");
   synergyList.className = "compendium-synergy-list";
   presentation.synergies.forEach((synergy) => {
@@ -1041,23 +1064,29 @@ function createCompendiumOverlay(): HTMLElement {
     item.className = "compendium-synergy";
     const name = document.createElement("strong");
     name.textContent = getTagLabel(activeLocale, synergy.tag);
-    const stat = synergy.effect.stat === "attack" ? copy.attack : copy.hp;
-    const rule = document.createElement("span");
-    rule.textContent = formatMessage(copy.compendiumSynergyRule, {
-      threshold: synergy.threshold,
-      value: synergy.effect.value,
-      stat,
+    const tiers = document.createElement("div");
+    tiers.className = "compendium-synergy__tiers";
+    synergy.tiers.forEach((tier) => {
+      const tierItem = document.createElement("section");
+      tierItem.className = "compendium-synergy__tier";
+      const rule = document.createElement("strong");
+      rule.textContent = formatMessage(copy.compendiumSynergyTier, {
+        threshold: tier.threshold,
+        effect: getSynergyEffectLabel(activeLocale, synergy.tag, tier.effect),
+      });
+      const cards = document.createElement("p");
+      cards.textContent = formatMessage(copy.compendiumSynergyCards, {
+        cards: tier.contributorCardIds
+          .map((cardId) => getLocalizedCard(activeLocale, getCardDefinition(cardId)).name)
+          .join(", "),
+      });
+      tierItem.append(rule, cards);
+      tiers.append(tierItem);
     });
-    const cards = document.createElement("p");
-    cards.textContent = formatMessage(copy.compendiumSynergyCards, {
-      cards: synergy.relevantCardIds
-        .map((cardId) => getLocalizedCard(activeLocale, getCardDefinition(cardId)).name)
-        .join(", "),
-    });
-    item.append(name, rule, cards);
+    item.append(name, tiers);
     synergyList.append(item);
   });
-  synergySection.append(synergyTitle, synergyList);
+  synergySection.append(synergyTitle, synergyNote, synergyList);
 
   content.append(cardSection, synergySection);
   panel.append(header, content);
@@ -1605,6 +1634,8 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
     formatRoundInsight(copy.roundInsightCastleDamage, insights.castles.enemy.damageTaken, insights.castles.player.damageTaken),
     formatRoundInsight(copy.roundInsightSurvivors, insights.sides.player.survivors.length, insights.sides.enemy.survivors.length),
   ];
+  const activePlayerSynergies = new Set(insights.sides.player.synergies.map((synergy) => synergy.tag)).size;
+  const activeEnemySynergies = new Set(insights.sides.enemy.synergies.map((synergy) => synergy.tag)).size;
   const optionalRows = [
     {
       total: insights.sides.player.healing.amount + insights.sides.enemy.healing.amount,
@@ -1619,8 +1650,8 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
       label: formatRoundInsight(copy.roundInsightSummons, insights.sides.player.summons.length, insights.sides.enemy.summons.length),
     },
     {
-      total: insights.sides.player.synergies.length + insights.sides.enemy.synergies.length,
-      label: formatRoundInsight(copy.roundInsightSynergies, insights.sides.player.synergies.length, insights.sides.enemy.synergies.length),
+      total: activePlayerSynergies + activeEnemySynergies,
+      label: formatRoundInsight(copy.roundInsightSynergies, activePlayerSynergies, activeEnemySynergies),
     },
   ]
     .filter((row) => row.total > 0)
@@ -2357,7 +2388,13 @@ function createTapPlacementPanel(cardId: CardId): HTMLElement {
   cancelButton.addEventListener("click", cancelDraftCardSelection);
 
   actions.append(infoButton, cancelButton);
-  panel.append(copyContainer, actions);
+  panel.append(copyContainer);
+  const option = getCurrentDraftOption(cardId);
+  const synergyForecast = option ? createCardSynergyForecast(option, "dock") : undefined;
+  if (synergyForecast) {
+    panel.append(synergyForecast);
+  }
+  panel.append(actions);
 
   return panel;
 }
@@ -2743,39 +2780,100 @@ function createCardTagRow(card: CardDefinition): HTMLElement {
   return row;
 }
 
-function createCardSynergyForecast(option: DraftOption): HTMLElement | undefined {
+function createCardSynergyForecast(option: DraftOption, variant: "card" | "dock" = "card"): HTMLElement | undefined {
   const presentation = getDraftOptionSynergyPresentation(option, uiState.draftBoardSlots);
-  if (presentation.placements.length === 0) {
+  const summary = summarizeDraftOptionSynergyPresentation(presentation);
+  if (!summary) {
     return undefined;
   }
 
-  const activation = findFirstSynergyActivation(presentation.placements.flatMap((placement) => placement.synergies));
-  if (!activation) {
-    return undefined;
-  }
-
-  const activationIsGuaranteed = presentation.placements.every((placement) =>
-    placement.synergies.some((synergy) => synergy.tag === activation.tag && synergy.activatesThreshold),
-  );
-  const label = document.createElement("span");
-  label.className = activationIsGuaranteed
-    ? "unit-card__synergy-forecast unit-card__synergy-forecast--guaranteed"
+  const copy = getCopy();
+  const container = document.createElement("div");
+  container.className = variant === "dock"
+    ? "unit-card__synergy-forecast unit-card__synergy-forecast--dock"
     : "unit-card__synergy-forecast";
-  label.textContent = formatMessage(
-    activationIsGuaranteed ? getCopy().synergyWillActivate : getCopy().synergyMayActivate,
-    {
-      tag: getTagLabel(activeLocale, activation.tag),
-      before: activation.beforeCount,
-      after: activation.afterCount,
-    },
-  );
-  return label;
-}
 
-function findFirstSynergyActivation(
-  synergies: readonly DraftTagSynergyForecast[],
-): DraftTagSynergyForecast | undefined {
-  return synergies.find((synergy) => synergy.activatesThreshold);
+  const heading = document.createElement("strong");
+  const placementLabel = summary.placementKind === "replace"
+    ? copy.synergyForecastReplace
+    : copy.synergyForecastPlace;
+  const headingText = summary.outcomes.some((outcome) => !outcome.guaranteed)
+    ? `${placementLabel} · ${copy.synergyForecastPossible}`
+    : placementLabel;
+  const visibleOutcomeLimit = variant === "card" ? 1 : 2;
+  const visibleOutcomes = summary.outcomes.slice(0, visibleOutcomeLimit);
+  const omittedOutcomeCount = summary.outcomes.length - visibleOutcomes.length;
+  heading.textContent = omittedOutcomeCount > 0
+    ? `${headingText} · +${omittedOutcomeCount}`
+    : headingText;
+  container.append(heading);
+
+  const formattedOutcomes = summary.outcomes.map((outcome) => {
+    if (outcome.kind === "loses_tag") {
+      const text = formatMessage(copy.synergyForecastLosesTag, {
+        tag: getTagLabel(activeLocale, outcome.tag),
+        before: outcome.beforeCount,
+        after: outcome.afterCount,
+      });
+      return {
+        outcome,
+        text,
+        accessibleText: text,
+      };
+    }
+
+    const template = outcome.kind === "activates"
+      ? copy.synergyForecastActivates
+      : outcome.kind === "loses"
+        ? copy.synergyForecastLoses
+        : copy.synergyForecastProgress;
+    const values = {
+      tag: getTagLabel(activeLocale, outcome.tag),
+      before: outcome.beforeCount,
+      after: outcome.afterCount,
+      threshold: outcome.threshold,
+    };
+    return {
+      outcome,
+      text: formatMessage(template, {
+        ...values,
+        effect: getSynergyEffectLabel(
+          activeLocale,
+          outcome.tag,
+          outcome.effect,
+          variant === "card" ? "compact" : "full",
+        ),
+      }),
+      accessibleText: formatMessage(template, {
+        ...values,
+        effect: getSynergyEffectLabel(activeLocale, outcome.tag, outcome.effect),
+      }),
+    };
+  });
+  const accessibleDescription = `${headingText}. ${formattedOutcomes
+    .map(({ outcome, accessibleText }) => outcome.guaranteed
+      ? accessibleText
+      : `${copy.synergyForecastPossible}: ${accessibleText}`)
+    .join(". ")}`;
+  container.setAttribute("aria-label", accessibleDescription);
+  container.title = accessibleDescription;
+
+  visibleOutcomes.forEach((outcome) => {
+    const line = document.createElement("span");
+    line.className = [
+      "unit-card__synergy-forecast-line",
+      `unit-card__synergy-forecast-line--${outcome.kind === "loses_tag" ? "loses" : outcome.kind}`,
+      outcome.guaranteed ? "" : "unit-card__synergy-forecast-line--possible",
+    ].filter(Boolean).join(" ");
+    const text = formattedOutcomes.find((entry) => entry.outcome === outcome)?.text ?? "";
+    line.textContent = `${outcome.guaranteed ? "" : "? "}${text}`;
+    if (!outcome.guaranteed) {
+      line.title = copy.synergyForecastPossible;
+    }
+    container.append(line);
+  });
+
+  return container;
 }
 
 function createCardArchetypeBadge(meta: CardDisplayMeta): HTMLElement {
@@ -3511,6 +3609,7 @@ function createBattleAbilityCalloutLabels(): BattleAbilityCalloutLabels {
     shield_wall: copy.battleCalloutArmor,
     stone_skin: copy.battleCalloutArmor,
     riposte: copy.battleCalloutArmor,
+    synergy_undead_4: copy.battleCalloutUndeadMastery,
     bone_pact: copy.battleCalloutBonePact,
   };
 }
