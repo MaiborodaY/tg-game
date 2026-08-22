@@ -123,6 +123,7 @@ test("PvP frontend is opt-in, authenticated, and sends only action intents", () 
 });
 
 test("draft UI prioritizes large card choices, synergy forecasts, and keyboard movement", () => {
+  const createSynergyForecast = mainSource.match(/function createCardSynergyForecast[\s\S]*?\n\}/)?.[0] ?? "";
   assert.doesNotMatch(mainSource, /hud\.append\(createEnemyArmyIntel\(\)\)/);
   assert.match(mainSource, /overlayClasses\.push\("draft-overlay--card-info-open"\)/);
   assert.match(mainSource, /getDraftOptionSynergyPresentation\(option, uiState\.draftBoardSlots\)/);
@@ -160,15 +161,25 @@ test("draft UI prioritizes large card choices, synergy forecasts, and keyboard m
   assert.match(mainSource, /summarizeDraftOptionSynergyPresentation\(presentation\)/);
   assert.match(mainSource, /outcome\.kind === "activates"/);
   assert.match(mainSource, /outcome\.kind === "loses"/);
-  assert.match(mainSource, /createCardSynergyForecast\(option, "dock"\)/);
-  assert.match(mainSource, /const visibleOutcomeLimit = variant === "card" \? 1 : 2/);
-  assert.match(mainSource, /const visibleOutcomes = summary\.outcomes\.slice\(0, visibleOutcomeLimit\)/);
+  assert.doesNotMatch(mainSource, /createCardSynergyForecast\(option, "dock"\)/);
+  assert.match(mainSource, /selectVisibleDraftOptionSynergyOutcomes\(summary\.outcomes, 2\)/);
   assert.match(mainSource, /const omittedOutcomeCount = summary\.outcomes\.length - visibleOutcomes\.length/);
+  assert.match(mainSource, /more\.className = "unit-card__synergy-forecast-more"/);
+  assert.match(mainSource, /more\.textContent = `\+\$\{omittedOutcomeCount\}`/);
+  assert.match(mainSource, /more\.setAttribute\("aria-hidden", "true"\)/);
+  assert.doesNotMatch(createSynergyForecast, /beforeCount|afterCount|synergyForecastProgress/);
+  assert.match(createSynergyForecast, /getSynergyEffectLabel\(activeLocale, outcome\.tag, outcome\.effect, "compact"\)/);
   assert.match(mainSource, /const formattedOutcomes = summary\.outcomes\.map/);
-  assert.match(mainSource, /container\.setAttribute\("aria-label", accessibleDescription\)/);
+  assert.doesNotMatch(createSynergyForecast, /container\.setAttribute\("aria-label"/);
+  assert.match(createSynergyForecast, /description\.className = "unit-card__synergy-forecast-description"/);
+  assert.match(createSynergyForecast, /description\.textContent = accessibleDescription/);
+  assert.match(createSynergyForecast, /line\.setAttribute\("aria-hidden", "true"\)/);
   assert.match(mainSource, /container\.title = accessibleDescription/);
-  assert.match(styles, /\.unit-card__synergy-forecast--dock\s*\{[^}]*position:\s*static[^}]*max-height:\s*56px[^}]*overflow:\s*hidden/s);
-  assert.match(styles, /\.unit-card__synergy-forecast--dock \.unit-card__synergy-forecast-line\s*\{[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s);
+  assert.doesNotMatch(styles, /\.unit-card__synergy-forecast--dock/);
+  assert.match(styles, /\.unit-card__synergy-forecast-line\s*\{[^}]*white-space:\s*nowrap/s);
+  assert.match(styles, /\.unit-card__synergy-forecast-more\s*\{[^}]*justify-self:\s*end[^}]*height:\s*12px/s);
+  assert.doesNotMatch(styles, /\.unit-card__synergy-forecast-more\s*\{[^}]*position:\s*absolute/s);
+  assert.match(styles, /\.unit-card__synergy-forecast-description\s*\{[^}]*position:\s*absolute[^}]*width:\s*1px[^}]*height:\s*1px/s);
   assert.match(styles, /\.unit-card__board-status--upgrade\s*\{/);
   assert.match(styles, /\.unit-card__board-status--maxed\s*\{/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{/);

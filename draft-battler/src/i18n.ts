@@ -154,13 +154,11 @@ export interface UiCopy {
   synergyMayActivate: string;
   synergyTierActive: string;
   synergyTierProgress: string;
-  synergyForecastPlace: string;
-  synergyForecastReplace: string;
   synergyForecastPossible: string;
+  synergyForecastBonus: string;
+  synergyForecastMastery: string;
   synergyForecastActivates: string;
-  synergyForecastProgress: string;
   synergyForecastLoses: string;
-  synergyForecastLosesTag: string;
   enemyArmy: string;
   enemyArmyHint: string;
   onboarding: string;
@@ -498,13 +496,11 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     synergyMayActivate: "Может активировать: {tag} {before}→{after}",
     synergyTierActive: "{threshold}/4 активно: {effect}",
     synergyTierProgress: "{threshold}/4 — осталось {remaining}: {effect}",
-    synergyForecastPlace: "Размещение",
-    synergyForecastReplace: "Замена",
     synergyForecastPossible: "зависит от позиции",
-    synergyForecastActivates: "{tag} {before}→{after}: открывает {threshold}/4 — {effect}",
-    synergyForecastProgress: "{tag} {before}→{after}: далее {threshold}/4 — {effect}",
-    synergyForecastLoses: "{tag} {before}→{after}: теряет {threshold}/4 — {effect}",
-    synergyForecastLosesTag: "{tag} {before}→{after}: бойцов этого типа станет меньше",
+    synergyForecastBonus: "Бонус",
+    synergyForecastMastery: "Мастерство",
+    synergyForecastActivates: "Активирует: {tier} «{tag}» — {effect}",
+    synergyForecastLoses: "Отключает: {tier} «{tag}» — {effect}",
     enemyArmy: "Известная армия врага",
     enemyArmyHint: "+1 новая карта пока скрыта",
     onboarding: "Коснитесь карты и позиции на поле — или перетащите карту.",
@@ -730,13 +726,11 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     synergyMayActivate: "Може активувати: {tag} {before}→{after}",
     synergyTierActive: "{threshold}/4 активно: {effect}",
     synergyTierProgress: "{threshold}/4 — залишилося {remaining}: {effect}",
-    synergyForecastPlace: "Розміщення",
-    synergyForecastReplace: "Заміна",
     synergyForecastPossible: "залежить від позиції",
-    synergyForecastActivates: "{tag} {before}→{after}: відкриває {threshold}/4 — {effect}",
-    synergyForecastProgress: "{tag} {before}→{after}: далі {threshold}/4 — {effect}",
-    synergyForecastLoses: "{tag} {before}→{after}: втрачає {threshold}/4 — {effect}",
-    synergyForecastLosesTag: "{tag} {before}→{after}: бійців цього типу стане менше",
+    synergyForecastBonus: "Бонус",
+    synergyForecastMastery: "Майстерність",
+    synergyForecastActivates: "Активує: {tier} «{tag}» — {effect}",
+    synergyForecastLoses: "Вимикає: {tier} «{tag}» — {effect}",
     enemyArmy: "Відома армія ворога",
     enemyArmyHint: "+1 нова карта поки прихована",
     onboarding: "Торкніться карти й позиції на полі — або перетягніть карту.",
@@ -962,13 +956,11 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     synergyMayActivate: "Can activate: {tag} {before}→{after}",
     synergyTierActive: "{threshold}/4 active: {effect}",
     synergyTierProgress: "{threshold}/4 — {remaining} more: {effect}",
-    synergyForecastPlace: "Placement",
-    synergyForecastReplace: "Replacement",
     synergyForecastPossible: "depends on position",
-    synergyForecastActivates: "{tag} {before}→{after}: unlocks {threshold}/4 — {effect}",
-    synergyForecastProgress: "{tag} {before}→{after}: next {threshold}/4 — {effect}",
-    synergyForecastLoses: "{tag} {before}→{after}: loses {threshold}/4 — {effect}",
-    synergyForecastLosesTag: "{tag} {before}→{after}: fewer fighters with this tag",
+    synergyForecastBonus: "Bonus",
+    synergyForecastMastery: "Mastery",
+    synergyForecastActivates: "Activates: {tier} “{tag}” — {effect}",
+    synergyForecastLoses: "Disables: {tier} “{tag}” — {effect}",
     enemyArmy: "Known enemy army",
     enemyArmyHint: "+1 new card is still hidden",
     onboarding: "Tap a card and a field slot—or drag the card.",

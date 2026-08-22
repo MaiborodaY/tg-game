@@ -38,6 +38,7 @@ import {
   getBoardUnitInspection,
   getDraftOptionBoardStatus,
   getDraftOptionSynergyPresentation,
+  selectVisibleDraftOptionSynergyOutcomes,
   summarizeDraftOptionSynergyPresentation,
   type BoardUnitInspection,
   type DraftOptionBoardStatus,
@@ -2388,13 +2389,7 @@ function createTapPlacementPanel(cardId: CardId): HTMLElement {
   cancelButton.addEventListener("click", cancelDraftCardSelection);
 
   actions.append(infoButton, cancelButton);
-  panel.append(copyContainer);
-  const option = getCurrentDraftOption(cardId);
-  const synergyForecast = option ? createCardSynergyForecast(option, "dock") : undefined;
-  if (synergyForecast) {
-    panel.append(synergyForecast);
-  }
-  panel.append(actions);
+  panel.append(copyContainer, actions);
 
   return panel;
 }
@@ -2780,7 +2775,7 @@ function createCardTagRow(card: CardDefinition): HTMLElement {
   return row;
 }
 
-function createCardSynergyForecast(option: DraftOption, variant: "card" | "dock" = "card"): HTMLElement | undefined {
+function createCardSynergyForecast(option: DraftOption): HTMLElement | undefined {
   const presentation = getDraftOptionSynergyPresentation(option, uiState.draftBoardSlots);
   const summary = summarizeDraftOptionSynergyPresentation(presentation);
   if (!summary) {
@@ -2789,89 +2784,60 @@ function createCardSynergyForecast(option: DraftOption, variant: "card" | "dock"
 
   const copy = getCopy();
   const container = document.createElement("div");
-  container.className = variant === "dock"
-    ? "unit-card__synergy-forecast unit-card__synergy-forecast--dock"
-    : "unit-card__synergy-forecast";
-
-  const heading = document.createElement("strong");
-  const placementLabel = summary.placementKind === "replace"
-    ? copy.synergyForecastReplace
-    : copy.synergyForecastPlace;
-  const headingText = summary.outcomes.some((outcome) => !outcome.guaranteed)
-    ? `${placementLabel} · ${copy.synergyForecastPossible}`
-    : placementLabel;
-  const visibleOutcomeLimit = variant === "card" ? 1 : 2;
-  const visibleOutcomes = summary.outcomes.slice(0, visibleOutcomeLimit);
+  container.className = "unit-card__synergy-forecast";
+  const visibleOutcomes = selectVisibleDraftOptionSynergyOutcomes(summary.outcomes, 2);
   const omittedOutcomeCount = summary.outcomes.length - visibleOutcomes.length;
-  heading.textContent = omittedOutcomeCount > 0
-    ? `${headingText} · +${omittedOutcomeCount}`
-    : headingText;
-  container.append(heading);
 
   const formattedOutcomes = summary.outcomes.map((outcome) => {
-    if (outcome.kind === "loses_tag") {
-      const text = formatMessage(copy.synergyForecastLosesTag, {
-        tag: getTagLabel(activeLocale, outcome.tag),
-        before: outcome.beforeCount,
-        after: outcome.afterCount,
-      });
-      return {
-        outcome,
-        text,
-        accessibleText: text,
-      };
-    }
-
-    const template = outcome.kind === "activates"
-      ? copy.synergyForecastActivates
-      : outcome.kind === "loses"
-        ? copy.synergyForecastLoses
-        : copy.synergyForecastProgress;
-    const values = {
-      tag: getTagLabel(activeLocale, outcome.tag),
-      before: outcome.beforeCount,
-      after: outcome.afterCount,
-      threshold: outcome.threshold,
-    };
+    const tier = outcome.threshold === 2 ? copy.synergyForecastBonus : copy.synergyForecastMastery;
+    const tag = getTagLabel(activeLocale, outcome.tag);
+    const template = outcome.kind === "activates" ? copy.synergyForecastActivates : copy.synergyForecastLoses;
+    const marker = outcome.kind === "loses" ? "−" : outcome.threshold === 2 ? "✓" : "★";
     return {
       outcome,
-      text: formatMessage(template, {
-        ...values,
-        effect: getSynergyEffectLabel(
-          activeLocale,
-          outcome.tag,
-          outcome.effect,
-          variant === "card" ? "compact" : "full",
-        ),
-      }),
+      text: `${marker} ${getSynergyEffectLabel(activeLocale, outcome.tag, outcome.effect, "compact")}`,
       accessibleText: formatMessage(template, {
-        ...values,
+        tier,
+        tag,
         effect: getSynergyEffectLabel(activeLocale, outcome.tag, outcome.effect),
       }),
     };
   });
-  const accessibleDescription = `${headingText}. ${formattedOutcomes
+  const accessibleDescription = formattedOutcomes
     .map(({ outcome, accessibleText }) => outcome.guaranteed
       ? accessibleText
       : `${copy.synergyForecastPossible}: ${accessibleText}`)
-    .join(". ")}`;
-  container.setAttribute("aria-label", accessibleDescription);
+    .join(". ");
   container.title = accessibleDescription;
+
+  const description = document.createElement("span");
+  description.className = "unit-card__synergy-forecast-description";
+  description.textContent = accessibleDescription;
+  container.append(description);
 
   visibleOutcomes.forEach((outcome) => {
     const line = document.createElement("span");
     line.className = [
       "unit-card__synergy-forecast-line",
-      `unit-card__synergy-forecast-line--${outcome.kind === "loses_tag" ? "loses" : outcome.kind}`,
+      `unit-card__synergy-forecast-line--${outcome.kind}`,
       outcome.guaranteed ? "" : "unit-card__synergy-forecast-line--possible",
     ].filter(Boolean).join(" ");
     const text = formattedOutcomes.find((entry) => entry.outcome === outcome)?.text ?? "";
     line.textContent = `${outcome.guaranteed ? "" : "? "}${text}`;
+    line.setAttribute("aria-hidden", "true");
     if (!outcome.guaranteed) {
       line.title = copy.synergyForecastPossible;
     }
     container.append(line);
   });
+
+  if (omittedOutcomeCount > 0) {
+    const more = document.createElement("span");
+    more.className = "unit-card__synergy-forecast-more";
+    more.textContent = `+${omittedOutcomeCount}`;
+    more.setAttribute("aria-hidden", "true");
+    container.append(more);
+  }
 
   return container;
 }

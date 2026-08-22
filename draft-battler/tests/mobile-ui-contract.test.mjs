@@ -91,8 +91,8 @@ test("compact layouts and reduced motion remain part of the stylesheet contract"
   assert.match(styles, /\.terminal-result__metrics\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
   assert.match(styles, /\.synergy-strip\s*\{[^}]*overflow-x:\s*auto/s);
   assert.match(styles, /\.synergy-chip__tiers\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
-  assert.match(styles, /\.unit-card__synergy-forecast--dock\s*\{[^}]*max-height:\s*56px[^}]*overflow:\s*hidden/s);
-  assert.match(styles, /\.unit-card__synergy-forecast--dock \.unit-card__synergy-forecast-line\s*\{[^}]*overflow:\s*hidden[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s);
+  assert.doesNotMatch(styles, /\.unit-card__synergy-forecast--dock/);
+  assert.match(styles, /\.unit-card__synergy-forecast-line\s*\{[^}]*white-space:\s*nowrap/s);
 });
 
 test("critical card copy remains readable", () => {
@@ -160,6 +160,18 @@ test("placement and move modes use one bottom context dock with compact target m
   assert.match(styles, /\.placement-context-dock__info\s*\{[^}]*width:\s*44px/s);
   assert.match(styles, /\.placement-context-dock__cancel\s*\{[^}]*width:\s*100%/s);
   assert.match(styles, /\.placement-context-dock--move \.placement-context-dock__cancel\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.placement-context-dock\s*\{[^}]*padding:\s*3px 6px[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.35fr\)[^}]*align-items:\s*center/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.placement-context-dock__copy span\s*\{[^}]*position:\s*absolute[^}]*width:\s*1px[^}]*height:\s*1px/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.placement-context-dock--move \.placement-context-dock__cancel\s*\{[^}]*grid-column:\s*auto/s,
+  );
   assert.doesNotMatch(styles, /--draft-top-stack|tap-placement-panel|keyboard-move-panel/);
   assert.match(styles, /\.field-slot--move-target::before\s*\{[^}]*border-color:[^}]*background:/s);
   assert.match(styles, /\.field-slot--move-swap::before\s*\{[^}]*border-color:[^}]*background:/s);

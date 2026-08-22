@@ -3476,9 +3476,9 @@ h3 {
   bottom: calc(var(--unit-card-footer-bottom) + var(--unit-card-footer-height) + 4px);
   left: 8px;
   z-index: 9;
-  padding: 4px;
+  padding: 3px 4px;
   display: grid;
-  gap: 2px;
+  gap: 1px;
   overflow: hidden;
   border: 1px solid rgba(228, 193, 94, 0.34);
   border-radius: 5px;
@@ -3486,26 +3486,15 @@ h3 {
   color: #ead58d;
   font-size: 9px;
   font-weight: 850;
-  line-height: 1.12;
-}
-
-.unit-card__synergy-forecast > strong {
-  overflow: hidden;
-  color: #e7d7a2;
-  font-size: 8px;
-  text-align: center;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 1.08;
 }
 
 .unit-card__synergy-forecast-line {
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
   color: #c9bd91;
-  text-align: left;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .unit-card__synergy-forecast-line--activates {
@@ -3520,25 +3509,31 @@ h3 {
   opacity: 0.85;
 }
 
-.unit-card__synergy-forecast--dock {
-  position: static;
-  padding: 5px 6px;
-  max-height: 56px;
+.unit-card__synergy-forecast-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
-  border-color: rgba(121, 199, 122, 0.28);
-  background: rgba(4, 8, 4, 0.52);
-  font-size: 9px;
-}
-
-.unit-card__synergy-forecast--dock > strong {
-  font-size: 9px;
-}
-
-.unit-card__synergy-forecast--dock .unit-card__synergy-forecast-line {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  border: 0;
+}
+
+.unit-card__synergy-forecast-more {
+  justify-self: end;
+  min-width: 16px;
+  height: 12px;
+  padding: 0 3px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(228, 193, 94, 0.5);
+  border-radius: 999px;
+  background: rgba(8, 11, 8, 0.96);
+  color: #ead58d;
+  font-size: 7px;
+  line-height: 1;
 }
 
 /* The draft keeps all three ornate vertical options visible while reserving
@@ -3747,12 +3742,8 @@ h3 {
   line-height: 1.05;
 }
 
-.draft-grid--triple .unit-card__synergy-forecast > strong {
-  font-size: clamp(6.5px, 1.65cqw, 8px);
-}
-
 .draft-grid--triple .unit-card__synergy-forecast-line {
-  -webkit-line-clamp: 1;
+  font-size: clamp(6.8px, 1.7cqw, 8px);
 }
 
 .draft-grid--triple .unit-card__drag-handle {
@@ -4372,6 +4363,29 @@ h3 {
 }
 
 @media (max-height: 600px) {
+  .placement-context-dock {
+    padding: 3px 6px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    align-items: center;
+    gap: 4px;
+  }
+
+  .placement-context-dock__copy span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .placement-context-dock--move .placement-context-dock__cancel {
+    grid-column: auto;
+  }
+
   .draft-onboarding {
     display: none;
   }

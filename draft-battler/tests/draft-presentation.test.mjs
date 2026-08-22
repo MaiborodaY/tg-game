@@ -9,6 +9,7 @@ import {
   getDraftOptionPlacementSynergyForecast,
   getDraftOptionSynergyPresentation,
   getLastKnownEnemyArmy,
+  selectVisibleDraftOptionSynergyOutcomes,
   summarizeDraftOptionSynergyPresentation,
 } from "../src/draftPresentation.ts";
 import {
@@ -258,7 +259,7 @@ test("duplicate upgrade forecast keeps unit tag counts unchanged", () => {
   ]);
 });
 
-test("full-board replacement forecasts both gained and lost tag counts", () => {
+test("full-board replacement forecasts only bonuses that activate or deactivate", () => {
   const slots = board(
     slot(0, "iron_guard"),
     slot(1, "shieldbearer"),
@@ -286,9 +287,62 @@ test("full-board replacement forecasts both gained and lost tag counts", () => {
     outcome.kind === "activates" && outcome.tag === "rogue" && outcome.threshold === 2 && !outcome.guaranteed));
   assert.ok(summary.outcomes.some((outcome) =>
     outcome.kind === "loses" && outcome.tag === "guardian" && outcome.threshold === 2 && !outcome.guaranteed));
-  assert.ok(summary.outcomes.some((outcome) =>
-    outcome.kind === "loses_tag" && outcome.tag === "beast" && outcome.beforeCount === 1 && outcome.afterCount === 0));
+  assert.ok(summary.outcomes.every((outcome) => outcome.kind === "activates" || outcome.kind === "loses"));
   assert.deepEqual(slots, originalSlots);
+});
+
+test("ordinary tag progress stays quiet until the choice crosses a synergy tier", () => {
+  const emptyProgress = summarizeDraftOptionSynergyPresentation(
+    getDraftOptionSynergyPresentation(option("spear_recruit"), board()),
+  );
+  const betweenTiers = summarizeDraftOptionSynergyPresentation(
+    getDraftOptionSynergyPresentation(
+      option("spear_recruit"),
+      board(slot(0, "iron_guard"), slot(1, "war_chaplain")),
+    ),
+  );
+  const bonus = summarizeDraftOptionSynergyPresentation(
+    getDraftOptionSynergyPresentation(option("spear_recruit"), board(slot(0, "war_chaplain"))),
+  );
+  const mastery = summarizeDraftOptionSynergyPresentation(
+    getDraftOptionSynergyPresentation(
+      option("spear_recruit"),
+      board(slot(0, "iron_guard"), slot(1, "war_chaplain"), slot(2, "grave_raider")),
+    ),
+  );
+
+  assert.equal(emptyProgress, undefined);
+  assert.equal(betweenTiers, undefined);
+  assert.deepEqual(bonus?.outcomes.map(({ kind, tag, threshold }) => ({ kind, tag, threshold })), [
+    { kind: "activates", tag: "warrior", threshold: 2 },
+  ]);
+  assert.deepEqual(mastery?.outcomes.map(({ kind, tag, threshold }) => ({ kind, tag, threshold })), [
+    { kind: "activates", tag: "warrior", threshold: 4 },
+  ]);
+});
+
+test("compact replacement forecast keeps one gain and one loss before hiding extra outcomes", () => {
+  const presentation = getDraftOptionSynergyPresentation(
+    option("smoke_trickster"),
+    board(
+      slot(0, "boar_rider"),
+      slot(1, "phantom_duelist"),
+      slot(2, "grave_raider"),
+      slot(3, "banner_knight"),
+      slot(4, "ironhide_bear"),
+      slot(5, "pyromancer"),
+    ),
+  );
+  const summary = summarizeDraftOptionSynergyPresentation(presentation);
+
+  assert.equal(summary.outcomes.length, 4);
+  assert.deepEqual(
+    selectVisibleDraftOptionSynergyOutcomes(summary.outcomes, 2).map(({ kind, tag }) => ({ kind, tag })),
+    [
+      { kind: "activates", tag: "mage" },
+      { kind: "loses", tag: "beast" },
+    ],
+  );
 });
 
 test("upgrade-only forecasts stay quiet because unit counts do not change", () => {

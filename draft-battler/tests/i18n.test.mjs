@@ -462,31 +462,25 @@ test("both synergy tiers have truthful localized effect and forecast copy", () =
           remaining: tier.threshold,
           effect,
         });
+        const tierLabel = tier.threshold === 2 ? copy.synergyForecastBonus : copy.synergyForecastMastery;
         const forecast = formatMessage(copy.synergyForecastActivates, {
           tag: getTagLabel(locale, tag),
-          before: tier.threshold - 1,
-          after: tier.threshold,
-          threshold: tier.threshold,
+          tier: tierLabel,
           effect,
         });
+        const visibleForecast = `${tier.threshold === 2 ? "✓" : "★"} ${compactEffect}`;
 
         assert.match(effect, new RegExp(String(tier.effect.value)), `${locale}:${tag}:${tier.threshold}:value`);
         assert.match(compactEffect, new RegExp(String(tier.effect.value)), `${locale}:${tag}:${tier.threshold}:compact-value`);
         assert.doesNotMatch(compactEffect, /\{[^}]+\}/, `${locale}:${tag}:${tier.threshold}:compact-resolved`);
         assert.ok(status.includes(`${tier.threshold}/4`), `${locale}:${tag}:${tier.threshold}:status`);
-        assert.ok(forecast.includes(`${tier.threshold}/4`), `${locale}:${tag}:${tier.threshold}:forecast`);
         assert.ok(status.includes(effect), `${locale}:${tag}:${tier.threshold}:status-effect`);
         assert.ok(forecast.includes(effect), `${locale}:${tag}:${tier.threshold}:forecast-effect`);
+        assert.ok(forecast.includes(tierLabel), `${locale}:${tag}:${tier.threshold}:forecast-tier`);
+        assert.doesNotMatch(visibleForecast, /→|\d\s*\/\s*\d/, `${locale}:${tag}:${tier.threshold}:visual-counts`);
         assert.doesNotMatch(`${status} ${forecast}`, /\{[^}]+\}/, `${locale}:${tag}:${tier.threshold}:resolved`);
       });
     });
-    const lostTag = formatMessage(copy.synergyForecastLosesTag, {
-      tag: getTagLabel(locale, "beast"),
-      before: 1,
-      after: 0,
-    });
-    assert.ok(lostTag.includes("1→0"), `${locale}:synergy:lost-tag-count`);
-    assert.doesNotMatch(lostTag, /\{[^}]+\}/, `${locale}:synergy:lost-tag-resolved`);
     assert.ok(copy.compendiumSynergyCards.includes(expectedScopeCopy[locale].contributor), `${locale}:contributors`);
     assert.ok(getSynergyEffectLabel(locale, "mage", SYNERGY_RULES.mage.tiers[0].effect)
       .includes(expectedScopeCopy[locale].mage), `${locale}:mage-recipients`);

@@ -79,18 +79,39 @@ interface DraftOptionSynergyOutcomeBase {
   guaranteed: boolean;
 }
 
-export type DraftOptionSynergyOutcome = DraftOptionSynergyOutcomeBase & (
-  | {
-      kind: "activates" | "progress" | "loses";
-      threshold: number;
-      effect: SynergyEffect;
-    }
-  | { kind: "loses_tag" }
-);
+export type DraftOptionSynergyOutcome = DraftOptionSynergyOutcomeBase & {
+  kind: "activates" | "loses";
+  threshold: number;
+  effect: SynergyEffect;
+};
 
 export interface DraftOptionSynergyOutcomePresentation {
   placementKind: "place" | "replace";
   outcomes: DraftOptionSynergyOutcome[];
+}
+
+export function selectVisibleDraftOptionSynergyOutcomes(
+  outcomes: readonly DraftOptionSynergyOutcome[],
+  limit: number,
+): DraftOptionSynergyOutcome[] {
+  if (limit <= 0) {
+    return [];
+  }
+
+  const selected: DraftOptionSynergyOutcome[] = [];
+  (["activates", "loses"] as const).forEach((kind) => {
+    const outcome = outcomes.find((candidate) => candidate.kind === kind);
+    if (outcome && selected.length < limit) {
+      selected.push(outcome);
+    }
+  });
+  outcomes.forEach((outcome) => {
+    if (selected.length < limit && !selected.includes(outcome)) {
+      selected.push(outcome);
+    }
+  });
+
+  return selected;
 }
 
 export type DraftOptionBoardStatus = "upgrade" | "maxed";
@@ -233,16 +254,6 @@ export function summarizeDraftOptionSynergyPresentation(
         }
       });
 
-      if (synergy.afterCount < synergy.beforeCount && synergy.deactivatedThresholds.length === 0) {
-        addSynergyTagLossOutcome(outcomes, synergy, placement.targetSlotIndex);
-      }
-
-      if (synergy.afterCount > synergy.beforeCount && synergy.activatedThresholds.length === 0) {
-        const nextTier = synergy.tiers.find((tier) => !tier.activeAfter);
-        if (nextTier) {
-          addSynergyOutcome(outcomes, "progress", synergy, nextTier, placement.targetSlotIndex);
-        }
-      }
     });
   });
 
@@ -252,9 +263,7 @@ export function summarizeDraftOptionSynergyPresentation(
 
   const kindOrder: Record<DraftOptionSynergyOutcome["kind"], number> = {
     activates: 0,
-    progress: 1,
-    loses: 2,
-    loses_tag: 3,
+    loses: 1,
   };
   return {
     placementKind,
@@ -330,7 +339,7 @@ function createTierForecast(
 
 function addSynergyOutcome(
   outcomes: Map<string, DraftOptionSynergyOutcome & { placementTargets: Set<number> }>,
-  kind: "activates" | "progress" | "loses",
+  kind: "activates" | "loses",
   synergy: DraftTagSynergyForecast,
   tier: DraftSynergyTierForecast,
   targetSlotIndex: number,
@@ -349,28 +358,6 @@ function addSynergyOutcome(
     afterCount: synergy.afterCount,
     threshold: tier.threshold,
     effect: cloneSynergyEffect(tier.effect),
-    guaranteed: false,
-    placementTargets: new Set([targetSlotIndex]),
-  });
-}
-
-function addSynergyTagLossOutcome(
-  outcomes: Map<string, DraftOptionSynergyOutcome & { placementTargets: Set<number> }>,
-  synergy: DraftTagSynergyForecast,
-  targetSlotIndex: number,
-): void {
-  const key = ["loses_tag", synergy.tag, synergy.beforeCount, synergy.afterCount].join(":");
-  const existing = outcomes.get(key);
-  if (existing) {
-    existing.placementTargets.add(targetSlotIndex);
-    return;
-  }
-
-  outcomes.set(key, {
-    kind: "loses_tag",
-    tag: synergy.tag,
-    beforeCount: synergy.beforeCount,
-    afterCount: synergy.afterCount,
     guaranteed: false,
     placementTargets: new Set([targetSlotIndex]),
   });

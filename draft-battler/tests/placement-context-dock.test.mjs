@@ -8,6 +8,7 @@ const styles = await readFile(new URL("../src/styles.css", import.meta.url), "ut
 
 test("placement and keyboard move modes replace the regular field action bar", () => {
   const createDraftOverlay = mainSource.match(/function createDraftOverlay[\s\S]*?\n\}/)?.[0] ?? "";
+  const createTapPlacementPanel = mainSource.match(/function createTapPlacementPanel[\s\S]*?\n\}/)?.[0] ?? "";
 
   assert.match(createDraftOverlay, /overlay\.append\(createFieldSlotsLayer\(\)\)/);
   assert.match(
@@ -18,6 +19,20 @@ test("placement and keyboard move modes replace the regular field action bar", (
   assert.match(mainSource, /placement-context-dock placement-context-dock--move/);
   assert.match(mainSource, /copyContainer\.setAttribute\("aria-live", "polite"\)/);
   assert.match(mainSource, /infoButton\.setAttribute\("aria-label", copy\.cardInfo\)/);
+  assert.doesNotMatch(createTapPlacementPanel, /createCardSynergyForecast|unit-card__synergy-forecast/);
+  assert.match(createTapPlacementPanel, /panel\.append\(copyContainer, actions\)/);
+});
+
+test("short-height context docks keep 44px controls without covering the lower field row", () => {
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.placement-context-dock\s*\{[^}]*padding:\s*3px 6px[^}]*grid-template-columns:[^}]*align-items:\s*center/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.placement-context-dock__copy span\s*\{[^}]*position:\s*absolute[^}]*width:\s*1px[^}]*height:\s*1px/s,
+  );
+  assert.match(styles, /\.placement-context-dock__info,[\s\S]*?\.placement-context-dock__cancel\s*\{[^}]*height:\s*44px/s);
 });
 
 test("cancel controls explain their action and selection cancel restores the draft-card focus", () => {
