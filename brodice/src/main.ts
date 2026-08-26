@@ -8,6 +8,7 @@ import {
   isRollTarget,
   normalizeDiceCount,
   rollDice,
+  type DieFace,
 } from "./dice.ts";
 import {
   clearHistory,
@@ -19,6 +20,7 @@ import {
 } from "./history.ts";
 import { loadPreferences, persistPreferences, type BroDicePreferences } from "./preferences.ts";
 import {
+  BRODICE_TELEGRAM_APP_URL,
   createSharedRollUrl,
   formatShareText,
   parseSharedRollUrl,
@@ -26,7 +28,15 @@ import {
 } from "./sharing.ts";
 import { setupTelegramAdapter } from "./telegram.ts";
 
-const FACE_GLYPHS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"] as const;
+const DICE_FACES = [1, 2, 3, 4, 5, 6] as const satisfies readonly DieFace[];
+const DIE_PIP_POSITIONS = [
+  [5],
+  [1, 9],
+  [1, 5, 9],
+  [1, 3, 7, 9],
+  [1, 3, 5, 7, 9],
+  [1, 3, 4, 6, 7, 9],
+] as const;
 const TARGETS = [2, 3, 4, 5, 6] as const;
 const PRESET_COUNTS = [3, 10, 20, 50] as const;
 const ROLL_ANIMATION_MS = 560;
@@ -43,7 +53,7 @@ let diceCount = preferences.diceCount;
 let target = preferences.target;
 let soundEnabled = preferences.soundEnabled;
 let history = loadHistory(storage);
-let activeRoll: RollRecord | null = parseSharedRollUrl(window.location.href);
+let activeRoll: RollRecord | null = parseSharedRollUrl(window.location.href, telegram.startParam);
 let rollSource: RollSource = activeRoll ? "shared" : "fresh";
 let rolling = false;
 let historyOpen = false;
@@ -152,7 +162,7 @@ function renderControls(): string {
       </div>
 
       <button class="roll-button" type="button" data-action="roll" ${rolling ? "disabled" : ""}>
-        <span class="roll-icon" aria-hidden="true">⚄</span>
+        ${renderDieFace(5, "roll-die")}
         <span>${rolling ? "ROLLING…" : `ROLL ${diceCount} ${diceCount === 1 ? "DIE" : "DICE"}`}</span>
       </button>
     </section>
@@ -162,10 +172,9 @@ function renderControls(): string {
 function renderSharedBanner(): string {
   return `
     <aside class="shared-banner">
-      <span class="shared-icon" aria-hidden="true">!</span>
+      <span class="shared-icon" aria-hidden="true">↗</span>
       <div>
-        <strong>SHARED ROLL</strong>
-        <p>Client generated · Not independently verified</p>
+        <strong>SHARED RESULT</strong>
       </div>
     </aside>
   `;
@@ -182,7 +191,7 @@ function renderResults(
     return `
       <section class="results-panel results-empty" aria-live="polite">
         <div class="empty-result-copy">
-          <span class="empty-result-die" aria-hidden="true">⚄</span>
+          ${renderDieFace(5, "empty-result-die")}
           <div>
             <p class="eyebrow">ROLL RESULT</p>
             <p class="awaiting">Ready to roll</p>
@@ -198,7 +207,7 @@ function renderResults(
       <section class="results-panel results-rolling" aria-live="polite" aria-busy="true">
         <div class="result-summary">
           <p class="eyebrow">ROLLING ${diceCount} DICE</p>
-          <div class="rolling-display" aria-label="Rolling dice"><span>⚀</span><span>⚂</span><span>⚄</span></div>
+          <div class="rolling-display" aria-label="Rolling dice">${renderDieFace(1)}${renderDieFace(3)}${renderDieFace(5)}</div>
           <p class="result-note">Generating a secure local result…</p>
         </div>
       </section>
@@ -212,28 +221,29 @@ function renderResults(
           <p class="eyebrow">${sourceLabel}</p>
           <p class="result-note">${record?.faces.length ?? diceCount} dice · ${formatTime(record?.createdAt)}</p>
         </div>
-        <p class="success-count">
+        <p class="success-count ${successes === 0 ? "no-successes" : ""}">
           <strong>${successes}</strong>
           <span>${successes === 1 ? "SUCCESS" : "SUCCESSES"}<small>AT ${formatTarget(target)}</small></span>
         </p>
       </div>
 
-      <div class="face-grid" aria-label="Counts for dice faces one through six">
-        ${FACE_GLYPHS.map((glyph, index) => {
-          const face = index + 1;
-          return `<article class="face-card ${face >= target ? "qualifies" : ""}" aria-label="Face ${face}: ${counts?.[index] ?? 0}">
+      <div class="face-grid" role="list" aria-label="Counts for dice faces one through six">
+        ${DICE_FACES.map((face, index) => {
+          const count = counts?.[index] ?? 0;
+          const qualifies = face >= target;
+          return `<div class="face-card ${qualifies ? "qualifies" : ""}" role="listitem" aria-label="Face ${face}: ${count}${qualifies ? ", counts as success" : ""}">
             <span class="face-label">FACE ${face}</span>
-            <span class="face-glyph" aria-hidden="true">${glyph}</span>
-            <strong>${counts?.[index] ?? 0}</strong>
-          </article>`;
+            ${renderDieFace(face, "face-die")}
+            <strong>${count}</strong>
+          </div>`;
         }).join("")}
       </div>
 
       ${record ? `
         <details class="individual-results">
           <summary>Individual dice <span>${record.faces.length}</span></summary>
-          <div class="dice-list" aria-label="Individual dice results">
-            ${record.faces.map((face, index) => `<span class="die-chip ${face >= target ? "qualifies" : ""}" title="Die ${index + 1}: ${face}">${FACE_GLYPHS[face - 1]}<span class="sr-only">${face}</span></span>`).join("")}
+          <div class="dice-list" role="list" aria-label="Individual dice results">
+            ${record.faces.map((face, index) => `<span class="die-chip ${face >= target ? "qualifies" : ""}" role="listitem">${renderDieFace(face, "chip-die")}<span class="sr-only">Die ${index + 1}: ${face}${face >= target ? ", success" : ""}</span></span>`).join("")}
           </div>
         </details>
         <div class="result-actions">
@@ -259,7 +269,7 @@ function renderHistorySheet(): string {
         </header>
 
         ${history.length === 0
-          ? `<div class="empty-history"><span aria-hidden="true">⚅</span><strong>NO ROLLS RECORDED</strong><p>Your latest 20 rolls will stay on this device.</p></div>`
+          ? `<div class="empty-history">${renderDieFace(6, "empty-history-die")}<strong>NO ROLLS RECORDED</strong><p>Your latest 20 rolls will stay on this device.</p></div>`
           : `<div class="history-list">
               ${history.map(renderHistoryItem).join("")}
             </div>
@@ -280,7 +290,7 @@ function renderHistoryItem(record: RollRecord): string {
   return `
     <article class="history-item">
       <button class="history-main" type="button" data-history-open="${record.id}">
-        <span class="history-success"><strong>${successes}</strong><small>${formatTarget(record.target)}</small></span>
+        <span class="history-success ${successes === 0 ? "no-successes" : ""}"><strong>${successes}</strong><small>${formatTarget(record.target)}</small></span>
         <span class="history-copy">
           <strong>${record.faces.length}D6 · ${formatHistoryTime(record.createdAt)}</strong>
           <small>${counts.map((count, index) => `${index + 1}:${count}`).join("  ")}</small>
@@ -387,7 +397,7 @@ function startRoll(): void {
 
 async function shareActiveRoll(): Promise<void> {
   if (!activeRoll || rolling || rollSource === "shared") return;
-  const sharedUrl = createSharedRollUrl(window.location.href, activeRoll, target);
+  const sharedUrl = createSharedRollUrl(BRODICE_TELEGRAM_APP_URL, activeRoll, target);
   const text = formatShareText(activeRoll, target);
   const outcome = await shareRoll(
     { title: "BroDice roll", text, url: sharedUrl },
@@ -504,7 +514,14 @@ function getLocalStorage(): StorageLike | null {
 
 function hasSharedRollParameter(): boolean {
   try {
-    return new URL(window.location.href).searchParams.has("roll");
+    const parameters = new URL(window.location.href).searchParams;
+    const candidates = [
+      telegram.startParam,
+      parameters.get("tgWebAppStartParam"),
+      parameters.get("startapp"),
+      parameters.get("roll"),
+    ];
+    return candidates.some((value) => value?.startsWith("r1_") || value?.startsWith("1."));
   } catch {
     return false;
   }
@@ -514,6 +531,8 @@ function removeSharedRollParameter(): void {
   try {
     const url = new URL(window.location.href);
     url.searchParams.delete("roll");
+    url.searchParams.delete("startapp");
+    url.searchParams.delete("tgWebAppStartParam");
     url.hash = "";
     window.history.replaceState(null, "", url);
   } catch {
@@ -537,6 +556,14 @@ function formatHistoryTime(value: number): string {
 
 function formatTargetHint(value: number): string {
   return value === 6 ? "Only 6s count" : `${value}–6 count`;
+}
+
+function renderDieFace(face: DieFace, className = ""): string {
+  const classes = ["die-face", className].filter(Boolean).join(" ");
+  const pips = DIE_PIP_POSITIONS[face - 1]
+    .map((position) => `<span class="die-pip die-pip-${position}"></span>`)
+    .join("");
+  return `<span class="${classes}" aria-hidden="true">${pips}</span>`;
 }
 
 function revealResults(): void {

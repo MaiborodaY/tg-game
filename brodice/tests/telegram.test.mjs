@@ -12,6 +12,7 @@ function createHarness({ supported = true } = {}) {
   const events = new Map();
   const properties = new Map();
   const webApp = {
+    initDataUnsafe: { start_param: "  r1_shared_roll  " },
     viewportHeight: 700.4,
     viewportStableHeight: 680.2,
     contentSafeAreaInset: { top: 12, right: 3, bottom: 18, left: 4 },
@@ -44,6 +45,7 @@ test("Telegram adapter initializes viewport, safe areas, colors, and swipes", ()
   const harness = createHarness();
   const adapter = setupTelegramAdapter(harness.host, harness.style);
   assert.equal(adapter.isTelegram, true);
+  assert.equal(adapter.startParam, "r1_shared_roll");
   assert.deepEqual(harness.calls.slice(0, 5), [
     ["ready"],
     ["expand"],

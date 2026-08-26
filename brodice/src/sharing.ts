@@ -2,7 +2,13 @@ import { countFaces, countSuccesses, formatTarget, isDieFace, isRollTarget, type
 import { createRollRecord, type RollRecord } from "./history.ts";
 
 const SHARED_ROLL_PARAMETER = "roll";
+const TELEGRAM_START_PARAMETER = "startapp";
+const TELEGRAM_WEB_APP_START_PARAMETER = "tgWebAppStartParam";
 const SHARED_ROLL_VERSION = "1";
+const SHARED_ROLL_START_PREFIX = `r${SHARED_ROLL_VERSION}`;
+const MAX_TELEGRAM_START_PARAMETER_LENGTH = 512;
+
+export const BRODICE_TELEGRAM_APP_URL = "https://t.me/reallifesame_bot/brodice";
 
 export type ShareAdapters = Readonly<{
   telegramShare?: (text: string, url: string) => boolean;
@@ -13,28 +19,44 @@ export type ShareAdapters = Readonly<{
 export type ShareData = Readonly<{ title: string; text: string; url: string }>;
 export type ShareOutcome = "telegram" | "native" | "clipboard" | "cancelled" | "failed";
 
-export function createSharedRollUrl(pageUrl: string, record: RollRecord, target: RollTarget): string {
-  const url = parseWebUrl(pageUrl);
+export function createSharedRollUrl(appUrl: string, record: RollRecord, target: RollTarget): string {
+  const url = parseWebUrl(appUrl);
   if (!url) return "";
   url.search = "";
   url.hash = "";
   const payload = [
-    SHARED_ROLL_VERSION,
+    SHARED_ROLL_START_PREFIX,
     record.createdAt.toString(36),
     String(target),
     record.faces.join(""),
-  ].join(".");
-  url.searchParams.set(SHARED_ROLL_PARAMETER, payload);
+  ].join("_");
+  url.searchParams.set(isTelegramMiniAppUrl(url) ? TELEGRAM_START_PARAMETER : SHARED_ROLL_PARAMETER, payload);
   return url.toString();
 }
 
-export function parseSharedRollUrl(value: string): RollRecord | null {
+export function parseSharedRollUrl(value: string, telegramStartParam?: string | null): RollRecord | null {
   const url = parseWebUrl(value);
-  if (!url) return null;
-  const payload = url.searchParams.get(SHARED_ROLL_PARAMETER);
-  if (!payload) return null;
-  const [version, timestampValue, targetValue, faceValues, ...rest] = payload.split(".");
-  if (rest.length > 0 || version !== SHARED_ROLL_VERSION || !faceValues) return null;
+  const payloads = [
+    telegramStartParam,
+    url?.searchParams.get(TELEGRAM_WEB_APP_START_PARAMETER),
+    url?.searchParams.get(TELEGRAM_START_PARAMETER),
+    url?.searchParams.get(SHARED_ROLL_PARAMETER),
+  ];
+
+  for (const payload of payloads) {
+    const record = parseSharedRollPayload(payload);
+    if (record) return record;
+  }
+  return null;
+}
+
+function parseSharedRollPayload(payload: string | null | undefined): RollRecord | null {
+  const normalized = payload?.trim();
+  if (!normalized || normalized.length > MAX_TELEGRAM_START_PARAMETER_LENGTH) return null;
+  const startPayload = normalized.startsWith(`${SHARED_ROLL_START_PREFIX}_`);
+  const [version, timestampValue, targetValue, faceValues, ...rest] = normalized.split(startPayload ? "_" : ".");
+  const expectedVersion = startPayload ? SHARED_ROLL_START_PREFIX : SHARED_ROLL_VERSION;
+  if (rest.length > 0 || version !== expectedVersion || !faceValues) return null;
 
   const createdAt = Number.parseInt(timestampValue ?? "", 36);
   const target = Number(targetValue);
@@ -92,11 +114,20 @@ export async function shareRoll(data: ShareData, adapters: ShareAdapters): Promi
 export function sanitizeSharedRollUrl(value: string): string {
   const source = parseWebUrl(value);
   if (!source) return "";
+  const startPayload = source.searchParams.get(TELEGRAM_START_PARAMETER);
   const payload = source.searchParams.get(SHARED_ROLL_PARAMETER);
   source.search = "";
   source.hash = "";
-  if (payload) source.searchParams.set(SHARED_ROLL_PARAMETER, payload.slice(0, 180));
+  if (startPayload && isTelegramMiniAppUrl(source)) {
+    source.searchParams.set(TELEGRAM_START_PARAMETER, startPayload.slice(0, MAX_TELEGRAM_START_PARAMETER_LENGTH));
+  } else if (payload) {
+    source.searchParams.set(SHARED_ROLL_PARAMETER, payload.slice(0, MAX_TELEGRAM_START_PARAMETER_LENGTH));
+  }
   return source.toString();
+}
+
+function isTelegramMiniAppUrl(url: URL): boolean {
+  return url.protocol === "https:" && url.hostname.toLowerCase() === "t.me";
 }
 
 function parseWebUrl(value: string): URL | null {

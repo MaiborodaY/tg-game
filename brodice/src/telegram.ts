@@ -3,6 +3,7 @@ export type HapticKind = "light" | "medium" | "success" | "error";
 type TelegramInsets = Readonly<{ top?: number; right?: number; bottom?: number; left?: number }>;
 
 interface TelegramWebApp {
+  initDataUnsafe?: { start_param?: string };
   viewportHeight?: number;
   viewportStableHeight?: number;
   safeAreaInset?: TelegramInsets;
@@ -30,6 +31,7 @@ declare global {
 
 export type TelegramAdapter = Readonly<{
   isTelegram: boolean;
+  startParam: string | null;
   ready(): void;
   haptic(kind: HapticKind): void;
   share(text: string, url: string): boolean;
@@ -123,6 +125,10 @@ export function setupTelegramAdapter(host: Window = window, style: CSSStyleDecla
 
   return Object.freeze({
     get isTelegram() { return webApp !== undefined; },
+    get startParam() {
+      const value = webApp?.initDataUnsafe?.start_param;
+      return typeof value === "string" && value.trim() ? value.trim() : null;
+    },
     ready,
     haptic,
     share,

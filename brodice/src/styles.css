@@ -13,7 +13,10 @@
   --blood: #ad2e27;
   --blood-bright: #e14a39;
   --amber: #d8a43a;
-  --green: #82a56d;
+  --success: #7fa866;
+  --success-bright: #8fbd73;
+  --success-line: #58734e;
+  --success-bg: #151e16;
   --tg-viewport-height: 100vh;
   --tg-viewport-stable-height: 100vh;
   --tg-safe-top: 0px;
@@ -265,10 +268,8 @@ h2 {
   place-items: center;
   border: 1px solid #967632;
   color: #f0d27c;
-  font-family: Georgia, serif;
+  font-size: 1rem;
   font-weight: 900;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  padding-top: 7px;
 }
 
 .field-group {
@@ -397,8 +398,44 @@ h2 {
   filter: saturate(0.55);
 }
 
-.roll-icon {
-  font-size: 1.65rem;
+.die-face {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 3px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: #0b0e0e;
+  color: #c9c7bd;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.die-pip {
+  width: 3px;
+  height: 3px;
+  align-self: center;
+  justify-self: center;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.die-pip-1 { grid-area: 1 / 1; }
+.die-pip-2 { grid-area: 1 / 2; }
+.die-pip-3 { grid-area: 1 / 3; }
+.die-pip-4 { grid-area: 2 / 1; }
+.die-pip-5 { grid-area: 2 / 2; }
+.die-pip-6 { grid-area: 2 / 3; }
+.die-pip-7 { grid-area: 3 / 1; }
+.die-pip-8 { grid-area: 3 / 2; }
+.die-pip-9 { grid-area: 3 / 3; }
+
+.roll-die {
+  width: 25px;
+  height: 25px;
+  color: #fff1d7;
 }
 
 .results-panel {
@@ -432,10 +469,11 @@ h2 {
 }
 
 .empty-result-die {
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
+  padding: 4px;
   color: #777d78;
-  font-size: 2.25rem;
-  line-height: 1;
 }
 
 .results-rolling .result-summary {
@@ -466,10 +504,14 @@ h2 {
 }
 
 .success-count strong {
-  color: var(--blood-bright);
+  color: var(--success-bright);
   font-size: 2.35rem;
   line-height: 1;
   letter-spacing: -0.04em;
+}
+
+.success-count.no-successes strong {
+  color: var(--muted);
 }
 
 .success-count span,
@@ -496,8 +538,10 @@ h2 {
   align-items: center;
   justify-content: center;
   gap: 9px;
-  color: #e6cc83;
-  font-size: 1.8rem;
+}
+
+.rolling-display .die-face {
+  color: #d8d4c9;
 }
 
 .face-grid {
@@ -507,6 +551,7 @@ h2 {
 }
 
 .face-card {
+  position: relative;
   display: flex;
   min-width: 0;
   min-height: 82px;
@@ -521,24 +566,33 @@ h2 {
 }
 
 .face-card.qualifies {
-  border-color: #6f5b2d;
-  background: linear-gradient(145deg, #1d1b12, #101313 64%);
+  border-color: var(--success-line);
+  background: linear-gradient(145deg, var(--success-bg), #0f1311 68%);
 }
 
-.face-glyph {
-  color: #c5c2b8;
-  font-size: 1.45rem;
-  line-height: 1;
+.face-card.qualifies::before {
+  position: absolute;
+  top: -1px;
+  right: 5px;
+  left: 5px;
+  height: 2px;
+  background: var(--success);
+  content: "";
 }
 
-.qualifies .face-glyph {
-  color: #efd17a;
-  text-shadow: 0 0 13px rgba(216, 164, 58, 0.2);
+.face-die {
+  width: 22px;
+  height: 22px;
+  color: #c9c7bd;
+}
+
+.qualifies .face-die {
+  color: #d9ddd4;
 }
 
 .face-label {
-  color: #757b78;
-  font-size: 0.48rem;
+  color: #8c928e;
+  font-size: 0.52rem;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -547,6 +601,10 @@ h2 {
   color: var(--bone);
   font-size: 1.5rem;
   line-height: 1;
+}
+
+.face-card.qualifies strong {
+  color: var(--success-bright);
 }
 
 .individual-results {
@@ -581,6 +639,7 @@ h2 {
 }
 
 .die-chip {
+  position: relative;
   display: grid;
   width: 34px;
   height: 34px;
@@ -588,13 +647,31 @@ h2 {
   border: 1px solid #343a39;
   background: #15191a;
   color: #aaa9a1;
-  font-size: 1.35rem;
 }
 
 .die-chip.qualifies {
-  border-color: #7a642f;
-  background: #242013;
-  color: #efd17a;
+  border-color: var(--success-line);
+  background: var(--success-bg);
+}
+
+.die-chip.qualifies::before {
+  position: absolute;
+  top: -1px;
+  right: 4px;
+  left: 4px;
+  height: 2px;
+  background: var(--success);
+  content: "";
+}
+
+.chip-die {
+  width: 22px;
+  height: 22px;
+  color: #b9bbb3;
+}
+
+.die-chip.qualifies .chip-die {
+  color: #d9ddd4;
 }
 
 .result-actions {
@@ -712,9 +789,13 @@ h2 {
 }
 
 .history-success strong {
-  color: var(--blood-bright);
+  color: var(--success-bright);
   font-size: 1.35rem;
   line-height: 1;
+}
+
+.history-success.no-successes strong {
+  color: var(--muted);
 }
 
 .history-success small,
@@ -754,10 +835,12 @@ h2 {
   text-align: center;
 }
 
-.empty-history > span {
+.empty-history-die {
+  width: 42px;
+  height: 42px;
   margin-bottom: 12px;
+  padding: 6px;
   color: #666b68;
-  font-size: 3rem;
 }
 
 .empty-history strong {
@@ -894,13 +977,13 @@ footer {
     animation: reveal-result 260ms ease-out;
   }
 
-  .roll-button:disabled .roll-icon {
+  .roll-button:disabled .roll-die {
     animation: dice-spin 460ms linear infinite;
   }
 
-  .rolling-display span:nth-child(1) { animation: dice-jump 420ms ease-in-out infinite; }
-  .rolling-display span:nth-child(2) { animation: dice-jump 420ms 90ms ease-in-out infinite; }
-  .rolling-display span:nth-child(3) { animation: dice-jump 420ms 180ms ease-in-out infinite; }
+  .rolling-display > .die-face:nth-child(1) { animation: dice-jump 420ms ease-in-out infinite; }
+  .rolling-display > .die-face:nth-child(2) { animation: dice-jump 420ms 90ms ease-in-out infinite; }
+  .rolling-display > .die-face:nth-child(3) { animation: dice-jump 420ms 180ms ease-in-out infinite; }
 
   .sheet-backdrop {
     animation: fade-backdrop 160ms ease-out;
