@@ -27,19 +27,27 @@
 }
 
 html {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
   background: var(--bg);
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100%;
   margin: 0;
+  overflow-x: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 50% -10%, rgba(175, 74, 54, 0.18), transparent 32rem),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 7px),
     var(--bg);
+}
+
+#app {
+  min-width: 0;
 }
 
 button,
@@ -67,7 +75,7 @@ input:focus-visible {
   min-height: var(--tg-viewport-height);
   margin: 0 auto;
   padding:
-    max(14px, env(safe-area-inset-top), var(--tg-safe-top))
+    max(10px, env(safe-area-inset-top), var(--tg-safe-top))
     max(14px, env(safe-area-inset-right), var(--tg-safe-right))
     max(18px, env(safe-area-inset-bottom), var(--tg-safe-bottom))
     max(14px, env(safe-area-inset-left), var(--tg-safe-left));
@@ -82,9 +90,9 @@ footer {
 }
 
 .brand-bar {
-  gap: 12px;
-  min-height: 64px;
-  margin-bottom: 12px;
+  gap: 9px;
+  min-height: 50px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -96,21 +104,32 @@ footer {
 .header-actions {
   display: flex;
   flex: 0 0 auto;
-  gap: 7px;
+  gap: 5px;
 }
 
 .brand-mark {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   place-items: center;
   border: 1px solid #985548;
   background: linear-gradient(145deg, #3b1916, #171313 58%, #2e2821);
-  color: #f2d7b5;
-  box-shadow: inset 0 0 0 3px #110d0c, 0 0 22px rgba(198, 62, 40, 0.16);
+  box-shadow: inset 0 0 0 3px #110d0c, 0 0 20px rgba(198, 62, 40, 0.16);
   clip-path: polygon(12% 0, 88% 0, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0 88%, 0 12%);
-  font-family: Georgia, serif;
-  font-weight: 800;
+}
+
+.dice-mark {
+  width: 74%;
+  height: 74%;
+  fill: #d8a43a;
+  filter: drop-shadow(0 1px 1px #000);
+}
+
+.dice-mark-body {
+  fill: #1a1513;
+  stroke: #e1c47c;
+  stroke-width: 2;
+  stroke-linejoin: bevel;
 }
 
 .eyebrow {
@@ -129,7 +148,7 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(1.55rem, 8vw, 2rem);
+  font-size: clamp(1.4rem, 7vw, 1.75rem);
   line-height: 0.95;
   letter-spacing: -0.04em;
   text-transform: uppercase;
@@ -148,12 +167,18 @@ h2 {
 
 .icon-button {
   position: relative;
-  width: 44px;
+  width: 48px;
   height: 44px;
   border: 1px solid var(--line);
   background: #101314;
   color: var(--muted);
-  font-size: 1.15rem;
+  font-size: 1rem;
+}
+
+.header-action-label {
+  font-size: 0.57rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
 }
 
 .icon-button.active {
@@ -199,17 +224,14 @@ h2 {
 }
 
 .control-panel {
-  padding: 20px 16px 16px;
+  padding: 16px 14px 14px;
 }
 
-.status-light {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--green);
-  font-size: 0.63rem;
+.setup-hint {
+  color: var(--muted);
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 .shared-banner {
@@ -249,26 +271,29 @@ h2 {
   padding-top: 7px;
 }
 
-.status-light::before {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-  content: "";
+.field-group {
+  margin-top: 15px;
 }
 
-.field-group {
-  margin-top: 20px;
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
 }
 
 .field-label {
   display: block;
-  margin-bottom: 8px;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.73rem;
   font-weight: 800;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.08em;
+}
+
+.field-help {
+  color: #8e938e;
+  font-size: 0.72rem;
 }
 
 .stepper {
@@ -319,8 +344,7 @@ h2 {
 }
 
 .presets {
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .targets {
@@ -332,7 +356,7 @@ h2 {
   min-width: 0;
   padding: 0 4px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
 }
 
@@ -347,11 +371,11 @@ h2 {
 .roll-button {
   display: flex;
   width: 100%;
-  min-height: 62px;
+  min-height: 56px;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 16px;
   border: 1px solid #ef6652;
   background:
     linear-gradient(115deg, transparent 0 10%, rgba(255, 255, 255, 0.09) 10% 11%, transparent 11% 89%, rgba(255, 255, 255, 0.08) 89% 90%, transparent 90%),
@@ -378,36 +402,86 @@ h2 {
 }
 
 .results-panel {
-  margin-top: 12px;
-  padding: 20px 16px 16px;
+  margin-top: 10px;
+  padding: 14px;
+  scroll-margin-top: max(10px, env(safe-area-inset-top), var(--tg-safe-top));
 }
 
 .result-summary {
-  min-height: 77px;
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.result-context {
+  min-width: 0;
+  text-align: left;
+}
+
+.results-empty {
+  padding-block: 13px;
+}
+
+.empty-result-copy {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-result-die {
+  flex: 0 0 auto;
+  color: #777d78;
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.results-rolling .result-summary {
+  display: block;
+  min-height: 78px;
   text-align: center;
 }
 
 .awaiting {
   margin-bottom: 3px;
   color: #d8d4c9;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.015em;
 }
 
 .success-count {
-  margin-bottom: 2px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
   color: var(--bone);
-  font-size: 1.1rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
+  text-align: left;
 }
 
 .success-count strong {
   color: var(--blood-bright);
-  font-size: 2.45rem;
+  font-size: 2.35rem;
+  line-height: 1;
   letter-spacing: -0.04em;
-  vertical-align: middle;
+}
+
+.success-count span,
+.success-count small {
+  display: block;
+}
+
+.success-count small {
+  margin-top: 3px;
+  color: var(--amber);
+  font-size: 0.61rem;
+  letter-spacing: 0.08em;
 }
 
 .result-note {
@@ -428,20 +502,22 @@ h2 {
 
 .face-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .face-card {
-  display: grid;
-  min-height: 100px;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  min-width: 0;
+  min-height: 82px;
+  flex-direction: column;
   align-items: center;
-  gap: 2px 8px;
-  padding: 10px;
+  justify-content: center;
+  gap: 3px;
+  padding: 7px 2px;
   border: 1px solid #303636;
   background: #0e1112;
+  text-align: center;
 }
 
 .face-card.qualifies {
@@ -450,9 +526,8 @@ h2 {
 }
 
 .face-glyph {
-  grid-row: 1 / 3;
   color: #c5c2b8;
-  font-size: 2.1rem;
+  font-size: 1.45rem;
   line-height: 1;
 }
 
@@ -462,17 +537,15 @@ h2 {
 }
 
 .face-label {
-  align-self: end;
   color: #757b78;
-  font-size: 0.55rem;
+  font-size: 0.48rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .face-card strong {
-  align-self: start;
   color: var(--bone);
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
@@ -758,28 +831,40 @@ footer {
     padding-left: max(10px, env(safe-area-inset-left), var(--tg-safe-left));
   }
 
-  .control-panel,
-  .results-panel {
+  .control-panel {
     padding-inline: 12px;
   }
 
-  .presets {
-    grid-template-columns: repeat(4, 1fr);
+  .results-panel {
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 350px) {
+  .brand-bar {
+    gap: 7px;
   }
 
-  .face-card {
-    min-height: 88px;
-    padding: 8px;
+  .brand-mark {
+    width: 34px;
+    height: 34px;
   }
 
-  .face-glyph {
-    font-size: 1.65rem;
+  .header-actions {
+    gap: 4px;
   }
 
-  .status-light {
-    max-width: 78px;
-    justify-content: flex-end;
-    text-align: right;
+  .icon-button {
+    width: 44px;
+  }
+
+  .brand-copy .eyebrow {
+    font-size: 0.52rem;
+    letter-spacing: 0.09em;
+  }
+
+  h1 {
+    font-size: 1.35rem;
   }
 }
 
@@ -793,16 +878,8 @@ footer {
     padding: 24px;
   }
 
-  .face-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
   .face-card {
-    display: flex;
-    min-height: 118px;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
+    min-height: 96px;
   }
 }
 

@@ -28,7 +28,7 @@ import { setupTelegramAdapter } from "./telegram.ts";
 
 const FACE_GLYPHS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"] as const;
 const TARGETS = [2, 3, 4, 5, 6] as const;
-const PRESET_COUNTS = [1, 2, 5, 10, 20, 50, 100] as const;
+const PRESET_COUNTS = [3, 10, 20, 50] as const;
 const ROLL_ANIMATION_MS = 560;
 
 type RollSource = "fresh" | "history" | "shared";
@@ -68,17 +68,27 @@ function render(): void {
   app.innerHTML = `
     <main class="app-shell ${rolling ? "is-rolling" : ""}">
       <header class="brand-bar">
-        <div class="brand-mark" aria-hidden="true"><span>VI</span></div>
+        <div class="brand-mark" aria-hidden="true">
+          <svg class="dice-mark" viewBox="0 0 48 48">
+            <path class="dice-mark-body" d="M13 7h22l6 6v22l-6 6H13l-6-6V13Z" />
+            <circle cx="16" cy="15" r="2.8" />
+            <circle cx="32" cy="15" r="2.8" />
+            <circle cx="16" cy="24" r="2.8" />
+            <circle cx="32" cy="24" r="2.8" />
+            <circle cx="16" cy="33" r="2.8" />
+            <circle cx="32" cy="33" r="2.8" />
+          </svg>
+        </div>
         <div class="brand-copy">
-          <p class="eyebrow">TABLETOP DICE TERMINAL</p>
+          <p class="eyebrow">TABLETOP D6 ROLLER</p>
           <h1>Bro<span>Dice</span></h1>
         </div>
         <div class="header-actions">
           <button class="icon-button ${soundEnabled ? "active" : ""}" type="button" data-action="toggle-sound" aria-label="${soundEnabled ? "Mute roll sound" : "Enable roll sound"}" title="${soundEnabled ? "Sound on" : "Sound off"}">
-            <span aria-hidden="true">${soundEnabled ? "♫" : "♪̸"}</span>
+            <span class="header-action-label" aria-hidden="true">${soundEnabled ? "SOUND" : "MUTED"}</span>
           </button>
           <button class="icon-button" type="button" data-action="open-history" aria-label="Open roll history" title="Roll history">
-            <span aria-hidden="true">≡</span>
+            <span class="header-action-label" aria-hidden="true">ROLLS</span>
             ${history.length > 0 ? `<span class="history-badge">${history.length}</span>` : ""}
           </button>
         </div>
@@ -87,7 +97,7 @@ function render(): void {
       ${sharedMode ? renderSharedBanner() : renderControls()}
       ${renderResults(activeRoll, counts, successes, sharedMode)}
 
-      <footer><span>BRODICE // CLIENT-ONLY ROLL</span><span>v0.1</span></footer>
+      <footer><span>LOCAL RNG · SAVED ON THIS DEVICE</span><span>v0.1</span></footer>
     </main>
     ${historyOpen ? renderHistorySheet() : ""}
     ${toastMessage ? `<div class="toast" role="status">${toastMessage}</div>` : ""}
@@ -101,14 +111,17 @@ function renderControls(): string {
     <section class="control-panel" aria-labelledby="roll-heading">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">D6 ROLL PROTOCOL</p>
-          <h2 id="roll-heading">Set your roll</h2>
+          <p class="eyebrow">NEW ROLL</p>
+          <h2 id="roll-heading">Choose your dice</h2>
         </div>
-        <span class="status-light">SECURE LOCAL RNG</span>
+        <span class="setup-hint">1–100 D6</span>
       </div>
 
       <div class="field-group">
-        <span class="field-label">NUMBER OF DICE</span>
+        <div class="field-label-row">
+          <span class="field-label">DICE COUNT</span>
+          <span class="field-help">Tap or type</span>
+        </div>
         <div class="stepper">
           <button type="button" data-action="decrement" aria-label="Remove one die" ${rolling ? "disabled" : ""}>−</button>
           <label>
@@ -125,11 +138,14 @@ function renderControls(): string {
       </div>
 
       <div class="field-group">
-        <span class="field-label">SUCCESS TARGET</span>
+        <div class="field-label-row">
+          <span class="field-label">SUCCESS ON</span>
+          <span class="field-help">${formatTargetHint(target)}</span>
+        </div>
         <div class="targets" role="group" aria-label="Minimum successful die result">
           ${TARGETS.map((value) => `
             <button class="${value === target ? "active" : ""}" type="button" data-target="${value}" aria-pressed="${value === target}" ${rolling ? "disabled" : ""}>
-              ${value === 6 ? "6" : `${value}+`}
+              ${formatTarget(value)}
             </button>
           `).join("")}
         </div>
@@ -137,7 +153,7 @@ function renderControls(): string {
 
       <button class="roll-button" type="button" data-action="roll" ${rolling ? "disabled" : ""}>
         <span class="roll-icon" aria-hidden="true">⚄</span>
-        <span>${rolling ? "ROLLING…" : `ROLL ${diceCount}D6`}</span>
+        <span>${rolling ? "ROLLING…" : `ROLL ${diceCount} ${diceCount === 1 ? "DIE" : "DICE"}`}</span>
       </button>
     </section>
   `;
@@ -162,30 +178,58 @@ function renderResults(
   sharedMode: boolean,
 ): string {
   const sourceLabel = sharedMode ? "SHARED ROLL" : rollSource === "history" ? "HISTORICAL ROLL" : "ROLL RESULT";
+  if (!record && !rolling) {
+    return `
+      <section class="results-panel results-empty" aria-live="polite">
+        <div class="empty-result-copy">
+          <span class="empty-result-die" aria-hidden="true">⚄</span>
+          <div>
+            <p class="eyebrow">ROLL RESULT</p>
+            <p class="awaiting">Ready to roll</p>
+            <p class="result-note">Face counts and ${formatTarget(target)} successes will appear here.</p>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  if (rolling) {
+    return `
+      <section class="results-panel results-rolling" aria-live="polite" aria-busy="true">
+        <div class="result-summary">
+          <p class="eyebrow">ROLLING ${diceCount} DICE</p>
+          <div class="rolling-display" aria-label="Rolling dice"><span>⚀</span><span>⚂</span><span>⚄</span></div>
+          <p class="result-note">Generating a secure local result…</p>
+        </div>
+      </section>
+    `;
+  }
+
   return `
-    <section class="results-panel ${record ? "has-result" : ""}" aria-live="polite" aria-busy="${rolling}">
+    <section class="results-panel has-result" aria-live="polite" aria-busy="false">
       <div class="result-summary">
-        <p class="eyebrow">${sourceLabel}</p>
-        ${rolling
-          ? `<div class="rolling-display" aria-label="Rolling dice"><span>⚀</span><span>⚂</span><span>⚄</span></div><p class="result-note">Randomizing ${diceCount} dice…</p>`
-          : successes === null
-            ? `<p class="awaiting">AWAITING ROLL</p><p class="result-note">Choose your dice and engage the roller.</p>`
-            : `<p class="success-count"><strong>${successes}</strong> ${successes === 1 ? "SUCCESS" : "SUCCESSES"}</p>
-               <p class="result-note">Target ${formatTarget(target)} · ${record?.faces.length ?? diceCount} dice · ${formatTime(record?.createdAt)}</p>`}
+        <div class="result-context">
+          <p class="eyebrow">${sourceLabel}</p>
+          <p class="result-note">${record?.faces.length ?? diceCount} dice · ${formatTime(record?.createdAt)}</p>
+        </div>
+        <p class="success-count">
+          <strong>${successes}</strong>
+          <span>${successes === 1 ? "SUCCESS" : "SUCCESSES"}<small>AT ${formatTarget(target)}</small></span>
+        </p>
       </div>
 
       <div class="face-grid" aria-label="Counts for dice faces one through six">
         ${FACE_GLYPHS.map((glyph, index) => {
           const face = index + 1;
-          return `<article class="face-card ${face >= target ? "qualifies" : ""}">
-            <span class="face-glyph" aria-hidden="true">${glyph}</span>
+          return `<article class="face-card ${face >= target ? "qualifies" : ""}" aria-label="Face ${face}: ${counts?.[index] ?? 0}">
             <span class="face-label">FACE ${face}</span>
-            <strong>${counts && !rolling ? counts[index] : "—"}</strong>
+            <span class="face-glyph" aria-hidden="true">${glyph}</span>
+            <strong>${counts?.[index] ?? 0}</strong>
           </article>`;
         }).join("")}
       </div>
 
-      ${record && !rolling ? `
+      ${record ? `
         <details class="individual-results">
           <summary>Individual dice <span>${record.faces.length}</span></summary>
           <div class="dice-list" aria-label="Individual dice results">
@@ -309,7 +353,6 @@ function toggleSound(): void {
   soundEnabled = !soundEnabled;
   savePreferences();
   telegram.haptic("light");
-  if (soundEnabled) void playRollSound();
   render();
 }
 
@@ -332,6 +375,7 @@ function startRoll(): void {
       rolling = false;
       telegram.haptic("success");
       render();
+      revealResults();
     } catch {
       rolling = false;
       telegram.haptic("error");
@@ -394,6 +438,7 @@ function openHistoryRecord(id: string | undefined): void {
   clearConfirmationOpen = false;
   telegram.haptic("light");
   render();
+  revealResults();
 }
 
 function rerollHistoryRecord(id: string | undefined): void {
@@ -488,6 +533,19 @@ function formatHistoryTime(value: number): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(value);
+}
+
+function formatTargetHint(value: number): string {
+  return value === 6 ? "Only 6s count" : `${value}–6 count`;
+}
+
+function revealResults(): void {
+  window.setTimeout(() => {
+    const results = app.querySelector<HTMLElement>(".results-panel.has-result");
+    if (!results) return;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    results.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  }, 0);
 }
 
 function vibrate(duration: number): void {
