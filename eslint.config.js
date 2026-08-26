@@ -11,6 +11,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ["brodice/src/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+    },
+  },
+  {
     files: [
       "draft-battler/scripts/**/*.mjs",
       "draft-battler/tests/**/*.mjs",
@@ -24,6 +30,17 @@ export default tseslint.config(
         fetch: "readonly",
         process: "readonly",
         Response: "readonly",
+        URL: "readonly",
+      },
+    },
+  },
+  {
+    files: ["brodice/scripts/**/*.mjs", "brodice/tests/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        Buffer: "readonly",
+        console: "readonly",
+        process: "readonly",
         URL: "readonly",
       },
     },

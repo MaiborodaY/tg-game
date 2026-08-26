@@ -1,0 +1,10 @@
+{
+  "name": "BroDice · D6 Dice Roller",
+  "short_name": "BroDice",
+  "description": "A fast d6 dice roller for tabletop games.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080a0b",
+  "theme_color": "#0d1011",
+  "lang": "en"
+}
