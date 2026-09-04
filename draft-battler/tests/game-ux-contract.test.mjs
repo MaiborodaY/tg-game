@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { APP_NAME } from "../src/brand.ts";
 
+const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 const rendererSource = await readFile(new URL("../src/rendering/phaserBattleScene.ts", import.meta.url), "utf8");
+
+test("public game surfaces use the BroBattler brand consistently", () => {
+  assert.equal(APP_NAME, "BroBattler");
+  assert.match(indexHtml, /<title>BroBattler<\/title>/);
+  assert.match(mainSource, /title\.textContent = APP_NAME/);
+  assert.match(mainSource, /\{ title: APP_NAME, text, url: window\.location\.href \}/);
+  assert.doesNotMatch(mainSource, /"(?:Draft Battler|Bro Battler)"/);
+});
 
 test("battle HUD and playback controls stay wired to live renderer state", () => {
   assert.match(mainSource, /createGameHud\(\), createBattleOverlay\(\)/);

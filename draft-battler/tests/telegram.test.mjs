@@ -203,11 +203,11 @@ test("Telegram language and version helpers fail closed on malformed clients", (
 
 test("Telegram share URLs strip Mini App credentials and reject non-web page URLs", () => {
   assert.equal(
-    createTelegramShareUrl("Bro Battler", "https://user:pass@example.com/play?tgWebAppData=secret#hash"),
-    "https://t.me/share/url?url=https%3A%2F%2Fexample.com%2Fplay&text=Bro+Battler",
+    createTelegramShareUrl("BroBattler", "https://user:pass@example.com/play?tgWebAppData=secret#hash"),
+    "https://t.me/share/url?url=https%3A%2F%2Fexample.com%2Fplay&text=BroBattler",
   );
   assert.equal(
-    createTelegramShareUrl("Bro Battler", "javascript:alert(1)"),
-    "https://t.me/share/url?text=Bro+Battler",
+    createTelegramShareUrl("BroBattler", "javascript:alert(1)"),
+    "https://t.me/share/url?text=BroBattler",
   );
 });

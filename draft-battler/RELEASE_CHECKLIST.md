@@ -1,4 +1,4 @@
-# Draft Battler MVP release checklist
+# BroBattler MVP release checklist
 
 The public MVP includes Solo and invite-code PvP. PvP uses server-authoritative drafting,
 private player snapshots, reconnect grace, room expiry, and strict protocol validation.

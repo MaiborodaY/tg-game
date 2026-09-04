@@ -194,7 +194,7 @@ test("daily challenge, local history, replay, and sharing copy is complete", () 
       playerHp: 9,
       enemyHp: 0,
     });
-    assert.match(formattedShare, /Bro Battler/);
+    assert.match(formattedShare, /^⚔️ BroBattler\n/);
     assert.match(formattedShare, /15\/15/);
     assert.match(formattedShare, /9:0/);
     assert.doesNotMatch(formattedShare, /\{[^}]+\}/, `${locale}:shareResultText unresolved placeholder`);

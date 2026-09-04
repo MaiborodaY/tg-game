@@ -1,5 +1,6 @@
 import type { SynergyEffect } from "./game/synergies";
 import type { CardDefinition, CardId, UnitTag } from "./game/types";
+import { APP_NAME } from "./brand";
 
 export const SUPPORTED_LOCALES = ["ru", "uk", "en"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -387,7 +388,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     shareResult: "Поделиться",
     shareCopied: "Результат скопирован",
     shareFailed: "Не удалось поделиться — скопируйте результат вручную.",
-    shareResultText: "⚔️ Bro Battler\n{outcome} · {difficulty}\nРаунды: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}",
+    shareResultText: `⚔️ ${APP_NAME}\n{outcome} · {difficulty}\nРаунды: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}`,
     botDifficulty: "Сложность бота",
     botDifficultyStandard: "Обычный",
     botDifficultyStrong: "Сильный",
@@ -617,7 +618,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     shareResult: "Поділитися",
     shareCopied: "Результат скопійовано",
     shareFailed: "Не вдалося поділитися — скопіюйте результат вручну.",
-    shareResultText: "⚔️ Bro Battler\n{outcome} · {difficulty}\nРаунди: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}",
+    shareResultText: `⚔️ ${APP_NAME}\n{outcome} · {difficulty}\nРаунди: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}`,
     botDifficulty: "Складність бота",
     botDifficultyStandard: "Звичайний",
     botDifficultyStrong: "Сильний",
@@ -847,7 +848,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     shareResult: "Share",
     shareCopied: "Result copied",
     shareFailed: "Could not share — copy the result manually.",
-    shareResultText: "⚔️ Bro Battler\n{outcome} · {difficulty}\nRounds: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}",
+    shareResultText: `⚔️ ${APP_NAME}\n{outcome} · {difficulty}\nRounds: {round}/{maxRounds} · HP: {playerHp}:{enemyHp}`,
     botDifficulty: "Bot difficulty",
     botDifficultyStandard: "Normal",
     botDifficultyStrong: "Strong",

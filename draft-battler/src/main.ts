@@ -1,4 +1,5 @@
 import "./styles.css";
+import { APP_NAME } from "./brand";
 import type { BattleAbilityCalloutLabels, BattlefieldController } from "./rendering/phaserBattleScene";
 import { prefersReducedBattleMotion } from "./rendering/motionPreference";
 import {
@@ -788,7 +789,7 @@ function createMainMenuOverlay(): HTMLElement {
 
   const title = document.createElement("h1");
   title.className = "main-menu__title";
-  title.textContent = "Draft Battler";
+  title.textContent = APP_NAME;
 
   const subtitle = document.createElement("p");
   subtitle.className = "main-menu__subtitle";
@@ -1832,7 +1833,7 @@ async function shareSoloRunResult(
   status.className = "terminal-result__share-status";
   try {
     const result = await shareResult(
-      { title: "Bro Battler", text, url: window.location.href },
+      { title: APP_NAME, text, url: window.location.href },
       {
         telegramShare: (sharedText, sharedUrl) => telegram.share(sharedText, sharedUrl),
         nativeShare: typeof navigator.share === "function"

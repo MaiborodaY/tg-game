@@ -4,7 +4,7 @@ import { shareResult } from "../src/resultSharing.ts";
 import { sanitizeSharedPageUrl } from "../src/telegram.ts";
 
 const RESULT = Object.freeze({
-  title: "Bro Battler",
+  title: "BroBattler",
   text: "Victory · Strong",
   url: "https://user:password@example.com/game?tgWebAppData=secret#private",
 });
