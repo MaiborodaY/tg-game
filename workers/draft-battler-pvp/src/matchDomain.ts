@@ -14,6 +14,8 @@ import {
 } from "../../../draft-battler/src/game/draft";
 import { resolveCombat } from "../../../draft-battler/src/game/combat";
 import { getMatchCastleDamage } from "./combatHp";
+import type { RankingSettlementStatus } from "./ranking";
+import type { TelegramPlayerIdentity } from "./telegramAuth";
 
 export const RULESET_VERSION = "draft-battler-pvp-v4";
 export const MATCH_SCHEMA_VERSION = 1;
@@ -70,6 +72,7 @@ export interface MatchState {
   players: Record<PlayerRole, MatchPlayerState>;
   combat?: MatchCombatSnapshot;
   outcome?: MatchOutcome;
+  rankingStatus?: RankingSettlementStatus | "pending";
   createdAt: number;
   updatedAt: number;
   expiresAt: number;
@@ -112,6 +115,7 @@ export type MatchDomainErrorCode =
   | "not_finished"
   | "rematch_not_ready"
   | "room_full"
+  | "same_player"
   | "invalid_seat";
 
 export class MatchDomainError extends Error {
@@ -630,6 +634,7 @@ export interface RoomSeatState {
   lastSeenAt: number;
   disconnectedAt?: number;
   disconnectDeadline?: number;
+  identity?: TelegramPlayerIdentity;
 }
 
 export interface RoomState {
@@ -659,6 +664,7 @@ export interface ClaimSeatInput {
   issuedTokenHash: string;
   connectionId: string;
   now: number;
+  identity?: TelegramPlayerIdentity;
 }
 
 export interface ClaimSeatResult {
@@ -715,6 +721,9 @@ export function claimSeat(current: RoomState, input: ClaimSeatInput): ClaimSeatR
     : undefined;
   if (existingRole) {
     const seat = room.seats[existingRole]!;
+    if (input.identity && seat.identity && input.identity.userId !== seat.identity.userId) {
+      throw new MatchDomainError("invalid_seat", "This room seat belongs to another Telegram player.");
+    }
     seat.connectionId = input.connectionId;
     seat.connected = true;
     seat.lastSeenAt = input.now;
@@ -728,6 +737,9 @@ export function claimSeat(current: RoomState, input: ClaimSeatInput): ClaimSeatR
   if (!role) {
     throw new MatchDomainError("room_full", "Both player seats are already claimed.");
   }
+  if (input.identity && Object.values(room.seats).some((seat) => seat?.identity?.userId === input.identity?.userId)) {
+    throw new MatchDomainError("same_player", "The same Telegram player cannot occupy both seats.");
+  }
   room.seats[role] = {
     role,
     tokenHash: input.issuedTokenHash,
@@ -736,6 +748,7 @@ export function claimSeat(current: RoomState, input: ClaimSeatInput): ClaimSeatR
     ready: false,
     claimedAt: input.now,
     lastSeenAt: input.now,
+    identity: input.identity ? { ...input.identity } : undefined,
   };
   touchRoom(room, input.now);
   return { room, role, reconnected: false };

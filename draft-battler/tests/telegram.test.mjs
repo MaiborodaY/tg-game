@@ -63,6 +63,7 @@ function createWebApp() {
     calls,
     eventListeners,
     backHandlers,
+    initData: " signed-telegram-init-data ",
     initDataUnsafe: { user: { language_code: " uk-UA " } },
     viewportHeight: 684,
     viewportStableHeight: 660,
@@ -108,6 +109,7 @@ test("standalone browser fallback stays operational without Telegram", () => {
 
   assert.equal(bridge.isTelegram, false);
   assert.equal(bridge.languageCode, null);
+  assert.equal(bridge.initData, null);
   assert.equal(cssVariables.values.get("--tg-viewport-height"), "720px");
   assert.equal(cssVariables.values.get("--tg-viewport-stable-height"), "720px");
   assert.doesNotThrow(() => {
@@ -128,6 +130,7 @@ test("Telegram startup applies viewport, safe area, locale and lifecycle control
 
   assert.equal(bridge.isTelegram, true);
   assert.equal(bridge.languageCode, "uk-UA");
+  assert.equal(bridge.initData, "signed-telegram-init-data");
   assert.equal(cssVariables.values.get("--tg-viewport-height"), "684px");
   assert.equal(cssVariables.values.get("--tg-viewport-stable-height"), "660px");
   assert.equal(cssVariables.values.get("--safe-top"), "15px");

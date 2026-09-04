@@ -17,6 +17,13 @@
   "observability": {
     "enabled": true
   },
+  "d1_databases": [
+    {
+      "binding": "WOL_DB",
+      "database_name": "wol",
+      "database_id": "3c0de039-c071-4928-9a77-f46632240f4a"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {

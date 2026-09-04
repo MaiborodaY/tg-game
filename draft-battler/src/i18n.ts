@@ -106,6 +106,24 @@ export interface UiCopy {
   pvpErrorOriginForbidden: string;
   pvpErrorInternal: string;
   pvpErrorBadRequest: string;
+  pvpErrorSamePlayer: string;
+  pvpErrorTelegramAuth: string;
+  pvpLeaderboardButton: string;
+  pvpLeaderboardTitle: string;
+  pvpLeaderboardIntro: string;
+  pvpLeaderboardLoading: string;
+  pvpLeaderboardEmpty: string;
+  pvpLeaderboardClose: string;
+  pvpLeaderboardRetry: string;
+  pvpLeaderboardPlayers: string;
+  pvpLeaderboardWins: string;
+  pvpLeaderboardGames: string;
+  pvpLeaderboardRecord: string;
+  pvpLeaderboardYou: string;
+  pvpLeaderboardWeekEnds: string;
+  pvpLeaderboardTelegramRequired: string;
+  pvpLeaderboardMissingProfile: string;
+  pvpLeaderboardRanked: string;
   howToPlay: string;
   compendium: string;
   compendiumTitle: string;
@@ -449,6 +467,24 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorOriginForbidden: "Подключение с этого адреса запрещено.",
     pvpErrorInternal: "Ошибка сервера. Попробуйте ещё раз.",
     pvpErrorBadRequest: "Сервер не принял запрос.",
+    pvpErrorSamePlayer: "Нельзя занять оба места одним Telegram-аккаунтом.",
+    pvpErrorTelegramAuth: "Не удалось подтвердить Telegram-профиль. Перезапустите игру из Telegram.",
+    pvpLeaderboardButton: "🏆 Недельный рейтинг",
+    pvpLeaderboardTitle: "Недельный рейтинг",
+    pvpLeaderboardIntro: "Победы в онлайн-дуэлях с понедельника по воскресенье.",
+    pvpLeaderboardLoading: "Загружаем рейтинг…",
+    pvpLeaderboardEmpty: "На этой неделе рейтинговых матчей ещё не было.",
+    pvpLeaderboardClose: "Закрыть рейтинг",
+    pvpLeaderboardRetry: "Повторить",
+    pvpLeaderboardPlayers: "Игроков: {count}",
+    pvpLeaderboardWins: "Победы",
+    pvpLeaderboardGames: "Игры",
+    pvpLeaderboardRecord: "В–П–Н",
+    pvpLeaderboardYou: "Вы",
+    pvpLeaderboardWeekEnds: "До {date}",
+    pvpLeaderboardTelegramRequired: "Откройте BroBattler из Telegram, чтобы ваши победы попадали в рейтинг.",
+    pvpLeaderboardMissingProfile: "Для участия сначала создайте персонажа в World of Life.",
+    pvpLeaderboardRanked: "Ваши завершённые онлайн-дуэли участвуют в рейтинге.",
     howToPlay: "Правила",
     compendium: "Карты",
     compendiumTitle: "Карты и синергии",
@@ -680,6 +716,24 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorOriginForbidden: "Підключення з цієї адреси заборонено.",
     pvpErrorInternal: "Помилка сервера. Спробуйте ще раз.",
     pvpErrorBadRequest: "Сервер не прийняв запит.",
+    pvpErrorSamePlayer: "Не можна зайняти обидва місця одним Telegram-акаунтом.",
+    pvpErrorTelegramAuth: "Не вдалося підтвердити Telegram-профіль. Перезапустіть гру з Telegram.",
+    pvpLeaderboardButton: "🏆 Тижневий рейтинг",
+    pvpLeaderboardTitle: "Тижневий рейтинг",
+    pvpLeaderboardIntro: "Перемоги в онлайн-дуелях із понеділка до неділі.",
+    pvpLeaderboardLoading: "Завантажуємо рейтинг…",
+    pvpLeaderboardEmpty: "Цього тижня рейтингових матчів ще не було.",
+    pvpLeaderboardClose: "Закрити рейтинг",
+    pvpLeaderboardRetry: "Повторити",
+    pvpLeaderboardPlayers: "Гравців: {count}",
+    pvpLeaderboardWins: "Перемоги",
+    pvpLeaderboardGames: "Ігри",
+    pvpLeaderboardRecord: "П–Пор–Н",
+    pvpLeaderboardYou: "Ви",
+    pvpLeaderboardWeekEnds: "До {date}",
+    pvpLeaderboardTelegramRequired: "Відкрийте BroBattler із Telegram, щоб ваші перемоги потрапляли до рейтингу.",
+    pvpLeaderboardMissingProfile: "Для участі спочатку створіть персонажа у World of Life.",
+    pvpLeaderboardRanked: "Ваші завершені онлайн-дуелі беруть участь у рейтингу.",
     howToPlay: "Правила",
     compendium: "Карти",
     compendiumTitle: "Карти й синергії",
@@ -911,6 +965,24 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorOriginForbidden: "Connections from this address are not allowed.",
     pvpErrorInternal: "Server error. Try again.",
     pvpErrorBadRequest: "The server rejected the request.",
+    pvpErrorSamePlayer: "One Telegram account cannot occupy both seats.",
+    pvpErrorTelegramAuth: "Could not verify your Telegram profile. Reopen the game from Telegram.",
+    pvpLeaderboardButton: "🏆 Weekly ranking",
+    pvpLeaderboardTitle: "Weekly ranking",
+    pvpLeaderboardIntro: "Online duel wins from Monday through Sunday.",
+    pvpLeaderboardLoading: "Loading ranking…",
+    pvpLeaderboardEmpty: "No ranked matches have been played this week yet.",
+    pvpLeaderboardClose: "Close ranking",
+    pvpLeaderboardRetry: "Retry",
+    pvpLeaderboardPlayers: "Players: {count}",
+    pvpLeaderboardWins: "Wins",
+    pvpLeaderboardGames: "Games",
+    pvpLeaderboardRecord: "W–L–D",
+    pvpLeaderboardYou: "You",
+    pvpLeaderboardWeekEnds: "Ends {date}",
+    pvpLeaderboardTelegramRequired: "Open BroBattler from Telegram for your wins to count in the ranking.",
+    pvpLeaderboardMissingProfile: "Create a World of Life character first to participate.",
+    pvpLeaderboardRanked: "Your completed online duels count toward the ranking.",
     howToPlay: "Rules",
     compendium: "Cards",
     compendiumTitle: "Cards & synergies",

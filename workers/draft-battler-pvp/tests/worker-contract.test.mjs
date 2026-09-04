@@ -38,6 +38,17 @@ test("worker schedules persistent TTL and disconnect lifecycle alarms", async ()
   assert.match(source, /deleteAll/);
 });
 
+test("worker authenticates Telegram seats and settles weekly results through D1", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+
+  assert.match(source, /authenticateOptionalTelegramRequest/);
+  assert.match(source, /readTrustedTelegramIdentity/);
+  assert.match(source, /readBroBattlerLeaderboard/);
+  assert.match(source, /settleBroBattlerMatch/);
+  assert.match(source, /PENDING_RANKINGS_STORAGE_KEY/);
+  assert.match(source, /x-telegram-init-data/);
+});
+
 test("worker deletes stale persisted rulesets before exposing room snapshots", async () => {
   const source = await readFile(sourceUrl, "utf8");
   const viewerStart = source.indexOf("private async createViewerSnapshot");

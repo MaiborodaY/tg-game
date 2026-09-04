@@ -1036,6 +1036,126 @@ button:focus-visible,
   list-style: none;
 }
 
+.pvp-leaderboard-panel {
+  height: min(620px, 100%);
+}
+
+.pvp-leaderboard-panel__content {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.pvp-leaderboard-panel__content .run-history-panel__empty {
+  min-height: 120px;
+}
+
+.pvp-leaderboard-panel__retry,
+.pvp-leaderboard-open {
+  width: 100%;
+}
+
+.pvp-leaderboard-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #c8b78c;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pvp-leaderboard-participation {
+  padding: 9px 10px;
+  border: 1px solid rgba(138, 202, 120, 0.34);
+  border-radius: 7px;
+  background: rgba(20, 38, 17, 0.72);
+  color: #c9f0bb;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pvp-leaderboard-participation--telegram_required,
+.pvp-leaderboard-participation--missing_profile {
+  border-color: rgba(228, 193, 94, 0.34);
+  background: rgba(45, 38, 18, 0.72);
+  color: #ead37e;
+}
+
+.pvp-leaderboard-list {
+  display: grid;
+  gap: 7px;
+}
+
+.pvp-leaderboard-entry {
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(243, 240, 221, 0.12);
+  border-radius: 8px;
+  background: rgba(22, 26, 20, 0.9);
+}
+
+.pvp-leaderboard-entry--viewer {
+  border-color: rgba(138, 202, 120, 0.62);
+  background:
+    linear-gradient(90deg, rgba(138, 202, 120, 0.12), transparent 66%),
+    rgba(22, 30, 19, 0.94);
+}
+
+.pvp-leaderboard-entry__rank {
+  color: #d8bd68;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+}
+
+.pvp-leaderboard-entry__identity {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.pvp-leaderboard-entry__identity strong {
+  overflow: hidden;
+  color: #f3f0dd;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pvp-leaderboard-entry__identity span {
+  color: #9fe08e;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pvp-leaderboard-entry__wins {
+  color: #f1d26f;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pvp-leaderboard-entry__record {
+  min-width: 54px;
+  color: #b8b097;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pvp-leaderboard-list__divider {
+  height: 1px;
+  margin: 3px 8px;
+  background: rgba(228, 193, 94, 0.3);
+}
+
 .run-history-entry {
   min-width: 0;
   padding: 10px;

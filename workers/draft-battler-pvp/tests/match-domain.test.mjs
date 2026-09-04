@@ -400,6 +400,33 @@ test("seat tokens reclaim the same seat, stale socket closes are ignored, and sn
   assert.equal(serialized.includes("host-token-hash"), false);
 });
 
+test("Telegram identity is bound to a seat and one user cannot claim both sides", () => {
+  let room = createRoom({ roomId: "identity", now: NOW });
+  room = claimSeat(room, {
+    issuedTokenHash: "host-token",
+    connectionId: "host-connection",
+    now: NOW + 1,
+    identity: { userId: "100", displayName: "Host" },
+  }).room;
+
+  expectDomainError("same_player", () => claimSeat(room, {
+    issuedTokenHash: "guest-token",
+    connectionId: "guest-connection",
+    now: NOW + 2,
+    identity: { userId: "100", displayName: "Host again" },
+  }));
+  expectDomainError("invalid_seat", () => claimSeat(room, {
+    presentedTokenHash: "host-token",
+    issuedTokenHash: "unused-token",
+    connectionId: "stolen-connection",
+    now: NOW + 3,
+    identity: { userId: "200", displayName: "Other" },
+  }));
+
+  const snapshot = JSON.stringify(createRoomSnapshot(room, "host", NOW + 4));
+  assert.doesNotMatch(snapshot, /100|Host/);
+});
+
 test("disconnect grace exposes deterministic forfeit and waiting-room seat release hooks", () => {
   let room = createRoom({ roomId: "graceroom", now: NOW });
   room = claimSeat(room, {

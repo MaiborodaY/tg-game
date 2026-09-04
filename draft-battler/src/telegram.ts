@@ -13,6 +13,7 @@ type TelegramBackButton = {
 };
 
 type TelegramWebApp = {
+  initData?: string;
   initDataUnsafe?: {
     user?: {
       language_code?: string;
@@ -56,6 +57,7 @@ type CssVariableTarget = {
 export type TelegramMiniAppBridge = Readonly<{
   readonly isTelegram: boolean;
   readonly languageCode: string | null;
+  readonly initData: string | null;
   ready(): void;
   setGameInProgress(active: boolean): void;
   setBackHandler(handler: (() => void) | undefined): void;
@@ -243,6 +245,7 @@ export function setupTelegramMiniApp(
   return Object.freeze({
     get isTelegram() { return webApp !== undefined; },
     get languageCode() { return getTelegramLanguageCode(webApp); },
+    get initData() { return webApp?.initData?.trim() || null; },
     ready,
     setGameInProgress,
     setBackHandler,

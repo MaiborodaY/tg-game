@@ -36,7 +36,12 @@ export class PvpRequestError extends Error {
   }
 }
 
-type PvpFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type PvpFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+export interface PvpApiRequestOptions {
+  telegramInitData?: string | null;
+  fetcher?: PvpFetch;
+}
 
 export function normalizePvpRoomId(value: string): string | undefined {
   const normalized = value.trim().toLowerCase();
@@ -127,28 +132,28 @@ export function clearPvpSession(storage: PvpSessionStorage | undefined): boolean
 
 export function createPvpRoom<TSnapshot = unknown>(
   apiOrigin: string,
-  fetcher: PvpFetch = fetch,
+  options: PvpApiRequestOptions = {},
 ): Promise<PvpBootstrapResponse<TSnapshot>> {
-  return requestPvpBootstrap<TSnapshot>(`${apiOrigin}/api/pvp/rooms`, {}, fetcher);
+  return requestPvpBootstrap<TSnapshot>(`${apiOrigin}/api/pvp/rooms`, {}, options);
 }
 
 export function joinPvpRoom<TSnapshot = unknown>(
   apiOrigin: string,
   roomId: string,
-  fetcher: PvpFetch = fetch,
+  options: PvpApiRequestOptions = {},
 ): Promise<PvpBootstrapResponse<TSnapshot>> {
   const normalizedRoomId = normalizePvpRoomId(roomId);
   if (!normalizedRoomId) {
     return Promise.reject(new PvpRequestError("invalid_room_code", 400));
   }
 
-  return requestPvpBootstrap<TSnapshot>(`${apiOrigin}/api/pvp/rooms/${normalizedRoomId}/join`, {}, fetcher);
+  return requestPvpBootstrap<TSnapshot>(`${apiOrigin}/api/pvp/rooms/${normalizedRoomId}/join`, {}, options);
 }
 
 export function reconnectPvpRoom<TSnapshot = unknown>(
   apiOrigin: string,
   session: PvpSessionCredentials,
-  fetcher: PvpFetch = fetch,
+  options: PvpApiRequestOptions = {},
 ): Promise<PvpBootstrapResponse<TSnapshot>> {
   const validSession = readPvpSession(session);
   if (!validSession) {
@@ -158,7 +163,7 @@ export function reconnectPvpRoom<TSnapshot = unknown>(
   return requestPvpBootstrap<TSnapshot>(
     `${apiOrigin}/api/pvp/rooms/${validSession.roomId}/reconnect`,
     { seatToken: validSession.seatToken },
-    fetcher,
+    options,
   );
 }
 
@@ -183,13 +188,16 @@ function readPvpSession(value: unknown): PvpSessionCredentials | undefined {
 async function requestPvpBootstrap<TSnapshot>(
   url: string,
   body: Record<string, unknown>,
-  fetcher: PvpFetch,
+  options: PvpApiRequestOptions,
 ): Promise<PvpBootstrapResponse<TSnapshot>> {
   let response: Response;
   try {
-    response = await fetcher(url, {
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    const initData = options.telegramInitData?.trim();
+    if (initData) headers["x-telegram-init-data"] = initData;
+    response = await (options.fetcher ?? fetch)(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     });
   } catch {

@@ -138,6 +138,11 @@ import {
 } from "./game/placement";
 import { setupTelegramMiniApp } from "./telegram";
 import {
+  fetchPvpLeaderboard,
+  type PvpLeaderboardEntry,
+  type PvpLeaderboardSnapshot,
+} from "./pvpLeaderboard";
+import {
   PvpRequestError,
   clearPvpSession,
   createPvpRoom,
@@ -327,6 +332,12 @@ let activeLocale = resolveInitialLocale(
 let howToOpen = !hasSeenHowTo(preferenceStorage);
 let compendiumOpen = false;
 let runHistoryOpen = false;
+let pvpLeaderboardOpen = false;
+let pvpLeaderboardRequestId = 0;
+let pvpLeaderboardState: {
+  status: "idle" | "loading" | "ready" | "error";
+  snapshot?: PvpLeaderboardSnapshot;
+} = { status: "idle" };
 flushQueuedSoloRunSummaries(runHistoryStorage);
 let soloRunHistory = loadSoloRunHistory(runHistoryStorage);
 let battlePlaybackSpeed = loadBattlePlaybackSpeed(preferenceStorage);
@@ -425,6 +436,10 @@ document.addEventListener("visibilitychange", () => {
 });
 
 function closeTopOverlay(): boolean {
+  if (pvpLeaderboardOpen) {
+    closePvpLeaderboard();
+    return true;
+  }
   if (pendingDraftReplacement) {
     cancelDraftReplacement();
     return true;
@@ -562,6 +577,11 @@ function render(): void {
     stageUi.append(createRunHistoryOverlay());
   }
 
+  if (pvpLeaderboardOpen) {
+    [...stageUi.children].forEach((child) => child.setAttribute("inert", ""));
+    stageUi.append(createPvpLeaderboardOverlay());
+  }
+
   if (uiState.mode === "draft" && pendingDraftReplacement) {
     const replacementOverlay = createDraftReplacementOverlay(pendingDraftReplacement);
     if (replacementOverlay) {
@@ -580,7 +600,7 @@ function syncTelegramMiniApp(): void {
   const gameInProgress = uiState.mode !== "menu" && uiState.run.status !== "finished";
   telegram.setGameInProgress(gameInProgress);
   telegram.setBackHandler(
-    uiState.mode !== "menu" || howToOpen || compendiumOpen || runHistoryOpen
+    uiState.mode !== "menu" || howToOpen || compendiumOpen || runHistoryOpen || pvpLeaderboardOpen
       ? handleTelegramBack
       : undefined,
   );
@@ -2695,7 +2715,7 @@ function createPvpJoinView(): HTMLElement {
     reconnectButton.addEventListener("click", () => void reconnectSavedPvpSession());
     controls.append(reconnectButton);
   }
-  body.append(controls);
+  body.append(controls, createPvpLeaderboardButton());
 
   return body;
 }
@@ -2765,9 +2785,192 @@ function createPvpConnectedView(): HTMLElement {
   leaveButton.addEventListener("click", canForfeit ? requestPvpForfeit : requestLeavePvpRoom);
 
   actions.append(readyButton, leaveButton);
-  body.append(room, players, actions);
+  body.append(room, players, actions, createPvpLeaderboardButton());
 
   return body;
+}
+
+function createPvpLeaderboardButton(): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = "pvp-panel__button pvp-leaderboard-open";
+  button.type = "button";
+  button.textContent = getCopy().pvpLeaderboardButton;
+  setFocusKey(button, "pvp-leaderboard-open");
+  button.addEventListener("click", openPvpLeaderboard);
+  return button;
+}
+
+function createPvpLeaderboardOverlay(): HTMLElement {
+  const copy = getCopy();
+  const overlay = document.createElement("div");
+  overlay.className = "run-history-overlay pvp-leaderboard-overlay";
+
+  const panel = document.createElement("section");
+  panel.className = "run-history-panel pvp-leaderboard-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "draft-battler-pvp-leaderboard-title");
+  panel.addEventListener("keydown", (event) => trapModalFocus(panel, event));
+
+  const header = document.createElement("div");
+  header.className = "run-history-panel__header";
+  const heading = document.createElement("div");
+  const title = document.createElement("h2");
+  title.id = "draft-battler-pvp-leaderboard-title";
+  title.textContent = copy.pvpLeaderboardTitle;
+  const intro = document.createElement("p");
+  intro.textContent = copy.pvpLeaderboardIntro;
+  heading.append(title, intro);
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "run-history-panel__close";
+  closeButton.type = "button";
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", copy.pvpLeaderboardClose);
+  closeButton.addEventListener("click", closePvpLeaderboard);
+  header.append(heading, closeButton);
+
+  const content = document.createElement("div");
+  content.className = "run-history-panel__content pvp-leaderboard-panel__content";
+  content.tabIndex = 0;
+  if (pvpLeaderboardState.status === "loading" || pvpLeaderboardState.status === "idle") {
+    content.append(createPvpLeaderboardMessage(copy.pvpLeaderboardLoading));
+  } else if (pvpLeaderboardState.status === "error" || !pvpLeaderboardState.snapshot) {
+    content.append(createPvpLeaderboardMessage(copy.pvpErrorRoom));
+    const retry = document.createElement("button");
+    retry.className = "pvp-panel__button pvp-leaderboard-panel__retry";
+    retry.type = "button";
+    retry.textContent = copy.pvpLeaderboardRetry;
+    retry.addEventListener("click", () => void loadPvpLeaderboard());
+    content.append(retry);
+  } else {
+    content.append(createPvpLeaderboardContent(pvpLeaderboardState.snapshot));
+  }
+
+  panel.append(header, content);
+  overlay.append(panel);
+  queueMicrotask(() => {
+    if (closeButton.isConnected) closeButton.focus();
+  });
+  return overlay;
+}
+
+function createPvpLeaderboardContent(snapshot: PvpLeaderboardSnapshot): DocumentFragment {
+  const copy = getCopy();
+  const fragment = document.createDocumentFragment();
+  const meta = document.createElement("div");
+  meta.className = "pvp-leaderboard-meta";
+  const players = document.createElement("span");
+  players.textContent = formatMessage(copy.pvpLeaderboardPlayers, { count: snapshot.totalPlayers });
+  const weekEnds = document.createElement("span");
+  weekEnds.textContent = formatMessage(copy.pvpLeaderboardWeekEnds, {
+    date: formatPvpLeaderboardDate(snapshot.weekEndsAt - 1),
+  });
+  meta.append(players, weekEnds);
+
+  const participation = document.createElement("p");
+  participation.className = `pvp-leaderboard-participation pvp-leaderboard-participation--${snapshot.participation}`;
+  participation.textContent = snapshot.participation === "telegram_required"
+    ? copy.pvpLeaderboardTelegramRequired
+    : snapshot.participation === "missing_profile"
+      ? copy.pvpLeaderboardMissingProfile
+      : copy.pvpLeaderboardRanked;
+  fragment.append(meta, participation);
+
+  if (snapshot.entries.length === 0) {
+    fragment.append(createPvpLeaderboardMessage(copy.pvpLeaderboardEmpty));
+    return fragment;
+  }
+
+  const list = document.createElement("div");
+  list.className = "pvp-leaderboard-list";
+  list.setAttribute("role", "list");
+  snapshot.entries.forEach((entry) => {
+    list.append(createPvpLeaderboardEntry(entry, entry.rank === snapshot.viewer?.rank));
+  });
+  if (snapshot.viewer && !snapshot.entries.some((entry) => entry.rank === snapshot.viewer?.rank)) {
+    const divider = document.createElement("div");
+    divider.className = "pvp-leaderboard-list__divider";
+    divider.setAttribute("aria-hidden", "true");
+    list.append(divider, createPvpLeaderboardEntry(snapshot.viewer, true));
+  }
+  fragment.append(list);
+  return fragment;
+}
+
+function createPvpLeaderboardEntry(entry: PvpLeaderboardEntry, isViewer: boolean): HTMLElement {
+  const copy = getCopy();
+  const row = document.createElement("article");
+  row.className = isViewer ? "pvp-leaderboard-entry pvp-leaderboard-entry--viewer" : "pvp-leaderboard-entry";
+  row.setAttribute("role", "listitem");
+
+  const rank = document.createElement("strong");
+  rank.className = "pvp-leaderboard-entry__rank";
+  rank.textContent = `#${entry.rank}`;
+  const identity = document.createElement("div");
+  identity.className = "pvp-leaderboard-entry__identity";
+  const name = document.createElement("strong");
+  name.textContent = entry.displayName;
+  identity.append(name);
+  if (isViewer) {
+    const you = document.createElement("span");
+    you.textContent = copy.pvpLeaderboardYou;
+    identity.append(you);
+  }
+  const wins = document.createElement("span");
+  wins.className = "pvp-leaderboard-entry__wins";
+  wins.title = copy.pvpLeaderboardWins;
+  wins.textContent = `🏆 ${entry.wins}`;
+  const record = document.createElement("span");
+  record.className = "pvp-leaderboard-entry__record";
+  record.title = `${copy.pvpLeaderboardRecord} · ${copy.pvpLeaderboardGames}: ${entry.games}`;
+  record.textContent = `${entry.wins}–${entry.losses}–${entry.draws}`;
+  row.append(rank, identity, wins, record);
+  return row;
+}
+
+function createPvpLeaderboardMessage(text: string): HTMLParagraphElement {
+  const message = document.createElement("p");
+  message.className = "run-history-panel__empty";
+  message.textContent = text;
+  return message;
+}
+
+function formatPvpLeaderboardDate(timestamp: number): string {
+  try {
+    return new Intl.DateTimeFormat(activeLocale, { day: "numeric", month: "short" }).format(timestamp);
+  } catch {
+    return new Date(timestamp).toISOString().slice(0, 10);
+  }
+}
+
+function openPvpLeaderboard(): void {
+  pvpLeaderboardOpen = true;
+  pvpLeaderboardState = { status: "loading" };
+  render();
+  void loadPvpLeaderboard();
+}
+
+function closePvpLeaderboard(): void {
+  pvpLeaderboardOpen = false;
+  pvpLeaderboardRequestId += 1;
+  requestFocusAfterRender("pvp-leaderboard-open");
+  render();
+}
+
+async function loadPvpLeaderboard(): Promise<void> {
+  const requestId = ++pvpLeaderboardRequestId;
+  pvpLeaderboardState = { status: "loading" };
+  render();
+  try {
+    const snapshot = await fetchPvpLeaderboard(PVP_API_ORIGIN, { telegramInitData: telegram.initData });
+    if (requestId !== pvpLeaderboardRequestId) return;
+    pvpLeaderboardState = { status: "ready", snapshot };
+  } catch {
+    if (requestId !== pvpLeaderboardRequestId) return;
+    pvpLeaderboardState = { status: "error" };
+  }
+  render();
 }
 
 function createPvpRoomCodeElement(roomId: string): HTMLElement {
@@ -4798,7 +5001,7 @@ async function createNewPvpRoom(): Promise<void> {
   pvpAutomaticReconnectUsed = false;
   updatePvpState({ panelOpen: true, status: "connecting", error: undefined });
   try {
-    await acceptPvpBootstrap(await createPvpRoom(PVP_API_ORIGIN));
+    await acceptPvpBootstrap(await createPvpRoom(PVP_API_ORIGIN, { telegramInitData: telegram.initData }));
   } catch (error) {
     handlePvpRequestError(error);
   }
@@ -4821,7 +5024,7 @@ async function joinPvpRoomFromInput(rawRoomId: string): Promise<void> {
     error: undefined,
   });
   try {
-    await acceptPvpBootstrap(await joinPvpRoom(PVP_API_ORIGIN, roomId));
+    await acceptPvpBootstrap(await joinPvpRoom(PVP_API_ORIGIN, roomId, { telegramInitData: telegram.initData }));
   } catch (error) {
     handlePvpRequestError(error);
   }
@@ -4845,7 +5048,7 @@ async function reconnectSavedPvpSession(automatic = false): Promise<void> {
     error: undefined,
   });
   try {
-    await acceptPvpBootstrap(await reconnectPvpRoom(PVP_API_ORIGIN, session));
+    await acceptPvpBootstrap(await reconnectPvpRoom(PVP_API_ORIGIN, session, { telegramInitData: telegram.initData }));
   } catch (error) {
     if (error instanceof PvpRequestError && ["invalid_token", "room_not_found"].includes(error.code)) {
       activePvpSession = undefined;
@@ -4899,6 +5102,7 @@ function getPvpErrorCopy(code: string | undefined): string {
     invalid_room_code: copy.pvpErrorInvalidCode,
     room_not_found: copy.pvpErrorRoomNotFound,
     room_full: copy.pvpErrorRoomFull,
+    same_player: copy.pvpErrorSamePlayer,
     invalid_token: copy.pvpErrorInvalidToken,
     stale_match: copy.pvpErrorStaleMatch,
     action_rejected: copy.pvpErrorActionRejected,
@@ -4906,6 +5110,8 @@ function getPvpErrorCopy(code: string | undefined): string {
     message_too_large: copy.pvpErrorBadRequest,
     pvp_disabled: copy.pvpErrorDisabled,
     origin_forbidden: copy.pvpErrorOriginForbidden,
+    invalid_init_data: copy.pvpErrorTelegramAuth,
+    auth_unavailable: copy.pvpErrorTelegramAuth,
     connection_failed: copy.pvpErrorConnectionFailed,
     internal_error: copy.pvpErrorInternal,
   };

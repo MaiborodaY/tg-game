@@ -14,7 +14,7 @@ test("Telegram SDK loads before the application module", () => {
   assert.ok(applicationModulePosition > telegramSdkPosition, "Telegram SDK must load before the game module");
 });
 
-test("game lifecycle is connected to Telegram without requiring a backend", () => {
+test("game lifecycle and signed PvP identity are connected to Telegram", () => {
   assert.match(mainSource, /telegram\.languageCode \?\? navigator\.language/);
   assert.match(mainSource, /telegram\.ready\(\)/);
   assert.match(mainSource, /telegram\.setGameInProgress\(gameInProgress\)/);
@@ -23,5 +23,7 @@ test("game lifecycle is connected to Telegram without requiring a backend", () =
 
   assert.match(telegramSource, /BackButton/);
   assert.match(telegramSource, /contentSafeAreaInset/);
-  assert.doesNotMatch(telegramSource, /\bfetch\s*\(|\bsendBeacon\s*\(|\.initData\b/);
+  assert.match(telegramSource, /get initData\(\)/);
+  assert.match(mainSource, /telegramInitData: telegram\.initData/);
+  assert.doesNotMatch(telegramSource, /\bfetch\s*\(|\bsendBeacon\s*\(/);
 });

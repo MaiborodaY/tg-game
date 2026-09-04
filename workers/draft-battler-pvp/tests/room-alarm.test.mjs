@@ -24,7 +24,9 @@ test("finished matches ignore stale disconnect deadlines and schedule their expi
     },
   };
 
-  assert.equal(getNextRoomAlarmAt(room, { phase: "finished", expiresAt: 10_000 }), 10_000);
+  assert.equal(getNextRoomAlarmAt(room, { phase: "finished", expiresAt: 10_000, rankingStatus: "recorded" }), 10_000);
+  assert.equal(getNextRoomAlarmAt(room, { phase: "finished", expiresAt: 10_000 }, 1_000), 10_000);
+  assert.equal(getNextRoomAlarmAt(room, { phase: "finished", expiresAt: 30_000 }, 1_000, true), 11_000);
 });
 
 test("active matches with both grace deadlines elapsed never reschedule an alarm in the past", () => {

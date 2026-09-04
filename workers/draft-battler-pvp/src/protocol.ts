@@ -24,6 +24,7 @@ export type PvpErrorCode =
   | "bad_request"
   | "room_not_found"
   | "room_full"
+  | "same_player"
   | "invalid_token"
   | "stale_match"
   | "action_rejected"
@@ -31,6 +32,9 @@ export type PvpErrorCode =
   | "message_too_large"
   | "pvp_disabled"
   | "origin_forbidden"
+  | "invalid_init_data"
+  | "auth_unavailable"
+  | "rating_unavailable"
   | "internal_error";
 
 export type PvpClientMessage =

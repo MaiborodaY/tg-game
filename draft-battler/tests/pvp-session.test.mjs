@@ -93,9 +93,10 @@ test("create, join, and reconnect use the authenticated bootstrap API", async ()
     });
   };
 
-  assert.equal((await createPvpRoom("", fetcher)).seat, "host");
-  assert.equal((await joinPvpRoom("https://pvp.example", " ABCD2345 ", fetcher)).seat, "guest");
-  const reconnect = await reconnectPvpRoom("", SESSION, fetcher);
+  const options = { fetcher, telegramInitData: " signed-init-data " };
+  assert.equal((await createPvpRoom("", options)).seat, "host");
+  assert.equal((await joinPvpRoom("https://pvp.example", " ABCD2345 ", options)).seat, "guest");
+  const reconnect = await reconnectPvpRoom("", SESSION, options);
   assert.equal(reconnect.roomId, ROOM_ID);
   assert.equal(reconnect.socketTicket, SOCKET_TICKET);
 
@@ -107,6 +108,7 @@ test("create, join, and reconnect use the authenticated bootstrap API", async ()
   requests.forEach(({ init }) => {
     assert.equal(init.method, "POST");
     assert.equal(init.headers["content-type"], "application/json");
+    assert.equal(init.headers["x-telegram-init-data"], "signed-init-data");
   });
   assert.deepEqual(JSON.parse(requests[0].init.body), {});
   assert.deepEqual(JSON.parse(requests[1].init.body), {});
@@ -115,29 +117,29 @@ test("create, join, and reconnect use the authenticated bootstrap API", async ()
 
 test("PvP bootstrap errors expose bounded codes without leaking credentials", async () => {
   await assert.rejects(
-    joinPvpRoom("", "bad", async () => createJsonResponse({})),
+    joinPvpRoom("", "bad", { fetcher: async () => createJsonResponse({}) }),
     (error) => error instanceof PvpRequestError && error.code === "invalid_room_code" && !error.message.includes(SEAT_TOKEN),
   );
   await assert.rejects(
-    createPvpRoom("", async () => createJsonResponse({ ok: false, error: "room_full" }, 409)),
+    createPvpRoom("", { fetcher: async () => createJsonResponse({ ok: false, error: "room_full" }, 409) }),
     (error) => error instanceof PvpRequestError && error.code === "room_full" && error.status === 409,
   );
   await assert.rejects(
-    createPvpRoom("", async () => createJsonResponse({ ok: true }, 200)),
+    createPvpRoom("", { fetcher: async () => createJsonResponse({ ok: true }, 200) }),
     (error) => error instanceof PvpRequestError && error.code === "bad_response",
   );
   await assert.rejects(
-    createPvpRoom("", async () => createJsonResponse({
+    createPvpRoom("", { fetcher: async () => createJsonResponse({
       ok: true,
       roomId: ROOM_ID,
       seat: "host",
       seatToken: SEAT_TOKEN,
       snapshot: {},
-    }, 200)),
+    }, 200) }),
     (error) => error instanceof PvpRequestError && error.code === "bad_response",
   );
   await assert.rejects(
-    createPvpRoom("", async () => { throw new Error(`secret ${SEAT_TOKEN}`); }),
+    createPvpRoom("", { fetcher: async () => { throw new Error(`secret ${SEAT_TOKEN}`); } }),
     (error) => error instanceof PvpRequestError && error.code === "connection_failed" && !error.message.includes(SEAT_TOKEN),
   );
 });

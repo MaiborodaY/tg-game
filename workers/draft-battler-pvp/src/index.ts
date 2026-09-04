@@ -58,12 +58,26 @@ import {
 } from "./releasePolicy";
 import { settleExpiredOpponentAfterReconnect } from "./reconnectLifecycle";
 import { getNextRoomAlarmAt } from "./roomAlarm";
+import {
+  createBroBattlerRankingCandidate,
+  readBroBattlerLeaderboard,
+  settleBroBattlerMatch,
+  settleBroBattlerRankingCandidate,
+  type BroBattlerRankingCandidate,
+} from "./ranking";
+import {
+  TelegramAuthError,
+  authenticateOptionalTelegramRequest,
+  type TelegramPlayerIdentity,
+} from "./telegramAuth";
 
 export { getEnabledPvpBinding, isPvpEnabled } from "./releasePolicy";
 export type { PvpEnabledFlag, PvpFeatureEnvironment } from "./releasePolicy";
 
 export interface Env extends PvpFeatureEnvironment {
   DRAFT_PVP_ROOM: DurableObjectNamespace<DraftPvpRoom>;
+  WOL_DB: D1Database;
+  BOT_TOKEN?: string;
   PVP_ALLOWED_ORIGINS?: string;
   ENVIRONMENT?: string;
 }
@@ -106,14 +120,24 @@ const ROOM_STORAGE_KEY = "room:v2";
 const MATCH_STORAGE_KEY = "match:v2";
 const SOCKET_TICKET_STORAGE_PREFIX = "socket-ticket:v1:";
 const INTERNAL_CREATE_PATH = "/internal/create";
+const INTERNAL_USER_ID_HEADER = "x-draft-user-id";
+const INTERNAL_USER_NAME_HEADER = "x-draft-user-name";
+const PENDING_RANKINGS_STORAGE_KEY = "ranking-pending:v1";
 const CREATE_ROOM_ATTEMPTS = 4;
+
+interface PendingRanking {
+  candidate: BroBattlerRankingCandidate;
+}
 
 export class DraftPvpRoom extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === INTERNAL_CREATE_PATH && request.method === "POST") {
-      return this.createHostSession(request.headers.get("x-pvp-room-id") ?? "");
+      return this.createHostSession(
+        request.headers.get("x-pvp-room-id") ?? "",
+        readTrustedTelegramIdentity(request),
+      );
     }
 
     const route = parseRoomRoute(url.pathname);
@@ -135,13 +159,13 @@ export class DraftPvpRoom extends DurableObject<Env> {
     }
 
     if (route.action === "join" && hasExactKeys(body, [])) {
-      return this.createGuestSession(route.roomId);
+      return this.createGuestSession(route.roomId, readTrustedTelegramIdentity(request));
     }
 
     if ((route.action === "reconnect" || route.action === "socket_ticket") && hasExactKeys(body, ["seatToken"])) {
       const seatToken = readSeatToken(body.seatToken);
       return seatToken
-        ? this.reconnectSession(route.roomId, seatToken)
+        ? this.reconnectSession(route.roomId, seatToken, readTrustedTelegramIdentity(request))
         : errorResponse("invalid_token", "Invalid room token.", 403);
     }
 
@@ -196,17 +220,30 @@ export class DraftPvpRoom extends DurableObject<Env> {
 
   async alarm(): Promise<void> {
     const now = Date.now();
+    const settledRankings = await this.flushPendingRankings();
     let room = await this.readRoom();
     let match = await this.readMatch();
     if (!room) {
       await this.ctx.storage.deleteAlarm();
       return;
     }
+    if (match?.rankingStatus === "pending") {
+      const settledStatus = settledRankings.get(match.matchId);
+      if (settledStatus) {
+        match = { ...match, rankingStatus: settledStatus };
+        await this.writeMatch(match);
+      }
+    }
 
     const disconnectedRole = match?.phase !== "finished" ? getDisconnectForfeitRole(room, now) : undefined;
     if (match && disconnectedRole) {
       match = forfeitDisconnectedPlayer(match, disconnectedRole, now);
       await this.writeMatch(match);
+      match = await this.settleFinishedMatch(room, match);
+    }
+
+    if (match?.phase === "finished" && match.rankingStatus === undefined) {
+      match = await this.settleFinishedMatch(room, match);
     }
 
     if (match && isMatchExpired(match, now)) {
@@ -217,6 +254,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
 
       match = expireMatch(match, now);
       await this.writeMatch(match);
+      match = await this.settleFinishedMatch(room, match);
     }
 
     if (!match) {
@@ -238,7 +276,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
     }
   }
 
-  private async createHostSession(rawRoomId: string): Promise<Response> {
+  private async createHostSession(rawRoomId: string, identity?: TelegramPlayerIdentity): Promise<Response> {
     const roomId = normalizeRoomId(rawRoomId);
     if (!roomId || await this.readRoom()) {
       return errorResponse("action_rejected", "Room code collision.", 409);
@@ -249,7 +287,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
     const tokenHash = await hashSeatToken(seatToken);
     const connectionId = `http:${crypto.randomUUID()}`;
     let room = createRoom({ roomId, now });
-    const claim = claimSeat(room, { issuedTokenHash: tokenHash, connectionId, now });
+    const claim = claimSeat(room, { issuedTokenHash: tokenHash, connectionId, now, identity });
     room = disconnectSeat(claim.room, { role: claim.role, tokenHash, connectionId, now });
     await this.writeRoom(room);
     await this.scheduleAlarm(room);
@@ -257,7 +295,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
     return json(await this.createSessionResponse(room, undefined, claim.role, seatToken));
   }
 
-  private async createGuestSession(roomId: string): Promise<Response> {
+  private async createGuestSession(roomId: string, identity?: TelegramPlayerIdentity): Promise<Response> {
     let room = await this.readRoom();
     if (!room || room.roomId !== roomId || Date.now() >= room.expiresAt) {
       return errorResponse("room_not_found", "Room not found.", 404);
@@ -268,7 +306,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
     const tokenHash = await hashSeatToken(seatToken);
     const connectionId = `http:${crypto.randomUUID()}`;
     try {
-      const claim = claimSeat(room, { issuedTokenHash: tokenHash, connectionId, now });
+      const claim = claimSeat(room, { issuedTokenHash: tokenHash, connectionId, now, identity });
       if (claim.role !== "guest" || claim.reconnected) {
         return errorResponse("room_full", "Room is full.", 409);
       }
@@ -277,12 +315,19 @@ export class DraftPvpRoom extends DurableObject<Env> {
       await this.scheduleAlarm(room);
       await this.broadcastSnapshots(room, await this.readMatch());
       return json(await this.createSessionResponse(room, await this.readMatch(), claim.role, seatToken));
-    } catch {
+    } catch (error) {
+      if (error instanceof MatchDomainError && error.code === "same_player") {
+        return errorResponse("same_player", error.message, 409);
+      }
       return errorResponse("room_full", "Room is full.", 409);
     }
   }
 
-  private async reconnectSession(roomId: string, seatToken: string): Promise<Response> {
+  private async reconnectSession(
+    roomId: string,
+    seatToken: string,
+    identity?: TelegramPlayerIdentity,
+  ): Promise<Response> {
     const expiry = await this.reconcileExpiry(Date.now());
     const room = expiry.status === "missing" ? undefined : expiry.room;
     const match = expiry.status === "missing" ? undefined : expiry.match;
@@ -294,6 +339,10 @@ export class DraftPvpRoom extends DurableObject<Env> {
     const role = findSeatRoleByTokenHash(room, tokenHash);
     if (!role) {
       return errorResponse("invalid_token", "Invalid room token.", 403);
+    }
+    const seatIdentity = room.seats[role]?.identity;
+    if (identity && seatIdentity && identity.userId !== seatIdentity.userId) {
+      return errorResponse("invalid_token", "This room seat belongs to another Telegram player.", 403);
     }
 
     // Reconnect bootstrap is deliberately read-only. The existing socket remains authoritative
@@ -379,6 +428,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
     match = reconnectSettlement.match;
     if (reconnectSettlement.forfeitedRole && match) {
       await this.writeMatch(match);
+      match = await this.settleFinishedMatch(room, match);
     }
     await this.scheduleAlarm(room, match);
     // Retire the old connection only after the replacement is accepted and durable seat ownership
@@ -424,6 +474,7 @@ export class DraftPvpRoom extends DurableObject<Env> {
           round: match.round,
         }, now).state;
         await this.writeMatch(match);
+        match = await this.settleFinishedMatch(room, match);
       }
       await this.writeRoom(disconnectSeat(room, {
         role: attachment.role,
@@ -464,6 +515,8 @@ export class DraftPvpRoom extends DurableObject<Env> {
     assertCurrentMatch(message, match);
     const intent = toMatchIntent(message);
     match = applyMatchIntent(match, attachment.role, intent, now).state;
+    await this.writeMatch(match);
+    match = await this.settleFinishedMatch(room, match);
     if (message.type === "rematch" && isRematchReady(match)) {
       match = startRematch(match, { matchId: createMatchId(), seed: createMatchSeed(room.roomId), now });
     }
@@ -577,6 +630,71 @@ export class DraftPvpRoom extends DurableObject<Env> {
     }
   }
 
+  private async settleFinishedMatch(room: RoomState, match: MatchState): Promise<MatchState> {
+    if (match.phase !== "finished" || match.rankingStatus) {
+      return match;
+    }
+
+    const candidate = createBroBattlerRankingCandidate(room, match);
+    if (!candidate) {
+      const unranked = { ...match, rankingStatus: "unranked" as const };
+      await this.writeMatch(unranked);
+      return unranked;
+    }
+
+    try {
+      const status = await settleBroBattlerMatch(this.env.WOL_DB, room, match);
+      const settled = { ...match, rankingStatus: status };
+      await this.writeMatch(settled);
+      return settled;
+    } catch (error) {
+      await this.enqueuePendingRanking(candidate);
+      const pending = { ...match, rankingStatus: "pending" as const };
+      await this.writeMatch(pending);
+      console.error("BroBattler ranking settlement queued", { matchId: match.matchId, error });
+      return pending;
+    }
+  }
+
+  private async enqueuePendingRanking(candidate: BroBattlerRankingCandidate): Promise<void> {
+    const pending = await this.readPendingRankings();
+    if (!pending.some((entry) => entry.candidate.matchId === candidate.matchId)) {
+      pending.push({ candidate });
+      await this.ctx.storage.put(PENDING_RANKINGS_STORAGE_KEY, pending);
+    }
+  }
+
+  private async flushPendingRankings(): Promise<Map<string, "recorded" | "unranked">> {
+    const pending = await this.readPendingRankings();
+    const remaining: PendingRanking[] = [];
+    const settled = new Map<string, "recorded" | "unranked">();
+    for (const entry of pending) {
+      try {
+        settled.set(entry.candidate.matchId, await settleBroBattlerRankingCandidate(this.env.WOL_DB, entry.candidate));
+      } catch (error) {
+        remaining.push(entry);
+        console.error("BroBattler ranking settlement retry failed", {
+          matchId: entry.candidate.matchId,
+          error,
+        });
+      }
+    }
+    if (remaining.length > 0) {
+      await this.ctx.storage.put(PENDING_RANKINGS_STORAGE_KEY, remaining);
+    } else if (pending.length > 0) {
+      await this.ctx.storage.delete(PENDING_RANKINGS_STORAGE_KEY);
+    }
+    return settled;
+  }
+
+  private async readPendingRankings(): Promise<PendingRanking[]> {
+    const value = await this.ctx.storage.get<unknown>(PENDING_RANKINGS_STORAGE_KEY);
+    if (!Array.isArray(value)) return [];
+    return value.filter((entry): entry is PendingRanking => Boolean(
+      entry && typeof entry === "object" && "candidate" in entry,
+    ));
+  }
+
   private async readRoom(): Promise<RoomState | undefined> {
     const room = await this.ctx.storage.get<unknown>(ROOM_STORAGE_KEY);
     if (room !== undefined && !isCurrentRoomState(room)) {
@@ -611,15 +729,17 @@ export class DraftPvpRoom extends DurableObject<Env> {
     }
     if (expiry.status === "match_expired") {
       await this.writeMatch(expiry.match);
-      await this.scheduleAlarm(expiry.room, expiry.match);
-      await this.broadcastSnapshots(expiry.room, expiry.match);
+      const settledMatch = await this.settleFinishedMatch(expiry.room, expiry.match);
+      await this.scheduleAlarm(expiry.room, settledMatch);
+      await this.broadcastSnapshots(expiry.room, settledMatch);
     }
     return expiry;
   }
 
   private async scheduleAlarm(room: RoomState, match?: MatchState): Promise<void> {
     const now = Date.now();
-    const nextAlarmAt = getNextRoomAlarmAt(room, match, now);
+    const hasPendingRanking = (await this.readPendingRankings()).length > 0;
+    const nextAlarmAt = getNextRoomAlarmAt(room, match, now, hasPendingRanking);
     if (Number.isFinite(nextAlarmAt)) {
       await this.ctx.storage.setAlarm(nextAlarmAt);
     } else {
@@ -663,6 +783,29 @@ export default {
       return errorResponse("pvp_disabled", "PvP is disabled for this release.", 404, request);
     }
 
+    let identity: TelegramPlayerIdentity | undefined;
+    try {
+      identity = await authenticateOptionalTelegramRequest(request, env);
+    } catch (error) {
+      if (error instanceof TelegramAuthError) {
+        return errorResponse(error.code, error.message, error.status, request);
+      }
+      return errorResponse("invalid_init_data", "Invalid Telegram authentication.", 401, request);
+    }
+
+    if (request.method === "POST" && url.pathname === `${API_PREFIX}/leaderboard`) {
+      const body = await readJsonBody(request);
+      if (!body || !hasExactKeys(body, [])) {
+        return errorResponse("bad_request", "Invalid leaderboard request.", 400, request);
+      }
+      try {
+        return json({ ok: true, ...(await readBroBattlerLeaderboard(env.WOL_DB, identity)) }, 200, request);
+      } catch (error) {
+        console.error("BroBattler leaderboard read failed", { error });
+        return errorResponse("rating_unavailable", "Leaderboard is temporarily unavailable.", 503, request);
+      }
+    }
+
     if (request.method === "POST" && url.pathname === `${API_PREFIX}/rooms`) {
       const body = await readJsonBody(request);
       if (!body || !hasExactKeys(body, [])) {
@@ -673,7 +816,7 @@ export default {
         const roomId = createRoomCode();
         const response = await roomNamespace.getByName(roomId).fetch(new Request(`https://room.invalid${INTERNAL_CREATE_PATH}`, {
           method: "POST",
-          headers: { "x-pvp-room-id": roomId },
+          headers: createTrustedRoomHeaders(undefined, identity, { "x-pvp-room-id": roomId }),
         }));
         if (response.status !== 409) {
           return withCors(response, request);
@@ -687,7 +830,10 @@ export default {
       return errorResponse("room_not_found", "Room not found.", 404, request);
     }
 
-    const response = await roomNamespace.getByName(route.roomId).fetch(request);
+    const forwardedRequest = route.action === "socket"
+      ? request
+      : new Request(request, { headers: createTrustedRoomHeaders(request, identity) });
+    const response = await roomNamespace.getByName(route.roomId).fetch(forwardedRequest);
     return route.action === "socket" ? response : withCors(response, request);
   },
 };
@@ -772,6 +918,27 @@ function findSeatRoleByTokenHash(room: RoomState, tokenHash: string): PlayerRole
   });
 }
 
+function createTrustedRoomHeaders(
+  request: Request | undefined,
+  identity: TelegramPlayerIdentity | undefined,
+  extra: Record<string, string> = {},
+): Headers {
+  const headers = new Headers(extra);
+  const contentType = request?.headers.get("content-type");
+  if (contentType) headers.set("content-type", contentType);
+  if (identity) {
+    headers.set(INTERNAL_USER_ID_HEADER, identity.userId);
+    headers.set(INTERNAL_USER_NAME_HEADER, identity.displayName);
+  }
+  return headers;
+}
+
+function readTrustedTelegramIdentity(request: Request): TelegramPlayerIdentity | undefined {
+  const userId = request.headers.get(INTERNAL_USER_ID_HEADER)?.trim();
+  const displayName = request.headers.get(INTERNAL_USER_NAME_HEADER)?.trim();
+  return userId && displayName ? { userId, displayName } : undefined;
+}
+
 function getSocketTicketStorageKey(role: PlayerRole): string {
   return `${SOCKET_TICKET_STORAGE_PREFIX}${role}`;
 }
@@ -835,7 +1002,7 @@ function corsHeaders(request: Request): Record<string, string> {
   return {
     "access-control-allow-origin": origin,
     "access-control-allow-methods": "POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
+    "access-control-allow-headers": "content-type, x-telegram-init-data",
     "access-control-max-age": "600",
     vary: "Origin",
   };
