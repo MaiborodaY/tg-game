@@ -135,10 +135,30 @@ test("bot difficulty choices are explicit in every locale", () => {
   });
 });
 
+test("main menu utility copy stays short without changing modal copy", () => {
+  const expectations = {
+    ru: { rules: "Правила", cards: "Карты", history: "История · {count}" },
+    uk: { rules: "Правила", cards: "Карти", history: "Історія · {count}" },
+    en: { rules: "Rules", cards: "Cards", history: "History · {count}" },
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    assert.equal(copy.howToPlay, expectations[locale].rules, `${locale}:howToPlay`);
+    assert.equal(copy.compendium, expectations[locale].cards, `${locale}:compendium`);
+    assert.equal(copy.runHistoryButton, expectations[locale].history, `${locale}:runHistoryButton`);
+    assert.match(copy.howToTitle, /\S/, `${locale}:howToTitle`);
+    assert.match(copy.compendiumTitle, /\S/, `${locale}:compendiumTitle`);
+    assert.match(copy.compendiumIntro, /\S/, `${locale}:compendiumIntro`);
+    assert.match(copy.runHistoryIntro, /\{limit\}/, `${locale}:runHistoryIntro limit`);
+  });
+});
+
 test("daily challenge, local history, replay, and sharing copy is complete", () => {
   const retentionKeys = [
     "dailyChallengeTitle",
     "dailyChallengeHint",
+    "dailyChallengeShortHint",
     "dailyChallengePlay",
     "runHistoryButton",
     "runHistoryTitle",
@@ -159,9 +179,9 @@ test("daily challenge, local history, replay, and sharing copy is complete", () 
     "shareResultText",
   ];
   const dailyExpectations = {
-    ru: ["сегодня", "сильный бот", "00:00 UTC"],
-    uk: ["сьогодні", "сильний бот", "00:00 UTC"],
-    en: ["today", "strong bot", "00:00 UTC"],
+    ru: { full: ["сегодня", "сильный бот", "00:00 UTC"], short: "Сегодня · сильный бот" },
+    uk: { full: ["сьогодні", "сильний бот", "00:00 UTC"], short: "Сьогодні · сильний бот" },
+    en: { full: ["today", "strong bot", "00:00 UTC"], short: "Today · strong bot" },
   };
   const sharePlaceholders = [
     "difficulty",
@@ -175,15 +195,20 @@ test("daily challenge, local history, replay, and sharing copy is complete", () 
   SUPPORTED_LOCALES.forEach((locale) => {
     const copy = getUiCopy(locale);
     retentionKeys.forEach((key) => assert.match(copy[key], /\S/, `${locale}:${key}`));
-    dailyExpectations[locale].forEach((fragment) => {
+    dailyExpectations[locale].full.forEach((fragment) => {
       assert.ok(copy.dailyChallengeHint.includes(fragment), `${locale}:dailyChallengeHint:${fragment}`);
     });
+    assert.equal(copy.dailyChallengeShortHint, dailyExpectations[locale].short, `${locale}:dailyChallengeShortHint`);
     assert.deepEqual(
       [...copy.shareResultText.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]).sort(),
       sharePlaceholders,
       `${locale}:shareResultText placeholders`,
     );
-    assert.match(copy.runHistoryButton, /\{count\}.*\{limit\}/, `${locale}:runHistoryButton placeholders`);
+    assert.deepEqual(
+      [...copy.runHistoryButton.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]),
+      ["count"],
+      `${locale}:runHistoryButton placeholders`,
+    );
     assert.match(copy.runHistoryIntro, /\{limit\}/, `${locale}:runHistoryIntro limit`);
 
     const formattedShare = formatMessage(copy.shareResultText, {

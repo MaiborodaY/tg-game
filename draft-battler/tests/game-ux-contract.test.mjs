@@ -38,17 +38,44 @@ test("a solo run can be abandoned from draft, round results, and active battle",
   assert.match(styles, /\.battle-playback-controls \.battle-playback-controls__abandon\s*\{[^}]*border-color:[^}]*color:/s);
 });
 
-test("main menu exposes fair standard and strong bot modes", () => {
+test("main menu exposes every mode as a compact one-click action", () => {
+  assert.match(mainSource, /header\.className = "main-menu__header"/);
+  assert.match(mainSource, /document\.createElement\("details"\)/);
+  assert.match(mainSource, /picker\.className = "main-menu-language"/);
+  assert.match(mainSource, /summary\.className = "main-menu-language__summary"/);
+  assert.match(mainSource, /setFocusKey\(summary, "main-menu-language"\)/);
+  assert.match(mainSource, /picker\.append\(summary, createLanguageSelector\("main-menu-language"\)\)/);
+  assert.match(mainSource, /modeGrid\.className = "main-menu__mode-grid"/);
   assert.match(mainSource, /createBotDifficultyButton\("standard"\)/);
   assert.match(mainSource, /createBotDifficultyButton\("strong"\)/);
-  assert.match(mainSource, /duelButtons\.setAttribute\("role", "group"\)/);
+  assert.match(mainSource, /modeGrid\.append\(createOnlineModeButton\(\)\)/);
+  assert.match(mainSource, /modeGrid\.append\(createDailyChallengeButton\(\)\)/);
+  assert.match(mainSource, /modeGrid\.setAttribute\("role", "group"\)/);
+  assert.match(mainSource, /modeGrid\.setAttribute\("aria-label", copy\.startRun\)/);
+  assert.doesNotMatch(mainSource, /modeGrid\.setAttribute\("aria-label", copy\.botDifficulty\)/);
   assert.match(mainSource, /button\.addEventListener\("click", \(\) => startNewSoloRun\(botDifficulty\)\)/);
+  assert.match(mainSource, /button\.addEventListener\("click", startOnlineLobby\)/);
+  assert.match(mainSource, /button\.addEventListener\("click", startDailyChallenge\)/);
+  assert.match(mainSource, /hint\.textContent = copy\.bot/);
+  assert.match(mainSource, /hint\.textContent = copy\.dailyChallengeShortHint/);
+  assert.match(mainSource, /button\.title = fullHint/);
+  assert.match(mainSource, /button\.title = copy\.dailyChallengeHint/);
+  assert.doesNotMatch(mainSource, /createDailyChallengeCard/);
   assert.match(mainSource, /createRun\(seed, botDifficulty\)/);
   assert.match(mainSource, /function startNewSoloRun\(botDifficulty: BotDifficulty\): void/);
   assert.match(mainSource, /snapshot\.run\.botDifficulty/);
-  assert.match(styles, /\.main-menu__duel-buttons\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
-  assert.match(styles, /\.main-menu__difficulty-button\s*\{[^}]*min-height:\s*68px/s);
-  assert.match(styles, /\.main-menu__difficulty-button--strong\s*\{[^}]*border-color:/s);
+  assert.match(styles, /\.main-menu__mode-grid\s*\{/);
+  assert.match(styles, /\.main-menu__mode-button\s*\{/);
+  assert.match(styles, /\.main-menu__mode-button--strong\s*\{[^}]*border-color:/s);
+});
+
+test("main menu keeps secondary actions in one compact utility row", () => {
+  assert.match(mainSource, /utilityActions\.className = "main-menu__utility-actions"/);
+  assert.match(mainSource, /utilityActions\.append\(howToButton, compendiumButton, createRunHistoryButton\(\)\)/);
+  assert.match(mainSource, /button\.className = "main-menu__button main-menu__history-button"/);
+  assert.match(mainSource, /formatMessage\(copy\.runHistoryButton, \{\s*count: soloRunHistory\.length,\s*\}\)/s);
+  assert.doesNotMatch(mainSource, /formatMessage\(copy\.runHistoryButton, \{\s*count: soloRunHistory\.length,\s*limit:/s);
+  assert.match(styles, /\.main-menu__utility-actions\s*\{/);
 });
 
 test("PvP lobby and match actions use localized, explicit player states", () => {

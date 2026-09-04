@@ -791,28 +791,30 @@ function createMainMenuOverlay(): HTMLElement {
   title.className = "main-menu__title";
   title.textContent = APP_NAME;
 
+  const header = document.createElement("header");
+  header.className = "main-menu__header";
+  header.append(title, createMainMenuLanguagePicker());
+
   const subtitle = document.createElement("p");
   subtitle.className = "main-menu__subtitle";
   subtitle.textContent = copy.menuSubtitle;
 
-  const languageSelector = createLanguageSelector();
-
   const actions = document.createElement("div");
   actions.className = "main-menu__actions";
 
-  const difficultyLabel = document.createElement("span");
-  difficultyLabel.className = "main-menu__difficulty-label";
-  difficultyLabel.id = "bot-difficulty-label";
-  difficultyLabel.textContent = copy.botDifficulty;
-
-  const duelButtons = document.createElement("div");
-  duelButtons.className = "main-menu__duel-buttons";
-  duelButtons.setAttribute("role", "group");
-  duelButtons.setAttribute("aria-labelledby", difficultyLabel.id);
-  duelButtons.append(
+  const modeGrid = document.createElement("div");
+  modeGrid.className = "main-menu__mode-grid";
+  modeGrid.setAttribute("role", "group");
+  modeGrid.setAttribute("aria-label", copy.startRun);
+  modeGrid.append(
     createBotDifficultyButton("standard"),
     createBotDifficultyButton("strong"),
   );
+
+  if (PVP_UI_ENABLED) {
+    modeGrid.append(createOnlineModeButton());
+  }
+  modeGrid.append(createDailyChallengeButton());
 
   const howToButton = document.createElement("button");
   howToButton.className = "main-menu__button";
@@ -827,64 +829,75 @@ function createMainMenuOverlay(): HTMLElement {
   setFocusKey(compendiumButton, "compendium-open");
   compendiumButton.addEventListener("click", openCompendium);
 
-  const referenceActions = document.createElement("div");
-  referenceActions.className = "main-menu__reference-actions";
-  referenceActions.append(howToButton, compendiumButton);
+  const utilityActions = document.createElement("div");
+  utilityActions.className = "main-menu__utility-actions";
+  utilityActions.append(howToButton, compendiumButton, createRunHistoryButton());
 
-  const retentionActions = document.createElement("div");
-  retentionActions.className = "main-menu__retention-actions";
-  retentionActions.append(createDailyChallengeCard(), createRunHistoryButton());
+  actions.append(modeGrid, utilityActions);
 
-  actions.append(difficultyLabel, duelButtons, retentionActions, referenceActions);
-  if (PVP_UI_ENABLED) {
-    const onlineButton = document.createElement("button");
-    onlineButton.className = "main-menu__button";
-    onlineButton.type = "button";
-    onlineButton.textContent = copy.onlineMode;
-    onlineButton.addEventListener("click", startOnlineLobby);
-    actions.append(onlineButton);
-  }
-
-  panel.append(title, subtitle, languageSelector, actions);
+  panel.append(header, subtitle, actions);
   overlay.append(panel);
 
   return overlay;
 }
 
-function createDailyChallengeCard(): HTMLElement {
+function createMainMenuLanguagePicker(): HTMLDetailsElement {
   const copy = getCopy();
-  const card = document.createElement("section");
-  card.className = "daily-challenge-card";
+  const picker = document.createElement("details");
+  picker.className = "main-menu-language";
 
-  const body = document.createElement("div");
-  body.className = "daily-challenge-card__copy";
-  const title = document.createElement("strong");
-  title.className = "daily-challenge-card__title";
-  title.textContent = copy.dailyChallengeTitle;
+  const summary = document.createElement("summary");
+  summary.className = "main-menu-language__summary";
+  summary.textContent = activeLocale.toUpperCase();
+  summary.title = `${copy.language}: ${copy.localeName}`;
+  summary.setAttribute("aria-label", summary.title);
+  setFocusKey(summary, "main-menu-language");
+
+  picker.append(summary, createLanguageSelector("main-menu-language"));
+  return picker;
+}
+
+function createOnlineModeButton(): HTMLButtonElement {
+  const copy = getCopy();
+  const button = document.createElement("button");
+  button.className = "main-menu__mode-button main-menu__mode-button--online";
+  button.type = "button";
+
+  const label = document.createElement("strong");
+  label.textContent = copy.onlineMode;
   const hint = document.createElement("span");
-  hint.className = "daily-challenge-card__hint";
-  hint.textContent = copy.dailyChallengeHint;
-  body.append(title, hint);
+  hint.textContent = "PvP";
+  button.append(label, hint);
+  button.addEventListener("click", startOnlineLobby);
+  return button;
+}
 
-  const playButton = document.createElement("button");
-  playButton.className = "daily-challenge-card__button";
-  playButton.type = "button";
-  playButton.textContent = copy.dailyChallengePlay;
-  setFocusKey(playButton, "daily-challenge-play");
-  playButton.addEventListener("click", startDailyChallenge);
+function createDailyChallengeButton(): HTMLButtonElement {
+  const copy = getCopy();
+  const button = document.createElement("button");
+  button.className = "main-menu__mode-button main-menu__mode-button--daily";
+  button.type = "button";
+  button.title = copy.dailyChallengeHint;
+  button.setAttribute("aria-label", `${copy.dailyChallengeTitle}. ${copy.dailyChallengeHint}`);
 
-  card.append(body, playButton);
-  return card;
+  const label = document.createElement("strong");
+  label.textContent = copy.dailyChallengeTitle;
+  const hint = document.createElement("span");
+  hint.textContent = copy.dailyChallengeShortHint;
+  button.append(label, hint);
+  setFocusKey(button, "daily-challenge-play");
+  button.addEventListener("click", startDailyChallenge);
+
+  return button;
 }
 
 function createRunHistoryButton(): HTMLButtonElement {
   const copy = getCopy();
   const button = document.createElement("button");
-  button.className = "main-menu__history-button";
+  button.className = "main-menu__button main-menu__history-button";
   button.type = "button";
   button.textContent = formatMessage(copy.runHistoryButton, {
     count: soloRunHistory.length,
-    limit: SOLO_RUN_HISTORY_LIMIT,
   });
   setFocusKey(button, "run-history-open");
   button.addEventListener("click", openRunHistory);
@@ -895,17 +908,21 @@ function createBotDifficultyButton(botDifficulty: BotDifficulty): HTMLButtonElem
   const copy = getCopy();
   const button = document.createElement("button");
   button.className = botDifficulty === "strong"
-    ? "main-menu__button main-menu__difficulty-button main-menu__difficulty-button--strong"
-    : "main-menu__button main-menu__button--primary main-menu__difficulty-button";
+    ? "main-menu__mode-button main-menu__mode-button--strong"
+    : "main-menu__mode-button main-menu__mode-button--primary";
   button.type = "button";
   button.dataset.botDifficulty = botDifficulty;
+
+  const fullHint = botDifficulty === "strong"
+    ? copy.botDifficultyStrongHint
+    : copy.botDifficultyStandardHint;
+  button.title = fullHint;
+  button.setAttribute("aria-label", `${getBotDifficultyLabel(botDifficulty)}. ${fullHint}`);
 
   const label = document.createElement("strong");
   label.textContent = getBotDifficultyLabel(botDifficulty);
   const hint = document.createElement("span");
-  hint.textContent = botDifficulty === "strong"
-    ? copy.botDifficultyStrongHint
-    : copy.botDifficultyStandardHint;
+  hint.textContent = copy.bot;
   button.append(label, hint);
   button.addEventListener("click", () => startNewSoloRun(botDifficulty));
   return button;
@@ -916,7 +933,7 @@ function getBotDifficultyLabel(botDifficulty: BotDifficulty): string {
   return botDifficulty === "strong" ? copy.botDifficultyStrong : copy.botDifficultyStandard;
 }
 
-function createLanguageSelector(): HTMLElement {
+function createLanguageSelector(focusAfterSelection?: string): HTMLElement {
   const copy = getCopy();
   const selector = document.createElement("div");
   selector.className = "language-selector";
@@ -932,7 +949,12 @@ function createLanguageSelector(): HTMLElement {
     button.title = getUiCopy(locale).localeName;
     button.setAttribute("aria-label", getUiCopy(locale).localeName);
     button.setAttribute("aria-pressed", String(locale === activeLocale));
-    button.addEventListener("click", () => selectLocale(locale));
+    button.addEventListener("click", () => {
+      if (focusAfterSelection) {
+        requestFocusAfterRender(focusAfterSelection);
+      }
+      selectLocale(locale);
+    });
     selector.append(button);
   });
 
@@ -1175,7 +1197,7 @@ function closeHowToPlay(): void {
   markHowToSeen(preferenceStorage);
   render();
   queueMicrotask(() => {
-    document.querySelector<HTMLButtonElement>(".main-menu__button--primary")?.focus();
+    document.querySelector<HTMLButtonElement>(".main-menu__mode-button--primary")?.focus();
   });
 }
 

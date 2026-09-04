@@ -29,6 +29,7 @@ export interface UiCopy {
   startRun: string;
   dailyChallengeTitle: string;
   dailyChallengeHint: string;
+  dailyChallengeShortHint: string;
   dailyChallengePlay: string;
   runHistoryButton: string;
   runHistoryTitle: string;
@@ -371,8 +372,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     startRun: "Начать дуэль",
     dailyChallengeTitle: "Испытание дня",
     dailyChallengeHint: "Один расклад на сегодня · сильный бот · обновление в 00:00 UTC.",
+    dailyChallengeShortHint: "Сегодня · сильный бот",
     dailyChallengePlay: "Играть",
-    runHistoryButton: "История · {count}/{limit}",
+    runHistoryButton: "История · {count}",
     runHistoryTitle: "Последние матчи",
     runHistoryIntro: "Хранятся локально на этом устройстве, до {limit} матчей.",
     runHistoryEmpty: "Здесь появятся завершённые матчи на этом устройстве.",
@@ -447,8 +449,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorOriginForbidden: "Подключение с этого адреса запрещено.",
     pvpErrorInternal: "Ошибка сервера. Попробуйте ещё раз.",
     pvpErrorBadRequest: "Сервер не принял запрос.",
-    howToPlay: "Как играть",
-    compendium: "Карты и синергии",
+    howToPlay: "Правила",
+    compendium: "Карты",
     compendiumTitle: "Карты и синергии",
     compendiumIntro: "Изучите весь набор бойцов и точные бонусы синергий до начала дуэли.",
     compendiumCards: "Карты",
@@ -601,8 +603,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     startRun: "Почати дуель",
     dailyChallengeTitle: "Випробування дня",
     dailyChallengeHint: "Один розклад на сьогодні · сильний бот · оновлення о 00:00 UTC.",
+    dailyChallengeShortHint: "Сьогодні · сильний бот",
     dailyChallengePlay: "Грати",
-    runHistoryButton: "Історія · {count}/{limit}",
+    runHistoryButton: "Історія · {count}",
     runHistoryTitle: "Останні матчі",
     runHistoryIntro: "Зберігаються локально на цьому пристрої, до {limit} матчів.",
     runHistoryEmpty: "Тут з’являться завершені матчі на цьому пристрої.",
@@ -677,8 +680,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorOriginForbidden: "Підключення з цієї адреси заборонено.",
     pvpErrorInternal: "Помилка сервера. Спробуйте ще раз.",
     pvpErrorBadRequest: "Сервер не прийняв запит.",
-    howToPlay: "Як грати",
-    compendium: "Карти й синергії",
+    howToPlay: "Правила",
+    compendium: "Карти",
     compendiumTitle: "Карти й синергії",
     compendiumIntro: "Перегляньте весь набір бійців і точні бонуси синергій до початку дуелі.",
     compendiumCards: "Карти",
@@ -831,8 +834,9 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     startRun: "Start duel",
     dailyChallengeTitle: "Daily challenge",
     dailyChallengeHint: "One layout today · strong bot · resets at 00:00 UTC.",
+    dailyChallengeShortHint: "Today · strong bot",
     dailyChallengePlay: "Play",
-    runHistoryButton: "History · {count}/{limit}",
+    runHistoryButton: "History · {count}",
     runHistoryTitle: "Recent matches",
     runHistoryIntro: "Stored locally on this device, up to {limit} matches.",
     runHistoryEmpty: "Completed matches on this device will appear here.",
@@ -907,8 +911,8 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorOriginForbidden: "Connections from this address are not allowed.",
     pvpErrorInternal: "Server error. Try again.",
     pvpErrorBadRequest: "The server rejected the request.",
-    howToPlay: "How to play",
-    compendium: "Cards & synergies",
+    howToPlay: "Rules",
+    compendium: "Cards",
     compendiumTitle: "Cards & synergies",
     compendiumIntro: "Review every fighter and the exact synergy bonuses before starting a duel.",
     compendiumCards: "Cards",

@@ -49,11 +49,40 @@ test("PvP lobby remains usable on narrow safe-area viewports", () => {
   );
 });
 
-test("retention controls and history modal remain accessible on 320 by 568 screens", () => {
-  assert.match(styles, /\.daily-challenge-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s);
+test("main menu and history remain accessible on 320 by 568 screens", () => {
   assert.match(
     styles,
-    /\.daily-challenge-card__button,\s*\.main-menu__history-button\s*\{[^}]*min-height:\s*44px/s,
+    /\.main-menu-overlay\s*\{[^}]*padding:[^}]*var\(--safe-top\)[^}]*var\(--safe-right\)[^}]*var\(--safe-bottom\)[^}]*var\(--safe-left\)/s,
+  );
+  assert.match(styles, /\.main-menu\s*\{[^}]*max-height:\s*100%[^}]*overflow-y:\s*auto/s);
+  assert.match(
+    styles,
+    /\.main-menu__header\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s,
+  );
+  assert.match(styles, /\.main-menu__title\s*\{[^}]*text-transform:\s*none/s);
+  assert.match(styles, /\.main-menu-language__summary\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(styles, /\.main-menu-language\[open\] > \.language-selector\s*\{[^}]*display:\s*flex/s);
+  assert.match(
+    styles,
+    /\.main-menu__mode-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s,
+  );
+  assert.match(styles, /\.main-menu__mode-button\s*\{[^}]*min-height:\s*68px/s);
+  assert.match(
+    styles,
+    /\.main-menu__mode-button:last-child:nth-child\(odd\)\s*\{[^}]*grid-column:\s*1 \/ -1/s,
+  );
+  for (const modifier of ["primary", "strong", "online", "daily"]) {
+    assert.match(styles, new RegExp(`\\.main-menu__mode-button--${modifier}\\s*\\{`));
+  }
+  assert.match(
+    styles,
+    /\.main-menu__utility-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s,
+  );
+  assert.match(styles, /\.main-menu__button\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(styles, /\.main-menu__history-button\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(
+    styles,
+    /@media\s*\(max-height:\s*600px\)[\s\S]*?\.main-menu__subtitle\s*\{[^}]*display:\s*none[^}]*\}[\s\S]*?\.main-menu__mode-button\s*\{[^}]*min-height:\s*60px/s,
   );
   assert.match(
     styles,
