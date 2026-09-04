@@ -13,7 +13,7 @@ export interface RoundDamageSynergyTotal {
 }
 
 export interface RoundDamagePresentation {
-  unitLeaders: RoundDamageUnitTotal[];
+  units: RoundDamageUnitTotal[];
   synergies: RoundDamageSynergyTotal[];
 }
 
@@ -33,13 +33,13 @@ export function createRoundDamagePresentation(
     }
 
     if (entry.source.kind === "unit") {
-      const creditedId = entry.source.unit.summonedBy ?? entry.source.unit.instanceId;
-      const creditedUnit = registry.get(creditedId) ?? entry.source.unit;
-      const existing = unitTotals.get(creditedId);
+      const sourceId = entry.source.unit.instanceId;
+      const sourceUnit = registry.get(sourceId) ?? entry.source.unit;
+      const existing = unitTotals.get(sourceId);
       if (existing) {
         existing.amount += amount;
       } else {
-        unitTotals.set(creditedId, { unit: creditedUnit, amount });
+        unitTotals.set(sourceId, { unit: sourceUnit, amount });
       }
       return;
     }
@@ -58,11 +58,8 @@ export function createRoundDamagePresentation(
   });
 
   const rankedUnits = [...unitTotals.values()].sort(compareUnitDamage);
-  const leaderAmount = rankedUnits[0]?.amount;
   return {
-    unitLeaders: leaderAmount === undefined
-      ? []
-      : rankedUnits.filter((entry) => entry.amount === leaderAmount),
+    units: rankedUnits,
     synergies: [...synergyTotals.values()].sort((left, right) =>
       right.amount - left.amount
         || left.tag.localeCompare(right.tag)

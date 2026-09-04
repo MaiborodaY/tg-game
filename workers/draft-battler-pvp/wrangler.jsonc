@@ -9,6 +9,9 @@
     "ENVIRONMENT": "production",
     "PVP_ALLOWED_ORIGINS": "https://draft-battler-pvp.mr-maybik.workers.dev"
   },
+  "secrets": {
+    "required": ["BOT_TOKEN"]
+  },
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application",

@@ -55,6 +55,7 @@ test("the production release config explicitly enables PvP for the public MVP", 
 
   assert.equal(config.vars?.PVP_ENABLED, "true");
   assert.equal(config.vars?.ENVIRONMENT, "production");
+  assert.deepEqual(config.secrets?.required, ["BOT_TOKEN"]);
   assert.equal(
     config.vars?.PVP_ALLOWED_ORIGINS,
     "https://draft-battler-pvp.mr-maybik.workers.dev",

@@ -1,13 +1,14 @@
 {
     "type": "module",
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20241022.0",
+        "@cloudflare/workers-types": "5.20260904.1",
         "@eslint/js": "^10.0.1",
         "eslint": "^10.4.1",
         "sharp": "^0.34.5",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.60.1",
-        "vite": "^8.0.16"
+        "vite": "^8.0.16",
+        "wrangler": "4.129.0"
     },
     "scripts": {
         "gladiator:dev": "vite gladiator-arena --config gladiator-arena/vite.config.ts --open",

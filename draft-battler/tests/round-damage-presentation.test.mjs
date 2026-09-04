@@ -21,7 +21,7 @@ function unitSource(instanceId, cardId, slotIndex, hpDamage, armorDamage, summon
   };
 }
 
-test("summon damage is credited to its drafted summoner and includes removed armor", () => {
+test("every damaging unit remains visible, including summons, and includes removed armor", () => {
   const graveBinderId = "player-0-grave_binder";
   const result = createRoundDamagePresentation(
     "player",
@@ -36,19 +36,18 @@ test("summon damage is credited to its drafted summoner and includes removed arm
     ],
   );
 
-  assert.deepEqual(result.unitLeaders, [{
-    unit: {
-      instanceId: graveBinderId,
-      cardId: "grave_binder",
-      slotIndex: 0,
-      upgradeLevel: 0,
-    },
-    amount: 8,
-  }]);
+  assert.deepEqual(
+    result.units.map((entry) => [entry.unit.instanceId, entry.amount]),
+    [
+      ["player-1-boar_rider", 7],
+      ["player-0-bone_pact_skeleton", 5],
+      [graveBinderId, 3],
+    ],
+  );
   assert.deepEqual(result.synergies, []);
 });
 
-test("tied leaders remain deterministic while zero damage is ignored", () => {
+test("all damaging units remain deterministic while zero damage is ignored", () => {
   const result = createRoundDamagePresentation(
     "enemy",
     [],
@@ -60,7 +59,7 @@ test("tied leaders remain deterministic while zero damage is ignored", () => {
   );
 
   assert.deepEqual(
-    result.unitLeaders.map((entry) => [entry.unit.instanceId, entry.amount]),
+    result.units.map((entry) => [entry.unit.instanceId, entry.amount]),
     [["enemy-0-iron_guard", 5], ["enemy-2-ember_mage", 5]],
   );
 });
@@ -91,6 +90,6 @@ test("team synergy damage stays separate and aggregates by tag and threshold", (
     ],
   );
 
-  assert.deepEqual(result.unitLeaders, []);
+  assert.deepEqual(result.units, []);
   assert.deepEqual(result.synergies, [{ tag: "mage", threshold: 4, amount: 6 }]);
 });

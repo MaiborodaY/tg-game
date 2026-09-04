@@ -1689,15 +1689,13 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
     const sources = insights.sides[owner].damageDealt.bySource;
     const slots = owner === "player" ? record.playerSlots : record.enemySlots;
     const presentation = createRoundDamagePresentation(owner, slots, sources);
-    const unitRow = createRoundUnitDamageRow(ownerLabel, presentation.unitLeaders);
+    const unitRows = createRoundUnitDamageRows(ownerLabel, presentation.units);
     const synergyRows = createRoundSynergyDamageRows(ownerLabel, presentation.synergies);
-    if (!unitRow && synergyRows.length === 0) {
+    if (unitRows.length === 0 && synergyRows.length === 0) {
       rows.append(createRoundDamageRow(ownerLabel, copy.roundDamageNone));
       return;
     }
-    if (unitRow) {
-      rows.append(unitRow);
-    }
+    unitRows.forEach((row) => rows.append(row));
     synergyRows.forEach((row) => rows.append(row));
   });
 
@@ -1705,20 +1703,14 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
   return section;
 }
 
-function createRoundUnitDamageRow(
+function createRoundUnitDamageRows(
   ownerLabel: string,
-  leaders: readonly RoundDamageUnitTotal[],
-): HTMLElement | undefined {
-  const copy = getCopy();
-  if (leaders.length === 0) {
-    return undefined;
-  }
-
-  const names = leaders.map((entry) => getRoundDamageUnitName(entry.unit));
-  const visibleName = names.length === 1
-    ? names[0]
-    : formatMessage(copy.roundDamageMore, { name: names[0], count: names.length - 1 });
-  return createRoundDamageRow(ownerLabel, visibleName, leaders[0].amount, names.join(", "));
+  units: readonly RoundDamageUnitTotal[],
+): HTMLElement[] {
+  return units.map(({ unit, amount }) => {
+    const name = getRoundDamageUnitName(unit);
+    return createRoundDamageRow(ownerLabel, name, amount);
+  });
 }
 
 function createRoundSynergyDamageRows(
@@ -5111,7 +5103,7 @@ function getPvpErrorCopy(code: string | undefined): string {
     pvp_disabled: copy.pvpErrorDisabled,
     origin_forbidden: copy.pvpErrorOriginForbidden,
     invalid_init_data: copy.pvpErrorTelegramAuth,
-    auth_unavailable: copy.pvpErrorTelegramAuth,
+    auth_unavailable: copy.pvpErrorTelegramAuthUnavailable,
     connection_failed: copy.pvpErrorConnectionFailed,
     internal_error: copy.pvpErrorInternal,
   };

@@ -108,6 +108,7 @@ export interface UiCopy {
   pvpErrorBadRequest: string;
   pvpErrorSamePlayer: string;
   pvpErrorTelegramAuth: string;
+  pvpErrorTelegramAuthUnavailable: string;
   pvpLeaderboardButton: string;
   pvpLeaderboardTitle: string;
   pvpLeaderboardIntro: string;
@@ -243,7 +244,6 @@ export interface UiCopy {
   roundInsightsTitle: string;
   roundDamageEnemy: string;
   roundDamageNone: string;
-  roundDamageMore: string;
   roundDamageSynergy: string;
   roundDamageAccessible: string;
   roundDamageUnknownUnit: string;
@@ -469,6 +469,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorBadRequest: "Сервер не принял запрос.",
     pvpErrorSamePlayer: "Нельзя занять оба места одним Telegram-аккаунтом.",
     pvpErrorTelegramAuth: "Не удалось подтвердить Telegram-профиль. Перезапустите игру из Telegram.",
+    pvpErrorTelegramAuthUnavailable: "Онлайн-режим временно недоступен: на сервере не настроена Telegram-авторизация.",
     pvpLeaderboardButton: "🏆 Недельный рейтинг",
     pvpLeaderboardTitle: "Недельный рейтинг",
     pvpLeaderboardIntro: "Победы в онлайн-дуэлях с понедельника по воскресенье.",
@@ -604,7 +605,6 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     roundInsightsTitle: "Урон в бою",
     roundDamageEnemy: "Враг",
     roundDamageNone: "урона нет",
-    roundDamageMore: "{name} + ещё {count}",
     roundDamageSynergy: "Синергия: {tag}",
     roundDamageAccessible: "{owner}: {sources} — {amount} урона",
     roundDamageUnknownUnit: "Неизвестный боец",
@@ -718,6 +718,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorBadRequest: "Сервер не прийняв запит.",
     pvpErrorSamePlayer: "Не можна зайняти обидва місця одним Telegram-акаунтом.",
     pvpErrorTelegramAuth: "Не вдалося підтвердити Telegram-профіль. Перезапустіть гру з Telegram.",
+    pvpErrorTelegramAuthUnavailable: "Онлайн-режим тимчасово недоступний: на сервері не налаштовано Telegram-авторизацію.",
     pvpLeaderboardButton: "🏆 Тижневий рейтинг",
     pvpLeaderboardTitle: "Тижневий рейтинг",
     pvpLeaderboardIntro: "Перемоги в онлайн-дуелях із понеділка до неділі.",
@@ -853,7 +854,6 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     roundInsightsTitle: "Шкода в бою",
     roundDamageEnemy: "Ворог",
     roundDamageNone: "шкоди немає",
-    roundDamageMore: "{name} + ще {count}",
     roundDamageSynergy: "Синергія: {tag}",
     roundDamageAccessible: "{owner}: {sources} — {amount} шкоди",
     roundDamageUnknownUnit: "Невідомий боєць",
@@ -967,6 +967,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpErrorBadRequest: "The server rejected the request.",
     pvpErrorSamePlayer: "One Telegram account cannot occupy both seats.",
     pvpErrorTelegramAuth: "Could not verify your Telegram profile. Reopen the game from Telegram.",
+    pvpErrorTelegramAuthUnavailable: "Online mode is temporarily unavailable: Telegram authentication is not configured on the server.",
     pvpLeaderboardButton: "🏆 Weekly ranking",
     pvpLeaderboardTitle: "Weekly ranking",
     pvpLeaderboardIntro: "Online duel wins from Monday through Sunday.",
@@ -1102,7 +1103,6 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     roundInsightsTitle: "Damage dealt",
     roundDamageEnemy: "Rival",
     roundDamageNone: "no damage",
-    roundDamageMore: "{name} + {count} more",
     roundDamageSynergy: "Synergy: {tag}",
     roundDamageAccessible: "{owner}: {sources} — {amount} damage",
     roundDamageUnknownUnit: "Unknown fighter",

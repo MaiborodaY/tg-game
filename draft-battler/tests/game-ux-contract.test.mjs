@@ -165,6 +165,7 @@ test("PvP frontend is opt-in, authenticated, and sends only action intents", () 
   assert.match(mainSource, /const shouldReconnect = Boolean\(activePvpSession\) && !pvpAutomaticReconnectUsed/);
   assert.match(mainSource, /void reconnectSavedPvpSession\(true\)/);
   assert.match(mainSource, /if \(message\.type === "error"\) \{\s*updatePvpState\(\{ error: getPvpErrorCopy\(message\.code\) \}\)/s);
+  assert.match(mainSource, /invalid_init_data: copy\.pvpErrorTelegramAuth,\s*auth_unavailable: copy\.pvpErrorTelegramAuthUnavailable,/s);
 });
 
 test("draft UI prioritizes large card choices, synergy forecasts, and keyboard movement", () => {

@@ -29,6 +29,18 @@ test("anonymous requests stay unranked while forged and expired data fail closed
   assert.equal((await verifyTelegramInitData(signed, TOKEN, { nowMs: NOW + 3 * 60 * 60 * 1_000 })).ok, false);
 });
 
+test("Telegram requests fail with a configuration error when BOT_TOKEN is missing", async () => {
+  const initData = await createInitData({ id: 123, username: "alice" });
+  const request = new globalThis.Request("https://example.com/api", {
+    headers: { "x-telegram-init-data": initData },
+  });
+
+  await assert.rejects(
+    authenticateOptionalTelegramRequest(request, {}),
+    (error) => error?.code === "auth_unavailable" && error?.status === 503,
+  );
+});
+
 async function createInitData(user) {
   const params = new globalThis.URLSearchParams({
     auth_date: String(Math.floor(NOW / 1_000)),

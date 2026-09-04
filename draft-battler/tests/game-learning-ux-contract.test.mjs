@@ -35,8 +35,9 @@ test("round result highlights attributable combat damage instead of obvious outc
   assert.match(mainSource, /insights\.sides\[owner\]\.damageDealt\.bySource/);
   assert.match(mainSource, /createRoundDamagePresentation\(owner, slots, sources\)/);
   assert.match(damagePresentationSource, /entry\.hpDamage \+ entry\.armorDamage/);
-  assert.match(damagePresentationSource, /entry\.source\.unit\.summonedBy \?\? entry\.source\.unit\.instanceId/);
+  assert.match(damagePresentationSource, /const sourceId = entry\.source\.unit\.instanceId/);
   assert.match(damagePresentationSource, /entry\.source\.kind === "unit"/);
+  assert.match(mainSource, /presentation\.units/);
   assert.doesNotMatch(mainSource, /copy\.roundInsightCastleDamage/);
   assert.doesNotMatch(mainSource, /copy\.roundInsightSurvivors/);
   assert.match(styles, /\.round-result-damage__row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s);
@@ -44,14 +45,13 @@ test("round result highlights attributable combat damage instead of obvious outc
   assert.match(styles, /\.round-result-damage__value\s*\{[^}]*text-align:\s*right/s);
 });
 
-test("round result omits zero HP deltas and describes zero or tied damage", () => {
+test("round result omits zero HP deltas and renders every damaging unit", () => {
   assert.match(mainSource, /playerLoss:\s*formatRoundHpLoss\(snapshot\.playerHpLoss\)/);
   assert.match(mainSource, /enemyLoss:\s*formatRoundHpLoss\(snapshot\.enemyHpLoss\)/);
   assert.match(mainSource, /return loss > 0 \? ` \(\u2212\$\{loss\}\)` : ""/);
-  assert.match(mainSource, /!unitRow && synergyRows\.length === 0[\s\S]*?copy\.roundDamageNone/);
-  assert.match(mainSource, /leaders\.length === 0[\s\S]*?return undefined/);
-  assert.match(mainSource, /formatMessage\(copy\.roundDamageMore, \{ name: names\[0\], count: names\.length - 1 \}\)/);
-  assert.match(mainSource, /names\.join\(", "\)/);
+  assert.match(mainSource, /unitRows\.length === 0 && synergyRows\.length === 0[\s\S]*?copy\.roundDamageNone/);
+  assert.match(mainSource, /units\.map\(\(\{ unit, amount \}\) =>/);
+  assert.match(mainSource, /createRoundDamageRow\(ownerLabel, name, amount\)/);
 });
 
 test("battle renderer receives localized ability callouts without changing combat rules", () => {
@@ -83,7 +83,6 @@ test("learning UI copy is complete and explicit in all locales", () => {
     "roundInsightsTitle",
     "roundDamageEnemy",
     "roundDamageNone",
-    "roundDamageMore",
     "roundDamageSynergy",
     "roundDamageAccessible",
     "roundDamageUnknownUnit",
@@ -98,8 +97,6 @@ test("learning UI copy is complete and explicit in all locales", () => {
     keys.forEach((key) => assert.match(copy[key], /\S/, `${locale}:${key}`));
     assert.match(copy.compendiumUpgradeNote, /(?:АТК|ATK)/, `${locale}:upgrade attack`);
     assert.match(copy.compendiumUpgradeNote, /HP/, `${locale}:upgrade hp`);
-    assert.match(copy.roundDamageMore, /\{name\}/, `${locale}:leader name placeholder`);
-    assert.match(copy.roundDamageMore, /\{count\}/, `${locale}:tied leaders placeholder`);
     assert.match(copy.roundDamageSynergy, /\{tag\}/, `${locale}:synergy tag placeholder`);
     for (const placeholder of ["owner", "sources", "amount"]) {
       assert.match(copy.roundDamageAccessible, new RegExp(`\\{${placeholder}\\}`), `${locale}:${placeholder} placeholder`);

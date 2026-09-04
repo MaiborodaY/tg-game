@@ -281,6 +281,8 @@ test("PvP lobby and match controls are localized completely", () => {
     "pvpErrorOriginForbidden",
     "pvpErrorInternal",
     "pvpErrorBadRequest",
+    "pvpErrorTelegramAuth",
+    "pvpErrorTelegramAuthUnavailable",
   ];
   const expectations = {
     ru: {
@@ -289,6 +291,7 @@ test("PvP lobby and match controls are localized completely", () => {
       pvpReadyForNextRound: "Готов к следующему раунду",
       pvpSpectator: "Наблюдатель",
       pvpErrorRoomFull: "В комнате уже два игрока.",
+      pvpErrorTelegramAuthUnavailable: "Онлайн-режим временно недоступен: на сервере не настроена Telegram-авторизация.",
     },
     uk: {
       pvpLobbyTitle: "Дуель із гравцем",
@@ -296,6 +299,7 @@ test("PvP lobby and match controls are localized completely", () => {
       pvpReadyForNextRound: "Готовий до наступного раунду",
       pvpSpectator: "Спостерігач",
       pvpErrorRoomFull: "У кімнаті вже два гравці.",
+      pvpErrorTelegramAuthUnavailable: "Онлайн-режим тимчасово недоступний: на сервері не налаштовано Telegram-авторизацію.",
     },
     en: {
       pvpLobbyTitle: "Player duel",
@@ -303,6 +307,7 @@ test("PvP lobby and match controls are localized completely", () => {
       pvpReadyForNextRound: "Ready for next round",
       pvpSpectator: "Spectator",
       pvpErrorRoomFull: "The room already has two players.",
+      pvpErrorTelegramAuthUnavailable: "Online mode is temporarily unavailable: Telegram authentication is not configured on the server.",
     },
   };
 
@@ -572,7 +577,7 @@ test("battle HUD, spatial positions, and draft forecasts are complete in every l
   });
 });
 
-test("round damage summary has concise zero, tie, synergy, and accessible copy in every locale", () => {
+test("round damage summary has concise zero, synergy, and accessible copy in every locale", () => {
   const expected = {
     ru: { title: "Урон в бою", enemy: "Враг", none: "урона нет" },
     uk: { title: "Шкода в бою", enemy: "Ворог", none: "шкоди немає" },
@@ -586,7 +591,6 @@ test("round damage summary has concise zero, tie, synergy, and accessible copy i
     assert.equal(copy.roundDamageNone, expected[locale].none);
 
     for (const value of [
-      formatMessage(copy.roundDamageMore, { name: "A", count: 2 }),
       formatMessage(copy.roundDamageSynergy, { tag: "B" }),
       formatMessage(copy.roundDamageAccessible, { owner: "C", sources: "D", amount: 7 }),
     ]) {
