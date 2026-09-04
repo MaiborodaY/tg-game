@@ -107,6 +107,14 @@ test("PvP lobby and match actions use localized, explicit player states", () => 
   assert.match(styles, /\.pvp-match-wait\s*\{[^}]*text-align:\s*center/s);
 });
 
+test("guest PvP perspective mirrors unit and synergy damage attribution", () => {
+  const mirrorSource = mainSource.match(/function mirrorCombatDamageSource[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(mainSource, /event\.source \? \{ source: mirrorCombatDamageSource\(event\.source\) \} : \{\}/);
+  assert.match(mirrorSource, /source\.kind === "unit"/);
+  assert.match(mirrorSource, /unitId: mirrorUnitId\(source\.unitId\)/);
+  assert.match(mirrorSource, /owner: mirrorOwner\(source\.owner\)/);
+});
+
 test("PvP frontend is opt-in, authenticated, and sends only action intents", () => {
   assert.match(mainSource, /VITE_DRAFT_BATTLER_PVP_ENABLED === "true"/);
   assert.match(mainSource, /normalizePvpApiOrigin\(import\.meta\.env\.VITE_DRAFT_BATTLER_PVP_ORIGIN\)/);

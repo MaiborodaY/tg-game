@@ -223,12 +223,12 @@ export interface UiCopy {
   battleInProgress: string;
   roundResultDetail: string;
   roundInsightsTitle: string;
-  roundInsightCastleDamage: string;
-  roundInsightSurvivors: string;
-  roundInsightHealing: string;
-  roundInsightBlocking: string;
-  roundInsightSummons: string;
-  roundInsightSynergies: string;
+  roundDamageEnemy: string;
+  roundDamageNone: string;
+  roundDamageMore: string;
+  roundDamageSynergy: string;
+  roundDamageAccessible: string;
+  roundDamageUnknownUnit: string;
   battleCalloutArmor: string;
   battleCalloutBanner: string;
   battleCalloutThorns: string;
@@ -564,14 +564,14 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     abandonRun: "Завершить",
     abandonRunConfirm: "Завершить текущую партию? Сохранённый прогресс будет удалён.",
     battleInProgress: "Идёт бой, раунд {round} из {maxRounds}.",
-    roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
-    roundInsightsTitle: "Ключевые итоги",
-    roundInsightCastleDamage: "Урон крепости: вы {player} · соперник {enemy}",
-    roundInsightSurvivors: "Выжившие: вы {player} · соперник {enemy}",
-    roundInsightHealing: "Лечение: вы {player} · соперник {enemy}",
-    roundInsightBlocking: "Предотвращено урона: вы {player} · соперник {enemy}",
-    roundInsightSummons: "Призывы: вы {player} · соперник {enemy}",
-    roundInsightSynergies: "Синергии: вы {player} · соперник {enemy}",
+    roundResultDetail: "{yourHp}: {playerHp}{playerLoss} · {enemyHp}: {enemyHpValue}{enemyLoss}",
+    roundInsightsTitle: "Урон в бою",
+    roundDamageEnemy: "Враг",
+    roundDamageNone: "урона нет",
+    roundDamageMore: "{name} + ещё {count}",
+    roundDamageSynergy: "Синергия: {tag}",
+    roundDamageAccessible: "{owner}: {sources} — {amount} урона",
+    roundDamageUnknownUnit: "Неизвестный боец",
     battleCalloutArmor: "БРОНЯ +{amount}",
     battleCalloutBanner: "ЗНАМЯ: +{amount} АТК",
     battleCalloutThorns: "ШИПЫ: +{amount} БРОНИ",
@@ -795,14 +795,14 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     abandonRun: "Завершити",
     abandonRunConfirm: "Завершити поточну партію? Збережений прогрес буде видалено.",
     battleInProgress: "Триває бій, раунд {round} із {maxRounds}.",
-    roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
-    roundInsightsTitle: "Ключові підсумки",
-    roundInsightCastleDamage: "Шкода фортеці: ви {player} · суперник {enemy}",
-    roundInsightSurvivors: "Вижили: ви {player} · суперник {enemy}",
-    roundInsightHealing: "Лікування: ви {player} · суперник {enemy}",
-    roundInsightBlocking: "Відвернено шкоди: ви {player} · суперник {enemy}",
-    roundInsightSummons: "Заклики: ви {player} · суперник {enemy}",
-    roundInsightSynergies: "Синергії: ви {player} · суперник {enemy}",
+    roundResultDetail: "{yourHp}: {playerHp}{playerLoss} · {enemyHp}: {enemyHpValue}{enemyLoss}",
+    roundInsightsTitle: "Шкода в бою",
+    roundDamageEnemy: "Ворог",
+    roundDamageNone: "шкоди немає",
+    roundDamageMore: "{name} + ще {count}",
+    roundDamageSynergy: "Синергія: {tag}",
+    roundDamageAccessible: "{owner}: {sources} — {amount} шкоди",
+    roundDamageUnknownUnit: "Невідомий боєць",
     battleCalloutArmor: "БРОНЯ +{amount}",
     battleCalloutBanner: "ПРАПОР: +{amount} АТК",
     battleCalloutThorns: "ШИПИ: +{amount} БРОНІ",
@@ -1026,14 +1026,14 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     abandonRun: "End run",
     abandonRunConfirm: "End the current run? Saved progress will be deleted.",
     battleInProgress: "Battle in progress, round {round} of {maxRounds}.",
-    roundResultDetail: "{yourHp}: {playerHp} (−{playerLoss}) · {enemyHp}: {enemyHpValue} (−{enemyLoss})",
-    roundInsightsTitle: "Key results",
-    roundInsightCastleDamage: "Keep damage: you {player} · rival {enemy}",
-    roundInsightSurvivors: "Survivors: you {player} · rival {enemy}",
-    roundInsightHealing: "Healing: you {player} · rival {enemy}",
-    roundInsightBlocking: "Damage prevented: you {player} · rival {enemy}",
-    roundInsightSummons: "Summons: you {player} · rival {enemy}",
-    roundInsightSynergies: "Synergies: you {player} · rival {enemy}",
+    roundResultDetail: "{yourHp}: {playerHp}{playerLoss} · {enemyHp}: {enemyHpValue}{enemyLoss}",
+    roundInsightsTitle: "Damage dealt",
+    roundDamageEnemy: "Rival",
+    roundDamageNone: "no damage",
+    roundDamageMore: "{name} + {count} more",
+    roundDamageSynergy: "Synergy: {tag}",
+    roundDamageAccessible: "{owner}: {sources} — {amount} damage",
+    roundDamageUnknownUnit: "Unknown fighter",
     battleCalloutArmor: "ARMOR +{amount}",
     battleCalloutBanner: "BANNER: +{amount} ATK",
     battleCalloutThorns: "THORNS: +{amount} ARMOR",

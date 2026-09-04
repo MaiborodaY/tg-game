@@ -52,12 +52,51 @@ test("Duelist armor absorbs exactly two damage before HP", () => {
   assert.equal(armorGain.type, "unit_buffed");
   assert.equal(armorGain.shieldDelta, 2);
   assert.deepEqual(
-    hits.slice(0, 2).map(({ amount, remainingHp, shieldAbsorbed }) => ({ amount, remainingHp, shieldAbsorbed })),
+    hits.slice(0, 2).map(({ amount, hpDamage, remainingHp, shieldAbsorbed, source }) => ({
+      amount,
+      hpDamage,
+      remainingHp,
+      shieldAbsorbed,
+      source,
+    })),
     [
-      { amount: 0, remainingHp: 8, shieldAbsorbed: 2 },
-      { amount: 2, remainingHp: 6, shieldAbsorbed: 0 },
+      {
+        amount: 0,
+        hpDamage: 0,
+        remainingHp: 8,
+        shieldAbsorbed: 2,
+        source: { kind: "unit", unitId: "enemy-0-iron_guard", hit: "primary" },
+      },
+      {
+        amount: 2,
+        hpDamage: 2,
+        remainingHp: 6,
+        shieldAbsorbed: 0,
+        source: { kind: "unit", unitId: "enemy-0-iron_guard", hit: "primary" },
+      },
     ],
   );
+});
+
+test("damage events preserve raw post-armor damage while reporting HP-clamped overkill", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "boar_rider", 1]]),
+    createBoard([[0, "ember_mage"]]),
+    1,
+  );
+  const lethalHit = combat.events.find(
+    (event) => event.type === "unit_damaged" && event.unitId === "enemy-0-ember_mage",
+  );
+
+  assert.ok(lethalHit);
+  assert.equal(lethalHit.amount, 10);
+  assert.equal(lethalHit.hpDamage, 6);
+  assert.equal(lethalHit.remainingHp, 0);
+  assert.deepEqual(lethalHit.source, {
+    kind: "unit",
+    unitId: "player-0-boar_rider",
+    hit: "primary",
+  });
 });
 
 test("equal-time actors resolve simultaneously, including mutual lethal attacks", () => {
@@ -206,6 +245,27 @@ test("mirrored bulwarks make the same block decision regardless of owner prefixe
   );
 });
 
+test("a full Bulwark block produces no attributable HP-damage event", () => {
+  const combat = resolveCombat(
+    createBoard([[0, "spear_recruit"]]),
+    createBoard([[0, "shieldbearer"]]),
+    1,
+  );
+  const blocked = combat.events.find((event) => event.type === "unit_blocked");
+
+  assert.ok(blocked);
+  assert.equal(
+    combat.events.some(
+      (event) => event.type === "unit_damaged" &&
+        event.time === blocked.time &&
+        event.unitId === blocked.unitId &&
+        event.source?.kind === "unit" &&
+        event.source.unitId === blocked.attackerId,
+    ),
+    false,
+  );
+});
+
 test("multiple same-tick lethal intents produce one death and one Bone Pact summon", () => {
   const combat = resolveCombat(
     createBoard([[0, "boar_rider"], [1, "boar_rider"]]),
@@ -259,8 +319,15 @@ test("a late Bone Pact summon keeps a monotonic cadence from its spawn time", ()
   const skeletonAttackTimes = combat.events
     .filter((event) => event.type === "unit_attacked" && event.attackerId === "enemy-0-bone_pact_skeleton")
     .map((event) => event.time);
+  const skeletonDamage = combat.events.find(
+    (event) => event.type === "unit_damaged" &&
+      event.source?.kind === "unit" &&
+      event.source.unitId === "enemy-0-bone_pact_skeleton",
+  );
 
   assert.ok(spawn);
+  assert.ok(skeletonDamage);
+  assert.equal(skeletonDamage.source.hit, "primary");
   assert.deepEqual(skeletonAttackTimes.slice(0, 2), [spawn.time + 1, spawn.time + 26]);
   combat.events.forEach((event, index) => {
     if (index > 0) {
@@ -419,7 +486,19 @@ for (const [cardId, splashDamage] of [["ember_mage", 1], ["pyromancer", 2]]) {
     ]);
     damagedAtFirstAttack
       .filter((event) => event.unitId !== attack.targetId)
-      .forEach((event) => assert.equal(event.shieldAbsorbed, splashDamage));
+      .forEach((event) => {
+        assert.equal(event.shieldAbsorbed, splashDamage);
+        assert.equal(event.hpDamage, 0);
+        assert.deepEqual(event.source, {
+          kind: "unit",
+          unitId: `player-1-${cardId}`,
+          hit: "splash",
+        });
+      });
+    assert.deepEqual(
+      damagedAtFirstAttack.find((event) => event.unitId === attack.targetId)?.source,
+      { kind: "unit", unitId: `player-1-${cardId}`, hit: "primary" },
+    );
   });
 }
 

@@ -466,11 +466,40 @@ function readRoundRecord(
 
   const resolvedRun = resolveRound(combatReadyRun);
   const expectedRecord = resolvedRun.roundHistory.at(-1);
-  if (!expectedRecord || !stableEqual(record, expectedRecord)) {
+  if (!expectedRecord || !matchesExpectedRoundRecord(record, expectedRecord)) {
     return undefined;
   }
 
   return { record: expectedRecord, run: resolvedRun };
+}
+
+function matchesExpectedRoundRecord(record: unknown, expectedRecord: RoundRecord): boolean {
+  if (stableEqual(record, expectedRecord)) {
+    return true;
+  }
+
+  // Snapshot v10 predates optional damage telemetry. Accept only its exact canonical shape,
+  // then return the freshly replayed record above so untrusted legacy data never reaches the UI.
+  return stableEqual(record, createLegacyDamageTelemetryRecord(expectedRecord));
+}
+
+function createLegacyDamageTelemetryRecord(record: RoundRecord): RoundRecord {
+  return {
+    ...record,
+    combatResult: {
+      ...record.combatResult,
+      events: record.combatResult.events.map((event) => event.type === "unit_damaged"
+        ? {
+            type: event.type,
+            time: event.time,
+            unitId: event.unitId,
+            amount: event.amount,
+            remainingHp: event.remainingHp,
+            shieldAbsorbed: event.shieldAbsorbed,
+          }
+        : event),
+    },
+  };
 }
 
 function readExpectedDraftOptions(

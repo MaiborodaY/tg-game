@@ -548,10 +548,10 @@ test("battle HUD, spatial positions, and draft forecasts are complete in every l
     const result = formatMessage(copy.roundResultDetail, {
       yourHp: copy.yourHp,
       playerHp: 17,
-      playerLoss: 3,
+      playerLoss: " (−3)",
       enemyHp: copy.enemyHp,
       enemyHpValue: 14,
-      enemyLoss: 6,
+      enemyLoss: " (−6)",
     });
 
     [position, forecast, result].forEach((value) => {
@@ -569,6 +569,40 @@ test("battle HUD, spatial positions, and draft forecasts are complete in every l
       copy.skipBattle,
     ]
       .forEach((value) => assert.match(value, /\S/, `${locale}:new control copy`));
+  });
+});
+
+test("round damage summary has concise zero, tie, synergy, and accessible copy in every locale", () => {
+  const expected = {
+    ru: { title: "Урон в бою", enemy: "Враг", none: "урона нет" },
+    uk: { title: "Шкода в бою", enemy: "Ворог", none: "шкоди немає" },
+    en: { title: "Damage dealt", enemy: "Rival", none: "no damage" },
+  };
+
+  SUPPORTED_LOCALES.forEach((locale) => {
+    const copy = getUiCopy(locale);
+    assert.equal(copy.roundInsightsTitle, expected[locale].title);
+    assert.equal(copy.roundDamageEnemy, expected[locale].enemy);
+    assert.equal(copy.roundDamageNone, expected[locale].none);
+
+    for (const value of [
+      formatMessage(copy.roundDamageMore, { name: "A", count: 2 }),
+      formatMessage(copy.roundDamageSynergy, { tag: "B" }),
+      formatMessage(copy.roundDamageAccessible, { owner: "C", sources: "D", amount: 7 }),
+    ]) {
+      assert.match(value, /\S/, `${locale}:round damage copy`);
+      assert.doesNotMatch(value, /\{[^}]+\}/, `${locale}:round damage placeholders`);
+    }
+
+    const zeroLoss = formatMessage(copy.roundResultDetail, {
+      yourHp: copy.yourHp,
+      playerHp: 20,
+      playerLoss: "",
+      enemyHp: copy.enemyHp,
+      enemyHpValue: 20,
+      enemyLoss: "",
+    });
+    assert.doesNotMatch(zeroLoss, /−0/, `${locale}:zero HP loss`);
   });
 });
 

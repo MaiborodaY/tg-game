@@ -105,7 +105,36 @@ test("round insights expose only attributable combat facts in a localization-neu
         { type: "unit_healed", time: 8, unitId: playerGuard.instanceId, amount: 1, remainingHp: 8, source: playerCleric.instanceId },
         { type: "unit_blocked", time: 5, unitId: "enemy-1-shieldbearer", attackerId: playerGuard.instanceId, amount: 3 },
         { type: "unit_spawned", time: 6, unit: enemySkeleton },
-        { type: "unit_damaged", time: 7, unitId: playerGuard.instanceId, amount: 2, remainingHp: 5, shieldAbsorbed: 2 },
+        {
+          type: "unit_damaged",
+          time: 6,
+          unitId: "enemy-1-shieldbearer",
+          amount: 3,
+          hpDamage: 2,
+          remainingHp: 14,
+          shieldAbsorbed: 1,
+          source: { kind: "unit", unitId: playerGuard.instanceId, hit: "primary" },
+        },
+        {
+          type: "unit_damaged",
+          time: 6,
+          unitId: "enemy-4-grave_binder",
+          amount: 1,
+          hpDamage: 1,
+          remainingHp: 6,
+          shieldAbsorbed: 0,
+          source: { kind: "synergy", owner: "player", tag: "mage", threshold: 4 },
+        },
+        {
+          type: "unit_damaged",
+          time: 7,
+          unitId: playerGuard.instanceId,
+          amount: 2,
+          hpDamage: 2,
+          remainingHp: 5,
+          shieldAbsorbed: 2,
+          source: { kind: "unit", unitId: enemySkeleton.instanceId, hit: "primary" },
+        },
         { type: "unit_died", time: 9, unitId: "enemy-4-grave_binder", killerId: playerGuard.instanceId },
         { type: "unit_died", time: 10, unitId: enemySkeleton.instanceId, killerId: playerGuard.instanceId },
         { type: "combat_finished", time: 10, winner: "player", hpLoss: 2, actions: 9 },
@@ -120,6 +149,50 @@ test("round insights expose only attributable combat facts in a localization-neu
     enemy: { hpBefore: 1, hpAfter: 0, damageTaken: 1 },
   });
   assert.equal(insights.sides.player.survivors.length, 2);
+  assert.deepEqual(insights.sides.player.damageDealt, {
+    hpDamage: 3,
+    armorDamage: 1,
+    eventCount: 2,
+    bySource: [{
+      source: {
+        kind: "unit",
+        unit: {
+          instanceId: playerGuard.instanceId,
+          cardId: "iron_guard",
+          slotIndex: 0,
+          upgradeLevel: 0,
+        },
+      },
+      hpDamage: 2,
+      armorDamage: 1,
+      eventCount: 1,
+    }, {
+      source: { kind: "synergy", owner: "player", tag: "mage", threshold: 4 },
+      hpDamage: 1,
+      armorDamage: 0,
+      eventCount: 1,
+    }],
+  });
+  assert.deepEqual(insights.sides.enemy.damageDealt, {
+    hpDamage: 2,
+    armorDamage: 2,
+    eventCount: 1,
+    bySource: [{
+      source: {
+        kind: "unit",
+        unit: {
+          instanceId: enemySkeleton.instanceId,
+          cardId: "bone_soldier",
+          slotIndex: 4,
+          upgradeLevel: 0,
+          summonedBy: "enemy-4-grave_binder",
+        },
+      },
+      hpDamage: 2,
+      armorDamage: 2,
+      eventCount: 1,
+    }],
+  });
   assert.deepEqual(insights.sides.player.healing, {
     amount: 3,
     eventCount: 2,
@@ -135,8 +208,8 @@ test("round insights expose only attributable combat facts in a localization-neu
     }],
   });
   assert.deepEqual(insights.sides.enemy.blocking, {
-    amount: 3,
-    eventCount: 1,
+    amount: 4,
+    eventCount: 2,
     byUnit: [{
       unit: {
         instanceId: "enemy-1-shieldbearer",
@@ -144,8 +217,8 @@ test("round insights expose only attributable combat facts in a localization-neu
         slotIndex: 1,
         upgradeLevel: 0,
       },
-      amount: 3,
-      eventCount: 1,
+      amount: 4,
+      eventCount: 2,
     }],
   });
   assert.deepEqual(insights.sides.player.blocking, {
@@ -215,6 +288,7 @@ test("round insights remain empty and stable when a round has no optional activi
 
   assert.deepEqual(insights.sides.player, {
     survivors: [],
+    damageDealt: { hpDamage: 0, armorDamage: 0, eventCount: 0, bySource: [] },
     healing: { amount: 0, eventCount: 0, byUnit: [] },
     blocking: { amount: 0, eventCount: 0, byUnit: [] },
     summons: [],
@@ -222,4 +296,43 @@ test("round insights remain empty and stable when a round has no optional activi
     synergies: [],
   });
   assert.deepEqual(insights.sides.enemy, insights.sides.player);
+});
+
+test("legacy damage events remain readable without inventing source attribution", () => {
+  const insights = createRoundInsights({
+    round: 2,
+    playerHpBefore: 20,
+    playerHpAfter: 20,
+    enemyHpBefore: 20,
+    enemyHpAfter: 20,
+    draftOptions: [],
+    draftRerollCount: 0,
+    playerSlots: [{ slotIndex: 0, cardId: "iron_guard", upgradeLevel: 0 }],
+    enemySlots: [{ slotIndex: 0, cardId: "shieldbearer", upgradeLevel: 0 }],
+    combatResult: {
+      winner: "draw",
+      hpLoss: 0,
+      playerCastleDamage: 0,
+      enemyCastleDamage: 0,
+      actions: 1,
+      events: [{
+        type: "unit_damaged",
+        time: 25,
+        unitId: "enemy-0-shieldbearer",
+        amount: 2,
+        remainingHp: 14,
+        shieldAbsorbed: 1,
+      }],
+      survivingPlayerUnits: [],
+      survivingEnemyUnits: [],
+    },
+  });
+
+  assert.deepEqual(insights.sides.player.damageDealt, {
+    hpDamage: 0,
+    armorDamage: 0,
+    eventCount: 0,
+    bySource: [],
+  });
+  assert.equal(insights.sides.enemy.blocking.amount, 1);
 });

@@ -138,6 +138,10 @@ export interface CombatUnit {
 
 export type CombatWinner = "player" | "enemy" | "draw";
 
+export type CombatDamageSource =
+  | { kind: "unit"; unitId: string; hit: "primary" | "splash" }
+  | { kind: "synergy"; owner: Owner; tag: UnitTag; threshold: SynergyThreshold };
+
 type CombatEventPayload =
   | { type: "combat_started"; playerUnits: string[]; enemyUnits: string[] }
   | {
@@ -159,7 +163,18 @@ type CombatEventPayload =
   | { type: "unit_buffed"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number; source: string }
   | { type: "unit_attacked"; attackerId: string; targetId: string; abilityId: AbilityId; damage: number }
   | { type: "unit_blocked"; unitId: string; attackerId: string; amount: number }
-  | { type: "unit_damaged"; unitId: string; amount: number; remainingHp: number; shieldAbsorbed: number }
+  | {
+      type: "unit_damaged";
+      unitId: string;
+      /** Damage remaining after armor. Kept for timeline and replay compatibility. */
+      amount: number;
+      /** Actual HP removed, capped by the target's HP before this hit. */
+      hpDamage?: number;
+      remainingHp: number;
+      shieldAbsorbed: number;
+      /** Optional for consumers that read legacy combat events. */
+      source?: CombatDamageSource;
+    }
   | { type: "unit_healed"; unitId: string; amount: number; remainingHp: number; source: string }
   | { type: "unit_died"; unitId: string; killerId?: string }
   | { type: "combat_finished"; winner: CombatWinner; hpLoss: number; actions: number };

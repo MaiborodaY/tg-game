@@ -6,6 +6,7 @@ import type {
   CombatWinner,
   Owner,
   RoundRecord,
+  SynergyThreshold,
   UnitTag,
 } from "./game/types";
 
@@ -31,6 +32,29 @@ export interface RoundInsightActivity {
   byUnit: RoundInsightUnitAmount[];
 }
 
+export type RoundInsightDamageSource =
+  | { kind: "unit"; unit: RoundInsightUnitRef }
+  | { kind: "synergy"; owner: Owner; tag: UnitTag; threshold: SynergyThreshold };
+
+export interface RoundInsightDamageSourceAmount {
+  source: RoundInsightDamageSource;
+  /** Actual health removed, excluding overkill. */
+  hpDamage: number;
+  /** Armor consumed by the same source. Full Bulwark blocks are excluded. */
+  armorDamage: number;
+  eventCount: number;
+}
+
+export interface RoundInsightDamage {
+  /** Actual health removed by this side, excluding overkill. */
+  hpDamage: number;
+  /** Enemy armor consumed by this side. */
+  armorDamage: number;
+  eventCount: number;
+  /** Primary and splash hits aggregate under the same unit; summons retain their own unit source. */
+  bySource: RoundInsightDamageSourceAmount[];
+}
+
 export interface RoundInsightSynergy {
   tag: UnitTag;
   threshold: SynergyAppliedCombatEvent["threshold"];
@@ -47,6 +71,7 @@ export interface RoundInsightSynergy {
 
 export interface RoundInsightSide {
   survivors: RoundInsightUnitRef[];
+  damageDealt: RoundInsightDamage;
   healing: RoundInsightActivity;
   blocking: RoundInsightActivity;
   summons: RoundInsightUnitRef[];
@@ -81,6 +106,10 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
     enemy: new Map(),
   };
   const blockingBySide: Record<Owner, Map<string, RoundInsightUnitAmount>> = {
+    player: new Map(),
+    enemy: new Map(),
+  };
+  const damageBySide: Record<Owner, Map<string, RoundInsightDamageSourceAmount>> = {
     player: new Map(),
     enemy: new Map(),
   };
@@ -135,10 +164,24 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
       continue;
     }
 
-    if (event.type === "unit_damaged" && event.shieldAbsorbed > 0) {
-      const owner = getRegisteredOwner(event.unitId, registry);
-      if (owner) {
-        addUnitAmount(blockingBySide[owner], getUnitRef(event.unitId, registry), event.shieldAbsorbed);
+    if (event.type === "unit_damaged") {
+      const targetOwner = getRegisteredOwner(event.unitId, registry);
+      if (targetOwner && event.shieldAbsorbed > 0) {
+        addUnitAmount(blockingBySide[targetOwner], getUnitRef(event.unitId, registry), event.shieldAbsorbed);
+      }
+
+      if (event.source && event.hpDamage !== undefined) {
+        const sourceOwner = event.source.kind === "unit"
+          ? getRegisteredOwner(event.source.unitId, registry)
+          : event.source.owner;
+        if (sourceOwner) {
+          addDamageSource(
+            damageBySide[sourceOwner],
+            toDamageSource(event.source, registry),
+            event.hpDamage,
+            event.shieldAbsorbed,
+          );
+        }
       }
       continue;
     }
@@ -157,6 +200,7 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
   }
 
   for (const owner of ["player", "enemy"] as const) {
+    sides[owner].damageDealt = finalizeDamage(damageBySide[owner]);
     sides[owner].healing = finalizeActivity(healingBySide[owner]);
     sides[owner].blocking = finalizeActivity(blockingBySide[owner]);
   }
@@ -176,6 +220,7 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
 function createEmptySide(): RoundInsightSide {
   return {
     survivors: [],
+    damageDealt: createEmptyDamage(),
     healing: createEmptyActivity(),
     blocking: createEmptyActivity(),
     summons: [],
@@ -186,6 +231,10 @@ function createEmptySide(): RoundInsightSide {
 
 function createEmptyActivity(): RoundInsightActivity {
   return { amount: 0, eventCount: 0, byUnit: [] };
+}
+
+function createEmptyDamage(): RoundInsightDamage {
+  return { hpDamage: 0, armorDamage: 0, eventCount: 0, bySource: [] };
 }
 
 function createCastleInsight(hpBefore: number, hpAfter: number): RoundInsights["castles"][Owner] {
@@ -259,6 +308,42 @@ function getRegisteredOwner(instanceId: string, registry: ReadonlyMap<string, Re
   return registry.get(instanceId)?.owner;
 }
 
+function toDamageSource(
+  source: NonNullable<Extract<CombatEvent, { type: "unit_damaged" }>["source"]>,
+  registry: ReadonlyMap<string, RegisteredUnit>,
+): RoundInsightDamageSource {
+  if (source.kind === "unit") {
+    return { kind: "unit", unit: getUnitRef(source.unitId, registry) };
+  }
+
+  return {
+    kind: "synergy",
+    owner: source.owner,
+    tag: source.tag,
+    threshold: source.threshold,
+  };
+}
+
+function addDamageSource(
+  amounts: Map<string, RoundInsightDamageSourceAmount>,
+  source: RoundInsightDamageSource,
+  hpDamage: number,
+  armorDamage: number,
+): void {
+  const key = source.kind === "unit"
+    ? `unit:${source.unit.instanceId}`
+    : `synergy:${source.owner}:${source.tag}:${source.threshold}`;
+  const existing = amounts.get(key);
+  if (existing) {
+    existing.hpDamage += hpDamage;
+    existing.armorDamage += armorDamage;
+    existing.eventCount += 1;
+    return;
+  }
+
+  amounts.set(key, { source, hpDamage, armorDamage, eventCount: 1 });
+}
+
 function addUnitAmount(
   amounts: Map<string, RoundInsightUnitAmount>,
   unit: RoundInsightUnitRef,
@@ -280,5 +365,15 @@ function finalizeActivity(amounts: ReadonlyMap<string, RoundInsightUnitAmount>):
     amount: byUnit.reduce((total, entry) => total + entry.amount, 0),
     eventCount: byUnit.reduce((total, entry) => total + entry.eventCount, 0),
     byUnit,
+  };
+}
+
+function finalizeDamage(amounts: ReadonlyMap<string, RoundInsightDamageSourceAmount>): RoundInsightDamage {
+  const bySource = [...amounts.values()];
+  return {
+    hpDamage: bySource.reduce((total, entry) => total + entry.hpDamage, 0),
+    armorDamage: bySource.reduce((total, entry) => total + entry.armorDamage, 0),
+    eventCount: bySource.reduce((total, entry) => total + entry.eventCount, 0),
+    bySource,
   };
 }

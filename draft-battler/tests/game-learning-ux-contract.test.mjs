@@ -5,6 +5,7 @@ import test from "node:test";
 import { SUPPORTED_LOCALES, getUiCopy } from "../src/i18n.ts";
 
 const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+const damagePresentationSource = await readFile(new URL("../src/roundDamagePresentation.ts", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 const rendererSource = await readFile(new URL("../src/rendering/phaserBattleScene.ts", import.meta.url), "utf8");
 
@@ -29,12 +30,28 @@ test("main menu exposes an accessible cards and synergies compendium", () => {
   assert.match(styles, /\.compendium-synergy__tier:nth-child\(2\)/);
 });
 
-test("round result uses factual insight data and keeps the summary compact", () => {
+test("round result highlights attributable combat damage instead of obvious outcome metrics", () => {
   assert.match(mainSource, /createRoundInsights\(record\)/);
-  assert.match(mainSource, /insights\.castles\.enemy\.damageTaken/);
-  assert.match(mainSource, /insights\.sides\.player\.survivors\.length/);
-  assert.match(mainSource, /\.filter\(\(row\) => row\.total > 0\)[\s\S]*?\.slice\(0, 2\)/);
-  assert.match(styles, /\.round-result-insights__grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
+  assert.match(mainSource, /insights\.sides\[owner\]\.damageDealt\.bySource/);
+  assert.match(mainSource, /createRoundDamagePresentation\(owner, slots, sources\)/);
+  assert.match(damagePresentationSource, /entry\.hpDamage \+ entry\.armorDamage/);
+  assert.match(damagePresentationSource, /entry\.source\.unit\.summonedBy \?\? entry\.source\.unit\.instanceId/);
+  assert.match(damagePresentationSource, /entry\.source\.kind === "unit"/);
+  assert.doesNotMatch(mainSource, /copy\.roundInsightCastleDamage/);
+  assert.doesNotMatch(mainSource, /copy\.roundInsightSurvivors/);
+  assert.match(styles, /\.round-result-damage__row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s);
+  assert.match(styles, /\.round-result-damage__label > span\s*\{[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s);
+  assert.match(styles, /\.round-result-damage__value\s*\{[^}]*text-align:\s*right/s);
+});
+
+test("round result omits zero HP deltas and describes zero or tied damage", () => {
+  assert.match(mainSource, /playerLoss:\s*formatRoundHpLoss\(snapshot\.playerHpLoss\)/);
+  assert.match(mainSource, /enemyLoss:\s*formatRoundHpLoss\(snapshot\.enemyHpLoss\)/);
+  assert.match(mainSource, /return loss > 0 \? ` \(\u2212\$\{loss\}\)` : ""/);
+  assert.match(mainSource, /!unitRow && synergyRows\.length === 0[\s\S]*?copy\.roundDamageNone/);
+  assert.match(mainSource, /leaders\.length === 0[\s\S]*?return undefined/);
+  assert.match(mainSource, /formatMessage\(copy\.roundDamageMore, \{ name: names\[0\], count: names\.length - 1 \}\)/);
+  assert.match(mainSource, /names\.join\(", "\)/);
 });
 
 test("battle renderer receives localized ability callouts without changing combat rules", () => {
@@ -64,8 +81,12 @@ test("learning UI copy is complete and explicit in all locales", () => {
     "synergyTierActive",
     "synergyTierProgress",
     "roundInsightsTitle",
-    "roundInsightCastleDamage",
-    "roundInsightSurvivors",
+    "roundDamageEnemy",
+    "roundDamageNone",
+    "roundDamageMore",
+    "roundDamageSynergy",
+    "roundDamageAccessible",
+    "roundDamageUnknownUnit",
     "battleCalloutArmor",
     "battleCalloutBanner",
     "battleCalloutUndeadMastery",
@@ -77,7 +98,11 @@ test("learning UI copy is complete and explicit in all locales", () => {
     keys.forEach((key) => assert.match(copy[key], /\S/, `${locale}:${key}`));
     assert.match(copy.compendiumUpgradeNote, /(?:АТК|ATK)/, `${locale}:upgrade attack`);
     assert.match(copy.compendiumUpgradeNote, /HP/, `${locale}:upgrade hp`);
-    assert.match(copy.roundInsightCastleDamage, /\{player\}/, `${locale}:player placeholder`);
-    assert.match(copy.roundInsightCastleDamage, /\{enemy\}/, `${locale}:enemy placeholder`);
+    assert.match(copy.roundDamageMore, /\{name\}/, `${locale}:leader name placeholder`);
+    assert.match(copy.roundDamageMore, /\{count\}/, `${locale}:tied leaders placeholder`);
+    assert.match(copy.roundDamageSynergy, /\{tag\}/, `${locale}:synergy tag placeholder`);
+    for (const placeholder of ["owner", "sources", "amount"]) {
+      assert.match(copy.roundDamageAccessible, new RegExp(`\\{${placeholder}\\}`), `${locale}:${placeholder} placeholder`);
+    }
   });
 });

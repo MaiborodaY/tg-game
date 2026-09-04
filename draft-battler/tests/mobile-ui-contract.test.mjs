@@ -124,6 +124,20 @@ test("compact layouts and reduced motion remain part of the stylesheet contract"
   assert.match(styles, /\.unit-card__synergy-forecast-line\s*\{[^}]*white-space:\s*nowrap/s);
 });
 
+test("round damage summary stays vertical and truncates long unit names", () => {
+  assert.match(styles, /\.round-result-damage__rows\s*\{[^}]*display:\s*grid[^}]*gap:/s);
+  assert.match(
+    styles,
+    /\.round-result-damage__row\s*\{[^}]*min-width:\s*0[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s,
+  );
+  assert.match(styles, /\.round-result-damage__label\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
+  assert.match(
+    styles,
+    /\.round-result-damage__label > span\s*\{[^}]*overflow:\s*hidden[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s,
+  );
+  assert.match(styles, /\.round-result-damage__value\s*\{[^}]*font-variant-numeric:\s*tabular-nums[^}]*text-align:\s*right/s);
+});
+
 test("critical card copy remains readable", () => {
   for (const selector of [
     "unit-card__rarity",

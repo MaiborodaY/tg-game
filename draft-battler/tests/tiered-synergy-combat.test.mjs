@@ -168,6 +168,13 @@ test("mage mastery resolves after startup armor and remains neutral when the arm
 
   assert.equal(openingDamage.length, 4);
   assert.ok(openingDamage.every((event) => event.amount === 0 && event.shieldAbsorbed === 1));
+  assert.ok(openingDamage.every((event) => event.hpDamage === 0));
+  assert.ok(openingDamage.every((event) =>
+    event.source?.kind === "synergy" &&
+    event.source.owner === "player" &&
+    event.source.tag === "mage" &&
+    event.source.threshold === 4
+  ));
   assert.equal(mageFirst.winner, guardianFirst.winner === "player" ? "enemy" : guardianFirst.winner === "enemy" ? "player" : "draw");
   assert.equal(mageFirst.playerCastleDamage, guardianFirst.enemyCastleDamage);
   assert.equal(mageFirst.enemyCastleDamage, guardianFirst.playerCastleDamage);

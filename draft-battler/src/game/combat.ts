@@ -32,7 +32,11 @@ interface TimelineUnit extends CombatUnit {
 }
 
 interface SynergyCombatState {
-  openingDamageByOwner: Map<Owner, number>;
+  openingDamageByOwner: Map<Owner, {
+    amount: number;
+    tag: UnitTag;
+    threshold: SynergyTier["threshold"];
+  }>;
   pendingUndeadDeathAttack: Set<Owner>;
 }
 
@@ -40,6 +44,7 @@ interface PlannedDamage {
   target: TimelineUnit;
   amount: number;
   blocked: boolean;
+  hit: "primary" | "splash";
 }
 
 interface PlannedAttack {
@@ -218,7 +223,7 @@ function applyTagSynergies(units: TimelineUnit[], events: CombatEvent[]): Synerg
 
       for (const tier of getActiveSynergyTiers(rule, taggedUnits.length)) {
         const affectedUnits = getSynergyAffectedUnits(tier, tag, owner, taggedUnits, units);
-        applySynergyTier(tier, owner, affectedUnits, synergyState);
+        applySynergyTier(tier, tag, owner, affectedUnits, synergyState);
         events.push(createSynergyAppliedEvent(owner, tag, tier, affectedUnits));
       }
     }
@@ -247,6 +252,7 @@ function getSynergyAffectedUnits(
 
 function applySynergyTier(
   tier: SynergyTier,
+  tag: UnitTag,
   owner: Owner,
   affectedUnits: readonly TimelineUnit[],
   synergyState: SynergyCombatState,
@@ -258,7 +264,11 @@ function applySynergyTier(
   }
 
   if (effect.kind === "opening_damage") {
-    synergyState.openingDamageByOwner.set(owner, effect.value);
+    synergyState.openingDamageByOwner.set(owner, {
+      amount: effect.value,
+      tag,
+      threshold: tier.threshold,
+    });
     return;
   }
 
@@ -340,31 +350,43 @@ function applyOpeningSynergyDamage(
 ): void {
   const undeadDeaths = new Set<Owner>();
   const plannedDamage = (["player", "enemy"] as const).flatMap((owner) => {
-    const amount = synergyState.openingDamageByOwner.get(owner) ?? 0;
-    if (amount <= 0) {
+    const openingDamage = synergyState.openingDamageByOwner.get(owner);
+    if (!openingDamage || openingDamage.amount <= 0) {
       return [];
     }
 
-    return getLivingUnits(units, getEnemyOwner(owner)).map((target) => ({
-      target,
-      amount,
-      shieldAbsorbed: Math.min(target.shield, amount),
-    }));
+    return getLivingUnits(units, getEnemyOwner(owner)).map((target) => {
+      const shieldAbsorbed = Math.min(target.shield, openingDamage.amount);
+      return {
+        owner,
+        target,
+        openingDamage,
+        shieldAbsorbed,
+        hpDamage: Math.min(target.hp, openingDamage.amount - shieldAbsorbed),
+      };
+    });
   });
 
-  plannedDamage.forEach(({ target, amount, shieldAbsorbed }) => {
+  plannedDamage.forEach(({ target, shieldAbsorbed, hpDamage }) => {
     target.shield -= shieldAbsorbed;
-    target.hp = Math.max(0, target.hp - (amount - shieldAbsorbed));
+    target.hp -= hpDamage;
   });
 
-  plannedDamage.forEach(({ target, amount, shieldAbsorbed }) => {
+  plannedDamage.forEach(({ owner, target, openingDamage, shieldAbsorbed, hpDamage }) => {
     events.push({
       type: "unit_damaged",
       time: 0,
       unitId: target.instanceId,
-      amount: amount - shieldAbsorbed,
+      amount: openingDamage.amount - shieldAbsorbed,
+      hpDamage,
       remainingHp: target.hp,
       shieldAbsorbed,
+      source: {
+        kind: "synergy",
+        owner,
+        tag: openingDamage.tag,
+        threshold: openingDamage.threshold,
+      },
     });
   });
 
@@ -400,7 +422,7 @@ function planAction(actor: TimelineUnit, units: readonly TimelineUnit[], time: n
   }
 
   const damage = calculateDamage(actor);
-  const primary = planDamage(target, damage, actor.instanceId, time);
+  const primary = planDamage(target, damage, actor.instanceId, time, "primary");
   const splash: PlannedDamage[] = [];
 
   if (actor.abilityId === "fireball" || actor.abilityId === "pyro_splash") {
@@ -410,7 +432,7 @@ function planAction(actor: TimelineUnit, units: readonly TimelineUnit[], time: n
     );
 
     adjacentTargets.forEach((unit) => {
-      splash.push(planDamage(unit, splashDamage, actor.instanceId, time));
+      splash.push(planDamage(unit, splashDamage, actor.instanceId, time, "splash"));
     });
   }
 
@@ -555,11 +577,18 @@ function calculateDamage(actor: TimelineUnit): number {
   return Math.max(1, damage);
 }
 
-function planDamage(target: TimelineUnit, amount: number, sourceUnitId: string, time: number): PlannedDamage {
+function planDamage(
+  target: TimelineUnit,
+  amount: number,
+  sourceUnitId: string,
+  time: number,
+  hit: PlannedDamage["hit"],
+): PlannedDamage {
   return {
     target,
     amount,
     blocked: shouldBulwarkBlock(target, amount, sourceUnitId, time),
+    hit,
   };
 }
 
@@ -591,6 +620,7 @@ function applyPlannedDamage(
   const shieldAbsorbed = Math.min(target.shield, plannedDamage.amount);
   target.shield -= shieldAbsorbed;
   const damageAfterShield = plannedDamage.amount - shieldAbsorbed;
+  const hpDamage = Math.min(target.hp, damageAfterShield);
   target.hp = Math.max(0, target.hp - damageAfterShield);
 
   events.push({
@@ -598,8 +628,10 @@ function applyPlannedDamage(
     time,
     unitId: target.instanceId,
     amount: damageAfterShield,
+    hpDamage,
     remainingHp: target.hp,
     shieldAbsorbed,
+    source: { kind: "unit", unitId: sourceUnitId, hit: plannedDamage.hit },
   });
 
   if (target.hp <= 0) {

@@ -24,6 +24,7 @@ import {
   type CardDefinition,
   type CardId,
   type BattleTimeline,
+  type CombatDamageSource,
   type CombatEvent,
   type CombatResult,
   type CombatUnit,
@@ -54,7 +55,15 @@ import {
   createCompendiumPresentation,
   type CompendiumCardPresentation,
 } from "./compendiumPresentation";
-import { createRoundInsights } from "./roundInsights";
+import {
+  createRoundInsights,
+  type RoundInsightUnitRef,
+} from "./roundInsights";
+import {
+  createRoundDamagePresentation,
+  type RoundDamageSynergyTotal,
+  type RoundDamageUnitTotal,
+} from "./roundDamagePresentation";
 import { createTodayDailyChallenge, type RunSource } from "./dailyChallenge";
 import {
   SOLO_RUN_HISTORY_LIMIT,
@@ -1633,10 +1642,10 @@ function createRoundResultSummary(record: RoundRecord): HTMLElement {
   detail.textContent = formatMessage(copy.roundResultDetail, {
     yourHp: copy.yourHp,
     playerHp: snapshot.playerHpAfter,
-    playerLoss: snapshot.playerHpLoss,
+    playerLoss: formatRoundHpLoss(snapshot.playerHpLoss),
     enemyHp: copy.enemyHp,
     enemyHpValue: snapshot.enemyHpAfter,
-    enemyLoss: snapshot.enemyHpLoss,
+    enemyLoss: formatRoundHpLoss(snapshot.enemyHpLoss),
   });
   summary.append(title, detail, createRoundInsightsSummary(record));
   return summary;
@@ -1652,47 +1661,105 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
   title.className = "round-result-insights__title";
   title.textContent = copy.roundInsightsTitle;
 
-  const metrics = document.createElement("div");
-  metrics.className = "round-result-insights__grid";
-  const rows = [
-    formatRoundInsight(copy.roundInsightCastleDamage, insights.castles.enemy.damageTaken, insights.castles.player.damageTaken),
-    formatRoundInsight(copy.roundInsightSurvivors, insights.sides.player.survivors.length, insights.sides.enemy.survivors.length),
-  ];
-  const activePlayerSynergies = new Set(insights.sides.player.synergies.map((synergy) => synergy.tag)).size;
-  const activeEnemySynergies = new Set(insights.sides.enemy.synergies.map((synergy) => synergy.tag)).size;
-  const optionalRows = [
-    {
-      total: insights.sides.player.healing.amount + insights.sides.enemy.healing.amount,
-      label: formatRoundInsight(copy.roundInsightHealing, insights.sides.player.healing.amount, insights.sides.enemy.healing.amount),
-    },
-    {
-      total: insights.sides.player.blocking.amount + insights.sides.enemy.blocking.amount,
-      label: formatRoundInsight(copy.roundInsightBlocking, insights.sides.player.blocking.amount, insights.sides.enemy.blocking.amount),
-    },
-    {
-      total: insights.sides.player.summons.length + insights.sides.enemy.summons.length,
-      label: formatRoundInsight(copy.roundInsightSummons, insights.sides.player.summons.length, insights.sides.enemy.summons.length),
-    },
-    {
-      total: activePlayerSynergies + activeEnemySynergies,
-      label: formatRoundInsight(copy.roundInsightSynergies, activePlayerSynergies, activeEnemySynergies),
-    },
-  ]
-    .filter((row) => row.total > 0)
-    .slice(0, 2)
-    .map((row) => row.label);
+  const rows = document.createElement("div");
+  rows.className = "round-result-damage__rows";
 
-  [...rows, ...optionalRows].forEach((label) => {
-    const metric = document.createElement("span");
-    metric.textContent = label;
-    metrics.append(metric);
+  (["player", "enemy"] as const).forEach((owner) => {
+    const ownerLabel = owner === "player" ? copy.you : copy.roundDamageEnemy;
+    const sources = insights.sides[owner].damageDealt.bySource;
+    const slots = owner === "player" ? record.playerSlots : record.enemySlots;
+    const presentation = createRoundDamagePresentation(owner, slots, sources);
+    const unitRow = createRoundUnitDamageRow(ownerLabel, presentation.unitLeaders);
+    const synergyRows = createRoundSynergyDamageRows(ownerLabel, presentation.synergies);
+    if (!unitRow && synergyRows.length === 0) {
+      rows.append(createRoundDamageRow(ownerLabel, copy.roundDamageNone));
+      return;
+    }
+    if (unitRow) {
+      rows.append(unitRow);
+    }
+    synergyRows.forEach((row) => rows.append(row));
   });
-  section.append(title, metrics);
+
+  section.append(title, rows);
   return section;
 }
 
-function formatRoundInsight(template: string, player: number, enemy: number): string {
-  return formatMessage(template, { player, enemy });
+function createRoundUnitDamageRow(
+  ownerLabel: string,
+  leaders: readonly RoundDamageUnitTotal[],
+): HTMLElement | undefined {
+  const copy = getCopy();
+  if (leaders.length === 0) {
+    return undefined;
+  }
+
+  const names = leaders.map((entry) => getRoundDamageUnitName(entry.unit));
+  const visibleName = names.length === 1
+    ? names[0]
+    : formatMessage(copy.roundDamageMore, { name: names[0], count: names.length - 1 });
+  return createRoundDamageRow(ownerLabel, visibleName, leaders[0].amount, names.join(", "));
+}
+
+function createRoundSynergyDamageRows(
+  ownerLabel: string,
+  synergies: readonly RoundDamageSynergyTotal[],
+): HTMLElement[] {
+  const copy = getCopy();
+  return synergies.map(({ tag, amount }) => {
+    const label = formatMessage(copy.roundDamageSynergy, { tag: getTagLabel(activeLocale, tag) });
+    return createRoundDamageRow(ownerLabel, label, amount, label, "synergy");
+  });
+}
+
+function createRoundDamageRow(
+  ownerLabel: string,
+  sourceLabel: string,
+  amount?: number,
+  fullSourceLabel = sourceLabel,
+  kind: "unit" | "synergy" = "unit",
+): HTMLElement {
+  const copy = getCopy();
+  const row = document.createElement("div");
+  row.className = `round-result-damage__row round-result-damage__row--${kind}`;
+
+  const label = document.createElement("span");
+  label.className = "round-result-damage__label";
+  const owner = document.createElement("b");
+  owner.textContent = `${ownerLabel} ·`;
+  const source = document.createElement("span");
+  source.textContent = sourceLabel;
+  label.append(owner, source);
+  row.append(label);
+
+  if (amount !== undefined) {
+    const value = document.createElement("strong");
+    value.className = "round-result-damage__value";
+    value.textContent = String(amount);
+    row.append(value);
+    const accessibleLabel = formatMessage(copy.roundDamageAccessible, {
+      owner: ownerLabel,
+      sources: fullSourceLabel,
+      amount,
+    });
+    row.title = accessibleLabel;
+    row.setAttribute("aria-label", accessibleLabel);
+  } else {
+    row.setAttribute("aria-label", `${ownerLabel} · ${sourceLabel}`);
+  }
+
+  return row;
+}
+
+function getRoundDamageUnitName(unit: RoundInsightUnitRef): string {
+  if (!unit.cardId) {
+    return getCopy().roundDamageUnknownUnit;
+  }
+  return getLocalizedCard(activeLocale, getCardDefinition(unit.cardId)).name;
+}
+
+function formatRoundHpLoss(loss: number): string {
+  return loss > 0 ? ` (−${loss})` : "";
 }
 
 function getRoundWinnerLabel(winner: CombatWinner): string {
@@ -5382,6 +5449,7 @@ function mirrorCombatEvent(event: CombatEvent, hpLoss: number): CombatEvent {
     return {
       ...event,
       unitId: mirrorUnitId(event.unitId),
+      ...(event.source ? { source: mirrorCombatDamageSource(event.source) } : {}),
     };
   }
 
@@ -5419,6 +5487,12 @@ function mirrorCombatUnit(unit: CombatUnit): CombatUnit {
 
 function mirrorOwner(owner: Owner): Owner {
   return owner === "player" ? "enemy" : "player";
+}
+
+function mirrorCombatDamageSource(source: CombatDamageSource): CombatDamageSource {
+  return source.kind === "unit"
+    ? { ...source, unitId: mirrorUnitId(source.unitId) }
+    : { ...source, owner: mirrorOwner(source.owner) };
 }
 
 function mirrorCombatWinner(winner: CombatWinner): CombatWinner {

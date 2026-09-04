@@ -201,6 +201,22 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function removeDamageTelemetry(snapshot) {
+  const legacy = cloneJson(snapshot);
+  let removed = 0;
+  legacy.run.roundHistory.forEach((record) => {
+    record.combatResult.events.forEach((event) => {
+      if (event.type === "unit_damaged") {
+        delete event.hpDamage;
+        delete event.source;
+        removed += 1;
+      }
+    });
+  });
+  assert.ok(removed > 0, "fixture must contain damage telemetry");
+  return legacy;
+}
+
 test("draft, battle-result, and finished checkpoints round-trip without sharing mutable state", () => {
   assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 10);
   assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v10");
@@ -228,6 +244,55 @@ test("draft, battle-result, and finished checkpoints round-trip without sharing 
     assert.notStrictEqual(decoded.run, snapshot.run);
     assert.notStrictEqual(decoded.run.roundHistory, snapshot.run.roundHistory);
   }
+});
+
+test("v10 battle-result and finished snapshots without damage telemetry replay into canonical records", () => {
+  for (const state of [createBattleResultCheckpoint(), createFinishedCheckpoint()]) {
+    const snapshot = createSoloRunSnapshot(state, FIXED_SAVED_AT);
+    const legacy = removeDamageTelemetry(snapshot);
+    const decoded = decodeSoloRunSnapshot(JSON.stringify(legacy));
+
+    assert.ok(decoded);
+    const damageEvents = decoded.run.roundHistory
+      .flatMap((record) => record.combatResult.events)
+      .filter((event) => event.type === "unit_damaged");
+    assert.ok(damageEvents.length > 0);
+    assert.ok(damageEvents.every((event) => Number.isSafeInteger(event.hpDamage) && event.source));
+  }
+});
+
+test("loading a compatible pre-telemetry v10 snapshot preserves the active save", () => {
+  const storage = new MemoryStorage();
+  const snapshot = createSoloRunSnapshot(createBattleResultCheckpoint(), FIXED_SAVED_AT);
+  const serialized = JSON.stringify(removeDamageTelemetry(snapshot));
+  storage.setItem(SOLO_RUN_STORAGE_KEY, serialized);
+
+  const loaded = loadSoloRunSnapshot(storage);
+
+  assert.ok(loaded);
+  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), serialized);
+  assert.ok(loaded.run.roundHistory.some((record) => record.combatResult.events.some((event) =>
+    event.type === "unit_damaged" && event.source && Number.isSafeInteger(event.hpDamage),
+  )));
+});
+
+test("partially missing or forged damage telemetry is rejected", () => {
+  const state = createBattleResultCheckpoint();
+  const missingSource = encodedObject(state);
+  const missingSourceEvent = missingSource.run.roundHistory
+    .flatMap((record) => record.combatResult.events)
+    .find((event) => event.type === "unit_damaged");
+  assert.ok(missingSourceEvent?.source);
+  delete missingSourceEvent.source;
+  assert.equal(decodeSoloRunSnapshot(JSON.stringify(missingSource)), undefined);
+
+  const forgedSource = encodedObject(state);
+  const forgedSourceEvent = forgedSource.run.roundHistory
+    .flatMap((record) => record.combatResult.events)
+    .find((event) => event.type === "unit_damaged" && event.source?.kind === "unit");
+  assert.ok(forgedSourceEvent);
+  forgedSourceEvent.source.unitId = "player-5-forged";
+  assert.equal(decodeSoloRunSnapshot(JSON.stringify(forgedSource)), undefined);
 });
 
 test("session factories keep a stable identity and completion timestamp", () => {
