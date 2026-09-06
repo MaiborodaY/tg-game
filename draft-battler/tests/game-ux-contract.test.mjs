@@ -113,6 +113,9 @@ test("guest PvP perspective mirrors unit and synergy damage attribution", () => 
   assert.match(mirrorSource, /source\.kind === "unit"/);
   assert.match(mirrorSource, /unitId: mirrorUnitId\(source\.unitId\)/);
   assert.match(mirrorSource, /owner: mirrorOwner\(source\.owner\)/);
+  const abilityBranch = mainSource.match(/if \(event\.type === "ability_triggered"\) \{[\s\S]*?\n {2}\}/)?.[0] ?? "";
+  assert.match(abilityBranch, /unitId: mirrorUnitId\(event\.unitId\)/);
+  assert.match(abilityBranch, /targetId: mirrorUnitId\(event\.targetId\)/);
 });
 
 test("PvP frontend is opt-in, authenticated, and sends only action intents", () => {
@@ -151,7 +154,7 @@ test("PvP frontend is opt-in, authenticated, and sends only action intents", () 
     mainSource,
     /const previousMatch = uiState\.pvp\.match;[\s\S]*?isSamePresentedPvpBattle\(state\.mode, previousMatch, match\)/,
   );
-  assert.match(mainSource, /const PVP_RULESET_VERSION = "draft-battler-pvp-v4"/);
+  assert.match(mainSource, /const PVP_RULESET_VERSION = "draft-battler-pvp-v5"/);
   assert.match(mainSource, /payload\.rulesetVersion !== PVP_RULESET_VERSION/);
   assert.match(mainSource, /match\.rulesetVersion !== PVP_RULESET_VERSION/);
   assert.match(mainSource, /const combat = resolveCombat\(hostSlots, guestSlots, value\.round\)/);

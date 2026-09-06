@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { loadSoloRunSnapshot, SOLO_RUN_STORAGE_KEY } from "../src/soloPersistence.ts";
 
 import {
   SOLO_RUN_HISTORY_LIMIT,
@@ -58,7 +59,7 @@ test("history round-trips through its own versioned key and returns immutable co
 
   assert.equal(saveSoloRunHistory(storage, [older, newer]), true);
   assert.equal(SOLO_RUN_HISTORY_STORAGE_KEY, `draft-battler:solo-run-history:v${SOLO_RUN_HISTORY_VERSION}`);
-  assert.equal(storage.values.has("draft-battler:solo-run:v10"), false);
+  assert.equal(storage.values.has(SOLO_RUN_STORAGE_KEY), false);
 
   const loaded = loadSoloRunHistory(storage);
   assert.deepEqual(loaded, [newer, older]);
@@ -73,6 +74,17 @@ test("history round-trips through its own versioned key and returns immutable co
   const encoded = encodeSoloRunHistory([older, createSummary(2)]);
   assert.ok(encoded);
   assert.deepEqual(decodeSoloRunHistory(encoded), [createSummary(2), older]);
+});
+
+test("discarding an old active ability-ruleset save preserves completed history", () => {
+  const storage = new MemoryStorage();
+  const summary = createSummary(2, { rulesetVersion: "draft-battler-solo-v4" });
+  assert.equal(saveSoloRunHistory(storage, [summary]), true);
+  storage.setItem("draft-battler:solo-run:v10", "obsolete-active-save");
+
+  assert.equal(loadSoloRunSnapshot(storage), undefined);
+  assert.equal(storage.getItem("draft-battler:solo-run:v10"), null);
+  assert.deepEqual(loadSoloRunHistory(storage), [summary]);
 });
 
 test("save sorts newest-first and caps history at ten valid summaries", () => {
@@ -181,11 +193,11 @@ test("storage failures stay nonfatal for load, save, record, and clear", () => {
 test("clear removes only the run-history key", () => {
   const storage = new MemoryStorage();
   storage.setItem(SOLO_RUN_HISTORY_STORAGE_KEY, encodeSoloRunHistory([createSummary()]));
-  storage.setItem("draft-battler:solo-run:v10", "active-run");
+  storage.setItem(SOLO_RUN_STORAGE_KEY, "active-run");
 
   assert.equal(clearSoloRunHistory(storage), true);
   assert.equal(storage.getItem(SOLO_RUN_HISTORY_STORAGE_KEY), null);
-  assert.equal(storage.getItem("draft-battler:solo-run:v10"), "active-run");
+  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), "active-run");
 });
 
 test("a failed history write can durably queue the receipt and recover it exactly once", () => {

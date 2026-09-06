@@ -91,6 +91,26 @@ test("practice has no server entry and incompatible clients cannot start ranked 
   assert.equal(sql.prepare("SELECT COUNT(*) AS count FROM brobattler_solo_runs").get().count, 0);
 });
 
+test("old ability rules cannot settle a pending run but recorded results survive ruleset upgrades", async (t) => {
+  const { db, sql } = database(t);
+  await assert.rejects(startRankedSoloRun(db, viewer, "draft-battler-solo-v4", monday), { code: "ruleset_mismatch" });
+  const { run } = await startRankedSoloRun(db, viewer, SOLO_RUN_RULESET_VERSION, monday);
+  sql.prepare("UPDATE brobattler_solo_runs SET ruleset_version=? WHERE run_id=?")
+    .run("draft-battler-solo-v4", run.runId);
+
+  await assert.rejects(finishRankedSoloRun(db, viewer, run.runId, [], monday + 60_000), { code: "ruleset_mismatch" });
+  assert.equal(sql.prepare("SELECT result FROM brobattler_solo_runs WHERE run_id=?").get(run.runId).result, null);
+
+  sql.prepare("UPDATE brobattler_solo_runs SET result='win', rounds_played=12, week_key='2026-W37', finished_at=? WHERE run_id=?")
+    .run(monday + 60_000, run.runId);
+  assert.deepEqual(await finishRankedSoloRun(db, viewer, run.runId, [], monday + 7 * 86_400_000), {
+    status: "recorded", result: "win", weekKey: "2026-W37",
+  });
+  const ranking = await readBroBattlerLeaderboard(db, viewer, monday, "strong_bot");
+  assert.equal(ranking.viewer.wins, 1);
+  assert.equal(ranking.viewer.games, 1);
+});
+
 test("compact replay derives the entire strong-bot run without accepting combat totals", () => {
   const run = autoplayRun("ranked-test-6", (state) => [state.draftOptions[0].cardId], "strong");
   assert.deepEqual(replaySoloRunChoices(run.seed, choices(run)), run);

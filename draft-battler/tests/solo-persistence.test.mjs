@@ -38,6 +38,7 @@ const LEGACY_V6_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v6";
 const LEGACY_V7_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v7";
 const LEGACY_V8_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v8";
 const LEGACY_V9_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v9";
+const LEGACY_V10_SOLO_RUN_STORAGE_KEY = "draft-battler:solo-run:v10";
 
 class MemoryStorage {
   values = new Map();
@@ -218,9 +219,9 @@ function removeDamageTelemetry(snapshot) {
 }
 
 test("draft, battle-result, and finished checkpoints round-trip without sharing mutable state", () => {
-  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 10);
-  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v10");
-  assert.equal(SOLO_RUN_RULESET_VERSION, "draft-battler-solo-v4");
+  assert.equal(SOLO_RUN_SNAPSHOT_VERSION, 11);
+  assert.equal(SOLO_RUN_STORAGE_KEY, "draft-battler:solo-run:v11");
+  assert.equal(SOLO_RUN_RULESET_VERSION, "draft-battler-solo-v5");
 
   const checkpoints = [
     createDraftCheckpoint(),
@@ -246,22 +247,15 @@ test("draft, battle-result, and finished checkpoints round-trip without sharing 
   }
 });
 
-test("v10 battle-result and finished snapshots without damage telemetry replay into canonical records", () => {
+test("v11 battle-result and finished snapshots require canonical damage telemetry", () => {
   for (const state of [createBattleResultCheckpoint(), createFinishedCheckpoint()]) {
     const snapshot = createSoloRunSnapshot(state, FIXED_SAVED_AT);
     const legacy = removeDamageTelemetry(snapshot);
-    const decoded = decodeSoloRunSnapshot(JSON.stringify(legacy));
-
-    assert.ok(decoded);
-    const damageEvents = decoded.run.roundHistory
-      .flatMap((record) => record.combatResult.events)
-      .filter((event) => event.type === "unit_damaged");
-    assert.ok(damageEvents.length > 0);
-    assert.ok(damageEvents.every((event) => Number.isSafeInteger(event.hpDamage) && event.source));
+    assert.equal(decodeSoloRunSnapshot(JSON.stringify(legacy)), undefined);
   }
 });
 
-test("loading a compatible pre-telemetry v10 snapshot preserves the active save", () => {
+test("loading a v11 snapshot with stripped telemetry discards the invalid active save", () => {
   const storage = new MemoryStorage();
   const snapshot = createSoloRunSnapshot(createBattleResultCheckpoint(), FIXED_SAVED_AT);
   const serialized = JSON.stringify(removeDamageTelemetry(snapshot));
@@ -269,11 +263,8 @@ test("loading a compatible pre-telemetry v10 snapshot preserves the active save"
 
   const loaded = loadSoloRunSnapshot(storage);
 
-  assert.ok(loaded);
-  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), serialized);
-  assert.ok(loaded.run.roundHistory.some((record) => record.combatResult.events.some((event) =>
-    event.type === "unit_damaged" && event.source && Number.isSafeInteger(event.hpDamage),
-  )));
+  assert.equal(loaded, undefined);
+  assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
 });
 
 test("partially missing or forged damage telemetry is rejected", () => {
@@ -417,13 +408,14 @@ test("later-round snapshots replay draft offers with the pre-pick incumbent boar
   assert.deepEqual(decodeSoloRunSnapshot(JSON.stringify(snapshot)), snapshot);
 });
 
-test("v5-v9 active checkpoints are discarded instead of crossing the solo-v4 ruleset boundary", () => {
+test("v5-v10 active checkpoints are discarded instead of crossing the solo-v5 ruleset boundary", () => {
   const legacyCases = [
     [5, LEGACY_V5_SOLO_RUN_STORAGE_KEY],
     [6, LEGACY_V6_SOLO_RUN_STORAGE_KEY],
     [7, LEGACY_V7_SOLO_RUN_STORAGE_KEY],
     [8, LEGACY_V8_SOLO_RUN_STORAGE_KEY],
     [9, LEGACY_V9_SOLO_RUN_STORAGE_KEY],
+    [10, LEGACY_V10_SOLO_RUN_STORAGE_KEY],
   ];
 
   for (const [version, storageKey] of legacyCases) {
@@ -436,7 +428,9 @@ test("v5-v9 active checkpoints are discarded instead of crossing the solo-v4 rul
         ? "draft-battler-solo-v1"
         : version === 8
           ? "draft-battler-solo-v2"
-          : "draft-battler-solo-v3";
+          : version === 9
+            ? "draft-battler-solo-v3"
+            : "draft-battler-solo-v4";
     }
     if (version === 5) {
       delete legacy.run.botDifficulty;
@@ -447,6 +441,14 @@ test("v5-v9 active checkpoints are discarded instead of crossing the solo-v4 rul
     assert.equal(loadSoloRunSnapshot(storage), undefined);
     assert.equal(storage.getItem(storageKey), null);
     assert.equal(storage.getItem(SOLO_RUN_STORAGE_KEY), null);
+  }
+});
+
+test("a current-version envelope cannot resume a previous ability ruleset", () => {
+  for (const state of [createDraftCheckpoint(), createBattleResultCheckpoint(), createFinishedCheckpoint()]) {
+    const snapshot = encodedObject(state);
+    snapshot.session.rulesetVersion = "draft-battler-solo-v4";
+    assert.equal(decodeSoloRunSnapshot(JSON.stringify(snapshot)), undefined);
   }
 });
 

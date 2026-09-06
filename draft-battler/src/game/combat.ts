@@ -8,6 +8,7 @@ import {
   type SynergyTier,
 } from "./synergies";
 import {
+  type AbilityId,
   type BoardSlot,
   type CardDefinition,
   type CombatEvent,
@@ -29,6 +30,10 @@ interface TimelineUnit extends CombatUnit {
   nextActionAt: number;
   bonePactUsed?: boolean;
   firstAttackSynergyDamage?: number;
+  defenseUsed?: boolean;
+  frostDelayUsed?: boolean;
+  frostDelayReceived?: boolean;
+  poison?: { sourceUnitId: string; remainingActions: number };
 }
 
 interface SynergyCombatState {
@@ -44,19 +49,24 @@ interface PlannedDamage {
   target: TimelineUnit;
   amount: number;
   blocked: boolean;
-  hit: "primary" | "splash";
+  hit: "primary" | "splash" | "poison" | "counter";
+  bypassArmor?: boolean;
 }
 
 interface PlannedAttack {
   primary: PlannedDamage;
   splash: PlannedDamage[];
   applyFrostHex: boolean;
+  interceptedTarget?: TimelineUnit;
+  parried: boolean;
+  counter?: PlannedDamage;
 }
 
 interface PlannedAction {
   actor: TimelineUnit;
-  healTarget?: TimelineUnit;
+  healTargets: TimelineUnit[];
   attack?: PlannedAttack;
+  poisonTick?: TimelineUnit["poison"];
 }
 
 export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: readonly BoardSlot[], _round: number): CombatResult {
@@ -78,7 +88,8 @@ export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: rea
   let actions = 0;
   let lastActionTime = 0;
   while (actions < MAX_COMBAT_ACTIONS && hasLivingUnits(units, "player") && hasLivingUnits(units, "enemy")) {
-    if (!hasDamageCapableUnits(units, "player") && !hasDamageCapableUnits(units, "enemy")) {
+    if (!hasDamageCapableUnits(units, "player") && !hasDamageCapableUnits(units, "enemy") &&
+        !getLivingUnits(units).some((unit) => unit.poison)) {
       break;
     }
 
@@ -89,7 +100,8 @@ export function resolveCombat(playerSlots: readonly BoardSlot[], enemySlots: rea
 
     const actionTime = Math.min(...actors.map((actor) => actor.nextActionAt));
     // Every intent is planned from one tick snapshot, so lethal ties cannot cancel the other side's action.
-    const plannedActions = actors.map((actor) => planAction(actor, units, actionTime));
+    const reservedDefenses = new Set<string>();
+    const plannedActions = actors.map((actor) => planAction(actor, units, actionTime, reservedDefenses));
 
     actors.forEach((actor) => {
       actor.acted += 1;
@@ -407,22 +419,40 @@ function applyOpeningSynergyDamage(
   });
 }
 
-function planAction(actor: TimelineUnit, units: readonly TimelineUnit[], time: number): PlannedAction {
-  const healTarget = actor.abilityId === "heal_only" || actor.abilityId === "heal_ally"
-    ? selectWeakestWoundedAlly(actor, units)
-    : undefined;
+function planAction(
+  actor: TimelineUnit,
+  units: readonly TimelineUnit[],
+  time: number,
+  reservedDefenses: Set<string>,
+): PlannedAction {
+  const healing = actor.abilityId === "heal_only" || actor.abilityId === "heal_ally" || actor.abilityId === "moon_chorus";
+  const healTargets = healing ? selectWoundedAllies(actor, units).slice(0, actor.abilityId === "moon_chorus" ? 3 : 1) : [];
+  const action: PlannedAction = { actor, healTargets, poisonTick: actor.poison };
 
-  if (actor.abilityId === "heal_only") {
-    return { actor, healTarget };
+  if (actor.abilityId === "heal_only" || actor.abilityId === "bulwark") {
+    return action;
   }
 
-  const target = selectTarget(actor, units);
-  if (!target) {
-    return { actor, healTarget };
+  const selectedTarget = selectTarget(actor, units);
+  if (!selectedTarget) {
+    return action;
   }
 
+  // Reserve one-use defenses across all intents in this tick without changing the combat snapshot.
+  const guard = getLivingUnits(units, selectedTarget.owner).find((unit) =>
+    unit.abilityId === "bodyguard" && getSlotRow(unit.slotIndex) === 0 &&
+    unit.slotIndex + 3 === selectedTarget.slotIndex && !unit.defenseUsed && !reservedDefenses.has(unit.instanceId));
+  const target = guard ?? selectedTarget;
+  if (guard) {
+    reservedDefenses.add(guard.instanceId);
+  }
+  const parried = target.abilityId === "phantom_parry" && !target.defenseUsed && !reservedDefenses.has(target.instanceId);
+  if (parried) {
+    reservedDefenses.add(target.instanceId);
+  }
   const damage = calculateDamage(actor);
   const primary = planDamage(target, damage, actor.instanceId, time, "primary");
+  primary.blocked ||= parried;
   const splash: PlannedDamage[] = [];
 
   if (actor.abilityId === "fireball" || actor.abilityId === "pyro_splash") {
@@ -436,13 +466,22 @@ function planAction(actor: TimelineUnit, units: readonly TimelineUnit[], time: n
     });
   }
 
+  if (actor.abilityId === "piercing_bolt" && getSlotRow(target.slotIndex) === 0) {
+    const behind = getLivingUnits(units, target.owner).find((unit) => unit.slotIndex === target.slotIndex + 3);
+    if (behind) {
+      splash.push(planDamage(behind, 2, actor.instanceId, time, "splash"));
+    }
+  }
+
   return {
-    actor,
-    healTarget,
+    ...action,
     attack: {
       primary,
       splash,
       applyFrostHex: actor.abilityId === "frost_hex" && actor.acted === 0,
+      interceptedTarget: guard ? selectedTarget : undefined,
+      parried,
+      counter: parried ? planDamage(actor, 2, target.instanceId, time, "counter") : undefined,
     },
   };
 }
@@ -455,12 +494,11 @@ function resolvePlannedActions(
   synergyState: SynergyCombatState,
 ): void {
   const undeadDeaths = new Set<Owner>();
+  const counters: { source: TimelineUnit; damage: PlannedDamage }[] = [];
 
   // Healing is the first phase of a simultaneous tick; all attack damage was already fixed by the snapshot.
   plannedActions.forEach((action) => {
-    if (action.healTarget) {
-      applyPlannedHealing(action.actor, action.healTarget, events, time);
-    }
+    action.healTargets.forEach((target) => applyPlannedHealing(action.actor, target, events, time));
   });
 
   plannedActions.forEach((action) => {
@@ -485,13 +523,57 @@ function resolvePlannedActions(
     }
 
     const { actor, attack } = action;
+    const target = attack.primary.target;
+    if (attack.interceptedTarget && target.hp > 0) {
+      target.defenseUsed = true;
+      emitAbility(target, attack.interceptedTarget, "bodyguard", events, time);
+    }
+    if (actor.abilityId === "threat_sight") {
+      emitAbility(actor, target, "threat_sight", events, time);
+    }
+    if (attack.parried && attack.counter) {
+      // Like normal attacks, a counter fixed by the tick snapshot survives a simultaneous lethal hit.
+      target.defenseUsed = true;
+      emitAbility(target, actor, "phantom_parry", events, time, 2);
+      events.push({ type: "unit_blocked", time, unitId: target.instanceId, attackerId: actor.instanceId, amount: attack.primary.amount });
+      counters.push({ source: target, damage: attack.counter });
+    }
+    if (actor.abilityId === "armor_corrosion" && !attack.primary.blocked && target.hp > 0 && target.shield > 0) {
+      const removed = Math.min(2, target.shield);
+      target.shield -= removed;
+      emitAbility(actor, target, "armor_corrosion", events, time, removed);
+      events.push({ type: "unit_damaged", time, unitId: target.instanceId, amount: 0, hpDamage: 0,
+        remainingHp: target.hp, shieldAbsorbed: removed, source: { kind: "unit", unitId: actor.instanceId, hit: "corrosion" } });
+    }
 
-    applyPlannedDamage(attack.primary, actor.instanceId, units, events, time, undeadDeaths);
+    const hit = !attack.parried && applyPlannedDamage(attack.primary, actor.instanceId, units, events, time, undeadDeaths);
     attack.splash.forEach((damage) => {
-      applyPlannedDamage(damage, actor.instanceId, units, events, time, undeadDeaths);
+      if (applyPlannedDamage(damage, actor.instanceId, units, events, time, undeadDeaths) && actor.abilityId === "piercing_bolt") {
+        emitAbility(actor, damage.target, "piercing_bolt", events, time, damage.amount);
+      }
     });
 
-    if (attack.applyFrostHex && attack.primary.target.hp > 0) {
+    if (hit && target.hp > 0 && actor.abilityId === "poison_bite") {
+      // Refresh, never stack. Existing poison due this tick is resolved from the captured intent below.
+      target.poison = { sourceUnitId: actor.instanceId, remainingActions: 2 };
+      if (!canAct(target) && target.nextActionAt <= time + ACTION_TIME_EPSILON) {
+        target.actionScheduleOrigin = time - target.acted * 100 / target.speed;
+        target.nextActionAt = getScheduledActionTime(target, target.acted + 1);
+      }
+      emitAbility(actor, target, "poison_bite", events, time, 1);
+    }
+    if (hit && actor.abilityId === "frost_delay" && !actor.frostDelayUsed) {
+      actor.frostDelayUsed = true;
+      if (target.hp > 0 && !target.frostDelayReceived) {
+        const delay = 50 / target.speed;
+        target.frostDelayReceived = true;
+        target.actionScheduleOrigin += delay;
+        target.nextActionAt += delay;
+        emitAbility(actor, target, "frost_delay", events, time, delay);
+      }
+    }
+
+    if (hit && attack.applyFrostHex && attack.primary.target.hp > 0) {
       attack.primary.target.attack = Math.max(1, attack.primary.target.attack - 1);
       events.push({
         type: "unit_buffed",
@@ -500,6 +582,20 @@ function resolvePlannedActions(
         attackDelta: -1,
         source: "frost_hex",
       });
+    }
+  });
+
+  // Counterattacks are damage only: no recursive parries, interception or on-hit abilities.
+  counters.forEach(({ source, damage }) => applyPlannedDamage(damage, source.instanceId, units, events, time, undeadDeaths));
+  plannedActions.forEach(({ actor, poisonTick }) => {
+    if (!poisonTick) {
+      return;
+    }
+    applyPlannedDamage({ target: actor, amount: 1, blocked: false, hit: "poison", bypassArmor: true },
+      poisonTick.sourceUnitId, units, events, time, undeadDeaths);
+    poisonTick.remainingActions -= 1;
+    if (actor.poison === poisonTick && poisonTick.remainingActions <= 0) {
+      actor.poison = undefined;
     }
   });
 
@@ -520,6 +616,10 @@ function selectTarget(actor: TimelineUnit, units: readonly TimelineUnit[]): Time
 
   if (actor.abilityId === "backstab" || actor.abilityId === "snipe") {
     return [...enemies].sort((left, right) => left.hp - right.hp || left.slotIndex - right.slotIndex)[0];
+  }
+
+  if (actor.abilityId === "threat_sight") {
+    return [...enemies].sort((left, right) => right.attack - left.attack || left.slotIndex - right.slotIndex)[0];
   }
 
   const tauntingBulwarks = enemies.filter(isBulwarkTauntTarget);
@@ -599,11 +699,11 @@ function applyPlannedDamage(
   events: CombatEvent[],
   time: number,
   undeadDeaths: Set<Owner>,
-): void {
+): boolean {
   const { target } = plannedDamage;
 
   if (target.hp <= 0) {
-    return;
+    return false;
   }
 
   if (plannedDamage.blocked) {
@@ -614,10 +714,10 @@ function applyPlannedDamage(
       attackerId: sourceUnitId,
       amount: plannedDamage.amount,
     });
-    return;
+    return false;
   }
 
-  const shieldAbsorbed = Math.min(target.shield, plannedDamage.amount);
+  const shieldAbsorbed = plannedDamage.bypassArmor ? 0 : Math.min(target.shield, plannedDamage.amount);
   target.shield -= shieldAbsorbed;
   const damageAfterShield = plannedDamage.amount - shieldAbsorbed;
   const hpDamage = Math.min(target.hp, damageAfterShield);
@@ -641,6 +741,7 @@ function applyPlannedDamage(
       undeadDeaths.add(target.owner);
     }
   }
+  return true;
 }
 
 function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], events: CombatEvent[], time: number): void {
@@ -672,6 +773,10 @@ function maybeSummonSkeleton(deadUnit: TimelineUnit, units: TimelineUnit[], even
     actionScheduleOrigin: time + 1 - 100 / 4,
     nextActionAt: time + 1,
     summonedBy: deadUnit.instanceId,
+    poison: undefined,
+    defenseUsed: false,
+    frostDelayUsed: false,
+    frostDelayReceived: false,
   };
 
   units.push(skeleton);
@@ -704,13 +809,13 @@ function triggerUndeadMastery(
     });
 }
 
-function selectWeakestWoundedAlly(
+function selectWoundedAllies(
   actor: TimelineUnit,
   units: readonly TimelineUnit[],
-): TimelineUnit | undefined {
+): TimelineUnit[] {
   return getLivingUnits(units, actor.owner)
     .filter((unit) => unit.hp < unit.maxHp)
-    .sort((left, right) => left.hp - right.hp || left.slotIndex - right.slotIndex)[0];
+    .sort((left, right) => left.hp - right.hp || left.slotIndex - right.slotIndex);
 }
 
 function applyPlannedHealing(
@@ -723,7 +828,7 @@ function applyPlannedHealing(
     return;
   }
 
-  const amount = Math.min(2, target.maxHp - target.hp);
+  const amount = Math.min(actor.abilityId === "moon_chorus" ? 1 : 2, target.maxHp - target.hp);
   if (amount <= 0) {
     return;
   }
@@ -731,6 +836,16 @@ function applyPlannedHealing(
   target.hp += amount;
 
   events.push({ type: "unit_healed", time, unitId: target.instanceId, amount, remainingHp: target.hp, source: actor.instanceId });
+  if (actor.abilityId === "moon_chorus") {
+    emitAbility(actor, target, "moon_chorus", events, time, amount);
+  }
+}
+
+function emitAbility(
+  unit: TimelineUnit, target: TimelineUnit, abilityId: AbilityId,
+  events: CombatEvent[], time: number, amount?: number,
+): void {
+  events.push({ type: "ability_triggered", time, unitId: unit.instanceId, targetId: target.instanceId, abilityId, amount });
 }
 
 function addShield(unit: TimelineUnit, amount: number, source: string, events: CombatEvent[], time: number): void {
@@ -739,7 +854,8 @@ function addShield(unit: TimelineUnit, amount: number, source: string, events: C
 }
 
 function findNextActors(units: readonly TimelineUnit[]): TimelineUnit[] {
-  const eligibleUnits = getLivingUnits(units).filter(canAct);
+  // Poison also ticks on the passive turns of a stationary shieldbearer; it does not grant an attack.
+  const eligibleUnits = getLivingUnits(units).filter((unit) => canAct(unit) || unit.poison);
   const nextActionAt = Math.min(...eligibleUnits.map((unit) => unit.nextActionAt));
 
   if (!Number.isFinite(nextActionAt)) {

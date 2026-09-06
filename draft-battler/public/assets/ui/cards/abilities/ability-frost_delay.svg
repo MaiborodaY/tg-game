@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-frost_delay" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#b6efff"/>
+      <stop offset="1" stop-color="#274765"/>
+    </radialGradient>
+    <filter id="ability-glow-frost_delay" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.506 0 0 0 0 0.843 0 0 0 0 0.949 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="67" cy="73" r="36" fill="url(#ability-fill-frost_delay)" stroke="#e5faff" stroke-width="5"/>
+  <path d="M67 47V73L84 85M28 13V53M11 23L45 43M11 43L45 23" stroke="#e5faff" stroke-width="6" stroke-linecap="round" filter="url(#ability-glow-frost_delay)"/>
+</svg>

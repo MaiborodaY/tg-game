@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-piercing_bolt" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#edc78d"/>
+      <stop offset="1" stop-color="#694625"/>
+    </radialGradient>
+    <filter id="ability-glow-piercing_bolt" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.894 0 0 0 0 0.678 0 0 0 0 0.369 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M27 53H48V106H27ZM72 53H93V106H72Z" fill="url(#ability-fill-piercing_bolt)" stroke="#fff0cf" stroke-width="5"/>
+  <path d="M13 40H113M92 22L113 40L92 58" stroke="#fff0cf" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#ability-glow-piercing_bolt)"/>
+</svg>

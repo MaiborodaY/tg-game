@@ -256,6 +256,16 @@ class CastleBattleScene extends Phaser.Scene {
     riposte: "ARMOR +{amount}",
     synergy_undead_4: "UNDEAD 4/4: +{amount} ATK",
     bone_pact: "BONE PACT",
+    poison_bite: "POISONED",
+    poison_tick: "POISON",
+    armor_corrosion: "ARMOR −{amount}",
+    bodyguard: "INTERCEPT",
+    phantom_parry: "PARRY",
+    counter: "COUNTER",
+    piercing_bolt: "PIERCE",
+    frost_delay: "DELAYED",
+    moon_chorus: "MOON HEALING",
+    threat_sight: "TOP THREAT",
   };
   private battleSpeed: BattlePlaybackSpeed = 1;
   private readonly playbackClock = new BattlePlaybackClock(this.battleSpeed);
@@ -964,6 +974,11 @@ class CastleBattleScene extends Phaser.Scene {
       return;
     }
 
+    if (event.type === "unit_ability") {
+      this.emitBattleAbilityCallouts([event]);
+      return;
+    }
+
     if (event.type === "unit_damage") {
       const view = this.unitViews.get(event.unitId);
       if (!view) {
@@ -974,6 +989,7 @@ class CastleBattleScene extends Phaser.Scene {
         this.updateUnitArmor(view, applyArmorDelta(view.armor, -event.shieldAbsorbed));
       }
       this.updateUnitHp(view, event.remainingHp);
+      this.emitBattleAbilityCallouts([event]);
       this.floatText(
         view.container.x,
         view.container.y - 54,
@@ -1961,6 +1977,7 @@ function isConcurrentCombatEvent(event: BattleTimelineEvent): boolean {
     event.type === "unit_spawn" ||
     event.type === "unit_buff" ||
     event.type === "unit_attack" ||
+    event.type === "unit_ability" ||
     event.type === "unit_block" ||
     event.type === "unit_damage" ||
     event.type === "unit_heal" ||
@@ -1969,6 +1986,15 @@ function isConcurrentCombatEvent(event: BattleTimelineEvent): boolean {
 }
 
 function getAbilityCalloutColor(callout: BattleAbilityCallout): string {
+  if (callout.tone === "poison") {
+    return "#b7dc72";
+  }
+  if (callout.tone === "damage") {
+    return "#f5a579";
+  }
+  if (callout.tone === "heal") {
+    return "#a4dfba";
+  }
   if (callout.tone === "armor") {
     return "#9fc4ff";
   }

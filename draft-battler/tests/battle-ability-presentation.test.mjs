@@ -193,6 +193,83 @@ test("callout plan is side-fair and prioritizes distinct named mechanics over pa
   );
 });
 
+test("all eight redesigns use explicit trigger events with truthful source and target anchors", () => {
+  const expectations = [
+    ["poison_bite", "poison", "poison", "target"],
+    ["armor_corrosion", "armor_down", "debuff", "target"],
+    ["bodyguard", "protect", "armor", "caster"],
+    ["phantom_parry", "parry", "armor", "caster"],
+    ["piercing_bolt", "pierce", "damage", "target"],
+    ["frost_delay", "delay", "debuff", "target"],
+    ["moon_chorus", "heal", "heal", "caster"],
+    ["threat_sight", "focus", "damage", "target"],
+  ];
+  for (const [abilityId, effect, tone, anchor] of expectations) {
+    assert.deepEqual(getBattleAbilityCallout({
+      type: "unit_ability", time: 20, unitId: "caster", targetId: "target", abilityId, amount: 2,
+    }), { unitId: anchor, sourceUnitId: "caster", source: abilityId, effect, tone, amount: 2 });
+  }
+  assert.equal(getBattleAbilityCallout({
+    type: "unit_ability", time: 20, unitId: "caster", targetId: "target", abilityId: "none",
+  }), undefined);
+});
+
+test("poison and counter damage retain visible source labels without guessing from the victim's card", () => {
+  for (const [hit, source, tone] of [["poison", "poison_tick", "poison"], ["counter", "counter", "damage"]]) {
+    assert.deepEqual(getBattleAbilityCallout({
+      type: "unit_damage", time: 40, unitId: "target", amount: 1, remainingHp: 4, shieldAbsorbed: 0,
+      source: { kind: "unit", unitId: "caster", hit },
+    }), { unitId: "target", sourceUnitId: "caster", source, effect: "damage", tone, amount: 1 });
+  }
+  assert.equal(getBattleAbilityCallout({
+    type: "unit_damage", time: 40, unitId: "target", amount: 0, remainingHp: 5, shieldAbsorbed: 2,
+    source: { kind: "unit", unitId: "caster", hit: "corrosion" },
+  }), undefined, "Corrosion uses its explicit trigger, not a false HP-damage label");
+  assert.equal(getBattleAbilityCallout({
+    type: "unit_damage", time: 40, unitId: "target", amount: 0, remainingHp: 5, shieldAbsorbed: 2,
+    source: { kind: "unit", unitId: "caster", hit: "counter" },
+  })?.source, "counter", "A counter remains identifiable when armor absorbs all of it");
+});
+
+test("hostile callouts count against the caster's quota and group healing emits once per caster", () => {
+  const units = [
+    createTimelineUnit("rat", "player", "plague_rat"),
+    createTimelineUnit("moon", "enemy", "moon_priestess"),
+    createTimelineUnit("target", "enemy", "bone_soldier"),
+    createTimelineUnit("target2", "enemy", "bone_archer"),
+  ];
+  const plan = createBattleAbilityCalloutPlan([
+    { type: "unit_ability", time: 20, unitId: "rat", targetId: "target", abilityId: "poison_bite" },
+    { type: "unit_ability", time: 20, unitId: "moon", targetId: "target", abilityId: "moon_chorus", amount: 1 },
+    { type: "unit_ability", time: 20, unitId: "moon", targetId: "target2", abilityId: "moon_chorus", amount: 1 },
+    { type: "unit_ability", time: 20, unitId: "moon", targetId: "moon", abilityId: "moon_chorus", amount: 1 },
+  ], units);
+  assert.deepEqual(plan.map(({ source, owner, anchorUnitId }) => ({ source, owner, anchorUnitId })), [
+    { source: "poison_bite", owner: "player", anchorUnitId: "target" },
+    { source: "moon_chorus", owner: "enemy", anchorUnitId: "moon" },
+  ]);
+});
+
+test("timeline retains explicit ability triggers and delayed damage attribution at their original combat time", () => {
+  const playerSlots = createBoard([[0, "plague_rat"]]);
+  const enemySlots = createBoard([[0, "stone_golem"]]);
+  const source = { kind: "unit", unitId: "player-0-plague_rat", hit: "poison" };
+  const combat = {
+    winner: "draw", hpLoss: 0, playerCastleDamage: 0, enemyCastleDamage: 0, actions: 1,
+    survivingPlayerUnits: [], survivingEnemyUnits: [],
+    events: [
+      { type: "ability_triggered", time: 12.5, unitId: source.unitId, targetId: "enemy-0-stone_golem", abilityId: "poison_bite" },
+      { type: "unit_damaged", time: 50, unitId: "enemy-0-stone_golem", amount: 1, hpDamage: 1, remainingHp: 15, shieldAbsorbed: 0, source },
+    ],
+  };
+  const timeline = createTimeline(combat, playerSlots, enemySlots);
+  const steps = timeline.events.filter((event) => event.type === "combat_step");
+  assert.equal(steps.length, 2);
+  assert.deepEqual(steps[0].events[0], { ...combat.events[0], type: "unit_ability" });
+  assert.deepEqual(steps[1].events[0].source, source);
+  assert.equal(steps[1].events[0].time, 50);
+});
+
 function createTimeline(combat, playerSlots, enemySlots) {
   return createBattleTimeline({
     playerSlots,

@@ -76,6 +76,31 @@ test("strong difficulty values crossing a four-unit synergy tier", () => {
   );
 });
 
+test("the strong bot places a bodyguard directly in front of an existing ally", () => {
+  const board = createEmptyBoardSlots();
+  board[4] = { slotIndex: 4, cardId: "ember_mage", upgradeLevel: 0 };
+
+  const result = advanceEnemyBoardSlots("recruit-guard8", 4, board, "strong");
+
+  assert.deepEqual(result.draftOptions.map((option) => option.cardId), ["boar_rider", "night_warden", "sneakblade"]);
+  assert.equal(result.pickedCardId, "night_warden");
+  assert.equal(result.targetSlotIndex, 1);
+  assert.equal(result.boardSlots[4].cardId, "ember_mage");
+});
+
+test("the strong bot places a new ranged ally behind its existing bodyguard", () => {
+  const board = createEmptyBoardSlots();
+  board[1] = { slotIndex: 1, cardId: "night_warden", upgradeLevel: 0 };
+
+  const result = advanceEnemyBoardSlots("protect-recruit0", 4, board, "strong");
+
+  assert.deepEqual(result.draftOptions.map((option) => option.cardId), ["bone_archer", "shieldbearer", "war_mastiff"]);
+  assert.equal(result.pickedCardId, "bone_archer");
+  assert.equal(result.targetSlotIndex, 4);
+  assert.equal(result.boardSlots[1].cardId, "night_warden");
+  assert.equal(isCardAllowedInSlot("night_warden", 4), true, "the ability does not impose a new placement ban");
+});
+
 test("a solo duel is capped at fifteen rounds", () => {
   assert.equal(MAX_RUN_ROUNDS, 15);
 });

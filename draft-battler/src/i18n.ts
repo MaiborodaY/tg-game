@@ -263,6 +263,16 @@ export interface UiCopy {
   battleCalloutFrost: string;
   battleCalloutUndeadMastery: string;
   battleCalloutBonePact: string;
+  battleCalloutPoison: string;
+  battleCalloutPoisonTick: string;
+  battleCalloutCorrosion: string;
+  battleCalloutBodyguard: string;
+  battleCalloutParry: string;
+  battleCalloutCounter: string;
+  battleCalloutPierce: string;
+  battleCalloutDelay: string;
+  battleCalloutMoon: string;
+  battleCalloutThreat: string;
   sceneLoading: string;
   battleResultReady: string;
   battlefieldUnavailable: string;
@@ -633,6 +643,16 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     battleCalloutFrost: "МОРОЗ: −{amount} АТК",
     battleCalloutUndeadMastery: "НЕЖИТЬ 4/4: +{amount} АТК",
     battleCalloutBonePact: "КОСТЯНОЙ ДОГОВОР",
+    battleCalloutPoison: "ОТРАВЛЕН",
+    battleCalloutPoisonTick: "ЯД",
+    battleCalloutCorrosion: "БРОНЯ −{amount}",
+    battleCalloutBodyguard: "ПЕРЕХВАТ",
+    battleCalloutParry: "ПАРИРОВАНИЕ",
+    battleCalloutCounter: "КОНТРАТАКА",
+    battleCalloutPierce: "ПРОБИТИЕ",
+    battleCalloutDelay: "ЗАДЕРЖКА",
+    battleCalloutMoon: "ЛУННОЕ ЛЕЧЕНИЕ",
+    battleCalloutThreat: "ОПАСНАЯ ЦЕЛЬ",
     sceneLoading: "Загрузка поля…",
     battleResultReady: "Результат боя готов.",
     battlefieldUnavailable: "Поле боя недоступно. Драфт продолжает работать.",
@@ -891,6 +911,16 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     battleCalloutFrost: "МОРОЗ: −{amount} АТК",
     battleCalloutUndeadMastery: "НЕЖИТЬ 4/4: +{amount} АТК",
     battleCalloutBonePact: "КІСТЯНИЙ ДОГОВІР",
+    battleCalloutPoison: "ОТРУЄНО",
+    battleCalloutPoisonTick: "ОТРУТА",
+    battleCalloutCorrosion: "БРОНЯ −{amount}",
+    battleCalloutBodyguard: "ПЕРЕХОПЛЕННЯ",
+    battleCalloutParry: "ПАРИРУВАННЯ",
+    battleCalloutCounter: "КОНТРАТАКА",
+    battleCalloutPierce: "ПРОБИТТЯ",
+    battleCalloutDelay: "ЗАТРИМКА",
+    battleCalloutMoon: "МІСЯЧНЕ ЗЦІЛЕННЯ",
+    battleCalloutThreat: "НЕБЕЗПЕЧНА ЦІЛЬ",
     sceneLoading: "Завантаження поля…",
     battleResultReady: "Результат бою готовий.",
     battlefieldUnavailable: "Поле бою недоступне. Драфт продовжує працювати.",
@@ -1149,6 +1179,16 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     battleCalloutFrost: "FROST: −{amount} ATK",
     battleCalloutUndeadMastery: "UNDEAD 4/4: +{amount} ATK",
     battleCalloutBonePact: "BONE PACT",
+    battleCalloutPoison: "POISONED",
+    battleCalloutPoisonTick: "POISON",
+    battleCalloutCorrosion: "ARMOR −{amount}",
+    battleCalloutBodyguard: "INTERCEPT",
+    battleCalloutParry: "PARRY",
+    battleCalloutCounter: "COUNTER",
+    battleCalloutPierce: "PIERCE",
+    battleCalloutDelay: "DELAYED",
+    battleCalloutMoon: "MOON HEALING",
+    battleCalloutThreat: "TOP THREAT",
     sceneLoading: "Loading field…",
     battleResultReady: "Battle result ready.",
     battlefieldUnavailable: "Battlefield unavailable. Drafting still works.",
@@ -1267,8 +1307,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     plague_rat: {
       name: "Чумная крыса",
-      text: "Получает +1 АТК, если в отряде есть другой Зверь.",
-      summary: "В начале боя получает +1 АТК, если в отряде есть другой Зверь.",
+      text: "Яд: −1 HP после каждого из 2 действий цели.",
+      summary: "Попадание отравляет цель: она теряет 1 HP после каждого из двух следующих действий. Яд обходит броню; повторное попадание обновляет срок, но не усиливает яд.",
     },
     rune_warden: {
       name: "Рунный хранитель",
@@ -1292,13 +1332,13 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     battle_alchemist: {
       name: "Боевой алхимик",
-      text: "Восстанавливает союзнику до 2 HP, затем атакует.",
-      summary: "Перед атакой восстанавливает до 2 HP самому раненому союзнику.",
+      text: "Перед попаданием растворяет до 2 брони цели.",
+      summary: "При попадании сначала снимает до 2 брони цели, затем наносит обычный урон. Не лечит союзников.",
     },
     night_warden: {
       name: "Ночной страж",
-      text: "В начале боя получает 2 брони.",
-      summary: "В начале боя получает 2 единицы брони, которые поглощают входящий урон.",
+      text: "Один раз принимает удар за союзника позади.",
+      summary: "В переднем ряду один раз за бой принимает на себя прямую атаку по союзнику непосредственно за ним, в той же колонне. Не перехватывает яд, урон по области и контратаки.",
     },
     grave_raider: {
       name: "Могильный рейдер",
@@ -1307,8 +1347,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     frost_wraith: {
       name: "Ледяной призрак",
-      text: "Первый удар снижает АТК цели на 1.",
-      summary: "Первая атака снижает АТК цели на 1, но не ниже 1.",
+      text: "Первое попадание задерживает следующую атаку цели.",
+      summary: "Первое попадание задерживает следующее действие цели на половину интервала её атаки. Каждую цель можно задержать лишь один раз за бой; текущую атаку не отменяет.",
     },
     ironhide_bear: {
       name: "Железношкурый медведь",
@@ -1347,18 +1387,18 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     moon_priestess: {
       name: "Лунная жрица",
-      text: "Восстанавливает союзнику до 2 HP, затем атакует.",
-      summary: "Перед атакой восстанавливает до 2 HP раненому союзнику с наименьшим текущим HP.",
+      text: "Лечит до 3 союзников на 1 HP, затем атакует.",
+      summary: "Перед атакой восстанавливает по 1 HP максимум трём раненым союзникам с наименьшим текущим HP, включая себя.",
     },
     phantom_duelist: {
       name: "Призрачный дуэлянт",
-      text: "В начале боя получает 2 брони.",
-      summary: "В начале боя получает 2 единицы брони, которые поглощают входящий урон.",
+      text: "Блокирует первую атаку и отвечает на 2 урона.",
+      summary: "Один раз за бой полностью парирует прямую атаку и наносит атакующему 2 урона. Не парирует яд, урон по области и контратаки.",
     },
     siege_engineer: {
       name: "Осадный инженер",
-      text: "Наносит 1 урон врагам на соседних с целью позициях.",
-      summary: "Каждая атака также наносит 1 урон врагам на позициях, соседних с целью.",
+      text: "Пробивает цель: 2 урона врагу сразу за ней.",
+      summary: "При атаке переднего ряда дополнительно наносит 2 урона врагу непосредственно за целью в той же колонне. Не задевает соседние колонны.",
     },
     bronze_minotaur: {
       name: "Бронзовый минотавр",
@@ -1372,8 +1412,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     star_seer: {
       name: "Звёздный провидец",
-      text: "Атакует врага с наименьшим текущим HP.",
-      summary: "Выбирает целью врага с наименьшим текущим запасом HP.",
+      text: "Атакует врага с наибольшей АТК.",
+      summary: "Выбирает врага с наибольшей текущей АТК, игнорируя ряд и провокацию Щитоносца. Ночной страж может перехватить эту атаку.",
     },
     war_chaplain: {
       name: "Боевой капеллан",
@@ -1479,8 +1519,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     plague_rat: {
       name: "Чумний пацюк",
-      text: "Отримує +1 АТК, якщо в загоні є інший Звір.",
-      summary: "На початку бою отримує +1 АТК, якщо в загоні є інший Звір.",
+      text: "Отрута: −1 HP після кожної з 2 дій цілі.",
+      summary: "Влучання отруює ціль: вона втрачає 1 HP після кожної з двох наступних дій. Отрута обходить броню; повторне влучання оновлює строк, але не посилює отруту.",
     },
     rune_warden: {
       name: "Рунічний вартовий",
@@ -1504,13 +1544,13 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     battle_alchemist: {
       name: "Бойовий алхімік",
-      text: "Відновлює союзнику до 2 HP, а потім атакує.",
-      summary: "Перед атакою відновлює до 2 HP найбільш пораненому союзнику.",
+      text: "Перед влучанням розчиняє до 2 броні цілі.",
+      summary: "При влучанні спочатку знімає до 2 броні цілі, потім завдає звичайної шкоди. Не лікує союзників.",
     },
     night_warden: {
       name: "Нічний вартовий",
-      text: "На початку бою отримує 2 броні.",
-      summary: "На початку бою отримує 2 одиниці броні, що поглинають вхідну шкоду.",
+      text: "Раз приймає удар за союзника позаду.",
+      summary: "У передньому ряду раз за бій приймає на себе пряму атаку по союзнику безпосередньо позаду, в тій самій колонці. Не перехоплює отруту, шкоду по області й контратаки.",
     },
     grave_raider: {
       name: "Могильний рейдер",
@@ -1519,8 +1559,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     frost_wraith: {
       name: "Крижаний привид",
-      text: "Перший удар знижує АТК цілі на 1.",
-      summary: "Перша атака знижує АТК цілі на 1, але не нижче 1.",
+      text: "Перше влучання затримує наступну атаку цілі.",
+      summary: "Перше влучання затримує наступну дію цілі на половину інтервалу її атаки. Кожну ціль можна затримати лише раз за бій; поточну атаку не скасовує.",
     },
     ironhide_bear: {
       name: "Залізношкірий ведмідь",
@@ -1559,18 +1599,18 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     moon_priestess: {
       name: "Місячна жриця",
-      text: "Відновлює союзнику до 2 HP, а потім атакує.",
-      summary: "Перед атакою відновлює до 2 HP пораненому союзнику з найменшим поточним HP.",
+      text: "Лікує до 3 союзників на 1 HP, потім атакує.",
+      summary: "Перед атакою відновлює по 1 HP максимум трьом пораненим союзникам із найменшим поточним HP, включно із собою.",
     },
     phantom_duelist: {
       name: "Примарний дуелянт",
-      text: "На початку бою отримує 2 броні.",
-      summary: "На початку бою отримує 2 одиниці броні, що поглинають вхідну шкоду.",
+      text: "Блокує першу атаку й відповідає на 2 шкоди.",
+      summary: "Раз за бій повністю парирує пряму атаку й завдає нападнику 2 шкоди. Не парирує отруту, шкоду по області й контратаки.",
     },
     siege_engineer: {
       name: "Облоговий інженер",
-      text: "Завдає 1 шкоди ворогам на сусідніх із ціллю позиціях.",
-      summary: "Кожна атака також завдає 1 шкоди ворогам на позиціях, сусідніх із ціллю.",
+      text: "Пробиває ціль: 2 шкоди ворогу одразу за нею.",
+      summary: "При атаці переднього ряду додатково завдає 2 шкоди ворогу безпосередньо за ціллю в тій самій колонці. Не зачіпає сусідні колонки.",
     },
     bronze_minotaur: {
       name: "Бронзовий мінотавр",
@@ -1584,8 +1624,8 @@ const CARD_TEXT: Record<"ru" | "uk", Record<CardId, LocalizedCardText>> = {
     },
     star_seer: {
       name: "Зоряний провидець",
-      text: "Атакує ворога з найменшим поточним HP.",
-      summary: "Обирає ціллю ворога з найменшим поточним запасом HP.",
+      text: "Атакує ворога з найбільшою АТК.",
+      summary: "Обирає ворога з найбільшою поточною АТК, ігноруючи ряд і провокацію Щитоносця. Нічний вартовий може перехопити цю атаку.",
     },
     war_chaplain: {
       name: "Бойовий капелан",

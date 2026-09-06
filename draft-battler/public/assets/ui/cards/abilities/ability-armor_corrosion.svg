@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-armor_corrosion" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#d9eb86"/>
+      <stop offset="1" stop-color="#405529"/>
+    </radialGradient>
+    <filter id="ability-glow-armor_corrosion" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.698 0 0 0 0 0.835 0 0 0 0 0.329 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M26 56L62 44L98 56V79C98 94 80 108 62 115C44 108 26 94 26 79Z" fill="url(#ability-fill-armor_corrosion)" stroke="#f3ffbf" stroke-width="5"/>
+  <path d="M70 54L57 72L73 79L57 104M84 15L105 25L93 51C88 59 73 52 78 43Z" stroke="#f3ffbf" stroke-width="6" stroke-linejoin="round" filter="url(#ability-glow-armor_corrosion)"/>
+</svg>

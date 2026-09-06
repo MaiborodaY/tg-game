@@ -336,3 +336,80 @@ test("legacy damage events remain readable without inventing source attribution"
   });
   assert.equal(insights.sides.enemy.blocking.amount, 1);
 });
+
+test("poison after its source dies and counterattacks retain their unit's damage attribution", () => {
+  const ratId = "player-0-plague_rat";
+  const duelistId = "enemy-0-phantom_duelist";
+  const damaged = (unitId, sourceId, hit, hpDamage, time, armor = 0) => ({
+    type: "unit_damaged", time, unitId, amount: hpDamage, hpDamage,
+    remainingHp: 1, shieldAbsorbed: armor,
+    source: { kind: "unit", unitId: sourceId, hit },
+  });
+  const insights = createRoundInsights({
+    round: 4, playerHpBefore: 20, playerHpAfter: 20, enemyHpBefore: 20, enemyHpAfter: 20,
+    draftOptions: [], draftRerollCount: 0,
+    playerSlots: [{ slotIndex: 0, cardId: "plague_rat", upgradeLevel: 0 }],
+    enemySlots: [{ slotIndex: 0, cardId: "phantom_duelist", upgradeLevel: 0 }],
+    combatResult: {
+      winner: "draw", hpLoss: 0, playerCastleDamage: 0, enemyCastleDamage: 0, actions: 4,
+      survivingPlayerUnits: [], survivingEnemyUnits: [],
+      events: [
+        damaged(duelistId, ratId, "primary", 2, 10),
+        { type: "unit_blocked", time: 11, unitId: duelistId, attackerId: ratId, amount: 3 },
+        damaged(ratId, duelistId, "counter", 2, 11, 1),
+        { type: "unit_died", time: 11, unitId: ratId, killerId: duelistId },
+        damaged(duelistId, ratId, "poison", 1, 20),
+        damaged(duelistId, ratId, "poison", 1, 30),
+        { type: "unit_died", time: 30, unitId: duelistId, killerId: ratId },
+      ],
+    },
+  });
+
+  assert.deepEqual(insights.sides.player.damageDealt, {
+    hpDamage: 4, armorDamage: 0, eventCount: 3,
+    bySource: [{
+      source: { kind: "unit", unit: { instanceId: ratId, cardId: "plague_rat", slotIndex: 0, upgradeLevel: 0 } },
+      hpDamage: 4, armorDamage: 0, eventCount: 3,
+    }],
+  });
+  assert.deepEqual(insights.sides.enemy.damageDealt, {
+    hpDamage: 2, armorDamage: 1, eventCount: 1,
+    bySource: [{
+      source: { kind: "unit", unit: { instanceId: duelistId, cardId: "phantom_duelist", slotIndex: 0, upgradeLevel: 0 } },
+      hpDamage: 2, armorDamage: 1, eventCount: 1,
+    }],
+  });
+  assert.equal(insights.sides.enemy.blocking.amount, 3);
+  assert.equal(insights.sides.player.blocking.amount, 1);
+});
+
+test("corroded armor counts as the alchemist's armor damage without a false defensive block", () => {
+  const alchemistId = "player-3-battle_alchemist";
+  const guardId = "enemy-0-iron_guard";
+  const insights = createRoundInsights({
+    round: 4, playerHpBefore: 20, playerHpAfter: 20, enemyHpBefore: 20, enemyHpAfter: 20,
+    draftOptions: [], draftRerollCount: 0,
+    playerSlots: [{ slotIndex: 3, cardId: "battle_alchemist", upgradeLevel: 0 }],
+    enemySlots: [{ slotIndex: 0, cardId: "iron_guard", upgradeLevel: 0 }],
+    combatResult: {
+      winner: "draw", hpLoss: 0, playerCastleDamage: 0, enemyCastleDamage: 0, actions: 1,
+      survivingPlayerUnits: [], survivingEnemyUnits: [],
+      events: [{
+        type: "unit_damaged", time: 20, unitId: guardId, amount: 0, hpDamage: 0,
+        remainingHp: 10, shieldAbsorbed: 2,
+        source: { kind: "unit", unitId: alchemistId, hit: "corrosion" },
+      }, {
+        type: "unit_damaged", time: 20, unitId: guardId, amount: 2, hpDamage: 2,
+        remainingHp: 8, shieldAbsorbed: 1,
+        source: { kind: "unit", unitId: alchemistId, hit: "primary" },
+      }],
+    },
+  });
+
+  assert.equal(insights.sides.player.damageDealt.hpDamage, 2);
+  assert.equal(insights.sides.player.damageDealt.armorDamage, 3);
+  assert.equal(insights.sides.player.damageDealt.bySource.length, 1);
+  assert.equal(insights.sides.player.damageDealt.bySource[0].source.unit.cardId, "battle_alchemist");
+  assert.equal(insights.sides.enemy.blocking.amount, 1);
+  assert.equal(insights.sides.enemy.blocking.eventCount, 1);
+});

@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 const MAX_ATTEMPTS = 4;
 const RETRY_DELAY_MS = 2_000;
 const REQUEST_TIMEOUT_MS = 5_000;
-const PVP_RULESET_VERSION = "draft-battler-pvp-v4";
+const PVP_RULESET_VERSION = "draft-battler-pvp-v5";
 
 export async function verifyDeployment(origin, request = fetch) {
   const baseUrl = new URL(origin);

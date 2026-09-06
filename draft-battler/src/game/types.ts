@@ -40,7 +40,15 @@ export type AbilityId =
   | "thorn_guard"
   | "stone_skin"
   | "pyro_splash"
-  | "riposte";
+  | "riposte"
+  | "poison_bite"
+  | "armor_corrosion"
+  | "bodyguard"
+  | "phantom_parry"
+  | "piercing_bolt"
+  | "frost_delay"
+  | "moon_chorus"
+  | "threat_sight";
 
 export type CardId =
   | "iron_guard"
@@ -139,7 +147,7 @@ export interface CombatUnit {
 export type CombatWinner = "player" | "enemy" | "draw";
 
 export type CombatDamageSource =
-  | { kind: "unit"; unitId: string; hit: "primary" | "splash" }
+  | { kind: "unit"; unitId: string; hit: "primary" | "splash" | "poison" | "counter" | "corrosion" }
   | { kind: "synergy"; owner: Owner; tag: UnitTag; threshold: SynergyThreshold };
 
 type CombatEventPayload =
@@ -162,6 +170,7 @@ type CombatEventPayload =
   | { type: "unit_spawned"; unit: CombatUnit }
   | { type: "unit_buffed"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number; source: string }
   | { type: "unit_attacked"; attackerId: string; targetId: string; abilityId: AbilityId; damage: number }
+  | { type: "ability_triggered"; unitId: string; targetId: string; abilityId: AbilityId; amount?: number }
   | { type: "unit_blocked"; unitId: string; attackerId: string; amount: number }
   | {
       type: "unit_damaged";

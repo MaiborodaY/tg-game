@@ -367,7 +367,7 @@ const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
 const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
 const PVP_UI_ENABLED = import.meta.env.VITE_DRAFT_BATTLER_PVP_ENABLED === "true";
 const PVP_API_ORIGIN = normalizePvpApiOrigin(import.meta.env.VITE_DRAFT_BATTLER_PVP_ORIGIN);
-const PVP_RULESET_VERSION = "draft-battler-pvp-v4";
+const PVP_RULESET_VERSION = "draft-battler-pvp-v5";
 const soloRankingDelivery = new SoloRankingDelivery(soloRunStorage);
 let soloRankingStarting = false;
 
@@ -3941,6 +3941,16 @@ function createBattleAbilityCalloutLabels(): BattleAbilityCalloutLabels {
     riposte: copy.battleCalloutArmor,
     synergy_undead_4: copy.battleCalloutUndeadMastery,
     bone_pact: copy.battleCalloutBonePact,
+    poison_bite: copy.battleCalloutPoison,
+    poison_tick: copy.battleCalloutPoisonTick,
+    armor_corrosion: copy.battleCalloutCorrosion,
+    bodyguard: copy.battleCalloutBodyguard,
+    phantom_parry: copy.battleCalloutParry,
+    counter: copy.battleCalloutCounter,
+    piercing_bolt: copy.battleCalloutPierce,
+    frost_delay: copy.battleCalloutDelay,
+    moon_chorus: copy.battleCalloutMoon,
+    threat_sight: copy.battleCalloutThreat,
   };
 }
 
@@ -5676,6 +5686,14 @@ function mirrorCombatResult(
 }
 
 function mirrorCombatEvent(event: CombatEvent, hpLoss: number): CombatEvent {
+  if (event.type === "ability_triggered") {
+    return {
+      ...event,
+      unitId: mirrorUnitId(event.unitId),
+      targetId: mirrorUnitId(event.targetId),
+    };
+  }
+
   if (event.type === "combat_started") {
     return {
       ...event,

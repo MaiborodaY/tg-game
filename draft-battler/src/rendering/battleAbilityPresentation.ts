@@ -11,10 +11,20 @@ export type BattleAbilityCalloutSource =
   | "stone_skin"
   | "riposte"
   | "synergy_undead_4"
+  | "poison_bite"
+  | "armor_corrosion"
+  | "bodyguard"
+  | "phantom_parry"
+  | "piercing_bolt"
+  | "frost_delay"
+  | "moon_chorus"
+  | "threat_sight"
+  | "poison_tick"
+  | "counter"
   | "bone_pact";
 
-export type BattleAbilityCalloutEffect = "attack_up" | "armor_up" | "attack_down" | "summon";
-export type BattleAbilityCalloutTone = "buff" | "armor" | "debuff" | "summon";
+export type BattleAbilityCalloutEffect = "attack_up" | "armor_up" | "attack_down" | "summon" | "poison" | "armor_down" | "protect" | "parry" | "pierce" | "delay" | "heal" | "focus" | "damage";
+export type BattleAbilityCalloutTone = "buff" | "armor" | "debuff" | "summon" | "poison" | "damage" | "heal";
 
 export interface BattleAbilityCallout {
   unitId: string;
@@ -22,6 +32,7 @@ export interface BattleAbilityCallout {
   effect: BattleAbilityCalloutEffect;
   tone: BattleAbilityCalloutTone;
   amount?: number;
+  sourceUnitId?: string;
 }
 
 export interface BattleAbilityCalloutPlanItem extends BattleAbilityCallout {
@@ -30,6 +41,16 @@ export interface BattleAbilityCalloutPlanItem extends BattleAbilityCallout {
 }
 
 const CALLOUT_SOURCE_PRIORITY: Readonly<Record<BattleAbilityCalloutSource, number>> = {
+  bodyguard: -10,
+  phantom_parry: -9,
+  frost_delay: -8,
+  armor_corrosion: -7,
+  poison_bite: -6,
+  piercing_bolt: -5,
+  moon_chorus: -4,
+  threat_sight: -3,
+  poison_tick: -2,
+  counter: -1,
   frost_hex: 0,
   synergy_undead_4: 1,
   bone_pact: 2,
@@ -48,6 +69,24 @@ export function getBattleAbilityCallout(
   event: CombatStepEvent,
   units: readonly BattleTimelineUnit[] = [],
 ): BattleAbilityCallout | undefined {
+  if (event.type === "unit_ability") {
+    return getTriggeredCallout(event);
+  }
+
+  if (event.type === "unit_damage" && event.source?.kind === "unit" && event.amount + event.shieldAbsorbed > 0) {
+    const hit = event.source.hit;
+    if (hit === "poison" || hit === "counter") {
+      return {
+        unitId: event.unitId,
+        sourceUnitId: event.source.unitId,
+        source: hit === "poison" ? "poison_tick" : "counter",
+        effect: "damage",
+        tone: hit === "poison" ? "poison" : "damage",
+        amount: event.amount,
+      };
+    }
+  }
+
   if (event.type === "unit_spawn") {
     return getSpawnCallout(event.unitId, units);
   }
@@ -106,7 +145,8 @@ export function createBattleAbilityCalloutPlan(
     }
 
     const anchorUnitIds = getBattleAbilityCalloutAnchorUnitIds(callout, units, targetUnit.owner);
-    const owner = callout.source === "frost_hex" ? getOpposingOwner(targetUnit.owner) : targetUnit.owner;
+    const sourceOwner = callout.sourceUnitId ? unitsById.get(callout.sourceUnitId)?.owner : undefined;
+    const owner = sourceOwner ?? (callout.source === "frost_hex" ? getOpposingOwner(targetUnit.owner) : targetUnit.owner);
 
     for (const anchorUnitId of anchorUnitIds) {
       const key = `${callout.source}:${anchorUnitId}`;
@@ -130,6 +170,31 @@ export function createBattleAbilityCalloutPlan(
       limitPerOwner,
     ).map(({ order: _order, ...candidate }) => candidate),
   );
+}
+
+function getTriggeredCallout(event: Extract<CombatStepEvent, { type: "unit_ability" }>): BattleAbilityCallout | undefined {
+  const effects: Partial<Record<typeof event.abilityId, { effect: BattleAbilityCalloutEffect; tone: BattleAbilityCalloutTone; onCaster?: boolean }>> = {
+    poison_bite: { effect: "poison", tone: "poison" },
+    armor_corrosion: { effect: "armor_down", tone: "debuff" },
+    bodyguard: { effect: "protect", tone: "armor", onCaster: true },
+    phantom_parry: { effect: "parry", tone: "armor", onCaster: true },
+    piercing_bolt: { effect: "pierce", tone: "damage" },
+    frost_delay: { effect: "delay", tone: "debuff" },
+    moon_chorus: { effect: "heal", tone: "heal", onCaster: true },
+    threat_sight: { effect: "focus", tone: "damage" },
+  };
+  const descriptor = effects[event.abilityId];
+  if (!descriptor) {
+    return undefined;
+  }
+  return {
+    unitId: descriptor.onCaster ? event.unitId : event.targetId,
+    sourceUnitId: event.unitId,
+    source: event.abilityId as BattleAbilityCalloutSource,
+    effect: descriptor.effect,
+    tone: descriptor.tone,
+    ...(event.amount === undefined ? {} : { amount: event.amount }),
+  };
 }
 
 function getBattleAbilityCalloutAnchorUnitIds(

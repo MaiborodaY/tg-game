@@ -202,7 +202,7 @@ function scoreEnemyBoard(slots: readonly BoardSlot[], placement: DraftPlacementC
 
     const stats = getCardStatsForUpgrade(card, slot.upgradeLevel);
     score += stats.attack * 6 + stats.hp * 2 + stats.speed + stats.range * 2 + card.tier * 4;
-    score += getAbilityDraftScore(card.abilityId);
+    score += getAbilityDraftScore(card.abilityId, slot.slotIndex, slots);
     score += getRolePositionScore(card, slot.slotIndex);
     card.tags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1));
   });
@@ -220,20 +220,49 @@ function scoreEnemyBoard(slots: readonly BoardSlot[], placement: DraftPlacementC
   return score;
 }
 
-function getAbilityDraftScore(abilityId: CardDefinition["abilityId"]): number {
-  if (abilityId === "bulwark" || abilityId === "battle_banner" || abilityId === "thorn_guard") {
-    return 12;
+function getAbilityDraftScore(
+  abilityId: CardDefinition["abilityId"],
+  slotIndex: number,
+  slots: readonly BoardSlot[],
+): number {
+  switch (abilityId) {
+    case "bodyguard": {
+      const protectedSlot = slots.find((slot) => slot.slotIndex === slotIndex + 3);
+      // Only reward a working formation on the bot's own board, not an imagined enemy target.
+      return isFrontRowSlot(slotIndex) && protectedSlot?.cardId ? 8 : 0;
+    }
+    case "bulwark":
+    case "battle_banner":
+    case "thorn_guard":
+      return 12;
+    case "heal_ally":
+    case "heal_only":
+    case "stone_skin":
+    case "phantom_parry":
+      return 9;
+    case "moon_chorus":
+      return Math.min(3, slots.filter((slot) => slot.cardId).length) * 3;
+    case "fireball":
+    case "pyro_splash":
+    case "bone_pact":
+    case "poison_bite":
+    case "piercing_bolt":
+      return 7;
+    case "armor_corrosion":
+    case "threat_sight":
+      return 6;
+    case "shield_wall":
+    case "charge":
+    case "backstab":
+    case "snipe":
+    case "frost_hex":
+    case "pack_hunter":
+    case "riposte":
+    case "frost_delay":
+      return 4;
+    case "none":
+      return 0;
   }
-
-  if (abilityId === "heal_ally" || abilityId === "heal_only" || abilityId === "stone_skin") {
-    return 9;
-  }
-
-  if (abilityId === "fireball" || abilityId === "pyro_splash" || abilityId === "bone_pact") {
-    return 7;
-  }
-
-  return abilityId === "none" ? 0 : 4;
 }
 
 function getRolePositionScore(card: CardDefinition, slotIndex: number): number {

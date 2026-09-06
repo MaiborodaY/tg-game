@@ -22,9 +22,9 @@ import {
 } from "./game/types";
 
 // Bump this whenever persisted state or deterministic combat semantics become incompatible.
-export const SOLO_RUN_SNAPSHOT_VERSION = 10;
+export const SOLO_RUN_SNAPSHOT_VERSION = 11;
 export const SOLO_RUN_STORAGE_KEY = `draft-battler:solo-run:v${SOLO_RUN_SNAPSHOT_VERSION}`;
-export const SOLO_RUN_RULESET_VERSION = "draft-battler-solo-v4";
+export const SOLO_RUN_RULESET_VERSION = "draft-battler-solo-v5";
 export const SOLO_RUN_ID_MAX_LENGTH = 160;
 const LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v1",
@@ -36,6 +36,7 @@ const LEGACY_SOLO_RUN_STORAGE_KEYS = [
   "draft-battler:solo-run:v7",
   "draft-battler:solo-run:v8",
   "draft-battler:solo-run:v9",
+  "draft-battler:solo-run:v10",
 ] as const;
 
 export type SoloRunCheckpoint = "draft" | "battle_result" | "finished";
@@ -489,40 +490,11 @@ function readRoundRecord(
 
   const resolvedRun = resolveRound(combatReadyRun);
   const expectedRecord = resolvedRun.roundHistory.at(-1);
-  if (!expectedRecord || !matchesExpectedRoundRecord(record, expectedRecord)) {
+  if (!expectedRecord || !stableEqual(record, expectedRecord)) {
     return undefined;
   }
 
   return { record: expectedRecord, run: resolvedRun };
-}
-
-function matchesExpectedRoundRecord(record: unknown, expectedRecord: RoundRecord): boolean {
-  if (stableEqual(record, expectedRecord)) {
-    return true;
-  }
-
-  // Snapshot v10 predates optional damage telemetry. Accept only its exact canonical shape,
-  // then return the freshly replayed record above so untrusted legacy data never reaches the UI.
-  return stableEqual(record, createLegacyDamageTelemetryRecord(expectedRecord));
-}
-
-function createLegacyDamageTelemetryRecord(record: RoundRecord): RoundRecord {
-  return {
-    ...record,
-    combatResult: {
-      ...record.combatResult,
-      events: record.combatResult.events.map((event) => event.type === "unit_damaged"
-        ? {
-            type: event.type,
-            time: event.time,
-            unitId: event.unitId,
-            amount: event.amount,
-            remainingHp: event.remainingHp,
-            shieldAbsorbed: event.shieldAbsorbed,
-          }
-        : event),
-    },
-  };
 }
 
 function readExpectedDraftOptions(

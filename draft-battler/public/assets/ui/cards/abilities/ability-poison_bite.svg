@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+<defs>
+    <radialGradient id="ability-fill-poison_bite" cx="50%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#fff8d6"/>
+      <stop offset="0.46" stop-color="#bfdc72"/>
+      <stop offset="1" stop-color="#355222"/>
+    </radialGradient>
+    <filter id="ability-glow-poison_bite" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.533 0 0 0 0 0.847 0 0 0 0 0.333 0 0 0 0.68 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M64 17C58 38 30 54 30 77A34 34 0 0 0 98 77C98 54 70 38 64 17Z" fill="url(#ability-fill-poison_bite)" stroke="#efffc8" stroke-width="5" filter="url(#ability-glow-poison_bite)"/>
+  <path d="M45 68L51 88L60 67M68 67L77 88L83 68" stroke="#efffc8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -80,6 +80,23 @@ test("runtime asset contract covers every card ability and presentation archetyp
   });
 });
 
+test("redesigned abilities have distinct decodable runtime icons", async () => {
+  const abilityIds = ["poison_bite", "armor_corrosion", "bodyguard", "phantom_parry", "piercing_bolt", "frost_delay", "moon_chorus", "threat_sight"];
+  const digests = [];
+  for (const abilityId of abilityIds) {
+    const iconPath = fileURLToPath(new URL(`../public/${getAbilityIconPath(abilityId)}`, import.meta.url));
+    const icon = sharp(iconPath);
+    const metadata = await icon.metadata();
+    assert.equal(metadata.format, "svg", abilityId);
+    assert.equal(metadata.width, 128, abilityId);
+    assert.equal(metadata.height, 128, abilityId);
+    const { data, info } = await icon.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    assert.ok(data.some((value, offset) => offset % info.channels === 3 && value > 0), `${abilityId} has visible artwork`);
+    digests.push(createHash("sha256").update(data).digest("hex"));
+  }
+  assert.equal(new Set(digests).size, abilityIds.length, "Mechanics must not reuse indistinguishable symbols");
+});
+
 test("every card has unique decodable unit and card art", async () => {
   const assets = CARD_DEFINITIONS.map((card) => {
     const asset = getUnitAsset(card.id);

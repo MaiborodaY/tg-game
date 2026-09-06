@@ -360,17 +360,27 @@ function getAbilityScore(abilityId: CardDefinition["abilityId"]): number {
   switch (abilityId) {
     case "none":
       return 0;
+    case "bodyguard":
+      // A static card score cannot assume an ally is placed in the protected column.
+      return 1;
     case "shield_wall":
     case "bulwark":
     case "heal_ally":
     case "heal_only":
     case "charge":
+    case "armor_corrosion":
+    case "moon_chorus":
+      // Conditional armor removal and spread healing are not guaranteed upgrades over a normal heal.
       return 2;
     case "battle_banner":
     case "thorn_guard":
     case "fireball":
     case "backstab":
     case "snipe":
+    case "poison_bite":
+    case "piercing_bolt":
+    case "frost_delay":
+    case "threat_sight":
       return 3;
     case "frost_hex":
     case "bone_pact":
@@ -378,6 +388,7 @@ function getAbilityScore(abilityId: CardDefinition["abilityId"]): number {
     case "stone_skin":
     case "pyro_splash":
     case "riposte":
+    case "phantom_parry":
       return 4;
   }
 }

@@ -428,7 +428,6 @@ test("armor-granting abilities expose exact values in every locale", () => {
     stone_golem: "5",
     duelist: "2",
     rune_warden: "3",
-    night_warden: "2",
     ironhide_bear: "1",
   };
 
@@ -441,6 +440,36 @@ test("armor-granting abilities expose exact values in every locale", () => {
       assert.ok(localized.text.includes(amount), `${locale}:${cardId}:amount`);
     });
   });
+});
+
+test("redesigned card copy describes distinct mechanics concisely in all locales", () => {
+  const expectedTerms = {
+    plague_rat: { ru: ["Яд", "1 HP", "двух", "броню"], uk: ["Отрута", "1 HP", "двох", "броню"], en: ["Poison", "1 HP", "2 turns", "armor"] },
+    battle_alchemist: { ru: ["2 брони"], uk: ["2 броні"], en: ["2 armor"] },
+    night_warden: { ru: ["Один раз", "позади", "переднем"], uk: ["Раз", "позаду", "передньому"], en: ["Once", "behind", "front"] },
+    phantom_duelist: { ru: ["2 урона", "парирует"], uk: ["2 шкоди", "парирує"], en: ["2 damage", "direct"] },
+    siege_engineer: { ru: ["2 урона", "колонне"], uk: ["2 шкоди", "колонці"], en: ["2 damage", "column"] },
+    frost_wraith: { ru: ["задерживает", "половину"], uk: ["затримує", "половину"], en: ["delays", "half"] },
+    moon_priestess: { ru: ["3 союзников", "1 HP"], uk: ["3 союзників", "1 HP"], en: ["3", "1 HP"] },
+    star_seer: { ru: ["наибольшей", "АТК"], uk: ["найбільшою", "АТК"], en: ["highest", "ATK"] },
+  };
+  for (const [cardId, locales] of Object.entries(expectedTerms)) {
+    const card = CARD_DEFINITIONS.find((definition) => definition.id === cardId);
+    for (const locale of SUPPORTED_LOCALES) {
+      const localized = getLocalizedCard(locale, card);
+      assert.ok(localized.text.length <= 65, `${locale}:${cardId} must fit short card text`);
+      const copy = `${localized.text} ${localized.summary}`.toLowerCase();
+      for (const term of locales[locale]) {
+        assert.ok(copy.includes(term.toLowerCase()), `${locale}:${cardId}:${term}`);
+      }
+    }
+  }
+  const calloutKeys = ["Poison", "PoisonTick", "Corrosion", "Bodyguard", "Parry", "Counter", "Pierce", "Delay", "Moon", "Threat"];
+  for (const locale of SUPPORTED_LOCALES) {
+    for (const key of calloutKeys) {
+      assert.match(getUiCopy(locale)[`battleCallout${key}`], /\S/);
+    }
+  }
 });
 
 test("Grave Binder copy explains both skeleton strength levels in every locale", () => {

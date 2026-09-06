@@ -1,9 +1,11 @@
 import { getCardDefinition, getCardStatsForUpgrade } from "./cards";
 import {
   PLAYER_STARTING_HP,
+  type AbilityId,
   type BoardSlot,
   type CardId,
   type CombatResult,
+  type CombatDamageSource,
   type CombatUnit,
   type CombatWinner,
   type Owner,
@@ -38,8 +40,9 @@ type CombatStepEventPayload =
   | { type: "unit_spawn"; unitId: string }
   | { type: "unit_buff"; unitId: string; attackDelta?: number; hpDelta?: number; shieldDelta?: number; source: string }
   | { type: "unit_attack"; attackerId: string; targetId: string; damage: number }
+  | { type: "unit_ability"; unitId: string; targetId: string; abilityId: AbilityId; amount?: number }
   | { type: "unit_block"; unitId: string; attackerId: string; amount: number }
-  | { type: "unit_damage"; unitId: string; amount: number; remainingHp: number; shieldAbsorbed: number }
+  | { type: "unit_damage"; unitId: string; amount: number; remainingHp: number; shieldAbsorbed: number; source?: CombatDamageSource }
   | { type: "unit_heal"; unitId: string; sourceUnitId: string; amount: number; remainingHp: number }
   | { type: "unit_die"; unitId: string };
 
@@ -157,6 +160,11 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
       continue;
     }
 
+    if (event.type === "ability_triggered") {
+      events.push({ ...event, type: "unit_ability" });
+      continue;
+    }
+
     if (event.type === "unit_damaged") {
       const unit = units.get(event.unitId);
       if (unit) {
@@ -170,6 +178,7 @@ export function createBattleTimeline(input: CreateBattleTimelineInput): BattleTi
         amount: event.amount,
         remainingHp: event.remainingHp,
         shieldAbsorbed: event.shieldAbsorbed,
+        source: event.source,
       });
       continue;
     }
@@ -389,6 +398,7 @@ function isCombatStepEvent(event: BattleTimelineEvent): event is CombatStepEvent
     event.type === "unit_spawn" ||
     event.type === "unit_buff" ||
     event.type === "unit_attack" ||
+    event.type === "unit_ability" ||
     event.type === "unit_block" ||
     event.type === "unit_damage" ||
     event.type === "unit_heal" ||

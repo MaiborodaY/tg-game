@@ -67,6 +67,14 @@ const abilityIcons = {
   stone_skin: { accent: "#c5c4b5", dark: "#4d4d45", glow: "#aca990" },
   pyro_splash: { accent: "#ffbd5d", dark: "#6c2717", glow: "#ff7430" },
   riposte: { accent: "#e5c48a", dark: "#573628", glow: "#df9250" },
+  poison_bite: { accent: "#bfdc72", dark: "#355222", glow: "#88d855" },
+  armor_corrosion: { accent: "#d9eb86", dark: "#405529", glow: "#b2d554" },
+  bodyguard: { accent: "#c3daef", dark: "#253c5b", glow: "#81b7ed" },
+  phantom_parry: { accent: "#dbcdff", dark: "#4b345f", glow: "#b18fe9" },
+  piercing_bolt: { accent: "#edc78d", dark: "#694625", glow: "#e4ad5e" },
+  frost_delay: { accent: "#b6efff", dark: "#274765", glow: "#81d7f2" },
+  moon_chorus: { accent: "#dbf0d9", dark: "#385b57", glow: "#a8e0bd" },
+  threat_sight: { accent: "#f3daa3", dark: "#624671", glow: "#d5a6ec" },
 };
 
 await Promise.all([
@@ -294,6 +302,40 @@ function abilitySvg(abilityId, theme) {
     riposte: `
   <path d="M33 19L93 105M95 19L35 105" stroke="#fff0cf" stroke-width="8" stroke-linecap="round" filter="url(#ability-glow-riposte)"/>
   <path d="M29 15L40 26M88 26L99 15M27 112L40 99M88 99L101 112" stroke="#fff0cf" stroke-width="5" stroke-linecap="round"/>
+`,
+    poison_bite: `
+  <path d="M64 17C58 38 30 54 30 77A34 34 0 0 0 98 77C98 54 70 38 64 17Z" fill="url(#ability-fill-poison_bite)" stroke="#efffc8" stroke-width="5" filter="url(#ability-glow-poison_bite)"/>
+  <path d="M45 68L51 88L60 67M68 67L77 88L83 68" stroke="#efffc8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+`,
+    armor_corrosion: `
+  <path d="M26 56L62 44L98 56V79C98 94 80 108 62 115C44 108 26 94 26 79Z" fill="url(#ability-fill-armor_corrosion)" stroke="#f3ffbf" stroke-width="5"/>
+  <path d="M70 54L57 72L73 79L57 104M84 15L105 25L93 51C88 59 73 52 78 43Z" stroke="#f3ffbf" stroke-width="6" stroke-linejoin="round" filter="url(#ability-glow-armor_corrosion)"/>
+`,
+    bodyguard: `
+  <circle cx="92" cy="32" r="12" fill="#eef5ff"/>
+  <path d="M84 51H104L113 95H83" stroke="#eef5ff" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M48 20L82 34V69C82 87 62 104 48 111C34 104 14 87 14 69V34Z" fill="url(#ability-fill-bodyguard)" stroke="#eef5ff" stroke-width="5" filter="url(#ability-glow-bodyguard)"/>
+  <path d="M47 38V89M31 56H65" stroke="#eef5ff" stroke-width="5" stroke-linecap="round"/>
+`,
+    phantom_parry: `
+  <path d="M41 87L90 19L100 31L51 98M30 81L61 107M40 96L27 113" stroke="#f6edff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" filter="url(#ability-glow-phantom_parry)"/>
+  <path d="M29 67A34 34 0 0 1 82 37M26 44L29 67L51 62" stroke="#d7c0ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+`,
+    piercing_bolt: `
+  <path d="M27 53H48V106H27ZM72 53H93V106H72Z" fill="url(#ability-fill-piercing_bolt)" stroke="#fff0cf" stroke-width="5"/>
+  <path d="M13 40H113M92 22L113 40L92 58" stroke="#fff0cf" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#ability-glow-piercing_bolt)"/>
+`,
+    frost_delay: `
+  <circle cx="67" cy="73" r="36" fill="url(#ability-fill-frost_delay)" stroke="#e5faff" stroke-width="5"/>
+  <path d="M67 47V73L84 85M28 13V53M11 23L45 43M11 43L45 23" stroke="#e5faff" stroke-width="6" stroke-linecap="round" filter="url(#ability-glow-frost_delay)"/>
+`,
+    moon_chorus: `
+  <path d="M72 15A43 43 0 1 0 108 78A38 38 0 0 1 72 15Z" fill="url(#ability-fill-moon_chorus)" stroke="#eefff1" stroke-width="5" filter="url(#ability-glow-moon_chorus)"/>
+  <path d="M88 27V47M78 37H98M106 56V74M97 65H115M92 87V105M83 96H101" stroke="#eefff1" stroke-width="5" stroke-linecap="round"/>
+`,
+    threat_sight: `
+  <path d="M13 69Q64 12 115 69Q64 120 13 69Z" fill="url(#ability-fill-threat_sight)" stroke="#fff3d2" stroke-width="5" filter="url(#ability-glow-threat_sight)"/>
+  <path d="M64 31L74 61L64 92L54 61ZM49 20L39 9M79 20L89 9" stroke="#fff3d2" stroke-width="5" stroke-linejoin="round"/>
 `,
   }[abilityId];
 

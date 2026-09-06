@@ -1,8 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getDebugBoardScore, getDebugDraftOptionScore, getDebugTeamScore } from "../src/game/debugSimulation.ts";
+import { CARD_DEFINITIONS } from "../src/game/cards.ts";
+import { getCardPowerScore, getDebugBoardScore, getDebugDraftOptionScore, getDebugTeamScore } from "../src/game/debugSimulation.ts";
 import { createRun, formatDebugRunReport, pickSynergyCards, simulateDebugRun } from "../src/game/index.ts";
+
+test("every roster ability has a finite score for seeded debug strategies", () => {
+  for (const card of CARD_DEFINITIONS) {
+    assert.ok(Number.isFinite(getCardPowerScore(card)), card.id);
+    assert.ok(Number.isFinite(getDebugTeamScore([card.id])), card.id);
+  }
+});
+
+test("static card scores do not assume ideal conditions for positional and conditional abilities", () => {
+  const score = (abilityId) => getCardPowerScore({ ...CARD_DEFINITIONS[0], abilityId });
+
+  assert.ok(score("bodyguard") < score("shield_wall"), "interception needs an ally in the protected column");
+  assert.equal(score("moon_chorus"), score("heal_ally"), "three wounded allies are not guaranteed");
+  assert.equal(score("armor_corrosion"), score("charge"), "armor removal needs an armored target");
+  assert.equal(score("piercing_bolt"), score("fireball"), "a rear target is conditional like splash neighbors");
+  assert.ok(score("piercing_bolt") < score("pyro_splash"));
+});
 
 test("debug simulation reports a deterministic two-castle duel", () => {
   const first = simulateDebugRun({ seed: "debug-duel", strategy: "synergy", botDifficulty: "strong" });

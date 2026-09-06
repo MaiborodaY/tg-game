@@ -96,14 +96,16 @@ test("match creation is deterministic but keeps each server offer private", () =
 });
 
 test("persisted state compatibility gates reject stale rulesets and schemas", () => {
-  const room = createRoom({ roomId: "room-v4", now: NOW });
+  const room = createRoom({ roomId: "room-v5", now: NOW });
   const match = createFixtureMatch();
 
-  assert.equal(RULESET_VERSION, "draft-battler-pvp-v4");
+  assert.equal(RULESET_VERSION, "draft-battler-pvp-v5");
   assert.equal(isCurrentRoomState(room), true);
   assert.equal(isCurrentMatchState(match), true);
-  assert.equal(isCurrentRoomState({ ...room, rulesetVersion: "draft-battler-pvp-v3" }), false);
-  assert.equal(isCurrentMatchState({ ...match, rulesetVersion: "draft-battler-pvp-v3" }), false);
+  for (const version of ["draft-battler-pvp-v3", "draft-battler-pvp-v4"]) {
+    assert.equal(isCurrentRoomState({ ...room, rulesetVersion: version }), false);
+    assert.equal(isCurrentMatchState({ ...match, rulesetVersion: version }), false);
+  }
   assert.equal(isCurrentRoomState({ ...room, schemaVersion: 0 }), false);
   assert.equal(isCurrentMatchState({ ...match, schemaVersion: 0 }), false);
   assert.equal(isCurrentRoomState(null), false);
@@ -259,6 +261,31 @@ test("PvP snapshots preserve the current four-unit synergy tier on the wire", ()
     shieldBonus: 1,
     unitCount: 4,
   });
+});
+
+test("PvP snapshots preserve new ability triggers and attributed damage on both players' wire views", () => {
+  for (const [hostCard, guestCard, abilityId, hit] of [
+    ["plague_rat", "iron_guard", "poison_bite", "poison"],
+    ["battle_alchemist", "iron_guard", "armor_corrosion", "corrosion"],
+    ["phantom_duelist", "spear_recruit", "phantom_parry", "counter"],
+  ]) {
+    let match = createFixtureMatch(`match-${abilityId}`);
+    match.players.host.boardSlots = boardWith(hostCard);
+    match.players.guest.boardSlots = boardWith(guestCard);
+    match = apply(match, "host", { type: "lock" });
+    match = apply(match, "guest", { type: "lock" });
+
+    for (const role of ["host", "guest"]) {
+      const snapshot = JSON.parse(JSON.stringify(createPlayerMatchSnapshot(match, role)));
+      assert.equal(snapshot.rulesetVersion, "draft-battler-pvp-v5");
+      assert.ok(snapshot.combat.combat.events.some((event) =>
+        event.type === "ability_triggered" && event.abilityId === abilityId,
+      ), `${role} receives ${abilityId}`);
+      assert.ok(snapshot.combat.combat.events.some((event) =>
+        event.type === "unit_damaged" && event.source?.kind === "unit" && event.source.hit === hit,
+      ), `${role} receives ${hit} damage attribution`);
+    }
+  }
 });
 
 test("the next round starts only after acknowledgements from both players and preserves committed armies", () => {

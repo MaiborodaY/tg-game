@@ -16,7 +16,15 @@
     "thorn_guard",
     "stone_skin",
     "pyro_splash",
-    "riposte"
+    "riposte",
+    "poison_bite",
+    "armor_corrosion",
+    "bodyguard",
+    "phantom_parry",
+    "piercing_bolt",
+    "frost_delay",
+    "moon_chorus",
+    "threat_sight"
   ],
   "cardArchetypes": ["tank", "damage", "support"]
 }

@@ -51,7 +51,7 @@ export interface RoundInsightDamage {
   /** Enemy armor consumed by this side. */
   armorDamage: number;
   eventCount: number;
-  /** Primary and splash hits aggregate under the same unit; summons retain their own unit source. */
+  /** Direct hits, splash, poison and counters aggregate under their source unit, even after its death. */
   bySource: RoundInsightDamageSourceAmount[];
 }
 
@@ -166,7 +166,8 @@ export function createRoundInsights(record: RoundRecord): RoundInsights {
 
     if (event.type === "unit_damaged") {
       const targetOwner = getRegisteredOwner(event.unitId, registry);
-      if (targetOwner && event.shieldAbsorbed > 0) {
+      const armorWasRemoved = event.source?.kind === "unit" && event.source.hit === "corrosion";
+      if (targetOwner && event.shieldAbsorbed > 0 && !armorWasRemoved) {
         addUnitAmount(blockingBySide[targetOwner], getUnitRef(event.unitId, registry), event.shieldAbsorbed);
       }
 
