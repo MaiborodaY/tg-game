@@ -3037,6 +3037,31 @@ h3 {
   filter: blur(1px);
 }
 
+/* These five opt-in illustrations use their visible feet, not transparent canvas edges. */
+.field-unit--grounded {
+  display: block;
+  pointer-events: none;
+}
+
+.field-unit--grounded .field-unit__sprite {
+  position: absolute;
+  z-index: 1;
+  max-width: none;
+}
+
+.field-unit--grounded::after {
+  position: absolute;
+  top: var(--unit-ground-y);
+  left: 50%;
+  z-index: 0;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.field-unit--grounded .field-unit__upgrade {
+  z-index: 2;
+}
+
 .field-unit__upgrade {
   position: absolute;
   top: -8px;

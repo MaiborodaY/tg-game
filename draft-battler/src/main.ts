@@ -98,6 +98,7 @@ import {
   type CardArchetype,
 } from "./cardAssetContract";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
+import { DRAFT_UNIT_ART_GROUND_Y, getGroundedUnitArtPlacement } from "./unitArtGrounding";
 import {
   SUPPORTED_LOCALES,
   formatMessage,
@@ -3607,6 +3608,15 @@ function createFieldSlotUnit(card: CardDefinition, slot: BoardSlot): HTMLElement
     sprite.decoding = "async";
     sprite.draggable = false;
     sprite.src = assetPath;
+    const groundedArt = getGroundedUnitArtPlacement(card.id, 96, 108, DRAFT_UNIT_ART_GROUND_Y);
+    if (groundedArt) {
+      unit.classList.add("field-unit--grounded");
+      unit.style.setProperty("--unit-ground-y", `${DRAFT_UNIT_ART_GROUND_Y}px`);
+      sprite.style.width = `${groundedArt.width}px`;
+      sprite.style.height = `${groundedArt.height}px`;
+      sprite.style.left = `calc(50% + ${groundedArt.x}px)`;
+      sprite.style.top = `${groundedArt.y}px`;
+    }
     marker = sprite;
   } else {
     marker = document.createElement("span");

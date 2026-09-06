@@ -33,15 +33,19 @@ const existingAnimatedCardIds = new Set([
   "duelist",
   "banner_knight",
 ]);
+const redrawnAnimatedCardIds = new Set([
+  "plague_rat",
+  "battle_alchemist",
+  "night_warden",
+  "moon_priestess",
+  "siege_engineer",
+]);
 const intentionallyStaticCardIds = new Set([
   "bone_archer",
-  "plague_rat",
   "rune_warden",
   "forest_skirmisher",
   "marsh_stalker",
   "crypt_keeper",
-  "battle_alchemist",
-  "night_warden",
   "grave_raider",
   "frost_wraith",
   "ironhide_bear",
@@ -51,9 +55,7 @@ const intentionallyStaticCardIds = new Set([
   "smoke_trickster",
   "war_mastiff",
   "grave_bellringer",
-  "moon_priestess",
   "phantom_duelist",
-  "siege_engineer",
   "bronze_minotaur",
   "headless_knight",
   "star_seer",
@@ -171,7 +173,7 @@ test("authoring art is complete and sprite mappings follow available source atla
     });
 
     const hasSourceSpriteSheet = await fileExists(spriteSheetPath);
-    if (existingAnimatedCardIds.has(card.id)) {
+    if (existingAnimatedCardIds.has(card.id) || redrawnAnimatedCardIds.has(card.id)) {
       assert.equal(hasSourceSpriteSheet, true, `${card.id} must retain its existing source atlas`);
       assert.ok(asset.spriteSheet, `${card.id} must retain its existing runtime sprite mapping`);
     }

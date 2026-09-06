@@ -222,6 +222,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:plague_rat",
     path: new URL("./assets/units/plague_rat/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/plague_rat/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:plague_rat:poses",
+      path: new URL("./assets/units/plague_rat/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   rune_warden: {
     key: "unit:rune_warden",
@@ -247,11 +253,23 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:battle_alchemist",
     path: new URL("./assets/units/battle_alchemist/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/battle_alchemist/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:battle_alchemist:poses",
+      path: new URL("./assets/units/battle_alchemist/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   night_warden: {
     key: "unit:night_warden",
     path: new URL("./assets/units/night_warden/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/night_warden/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:night_warden:poses",
+      path: new URL("./assets/units/night_warden/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   grave_raider: {
     key: "unit:grave_raider",
@@ -302,6 +320,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:moon_priestess",
     path: new URL("./assets/units/moon_priestess/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/moon_priestess/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:moon_priestess:poses",
+      path: new URL("./assets/units/moon_priestess/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   phantom_duelist: {
     key: "unit:phantom_duelist",
@@ -312,6 +336,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:siege_engineer",
     path: new URL("./assets/units/siege_engineer/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/siege_engineer/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:siege_engineer:poses",
+      path: new URL("./assets/units/siege_engineer/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   bronze_minotaur: {
     key: "unit:bronze_minotaur",

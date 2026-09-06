@@ -22,6 +22,7 @@ import {
   type FieldLayout,
 } from "../fieldLayout";
 import { getUnitAsset, getUnitAssets } from "../unitAssets";
+import { BATTLE_UNIT_ART_GROUND_Y, getGroundedRangedAttackTiming, getGroundedUnitArtPlacement, hasGroundedProjectilePose } from "../unitArtGrounding";
 import {
   BATTLE_CAMERA_CLOSE_ZOOM,
   BATTLE_CAMERA_ZOOM,
@@ -795,13 +796,23 @@ class CastleBattleScene extends Phaser.Scene {
 
     if (asset && this.textures.exists(asset.key)) {
       const sprite = this.add.image(0, -12, asset.key);
-      const displaySize = fitStaticUnitArtSize(
-        sprite.width,
-        sprite.height,
+      const groundedArt = getGroundedUnitArtPlacement(
+        unit.cardId,
         UNIT_SPRITE_DISPLAY_WIDTH,
         UNIT_SPRITE_DISPLAY_HEIGHT,
+        BATTLE_UNIT_ART_GROUND_Y,
       );
-      sprite.setDisplaySize(displaySize.width, displaySize.height);
+      if (groundedArt) {
+        sprite.setOrigin(0, 0).setPosition(groundedArt.x, groundedArt.y).setDisplaySize(groundedArt.width, groundedArt.height);
+      } else {
+        const displaySize = fitStaticUnitArtSize(
+          sprite.width,
+          sprite.height,
+          UNIT_SPRITE_DISPLAY_WIDTH,
+          UNIT_SPRITE_DISPLAY_HEIGHT,
+        );
+        sprite.setDisplaySize(displaySize.width, displaySize.height);
+      }
       if (unit.owner === "enemy") {
         sprite.setTint(0xf0a27c);
       }
@@ -1251,7 +1262,8 @@ class CastleBattleScene extends Phaser.Scene {
       return;
     }
 
-    if (getCardDefinition(attacker.unit.cardId).stats.range >= 3) {
+    // The alchemist throws from range 2; the authored throw is a visual choice, not a change to combat reach.
+    if (getCardDefinition(attacker.unit.cardId).stats.range >= 3 || (attacker.sprite && hasGroundedProjectilePose(attacker.unit.cardId))) {
       await this.playRangedUnitAttack(attacker, target, focusCamera);
       return;
     }
@@ -1343,7 +1355,13 @@ class CastleBattleScene extends Phaser.Scene {
       );
     }
 
-    if (attacker.sprite) {
+    const groundedTiming = getGroundedRangedAttackTiming(attacker.unit.cardId, Boolean(attacker.sprite));
+    if (groundedTiming) {
+      // The authored cast/shot pose already moves the body; keep its feet on the contact shadow.
+      await this.delay(groundedTiming.windupMs);
+      this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
+      await this.delay(groundedTiming.recoveryMs);
+    } else if (attacker.sprite) {
       const startY = attacker.sprite.y;
       await this.tween({
         targets: attacker.sprite,
