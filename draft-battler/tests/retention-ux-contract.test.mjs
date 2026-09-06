@@ -57,7 +57,7 @@ test("history replay keeps the deterministic setup but start creates a fresh run
   );
   assert.match(
     mainSource,
-    /function confirmFinishedSoloRunDiscard\(\): boolean \{\s*if \(ensureFinishedSoloRunRecorded\(\)\) \{\s*return true;\s*\}\s*if \(window\.confirm\(getCopy\(\)\.runHistoryDiscardConfirm\)\) \{\s*return true;\s*\}[\s\S]*?showSoloHistorySaveFailure\(\);\s*return false/,
+    /function confirmFinishedSoloRunDiscard\(\): boolean \{[\s\S]*?soloRankingDelivery\.queue[\s\S]*?soloRankingDiscardConfirm[\s\S]*?if \(ensureFinishedSoloRunRecorded\(\)\) \{\s*return true;\s*\}\s*if \(window\.confirm\(getCopy\(\)\.runHistoryDiscardConfirm\)\) \{\s*return true;\s*\}[\s\S]*?showSoloHistorySaveFailure\(\);\s*return false/,
   );
 });
 

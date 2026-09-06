@@ -1,6 +1,7 @@
 import { PvpRequestError, type PvpApiRequestOptions } from "./pvpSession";
 
 export type PvpLeaderboardParticipation = "ranked" | "missing_profile" | "telegram_required";
+export type LeaderboardMode = "pvp" | "strong_bot";
 
 export interface PvpLeaderboardEntry {
   rank: number;
@@ -23,6 +24,7 @@ export interface PvpLeaderboardSnapshot {
 export async function fetchPvpLeaderboard(
   apiOrigin: string,
   options: PvpApiRequestOptions = {},
+  mode: LeaderboardMode = "pvp",
 ): Promise<PvpLeaderboardSnapshot> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   const initData = options.telegramInitData?.trim();
@@ -30,7 +32,7 @@ export async function fetchPvpLeaderboard(
 
   let response: Response;
   try {
-    response = await (options.fetcher ?? fetch)(`${apiOrigin}/api/pvp/leaderboard`, {
+    response = await (options.fetcher ?? fetch)(`${apiOrigin}/api/${mode === "strong_bot" ? "solo" : "pvp"}/leaderboard`, {
       method: "POST",
       headers,
       body: "{}",

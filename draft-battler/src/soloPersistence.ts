@@ -413,6 +413,29 @@ interface ReplayedRound {
   run: RunState;
 }
 
+export interface SoloRoundChoice {
+  draftRerollCount: number;
+  playerSlots: BoardSlot[];
+}
+
+// Ranked delivery contains choices only. HP, opponents and outcome are recomputed,
+// using the same legal-board validator as local snapshot restoration.
+export function replaySoloRunChoices(seed: string, choices: unknown): RunState | undefined {
+  if (!Array.isArray(choices) || choices.length < 1 || choices.length > MAX_RUN_ROUNDS) return undefined;
+  let run = createRun(seed, "strong");
+  for (const value of choices) {
+    const choice = readExactRecord(value, ["draftRerollCount", "playerSlots"]);
+    if (!choice || run.status !== "draft") return undefined;
+    const rerolls = readInteger(choice.draftRerollCount, 0, FREE_REROLLS_PER_ROUND);
+    const slots = readBoardSlots(choice.playerSlots);
+    if (rerolls === undefined || !slots) return undefined;
+    const options = createDraftOptions(seed, run.round, rerolls, run.boardSlots);
+    if (!isValidRoundPlayerBoard(run.boardSlots, slots, options)) return undefined;
+    run = resolveRound(chooseDraftCards({ ...run, draftRerollCount: rerolls, draftOptions: options }, slots));
+  }
+  return run.status === "finished" ? run : undefined;
+}
+
 function readRoundRecord(
   value: unknown,
   draftRun: RunState,

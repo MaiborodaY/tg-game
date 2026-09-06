@@ -16,3 +16,12 @@ test("online lobby exposes a modal weekly leaderboard with a personal row", () =
   assert.match(i18n, /pvpLeaderboardTelegramRequired/);
   assert.match(i18n, /pvpLeaderboardMissingProfile/);
 });
+
+test("main menu exposes separate ranking modes with a bounded scrollable list", () => {
+  assert.match(main, /createPvpLeaderboardButton\("strong_bot"\)/);
+  assert.match(main, /\["pvp", "strong_bot"\] as const/);
+  assert.match(main, /setAttribute\("aria-pressed"/);
+  assert.match(styles, /\.pvp-leaderboard-panel\s*\{[^}]*grid-template-rows: auto auto minmax\(0, 1fr\)/s);
+  assert.match(styles, /\.main-menu__ranking-button\s*\{[^}]*grid-column: 1 \/ -1/s);
+  assert.match(main, /notice.className = "solo-ranking-notice"/);
+});

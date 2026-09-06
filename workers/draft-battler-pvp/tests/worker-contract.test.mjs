@@ -4,6 +4,15 @@ import test from "node:test";
 
 const sourceUrl = new URL("../src/index.ts", import.meta.url);
 
+test("solo ranking routes reuse Telegram verification and a separately bounded finish body", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+  const start = source.indexOf('url.pathname === "/api/solo/start"');
+  assert.ok(start > source.indexOf("identity = await authenticateOptionalTelegramRequest"));
+  assert.match(source, /readJsonBody\(request, isStart \? undefined : 24_576\)/);
+  assert.match(source, /isStart \? \["rulesetVersion"\] : \["runId", "rounds"\]/);
+  assert.match(source, /finishRankedSoloRun\(env.WOL_DB, identity, body.runId, body.rounds\)/);
+});
+
 test("worker exposes authenticated room lifecycle and never accepts arbitrary boards or peer messages", async () => {
   const source = await readFile(sourceUrl, "utf8");
 

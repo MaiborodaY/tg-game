@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { finishRankedSoloRun, SoloRankingError, startRankedSoloRun } from "./soloRanking";
 import {
   getExpiryReconciliation,
   type ExpiryReconciliation,
@@ -793,16 +794,35 @@ export default {
       return errorResponse("invalid_init_data", "Invalid Telegram authentication.", 401, request);
     }
 
-    if (request.method === "POST" && url.pathname === `${API_PREFIX}/leaderboard`) {
+    if (request.method === "POST" && (url.pathname === `${API_PREFIX}/leaderboard` || url.pathname === "/api/solo/leaderboard")) {
       const body = await readJsonBody(request);
       if (!body || !hasExactKeys(body, [])) {
         return errorResponse("bad_request", "Invalid leaderboard request.", 400, request);
       }
       try {
-        return json({ ok: true, ...(await readBroBattlerLeaderboard(env.WOL_DB, identity)) }, 200, request);
+        const mode = url.pathname === "/api/solo/leaderboard" ? "strong_bot" : "pvp";
+        return json({ ok: true, ...(await readBroBattlerLeaderboard(env.WOL_DB, identity, Date.now(), mode)) }, 200, request);
       } catch (error) {
         console.error("BroBattler leaderboard read failed", { error });
         return errorResponse("rating_unavailable", "Leaderboard is temporarily unavailable.", 503, request);
+      }
+    }
+
+    if (request.method === "POST" && (url.pathname === "/api/solo/start" || url.pathname === "/api/solo/finish")) {
+      const isStart = url.pathname === "/api/solo/start";
+      const body = await readJsonBody(request, isStart ? undefined : 24_576);
+      if (!body || !hasExactKeys(body, isStart ? ["rulesetVersion"] : ["runId", "rounds"])) {
+        return errorResponse("bad_request", "Invalid solo ranking request.", 400, request);
+      }
+      try {
+        const result = isStart
+          ? await startRankedSoloRun(env.WOL_DB, identity, body.rulesetVersion)
+          : await finishRankedSoloRun(env.WOL_DB, identity, body.runId, body.rounds);
+        return json({ ok: true, ...result }, 200, request);
+      } catch (error) {
+        if (error instanceof SoloRankingError) return errorResponse(error.code, error.message, error.status, request);
+        console.error("BroBattler solo ranking failed", { error });
+        return errorResponse("rating_unavailable", "Solo ranking is temporarily unavailable.", 503, request);
       }
     }
 

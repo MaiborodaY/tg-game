@@ -62,7 +62,7 @@ test("main menu exposes every mode as a compact one-click action", () => {
   assert.match(mainSource, /button\.title = copy\.dailyChallengeHint/);
   assert.doesNotMatch(mainSource, /createDailyChallengeCard/);
   assert.match(mainSource, /createRun\(seed, botDifficulty\)/);
-  assert.match(mainSource, /function startNewSoloRun\(botDifficulty: BotDifficulty\): void/);
+  assert.match(mainSource, /async function startNewSoloRun\(botDifficulty: BotDifficulty\): Promise<void>/);
   assert.match(mainSource, /snapshot\.run\.botDifficulty/);
   assert.match(styles, /\.main-menu__mode-grid\s*\{/);
   assert.match(styles, /\.main-menu__mode-button\s*\{/);

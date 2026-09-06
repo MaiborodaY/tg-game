@@ -20,6 +20,32 @@ before pushing; GitHub repeats the frontend typecheck/build and PvP Worker typec
 
 ## Mobile and Telegram smoke
 
+### Strong-bot weekly ranking rollout
+
+- The schema is owned by World of Life: `migrations/0266_create_brobattler_solo_runs.sql`
+  on branch `codex/brobattler-strong-bot-ranking`. Apply only this reviewed migration
+  to the existing `wol` D1 database before deploying this Worker/client; do not apply
+  unrelated pending migrations. Existing PvP data and rewards are untouched.
+- The existing `WOL_DB`, `BOT_TOKEN`, origin allowlist and PvP release flag also serve
+  `POST /api/solo/start`, `/api/solo/finish`, and `/api/solo/leaderboard`.
+- New strong-bot runs started in Telegram with a WoL profile receive a server seed.
+  Finish submits at most 15 draft choices (24 KiB request cap), not claimed HP or wins.
+  The Worker reuses snapshot validation and deterministic strong-bot combat to settle
+  one result. Weekly sorting and UTC boundaries match PvP; the two tables never mix.
+- Only newly registered runs count. Standard bots, daily challenges, history/same-layout
+  replays and browser practice do not. A failed ranked start offers explicit unranked practice.
+- Finishes are queued in local storage and retried on reopen, connection recovery,
+  ranking open, or manual retry. The week is assigned on first server acceptance,
+  so an offline finish delivered after Monday belongs to the new week. Clearing app
+  storage before delivery loses the unsent result. Incompatible ruleset updates reject
+  unsettled old runs; bump the shared solo ruleset on any incompatible gameplay change.
+- Replay validation checks legal play, not human play: it does not prevent automation
+  or searching over the disclosed seed. No economy rewards are granted by this ranking.
+- Manually verify a new strong-bot finish, a duplicate/reloaded finish, both leaderboard
+  tabs, and an offline/reconnected delivery. Browser checks are intentionally user-run.
+
+### Existing game smoke
+
 Record the commit SHA, then run this checklist locally before push and repeat the critical path
 against the deployed URL after the automatic deployment.
 

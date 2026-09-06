@@ -35,6 +35,9 @@ export type PvpErrorCode =
   | "invalid_init_data"
   | "auth_unavailable"
   | "rating_unavailable"
+  | "ruleset_mismatch"
+  | "solo_run_not_found"
+  | "invalid_solo_result"
   | "internal_error";
 
 export type PvpClientMessage =
@@ -210,10 +213,10 @@ export function readSeatToken(value: unknown): string | undefined {
   return typeof value === "string" && /^[A-Za-z0-9_-]{43}$/u.test(value) ? value : undefined;
 }
 
-export async function readJsonBody(request: Request): Promise<Record<string, unknown> | undefined> {
+export async function readJsonBody(request: Request, maxBytes = MAX_HTTP_BODY_BYTES): Promise<Record<string, unknown> | undefined> {
   const contentLengthHeader = request.headers.get("content-length");
   if (contentLengthHeader !== null
-    && (!/^\d+$/u.test(contentLengthHeader) || Number(contentLengthHeader) > MAX_HTTP_BODY_BYTES)) {
+    && (!/^\d+$/u.test(contentLengthHeader) || Number(contentLengthHeader) > maxBytes)) {
     await cancelRequestBody(request);
     return undefined;
   }
@@ -235,7 +238,7 @@ export async function readJsonBody(request: Request): Promise<Record<string, unk
       }
 
       byteCount += value.byteLength;
-      if (byteCount > MAX_HTTP_BODY_BYTES) {
+      if (byteCount > maxBytes) {
         await reader.cancel();
         return undefined;
       }

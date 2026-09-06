@@ -146,8 +146,10 @@ export async function readBroBattlerLeaderboard(
   db: D1Database,
   viewer: TelegramPlayerIdentity | undefined,
   now = Date.now(),
+  mode: "pvp" | "strong_bot" = "pvp",
 ): Promise<BroBattlerLeaderboard> {
   const { weekKey, weekEndsAt } = getUtcIsoWeek(now);
+  const table = mode === "strong_bot" ? "brobattler_solo_runs" : "brobattler_match_results";
   const rankedCte = `
     WITH aggregates AS (
       SELECT
@@ -158,7 +160,7 @@ export async function readBroBattlerLeaderboard(
         SUM(CASE WHEN result = 'draw' THEN 1 ELSE 0 END) AS draws,
         COUNT(*) AS games,
         MAX(finished_at) AS last_finished_at
-      FROM brobattler_match_results
+      FROM ${table}
       WHERE week_key = ?
       GROUP BY user_id
     ), ranked AS (
@@ -173,7 +175,7 @@ export async function readBroBattlerLeaderboard(
     FROM ranked ORDER BY rank LIMIT ?
   `).bind(weekKey, LEADERBOARD_LIMIT);
   const totalStatement = db.prepare(
-    "SELECT COUNT(DISTINCT user_id) AS total FROM brobattler_match_results WHERE week_key = ?",
+    `SELECT COUNT(DISTINCT user_id) AS total FROM ${table} WHERE week_key = ?`,
   ).bind(weekKey);
   const viewerStatement = viewer
     ? db.prepare(`${rankedCte}

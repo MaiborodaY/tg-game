@@ -137,10 +137,12 @@ import {
   type DraftPlacementClassification,
 } from "./game/placement";
 import { setupTelegramMiniApp } from "./telegram";
+import { isRankedSoloRun, requestRankedSoloStart, SoloRankingDelivery } from "./soloRanking";
 import {
   fetchPvpLeaderboard,
   type PvpLeaderboardEntry,
   type PvpLeaderboardSnapshot,
+  type LeaderboardMode,
 } from "./pvpLeaderboard";
 import {
   PvpRequestError,
@@ -202,6 +204,7 @@ interface SoloRunStartRequest {
   botDifficulty: BotDifficulty;
   source: RunSource;
   dailyDateKey: string | null;
+  session?: SoloRunSession;
 }
 
 interface PvpState {
@@ -333,6 +336,7 @@ let howToOpen = !hasSeenHowTo(preferenceStorage);
 let compendiumOpen = false;
 let runHistoryOpen = false;
 let pvpLeaderboardOpen = false;
+let leaderboardMode: LeaderboardMode = "pvp";
 let pvpLeaderboardRequestId = 0;
 let pvpLeaderboardState: {
   status: "idle" | "loading" | "ready" | "error";
@@ -364,6 +368,8 @@ const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("
 const PVP_UI_ENABLED = import.meta.env.VITE_DRAFT_BATTLER_PVP_ENABLED === "true";
 const PVP_API_ORIGIN = normalizePvpApiOrigin(import.meta.env.VITE_DRAFT_BATTLER_PVP_ORIGIN);
 const PVP_RULESET_VERSION = "draft-battler-pvp-v4";
+const soloRankingDelivery = new SoloRankingDelivery(soloRunStorage);
+let soloRankingStarting = false;
 
 interface ActivePointerDrag {
   cleanup: () => void;
@@ -420,6 +426,8 @@ if (restoredSoloRun?.checkpoint === "finished") {
 
 render();
 telegram.ready();
+void flushSoloRankingResults();
+window.addEventListener("online", () => void flushSoloRankingResults());
 window.addEventListener("beforeunload", () => {
   closePvpSocket();
   telegram.destroy();
@@ -430,6 +438,7 @@ window.addEventListener("keydown", (event) => {
   }
 });
 document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") void flushSoloRankingResults();
   if (document.visibilityState === "visible" && uiState.mode === "menu") {
     render();
   }
@@ -861,10 +870,16 @@ function createMainMenuOverlay(): HTMLElement {
   const utilityActions = document.createElement("div");
   utilityActions.className = "main-menu__utility-actions";
   utilityActions.append(howToButton, compendiumButton, createRunHistoryButton());
+  if (PVP_UI_ENABLED) {
+    const rankingButton = createPvpLeaderboardButton("strong_bot");
+    rankingButton.className = "main-menu__button main-menu__ranking-button";
+    utilityActions.append(rankingButton);
+  }
 
   actions.append(modeGrid, utilityActions);
 
   panel.append(header, subtitle, actions);
+  if (soloRankingStarting) panel.append(createSoloRankingNotice(copy.soloRankingStarting));
   overlay.append(panel);
 
   return overlay;
@@ -941,6 +956,7 @@ function createBotDifficultyButton(botDifficulty: BotDifficulty): HTMLButtonElem
     : "main-menu__mode-button main-menu__mode-button--primary";
   button.type = "button";
   button.dataset.botDifficulty = botDifficulty;
+  button.disabled = soloRankingStarting;
 
   const fullHint = botDifficulty === "strong"
     ? copy.botDifficultyStrongHint
@@ -1398,13 +1414,33 @@ function selectLocale(locale: SupportedLocale): void {
   render();
 }
 
-function startNewSoloRun(botDifficulty: BotDifficulty): void {
-  startSoloRun({
+async function startNewSoloRun(botDifficulty: BotDifficulty): Promise<void> {
+  if (soloRankingStarting || !confirmFinishedSoloRunDiscard()) return;
+  const request: SoloRunStartRequest = {
     seed: createSeed(),
     botDifficulty,
     source: "standard",
     dailyDateKey: null,
-  });
+  };
+  if (botDifficulty === "strong" && PVP_UI_ENABLED && telegram.initData) {
+    soloRankingStarting = true;
+    const startingState = uiState;
+    render();
+    try {
+      const result = await requestRankedSoloStart(PVP_API_ORIGIN, { telegramInitData: telegram.initData });
+      if (uiState !== startingState) return;
+      if (result.run) {
+        request.seed = result.run.seed;
+        request.session = createSoloRunSession({ source: "standard", runId: result.run.runId, now: result.run.startedAt });
+      } else if (!window.confirm(getCopy().soloRankingPracticeConfirm)) return;
+    } catch {
+      if (uiState !== startingState || !window.confirm(getCopy().soloRankingPracticeConfirm)) return;
+    } finally {
+      soloRankingStarting = false;
+      render();
+    }
+  }
+  startSoloRun(request);
 }
 
 function startDailyChallenge(): void {
@@ -1444,7 +1480,7 @@ function startSoloRun(request: SoloRunStartRequest): void {
     "solo",
     "draft",
     request.botDifficulty,
-    createSoloRunSession({
+    request.session ?? createSoloRunSession({
       source: request.source,
       dailyDateKey: request.dailyDateKey,
     }),
@@ -1856,6 +1892,7 @@ function createSoloTerminalResult(): HTMLElement {
   newLayoutButton.className = session.source === "daily" ? "terminal-result__secondary-button" : "primary-button";
   newLayoutButton.type = "button";
   newLayoutButton.textContent = copy.newLayout;
+  newLayoutButton.disabled = soloRankingStarting;
   setFocusKey(newLayoutButton, "restart-run");
   const replayDifficulty = uiState.run.botDifficulty;
   newLayoutButton.addEventListener("click", () => startNewSoloRun(replayDifficulty));
@@ -1897,6 +1934,25 @@ function createSoloTerminalResult(): HTMLElement {
     actions.append(newLayoutButton, sameLayoutButton, shareButton, menuButton);
   }
   panel.append(eyebrow, title, detail, metrics);
+  if (PVP_UI_ENABLED && uiState.run.botDifficulty === "strong") {
+    const rankingStatus = soloRankingDelivery.status(session.runId);
+    const ranked = isRankedSoloRun(session, uiState.run);
+    const message = !ranked ? copy.soloRankingUnranked
+      : rankingStatus === "recorded" ? copy.soloRankingRecorded
+        : rankingStatus === "rejected" ? copy.soloRankingRejected : copy.soloRankingPending;
+    const rankingNotice = createSoloRankingNotice(message);
+    panel.append(rankingNotice);
+    if (ranked && rankingStatus === "pending") {
+      const retry = document.createElement("button");
+      retry.className = "terminal-result__secondary-button";
+      retry.type = "button";
+      retry.textContent = copy.pvpLeaderboardRetry;
+      retry.addEventListener("click", () => void flushSoloRankingResults());
+      panel.append(retry);
+    }
+    panel.append(createPvpLeaderboardButton("strong_bot"));
+  }
+  if (soloRankingStarting) panel.append(createSoloRankingNotice(copy.soloRankingStarting));
 
   if (uiState.battlePresentationNotice) {
     panel.append(createBattlePresentationNotice(uiState.battlePresentationNotice));
@@ -2782,13 +2838,13 @@ function createPvpConnectedView(): HTMLElement {
   return body;
 }
 
-function createPvpLeaderboardButton(): HTMLButtonElement {
+function createPvpLeaderboardButton(mode: LeaderboardMode = "pvp"): HTMLButtonElement {
   const button = document.createElement("button");
   button.className = "pvp-panel__button pvp-leaderboard-open";
   button.type = "button";
   button.textContent = getCopy().pvpLeaderboardButton;
   setFocusKey(button, "pvp-leaderboard-open");
-  button.addEventListener("click", openPvpLeaderboard);
+  button.addEventListener("click", () => openPvpLeaderboard(mode));
   return button;
 }
 
@@ -2811,7 +2867,7 @@ function createPvpLeaderboardOverlay(): HTMLElement {
   title.id = "draft-battler-pvp-leaderboard-title";
   title.textContent = copy.pvpLeaderboardTitle;
   const intro = document.createElement("p");
-  intro.textContent = copy.pvpLeaderboardIntro;
+  intro.textContent = leaderboardMode === "strong_bot" ? copy.soloLeaderboardIntro : copy.pvpLeaderboardIntro;
   heading.append(title, intro);
 
   const closeButton = document.createElement("button");
@@ -2839,7 +2895,20 @@ function createPvpLeaderboardOverlay(): HTMLElement {
     content.append(createPvpLeaderboardContent(pvpLeaderboardState.snapshot));
   }
 
-  panel.append(header, content);
+  const modes = document.createElement("div");
+  modes.className = "leaderboard-modes";
+  modes.setAttribute("role", "group");
+  modes.setAttribute("aria-label", copy.pvpLeaderboardTitle);
+  for (const mode of ["pvp", "strong_bot"] as const) {
+    const button = document.createElement("button");
+    button.className = "pvp-panel__button";
+    button.type = "button";
+    button.textContent = mode === "pvp" ? "PvP" : `${copy.bot} · ${copy.botDifficultyStrong}`;
+    button.setAttribute("aria-pressed", String(mode === leaderboardMode));
+    button.addEventListener("click", () => openPvpLeaderboard(mode));
+    modes.append(button);
+  }
+  panel.append(header, modes, content);
   overlay.append(panel);
   queueMicrotask(() => {
     if (closeButton.isConnected) closeButton.focus();
@@ -2866,7 +2935,7 @@ function createPvpLeaderboardContent(snapshot: PvpLeaderboardSnapshot): Document
     ? copy.pvpLeaderboardTelegramRequired
     : snapshot.participation === "missing_profile"
       ? copy.pvpLeaderboardMissingProfile
-      : copy.pvpLeaderboardRanked;
+      : leaderboardMode === "strong_bot" ? copy.soloLeaderboardRanked : copy.pvpLeaderboardRanked;
   fragment.append(meta, participation);
 
   if (snapshot.entries.length === 0) {
@@ -2928,6 +2997,14 @@ function createPvpLeaderboardMessage(text: string): HTMLParagraphElement {
   return message;
 }
 
+function createSoloRankingNotice(text: string): HTMLParagraphElement {
+  const notice = document.createElement("p");
+  notice.className = "solo-ranking-notice";
+  notice.setAttribute("role", "status");
+  notice.textContent = text;
+  return notice;
+}
+
 function formatPvpLeaderboardDate(timestamp: number): string {
   try {
     return new Intl.DateTimeFormat(activeLocale, { day: "numeric", month: "short" }).format(timestamp);
@@ -2936,11 +3013,13 @@ function formatPvpLeaderboardDate(timestamp: number): string {
   }
 }
 
-function openPvpLeaderboard(): void {
+function openPvpLeaderboard(mode: LeaderboardMode = "pvp"): void {
+  leaderboardMode = mode;
   pvpLeaderboardOpen = true;
   pvpLeaderboardState = { status: "loading" };
   render();
   void loadPvpLeaderboard();
+  if (mode === "strong_bot") void flushSoloRankingResults();
 }
 
 function closePvpLeaderboard(): void {
@@ -2955,7 +3034,7 @@ async function loadPvpLeaderboard(): Promise<void> {
   pvpLeaderboardState = { status: "loading" };
   render();
   try {
-    const snapshot = await fetchPvpLeaderboard(PVP_API_ORIGIN, { telegramInitData: telegram.initData });
+    const snapshot = await fetchPvpLeaderboard(PVP_API_ORIGIN, { telegramInitData: telegram.initData }, leaderboardMode);
     if (requestId !== pvpLeaderboardRequestId) return;
     pvpLeaderboardState = { status: "ready", snapshot };
   } catch {
@@ -4936,6 +5015,7 @@ function fightRound(): void {
   persistSoloRun();
   if (nextRun.status === "finished") {
     ensureFinishedSoloRunRecorded();
+    void flushSoloRankingResults();
   }
   render();
 }
@@ -6142,6 +6222,8 @@ function ensureFinishedSoloRunRecorded(): boolean {
     return true;
   }
 
+  soloRankingDelivery.queue(uiState.soloSession, uiState.run);
+
   const summary: SoloRunSummary = {
     id: uiState.soloSession.runId,
     seed: uiState.run.seed,
@@ -6179,6 +6261,10 @@ function showSoloHistorySaveFailure(): void {
 }
 
 function confirmFinishedSoloRunDiscard(): boolean {
+  if (uiState.soloSession && !soloRankingDelivery.queue(uiState.soloSession, uiState.run)) {
+    void flushSoloRankingResults();
+    if (!window.confirm(getCopy().soloRankingDiscardConfirm)) return false;
+  }
   if (ensureFinishedSoloRunRecorded()) {
     return true;
   }
@@ -6188,6 +6274,13 @@ function confirmFinishedSoloRunDiscard(): boolean {
 
   showSoloHistorySaveFailure();
   return false;
+}
+
+async function flushSoloRankingResults(): Promise<void> {
+  if (!PVP_UI_ENABLED || !soloRankingDelivery.hasPending || !telegram.initData) return;
+  await soloRankingDelivery.flush(PVP_API_ORIGIN, { telegramInitData: telegram.initData });
+  render();
+  if (pvpLeaderboardOpen && leaderboardMode === "strong_bot") void loadPvpLeaderboard();
 }
 
 function clearPersistedSoloRun(): void {

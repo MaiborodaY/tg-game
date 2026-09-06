@@ -4,6 +4,16 @@ import test from "node:test";
 import { PvpRequestError } from "../src/pvpSession.ts";
 import { fetchPvpLeaderboard } from "../src/pvpLeaderboard.ts";
 
+test("strong-bot tab reads the separate solo leaderboard with the same public contract", async () => {
+  const result = await fetchPvpLeaderboard("", {
+    fetcher: async (url) => {
+      assert.equal(url, "/api/solo/leaderboard");
+      return new Response(JSON.stringify({ ok: true, weekKey: "2026-W37", weekEndsAt: 1, totalPlayers: 0, entries: [], viewer: null, participation: "telegram_required" }));
+    },
+  }, "strong_bot");
+  assert.equal(result.participation, "telegram_required");
+});
+
 test("leaderboard sends Telegram auth and accepts bounded public player data", async () => {
   let captured;
   const snapshot = await fetchPvpLeaderboard("https://pvp.example", {

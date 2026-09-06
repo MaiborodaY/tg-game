@@ -125,6 +125,15 @@ export interface UiCopy {
   pvpLeaderboardTelegramRequired: string;
   pvpLeaderboardMissingProfile: string;
   pvpLeaderboardRanked: string;
+  soloLeaderboardIntro: string;
+  soloLeaderboardRanked: string;
+  soloRankingStarting: string;
+  soloRankingPracticeConfirm: string;
+  soloRankingPending: string;
+  soloRankingRecorded: string;
+  soloRankingRejected: string;
+  soloRankingUnranked: string;
+  soloRankingDiscardConfirm: string;
   howToPlay: string;
   compendium: string;
   compendiumTitle: string;
@@ -486,6 +495,15 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpLeaderboardTelegramRequired: "Откройте BroBattler из Telegram, чтобы ваши победы попадали в рейтинг.",
     pvpLeaderboardMissingProfile: "Для участия сначала создайте персонажа в World of Life.",
     pvpLeaderboardRanked: "Ваши завершённые онлайн-дуэли участвуют в рейтинге.",
+    soloLeaderboardIntro: "Победы над сильным ботом за неделю: пн–вс, UTC. Только новые партии — без испытания дня и повторов.",
+    soloLeaderboardRanked: "Новые партии против сильного бота из Telegram участвуют в рейтинге после проверки результата.",
+    soloRankingStarting: "Готовим рейтинговую партию…",
+    soloRankingPracticeConfirm: "Не удалось начать рейтинговую партию. Нужны связь, запуск из Telegram и персонаж World of Life. Начать тренировку без рейтинга?",
+    soloRankingPending: "Результат ожидает отправки в рейтинг. При восстановлении связи попробуем снова; при необходимости переоткройте игру из Telegram.",
+    soloRankingRecorded: "Результат учтён в рейтинге против сильного бота.",
+    soloRankingRejected: "Результат не зачтён: правила игры обновились или партию не удалось подтвердить. Начните новую партию.",
+    soloRankingUnranked: "Тренировка: эта партия не участвует в недельном рейтинге.",
+    soloRankingDiscardConfirm: "Не удалось сохранить результат для отправки в рейтинг. Покинуть партию и потерять неотправленный результат?",
     howToPlay: "Правила",
     compendium: "Карты",
     compendiumTitle: "Карты и синергии",
@@ -735,6 +753,15 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpLeaderboardTelegramRequired: "Відкрийте BroBattler із Telegram, щоб ваші перемоги потрапляли до рейтингу.",
     pvpLeaderboardMissingProfile: "Для участі спочатку створіть персонажа у World of Life.",
     pvpLeaderboardRanked: "Ваші завершені онлайн-дуелі беруть участь у рейтингу.",
+    soloLeaderboardIntro: "Перемоги над сильним ботом за тиждень: пн–нд, UTC. Лише нові партії — без випробування дня та повторів.",
+    soloLeaderboardRanked: "Нові партії проти сильного бота з Telegram беруть участь у рейтингу після перевірки результату.",
+    soloRankingStarting: "Готуємо рейтингову партію…",
+    soloRankingPracticeConfirm: "Не вдалося почати рейтингову партію. Потрібні зв’язок, запуск із Telegram і персонаж World of Life. Почати тренування без рейтингу?",
+    soloRankingPending: "Результат очікує надсилання до рейтингу. Коли зв’язок відновиться, спробуємо знову; за потреби відкрийте гру з Telegram ще раз.",
+    soloRankingRecorded: "Результат враховано в рейтингу проти сильного бота.",
+    soloRankingRejected: "Результат не зараховано: правила гри оновилися або партію не вдалося підтвердити. Почніть нову партію.",
+    soloRankingUnranked: "Тренування: ця партія не бере участі в тижневому рейтингу.",
+    soloRankingDiscardConfirm: "Не вдалося зберегти результат для надсилання до рейтингу. Покинути партію та втратити ненадісланий результат?",
     howToPlay: "Правила",
     compendium: "Карти",
     compendiumTitle: "Карти й синергії",
@@ -984,6 +1011,15 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpLeaderboardTelegramRequired: "Open BroBattler from Telegram for your wins to count in the ranking.",
     pvpLeaderboardMissingProfile: "Create a World of Life character first to participate.",
     pvpLeaderboardRanked: "Your completed online duels count toward the ranking.",
+    soloLeaderboardIntro: "Strong-bot wins this week: Mon–Sun, UTC. New runs only — no daily challenges or replays.",
+    soloLeaderboardRanked: "New strong-bot runs started from Telegram count after server verification.",
+    soloRankingStarting: "Preparing a ranked run…",
+    soloRankingPracticeConfirm: "Could not start a ranked run. A connection, Telegram launch and a World of Life character are required. Start unranked practice instead?",
+    soloRankingPending: "Result waiting to be sent to the ranking. We will retry when connected; reopen the game from Telegram if needed.",
+    soloRankingRecorded: "Result recorded in the strong-bot ranking.",
+    soloRankingRejected: "Result not counted: game rules changed or the run could not be verified. Start a new run.",
+    soloRankingUnranked: "Practice: this run does not count toward the weekly ranking.",
+    soloRankingDiscardConfirm: "Could not save the result for ranking delivery. Leave this run and lose the unsent result?",
     howToPlay: "Rules",
     compendium: "Cards",
     compendiumTitle: "Cards & synergies",

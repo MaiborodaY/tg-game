@@ -78,6 +78,16 @@ test("chunked HTTP bodies without Content-Length stop at the byte limit", async 
   assert.equal(cancelled, true);
 });
 
+test("solo finish may use its larger bounded body without relaxing room request limits", async () => {
+  const value = { rounds: "x".repeat(4_000) };
+  const request = () => new RequestCtor("https://game.example/api/solo/finish", { method: "POST", body: JSON.stringify(value) });
+  assert.equal(await readJsonBody(request()), undefined);
+  assert.deepEqual(await readJsonBody(request(), 24_576), value);
+  assert.equal(await readJsonBody(new RequestCtor("https://game.example/api/solo/finish", {
+    method: "POST", body: JSON.stringify({ rounds: "x".repeat(24_576) }),
+  }), 24_576), undefined);
+});
+
 test("seat token authentication stores a one-way digest", async () => {
   const token = createSeatToken(Uint8Array.from({ length: SEAT_TOKEN_BYTES }, (_, index) => 255 - index));
   const digest = await hashSeatToken(token);
