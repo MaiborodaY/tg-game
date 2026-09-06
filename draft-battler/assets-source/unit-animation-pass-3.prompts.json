@@ -1,0 +1,299 @@
+{
+  "mode": "built-in image_gen",
+  "scope": "Animation pass 3: five previously redrawn units only. Original static/card images and combat mechanics are unchanged.",
+  "layout": {
+    "source": {
+      "width": 1280,
+      "height": 512,
+      "frameSize": 256,
+      "baseline": 236
+    },
+    "runtime": {
+      "width": 640,
+      "height": 256,
+      "frameSize": 128,
+      "baseline": 118
+    },
+    "columns": [
+      "idle",
+      "walk A",
+      "walk B",
+      "attack",
+      "fallen"
+    ],
+    "rows": [
+      "south/front/enemy",
+      "north/back/player"
+    ]
+  },
+  "preparation": {
+    "background": "Initial generated opaque checkerboards replaced through built-in image editing by magenta. User-approved local extraction, trim, proportional scale, transparent padding and PNG/WebP conversion only; no code-generated body parts, mirrored directions or cloned poses.",
+    "base": "prepare-unit-pose-sheet.mjs --loose-grid. Ten connected figures extracted in row order, common anatomical scale, max visible width 220/height 196, baseline236. Bone sheet 1942x809 padded horizontally to2023x809 with magenta before extraction; no image stretching.",
+    "patchAssembly": "Individual generated correction figures separated only through empty background gaps. Standing walk replacements calibrated to existing walk-A height for each facing. Bell attack/death pairs share a scale anchored to original idle height, so fallen bodies retain anatomical scale. Assertions ensure <=220x196, whole figure margins and exact preservation of all untouched atlas frames.",
+    "paletteSpecificCleanup": "No authored violet in these five designs. Visible residual key-color pixels with min(R,B)-G>20 receive alpha*=clamp((60-dominance)/40,0,1); fully transparent pixels zeroed, otherwise R/B capped to G+8. Idempotence checked. Cleanup before runtime WebP generation.",
+    "runtime": "generate-runtime-assets.mjs --units bone_archer,rune_warden,marsh_stalker,ironhide_bear,grave_bellringer"
+  },
+  "preview": "draft-battler/assets-source/unit-animation-pass-3.preview.webp",
+  "assets": [
+    {
+      "id": "bone_archer",
+      "name": "Костяной лучник",
+      "reference": "draft-battler/assets-source/units/bone_archer/unit.png",
+      "sourceAtlas": "draft-battler/assets-source/units/bone_archer/sprite-sheet.png",
+      "runtimeAtlas": "draft-battler/src/assets/units/bone_archer/sprite-sheet.webp",
+      "initialGeneratedFile": "exec-1c288d38-ef80-4edc-9bc0-e8a8c13de445.png",
+      "baseGeneratedFile": "exec-16fe41f0-d74d-4e6e-a4f4-6cb488935fea.png",
+      "prompt": "Use case: identity-preserve. Asset type: production 2D game animation pose atlas for BroBattler.\nImage 1 is the EXACT APPROVED character design reference. Preserve its identity, silhouette proportions, equipment, palette and hand-painted tactile realistic miniature style. Generate new articulated poses of this exact character, not variations or new outfits.\nOutput a wide 2560x1024 canvas, ratio 5:2: exactly TEN complete separate figures arranged in 5 equal SQUARE columns by 2 rows. One figure in each cell, with generous empty gutters; equipment, feet and bodies must not touch or cross any cell border. Same anatomical scale and camera elevation across all ten poses. Show full bodies with all equipment. No labels, letters, numbers, panel lines, UI, other characters, scenery, floor, shadows or particle clouds.\nBACKGROUND: genuinely transparent alpha, NOT a painted checkerboard. If actual alpha is unavailable use entirely flat vivid magenta #FF00FF. Preserve fine edges without colored rim light or reflections.\nCAMERA/DIRECTIONS: slightly elevated 3/4 game camera. TOP row all face SOUTH toward viewer: front of chest/face visible. BOTTOM row all face NORTH away from viewer: back of head, back of clothing/equipment visible, NO face looking back. This is a true rear view, NOT a horizontal mirror of the front row. Equipment stays on same anatomical arm/side when turned around.\nColumns left to right in EACH row:\n1) Neutral standing idle, support feet firmly planted.\n2) WALK A: clear LEFT FOOT FORWARD contact and RIGHT FOOT BEHIND push-off, opposite arm swing, moving along the row's facing direction.\n3) WALK B: visibly opposite gait phase, RIGHT FOOT FORWARD contact and LEFT FOOT BEHIND push-off, opposite arm swing. This is NOT a copy of column2 with a shifted body, mirrored image or changed lighting. Same travel direction. Make which foot is ahead unmistakable from knee and foot silhouettes.\n4) Character-specific attack described below, weight supported, not floating.\n5) Fallen defeat pose: entire body collapsed horizontally on its side near the floor, eyes shut; equipment resting touching the body so it stays one coherent cutout. Much lower than standing height but same anatomical scale, no blood/gore. True front-facing fallen view on top and back-facing fallen view below. No kneeling or merely tilted standing pose.\nAt least one support foot remains on implied ground in every walk pose. Whole body and gear fit each cell. No jump, hover, skating, duplicate limbs, merged poses or disconnected props.\nCHARACTER INVARIANTS AND ACTION: Tall very thin bare ivory skeleton archer with exposed ribs, short rusty-red shoulder mantlet, ragged dark breeches, narrow worn leather shoes, small hip quiver, tall asymmetric wooden longbow with pale bone tips. Bow remains in anatomical LEFT hand; loose arrow/right hand. No hood, helmet, long cloak, armor or new glowing effects. ATTACK: planted archer stance, left hand holds bow at full extension and right fingers draw nocked arrow and taut bowstring back to cheek, elbow sharply bent behind, both bow tips wholly visible. At rest/steps bow upright and held steady. In rear row the bow correctly appears on screen-left, quiver and mantlet follow same identity. Both walk frames visibly exchange advancing leg, long bone shins unobstructed. Fallen pose keeps one skeletal hand on bow laid along body; no detached bone pile.",
+      "baseCorrectionPrompt": "Use case: precise-object-edit. Image1 is an existing TEN-POSE character sprite sheet to correct, preserving the exact character identity and visual style.\nReplace the painted checkerboard background with perfectly FLAT MAGENTA #FF00FF, including ALL gaps between limbs and equipment. No transparency simulation, no checkerboard, no gradients, reflections, magenta light, shadows or fog.\nKeep a wide 5:2 canvas, precisely5 columns by2 rows of equal SQUARE cells, ten complete figures. Keep pose order idle, walkA, walkB, attack, fallen. Top row FRONT facing viewer; bottom row TRUE BACK facing away. Preserve hands holding the same equipment on the same ANATOMICAL sides in both views. Make every entire figure fit WITHIN its cell with comfortable blank outer margins and gutters; no gear touching canvas borders, no cross-cell overlaps. Scale all characters consistently to allow room for largest pose, leaving at least 8percent margin around each entire body and weapon. No labels, drawn grid, text or watermark. No additional figures or accessories.\nPreserve existing valid anatomy, material, costume and details. Any changes to poses are ONLY the corrections described below.\nCORRECTIONS: Correct column3 only in both rows to the OPPOSITE phase of column2, with clearly exchanged advancing legs, NOT the same front shin or a horizontal mirror. Keep arms/bow sides unchanged. TOP column3: viewer-LEFT shoe is FORWARD toward viewer with straighter knee, viewer-RIGHT shoe is BACK with knee bent. BOTTOM column3: viewer-RIGHT leg is forward AWAY from viewer, viewer-LEFT shoe is behind nearer viewer. For both ATTACK column4 poses show the COMPLETE bow including its upper tip and taut string inside cell; the top-row bow currently is clipped, restore the missing tip and shrink the consistent sheet scale to give margin. Do not crop or break the longbow; correct one plausible bow with nocked arrow and exactly two skeletal hands.",
+      "corrections": [
+        {
+          "key": "bone_walk_b",
+          "layout": "two-view",
+          "frameIndices": [
+            2,
+            7
+          ],
+          "generatedFile": "exec-321bb26a-76e3-405b-a10c-3309f3f008e0.png",
+          "finalGeneratedFile": "exec-321bb26a-76e3-405b-a10c-3309f3f008e0.png",
+          "prompt": "Use case: identity-preserve. Image1 is the approved exact character identity, materials, proportions, palette and equipment, NOT the pose to copy. Produce genuinely NEW ARTICULATED POSES as described, with the same hand-painted realistic game-miniature style. Entire figure, feet and equipment inside frame with generous empty margins. Every limb and prop remains physically connected. Flat MAGENTA #FF00FF technical chroma-key background with NO checkerboard, reflections, shadows, floor, particles or magenta spill. No labels, text, borders or scenery.\nCreate TWO full-body walking views SIDE BY SIDE on a square1536x1536 sheet, each in its own tall half with a large empty gutter.\nLEFT PANEL: front three-quarter facing viewer. This skeleton's VIEWER-LEFT leg is extended FORWARD toward viewer, its long shin slants out in front of hips and LEFT-on-screen shoe clearly leads. VIEWER-RIGHT thigh bends BACK, knee behind hips, heel rising off ground behind. The longbow remains in viewer-RIGHT hand upright beside body, arrow in viewer-LEFT hand. No horizontal mirror.\nRIGHT PANEL: true BACK view facing away, no face. Anatomically the SAME phase: skeleton RIGHT leg advances away from viewer (on viewer-RIGHT of rear figure), LEFT leg trails nearer viewer (viewer-LEFT) with raised heel. Bow remains viewer-LEFT hand, arrow viewer-RIGHT. Show a decisive opposite-leg contact pose, not neutral stance. Long bone shins visible, hips shift naturally, at least one shoe bearing weight. Exact red shoulder mantlet, bare ivory ribs, dark breeches, shoes and complete longbow.",
+          "assembly": [
+            {
+              "index": 2,
+              "sourceCell": {
+                "left": 0,
+                "top": 0,
+                "width": 627,
+                "height": 1254
+              },
+              "sourceBounds": {
+                "left": 68,
+                "top": 75,
+                "width": 500,
+                "height": 1076
+              },
+              "scale": 0.17657992565055763,
+              "width": 88,
+              "height": 189
+            },
+            {
+              "index": 7,
+              "sourceCell": {
+                "left": 627,
+                "top": 0,
+                "width": 627,
+                "height": 1254
+              },
+              "sourceBounds": {
+                "left": 30,
+                "top": 78,
+                "width": 525,
+                "height": 1074
+              },
+              "scale": 0.1601489757914339,
+              "width": 84,
+              "height": 172
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rune_warden",
+      "name": "Рунный хранитель",
+      "reference": "draft-battler/assets-source/units/rune_warden/unit.png",
+      "sourceAtlas": "draft-battler/assets-source/units/rune_warden/sprite-sheet.png",
+      "runtimeAtlas": "draft-battler/src/assets/units/rune_warden/sprite-sheet.webp",
+      "initialGeneratedFile": "exec-8c6ed400-b8dd-482a-a8d0-eaa82f4a63eb.png",
+      "baseGeneratedFile": "exec-1d16cdb2-0955-476f-b6cb-2b11e2aabcb2.png",
+      "prompt": "Use case: identity-preserve. Asset type: production 2D game animation pose atlas for BroBattler.\nImage 1 is the EXACT APPROVED character design reference. Preserve its identity, silhouette proportions, equipment, palette and hand-painted tactile realistic miniature style. Generate new articulated poses of this exact character, not variations or new outfits.\nOutput a wide 2560x1024 canvas, ratio 5:2: exactly TEN complete separate figures arranged in 5 equal SQUARE columns by 2 rows. One figure in each cell, with generous empty gutters; equipment, feet and bodies must not touch or cross any cell border. Same anatomical scale and camera elevation across all ten poses. Show full bodies with all equipment. No labels, letters, numbers, panel lines, UI, other characters, scenery, floor, shadows or particle clouds.\nBACKGROUND: genuinely transparent alpha, NOT a painted checkerboard. If actual alpha is unavailable use entirely flat vivid magenta #FF00FF. Preserve fine edges without colored rim light or reflections.\nCAMERA/DIRECTIONS: slightly elevated 3/4 game camera. TOP row all face SOUTH toward viewer: front of chest/face visible. BOTTOM row all face NORTH away from viewer: back of head, back of clothing/equipment visible, NO face looking back. This is a true rear view, NOT a horizontal mirror of the front row. Equipment stays on same anatomical arm/side when turned around.\nColumns left to right in EACH row:\n1) Neutral standing idle, support feet firmly planted.\n2) WALK A: clear LEFT FOOT FORWARD contact and RIGHT FOOT BEHIND push-off, opposite arm swing, moving along the row's facing direction.\n3) WALK B: visibly opposite gait phase, RIGHT FOOT FORWARD contact and LEFT FOOT BEHIND push-off, opposite arm swing. This is NOT a copy of column2 with a shifted body, mirrored image or changed lighting. Same travel direction. Make which foot is ahead unmistakable from knee and foot silhouettes.\n4) Character-specific attack described below, weight supported, not floating.\n5) Fallen defeat pose: entire body collapsed horizontally on its side near the floor, eyes shut; equipment resting touching the body so it stays one coherent cutout. Much lower than standing height but same anatomical scale, no blood/gore. True front-facing fallen view on top and back-facing fallen view below. No kneeling or merely tilted standing pose.\nAt least one support foot remains on implied ground in every walk pose. Whole body and gear fit each cell. No jump, hover, skating, duplicate limbs, merged poses or disconnected props.\nCHARACTER INVARIANTS AND ACTION: Short wide stocky bald rune scholar with square grey beard, ochre quilted vest, grey knee-length apron, heavy boots. Giant dark stone runic gauntlet on anatomical RIGHT arm, heavy slate rune tablet in metal frame cradled by anatomical LEFT arm, amber incisions. No hood, staff, full plate armor or cape. ATTACK: braced feet, bends and extends the massive gauntlet toward target to focus a spell, tablet close to chest; contained amber light IN grooves only, no floating projectile or bubble. Rear view has gauntlet on screen-right and tablet on screen-left, tablet BACK is plain stone with straps, do not show front runes through its back. Walking: two clearly different short deliberate opposite-foot stomps, boots separated, heavy gear stable. Fallen view keeps tablet and gauntlet touching collapsed body.",
+      "baseCorrectionPrompt": "Use case: precise-object-edit. Image1 is an existing TEN-POSE character sprite sheet to correct, preserving the exact character identity and visual style.\nReplace the painted checkerboard background with perfectly FLAT MAGENTA #FF00FF, including ALL gaps between limbs and equipment. No transparency simulation, no checkerboard, no gradients, reflections, magenta light, shadows or fog.\nKeep a wide 5:2 canvas, precisely5 columns by2 rows of equal SQUARE cells, ten complete figures. Keep pose order idle, walkA, walkB, attack, fallen. Top row FRONT facing viewer; bottom row TRUE BACK facing away. Preserve hands holding the same equipment on the same ANATOMICAL sides in both views. Make every entire figure fit WITHIN its cell with comfortable blank outer margins and gutters; no gear touching canvas borders, no cross-cell overlaps. Scale all characters consistently to allow room for largest pose, leaving at least 8percent margin around each entire body and weapon. No labels, drawn grid, text or watermark. No additional figures or accessories.\nPreserve existing valid anatomy, material, costume and details. Any changes to poses are ONLY the corrections described below.\nCORRECTIONS: No pose redesign needed. Keep both genuinely opposite walking steps and exact stone gauntlet/tablet. Do not add third arm, move equipment to a different hand or turn the back views to face front.",
+      "corrections": []
+    },
+    {
+      "id": "marsh_stalker",
+      "name": "Болотный лазутчик",
+      "reference": "draft-battler/assets-source/units/marsh_stalker/unit.png",
+      "sourceAtlas": "draft-battler/assets-source/units/marsh_stalker/sprite-sheet.png",
+      "runtimeAtlas": "draft-battler/src/assets/units/marsh_stalker/sprite-sheet.webp",
+      "initialGeneratedFile": "exec-8753fd54-7f08-4fe1-a284-d46b33393887.png",
+      "baseGeneratedFile": "exec-81082216-f2b7-4ea5-a1c8-5631165b2bf4.png",
+      "prompt": "Use case: identity-preserve. Asset type: production 2D game animation pose atlas for BroBattler.\nImage 1 is the EXACT APPROVED character design reference. Preserve its identity, silhouette proportions, equipment, palette and hand-painted tactile realistic miniature style. Generate new articulated poses of this exact character, not variations or new outfits.\nOutput a wide 2560x1024 canvas, ratio 5:2: exactly TEN complete separate figures arranged in 5 equal SQUARE columns by 2 rows. One figure in each cell, with generous empty gutters; equipment, feet and bodies must not touch or cross any cell border. Same anatomical scale and camera elevation across all ten poses. Show full bodies with all equipment. No labels, letters, numbers, panel lines, UI, other characters, scenery, floor, shadows or particle clouds.\nBACKGROUND: genuinely transparent alpha, NOT a painted checkerboard. If actual alpha is unavailable use entirely flat vivid magenta #FF00FF. Preserve fine edges without colored rim light or reflections.\nCAMERA/DIRECTIONS: slightly elevated 3/4 game camera. TOP row all face SOUTH toward viewer: front of chest/face visible. BOTTOM row all face NORTH away from viewer: back of head, back of clothing/equipment visible, NO face looking back. This is a true rear view, NOT a horizontal mirror of the front row. Equipment stays on same anatomical arm/side when turned around.\nColumns left to right in EACH row:\n1) Neutral standing idle, support feet firmly planted.\n2) WALK A: clear LEFT FOOT FORWARD contact and RIGHT FOOT BEHIND push-off, opposite arm swing, moving along the row's facing direction.\n3) WALK B: visibly opposite gait phase, RIGHT FOOT FORWARD contact and LEFT FOOT BEHIND push-off, opposite arm swing. This is NOT a copy of column2 with a shifted body, mirrored image or changed lighting. Same travel direction. Make which foot is ahead unmistakable from knee and foot silhouettes.\n4) Character-specific attack described below, weight supported, not floating.\n5) Fallen defeat pose: entire body collapsed horizontally on its side near the floor, eyes shut; equipment resting touching the body so it stays one coherent cutout. Much lower than standing height but same anatomical scale, no blood/gore. True front-facing fallen view on top and back-facing fallen view below. No kneeling or merely tilted standing pose.\nAt least one support foot remains on implied ground in every walk pose. Whole body and gear fit each cell. No jump, hover, skating, duplicate limbs, merged poses or disconnected props.\nCHARACTER INVARIANTS AND ACTION: Olive mottled frog-like amphibian ranged scout with broad golden eyes, large webbed feet, very long folded hind legs, smaller arms, straw reed shoulder pad on anatomical RIGHT shoulder, leather harness with dart tubes and canteen. No tail, hood, cape, spear or humanoid face. Keep natural amphibian anatomy. Long HOLLOW reed blowpipe always held in both hands. ATTACK: crouches with both webbed feet planted, puts narrow end of blowpipe to lips and aims its open barrel toward target; cheeks slightly puffed, no detached dart or green cloud. REAR row must show textured rounded back of head and back harness with NO visible face/eyes. WALK A left webbed foot steps forward while right pushes behind; WALK B right steps forward while left pushes behind. A slow crouched stalking gait, NEVER leap or both feet airborne. Fallen pose low on side with tucked limbs and blowpipe held against body.",
+      "baseCorrectionPrompt": "Use case: precise-object-edit. Image1 is an existing TEN-POSE character sprite sheet to correct, preserving the exact character identity and visual style.\nReplace the painted checkerboard background with perfectly FLAT MAGENTA #FF00FF, including ALL gaps between limbs and equipment. No transparency simulation, no checkerboard, no gradients, reflections, magenta light, shadows or fog.\nKeep a wide 5:2 canvas, precisely5 columns by2 rows of equal SQUARE cells, ten complete figures. Keep pose order idle, walkA, walkB, attack, fallen. Top row FRONT facing viewer; bottom row TRUE BACK facing away. Preserve hands holding the same equipment on the same ANATOMICAL sides in both views. Make every entire figure fit WITHIN its cell with comfortable blank outer margins and gutters; no gear touching canvas borders, no cross-cell overlaps. Scale all characters consistently to allow room for largest pose, leaving at least 8percent margin around each entire body and weapon. No labels, drawn grid, text or watermark. No additional figures or accessories.\nPreserve existing valid anatomy, material, costume and details. Any changes to poses are ONLY the corrections described below.\nCORRECTIONS: Correct TOP row column3 to opposite advancing foot from column2: viewer-LEFT webbed foot clearly FORWARD toward viewer, with its knee extending, viewer-RIGHT leg bent BACK and its foot pushing off behind. Keep olive frog body, big eyes, straw pad, harness and blowpipe same. The two forearms remain holding blowpipe, no extra arms. Preserve the useful rear-row walk pair and the crouching blowpipe attack poses. All feet stay anatomically connected, no hover, leap or tail.",
+      "corrections": [
+        {
+          "key": "marsh_walk_b_front",
+          "layout": "single",
+          "frameIndices": [
+            2
+          ],
+          "generatedFile": "exec-bee5d220-2783-4df6-92f8-2de1e746c522.png",
+          "finalGeneratedFile": "exec-bee5d220-2783-4df6-92f8-2de1e746c522.png",
+          "prompt": "Use case: identity-preserve. Image1 is the approved exact character identity, materials, proportions, palette and equipment, NOT the pose to copy. Produce genuinely NEW ARTICULATED POSES as described, with the same hand-painted realistic game-miniature style. Entire figure, feet and equipment inside frame with generous empty margins. Every limb and prop remains physically connected. Flat MAGENTA #FF00FF technical chroma-key background with NO checkerboard, reflections, shadows, floor, particles or magenta spill. No labels, text, borders or scenery.\nCreate ONE full-body frog scout walking toward viewer in a mild frontal three-quarter view, portrait1024x1536.\nCritical gait: VIEWER-LEFT webbed foot extends decisively FORWARD toward the viewer, its ankle below and in front of knee, carrying the weight. VIEWER-RIGHT leg is bent BEHIND the body, heel higher and toes trailing back, NOT another forward step of the viewer-right foot. Crouched stalking movement with real asymmetric bent knees, no jumping or bothfeetairborne. Preserve olive amphibian anatomy, golden eyes, exact straw shoulderpad on viewerLEFT, leather harness/dart tubes/canteen and long HOLLOW blowpipe held in TWO hands at chest level pointing slightly to viewer-right. Do not turn equipment over or mirror the character. Alltoesinsidecanvas.",
+          "assembly": [
+            {
+              "index": 2,
+              "sourceCell": {
+                "left": 0,
+                "top": 0,
+                "width": 1024,
+                "height": 1536
+              },
+              "sourceBounds": {
+                "left": 183,
+                "top": 214,
+                "width": 765,
+                "height": 1235
+              },
+              "scale": 0.1562753036437247,
+              "width": 120,
+              "height": 194
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ironhide_bear",
+      "name": "Железношкурый медведь",
+      "reference": "draft-battler/assets-source/units/ironhide_bear/unit.png",
+      "sourceAtlas": "draft-battler/assets-source/units/ironhide_bear/sprite-sheet.png",
+      "runtimeAtlas": "draft-battler/src/assets/units/ironhide_bear/sprite-sheet.webp",
+      "initialGeneratedFile": "exec-c9ca793e-923f-48b5-8b46-445180190cb8.png",
+      "baseGeneratedFile": "exec-90b5c685-ae01-4154-acfc-acfd96c1ad32.png",
+      "prompt": "Use case: identity-preserve. Asset type: production 2D game animation pose atlas for BroBattler.\nImage 1 is the EXACT APPROVED character design reference. Preserve its identity, silhouette proportions, equipment, palette and hand-painted tactile realistic miniature style. Generate new articulated poses of this exact character, not variations or new outfits.\nOutput a wide 2560x1024 canvas, ratio 5:2: exactly TEN complete separate figures arranged in 5 equal SQUARE columns by 2 rows. One figure in each cell, with generous empty gutters; equipment, feet and bodies must not touch or cross any cell border. Same anatomical scale and camera elevation across all ten poses. Show full bodies with all equipment. No labels, letters, numbers, panel lines, UI, other characters, scenery, floor, shadows or particle clouds.\nBACKGROUND: genuinely transparent alpha, NOT a painted checkerboard. If actual alpha is unavailable use entirely flat vivid magenta #FF00FF. Preserve fine edges without colored rim light or reflections.\nCAMERA/DIRECTIONS: slightly elevated 3/4 game camera. TOP row all face SOUTH toward viewer: front of chest/face visible. BOTTOM row all face NORTH away from viewer: back of head, back of clothing/equipment visible, NO face looking back. This is a true rear view, NOT a horizontal mirror of the front row. Equipment stays on same anatomical arm/side when turned around.\nColumns left to right in EACH row:\n1) Neutral standing idle, support feet firmly planted.\n2) WALK A: clear LEFT FOOT FORWARD contact and RIGHT FOOT BEHIND push-off, opposite arm swing, moving along the row's facing direction.\n3) WALK B: visibly opposite gait phase, RIGHT FOOT FORWARD contact and LEFT FOOT BEHIND push-off, opposite arm swing. This is NOT a copy of column2 with a shifted body, mirrored image or changed lighting. Same travel direction. Make which foot is ahead unmistakable from knee and foot silhouettes.\n4) Character-specific attack described below, weight supported, not floating.\n5) Fallen defeat pose: entire body collapsed horizontally on its side near the floor, eyes shut; equipment resting touching the body so it stays one coherent cutout. Much lower than standing height but same anatomical scale, no blood/gore. True front-facing fallen view on top and back-facing fallen view below. No kneeling or merely tilted standing pose.\nAt least one support foot remains on implied ground in every walk pose. Whole body and gear fit each cell. No jump, hover, skating, duplicate limbs, merged poses or disconnected props.\nCHARACTER INVARIANTS AND ACTION: Massive natural quadruped guardian bear, pale ash-blond shaggy fur, uncovered dark muzzle and paws, small round ears, dark interlocking trapezoid iron plates over back/shoulders, leather harness with three flat iron talisman disks. Exactly FOUR legs. No rider, saddle, weapon or humanoid stance. OVERRIDE walking foot directions for quadruped gait: WALK A advances LEFT FOREPAW and RIGHT HINDPAW, with opposite diagonal pair behind; WALK B advances RIGHT FOREPAW and LEFT HINDPAW, other diagonal pair behind. Heavy deliberate walking with weight always on ground, same size and travel direction, clear different leg silhouettes. ATTACK: stays low on THREE supporting paws and sweeps one front paw forward at chest height, slight shoulder twist, no rearing upright or jumping. Rear row head points away NORTH and presents armored rump/back, no head turned to camera. Fallen pose bear on side with forepaws curled, body and plates intact, same body scale.",
+      "baseCorrectionPrompt": "Use case: precise-object-edit. Image1 is an existing TEN-POSE character sprite sheet to correct, preserving the exact character identity and visual style.\nReplace the painted checkerboard background with perfectly FLAT MAGENTA #FF00FF, including ALL gaps between limbs and equipment. No transparency simulation, no checkerboard, no gradients, reflections, magenta light, shadows or fog.\nKeep a wide 5:2 canvas, precisely5 columns by2 rows of equal SQUARE cells, ten complete figures. Keep pose order idle, walkA, walkB, attack, fallen. Top row FRONT facing viewer; bottom row TRUE BACK facing away. Preserve hands holding the same equipment on the same ANATOMICAL sides in both views. Make every entire figure fit WITHIN its cell with comfortable blank outer margins and gutters; no gear touching canvas borders, no cross-cell overlaps. Scale all characters consistently to allow room for largest pose, leaving at least 8percent margin around each entire body and weapon. No labels, drawn grid, text or watermark. No additional figures or accessories.\nPreserve existing valid anatomy, material, costume and details. Any changes to poses are ONLY the corrections described below.\nCORRECTIONS: No redesign. Retain four legs, correctly opposite diagonal-pair walking phases and low three-paw-supported swipe. Do not turn bear into a two-legged creature, do not add limbs, do not turn rear view face toward viewer.",
+      "corrections": []
+    },
+    {
+      "id": "grave_bellringer",
+      "name": "Могильный звонарь",
+      "reference": "draft-battler/assets-source/units/grave_bellringer/unit.png",
+      "sourceAtlas": "draft-battler/assets-source/units/grave_bellringer/sprite-sheet.png",
+      "runtimeAtlas": "draft-battler/src/assets/units/grave_bellringer/sprite-sheet.webp",
+      "initialGeneratedFile": "exec-da69b6a6-9358-4b48-bb81-187f1a4e0eb7.png",
+      "baseGeneratedFile": "exec-ef90c893-5ecf-4e65-9503-46ae61901bfb.png",
+      "prompt": "Use case: identity-preserve. Asset type: production 2D game animation pose atlas for BroBattler.\nImage 1 is the EXACT APPROVED character design reference. Preserve its identity, silhouette proportions, equipment, palette and hand-painted tactile realistic miniature style. Generate new articulated poses of this exact character, not variations or new outfits.\nOutput a wide 2560x1024 canvas, ratio 5:2: exactly TEN complete separate figures arranged in 5 equal SQUARE columns by 2 rows. One figure in each cell, with generous empty gutters; equipment, feet and bodies must not touch or cross any cell border. Same anatomical scale and camera elevation across all ten poses. Show full bodies with all equipment. No labels, letters, numbers, panel lines, UI, other characters, scenery, floor, shadows or particle clouds.\nBACKGROUND: genuinely transparent alpha, NOT a painted checkerboard. If actual alpha is unavailable use entirely flat vivid magenta #FF00FF. Preserve fine edges without colored rim light or reflections.\nCAMERA/DIRECTIONS: slightly elevated 3/4 game camera. TOP row all face SOUTH toward viewer: front of chest/face visible. BOTTOM row all face NORTH away from viewer: back of head, back of clothing/equipment visible, NO face looking back. This is a true rear view, NOT a horizontal mirror of the front row. Equipment stays on same anatomical arm/side when turned around.\nColumns left to right in EACH row:\n1) Neutral standing idle, support feet firmly planted.\n2) WALK A: clear LEFT FOOT FORWARD contact and RIGHT FOOT BEHIND push-off, opposite arm swing, moving along the row's facing direction.\n3) WALK B: visibly opposite gait phase, RIGHT FOOT FORWARD contact and LEFT FOOT BEHIND push-off, opposite arm swing. This is NOT a copy of column2 with a shifted body, mirrored image or changed lighting. Same travel direction. Make which foot is ahead unmistakable from knee and foot silhouettes.\n4) Character-specific attack described below, weight supported, not floating.\n5) Fallen defeat pose: entire body collapsed horizontally on its side near the floor, eyes shut; equipment resting touching the body so it stays one coherent cutout. Much lower than standing height but same anatomical scale, no blood/gore. True front-facing fallen view on top and back-facing fallen view below. No kneeling or merely tilted standing pose.\nAt least one support foot remains on implied ground in every walk pose. Whole body and gear fit each cell. No jump, hover, skating, duplicate limbs, merged poses or disconnected props.\nCHARACTER INVARIANTS AND ACTION: Stooped undead bell carrier with bare gaunt grey corpse face, milky eyes, sparse white hair, knee-length faded green undertaker coat, cream sash, wrapped old boots. Heavy wood yoke across shoulders with ONE large bronze verdigris funeral bell hanging by a short chain on his anatomical LEFT side. Right hand steadies yoke; left holds wooden mallet. Keep bell, yoke and mallet identical. ATTACK: both feet braced, left forearm swings mallet outward to STRIKE THE SIDE OF THE HANGING BELL, mallet head touching bell wall, slight bell tilt; right hand still supporting yoke. No glowing particles or ghosts. Rear view bell is on screen-left, back of bald grey head and coat visible, no face. WALK A left boot forward/right boot back; WALK B right boot forward/left boot back, stooped careful steps under weight, slight opposite bell sway; no hovering. Defeat pose body and yoke collapsed sideways on floor, bell resting next to and touching him, mallet held close, NO detached hanging bell without support.",
+      "baseCorrectionPrompt": "Use case: precise-object-edit. Image1 is an existing TEN-POSE character sprite sheet to correct, preserving the exact character identity and visual style.\nReplace the painted checkerboard background with perfectly FLAT MAGENTA #FF00FF, including ALL gaps between limbs and equipment. No transparency simulation, no checkerboard, no gradients, reflections, magenta light, shadows or fog.\nKeep a wide 5:2 canvas, precisely5 columns by2 rows of equal SQUARE cells, ten complete figures. Keep pose order idle, walkA, walkB, attack, fallen. Top row FRONT facing viewer; bottom row TRUE BACK facing away. Preserve hands holding the same equipment on the same ANATOMICAL sides in both views. Make every entire figure fit WITHIN its cell with comfortable blank outer margins and gutters; no gear touching canvas borders, no cross-cell overlaps. Scale all characters consistently to allow room for largest pose, leaving at least 8percent margin around each entire body and weapon. No labels, drawn grid, text or watermark. No additional figures or accessories.\nPreserve existing valid anatomy, material, costume and details. Any changes to poses are ONLY the corrections described below.\nCORRECTIONS: Fix ATTACK in both rows: there must be exactly TWO ARMS and exactly ONE BELL. One hand steadies the wooden shoulder yoke; the other hand swings its mallet to contact the side of the SAME bell hanging from the yoke. NEVER use two hands on the mallet while a third hand holds the yoke. TOP attack: bell hangs on viewer-RIGHT, mallet held by that side arm with elbow bent toward bell; other hand on viewer-LEFT stabilizes yoke. BOTTOM attack: bell hangs on viewer-LEFT, mallet held by that side arm striking this bell; hand on viewer-RIGHT stabilizes yoke. REMOVE the impossible additional bell on viewer-right of the bottom attack. DEFEAT bothrows: retain the single bronze bell on its side at the character's hip TOUCHING the fallen body and connected to the yoke by slack chain; it must NOT disappear. Preserve complete body/mallet/yoke in the fallen pose. WALK column3 in bothrows: exchange forward/back feet compared to column2, a genuine opposite stride while keeping the same torso/gear side; no cloned lead leg.",
+      "corrections": [
+        {
+          "key": "bell_walk_b_front",
+          "layout": "single",
+          "frameIndices": [
+            2
+          ],
+          "generatedFile": "exec-0916ae76-02d5-4aa4-8a8d-29b0bc5d575c.png",
+          "finalGeneratedFile": "exec-1f9ae51c-8c64-48ad-aa88-cb900f32cdbd.png",
+          "prompt": "Use case: identity-preserve. Image1 is the approved exact character identity, materials, proportions, palette and equipment, NOT the pose to copy. Produce genuinely NEW ARTICULATED POSES as described, with the same hand-painted realistic game-miniature style. Entire figure, feet and equipment inside frame with generous empty margins. Every limb and prop remains physically connected. Flat MAGENTA #FF00FF technical chroma-key background with NO checkerboard, reflections, shadows, floor, particles or magenta spill. No labels, text, borders or scenery.\nCreate ONE full-body walking FRONT view toward viewer, portrait1024x1536. Undead bell carrier takes a deliberate step with VIEWER-RIGHT BOOT well FORWARD toward viewer, that knee leading; VIEWER-LEFT boot trails BEHIND with lifted heel. Clearly asymmetric opposite step, not standing or copying the reference legs. Preserve stoop, bald corpse-grey face, greencoat/cream sash and wooden yoke physically resting across shoulders. ExactlyONE bell hangs from yoke on viewerRIGHT by shortchain. ViewerLEFT hand grips yoke support, viewerRIGHT hand holds lowered mallet close to bell. TWO arms only, no extra hand or bell. All full body/props visible.",
+          "finalCorrectionPrompt": "Use case: precise-object-edit. Image1 is the exact single undead bell carrier walking pose. Preserve the character's upper body, face, clothes, colors, ONE bell on image-right, wooden yoke, two arms and mallet. Keep flat magenta background and portrait framing.\nChange ONLY the legs and lower coat hem to an OPPOSITE-FOOT walking contact pose:\nThe boot currently FARTHER BACK on the RIGHT SIDE OF THIS IMAGE must move FORWARD and DOWN to the lower-right, becoming the leading planted boot closest to the viewer. Extend its shin diagonally down-right from its own right-side knee, leading boot around x=660,y=1380 on the 1024x1536 canvas.\nThe large boot currently closest to viewer near the BOTTOM CENTER-LEFT must move BACK and UP to about x=360,y=1190, trailing behind, heel slightly raised. Bend that left-side knee back.\nThis exchanges the two leg poses, not a camera change. Never mirror or flip the whole image: bell and yoke MUST stay on the same sides and no upper-body rearrangement. Keep legs correctly attached to hips, natural weight on forward image-right boot, two distinct shoes and no extra limb. Whole feet/props visible, no shadows, labels or checkerboard.",
+          "assembly": [
+            {
+              "index": 2,
+              "sourceCell": {
+                "left": 0,
+                "top": 0,
+                "width": 1024,
+                "height": 1536
+              },
+              "sourceBounds": {
+                "left": 128,
+                "top": 108,
+                "width": 881,
+                "height": 1365
+              },
+              "scale": 0.1413919413919414,
+              "width": 125,
+              "height": 194
+            }
+          ]
+        },
+        {
+          "key": "bell_action_death",
+          "layout": "four",
+          "frameIndices": [
+            3,
+            4,
+            8,
+            9
+          ],
+          "generatedFile": "exec-f4d58efb-ca02-4adb-b953-e900caed49c4.png",
+          "finalGeneratedFile": "exec-f4d58efb-ca02-4adb-b953-e900caed49c4.png",
+          "prompt": "Use case: identity-preserve. Image1 is the approved exact character identity, materials, proportions, palette and equipment, NOT the pose to copy. Produce genuinely NEW ARTICULATED POSES as described, with the same hand-painted realistic game-miniature style. Entire figure, feet and equipment inside frame with generous empty margins. Every limb and prop remains physically connected. Flat MAGENTA #FF00FF technical chroma-key background with NO checkerboard, reflections, shadows, floor, particles or magenta spill. No labels, text, borders or scenery.\nCreate precisely FOUR complete poses on1536x1536 square,2columns by2rows with large blank gutters; eachcell fitswholebody and all equipment, consistent anatomicalscale.\nTOP LEFT: FRONT attack. Feet planted; ONE rightanatomicalhand on viewerLEFT supports yoke. The OTHER leftanatomicalhand on viewerRIGHT holds mallet by handle and taps the single bell hanging on viewerRIGHT. Keep that elbow on viewerRIGHT, no arm crossing the chest. The mallet head touches bellwall. TWO ARMS TOTAL: supporting rightarm and striking leftarm. No second hand on mallet.\nBOTTOM LEFT: same action TRUE BACK view facingaway. Yoke onshoulders. ONE rightanatomicalhand on viewerRIGHT supports yoke, ONE leftanatomicalhand on viewerLEFT strikes the SAME single bell hanging on viewerLEFT. Bell doesnotmoveacrossbody. No headturnedcamera, noface.\nTOP RIGHT: FRONT fallen pose. Character lying curled onside, eyesclosed, kneesbent, samehead/bodysize as standing. Yoke lies touchingbody and ONE largebell lies onside tuckednextto hiship IN FRONT of torso, mouth visible, chain slack connectedtoyoke; mallet byhand touchingbody. Keep wholefallen group compact andlow, not widerthan1.25standingheight. No blood/gore.\nBOTTOM RIGHT: TRUE REAR fallen view of this exact collapsed arrangement, coatback and backofhead visible; retain ONE bronze bell against torso and connectedyoke/chain andmallet.\nCharacter inventory in EACHCELL: exactly2arms,2legs,1head,1woodenyoke,1singlebronze funeralbell,1mallet. Never clone bell, addarms or omitbell in death. Maintain worn greencoat, creamsash, thinwhitehair, corpseface andboots. Fullbell/lips/clapperinsidecell. Do not show any standing idle/walking poses.",
+          "assembly": [
+            {
+              "index": 3,
+              "sourceCell": {
+                "left": 0,
+                "top": 0,
+                "width": 596,
+                "height": 627
+              },
+              "sourceBounds": {
+                "left": 94,
+                "top": 38,
+                "width": 460,
+                "height": 567
+              },
+              "scale": 0.3421516754850088,
+              "width": 157,
+              "height": 194
+            },
+            {
+              "index": 4,
+              "sourceCell": {
+                "left": 596,
+                "top": 0,
+                "width": 658,
+                "height": 627
+              },
+              "sourceBounds": {
+                "left": 3,
+                "top": 260,
+                "width": 592,
+                "height": 284
+              },
+              "scale": 0.3421516754850088,
+              "width": 203,
+              "height": 97
+            },
+            {
+              "index": 8,
+              "sourceCell": {
+                "left": 0,
+                "top": 627,
+                "width": 620,
+                "height": 627
+              },
+              "sourceBounds": {
+                "left": 56,
+                "top": 26,
+                "width": 435,
+                "height": 545
+              },
+              "scale": 0.344954128440367,
+              "width": 150,
+              "height": 188
+            },
+            {
+              "index": 9,
+              "sourceCell": {
+                "left": 620,
+                "top": 627,
+                "width": 634,
+                "height": 627
+              },
+              "sourceBounds": {
+                "left": 3,
+                "top": 200,
+                "width": 552,
+                "height": 316
+              },
+              "scale": 0.344954128440367,
+              "width": 190,
+              "height": 109
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

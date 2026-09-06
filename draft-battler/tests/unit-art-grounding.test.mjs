@@ -17,12 +17,13 @@ import {
 const groundedIds = [
   "battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat",
   "phantom_duelist", "frost_wraith", "star_seer", "bronze_minotaur", "harpy_scout",
+  "bone_archer", "rune_warden", "marsh_stalker", "ironhide_bear", "grave_bellringer",
 ];
 const sceneSource = await readFile(new URL("../src/rendering/phaserBattleScene.ts", import.meta.url), "utf8");
 const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 
-test("grounding is explicitly restricted to the ten redrawn units", () => {
+test("grounding is explicitly restricted to the fifteen redrawn units", () => {
   const optedIn = CARD_DEFINITIONS.filter((card) => getGroundedUnitArtBounds(card.id)).map((card) => card.id);
   assert.deepEqual(optedIn.sort(), [...groundedIds].sort());
   for (const card of CARD_DEFINITIONS.filter((card) => !groundedIds.includes(card.id))) {
@@ -97,16 +98,31 @@ test("grounded ranged poses preserve prior windup and total animation duration",
 
 test("redrawn ranged units use projectile poses without changing ranges or melee lunges", () => {
   assert.deepEqual(CARD_DEFINITIONS.filter((card) => hasGroundedProjectilePose(card.id)).map((card) => card.id).sort(),
-    ["battle_alchemist", "frost_wraith", "harpy_scout", "moon_priestess", "siege_engineer", "star_seer"]);
+    ["battle_alchemist", "bone_archer", "frost_wraith", "grave_bellringer", "harpy_scout", "marsh_stalker", "moon_priestess", "rune_warden", "siege_engineer", "star_seer"]);
   assert.equal(CARD_DEFINITIONS.find((card) => card.id === "battle_alchemist").stats.range, 2);
-  for (const cardId of ["frost_wraith", "star_seer", "harpy_scout"]) {
+  for (const cardId of ["frost_wraith", "star_seer", "harpy_scout", "bone_archer", "rune_warden"]) {
     assert.equal(CARD_DEFINITIONS.find((card) => card.id === cardId).stats.range, 3, cardId);
   }
-  for (const cardId of ["phantom_duelist", "bronze_minotaur"]) {
+  for (const cardId of ["phantom_duelist", "bronze_minotaur", "ironhide_bear"]) {
     assert.equal(hasGroundedProjectilePose(cardId), false, cardId);
     assert.equal(CARD_DEFINITIONS.find((card) => card.id === cardId).stats.range, 1, cardId);
   }
   assert.match(sceneSource, /attacker\.sprite && hasGroundedProjectilePose\(attacker\.unit\.cardId\)/);
+});
+
+test("range-2 marsh and bell poses attack in place while the untouched range-2 units keep their existing movement", () => {
+  for (const cardId of ["marsh_stalker", "grave_bellringer"]) {
+    assert.equal(CARD_DEFINITIONS.find((card) => card.id === cardId).stats.range, 2, `${cardId}: preserve gameplay reach`);
+    assert.equal(hasGroundedProjectilePose(cardId), true, `${cardId}: must bypass the melee lunge`);
+    assert.deepEqual(getGroundedRangedAttackTiming(cardId, true), { windupMs: 90, recoveryMs: 125 });
+  }
+  for (const cardId of ["crypt_keeper", "war_chaplain"]) {
+    assert.equal(CARD_DEFINITIONS.find((card) => card.id === cardId).stats.range, 2, cardId);
+    assert.equal(hasGroundedProjectilePose(cardId), false, `${cardId}: not part of this animation pass`);
+    assert.equal(getGroundedRangedAttackTiming(cardId, true), undefined, cardId);
+  }
+  const attackMethod = sceneSource.slice(sceneSource.indexOf("private async playUnitAttack"), sceneSource.indexOf("private async playUnitBlock"));
+  assert.match(attackMethod, /stats\.range >= 3 \|\| \(attacker\.sprite && hasGroundedProjectilePose\(attacker\.unit\.cardId\)\)\) \{\s*await this\.playRangedUnitAttack\(attacker, target, focusCamera\);\s*return;/);
 });
 
 test("only opt-in draft art and fallback images use grounded placement without changing slot hitboxes", () => {

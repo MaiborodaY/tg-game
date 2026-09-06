@@ -9,9 +9,10 @@ import { getVisibleBounds } from "../scripts/prepare-chroma-unit.mjs";
 const animatedIds = [
   "battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat",
   "phantom_duelist", "frost_wraith", "star_seer", "bronze_minotaur", "harpy_scout",
+  "bone_archer", "rune_warden", "marsh_stalker", "ironhide_bear", "grave_bellringer",
 ];
 
-test("the ten redrawn units have complete grounded pose atlases at authoring and runtime sizes", async () => {
+test("the fifteen redrawn units have complete grounded pose atlases at authoring and runtime sizes", async () => {
   for (const id of animatedIds) {
     const asset = getUnitAsset(id);
     assert.ok(asset.spriteSheet, id);

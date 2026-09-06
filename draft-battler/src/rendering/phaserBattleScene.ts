@@ -1264,7 +1264,7 @@ class CastleBattleScene extends Phaser.Scene {
       return;
     }
 
-    // The alchemist throws from range 2; the authored throw is a visual choice, not a change to combat reach.
+    // Authored range-2 throws/casts are visual choices, not changes to combat reach.
     if (getCardDefinition(attacker.unit.cardId).stats.range >= 3 || (attacker.sprite && hasGroundedProjectilePose(attacker.unit.cardId))) {
       await this.playRangedUnitAttack(attacker, target, focusCamera);
       return;

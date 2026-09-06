@@ -33,6 +33,11 @@ const GROUNDED_UNIT_ART: Partial<Record<CardId, UnitArtBounds>> = {
   star_seer: { sourceWidth: 384, sourceHeight: 576, left: 61, top: 35, width: 262, height: 519 },
   bronze_minotaur: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 93, width: 362, height: 461 },
   harpy_scout: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 38, width: 362, height: 516 },
+  bone_archer: { sourceWidth: 384, sourceHeight: 576, left: 65, top: 34, width: 255, height: 520 },
+  rune_warden: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 110, width: 362, height: 444 },
+  marsh_stalker: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 185, width: 362, height: 369 },
+  ironhide_bear: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 196, width: 362, height: 358 },
+  grave_bellringer: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 37, width: 362, height: 517 },
 };
 
 export function getGroundedUnitArtBounds(cardId: CardId): Readonly<UnitArtBounds> | undefined {
@@ -70,5 +75,6 @@ export function getGroundedRangedAttackTiming(cardId: CardId, hasAtlas: boolean)
 
 export function hasGroundedProjectilePose(cardId: CardId): boolean {
   return cardId === "battle_alchemist" || cardId === "siege_engineer" || cardId === "moon_priestess"
-    || cardId === "frost_wraith" || cardId === "star_seer" || cardId === "harpy_scout";
+    || cardId === "frost_wraith" || cardId === "star_seer" || cardId === "harpy_scout"
+    || cardId === "bone_archer" || cardId === "rune_warden" || cardId === "marsh_stalker" || cardId === "grave_bellringer";
 }

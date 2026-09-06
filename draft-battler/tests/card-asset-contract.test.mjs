@@ -44,23 +44,29 @@ const redrawnAnimatedCardIds = new Set([
   "star_seer",
   "bronze_minotaur",
   "harpy_scout",
-]);
-const intentionallyStaticCardIds = new Set([
   "bone_archer",
   "rune_warden",
-  "forest_skirmisher",
   "marsh_stalker",
+  "ironhide_bear",
+  "grave_bellringer",
+]);
+const intentionallyStaticCardIds = new Set([
+  "forest_skirmisher",
   "crypt_keeper",
   "grave_raider",
-  "ironhide_bear",
   "soul_hunter",
   "city_crossbowman",
   "smoke_trickster",
   "war_mastiff",
-  "grave_bellringer",
   "headless_knight",
   "war_chaplain",
 ]);
+
+test("animation rollout accounts for every card exactly once without opting in untouched units", () => {
+  const classifiedIds = [...existingAnimatedCardIds, ...redrawnAnimatedCardIds, ...intentionallyStaticCardIds];
+  assert.equal(new Set(classifiedIds).size, classifiedIds.length, "Animation cohorts must not overlap");
+  assert.deepEqual(classifiedIds.sort(), CARD_DEFINITIONS.map((card) => card.id).sort());
+});
 
 test("runtime asset contract covers every card ability and presentation archetype", () => {
   const expectedAbilities = [...new Set(CARD_DEFINITIONS.map((card) => card.abilityId))].sort();
