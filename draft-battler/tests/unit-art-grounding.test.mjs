@@ -14,12 +14,15 @@ import {
   hasGroundedProjectilePose,
 } from "../src/unitArtGrounding.ts";
 
-const groundedIds = ["battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat"];
+const groundedIds = [
+  "battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat",
+  "phantom_duelist", "frost_wraith", "star_seer", "bronze_minotaur", "harpy_scout",
+];
 const sceneSource = await readFile(new URL("../src/rendering/phaserBattleScene.ts", import.meta.url), "utf8");
 const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 
-test("grounding is explicitly restricted to the five redrawn units", () => {
+test("grounding is explicitly restricted to the ten redrawn units", () => {
   const optedIn = CARD_DEFINITIONS.filter((card) => getGroundedUnitArtBounds(card.id)).map((card) => card.id);
   assert.deepEqual(optedIn.sort(), [...groundedIds].sort());
   for (const card of CARD_DEFINITIONS.filter((card) => !groundedIds.includes(card.id))) {
@@ -59,7 +62,7 @@ test("grounding metadata matches the visible bounds of the actual runtime illust
   }
 });
 
-test("humanoids, rat, and ballista fit their visible box proportionally and touch the baseline", () => {
+test("redrawn units fit their visible box proportionally and touch the baseline", () => {
   for (const cardId of groundedIds) {
     const bounds = getGroundedUnitArtBounds(cardId);
     for (const [maxWidth, maxHeight, groundY] of [[96, 108, DRAFT_UNIT_ART_GROUND_Y], [56, 68, BATTLE_UNIT_ART_GROUND_Y]]) {
@@ -92,10 +95,17 @@ test("grounded ranged poses preserve prior windup and total animation duration",
   }
 });
 
-test("the alchemist throws from its existing short range while melee units keep lunging", () => {
+test("redrawn ranged units use projectile poses without changing ranges or melee lunges", () => {
   assert.deepEqual(CARD_DEFINITIONS.filter((card) => hasGroundedProjectilePose(card.id)).map((card) => card.id).sort(),
-    ["battle_alchemist", "moon_priestess", "siege_engineer"]);
+    ["battle_alchemist", "frost_wraith", "harpy_scout", "moon_priestess", "siege_engineer", "star_seer"]);
   assert.equal(CARD_DEFINITIONS.find((card) => card.id === "battle_alchemist").stats.range, 2);
+  for (const cardId of ["frost_wraith", "star_seer", "harpy_scout"]) {
+    assert.equal(CARD_DEFINITIONS.find((card) => card.id === cardId).stats.range, 3, cardId);
+  }
+  for (const cardId of ["phantom_duelist", "bronze_minotaur"]) {
+    assert.equal(hasGroundedProjectilePose(cardId), false, cardId);
+    assert.equal(CARD_DEFINITIONS.find((card) => card.id === cardId).stats.range, 1, cardId);
+  }
   assert.match(sceneSource, /attacker\.sprite && hasGroundedProjectilePose\(attacker\.unit\.cardId\)/);
 });
 

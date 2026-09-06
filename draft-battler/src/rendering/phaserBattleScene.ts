@@ -22,7 +22,8 @@ import {
   type FieldLayout,
 } from "../fieldLayout";
 import { getUnitAsset, getUnitAssets } from "../unitAssets";
-import { BATTLE_UNIT_ART_GROUND_Y, getGroundedRangedAttackTiming, getGroundedUnitArtPlacement, hasGroundedProjectilePose } from "../unitArtGrounding";
+import { BATTLE_UNIT_ART_GROUND_Y, getGroundedRangedAttackTiming, getGroundedUnitArtBounds, getGroundedUnitArtPlacement, hasGroundedProjectilePose } from "../unitArtGrounding";
+import { UnitPoseState, type UnitPose } from "./unitPoseState";
 import {
   BATTLE_CAMERA_CLOSE_ZOOM,
   BATTLE_CAMERA_ZOOM,
@@ -155,6 +156,7 @@ interface UnitView {
   armor: number;
   sprite?: Phaser.GameObjects.Sprite;
   facing: UnitFacing;
+  poseState: UnitPoseState;
   currentFrame?: number;
   depthBucket?: number;
   presentationScale?: number;
@@ -164,7 +166,6 @@ interface UnitView {
 }
 
 type UnitFacing = "south" | "north";
-type UnitPose = "idle" | "walkA" | "walkB" | "attack" | "dead";
 
 interface UnitArtResult {
   objects: Phaser.GameObjects.GameObject[];
@@ -774,6 +775,7 @@ class CastleBattleScene extends Phaser.Scene {
       armor: 0,
       sprite: unitArt.sprite,
       facing: getDefaultUnitFacing(unit.owner),
+      poseState: new UnitPoseState(Boolean(unitArt.sprite && getGroundedUnitArtBounds(unit.cardId))),
       currentFrame: unitArt.sprite ? getUnitFrame(getDefaultUnitFacing(unit.owner), "idle") : undefined,
     };
     this.unitViews.set(unit.unitId, view);
@@ -1651,6 +1653,9 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private setUnitPose(view: UnitView, pose: UnitPose, facing: UnitFacing = view.facing): void {
+    if (!view.poseState.accept(pose)) {
+      return;
+    }
     view.facing = facing;
 
     if (!view.sprite) {

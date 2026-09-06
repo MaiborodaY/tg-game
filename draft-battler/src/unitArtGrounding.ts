@@ -20,7 +20,7 @@ export interface GroundedUnitArtPlacement {
   height: number;
 }
 
-// Measured from these five unit.webp files at alpha > 12. Tests detect artwork drift.
+// Measured from the redrawn unit.webp files at alpha > 12. Tests detect artwork drift.
 // Keep this opt-in so the older units retain their established framing and animations.
 const GROUNDED_UNIT_ART: Partial<Record<CardId, UnitArtBounds>> = {
   plague_rat: { sourceWidth: 384, sourceHeight: 384, left: 11, top: 115, width: 362, height: 254 },
@@ -28,6 +28,11 @@ const GROUNDED_UNIT_ART: Partial<Record<CardId, UnitArtBounds>> = {
   night_warden: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 81, width: 362, height: 473 },
   siege_engineer: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 113, width: 362, height: 441 },
   moon_priestess: { sourceWidth: 384, sourceHeight: 576, left: 36, top: 34, width: 312, height: 520 },
+  phantom_duelist: { sourceWidth: 384, sourceHeight: 576, left: 32, top: 35, width: 320, height: 518 },
+  frost_wraith: { sourceWidth: 384, sourceHeight: 576, left: 51, top: 35, width: 282, height: 518 },
+  star_seer: { sourceWidth: 384, sourceHeight: 576, left: 61, top: 35, width: 262, height: 519 },
+  bronze_minotaur: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 93, width: 362, height: 461 },
+  harpy_scout: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 38, width: 362, height: 516 },
 };
 
 export function getGroundedUnitArtBounds(cardId: CardId): Readonly<UnitArtBounds> | undefined {
@@ -64,5 +69,6 @@ export function getGroundedRangedAttackTiming(cardId: CardId, hasAtlas: boolean)
 }
 
 export function hasGroundedProjectilePose(cardId: CardId): boolean {
-  return cardId === "battle_alchemist" || cardId === "siege_engineer" || cardId === "moon_priestess";
+  return cardId === "battle_alchemist" || cardId === "siege_engineer" || cardId === "moon_priestess"
+    || cardId === "frost_wraith" || cardId === "star_seer" || cardId === "harpy_scout";
 }

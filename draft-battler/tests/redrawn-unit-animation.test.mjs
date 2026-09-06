@@ -6,12 +6,18 @@ import sharp from "sharp";
 import { getUnitAsset } from "../src/unitAssets.ts";
 import { getVisibleBounds } from "../scripts/prepare-chroma-unit.mjs";
 
-const animatedIds = ["battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat"];
+const animatedIds = [
+  "battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat",
+  "phantom_duelist", "frost_wraith", "star_seer", "bronze_minotaur", "harpy_scout",
+];
 
-test("the five redrawn units have complete grounded pose atlases at authoring and runtime sizes", async () => {
+test("the ten redrawn units have complete grounded pose atlases at authoring and runtime sizes", async () => {
   for (const id of animatedIds) {
     const asset = getUnitAsset(id);
     assert.ok(asset.spriteSheet, id);
+    assert.equal(asset.spriteSheet.key, `unit:${id}:poses`);
+    assert.equal(asset.spriteSheet.frameWidth, 128, id);
+    assert.equal(asset.spriteSheet.frameHeight, 128, id);
     const files = [
       { path: fileURLToPath(new URL(`../assets-source/units/${id}/sprite-sheet.png`, import.meta.url)), size: 256, baseline: 236 },
       { path: fileURLToPath(asset.spriteSheet.path), size: 128, baseline: 118 },

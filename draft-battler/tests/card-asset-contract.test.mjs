@@ -39,6 +39,11 @@ const redrawnAnimatedCardIds = new Set([
   "night_warden",
   "moon_priestess",
   "siege_engineer",
+  "phantom_duelist",
+  "frost_wraith",
+  "star_seer",
+  "bronze_minotaur",
+  "harpy_scout",
 ]);
 const intentionallyStaticCardIds = new Set([
   "bone_archer",
@@ -47,18 +52,13 @@ const intentionallyStaticCardIds = new Set([
   "marsh_stalker",
   "crypt_keeper",
   "grave_raider",
-  "frost_wraith",
   "ironhide_bear",
   "soul_hunter",
   "city_crossbowman",
-  "harpy_scout",
   "smoke_trickster",
   "war_mastiff",
   "grave_bellringer",
-  "phantom_duelist",
-  "bronze_minotaur",
   "headless_knight",
-  "star_seer",
   "war_chaplain",
 ]);
 

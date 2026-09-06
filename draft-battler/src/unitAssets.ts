@@ -280,6 +280,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:frost_wraith",
     path: new URL("./assets/units/frost_wraith/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/frost_wraith/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:frost_wraith:poses",
+      path: new URL("./assets/units/frost_wraith/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   ironhide_bear: {
     key: "unit:ironhide_bear",
@@ -300,6 +306,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:harpy_scout",
     path: new URL("./assets/units/harpy_scout/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/harpy_scout/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:harpy_scout:poses",
+      path: new URL("./assets/units/harpy_scout/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   smoke_trickster: {
     key: "unit:smoke_trickster",
@@ -331,6 +343,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:phantom_duelist",
     path: new URL("./assets/units/phantom_duelist/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/phantom_duelist/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:phantom_duelist:poses",
+      path: new URL("./assets/units/phantom_duelist/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   siege_engineer: {
     key: "unit:siege_engineer",
@@ -347,6 +365,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:bronze_minotaur",
     path: new URL("./assets/units/bronze_minotaur/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/bronze_minotaur/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:bronze_minotaur:poses",
+      path: new URL("./assets/units/bronze_minotaur/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   headless_knight: {
     key: "unit:headless_knight",
@@ -357,6 +381,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:star_seer",
     path: new URL("./assets/units/star_seer/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/star_seer/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:star_seer:poses",
+      path: new URL("./assets/units/star_seer/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   war_chaplain: {
     key: "unit:war_chaplain",
