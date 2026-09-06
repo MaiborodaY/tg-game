@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { readUnitAssetSelection } from "./unit-asset-selection.mjs";
 
 const UNITS_ROOT = path.resolve("draft-battler/assets-source/units");
 const PREVIEW_PATH = path.resolve(".tmp/draft-battler-card-unit-preview.png");
@@ -135,12 +136,19 @@ async function writePreview(results) {
 }
 
 const unitDirs = await listUnitDirs();
+const selectedUnitIds = readUnitAssetSelection(process.argv.slice(2), unitDirs.map((unitDir) => path.basename(unitDir)));
+const selectedUnitDirs = selectedUnitIds
+  ? unitDirs.filter((unitDir) => selectedUnitIds.includes(path.basename(unitDir)))
+  : unitDirs;
 const results = [];
-for (const unitDir of unitDirs) {
+for (const unitDir of selectedUnitDirs) {
   results.push(await generateCardPortrait(unitDir));
 }
 
-await writePreview(results);
+// A partial redraw must not replace the shared whole-roster preview.
+if (!selectedUnitIds) {
+  await writePreview(results);
+}
 
 console.table(
   results.map(({ unitName, source, bounds, portrait }) => ({
@@ -151,4 +159,6 @@ console.table(
   })),
 );
 console.log(`Generated ${results.length} card portraits.`);
-console.log(`Preview: ${path.relative(process.cwd(), PREVIEW_PATH)}`);
+if (!selectedUnitIds) {
+  console.log(`Preview: ${path.relative(process.cwd(), PREVIEW_PATH)}`);
+}

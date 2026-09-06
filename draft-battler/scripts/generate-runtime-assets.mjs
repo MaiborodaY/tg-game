@@ -1,6 +1,7 @@
 import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { readUnitAssetSelection } from "./unit-asset-selection.mjs";
 
 const repoRoot = process.cwd();
 const sourceRoot = readPathArg("--source-root", path.join(repoRoot, "draft-battler", "assets-source"));
@@ -51,9 +52,11 @@ const profiles = {
   },
 };
 
+const availableUnitIds = await listUnitIds();
+const selectedUnitIds = readUnitAssetSelection(process.argv.slice(2), availableUnitIds);
 const jobs = [
-  ...await createUnitJobs(),
-  ...createStaticJobs(),
+  ...createUnitJobs(selectedUnitIds ?? availableUnitIds),
+  ...(selectedUnitIds ? [] : createStaticJobs()),
 ];
 const results = [];
 
@@ -67,30 +70,37 @@ for (const job of jobs) {
 }
 
 results.sort((left, right) => right.sourceBytes - left.sourceBytes || left.target.localeCompare(right.target));
-await writeReadme(results);
+// Partial generation leaves the complete asset inventory and unrelated art untouched.
+if (!selectedUnitIds) {
+  await writeReadme(results);
+}
 printSummary(results);
 
-async function createUnitJobs() {
+async function listUnitIds() {
   const unitsRoot = path.join(sourceRoot, "units");
   const entries = await readdir(unitsRoot, { withFileTypes: true });
 
   return entries
     .filter((entry) => entry.isDirectory())
-    .sort((left, right) => left.name.localeCompare(right.name))
-    .flatMap((entry) => [
+    .map((entry) => entry.name)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function createUnitJobs(unitIds) {
+  return unitIds.flatMap((unitId) => [
       {
-        source: `units/${entry.name}/unit.png`,
-        target: `units/${entry.name}/unit.webp`,
+        source: `units/${unitId}/unit.png`,
+        target: `units/${unitId}/unit.webp`,
         profile: profiles.unit,
       },
       {
-        source: `units/${entry.name}/card.png`,
-        target: `units/${entry.name}/card.webp`,
+        source: `units/${unitId}/card.png`,
+        target: `units/${unitId}/card.webp`,
         profile: profiles.card,
       },
       {
-        source: `units/${entry.name}/sprite-sheet.png`,
-        target: `units/${entry.name}/sprite-sheet.webp`,
+        source: `units/${unitId}/sprite-sheet.png`,
+        target: `units/${unitId}/sprite-sheet.webp`,
         profile: profiles.spriteSheet,
       },
     ]);
