@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>BroBattler · адаптивные карты</title>
+    <style>
+      #card-fixture { width: min(520px, 100vw); height: 100dvh; margin: auto; background: #141b13; }
+      .fixture-tools { position: absolute; inset: 4px 4px auto; z-index: 20; display: flex; flex-wrap: wrap; gap: 3px; }
+      .fixture-tools button, .fixture-tools select { min-height: 30px; padding: 3px 6px; border: 1px solid #536049; border-radius: 4px; background: #252d21; color: #eeeadd; font: 11px system-ui, sans-serif; }
+      .fixture-tools [aria-pressed="true"] { border-color: #dec482; }
+      #fixture-status { position: absolute; inset: auto 4px 4px; z-index: 20; margin: 0; max-height: 58px; overflow: auto; padding: 5px; background: #0e140dee; border: 1px solid #536049; border-radius: 4px; color: #d9e9ca; font: 10px/1.25 system-ui, sans-serif; white-space: pre-wrap; }
+      #fixture-status[data-result="fail"] { color: #ffb3a1; border-color: #b56650; }
+    </style>
+  </head>
+  <body>
+    <main id="card-fixture" class="stage stage--draft" aria-label="Локальная проверка всех карт">
+      <nav class="fixture-tools" aria-label="Проверка адаптивности">
+        <button type="button" id="screenshot-triple">Карты со скриншота</button>
+        <button type="button" id="next-triple">Следующие три</button>
+        <button type="button" id="stress" aria-pressed="false">Статус + 2 бонуса</button>
+        <select id="locale" aria-label="Язык карт"><option value="ru">RU</option><option value="uk">UK</option><option value="en">EN</option></select>
+        <button type="button" id="audit-all">Проверить все 42 карты</button>
+      </nav>
+      <div class="draft-overlay">
+        <section class="draft-panel">
+          <header class="panel-header panel-header--draft"><h1>Выберите одну карту</h1></header>
+          <div class="draft-grid draft-grid--triple" id="cards"></div>
+        </section>
+      </div>
+      <pre id="fixture-status" role="status" aria-live="polite">Загрузка…</pre>
+    </main>
+    <script type="module" src="./cards.ts"></script>
+  </body>
+</html>

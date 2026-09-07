@@ -4,8 +4,18 @@
   --draft-card-name-size: clamp(11.5px, 3.1cqw, 13px);
   --draft-card-ability-size: clamp(10px, 2.7cqw, 11.3px);
   --draft-card-footer-height: 108px;
+  --draft-card-status-height: 0px;
+  --draft-card-forecast-height: 0px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(4px, 1.35cqw, 6px);
+}
+
+.stage--draft .draft-grid--triple.draft-grid--with-status {
+  --draft-card-status-height: 16px;
+}
+
+.stage--draft .draft-grid--triple.draft-grid--with-forecast {
+  --draft-card-forecast-height: 28px;
 }
 
 .stage--draft .draft-grid--triple .unit-card {
@@ -72,12 +82,16 @@
 
 .stage--draft .draft-grid--triple .unit-card__body {
   clip-path: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 55px 14px var(--draft-card-status-height) minmax(56px, 1fr) var(--draft-card-forecast-height) var(--draft-card-footer-height);
+  gap: 2px;
+  padding: 25px 3px 4px;
 }
 
 .stage--draft .draft-grid--triple .unit-card__header {
-  top: 26px;
-  right: 3px;
-  left: 3px;
+  position: static;
+  grid-row: 1;
   height: 55px;
   gap: 2px;
 }
@@ -115,9 +129,10 @@
 }
 
 .stage--draft .draft-grid--triple .unit-card__tag-row {
-  top: 85px;
-  right: 2px;
-  left: 2px;
+  position: static;
+  grid-row: 2;
+  min-width: 0;
+  align-self: center;
   gap: 2px;
 }
 
@@ -133,9 +148,13 @@
 }
 
 .stage--draft .draft-grid--triple .unit-card__board-status {
-  top: 108px;
-  max-width: calc(100% - 10px);
-  padding: 3px 5px;
+  position: static;
+  grid-row: 3;
+  justify-self: center;
+  align-self: center;
+  transform: none;
+  max-width: 100%;
+  padding: 2px 4px;
   border-radius: 4px;
   font-size: 8.5px;
   font-weight: 650;
@@ -144,21 +163,32 @@
 }
 
 .stage--draft .draft-grid--triple .unit-card > .unit-card__body > .unit-card__art {
-  top: 100px;
-  right: 0;
-  bottom: calc(var(--draft-card-footer-height) + 7px);
-  left: 0;
+  position: relative;
+  inset: auto;
+  grid-row: 4;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  margin: 3px 2px;
 }
 
 .stage--draft .draft-grid--triple .unit-card__sprite {
+  /* An intrinsic image must never size a Grid track beyond the art viewport. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   object-fit: contain;
-  object-position: center bottom;
+  object-position: center;
+  filter: none;
 }
 
 .stage--draft .draft-grid--triple .unit-card__footer {
-  right: 3px;
-  bottom: 4px;
-  left: 3px;
+  position: static;
+  grid-row: 6;
+  min-width: 0;
   height: var(--draft-card-footer-height);
   grid-template-rows: 28px minmax(0, 1fr);
   gap: 3px;
@@ -210,10 +240,12 @@
 }
 
 .stage--draft .draft-grid--triple .unit-card__synergy-forecast {
-  right: 3px;
-  bottom: calc(var(--draft-card-footer-height) + 7px);
-  left: 3px;
-  padding: 3px;
+  position: static;
+  grid-row: 5;
+  align-self: center;
+  min-width: 0;
+  max-height: 100%;
+  padding: 2px;
   border-color: #5a6748;
   background: #1b2418;
   box-shadow: none;
@@ -240,6 +272,6 @@
 
 @media (max-height: 720px) {
   .stage--draft .draft-grid--triple {
-    --draft-triple-card-height: clamp(310px, calc(100dvh - var(--draft-short-top) - var(--draft-short-bottom) - 42px), 330px);
+    --draft-triple-card-height: 330px;
   }
 }

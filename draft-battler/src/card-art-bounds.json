@@ -1,0 +1,338 @@
+{
+  "banner_knight": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 61,
+    "top": 33,
+    "width": 135,
+    "height": 334
+  },
+  "battle_alchemist": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 41,
+    "top": 32,
+    "width": 175,
+    "height": 335
+  },
+  "boar_rider": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 11,
+    "top": 33,
+    "width": 234,
+    "height": 335
+  },
+  "bone_archer": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 45,
+    "top": 33,
+    "width": 166,
+    "height": 334
+  },
+  "bone_soldier": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 9,
+    "top": 32,
+    "width": 238,
+    "height": 335
+  },
+  "bronze_minotaur": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 49,
+    "width": 250,
+    "height": 318
+  },
+  "city_crossbowman": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 25,
+    "top": 33,
+    "width": 206,
+    "height": 334
+  },
+  "crypt_keeper": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 42,
+    "top": 33,
+    "width": 171,
+    "height": 334
+  },
+  "duelist": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 23,
+    "top": 32,
+    "width": 210,
+    "height": 336
+  },
+  "ember_mage": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 26,
+    "top": 33,
+    "width": 204,
+    "height": 334
+  },
+  "field_cleric": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 31,
+    "top": 33,
+    "width": 195,
+    "height": 334
+  },
+  "forest_skirmisher": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 45,
+    "top": 33,
+    "width": 167,
+    "height": 334
+  },
+  "frost_acolyte": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 32,
+    "top": 33,
+    "width": 193,
+    "height": 334
+  },
+  "frost_wraith": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 36,
+    "top": 33,
+    "width": 184,
+    "height": 334
+  },
+  "grave_bellringer": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 10,
+    "top": 32,
+    "width": 236,
+    "height": 336
+  },
+  "grave_binder": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 35,
+    "top": 33,
+    "width": 186,
+    "height": 335
+  },
+  "grave_raider": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 8,
+    "top": 33,
+    "width": 239,
+    "height": 334
+  },
+  "harpy_scout": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 10,
+    "top": 33,
+    "width": 236,
+    "height": 334
+  },
+  "headless_knight": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 22,
+    "top": 33,
+    "width": 212,
+    "height": 335
+  },
+  "iron_guard": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 19,
+    "top": 32,
+    "width": 219,
+    "height": 336
+  },
+  "ironhide_bear": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 119,
+    "width": 250,
+    "height": 248
+  },
+  "longbow_hunter": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 15,
+    "top": 33,
+    "width": 226,
+    "height": 334
+  },
+  "marsh_stalker": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 112,
+    "width": 250,
+    "height": 255
+  },
+  "moon_priestess": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 27,
+    "top": 33,
+    "width": 203,
+    "height": 334
+  },
+  "night_warden": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 41,
+    "width": 251,
+    "height": 326
+  },
+  "phantom_duelist": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 24,
+    "top": 33,
+    "width": 208,
+    "height": 334
+  },
+  "plague_rat": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 190,
+    "width": 251,
+    "height": 177
+  },
+  "pyromancer": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 26,
+    "top": 33,
+    "width": 205,
+    "height": 334
+  },
+  "rune_warden": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 61,
+    "width": 250,
+    "height": 306
+  },
+  "shieldbearer": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 9,
+    "top": 33,
+    "width": 239,
+    "height": 334
+  },
+  "siege_engineer": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 2,
+    "top": 62,
+    "width": 252,
+    "height": 305
+  },
+  "smoke_trickster": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 29,
+    "top": 32,
+    "width": 198,
+    "height": 336
+  },
+  "sneakblade": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 14,
+    "top": 33,
+    "width": 228,
+    "height": 334
+  },
+  "soul_hunter": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 31,
+    "top": 33,
+    "width": 194,
+    "height": 335
+  },
+  "spear_recruit": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 2,
+    "top": 48,
+    "width": 251,
+    "height": 320
+  },
+  "star_seer": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 43,
+    "top": 33,
+    "width": 170,
+    "height": 334
+  },
+  "stone_golem": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 4,
+    "top": 33,
+    "width": 248,
+    "height": 334
+  },
+  "thorn_druid": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 22,
+    "top": 33,
+    "width": 212,
+    "height": 334
+  },
+  "war_chaplain": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 28,
+    "top": 32,
+    "width": 200,
+    "height": 336
+  },
+  "war_mastiff": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 3,
+    "top": 110,
+    "width": 250,
+    "height": 257
+  },
+  "witch_doctor": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 36,
+    "top": 33,
+    "width": 185,
+    "height": 334
+  },
+  "wolfhound": {
+    "sourceWidth": 256,
+    "sourceHeight": 384,
+    "left": 2,
+    "top": 129,
+    "width": 252,
+    "height": 238
+  }
+}

@@ -103,6 +103,7 @@ import {
   type CardArchetype,
 } from "./cardAssetContract";
 import { getUnitAsset, getUnitCardAssetPath } from "./unitAssets";
+import { createDraftCardSilhouette } from "./draftCardArt";
 import { DRAFT_UNIT_ART_GROUND_Y, getGroundedUnitArtPlacement } from "./unitArtGrounding";
 import {
   SUPPORTED_LOCALES,
@@ -2335,6 +2336,10 @@ function createDraftGrid(): HTMLElement {
     grid.append(createDraftCard(option));
   });
 
+  // Reserve the same optional rows on all three offers so their art stays comparable.
+  grid.classList.toggle("draft-grid--with-status", Boolean(grid.querySelector(".unit-card__board-status")));
+  grid.classList.toggle("draft-grid--with-forecast", Boolean(grid.querySelector(".unit-card__synergy-forecast")));
+
   return grid;
 }
 
@@ -2362,10 +2367,11 @@ function createDraftCard(option: DraftOption): HTMLButtonElement {
   setFocusKey(button, `draft-card-${option.cardId}`);
   button.setAttribute("aria-pressed", String(uiState.selectedDraftCardId === option.cardId));
 
-  button.append(createCardFrame(), createCardArchetypeBadge(meta), createCardBody(card, meta, option));
+  const body = createCardBody(card, meta, option);
   if (boardStatus) {
-    button.append(createDraftCardBoardStatus(boardStatus, localizedCard.name));
+    body.append(createDraftCardBoardStatus(boardStatus, localizedCard.name));
   }
+  button.append(createCardFrame(), createCardArchetypeBadge(meta), body);
   button.append(createCardDragHandle());
 
   button.addEventListener("click", () => handleDraftCardClick(option.cardId));
@@ -3148,7 +3154,7 @@ function createCardBody(card: CardDefinition, meta: CardDisplayMeta, option?: Dr
   footer.append(createCardStats(card), createCardAbility(card));
 
   body.append(
-    createCardArt(card, meta),
+    createCardArt(card, meta, "silhouette"),
     createCardHeader(card, meta),
     createCardTagRow(card),
     footer,
@@ -3292,13 +3298,15 @@ function createCardMetaRow(meta: CardDisplayMeta): HTMLElement {
   return row;
 }
 
-function createCardArt(card: CardDefinition, meta: CardDisplayMeta): HTMLElement {
+function createCardArt(card: CardDefinition, meta: CardDisplayMeta, framing: "portrait" | "silhouette" = "portrait"): HTMLElement {
   const localizedName = getLocalizedCard(activeLocale, card).name;
   const art = document.createElement("div");
   art.className = `unit-card__art unit-card__art--${meta.archetype} unit-card__art--${meta.rarity}`;
 
   const assetPath = getUnitCardAssetPath(card.id) ?? getUnitAssetPath(card.id);
-  if (assetPath) {
+  if (assetPath && framing === "silhouette") {
+    art.append(createDraftCardSilhouette(card.id, localizedName, assetPath));
+  } else if (assetPath) {
     const sprite = document.createElement("img");
     sprite.className = "unit-card__sprite";
     sprite.alt = localizedName;

@@ -10,6 +10,7 @@ import * as castleAssault from "../src/rendering/castleAssaultPresentation.ts";
 import * as fieldLayout from "../src/fieldLayout.ts";
 import * as battleLayout from "../src/rendering/battlePresentationLayout.ts";
 import * as battleUnitHud from "../src/rendering/battleUnitHud.ts";
+import * as backdropLayout from "../src/rendering/backdropLayout.ts";
 import { UnitMotionState } from "../src/rendering/unitMotionState.ts";
 import { UnitPoseState } from "../src/rendering/unitPoseState.ts";
 
@@ -45,7 +46,7 @@ const context = {
     Scenes: { Events: { SHUTDOWN: "shutdown" } },
     Scale: { Events: { RESIZE: "resize" } },
   },
-  ...game, ...grounding, ...playback, ...armor, ...castleAssault, ...fieldLayout, ...battleLayout, ...battleUnitHud,
+  ...game, ...grounding, ...playback, ...armor, ...castleAssault, ...fieldLayout, ...battleLayout, ...battleUnitHud, ...backdropLayout,
   UnitMotionState, UnitPoseState,
 };
 vm.runInNewContext(compiled, context, { filename: "phaserBattleScene.headless.cjs" });

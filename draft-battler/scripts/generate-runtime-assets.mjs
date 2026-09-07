@@ -1,7 +1,9 @@
 import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { readUnitAssetSelection } from "./unit-asset-selection.mjs";
+import { collectCardArtBounds, serializeCardArtBounds } from "./generate-card-art-bounds.mjs";
 
 const repoRoot = process.cwd();
 const sourceRoot = readPathArg("--source-root", path.join(repoRoot, "draft-battler", "assets-source"));
@@ -73,6 +75,12 @@ results.sort((left, right) => right.sourceBytes - left.sourceBytes || left.targe
 // Partial generation leaves the complete asset inventory and unrelated art untouched.
 if (!selectedUnitIds) {
   await writeReadme(results);
+}
+// Keep draft framing in sync after full or partial redraws. Custom output roots
+// are isolated asset experiments and must not change the application's metadata.
+if (outputRoot === fileURLToPath(new URL("../src/assets", import.meta.url))) {
+  const bounds = await collectCardArtBounds(path.join(outputRoot, "units"));
+  await writeFile(path.join(outputRoot, "..", "card-art-bounds.json"), serializeCardArtBounds(bounds));
 }
 printSummary(results);
 

@@ -15,7 +15,7 @@ test("the draft-card redesign only affects the three live offers, not collection
   assert.ok(rules.length > 0);
   for (const rule of rules) {
     for (const selector of rule.selectors) {
-      assert.ok(selector === scope || selector.startsWith(`${scope} `), `Unscoped draft presentation: ${selector}`);
+      assert.ok(selector === scope || selector.startsWith(`${scope} `) || selector.startsWith(`${scope}.draft-grid--`), `Unscoped draft presentation: ${selector}`);
       assert.doesNotMatch(selector, /compendium|card-info|main-menu|field-slot|:root/);
     }
   }
@@ -72,17 +72,49 @@ test("name and ability typography have readable minimums with sufficient allocat
   }
 });
 
-test("illustrations remain grounded and footer badges share the footer's actual boundary", () => {
+test("art has its own bounded viewport and badges cannot cover the silhouette", () => {
+  const body = declarationsFor(`${scope} .unit-card__body`);
   const art = declarationsFor(`${scope} .unit-card > .unit-card__body > .unit-card__art`);
   const sprite = declarationsFor(`${scope} .unit-card__sprite`);
   const forecast = declarationsFor(`${scope} .unit-card__synergy-forecast`);
+  const status = declarationsFor(`${scope} .unit-card__board-status`);
+  const footer = declarationsFor(`${scope} .unit-card__footer`);
   assert.equal(sprite.get("object-fit"), "contain");
-  assert.equal(sprite.get("object-position"), "center bottom");
-  assert.equal(art.get("bottom"), "calc(var(--draft-card-footer-height) + 7px)");
-  assert.equal(forecast.get("bottom"), art.get("bottom"));
+  assert.equal(sprite.get("object-position"), "center");
+  assert.equal(sprite.get("position"), "absolute");
+  assert.equal(sprite.get("inset"), "0");
+  assert.equal(sprite.get("width"), "100%");
+  assert.equal(sprite.get("height"), "100%");
+  assert.equal(sprite.get("min-height"), "0");
+  assert.equal(art.get("display"), "block", "No intrinsic Grid row may grow behind the footer");
+  assert.equal(art.get("position"), "relative");
+  assert.equal(art.get("inset"), "auto");
+  assert.equal(body.get("display"), "grid");
+  assert.match(body.get("grid-template-rows"), /minmax\(56px, 1fr\)/);
+  assert.equal(status.get("grid-row"), "3");
+  assert.equal(art.get("grid-row"), "4");
+  assert.equal(forecast.get("grid-row"), "5");
+  assert.equal(footer.get("grid-row"), "6");
+  assert.equal(status.get("position"), "static");
+  assert.equal(forecast.get("position"), "static");
+  assert.equal(footer.get("position"), "static");
   assert.equal(declarationsFor(`${scope} .unit-card__ability-icon`).get("display"), "none",
     "Redundant ability decoration must not steal a text column on narrow cards");
   assert.equal(declarationsFor(`${scope} .unit-card__stat-value`).get("font-size"), "13px");
+});
+
+test("the shortest card can hold both badge rows and a nonzero full-silhouette area", () => {
+  const body = declarationsFor(`${scope} .unit-card__body`);
+  const header = declarationsFor(`${scope} .unit-card__header`);
+  const footer = declarationsFor(scope).get("--draft-card-footer-height");
+  const status = declarationsFor(`${scope}.draft-grid--with-status`).get("--draft-card-status-height");
+  const forecast = declarationsFor(`${scope}.draft-grid--with-forecast`).get("--draft-card-forecast-height");
+  const padding = body.get("padding").split(" ").map(parseFloat);
+  const occupied = 12 + padding[0] + padding[2] + parseFloat(header.get("height")) + 14 +
+    parseFloat(status) + parseFloat(forecast) + parseFloat(footer) + 5 * parseFloat(body.get("gap"));
+  assert.ok(330 - occupied >= 56, "Image space must not depend on hiding a status or ability");
+  assert.match(mainSource, /body\.append\(createDraftCardBoardStatus/);
+  assert.match(mainSource, /grid\.classList\.toggle\("draft-grid--with-forecast"/);
 });
 
 test("common rarity stays accessible while uncommon and rare labels remain visible", () => {

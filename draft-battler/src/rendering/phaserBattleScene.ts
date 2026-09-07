@@ -49,6 +49,7 @@ import {
 } from "./battlePlayback";
 import { applyArmorDelta } from "./armorPresentation";
 import { createUnitCombatFeedback, getUnitVitals, UNIT_VITALS_BAR_HEIGHT, UNIT_VITALS_WIDTH } from "./battleUnitHud";
+import { getBackdropCoverSize } from "./backdropLayout";
 import {
   createBattleAbilityCalloutPlan,
   type BattleAbilityCallout,
@@ -99,7 +100,6 @@ const BATTLEFIELD_SIDE_PROPS_ASSET_URL = new URL(
   "../assets/environment/battlefield/common_forest/side_props.webp",
   import.meta.url,
 ).href;
-const BATTLEFIELD_BASE_OVERSCAN_Y = 36;
 const BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y = 54;
 const BATTLEFIELD_SIDE_PROPS_ALPHA = 0.56;
 const USE_DOM_BATTLEFIELD_ENVIRONMENT = false;
@@ -249,6 +249,7 @@ class CastleBattleScene extends Phaser.Scene {
   private readonly floatTextPool: Phaser.GameObjects.Text[] = [];
   private readonly glowPool: Phaser.GameObjects.Ellipse[] = [];
   private presentationLayer?: Phaser.GameObjects.Container;
+  private viewportBackdrop?: Phaser.GameObjects.Image;
   private command: SceneCommand = {
     type: "draft",
     playerCastleHp: CASTLE_MAX_HP,
@@ -328,12 +329,15 @@ class CastleBattleScene extends Phaser.Scene {
       this.floatTextPool.length = 0;
       this.glowPool.length = 0;
       this.presentationLayer = undefined;
+      this.viewportBackdrop = undefined;
     });
 
     this.applyCommand(this.command);
   }
 
   private refreshDraftAfterResize(): void {
+    // The background follows Telegram's viewport even while the same battle keeps playing.
+    this.refreshBackdropSize();
     if (!this.ready || this.destroyed || this.command.type !== "draft" || this.activeBattle) return;
     const { width, height } = this.scale;
     if (width <= 0 || height <= 0 || (this.layout?.width === width && this.layout?.height === height)) return;
@@ -473,6 +477,7 @@ class CastleBattleScene extends Phaser.Scene {
     this.presentationAbortController = new AbortController();
     [...this.children.list].forEach((child) => child.destroy());
     this.presentationLayer = undefined;
+    this.viewportBackdrop = undefined;
     this.unitViews.clear();
     this.castleViews.clear();
     this.strikePool.length = 0;
@@ -496,7 +501,8 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private wrapSceneInPresentationLayer(): void {
-    const children = [...this.children.list];
+    // Camera zoom belongs to the actors, never to the screen-filling background.
+    const children = this.children.list.filter((child) => child !== this.viewportBackdrop);
     const layer = this.add.container(0, 0);
 
     if (children.length > 0) {
@@ -577,18 +583,17 @@ class CastleBattleScene extends Phaser.Scene {
     const backgroundPad = 260;
 
     const hasBattlefieldBase = this.textures.exists(BATTLEFIELD_BASE_TEXTURE_KEY);
-    const baseSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_BASE_OVERSCAN_Y);
     const sidePropsSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y);
 
     if (hasBattlefieldBase) {
       // Keep the original menu art; the quieter lane is used only in a match.
       const useGameBackdrop = !(this.command.type === "draft" && this.command.backdrop === "menu") &&
         this.textures.exists(BATTLEFIELD_GAME_TEXTURE_KEY);
-      this.add
+      this.viewportBackdrop = this.add
         .image(width / 2, height / 2, useGameBackdrop ? BATTLEFIELD_GAME_TEXTURE_KEY : BATTLEFIELD_BASE_TEXTURE_KEY)
         .setDepth(-120)
-        .setScrollFactor(1)
-        .setDisplaySize(baseSize.width, baseSize.height);
+        .setScrollFactor(0);
+      this.refreshBackdropSize();
 
       if (ENABLE_BATTLEFIELD_SIDE_PROPS && this.textures.exists(BATTLEFIELD_SIDE_PROPS_TEXTURE_KEY)) {
         this.add
@@ -621,6 +626,14 @@ class CastleBattleScene extends Phaser.Scene {
 
     const sideProps = this.add.graphics().setDepth(-55).setScrollFactor(0.62);
     drawSideProps(sideProps, this.layout);
+  }
+
+  private refreshBackdropSize(): void {
+    const image = this.viewportBackdrop;
+    const { width, height } = this.scale;
+    if (!image || this.destroyed || width <= 0 || height <= 0) return;
+    const size = getBackdropCoverSize(width, height, image.width, image.height);
+    image.setPosition(width / 2, height / 2).setDisplaySize(size.width, size.height);
   }
 
   private drawGroundTexture(field: Phaser.GameObjects.Graphics): void {
