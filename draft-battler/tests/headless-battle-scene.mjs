@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { EventEmitter } from "node:events";
 import vm from "node:vm";
 import ts from "typescript";
 import * as game from "../src/game/index.ts";
@@ -8,6 +9,7 @@ import * as armor from "../src/rendering/armorPresentation.ts";
 import * as castleAssault from "../src/rendering/castleAssaultPresentation.ts";
 import * as fieldLayout from "../src/fieldLayout.ts";
 import * as battleLayout from "../src/rendering/battlePresentationLayout.ts";
+import * as battleUnitHud from "../src/rendering/battleUnitHud.ts";
 import { UnitMotionState } from "../src/rendering/unitMotionState.ts";
 import { UnitPoseState } from "../src/rendering/unitPoseState.ts";
 
@@ -22,8 +24,28 @@ const compiled = ts.transpileModule(
 ).outputText;
 const context = {
   exports: {}, URL, AbortController: globalThis.AbortController,
-  Phaser: { Scene: class {}, Scenes: { Events: { SHUTDOWN: "shutdown" } } },
-  ...game, ...grounding, ...playback, ...armor, ...castleAssault, ...fieldLayout, ...battleLayout,
+  Phaser: {
+    Scene: class {
+      constructor() {
+        const emitter = new EventEmitter();
+        const boundListeners = new Map();
+        this.scale = {
+          width: 390, height: 720,
+          on(event, listener, receiver) {
+            const bound = listener.bind(receiver);
+            boundListeners.set(listener, bound);
+            emitter.on(event, bound);
+          },
+          off(event, listener) { emitter.off(event, boundListeners.get(listener)); boundListeners.delete(listener); },
+          emit: (...args) => emitter.emit(...args),
+          listenerCount: (event) => emitter.listenerCount(event),
+        };
+      }
+    },
+    Scenes: { Events: { SHUTDOWN: "shutdown" } },
+    Scale: { Events: { RESIZE: "resize" } },
+  },
+  ...game, ...grounding, ...playback, ...armor, ...castleAssault, ...fieldLayout, ...battleLayout, ...battleUnitHud,
   UnitMotionState, UnitPoseState,
 };
 vm.runInNewContext(compiled, context, { filename: "phaserBattleScene.headless.cjs" });

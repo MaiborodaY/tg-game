@@ -106,6 +106,24 @@ test("card details align content at the top without stretching tag rows", () => 
   assert.ok(["start", "flex-start"].includes(tags.get("align-items")));
 });
 
+test("short phones reserve a separate bottom action area while reclaiming room for cards", () => {
+  const bar = declarationsFor((selector) => selector.endsWith(".field-action-bar"));
+  const overlay = declarationsFor((selector) => selector.endsWith(".draft-overlay"));
+  assert.equal(bar.get("bottom"), "calc(var(--safe-bottom) + 10px)");
+  assert.match(overlay.get("--draft-short-bottom") ?? "", /64px/);
+  const shortRules = [];
+  theme.walkAtRules("media", (media) => {
+    if (media.params === "(max-height: 600px)") media.walkRules((rule) => shortRules.push(...rule.selectors));
+  });
+  assert.ok(shortRules.includes(":where(.stage--draft) .field-action-bar"));
+  assert.ok(shortRules.includes(":where(.stage--draft) .draft-overlay"));
+});
+
+test("a collapsed draft header does not create a rounding-only scrollbar", () => {
+  const panel = declarationsFor((selector) => selector.endsWith(".draft-panel--collapsed"));
+  assert.equal(panel.get("overflow"), "visible");
+});
+
 function declarationsFor(matches) {
   const result = new Map();
   for (const rule of rules) {

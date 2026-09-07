@@ -29,6 +29,8 @@ import {
   BATTLE_CAMERA_CLOSE_ZOOM,
   BATTLE_CAMERA_ZOOM,
   fitStaticUnitArtSize,
+  getBattleCameraFrame,
+  getBattleFormationPosition,
   getUnitPresentationScale,
 } from "./battlePresentationLayout";
 import {
@@ -45,7 +47,8 @@ import {
   type BattlePlaybackSpeed,
   type FinalBattlePresentation,
 } from "./battlePlayback";
-import { applyArmorDelta, formatArmorBadge, formatDamageFeedback } from "./armorPresentation";
+import { applyArmorDelta } from "./armorPresentation";
+import { createUnitCombatFeedback, getUnitVitals, UNIT_VITALS_BAR_HEIGHT, UNIT_VITALS_WIDTH } from "./battleUnitHud";
 import {
   createBattleAbilityCalloutPlan,
   type BattleAbilityCallout,
@@ -54,7 +57,6 @@ import {
 
 const GAME_WIDTH = 390;
 const GAME_HEIGHT = 720;
-const UNIT_HP_BAR_WIDTH = 42;
 const CASTLE_HP_BAR_WIDTH = 132;
 const CASTLE_MAX_HP = PLAYER_STARTING_HP;
 const UNIT_SPRITE_DISPLAY_WIDTH = 56;
@@ -68,7 +70,6 @@ const UNIT_HP_WIDTH_EPSILON = 0.25;
 const BATTLE_PRESENTATION_TIME_SCALE = 2;
 const COMBAT_TICK_DURATION_MS = 30;
 const COMBAT_STEP_RESULT_DELAY_MS = 110;
-const COMBAT_STEP_FLOAT_TEXT_LIMIT = 1;
 const BATTLE_CASTLE_CAMERA_ZOOM = 1.28;
 const ENEMY_CASTLE_APPROACH_CAMERA_ZOOM = 1.14;
 const PLAYER_KEEP_TEXTURE_KEY = "environment:player-keep";
@@ -86,6 +87,11 @@ const PLAYER_PROCEDURAL_CASTLE_HP_LABEL_Y = -70;
 const BATTLEFIELD_BASE_TEXTURE_KEY = "environment:battlefield:common-forest:base";
 const BATTLEFIELD_BASE_ASSET_URL = new URL(
   "../assets/environment/battlefield/common_forest/battlefield_base.webp",
+  import.meta.url,
+).href;
+const BATTLEFIELD_GAME_TEXTURE_KEY = "environment:battlefield:common-forest:diorama";
+const BATTLEFIELD_GAME_ASSET_URL = new URL(
+  "../assets/environment/battlefield/common_forest/battlefield_diorama.webp",
   import.meta.url,
 ).href;
 const BATTLEFIELD_SIDE_PROPS_TEXTURE_KEY = "environment:battlefield:common-forest:side-props";
@@ -118,10 +124,11 @@ export type BattleAbilityCalloutLabels = Readonly<Record<BattleAbilityCalloutSou
 export interface ShowDraftInput {
   playerCastleHp: number;
   enemyCastleHp: number;
+  backdrop?: "menu" | "game";
 }
 
 type SceneCommand =
-  | { type: "draft"; playerCastleHp: number; enemyCastleHp: number }
+  | { type: "draft"; playerCastleHp: number; enemyCastleHp: number; backdrop?: "menu" | "game" }
   | {
       type: "battle";
       timeline: BattleTimeline;
@@ -151,6 +158,7 @@ interface ActiveBattlePlayback {
 interface UnitView {
   unit: BattleTimelineUnit;
   container: Phaser.GameObjects.Container;
+  vitals: Phaser.GameObjects.Container;
   hpFill: Phaser.GameObjects.Rectangle;
   hpLabel: Phaser.GameObjects.Text;
   armorLabel: Phaser.GameObjects.Text;
@@ -286,6 +294,7 @@ class CastleBattleScene extends Phaser.Scene {
     }
     if (!USE_DOM_BATTLEFIELD_ENVIRONMENT) {
       this.load.image(BATTLEFIELD_BASE_TEXTURE_KEY, BATTLEFIELD_BASE_ASSET_URL);
+      this.load.image(BATTLEFIELD_GAME_TEXTURE_KEY, BATTLEFIELD_GAME_ASSET_URL);
     }
     getUnitAssets().forEach((asset) => {
       if (asset.spriteSheet) {
@@ -305,7 +314,9 @@ class CastleBattleScene extends Phaser.Scene {
   create(): void {
     this.ready = true;
     this.destroyed = false;
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.refreshDraftAfterResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.refreshDraftAfterResize, this);
       this.destroyed = true;
       this.ready = false;
       this.cancelActiveBattle();
@@ -322,11 +333,20 @@ class CastleBattleScene extends Phaser.Scene {
     this.applyCommand(this.command);
   }
 
+  private refreshDraftAfterResize(): void {
+    if (!this.ready || this.destroyed || this.command.type !== "draft" || this.activeBattle) return;
+    const { width, height } = this.scale;
+    if (width <= 0 || height <= 0 || (this.layout?.width === width && this.layout?.height === height)) return;
+    // A resize redraws only the current draft presentation; never restart or skip an active timeline.
+    this.applyCommand(this.command);
+  }
+
   showDraft(input: ShowDraftInput): void {
     this.setCommand({
       type: "draft",
       playerCastleHp: input.playerCastleHp,
       enemyCastleHp: input.enemyCastleHp,
+      backdrop: input.backdrop,
     });
   }
 
@@ -561,8 +581,11 @@ class CastleBattleScene extends Phaser.Scene {
     const sidePropsSize = getBackdropDisplaySize(this.layout, BATTLEFIELD_SIDE_PROPS_OVERSCAN_Y);
 
     if (hasBattlefieldBase) {
+      // Keep the original menu art; the quieter lane is used only in a match.
+      const useGameBackdrop = !(this.command.type === "draft" && this.command.backdrop === "menu") &&
+        this.textures.exists(BATTLEFIELD_GAME_TEXTURE_KEY);
       this.add
-        .image(width / 2, height / 2, BATTLEFIELD_BASE_TEXTURE_KEY)
+        .image(width / 2, height / 2, useGameBackdrop ? BATTLEFIELD_GAME_TEXTURE_KEY : BATTLEFIELD_BASE_TEXTURE_KEY)
         .setDepth(-120)
         .setScrollFactor(1)
         .setDisplaySize(baseSize.width, baseSize.height);
@@ -749,33 +772,34 @@ class CastleBattleScene extends Phaser.Scene {
           })
           .setOrigin(0.5)
       : undefined;
-    const hpBack = this.add.rectangle(-UNIT_HP_BAR_WIDTH / 2, 31, UNIT_HP_BAR_WIDTH, 6, 0x3b1f1b, 0.92).setOrigin(0, 0.5);
-    const hpFill = this.add.rectangle(-UNIT_HP_BAR_WIDTH / 2, 31, UNIT_HP_BAR_WIDTH, 6, 0x79c77a, 1).setOrigin(0, 0.5);
+    const vitalsBack = this.add.rectangle(0, 36, 68, 19, 0x10150f, 0.9).setStrokeStyle(1, sideDarkColor, 0.95);
+    const hpBack = this.add.rectangle(-UNIT_VITALS_WIDTH / 2, 30, UNIT_VITALS_WIDTH, UNIT_VITALS_BAR_HEIGHT, 0x3b1f1b, 1).setOrigin(0, 0.5);
+    const hpFill = this.add.rectangle(-UNIT_VITALS_WIDTH / 2, 30, UNIT_VITALS_WIDTH, UNIT_VITALS_BAR_HEIGHT, sideColor, 1).setOrigin(0, 0.5);
     const hpLabel = this.add
-      .text(0, 41, `${unit.startHp}/${unit.maxHp}`, {
+      .text(0, 40, `${unit.startHp}/${unit.maxHp}`, {
         color: "#f3f0dd",
         fontFamily: "Arial",
         fontSize: "10px",
+        fontStyle: "bold",
       })
       .setOrigin(0.5);
     const armorLabel = this.add
-      .text(-22, -49, "", {
+      .text(23, 40, "", {
         color: "#d8ecff",
-        backgroundColor: "#18354d",
         fontFamily: "Arial",
         fontSize: "9px",
         fontStyle: "bold",
         stroke: "#08131d",
         strokeThickness: 2,
       })
-      .setPadding(3, 1, 3, 1)
       .setOrigin(0.5)
       .setVisible(false);
     objects.push(contactShadow, ...unitArt.objects);
     if (upgradeBadge) {
       objects.push(upgradeBadge);
     }
-    objects.push(hpBack, hpFill, hpLabel, armorLabel);
+    const vitals = this.add.container(0, 0).add([vitalsBack, hpBack, hpFill, hpLabel, armorLabel]);
+    objects.push(vitals);
     container.add(objects);
 
     if (unit.summonedBy) {
@@ -788,6 +812,7 @@ class CastleBattleScene extends Phaser.Scene {
     const view: UnitView = {
       unit,
       container,
+      vitals,
       hpFill,
       hpLabel,
       armorLabel,
@@ -997,12 +1022,7 @@ class CastleBattleScene extends Phaser.Scene {
       }
       this.updateUnitHp(view, event.remainingHp);
       this.emitBattleAbilityCallouts([event]);
-      this.floatText(
-        view.container.x,
-        view.container.y - 54,
-        formatDamageFeedback(event.amount, event.shieldAbsorbed),
-        event.amount > 0 ? "#da6b58" : "#86a8ff",
-      );
+      this.emitUnitCombatFeedback([event]);
       await this.flash(view.container, event.amount > 0 ? 0xda6b58 : 0x86a8ff);
       return;
     }
@@ -1025,7 +1045,7 @@ class CastleBattleScene extends Phaser.Scene {
       }
 
       this.updateUnitHp(view, event.remainingHp);
-      this.floatText(view.container.x, view.container.y - 54, `+${event.amount}`, "#79c77a");
+      this.emitUnitCombatFeedback([event]);
       await this.flash(view.container, 0x79c77a);
       return;
     }
@@ -1162,21 +1182,10 @@ class CastleBattleScene extends Phaser.Scene {
 
     const deathEvents = resultEvents.filter((event) => event.type === "unit_die");
     const visibleResultEvents = resultEvents.filter((event) => event.type !== "unit_die");
-    const textLimit = COMBAT_STEP_FLOAT_TEXT_LIMIT;
-    let emittedTextCount = 0;
     const armorFeedbackTasks: Promise<void>[] = [];
     const healedViews = new Set<UnitView>();
 
     this.emitBattleAbilityCallouts(visibleResultEvents);
-
-    const emitText = (view: UnitView, label: string, color: string) => {
-      if (emittedTextCount >= textLimit) {
-        return;
-      }
-
-      this.floatText(view.container.x, view.container.y - 54, label, color);
-      emittedTextCount += 1;
-    };
 
     visibleResultEvents.forEach((event) => {
       if (event.type === "unit_buff") {
@@ -1188,14 +1197,6 @@ class CastleBattleScene extends Phaser.Scene {
         return;
       }
 
-      if (event.type === "unit_block") {
-        const view = this.unitViews.get(event.unitId);
-        if (view) {
-          emitText(view, this.blockLabel, "#86a8ff");
-        }
-        return;
-      }
-
       if (event.type === "unit_damage") {
         const view = this.unitViews.get(event.unitId);
         if (view) {
@@ -1203,11 +1204,6 @@ class CastleBattleScene extends Phaser.Scene {
             this.updateUnitArmor(view, applyArmorDelta(view.armor, -event.shieldAbsorbed));
           }
           this.updateUnitHp(view, event.remainingHp);
-          emitText(
-            view,
-            formatDamageFeedback(event.amount, event.shieldAbsorbed),
-            event.amount > 0 ? "#da6b58" : "#86a8ff",
-          );
         }
         return;
       }
@@ -1216,12 +1212,12 @@ class CastleBattleScene extends Phaser.Scene {
         const view = this.unitViews.get(event.unitId);
         if (view) {
           this.updateUnitHp(view, event.remainingHp);
-          emitText(view, `+${event.amount}`, "#79c77a");
           if (event.amount > 0) healedViews.add(view);
         }
       }
     });
 
+    this.emitUnitCombatFeedback(visibleResultEvents);
     await Promise.all([
       ...armorFeedbackTasks,
       // A group heal shares one casting pose, but every recipient needs visible feedback.
@@ -1232,7 +1228,7 @@ class CastleBattleScene extends Phaser.Scene {
 
   private emitBattleAbilityCallouts(events: readonly CombatStepEvent[]): void {
     const timelineUnits = this.activeBattle?.timeline.units ?? [];
-    const callouts = createBattleAbilityCalloutPlan(events, timelineUnits);
+    const callouts = createBattleAbilityCalloutPlan(events, timelineUnits, 1);
 
     for (const callout of callouts) {
       const view = this.unitViews.get(callout.anchorUnitId) ?? this.unitViews.get(callout.unitId);
@@ -1242,7 +1238,17 @@ class CastleBattleScene extends Phaser.Scene {
 
       const labelTemplate = this.abilityCalloutLabels[callout.source];
       const label = labelTemplate.replace("{amount}", String(callout.amount ?? ""));
-      this.floatText(view.container.x, view.container.y - 72, label, getAbilityCalloutColor(callout), 0.9);
+      this.floatText(view.container.x, view.container.y - 76, label, getAbilityCalloutColor(callout), 0.8);
+    }
+  }
+
+  private emitUnitCombatFeedback(events: readonly CombatStepEvent[]): void {
+    const units = [...this.unitViews.values()].map((view) => view.unit);
+    for (const feedback of createUnitCombatFeedback(events, units, this.blockLabel)) {
+      const view = this.unitViews.get(feedback.unitId);
+      if (!view || !this.isCurrentUnit(view)) continue;
+      const color = feedback.tone === "damage" ? "#f4b097" : feedback.tone === "heal" ? "#b7efaa" : "#c1e2ff";
+      this.floatText(view.container.x, view.container.y - 54, feedback.label, color, 0.9);
     }
   }
 
@@ -1767,7 +1773,17 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private focusCameraOnPoint(x: number, y: number, duration: number, zoom: number): void {
-    const focus = getCameraFocusPoint(this.layout, x, y, zoom);
+    // Hold the complete formation during hits, blocks and buffs; only phase changes move the camera.
+    if (zoom === BATTLE_CAMERA_CLOSE_ZOOM) return;
+    const fittedFormation = zoom === BATTLE_CAMERA_ZOOM;
+    if (fittedFormation) {
+      const frame = getBattleCameraFrame(this.layout);
+      x = frame.x;
+      y = frame.y;
+      zoom = frame.zoom;
+    }
+    // The fitted frame already owns safe margins; legacy point clamps displace it at zoom < 1.
+    const focus = fittedFormation ? { x, y } : getCameraFocusPoint(this.layout, x, y, zoom);
     const target = getPresentationCameraLayerTransform(this.layout, focus.x, focus.y, zoom);
     const scaledDuration = scaleBattleDuration(duration);
     const layer = this.presentationLayer;
@@ -1799,12 +1815,14 @@ class CastleBattleScene extends Phaser.Scene {
 
   private updateUnitHp(view: UnitView, hp: number): void {
     if (!this.isCurrentUnit(view)) return;
-    const ratio = view.unit.maxHp > 0 ? clamp(hp / view.unit.maxHp, 0, 1) : 0;
-    const fillWidth = Math.max(1, UNIT_HP_BAR_WIDTH * ratio);
-    const hpLabelText = `${Math.max(0, hp)}/${view.unit.maxHp}`;
+    const vitals = getUnitVitals(hp, view.unit.maxHp, view.armor);
+    const fillWidth = Math.max(1, UNIT_VITALS_WIDTH * vitals.ratio);
+    const hpLabelText = vitals.hpLabel;
+    view.vitals.setVisible(vitals.alive);
+    view.hpFill.setVisible(vitals.alive);
 
     if (view.hpFillWidth === undefined || Math.abs(view.hpFillWidth - fillWidth) >= UNIT_HP_WIDTH_EPSILON) {
-      view.hpFill.setDisplaySize(fillWidth, 6);
+      view.hpFill.setDisplaySize(fillWidth, UNIT_VITALS_BAR_HEIGHT);
       view.hpFillWidth = fillWidth;
     }
 
@@ -1816,12 +1834,12 @@ class CastleBattleScene extends Phaser.Scene {
 
   private updateUnitArmor(view: UnitView, armor: number): void {
     if (!this.isCurrentUnit(view)) return;
-    const normalizedArmor = Math.max(0, Math.trunc(armor));
-    const armorLabelText = formatArmorBadge(normalizedArmor);
+    const { armor: normalizedArmor, armorLabel: armorLabelText } = getUnitVitals(0, view.unit.maxHp, armor);
     view.armor = normalizedArmor;
 
     if (view.armorLabelText !== armorLabelText) {
       view.armorLabel.setText(armorLabelText).setVisible(normalizedArmor > 0);
+      view.hpLabel.setX(normalizedArmor > 0 ? -10 : 0);
       view.armorLabelText = armorLabelText;
     }
   }
@@ -1856,9 +1874,9 @@ class CastleBattleScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: text,
-      y: y - 22,
+      y: y - 14,
       alpha: 0,
-      duration: scaleBattleDuration(520),
+      duration: scaleBattleDuration(380),
       ease: "Sine.easeOut",
       onComplete: () => { if (!signal.aborted && !this.destroyed) this.releaseFloatText(text); },
     });
@@ -1966,13 +1984,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private getClashPosition(owner: Owner, slotIndex: number): { x: number; y: number } {
-    const row = getFieldSlotRow(slotIndex);
-    const y = this.layout.clashRowsY[owner][row] ?? this.layout.clashRowsY[owner][0];
-
-    return {
-      x: getLaneX(this.layout, getFieldSlotColumn(slotIndex), y),
-      y,
-    };
+    return getBattleFormationPosition(this.layout, owner, slotIndex);
   }
 
   private getCastleApproachPosition(owner: Owner, slotIndex: number): { x: number; y: number } {

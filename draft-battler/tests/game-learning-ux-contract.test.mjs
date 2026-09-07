@@ -67,7 +67,7 @@ test("battle renderer receives localized ability callouts without changing comba
   ]) {
     assert.match(mainSource, new RegExp(`copy\\.${key}\\b`), `main.ts uses ${key}`);
   }
-  assert.match(rendererSource, /createBattleAbilityCalloutPlan\(events, timelineUnits\)/);
+  assert.match(rendererSource, /createBattleAbilityCalloutPlan\(events, timelineUnits, 1\)/);
   assert.match(rendererSource, /this\.emitBattleAbilityCallouts\(visibleResultEvents\)/);
 });
 

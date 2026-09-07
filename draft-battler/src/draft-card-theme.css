@@ -1,0 +1,245 @@
+/* Three comparable offers, with the illustration and decision text taking
+   precedence over the frame. Detail panels and the collection keep their art. */
+.stage--draft .draft-grid--triple {
+  --draft-card-name-size: clamp(11.5px, 3.1cqw, 13px);
+  --draft-card-ability-size: clamp(10px, 2.7cqw, 11.3px);
+  --draft-card-footer-height: 108px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(4px, 1.35cqw, 6px);
+}
+
+.stage--draft .draft-grid--triple .unit-card {
+  --draft-card-edge: #84734e;
+  --draft-card-inlay: rgba(190, 172, 123, 0.16);
+  --unit-card-body-inset-top: 6px;
+  --unit-card-body-inset-x: 4px;
+  --unit-card-body-inset-bottom: 6px;
+  touch-action: pan-y;
+}
+
+.stage--draft .draft-grid--triple .unit-card--uncommon {
+  --draft-card-edge: #638465;
+  --draft-card-inlay: rgba(153, 196, 153, 0.17);
+}
+
+.stage--draft .draft-grid--triple .unit-card--rare {
+  --draft-card-edge: #647ea0;
+  --draft-card-inlay: rgba(153, 185, 227, 0.18);
+}
+
+/* A thin double inlay replaces the bulky baked frame; the existing metal
+   medallion retains the fantasy silhouette without competing with the name. */
+.stage--draft .draft-grid--triple .unit-card::before {
+  inset: 12px 0 0;
+  border: 1px solid var(--draft-card-edge);
+  border-radius: 9px 9px 7px 7px;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(143, 127, 82, 0.12), transparent 62%),
+    linear-gradient(180deg, #20231b, #121710 42%, #11160f);
+  filter: none;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.34);
+}
+
+.stage--draft .draft-grid--triple .unit-card::after {
+  content: "";
+  position: absolute;
+  inset: 16px 4px 4px;
+  z-index: 1;
+  border: 1px solid var(--draft-card-inlay);
+  border-radius: 6px 6px 4px 4px;
+  background:
+    linear-gradient(135deg, var(--draft-card-edge) 0 1px, transparent 2px) top left / 10px 10px,
+    linear-gradient(225deg, var(--draft-card-edge) 0 1px, transparent 2px) top right / 10px 10px,
+    linear-gradient(45deg, var(--draft-card-edge) 0 1px, transparent 2px) bottom left / 10px 10px,
+    linear-gradient(315deg, var(--draft-card-edge) 0 1px, transparent 2px) bottom right / 10px 10px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__archetype {
+  top: 0;
+  width: 32px;
+  height: 32px;
+  background: var(--card-medallion-image) center / contain no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+.stage--draft .draft-grid--triple .unit-card__archetype-icon {
+  width: 16px;
+  height: 16px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.stage--draft .draft-grid--triple .unit-card__body {
+  clip-path: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__header {
+  top: 26px;
+  right: 3px;
+  left: 3px;
+  height: 55px;
+  gap: 2px;
+}
+
+.stage--draft .draft-grid--triple .unit-card__name {
+  max-width: 100%;
+  font-size: var(--draft-card-name-size);
+  font-weight: 700;
+  line-height: 1.12;
+  text-transform: none;
+  text-shadow: 0 1px 2px #000;
+  -webkit-line-clamp: 3;
+}
+
+.stage--draft .draft-grid--triple .unit-card__rarity {
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+/* The repeated common label is visually quiet, not removed from the card's
+   accessible name. Non-common rarity remains explicit as well as colored. */
+.stage--draft .draft-grid--triple .unit-card__rarity--common {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stage--draft .draft-grid--triple .unit-card__tag-row {
+  top: 85px;
+  right: 2px;
+  left: 2px;
+  gap: 2px;
+}
+
+.stage--draft .draft-grid--triple .unit-card__tag-row span {
+  padding: 2px;
+  border-color: transparent;
+  border-radius: 3px;
+  background: #252f23;
+  color: #c2d0b6;
+  font-size: clamp(8px, 2.15cqw, 9px);
+  font-weight: 600;
+  text-transform: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__board-status {
+  top: 108px;
+  max-width: calc(100% - 10px);
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 8.5px;
+  font-weight: 650;
+  text-transform: none;
+  box-shadow: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card > .unit-card__body > .unit-card__art {
+  top: 100px;
+  right: 0;
+  bottom: calc(var(--draft-card-footer-height) + 7px);
+  left: 0;
+}
+
+.stage--draft .draft-grid--triple .unit-card__sprite {
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.stage--draft .draft-grid--triple .unit-card__footer {
+  right: 3px;
+  bottom: 4px;
+  left: 3px;
+  height: var(--draft-card-footer-height);
+  grid-template-rows: 28px minmax(0, 1fr);
+  gap: 3px;
+}
+
+.stage--draft .draft-grid--triple .unit-card__stats {
+  gap: 1px;
+  border-top: 1px solid var(--draft-card-inlay);
+}
+
+.stage--draft .draft-grid--triple .unit-card__stat {
+  padding: 2px 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__stat-label {
+  color: #b9b8a5;
+  font-size: clamp(8px, 2.1cqw, 9px);
+}
+
+.stage--draft .draft-grid--triple .unit-card__stat-value {
+  color: #eeeadd;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__ability {
+  display: block;
+  padding: 4px 3px;
+  border: 0;
+  border-radius: 4px;
+  background: #10160f;
+  color: #eeeadd;
+  font-size: var(--draft-card-ability-size);
+  line-height: 1.18;
+  text-shadow: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__ability-icon {
+  display: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__ability-text {
+  -webkit-line-clamp: 5;
+}
+
+.stage--draft .draft-grid--triple .unit-card__synergy-forecast {
+  right: 3px;
+  bottom: calc(var(--draft-card-footer-height) + 7px);
+  left: 3px;
+  padding: 3px;
+  border-color: #5a6748;
+  background: #1b2418;
+  box-shadow: none;
+}
+
+.stage--draft .draft-grid--triple .unit-card__synergy-forecast-line {
+  font-size: clamp(8px, 2.1cqw, 9px);
+  font-weight: 600;
+  line-height: 1.12;
+}
+
+.stage--draft .draft-grid--triple .unit-card__drag-handle {
+  top: 52%;
+  right: -2px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: radial-gradient(circle, rgba(16, 22, 15, 0.92) 0 11px, transparent 12px);
+  color: #c6bb99;
+  font-size: 13px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+@media (max-height: 720px) {
+  .stage--draft .draft-grid--triple {
+    --draft-triple-card-height: clamp(310px, calc(100dvh - var(--draft-short-top) - var(--draft-short-bottom) - 42px), 330px);
+  }
+}

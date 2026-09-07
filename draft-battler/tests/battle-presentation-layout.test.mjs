@@ -9,6 +9,9 @@ import {
   BATTLE_UNIT_PRESENTATION_SCALE,
   DRAFT_UNIT_PRESENTATION_SCALE,
   fitStaticUnitArtSize,
+  BATTLE_UNIT_VISUAL_BOUNDS,
+  getBattleCameraFrame,
+  getBattleFormationPosition,
   getUnitPresentationScale,
 } from "../src/rendering/battlePresentationLayout.ts";
 
@@ -26,17 +29,45 @@ test("battle presentation improves central unit readability without changing dra
   const currentBattleScreenScale = getUnitPresentationScale(layout, y, "battle") * BATTLE_CAMERA_ZOOM;
   const readabilityGain = currentBattleScreenScale / previousBattleScreenScale;
 
-  assert.ok(readabilityGain >= 1.15 && readabilityGain <= 1.2);
+  assert.ok(readabilityGain >= 1.2 && readabilityGain <= 1.25);
 });
 
-test("close combat remains focused without over-zooming units", () => {
-  const previousCloseScreenScale = 0.86 * 1.32;
-  const currentCloseScreenScale = BATTLE_UNIT_PRESENTATION_SCALE * BATTLE_CAMERA_CLOSE_ZOOM;
-  const readabilityGain = currentCloseScreenScale / previousCloseScreenScale;
-
-  assert.ok(readabilityGain >= 1.14 && readabilityGain <= 1.18);
+test("close combat does not repeatedly reframe or zoom on each hit", () => {
   assert.ok(BATTLE_CAMERA_CLOSE_ZOOM > BATTLE_CAMERA_ZOOM);
+  assert.match(sceneSource, /if \(zoom === BATTLE_CAMERA_CLOSE_ZOOM\) return;/);
+  assert.match(sceneSource, /getBattleCameraFrame\(this\.layout\)/);
 });
+
+for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
+  test(`all twelve unit atlases and vitals fit the stable camera at ${width}x${height}`, () => {
+    const layout = createFieldLayout(width, height);
+    const original = JSON.parse(JSON.stringify(layout));
+    const frame = getBattleCameraFrame(layout);
+    const rectangles = [];
+    for (const owner of ["player", "enemy"]) {
+      for (let slot = 0; slot < 6; slot += 1) {
+        const point = getBattleFormationPosition(layout, owner, slot);
+        const scale = getUnitPresentationScale(layout, point.y, "battle");
+        const rectangle = {
+          left: (point.x + BATTLE_UNIT_VISUAL_BOUNDS.left * scale - frame.x) * frame.zoom + width / 2,
+          right: (point.x + BATTLE_UNIT_VISUAL_BOUNDS.right * scale - frame.x) * frame.zoom + width / 2,
+          top: (point.y + BATTLE_UNIT_VISUAL_BOUNDS.top * scale - frame.y) * frame.zoom + height / 2,
+          bottom: (point.y + BATTLE_UNIT_VISUAL_BOUNDS.bottom * scale - frame.y) * frame.zoom + height / 2,
+        };
+        assert.ok(rectangle.left >= 12 - 1e-9 && rectangle.right <= width - 12 + 1e-9, `${owner} ${slot}: horizontal safe margin`);
+        assert.ok(rectangle.top >= 116 - 1e-9 && rectangle.bottom <= height - 54 + 1e-9, `${owner} ${slot}: header and controls safe margin`);
+        rectangles.push(rectangle);
+      }
+    }
+    for (let index = 0; index < rectangles.length; index += 1) {
+      for (const other of rectangles.slice(index + 1)) {
+        const box = rectangles[index];
+        assert.ok(box.right <= other.left || other.right <= box.left || box.bottom <= other.top || other.bottom <= box.top, "units and vitals must not overlap in a full formation");
+      }
+    }
+    assert.deepEqual(layout, original, "draft field geometry remains unchanged");
+  });
+}
 
 test("battlefield renderer no longer exposes the temporary CLASH label", () => {
   assert.doesNotMatch(sceneSource, /["']CLASH["']/);

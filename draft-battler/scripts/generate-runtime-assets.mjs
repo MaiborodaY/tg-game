@@ -114,6 +114,11 @@ function createStaticJobs() {
       profile: profiles.battlefield,
     },
     {
+      source: "environment/battlefield/common_forest/battlefield_diorama.png",
+      target: "environment/battlefield/common_forest/battlefield_diorama.webp",
+      profile: profiles.battlefield,
+    },
+    {
       source: "environment/battlefield/common_forest/side_props.png",
       target: "environment/battlefield/common_forest/side_props.webp",
       profile: profiles.battlefield,

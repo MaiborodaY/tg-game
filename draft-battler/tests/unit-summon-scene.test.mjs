@@ -219,7 +219,7 @@ function setupScene() {
 function makeObject(x = 0, y = 0) {
   return {
     x, y, alpha: 1, visible: true, flipX: false,
-    add() { return this; }, setOrigin() { return this; }, setPadding() { return this; },
+    add() { return this; }, setOrigin() { return this; }, setPadding() { return this; }, setStrokeStyle() { return this; },
     setAlpha(alpha) { this.alpha = alpha; return this; }, setVisible(visible) { this.visible = visible; return this; },
     setPosition(nextX, nextY) { this.x = nextX; this.y = nextY; return this; },
     setFrame(frame) { this.frame = frame; return this; }, setDepth(depth) { this.depth = depth; return this; },

@@ -246,7 +246,7 @@ test("draft actions and card details communicate state without duplicate battle 
   assert.match(mainSource, /blockLabel: getCopy\(\)\.blockFeedback/);
   assert.doesNotMatch(rendererSource, /showResult\(/);
   assert.doesNotMatch(rendererSource, /resultLabels/);
-  assert.match(rendererSource, /emitText\(view, this\.blockLabel, "#86a8ff"\)/);
+  assert.match(rendererSource, /createUnitCombatFeedback\(events, units, this\.blockLabel\)/);
   assert.match(
     styles,
     /\.card-info-panel__art\s*\{[^}]*width:\s*min\(64vw, 240px\)[^}]*aspect-ratio:\s*2 \/ 3/s,

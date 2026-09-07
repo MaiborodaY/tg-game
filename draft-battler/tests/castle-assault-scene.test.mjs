@@ -121,7 +121,7 @@ function setupScene({ legacy = false, size = [390, 720] } = {}) {
   const scene = new HeadlessBattleScene();
   const tasks = [], calls = [], staleWrites = [], castleHp = new Map();
   scene.command = { type: "battle" };
-  scene.scale = { width: size[0], height: size[1] };
+  Object.assign(scene.scale, { width: size[0], height: size[1] });
   scene.layout = createFieldLayout(...size);
   scene.children = { list: [] };
   scene.tweens = {

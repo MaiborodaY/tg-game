@@ -17,6 +17,19 @@ export interface RoundDamagePresentation {
   synergies: RoundDamageSynergyTotal[];
 }
 
+/** Both armies share one scale: equal damage must have equal visual length. */
+export function getRoundDamageBarMaximum(amounts: readonly number[]): number {
+  return amounts.reduce((maximum, amount) =>
+    Number.isFinite(amount) && amount > maximum ? amount : maximum, 0);
+}
+
+export function getRoundDamageBarRatio(amount: number, maximum: number): number {
+  if (!Number.isFinite(amount) || !Number.isFinite(maximum) || amount <= 0 || maximum <= 0) {
+    return 0;
+  }
+  return Math.min(1, amount / maximum);
+}
+
 export function createRoundDamagePresentation(
   owner: Owner,
   slots: readonly BoardSlot[],

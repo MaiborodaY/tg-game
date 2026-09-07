@@ -1,5 +1,7 @@
 import "./styles.css";
 import "./gameplay-theme.css";
+import "./round-damage-theme.css";
+import "./draft-card-theme.css";
 import { APP_NAME } from "./brand";
 import type { BattleAbilityCalloutLabels, BattlefieldController } from "./rendering/phaserBattleScene";
 import { prefersReducedBattleMotion } from "./rendering/motionPreference";
@@ -62,6 +64,8 @@ import {
 } from "./roundInsights";
 import {
   createRoundDamagePresentation,
+  getRoundDamageBarMaximum,
+  getRoundDamageBarRatio,
   type RoundDamageSynergyTotal,
   type RoundDamageUnitTotal,
 } from "./roundDamagePresentation";
@@ -169,7 +173,7 @@ type CardRarity = "common" | "uncommon" | "rare";
 type PvpConnectionStatus = "idle" | "connecting" | "connected" | "error";
 type PvpPlayerRole = PvpSeat;
 type BattlefieldCommand =
-  | { type: "draft"; key: string; playerCastleHp: number; enemyCastleHp: number }
+  | { type: "draft"; key: string; playerCastleHp: number; enemyCastleHp: number; backdrop: "menu" | "game" }
   | { type: "battle"; key: string; timeline: BattleTimeline };
 
 interface CardDisplayMeta {
@@ -427,6 +431,8 @@ if (restoredSoloRun?.checkpoint === "finished") {
 }
 
 render();
+const stopFieldSlotResizeTracking = observeFieldSlotLayout();
+import.meta.hot?.dispose(stopFieldSlotResizeTracking);
 telegram.ready();
 void flushSoloRankingResults();
 window.addEventListener("online", () => void flushSoloRankingResults());
@@ -1726,19 +1732,29 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
   const rows = document.createElement("div");
   rows.className = "round-result-damage__rows";
 
-  (["player", "enemy"] as const).forEach((owner) => {
+  const sides = (["player", "enemy"] as const).map((owner) => {
     const ownerLabel = owner === "player" ? copy.you : copy.roundDamageEnemy;
     const sources = insights.sides[owner].damageDealt.bySource;
     const slots = owner === "player" ? record.playerSlots : record.enemySlots;
     const presentation = createRoundDamagePresentation(owner, slots, sources);
-    const unitRows = createRoundUnitDamageRows(ownerLabel, presentation.units);
-    const synergyRows = createRoundSynergyDamageRows(ownerLabel, presentation.synergies);
+    return { owner, ownerLabel, presentation };
+  });
+  const maximumDamage = getRoundDamageBarMaximum(sides.flatMap(({ presentation }) =>
+    [...presentation.units, ...presentation.synergies].map(({ amount }) => amount)));
+
+  sides.forEach(({ owner, ownerLabel, presentation }) => {
+    const unitRows = createRoundUnitDamageRows(ownerLabel, presentation.units, maximumDamage);
+    const synergyRows = createRoundSynergyDamageRows(ownerLabel, presentation.synergies, maximumDamage);
     if (unitRows.length === 0 && synergyRows.length === 0) {
-      rows.append(createRoundDamageRow(ownerLabel, copy.roundDamageNone));
+      const emptyRow = createRoundDamageRow(ownerLabel, copy.roundDamageNone);
+      emptyRow.dataset.owner = owner;
+      rows.append(emptyRow);
       return;
     }
-    unitRows.forEach((row) => rows.append(row));
-    synergyRows.forEach((row) => rows.append(row));
+    [...unitRows, ...synergyRows].forEach((row) => {
+      row.dataset.owner = owner;
+      rows.append(row);
+    });
   });
 
   section.append(title, rows);
@@ -1748,21 +1764,27 @@ function createRoundInsightsSummary(record: RoundRecord): HTMLElement {
 function createRoundUnitDamageRows(
   ownerLabel: string,
   units: readonly RoundDamageUnitTotal[],
+  maximumDamage: number,
 ): HTMLElement[] {
   return units.map(({ unit, amount }) => {
     const name = getRoundDamageUnitName(unit);
-    return createRoundDamageRow(ownerLabel, name, amount);
+    const row = createRoundDamageRow(ownerLabel, name, amount);
+    row.style.setProperty("--round-damage-ratio", String(getRoundDamageBarRatio(amount, maximumDamage)));
+    return row;
   });
 }
 
 function createRoundSynergyDamageRows(
   ownerLabel: string,
   synergies: readonly RoundDamageSynergyTotal[],
+  maximumDamage: number,
 ): HTMLElement[] {
   const copy = getCopy();
   return synergies.map(({ tag, amount }) => {
     const label = formatMessage(copy.roundDamageSynergy, { tag: getTagLabel(activeLocale, tag) });
-    return createRoundDamageRow(ownerLabel, label, amount, label, "synergy");
+    const row = createRoundDamageRow(ownerLabel, label, amount, label, "synergy");
+    row.style.setProperty("--round-damage-ratio", String(getRoundDamageBarRatio(amount, maximumDamage)));
+    return row;
   });
 }
 
@@ -1791,6 +1813,14 @@ function createRoundDamageRow(
     value.className = "round-result-damage__value";
     value.textContent = String(amount);
     row.append(value);
+    // Numbers and owner labels carry the meaning; this is only a comparison aid.
+    const track = document.createElement("span");
+    track.className = "round-result-damage__track";
+    track.setAttribute("aria-hidden", "true");
+    const fill = document.createElement("span");
+    fill.className = "round-result-damage__fill";
+    track.append(fill);
+    row.append(track);
     const accessibleLabel = formatMessage(copy.roundDamageAccessible, {
       owner: ownerLabel,
       sources: fullSourceLabel,
@@ -3426,8 +3456,7 @@ function createFieldSlotsLayer(): HTMLElement {
   return slots;
 }
 
-function getPlayerFieldSlotPosition(slotIndex: number): FieldSlotPosition {
-  const layout = createCurrentFieldLayout();
+function getPlayerFieldSlotPosition(slotIndex: number, layout = createCurrentFieldLayout()): FieldSlotPosition {
   const row = getFieldSlotRow(slotIndex);
   const column = getFieldSlotColumn(slotIndex);
   const y = layout.homeRowsY.player[row] ?? layout.homeRowsY.player[0];
@@ -3449,6 +3478,51 @@ function createCurrentFieldLayout(): FieldLayout {
   const height = rect?.height && rect.height > 0 ? rect.height : FIELD_FALLBACK_HEIGHT;
 
   return createFieldLayout(width, height);
+}
+
+function updateFieldSlotPosition(slot: HTMLElement, slotIndex: number, layout = createCurrentFieldLayout()): void {
+  const position = getPlayerFieldSlotPosition(slotIndex, layout);
+  slot.style.setProperty("--slot-x", `${position.xPercent}%`);
+  slot.style.setProperty("--slot-y", `${position.yFromBottom}px`);
+  slot.style.setProperty("--slot-scale", `${position.scale}`);
+  slot.style.setProperty("--slot-depth", `${position.depth}`);
+}
+
+function refreshFieldSlotPositions(): void {
+  const layout = createCurrentFieldLayout();
+  stageElement?.querySelectorAll<HTMLElement>(".field-slot[data-field-slot-index]").forEach((slot) => {
+    const slotIndex = Number(slot.dataset.fieldSlotIndex);
+    if (Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < BOARD_SLOT_COUNT) {
+      updateFieldSlotPosition(slot, slotIndex, layout);
+    }
+  });
+}
+
+function observeFieldSlotLayout(): () => void {
+  let observer: ResizeObserver | undefined;
+  const suspend = (): void => {
+    observer?.disconnect();
+    observer = undefined;
+  };
+  const resume = (): void => {
+    if (!observer && stageElement && typeof ResizeObserver !== "undefined") {
+      // Reposition existing hitboxes instead of rendering: selection, focus and
+      // open overlays survive viewport changes while Phaser resizes separately.
+      observer = new ResizeObserver(refreshFieldSlotPositions);
+      observer.observe(stageElement);
+    }
+    refreshFieldSlotPositions();
+  };
+  window.addEventListener("pagehide", suspend);
+  window.addEventListener("pageshow", resume);
+  window.addEventListener("resize", refreshFieldSlotPositions);
+  resume();
+  return () => {
+    suspend();
+    window.removeEventListener("pagehide", suspend);
+    window.removeEventListener("pageshow", resume);
+    window.removeEventListener("resize", refreshFieldSlotPositions);
+  };
 }
 
 function createFieldActionBar(): HTMLElement {
@@ -3505,11 +3579,7 @@ function createFieldSlot(slotIndex: number): HTMLButtonElement {
   slot.dataset.fieldSlotIndex = String(slotIndex);
   setFocusKey(slot, `field-slot-${slotIndex}`);
   slot.setAttribute("aria-pressed", String(uiState.selectedCardInfoSlotIndex === slotIndex));
-  const slotPosition = getPlayerFieldSlotPosition(slotIndex);
-  slot.style.setProperty("--slot-x", `${slotPosition.xPercent}%`);
-  slot.style.setProperty("--slot-y", `${slotPosition.yFromBottom}px`);
-  slot.style.setProperty("--slot-scale", `${slotPosition.scale}`);
-  slot.style.setProperty("--slot-depth", `${slotPosition.depth}`);
+  updateFieldSlotPosition(slot, slotIndex);
 
   const positionLabel = getFieldPositionLabel(slotIndex);
   if (selectedDraftCardId) {
@@ -3827,9 +3897,10 @@ function createBattlefieldCommand(): BattlefieldCommand | undefined {
   if (uiState.mode === "menu" || uiState.mode === "draft") {
     return {
       type: "draft",
-      key: `draft:${uiState.run.seed}:${uiState.run.round}:${uiState.run.playerHp}:${uiState.run.enemyHp}`,
+      key: `draft:${uiState.mode}:${uiState.run.seed}:${uiState.run.round}:${uiState.run.playerHp}:${uiState.run.enemyHp}`,
       playerCastleHp: uiState.run.playerHp,
       enemyCastleHp: uiState.run.enemyHp,
+      backdrop: uiState.mode === "menu" ? "menu" : "game",
     };
   }
 
@@ -3925,6 +3996,7 @@ function applyBattlefieldCommand(command: BattlefieldCommand): void {
       battlefieldController?.showDraft({
         playerCastleHp: command.playerCastleHp,
         enemyCastleHp: command.enemyCastleHp,
+        backdrop: command.backdrop,
       });
       return;
     }

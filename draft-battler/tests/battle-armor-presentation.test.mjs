@@ -28,5 +28,6 @@ test("damage feedback distinguishes HP loss from absorbed armor", () => {
 test("battlefield renderer applies armor gains and absorption to the persistent badge", () => {
   assert.match(sceneSource, /event\.shieldDelta[\s\S]*?updateUnitArmor/);
   assert.match(sceneSource, /event\.shieldAbsorbed > 0[\s\S]*?updateUnitArmor/);
-  assert.match(sceneSource, /formatDamageFeedback\(event\.amount, event\.shieldAbsorbed\)/);
+  assert.match(sceneSource, /createUnitCombatFeedback\(events, units, this\.blockLabel\)/);
+  assert.match(sceneSource, /getUnitVitals\(hp, view\.unit\.maxHp, view\.armor\)/);
 });

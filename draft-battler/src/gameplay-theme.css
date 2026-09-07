@@ -318,3 +318,20 @@
     --draft-short-top: max(120px, calc(var(--safe-top) + 112px));
   }
 }
+
+:where(.stage--draft) .draft-panel--collapsed {
+  /* Only the header remains: rounding its height must not create a tiny scroller. */
+  overflow: visible;
+}
+
+@media (max-height: 600px) {
+  /* Short phones use the bottom action area instead of reserving empty space
+     beneath it: the three readable cards can then fit without a nested scroll. */
+  :where(.stage--draft) .field-action-bar {
+    bottom: calc(var(--safe-bottom) + 10px);
+  }
+
+  :where(.stage--draft) .draft-overlay {
+    --draft-short-bottom: max(64px, calc(var(--safe-bottom) + 64px));
+  }
+}
