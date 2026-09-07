@@ -49,21 +49,21 @@ const redrawnAnimatedCardIds = new Set([
   "marsh_stalker",
   "ironhide_bear",
   "grave_bellringer",
-]);
-const intentionallyStaticCardIds = new Set([
   "forest_skirmisher",
   "crypt_keeper",
-  "grave_raider",
-  "soul_hunter",
   "city_crossbowman",
   "smoke_trickster",
   "war_mastiff",
+  "grave_raider",
+  "soul_hunter",
   "headless_knight",
   "war_chaplain",
 ]);
 
-test("animation rollout accounts for every card exactly once without opting in untouched units", () => {
-  const classifiedIds = [...existingAnimatedCardIds, ...redrawnAnimatedCardIds, ...intentionallyStaticCardIds];
+test("the completed animation rollout covers all 42 cards with 18 original and 24 redrawn atlases", () => {
+  assert.equal(existingAnimatedCardIds.size, 18);
+  assert.equal(redrawnAnimatedCardIds.size, 24);
+  const classifiedIds = [...existingAnimatedCardIds, ...redrawnAnimatedCardIds];
   assert.equal(new Set(classifiedIds).size, classifiedIds.length, "Animation cohorts must not overlap");
   assert.deepEqual(classifiedIds.sort(), CARD_DEFINITIONS.map((card) => card.id).sort());
 });
@@ -179,31 +179,23 @@ test("authoring art is complete and sprite mappings follow available source atla
     });
 
     const hasSourceSpriteSheet = await fileExists(spriteSheetPath);
-    if (existingAnimatedCardIds.has(card.id) || redrawnAnimatedCardIds.has(card.id)) {
-      assert.equal(hasSourceSpriteSheet, true, `${card.id} must retain its existing source atlas`);
-      assert.ok(asset.spriteSheet, `${card.id} must retain its existing runtime sprite mapping`);
-    }
-    if (intentionallyStaticCardIds.has(card.id)) {
-      assert.equal(hasSourceSpriteSheet, false, `${card.id} must not use a generated placeholder atlas`);
-      assert.equal(asset.spriteSheet, undefined, `${card.id} must use the static battle-art fallback`);
-    }
+    assert.equal(hasSourceSpriteSheet, true, `${card.id} must retain its authored source atlas`);
+    assert.ok(asset.spriteSheet, `${card.id} must retain its runtime sprite mapping`);
     assert.equal(
       Boolean(asset.spriteSheet),
       hasSourceSpriteSheet,
       `${card.id} runtime sprite mapping must match the available source atlas`,
     );
 
-    if (hasSourceSpriteSheet) {
-      await assertTransparentRaster({
-        label: `${card.id} authoring sprite sheet`,
-        filePath: spriteSheetPath,
-        format: "png",
-        width: 1280,
-        height: 512,
-        frameWidth: 256,
-        frameHeight: 256,
-      });
-    }
+    await assertTransparentRaster({
+      label: `${card.id} authoring sprite sheet`,
+      filePath: spriteSheetPath,
+      format: "png",
+      width: 1280,
+      height: 512,
+      frameWidth: 256,
+      frameHeight: 256,
+    });
   }
 });
 

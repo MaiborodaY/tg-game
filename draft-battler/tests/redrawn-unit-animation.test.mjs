@@ -10,9 +10,11 @@ const animatedIds = [
   "battle_alchemist", "siege_engineer", "night_warden", "moon_priestess", "plague_rat",
   "phantom_duelist", "frost_wraith", "star_seer", "bronze_minotaur", "harpy_scout",
   "bone_archer", "rune_warden", "marsh_stalker", "ironhide_bear", "grave_bellringer",
+  "forest_skirmisher", "crypt_keeper", "city_crossbowman", "smoke_trickster", "war_mastiff",
+  "grave_raider", "soul_hunter", "headless_knight", "war_chaplain",
 ];
 
-test("the fifteen redrawn units have complete grounded pose atlases at authoring and runtime sizes", async () => {
+test("all twenty-four redrawn units have complete grounded pose atlases at authoring and runtime sizes", async () => {
   for (const id of animatedIds) {
     const asset = getUnitAsset(id);
     assert.ok(asset.spriteSheet, id);

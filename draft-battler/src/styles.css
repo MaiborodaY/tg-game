@@ -3037,7 +3037,7 @@ h3 {
   filter: blur(1px);
 }
 
-/* These five opt-in illustrations use their visible feet, not transparent canvas edges. */
+/* Redrawn opt-in illustrations use their visible feet, not transparent canvas edges. */
 .field-unit--grounded {
   display: block;
   pointer-events: none;

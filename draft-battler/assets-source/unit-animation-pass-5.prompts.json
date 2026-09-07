@@ -1,0 +1,1134 @@
+{
+  "mode": "built-in image_gen",
+  "scope": "Final animation pass for exactly four redrawn units. Forty genuinely authored front/back poses; no gameplay, balance, backend or static portrait changes. Existing renderer paths are reused.",
+  "atlasContract": {
+    "source": {
+      "width": 1280,
+      "height": 512,
+      "frame": 256,
+      "baseline": 236
+    },
+    "runtime": {
+      "width": 640,
+      "height": 256,
+      "frame": 128,
+      "baseline": 118
+    },
+    "columns": [
+      "idle",
+      "walk-a",
+      "walk-b",
+      "action",
+      "fallen"
+    ],
+    "rows": [
+      "south/front/enemy",
+      "north/back/player"
+    ],
+    "visibleMax": {
+      "width": 220,
+      "height": 196
+    }
+  },
+  "preparation": "User-approved technical matte removal and atlas packing using prepare-unit-pose-sheet.mjs looseGrid mode, preserving whole-figure proportions and one shared source scale across all ten poses. Real authored walk replacements are individually keyed, cropped through empty gutters and proportionally scaled to the corresponding existing walk A height; headless rear walks use 157px (rear idle body height) because the raised sword was removed. All figures anchored at y=236. No mirrored, cloned, warped or procedurally painted character anatomy.",
+  "paletteSpecificCleanup": "No authored purple in the approved designs. Residual min(R,B)-G>20: alpha*=clamp((60-dominance)/40,0,1); zero transparent pixels, otherwise cap R/B at G+8. Synthetic palette preservation, pure-key removal, soft-alpha and idempotence assertions. Only chroma-spill pixels affected.",
+  "integration": "Grounding opts in these last four from measured static alpha bounds. Soul Hunter uses the existing grounded ranged pose path. Grave Raider and Headless Knight retain melee lunges. War Chaplain remains range-2 offensive armor support with short scepter strike, not a heal/cast. Its gameplay ability is unchanged.",
+  "previewPath": "draft-battler/assets-source/unit-animation-pass-5.preview.webp",
+  "units": [
+    {
+      "id": "grave_raider",
+      "name": "Могильный рейдер",
+      "referencePath": "draft-battler/assets-source/units/grave_raider/unit.png",
+      "sourceAtlasPath": "draft-battler/assets-source/units/grave_raider/sprite-sheet.png",
+      "runtimeAtlasPath": "draft-battler/src/assets/units/grave_raider/sprite-sheet.webp",
+      "rawGeneratedFile": "exec-51da0c79-5b00-44a2-8ea4-16eda048d44f.png",
+      "preparedBaseGeneratedFile": "exec-51da0c79-5b00-44a2-8ea4-16eda048d44f.png",
+      "prompt": "Use case: identity-preserve.\nAsset type: production articulated 2D animation pose atlas for BroBattler.\nImage 1 is the EXACT approved character design. Preserve identity, face, proportions, clothing, equipment, colors and tactile hand-painted realistic fantasy miniature style. Generate genuinely new articulated poses, not recolors, mirrors, clones or new outfits.\nOUTPUT: wide landscape canvas at ratio 5:2 (prefer 2560x1024), exactly TEN full-body figures, five equal square columns by two rows. One entire figure with equipment per cell, same anatomical scale and mildly elevated camera. Large clean gutters, every weapon tip, foot and fallen body inside its cell. Standing height approximately 65 percent of cell height, allow space for horizontal fallen pose at the SAME body scale. No labels, numbers, drawn grid, text, watermark or scenery.\nTECHNICAL BACKDROP: completely flat opaque saturated MAGENTA #FF00FF for later approved chroma extraction. DO NOT draw checkerboard or simulate transparency. No gradients, magenta light/reflections, rim glows, floor, pedestal, cast shadows, dust or detached particles.\nDIRECTIONS: TOP row faces SOUTH toward viewer, front chest/face visible. BOTTOM row faces NORTH away from viewer, true back of head and body visible, NO face looking back. Rear row is genuine rear anatomy, not a horizontal mirror. Equipment stays on the SAME ANATOMICAL side.\nCOLUMNS left to right in each row:\n1. IDLE, stable quiet supported stance.\n2. WALK A, one planted support leg, opposite leg visibly behind in push-off. Front view SCREEN-LEFT foot leads closer to viewer; back view SCREEN-RIGHT foot advances away from viewer.\n3. WALK B, clearly EXCHANGED advancing leg and opposite arm swing. Front view SCREEN-RIGHT foot leads closer to viewer; back view SCREEN-LEFT foot advances away. Must change knee/foot silhouette decisively, not just move whole body or repaint clothes. Same travel direction/camera.\n4. ACTION described below: distinct supported pose, both feet planted for casts/shooting, no leap.\n5. FALLEN defeat, entire body collapsed HORIZONTALLY on its side with bent limbs, eyes shut, low head, at SAME anatomical scale. Gear rests next to and touching a hand/body to remain one coherent cutout. No crouching, kneeling, sideways standing, blood or gore. Front-facing fallen top; back-facing fallen bottom.\nKeep limb inventory correct. At least one support leg/paw grounded through all walking poses.\nCHARACTER INVARIANTS AND SPECIFIC ACTION: Huge broad hunchshouldered undead raider, thick grey corpse arms, iron-braced skeletal jaw, dark braids, reddish-brown cropped leather brigandine, one large bone shoulder on anatomical LEFT (front screen-right/rear screen-left), patched trousers and huge wrapped boots. ONE short-shaft heavy chipped broad rectangular axe in BOTH hands. No cloak, shield or other weapons. ACTION: distinct powerful two-handed diagonal AXE CHOP with lowered center of mass and torso rotation, axe raised beside shoulder then angled forward, both hands grip same shaft; all axe tips remain within cell. Keep head and body equally broad in all poses. In rear row dark braids and leather back visible, bone shoulder same anatomical side. Defeat entire heavy body on its side, axe touching gauntlet."
+    },
+    {
+      "id": "soul_hunter",
+      "name": "Охотник за душами",
+      "referencePath": "draft-battler/assets-source/units/soul_hunter/unit.png",
+      "sourceAtlasPath": "draft-battler/assets-source/units/soul_hunter/sprite-sheet.png",
+      "runtimeAtlasPath": "draft-battler/src/assets/units/soul_hunter/sprite-sheet.webp",
+      "rawGeneratedFile": "exec-29e80e69-042e-47e6-8e65-bb79e560760b.png",
+      "preparedBaseGeneratedFile": "exec-ad70dd86-cc23-402c-ae2b-629003b837e1.png",
+      "prompt": "Use case: identity-preserve.\nAsset type: production articulated 2D animation pose atlas for BroBattler.\nImage 1 is the EXACT approved character design. Preserve identity, face, proportions, clothing, equipment, colors and tactile hand-painted realistic fantasy miniature style. Generate genuinely new articulated poses, not recolors, mirrors, clones or new outfits.\nOUTPUT: wide landscape canvas at ratio 5:2 (prefer 2560x1024), exactly TEN full-body figures, five equal square columns by two rows. One entire figure with equipment per cell, same anatomical scale and mildly elevated camera. Large clean gutters, every weapon tip, foot and fallen body inside its cell. Standing height approximately 65 percent of cell height, allow space for horizontal fallen pose at the SAME body scale. No labels, numbers, drawn grid, text, watermark or scenery.\nTECHNICAL BACKDROP: completely flat opaque saturated MAGENTA #FF00FF for later approved chroma extraction. DO NOT draw checkerboard or simulate transparency. No gradients, magenta light/reflections, rim glows, floor, pedestal, cast shadows, dust or detached particles.\nDIRECTIONS: TOP row faces SOUTH toward viewer, front chest/face visible. BOTTOM row faces NORTH away from viewer, true back of head and body visible, NO face looking back. Rear row is genuine rear anatomy, not a horizontal mirror. Equipment stays on the SAME ANATOMICAL side.\nCOLUMNS left to right in each row:\n1. IDLE, stable quiet supported stance.\n2. WALK A, one planted support leg, opposite leg visibly behind in push-off. Front view SCREEN-LEFT foot leads closer to viewer; back view SCREEN-RIGHT foot advances away from viewer.\n3. WALK B, clearly EXCHANGED advancing leg and opposite arm swing. Front view SCREEN-RIGHT foot leads closer to viewer; back view SCREEN-LEFT foot advances away. Must change knee/foot silhouette decisively, not just move whole body or repaint clothes. Same travel direction/camera.\n4. ACTION described below: distinct supported pose, both feet planted for casts/shooting, no leap.\n5. FALLEN defeat, entire body collapsed HORIZONTALLY on its side with bent limbs, eyes shut, low head, at SAME anatomical scale. Gear rests next to and touching a hand/body to remain one coherent cutout. No crouching, kneeling, sideways standing, blood or gore. Front-facing fallen top; back-facing fallen bottom.\nKeep limb inventory correct. At least one support leg/paw grounded through all walking poses.\nCHARACTER INVARIANTS AND SPECIFIC ACTION: Tall lean undead HUNTRESS, pale corpse face with skull cheek, tied silver-white hair, short petrol-green high-collar hunting coat, ivory sleeves, fitted dark leggings and high brown boots. Bone-and-ebony recurved BOW held in anatomical LEFT hand (front screen-right/rear screen-left), dark arrow anatomical RIGHT, small hip quiver and single belt amber vial. No hood, staff, cloak or sword. ACTION: full coherent ARCHERY DRAW, left arm extended sideways-forward toward target while right fingers draw ONE arrow on taut string to cheek, bow bends, arrow nocked, both feet planted. Side turn appropriate to each facing row, rear action still shows back. Walking bow lowered, string and tips intact in every pose. Silver hair secured at back, no new headdress. Fallen bow and arrow stay touching hands and body, not floating.",
+      "backgroundEditPrompt": "Use case: background-extraction. Image 1 is the exact TEN-POSE atlas to keep. REMOVE ONLY all white grid separator bars and replace them with exactly the surrounding solid MAGENTA #FF00FF. Keep every pixel of every character, bow, string, arrow and fine hair unchanged, all 10 poses in exactly the same position and scale and order. Preserve canvas1983x793 ratio5:2. No grid lines, text, scenery, shadows or gradients. DO NOT change artwork, body, pose, background color or layout. Only white separators become magenta."
+    },
+    {
+      "id": "headless_knight",
+      "name": "Безголовый рыцарь",
+      "referencePath": "draft-battler/assets-source/units/headless_knight/unit.png",
+      "sourceAtlasPath": "draft-battler/assets-source/units/headless_knight/sprite-sheet.png",
+      "runtimeAtlasPath": "draft-battler/src/assets/units/headless_knight/sprite-sheet.webp",
+      "rawGeneratedFile": "exec-4da2741f-8f38-4c3f-b146-d63882b97f23.png",
+      "preparedBaseGeneratedFile": "exec-4da2741f-8f38-4c3f-b146-d63882b97f23.png",
+      "prompt": "Use case: identity-preserve.\nAsset type: production articulated 2D animation pose atlas for BroBattler.\nImage 1 is the EXACT approved character design. Preserve identity, face, proportions, clothing, equipment, colors and tactile hand-painted realistic fantasy miniature style. Generate genuinely new articulated poses, not recolors, mirrors, clones or new outfits.\nOUTPUT: wide landscape canvas at ratio 5:2 (prefer 2560x1024), exactly TEN full-body figures, five equal square columns by two rows. One entire figure with equipment per cell, same anatomical scale and mildly elevated camera. Large clean gutters, every weapon tip, foot and fallen body inside its cell. Standing height approximately 65 percent of cell height, allow space for horizontal fallen pose at the SAME body scale. No labels, numbers, drawn grid, text, watermark or scenery.\nTECHNICAL BACKDROP: completely flat opaque saturated MAGENTA #FF00FF for later approved chroma extraction. DO NOT draw checkerboard or simulate transparency. No gradients, magenta light/reflections, rim glows, floor, pedestal, cast shadows, dust or detached particles.\nDIRECTIONS: TOP row faces SOUTH toward viewer, front chest/face visible. BOTTOM row faces NORTH away from viewer, true back of head and body visible, NO face looking back. Rear row is genuine rear anatomy, not a horizontal mirror. Equipment stays on the SAME ANATOMICAL side.\nCOLUMNS left to right in each row:\n1. IDLE, stable quiet supported stance.\n2. WALK A, one planted support leg, opposite leg visibly behind in push-off. Front view SCREEN-LEFT foot leads closer to viewer; back view SCREEN-RIGHT foot advances away from viewer.\n3. WALK B, clearly EXCHANGED advancing leg and opposite arm swing. Front view SCREEN-RIGHT foot leads closer to viewer; back view SCREEN-LEFT foot advances away. Must change knee/foot silhouette decisively, not just move whole body or repaint clothes. Same travel direction/camera.\n4. ACTION described below: distinct supported pose, both feet planted for casts/shooting, no leap.\n5. FALLEN defeat, entire body collapsed HORIZONTALLY on its side with bent limbs, eyes shut, low head, at SAME anatomical scale. Gear rests next to and touching a hand/body to remain one coherent cutout. No crouching, kneeling, sideways standing, blood or gore. Front-facing fallen top; back-facing fallen bottom.\nKeep limb inventory correct. At least one support leg/paw grounded through all walking poses.\nCHARACTER INVARIANTS AND SPECIFIC ACTION: Truly HEADLESS hollow heavy plate armor. Absolutely NO head, helmet, skull, carried head, flames or emerging spirit in ANY frame. Empty dark round gorget with only a tiny contained teal glint deep inside. Pale pewter broad plate shoulders and bronze borders, oxblood waist tabard, charcoal tattered cape, heavy armored boots. ONE broad straight executioner GREAT SWORD, thick square/angled tip, held in BOTH gauntlets. ACTION: supported heavy two-handed diagonal sword strike/backswing, blade beside body angled upward, torso rotates while legs brace, NOT identical upright resting sword as idle. Sword stays same size and shape. Rear row shows cape over armor, empty rear rim of gorget, no face. Fallen entire empty armor on its side with limbs connected, sword alongside touching hand, no scattered body parts."
+    },
+    {
+      "id": "war_chaplain",
+      "name": "Боевой капеллан",
+      "referencePath": "draft-battler/assets-source/units/war_chaplain/unit.png",
+      "sourceAtlasPath": "draft-battler/assets-source/units/war_chaplain/sprite-sheet.png",
+      "runtimeAtlasPath": "draft-battler/src/assets/units/war_chaplain/sprite-sheet.webp",
+      "rawGeneratedFile": "exec-fad4941f-87d9-4896-a12f-90aef66423a4.png",
+      "preparedBaseGeneratedFile": "exec-fad4941f-87d9-4896-a12f-90aef66423a4.png",
+      "prompt": "Use case: identity-preserve.\nAsset type: production articulated 2D animation pose atlas for BroBattler.\nImage 1 is the EXACT approved character design. Preserve identity, face, proportions, clothing, equipment, colors and tactile hand-painted realistic fantasy miniature style. Generate genuinely new articulated poses, not recolors, mirrors, clones or new outfits.\nOUTPUT: wide landscape canvas at ratio 5:2 (prefer 2560x1024), exactly TEN full-body figures, five equal square columns by two rows. One entire figure with equipment per cell, same anatomical scale and mildly elevated camera. Large clean gutters, every weapon tip, foot and fallen body inside its cell. Standing height approximately 65 percent of cell height, allow space for horizontal fallen pose at the SAME body scale. No labels, numbers, drawn grid, text, watermark or scenery.\nTECHNICAL BACKDROP: completely flat opaque saturated MAGENTA #FF00FF for later approved chroma extraction. DO NOT draw checkerboard or simulate transparency. No gradients, magenta light/reflections, rim glows, floor, pedestal, cast shadows, dust or detached particles.\nDIRECTIONS: TOP row faces SOUTH toward viewer, front chest/face visible. BOTTOM row faces NORTH away from viewer, true back of head and body visible, NO face looking back. Rear row is genuine rear anatomy, not a horizontal mirror. Equipment stays on the SAME ANATOMICAL side.\nCOLUMNS left to right in each row:\n1. IDLE, stable quiet supported stance.\n2. WALK A, one planted support leg, opposite leg visibly behind in push-off. Front view SCREEN-LEFT foot leads closer to viewer; back view SCREEN-RIGHT foot advances away from viewer.\n3. WALK B, clearly EXCHANGED advancing leg and opposite arm swing. Front view SCREEN-RIGHT foot leads closer to viewer; back view SCREEN-LEFT foot advances away. Must change knee/foot silhouette decisively, not just move whole body or repaint clothes. Same travel direction/camera.\n4. ACTION described below: distinct supported pose, both feet planted for casts/shooting, no leap.\n5. FALLEN defeat, entire body collapsed HORIZONTALLY on its side with bent limbs, eyes shut, low head, at SAME anatomical scale. Gear rests next to and touching a hand/body to remain one coherent cutout. No crouching, kneeling, sideways standing, blood or gore. Front-facing fallen top; back-facing fallen bottom.\nKeep limb inventory correct. At least one support leg/paw grounded through all walking poses.\nCHARACTER INVARIANTS AND SPECIFIC ACTION: Stout older living human, shaved bald scalp, short white beard, warm stern face, dull bronze breastplate with sun emblem, wine-red quilted cleric coat, wide long ivory stole, dark trousers and chunky visible boots. Anatomical LEFT arm (front screen-right/rear screen-left) cradles ONE CLOSED large red devotional TOME with bronze corners/sun emblem at ribs. Anatomical RIGHT hand grips ONE SHORT bronze reliquary SCEPTRE with contained amber gem. ACTION is a compact MELEE SCEPTRE strike, right elbow raised and sceptre pushed forward/down, torso leaning slightly, feet braced, book still firmly tucked to LEFT ribs. Not a healing spell, not a floating magic cast. No shield, halo, wings, tall staff, second book, detached effects. Rear views show bald back of head, wine-red back coat, narrow ivory stole ends only as physically appropriate, book remains anatomical LEFT. Fallen on side with book and sceptre held close touching body."
+    }
+  ],
+  "basePreparation": [
+    {
+      "id": "grave_raider",
+      "width": 1280,
+      "height": 512,
+      "columns": 5,
+      "rows": 2,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "baseline": 236,
+      "background": "magenta",
+      "scale": 0.5606936416184971,
+      "frames": [
+        {
+          "index": 0,
+          "sourceCell": {
+            "left": 67,
+            "top": 27,
+            "width": 279,
+            "height": 347
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 273,
+            "height": 341
+          },
+          "preparedBounds": {
+            "left": 52,
+            "top": 44,
+            "width": 153,
+            "height": 192
+          }
+        },
+        {
+          "index": 1,
+          "sourceCell": {
+            "left": 451,
+            "top": 29,
+            "width": 299,
+            "height": 352
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 293,
+            "height": 346
+          },
+          "preparedBounds": {
+            "left": 46,
+            "top": 42,
+            "width": 165,
+            "height": 194
+          }
+        },
+        {
+          "index": 2,
+          "sourceCell": {
+            "left": 880,
+            "top": 32,
+            "width": 268,
+            "height": 348
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 262,
+            "height": 342
+          },
+          "preparedBounds": {
+            "left": 54,
+            "top": 44,
+            "width": 148,
+            "height": 192
+          }
+        },
+        {
+          "index": 3,
+          "sourceCell": {
+            "left": 1206,
+            "top": 24,
+            "width": 300,
+            "height": 339
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 294,
+            "height": 333
+          },
+          "preparedBounds": {
+            "left": 45,
+            "top": 48,
+            "width": 166,
+            "height": 188
+          }
+        },
+        {
+          "index": 4,
+          "sourceCell": {
+            "left": 1567,
+            "top": 218,
+            "width": 378,
+            "height": 185
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 372,
+            "height": 179
+          },
+          "preparedBounds": {
+            "left": 24,
+            "top": 136,
+            "width": 208,
+            "height": 100
+          }
+        },
+        {
+          "index": 5,
+          "sourceCell": {
+            "left": 25,
+            "top": 412,
+            "width": 263,
+            "height": 335
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 257,
+            "height": 329
+          },
+          "preparedBounds": {
+            "left": 56,
+            "top": 51,
+            "width": 145,
+            "height": 185
+          }
+        },
+        {
+          "index": 6,
+          "sourceCell": {
+            "left": 386,
+            "top": 412,
+            "width": 272,
+            "height": 342
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 266,
+            "height": 336
+          },
+          "preparedBounds": {
+            "left": 53,
+            "top": 48,
+            "width": 150,
+            "height": 188
+          }
+        },
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 778,
+            "top": 412,
+            "width": 263,
+            "height": 342
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 257,
+            "height": 336
+          },
+          "preparedBounds": {
+            "left": 56,
+            "top": 48,
+            "width": 144,
+            "height": 188
+          }
+        },
+        {
+          "index": 8,
+          "sourceCell": {
+            "left": 1168,
+            "top": 402,
+            "width": 320,
+            "height": 350
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 314,
+            "height": 344
+          },
+          "preparedBounds": {
+            "left": 40,
+            "top": 43,
+            "width": 177,
+            "height": 193
+          }
+        },
+        {
+          "index": 9,
+          "sourceCell": {
+            "left": 1560,
+            "top": 601,
+            "width": 380,
+            "height": 161
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 374,
+            "height": 155
+          },
+          "preparedBounds": {
+            "left": 23,
+            "top": 149,
+            "width": 211,
+            "height": 87
+          }
+        }
+      ],
+      "looseGrid": true,
+      "skippedParticles": []
+    },
+    {
+      "id": "soul_hunter",
+      "width": 1280,
+      "height": 512,
+      "columns": 5,
+      "rows": 2,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "baseline": 236,
+      "background": "magenta",
+      "scale": 0.5271739130434783,
+      "frames": [
+        {
+          "index": 0,
+          "sourceCell": {
+            "left": 102,
+            "top": 14,
+            "width": 206,
+            "height": 362
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 200,
+            "height": 356
+          },
+          "preparedBounds": {
+            "left": 75,
+            "top": 48,
+            "width": 106,
+            "height": 188
+          }
+        },
+        {
+          "index": 1,
+          "sourceCell": {
+            "left": 476,
+            "top": 16,
+            "width": 237,
+            "height": 363
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 231,
+            "height": 357
+          },
+          "preparedBounds": {
+            "left": 67,
+            "top": 47,
+            "width": 122,
+            "height": 189
+          }
+        },
+        {
+          "index": 2,
+          "sourceCell": {
+            "left": 872,
+            "top": 21,
+            "width": 227,
+            "height": 358
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 221,
+            "height": 352
+          },
+          "preparedBounds": {
+            "left": 70,
+            "top": 50,
+            "width": 117,
+            "height": 186
+          }
+        },
+        {
+          "index": 3,
+          "sourceCell": {
+            "left": 1247,
+            "top": 2,
+            "width": 295,
+            "height": 374
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 289,
+            "height": 368
+          },
+          "preparedBounds": {
+            "left": 52,
+            "top": 42,
+            "width": 153,
+            "height": 194
+          }
+        },
+        {
+          "index": 4,
+          "sourceCell": {
+            "left": 1598,
+            "top": 260,
+            "width": 372,
+            "height": 114
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 366,
+            "height": 108
+          },
+          "preparedBounds": {
+            "left": 31,
+            "top": 178,
+            "width": 194,
+            "height": 58
+          }
+        },
+        {
+          "index": 5,
+          "sourceCell": {
+            "left": 61,
+            "top": 413,
+            "width": 207,
+            "height": 368
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 201,
+            "height": 362
+          },
+          "preparedBounds": {
+            "left": 75,
+            "top": 44,
+            "width": 107,
+            "height": 192
+          }
+        },
+        {
+          "index": 6,
+          "sourceCell": {
+            "left": 457,
+            "top": 422,
+            "width": 216,
+            "height": 352
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 210,
+            "height": 346
+          },
+          "preparedBounds": {
+            "left": 73,
+            "top": 54,
+            "width": 111,
+            "height": 182
+          }
+        },
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 855,
+            "top": 425,
+            "width": 212,
+            "height": 349
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 206,
+            "height": 343
+          },
+          "preparedBounds": {
+            "left": 74,
+            "top": 55,
+            "width": 109,
+            "height": 181
+          }
+        },
+        {
+          "index": 8,
+          "sourceCell": {
+            "left": 1216,
+            "top": 412,
+            "width": 290,
+            "height": 365
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 284,
+            "height": 359
+          },
+          "preparedBounds": {
+            "left": 53,
+            "top": 46,
+            "width": 150,
+            "height": 190
+          }
+        },
+        {
+          "index": 9,
+          "sourceCell": {
+            "left": 1607,
+            "top": 648,
+            "width": 361,
+            "height": 105
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 355,
+            "height": 99
+          },
+          "preparedBounds": {
+            "left": 34,
+            "top": 183,
+            "width": 188,
+            "height": 53
+          }
+        }
+      ],
+      "looseGrid": true,
+      "skippedParticles": []
+    },
+    {
+      "id": "headless_knight",
+      "width": 1280,
+      "height": 512,
+      "columns": 5,
+      "rows": 2,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "baseline": 236,
+      "background": "magenta",
+      "scale": 0.5527065527065527,
+      "frames": [
+        {
+          "index": 0,
+          "sourceCell": {
+            "left": 96,
+            "top": 66,
+            "width": 219,
+            "height": 308
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 213,
+            "height": 302
+          },
+          "preparedBounds": {
+            "left": 69,
+            "top": 70,
+            "width": 119,
+            "height": 166
+          }
+        },
+        {
+          "index": 1,
+          "sourceCell": {
+            "left": 498,
+            "top": 67,
+            "width": 208,
+            "height": 302
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 202,
+            "height": 296
+          },
+          "preparedBounds": {
+            "left": 72,
+            "top": 72,
+            "width": 112,
+            "height": 164
+          }
+        },
+        {
+          "index": 2,
+          "sourceCell": {
+            "left": 917,
+            "top": 69,
+            "width": 191,
+            "height": 305
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 185,
+            "height": 299
+          },
+          "preparedBounds": {
+            "left": 77,
+            "top": 70,
+            "width": 102,
+            "height": 166
+          }
+        },
+        {
+          "index": 3,
+          "sourceCell": {
+            "left": 1269,
+            "top": 20,
+            "width": 259,
+            "height": 357
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 253,
+            "height": 351
+          },
+          "preparedBounds": {
+            "left": 58,
+            "top": 42,
+            "width": 140,
+            "height": 194
+          }
+        },
+        {
+          "index": 4,
+          "sourceCell": {
+            "left": 1628,
+            "top": 250,
+            "width": 311,
+            "height": 134
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 305,
+            "height": 128
+          },
+          "preparedBounds": {
+            "left": 44,
+            "top": 164,
+            "width": 169,
+            "height": 72
+          }
+        },
+        {
+          "index": 5,
+          "sourceCell": {
+            "left": 97,
+            "top": 443,
+            "width": 191,
+            "height": 288
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 185,
+            "height": 282
+          },
+          "preparedBounds": {
+            "left": 77,
+            "top": 79,
+            "width": 103,
+            "height": 157
+          }
+        },
+        {
+          "index": 6,
+          "sourceCell": {
+            "left": 464,
+            "top": 395,
+            "width": 194,
+            "height": 345
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 188,
+            "height": 339
+          },
+          "preparedBounds": {
+            "left": 76,
+            "top": 48,
+            "width": 104,
+            "height": 188
+          }
+        },
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 860,
+            "top": 405,
+            "width": 188,
+            "height": 341
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 182,
+            "height": 335
+          },
+          "preparedBounds": {
+            "left": 78,
+            "top": 50,
+            "width": 101,
+            "height": 186
+          }
+        },
+        {
+          "index": 8,
+          "sourceCell": {
+            "left": 1253,
+            "top": 403,
+            "width": 247,
+            "height": 340
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 241,
+            "height": 334
+          },
+          "preparedBounds": {
+            "left": 62,
+            "top": 51,
+            "width": 133,
+            "height": 185
+          }
+        },
+        {
+          "index": 9,
+          "sourceCell": {
+            "left": 1596,
+            "top": 609,
+            "width": 351,
+            "height": 138
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 345,
+            "height": 132
+          },
+          "preparedBounds": {
+            "left": 32,
+            "top": 162,
+            "width": 192,
+            "height": 74
+          }
+        }
+      ],
+      "looseGrid": true,
+      "skippedParticles": []
+    },
+    {
+      "id": "war_chaplain",
+      "width": 1280,
+      "height": 512,
+      "columns": 5,
+      "rows": 2,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "baseline": 236,
+      "background": "magenta",
+      "scale": 0.5434173669467787,
+      "frames": [
+        {
+          "index": 0,
+          "sourceCell": {
+            "left": 65,
+            "top": 33,
+            "width": 242,
+            "height": 356
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 236,
+            "height": 350
+          },
+          "preparedBounds": {
+            "left": 64,
+            "top": 45,
+            "width": 129,
+            "height": 191
+          }
+        },
+        {
+          "index": 1,
+          "sourceCell": {
+            "left": 427,
+            "top": 35,
+            "width": 239,
+            "height": 358
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 233,
+            "height": 352
+          },
+          "preparedBounds": {
+            "left": 65,
+            "top": 44,
+            "width": 127,
+            "height": 192
+          }
+        },
+        {
+          "index": 2,
+          "sourceCell": {
+            "left": 840,
+            "top": 35,
+            "width": 228,
+            "height": 363
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 222,
+            "height": 357
+          },
+          "preparedBounds": {
+            "left": 67,
+            "top": 41,
+            "width": 122,
+            "height": 195
+          }
+        },
+        {
+          "index": 3,
+          "sourceCell": {
+            "left": 1198,
+            "top": 52,
+            "width": 250,
+            "height": 339
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 244,
+            "height": 333
+          },
+          "preparedBounds": {
+            "left": 62,
+            "top": 54,
+            "width": 133,
+            "height": 182
+          }
+        },
+        {
+          "index": 4,
+          "sourceCell": {
+            "left": 1572,
+            "top": 222,
+            "width": 363,
+            "height": 173
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 357,
+            "height": 167
+          },
+          "preparedBounds": {
+            "left": 31,
+            "top": 145,
+            "width": 195,
+            "height": 91
+          }
+        },
+        {
+          "index": 5,
+          "sourceCell": {
+            "left": 85,
+            "top": 420,
+            "width": 218,
+            "height": 330
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 212,
+            "height": 324
+          },
+          "preparedBounds": {
+            "left": 70,
+            "top": 59,
+            "width": 116,
+            "height": 177
+          }
+        },
+        {
+          "index": 6,
+          "sourceCell": {
+            "left": 450,
+            "top": 420,
+            "width": 213,
+            "height": 326
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 207,
+            "height": 320
+          },
+          "preparedBounds": {
+            "left": 72,
+            "top": 62,
+            "width": 112,
+            "height": 174
+          }
+        },
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 832,
+            "top": 420,
+            "width": 196,
+            "height": 331
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 190,
+            "height": 325
+          },
+          "preparedBounds": {
+            "left": 76,
+            "top": 61,
+            "width": 104,
+            "height": 175
+          }
+        },
+        {
+          "index": 8,
+          "sourceCell": {
+            "left": 1178,
+            "top": 428,
+            "width": 287,
+            "height": 322
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 281,
+            "height": 316
+          },
+          "preparedBounds": {
+            "left": 52,
+            "top": 64,
+            "width": 153,
+            "height": 172
+          }
+        },
+        {
+          "index": 9,
+          "sourceCell": {
+            "left": 1537,
+            "top": 573,
+            "width": 368,
+            "height": 164
+          },
+          "sourceBounds": {
+            "left": 3,
+            "top": 3,
+            "width": 362,
+            "height": 158
+          },
+          "preparedBounds": {
+            "left": 30,
+            "top": 150,
+            "width": 196,
+            "height": 86
+          }
+        }
+      ],
+      "looseGrid": true,
+      "skippedParticles": []
+    }
+  ],
+  "referenceExtraction": "Replacement inputs were losslessly cropped from each prepared base's recorded sourceCell (grave6, soul1/6, headless6/7 and idle5), uniformly resized into 480x660 with magenta padding inside 512x768 panes. No anatomy painting.",
+  "replacements": [
+    {
+      "key": "grave_rear_b",
+      "id": "grave_raider",
+      "indices": [
+        7
+      ],
+      "layout": "single",
+      "generatedFile": "exec-75b10d90-f83b-4e93-8aee-0ab30bf70311.png",
+      "prompt": "Use case: precise-object-edit. Image 1 is WALK A from BACK for the exact character; create WALK B by changing ONLY legs below hips. Same tall portrait, camera, facing AWAY, anatomy scale, upper body, bone shoulder screen-left, axe and dark braids absolutely unchanged. In the reference the boot on SCREEN-RIGHT is nearest the viewer with sole visible. EXCHANGE THE TWO LEG POSES: now SCREEN-LEFT leg goes back toward viewer with bent knee and sole visible at bottom-left; SCREEN-RIGHT boot plants farther up/away beneath right hip. Show two clearly separated legs and a strong opposite stride. Not a mirror: DO NOT move shoulder armor or axe to other side. No face. Preserve large broad torso, wrapped boots, exactly two arms/legs, true back view. Uniform flat MAGENTA #FF00FF background, no shadows/grid/text/glow/particles. Complete body and axe inside generous margins."
+    },
+    {
+      "key": "soul_walk_b",
+      "id": "soul_hunter",
+      "indices": [
+        2,
+        7
+      ],
+      "layout": "two-view",
+      "generatedFile": "exec-b77cab8e-94be-48d6-86dc-d69de60e8c97.png",
+      "prompt": "Use case: precise-object-edit. Image 1 shows TWO WALK A poses, front on LEFT half and back on RIGHT half. Create the opposite WALK B in BOTH halves by changing ONLY lower legs and feet below coat hem. Do NOT change either upper body, coat, hair, arms, bow, arrow, equipment side or character size. LEFT HALF FRONT: current screen-left leg leads. Reverse it: screen-RIGHT leg now stretches toward camera and its boot is lowest at bottom-right; screen-LEFT knee bends backward with boot visibly raised farther away and higher at left. RIGHT HALF BACK: current screen-right leg trails toward camera with visible sole. Reverse it: screen-LEFT leg now trails toward camera, bent knee and sole visible lowest at bottom-left; screen-RIGHT boot planted farther up/away under right hip. Exactly two legs per figure, clearly opposite silhouette versus reference. Do not mirror full characters or turn their bodies; LEFT remains front face, RIGHT remains true back. Same height/proportions and thin bow/string and arrow. Two complete separate figures with large margins on uniform saturated solid MAGENTA #FF00FF. No labels, grid, scenery, shadow, extra limbs or floating gear."
+    },
+    {
+      "key": "headless_rear_walks",
+      "id": "headless_knight",
+      "indices": [
+        6,
+        7
+      ],
+      "layout": "two-view",
+      "generatedFile": "exec-fbabf891-fe1d-4299-9293-e9c320c392d3.png",
+      "prompt": "Use case: precise-object-edit. Image 1 is the TWO rear WALK phases to edit, A on LEFT and B on RIGHT. Image 2 is ONLY the reference for the correct DOWNWARD sword carry and EMPTY collar; do not copy its standing legs. In both walking figures CHANGE ONLY sword and concealed forearm position: remove upward blade emerging above right shoulder completely, keep exactly ONE executioner sword now held pointing DOWN in front of body as in image2; from rear its blade tip is visible below cape between knees/calves. Preserve both EXISTING opposite walking leg phases from image1, all cape folds, empty collar, shoulder armor, anatomy proportions, body scale and facing AWAY. No head/helmet/skull/glowing spirit ever. Do not lower whole body, enlarge torso or redraw legs. Exactly two complete separate rear walking figures, the same equipment, same grey cape, no extra blades or disconnected tips. Uniform flat MAGENTA #FF00FF background with generous clear margins, no grid/text/shadow/particles.",
+      "initialGeneratedFile": "exec-5f325d82-6306-4f78-be19-02caecc96336.png",
+      "gaitCorrectionPrompt": "Use case: precise-object-edit. Image1 contains two BACK-view walking poses of the SAME headless knight, but the legs currently repeat. KEEP THE LEFT FIGURE ENTIRELY UNCHANGED. In ONLY the RIGHT FIGURE, redraw ONLY the lower legs/boots and a tiny edge of cape below the knees to show the OPPOSITE stride. For the RIGHT FIGURE only: SCREEN-LEFT armored boot must now extend backward toward camera and show its broad dark SOLE at the lowest point around x=1020 y=980; SCREEN-RIGHT boot must be planted away from camera, HIGHER around x=1210 y=880, with its heel/back visible and NO sole pointed at camera. Both legs visible below the cape, exactly two legs. The sword still hangs POINT DOWN between legs, do not remove or deform it. No upward blade. Do not swap entire body, mirror armor, add head, change upper body, pose scale, cape length, or edit first figure. Same two separate full bodies at same positions on uniform flat saturated MAGENTA #FF00FF background, no shadows, text or grid. The only required change is a convincing opposite footfall for the right-hand figure."
+    }
+  ],
+  "replacementPreparation": [
+    {
+      "key": "grave_rear_b",
+      "id": "grave_raider",
+      "prepared": [
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 0,
+            "top": 0,
+            "width": 1023,
+            "height": 1537
+          },
+          "sourceBounds": {
+            "left": 37,
+            "top": 173,
+            "width": 947,
+            "height": 1223
+          },
+          "scale": 0.15372035977105478,
+          "width": 146,
+          "height": 189
+        }
+      ]
+    },
+    {
+      "key": "soul_walk_b",
+      "id": "soul_hunter",
+      "prepared": [
+        {
+          "index": 2,
+          "sourceCell": {
+            "left": 0,
+            "top": 0,
+            "width": 724,
+            "height": 1086
+          },
+          "sourceBounds": {
+            "left": 70,
+            "top": 74,
+            "width": 592,
+            "height": 932
+          },
+          "scale": 0.20278969957081544,
+          "width": 120,
+          "height": 189
+        },
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 724,
+            "top": 0,
+            "width": 724,
+            "height": 1086
+          },
+          "sourceBounds": {
+            "left": 84,
+            "top": 75,
+            "width": 555,
+            "height": 924
+          },
+          "scale": 0.19696969696969696,
+          "width": 109,
+          "height": 181
+        }
+      ]
+    },
+    {
+      "key": "headless_rear_walks",
+      "id": "headless_knight",
+      "prepared": [
+        {
+          "index": 6,
+          "sourceCell": {
+            "left": 0,
+            "top": 0,
+            "width": 724,
+            "height": 1086
+          },
+          "sourceBounds": {
+            "left": 107,
+            "top": 169,
+            "width": 497,
+            "height": 816
+          },
+          "scale": 0.19240196078431374,
+          "width": 96,
+          "height": 158
+        },
+        {
+          "index": 7,
+          "sourceCell": {
+            "left": 724,
+            "top": 0,
+            "width": 724,
+            "height": 1086
+          },
+          "sourceBounds": {
+            "left": 81,
+            "top": 173,
+            "width": 490,
+            "height": 835
+          },
+          "scale": 0.18802395209580838,
+          "width": 92,
+          "height": 157
+        }
+      ]
+    }
+  ],
+  "exportCommand": "node draft-battler/scripts/generate-runtime-assets.mjs --units=grave_raider,soul_hunter,headless_knight,war_chaplain"
+}

@@ -40,12 +40,13 @@ test("older units and static fallbacks retain their existing pose transition beh
   }
 });
 
-test("the scene creates a per-view latch only for grounded atlas units and checks it before changing frames", async () => {
+test("the scene protects grounded atlas units and summons before changing frames", async () => {
   const source = await readFile(new URL("../src/rendering/phaserBattleScene.ts", import.meta.url), "utf8");
   const createUnit = source.slice(source.indexOf("private createUnit("), source.indexOf("private createUnitArt("));
   const setPose = source.slice(source.indexOf("private setUnitPose("), source.indexOf("private updateUnitSpatialStyle("));
 
-  assert.match(createUnit, /poseState: new UnitPoseState\(Boolean\(unitArt\.sprite && getGroundedUnitArtBounds\(unit\.cardId\)\)\)/);
+  assert.match(createUnit, /const protectAnimation = Boolean\(unit\.summonedBy \|\| \(unitArt\.sprite && getGroundedUnitArtBounds\(unit\.cardId\)\)\);/);
+  assert.match(createUnit, /poseState: new UnitPoseState\(protectAnimation\)/);
   assert.match(setPose, /if \(!view\.poseState\.accept\(pose\)\) \{\s*return;\s*\}\s*view\.facing = facing;/);
   assert.ok(setPose.indexOf("view.poseState.accept(pose)") < setPose.indexOf("view.sprite.setFrame(frame)"));
 });

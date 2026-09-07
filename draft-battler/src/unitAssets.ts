@@ -250,6 +250,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:forest_skirmisher",
     path: new URL("./assets/units/forest_skirmisher/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/forest_skirmisher/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:forest_skirmisher:poses",
+      path: new URL("./assets/units/forest_skirmisher/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   marsh_stalker: {
     key: "unit:marsh_stalker",
@@ -266,6 +272,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:crypt_keeper",
     path: new URL("./assets/units/crypt_keeper/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/crypt_keeper/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:crypt_keeper:poses",
+      path: new URL("./assets/units/crypt_keeper/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   battle_alchemist: {
     key: "unit:battle_alchemist",
@@ -293,6 +305,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:grave_raider",
     path: new URL("./assets/units/grave_raider/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/grave_raider/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:grave_raider:poses",
+      path: new URL("./assets/units/grave_raider/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   frost_wraith: {
     key: "unit:frost_wraith",
@@ -320,11 +338,23 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:soul_hunter",
     path: new URL("./assets/units/soul_hunter/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/soul_hunter/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:soul_hunter:poses",
+      path: new URL("./assets/units/soul_hunter/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   city_crossbowman: {
     key: "unit:city_crossbowman",
     path: new URL("./assets/units/city_crossbowman/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/city_crossbowman/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:city_crossbowman:poses",
+      path: new URL("./assets/units/city_crossbowman/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   harpy_scout: {
     key: "unit:harpy_scout",
@@ -341,11 +371,23 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:smoke_trickster",
     path: new URL("./assets/units/smoke_trickster/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/smoke_trickster/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:smoke_trickster:poses",
+      path: new URL("./assets/units/smoke_trickster/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   war_mastiff: {
     key: "unit:war_mastiff",
     path: new URL("./assets/units/war_mastiff/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/war_mastiff/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:war_mastiff:poses",
+      path: new URL("./assets/units/war_mastiff/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   grave_bellringer: {
     key: "unit:grave_bellringer",
@@ -406,6 +448,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:headless_knight",
     path: new URL("./assets/units/headless_knight/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/headless_knight/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:headless_knight:poses",
+      path: new URL("./assets/units/headless_knight/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
   star_seer: {
     key: "unit:star_seer",
@@ -422,6 +470,12 @@ const UNIT_ASSETS: Record<CardId, UnitAsset> = {
     key: "unit:war_chaplain",
     path: new URL("./assets/units/war_chaplain/unit.webp", import.meta.url).href,
     cardPath: new URL("./assets/units/war_chaplain/card.webp", import.meta.url).href,
+    spriteSheet: {
+      key: "unit:war_chaplain:poses",
+      path: new URL("./assets/units/war_chaplain/sprite-sheet.webp", import.meta.url).href,
+      frameWidth: UNIT_SPRITE_FRAME_SIZE,
+      frameHeight: UNIT_SPRITE_FRAME_SIZE,
+    },
   },
 };
 

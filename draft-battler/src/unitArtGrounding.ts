@@ -38,6 +38,15 @@ const GROUNDED_UNIT_ART: Partial<Record<CardId, UnitArtBounds>> = {
   marsh_stalker: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 185, width: 362, height: 369 },
   ironhide_bear: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 196, width: 362, height: 358 },
   grave_bellringer: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 37, width: 362, height: 517 },
+  forest_skirmisher: { sourceWidth: 384, sourceHeight: 576, left: 64, top: 35, width: 256, height: 519 },
+  crypt_keeper: { sourceWidth: 384, sourceHeight: 576, left: 61, top: 35, width: 262, height: 518 },
+  city_crossbowman: { sourceWidth: 384, sourceHeight: 576, left: 33, top: 35, width: 318, height: 519 },
+  smoke_trickster: { sourceWidth: 384, sourceHeight: 576, left: 39, top: 35, width: 306, height: 519 },
+  war_mastiff: { sourceWidth: 384, sourceHeight: 576, left: 12, top: 182, width: 361, height: 372 },
+  grave_raider: { sourceWidth: 384, sourceHeight: 576, left: 11, top: 44, width: 362, height: 510 },
+  soul_hunter: { sourceWidth: 384, sourceHeight: 576, left: 43, top: 35, width: 298, height: 519 },
+  headless_knight: { sourceWidth: 384, sourceHeight: 576, left: 30, top: 35, width: 325, height: 519 },
+  war_chaplain: { sourceWidth: 384, sourceHeight: 576, left: 39, top: 34, width: 307, height: 520 },
 };
 
 export function getGroundedUnitArtBounds(cardId: CardId): Readonly<UnitArtBounds> | undefined {
@@ -76,5 +85,6 @@ export function getGroundedRangedAttackTiming(cardId: CardId, hasAtlas: boolean)
 export function hasGroundedProjectilePose(cardId: CardId): boolean {
   return cardId === "battle_alchemist" || cardId === "siege_engineer" || cardId === "moon_priestess"
     || cardId === "frost_wraith" || cardId === "star_seer" || cardId === "harpy_scout"
-    || cardId === "bone_archer" || cardId === "rune_warden" || cardId === "marsh_stalker" || cardId === "grave_bellringer";
+    || cardId === "bone_archer" || cardId === "rune_warden" || cardId === "marsh_stalker" || cardId === "grave_bellringer"
+    || cardId === "forest_skirmisher" || cardId === "city_crossbowman" || cardId === "smoke_trickster" || cardId === "soul_hunter";
 }

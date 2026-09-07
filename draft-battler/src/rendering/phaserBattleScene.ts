@@ -24,6 +24,7 @@ import {
 import { getUnitAsset, getUnitAssets } from "../unitAssets";
 import { BATTLE_UNIT_ART_GROUND_Y, getGroundedRangedAttackTiming, getGroundedUnitArtBounds, getGroundedUnitArtPlacement, hasGroundedProjectilePose } from "../unitArtGrounding";
 import { UnitPoseState, type UnitPose } from "./unitPoseState";
+import { UnitMotionState, type UnitMotionResult } from "./unitMotionState";
 import {
   BATTLE_CAMERA_CLOSE_ZOOM,
   BATTLE_CAMERA_ZOOM,
@@ -157,6 +158,7 @@ interface UnitView {
   sprite?: Phaser.GameObjects.Sprite;
   facing: UnitFacing;
   poseState: UnitPoseState;
+  motionState?: UnitMotionState;
   currentFrame?: number;
   depthBucket?: number;
   presentationScale?: number;
@@ -234,6 +236,7 @@ class CastleBattleScene extends Phaser.Scene {
   private readonly activeCombatPresentation = new Set<Promise<void>>();
   private readonly activeWalkTimers = new Set<Phaser.Time.TimerEvent>();
   private readonly activeDelayTimers = new Set<Phaser.Time.TimerEvent>();
+  private presentationAbortController = new AbortController();
   private readonly strikePool: StrikeEffect[] = [];
   private readonly floatTextPool: Phaser.GameObjects.Text[] = [];
   private readonly glowPool: Phaser.GameObjects.Ellipse[] = [];
@@ -307,6 +310,13 @@ class CastleBattleScene extends Phaser.Scene {
       this.ready = false;
       this.cancelActiveBattle();
       this.playToken += 1;
+      this.cancelPresentation();
+      this.unitViews.clear();
+      this.castleViews.clear();
+      this.strikePool.length = 0;
+      this.floatTextPool.length = 0;
+      this.glowPool.length = 0;
+      this.presentationLayer = undefined;
     });
 
     this.applyCommand(this.command);
@@ -426,18 +436,25 @@ class CastleBattleScene extends Phaser.Scene {
     });
   }
 
-  private clearScene(): void {
+  private cancelPresentation(): void {
+    this.presentationAbortController.abort();
+    this.unitViews.forEach((view) => view.motionState?.dispose());
     this.tweens.killAll();
     this.activeWalkTimers.forEach((timer) => timer.remove(false));
     this.activeWalkTimers.clear();
     this.activeDelayTimers.forEach((timer) => timer.remove(false));
     this.activeDelayTimers.clear();
     this.time.removeAllEvents();
+    this.activeCombatPresentation.clear();
+  }
+
+  private clearScene(): void {
+    this.cancelPresentation();
+    this.presentationAbortController = new AbortController();
     [...this.children.list].forEach((child) => child.destroy());
     this.presentationLayer = undefined;
     this.unitViews.clear();
     this.castleViews.clear();
-    this.activeCombatPresentation.clear();
     this.strikePool.length = 0;
     this.floatTextPool.length = 0;
     this.glowPool.length = 0;
@@ -766,6 +783,8 @@ class CastleBattleScene extends Phaser.Scene {
       container.setVisible(false);
     }
 
+    // Summons may act before their appearance effect ends, including older or fallback art.
+    const protectAnimation = Boolean(unit.summonedBy || (unitArt.sprite && getGroundedUnitArtBounds(unit.cardId)));
     const view: UnitView = {
       unit,
       container,
@@ -775,7 +794,8 @@ class CastleBattleScene extends Phaser.Scene {
       armor: 0,
       sprite: unitArt.sprite,
       facing: getDefaultUnitFacing(unit.owner),
-      poseState: new UnitPoseState(Boolean(unitArt.sprite && getGroundedUnitArtBounds(unit.cardId))),
+      poseState: new UnitPoseState(protectAnimation),
+      motionState: protectAnimation ? new UnitMotionState() : undefined,
       currentFrame: unitArt.sprite ? getUnitFrame(getDefaultUnitFacing(unit.owner), "idle") : undefined,
     };
     this.unitViews.set(unit.unitId, view);
@@ -885,6 +905,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private async playConcurrentCombatEvent(event: BattleTimelineEvent, playToken: number): Promise<void> {
+    const signal = this.presentationAbortController.signal;
     if (event.type === "combat_step") {
       await this.playCombatStep(event.events, event.time, playToken);
       return;
@@ -894,11 +915,12 @@ class CastleBattleScene extends Phaser.Scene {
       await this.delayRaw(scaleBattleDuration(event.time > 0 ? 110 : 0));
     }
 
-    await this.playEvent(event, playToken, undefined, { focusCamera: false });
+    if (!signal.aborted) await this.playEvent(event, playToken, undefined, { focusCamera: false });
   }
 
   private async waitForActiveCombatPresentation(): Promise<void> {
-    while (this.activeCombatPresentation.size > 0) {
+    const signal = this.presentationAbortController.signal;
+    while (!signal.aborted && this.activeCombatPresentation.size > 0) {
       await Promise.allSettled([...this.activeCombatPresentation]);
     }
   }
@@ -931,36 +953,7 @@ class CastleBattleScene extends Phaser.Scene {
     }
 
     if (event.type === "unit_spawn") {
-      const view = this.unitViews.get(event.unitId);
-      if (!view) {
-        return;
-      }
-
-      const homePosition = this.getHomePosition(view.unit.owner, view.unit.slotIndex);
-      view.container.setPosition(homePosition.x, homePosition.y);
-      this.updateUnitSpatialStyle(view, true);
-      view.container.setAlpha(0);
-      view.container.setVisible(true);
-      const clashPosition = this.getClashPosition(view.unit.owner, view.unit.slotIndex);
-      if (focusCamera) {
-        this.focusCameraOnPoint(clashPosition.x, clashPosition.y, 180, BATTLE_CAMERA_ZOOM);
-      }
-      const stopWalking = this.startUnitWalkCycle(view);
-      try {
-        await this.tween({
-          targets: view.container,
-          alpha: 1,
-          x: clashPosition.x,
-          y: clashPosition.y,
-          duration: 360,
-          ease: "Sine.easeOut",
-          onUpdate: () => this.updateUnitSpatialStyle(view),
-        });
-      } finally {
-        this.updateUnitSpatialStyle(view, true);
-        stopWalking();
-      }
-      this.emitBattleAbilityCallouts([event]);
+      await this.playCombatStepSpawn(event, focusCamera);
       return;
     }
 
@@ -978,6 +971,7 @@ class CastleBattleScene extends Phaser.Scene {
         this.focusCameraOnPoint(view.container.x, view.container.y, 170, BATTLE_CAMERA_CLOSE_ZOOM);
       }
       await this.pulse(view.container, event.shieldDelta ? 0x86a8ff : 0xe4c15e);
+      if (!this.isCurrentUnit(view) || playToken !== this.playToken) return;
       this.emitBattleAbilityCallouts([event]);
       return;
     }
@@ -1026,7 +1020,8 @@ class CastleBattleScene extends Phaser.Scene {
 
       const source = this.unitViews.get(event.sourceUnitId);
       if (source && getCardDefinition(source.unit.cardId).abilityId === "heal_only") {
-        await this.playRangedUnitAttack(source, view, focusCamera);
+        await this.playRangedUnitAttack(source, view, focusCamera, "heal");
+        if (this.destroyed || playToken !== this.playToken || this.unitViews.get(event.unitId) !== view) return;
       }
 
       this.updateUnitHp(view, event.remainingHp);
@@ -1088,22 +1083,33 @@ class CastleBattleScene extends Phaser.Scene {
     await Promise.all([spawnTask, actionTask, resultTask]);
   }
 
-  private async playCombatStepSpawn(event: Extract<CombatStepEvent, { type: "unit_spawn" }>): Promise<void> {
+  private async playCombatStepSpawn(event: Extract<CombatStepEvent, { type: "unit_spawn" }>, focusCamera = false): Promise<void> {
     const view = this.unitViews.get(event.unitId);
-    if (!view) {
+    if (!view || !this.isCurrentUnit(view)) {
       return;
     }
 
-    const homePosition = this.getHomePosition(view.unit.owner, view.unit.slotIndex);
-    view.container.setPosition(homePosition.x, homePosition.y);
-    this.updateUnitSpatialStyle(view, true);
-    view.container.setAlpha(0);
-    view.container.setVisible(true);
-
     const clashPosition = this.getClashPosition(view.unit.owner, view.unit.slotIndex);
+    const position = view.unit.summonedBy ? clashPosition : this.getHomePosition(view.unit.owner, view.unit.slotIndex);
+    view.container.setPosition(position.x, position.y);
+    this.updateUnitSpatialStyle(view, true);
+    view.container.setAlpha(view.unit.summonedBy ? 1 : 0);
+    view.container.setVisible(true);
+    if (focusCamera) {
+      this.focusCameraOnPoint(clashPosition.x, clashPosition.y, 180, BATTLE_CAMERA_ZOOM);
+    }
+
+    if (view.unit.summonedBy) {
+      // The skeleton's first attack is already due next tick; never walk its body in from home.
+      this.setUnitPose(view, "idle", getDefaultUnitFacing(view.unit.owner));
+      this.emitBattleAbilityCallouts([event]);
+      await this.playSummonAppearance(view);
+      return;
+    }
+
     const stopWalking = this.startUnitWalkCycle(view);
     try {
-      await this.tween({
+      await this.tweenUnitMotion(view, {
         targets: view.container,
         alpha: 1,
         x: clashPosition.x,
@@ -1116,7 +1122,20 @@ class CastleBattleScene extends Phaser.Scene {
       this.updateUnitSpatialStyle(view, true);
       stopWalking();
     }
-    this.emitBattleAbilityCallouts([event]);
+    if (this.isCurrentUnit(view)) this.emitBattleAbilityCallouts([event]);
+  }
+
+  private async playSummonAppearance(view: UnitView): Promise<void> {
+    const signal = this.presentationAbortController.signal;
+    if (signal.aborted || this.destroyed) return;
+    const scale = view.presentationScale ?? 1;
+    const glow = this.acquireGlow(
+      view.container.x, view.container.y + BATTLE_UNIT_ART_GROUND_Y * scale,
+      58 * scale, 18 * scale, 0xa7e68e, 0.42,
+    ).setDepth(view.container.depth - 1);
+
+    await this.tween({ targets: glow, alpha: 0, scale: 1.4, duration: 140, ease: "Sine.easeOut" }, signal);
+    if (!signal.aborted && !this.destroyed) this.releaseGlow(glow);
   }
 
   private async playCombatStepHealCast(event: Extract<CombatStepEvent, { type: "unit_heal" }>): Promise<void> {
@@ -1126,17 +1145,18 @@ class CastleBattleScene extends Phaser.Scene {
       return;
     }
 
-    await this.playRangedUnitAttack(source, view, false);
+    await this.playRangedUnitAttack(source, view, false, "heal");
   }
 
   private async playCombatStepResults(events: readonly CombatStepEvent[], time: number, playToken: number): Promise<void> {
+    const signal = this.presentationAbortController.signal;
     const resultEvents = events.filter((event) => event.type !== "unit_spawn" && event.type !== "unit_attack");
     if (resultEvents.length === 0) {
       return;
     }
 
     await this.delayRaw(scaleBattleDuration(time > 0 ? COMBAT_STEP_RESULT_DELAY_MS : 0));
-    if (this.destroyed || playToken !== this.playToken) {
+    if (signal.aborted || this.destroyed || playToken !== this.playToken) {
       return;
     }
 
@@ -1145,6 +1165,7 @@ class CastleBattleScene extends Phaser.Scene {
     const textLimit = COMBAT_STEP_FLOAT_TEXT_LIMIT;
     let emittedTextCount = 0;
     const armorFeedbackTasks: Promise<void>[] = [];
+    const healedViews = new Set<UnitView>();
 
     this.emitBattleAbilityCallouts(visibleResultEvents);
 
@@ -1196,12 +1217,15 @@ class CastleBattleScene extends Phaser.Scene {
         if (view) {
           this.updateUnitHp(view, event.remainingHp);
           emitText(view, `+${event.amount}`, "#79c77a");
+          if (event.amount > 0) healedViews.add(view);
         }
       }
     });
 
     await Promise.all([
       ...armorFeedbackTasks,
+      // A group heal shares one casting pose, but every recipient needs visible feedback.
+      ...[...healedViews].map((view) => this.flash(view.container, 0x79c77a, 140)),
       ...deathEvents.map((event) => this.playCombatStepDeath(event)),
     ]);
   }
@@ -1286,7 +1310,7 @@ class CastleBattleScene extends Phaser.Scene {
       );
     }
 
-    await this.tween({
+    const strikeMotion = await this.tweenUnitMotion(attacker, {
       targets: attacker.container,
       x: strike.x,
       y: strike.y,
@@ -1294,9 +1318,12 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeOut",
       onUpdate: () => this.updateUnitSpatialStyle(attacker),
     });
+    if (strikeMotion === "disposed" || attacker.motionState?.isDisposed()) return;
     this.updateUnitSpatialStyle(attacker, true);
     this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
-    await this.tween({
+    // A simultaneous lethal hit still lands, but the fallen body must not slide back home.
+    if (strikeMotion === "dead") return;
+    const returnMotion = await this.tweenUnitMotion(attacker, {
       targets: attacker.container,
       x: start.x,
       y: start.y,
@@ -1304,6 +1331,7 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeIn",
       onUpdate: () => this.updateUnitSpatialStyle(attacker),
     });
+    if (returnMotion === "disposed" || attacker.motionState?.isDisposed()) return;
     this.updateUnitSpatialStyle(attacker, true);
     this.setUnitPose(attacker, "idle", attackFacing);
   }
@@ -1329,7 +1357,7 @@ class CastleBattleScene extends Phaser.Scene {
       );
     }
 
-    await this.tween({
+    const blockMotion = await this.tweenUnitMotion(defender, {
       targets: defender.container,
       x: startX + (defender.unit.owner === "player" ? 4 : -4),
       y: startY + (defender.unit.owner === "player" ? 4 : -4),
@@ -1338,6 +1366,7 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeOut",
       onUpdate: () => this.updateUnitSpatialStyle(defender),
     });
+    if (blockMotion === "disposed" || defender.motionState?.isDisposed()) return;
     this.updateUnitSpatialStyle(defender, true);
 
     this.floatText(defender.container.x, defender.container.y - 54, this.blockLabel, "#86a8ff");
@@ -1345,7 +1374,14 @@ class CastleBattleScene extends Phaser.Scene {
     this.setUnitPose(defender, "idle", attackFacing);
   }
 
-  private async playRangedUnitAttack(attacker: UnitView, target: UnitView, focusCamera: boolean): Promise<void> {
+  private async playRangedUnitAttack(
+    attacker: UnitView,
+    target: UnitView,
+    focusCamera: boolean,
+    intent: "attack" | "heal" = "attack",
+  ): Promise<void> {
+    const castSignal = this.presentationAbortController.signal;
+    if (this.destroyed || castSignal.aborted || attacker.motionState?.isDisposed()) return;
     const attackFacing = getDefaultUnitFacing(attacker.unit.owner);
     this.setUnitPose(attacker, "attack", attackFacing);
     if (focusCamera) {
@@ -1360,9 +1396,10 @@ class CastleBattleScene extends Phaser.Scene {
     const groundedTiming = getGroundedRangedAttackTiming(attacker.unit.cardId, Boolean(attacker.sprite));
     if (groundedTiming) {
       // The authored cast/shot pose already moves the body; keep its feet on the contact shadow.
-      await this.delay(groundedTiming.windupMs);
-      this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
-      await this.delay(groundedTiming.recoveryMs);
+      await this.delayCast(groundedTiming.windupMs, castSignal);
+      if (castSignal.aborted || this.destroyed) return;
+      if (intent === "attack") this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
+      await this.delayCast(groundedTiming.recoveryMs, castSignal);
     } else if (attacker.sprite) {
       const startY = attacker.sprite.y;
       await this.tween({
@@ -1371,13 +1408,15 @@ class CastleBattleScene extends Phaser.Scene {
         duration: 90,
         ease: "Sine.easeOut",
       });
-      this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
+      if (castSignal.aborted || this.destroyed) return;
+      if (intent === "attack") this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
       await this.tween({
         targets: attacker.sprite,
         y: startY + 2,
         duration: 70,
         ease: "Sine.easeIn",
       });
+      if (castSignal.aborted || this.destroyed) return;
       await this.tween({
         targets: attacker.sprite,
         y: startY,
@@ -1393,8 +1432,9 @@ class CastleBattleScene extends Phaser.Scene {
         ease: "Sine.easeOut",
         onUpdate: () => this.updateUnitSpatialStyle(attacker),
       });
+      if (castSignal.aborted || this.destroyed) return;
       this.updateUnitSpatialStyle(attacker, true);
-      this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
+      if (intent === "attack") this.drawStrike(attacker.container.x, attacker.container.y, target.container.x, target.container.y);
       await this.tween({
         targets: attacker.container,
         y: startY,
@@ -1402,9 +1442,11 @@ class CastleBattleScene extends Phaser.Scene {
         ease: "Sine.easeIn",
         onUpdate: () => this.updateUnitSpatialStyle(attacker),
       });
+      if (castSignal.aborted || this.destroyed) return;
       this.updateUnitSpatialStyle(attacker, true);
     }
 
+    if (castSignal.aborted || this.destroyed) return;
     this.setUnitPose(attacker, "idle", attackFacing);
   }
 
@@ -1443,18 +1485,20 @@ class CastleBattleScene extends Phaser.Scene {
         const { attackerId, delayMs, remainingHpAfterHit } = hit;
         const attacker = attackerById.get(attackerId);
         await this.delay(delayMs);
+        if (!this.isCurrentBattle(playToken, activeBattle)) return;
 
         const attackFacing = event.owner === "enemy" ? "north" : "south";
         const startY = attacker?.container.y;
         if (attacker && startY !== undefined) {
           this.setUnitPose(attacker, "attack", attackFacing);
-          await this.tween({
+          const lungeMotion = await this.tweenUnitMotion(attacker, {
             targets: attacker.container,
             y: startY + (event.owner === "player" ? 18 : -18),
             duration: CASTLE_ASSAULT_LUNGE_MS,
             ease: "Sine.easeOut",
             onUpdate: () => this.updateUnitSpatialStyle(attacker),
           });
+          if (lungeMotion === "disposed" || attacker.motionState?.isDisposed()) return;
           this.updateUnitSpatialStyle(attacker, true);
         } else {
           await this.delay(CASTLE_ASSAULT_LUNGE_MS);
@@ -1468,15 +1512,17 @@ class CastleBattleScene extends Phaser.Scene {
           this.updateCastleHp(event.owner, remainingHpAfterHit);
           activeBattle?.completion.emitCastleHp(event.owner, remainingHpAfterHit);
         }
+        if (!this.isCurrentBattle(playToken, activeBattle)) return;
 
         if (attacker && startY !== undefined) {
-          await this.tween({
+          const returnMotion = await this.tweenUnitMotion(attacker, {
             targets: attacker.container,
             y: startY,
             duration: CASTLE_ASSAULT_LUNGE_MS,
             ease: "Sine.easeIn",
             onUpdate: () => this.updateUnitSpatialStyle(attacker),
           });
+          if (returnMotion === "disposed" || attacker.motionState?.isDisposed()) return;
           this.updateUnitSpatialStyle(attacker, true);
           this.setUnitPose(attacker, "idle", attackFacing);
         } else {
@@ -1511,7 +1557,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private async playUnitSacrifice(view: UnitView, duration: number): Promise<void> {
-    if (!view.container.visible) {
+    if (!this.isCurrentUnit(view) || !view.container.visible) {
       return;
     }
 
@@ -1521,14 +1567,19 @@ class CastleBattleScene extends Phaser.Scene {
     await this.tween({
       targets: view.container,
       alpha: 0,
-      scale: 0.76,
+      // Shrink relative to perspective, keeping the contact point on the ground.
+      scaleX: view.container.scaleX * 0.76,
+      scaleY: view.container.scaleY * 0.76,
+      y: view.container.y + BATTLE_UNIT_ART_GROUND_Y * view.container.scaleY * 0.24,
       duration,
       ease: "Sine.easeIn",
     });
-    view.container.setVisible(false);
+    if (this.isCurrentUnit(view)) view.container.setVisible(false);
   }
 
   private drawStrike(startX: number, startY: number, endX: number, endY: number): void {
+    const signal = this.presentationAbortController.signal;
+    if (signal.aborted || this.destroyed) return;
     const effect = this.acquireStrikeEffect();
     const { shadow, strike } = effect;
 
@@ -1542,7 +1593,7 @@ class CastleBattleScene extends Phaser.Scene {
       alpha: 0,
       scaleX: 1.18,
       duration: scaleBattleDuration(140),
-      onComplete: () => this.releaseStrikeEffect(effect),
+      onComplete: () => { if (!signal.aborted && !this.destroyed) this.releaseStrikeEffect(effect); },
     });
   }
 
@@ -1609,7 +1660,7 @@ class CastleBattleScene extends Phaser.Scene {
   private async moveUnitTo(view: UnitView, position: { x: number; y: number }, duration: number): Promise<void> {
     const stopWalking = this.startUnitWalkCycle(view);
     try {
-      await this.tween({
+      await this.tweenUnitMotion(view, {
         targets: view.container,
         x: position.x,
         y: position.y,
@@ -1627,6 +1678,7 @@ class CastleBattleScene extends Phaser.Scene {
 
   private startUnitWalkCycle(view: UnitView): () => void {
     const facing = getDefaultUnitFacing(view.unit.owner);
+    const signal = this.presentationAbortController.signal;
 
     this.setUnitPose(view, "walkA", facing);
 
@@ -1639,6 +1691,7 @@ class CastleBattleScene extends Phaser.Scene {
       delay: scaleBattleDuration(150),
       loop: true,
       callback: () => {
+        if (signal.aborted || !this.isCurrentUnit(view)) return;
         this.setUnitPose(view, nextPose, facing);
         nextPose = nextPose === "walkA" ? "walkB" : "walkA";
       },
@@ -1648,11 +1701,18 @@ class CastleBattleScene extends Phaser.Scene {
     return () => {
       timer.remove(false);
       this.activeWalkTimers.delete(timer);
-      this.setUnitPose(view, "idle", facing);
+      if (!signal.aborted) this.setUnitPose(view, "idle", facing);
     };
   }
 
+  private isCurrentUnit(view: UnitView): boolean {
+    return !this.destroyed && !this.presentationAbortController.signal.aborted
+      && this.unitViews.get(view.unit.unitId) === view && !view.motionState?.isDisposed();
+  }
+
   private setUnitPose(view: UnitView, pose: UnitPose, facing: UnitFacing = view.facing): void {
+    if (!this.isCurrentUnit(view)) return;
+    if (pose === "dead") view.motionState?.die();
     if (!view.poseState.accept(pose)) {
       return;
     }
@@ -1675,6 +1735,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private updateUnitSpatialStyle(view: UnitView, force = false): void {
+    if (!this.isCurrentUnit(view)) return;
     const { container } = view;
     const nextDepthBucket = Math.round(container.y / UNIT_DEPTH_BUCKET_SIZE) * UNIT_DEPTH_BUCKET_SIZE;
     const nextScale = getUnitPresentationScale(this.layout, container.y, this.command.type);
@@ -1737,6 +1798,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private updateUnitHp(view: UnitView, hp: number): void {
+    if (!this.isCurrentUnit(view)) return;
     const ratio = view.unit.maxHp > 0 ? clamp(hp / view.unit.maxHp, 0, 1) : 0;
     const fillWidth = Math.max(1, UNIT_HP_BAR_WIDTH * ratio);
     const hpLabelText = `${Math.max(0, hp)}/${view.unit.maxHp}`;
@@ -1753,6 +1815,7 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private updateUnitArmor(view: UnitView, armor: number): void {
+    if (!this.isCurrentUnit(view)) return;
     const normalizedArmor = Math.max(0, Math.trunc(armor));
     const armorLabelText = formatArmorBadge(normalizedArmor);
     view.armor = normalizedArmor;
@@ -1785,6 +1848,8 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private floatText(x: number, y: number, label: string, color: string, scale = 1): void {
+    const signal = this.presentationAbortController.signal;
+    if (signal.aborted || this.destroyed) return;
     const text = this.acquireFloatText();
 
     text.setPosition(x, y).setText(label).setColor(color).setScale(scale).setDepth(980);
@@ -1795,7 +1860,7 @@ class CastleBattleScene extends Phaser.Scene {
       alpha: 0,
       duration: scaleBattleDuration(520),
       ease: "Sine.easeOut",
-      onComplete: () => this.releaseFloatText(text),
+      onComplete: () => { if (!signal.aborted && !this.destroyed) this.releaseFloatText(text); },
     });
   }
 
@@ -1831,6 +1896,8 @@ class CastleBattleScene extends Phaser.Scene {
   }
 
   private async flash(target: Phaser.GameObjects.Container, color: number, duration = 180): Promise<void> {
+    const signal = this.presentationAbortController.signal;
+    if (signal.aborted || this.destroyed) return;
     const glow = this.acquireGlow(target.x, target.y - 8, 74, 74, color, 0.32).setDepth(target.depth + 1);
 
     await this.tween({
@@ -1841,10 +1908,12 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeOut",
     });
 
-    this.releaseGlow(glow);
+    if (!signal.aborted && !this.destroyed) this.releaseGlow(glow);
   }
 
   private async pulse(target: Phaser.GameObjects.Container, color: number): Promise<void> {
+    const signal = this.presentationAbortController.signal;
+    if (signal.aborted || this.destroyed) return;
     const glow = this.acquireGlow(target.x, target.y - 8, 68, 68, color, 0.22).setDepth(target.depth + 1);
 
     await this.tween({
@@ -1855,7 +1924,7 @@ class CastleBattleScene extends Phaser.Scene {
       ease: "Sine.easeOut",
     });
 
-    this.releaseGlow(glow);
+    if (!signal.aborted && !this.destroyed) this.releaseGlow(glow);
   }
 
   private acquireGlow(x: number, y: number, width: number, height: number, color: number, alpha: number): Phaser.GameObjects.Ellipse {
@@ -1925,31 +1994,75 @@ class CastleBattleScene extends Phaser.Scene {
     return this.scheduleDelay(durationMs);
   }
 
-  private scheduleDelay(durationMs: number): Promise<void> {
-    if (durationMs <= 0 || this.destroyed) {
-      return Promise.resolve();
-    }
+  private delayCast(durationMs: number, signal: AbortSignal): Promise<void> {
+    return this.scheduleDelay(scaleBattleDuration(durationMs), signal);
+  }
 
+  private scheduleDelay(durationMs: number, signal = this.presentationAbortController.signal): Promise<void> {
+    if (durationMs <= 0 || signal.aborted || this.destroyed) return Promise.resolve();
+
+    // Death preserves an already committed shot; scene replacement cancels and settles it.
     return new Promise((resolve) => {
-      const timer = this.time.delayedCall(durationMs, () => {
+      const finish = () => {
         this.activeDelayTimers.delete(timer);
+        signal.removeEventListener("abort", cancel);
         resolve();
-      });
+      };
+      const cancel = () => {
+        timer.remove(false);
+        finish();
+      };
+      const timer = this.time.delayedCall(durationMs, finish);
       this.activeDelayTimers.add(timer);
+      signal.addEventListener("abort", cancel, { once: true });
     });
   }
 
-  private tween(config: Phaser.Types.Tweens.TweenBuilderConfig): Promise<void> {
-    if (this.destroyed) {
+  private async tweenUnitMotion(view: UnitView, config: Phaser.Types.Tweens.TweenBuilderConfig): Promise<UnitMotionResult> {
+    const signal = this.presentationAbortController.signal;
+    if (!this.isCurrentUnit(view)) return "disposed";
+    if (!view.motionState) {
+      await this.tween(config, signal);
+      return signal.aborted || !this.isCurrentUnit(view) ? "disposed" : "completed";
+    }
+    if (this.destroyed) return "disposed";
+    return view.motionState.run((complete) => {
+      const tween = this.tweens.add({
+        ...config,
+        duration: typeof config.duration === "number" ? scaleBattleDuration(config.duration) : config.duration,
+        onComplete: complete,
+      });
+      return () => tween.stop();
+    });
+  }
+
+  private tween(config: Phaser.Types.Tweens.TweenBuilderConfig, signal = this.presentationAbortController.signal): Promise<void> {
+    if (this.destroyed || signal?.aborted) {
       return Promise.resolve();
     }
 
     return new Promise((resolve) => {
-      this.tweens.add({
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener("abort", cancel);
+        resolve();
+      };
+      const cancel = () => {
+        // Killing a Phaser tween alone does not complete the awaiting presentation task.
+        finish();
+        tween.stop();
+      };
+      const tween = this.tweens.add({
         ...config,
         duration: typeof config.duration === "number" ? scaleBattleDuration(config.duration) : config.duration,
-        onComplete: () => resolve(),
+        onComplete: finish,
       });
+      if (!settled) {
+        signal?.addEventListener("abort", cancel, { once: true });
+        if (signal?.aborted) cancel();
+      }
     });
   }
 }
