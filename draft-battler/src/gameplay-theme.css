@@ -1,0 +1,320 @@
+/* In-game chrome only: the menu, artwork and battlefield hitboxes keep their
+   existing presentation. Bronze marks primary actions, not every surface. */
+:where(.stage--draft, .stage--battle, .stage--finished) {
+  --game-surface: #141914;
+  --game-control: #242c23;
+  --game-line: #444a3d;
+  --game-text: #eeeadd;
+  --game-muted: #b9b8a5;
+  --game-gold: #c5aa6e;
+  --game-danger: #e0a092;
+  --game-success: #b3d1a0;
+  --game-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .metric {
+  border-color: var(--game-line);
+  border-radius: 8px;
+  background: var(--game-surface);
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .metric__icon {
+  border-color: transparent;
+  background: rgba(197, 170, 110, 0.09);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .metric__label {
+  color: var(--game-muted);
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .metric__value {
+  color: var(--game-text);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .metric--enemy-hp .metric__icon {
+  border-color: transparent;
+  background: rgba(224, 160, 146, 0.09);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .synergy-strip {
+  scrollbar-color: #606550 transparent;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .synergy-chip {
+  border-color: #363e32;
+  border-radius: 8px;
+  background: var(--game-surface);
+  color: var(--game-muted);
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .synergy-chip__tier {
+  color: var(--game-muted);
+  background: transparent;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .synergy-chip--active {
+  border-color: #677d58;
+  color: var(--game-success);
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .synergy-chip--mastered {
+  border-color: #958150;
+  color: var(--game-gold);
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .panel-header--draft {
+  border-color: var(--game-line);
+  border-radius: 8px;
+  background: var(--game-surface);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .panel-header--draft h1 {
+  font-family: inherit;
+  font-weight: 650;
+  font-size: clamp(10px, 2.8cqw, 12px);
+  text-transform: none;
+  text-shadow: none;
+  color: var(--game-text);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .panel-header--draft .panel-caption {
+  border: 0;
+  color: var(--game-muted);
+  text-transform: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .draft-onboarding {
+  border-color: transparent;
+  border-radius: 6px;
+  background: rgba(20, 25, 20, 0.94);
+  color: var(--game-muted);
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: none;
+}
+
+/* Filter the decorative template, never the character or its readable text. */
+:where(.stage--draft, .stage--battle, .stage--finished) .unit-card::before {
+  filter: saturate(0.72) brightness(0.86);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .draft-grid--triple .unit-card__name {
+  line-height: 1.08;
+  text-shadow: 0 1px 2px #000;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .unit-card__stat {
+  border-color: rgba(185, 184, 165, 0.1);
+  background: rgba(20, 25, 20, 0.94);
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .draft-grid--triple .unit-card__ability {
+  border-color: transparent;
+  background: rgba(12, 16, 12, 0.94);
+  color: var(--game-text);
+  line-height: 1.12;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .logs-button, .logs-panel__close, .logs-round-button,
+  .draft-choices-toggle, .panel-header--draft .reroll-button,
+  .placement-context-dock__cancel, .placement-context-dock__info,
+  .card-info-panel__close, .card-info-panel__move,
+  .battle-playback-controls button, .terminal-result__secondary-button,
+  .draft-replacement-panel__actions button
+) {
+  border-color: var(--game-line);
+  border-radius: 8px;
+  background: var(--game-control);
+  color: var(--game-text);
+  font-family: inherit;
+  font-weight: 600;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .panel-header--draft .reroll-button {
+  font-size: 10px;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .logs-button--active, .logs-round-button--selected,
+  .battle-playback-controls__speed[aria-pressed="true"]
+) {
+  border-color: #768563;
+  background: #303e2c;
+  color: var(--game-success);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .battle-playback-controls {
+  top: calc(var(--safe-top) + 64px);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .action-bar__abandon, .battle-playback-controls .battle-playback-controls__abandon
+) {
+  border-color: #674b41;
+  background: #2b211d;
+  color: var(--game-danger);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .primary-button, .field-action-bar .primary-button
+) {
+  min-height: 44px;
+  border: 1px solid #c5aa6e;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #cfb67e, #b79b5f);
+  color: #211d13;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-transform: none;
+  text-shadow: none;
+  box-shadow: var(--game-shadow);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .field-action-bar .primary-button::before,
+:where(.stage--draft, .stage--battle, .stage--finished) .field-action-bar .primary-button::after {
+  content: none;
+}
+
+/* Opaque disabled controls stay legible over the moving castle artwork. */
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .primary-button:disabled, .field-action-bar .primary-button:disabled,
+  .panel-header--draft .reroll-button:disabled
+) {
+  background: #272c24;
+  border-color: #484f40;
+  color: var(--game-muted);
+  box-shadow: none;
+  opacity: 1;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .placement-context-dock, .card-info-panel, .logs-panel,
+  .draft-replacement-panel, .terminal-result, .battle-presentation-notice
+) {
+  border-color: var(--game-line);
+  background: var(--game-surface);
+  box-shadow: var(--game-shadow);
+  color: var(--game-text);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .placement-context-dock__copy span {
+  color: var(--game-muted);
+}
+
+/* Auto-sized grid rows prevent tiny badges stretching to fill a tall dialog. */
+:where(.stage--draft, .stage--battle, .stage--finished) .card-info-panel {
+  align-content: start;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) :is(
+  .card-info-panel__type, .card-info-panel__tags
+) {
+  align-items: start;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .card-info-panel__stats .unit-card__stat {
+  min-height: 40px;
+  gap: 4px;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .card-info-panel__summary {
+  line-height: 1.5;
+  color: var(--game-text);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .draft-replacement-panel__actions .draft-replacement-panel__confirm {
+  border-color: #a57b52;
+  background: #6d4930;
+  color: #fff0db;
+}
+
+/* Results no longer reserve a right-hand column for the old floating log
+   button. Only statistics scroll; the next-round action is always outside. */
+:where(.stage--draft, .stage--battle, .stage--finished) .battle-action-panel {
+  right: calc(var(--safe-right) + 10px);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary {
+  max-height: min(42dvh, 340px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #606550 transparent;
+  padding: 12px;
+  gap: 6px;
+  border-color: var(--game-line);
+  background: var(--game-surface);
+  color: var(--game-text);
+  box-shadow: var(--game-shadow);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary > strong {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary > span {
+  color: var(--game-muted);
+  font-size: 11px;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary--player > strong {
+  color: var(--game-success);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary--enemy > strong {
+  color: var(--game-danger);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-insights .round-result-insights__title {
+  color: var(--game-muted);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-damage__row {
+  min-height: 32px;
+  border-color: transparent;
+  background: var(--game-control);
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-damage__row--synergy {
+  background: #293525;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary .round-result-damage__value {
+  color: var(--game-text);
+  font-weight: 700;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) button:focus-visible,
+:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary:focus-visible {
+  outline: 2px solid var(--game-gold);
+  outline-offset: 2px;
+}
+
+@media (max-height: 720px) {
+  /* A wrapped opponent label plus the synergy scroller must not meet the
+     draft header's extended touch targets on narrow phones. */
+  :where(.stage--draft, .stage--battle, .stage--finished) .draft-overlay--has-logs:not(.draft-overlay--with-enemy-intel) {
+    --draft-short-top: max(120px, calc(var(--safe-top) + 112px));
+  }
+}

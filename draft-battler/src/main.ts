@@ -1,4 +1,5 @@
 import "./styles.css";
+import "./gameplay-theme.css";
 import { APP_NAME } from "./brand";
 import type { BattleAbilityCalloutLabels, BattlefieldController } from "./rendering/phaserBattleScene";
 import { prefersReducedBattleMotion } from "./rendering/motionPreference";
@@ -1692,8 +1693,12 @@ function createRoundResultSummary(record: RoundRecord): HTMLElement {
   summary.setAttribute("role", "status");
   summary.setAttribute("aria-live", "polite");
   summary.setAttribute("aria-atomic", "true");
+  // Long damage lists scroll independently of the next-round action.
+  summary.tabIndex = 0;
+  summary.setAttribute("aria-labelledby", "round-result-title");
 
   const title = document.createElement("strong");
+  title.id = "round-result-title";
   title.textContent = getRoundWinnerLabel(snapshot.winner);
   const detail = document.createElement("span");
   detail.textContent = formatMessage(copy.roundResultDetail, {
