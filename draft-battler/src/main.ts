@@ -1925,26 +1925,14 @@ function createSoloTerminalResult(): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "terminal-result__actions";
 
-  const newLayoutButton = document.createElement("button");
-  newLayoutButton.className = session.source === "daily" ? "terminal-result__secondary-button" : "primary-button";
-  newLayoutButton.type = "button";
-  newLayoutButton.textContent = copy.newLayout;
-  newLayoutButton.disabled = soloRankingStarting;
-  setFocusKey(newLayoutButton, "restart-run");
-  const replayDifficulty = uiState.run.botDifficulty;
-  newLayoutButton.addEventListener("click", () => startNewSoloRun(replayDifficulty));
-
-  const sameLayoutButton = document.createElement("button");
-  sameLayoutButton.className = session.source === "daily" ? "primary-button" : "terminal-result__secondary-button";
-  sameLayoutButton.type = "button";
-  sameLayoutButton.textContent = copy.sameLayout;
-  const replayRequest: SoloRunStartRequest = {
-    seed: uiState.run.seed,
-    botDifficulty: uiState.run.botDifficulty,
-    source: session.source,
-    dailyDateKey: session.dailyDateKey,
-  };
-  sameLayoutButton.addEventListener("click", () => startSoloRun(replayRequest));
+  const newGameButton = document.createElement("button");
+  newGameButton.className = "primary-button terminal-result__new-game";
+  newGameButton.type = "button";
+  newGameButton.textContent = copy.newGame;
+  newGameButton.disabled = soloRankingStarting;
+  setFocusKey(newGameButton, "restart-run");
+  const difficulty = uiState.run.botDifficulty;
+  newGameButton.addEventListener("click", () => startNewSoloRun(difficulty));
 
   const shareButton = document.createElement("button");
   shareButton.className = "terminal-result__secondary-button";
@@ -1965,11 +1953,7 @@ function createSoloTerminalResult(): HTMLElement {
   setFocusKey(menuButton, "return-menu");
   menuButton.addEventListener("click", returnToMainMenu);
 
-  if (session.source === "daily") {
-    actions.append(sameLayoutButton, newLayoutButton, shareButton, menuButton);
-  } else {
-    actions.append(newLayoutButton, sameLayoutButton, shareButton, menuButton);
-  }
+  actions.append(newGameButton, shareButton, menuButton);
   panel.append(eyebrow, title, detail, metrics);
   if (PVP_UI_ENABLED && uiState.run.botDifficulty === "strong") {
     const rankingStatus = soloRankingDelivery.status(session.runId);
@@ -2238,6 +2222,8 @@ function createLogsPanel(logs: readonly RoundRecord[]): HTMLElement {
 
   const body = document.createElement("div");
   body.className = "logs-panel__body";
+  body.tabIndex = 0;
+  body.setAttribute("aria-label", copy.logs);
 
   const selectedLog = getSelectedRoundLog(logs);
   if (selectedLog) {
@@ -2257,7 +2243,12 @@ function createRoundLogReport(log: RoundRecord): HTMLElement {
   const title = document.createElement("h2");
   title.textContent = formatMessage(copy.roundNumber, { round: log.round });
 
-  report.append(title, createBattleSummary(log), createMatchupList(log.playerSlots, log.enemySlots));
+  report.append(
+    title,
+    createBattleSummary(log),
+    createRoundInsightsSummary(log),
+    createMatchupList(log.playerSlots, log.enemySlots),
+  );
 
   return report;
 }
@@ -2971,14 +2962,17 @@ function createPvpLeaderboardContent(snapshot: PvpLeaderboardSnapshot): Document
   });
   meta.append(players, weekEnds);
 
-  const participation = document.createElement("p");
-  participation.className = `pvp-leaderboard-participation pvp-leaderboard-participation--${snapshot.participation}`;
-  participation.textContent = snapshot.participation === "telegram_required"
-    ? copy.pvpLeaderboardTelegramRequired
-    : snapshot.participation === "missing_profile"
-      ? copy.pvpLeaderboardMissingProfile
-      : leaderboardMode === "strong_bot" ? copy.soloLeaderboardRanked : copy.pvpLeaderboardRanked;
-  fragment.append(meta, participation);
+  fragment.append(meta);
+  if (leaderboardMode !== "strong_bot" || snapshot.participation !== "ranked") {
+    const participation = document.createElement("p");
+    participation.className = `pvp-leaderboard-participation pvp-leaderboard-participation--${snapshot.participation}`;
+    participation.textContent = snapshot.participation === "telegram_required"
+      ? copy.pvpLeaderboardTelegramRequired
+      : snapshot.participation === "missing_profile"
+        ? copy.pvpLeaderboardMissingProfile
+        : copy.pvpLeaderboardRanked;
+    fragment.append(participation);
+  }
 
   if (snapshot.entries.length === 0) {
     fragment.append(createPvpLeaderboardMessage(copy.pvpLeaderboardEmpty));

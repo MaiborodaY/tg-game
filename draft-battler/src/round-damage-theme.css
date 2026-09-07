@@ -36,10 +36,22 @@
   line-height: 1.25;
 }
 
-:where(.stage--draft, .stage--battle, .stage--finished) .round-result-summary .round-result-damage__value {
+:where(.stage--draft, .stage--battle, .stage--finished) :is(.round-result-summary, .report--log) .round-result-damage__value {
   grid-column: 2;
   grid-row: 1 / 3;
   align-self: center;
+  min-width: 2ch;
+  color: var(--game-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: right;
+}
+
+:where(.stage--draft, .stage--battle, .stage--finished) .report--log .round-result-insights {
+  margin-top: 12px;
 }
 
 :where(.stage--draft, .stage--battle, .stage--finished) .round-result-damage__track {

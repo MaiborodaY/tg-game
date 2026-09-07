@@ -42,8 +42,7 @@ export interface UiCopy {
   closeRunHistory: string;
   runSourceStandard: string;
   runSourceDaily: string;
-  newLayout: string;
-  sameLayout: string;
+  newGame: string;
   shareResult: string;
   shareCopied: string;
   shareFailed: string;
@@ -126,7 +125,6 @@ export interface UiCopy {
   pvpLeaderboardMissingProfile: string;
   pvpLeaderboardRanked: string;
   soloLeaderboardIntro: string;
-  soloLeaderboardRanked: string;
   soloRankingStarting: string;
   soloRankingPracticeConfirm: string;
   soloRankingPending: string;
@@ -422,8 +420,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeRunHistory: "Закрыть историю матчей",
     runSourceStandard: "Обычный матч",
     runSourceDaily: "Испытание дня",
-    newLayout: "Новый расклад",
-    sameLayout: "Тот же расклад",
+    newGame: "Новая игра",
     shareResult: "Поделиться",
     shareCopied: "Результат скопирован",
     shareFailed: "Не удалось поделиться — скопируйте результат вручную.",
@@ -506,7 +503,6 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpLeaderboardMissingProfile: "Для участия сначала создайте персонажа в World of Life.",
     pvpLeaderboardRanked: "Ваши завершённые онлайн-дуэли участвуют в рейтинге.",
     soloLeaderboardIntro: "Победы над сильным ботом за неделю: пн–вс, UTC. Только новые партии — без испытания дня и повторов.",
-    soloLeaderboardRanked: "Новые партии против сильного бота из Telegram участвуют в рейтинге после проверки результата.",
     soloRankingStarting: "Готовим рейтинговую партию…",
     soloRankingPracticeConfirm: "Не удалось начать рейтинговую партию. Нужны связь, запуск из Telegram и персонаж World of Life. Начать тренировку без рейтинга?",
     soloRankingPending: "Результат ожидает отправки в рейтинг. При восстановлении связи попробуем снова; при необходимости переоткройте игру из Telegram.",
@@ -690,8 +686,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeRunHistory: "Закрити історію матчів",
     runSourceStandard: "Звичайний матч",
     runSourceDaily: "Випробування дня",
-    newLayout: "Новий розклад",
-    sameLayout: "Той самий розклад",
+    newGame: "Нова гра",
     shareResult: "Поділитися",
     shareCopied: "Результат скопійовано",
     shareFailed: "Не вдалося поділитися — скопіюйте результат вручну.",
@@ -774,7 +769,6 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpLeaderboardMissingProfile: "Для участі спочатку створіть персонажа у World of Life.",
     pvpLeaderboardRanked: "Ваші завершені онлайн-дуелі беруть участь у рейтингу.",
     soloLeaderboardIntro: "Перемоги над сильним ботом за тиждень: пн–нд, UTC. Лише нові партії — без випробування дня та повторів.",
-    soloLeaderboardRanked: "Нові партії проти сильного бота з Telegram беруть участь у рейтингу після перевірки результату.",
     soloRankingStarting: "Готуємо рейтингову партію…",
     soloRankingPracticeConfirm: "Не вдалося почати рейтингову партію. Потрібні зв’язок, запуск із Telegram і персонаж World of Life. Почати тренування без рейтингу?",
     soloRankingPending: "Результат очікує надсилання до рейтингу. Коли зв’язок відновиться, спробуємо знову; за потреби відкрийте гру з Telegram ще раз.",
@@ -958,8 +952,7 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     closeRunHistory: "Close match history",
     runSourceStandard: "Standard match",
     runSourceDaily: "Daily challenge",
-    newLayout: "New layout",
-    sameLayout: "Same layout",
+    newGame: "New game",
     shareResult: "Share",
     shareCopied: "Result copied",
     shareFailed: "Could not share — copy the result manually.",
@@ -1042,7 +1035,6 @@ const UI_COPY: Record<SupportedLocale, UiCopy> = {
     pvpLeaderboardMissingProfile: "Create a World of Life character first to participate.",
     pvpLeaderboardRanked: "Your completed online duels count toward the ranking.",
     soloLeaderboardIntro: "Strong-bot wins this week: Mon–Sun, UTC. New runs only — no daily challenges or replays.",
-    soloLeaderboardRanked: "New strong-bot runs started from Telegram count after server verification.",
     soloRankingStarting: "Preparing a ranked run…",
     soloRankingPracticeConfirm: "Could not start a ranked run. A connection, Telegram launch and a World of Life character are required. Start unranked practice instead?",
     soloRankingPending: "Result waiting to be sent to the ranking. We will retry when connected; reopen the game from Telegram if needed.",
