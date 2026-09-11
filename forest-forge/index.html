@@ -82,11 +82,11 @@
         <div id="probabilities-panel"><table class="probabilities"><thead><tr><th>Epoch</th><th id="current-anvil-level"></th><th id="next-anvil-level"></th></tr></thead><tbody id="probability-rows"></tbody></table></div>
         <div class="anvil-upgrade">
           <strong id="anvil-level"></strong>
-          <p id="upgrade-status"></p>
           <div id="upgrade-progress-wrap" hidden><progress id="upgrade-progress" max="100" value="0" aria-label="Anvil upgrade progress"></progress><span id="upgrade-time"></span></div>
           <button id="skip-anvil-coins" class="button blue" title="Up to 3× the upgrade cost, decreasing with time remaining" hidden><span>Skip</span><small><i class="coin" aria-hidden="true"></i><span id="skip-anvil-price"></span></small></button>
-          <button id="upgrade-anvil" class="button blue"></button><button id="skip-anvil-time" class="mini-button" hidden>Skip wait · Local</button>
-          <button id="new-game" class="new-game" hidden>Start a new hero · Local</button>
+          <button id="upgrade-anvil" class="button blue"></button>
+          <div class="anvil-local"><button id="skip-anvil-time" class="mini-button" hidden>Skip wait · Local</button>
+          <button id="new-game" class="new-game" hidden>Start a new hero · Local</button></div>
         </div>
       </section>
     </section>

@@ -231,7 +231,6 @@ button:disabled { opacity:.55; cursor:default; }
 .anvil-dialog { position:fixed; left:50%; right:auto; transform:translateX(-50%); width:min(460px,calc(100% - 20px)); bottom:calc(8px + var(--safe-bottom)); }
 .anvil-upgrade { margin-top:12px; text-align:center; }
 #anvil-level { font-size:17px; }
-#upgrade-status { margin:6px 0 10px; font-size:12px; }
 #upgrade-anvil { width:100%; font-size:15px; }
 .probabilities { border-collapse:separate; border-spacing:0 5px; width:100%; font-size:12px; }
 .probabilities th { text-align:left; font-weight:700; }
@@ -345,79 +344,36 @@ button:disabled { opacity:.55; cursor:default; }
 
 #weapon-choice{max-width:140px;font:inherit;padding:5px;border:1px solid var(--ink);border-radius:5px;background:var(--paper,#fffaf0)}
 
-#skip-anvil-time{display:block;margin:8px auto 0;font-size:12px}
-
-#anvil-title { font:26px/1.1 'Lilita UI',sans-serif; color:var(--ink); }
-.anvil-wallet { display:flex; align-items:center; justify-content:center; gap:6px; width:max-content; max-width:100%; margin:4px auto 12px; padding:3px 10px; border-radius:9px; background:var(--ink); color:var(--paper); font:20px 'Lilita UI',sans-serif; }
-.epoch-name { display:flex; align-items:center; gap:6px; }
-.epoch-icon { width:32px; height:32px; flex:none; }
-.probabilities { table-layout:fixed; }
+/* Size the forge sheet against usable space, including Telegram controls. */
+.anvil-dialog {
+  --anvil-space:calc(var(--tg-viewport-stable-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 20px);
+  --epoch-row:clamp(20px, calc((var(--anvil-space) - 300px) / 10), 30px);
+  padding:8px;
+  max-height:var(--anvil-space);
+}
+.anvil-dialog .sheet-top { align-items:center; margin-bottom:3px; }
+.anvil-dialog .close { width:34px; height:34px; font-size:28px; flex:none; }
+#anvil-title { font:clamp(20px, 5.8vw, 24px)/1.1 'Lilita UI',sans-serif; color:var(--ink); }
+.anvil-wallet { display:flex; align-items:center; justify-content:center; gap:6px; width:max-content; max-width:100%; margin:0 auto 3px; padding:2px 8px; border-radius:9px; background:var(--ink); color:var(--paper); font:18px/22px 'Lilita UI',sans-serif; }
+.epoch-name { display:flex; align-items:center; gap:5px; }
+.epoch-icon { width:min(24px, calc(var(--epoch-row) - 4px)); height:min(24px, calc(var(--epoch-row) - 4px)); flex:none; }
+.probabilities { table-layout:fixed; border-spacing:0 3px; }
 .probabilities th:first-child { width:60%; }
-.probabilities tbody th,.probabilities tbody td { padding:3px 6px; font:clamp(12px,3.8vw,18px)/1.15 'Lilita UI',sans-serif; }
+.probabilities thead th { padding:2px 5px; font-size:12px; }
+.probabilities tbody th,.probabilities tbody td { height:var(--epoch-row); padding:1px 5px; font:clamp(12px,3.6vw,16px)/1.1 'Lilita UI',sans-serif; }
 .probabilities tbody td:last-child { background:#14251a17; color:#35473b; }
-.anvil-upgrade { margin-top:16px; }
-#anvil-level { font:20px 'Lilita UI',sans-serif; }
-#upgrade-status { margin:5px 0 8px; font-size:13px; }
-#upgrade-progress-wrap { position:relative; height:32px; border:2px solid var(--ink); border-radius:9px; overflow:hidden; margin-bottom:14px; background:#41495c; }
+.anvil-upgrade { margin-top:5px; text-align:center; }
+#anvil-level { display:block; margin-bottom:4px; font:clamp(14px,4vw,18px)/20px 'Lilita UI',sans-serif; }
+#upgrade-progress-wrap { position:relative; height:26px; border:2px solid var(--ink); border-radius:8px; overflow:hidden; margin-bottom:5px; background:#41495c; }
 #upgrade-progress { display:block; appearance:none; border:0; width:100%; height:100%; background:#41495c; border-radius:0; }
 #upgrade-progress::-webkit-progress-bar { background:#41495c; border-radius:0; }
 #upgrade-progress::-webkit-progress-value { background:#08a9ed; border-radius:0; }
 #upgrade-progress::-moz-progress-bar { background:#08a9ed; }
-#upgrade-time { position:absolute; inset:0; display:grid; place-items:center; font:19px 'Lilita UI',sans-serif; color:white; -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; }
-#skip-anvil-coins { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:146px; max-width:100%; margin:0 auto; padding:10px 20px 13px; font:28px 'Lilita UI',sans-serif; }
-#skip-anvil-coins small { display:flex; align-items:center; gap:5px; font:20px 'Lilita UI',sans-serif; }
-@media(max-width:360px) {
-  #anvil-title { font-size:23px; }
-  .epoch-icon { width:25px; height:28px; }
-  .epoch-name { gap:4px; }
-  .probabilities tbody th,.probabilities tbody td { padding:4px; }
-}
-.anvil-upgrade #skip-anvil-time,.anvil-upgrade #new-game { display:inline-flex; align-items:center; justify-content:center; margin:5px 3px 0; padding:3px 5px; min-height:24px; font-size:10px; }
-@media(max-height:760px) {
-  .anvil-dialog { padding:8px; }
-  .anvil-dialog .sheet-top { margin-bottom:4px; }
-  #anvil-title { font-size:23px; }
-  .anvil-wallet { margin:2px auto 5px; padding:2px 8px; font-size:18px; }
-  .probabilities { border-spacing:0 3px; }
-  .probabilities thead th { padding:3px 5px; font-size:12px; }
-  .probabilities tbody th,.probabilities tbody td { padding:2px 5px; }
-  .epoch-icon { width:24px; height:24px; }
-  .anvil-upgrade { margin-top:8px; }
-  #anvil-level { font-size:18px; }
-  #upgrade-status { margin:3px 0 6px; font-size:12px; }
-  #upgrade-progress-wrap { height:28px; margin-bottom:8px; }
-  #upgrade-time { font-size:17px; }
-  #skip-anvil-coins { flex-direction:row; justify-content:center; gap:12px; min-height:44px; padding:6px 16px 9px; font-size:24px; }
-  #skip-anvil-coins small { font-size:18px; }
-}
-@media(max-height:620px) {
-  .anvil-dialog .close { width:32px; height:32px; font-size:26px; }
-  #anvil-title { font-size:21px; }
-  .anvil-wallet { font-size:16px; }
-  .probabilities { border-spacing:0 2px; }
-  .probabilities tbody th,.probabilities tbody td { padding:1px 4px; font-size:13px; }
-  .epoch-icon { width:22px; height:22px; }
-  .epoch-name { gap:4px; }
-  .anvil-upgrade { margin-top:6px; }
-  #anvil-level { font-size:17px; }
-  #upgrade-status { font-size:11px; margin:3px 0 5px; }
-  #upgrade-progress-wrap { height:25px; margin-bottom:6px; }
-}
-@media(max-height:520px) {
-  .anvil-dialog { padding:6px; }
-  .anvil-dialog .sheet-top { margin-bottom:2px; }
-  .anvil-wallet { margin:0 auto 3px; }
-  .probabilities thead th { padding:1px 4px; }
-  .probabilities tbody th,.probabilities tbody td { font-size:12px; }
-  .epoch-icon { width:20px; height:20px; }
-  .anvil-upgrade { display:grid; grid-template-columns:minmax(0,1fr) 108px; gap:3px 8px; }
-  #anvil-level,#upgrade-status,#upgrade-progress-wrap { grid-column:1; margin:0; }
-  #skip-anvil-coins { grid-column:2; grid-row:1 / 4; flex-direction:column; gap:0; min-width:0; width:100%; height:100%; padding:4px 8px 7px; }
-  #skip-anvil-coins small { font-size:13px; }
-  #upgrade-anvil { grid-column:1 / -1; }
-  .anvil-upgrade #skip-anvil-time { grid-column:1; }
-  .anvil-upgrade #new-game { grid-column:2; font-size:9px; }
-}
+#upgrade-time { position:absolute; inset:0; display:grid; place-items:center; font:17px 'Lilita UI',sans-serif; color:white; -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; }
+#skip-anvil-coins { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:10px; min-height:44px; max-width:100%; margin:0 auto; padding:5px 16px 8px; font:22px/26px 'Lilita UI',sans-serif; }
+#skip-anvil-coins small { display:flex; align-items:center; gap:5px; font:18px 'Lilita UI',sans-serif; }
+.anvil-local { display:flex; justify-content:center; gap:6px; }
+.anvil-upgrade #skip-anvil-time,.anvil-upgrade #new-game { display:inline-flex; align-items:center; justify-content:center; margin:5px 0 0; padding:3px 5px; min-height:24px; font-size:10px; }
 
 @media(max-width:360px) {
   .hud { left:10px; right:10px; }

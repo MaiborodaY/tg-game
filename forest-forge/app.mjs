@@ -377,8 +377,8 @@ function updateAnvil() {
   $('skip-anvil-coins').disabled = !skipCost || state.coins < skipCost;
   $('skip-anvil-coins').setAttribute('aria-label', `Skip upgrade for ${skipCost.toLocaleString('en')} coins`);
   setText('skip-anvil-price', skipCost.toLocaleString('en'));
-  setText('anvil-level', `Anvil · Level ${state.anvilLevel}`);
-  setText('upgrade-status', state.upgradeEndsAt ? 'Upgrade in progress' : next ? `Next upgrade takes ${next.minutes < 60 ? next.minutes + ' minutes' : (next.minutes / 60).toFixed(1) + ' hours'}` : 'Maximum anvil level reached');
+  const durationLabel = next ? (next.minutes < 60 ? `${next.minutes} min` : `${(next.minutes / 60).toFixed(1)} h`) : '';
+  setText('anvil-level', next ? `Anvil · Lv. ${state.anvilLevel} → ${state.anvilLevel + 1}${upgrading ? '' : ` · ${durationLabel}`}` : `Anvil · Lv. ${state.anvilLevel} · Max`);
   setText('upgrade-anvil', state.upgradeEndsAt ? 'Upgrade in progress' : next ? `Upgrade · ${next.coins.toLocaleString('en')} coins` : 'Max level');
   $('upgrade-anvil').disabled = !!state.upgradeEndsAt || !next || state.coins < next.coins;
   $('skip-anvil-time').hidden=!localPreview||!state.upgradeEndsAt;
