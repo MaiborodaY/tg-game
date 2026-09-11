@@ -68,6 +68,17 @@ Browser visitors retain their existing local demo progress.
 
 ## Current gameplay and art
 
+The route contains ten biomes, twenty levels each, with ten waves per level.
+The HUD advances from 1–20 to 2–1. Every biome has its own scenery, melee/ranged
+enemies, healer and final ruler; normal level bosses use larger commanders.
+Scenery changes only at biome boundaries, behind the existing upper-scene fade.
+The original combat balance and saved global level remain in use.
+
+Locally, `/?biome=1` through `/?biome=10` opens a disposable preview; add
+`&boss=1` for its final boss. The selector lets you view the entire route without
+changing your saved hero. Source art, route and preparation instructions are in
+`design/biomes/README.md`. Biome atlases load on demand and ship as lossless WebP.
+
 The hero attacks every two seconds. Ordinary enemies have a 20% hammer drop
 chance; bosses always pay five times their biome hammer roll. Idle income is one
 hammer and one coin per minute, capped at four hours. New heroes have five

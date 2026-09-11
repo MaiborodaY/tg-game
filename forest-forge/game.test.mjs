@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { anvilSkipCost, skipAnvilUpgrade } from './game.mjs';
+import { anvilSkipCost, skipAnvilUpgrade, BIOMES, LEVELS_PER_BIOME, MAX_LEVEL } from './game.mjs';
 import { idleRewards, collectIdleRewards } from './game.mjs';
 import { freshGame, stats, itemLevel, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
 function advance(s, seconds) { const events=[]; for(let i=0;i<seconds*30;i++)events.push(...step(s,1/30)); return events; }
@@ -292,13 +292,48 @@ test('legacy save preserves money, HP, gear, and already-paid pending forge; com
 });
 
 test('200 levels use ten waves each; death retains loot and no between-wave healing',()=>{
- for(let level=11;level<=200;level++)for(let n=0;n<10;n++){const s=wave(level,n);assert.equal(s.enemies.some(e=>e.boss),n===9);assert.deepEqual(restore(JSON.stringify(s)),s);}
+ for(let level=11;level<=200;level++)for(let n=0;n<10;n++){const s=wave(level,n);assert.equal(s.enemies.some(e=>e.boss),n===9);assert.ok(s.enemies.length<=5);assert.deepEqual(restore(JSON.stringify(s)),s);}
  const s=wave(6,6);s.hp=1;s.hammers=7;s.coins=100;forge(s,()=>0);
  s.enemies[0].x=s.heroX+.115;s.enemies[0].engaged=true;s.enemies[0].clock=1.09;
  assert.ok(step(s,1/30).some(e=>e.type==='death'));advance(s,1.9);assert.equal(s.encounter,0);assert.equal(s.hp,stats(s).hp);assert.equal(s.coins,100);assert.equal(s.hammers,5);assert.ok(s.pending);
  s.hp=17;s.phase='victory';s.phaseTime=0;step(s,1/30);assert.equal(s.hp,17);
  const last=wave(200,9);last.phase='victory';last.phaseTime=0;
  assert.ok(step(last,1/30).some(e=>e.type==='complete'));assert.ok(restore(JSON.stringify(last)).completed);replay(last);assert.equal(last.level,1);assert.equal(last.highest,200);
+});
+
+test('biomes change only after their twentieth boss, and death retries the same biome',()=>{
+ assert.equal(BIOMES.length*LEVELS_PER_BIOME,MAX_LEVEL);
+ assert.equal(new Set(BIOMES.flatMap(b=>Object.values(b.names))).size,50);
+ for(let i=0;i<BIOMES.length;i++){
+  const first=i*20+1,last=(i+1)*20;
+  assert.equal(enemyFor(first).name,BIOMES[i].names.warrior);
+  assert.equal(enemyFor(last-1,'boss').name,BIOMES[i].names.commander);
+  assert.equal(enemyFor(last,'boss').name,BIOMES[i].names.boss);
+  const s=wave(last,9);s.coins=731;s.hammers=97;s.enemies.forEach(e=>e.hp=0);s.phase='victory';s.phaseTime=0;
+  const events=step(s,1/30);
+  if(i<9){
+   assert.equal(s.level,last+1);assert.equal(s.encounter,0);assert.equal(s.enemies[0].name,BIOMES[i+1].names.warrior);
+   assert.ok(events.some(e=>e.type==='level'&&e.level===last+1));
+   assert.equal((s.level-1)%LEVELS_PER_BIOME+1,1);
+   s.hp=0;s.phase='dead';s.phaseTime=0;step(s,1/30);
+   assert.equal(s.level,last+1);assert.equal(s.encounter,0);assert.equal(s.enemies[0].name,BIOMES[i+1].names.warrior);
+  }else assert.ok(s.completed);
+  assert.equal(s.coins,731);assert.equal(s.hammers,97);
+ }
+});
+
+test('pre-biome saves retain an in-progress legacy formation and owned progress',()=>{
+ const s=wave(10,6);s.level=147;s.highest=153;s.coins=913;s.hammers=64;s.hp=13;
+ s.equipment.weapon=candidate('weapon',71);
+ for(const e of s.enemies){Object.assign(e,enemyFor(s.level,e.kind));e.hp=e.maxHp-1;e.name='Old goblin';}
+ const loaded=restore(JSON.stringify(s));
+ assert.equal(loaded.level,147);assert.equal(loaded.highest,153);assert.equal(loaded.encounter,6);
+ assert.equal(loaded.coins,913);assert.equal(loaded.hammers,64);assert.equal(loaded.hp,13);
+ assert.deepEqual(loaded.equipment,s.equipment);
+ assert.deepEqual(loaded.enemies.map(e=>[e.id,e.kind,e.hp,e.x]),s.enemies.map(e=>[e.id,e.kind,e.hp,e.x]));
+ assert.equal(loaded.enemies[0].name,BIOMES[7].names.warrior);
+ loaded.enemies.forEach(e=>e.hp=0);loaded.phase='victory';loaded.phaseTime=0;step(loaded,1/30);
+ assert.equal(loaded.encounter,7);assert.deepEqual(restore(JSON.stringify(loaded)),loaded);
 });
 
 test('completed version-one saves continue at level 11 without losing equipment or gold',()=>{

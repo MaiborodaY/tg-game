@@ -1,0 +1,17 @@
+Create a production animation sprite atlas for a bright 2D side-scrolling mobile fantasy game. EXACTLY 4 horizontal rows and 8 columns = 32 isolated sprite frames on a genuinely transparent background. Image canvas 2048 x 1024, each cell exactly 256 x 256. No grid lines, labels, text, scenery, floor, shadow, sparkles, slash effects or loose projectiles. Keep every sprite fully within its cell with at least 20px transparent margin. All characters face LEFT in every standing and action frame, toward a hero on their left. Clean adorable-but-hostile chibi proportions: oversized heads, short chunky legs, stubby hands, emphatic dark near-black outline of consistent thickness, bold flat colors with only one broad cel-shaded shadow, no thin details, no texture, no rendered 3D, no gradients. Match a simple green goblin cartoon game: clear silhouettes that read at 40 pixels tall. All frames in each row must depict EXACTLY THE SAME character design, outfit and held object. Each body remains centered at the horizontal center of its cell and all standing feet share one baseline. Keep a single stable scale within a row.
+COLUMN POSES for EACH row, left to right:
+1: idle ready pose;
+2: walk contact A, leftward stride, front foot forward and rear foot backward;
+3: walk passing A, feet crossing beneath body;
+4: walk contact B, opposite legs and arms;
+5: walk passing B, opposite foot lifted;
+6: attack or cast WINDUP, held weapon drawn back/up, turn remains left;
+7: attack or cast FOLLOW-THROUGH strongly extended LEFT, weapon or hands still connected, NO airborne object;
+8: defeated pose lying flat on ground, same outfit and weapon, no gore, no icons.
+This is ONE atlas asset, not a character concept poster. Each row must have all eight poses, aligned into the regular cells, with no extra characters.
+ROWS TOP TO BOTTOM:
+1. MELEE: a rust-red fox street duelist with cream muzzle, dark blue eye mask and short cobalt coat, wielding a broad curved silver cutlass. One visible big triangular ear, thick fox tail and short boots.
+2. RANGED: a squat navy crow watchman with large cream beak, copper tricorn hat, coral coat, holding a short broad flintlock blunderbuss LEFT. Two yellow bird feet, no human face.
+3. HEALER: a small plum-cloaked masked plague apothecary with an oversized pale hooked beak mask and wide indigo hat, holding one large amber medicine flask and a short cane. Clear bird-mask silhouette, no tiny straps.
+4. MAIN BOSS: the Clockwork Magistrate, a massive short-legged brass bell automaton with a dark cobalt metal coat shape, one huge round cream clock-face eye without numbers and enormous squared copper fists. One simple roof-like cap with a red pennant. No gears drawn individually.
+Maintain stable identities and actual distinct walk limb positions across all eight columns. Whole atlas completely transparent.

@@ -1,0 +1,17 @@
+Create a production animation sprite atlas for a bright 2D side-scrolling mobile fantasy game. EXACTLY 4 horizontal rows and 8 columns = 32 isolated sprite frames on a genuinely transparent background. Image canvas 2048 x 1024, each cell exactly 256 x 256. No grid lines, labels, text, scenery, floor, shadow, sparkles, slash effects or loose projectiles. Keep every sprite fully within its cell with at least 20px transparent margin. All characters face LEFT in every standing and action frame, toward a hero on their left. Clean adorable-but-hostile chibi proportions: oversized heads, short chunky legs, stubby hands, emphatic dark near-black outline of consistent thickness, bold flat colors with only one broad cel-shaded shadow, no thin details, no texture, no rendered 3D, no gradients. Match a simple green goblin cartoon game: clear silhouettes that read at 40 pixels tall. All frames in each row must depict EXACTLY THE SAME character design, outfit and held object. Each body remains centered at the horizontal center of its cell and all standing feet share one baseline. Keep a single stable scale within a row.
+COLUMN POSES for EACH row, left to right:
+1: idle ready pose;
+2: walk contact A, leftward stride, front foot forward and rear foot backward;
+3: walk passing A, feet crossing beneath body;
+4: walk contact B, opposite legs and arms;
+5: walk passing B, opposite foot lifted;
+6: attack or cast WINDUP, held weapon drawn back/up, turn remains left;
+7: attack or cast FOLLOW-THROUGH strongly extended LEFT, weapon or hands still connected, NO airborne object;
+8: defeated pose lying flat on ground, same outfit and weapon, no gore, no icons.
+This is ONE atlas asset, not a character concept poster. Each row must have all eight poses, aligned into the regular cells, with no extra characters.
+ROWS TOP TO BOTTOM:
+1. MELEE: a stout ochre mushroom bruiser with a very broad dark plum cap, cream stalk face with two black angry eyes, two root legs and thick root arms, holding one chunky turquoise hooked root cleaver. No human skin or goblin ears.
+2. RANGED: a squat teal bog frog, huge golden cheeks and small amber eyes, two short legs, holding a single crooked tan reed blowpipe pointing left. Different silhouette from the mushrooms; no mushroom cap on this frog.
+3. HEALER: a slender cream mushroom oracle in a dark teal bell-shaped cloak, small purple cap and one crooked root staff topped with a simple pink closed bud. Two short feet, face visibly different from the bruiser.
+4. MAIN BOSS: the Mire Monarch, a huge short-legged hollow stump monster with two enormous root arms, one enormous layered violet mushroom crown, bright yellow angry eyes in a dark face hollow and a broad toothless mouth. No held weapon, attacks with its huge left-facing fist. Only three large mushroom cap shapes, no tiny mushrooms.
+Maintain stable identities and actual distinct walk limb positions across all eight columns. Whole atlas completely transparent.

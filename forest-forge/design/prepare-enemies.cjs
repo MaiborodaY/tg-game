@@ -6,6 +6,71 @@ const root = path.resolve(__dirname, '..');
 
 (async () => {
   const report = [];
+  if (process.argv[2] === '--biomes') {
+    const base = path.join(__dirname, 'biomes');
+    const ids = process.argv.slice(3).length ? process.argv.slice(3) : fs.readdirSync(base).filter(id => fs.existsSync(path.join(base,id,'enemies-source.png')));
+    for (const id of ids) {
+      const {data,info} = await sharp(path.join(base,id,'enemies-source.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+      if (!data.some((value,i) => i%4===3 && value===0)) throw Error(`${id}: expected transparent source`);
+      // Extract whole silhouettes, including attacks crossing the nominal grid.
+      const count=info.width*info.height,labels=new Int32Array(count),queue=new Int32Array(count),poses=new Array(32);
+      let label=0;
+      for(let p=0;p<count;p++){
+        if(labels[p]||data[p*4+3]<24)continue;
+        label++;let read=0,write=1,left=info.width,top=info.height,right=0,bottom=0,sumX=0,sumY=0;
+        queue[0]=p;labels[p]=label;
+        while(read<write){
+          const n=queue[read++],x=n%info.width,y=Math.floor(n/info.width);
+          left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);sumX+=x;sumY+=y;
+          for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){
+            const nx=x+dx,ny=y+dy;
+            if(nx<0||nx>=info.width||ny<0||ny>=info.height)continue;
+            const v=ny*info.width+nx;
+            if(!labels[v]&&data[v*4+3]>=24){labels[v]=label;queue[write++]=v;}
+          }
+        }
+        if(write<500)continue;
+        const row=Math.min(3,Math.floor(sumY/write/(info.height/4))),col=Math.min(7,Math.floor(sumX/write/(info.width/8))),slot=row*8+col;
+        if(!poses[slot]||poses[slot].area<write)poses[slot]={label,left,top,right,bottom,area:write};
+      }
+      if(poses.filter(Boolean).length!==32)throw Error(`${id}: expected 32 separate complete creatures, got ${poses.filter(Boolean).length}`);
+      if(poses.some(f=>f.left<2||f.top<2||f.right>info.width-3||f.bottom>info.height-3))throw Error(`${id}: creature touches source edge; regenerate with more padding`);
+      const layers = [], rows = [];
+      for (let row=0;row<4;row++) {
+        const frames = poses.slice(row*8,row*8+8);
+        for(const [col,f] of frames.entries()){
+          let sum=0,pixels=0;
+          // Grounded body centre stays stable when a weapon extends outwards.
+          for(let y=Math.floor(f.bottom-(f.bottom-f.top)*.22);y<=f.bottom;y++)for(let x=f.left;x<=f.right;x++){
+            if(labels[y*info.width+x]===f.label){sum+=x;pixels++;}
+          }
+          f.anchor=col===7?(f.left+f.right)/2:sum/pixels;
+        }
+        // One scale per creature across idle, walking, attacking and defeat.
+        const scale=Math.min(168/Math.max(...frames.map(f=>f.bottom-f.top+1)),84/Math.max(...frames.map(f=>f.anchor-f.left)),84/Math.max(...frames.map(f=>f.right-f.anchor)));
+        for(const [col,f] of frames.entries()){
+          const width=f.right-f.left+1,height=f.bottom-f.top+1,rgba=Buffer.alloc(width*height*4);
+          for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+            const p=(f.top+y)*info.width+f.left+x,src=p*4,dst=(y*width+x)*4;
+            if(labels[p]===f.label)data.copy(rgba,dst,src,src+4);
+          }
+          const rw=Math.max(1,Math.round(width*scale)),rh=Math.max(1,Math.round(height*scale));
+          const image=await sharp(rgba,{raw:{width,height,channels:4}}).resize(rw,rh).png().toBuffer();
+          const left=Math.round(96-(f.anchor-f.left)*scale),top=180-rh;
+          if(left<5||top<5||left+rw>187||top+rh>187)throw Error(`${id}: atlas frame clipped`);
+          layers.push({input:image,left:col*192+left,top:row*192+top});
+        }
+        rows.push({row,scale,frames:frames.map(({left,top,right,bottom,area})=>({left,top,right,bottom,area}))});
+      }
+      const target=path.join(root,'assets','biomes',id);fs.mkdirSync(target,{recursive:true});
+      const saved=await sharp({create:{width:1536,height:768,channels:4,background:'#00000000'}}).composite(layers).png({palette:true,quality:100,compressionLevel:9,effort:10}).toFile(path.join(target,'enemies.png'));
+      fs.writeFileSync(path.join(target,'enemies.json'),JSON.stringify({bodyHeights:rows.map(r=>Math.round((r.frames[0].bottom-r.frames[0].top+1)*r.scale)/192)})+'\n');
+      report.push({id,frames:32,bytes:saved.size,rows});
+    }
+    fs.mkdirSync(path.join(root,'qa'),{recursive:true});
+    fs.writeFileSync(path.join(root,'qa','biome-enemies-preparation.json'),JSON.stringify(report,null,2));
+    console.log(JSON.stringify(report.map(({rows,...entry})=>entry)));return;
+  }
   for (const kind of (process.argv.slice(2).length ? process.argv.slice(2) : ['warrior', 'archer', 'boss', 'healer'])) {
     const { data, info } = await sharp(path.join(__dirname, 'enemy-sources', `${kind}.png`)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     const { width: w, height: h } = info, count = w * h;

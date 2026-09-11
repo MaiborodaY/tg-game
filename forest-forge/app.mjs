@@ -1,4 +1,4 @@
-import { freshGame, restore, stats, itemLevel, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY } from './game.mjs';
+import { freshGame, restore, stats, itemLevel, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs';
 
 const $ = id => document.getElementById(id);
@@ -7,6 +7,9 @@ const requestedOutfit=new URLSearchParams(location.search).get('outfit');
 const previewSet=localPreview&&[...ARMOR_SETS.flat(),'stone-guard'].includes(requestedOutfit)?requestedOutfit:null;
 const requestedWeapon=new URLSearchParams(location.search).get('weapon');
 const previewWeapon=localPreview&&Object.hasOwn(WEAPONS,requestedWeapon)?requestedWeapon:null;
+const requestedBiome=Number(new URLSearchParams(location.search).get('biome'));
+const previewBiome=localPreview&&!previewWeapon&&!previewSet&&Number.isInteger(requestedBiome)&&requestedBiome>=1&&requestedBiome<=BIOMES.length?requestedBiome:null;
+const previewBoss=previewBiome&&new URLSearchParams(location.search).get('boss')==='1';
 let state;
 let artVersion=Date.now();
 window.addEventListener('storage',event=>{if(event.key==='forest-forge-art-update')artVersion=Date.now();});
@@ -17,6 +20,16 @@ let cloudBusy = false, cloudDirty = false, cloudFailed = false, lastCloudSave = 
 if (telegramLaunch) { state = freshGame(); $('cloud-status').hidden = false; $('game').inert = true; }
 else try { state = restore(localStorage.getItem(SAVE_KEY)); } catch { state = freshGame(); storageAvailable = false; }
 if(previewWeapon){state=freshGame();const w=WEAPONS[previewWeapon];state.equipment.weapon={slot:'weapon',weaponId:previewWeapon,name:w.name,quality:w.quality,epoch:w.epoch,itemLevel:1,value:Math.max(1,Math.round(2*w.multiplier)),sale:1};}
+if(previewBiome){
+  state=freshGame();state.level=state.highest=(previewBiome-1)*LEVELS_PER_BIOME+(previewBoss?20:11);
+  const [id,w]=Object.entries(WEAPONS).find(([,w])=>w.epoch===previewBiome&&!w.range);
+  state.equipment.weapon={slot:'weapon',weaponId:id,name:w.name,quality:w.quality,epoch:w.epoch,itemLevel:1,value:Math.max(2,Math.round(enemyFor(state.level).maxHp*.25)),sale:1};
+  state.equipment.chest={slot:'chest',name:'Preview armor',quality:0,epoch:previewBiome,itemLevel:1,value:enemyFor(state.level,'boss').damage*1000,sale:1};
+  state.hp=stats(state).hp;
+  const mixed=BIOMES[previewBiome-1].waves.findIndex(w=>w.includes('W')&&w.includes('A')&&w.includes('H'));
+  const encounter=previewBoss?9:(mixed-10+18)%9;
+  state.encounter=encounter?encounter-1:0;state.phase=encounter?'victory':'dead';state.phaseTime=0;step(state,1/30);
+}
 let ringTarget = null, bulkSaleSelection = null;
 let sheetSlot = null, toastUntil = 0;
 let savedTime = 0, uiTime = 0, frameCount = 0;
@@ -54,7 +67,7 @@ for (const [i, name] of EPOCHS.entries()) {
 
 }
 const save = (force = false) => {
-  if(previewSet||previewWeapon)return;
+  if(previewSet||previewWeapon||previewBiome)return;
   if (telegramLaunch) {
     if (!cloudReady) return;
     cloudDirty = true;
@@ -99,6 +112,7 @@ async function loadCloud() {
     const result = await response.json();
     if (!result.state || result.state.version !== 3 || !Number.isSafeInteger(result.revision)) throw Error('Invalid cloud save');
     state = restore(JSON.stringify(result.state)); cloudRevision = result.revision;
+    await scene.prepare(state.level);
     cloudReady = true; cloudDirty = false; lastCloudSave = performance.now();
     $('cloud-status').hidden = true; $('game').inert = false; updateUI(); start();
   } catch { cloudError(0, true); }
@@ -430,10 +444,10 @@ $('equip-stronger').addEventListener('click', () => {
   if (equipStronger(state)) afterItemAction(null, selected === state.pending);
 });
 $('equip').addEventListener('click', () => { if (equip(state, state.pending?.slot === 'ring' ? ringTarget : state.pending?.slot)) { afterItemAction(null); } });
-$('replay').addEventListener('click', () => { if (replay(state)) { save(); updateUI(); } });
+$('replay').addEventListener('click', () => { if (replay(state)) { void scene?.prepare(state.level); save(); updateUI(); } });
 $('new-game').addEventListener('click', () => {
   if (confirm('Start a new hero? Your current equipment, coins, hammers, and progress will be reset.')) {
-    closeSheet(); state = freshGame(); save(); updateUI();
+    closeSheet(); state = freshGame(); void scene?.prepare(state.level); save(); updateUI();
   }
 });
 document.addEventListener('keydown', e => {
@@ -469,10 +483,16 @@ function updateUI() {
   }
   displayedItemLevel = level;
   setText('coins', compact.format(state.coins)); setText('damage', compact.format(total.damage)); setText('max-hp', compact.format(total.hp));
-  setText('level', `Level 1–${state.level}`);
+  const biomeIndex=Math.floor((state.level-1)/LEVELS_PER_BIOME),biome=BIOMES[biomeIndex];
+  const levelLabel=`${biomeIndex+1}–${(state.level-1)%LEVELS_PER_BIOME+1}`;
+  setText('level', `Level ${levelLabel}`);
+  if($('location').textContent!==biome.name){
+    setText('location',biome.name);document.documentElement.style.setProperty('--biome-ground',biome.ground);
+    if(telegramInitialized&&window.Telegram?.WebApp?.isVersionAtLeast?.('6.9'))window.Telegram.WebApp.setHeaderColor(biome.ground);
+  }
   setText('wave-label', `Wave ${state.encounter + 1} / 10`);
   nodes.forEach((n, i) => { n.classList.toggle('passed', state.completed || i < state.encounter); n.classList.toggle('active', !state.completed && i === state.encounter); });
-  $('progress').setAttribute('aria-label', `Wave ${state.encounter + 1} of 10, level ${state.level}`);
+  $('progress').setAttribute('aria-label', `Wave ${state.encounter + 1} of 10, level ${levelLabel}`);
   equipmentButtons.forEach((b, i) => {
     const item = state.equipment[SLOTS[i]];
     const cls = item ? `slot epoch-${item.epoch ?? 1}` : 'slot vacant';
@@ -495,7 +515,7 @@ function updateUI() {
   for (const [i, option] of BATCH_OPTIONS.entries()) {
     const button = $('batch-options').children[i], unlocked = state.highest >= option.level;
     button.disabled = !unlocked;
-    button.textContent = unlocked ? `×${option.size}` : `×${option.size} · Level 1–${option.level} 🔒`;
+    button.textContent = unlocked ? `×${option.size}` : `×${option.size} · Level ${Math.floor((option.level-1)/LEVELS_PER_BIOME)+1}–${(option.level-1)%LEVELS_PER_BIOME+1} 🔒`;
     button.setAttribute('aria-pressed', String(option.size === (state.selectedBatch ?? batchSize(state))));
   }
   // Keep the displayed stack until the one incoming batch card lands.
@@ -537,6 +557,7 @@ let scene;
 function processEvents(events) {
   for (const event of events) {
     scene?.emit(event);
+    if(event.type==='level')void scene?.prepare(state.level).catch(error=>{console.error(error);notify('Could not load this biome. Refresh the page.');});
     if (event.type === 'forged') {
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const keptCount = event.count - event.soldCount;
@@ -597,7 +618,8 @@ function frame(now) {
   last = now; accumulated += dt;
   if (accumulated >= 1 / 30) {
     const elapsed = accumulated;
-    while (accumulated >= 1 / 30) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
+    while (accumulated >= 1 / 30 && !scene?.loading) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
+    if(scene?.loading)accumulated=0;
     if (state.forging > 0) $('forge').style.setProperty('--forge-time', `${-(1.5 - state.forging)}s`);
     scene?.render(state, elapsed); frameCount++;
     uiTime += elapsed; savedTime += elapsed;
@@ -618,7 +640,7 @@ function setupTelegram() {
   if (!tg || telegramInitialized) return;
   telegramInitialized = true;
   tg.ready(); tg.expand();
-  if (tg.isVersionAtLeast?.('6.1')) { tg.setHeaderColor(tg.isVersionAtLeast('6.9') ? '#72c851' : 'bg_color'); tg.setBackgroundColor('#fffaf0'); }
+  if (tg.isVersionAtLeast?.('6.1')) { tg.setHeaderColor(tg.isVersionAtLeast('6.9') ? BIOMES[Math.floor((state.level-1)/LEVELS_PER_BIOME)].ground : 'bg_color'); tg.setBackgroundColor('#fffaf0'); }
   if (tg.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes();
   function safeArea() {
     // Telegram's content inset starts inside the device safe area (status bar/notch).
@@ -651,7 +673,13 @@ if(previewWeapon){
  $('workshop').inert=true;$('replay').disabled=true;
 }
 if(previewSet){$('outfit-preview').hidden=false;$('outfit-edit').href='sets.html?set='+encodeURIComponent(previewSet)+'&fit=1';$('outfit-name').textContent='Loading outfit…';$('workshop').inert=true;$('replay').disabled=true;}
-try { scene = await createScene($('scene'),previewSet);if(previewSet)$('outfit-name').textContent=scene.previewName+' · Test';if(telegramLaunch)await loadCloud();scene.render(state, 0); start(); }
+if(previewBiome){
+  $('outfit-preview').hidden=false;$('outfit-name').textContent='Biome test';$('outfit-preview').querySelector('small').textContent='Progress is not saved';$('outfit-edit').hidden=true;$('weapon-choice').hidden=false;
+  for(const [i,biome] of BIOMES.entries())for(const boss of [false,true]){const option=document.createElement('option');option.value=`${i+1}${boss?'&boss=1':''}`;option.textContent=biome.name+(boss?' · Boss':'');$('weapon-choice').append(option);}
+  $('weapon-choice').value=`${previewBiome}${previewBoss?'&boss=1':''}`;$('weapon-choice').onchange=()=>location.href='/?biome='+$('weapon-choice').value;
+  $('workshop').inert=true;$('replay').disabled=true;
+}
+try { scene = await createScene($('scene'),previewSet);if(previewSet)$('outfit-name').textContent=scene.previewName+' · Test';if(telegramLaunch)await loadCloud();else await scene.prepare(state.level);scene.render(state, 0); start(); }
 catch (error) { console.error(error); notify('Could not load the artwork. Refresh the page.'); }
 
 // Only available when explicitly opening ?debug=1 for local verification.

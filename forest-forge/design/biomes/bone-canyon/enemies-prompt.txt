@@ -1,0 +1,18 @@
+Create a production animation sprite atlas for a bright 2D side-scrolling mobile fantasy game. EXACTLY 4 horizontal rows and 8 columns = 32 isolated sprite frames on a genuinely transparent background. Image canvas 2048 x 1024, each cell exactly 256 x 256. No grid lines, labels, text, scenery, floor, shadow, sparkles, slash effects or loose projectiles. Keep every sprite fully within its cell with at least 20px transparent margin. All characters face LEFT in every standing and action frame, toward a hero on their left. Clean adorable-but-hostile chibi proportions: oversized heads, short chunky legs, stubby hands, emphatic dark near-black outline of consistent thickness, bold flat colors with only one broad cel-shaded shadow, no thin details, no texture, no rendered 3D, no gradients. Match a simple green goblin cartoon game: clear silhouettes that read at 40 pixels tall. All frames in each row must depict EXACTLY THE SAME character design, outfit and held object. Each body remains centered at the horizontal center of its cell and all standing feet share one baseline. Keep a single stable scale within a row.
+COLUMN POSES for EACH row, left to right:
+1: idle ready pose;
+2: walk contact A, leftward stride, front foot forward and rear foot backward;
+3: walk passing A, feet crossing beneath body;
+4: walk contact B, opposite legs and arms;
+5: walk passing B, opposite foot lifted;
+6: attack or cast WINDUP, held weapon drawn back/up, turn remains left;
+7: attack or cast FOLLOW-THROUGH strongly extended LEFT, weapon or hands still connected, NO airborne object;
+8: defeated pose lying flat on ground, same outfit and weapon, no gore, no icons.
+This is ONE atlas asset, not a character concept poster. Each row must have all eight poses, aligned into the regular cells, with no extra characters.
+ROWS TOP TO BOTTOM:
+1. MELEE: a red-orange hyena scavenger with dark muzzle, shaggy cream mane, two thick feet, wielding a broad ivory jawbone axe. Short expressive snout, one broken ear. Not a human skeleton.
+2. RANGED: a small bipedal ivory bone lizard with long flat skull snout, turquoise scarf and a short dark wooden crossbow. Big empty black eye socket, solid simple bone limbs. No individual finger bones.
+3. HEALER: a dark red hooded carrion shaman wearing a single ivory vulture-beak mask, teal sash, short feet, carrying a spiral horn staff. Only three clear costume masses.
+4. MAIN BOSS: Ribmaw, an enormous red sandstone-armored skull beast with hunched gorilla body, enormous ivory sabertooth jaw, teal eyes, huge clenched rock fists and broad ivory rib plates on its back. No held weapon, no tiny skeleton anatomy.
+Maintain stable identities and actual distinct walk limb positions across all eight columns. Whole atlas completely transparent.
+OVERRIDE SPACING: Each creature fits comfortably in the CENTRAL 65% of its cell with wide empty gutters. Entire outer border and row/column gutters must be empty. No weapon or staff may touch any other creature. All 32 complete separated silhouettes, including outside-edge weapons. Keep the skeleton's feet well separated from the raised shaman staff in the next row. Uniform scale per row. True transparent PNG with alpha=0. There is NO background: do not paint a white background or gray checkerboard. Very simple, flat 2-tone shading, firm clean dark outline.

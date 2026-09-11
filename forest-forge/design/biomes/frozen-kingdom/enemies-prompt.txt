@@ -1,0 +1,17 @@
+Create a production animation sprite atlas for a bright 2D side-scrolling mobile fantasy game. EXACTLY 4 horizontal rows and 8 columns = 32 isolated sprite frames on a genuinely transparent background. Image canvas 2048 x 1024, each cell exactly 256 x 256. No grid lines, labels, text, scenery, floor, shadow, sparkles, slash effects or loose projectiles. Keep every sprite fully within its cell with at least 20px transparent margin. All characters face LEFT in every standing and action frame, toward a hero on their left. Clean adorable-but-hostile chibi proportions: oversized heads, short chunky legs, stubby hands, emphatic dark near-black outline of consistent thickness, bold flat colors with only one broad cel-shaded shadow, no thin details, no texture, no rendered 3D, no gradients. Match a simple green goblin cartoon game: clear silhouettes that read at 40 pixels tall. All frames in each row must depict EXACTLY THE SAME character design, outfit and held object. Each body remains centered at the horizontal center of its cell and all standing feet share one baseline. Keep a single stable scale within a row.
+COLUMN POSES for EACH row, left to right:
+1: idle ready pose;
+2: walk contact A, leftward stride, front foot forward and rear foot backward;
+3: walk passing A, feet crossing beneath body;
+4: walk contact B, opposite legs and arms;
+5: walk passing B, opposite foot lifted;
+6: attack or cast WINDUP, held weapon drawn back/up, turn remains left;
+7: attack or cast FOLLOW-THROUGH strongly extended LEFT, weapon or hands still connected, NO airborne object;
+8: defeated pose lying flat on ground, same outfit and weapon, no gore, no icons.
+This is ONE atlas asset, not a character concept poster. Each row must have all eight poses, aligned into the regular cells, with no extra characters.
+ROWS TOP TO BOTTOM:
+1. MELEE: a squat icy-blue armored penguin sentinel with dark navy face, small orange beak, white belly, huge ice crystal shoulder and short navy boots, wielding a chunky flat ice cleaver.
+2. RANGED: a round snow hare with long dark blue-tipped ears folded back, white fur, navy scarf, tiny feet, holding a pale blue icicle crossbow. No human armor.
+3. HEALER: a small navy hooded snow owl with cream face disk, blue eyes, thick snow cape, two orange feet and a simple ice lantern held on a short staff. Round owl head and wings remain obvious.
+4. MAIN BOSS: the Rime Regent, a huge squat shaggy white yeti with navy face and hands, a single broad three-point ice crown and enormous ice gauntlets. Massive rounded fists, short wide legs, angry but cartoon face. Only two large shoulder ice slabs.
+Maintain stable identities and actual distinct walk limb positions across all eight columns. Whole atlas completely transparent.

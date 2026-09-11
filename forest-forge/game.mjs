@@ -141,6 +141,319 @@ export const DAMAGE_SLOTS = ['weapon', 'gloves', 'necklace', 'ring1', 'ring2', '
 export const LABELS = { weapon: 'Weapon', helmet: 'Helmet', chest: 'Chestplate', legs: 'Leg armor', gloves: 'Gloves', cape: 'Cape', shoulders: 'Shoulders', boots: 'Boots', belt: 'Belt', necklace: 'Necklace', ring1: 'Ring 1', ring2: 'Ring 2' };
 export const SAVE_KEY = 'forest-forge-prototype-v1';
 export const MAX_LEVEL = 200;
+export const LEVELS_PER_BIOME = 20;
+export const BIOMES = [
+  {
+    "id": "whispering-woods",
+    "name": "Whispering Woods",
+    "ground": "#72c851",
+    "road": "#e6be7c",
+    "shade": "#4ea346",
+    "detail": "#42ac50",
+    "edge": "#d3aa68",
+    "light": "#efd198",
+    "shot": "#dbe3df",
+    "terrain": "grass",
+    "names": {
+      "warrior": "Goblin Warrior",
+      "archer": "Goblin Archer",
+      "healer": "Goblin Shaman",
+      "commander": "Goblin Chieftain",
+      "boss": "Goblin King"
+    },
+    "waves": [
+      "WWH",
+      "WWW",
+      "WWAA",
+      "WWAH",
+      "WWWA",
+      "WWAA",
+      "WWWAH",
+      "WWW",
+      "WWAAH"
+    ],
+    "bossWave": "BAA"
+  },
+  {
+    "id": "spore-marsh",
+    "name": "Spore Marsh",
+    "ground": "#58a59a",
+    "road": "#b9aa80",
+    "shade": "#306d78",
+    "detail": "#347d87",
+    "edge": "#879c81",
+    "light": "#d4c49a",
+    "shot": "#e3aeff",
+    "terrain": "water",
+    "names": {
+      "warrior": "Cap Bruiser",
+      "archer": "Reedspitter",
+      "healer": "Spore Oracle",
+      "commander": "Oldcap Warden",
+      "boss": "Mire Monarch"
+    },
+    "waves": [
+      "WWH",
+      "WWA",
+      "WWW",
+      "WAH",
+      "WWAA",
+      "WWWH",
+      "WWAH",
+      "WWWA",
+      "WWAAH"
+    ],
+    "bossWave": "BWH"
+  },
+  {
+    "id": "bone-canyon",
+    "name": "Bone Canyon",
+    "ground": "#d78b5d",
+    "road": "#f0c790",
+    "shade": "#a75747",
+    "detail": "#b76a4c",
+    "edge": "#cf9867",
+    "light": "#f9dda7",
+    "shot": "#f9edc8",
+    "terrain": "sand",
+    "names": {
+      "warrior": "Jaw Scavenger",
+      "archer": "Bone Skitter",
+      "healer": "Carrion Shaman",
+      "commander": "Pack Ravager",
+      "boss": "Ribmaw"
+    },
+    "waves": [
+      "WWW",
+      "WWA",
+      "WWWA",
+      "WWAA",
+      "WWH",
+      "WWWA",
+      "WWWH",
+      "WWAA",
+      "WWWAH"
+    ],
+    "bossWave": "BWW"
+  },
+  {
+    "id": "frozen-kingdom",
+    "name": "Frozen Kingdom",
+    "ground": "#91cad8",
+    "road": "#dae9ee",
+    "shade": "#598cb7",
+    "detail": "#6eb0c9",
+    "edge": "#a2c9d8",
+    "light": "#f5fbff",
+    "shot": "#a8f0ff",
+    "terrain": "snow",
+    "names": {
+      "warrior": "Ice Sentinel",
+      "archer": "Frost Hare",
+      "healer": "Snow Oracle",
+      "commander": "Glacier Captain",
+      "boss": "Rime Regent"
+    },
+    "waves": [
+      "WWA",
+      "WWAA",
+      "WWH",
+      "WWW",
+      "WWAH",
+      "WWAA",
+      "WWWA",
+      "WWAAH",
+      "WWWH"
+    ],
+    "bossWave": "BWA"
+  },
+  {
+    "id": "sunset-city",
+    "name": "Sunset City",
+    "ground": "#ba827e",
+    "road": "#e9b997",
+    "shade": "#735b81",
+    "detail": "#a06c70",
+    "edge": "#c88d77",
+    "light": "#f7d1a6",
+    "shot": "#ffe7a8",
+    "terrain": "paving",
+    "names": {
+      "warrior": "Fox Duelist",
+      "archer": "Crow Musketeer",
+      "healer": "Plague Apothecary",
+      "commander": "Street Marshal",
+      "boss": "Clockwork Magistrate"
+    },
+    "waves": [
+      "WWA",
+      "WWAA",
+      "WWW",
+      "WWAH",
+      "WWA",
+      "WWWA",
+      "WWAAH",
+      "WWH",
+      "WWAA"
+    ],
+    "bossWave": "BAA"
+  },
+  {
+    "id": "living-foundry",
+    "name": "Living Foundry",
+    "ground": "#667b75",
+    "road": "#a4afa1",
+    "shade": "#354e50",
+    "detail": "#465e5a",
+    "edge": "#798d86",
+    "light": "#c5d1b8",
+    "shot": "#c9fa59",
+    "terrain": "metal",
+    "names": {
+      "warrior": "Clamp Enforcer",
+      "archer": "Reactor Mite",
+      "healer": "Repair Drone",
+      "commander": "Iron Foreman",
+      "boss": "Furnace Heart"
+    },
+    "waves": [
+      "WWH",
+      "WWWH",
+      "WWA",
+      "WWW",
+      "WWAH",
+      "WWAA",
+      "WWWAH",
+      "WWH",
+      "WWAAH"
+    ],
+    "bossWave": "BWH"
+  },
+  {
+    "id": "alien-garden",
+    "name": "Alien Moon Garden",
+    "ground": "#79c5b5",
+    "road": "#d0add0",
+    "shade": "#487e98",
+    "detail": "#50a794",
+    "edge": "#a584ba",
+    "light": "#e3cce6",
+    "shot": "#ed98cc",
+    "terrain": "alien",
+    "names": {
+      "warrior": "Snapleaf",
+      "archer": "Seed Cannon Beetle",
+      "healer": "Orchid Seer",
+      "commander": "Thorn Matriarch",
+      "boss": "Moonbloom Devourer"
+    },
+    "waves": [
+      "WWA",
+      "WWW",
+      "WWAH",
+      "WWAA",
+      "WWH",
+      "WWWA",
+      "WWAAH",
+      "WWWH",
+      "WWAA"
+    ],
+    "bossWave": "BWA"
+  },
+  {
+    "id": "time-rift",
+    "name": "Time Rift",
+    "ground": "#9c91c4",
+    "road": "#d1cbea",
+    "shade": "#65588f",
+    "detail": "#8072b4",
+    "edge": "#afa3d1",
+    "light": "#efebff",
+    "shot": "#85f4eb",
+    "terrain": "rift",
+    "names": {
+      "warrior": "Rift Knight",
+      "archer": "Prism Strider",
+      "healer": "Hollow Timekeeper",
+      "commander": "Fracture Warden",
+      "boss": "Broken Colossus"
+    },
+    "waves": [
+      "WWAH",
+      "WWAA",
+      "WWH",
+      "WWWA",
+      "WWW",
+      "WWAAH",
+      "WWWH",
+      "WWA",
+      "WWWAH"
+    ],
+    "bossWave": "BWH"
+  },
+  {
+    "id": "ashen-underworld",
+    "name": "Ashen Underworld",
+    "ground": "#705b64",
+    "road": "#b08b7d",
+    "shade": "#433f50",
+    "detail": "#514754",
+    "edge": "#856762",
+    "light": "#cda491",
+    "shot": "#ff9c4f",
+    "terrain": "ash",
+    "names": {
+      "warrior": "Obsidian Imp",
+      "archer": "Coal Toad",
+      "healer": "Ash Witch",
+      "commander": "Horned Overseer",
+      "boss": "Cinder Maw"
+    },
+    "waves": [
+      "WWW",
+      "WWWA",
+      "WWH",
+      "WWAA",
+      "WWWH",
+      "WWAH",
+      "WWWAH",
+      "WWW",
+      "WWAAH"
+    ],
+    "bossWave": "BWW"
+  },
+  {
+    "id": "sky-archipelago",
+    "name": "Sky Archipelago",
+    "ground": "#b5dbea",
+    "road": "#f2e6c8",
+    "shade": "#7caac9",
+    "detail": "#91c5df",
+    "edge": "#d4c5a3",
+    "light": "#fff8df",
+    "shot": "#ffdd72",
+    "terrain": "sky",
+    "names": {
+      "warrior": "Marble Griffin",
+      "archer": "Cloud Harpy",
+      "healer": "Bell Acolyte",
+      "commander": "Suncrest Sentinel",
+      "boss": "Eclipse Archon"
+    },
+    "waves": [
+      "WWA",
+      "WWH",
+      "WWAA",
+      "WWAH",
+      "WWWA",
+      "WWWH",
+      "WWAAH",
+      "WWWAH",
+      "WWAA"
+    ],
+    "bossWave": "BWA"
+  }
+];
 export const HERO_ATTACK_INTERVAL = 2;
 export const APPROACH_SPEED = .36 / 1.4;
 export const IDLE_REWARD_INTERVAL = 60000;
@@ -185,14 +498,18 @@ export function itemLevel(s) {
 }
 export function enemyFor(level, kind = 'warrior') {
   const row = COMBAT[level - 1];
+  const biome = BIOMES[Math.floor((level - 1) / LEVELS_PER_BIOME)];
   return { kind, boss: kind === 'boss',
-    name: { warrior: 'Goblin Warrior', archer: 'Goblin Archer', healer: 'Goblin Healer', boss: 'Goblin King' }[kind],
+    name: biome.names[kind === 'boss' && level % LEVELS_PER_BIOME ? 'commander' : kind],
     maxHp: row[kind + '_hp'], damage: kind === 'healer' ? 0 : row[kind + '_damage'],
     healing: row.healing_per_3s, reward: row[kind === 'boss' ? 'boss_coins' : 'monster_coins'] };
 }
 function prepareEncounter(s) {
   let x = s.heroX + .91;
-  const kinds = [...WAVES[Math.min(s.level, 10) - 1][s.encounter]].map(k => KINDS[k]);
+  const biome = BIOMES[Math.floor((s.level - 1) / LEVELS_PER_BIOME)];
+  const formation = s.level <= 10 ? WAVES[s.level - 1][s.encounter] :
+    s.encounter === 9 ? biome.bossWave : biome.waves[(s.encounter + (s.level - 1) % LEVELS_PER_BIOME) % 9];
+  const kinds = [...formation].map(k => KINDS[k]);
   kinds.sort((a,b) => ['warrior','boss','archer','healer'].indexOf(a) - ['warrior','boss','archer','healer'].indexOf(b));
   s.enemies = kinds.map((kind, id) => {
     const e = enemyFor(s.level, kind);
@@ -503,9 +820,13 @@ export function restore(serialized, now = Date.now()) {
     if (!Number.isInteger(s.encounter) || s.encounter < 0 || s.encounter > 9 || s.hp > stats(s).hp ||
       !['walk','fight','dead','victory','complete'].includes(s.phase) || !['heroX','heroClock','heroActionAge'].every(k => nonnegative(s[k])) ||
       !Number.isFinite(s.phaseTime) || (s.completed !== (s.phase === 'complete')) || (s.completed && (s.level !== MAX_LEVEL || s.encounter !== 9))) return freshGame(now);
-    const expected = [...WAVES[Math.min(s.level, 10) - 1][s.encounter]].map(k => KINDS[k]).sort();
-    if (!Array.isArray(s.enemies) || s.enemies.length !== expected.length ||
-      s.enemies.map(e => e.kind).sort().some((k,i) => k !== expected[i]) ||
+    const biome = BIOMES[Math.floor((s.level - 1) / LEVELS_PER_BIOME)];
+    const formation = s.level <= 10 ? WAVES[s.level - 1][s.encounter] :
+      s.encounter === 9 ? biome.bossWave : biome.waves[(s.encounter + (s.level - 1) % LEVELS_PER_BIOME) % 9];
+    const expected = [...formation].map(k => KINDS[k]).sort().join(',');
+    // A saved fight can still contain the formation used before biomes shipped.
+    const previous = [...WAVES[Math.min(s.level, 10) - 1][s.encounter]].map(k => KINDS[k]).sort().join(',');
+    if (!Array.isArray(s.enemies) || ![expected, previous].includes(s.enemies.map(e => e.kind).sort().join(',')) ||
       !s.enemies.every((e,i) => e.id === i && ['hp','x','clock','healClock','actionAge','deadTime'].every(k => nonnegative(e[k])) && e.hp <= enemyFor(s.level,e.kind).maxHp)) return freshGame(now);
     for (const e of s.enemies) Object.assign(e, enemyFor(s.level, e.kind), {hp:Math.ceil(e.hp)});
     if ((s.phase === 'walk' || s.phase === 'fight') && !s.enemies.some(e => e.hp > 0)) return freshGame(now);

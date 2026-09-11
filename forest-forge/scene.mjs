@@ -1,5 +1,5 @@
 const compactNumber = new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1});
-import { stats, ARMOR_SETS, WEAPONS, HERO_ATTACK_INTERVAL } from './game.mjs';
+import { stats, ARMOR_SETS, WEAPONS, HERO_ATTACK_INTERVAL, BIOMES, LEVELS_PER_BIOME } from './game.mjs';
 
 // Existing atlas poses: body x/y/angle, then each hand's x/y/angle.
 // Source coordinates match design/hero-base-v2-poses.json and build-set.cjs.
@@ -64,12 +64,32 @@ export async function createScene(canvas, previewSet = null) {
   const heroRig = heroRigs[0];
   const heroSlots = heroRig.rows.map((_,row) => Object.keys(heroRig.slots).find(slot => heroRig.slots[slot].includes(row)));
   let width = 0, height = 0, titleY = 0, ratio = 1, landscape;
-  let time = 0, previousEnemies = null;
+  let time = 0, previousEnemies = null, previousBossSize = 128;
+  let biomeIndex = 0, wantedBiome = 0, biomeSprites = null, scenery = null, biomeHeights = null, loading = false;
   let reveal = 0, levelTitle = null;
   let chakramFlight = null;
   const numbers = [];
   const coins = [];
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  async function prepare(level) {
+    const index = Math.floor((level - 1) / LEVELS_PER_BIOME);
+    wantedBiome=index;
+    if (index === biomeIndex) { loading=false; return; }
+    loading = true;
+    let sprites = null, decor = null, heights = null;
+    if (index) {
+      [sprites, decor, heights] = await Promise.all([...['enemies.png', 'scenery.svg'].map(async file => {
+        const image = new Image(); image.src = `assets/biomes/${BIOMES[index].id}/${file}`;
+        await image.decode(); return image;
+      }), fetch(`assets/biomes/${BIOMES[index].id}/enemies.json`).then(async response=>{
+        if(!response.ok)throw Error(`Could not load ${BIOMES[index].name} sprite metadata`);
+        return (await response.json()).bodyHeights;
+      })]);
+    }
+    if(index!==wantedBiome)return; // A local reset or cloud reload can change location while images load.
+    biomeIndex = index; biomeSprites = sprites; scenery = decor; biomeHeights = heights;
+    resize(); reveal = .55; loading = false;
+  }
   function resize() {
     const bounds = canvas.getBoundingClientRect();
     width = bounds.width; height = bounds.height;
@@ -81,35 +101,62 @@ export async function createScene(canvas, previewSet = null) {
     landscape = document.createElement('canvas');
     landscape.width = canvas.width; landscape.height = canvas.height;
     const c = landscape.getContext('2d', { alpha: false });
-    c.scale(ratio, ratio);
-    c.fillStyle = '#72c851'; c.fillRect(0, 0, width, height);
+    c.scale(landscape.width / width, landscape.height / height);
+    const biome = BIOMES[biomeIndex];
+    c.fillStyle = biome.ground; c.fillRect(0, 0, width, height);
     const roadTop = height * .585, roadBottom = height * .795;
-    c.fillStyle = '#e6be7c'; c.fillRect(0, roadTop, width, roadBottom - roadTop);
+    c.fillStyle = biome.road; c.fillRect(0, roadTop, width, roadBottom - roadTop);
     for (let i = 0; i < 42; i++) {
       const x = ((i * 73 + 19) % 401) / 401 * width;
       const y = ((i * 67 + 11) % 353) / 353 * height;
       if (y > roadTop - 6 && y < roadBottom + 6) continue;
-      c.strokeStyle = '#3eac4e'; c.lineWidth = 2; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(x, y); c.lineTo(x - 2, y - 4);
-      c.moveTo(x + 3, y); c.lineTo(x + 4, y - 5); c.stroke();
+      c.strokeStyle = biome.detail; c.fillStyle = biome.detail; c.lineWidth = 1.5; c.lineCap = 'round';
+      c.beginPath();
+      if (biome.terrain === 'water') {
+        c.ellipse(x,y,9+i%9,3+i%3,0,0,Math.PI*2); c.fill();
+        c.strokeStyle='#92d7c1'; c.beginPath(); c.ellipse(x+2,y-1,5+i%5,1.5,0,Math.PI,Math.PI*2); c.stroke();
+      } else if (biome.terrain === 'snow') {
+        c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();
+      } else if (biome.terrain === 'paving' || biome.terrain === 'metal') {
+        c.roundRect(x-6,y-3,14+i%9,7,2);c.stroke();
+        if(biome.terrain==='metal'&&i%4===0){c.fillStyle='#c0e98b';c.fillRect(x-3,y,7,2);}
+      } else if (biome.terrain === 'rift') {
+        c.moveTo(x,y-5);c.lineTo(x+8,y);c.lineTo(x,y+4);c.lineTo(x-5,y);c.closePath();c.stroke();
+      } else if (biome.terrain === 'ash') {
+        c.moveTo(x-8,y);c.lineTo(x,y+3);c.lineTo(x+6,y-3);c.lineTo(x+12,y);c.stroke();
+        if(i%5===0){c.strokeStyle='#f3a36d';c.beginPath();c.moveTo(x,y+2);c.lineTo(x+5,y-2);c.stroke();}
+      } else if (biome.terrain === 'sky') {
+        c.fillStyle='#d9edf3';c.ellipse(x,y,10+i%7,3,0,0,Math.PI*2);c.fill();
+      } else if (biome.terrain === 'sand') {
+        c.moveTo(x-6,y);c.quadraticCurveTo(x,y+3,x+7,y);c.stroke();
+      } else if (biome.terrain === 'alien') {
+        c.ellipse(x,y,4,2,0,0,Math.PI*2);c.fill();
+        c.fillStyle='#c7efd3';c.beginPath();c.arc(x+2,y-2,1.4,0,Math.PI*2);c.fill();
+      } else {
+        c.moveTo(x,y);c.lineTo(x-2,y-4);c.moveTo(x+3,y);c.lineTo(x+4,y-5);c.stroke();
+      }
     }
     for (let i = 0; i < 24; i++) {
-      c.fillStyle = i % 2 ? '#cca568' : '#ebca93';
+      c.fillStyle = i % 2 ? biome.edge : biome.light;
       c.beginPath(); c.ellipse((i * 97 + 9) % width, roadTop + 8 + (i * 13) % Math.max(10, roadBottom - roadTop - 16), 3 + i % 3, 1.4, 0, 0, Math.PI * 2); c.fill();
     }
     // Trees occupy the margins, leaving the HUD and path readable.
     const trees = [[.04,.05,37],[.40,.07,39],[.76,.05,43],[.94,.24,46],[-.02,.30,48],
       [.21,.39,35],[.65,.39,38],[.09,.56,31],[.88,.57,33],[.07,.97,43],[.38,.95,42],[.74,.97,44],[.96,.96,46]];
-    for (const [x, y, size] of trees) {
+    for (const [treeIndex, [x, y, size]] of trees.entries()) {
       const s = size * Math.min(width / 390, 1.15);
       for (const offset of [-width, 0, width]) {
         const tx = x * width + offset;
-        c.fillStyle = '#368f3944'; c.beginPath(); c.ellipse(tx + s * .4, y * height - 2, s * .36, s * .08, 0, 0, Math.PI * 2); c.fill();
-        c.drawImage(art.tree, tx, y * height - s * 1.4, s, s * 1.4);
+        c.fillStyle = biome.shade+'66'; c.beginPath(); c.ellipse(tx + s * .4, y * height - 2, s * .42, s * .10, 0, 0, Math.PI * 2); c.fill();
+        if (scenery) {
+          const kind = treeIndex % 6;
+          const size = s * (kind < 2 ? 1.75 : 1.38);
+          c.drawImage(scenery,kind*128,0,128,128,tx-(size-s)/2,y*height-size,size,size);
+        } else c.drawImage(art.tree, tx, y * height - s * 1.4, s, s * 1.4);
       }
     }
     for (let i = 0; i < 26; i++) {
-      c.fillStyle = '#72c851';
+      c.fillStyle = biome.ground;
       const x = i * width / 25;
       c.beginPath(); c.ellipse(x, roadTop, 4 + i % 4, 2 + i % 3, 0, 0, Math.PI * 2); c.fill();
       c.beginPath(); c.ellipse(x + 6, roadBottom, 4 + i % 3, 2 + i % 4, 0, 0, Math.PI * 2); c.fill();
@@ -119,14 +166,18 @@ export async function createScene(canvas, previewSet = null) {
     if (['restart','level','complete'].includes(event.type)) {
       chakramFlight = null;
       reveal = .55;
-      levelTitle = event.type === 'level' ? { text:`Level 1–${event.level}`, age:0 } : null;
+      const index = Math.floor((event.level - 1) / LEVELS_PER_BIOME);
+      levelTitle = event.type === 'level' ? {
+        text:`Level ${index+1}–${(event.level-1)%LEVELS_PER_BIOME+1}`,
+        location:(event.level-1)%LEVELS_PER_BIOME===0?BIOMES[index].name:null, age:0
+      } : null;
     }
     if(event.type==='heroHit'&&chakramFlight){
       const target=previousEnemies?.find(enemy=>enemy.id===event.targetId);
       if(target){
         chakramFlight.returning=true;
         chakramFlight.hitX=target.x;
-        chakramFlight.hitY=(previousEnemies.length>1&&!target.boss?(target.id%2?7:-5):0)-(target.boss?128:50)*.34;
+        chakramFlight.hitY=(previousEnemies.length>1&&!target.boss?(target.id%2?7:-5):0)-(target.boss?previousBossSize:50)*.34;
       }
     }
     if (event.type === 'kill' && !reducedMotion.matches) {
@@ -156,6 +207,10 @@ export async function createScene(canvas, previewSet = null) {
     context.fillStyle = color; context.fillRect(x - size / 2, y, size * Math.max(0, Math.min(1, fraction)), 4 * scale);
   }
   function render(state, dt) {
+    if (loading) { context.fillStyle='#081312';context.fillRect(0,0,width,height);return; }
+    const biome = BIOMES[biomeIndex];
+    const bossSize = state.level % LEVELS_PER_BIOME === 0 ? 128 : 88;
+    previousBossSize=bossSize;
     time += dt;
     reveal = Math.max(0, reveal - dt);
     if (levelTitle && (levelTitle.age += dt) >= 2) levelTitle = null;
@@ -324,7 +379,7 @@ export async function createScene(canvas, previewSet = null) {
     const groups = state.enemies.length > 1;
     for (const e of state.enemies) {
       if (state.completed || (!e.hp && !e.deadTime)) continue;
-      const x = (e.x - camera) * width, size = (e.boss ? 128 : 50) * unit;
+      const x = (e.x - camera) * width, size = (e.boss ? bossSize : 50) * unit;
       const floor = base + (groups && !e.boss ? (e.id % 2 ? 7 : -5) * unit : 0);
       let frame = 0;
       if (!e.hp) frame = 15;
@@ -342,13 +397,23 @@ export async function createScene(canvas, previewSet = null) {
         }
       }
       context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(x, floor + (e.boss ? 2 : 1), size * .3, e.boss ? 3 : 1.5, 0, 0, Math.PI * 2); context.fill();
-      context.drawImage(art[e.kind], frame * 192, 0, 192, 192, x - size/2, floor - size * 180/192, size, size);
-      if (e.hp) bar(x, floor - size * .63 - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
+      const row = e.boss ? (state.level%LEVELS_PER_BIOME===0?3:0) : ['warrior','archer','healer'].indexOf(e.kind);
+      if (biomeSprites) {
+        const pose = [0,1,2,3,4,1,2,3,4,5,5,5,6,6,0,7][frame];
+        context.drawImage(biomeSprites,pose*192,row*192,192,192,x-size/2,floor-size*180/192,size,size);
+      } else {
+        const kind = e.boss && state.level%LEVELS_PER_BIOME!==0 ? 'warrior' : e.kind;
+        context.drawImage(art[kind],frame*192,0,192,192,x-size/2,floor-size*180/192,size,size);
+      }
+      if (e.hp) bar(x, floor - size * (biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
       if (e.kind === 'archer' && e.hp && e.actionAge < .15 && state.phase !== 'dead') {
         const p = e.actionAge / .15, ax = (x - 9*unit)*(1-p) + (heroX + 8*unit)*p;
         const ay = (floor - 14*unit)*(1-p) + (base - 28*unit)*p;
-        context.strokeStyle = '#503c22'; context.lineWidth = 1; context.beginPath(); context.moveTo(ax+6.5,ay); context.lineTo(ax,ay); context.stroke();
-        context.fillStyle = '#dbe3df'; context.beginPath(); context.moveTo(ax,ay); context.lineTo(ax+2,ay-1.5); context.lineTo(ax+2,ay+1.5); context.closePath(); context.fill();
+        context.strokeStyle = '#283b3a'; context.fillStyle = biome.shot; context.lineWidth = 1;
+        if (biomeIndex===0 || biomeIndex===2 || biomeIndex===3 || biomeIndex===9) {
+          context.beginPath();context.moveTo(ax+6.5,ay);context.lineTo(ax,ay);context.stroke();
+          context.beginPath();context.moveTo(ax,ay);context.lineTo(ax+2,ay-1.5);context.lineTo(ax+2,ay+1.5);context.closePath();context.fill();
+        } else { context.beginPath();context.ellipse(ax,ay,3,2,0,0,Math.PI*2);context.fill();context.stroke(); }
       }
     }
     if(chakramFlight&&chakramHand){
@@ -358,7 +423,7 @@ export async function createScene(canvas, previewSet = null) {
       const travel=returning?progress*progress*(3-2*progress):Math.sin(progress*Math.PI/2);
       const fromX=returning?flight.hitX:flight.x,fromY=returning?flight.hitY:flight.y;
       const toX=returning?chakramHand.x:target.x;
-      const toY=returning?chakramHand.y:(groups&&!target.boss?(target.id%2?7:-5):0)-(target.boss?128:50)*.34;
+      const toY=returning?chakramHand.y:(groups&&!target.boss?(target.id%2?7:-5):0)-(target.boss?bossSize:50)*.34;
       const arc=reducedMotion.matches?0:Math.sin(Math.PI*progress)*(returning?14:-8);
       const x=(fromX+(toX-fromX)*travel-camera)*width,y=base+(fromY+(toY-fromY)*travel+arc)*unit;
       const spin=reducedMotion.matches?0:returning?Math.PI*4+(Math.PI*4+chakramHand.angle)*progress:flight.angle+(Math.PI*4-flight.angle)*progress;
@@ -392,7 +457,7 @@ export async function createScene(canvas, previewSet = null) {
       // Damage rises above the target; loot occupies two separate rows below its feet.
       const x = n.reward ? Math.min(width - context.measureText(n.text).width - 6, anchorX + 24 * unit + age * 8) : anchorX;
       const y = n.reward ? base + 12 + (n.rewardRow || 0) * 16 - age * 12
-        : base - (e ? (e.boss ? 128 : 50)*unit*.63 : hSize) - 10 - age * 22;
+        : base - (e ? (e.boss ? bossSize : 50)*unit*(biomeHeights?.[e.boss?(state.level%LEVELS_PER_BIOME===0?3:0):['warrior','archer','healer'].indexOf(e.kind)] ?? .63) : hSize) - 10 - age * 22;
       context.globalAlpha = Math.min(1,n.life*4); context.lineWidth = 3;
       if (n.coinIcon) {
         context.beginPath(); context.arc(x - 8, y - 4, 4.5, 0, Math.PI * 2);
@@ -415,10 +480,12 @@ export async function createScene(canvas, previewSet = null) {
       context.font=`${Math.round(32*unit)}px "Lilita UI", "Trebuchet MS", sans-serif`;
       context.textAlign='center';context.textBaseline='middle';context.lineJoin='round';context.lineWidth=5*unit;
       context.strokeStyle='#142725';context.fillStyle='#fff5d7';
-      context.strokeText(levelTitle.text,width/2,titleY);context.fillText(levelTitle.text,width/2,titleY);context.restore();
+      context.strokeText(levelTitle.text,width/2,titleY);context.fillText(levelTitle.text,width/2,titleY);
+      if(levelTitle.location){context.font=`${Math.round(18*unit)}px "Lilita UI",sans-serif`;context.lineWidth=4*unit;context.strokeText(levelTitle.location,width/2,titleY+28*unit);context.fillText(levelTitle.location,width/2,titleY+28*unit);}
+      context.restore();
     }
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, previewName:previewRig?.name };
+  return { render, emit, prepare, get loading(){return loading;}, previewName:previewRig?.name };
 }

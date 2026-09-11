@@ -1,0 +1,17 @@
+Create a production animation sprite atlas for a bright 2D side-scrolling mobile fantasy game. EXACTLY 4 horizontal rows and 8 columns = 32 isolated sprite frames on a genuinely transparent background. Image canvas 2048 x 1024, each cell exactly 256 x 256. No grid lines, labels, text, scenery, floor, shadow, sparkles, slash effects or loose projectiles. Keep every sprite fully within its cell with at least 20px transparent margin. All characters face LEFT in every standing and action frame, toward a hero on their left. Clean adorable-but-hostile chibi proportions: oversized heads, short chunky legs, stubby hands, emphatic dark near-black outline of consistent thickness, bold flat colors with only one broad cel-shaded shadow, no thin details, no texture, no rendered 3D, no gradients. Match a simple green goblin cartoon game: clear silhouettes that read at 40 pixels tall. All frames in each row must depict EXACTLY THE SAME character design, outfit and held object. Each body remains centered at the horizontal center of its cell and all standing feet share one baseline. Keep a single stable scale within a row.
+COLUMN POSES for EACH row, left to right:
+1: idle ready pose;
+2: walk contact A, leftward stride, front foot forward and rear foot backward;
+3: walk passing A, feet crossing beneath body;
+4: walk contact B, opposite legs and arms;
+5: walk passing B, opposite foot lifted;
+6: attack or cast WINDUP, held weapon drawn back/up, turn remains left;
+7: attack or cast FOLLOW-THROUGH strongly extended LEFT, weapon or hands still connected, NO airborne object;
+8: defeated pose lying flat on ground, same outfit and weapon, no gore, no icons.
+This is ONE atlas asset, not a character concept poster. Each row must have all eight poses, aligned into the regular cells, with no extra characters.
+ROWS TOP TO BOTTOM:
+1. MELEE: a stocky dark graphite maintenance robot with one lime rectangular visor, orange piston forearms and a single huge dark steel wrench-claw for its forward hand. Two broad heavy boots. Industrial asymmetrical silhouette.
+2. RANGED: a small lime-green three-legged reactor mite robot with a round charcoal pressure tank body, a wide horizontal orange lens and one short built-in left-pointing nozzle. Do not make it look humanoid; three short articulated feet.
+3. HEALER: a pale mint repair drone on two springy dark legs, one rectangular blue screen face, orange tool arm and a single large lime battery backpack. Rounded trapezoid torso, no tiny panels.
+4. MAIN BOSS: Furnace Heart, an immense hunched charcoal walking furnace with a broad glowing orange square mouth, lime eyes, two enormous industrial clamp fists and one large exhaust stack. Short heavy legs, only three thick armor plates, no small wires or rivets.
+Maintain stable identities and actual distinct walk limb positions across all eight columns. Whole atlas completely transparent.

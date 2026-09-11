@@ -18,6 +18,11 @@ const root = path.resolve(__dirname, '..');
   for (const name of await fs.readdir(path.join(root, 'assets/weapons'))) {
     if (name.endsWith('-icon.png')) sources.add(`assets/weapons/${name}`);
   }
+  for (const biome of await fs.readdir(path.join(root, 'assets/biomes'))) {
+    sources.add(`assets/biomes/${biome}/enemies.png`);
+    sources.add(`assets/biomes/${biome}/enemies.json`);
+    sources.add(`assets/biomes/${biome}/scenery.svg`);
+  }
   const files = [], images = [];
   let before = 0, after = 0;
   for (const source of [...sources].sort()) {
