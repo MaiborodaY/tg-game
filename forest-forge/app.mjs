@@ -631,8 +631,12 @@ function setupTelegram() {
   safeArea();
   tg.onEvent('safeAreaChanged', safeArea); tg.onEvent('contentSafeAreaChanged', safeArea);
   tg.onEvent('fullscreenChanged', safeArea); tg.onEvent('fullscreenFailed', safeArea);
-  if (tg.initData && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
-    try { tg.requestFullscreen(); } catch { /* Keep the expanded view if this client cannot enter fullscreen. */ }
+  if (tg.initData && tg.isVersionAtLeast?.('8.0')) {
+    const mobile = ['android', 'android_x', 'ios'].includes(tg.platform);
+    try {
+      if (mobile && !tg.isFullscreen) tg.requestFullscreen();
+      else if (!mobile && tg.isFullscreen) tg.exitFullscreen();
+    } catch { /* Keep the current view if this client cannot change fullscreen. */ }
   }
   tg.onEvent('activated', start); tg.onEvent('deactivated', stop);
   tg.BackButton?.onClick(closeSheet);
