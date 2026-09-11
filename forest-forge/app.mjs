@@ -769,9 +769,14 @@ function setupTelegram() {
     }
     document.documentElement.classList.toggle('telegram-app', Boolean(tg.initData));
     document.documentElement.classList.toggle('telegram-fullscreen', Boolean(tg.initData && tg.isFullscreen));
+    const height = tg.viewportHeight || window.innerHeight;
+    const insets = ['top','bottom'].reduce((sum, edge) => sum + (tg.safeAreaInset?.[edge] || 0) + (tg.contentSafeAreaInset?.[edge] || 0), 0);
+    document.documentElement.style.setProperty('--game-viewport-height', `${height}px`);
+    document.documentElement.classList.toggle('telegram-compact', Boolean(tg.initData && height - insets < 620));
   }
   safeArea();
   tg.onEvent('safeAreaChanged', safeArea); tg.onEvent('contentSafeAreaChanged', safeArea);
+  tg.onEvent('viewportChanged', safeArea);
   tg.onEvent('fullscreenChanged', safeArea); tg.onEvent('fullscreenFailed', safeArea);
   if (tg.initData && tg.isVersionAtLeast?.('8.0')) {
     const mobile = ['android', 'android_x', 'ios'].includes(tg.platform);
