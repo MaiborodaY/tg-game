@@ -106,6 +106,7 @@ async function loadCloud() {
 async function flushCloud(force = false) {
   if (!cloudReady || cloudBusy || !cloudDirty || (!force && performance.now() - lastCloudSave < 10000)) return;
   cloudBusy = true; cloudDirty = false; lastCloudSave = performance.now();
+  let saved = false;
   const body = JSON.stringify({ state, revision:cloudRevision });
   try {
     const response = await fetch('/api/save', { method:'PUT', headers:{'Content-Type':'application/json','x-telegram-init-data':cloudInitData}, body, keepalive:new TextEncoder().encode(body).length < 60000, signal:AbortSignal.timeout(10000) });
@@ -113,11 +114,12 @@ async function flushCloud(force = false) {
     const result = await response.json();
     if (!Number.isSafeInteger(result.revision)) throw Error('Invalid save response');
     cloudRevision = result.revision; cloudFailed = false;
+    saved = true;
     $('cloud-status').hidden = true; $('game').inert = false; start();
   } catch { cloudDirty = true; cloudError(0); }
   finally {
     cloudBusy = false;
-    if (document.hidden && cloudDirty && !cloudFailed) void flushCloud(true);
+    if (saved && document.hidden && cloudDirty && !cloudFailed) void flushCloud(true);
   }
 }
 function notify(text) { $('toast').textContent = text; $('toast').classList.add('visible'); toastUntil = performance.now() + 2200; }
