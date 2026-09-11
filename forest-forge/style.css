@@ -449,8 +449,8 @@ button:disabled { opacity:.55; cursor:default; }
 #cloud-retry { margin-top:12px; min-width:140px; }
 
 /* Activity navigation occupies its own row; hidden scenes do not animate. */
-#activities { flex:none; height:calc(58px + var(--safe-bottom,0px)); padding:4px 18px var(--safe-bottom,0px); background:#3e4556; border-top:3px solid #182c2a; display:flex; align-items:flex-start; gap:24px; }
-#activities button { position:relative; top:-14px; width:58px; height:49px; border:0; background:none; color:#fff; display:grid; justify-items:center; padding:0; cursor:pointer; }
+#activities { flex:none; height:auto; padding:4px 18px calc(12px + var(--safe-bottom,0px)); background:#3e4556; border-top:3px solid #182c2a; display:flex; align-items:flex-start; gap:24px; }
+#activities button { position:relative; width:58px; height:49px; border:0; background:none; color:#fff; display:grid; justify-items:center; padding:0; cursor:pointer; }
 #activities img { width:36px; height:36px; } #activities small { font-size:10px; line-height:11px; }
 .activity-close { display:none; } .mine-open #mine-toggle img,.mine-open #mine-toggle small { display:none; }
 .mine-open #mine-toggle .activity-close { display:grid; place-items:center; width:45px;height:45px;border:3px solid #172b29;border-radius:50%;background:#ff5262;box-shadow:0 3px #922d3a;font:bold 36px/1 sans-serif; }
@@ -511,7 +511,7 @@ button:disabled { opacity:.55; cursor:default; }
 .mine-dialog::backdrop{background:#0009;}.mine-dialog h2{margin:0;font:24px 'Lilita UI',sans-serif;}.mine-dialog p{font-size:12px;}.mine-dialog .button{width:100%;margin-top:14px;}
 .mine-dialog label {display:flex;align-items:center;justify-content:space-between;margin-top:20px;}.mine-dialog input{width:120px;padding:8px;font-size:18px;border:2px solid #52675f;border-radius:7px;}
 .mine-resource-row {display:flex;align-items:center;gap:10px;padding:7px 0;}.mine-resource-row img {width:36px;height:36px;}.mine-resource-row b{margin-left:auto;}
-@media(max-height:700px){#mine-workshop{padding:8px 16px;}.mine-upgrade-block{margin-top:7px;}.ore-card img{width:32px;height:32px;}#activities{height:calc(52px + var(--safe-bottom,0px));}.mine-inventory-title{margin-bottom:4px;}#mine-heading{top:calc(46px + var(--safe-top,0px));}}
+@media(max-height:700px){#mine-workshop{padding:8px 16px;}.mine-upgrade-block{margin-top:7px;}.ore-card img{width:32px;height:32px;}.mine-inventory-title{margin-bottom:4px;}#mine-heading{top:calc(46px + var(--safe-top,0px));}}
 @media(prefers-reduced-motion:reduce){#mine-found.pop{animation:none}}
 
 /* Reserve navigation inside the visible Telegram window, only compacting tight layouts. */
@@ -528,5 +528,4 @@ button:disabled { opacity:.55; cursor:default; }
 .telegram-compact .forge-area { min-height:0; padding-top:4px; gap:4px; }
 .telegram-compact .forge-row { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); }
 .telegram-compact .forge,.telegram-compact .forge-art { width:112px; height:93px; }
-.telegram-compact #activities { height:calc(63px + var(--safe-bottom)); }
 .telegram-compact #activities button { height:56px; }
