@@ -19,6 +19,17 @@
     <div id="outfit-preview" hidden><span><strong id="outfit-name">Outfit test</strong><small>Appearance only · progress is not saved</small></span><select id="weapon-choice" aria-label="Test weapon" hidden></select><a id="outfit-edit">Back to fit</a><a href="/">Exit test</a></div>
     <section id="battle" aria-label="Automatic combat">
       <canvas id="scene" aria-label="A knight fights goblins along a forest path"></canvas>
+      <div id="mine-scene" hidden aria-label="Miner working in a cave">
+        <img id="mine-background" class="mine-cave" src="assets/mine/cave-background.webp" alt="">
+        <img id="mine-deposit" class="mine-deposit" src="assets/mine/deposit-stone.webp" alt="">
+        <div class="mine-veins" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="mine-miner-rig" aria-label="Miner swinging a pickaxe">
+          <div class="mine-miner-body"><img src="assets/mine/miner-body.webp" alt=""><img class="mine-miner-arms" src="assets/mine/miner-arms.webp" alt=""></div>
+          <span class="mine-impact" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <span id="mine-found" aria-live="polite"></span>
+      </div>
+      <div id="mine-heading" hidden><h1 id="mine-level">Mine · Lv. 1</h1><span>1 ore / minute</span></div>
       <header class="hud">
         <div class="hero-hud">
           <div class="avatar"><img src="assets/helmet.svg" alt="Hero portrait"></div>
@@ -51,7 +62,7 @@
           <div class="forge-tools"><div class="total-stats"><span><img src="assets/weapon.svg" alt="Damage"><b id="damage">2</b></span><span><svg class="heart" viewBox="0 0 40 36" aria-label="Maximum health"><path d="M20 33C-12 14 7-8 20 6 33-8 52 14 20 33Z"/></svg><b id="max-hp">20</b></span></div><button id="anvil-info" class="mini-button">Anvil Lv. 1</button><button id="auto-forge" class="mini-button" aria-pressed="false" aria-haspopup="dialog" aria-controls="auto-dialog">Auto OFF</button></div>
           <div class="forge-center">
             <button id="forge" class="forge" aria-label="Forge items"><span class="forge-art"><img id="forge-image" src="assets/anvil.svg" alt=""><span id="hammer" aria-hidden="true"><img class="hammer-icon" src="assets/hammer.webp" alt=""></span><span class="forge-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><img class="forge-flash" src="assets/forge-flash.svg" alt="" aria-hidden="true"><span class="forge-impact-ring" aria-hidden="true"></span></span><span class="hammer-balance"><img class="hammer-icon" src="assets/hammer.webp" alt=""><b id="hammers">0</b></span></button>
-            <button id="batch-choice" class="mini-button batch-choice" aria-expanded="false" aria-controls="batch-options" aria-label="Choose forge batch size"><span id="batch-label">×2</span><span aria-hidden="true">▾</span></button>
+            <button id="batch-choice" class="mini-button batch-choice" aria-expanded="false" aria-controls="batch-options" aria-label="Choose forge batch size"><span id="batch-label">×1</span><span aria-hidden="true">▾</span></button>
             <div id="batch-options" class="batch-options" role="group" aria-label="Forge batch size" hidden></div>
           </div>
           <button id="results" class="result-stack" hidden aria-label="View forged items"><span class="stack-card stack-back-two"></span><span class="stack-card stack-back-one"></span><span class="stack-card stack-front"><img id="result-image" alt=""><span id="result-level" class="item-level"></span></span><b id="result-count"></b></button>
@@ -71,7 +82,17 @@
           <button id="close-sheet" class="close" aria-label="Close comparison">×</button>
         </div>
         <div id="equipped-row" class="item-row"><span id="equipped-card" class="item-icon"><img id="equipped-image" alt=""><span id="equipped-level" class="item-level"></span></span><div class="item-details"><h2 id="equipped-name"></h2><small id="equipped-epoch" class="item-epoch"></small><p id="equipped-stat"></p></div></div>
-        <div id="new-row" class="new-row"><span class="new-tag">NEW</span><div class="item-row"><span id="new-card" class="item-icon"><img id="new-image" alt=""><span id="new-level" class="item-level"></span></span><div class="item-details"><h2 id="new-name"></h2><small id="new-epoch" class="item-epoch"></small><p><span id="new-stat"></span> <b id="difference"></b></p></div></div></div>
+        <p id="equipped-affix" class="affix-line" hidden></p>
+        <div id="reforge-panel" hidden>
+          <div id="reforge-choice" hidden aria-live="polite">
+            <div class="affix-options"><div><small>Current</small><strong id="reforge-current"></strong></div><div class="affix-new"><small>New</small><strong id="reforge-new"></strong></div></div>
+            <div class="sheet-actions"><button id="reforge-keep" class="button">Keep</button><button id="reforge-replace" class="button blue">Replace</button></div>
+          </div>
+          <button id="reforge-filter" aria-expanded="false" aria-controls="reforge-filters">Stop when: Any ▾</button>
+          <div id="reforge-filters" popover="auto" role="group" aria-label="Stop when affix matches"></div>
+          <button id="reforge-roll" class="button blue"><span>Reforge</span><i class="coin" aria-hidden="true"></i><span id="reforge-price"></span></button>
+        </div>
+        <div id="new-row" class="new-row"><span class="new-tag">NEW</span><div class="item-row"><span id="new-card" class="item-icon"><img id="new-image" alt=""><span id="new-level" class="item-level"></span></span><div class="item-details"><h2 id="new-name"></h2><small id="new-epoch" class="item-epoch"></small><p><span id="new-stat"></span> <b id="difference"></b></p></div></div><p id="new-affix" class="affix-line" hidden></p></div>
         <div id="result-nav" class="result-nav" hidden><button id="previous-result" aria-label="Previous item">‹</button><span class="result-summary"><button id="equip-stronger" class="equip-stronger">Equip stronger</button><span id="results-remaining"></span><button id="sell-weaker" class="sell-weaker" hidden>Sell weaker</button></span><button id="next-result" aria-label="Next item">›</button></div>
 
         <div id="sheet-actions" class="sheet-actions"><button id="sell" class="button red"><span>Sell</span><small><i class="coin" aria-hidden="true"></i><span id="sell-price">5</span></small></button><button id="equip" class="button blue">Equip</button></div>
@@ -90,6 +111,16 @@
         </div>
       </section>
     </section>
+    <section id="mine-workshop" hidden aria-label="Mine inventory">
+      <div class="mine-inventory-title"><strong>Ore storage</strong><button id="mine-info" class="mini-button" aria-label="Mining probabilities">ⓘ</button></div>
+      <div id="mine-ore-grid"></div>
+      <button id="mine-collect" class="mini-button" hidden>Collect</button>
+      <div class="mine-upgrade-block"><strong id="mine-upgrade-title"></strong><div id="mine-cost"></div>
+        <div id="mine-upgrade-progress" hidden><progress id="mine-progress" max="100" value="0"></progress><span id="mine-time"></span></div>
+        <button id="mine-upgrade" class="button blue">Upgrade</button>
+      </div>
+    </section>
+    <nav id="activities" aria-label="Activities"><button id="mine-toggle" aria-label="Open mine" aria-pressed="false"><img src="assets/mine/pickaxe.svg" alt=""><span class="activity-close" aria-hidden="true">×</span><small>Mine</small></button></nav>
     <div id="reward-flight" aria-hidden="true"></div>
   </main>
   <dialog id="bulk-sale-confirm" class="bulk-sale-confirm" aria-labelledby="bulk-sale-title" aria-describedby="bulk-sale-summary">
@@ -114,5 +145,8 @@
     <p id="auto-hint">Unchecked epochs are sold after auto forging.</p>
     <button id="run-auto" class="button blue">Start</button>
   </dialog>
+  <dialog id="mine-info-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining chances</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-chances"></div><p>1 ore per minute. Offline storage: 4 hours.</p></dialog>
+  <dialog id="mine-sale-dialog" class="mine-dialog"><div class="sheet-top"><h2 id="mine-sale-name">Sell ore</h2><button class="close" data-close-mine aria-label="Close">×</button></div><label>Amount <input id="mine-sale-amount" type="number" min="1" step="1" inputmode="numeric"></label><button id="mine-sell" class="button blue">Sell</button></dialog>
+  <dialog id="mine-rewards-dialog" class="mine-dialog"><div class="sheet-top"><h2>While you were away</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-rewards"></div><p>Up to 4 hours of mining.</p><button id="mine-rewards-collect" class="button blue">Collect</button></dialog>
 </body>
 </html>

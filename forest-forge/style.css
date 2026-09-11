@@ -173,7 +173,7 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 .ring-target { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:0; border:0; background:none; }
 .ring-target strong { font-size:12px; line-height:14px; }
 .ring-target[aria-pressed="true"] .item-icon { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue); }
-.ring-target[aria-pressed="true"]:after { content:'вњ“'; position:absolute; right:-5px; top:-5px; display:grid; place-items:center; width:17px; height:17px; border:2px solid var(--ink); border-radius:50%; background:var(--blue); color:white; font:bold 12px Arial,sans-serif; }
+.ring-target[aria-pressed="true"]:after { content:'\2713'; position:absolute; right:-5px; top:-5px; display:grid; place-items:center; width:17px; height:17px; border:2px solid var(--ink); border-radius:50%; background:var(--blue); color:white; font:bold 12px Arial,sans-serif; }
 .button { border:2.5px solid var(--ink); border-radius:11px; padding:9px 10px 12px; box-shadow:inset 0 -4px 0 #0002; color:#fff; font-size:18px; min-height:47px; }
 .button:active { transform:translateY(2px); box-shadow:inset 0 -2px 0 #0002; }
 .red { background:var(--red); }
@@ -297,6 +297,23 @@ button:disabled { opacity:.55; cursor:default; }
 #comparison .item-level { bottom:2px; color:var(--ink); -webkit-text-stroke:0; font:400 12px/1 'Lilita UI',sans-serif; }
 #comparison .ring-target .item-icon { width:46px; height:46px; padding:4px; }
 #comparison .item-details { min-width:0; }
+#comparison .affix-line { margin:8px 0; padding:9px 11px; border:1px solid #d1d0c6; border-radius:9px; background:#eeece5; font:400 16px/1.2 'Lilita UI',sans-serif; }
+#reforge-panel { margin-top:9px; }
+#reforge-filter { display:block; padding:5px 2px; margin:4px 0 5px; border:0; background:none; color:var(--ink); font:400 13px/1.2 'Lilita UI',sans-serif; cursor:pointer; }
+#reforge-filter.matched { color:#29824c; }
+#reforge-filters { position:fixed; top:auto; right:auto; margin:0; box-sizing:border-box; width:240px; max-width:calc(100vw - 16px); overflow-y:auto; padding:7px; border:2px solid var(--ink); border-radius:10px; background:var(--paper); color:var(--ink); box-shadow:0 3px 0 #10272544; }
+#reforge-filters label { display:flex; align-items:center; gap:9px; min-height:30px; padding:3px 6px; cursor:pointer; font:400 15px/1.2 'Lilita UI',sans-serif; }
+#reforge-filters input { width:18px; height:18px; accent-color:#0bafe0; }
+#reforge-roll { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; min-height:45px; padding:8px; font:400 21px/1.1 'Lilita UI',sans-serif; }
+#reforge-roll .coin { width:18px; height:18px; }
+.affix-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.affix-options > div { min-width:0; padding:11px; border:2px solid #cecec4; border-radius:11px; background:#eeece5; }
+.affix-options small { display:block; margin-bottom:9px; color:#747970; font:400 13px/1 'Lilita UI',sans-serif; }
+.affix-options strong { display:block; font:400 18px/1.2 'Lilita UI',sans-serif; overflow-wrap:anywhere; }
+.affix-options .affix-new { border-color:#0aabe0; background:#d2ebf5; animation:affix-reveal .22s ease-out; }
+#reforge-keep { background:#eeece5; color:var(--ink); text-shadow:none; }
+@keyframes affix-reveal { from { opacity:.4; transform:translateY(4px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce) { .affix-options .affix-new { animation:none; } }
 #comparison h2 { margin:0 0 3px; font:400 17px/1.12 'Lilita UI',sans-serif; overflow-wrap:anywhere; }
 #comparison .item-epoch { display:block; margin-bottom:4px; color:#7d8178; font:400 11px/1.15 'Lilita UI',sans-serif; }
 #comparison .item-row p { font:400 18px/1.2 'Lilita UI',sans-serif; }
@@ -430,3 +447,69 @@ button:disabled { opacity:.55; cursor:default; }
 #cloud-status:not([hidden]) { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:24px; background:#102e25d9; }
 #cloud-status > div { max-width:340px; padding:22px; border:3px solid #183d34; border-radius:16px; background:#fffaf0; text-align:center; font-weight:700; }
 #cloud-retry { margin-top:12px; min-width:140px; }
+
+/* Activity navigation occupies its own row; hidden scenes do not animate. */
+#activities { flex:none; height:calc(58px + var(--safe-bottom,0px)); padding:4px 18px var(--safe-bottom,0px); background:#3e4556; border-top:3px solid #182c2a; display:flex; align-items:flex-start; gap:24px; }
+#activities button { position:relative; width:58px; height:49px; border:0; background:none; color:#fff; display:grid; justify-items:center; padding:0; cursor:pointer; }
+#activities img { width:36px; height:36px; } #activities small { font-size:10px; line-height:11px; }
+.activity-close { display:none; } .mine-open #mine-toggle img,.mine-open #mine-toggle small { display:none; }
+.mine-open #mine-toggle .activity-close { display:grid; place-items:center; width:45px;height:45px;border:3px solid #172b29;border-radius:50%;background:#ff5262;box-shadow:0 3px #922d3a;font:bold 36px/1 sans-serif; }
+#workshop { padding-bottom:8px; }
+#game #battle { flex:1 1 auto; height:auto; min-height:160px; }
+#game #workshop { flex:0 0 auto; }
+.mine-open #scene,.mine-open .level-hud,.mine-open #idle-loot,.mine-open #completed { display:none; }
+#mine-scene { position:absolute;inset:0;overflow:hidden;background:#66584d; }
+.mine-cave,.mine-deposit { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:66% 70%;pointer-events:none; }
+
+.mine-miner-rig {position:absolute;left:16%;bottom:19%;width:58%;aspect-ratio:1374/1145;pointer-events:none;--mine-cycle:2.4s;}
+.mine-miner-body {position:absolute;inset:0;transform-origin:39% 94%;animation:mine-body var(--mine-cycle) infinite;}
+.mine-miner-body img {position:absolute;width:100%;height:100%;inset:0;}
+.mine-miner-arms {transform-origin:40% 58%;animation:mine-arms var(--mine-cycle) infinite;}
+@keyframes mine-body {
+  0%,100%{transform:rotate(0deg) scaleY(1);animation-timing-function:ease-in-out;}
+  52%,62%{transform:rotate(-2deg) scaleY(1.01);animation-timing-function:cubic-bezier(.55,0,1,.5);}
+  76%,82%{transform:rotate(3deg) scaleY(.98);animation-timing-function:ease-in-out;}
+}
+@keyframes mine-arms {
+  0%,100%{transform:rotate(-3deg);animation-timing-function:ease-in-out;}
+  52%,62%{transform:rotate(-41deg);animation-timing-function:cubic-bezier(.55,0,1,.5);}
+  76%,82%{transform:rotate(25deg);animation-timing-function:ease-in-out;}
+}
+.mine-impact {position:absolute;left:87%;top:75%;}
+.mine-impact i {position:absolute;width:4px;height:4px;background:#b39b7c;border-radius:1px;opacity:0;animation:mine-chip var(--mine-cycle) infinite;--chip-x:16px;--chip-y:-16px;}
+.mine-impact i:nth-child(2){--chip-x:-17px;--chip-y:-21px;background:#e8d0ac;}
+.mine-impact i:nth-child(3){--chip-x:7px;--chip-y:-27px;width:3px;height:3px;}
+.mine-impact i:nth-child(4){--chip-x:25px;--chip-y:2px;background:#e8d0ac;}
+.mine-impact i:nth-child(5){--chip-x:-11px;--chip-y:5px;width:3px;height:3px;}
+.mine-impact i:nth-child(6){--chip-x:19px;--chip-y:-9px;}
+@keyframes mine-chip {0%,75%{opacity:0;transform:translate(0,0)}76%{opacity:1;transform:translate(0,0)}96%,100%{opacity:0;transform:translate(var(--chip-x),var(--chip-y))}}
+#game.page-paused .mine-miner-body,#game.page-paused .mine-miner-arms,#game.page-paused .mine-impact i{animation-play-state:paused;}
+@media(prefers-reduced-motion:reduce){.mine-miner-body,.mine-miner-arms,.mine-impact i{animation:none;}}
+
+#mine-heading { position:absolute;top:calc(54px + var(--safe-top,0px));left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 2px #231a15;pointer-events:none; }
+#mine-heading h1 { font:25px/1 'Lilita UI',sans-serif;margin:0 0 4px; } #mine-heading span{font-size:12px;}
+#mine-found {position:absolute;left:45%;bottom:35%;font:bold 17px sans-serif;color:#fff;text-shadow:0 2px #172b29;}
+#mine-found.pop {animation:ore-found 1.6s ease-out both;} @keyframes ore-found {0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-32px)}}
+.mine-veins {position:absolute;right:9%;bottom:25%;width:27%;height:28%;pointer-events:none;}
+.mine-veins i {display:none;position:absolute;width:25%;height:35%;background:#d89662;clip-path:polygon(30% 0,100% 20%,80% 100%,0 70%);box-shadow:inset 4px 3px #ffe4ab;}
+.mine-veins i:nth-child(2){left:45%;top:30%}.mine-veins i:nth-child(3){left:15%;top:65%;background:#65d6e5}.mine-veins i:nth-child(4){left:75%;top:65%;background:#65d6e5}
+.mine-open[data-mine-tier="iron"] .mine-veins i:nth-child(-n+2),.mine-open[data-mine-tier="crystal"] .mine-veins i {display:block;}
+#mine-workshop {flex:none;padding:12px 20px;background:#fffaf0;}
+.mine-inventory-title {display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}.mine-inventory-title strong{font:20px 'Lilita UI',sans-serif;}.mine-inventory-title button{width:30px;min-height:28px;padding:2px;}
+#mine-ore-grid {display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.ore-card {position:relative;border:2px solid #52675f;border-radius:10px;background:#ece9df;padding:5px 2px;display:flex;flex-direction:column;align-items:center;cursor:pointer;color:#17332b;}
+.ore-card img {width:42px;height:42px;} .ore-card strong {font-size:15px;} .ore-card small{font-size:10px;}
+.ore-card:disabled {opacity:.4;cursor:default;}
+.mine-upgrade-block {margin-top:12px;text-align:center;}.mine-upgrade-block>strong {font-size:15px;}
+#mine-cost {display:flex;justify-content:center;gap:12px;margin:6px 0;font-size:12px;}#mine-cost span{display:flex;align-items:center;gap:3px;}#mine-cost img{width:24px;height:24px;}#mine-cost .missing{color:#b5333e;}
+#mine-upgrade {width:100%;min-height:40px;font-size:18px;padding:7px;}
+#mine-upgrade-progress {position:relative;height:32px;margin:10px 0;border:2px solid #17332b;border-radius:8px;overflow:hidden;background:#41495c;}
+#mine-progress {width:100%;height:100%;border:0;display:block;appearance:none;background:#41495c;}#mine-progress::-webkit-progress-bar{background:#41495c;}#mine-progress::-webkit-progress-value{background:#11b2e0;}#mine-progress::-moz-progress-bar{background:#11b2e0;}
+#mine-time {position:absolute;inset:0;display:grid;place-items:center;color:white;font-weight:bold;text-shadow:0 1px #17332b;}
+#mine-collect{width:100%;margin-top:8px;background:#b9e6a2;}
+.mine-dialog {width:min(360px,calc(100vw - 32px));padding:18px;border:3px solid #17332b;border-radius:16px;background:#fffaf0;color:#17332b;}
+.mine-dialog::backdrop{background:#0009;}.mine-dialog h2{margin:0;font:24px 'Lilita UI',sans-serif;}.mine-dialog p{font-size:12px;}.mine-dialog .button{width:100%;margin-top:14px;}
+.mine-dialog label {display:flex;align-items:center;justify-content:space-between;margin-top:20px;}.mine-dialog input{width:120px;padding:8px;font-size:18px;border:2px solid #52675f;border-radius:7px;}
+.mine-resource-row {display:flex;align-items:center;gap:10px;padding:7px 0;}.mine-resource-row img {width:36px;height:36px;}.mine-resource-row b{margin-left:auto;}
+@media(max-height:700px){#mine-workshop{padding:8px 16px;}.mine-upgrade-block{margin-top:7px;}.ore-card img{width:32px;height:32px;}#activities{height:calc(52px + var(--safe-bottom,0px));}.mine-inventory-title{margin-bottom:4px;}#mine-heading{top:calc(46px + var(--safe-top,0px));}}
+@media(prefers-reduced-motion:reduce){#mine-found.pop{animation:none}}

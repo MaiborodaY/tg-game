@@ -160,19 +160,7 @@ export const BIOMES = [
       "healer": "Goblin Shaman",
       "commander": "Goblin Chieftain",
       "boss": "Goblin King"
-    },
-    "waves": [
-      "WWH",
-      "WWW",
-      "WWAA",
-      "WWAH",
-      "WWWA",
-      "WWAA",
-      "WWWAH",
-      "WWW",
-      "WWAAH"
-    ],
-    "bossWave": "BAA"
+    }
   },
   {
     "id": "spore-marsh",
@@ -191,19 +179,7 @@ export const BIOMES = [
       "healer": "Spore Oracle",
       "commander": "Oldcap Warden",
       "boss": "Mire Monarch"
-    },
-    "waves": [
-      "WWH",
-      "WWA",
-      "WWW",
-      "WAH",
-      "WWAA",
-      "WWWH",
-      "WWAH",
-      "WWWA",
-      "WWAAH"
-    ],
-    "bossWave": "BWH"
+    }
   },
   {
     "id": "bone-canyon",
@@ -222,19 +198,7 @@ export const BIOMES = [
       "healer": "Carrion Shaman",
       "commander": "Pack Ravager",
       "boss": "Ribmaw"
-    },
-    "waves": [
-      "WWW",
-      "WWA",
-      "WWWA",
-      "WWAA",
-      "WWH",
-      "WWWA",
-      "WWWH",
-      "WWAA",
-      "WWWAH"
-    ],
-    "bossWave": "BWW"
+    }
   },
   {
     "id": "frozen-kingdom",
@@ -253,19 +217,7 @@ export const BIOMES = [
       "healer": "Snow Oracle",
       "commander": "Glacier Captain",
       "boss": "Rime Regent"
-    },
-    "waves": [
-      "WWA",
-      "WWAA",
-      "WWH",
-      "WWW",
-      "WWAH",
-      "WWAA",
-      "WWWA",
-      "WWAAH",
-      "WWWH"
-    ],
-    "bossWave": "BWA"
+    }
   },
   {
     "id": "sunset-city",
@@ -284,19 +236,7 @@ export const BIOMES = [
       "healer": "Plague Apothecary",
       "commander": "Street Marshal",
       "boss": "Clockwork Magistrate"
-    },
-    "waves": [
-      "WWA",
-      "WWAA",
-      "WWW",
-      "WWAH",
-      "WWA",
-      "WWWA",
-      "WWAAH",
-      "WWH",
-      "WWAA"
-    ],
-    "bossWave": "BAA"
+    }
   },
   {
     "id": "living-foundry",
@@ -315,19 +255,7 @@ export const BIOMES = [
       "healer": "Repair Drone",
       "commander": "Iron Foreman",
       "boss": "Furnace Heart"
-    },
-    "waves": [
-      "WWH",
-      "WWWH",
-      "WWA",
-      "WWW",
-      "WWAH",
-      "WWAA",
-      "WWWAH",
-      "WWH",
-      "WWAAH"
-    ],
-    "bossWave": "BWH"
+    }
   },
   {
     "id": "alien-garden",
@@ -346,19 +274,7 @@ export const BIOMES = [
       "healer": "Orchid Seer",
       "commander": "Thorn Matriarch",
       "boss": "Moonbloom Devourer"
-    },
-    "waves": [
-      "WWA",
-      "WWW",
-      "WWAH",
-      "WWAA",
-      "WWH",
-      "WWWA",
-      "WWAAH",
-      "WWWH",
-      "WWAA"
-    ],
-    "bossWave": "BWA"
+    }
   },
   {
     "id": "time-rift",
@@ -377,19 +293,7 @@ export const BIOMES = [
       "healer": "Hollow Timekeeper",
       "commander": "Fracture Warden",
       "boss": "Broken Colossus"
-    },
-    "waves": [
-      "WWAH",
-      "WWAA",
-      "WWH",
-      "WWWA",
-      "WWW",
-      "WWAAH",
-      "WWWH",
-      "WWA",
-      "WWWAH"
-    ],
-    "bossWave": "BWH"
+    }
   },
   {
     "id": "ashen-underworld",
@@ -408,19 +312,7 @@ export const BIOMES = [
       "healer": "Ash Witch",
       "commander": "Horned Overseer",
       "boss": "Cinder Maw"
-    },
-    "waves": [
-      "WWW",
-      "WWWA",
-      "WWH",
-      "WWAA",
-      "WWWH",
-      "WWAH",
-      "WWWAH",
-      "WWW",
-      "WWAAH"
-    ],
-    "bossWave": "BWW"
+    }
   },
   {
     "id": "sky-archipelago",
@@ -439,19 +331,7 @@ export const BIOMES = [
       "healer": "Bell Acolyte",
       "commander": "Suncrest Sentinel",
       "boss": "Eclipse Archon"
-    },
-    "waves": [
-      "WWA",
-      "WWH",
-      "WWAA",
-      "WWAH",
-      "WWWA",
-      "WWWH",
-      "WWAAH",
-      "WWWAH",
-      "WWAA"
-    ],
-    "bossWave": "BWA"
+    }
   }
 ];
 export const HERO_ATTACK_INTERVAL = 2;
@@ -471,23 +351,65 @@ const NAMES = {
   helmet: ['Hunter Fur Hood', 'Bone Warrior Skull Helm', 'Forest Guardian Helmet'],
   chest: ['Hunter Leather Vest', 'Bone Warrior Rib Armor', 'Forest Guardian Armor'],
 };
-// One string per wave. W warrior, A archer, H healer, B boss.
+// Ten fixed waves per row: tutorial, then local levels 1–5, 6–10, 11–15, 16–20.
+// W warrior, A archer, H healer, B boss. The last row builds to seven enemies.
 export const WAVES = [
-  ['W','W','W','W','A','W','W','A','W','B'],
-  ['W','A','W','WW','W','A','WW','A','WW','B'],
-  ['W','WW','A','WA','WW','A','WA','WW','WA','B'],
-  ['WW','WA','WW','AA','WW','WA','WWA','AA','WWA','B'],
-  ['WW','WA','AA','WWW','WAA','WW','WWA','WWW','WAA','BW'],
-  ['WW','WA','WW','WH','WW','WAA','WWH','WA','WWA','BW'],
-  ['WW','WAA','WWW','WWH','AA','WAH','WWW','WWAA','WWAH','BA'],
-  ['WWW','WWA','WWH','WWAA','WWW','WAAH','WWWH','WWA','WWAA','BWW'],
-  ['WWW','WWAA','WWH','WWWA','WAAH','WWW','WWAAH','WWA','WWWA','BWA'],
-  ['WWH','WWW','WWAA','WWAH','WWWA','WWAA','WWWAH','WWW','WWAAH','BAA'],
+  ['W','W','W','W','A','W','W','A','W','WWBAH'],
+  ['WW','WA','WW','WA','WWW','WW','WWA','WAA','WWW','WWBAH'],
+  ['WWW','WWA','WWH','WAA','WWAH','WWA','WWWA','WWWH','WWAA','WWBAH'],
+  ['WWWA','WWAA','WWAH','WWWH','WWWAH','WWAA','WWWWA','WWWAA','WWWAH','WWBAH'],
+  ['WWWWA','WWWAA','WWWAH','WWAAH','WWWWAH','WWWAA','WWWAAH','WWWWAA','WWWWAAH','WWBAH'],
 ];
 const KINDS = { W: 'warrior', A: 'archer', H: 'healer', B: 'boss' };
+export const AFFIXES = [
+  { id:'damage', name:'Damage', min:3, max:10, step:1 },
+  { id:'health', name:'Health', min:3, max:10, step:1 },
+  { id:'speed', name:'Attack speed', min:1, max:5, step:1 },
+  { id:'crit', name:'Critical chance', min:1, max:3, step:1 },
+  { id:'critDamage', name:'Critical damage', min:5, max:15, step:1 },
+  { id:'lifesteal', name:'Lifesteal', min:1, max:3, step:1 },
+  { id:'block', name:'Block chance', min:1, max:3, step:1 },
+  { id:'regen', name:'Health regen', min:.1, max:.5, step:.1 },
+  { id:'double', name:'Double strike', min:1, max:5, step:1 },
+];
+export const REFORGE_PRICES = [0,400,800,1600,3125,6250,12500,25000,50000,100000];
+export function rollAffix(rng = Math.random) {
+  const a = AFFIXES[Math.min(AFFIXES.length-1, Math.floor(rng()*AFFIXES.length))];
+  const steps = Math.round((a.max-a.min)/a.step);
+  return { type:a.id, value:Number((a.min + Math.min(steps,Math.floor(rng()*(steps+1)))*a.step).toFixed(1)) };
+}
+export function affixBonuses(s) {
+  const bonuses = Object.fromEntries(AFFIXES.map(a => [a.id,0]));
+  for (const item of Object.values(s.equipment)) if (item?.affix) bonuses[item.affix.type] += item.affix.value;
+  return bonuses;
+}
+export function attackInterval(s) { return HERO_ATTACK_INTERVAL / (1 + affixBonuses(s).speed / 100); }
+export function reforgeCost(item) {
+  const base = REFORGE_PRICES[(item?.epoch ?? 1)-1] || 0;
+  return Math.ceil(base * (10 + Math.min(10,item?.reforges || 0)) / 10);
+}
+export function reforge(s, slot, rng = Math.random) {
+  const item = s.equipment[slot], cost = reforgeCost(item);
+  if (!item || !cost || s.coins < cost) return false;
+  if (item.reforgeOffer && s.reforgeStop?.includes(item.reforgeOffer.type)) return false;
+  item.reforgeOffer = rollAffix(rng); item.reforges = Math.min(10,(item.reforges || 0)+1); s.coins -= cost;
+  return true;
+}
+export function resolveReforge(s, slot, replace) {
+  const item = s.equipment[slot];
+  if (!item?.reforgeOffer) return false;
+  const fraction = s.hp / stats(s).hp;
+  if (replace) item.affix = item.reforgeOffer;
+  delete item.reforgeOffer;
+  s.hp = fraction * stats(s).hp;
+  return true;
+}
 export function stats(s) {
   const total = { hp: 20, damage: 2 };
   for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += s.equipment[slot]?.value ?? 0;
+  const bonuses = affixBonuses(s);
+  total.hp = Math.round(total.hp * (1 + bonuses.health / 100));
+  total.damage = Math.round(total.damage * (1 + bonuses.damage / 100));
   return total;
 }
 export function itemLevel(s) {
@@ -506,9 +428,12 @@ export function enemyFor(level, kind = 'warrior') {
 }
 function prepareEncounter(s) {
   let x = s.heroX + .91;
-  const biome = BIOMES[Math.floor((s.level - 1) / LEVELS_PER_BIOME)];
-  const formation = s.level <= 10 ? WAVES[s.level - 1][s.encounter] :
-    s.encounter === 9 ? biome.bossWave : biome.waves[(s.encounter + (s.level - 1) % LEVELS_PER_BIOME) % 9];
+  const local = (s.level - 1) % LEVELS_PER_BIOME;
+  const row = s.level === 1 ? 0 : 1 + Math.floor(local / 5);
+  // Only rotate the opening/middle trios; the final three waves keep their build-up.
+  const column = s.level === 1 || s.encounter >= 6 ? s.encounter :
+    Math.floor(s.encounter / 3) * 3 + (s.encounter + local + Math.floor((s.level - 1) / LEVELS_PER_BIOME)) % 3;
+  const formation = WAVES[row][column];
   const kinds = [...formation].map(k => KINDS[k]);
   kinds.sort((a,b) => ['warrior','boss','archer','healer'].indexOf(a) - ['warrior','boss','archer','healer'].indexOf(b));
   s.enemies = kinds.map((kind, id) => {
@@ -517,15 +442,68 @@ function prepareEncounter(s) {
     x += kind === 'boss' || kinds[id + 1] === 'boss' ? .19 : .11;
     return member;
   });
-  s.targetId = null; s.heroClock = 0; s.heroActionAge = 1;
+  s.targetId = null; s.heroClock = 0; s.heroActionAge = 1; s.doubleStrikeDelay = 0;
   s.phase = 'walk'; s.phaseTime = 0;
 }
 export function freshGame(now = Date.now()) {
   const s = { version: 3, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
-    autoForge: false, autoSellEpochs: [], forgingAuto: false, selectedBatch: null, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
+  s.mine = {level:1,ore:[0,0,0,0],pending:[0,0,0,0],lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
+}
+export const MINE_RESOURCES = [
+  {id:'stone',name:'Stone',price:1,color:'#929ba0'},
+  {id:'coal',name:'Coal',price:5,color:'#454854'},
+  {id:'iron',name:'Iron',price:15,color:'#cd8659'},
+  {id:'crystal',name:'Crystal',price:40,color:'#75d7eb'},
+];
+// Starter balance. Each row is a level; costs purchase that level from the previous one.
+export const MINE_LEVELS = [
+  {chances:[100,0,0,0],cost:[0,0,0,0],minutes:0},
+  {chances:[99,1,0,0],cost:[30,0,0,0],minutes:5},
+  {chances:[90,10,0,0],cost:[60,1,0,0],minutes:15},
+  {chances:[75,24,1,0],cost:[100,10,0,0],minutes:30},
+  {chances:[55,35,10,0],cost:[150,25,1,0],minutes:60},
+  {chances:[35,40,24,1],cost:[200,50,15,0],minutes:120},
+  {chances:[20,35,40,5],cost:[250,80,40,1],minutes:180},
+  {chances:[10,25,50,15],cost:[300,120,80,10],minutes:240},
+  {chances:[5,15,50,30],cost:[350,160,150,30],minutes:360},
+  {chances:[0,10,40,50],cost:[400,200,250,60],minutes:480},
+];
+export const MINE_INTERVAL = 60000, MINE_CAP = 240;
+export function settleMine(s, now = Date.now(), rng = Math.random) {
+  const m=s.mine, slots=Math.max(0,MINE_CAP-m.pending.reduce((a,b)=>a+b,0));
+  const elapsed=Math.max(0,Math.floor((now-m.lastAt)/MINE_INTERVAL)), count=Math.min(slots,elapsed);
+  for(let n=1;n<=count;n++){
+    const at=m.lastAt+n*MINE_INTERVAL;
+    if(m.upgradeEndsAt && at>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
+    const chances=MINE_LEVELS[m.level-1].chances;let roll=rng()*100,index=0;
+    while(index<3 && roll>=chances[index])roll-=chances[index++];
+    m.pending[index]++;
+  }
+  if(elapsed>=slots)m.lastAt=Math.max(m.lastAt,now);
+  else m.lastAt+=count*MINE_INTERVAL;
+  if(m.upgradeEndsAt && now>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
+  return count;
+}
+export function collectMine(s, now = Date.now()) {
+  settleMine(s,now);
+  const loot=[...s.mine.pending];
+  loot.forEach((n,i)=>s.mine.ore[i]+=n);s.mine.pending=[0,0,0,0];
+  return loot;
+}
+export function upgradeMine(s, now = Date.now()) {
+  settleMine(s,now);
+  const m=s.mine,next=MINE_LEVELS[m.level];
+  if(!next || m.upgradeEndsAt || next.cost.some((n,i)=>m.ore[i]<n))return false;
+  next.cost.forEach((n,i)=>m.ore[i]-=n);m.upgradeEndsAt=now+next.minutes*60000;
+  return true;
+}
+export function sellOre(s,index,amount) {
+  if(!Number.isInteger(index)||!MINE_RESOURCES[index]||!Number.isSafeInteger(amount)||amount<1||s.mine.ore[index]<amount)return false;
+  s.mine.ore[index]-=amount;s.coins+=amount*MINE_RESOURCES[index].price;return true;
 }
 // A saved timestamp keeps the same four-hour buffer online and offline.
 export function idleRewards(s, now = Date.now()) {
@@ -542,7 +520,7 @@ export function collectIdleRewards(s, now = Date.now()) {
 // One hammer per item. A partial batch spends only the remaining hammers.
 export function batchSize(s) { return COMBAT[s.highest - 1].batch_size; }
 export const BATCH_OPTIONS = [{ size:1, level:1 }, ...COMBAT.flatMap((row,i) => !i || row.batch_size !== COMBAT[i-1].batch_size ? [{ size:row.batch_size, level:i+1 }] : [])];
-export function forgeCost(s) { return Math.min(s.hammers, s.selectedBatch ?? batchSize(s), batchSize(s)); }
+export function forgeCost(s) { return Math.min(s.hammers, s.selectedBatch ?? 1, batchSize(s)); }
 export function forge(s, rng = Math.random) {
   if (s.forging > 0 || s.hammers < 1) return false;
   s.forgingAuto = s.autoForge;
@@ -561,6 +539,7 @@ export function forge(s, rng = Math.random) {
     const quality = weaponId ? WEAPONS[weaponId].quality : Math.min((ARMOR_SETS[epochIndex]?.length??1)-1, Math.floor(appearance * (ARMOR_SETS[epochIndex]?.length??1)));
     s.forgingItems.push({ slot, ...(weaponId?{weaponId}:{}), name: weaponId?WEAPONS[weaponId].name:epochIndex===0?NAMES[slot][quality]:`${epochIndex===1?['Bronze Warrior','Temple Guard','Legionary'][quality]:epochIndex===2?['Iron Knight','Forest Ranger','Royal Guard'][quality]:epochIndex===3?['Musketeer','Corsair','Grenadier'][quality]:epochIndex===4?['Field Scout','Commando','Heavy Trooper'][quality]:epochIndex===5?['Neon Runner','Exo Trooper','Reactor Guard'][quality]:epochIndex===6?["Lunar Scout","Void Corsair","Xeno Warden"][quality]:epochIndex===7?["Rift Nomad","Prism Keeper","Paradox Knight"][quality]:epochIndex===8?["Ash Reaper","Ember Brute","Obsidian Tyrant"][quality]:epochIndex===9?["Dawn Herald","Storm Seraph","Sun Sovereign"][quality]:EPOCHS[epochIndex]} ${LABELS[slot]||'Ring'}`, quality, epoch: epochIndex + 1, itemLevel,
       sale: SALE_PRICES[epochIndex], value: Math.max(1, Math.round(Math.round(bases[slot] * 10 ** epochIndex * (1 + .05 * (itemLevel - 1))) * (WEAPONS[weaponId]?.multiplier??1))) });
+    if (epochIndex > 0) s.forgingItems.at(-1).affix = rollAffix(rng);
     s.lastEpoch = epochIndex + 1;
     if (mastery.level < 100 && ++mastery.xp >= mastery.level + 4) { mastery.xp = 0; mastery.level++; }
   }
@@ -594,7 +573,7 @@ export function equipStronger(s, preview = false) {
     const slot = item.slot === 'ring'
       ? (equipment.ring1?.value ?? 0) <= (equipment.ring2?.value ?? 0) ? 'ring1' : 'ring2'
       : item.slot;
-    if (item.value > (equipment[slot]?.value ?? 0)) {
+    if (item.value > (equipment[slot]?.value ?? 0) && (!equipment[slot]?.affix || item.affix?.type === equipment[slot].affix.type && item.affix.value >= equipment[slot].affix.value)) {
       equipment[slot] = { ...item, slot }; chosen[slot] = item;
     }
   }
@@ -617,7 +596,8 @@ export function sellWeaker(s, preview = false, selection = null) {
     const equipped = item.slot === 'ring'
       ? s.equipment.ring1 && s.equipment.ring2 && { value: Math.min(s.equipment.ring1.value, s.equipment.ring2.value) }
       : s.equipment[item.slot];
-    if ((!selection || selection.has(item)) && equipped && item.value <= equipped.value) { count++; coins += item.sale; }
+    const affixWeaker = !item.affix || (item.slot === 'ring' ? ['ring1','ring2'] : [item.slot]).every(slot => s.equipment[slot]?.affix?.type === item.affix.type && s.equipment[slot].affix.value >= item.affix.value);
+    if ((!selection || selection.has(item)) && equipped && item.value <= equipped.value && affixWeaker) { count++; coins += item.sale; }
     else if (!preview) remaining.push(item);
   }
   if (!preview && count) {
@@ -672,7 +652,10 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   s.heroActionAge = Math.min(1, s.heroActionAge + dt);
   for (const e of s.enemies) { e.actionAge = Math.min(1, e.actionAge + dt); e.deadTime = Math.max(0, e.deadTime - dt); }
   if (s.completed) return events;
+  const bonuses = affixBonuses(s), hero = stats(s), interval = HERO_ATTACK_INTERVAL / (1 + bonuses.speed/100);
+  if (s.hp > 0 && s.phase !== 'dead') s.hp = Math.min(hero.hp, s.hp + hero.hp * bonuses.regen / 100 * dt);
   if (s.phase === 'dead' || s.phase === 'victory') {
+    s.doubleStrikeDelay = 0;
     if (s.phase === 'victory') s.heroX += APPROACH_SPEED / 2 * dt;
     else for (const e of s.enemies) if (e.hp > 0) { e.x -= APPROACH_SPEED / 2 * dt; e.moving = true; e.engaged = false; }
     s.phaseTime -= dt;
@@ -698,11 +681,11 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   const archers = living.filter(e => e.kind === 'archer');
   for (const e of living) {
     const index = melee.indexOf(e);
-    const distance = index >= 0 ? (e.boss ? .165 : .115) + (index === 1 ? .055 : index > 1 ? .15 + (index - 2) * .11 : 0)
+    const distance = index >= 0 ? (e.boss ? .165 : .115) + (index < 3 ? index * .035 : .18 + (index - 3) * .11)
       : e.kind === 'archer' ? .46 + archers.indexOf(e) * .10 : .65;
     e.moving = e.x - s.heroX > distance + .0001;
     if (e.moving) e.x -= Math.min(APPROACH_SPEED / 2 * dt, e.x - s.heroX - distance);
-    const ready = !e.moving && index < 2;
+    const ready = !e.moving && index < 3;
     if (ready && !e.engaged) e.clock = e.kind === 'archer' ? .70 : e.boss ? .58 : .68;
     if (!ready) e.clock = 0;
     e.engaged = ready;
@@ -710,16 +693,24 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   const inReach = target.x - s.heroX <= reach + .0001;
   s.phase = inReach ? 'fight' : 'walk';
   if (inReach && (s.targetId !== target.id || oldPhase !== 'fight')) {
-    s.heroClock = .75;
+    s.heroClock = interval * .375; s.doubleStrikeDelay = 0;
     if (target.boss) events.push({ type: 'boss' });
   }
   s.targetId = target.id;
   if (inReach) {
     s.heroClock += dt;
-    if (s.heroClock >= HERO_ATTACK_INTERVAL) {
-      s.heroClock -= HERO_ATTACK_INTERVAL; s.heroActionAge = 0; s.heroAttackCount++;
-      const damage = stats(s).damage; target.hp = Math.max(0, target.hp - damage);
-      events.push({ type: 'heroHit', value: damage, targetId: target.id });
+    const extra = s.doubleStrikeDelay > 0 && s.doubleStrikeDelay <= dt;
+    s.doubleStrikeDelay = Math.max(0,(s.doubleStrikeDelay || 0)-dt);
+    if (s.heroClock >= interval || extra) {
+      if (!extra) s.heroClock -= interval;
+      s.heroActionAge = 0; s.heroAttackCount++;
+      const critical = rng() < Math.min(50,5 + bonuses.crit)/100;
+      const damage = Math.round(hero.damage * (critical ? 1.5 + bonuses.critDamage/100 : 1));
+      const dealt = Math.min(target.hp,damage);
+      target.hp = Math.max(0, target.hp - damage);
+      s.hp = Math.min(hero.hp,s.hp + dealt * bonuses.lifesteal/100);
+      events.push({ type: 'heroHit', value: damage, targetId: target.id, critical, extra });
+      if (!extra && target.hp > 0 && bonuses.double > 0 && rng() < bonuses.double/100) s.doubleStrikeDelay = interval * .16;
       if (!target.hp) {
         target.deadTime = .6; target.engaged = false; target.moving = false;
         s.kills++; s.coins += target.reward;
@@ -732,7 +723,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
         }
       }
     }
-  } else s.heroClock = 0;
+  } else { s.heroClock = 0; s.doubleStrikeDelay = 0; }
   for (const e of living) {
     if (!e.hp || !e.engaged) continue;
     if (e.kind === 'healer') {
@@ -756,8 +747,9 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     if (e.clock >= 1.1) {
       e.clock -= 1.1;
       if (e.kind !== 'archer') e.actionAge = 0;
-      s.hp = Math.max(0, s.hp - e.damage);
-      events.push({ type: 'enemyHit', value: e.damage, sourceId: e.id, ranged: e.kind === 'archer' });
+      const blocked = bonuses.block > 0 && rng() < bonuses.block/100;
+      s.hp = Math.max(0, s.hp - (blocked ? 0 : e.damage));
+      events.push({ type: 'enemyHit', value: blocked ? 0 : e.damage, blocked, sourceId: e.id, ranged: e.kind === 'archer' });
       if (!s.hp) {
         s.deaths++; s.phase = 'dead'; s.phaseTime = 1.8;
         events.push({ type: 'death' }); return events;
@@ -775,7 +767,10 @@ export function restore(serialized, now = Date.now()) {
   try {
     const s = JSON.parse(serialized);
     const nonnegative = n => Number.isFinite(n) && n >= 0;
-    const item = i => i && (SLOTS.includes(i.slot) || i.slot === 'ring') && typeof i.name === 'string' && Number.isFinite(i.value) && i.value > 0 && nonnegative(i.sale) && [0,1,2].includes(i.quality);
+    const affix = a => a && AFFIXES.some(d => d.id === a.type && Number.isFinite(a.value) && a.value >= d.min && a.value <= d.max && Math.abs((a.value-d.min)/d.step-Math.round((a.value-d.min)/d.step)) < 1e-8);
+    const item = i => i && (SLOTS.includes(i.slot) || i.slot === 'ring') && typeof i.name === 'string' && Number.isFinite(i.value) && i.value > 0 && nonnegative(i.sale) && [0,1,2].includes(i.quality)
+      && (i.affix == null || i.epoch >= 2 && affix(i.affix)) && (i.reforgeOffer == null || i.epoch >= 2 && affix(i.reforgeOffer))
+      && (i.reforges == null || Number.isInteger(i.reforges) && i.reforges >= 0 && i.reforges <= 10);
     if (!s || ![1,2,3].includes(s.version) || !nonnegative(s.coins) || !Number.isInteger(s.level) || s.level < 1 || s.level > MAX_LEVEL ||
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
@@ -812,24 +807,32 @@ export function restore(serialized, now = Date.now()) {
       if (s.completed && s.level < MAX_LEVEL) { s.completed = false; s.phase = "victory"; s.phaseTime = .8; }
     }
     if (!nonnegative(s.idleSince)) s.idleSince = now;
+    if (!s.mine || !Number.isInteger(s.mine.level) || s.mine.level<1 || s.mine.level>MINE_LEVELS.length ||
+      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length===4 && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
+      s.mine.pending.reduce((a,b)=>a+b,0)>MINE_CAP || !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt) ||
+      s.mine.level===MINE_LEVELS.length && s.mine.upgradeEndsAt) s.mine={level:1,ore:[0,0,0,0],pending:[0,0,0,0],lastAt:now,upgradeEndsAt:0};
     s.autoSellEpochs = Array.isArray(s.autoSellEpochs) ? s.autoSellEpochs.filter(epoch => Number.isInteger(epoch) && epoch >= 1 && epoch <= EPOCHS.length) : [];
+    s.reforgeStop = Array.isArray(s.reforgeStop) ? [...new Set(s.reforgeStop.filter(id=>AFFIXES.some(a=>a.id===id)))] : [];
     s.forgingAuto = s.forging > 0 && s.forgingAuto === true;
-    s.selectedBatch = BATCH_OPTIONS.some(option => option.size === s.selectedBatch && option.level <= s.highest) ? s.selectedBatch : null;
+    s.selectedBatch = BATCH_OPTIONS.some(option => option.size === s.selectedBatch && option.level <= s.highest) ? s.selectedBatch : 1;
     s.heroAttackCount = Number.isSafeInteger(s.heroAttackCount) && s.heroAttackCount >= 0 ? s.heroAttackCount : 0;
+    s.doubleStrikeDelay = nonnegative(s.doubleStrikeDelay) ? s.doubleStrikeDelay : 0;
     finishUpgrade(s, now);
     if (!Number.isInteger(s.encounter) || s.encounter < 0 || s.encounter > 9 || s.hp > stats(s).hp ||
       !['walk','fight','dead','victory','complete'].includes(s.phase) || !['heroX','heroClock','heroActionAge'].every(k => nonnegative(s[k])) ||
       !Number.isFinite(s.phaseTime) || (s.completed !== (s.phase === 'complete')) || (s.completed && (s.level !== MAX_LEVEL || s.encounter !== 9))) return freshGame(now);
-    const biome = BIOMES[Math.floor((s.level - 1) / LEVELS_PER_BIOME)];
-    const formation = s.level <= 10 ? WAVES[s.level - 1][s.encounter] :
-      s.encounter === 9 ? biome.bossWave : biome.waves[(s.encounter + (s.level - 1) % LEVELS_PER_BIOME) % 9];
-    const expected = [...formation].map(k => KINDS[k]).sort().join(',');
-    // A saved fight can still contain the formation used before biomes shipped.
-    const previous = [...WAVES[Math.min(s.level, 10) - 1][s.encounter]].map(k => KINDS[k]).sort().join(',');
-    if (!Array.isArray(s.enemies) || ![expected, previous].includes(s.enemies.map(e => e.kind).sort().join(',')) ||
+    if (!Array.isArray(s.enemies) || !s.enemies.length || s.enemies.length > 7 ||
+      s.enemies.filter(e=>e.kind==='boss').length !== (s.encounter===9?1:0) ||
+      s.enemies.filter(e=>e.kind==='warrior').length > 4 || s.enemies.filter(e=>e.kind==='archer').length > 2 || s.enemies.filter(e=>e.kind==='healer').length > 1 ||
+      s.enemies.some(e=>!Object.values(KINDS).includes(e.kind)) ||
       !s.enemies.every((e,i) => e.id === i && ['hp','x','clock','healClock','actionAge','deadTime'].every(k => nonnegative(e[k])) && e.hp <= enemyFor(s.level,e.kind).maxHp)) return freshGame(now);
     for (const e of s.enemies) Object.assign(e, enemyFor(s.level, e.kind), {hp:Math.ceil(e.hp)});
     if ((s.phase === 'walk' || s.phase === 'fight') && !s.enemies.some(e => e.hp > 0)) return freshGame(now);
+    const local = (s.level - 1) % LEVELS_PER_BIOME;
+    const row = s.level === 1 ? 0 : 1 + Math.floor(local / 5);
+    const column = s.level === 1 || s.encounter >= 6 ? s.encounter :
+      Math.floor(s.encounter / 3) * 3 + (s.encounter + local + Math.floor((s.level - 1) / LEVELS_PER_BIOME)) % 3;
+    if (['walk','fight'].includes(s.phase) && s.enemies.map(e=>e.kind).join(',') !== [...WAVES[row][column]].map(k=>KINDS[k]).join(',')) prepareEncounter(s);
     return s;
   } catch { return freshGame(now); }
 }

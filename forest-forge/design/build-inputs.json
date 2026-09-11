@@ -72,5 +72,14 @@
   "game.mjs",
   "index.html",
   "scene.mjs",
-  "style.css"
+  "style.css",
+  "assets/mine/coal.svg",
+  "assets/mine/crystal.svg",
+  "assets/mine/iron.svg",
+  "assets/mine/pickaxe.svg",
+  "assets/mine/stone.svg",
+  "assets/mine/miner-body.webp",
+  "assets/mine/miner-arms.webp",
+  "assets/mine/cave-background.webp",
+  "assets/mine/deposit-stone.webp"
 ]

@@ -1,5 +1,7 @@
+import { MINE_RESOURCES, MINE_LEVELS, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, itemLevel, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs';
+import { AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 
 const $ = id => document.getElementById(id);
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||/^(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}$/.test(location.hostname);
@@ -10,6 +12,7 @@ const previewWeapon=localPreview&&Object.hasOwn(WEAPONS,requestedWeapon)?request
 const requestedBiome=Number(new URLSearchParams(location.search).get('biome'));
 const previewBiome=localPreview&&!previewWeapon&&!previewSet&&Number.isInteger(requestedBiome)&&requestedBiome>=1&&requestedBiome<=BIOMES.length?requestedBiome:null;
 const previewBoss=previewBiome&&new URLSearchParams(location.search).get('boss')==='1';
+const previewReforge=localPreview && !previewWeapon && !previewSet && !previewBiome && new URLSearchParams(location.search).get('reforge')==='1';
 let state;
 let artVersion=Date.now();
 window.addEventListener('storage',event=>{if(event.key==='forest-forge-art-update')artVersion=Date.now();});
@@ -21,20 +24,24 @@ if (telegramLaunch) { state = freshGame(); $('cloud-status').hidden = false; $('
 else try { state = restore(localStorage.getItem(SAVE_KEY)); } catch { state = freshGame(); storageAvailable = false; }
 if(previewWeapon){state=freshGame();const w=WEAPONS[previewWeapon];state.equipment.weapon={slot:'weapon',weaponId:previewWeapon,name:w.name,quality:w.quality,epoch:w.epoch,itemLevel:1,value:Math.max(1,Math.round(2*w.multiplier)),sale:1};}
 if(previewBiome){
-  state=freshGame();state.level=state.highest=(previewBiome-1)*LEVELS_PER_BIOME+(previewBoss?20:11);
+  state=freshGame();state.level=state.highest=(previewBiome-1)*LEVELS_PER_BIOME+(previewBoss?20:18);
   const [id,w]=Object.entries(WEAPONS).find(([,w])=>w.epoch===previewBiome&&!w.range);
   state.equipment.weapon={slot:'weapon',weaponId:id,name:w.name,quality:w.quality,epoch:w.epoch,itemLevel:1,value:Math.max(2,Math.round(enemyFor(state.level).maxHp*.25)),sale:1};
   state.equipment.chest={slot:'chest',name:'Preview armor',quality:0,epoch:previewBiome,itemLevel:1,value:enemyFor(state.level,'boss').damage*1000,sale:1};
   state.hp=stats(state).hp;
-  const mixed=BIOMES[previewBiome-1].waves.findIndex(w=>w.includes('W')&&w.includes('A')&&w.includes('H'));
-  const encounter=previewBoss?9:(mixed-10+18)%9;
+  const encounter=previewBoss?9:8;
   state.encounter=encounter?encounter-1:0;state.phase=encounter?'victory':'dead';state.phaseTime=0;step(state,1/30);
 }
 let ringTarget = null, bulkSaleSelection = null;
+if(previewReforge){
+  state=freshGame();state.coins=10000;state.hammers=50;state.anvilLevel=10;
+  for(const [slot,type,value] of [['ring1','speed',4],['ring2','health',7]]) state.equipment[slot]={slot,name:'Bronze Warrior Ring',quality:0,epoch:2,itemLevel:12,value:10,sale:1,affix:{type,value}};
+}
 let sheetSlot = null, toastUntil = 0;
 let savedTime = 0, uiTime = 0, frameCount = 0;
 let running = false, raf = 0, last = 0, accumulated = 0;
 let telegramInitialized = false, returnFocus = null;
+let mineOpen=false, mineWaiting=false, mineSaleIndex=0;
 const nodes = [...$('progress').children];
 const equipmentButtons = [];
 const compact = new Intl.NumberFormat('en', { notation:'compact', maximumFractionDigits:1 });
@@ -67,7 +74,7 @@ for (const [i, name] of EPOCHS.entries()) {
 
 }
 const save = (force = false) => {
-  if(previewSet||previewWeapon||previewBiome)return;
+  if(previewSet||previewWeapon||previewBiome||previewReforge)return;
   if (telegramLaunch) {
     if (!cloudReady) return;
     cloudDirty = true;
@@ -140,6 +147,7 @@ function notify(text) { $('toast').textContent = text; $('toast').classList.add(
 function setText(id, value) { const text = String(value); if ($(id).textContent !== text) $(id).textContent = text; }
 function itemArt(img, item) { if(item.slot==='weapon'&&WEAPONS[item.weaponId]?.sprite&&WEAPONS[item.weaponId].epoch===(item.epoch??1)){const path=`assets/weapons/${item.weaponId}-icon.png?v=${artVersion}`;if(img.getAttribute('src')!==path)img.src=path;return;}const set=item.slot==='weapon'?((item.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard'][item.quality]:undefined):ARMOR_SETS[(item.epoch??1)-1]?.[item.quality];const path = set && ['weapon','helmet','chest','shoulders','cape','gloves','legs','boots'].includes(item.slot) ? `assets/sets/${set}/${item.slot}-icon.png?v=${artVersion}` : `assets/${item.slot === 'ring' ? 'ring1' : item.slot}${(item.epoch??1)>ARMOR_SETS.length?'':'-'+item.quality}.svg`; if (img.getAttribute('src') !== path) img.src = path; }
 function describe(item) { return `${DAMAGE_SLOTS.includes(item.slot) ? 'Damage' : 'Health'} ${compact.format(item.value)}`; }
+function describeAffix(affix) { return affix ? `${AFFIXES.find(a=>a.id===affix.type).name} +${affix.value}%${affix.type==='regen'?' / sec':''}` : 'No affix'; }
 
 for (const slot of SLOTS) {
   const button = document.createElement('button');
@@ -153,8 +161,26 @@ for (const slot of SLOTS) {
 
 function fillSheet() {
   const candidate = sheetSlot === 'pending' ? state.pending : null;
-  const ringChoice = candidate?.slot === 'ring';
+  const ringChoice = candidate?.slot === 'ring' || ['ring1','ring2'].includes(sheetSlot);
   const old = state.equipment[ringChoice ? ringTarget : candidate ? candidate.slot : sheetSlot];
+  const offer = !candidate && old?.reforgeOffer;
+  setText('sheet-title',offer ? 'Reforge' : 'Equipped');
+  $('equipped-affix').hidden = !old?.affix || !!offer;
+  setText('equipped-affix',describeAffix(old?.affix));
+  $('reforge-panel').hidden = !!candidate || !reforgeCost(old);
+  $('reforge-choice').hidden = !offer;
+  $('reforge-roll').hidden = false;
+  const cost = reforgeCost(old);
+  setText('reforge-price',cost.toLocaleString('en'));
+  const matched = !!offer && state.reforgeStop.includes(offer.type);
+  $('reforge-roll').disabled = state.coins < cost || matched;
+  $('reforge-roll').setAttribute('aria-label',`Reforge for ${cost} coins${matched ? ', matched selected affix' : state.coins < cost ? ', not enough coins' : ''}`);
+  setText('reforge-filter',matched ? '✓ Matched ▾' : `Stop when: ${state.reforgeStop.length ? state.reforgeStop.length+' selected' : 'Any'} ▾`);
+  $('reforge-filter').classList.toggle('matched',matched);
+  for (const input of $('reforge-filters').querySelectorAll('input')) input.checked=state.reforgeStop.includes(input.value);
+  setText('reforge-current',describeAffix(old?.affix));
+  setText('reforge-new',describeAffix(offer));
+  $('reforge-new').className = offer && old?.affix?.type === offer.type ? (offer.value > old.affix.value ? 'better' : offer.value < old.affix.value ? 'worse' : '') : '';
   $('ring-targets').hidden = !ringChoice;
   if (ringChoice) for (const slot of ['ring1','ring2']) {
     const item = state.equipment[slot], button = $(`choose-${slot}`);
@@ -181,8 +207,10 @@ function fillSheet() {
   $('sell-weaker').hidden = !weaker.count;
   $('sell-weaker').setAttribute('aria-label', `Sell ${weaker.count} weaker or equal items`);
   if (bulkSaleSelection) setText('bulk-sale-summary', `Sell ${weaker.count} weaker or equal items for ${weaker.coins.toLocaleString('en')} coins?`);
-  for (const id of ['sell', 'equip', 'choose-ring1', 'choose-ring2']) $(id).disabled = !!bulkSaleSelection;
+  for (const id of ['sell', 'equip', 'choose-ring1', 'choose-ring2']) $(id).disabled = !!bulkSaleSelection || !!offer;
   if (candidate) {
+    $('new-affix').hidden = !candidate.affix;
+    setText('new-affix',describeAffix(candidate.affix));
     $('new-card').className = `item-icon epoch-${candidate.epoch ?? 1}`;
     itemArt($('new-image'), candidate);
     setText('new-name', candidate.name); setText('new-stat', describe(candidate));
@@ -198,7 +226,7 @@ function openSheet(slot) {
   $('batch-options').hidden = true; $('batch-choice').setAttribute('aria-expanded', 'false');
   if (slot === 'pending' && !state.pending) return;
   returnFocus = document.activeElement;
-  ringTarget = slot === 'pending' && state.pending?.slot === 'ring' ? (!state.equipment.ring1 ? 'ring1' : !state.equipment.ring2 ? 'ring2' : 'ring1') : null;
+  ringTarget = ['ring1','ring2'].includes(slot) ? slot : slot === 'pending' && state.pending?.slot === 'ring' ? (!state.equipment.ring1 ? 'ring1' : !state.equipment.ring2 ? 'ring2' : 'ring1') : null;
   sheetSlot = slot; fillSheet();
   $('comparison').hidden = false; $('sheet-backdrop').hidden = false;
   $('equipment').inert = true; document.querySelector('.forge-area').inert = true;
@@ -206,10 +234,12 @@ function openSheet(slot) {
   if (telegramInitialized) window.Telegram.WebApp.BackButton?.show();
 }
 function closeSheet() {
+  if ($('reforge-filters').matches(':popover-open')) $('reforge-filters').hidePopover();
   if ($('auto-dialog').open) { $('auto-dialog').close(); return; }
   if ($('idle-dialog').open) { $('idle-dialog').close(); return; }
   if ($('bulk-sale-confirm').open) { $('cancel-bulk-sale').click(); return; }
   bulkSaleSelection = null;
+  if (sheetSlot && sheetSlot !== 'pending' && resolveReforge(state,ringTarget || sheetSlot,false)) save(true);
   anvilOpen = false; $('anvil-dialog').hidden = true;
   sheetSlot = null; $('comparison').hidden = true; $('sheet-backdrop').hidden = true;
   $('equipment').inert = false; document.querySelector('.forge-area').inert = false;
@@ -411,6 +441,36 @@ function updateAnvil() {
   });
 }
 for (const slot of ['ring1','ring2']) $(`choose-${slot}`).addEventListener('click', () => { ringTarget = slot; fillSheet(); });
+$('reforge-roll').addEventListener('click',()=>{
+  if (!sheetSlot || sheetSlot==='pending' || !reforge(state,ringTarget || sheetSlot)) return;
+  save(true); updateUI(); $('reforge-keep').focus({preventScroll:true});
+});
+for (const affix of AFFIXES) {
+  const label=document.createElement('label'),input=document.createElement('input');
+  input.type='checkbox';input.value=affix.id;
+  label.append(input,document.createTextNode(affix.name));$('reforge-filters').append(label);
+  input.addEventListener('change',()=>{
+    state.reforgeStop=state.reforgeStop.filter(id=>id!==affix.id);
+    if(input.checked)state.reforgeStop.push(affix.id);
+    save(true);fillSheet();
+  });
+}
+$('reforge-filter').addEventListener('click',()=>{
+  const list=$('reforge-filters');
+  if(list.matches(':popover-open')){list.hidePopover();return;}
+  const box=$('reforge-filter').getBoundingClientRect();
+  list.style.left=`${Math.max(8,Math.min(box.left,innerWidth-248))}px`;
+  list.style.bottom=`${innerHeight-box.top+6}px`;
+  list.style.maxHeight=`${Math.max(40,box.top-14)}px`;
+  list.showPopover();
+  list.querySelector('input')?.focus({preventScroll:true});
+});
+$('reforge-filters').addEventListener('toggle',event=>$('reforge-filter').setAttribute('aria-expanded',String(event.newState==='open')));
+$('reforge-filters').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();$('reforge-filters').hidePopover();$('reforge-filter').focus({preventScroll:true});}});
+for (const [id,replace] of [['reforge-keep',false],['reforge-replace',true]]) $(id).addEventListener('click',()=>{
+  if (!resolveReforge(state,ringTarget || sheetSlot,replace)) return;
+  save(true); updateUI(); $('reforge-roll').focus({preventScroll:true});
+});
 $('close-sheet').addEventListener('click', closeSheet);
 $('sheet-backdrop').addEventListener('click', closeSheet);
 $('sell').addEventListener('click', () => { if (sell(state)) { afterItemAction(); } });
@@ -455,7 +515,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSheet();
   if (e.key === 'Tab') {
     const dialog = anvilOpen ? $('anvil-dialog') : $('comparison');
-    const buttons = [...dialog.querySelectorAll('button')].filter(b => !b.disabled && b.getClientRects().length);
+    const buttons = [...dialog.querySelectorAll('button,input')].filter(b => !b.disabled && b.getClientRects().length);
     const at = buttons.indexOf(document.activeElement);
     e.preventDefault(); buttons[(at + (e.shiftKey ? buttons.length - 1 : 1)) % buttons.length].focus();
   }
@@ -510,13 +570,13 @@ function updateUI() {
   $('forge').classList.toggle('first-forge', state.hammers > 0 && state.mastery.every(m => m.level === 1 && m.xp === 0));
   $('forge').setAttribute('aria-label', `Forge ${forgeCost(state)} items for ${forgeCost(state)} hammers`);
   setText('hammers', state.hammers.toLocaleString('en').replaceAll(',', ' '));
-  setText('batch-label', `×${state.selectedBatch ?? batchSize(state)}`);
-  $('batch-choice').setAttribute('aria-label', `Choose batch size, currently ${state.selectedBatch ?? batchSize(state)}`);
+  setText('batch-label', `×${state.selectedBatch ?? 1}`);
+  $('batch-choice').setAttribute('aria-label', `Choose batch size, currently ${state.selectedBatch ?? 1}`);
   for (const [i, option] of BATCH_OPTIONS.entries()) {
     const button = $('batch-options').children[i], unlocked = state.highest >= option.level;
     button.disabled = !unlocked;
     button.textContent = unlocked ? `×${option.size}` : `×${option.size} · Level ${Math.floor((option.level-1)/LEVELS_PER_BIOME)+1}–${(option.level-1)%LEVELS_PER_BIOME+1} 🔒`;
-    button.setAttribute('aria-pressed', String(option.size === (state.selectedBatch ?? batchSize(state))));
+    button.setAttribute('aria-pressed', String(option.size === (state.selectedBatch ?? 1)));
   }
   // Keep the displayed stack until the one incoming batch card lands.
   if (!resultInFlight) {
@@ -549,7 +609,7 @@ function updateUI() {
   setText('forge-hint', 'Progress is not being saved: storage unavailable');
   if (anvilOpen) updateAnvil();
   if ($('auto-dialog').open) updateAutoFilter();
-  if (sheetSlot === 'pending') fillSheet();
+  if (sheetSlot) fillSheet();
   $('completed').hidden = !state.completed;
 }
 
@@ -612,10 +672,70 @@ function processEvents(events) {
     if (['kill', 'death', 'level', 'complete', 'forged', 'forgeStarted', 'anvilUpgraded'].includes(event.type)) save();
   }
 }
+function mineRows(amounts) {
+  return MINE_RESOURCES.map((r,i)=>amounts[i]?`<div class="mine-resource-row"><img src="assets/mine/${r.id}.svg" alt=""><span>${r.name}</span><b>${amounts[i]}</b></div>`:'').join('');
+}
+function updateMineUI() {
+  const m=state.mine, next=MINE_LEVELS[m.level], pending=m.pending.reduce((a,b)=>a+b,0);
+  setText('coins',compact.format(state.coins));setText('mine-level',`Mine · Lv. ${m.level}`);
+  $('game').dataset.mineTier=m.level>=6?'crystal':m.level>=4?'iron':'stone';
+  for(const [i,r] of MINE_RESOURCES.entries()) {
+    const card=$('mine-ore-grid').children[i], unlocked=MINE_LEVELS.slice(0,m.level).some(l=>l.chances[i]>0);
+    card.disabled=!unlocked;card.querySelector('strong').textContent=unlocked?compact.format(m.ore[i]):'Locked';
+    card.querySelector('small').textContent=r.name;card.setAttribute('aria-label',`${r.name}: ${m.ore[i]}, sell`);
+  }
+  $('mine-collect').hidden=!pending;setText('mine-collect',`Collect ${pending} ore`);
+  setText('mine-upgrade-title',m.upgradeEndsAt?'Upgrade in progress':next?`Upgrade to level ${m.level+1}`:'Maximum mine level');
+  $('mine-cost').innerHTML=next&&!m.upgradeEndsAt?next.cost.map((n,i)=>n?`<span class="${m.ore[i]<n?'missing':''}"><img src="assets/mine/${MINE_RESOURCES[i].id}.svg" alt="${MINE_RESOURCES[i].name}">${m.ore[i]}/${n}</span>`:'').join(''):'';
+  $('mine-upgrade').hidden=!!m.upgradeEndsAt||!next;
+  $('mine-upgrade').disabled=!next||next.cost.some((n,i)=>m.ore[i]<n);
+  if(next)setText('mine-upgrade',`Upgrade · ${next.minutes<60?next.minutes+'m':next.minutes/60+'h'}`);
+  $('mine-upgrade-progress').hidden=!m.upgradeEndsAt;
+  if(m.upgradeEndsAt){const seconds=Math.max(0,Math.ceil((m.upgradeEndsAt-Date.now())/1000));$('mine-progress').value=100*(1-seconds/(next.minutes*60));setText('mine-time',`${Math.floor(seconds/3600)?Math.floor(seconds/3600)+'h ':''}${Math.floor(seconds/60)%60}m ${seconds%60}s`);}
+  if($('mine-rewards-dialog').open)$('mine-rewards').innerHTML=mineRows(m.pending);
+  if($('mine-info-dialog').open)$('mine-chances').innerHTML=MINE_RESOURCES.map((r,i)=>`<div class="mine-resource-row"><img src="assets/mine/${r.id}.svg" alt=""><span>${r.name}</span><b>${MINE_LEVELS[m.level-1].chances[i]}%${next?' → '+next.chances[i]+'%':''}</b></div>`).join('');
+}
+function takeMineOre() {
+  const loot=collectMine(state);mineWaiting=false;
+  $('mine-rewards-dialog').close();updateMineUI();save(true);
+  if(loot.some(Boolean)){
+    const label=loot.map((n,i)=>n?`+${n} ${MINE_RESOURCES[i].name}`:'').filter(Boolean).join(' · ');
+    $('mine-found').textContent=label;$('mine-found').classList.remove('pop');void $('mine-found').offsetWidth;$('mine-found').classList.add('pop');
+  }
+}
+function setMineOpen(open) {
+  closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+  mineOpen=open;$('game').classList.toggle('mine-open',open);
+  $('workshop').hidden=open;$('mine-workshop').hidden=!open;$('mine-scene').hidden=!open;$('mine-heading').hidden=!open;
+  $('mine-toggle').setAttribute('aria-pressed',String(open));$('mine-toggle').setAttribute('aria-label',open?'Close mine':'Open mine');
+  accumulated=0;last=performance.now();uiTime=0;
+  if(open){settleMine(state);mineWaiting=state.mine.pending.some(Boolean);if(mineWaiting)$('mine-rewards-dialog').showModal();updateMineUI();window.Telegram?.WebApp?.BackButton?.show();}
+  else {updateUI();window.Telegram?.WebApp?.BackButton?.hide();}
+  save(true);
+}
+$('mine-toggle').addEventListener('click',()=>setMineOpen(!mineOpen));
+for(const [i,r] of MINE_RESOURCES.entries()){
+  const button=document.createElement('button');button.className='ore-card';button.innerHTML=`<img src="assets/mine/${r.id}.svg" alt=""><strong>0</strong><small>${r.name}</small>`;
+  button.addEventListener('click',()=>{mineSaleIndex=i;setText('mine-sale-name',r.name);$('mine-sale-amount').value=state.mine.ore[i];$('mine-sale-amount').max=state.mine.ore[i];updateMineSale();$('mine-sale-dialog').showModal();});$('mine-ore-grid').append(button);
+}
+function updateMineSale(){const n=Number($('mine-sale-amount').value);$('mine-sell').disabled=!Number.isSafeInteger(n)||n<1||n>state.mine.ore[mineSaleIndex];setText('mine-sell',`Sell · ${Number.isSafeInteger(n)&&n>0?compact.format(n*MINE_RESOURCES[mineSaleIndex].price):0} coins`);}
+$('mine-sale-amount').addEventListener('input',updateMineSale);
+$('mine-sell').addEventListener('click',()=>{if(sellOre(state,mineSaleIndex,Number($('mine-sale-amount').value))){$('mine-sale-dialog').close();updateMineUI();save(true);}});
+$('mine-upgrade').addEventListener('click',()=>{if(upgradeMine(state)){updateMineUI();save(true);}});
+$('mine-info').addEventListener('click',()=>{$('mine-info-dialog').showModal();updateMineUI();});
+$('mine-collect').addEventListener('click',takeMineOre);$('mine-rewards-collect').addEventListener('click',takeMineOre);
+document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+
 function frame(now) {
   if (!running) return;
   const dt = Math.min((now - last) / 1000, .25);
   last = now; accumulated += dt;
+  if(mineOpen){
+    accumulated=0;uiTime+=dt;savedTime+=dt;
+    if(uiTime>=1){settleMine(state);if(!mineWaiting&&state.mine.pending.some(Boolean))takeMineOre();finishUpgrade(state);updateMineUI();uiTime=0;}
+    if(savedTime>=3){save();savedTime=0;}
+    raf=requestAnimationFrame(frame);return;
+  }
   if (accumulated >= 1 / 30) {
     const elapsed = accumulated;
     while (accumulated >= 1 / 30 && !scene?.loading) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
@@ -629,8 +749,8 @@ function frame(now) {
   }
   raf = requestAnimationFrame(frame);
 }
-function start() { if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); updateUI(); running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
-function stop() { running = false; cancelAnimationFrame(raf); save(true); }
+function start() { $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);mineWaiting=state.mine.pending.some(Boolean);if(mineWaiting&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
+function stop() { $('game').classList.add('page-paused'); running = false; cancelAnimationFrame(raf); save(true); }
 document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
 window.addEventListener('pagehide', stop);
 window.addEventListener('pageshow', start);
@@ -661,12 +781,13 @@ function setupTelegram() {
     } catch { /* Keep the current view if this client cannot change fullscreen. */ }
   }
   tg.onEvent('activated', start); tg.onEvent('deactivated', stop);
-  tg.BackButton?.onClick(closeSheet);
+  tg.BackButton?.onClick(()=>{const dialog=document.querySelector('.mine-dialog[open]');if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else closeSheet();});
   if (sheetSlot || anvilOpen || $('idle-dialog').open || $('auto-dialog').open) tg.BackButton?.show();
 }
 // The external Telegram SDK is optional; normal browser startup never waits for it.
 document.querySelector('script[src*="telegram-web-app"]')?.addEventListener('load', setupTelegram);
 setupTelegram(); updateUI(); save();
+if(previewReforge){$('outfit-preview').hidden=false;$('outfit-name').textContent='Reforge test';$('outfit-preview').querySelector('small').textContent='Progress is not saved';$('outfit-edit').hidden=true;openSheet('ring1');}
 if(previewWeapon){
  $('outfit-preview').hidden=false;$('outfit-name').textContent='Weapon test';$('outfit-preview').querySelector('small').textContent='Progress is not saved';$('outfit-edit').hidden=true;$('weapon-choice').hidden=false;
  for(const [id,w] of Object.entries(WEAPONS)){const option=document.createElement('option');option.value=id;option.textContent=w.name;$('weapon-choice').append(option);}$('weapon-choice').value=previewWeapon;$('weapon-choice').onchange=()=>location.href='/?weapon='+$('weapon-choice').value;

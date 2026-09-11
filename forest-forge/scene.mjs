@@ -1,5 +1,5 @@
 const compactNumber = new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1});
-import { stats, ARMOR_SETS, WEAPONS, HERO_ATTACK_INTERVAL, BIOMES, LEVELS_PER_BIOME } from './game.mjs';
+import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME } from './game.mjs';
 
 // Existing atlas poses: body x/y/angle, then each hand's x/y/angle.
 // Source coordinates match design/hero-base-v2-poses.json and build-set.cjs.
@@ -195,7 +195,7 @@ export async function createScene(canvas, previewSet = null) {
     }
     if (['heroHit','enemyHit','kill','heal'].includes(event.type)) {
       numbers.push({ targetId: event.type === 'enemyHit' ? null : event.targetId,
-        text: (event.type === 'kill' || event.type === 'heal' ? '+' : '') + compactNumber.format(event.value),
+        text: event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' ? '+' : '') + compactNumber.format(event.value) + (event.critical ? '!' : ''),
         color: event.type === 'heal' ? '#91ff9b' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: .8, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
       if (event.type === 'kill' && event.hammers) numbers.push({ targetId:event.targetId,
         text:'+' + event.hammers, color:'#c7efff', life:.8, reward:true, rewardRow:1, hammerIcon:true });
@@ -226,7 +226,8 @@ export async function createScene(canvas, previewSet = null) {
     const base = height * .758, unit = Math.min(width / 390, 1.15);
     const heroX = width * .24, hSize = (59 / 1.5) * unit;
     // The counter advances on contact; recovery belongs to the preceding windup.
-    const recovery = state.heroActionAge < HERO_ATTACK_INTERVAL * .2;
+    const interval = attackInterval(state);
+    const recovery = state.heroActionAge < interval * .2;
     const attackIndex = (state.heroAttackCount || 0) - (recovery ? 1 : 0);
     const weapon = previewRig ? (previewRig.slots.weapon ? {quality:['hunter-hides','bone-warrior','stone-guard'].indexOf(previewSet)} : null) : state.equipment.weapon;
     const ranged=Boolean(WEAPONS[weapon?.weaponId]?.range),customWeapon=Boolean(WEAPONS[weapon?.weaponId]?.sprite&&WEAPONS[weapon.weaponId].epoch===(weapon.epoch??1));
@@ -241,7 +242,7 @@ export async function createScene(canvas, previewSet = null) {
     if (combat) {
       // One 2 s loop: .4 s return, .8 s living guard, .65 s preparation, .15 s strike.
       // Contact is at the clock wrap, exactly when the simulation applies damage.
-      const cycle=Math.min(1,Math.max(0,(recovery?state.heroActionAge:state.heroClock)/HERO_ATTACK_INTERVAL));
+      const cycle=Math.min(1,Math.max(0,state.doubleStrikeDelay > 0 ? .6 + .4 * (1-state.doubleStrikeDelay/(interval*.16)) : (recovery?state.heroActionAge:state.heroClock)/interval));
       const start=shooting?(WEAPONS[weapon?.weaponId]?.pose==='crossbow'||['crossbow','blowpipe'].includes(weapon?.weaponId)?28:22):attackStart;
       const rest=shooting?start:0;
       const keys=[[0,start+3],[.06,start+4],[.14,start+5],[.2,rest],[.6,rest],[.77,start],[.925,start+1],[.965,start+2],[1,start+3]];
@@ -287,7 +288,7 @@ export async function createScene(canvas, previewSet = null) {
         y:(pose[1]-180+x*Math.sin(bodyAngle)+y*Math.cos(bodyAngle))*k/unit,angle:handAngle+bodyAngle};
     }
     if(!throwing||state.phase==='dead'||state.completed||chakramFlight?.returning&&!recovery)chakramFlight=null;
-    if(throwing&&weaponImage&&state.phase==='fight'&&state.heroClock>=HERO_ATTACK_INTERVAL*.85&&!chakramFlight){
+    if(throwing&&weaponImage&&state.phase==='fight'&&(state.heroClock>=interval*.85 || state.doubleStrikeDelay > 0 && state.doubleStrikeDelay < interval*.08)&&!chakramFlight){
       const target=state.enemies.find(enemy=>enemy.id===state.targetId&&enemy.hp);
       if(target)chakramFlight={...chakramHand,targetId:target.id,returning:false};
     }
@@ -397,13 +398,12 @@ export async function createScene(canvas, previewSet = null) {
         }
       }
       context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(x, floor + (e.boss ? 2 : 1), size * .3, e.boss ? 3 : 1.5, 0, 0, Math.PI * 2); context.fill();
-      const row = e.boss ? (state.level%LEVELS_PER_BIOME===0?3:0) : ['warrior','archer','healer'].indexOf(e.kind);
+      const row = e.boss ? 3 : ['warrior','archer','healer'].indexOf(e.kind);
       if (biomeSprites) {
         const pose = [0,1,2,3,4,1,2,3,4,5,5,5,6,6,0,7][frame];
         context.drawImage(biomeSprites,pose*192,row*192,192,192,x-size/2,floor-size*180/192,size,size);
       } else {
-        const kind = e.boss && state.level%LEVELS_PER_BIOME!==0 ? 'warrior' : e.kind;
-        context.drawImage(art[kind],frame*192,0,192,192,x-size/2,floor-size*180/192,size,size);
+        context.drawImage(art[e.kind],frame*192,0,192,192,x-size/2,floor-size*180/192,size,size);
       }
       if (e.hp) bar(x, floor - size * (biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
       if (e.kind === 'archer' && e.hp && e.actionAge < .15 && state.phase !== 'dead') {
@@ -419,7 +419,7 @@ export async function createScene(canvas, previewSet = null) {
     if(chakramFlight&&chakramHand){
       const flight=chakramFlight,returning=flight.returning;
       const target=state.enemies.find(enemy=>enemy.id===flight.targetId);
-      const progress=Math.min(1,Math.max(0,returning?state.heroActionAge/(HERO_ATTACK_INTERVAL*.2):(state.heroClock/HERO_ATTACK_INTERVAL-.85)/.15));
+      const progress=Math.min(1,Math.max(0,returning?state.heroActionAge/(interval*.2):(state.heroClock/interval-.85)/.15));
       const travel=returning?progress*progress*(3-2*progress):Math.sin(progress*Math.PI/2);
       const fromX=returning?flight.hitX:flight.x,fromY=returning?flight.hitY:flight.y;
       const toX=returning?chakramHand.x:target.x;
@@ -457,7 +457,7 @@ export async function createScene(canvas, previewSet = null) {
       // Damage rises above the target; loot occupies two separate rows below its feet.
       const x = n.reward ? Math.min(width - context.measureText(n.text).width - 6, anchorX + 24 * unit + age * 8) : anchorX;
       const y = n.reward ? base + 12 + (n.rewardRow || 0) * 16 - age * 12
-        : base - (e ? (e.boss ? bossSize : 50)*unit*(biomeHeights?.[e.boss?(state.level%LEVELS_PER_BIOME===0?3:0):['warrior','archer','healer'].indexOf(e.kind)] ?? .63) : hSize) - 10 - age * 22;
+        : base - (e ? (e.boss ? bossSize : 50)*unit*(biomeHeights?.[e.boss?3:['warrior','archer','healer'].indexOf(e.kind)] ?? .63) : hSize) - 10 - age * 22;
       context.globalAlpha = Math.min(1,n.life*4); context.lineWidth = 3;
       if (n.coinIcon) {
         context.beginPath(); context.arc(x - 8, y - 4, 4.5, 0, Math.PI * 2);
