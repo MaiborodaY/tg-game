@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 8: Interdimensional. MATERIAL DIRECTION: Restrained geometric equipment: indigo frames, muted violet or turquoise working surfaces, plain pale edges. The era is strange but these are its ordinary tools, with no gems or floating ornaments.
+
+1. PHASE KNIFE (melee): An upright short broad geometric knife: its turquoise blade has one simple sideways step halfway along the back edge, like two offset blade planes joined into ONE continuous solid object. Straight pale cutting edge and a plain dark-violet flat grip with two shallow finger recesses. No gems, wrapped hilt, gold cap or floating pieces. Keep it recognizably a modest utility blade.
+
+2. RESONANCE FORK (melee): A solid indigo tuning-fork weapon: two thick parallel blunt prongs form a tall narrow U at the top, with one simple turquoise cap on each prong. They join into a short uninterrupted pale-gray stem with a plain oval flat butt for gripping. No wires, levitating parts, jewels or handle wrap. Minimal blunt geometric silhouette, entirely different from the knife.
+
+3. APERTURE PROJECTOR (ranged): A compact handheld projector pointing RIGHT with a broad open rectangular muzzle frame, its center empty white, and one narrow turquoise strip along the frame's inside. A short violet block behind the frame and a curved plain charcoal pistol grip underneath. All parts rigidly physically connected. No crystal cluster, circular portal bow, beam, particles or elaborate machinery. Readable rectangular silhouette.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

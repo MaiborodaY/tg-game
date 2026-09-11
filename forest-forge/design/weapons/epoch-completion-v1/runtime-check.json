@@ -1,0 +1,169 @@
+{
+  "report": [
+    {
+      "era": "prehistoric",
+      "weapons": [
+        "tusk-hook",
+        "antler-fork",
+        "shell-mallet",
+        "thorn-root",
+        "flint-axe",
+        "bone-cudgel",
+        "hide-sling"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "ancient",
+      "weapons": [
+        "obsidian-sawblade",
+        "crocodile-cleaver",
+        "war-oar",
+        "sun-disk-mace",
+        "scorpion-pincer",
+        "lotus-staff"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "gunpowder",
+      "weapons": [
+        "sawfish-sabre",
+        "capstan-crusher",
+        "whaling-hook",
+        "sail-shears",
+        "bottle-breaker",
+        "boarding-gunblade"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "modern",
+      "weapons": [
+        "chain-cleaver",
+        "rail-breaker",
+        "piston-lance",
+        "pressure-ram",
+        "hydraulic-jaws",
+        "ram-knuckles",
+        "drum-shotgun"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "futuristic",
+      "weapons": [
+        "ring-cutter",
+        "ion-fork",
+        "hinge-blade",
+        "clamp-maul",
+        "capacitor-lance",
+        "rotor-glaive",
+        "cassette-launcher"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "space",
+      "weapons": [
+        "crater-pick",
+        "airlock-cleaver",
+        "orbital-claw",
+        "gravity-dumbbell",
+        "thruster-maul",
+        "solar-sail-blade",
+        "eclipse-launcher"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "interdimensional",
+      "weapons": [
+        "mobius-blade",
+        "staircase-cleaver",
+        "inside-out-mace",
+        "hourglass-lance",
+        "echo-fork",
+        "folded-door",
+        "inversion-caster"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "underworld",
+      "weapons": [
+        "rib-cleaver",
+        "furnace-poker",
+        "coffin-maul",
+        "grave-spade",
+        "shackle-hook",
+        "brimstone-censer",
+        "jaw-scatterer"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    },
+    {
+      "era": "divine",
+      "weapons": [
+        "wing-fan",
+        "crescent-crook",
+        "balance-maul",
+        "cloud-cleaver",
+        "crown-breaker",
+        "oath-tablet",
+        "choir-organ"
+      ],
+      "poses": [
+        "walk",
+        "windup",
+        "impact",
+        "alternate"
+      ]
+    }
+  ],
+  "rendered": 61,
+  "weaponOptions": 130,
+  "previewPreservesSave": true,
+  "errors": [],
+  "failed": []
+}

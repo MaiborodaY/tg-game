@@ -4,7 +4,7 @@
   "sourceSheets": [
     "source.png"
   ],
-  "cell": 101,
+  "cell": 136,
   "frames": 22,
   "rows": [
     "cape",
@@ -71,16 +71,30 @@
     "glove-back",
     "glove-front"
   ],
-  "weaponRows": [],
+  "weaponRows": [
+    "officer-sabre",
+    "boarding-axe",
+    "powder-maul",
+    "banner-pike",
+    "flintlock-pistol",
+    "blunderbuss",
+    "deck-cannon",
+    "sawfish-sabre",
+    "capstan-crusher",
+    "whaling-hook",
+    "sail-shears",
+    "bottle-breaker",
+    "boarding-gunblade"
+  ],
   "viewBox": [
     450,
-    16,
-    734,
-    734
+    -86,
+    990,
+    990
   ],
   "anchor": [
-    0.4087193460490463,
-    0.9455040871934605
+    0.30303030303030304,
+    0.804040404040404
   ],
-  "bodyHeight": 0.8038147138964578
+  "bodyHeight": 0.5959595959595959
 }

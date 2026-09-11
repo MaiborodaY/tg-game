@@ -1,0 +1,429 @@
+[
+  {
+    "id": "rift-sickle",
+    "name": "Rift Sickle",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A RIFT SICKLE: one enormous flowing crescent hook blade in deep teal with a broad pale-mint inner edge, short curved dark-blue grip beneath it, ONE small golden oval at the joint. Elegant open crescent profile, physical continuous blade, no portal particles. Upright handle.",
+    "epoch": 8,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      98,
+      17,
+      367,
+      484
+    ],
+    "grip": [
+      255,
+      412
+    ],
+    "fitExtent": 320,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "rift-nomad",
+    "crop": [
+      98,
+      17,
+      367,
+      484
+    ],
+    "pivot": [
+      0.4278,
+      0.8161
+    ],
+    "size": [
+      242.64,
+      320
+    ]
+  },
+  {
+    "id": "prism-axe",
+    "name": "Prism Axe",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A PRISM AXE: one huge triangular rose-and-aqua CRYSTAL axe head projecting RIGHT from a straight short violet shaft, only three or four large sharply separated opaque color facets. Asymmetric broad triangle silhouette. No shards, glitter, transparency haze or fine polygons.",
+    "epoch": 8,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      634,
+      16,
+      301,
+      473
+    ],
+    "grip": [
+      671,
+      370
+    ],
+    "fitExtent": 320,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "rift-nomad",
+    "crop": [
+      634,
+      16,
+      301,
+      473
+    ],
+    "pivot": [
+      0.1229,
+      0.7484
+    ],
+    "size": [
+      203.64,
+      320
+    ]
+  },
+  {
+    "id": "paradox-hammer",
+    "name": "Paradox Hammer",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A PARADOX HAMMER: head made from TWO joined offset rectangular blocks, a larger ivory block high on LEFT and smaller ink-black block lower on RIGHT, ONE amber diamond in the connecting bridge; short straight dark handle below. Deliberately asymmetric stair-step silhouette, all pieces physically attached. No checker pattern.",
+    "epoch": 8,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      115,
+      532,
+      326,
+      441
+    ],
+    "grip": [
+      278,
+      855
+    ],
+    "fitExtent": 300,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "rift-nomad",
+    "crop": [
+      115,
+      532,
+      326,
+      441
+    ],
+    "pivot": [
+      0.5,
+      0.7324
+    ],
+    "size": [
+      221.77,
+      300
+    ]
+  },
+  {
+    "id": "folded-spear",
+    "name": "Folded Spear",
+    "attack": "thrust",
+    "kind": "melee",
+    "description": "A FOLDED SPEAR: long ivory and black spear with ONE obvious angular zigzag bend in its upper blade, as if a rigid ribbon is folded through right angles, sharp amber triangular point at the very top. Lower two-thirds is a straight navy shaft with simple grip. Keep one continuous connected object, not floating blade segments.",
+    "epoch": 8,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      696,
+      492,
+      141,
+      515
+    ],
+    "grip": [
+      765,
+      880
+    ],
+    "fitExtent": 440,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "rift-nomad",
+    "thrustTurn": 55,
+    "crop": [
+      696,
+      492,
+      141,
+      515
+    ],
+    "pivot": [
+      0.4894,
+      0.7534
+    ],
+    "size": [
+      120.47,
+      440
+    ]
+  },
+  {
+    "id": "portal-focus",
+    "name": "Portal Focus",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "bow",
+    "description": "A PORTAL FOCUS: broad vertical teal oval ring with a THICK mint rim, entirely empty background inside the opening, two small integrated navy outer tabs, mounted on one short straight dark handle BELOW the ring. It is a held magical ranged focus, not a thrown chakram. One contiguous ring-and-grip object, upright. No swirl in the hole, no beam.",
+    "epoch": 8,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      84,
+      1012,
+      355,
+      488
+    ],
+    "grip": [
+      267,
+      1404
+    ],
+    "fitExtent": 300,
+    "clearPoints": [
+      [
+        256,
+        1174
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "rift-nomad",
+    "crop": [
+      84,
+      1012,
+      355,
+      488
+    ],
+    "pivot": [
+      0.5155,
+      0.8033
+    ],
+    "size": [
+      218.24,
+      300
+    ]
+  },
+  {
+    "id": "kaleidoscope-emitter",
+    "name": "Kaleidoscope Emitter",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A KALEIDOSCOPE EMITTER: horizontal magical ray weapon with THREE large connected amethyst triangular prism barrels fanning toward RIGHT from one rose-crystal body, aqua bands and a rear dark-violet pistol grip. One main wide prism visible, two shorter prisms alongside. Angular faceted fan silhouette, no conventional steel gun barrel, no effects.",
+    "epoch": 8,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      513,
+      1063,
+      497,
+      366
+    ],
+    "grip": [
+      596,
+      1350
+    ],
+    "fitExtent": -380,
+    "clearPoints": [],
+    "rotation": 0,
+    "atlas": "rift-nomad",
+    "crop": [
+      513,
+      1063,
+      497,
+      366
+    ],
+    "pivot": [
+      0.167,
+      0.7842
+    ],
+    "size": [
+      380,
+      279.84
+    ]
+  },
+  {
+    "id": "mobius-blade",
+    "name": "Mobius Blade",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A blade made from ONE solid twisted ribbon forming a narrow open Moebius loop with a sharp upper tip. Mint-green front face and deep-teal underside, integral dark-blue handgrip formed by the narrow bottom bend. One impossible-looking broad twist, clearly connected material. No floating fragments, engravings or glow.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.88
+    ],
+    "size": [
+      168.78,
+      360
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      137,
+      13,
+      203,
+      433
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/mobius-blade-clean.png"
+  },
+  {
+    "id": "staircase-cleaver",
+    "name": "Staircase Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An impossible stair-step cleaver: THREE enormous offset rose-red rectangular blade blocks form one continuous ascending zigzag edge, pale ivory bevel along the right, joined to a short plum angular handgrip below. Solid connecting spine visible. Bold stepped silhouette, no separate floating cubes or gem facets.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.49,
+      0.86
+    ],
+    "size": [
+      190.83,
+      320
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      495,
+      11,
+      260,
+      436
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/staircase-cleaver-clean.png"
+  },
+  {
+    "id": "inside-out-mace",
+    "name": "Inside-Out Mace",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A paradox mace with an open hollow ivory cube as its head: the dark-purple inner cube face appears inverted toward the viewer, ONE mint diagonal solid brace holds it, and a short flat black handle extends below. Show only three broad cube faces and a clearly open center. No nested fine frames, floating parts or gold trim.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.85
+    ],
+    "size": [
+      196.51,
+      310
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      909,
+      35,
+      258,
+      407
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/inside-out-mace-clean.png"
+  },
+  {
+    "id": "hourglass-lance",
+    "name": "Hourglass Lance",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "A dimensional lance whose large spearhead is one long hourglass-shaped ivory frame: TWO solid pale-blue triangular glass panes pinch at its waist, rose-red angular end caps, and one short sharp ivory spike at top. Long dark-purple shaft below with a simple pale grip. One hourglass outline only, no sand grains, clocks, runes or sparkles.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      144.47,
+      470
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      164,
+      465,
+      154,
+      501
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/hourglass-lance-clean.png"
+  },
+  {
+    "id": "echo-fork",
+    "name": "Echo Fork",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A dimensional fighting fork with TWO thick unequal crescent prongs nested side by side and shifted vertically, joined by one broad lower bend. Dark-teal outer crescent, mint inner crescent, deep violet integral grip below. Repeated impossible curve creates the idea, but only two blades and three broad planes; no translucent ghost copies or particles.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.84
+    ],
+    "size": [
+      182.51,
+      350
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      505,
+      479,
+      243,
+      466
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/echo-fork-clean.png"
+  },
+  {
+    "id": "folded-door",
+    "name": "Folded Door",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A weapon built from a folded portal doorframe: one tall open ivory L-shaped rectangular frame folds once into a short horizontal amber cutting wing at the upper RIGHT, with dark-purple interior surfaces and an integral narrow lower grip. Big angular negative space, one impossible corner connection. No wall, scene inside portal, floating blocks or tiny decoration.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.33,
+      0.86
+    ],
+    "size": [
+      193.79,
+      320
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      923,
+      478,
+      281,
+      464
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/folded-door-clean.png"
+  },
+  {
+    "id": "inversion-caster",
+    "name": "Inversion Caster",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A compact dimensional caster pointing RIGHT: one chunky black square open muzzle nested inside one larger ivory square frame, offset from a short lavender folded rear housing; ONE amber bridge connects the frames, a crooked black pistol grip sits below. Only two square openings and a single broad impossible fold. No concentric multitudes, beams, lenses or ordinary gun barrel.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 0,
+    "pivot": [
+      0.17,
+      0.79
+    ],
+    "size": [
+      330,
+      224.37
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      450,
+      969,
+      403,
+      274
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/inversion-caster-clean.png"
+  }
+]

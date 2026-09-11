@@ -1,0 +1,461 @@
+[
+  {
+    "id": "officer-sabre",
+    "name": "Officer Sabre",
+    "attack": "combo",
+    "kind": "melee",
+    "description": "An elegant LONG CURVED SABRE: gently curved narrow silver blade, an enormous open gold D-shaped knuckle guard, navy wrapped grip, gold pommel. Upright blade, point up, handle at bottom. Distinct long sweeping crescent edge.",
+    "epoch": 4,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      192,
+      13,
+      174,
+      572
+    ],
+    "grip": [
+      252,
+      487
+    ],
+    "fitExtent": 350,
+    "clearPoints": [
+      [
+        290,
+        470
+      ]
+    ],
+    "rotation": 35,
+    "atlas": "musketeer",
+    "thrustTurn": 55,
+    "crop": [
+      192,
+      13,
+      174,
+      572
+    ],
+    "pivot": [
+      0.3448,
+      0.8287
+    ],
+    "size": [
+      106.47,
+      350
+    ]
+  },
+  {
+    "id": "boarding-axe",
+    "name": "Boarding Axe",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A squat PIRATE BOARDING AXE: broad dark-iron crescent axe blade on the RIGHT, one short angular brass pick on the LEFT, short curved reddish wooden haft, large crimson wrap. Compact top-heavy asymmetric silhouette. Upright haft.",
+    "epoch": 4,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      556,
+      81,
+      363,
+      482
+    ],
+    "grip": [
+      738,
+      472
+    ],
+    "fitExtent": 290,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "musketeer",
+    "crop": [
+      556,
+      81,
+      363,
+      482
+    ],
+    "pivot": [
+      0.5014,
+      0.8112
+    ],
+    "size": [
+      218.4,
+      290
+    ]
+  },
+  {
+    "id": "powder-maul",
+    "name": "Powder Maul",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A GRENADEER'S BARREL MAUL: one chunky horizontal wooden powder-keg cylinder as a hammer head, bound by two thick dark iron bands with brass end caps, on a short stout navy-wrapped wooden handle. No fuse, no explosion. Obvious wide barrel-shaped hammer silhouette, upright handle.",
+    "epoch": 4,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      102,
+      630,
+      337,
+      443
+    ],
+    "grip": [
+      268,
+      962
+    ],
+    "fitExtent": 300,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "musketeer",
+    "crop": [
+      102,
+      630,
+      337,
+      444
+    ],
+    "pivot": [
+      0.4926,
+      0.7477
+    ],
+    "size": [
+      227.7,
+      300
+    ]
+  },
+  {
+    "id": "banner-pike",
+    "name": "Banner Pike",
+    "attack": "thrust",
+    "kind": "melee",
+    "description": "A long PARTISAN PIKE: large polished silver diamond center blade with two short flared side wings, brass socket, long straight warm-brown shaft, ONE compact folded blue pennant attached below the head. Upright long spear silhouette; entire butt and tip visible.",
+    "epoch": 4,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      645,
+      576,
+      188,
+      521
+    ],
+    "grip": [
+      743,
+      1004
+    ],
+    "fitExtent": 540,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "musketeer",
+    "thrustTurn": 55,
+    "crop": [
+      645,
+      576,
+      188,
+      521
+    ],
+    "pivot": [
+      0.5213,
+      0.8215
+    ],
+    "size": [
+      194.86,
+      540
+    ]
+  },
+  {
+    "id": "flintlock-pistol",
+    "name": "Flintlock Pistol",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A chunky FLINTLOCK PISTOL: curved dark walnut grip, large simple brass lock plate, ONE long silver barrel pointing horizontally RIGHT. Single pistol only, no hands, readable curved grip and barrel, no smoke or bullets. Slight side view with minimal perspective.",
+    "epoch": 4,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      40,
+      1159,
+      453,
+      278
+    ],
+    "grip": [
+      116,
+      1332
+    ],
+    "fitExtent": -300,
+    "clearPoints": [
+      [
+        216,
+        1324
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "musketeer",
+    "crop": [
+      40,
+      1159,
+      453,
+      278
+    ],
+    "pivot": [
+      0.1678,
+      0.6223
+    ],
+    "size": [
+      300,
+      184.11
+    ]
+  },
+  {
+    "id": "blunderbuss",
+    "name": "Brass Blunderbuss",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A short heavy BLUNDERBUSS: large stock of reddish wood at LEFT and a wildly flared golden brass trumpet-like muzzle at RIGHT; dark barrel band, oversized simple trigger grip. Horizontal. Clearly much bulkier and wider-mouthed than the pistol. No smoke, projectiles or extra ammunition.",
+    "epoch": 4,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      529,
+      1160,
+      462,
+      244
+    ],
+    "grip": [
+      615,
+      1326
+    ],
+    "fitExtent": -360,
+    "clearPoints": [
+      [
+        716,
+        1338
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "musketeer",
+    "crop": [
+      529,
+      1160,
+      462,
+      244
+    ],
+    "pivot": [
+      0.1861,
+      0.6803
+    ],
+    "size": [
+      360,
+      190.13
+    ]
+  },
+  {
+    "id": "deck-cannon",
+    "name": "Handheld Deck Cannon",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A handheld miniature ship cannon: very thick short charcoal cast-iron barrel, two oversized cast rings, big round muzzle pointing RIGHT, rounded closed breech at LEFT, a small brass lifting loop on top, and one curved dark walnut pistol grip beneath the rear. No wheels, no carriage, no shoulder stock. Heavy horizontal silhouette.",
+    "epoch": 4,
+    "tile": 6,
+    "source": "deck-cannon-source.png",
+    "sourceRect": [
+      52,
+      232,
+      1155,
+      794
+    ],
+    "grip": [
+      203,
+      845
+    ],
+    "fitExtent": -400,
+    "clearPoints": [
+      [
+        452,
+        327
+      ],
+      [
+        441,
+        793
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "musketeer",
+    "crop": [
+      51,
+      230,
+      1155,
+      796
+    ],
+    "pivot": [
+      0.1316,
+      0.7726
+    ],
+    "size": [
+      400,
+      275.67
+    ]
+  },
+  {
+    "id": "sawfish-sabre",
+    "name": "Sawfish Sabre",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A pirate sawfish sabre: one broad gently curved steel blade with THREE massive triangular teeth on its BACK edge; navy open D-shaped knuckle guard, smooth cream bone grip. The forward edge is clean and curved, the toothed back changes its silhouette. No fish face or eyes, no golden filigree.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 15,
+    "pivot": [
+      0.22,
+      0.75
+    ],
+    "size": [
+      296.27,
+      350
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      64,
+      25,
+      386,
+      456
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/sawfish-sabre-clean.png"
+  },
+  {
+    "id": "capstan-crusher",
+    "name": "Capstan Crusher",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A ship's capstan made into a crushing maul: squat dark-red wooden drum head with TWO thick crossed iron bars protruding to its sides, and a short tapered bare wooden handle beneath. One wide cream rope belt around the drum. Naval hand-built construction, irregular cross-shaped mass, no many planks or tiny bolts.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.82
+    ],
+    "size": [
+      297.03,
+      290
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      504,
+      34,
+      465,
+      454
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/capstan-crusher-clean.png"
+  },
+  {
+    "id": "whaling-hook",
+    "name": "Whaling Hook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An oversized whaler's gaff: long pale-iron HOOK turns down sharply at the top with ONE big backward barb, seated in a broad dark collar on a short chunky sea-green wooden haft. One off-white rope knot on the grip, blunt rounded butt. Bold crook silhouette, not a straight spear.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.28,
+      0.84
+    ],
+    "size": [
+      142.29,
+      360
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      175,
+      489,
+      200,
+      506
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/whaling-hook-clean.png"
+  },
+  {
+    "id": "sail-shears",
+    "name": "Sail Shears",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "Huge naval sail shears adapted as a sword, shown as one rigid partially open object: TWO long unequal silver blades, ONE navy pivot cap, a large dark-red oval grip and a smaller plain iron finger loop. Strong V-shaped cutting head, three broad highlights, no tiny screws. No hands.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.2,
+      0.86
+    ],
+    "size": [
+      204.38,
+      330
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      589,
+      489,
+      314,
+      507
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/sail-shears-clean.png"
+  },
+  {
+    "id": "bottle-breaker",
+    "name": "Bottle Breaker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An enormous pirate green-glass bottle used as a fighting club, oriented narrow neck/grip DOWN and broken wide bottom UP. THREE large uneven glass teeth on the broken upper edge, thick bottle shoulders, ONE tan rope knot around the lower narrow neck. Deep sea-green body with two broad planar highlights. No label, liquid, small shards or transparency clutter.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.45,
+      0.8
+    ],
+    "size": [
+      161.21,
+      280
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      110,
+      991,
+      285,
+      495
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/bottle-breaker-clean.png"
+  },
+  {
+    "id": "boarding-gunblade",
+    "name": "Boarding Gunblade",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "A short pirate gunblade with a broad curved silver cutlass blade extending UP from a chunky walnut flintlock-pistol grip. ONE fat charcoal pistol barrel sits parallel to the lower third of the blade and a single dull brass lock plate sits at the grip. The barrel is part of the sword, no shot effects. Simple oversized merged sabre-and-flintlock silhouette, no tiny mechanisms.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 0,
+    "pivot": [
+      0.18,
+      0.84
+    ],
+    "size": [
+      273.88,
+      350
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      519,
+      947,
+      421,
+      538
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/boarding-gunblade-clean.png"
+  }
+]

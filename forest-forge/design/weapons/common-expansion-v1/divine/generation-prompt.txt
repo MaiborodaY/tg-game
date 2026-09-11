@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 10: Divine. MATERIAL DIRECTION: Plain ivory-white weapon surfaces, functional warm-gold edges and restrained deep-blue grips. Clean temple guard equipment: elegant but common for its era, not ceremonial premium rewards.
+
+1. TEMPLE SPEAR (melee): A simple upright long spear with one broad white leaf-shaped head, a narrow gold center ridge and ONE small diamond-shaped cutout near the blade's base. A straight uninterrupted deep-blue shaft with a single gold head collar and plain flat bottom. No wrapping, wings, rays, laurels, halos or gemstones. Slender, calm and martial.
+
+2. GUARDIAN HATCHET (melee): A short practical single-bit hatchet: one compact white wedge blade extending to the RIGHT with a narrow gold cutting edge, a flat plain gray poll to the LEFT. Its solid short ivory-wood handle is gently curved with a broad rounded hook at the butt, no leather wrap or separate pommel. No symbols, wings, sun face or decorative spikes. Broad compact silhouette distinct from the long spear.
+
+3. TEMPLE CROSSBOW (ranged): A sturdy modest crossbow pointing RIGHT, with short plain golden metal bow arms, a straight ivory stock, one taut dark-blue string and a smooth angled deep-blue wooden grip integrated under the rear. No loaded bolt. One functional white shoulder brace, no wings, crowns, halos, gems, filigree or rays. It must look like ordinary temple guard equipment.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

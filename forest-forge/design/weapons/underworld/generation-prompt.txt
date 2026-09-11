@@ -1,0 +1,22 @@
+Use case: stylized-concept. Production modular 2D WEAPON sprite sheet for Forest Forge.
+Input 1 is a STYLE REFERENCE: existing weapons. Keep its thick near-black outlines, large readable shapes and 2–3 broad cel-shaded planes, but draw ONLY the six new weapons specified below. Do not copy the old designs or include its characters or labels.
+Input 2 is this epoch's ARMOR CONCEPT reference: use its materials/color language so the weapons belong to this world. It is not an edit target; no body parts or armor on this sheet.
+
+Create one PORTRAIT 1024 x 1536 image containing exactly SIX complete isolated weapons in TWO COLUMNS and THREE ROWS of equal square cells. Fill cells in reading order: upper-left, upper-right, middle-left, middle-right, lower-left, lower-right. The top FOUR cells are melee; bottom TWO cells are ranged. Each weapon has at least 35 px of empty margin on all sides of its own cell. Full tips, handles, guards and stocks must fit. Do not overlap cells.
+Melee objects stand upright with the usable handgrip at the bottom and blade/head at top; do not tilt the entire object diagonally. Ranged guns point horizontally RIGHT, stocks/rear at LEFT; bows and magical ring foci remain upright as explicitly described. Show each object as it would be held by a side-view chibi hero, not from above. Every weapon needs a clear usable handgrip, sufficiently thick to read at small scale.
+Juicy saturated cartoon raster game art, consistent bold outline and simple broad highlights. These are visual variants for a small hero: no micro-detail, text, mechanical schematics, tiny screws, textures, lens flare, external glow, particles, projectiles, ammunition, effects, hands, heroes, scenery, ground, cast shadows, labels, borders or grid lines. No duplicate objects. All components of each weapon are physically connected.
+Background: genuinely transparent alpha, including enclosed negative-space holes. If real alpha is not available, use perfectly flat pure white #FFFFFF including all holes. NEVER paint a checkerboard, gradient or off-white paper.
+Keep the six silhouettes unmistakably different from each other. Preserve the exact row/column placement below.
+
+EPOCH 9: UNDERWORLD
+UPPER LEFT: REAPER SCYTHE. An ASH REAPER SCYTHE: huge thin hooked charcoal crescent blade at top curving RIGHT, broad pale-grey cutting edge, long slightly crooked brown shaft wrapped with one large ivory bone-like grip band. Tattered muted-plum wrap just below the head, but no dangling particles. Tall bony silhouette.
+
+UPPER RIGHT: RAM CRUSHER. A RAM CRUSHER: short brutal mace whose wide head is an oxblood-red iron block between TWO enormous curled bronze ram horns, short stout brown handle extending down. Heavy symmetrical horned hammer silhouette, three broad metal colors, no skull or face.
+
+MIDDLE LEFT: OBSIDIAN GREATBLADE. An OBSIDIAN GREATBLADE: extremely broad tapered black triangular blade pointing UP, one long crimson diamond inset, large offset angular dark guard and short wine-red grip. Jagged stepped edge with only TWO broad notches. Huge cleaver-like dark royal sword, no cracks, veins or tiny filigree.
+
+MIDDLE RIGHT: INFERNAL FORK. An INFERNAL FORK: long straight dark-iron pole with exactly TWO massive red-and-black sharpened prongs curving outward at the top, joined by a chunky oxblood crosspiece. Long open slot between the two prongs; no middle tine. Tall fork silhouette, simple brown grip below, no flames.
+
+LOWER LEFT: BONE BALLISTA. A handheld BONE BALLISTA: wide ivory rib-shaped crossbow limbs swept back toward LEFT on a long charcoal central rail pointing horizontally RIGHT, one dark-plum taut bowstring attached at both limb tips, brown rear grip. Three-quarter SIDE VIEW AS HELD, not top-down. No loaded arrow, no hands or bolts. Large simple bone forms.
+
+LOWER RIGHT: CINDER CANNON. A CINDER CANNON: enormous squat oxblood-red furnace gun, chunky black barrel mouth at RIGHT with one flat bright orange inner disc, rivet-free bronze ring, broad red chamber LEFT and a large bronze lower rear grip. Horizontal volcanic-industrial silhouette, no flame outside the muzzle, no smoke.

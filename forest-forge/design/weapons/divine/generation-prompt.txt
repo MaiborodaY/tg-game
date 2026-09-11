@@ -1,0 +1,22 @@
+Use case: stylized-concept. Production modular 2D WEAPON sprite sheet for Forest Forge.
+Input 1 is a STYLE REFERENCE: existing weapons. Keep its thick near-black outlines, large readable shapes and 2–3 broad cel-shaded planes, but draw ONLY the six new weapons specified below. Do not copy the old designs or include its characters or labels.
+Input 2 is this epoch's ARMOR CONCEPT reference: use its materials/color language so the weapons belong to this world. It is not an edit target; no body parts or armor on this sheet.
+
+Create one PORTRAIT 1024 x 1536 image containing exactly SIX complete isolated weapons in TWO COLUMNS and THREE ROWS of equal square cells. Fill cells in reading order: upper-left, upper-right, middle-left, middle-right, lower-left, lower-right. The top FOUR cells are melee; bottom TWO cells are ranged. Each weapon has at least 35 px of empty margin on all sides of its own cell. Full tips, handles, guards and stocks must fit. Do not overlap cells.
+Melee objects stand upright with the usable handgrip at the bottom and blade/head at top; do not tilt the entire object diagonally. Ranged guns point horizontally RIGHT, stocks/rear at LEFT; bows and magical ring foci remain upright as explicitly described. Show each object as it would be held by a side-view chibi hero, not from above. Every weapon needs a clear usable handgrip, sufficiently thick to read at small scale.
+Juicy saturated cartoon raster game art, consistent bold outline and simple broad highlights. These are visual variants for a small hero: no micro-detail, text, mechanical schematics, tiny screws, textures, lens flare, external glow, particles, projectiles, ammunition, effects, hands, heroes, scenery, ground, cast shadows, labels, borders or grid lines. No duplicate objects. All components of each weapon are physically connected.
+Background: genuinely transparent alpha, including enclosed negative-space holes. If real alpha is not available, use perfectly flat pure white #FFFFFF including all holes. NEVER paint a checkerboard, gradient or off-white paper.
+Keep the six silhouettes unmistakably different from each other. Preserve the exact row/column placement below.
+
+EPOCH 10: DIVINE
+UPPER LEFT: DAWN RAPIER. A DAWN RAPIER: slender long ivory sword blade pointing UP, one broad gold center line, OPEN gold crescent knuckle guard with TWO large laurel leaves, peach-coral grip and round gold pommel. Elegant thin silhouette, no ornate tiny filigree.
+
+UPPER RIGHT: SERAPH GLAIVE. A SERAPH GLAIVE: long cobalt shaft and one large swept SILVER WING-SHAPED glaive blade at the top curving RIGHT, exactly THREE broad feather lobes making the blade, one gold collar. Upright spear-sized weapon, strong flowing wing profile, no loose feathers or magic trail.
+
+MIDDLE LEFT: SUN MAUL. A SUN MAUL: an enormous round ivory disc head with thick golden rim and FOUR short broad blunt sun-ray tabs, mounted on a short ivory handle with broad gold grip. Upright round-headed ceremonial hammer, bright white circular center, no face, no many tiny sun rays.
+
+MIDDLE RIGHT: OATH BELL. An OATH BELL melee mace: one huge heavy GOLD BELL-shaped striking head at the TOP, cream inset panel, wide flared lower bell lip and one small dark clapper visible; sturdy straight ivory-and-gold grip extends DOWN from its back-center mounting. Clearly a heavy bell on a handle, continuous mechanically joined silhouette. No rope, chain, sound waves or floating pieces.
+
+LOWER LEFT: HALO BOW. A HALO BOW: tall vertical bow formed by TWO large swept ivory feather wings around a central gold handgrip on the LEFT of the silhouette; one taut gold string connects the tips on the RIGHT. Gentle 3/4 side view, opening EMPTY, exactly three broad feather planes per wing. No arrow, hands, particles, halo floating nearby.
+
+LOWER RIGHT: JUDGMENT TRUMPET. A JUDGMENT TRUMPET, a magical ranged weapon: one horizontal ivory-and-gold ceremonial horn with a narrow cobalt rear tube LEFT, huge flared golden bell RIGHT shaped with three broad sun-ray edges, one swept silver wing plate along its body and an unmistakable lower rear gold pistol-style handgrip. Big clean trumpet silhouette, NOT a rifle. No sound waves, beam or particles.

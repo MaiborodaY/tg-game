@@ -1,0 +1,16 @@
+Use case: stylized-concept.
+Asset type: one THREE-WEAPON concept sheet, ordinary gear for an existing mobile 2D game.
+Reference images are ONLY drawing-style anchors: match the game's near-black contour weight, chunky readable volumes, simple cel shading and restrained highlights. Do not copy their subjects, materials, color schemes or identical hilt templates.
+The user's key correction is COLOR VARIETY WITHIN EACH ERA. Each object must have its own clearly visible dominant palette, not a uniform bronze/gold or gray/brown tint across the sheet. The exact colors specified for each item are mandatory and take priority over reference colors. Keep the weapon designs practical, simple and ordinary for their era. No novelty animal-shaped or luxury weapons.
+
+ERA 10: Divine.
+PALETTE PLAN: White/deep-blue spear, pale gold/forest-green hatchet, rose-red/ivory crossbow. Clean ordinary temple guard gear with different finishes, no all-gold ceremonial set.
+
+1. TEMPLE SPEAR (melee): An upright slender temple spear: plain WHITE leaf-shaped head with a narrow pale-gold central ridge and one small diamond-shaped hole near the blade base. A long smooth DEEP-BLUE shaft, one functional gold head collar and a plain flat bottom. No wraps, wings, rays, laurels, halos or gems. Simple martial silhouette.
+
+2. GUARDIAN HATCHET (melee): An upright short guardian hatchet: one compact PALE-GOLD wedge head projects RIGHT, with a narrow silver cutting edge and a flat simple gray poll on the LEFT. Its short solid FOREST-GREEN wooden handhold curves gently into one broad rounded hook at the butt. No separate pommel, leather wrap, sun face, wings or spikes. Compact practical shape.
+
+3. TEMPLE CROSSBOW (ranged): A modest sturdy temple crossbow pointing RIGHT, with short thick plain IVORY-colored bow arms, a broad ROSE-RED wooden stock and a smooth angled dark-red grip integrated under the rear. One taut gray string, simple silver trigger hardware and no loaded bolt. No gold scrolls, jewels, halos, wings, crowns, rays or decorative braces.
+Drawing: one large base-color area, one broad hard-edged shadow, one restrained highlight per material, clean surfaces and a few large planes. Stay readable at 48-64px. Match the existing 2D game art, not flat clipart or polished realistic 3D. No microtexture, tiny bevel mosaics, chips, scratches, filigree, dense straps or decorative parts.
+Layout: ONE landscape 1536 x 1024 sheet with exactly THREE complete separated items, equally spaced columns: item 1 LEFT, item 2 CENTER, item 3 RIGHT. No repeated views, plenty of white gap and at least 50 px outside margin, no cropping. First two weapons are melee; the third is ranged. All objects need an obvious usable handhold; no hands are shown.
+Background: pure white, no cast shadows or checkerboards. No labels, text, numbers, panels, UI, borders, watermarks, people, scenery, projectiles, ammo piles, motion effects, floating parts, glow clouds, faces, gems or generic gold-capped brown spiral grips.

@@ -1,0 +1,16 @@
+Use case: stylized-concept.
+Asset type: one THREE-WEAPON concept sheet, ordinary gear for an existing mobile 2D game.
+Reference images are ONLY drawing-style anchors: match the game's near-black contour weight, chunky readable volumes, simple cel shading and restrained highlights. Do not copy their subjects, materials, color schemes or identical hilt templates.
+The user's key correction is COLOR VARIETY WITHIN EACH ERA. Each object must have its own clearly visible dominant palette, not a uniform bronze/gold or gray/brown tint across the sheet. The exact colors specified for each item are mandatory and take priority over reference colors. Keep the weapon designs practical, simple and ordinary for their era. No novelty animal-shaped or luxury weapons.
+
+ERA 4: Gunpowder.
+PALETTE PLAN: Silver/navy/ivory cutlass, charcoal/orange hook, dark steel/olive musket. No blanket brown-and-gold naval palette.
+
+1. BOARDING CUTLASS (melee): An upright broad short sailor's steel cutlass, gently curved with a rounded clipped tip and one pale cutting-edge highlight. Its knuckle guard is one large NAVY-BLUE painted iron bowl, with a smooth IVORY handhold inside, no wraps or scrollwork. Modest steel blade and dark-blue guard, no gold. Stouter and plainer than the officer sabre.
+
+2. DOCK HOOK (melee): A practical iron dock hook used as a melee weapon: one thick CHARCOAL C-shaped hook above a narrow neck, with a compact horizontal ORANGE-painted oak cross-grip at its lower end. The grip is smooth bare painted wood, plain rounded ends, no wrapping or chains. A hooked T silhouette, not a prosthetic hand.
+
+3. MATCHLOCK MUSKET (ranged): A long slim matchlock musket pointing RIGHT: plain dark-gray barrel, one simple match lever, long OLIVE-GREEN painted wooden stock and a bent solid green butt on the LEFT. Only two iron barrel bands and a plain trigger guard. No gold, scope, bayonet, smoke or ornate fittings. Clearly a long rifle, not a pistol or blunderbuss.
+Drawing: one large base-color area, one broad hard-edged shadow, one restrained highlight per material, clean surfaces and a few large planes. Stay readable at 48-64px. Match the existing 2D game art, not flat clipart or polished realistic 3D. No microtexture, tiny bevel mosaics, chips, scratches, filigree, dense straps or decorative parts.
+Layout: ONE landscape 1536 x 1024 sheet with exactly THREE complete separated items, equally spaced columns: item 1 LEFT, item 2 CENTER, item 3 RIGHT. No repeated views, plenty of white gap and at least 50 px outside margin, no cropping. First two weapons are melee; the third is ranged. All objects need an obvious usable handhold; no hands are shown.
+Background: pure white, no cast shadows or checkerboards. No labels, text, numbers, panels, UI, borders, watermarks, people, scenery, projectiles, ammo piles, motion effects, floating parts, glow clouds, faces, gems or generic gold-capped brown spiral grips.

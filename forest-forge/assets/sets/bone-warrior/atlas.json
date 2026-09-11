@@ -5,7 +5,7 @@
     "source.png",
     "separate-legs-boots-source.png"
   ],
-  "cell": 96,
+  "cell": 127,
   "frames": 22,
   "rows": [
     "cape",
@@ -75,16 +75,24 @@
     "glove-back",
     "glove-front"
   ],
-  "weaponRows": [],
+  "weaponRows": [
+    "tusk-hook",
+    "antler-fork",
+    "shell-mallet",
+    "thorn-root",
+    "flint-axe",
+    "bone-cudgel",
+    "hide-sling"
+  ],
   "viewBox": [
     450,
-    50,
-    700,
-    700
+    -18,
+    924,
+    924
   ],
   "anchor": [
-    0.42857142857142855,
-    0.9428571428571428
+    0.3246753246753247,
+    0.7878787878787878
   ],
-  "bodyHeight": 0.8428571428571429
+  "bodyHeight": 0.6385281385281385
 }

@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: one concept sheet of THREE ordinary starter-tier weapons for an existing cartoon mobile game.
+The supplied images are STYLE REFERENCES ONLY: the game's wooden Hunter Club and Jawbone Crusher. Match their clean near-black contours, chunky proportions, simple cel-shaded volumes, warm natural colors and clear small-icon readability. Do not copy those weapons.
+
+This is the FIRST, PREHISTORIC tier: practical, humble weapons made of stone, plain wood, animal bone and hide. Good polished game art depicting simple equipment. No premium skin designs or magical motifs. The three should differ through construction and silhouette, not decorative complexity.
+
+LEFT — FLINT AXE, melee:
+A short, gently crooked plain wooden shaft carrying one broad gray flint axe head. The head is an asymmetric squat wedge, wider on the right with a simple cutting edge. Only two crossed thick rawhide strips lash the stone to the TOP of the shaft. The lower handgrip is bare wood with a naturally rounded butt; no wrap on the grip and no manufactured pommel. Stone has just three broad planes, wood has one large highlight and one small branch knot. Upright, head at top, grip down. It must look like a common handmade stone axe, not an ornate war axe.
+
+MIDDLE — BONE CUDGEL, melee:
+One solid pale ivory large-animal leg bone used directly as a club. A heavy rounded asymmetrical two-lobed joint forms the striking end at the top; a gently bent slender bone shaft is the handhold; the bottom ends in a much smaller natural rounded knob. Entire weapon is BONE, no attached wooden handle, metal, leather grip, teeth, spikes, carvings or ornaments. Clean broad cream and beige shading, no fine anatomical texture. Taller and narrower than the axe, immediately recognizable by its uninterrupted organic silhouette. Not a jawbone and not a skull weapon.
+
+RIGHT — HIDE SLING, ranged:
+A simple traditional handheld sling: two thick tan hide cords connected to opposite ends of a small dark-brown oval leather cradle holding ONE smooth gray stone. The two cords rise together to a small finger loop at the upper right; the stone-filled cradle hangs below-left, creating a compact teardrop silhouette with clear open white space between the cords. No wooden frame or handle, no slingshot fork, no elastic bands, no bow limbs, no extra loose stones. Make the cords wide enough to stay readable at icon size. At most two simple seam marks on the cradle and a single small knot at the finger loop. The stone is securely inside the cradle, not flying.
+
+Shared drawing rules: distinct silhouettes and handhold constructions for all THREE. Simple readable materials, one broad shadow and a restrained light patch, matching the references' 2D cartoon finish. No over-rendering, tiny cracks, scratches, mottling, many facets, dense wood grain, rope fibers or excessive seams. No gold, polished steel, gems, runes, glow, flowers, feathers, animal faces or decorative fittings.
+
+Composition: landscape 1536 by 1024, one complete weapon in each of three separated columns, left axe / middle bone cudgel / right sling. Balance their visual sizes while keeping their natural different proportions. Every weapon fully visible, clear gaps and generous white margins. Pure flat white background with no ground shadow. No text, labels, numbers, UI, borders, logos, watermarks, people, hands, scenes, particles, motion trails or alternate views.

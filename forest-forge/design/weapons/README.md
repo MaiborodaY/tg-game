@@ -1,6 +1,6 @@
 # Trial weapons
 
-Open `/?weapon=short-bow`. The selector switches all seven weapons: Club, Spear, Slingshot, Short Bow, Gladius, Bronze Axe and Battle Spear in a fresh, non-saving battle. Exit returns to the player's save. The workshop also links to this trial.
+Open `/?weapon=mobius-blade`. The selector now switches all 130 weapons in a fresh, non-saving battle. Every epoch has 10 melee and 3 ranged weapons. Exit returns to the player's save. The workshop also links to this trial. All ten epochs have their own weapon pool. All weapon types share the current 2-second attack interval. The latest 61 additions, exact generation prompts and verified fitting previews are indexed in [epoch-completion-v1/README.md](epoch-completion-v1/README.md).
 
 Club and Spear reuse the Hunter Hides / Bone Warrior weapon artwork and animations. Slingshot (epoch 1) and Short Bow (epoch 2) are in the forge pool; armor appearances remain independent. All weapons use the shared 1-second attack cycle. Ranged items have 80% of the corresponding melee item's rolled weapon damage, rounded to the nearest whole number (minimum 1). Base hero and accessory damage are unchanged. No projectile simulation or new affixes.
 
@@ -30,3 +30,19 @@ Ten additional weapons complete epoch 3, which now participates in forging from 
 ## Weapon expansion: connected locally
 
 Nine more weapons (two melee and one ranged per existing epoch) bring the catalog to 26. Only the flail adds relative chain movement; all hero animations and attack timing remain unchanged. Sources, exact prompts, fitting and checks: `expansion/README.md`. All 36 model tests pass. Trial: `/?weapon=chain-flail`. Public deployment is unchanged.
+
+## Epochs 4–10: 43 more weapons, connected locally
+
+Seven six-item generation sheets add four melee and two ranged weapons per epoch. The user's extra handheld ship cannon gives Gunpowder seven new weapons. Existing 26 weapons are retained, for 69 total. Exact built-in generation prompts, original sheets and fits are in each directory:
+
+- [Gunpowder](gunpowder/README.md), atlas owner Musketeer.
+- [Modern](modern/README.md), atlas owner Field Scout.
+- [Futuristic](futuristic/README.md), atlas owner Neon Runner.
+- [Space](space/README.md), atlas owner Lunar Scout.
+- [Interdimensional](interdimensional/README.md), atlas owner Rift Nomad.
+- [Underworld](underworld/README.md), atlas owner Ash Reaper.
+- [Divine](divine/README.md), atlas owner Dawn Herald.
+
+All 44 model tests pass, including forge/equip/reload at item levels 1 and 100 and common 2-second cadence. Local browser renders cover all 43 weapons in four combat poses; all 1,462 weapon atlas cells are visible and unclipped. Each preview loads only its own weapon atlas. Evidence: `qa/later-epoch-weapons-runtime.json`, `qa/later-epoch-weapon-atlases.json` and `qa/later-epoch-weapon-icons.png`.
+
+This first broad batch is integrated but the user judged its art too uniform. The next batch must follow [the stronger fantasy direction](fantasy-brief.md), with one sheet reviewed before scaling up. These next-batch images have not been generated. No publication or production testing was performed for this update.

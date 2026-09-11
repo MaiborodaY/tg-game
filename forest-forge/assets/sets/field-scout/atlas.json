@@ -4,7 +4,7 @@
   "sourceSheets": [
     "source.png"
   ],
-  "cell": 96,
+  "cell": 130,
   "frames": 22,
   "rows": [
     "cape",
@@ -71,16 +71,30 @@
     "glove-back",
     "glove-front"
   ],
-  "weaponRows": [],
+  "weaponRows": [
+    "trench-knife",
+    "breach-hammer",
+    "rescue-axe",
+    "shock-baton",
+    "assault-rifle",
+    "rotary-gun",
+    "chain-cleaver",
+    "rail-breaker",
+    "piston-lance",
+    "pressure-ram",
+    "hydraulic-jaws",
+    "ram-knuckles",
+    "drum-shotgun"
+  ],
   "viewBox": [
     450,
-    50,
-    700,
-    700
+    -42,
+    942,
+    942
   ],
   "anchor": [
-    0.42857142857142855,
-    0.9428571428571428
+    0.3184713375796178,
+    0.7983014861995754
   ],
-  "bodyHeight": 0.8428571428571429
+  "bodyHeight": 0.6263269639065817
 }

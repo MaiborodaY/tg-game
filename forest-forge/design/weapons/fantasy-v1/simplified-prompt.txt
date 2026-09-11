@@ -1,0 +1,15 @@
+Use case: style-transfer.
+Asset type: a single concept preview sheet of THREE fantasy weapons for a small mobile 2D game.
+Input image 1 is the edit target. Redraw this SAME trio much more simply. The current image is far too detailed for small game sprites.
+
+Preserve these invariants: exactly THREE weapons, in the same left-to-right order; the same identity, orientation, practical grips and distinctive overall silhouettes; warm ochre stone fist at left, crimson demon wing in the middle, turquoise beetle cannon pointing RIGHT at right. The fist and wing are melee weapons; the beetle is a ranged weapon. No extra subjects, labels or duplicate views.
+
+The ONLY design change is a drastic reduction in rendering and structural detail. Aim for about 75 percent fewer internal marks. Make it look like clean bold cartoon mobile-game icon art, with thick consistent near-black outlines, smooth simple shapes and broad flat colors. At most a base fill and ONE large hard-edged shadow per material. Each weapon should remain immediately readable at 48 pixels tall. Keep a finished, charming and punchy drawing, not a sketch.
+
+LEFT, TITAN FIST: one chunky mitten-like petrified clenched fist with three or four broad knuckle shapes and one simple thumb. Smooth broad ochre surfaces. REMOVE all moss, mottling, chips, pebble facets, stone grain and small cracks. Allow only ONE simple amber zigzag accent across the fist. A short thick dark-brown handle with no more than two wrap lines. No stack of tiny stones at the wrist or pommel.
+
+MIDDLE, DEMON WING: retain the large red bat-wing silhouette and three ivory hooked tips. Broad nearly flat crimson membrane, simple ivory supports, one broad dark-red shadow region. Simplify the frame to clean smooth thick curves, with NO anatomical bone nodules, wrinkles, veins, streaks or multiple highlights. Short red grip with two wrap lines.
+
+RIGHT, BOMBARDIER BEETLE: retain the squat round turquoise shell, small olive head and right-facing mouth/nozzle plus the thick U-shaped underside grip. Two large smooth shell panels, one dark teal shadow patch, one small solid orange eye. Simplify the head to two or three clean shapes and the nozzle to a bold open round mouth. REMOVE ALL polygonal reflections, glints, shell texture, scales, body segment clutter, tiny leg joints and layered mechanical details. The underside grip is a simple clean brown U with one or two wrap marks.
+
+Composition: same landscape 1536 by 1024 sheet, three separated columns, every entire weapon fully visible with clear white gaps and generous outer margins. Large flat pure white background, no floor, shadows behind objects, text, letters, numbers, UI, hands, characters, borders or watermarks. No gradients, painterly rendering, realistic lighting, 3D polish, microdetails, particles or glow haze. Fantasy must come from the shapes, not surface decoration.

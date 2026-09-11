@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 4: Gunpowder. MATERIAL DIRECTION: Weathered steel, walnut, dull iron and small functional brass fittings. Plain sailors' and infantry equipment.
+
+1. BOARDING CUTLASS (melee): A broad short steel cutlass with a gently curved blade and a rounded clipped tip, upright. One large dark iron bowl guard covers the knuckles; the handhold inside is smooth ivory wood with no wrap. No gold scrolls or gems. A heavy broad sailor's blade, clearly stouter than the existing officer sabre.
+
+2. DOCK HOOK (melee): A short sturdy iron boarding hook: a single thick C-shaped hook above a narrow iron neck, with a compact horizontal oak cross-grip at the base so its overall silhouette resembles a hooked T. The grip is bare wood, no spiral straps, no fittings, no chains. A practical maritime hand tool used as a melee weapon, not a severed pirate prosthetic hand.
+
+3. MATCHLOCK MUSKET (ranged): A plain long matchlock musket pointing RIGHT: slender dark straight barrel, one simple matchlock lever, long reddish-walnut stock tapering into a bent solid butt at the LEFT. Two dull iron bands and one simple trigger guard. No scope, bayonet, muzzle flare or smoke. A long slim rifle silhouette, not a pistol or wide blunderbuss.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

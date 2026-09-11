@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 5: Modern. MATERIAL DIRECTION: Utility gray steel, olive green, matte charcoal and plain brown wooden gun furniture. No gold, jewels or science-fiction lighting.
+
+1. FIELD MACHETE (melee): An upright broad plain machete with a forward-heavy gray blade and a blunt clipped tip. Flat dark-olive handle slabs with TWO large black rivets and a small lanyard hole, no actual cord. No guard, no wrapping, no pommel decoration. Clean angular silhouette.
+
+2. ENTRENCHING SHOVEL (melee): A compact entrenching shovel used as a melee weapon, upright with a broad pentagonal dark-steel spade blade at the top and a short olive shaft below. A small open triangular D-grip forms the lower handhold. Only one large hinge collar, no tiny mechanism details. Clear broad spade silhouette, different from a knife or hammer.
+
+3. PUMP SHOTGUN (ranged): A short practical pump-action shotgun pointing RIGHT, with one dark barrel above a shorter tubular magazine, a blocky brown pump fore-end with just two grooves and a plain smooth brown shoulder stock on the LEFT. Dark metal receiver, small trigger guard, no magazine sticking down, no scope or attachments. No text or real-world brand markings.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

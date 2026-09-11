@@ -308,6 +308,12 @@ for (const epoch of AVAILABLE_EPOCHS) {
   });
   $('auto-epochs').append(row);
 }
+// One clipped pattern layer per surface; item images remain the first child.
+for (const surface of document.querySelectorAll('.slot,.item-icon,.stack-card,.probabilities tbody th,.auto-epoch')) {
+  const pattern = document.createElement('span');
+  pattern.className = 'epoch-pattern'; pattern.setAttribute('aria-hidden', 'true');
+  surface.append(pattern);
+}
 function updateAutoFilter() {
   for (const row of $('auto-epochs').children) {
     const epoch = Number(row.dataset.epoch), chance = FORGE_CHANCES[state.anvilLevel-1][epoch-1];

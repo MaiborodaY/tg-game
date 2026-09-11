@@ -1,0 +1,442 @@
+[
+  {
+    "id": "reaper-scythe",
+    "name": "Reaper Scythe",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "An ASH REAPER SCYTHE: huge thin hooked charcoal crescent blade at top curving RIGHT, broad pale-grey cutting edge, long slightly crooked brown shaft wrapped with one large ivory bone-like grip band. Tattered muted-plum wrap just below the head, but no dangling particles. Tall bony silhouette.",
+    "epoch": 9,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      154,
+      15,
+      306,
+      491
+    ],
+    "grip": [
+      201,
+      355
+    ],
+    "fitExtent": 500,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "ash-reaper",
+    "crop": [
+      154,
+      15,
+      306,
+      491
+    ],
+    "pivot": [
+      0.1536,
+      0.6925
+    ],
+    "size": [
+      311.61,
+      500
+    ]
+  },
+  {
+    "id": "ram-crusher",
+    "name": "Ram Crusher",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A RAM CRUSHER: short brutal mace whose wide head is an oxblood-red iron block between TWO enormous curled bronze ram horns, short stout brown handle extending down. Heavy symmetrical horned hammer silhouette, three broad metal colors, no skull or face.",
+    "epoch": 9,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      565,
+      76,
+      400,
+      388
+    ],
+    "grip": [
+      765,
+      347
+    ],
+    "fitExtent": 340,
+    "clearPoints": [
+      [
+        650,
+        203
+      ],
+      [
+        871,
+        203
+      ]
+    ],
+    "rotation": 35,
+    "atlas": "ash-reaper",
+    "crop": [
+      565,
+      76,
+      400,
+      388
+    ],
+    "pivot": [
+      0.5,
+      0.6985
+    ],
+    "size": [
+      350.52,
+      340
+    ]
+  },
+  {
+    "id": "obsidian-greatblade",
+    "name": "Obsidian Greatblade",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "An OBSIDIAN GREATBLADE: extremely broad tapered black triangular blade pointing UP, one long crimson diamond inset, large offset angular dark guard and short wine-red grip. Jagged stepped edge with only TWO broad notches. Huge cleaver-like dark royal sword, no cracks, veins or tiny filigree.",
+    "epoch": 9,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      145,
+      489,
+      225,
+      542
+    ],
+    "grip": [
+      258,
+      947
+    ],
+    "fitExtent": 440,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "ash-reaper",
+    "crop": [
+      145,
+      489,
+      225,
+      542
+    ],
+    "pivot": [
+      0.5022,
+      0.845
+    ],
+    "size": [
+      182.66,
+      440
+    ]
+  },
+  {
+    "id": "infernal-fork",
+    "name": "Infernal Fork",
+    "attack": "thrust",
+    "kind": "melee",
+    "description": "An INFERNAL FORK: long straight dark-iron pole with exactly TWO massive red-and-black sharpened prongs curving outward at the top, joined by a chunky oxblood crosspiece. Long open slot between the two prongs; no middle tine. Tall fork silhouette, simple brown grip below, no flames.",
+    "epoch": 9,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      632,
+      489,
+      262,
+      542
+    ],
+    "grip": [
+      765,
+      943
+    ],
+    "fitExtent": 540,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "ash-reaper",
+    "thrustTurn": 55,
+    "crop": [
+      632,
+      489,
+      262,
+      542
+    ],
+    "pivot": [
+      0.5076,
+      0.8376
+    ],
+    "size": [
+      261.03,
+      540
+    ]
+  },
+  {
+    "id": "bone-ballista",
+    "name": "Bone Ballista",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A handheld BONE BALLISTA: wide ivory rib-shaped crossbow limbs swept back toward LEFT on a long charcoal central rail pointing horizontally RIGHT, one dark-plum taut bowstring attached at both limb tips, brown rear grip. Three-quarter SIDE VIEW AS HELD, not top-down. No loaded arrow, no hands or bolts. Large simple bone forms.",
+    "epoch": 9,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      31,
+      1081,
+      450,
+      390
+    ],
+    "grip": [
+      84,
+      1304
+    ],
+    "fitExtent": -380,
+    "clearPoints": [
+      [
+        210,
+        1190
+      ],
+      [
+        219,
+        1350
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "ash-reaper",
+    "crop": [
+      31,
+      1081,
+      450,
+      390
+    ],
+    "pivot": [
+      0.1178,
+      0.5718
+    ],
+    "size": [
+      380,
+      329.33
+    ]
+  },
+  {
+    "id": "cinder-cannon",
+    "name": "Cinder Cannon",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A CINDER CANNON: enormous squat oxblood-red furnace gun, chunky black barrel mouth at RIGHT with one flat bright orange inner disc, rivet-free bronze ring, broad red chamber LEFT and a large bronze lower rear grip. Horizontal volcanic-industrial silhouette, no flame outside the muzzle, no smoke.",
+    "epoch": 9,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      542,
+      1120,
+      453,
+      288
+    ],
+    "grip": [
+      585,
+      1335
+    ],
+    "fitExtent": -350,
+    "clearPoints": [],
+    "rotation": 0,
+    "atlas": "ash-reaper",
+    "crop": [
+      542,
+      1120,
+      453,
+      289
+    ],
+    "pivot": [
+      0.0949,
+      0.7439
+    ],
+    "size": [
+      350,
+      223.29
+    ]
+  },
+  {
+    "id": "rib-cleaver",
+    "name": "Rib Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An underworld cleaver assembled from THREE broad ivory rib plates fused to a dark bone spine. Tall broad solid bone cutting face on the RIGHT, three rounded rib humps on the LEFT, short oxblood leather grip beneath. Corpse-bone construction, clean cartoon ivory planes, no gore, fractures, runes or skull ornament.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.4,
+      0.84
+    ],
+    "size": [
+      190.84,
+      350
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      130,
+      10,
+      253,
+      464
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/rib-cleaver-clean.png"
+  },
+  {
+    "id": "furnace-poker",
+    "name": "Furnace Poker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An enormous underworld furnace poker: a black iron shaft bends into a huge angular open hook at the TOP, one flat dull-orange heat-colored face inside the hook, and a thick smooth bone grip near the lower end. One short opposing iron barb. Long brutal S-shaped silhouette, no actual flame, cinders, chain or many spikes.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.45,
+      0.86
+    ],
+    "size": [
+      171.48,
+      440
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      555,
+      9,
+      182,
+      467
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/furnace-poker-clean.png"
+  },
+  {
+    "id": "coffin-maul",
+    "name": "Coffin Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A gravekeeper's maul whose head is ONE broad squat coffin-shaped dark-plum wooden block set horizontally, with ONE thick pale bone clamp crossing its face and a short crooked ivory bone handle beneath. The coffin has its characteristic clipped corners; no lettering, cross, hinges, fine planks or gold.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.46,
+      0.85
+    ],
+    "size": [
+      238,
+      300
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      870,
+      55,
+      334,
+      421
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/coffin-maul-clean.png"
+  },
+  {
+    "id": "grave-spade",
+    "name": "Grave Spade",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "An underworld grave spade used as a spear: broad pointed rusty-iron shovel blade with ONE massive missing bite in its right edge and a small dark-red inner plane, mounted directly on a long dark bone shaft with an open oval bone grip at bottom. Large broken spade silhouette, no dirt, rubble or tiny chips.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.74
+    ],
+    "size": [
+      207.71,
+      460
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      133,
+      490,
+      205,
+      454
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/grave-spade-clean.png"
+  },
+  {
+    "id": "shackle-hook",
+    "name": "Shackle Hook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A brutal underworld meat-hook weapon: ONE huge dark-steel S-shaped hook with one long sharp upper crook and a squared lower loop holding a solid short ivory grip. TWO very thick welded links connect the rigid grip, clearly fixed rather than a swinging chain. Small oxblood collar only, no long chain, gore or ornaments.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.9
+    ],
+    "size": [
+      145.89,
+      300
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      539,
+      493,
+      213,
+      438
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/shackle-hook-clean.png"
+  },
+  {
+    "id": "brimstone-censer",
+    "name": "Brimstone Censer",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A handheld underworld censer maul: a squat wide black iron urn head, THREE large orange inset vent windows across its face, one flat pointed lid, fixed directly to a short dark-red bone handle below. Heavy lantern-like impact silhouette. No chain, smoke, flame, filigree or many small holes.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.84
+    ],
+    "size": [
+      187.24,
+      300
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      898,
+      508,
+      269,
+      431
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/brimstone-censer-clean.png"
+  },
+  {
+    "id": "jaw-scatterer",
+    "name": "Jaw Scatterer",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "An underworld scattergun pointing RIGHT, built from two huge ivory jawbones around a very short dark iron barrel: THREE large upper teeth and TWO lower teeth form a gaping muzzle, charcoal rear chamber, and a short curved dark-green bone grip under the back. Bone-and-iron weapon, not a living monster. No eyes, full animal body, glow, bullets or ornate carvings.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 0,
+    "pivot": [
+      0.16,
+      0.8
+    ],
+    "size": [
+      350,
+      210.29
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      386,
+      939,
+      491,
+      295
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/jaw-scatterer-clean.png"
+  }
+]

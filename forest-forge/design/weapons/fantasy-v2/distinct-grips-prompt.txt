@@ -1,0 +1,16 @@
+Use case: precise-object-edit.
+Input image 1 is the EDIT TARGET: the existing three-weapon sheet for our mobile 2D game.
+Change ONLY the three handles and their immediate connections. Preserve the shark blade, mushroom cap and dragon cannon head, the same order, poses, overall sizes, colors, white background, near-black outlines, simple cel shading and restrained highlights. This is a localized handle redesign, not a new art style.
+
+The problem to fix: all three currently use the SAME brown spiral leather grip and gold end caps. REMOVE that repeated handle construction completely. Each grip must have its own readable shape and material, appropriate to its weapon:
+
+LEFT — SHARK CLEAVER:
+Replace the entire brown-and-gold handle, including its gold collar and pommel, with a smooth blue-gray shark tail. A narrow, slightly curved tail stem provides a usable handhold below the blade and ends in a small asymmetric forked tail fin. The upper blade transitions cleanly into this tail-stem grip without a metal ring. Keep the fin compact, clearly separated into two broad lobes. One broad pale-blue highlight and one dark-blue shadow. NO leather wrap, gold cap, ornamental bands or fish scales.
+
+MIDDLE — MUSHROOM MAUL:
+Continue the existing ivory mushroom stem all the way down as one smooth organic grip, replacing its brown wrap and gold end cap. The grip is gently irregular and slightly tapered; its bottom widens into a compact rounded root bulb with only two or three stubby root lobes. Cream surface with one warm beige shadow. NO leather, metal fittings, spiral stripes, bark, fine roots or texture. Preserve a sufficiently narrow central portion for the hero to hold.
+
+RIGHT — DRAGON CANNON:
+Replace only its leather-and-gold pistol grip with ONE solid curved dark burgundy dragon horn. It grows down from the underside of the cannon, curves gently backward, and tapers to a blunt hooked tip. Broad smooth surface, one muted red highlight, one dark shadow; no ridges. This is a comfortable compact pistol-grip shape, not a long spike. Keep the orange trigger/guard and the cannon's existing upper horns, rear gold barrel ring and face unchanged. NO grip wraps, grip end cap or extra ornament.
+
+All three complete weapons must remain fully visible, with the same three-column layout and generous white gaps. Match the existing artwork exactly in contour weight and lighting. The handles should be recognizably DIFFERENT in silhouette, material and construction even when tiny. Keep the limited detail level of the target image. No new decorative marks, characters, hands, labels, text, backgrounds, particles, glow or realistic textures. Do not alter or replace the main weapon heads.

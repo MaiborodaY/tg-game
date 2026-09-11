@@ -1,0 +1,438 @@
+[
+  {
+    "id": "dawn-rapier",
+    "name": "Dawn Rapier",
+    "attack": "combo",
+    "kind": "melee",
+    "description": "A DAWN RAPIER: slender long ivory sword blade pointing UP, one broad gold center line, OPEN gold crescent knuckle guard with TWO large laurel leaves, peach-coral grip and round gold pommel. Elegant thin silhouette, no ornate tiny filigree.",
+    "epoch": 10,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      158,
+      23,
+      204,
+      467
+    ],
+    "grip": [
+      265,
+      397
+    ],
+    "fitExtent": 350,
+    "clearPoints": [
+      [
+        234,
+        389
+      ],
+      [
+        286,
+        400
+      ]
+    ],
+    "rotation": 35,
+    "atlas": "dawn-herald",
+    "thrustTurn": 55,
+    "crop": [
+      158,
+      23,
+      203,
+      467
+    ],
+    "pivot": [
+      0.5271,
+      0.8009
+    ],
+    "size": [
+      152.14,
+      350
+    ]
+  },
+  {
+    "id": "seraph-glaive",
+    "name": "Seraph Glaive",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A SERAPH GLAIVE: long cobalt shaft and one large swept SILVER WING-SHAPED glaive blade at the top curving RIGHT, exactly THREE broad feather lobes making the blade, one gold collar. Upright spear-sized weapon, strong flowing wing profile, no loose feathers or magic trail.",
+    "epoch": 10,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      688,
+      18,
+      181,
+      472
+    ],
+    "grip": [
+      730,
+      407
+    ],
+    "fitExtent": 500,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "dawn-herald",
+    "crop": [
+      688,
+      18,
+      181,
+      472
+    ],
+    "pivot": [
+      0.232,
+      0.8242
+    ],
+    "size": [
+      191.74,
+      500
+    ]
+  },
+  {
+    "id": "sun-maul",
+    "name": "Sun Maul",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A SUN MAUL: an enormous round ivory disc head with thick golden rim and FOUR short broad blunt sun-ray tabs, mounted on a short ivory handle with broad gold grip. Upright round-headed ceremonial hammer, bright white circular center, no face, no many tiny sun rays.",
+    "epoch": 10,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      98,
+      509,
+      322,
+      473
+    ],
+    "grip": [
+      258,
+      902
+    ],
+    "fitExtent": 340,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "dawn-herald",
+    "crop": [
+      98,
+      509,
+      322,
+      473
+    ],
+    "pivot": [
+      0.4969,
+      0.8309
+    ],
+    "size": [
+      231.46,
+      340
+    ]
+  },
+  {
+    "id": "oath-bell",
+    "name": "Oath Bell",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "An OATH BELL melee mace: one huge heavy GOLD BELL-shaped striking head at the TOP, cream inset panel, wide flared lower bell lip and one small dark clapper visible; sturdy straight ivory-and-gold grip extends DOWN from its back-center mounting. Clearly a heavy bell on a handle, continuous mechanically joined silhouette. No rope, chain, sound waves or floating pieces.",
+    "epoch": 10,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      623,
+      521,
+      270,
+      465
+    ],
+    "grip": [
+      761,
+      889
+    ],
+    "fitExtent": 300,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "dawn-herald",
+    "crop": [
+      623,
+      521,
+      270,
+      465
+    ],
+    "pivot": [
+      0.5111,
+      0.7914
+    ],
+    "size": [
+      174.19,
+      300
+    ]
+  },
+  {
+    "id": "halo-bow",
+    "name": "Halo Bow",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "bow",
+    "description": "A HALO BOW: tall vertical bow formed by TWO large swept ivory feather wings around a central gold handgrip on the LEFT of the silhouette; one taut gold string connects the tips on the RIGHT. Gentle 3/4 side view, opening EMPTY, exactly three broad feather planes per wing. No arrow, hands, particles, halo floating nearby.",
+    "epoch": 10,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      136,
+      998,
+      201,
+      511
+    ],
+    "grip": [
+      175,
+      1250
+    ],
+    "fitExtent": 450,
+    "clearPoints": [
+      [
+        253,
+        1240
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "dawn-herald",
+    "mirror": true,
+    "crop": [
+      136,
+      998,
+      201,
+      511
+    ],
+    "pivot": [
+      0.806,
+      0.4932
+    ],
+    "size": [
+      177.01,
+      450
+    ]
+  },
+  {
+    "id": "judgment-trumpet",
+    "name": "Judgment Trumpet",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A JUDGMENT TRUMPET, a magical ranged weapon: one horizontal ivory-and-gold ceremonial horn with a narrow cobalt rear tube LEFT, huge flared golden bell RIGHT shaped with three broad sun-ray edges, one swept silver wing plate along its body and an unmistakable lower rear gold pistol-style handgrip. Big clean trumpet silhouette, NOT a rifle. No sound waves, beam or particles.",
+    "epoch": 10,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      491,
+      1088,
+      503,
+      312
+    ],
+    "grip": [
+      593,
+      1342
+    ],
+    "fitExtent": -360,
+    "clearPoints": [],
+    "rotation": 0,
+    "atlas": "dawn-herald",
+    "crop": [
+      491,
+      1088,
+      503,
+      312
+    ],
+    "pivot": [
+      0.2028,
+      0.8141
+    ],
+    "size": [
+      360,
+      223.3
+    ]
+  },
+  {
+    "id": "wing-fan",
+    "name": "Wing Fan",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A divine fighting fan made from THREE enormous overlapping rigid ivory feather blades, each with ONE pale-blue bevel and one rounded silver tip. They spread asymmetrically from a small plain gold hinge and an integral narrow navy handgrip below. Broad fan silhouette, no tiny feather barbs, gems or filigree.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.75,
+      0.87
+    ],
+    "size": [
+      279.98,
+      330
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      33,
+      12,
+      375,
+      442
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/wing-fan-clean.png"
+  },
+  {
+    "id": "crescent-crook",
+    "name": "Crescent Crook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A celestial crook: one enormous smooth silver crescent forms an open hook at top of a gently curved deep-blue shaft, with a plain ivory lower handgrip and one small flat warm-gold collar. Long moon-shaped hook with one sharp end and one blunt end. No stars, jewelry, face, glow or fine engraving.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.34,
+      0.87
+    ],
+    "size": [
+      213.69,
+      400
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      516,
+      7,
+      242,
+      453
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/crescent-crook-clean.png"
+  },
+  {
+    "id": "balance-maul",
+    "name": "Balance Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A divine judgment maul shaped as a simplified balance: a thick ivory crossbeam head carries TWO unequal solid gold circular weights fixed directly beneath its ends by short rigid navy bars; one short straight pale-blue handgrip continues below its center. Uneven broad T silhouette, solid connected weapon, no chains, fine scales, symbols or gems.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.54,
+      0.85
+    ],
+    "size": [
+      362.74,
+      330
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      811,
+      62,
+      421,
+      383
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/balance-maul-clean.png"
+  },
+  {
+    "id": "cloud-cleaver",
+    "name": "Cloud Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A solid divine cloud cleaver: broad ivory blade with THREE large rounded cloud lobes on the BACK edge, a continuous sharp pale-silver cutting edge on the RIGHT, one simple dark-blue bent grip below and a single gold rivet. It is rigid metal and enamel, not vapor. No mist, light rays, intricate curls or decorations.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.34,
+      0.85
+    ],
+    "size": [
+      206.25,
+      330
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      89,
+      474,
+      275,
+      440
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/cloud-cleaver-clean.png"
+  },
+  {
+    "id": "crown-breaker",
+    "name": "Crown Breaker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A holy crown-shaped crusher: ONE massive low gold crown with THREE very large triangular points forms the impact head above a short ivory shaft and a wide dark-blue lower grip. The crown is plain solid metal with a single broad cream highlight, deliberately simple. No gemstones, tiny teeth, banners or engravings.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.82
+    ],
+    "size": [
+      222.16,
+      290
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      461,
+      476,
+      334,
+      436
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/crown-breaker-clean.png"
+  },
+  {
+    "id": "oath-tablet",
+    "name": "Oath Tablet",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A divine battle tablet used as a cleaver: one tall thick rounded-top ivory stone slab, a dark-blue beveled right cutting edge, ONE large recessed pale-gold vertical panel with NO writing, and a wide oval handhold cut directly through the bottom of the slab. No separate wrapped handle. Heavy sacred-tablet silhouette, no runes, inscriptions, scrollwork or ornament.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.48,
+      0.95
+    ],
+    "size": [
+      169.98,
+      320
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      920,
+      475,
+      230,
+      433
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/oath-tablet-clean.png"
+  },
+  {
+    "id": "choir-organ",
+    "name": "Choir Organ",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A small handheld celestial organ-cannon pointing horizontally RIGHT: THREE thick ivory organ pipes of clearly unequal length rest side-by-side in one compact dark-blue housing, a single pale-gold clamp joins them, and a curved coral-red pistol grip sits underneath the rear. THREE broad dark pipe openings, clean stepped pipe silhouette. No keys, musical notes, filigree, wings, beams or loose projectiles.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 0,
+    "pivot": [
+      0.18,
+      0.79
+    ],
+    "size": [
+      340,
+      249.22
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      422,
+      932,
+      412,
+      302
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/choir-organ-clean.png"
+  }
+]

@@ -1,0 +1,856 @@
+[
+  {
+    "epoch": 1,
+    "group": "prehistoric",
+    "id": "tusk-hook",
+    "source": "design/weapons/epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      189,
+      39,
+      367,
+      580
+    ],
+    "area": 99501,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric/tusk-hook-clean.png"
+  },
+  {
+    "epoch": 1,
+    "group": "prehistoric",
+    "id": "antler-fork",
+    "source": "design/weapons/epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      847,
+      18,
+      220,
+      601
+    ],
+    "area": 48920,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric/antler-fork-clean.png"
+  },
+  {
+    "epoch": 1,
+    "group": "prehistoric",
+    "id": "shell-mallet",
+    "source": "design/weapons/epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      132,
+      669,
+      433,
+      563
+    ],
+    "area": 124094,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric/shell-mallet-clean.png"
+  },
+  {
+    "epoch": 1,
+    "group": "prehistoric",
+    "id": "thorn-root",
+    "source": "design/weapons/epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      834,
+      642,
+      277,
+      590
+    ],
+    "area": 83804,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric/thorn-root-clean.png"
+  },
+  {
+    "epoch": 2,
+    "group": "ancient",
+    "id": "obsidian-sawblade",
+    "source": "design/weapons/epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      179,
+      8,
+      212,
+      476
+    ],
+    "area": 55779,
+    "clean": "design/weapons/epoch-completion-v1/ancient/obsidian-sawblade-clean.png"
+  },
+  {
+    "epoch": 2,
+    "group": "ancient",
+    "id": "crocodile-cleaver",
+    "source": "design/weapons/epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      540,
+      47,
+      414,
+      403
+    ],
+    "area": 70544,
+    "clean": "design/weapons/epoch-completion-v1/ancient/crocodile-cleaver-clean.png"
+  },
+  {
+    "epoch": 2,
+    "group": "ancient",
+    "id": "war-oar",
+    "source": "design/weapons/epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      175,
+      496,
+      201,
+      475
+    ],
+    "area": 54983,
+    "clean": "design/weapons/epoch-completion-v1/ancient/war-oar-clean.png"
+  },
+  {
+    "epoch": 2,
+    "group": "ancient",
+    "id": "sun-disk-mace",
+    "source": "design/weapons/epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      583,
+      483,
+      324,
+      473
+    ],
+    "area": 67788,
+    "clean": "design/weapons/epoch-completion-v1/ancient/sun-disk-mace-clean.png"
+  },
+  {
+    "epoch": 2,
+    "group": "ancient",
+    "id": "scorpion-pincer",
+    "source": "design/weapons/epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      164,
+      982,
+      274,
+      502
+    ],
+    "area": 55496,
+    "clean": "design/weapons/epoch-completion-v1/ancient/scorpion-pincer-clean.png"
+  },
+  {
+    "epoch": 2,
+    "group": "ancient",
+    "id": "lotus-staff",
+    "source": "design/weapons/epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      609,
+      963,
+      273,
+      540
+    ],
+    "area": 51942,
+    "clean": "design/weapons/epoch-completion-v1/ancient/lotus-staff-clean.png"
+  },
+  {
+    "epoch": 4,
+    "group": "gunpowder",
+    "id": "sawfish-sabre",
+    "source": "design/weapons/epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      64,
+      25,
+      386,
+      456
+    ],
+    "area": 58977,
+    "clean": "design/weapons/epoch-completion-v1/gunpowder/sawfish-sabre-clean.png"
+  },
+  {
+    "epoch": 4,
+    "group": "gunpowder",
+    "id": "capstan-crusher",
+    "source": "design/weapons/epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      504,
+      34,
+      465,
+      454
+    ],
+    "area": 82719,
+    "clean": "design/weapons/epoch-completion-v1/gunpowder/capstan-crusher-clean.png"
+  },
+  {
+    "epoch": 4,
+    "group": "gunpowder",
+    "id": "whaling-hook",
+    "source": "design/weapons/epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      175,
+      489,
+      200,
+      506
+    ],
+    "area": 48488,
+    "clean": "design/weapons/epoch-completion-v1/gunpowder/whaling-hook-clean.png"
+  },
+  {
+    "epoch": 4,
+    "group": "gunpowder",
+    "id": "sail-shears",
+    "source": "design/weapons/epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      589,
+      489,
+      314,
+      507
+    ],
+    "area": 72701,
+    "clean": "design/weapons/epoch-completion-v1/gunpowder/sail-shears-clean.png"
+  },
+  {
+    "epoch": 4,
+    "group": "gunpowder",
+    "id": "bottle-breaker",
+    "source": "design/weapons/epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      110,
+      991,
+      285,
+      495
+    ],
+    "area": 78521,
+    "clean": "design/weapons/epoch-completion-v1/gunpowder/bottle-breaker-clean.png"
+  },
+  {
+    "epoch": 4,
+    "group": "gunpowder",
+    "id": "boarding-gunblade",
+    "source": "design/weapons/epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      519,
+      947,
+      421,
+      538
+    ],
+    "area": 68940,
+    "clean": "design/weapons/epoch-completion-v1/gunpowder/boarding-gunblade-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "chain-cleaver",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      128,
+      15,
+      206,
+      487
+    ],
+    "area": 63105,
+    "clean": "design/weapons/epoch-completion-v1/modern/chain-cleaver-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "rail-breaker",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      494,
+      19,
+      277,
+      484
+    ],
+    "area": 54393,
+    "clean": "design/weapons/epoch-completion-v1/modern/rail-breaker-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "piston-lance",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      856,
+      15,
+      327,
+      492
+    ],
+    "area": 48667,
+    "clean": "design/weapons/epoch-completion-v1/modern/piston-lance-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "pressure-ram",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      62,
+      519,
+      339,
+      430
+    ],
+    "area": 77811,
+    "clean": "design/weapons/epoch-completion-v1/modern/pressure-ram-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "hydraulic-jaws",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      473,
+      523,
+      303,
+      419
+    ],
+    "area": 61802,
+    "clean": "design/weapons/epoch-completion-v1/modern/hydraulic-jaws-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "ram-knuckles",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      810,
+      594,
+      401,
+      301
+    ],
+    "area": 85294,
+    "clean": "design/weapons/epoch-completion-v1/modern/ram-knuckles-clean.png"
+  },
+  {
+    "epoch": 5,
+    "group": "modern",
+    "id": "drum-shotgun",
+    "source": "design/weapons/epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      314,
+      967,
+      620,
+      264
+    ],
+    "area": 103039,
+    "clean": "design/weapons/epoch-completion-v1/modern/drum-shotgun-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "ring-cutter",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      84,
+      16,
+      323,
+      400
+    ],
+    "area": 59180,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/ring-cutter-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "ion-fork",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      527,
+      8,
+      203,
+      404
+    ],
+    "area": 49098,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/ion-fork-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "hinge-blade",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      916,
+      6,
+      253,
+      431
+    ],
+    "area": 41756,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/hinge-blade-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "clamp-maul",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      77,
+      463,
+      326,
+      434
+    ],
+    "area": 80340,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/clamp-maul-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "capacitor-lance",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      558,
+      425,
+      142,
+      479
+    ],
+    "area": 31490,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/capacitor-lance-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "rotor-glaive",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      860,
+      456,
+      378,
+      437
+    ],
+    "area": 49567,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/rotor-glaive-clean.png"
+  },
+  {
+    "epoch": 6,
+    "group": "futuristic",
+    "id": "cassette-launcher",
+    "source": "design/weapons/epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      346,
+      943,
+      561,
+      286
+    ],
+    "area": 87654,
+    "clean": "design/weapons/epoch-completion-v1/futuristic/cassette-launcher-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "crater-pick",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      54,
+      38,
+      383,
+      403
+    ],
+    "area": 65817,
+    "clean": "design/weapons/epoch-completion-v1/space/crater-pick-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "airlock-cleaver",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      507,
+      8,
+      252,
+      433
+    ],
+    "area": 82035,
+    "clean": "design/weapons/epoch-completion-v1/space/airlock-cleaver-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "orbital-claw",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      896,
+      24,
+      327,
+      417
+    ],
+    "area": 63963,
+    "clean": "design/weapons/epoch-completion-v1/space/orbital-claw-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "gravity-dumbbell",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      54,
+      460,
+      333,
+      410
+    ],
+    "area": 74137,
+    "clean": "design/weapons/epoch-completion-v1/space/gravity-dumbbell-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "thruster-maul",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      460,
+      473,
+      382,
+      397
+    ],
+    "area": 86065,
+    "clean": "design/weapons/epoch-completion-v1/space/thruster-maul-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "solar-sail-blade",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      957,
+      437,
+      234,
+      452
+    ],
+    "area": 54304,
+    "clean": "design/weapons/epoch-completion-v1/space/solar-sail-blade-clean.png"
+  },
+  {
+    "epoch": 7,
+    "group": "space",
+    "id": "eclipse-launcher",
+    "source": "design/weapons/epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      421,
+      879,
+      423,
+      343
+    ],
+    "area": 85877,
+    "clean": "design/weapons/epoch-completion-v1/space/eclipse-launcher-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "mobius-blade",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      137,
+      13,
+      203,
+      433
+    ],
+    "area": 42362,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/mobius-blade-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "staircase-cleaver",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      495,
+      11,
+      260,
+      436
+    ],
+    "area": 53068,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/staircase-cleaver-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "inside-out-mace",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      909,
+      35,
+      258,
+      407
+    ],
+    "area": 64894,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/inside-out-mace-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "hourglass-lance",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      164,
+      465,
+      154,
+      501
+    ],
+    "area": 37026,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/hourglass-lance-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "echo-fork",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      505,
+      479,
+      243,
+      466
+    ],
+    "area": 49572,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/echo-fork-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "folded-door",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      923,
+      478,
+      281,
+      464
+    ],
+    "area": 51986,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/folded-door-clean.png"
+  },
+  {
+    "epoch": 8,
+    "group": "interdimensional",
+    "id": "inversion-caster",
+    "source": "design/weapons/epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      450,
+      969,
+      403,
+      274
+    ],
+    "area": 68342,
+    "clean": "design/weapons/epoch-completion-v1/interdimensional/inversion-caster-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "rib-cleaver",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      130,
+      10,
+      253,
+      464
+    ],
+    "area": 68278,
+    "clean": "design/weapons/epoch-completion-v1/underworld/rib-cleaver-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "furnace-poker",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      555,
+      9,
+      182,
+      467
+    ],
+    "area": 32541,
+    "clean": "design/weapons/epoch-completion-v1/underworld/furnace-poker-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "coffin-maul",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      870,
+      55,
+      334,
+      421
+    ],
+    "area": 64884,
+    "clean": "design/weapons/epoch-completion-v1/underworld/coffin-maul-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "grave-spade",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      133,
+      490,
+      205,
+      454
+    ],
+    "area": 41529,
+    "clean": "design/weapons/epoch-completion-v1/underworld/grave-spade-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "shackle-hook",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      539,
+      493,
+      213,
+      438
+    ],
+    "area": 50566,
+    "clean": "design/weapons/epoch-completion-v1/underworld/shackle-hook-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "brimstone-censer",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      898,
+      508,
+      269,
+      431
+    ],
+    "area": 58245,
+    "clean": "design/weapons/epoch-completion-v1/underworld/brimstone-censer-clean.png"
+  },
+  {
+    "epoch": 9,
+    "group": "underworld",
+    "id": "jaw-scatterer",
+    "source": "design/weapons/epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      386,
+      939,
+      491,
+      295
+    ],
+    "area": 77215,
+    "clean": "design/weapons/epoch-completion-v1/underworld/jaw-scatterer-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "wing-fan",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      33,
+      12,
+      375,
+      442
+    ],
+    "area": 80282,
+    "clean": "design/weapons/epoch-completion-v1/divine/wing-fan-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "crescent-crook",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      516,
+      7,
+      242,
+      453
+    ],
+    "area": 40356,
+    "clean": "design/weapons/epoch-completion-v1/divine/crescent-crook-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "balance-maul",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      811,
+      62,
+      421,
+      383
+    ],
+    "area": 84404,
+    "clean": "design/weapons/epoch-completion-v1/divine/balance-maul-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "cloud-cleaver",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      89,
+      474,
+      275,
+      440
+    ],
+    "area": 66404,
+    "clean": "design/weapons/epoch-completion-v1/divine/cloud-cleaver-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "crown-breaker",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      461,
+      476,
+      334,
+      436
+    ],
+    "area": 67885,
+    "clean": "design/weapons/epoch-completion-v1/divine/crown-breaker-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "oath-tablet",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      920,
+      475,
+      230,
+      433
+    ],
+    "area": 83765,
+    "clean": "design/weapons/epoch-completion-v1/divine/oath-tablet-clean.png"
+  },
+  {
+    "epoch": 10,
+    "group": "divine",
+    "id": "choir-organ",
+    "source": "design/weapons/epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      422,
+      932,
+      412,
+      302
+    ],
+    "area": 59956,
+    "clean": "design/weapons/epoch-completion-v1/divine/choir-organ-clean.png"
+  },
+  {
+    "epoch": 1,
+    "group": "prehistoric-reuse",
+    "id": "flint-axe",
+    "source": "design/weapons/prehistoric-common-v1/concepts.png",
+    "sourceRect": [
+      70,
+      102,
+      424,
+      830
+    ],
+    "area": 175972,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric-reuse/flint-axe-clean.png"
+  },
+  {
+    "epoch": 1,
+    "group": "prehistoric-reuse",
+    "id": "bone-cudgel",
+    "source": "design/weapons/prehistoric-common-v1/concepts.png",
+    "sourceRect": [
+      589,
+      55,
+      311,
+      892
+    ],
+    "area": 133705,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric-reuse/bone-cudgel-clean.png"
+  },
+  {
+    "epoch": 1,
+    "group": "prehistoric-reuse",
+    "id": "hide-sling",
+    "source": "design/weapons/prehistoric-common-v1/concepts.png",
+    "sourceRect": [
+      989,
+      162,
+      497,
+      735
+    ],
+    "area": 120508,
+    "clean": "design/weapons/epoch-completion-v1/prehistoric-reuse/hide-sling-clean.png"
+  }
+]

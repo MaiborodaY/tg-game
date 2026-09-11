@@ -1,0 +1,423 @@
+[
+  {
+    "id": "meteor-mace",
+    "name": "Meteor Mace",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A METEOR MACE: one large irregular dark rock head with THREE broad orange-filled cracks, held in a simple silver claw socket above a short dark-teal wrapped handle. Upright blunt club silhouette, thick rock outline, no little craters, particles or floating fragments.",
+    "epoch": 7,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      118,
+      29,
+      299,
+      462
+    ],
+    "grip": [
+      268,
+      410
+    ],
+    "fitExtent": 300,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "lunar-scout",
+    "crop": [
+      118,
+      29,
+      299,
+      462
+    ],
+    "pivot": [
+      0.5017,
+      0.8247
+    ],
+    "size": [
+      194.16,
+      300
+    ]
+  },
+  {
+    "id": "orbit-cleaver",
+    "name": "Orbit Cleaver",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "An ORBIT CLEAVER: gigantic almost semicircular navy/violet blade like a solid cut section of a planetary ring, one broad silver cutting rim, attached to a short chunky purple handle below the lower-left blade. Upright heavy cleaver, open crescent bite on one side, clear grip. Not a thin conventional sword.",
+    "epoch": 7,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      604,
+      26,
+      357,
+      474
+    ],
+    "grip": [
+      675,
+      420
+    ],
+    "fitExtent": 340,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "lunar-scout",
+    "crop": [
+      604,
+      26,
+      357,
+      474
+    ],
+    "pivot": [
+      0.1989,
+      0.8312
+    ],
+    "size": [
+      256.08,
+      340
+    ]
+  },
+  {
+    "id": "gravity-anchor",
+    "name": "Gravity Anchor",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A GRAVITY ANCHOR used as a melee weapon: enormous teal and silver ANCHOR head at the TOP with two broad blunt upward-curled hooked arms, a central short silver spike, and a long straight dark shaft extending DOWN to a purple grip. Heavy wide anchor silhouette, clean three-part construction. No rope or chains.",
+    "epoch": 7,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      69,
+      514,
+      389,
+      507
+    ],
+    "grip": [
+      264,
+      923
+    ],
+    "fitExtent": 450,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "lunar-scout",
+    "crop": [
+      69,
+      514,
+      389,
+      507
+    ],
+    "pivot": [
+      0.5013,
+      0.8067
+    ],
+    "size": [
+      345.27,
+      450
+    ]
+  },
+  {
+    "id": "xeno-spear",
+    "name": "Xeno Spear",
+    "attack": "thrust",
+    "kind": "melee",
+    "description": "A XENO SPEAR: long living-looking dark-teal shaft, organic lime chitin spear point made of TWO overlapping curved mandible-like plates joining to ONE long tip, one violet collar and simple teal handgrip. Tall narrow organic silhouette, no flesh, eyes, limbs or floating parts.",
+    "epoch": 7,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      703,
+      514,
+      132,
+      517
+    ],
+    "grip": [
+      770,
+      947
+    ],
+    "fitExtent": 480,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "lunar-scout",
+    "thrustTurn": 55,
+    "crop": [
+      703,
+      514,
+      132,
+      517
+    ],
+    "pivot": [
+      0.5076,
+      0.8375
+    ],
+    "size": [
+      122.55,
+      480
+    ]
+  },
+  {
+    "id": "comet-launcher",
+    "name": "Comet Launcher",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A COMET LAUNCHER: large rounded ivory/orange space cannon, one fat horizontal tube from rear LEFT to circular muzzle RIGHT, orange front ring, ivory padded shell and one rear underside grey grip. Chunky friendly astronaut hardware. No rocket sticking out, exhaust or particles.",
+    "epoch": 7,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      31,
+      1104,
+      465,
+      325
+    ],
+    "grip": [
+      159,
+      1350
+    ],
+    "fitExtent": -380,
+    "clearPoints": [],
+    "rotation": 0,
+    "atlas": "lunar-scout",
+    "crop": [
+      31,
+      1104,
+      465,
+      325
+    ],
+    "pivot": [
+      0.2753,
+      0.7569
+    ],
+    "size": [
+      380,
+      265.59
+    ]
+  },
+  {
+    "id": "void-beamer",
+    "name": "Void Beamer",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A VOID BEAMER: long lean navy gun pointing RIGHT with a silver triangular rear stock LEFT, a narrow black barrel and TWO thick violet structural rings around its front; a single violet oval core integrated in the receiver. Both rings physically attached to the barrel, no floating elements. Lower rear grip clear, no laser beam.",
+    "epoch": 7,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      534,
+      1165,
+      462,
+      242
+    ],
+    "grip": [
+      636,
+      1340
+    ],
+    "fitExtent": -360,
+    "clearPoints": [],
+    "rotation": 0,
+    "atlas": "lunar-scout",
+    "crop": [
+      534,
+      1165,
+      462,
+      242
+    ],
+    "pivot": [
+      0.2208,
+      0.7231
+    ],
+    "size": [
+      360,
+      188.57
+    ]
+  },
+  {
+    "id": "crater-pick",
+    "name": "Crater Pick",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An asteroid-miner's pick made from one huge crescent-shaped grey moon-rock shard, with ONE broad round crater visible on its face. Its short white grip extends from the thick lower side, joined by one orange clamp. Hooked rocky point at upper RIGHT, angular opposite end. No tiny craters, rubble, crystals or conventional metal axe head.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.83
+    ],
+    "size": [
+      313.62,
+      330
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      54,
+      38,
+      383,
+      403
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/crater-pick-clean.png"
+  },
+  {
+    "id": "airlock-cleaver",
+    "name": "Airlock Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A spaceship airlock panel repurposed as a massive cleaver: tall chunky off-white rounded rectangular bulkhead blade with a single thick dark cutting bevel down the RIGHT edge, ONE blue oval window near its top, an orange diagonal lower corner, and a dark handgrip through an open cutout near its bottom. No separate sword hilt, labels or many bolts.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.14,
+      0.75
+    ],
+    "size": [
+      209.52,
+      360
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      507,
+      8,
+      252,
+      433
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/airlock-cleaver-clean.png"
+  },
+  {
+    "id": "orbital-claw",
+    "name": "Orbital Claw",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A salvage grappler used as a handheld space claw: THREE large lime-and-dark-teal claw prongs curl inward from one small ivory hub, one prong much longer than the others, a short angular violet handle below. Open asymmetric claw outline; solid mechanically connected sections, no flexible tubes or tiny joints.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.38,
+      0.85
+    ],
+    "size": [
+      266.62,
+      340
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      896,
+      24,
+      327,
+      417
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/orbital-claw-clean.png"
+  },
+  {
+    "id": "gravity-dumbbell",
+    "name": "Gravity Dumbbell",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A cosmic crushing weapon shaped like an asymmetric dumbbell: an enormous flat dark-purple disk at TOP with one off-white rim and black central circular face, a narrow solid teal handgrip in the middle, and a much smaller matching disk at BOTTOM. Heavy black mass, clean planetary disk silhouette, no floating planets, sparkles or fine rings.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.49,
+      0.65
+    ],
+    "size": [
+      227.41,
+      280
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      54,
+      460,
+      333,
+      410
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/gravity-dumbbell-clean.png"
+  },
+  {
+    "id": "thruster-maul",
+    "name": "Thruster Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A salvaged spacecraft thruster used as a maul: one short fat white rocket-engine nacelle lies horizontally at the head, broad dark nozzle faces RIGHT, an orange fin on top, and a short dark-blue rigid mounting strut forms the grip below. One broad blue engine inset, no fire or cables. Distinct lopsided engine silhouette.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.37,
+      0.84
+    ],
+    "size": [
+      307.91,
+      320
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      460,
+      473,
+      382,
+      397
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/thruster-maul-clean.png"
+  },
+  {
+    "id": "solar-sail-blade",
+    "name": "Solar Sail Blade",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A large solid kite-shaped solar-sail blade: an asymmetrical folded rhomboid cutting panel, teal on the large left face, pale silver on the narrow right face, dark-violet perimeter frame, and a narrow ivory handle continuing from the lower corner. ONE bold central fold only. Looks built from spacecraft sail material, no grid of solar cells, no decoration.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.44,
+      0.84
+    ],
+    "size": [
+      191.55,
+      370
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      957,
+      437,
+      234,
+      452
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/solar-sail-blade-clean.png"
+  },
+  {
+    "id": "eclipse-launcher",
+    "name": "Eclipse Launcher",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A handheld space launcher pointing RIGHT: its muzzle is an enormous off-white circular accelerator ring held by TWO short solid braces to a very short purple rear receiver, with one small orange rear capsule and a dark angled pistol grip beneath. Huge hollow circular muzzle dominates, visible black open center, minimal foreshortening. No beams, loose satellites, lens flare or ordinary long barrel.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 0,
+    "pivot": [
+      0.2,
+      0.8
+    ],
+    "size": [
+      350,
+      283.81
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      421,
+      879,
+      423,
+      343
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/eclipse-launcher-clean.png"
+  }
+]

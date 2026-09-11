@@ -1,0 +1,24 @@
+Use case: stylized-concept, production modular equipment sprites for Forest Forge.
+Input 1: actual hero BODY PART template. Use ONLY for handedness, facing direction and attachment coverage; it does NOT dictate the equipment outline, material or bulk.
+Input 2: COSTUME CONCEPT. This is the authority for the chosen set's silhouette, materials, colors, shapes and volume. Select only the character named below.
+Input 3: existing corrected Field Scout production sheet. Use ONLY as an example of complete standalone part boundaries and the 13-part cell layout. DO NOT copy its green palette, cap, round shoulders, vest shape or proportions. Our new costume must retain its OWN structural identity.
+
+Create ONE square 1536x1536 sheet, strictly regular 4x4 grid, EXACTLY THIRTEEN ISOLATED ARMOR PIECES, with at least 28 pixels of empty margin around each item. These are independent modular equipment pieces, not a dressed hero or rectangles cut from a costume.
+Row 1: [HEADGEAR ONLY, CHEST ONLY neck to waist, CAPE swept LEFT, EMPTY].
+Row 2: [REAR SHOULDER, FRONT SHOULDER, complete CLOSED REAR GLOVE, complete CLOSED FRONT GLOVE].
+Row 3: [REAR HIP PANEL, FRONT HIP PANEL, REAR SHIN/LOWER-LEG COVERING WITHOUT FOOT, FRONT SHIN/LOWER-LEG COVERING WITHOUT FOOT].
+Row 4: [complete REAR SHORT ANKLE BOOT, complete FRONT SHORT ANKLE BOOT, EMPTY, EMPTY].
+All three designated empty cells remain empty. No weapon.
+
+Do not copy beige skin/fabric stumps or rectangular crop edges from input 1. Each silhouette must have a complete finished outer contour. Shoulders contain only their armor/cloth shapes with NO arms or sleeves projecting out. Boots start at their own finished cuff bands with NO skin, ankle, shin or trouser fabric sticking above them. Shin covers contain NO toes or soles, and have finished tops and bottoms without projecting skin/fabric. Hip panels are TWO independent complete shapes, not one pair of trousers.
+Headgear contains NO head, hair, face, ears, skin, chin or neck. The game supplies the human head. Preserve the chosen crown/hat/helmet's characteristic outline. In open-face helmets, no dangling BLACK far-side strap, hook or thin projection on the front/right side below the brow. No chin collar. Face opening and all gaps must be empty white. No large dark hollow cavity or interior shading.
+Chest ends at a finished waist edge. No attached shoulders, arms, hip tails, skirts or hands. Keep the lower cloth/plate shapes in their two hip cells. For robes, make those two hip panels flow with the concept silhouette.
+Gloves are complete CLOSED mittens covering the whole fist and palm with one simple thumb, not wrist bracelets or open tubes. Boots are complete short ankle footwear including toe, heel and sole, seen AS WORN at limb height. The top is covered by a SOLID flat cuff facade: no open ellipse, visible interior, hole or recessed rim. Rear and front parts must follow their different template orientations.
+Cape must keep its actual concept shape: cloth, membrane or feather fan as appropriate. It is one single connected piece, not extra wings or floating particles.
+
+Bold crisp near-black outlines, saturated appealing colors, only two or three broad cel-shaded regions, big simple highlights. Preserve the concept's distinctive forms, not a common rounded armor template. No tiny details, labels, grid, text, cast shadows, sparkles, scenery or extra objects.
+Background: request real transparent alpha. If not available, use perfectly solid pure white #FFFFFF, including all negative-space holes. Absolutely NEVER paint a checkerboard. Do not include body, skin, face, hair, weapons or shields.
+
+Selected character: ONLY the RIGHT OBSIDIAN TYRANT from input 2.
+Design: A TALL ANGULAR dark royal armor silhouette on the SAME short hero body. Open obsidian-black crown with THREE large upward blade-shaped points and one deep ruby center face, no curled horns. Sharp black/charcoal chest plate with ONE broad crimson diagonal edge and a large ruby pentagon. Tall wedge-shaped obsidian shoulder guards, full charcoal closed gloves with broad crimson back plates. Long triangular black split hip plates, sharp tapered obsidian shin plates, separate pointed black ankle boots with broad crimson toes. A long triangular deep-wine cape with a rich red inner plane. Cut obsidian planes, crisp hard silhouette, not rounded red brute armor. No tiny crystal shards, engraved runes, chains, skulls or detailed filigree.
+Final reminder: the body/face described by the concept is NOT part of any sprite. Output ONLY the thirteen equipment pieces in the specified cells.

@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 3: Medieval. MATERIAL DIRECTION: Plain gray steel, weathered brown wood, charcoal iron and one muted blue cloth accent. Everyday guard equipment, no noble decoration.
+
+1. MILITARY PICK (melee): A steel war pick: a small rectangular striking poll to the LEFT and one long downward-curving tapered beak to the RIGHT, mounted across the top of a straight bare ash-wood handle. Only one dark iron collar at the head; no wrapping and no decorative pommel. A slim T-shaped weapon with plenty of empty space.
+
+2. GUARD BILLHOOK (melee): A short broad heavy steel billhook, upright: the blade's upper tip bends forward into one pronounced hooked point while the inside cutting edge stays broad and simple. The grip is a thick flat charcoal handle with an oval hole near its blunt end and a single plain rivet. No wooden shaft, no leather spiral, no gold. Make the broad hooked blade very different from the narrow pick.
+
+3. HAND ARBALEST (ranged): A compact handheld crossbow pointing RIGHT, with short thick steel bow arms, a dark wooden stock and a steep pistol-like integral wooden grip, one simple blue cloth band on the stock. Visible simple taut string; no loaded bolt. Short and stout, not the large existing long-stock crossbow. No ornate fittings or winding mechanisms.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

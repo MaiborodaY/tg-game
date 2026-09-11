@@ -1,0 +1,193 @@
+[
+  {
+    "id": "tusk-hook",
+    "name": "Tusk Hook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A single huge curved saber-tooth fang used as a hooked cleaver. Smooth broad ivory crescent blade, one ochre rawhide binding at its base, a short crooked dark-wood handgrip that follows the curve. Bare natural materials; exaggerated deep hook, no metal.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.85
+    ],
+    "size": [
+      189.83,
+      300
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      189,
+      39,
+      367,
+      580
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/tusk-hook-clean.png"
+  },
+  {
+    "id": "antler-fork",
+    "name": "Antler Fork",
+    "kind": "melee",
+    "attack": "thrust",
+    "description": "An asymmetrical elk-antler hunting fork. One long ivory antler tine points straight up and two shorter blunt side tines curve right; tied with a broad dark-brown hide knot to a long irregular wood shaft. Three very large clear tines only; no fine branches.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.82
+    ],
+    "size": [
+      168.39,
+      460
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      847,
+      18,
+      220,
+      601
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/antler-fork-clean.png",
+    "thrustTurn": 55
+  },
+  {
+    "id": "shell-mallet",
+    "name": "Shell Mallet",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A prehistoric hammer built from one oversized flattened river-snail shell with one broad spiral ridge. Rust-ochre shell mass extends strongly to the left, cream shell lip on the right, fixed with two thick tan lashings onto a short charcoal driftwood handle. Read as a shell, not a metal hammer.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.58,
+      0.79
+    ],
+    "size": [
+      230.73,
+      300
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      132,
+      669,
+      433,
+      563
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/shell-mallet-clean.png"
+  },
+  {
+    "id": "thorn-root",
+    "name": "Thornroot Cudgel",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A single thick bent forest root used as a cudgel: dark chestnut crook widens at the top into three huge pale thorn spikes on its outer right edge, one stubby root nub at the butt. Asymmetric zigzag silhouette, smooth bare narrow grip, one broad green moss patch only. No leaves, no many thorns, no metal.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.31,
+      0.82
+    ],
+    "size": [
+      150.24,
+      320
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      834,
+      642,
+      277,
+      590
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/thorn-root-clean.png"
+  },
+  {
+    "epoch": 1,
+    "id": "flint-axe",
+    "name": "Flint Axe",
+    "kind": "melee",
+    "attack": "swing",
+    "source": "../prehistoric-common-v1/concepts.png",
+    "tile": 0,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.34,
+      0.8
+    ],
+    "size": [
+      158.36,
+      310
+    ],
+    "sourceRect": [
+      70,
+      102,
+      424,
+      830
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric-reuse/flint-axe-clean.png"
+  },
+  {
+    "epoch": 1,
+    "id": "bone-cudgel",
+    "name": "Bone Cudgel",
+    "kind": "melee",
+    "attack": "swing",
+    "source": "../prehistoric-common-v1/concepts.png",
+    "tile": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.33,
+      0.85
+    ],
+    "size": [
+      104.6,
+      300
+    ],
+    "sourceRect": [
+      589,
+      55,
+      311,
+      892
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric-reuse/bone-cudgel-clean.png"
+  },
+  {
+    "epoch": 1,
+    "id": "hide-sling",
+    "name": "Hide Sling",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "bow",
+    "source": "../prehistoric-common-v1/concepts.png",
+    "tile": 2,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 0,
+    "pivot": [
+      0.77,
+      0.15
+    ],
+    "size": [
+      142,
+      210
+    ],
+    "sourceRect": [
+      989,
+      162,
+      497,
+      735
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric-reuse/hide-sling-clean.png"
+  }
+]

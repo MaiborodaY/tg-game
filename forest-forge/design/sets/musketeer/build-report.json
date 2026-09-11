@@ -150,13 +150,13 @@
   ],
   "viewBox": [
     450,
-    16,
-    734,
-    734
+    -86,
+    990,
+    990
   ],
-  "cell": 101,
+  "cell": 136,
   "clippedPixels": 0,
   "emptyPartFrames": 0,
-  "atlasBytes": 284161,
-  "decodedBytes": 23339888
+  "atlasBytes": 309603,
+  "decodedBytes": 42318848
 }

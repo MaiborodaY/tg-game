@@ -327,10 +327,46 @@ button:disabled { opacity:.55; cursor:default; }
 .epoch-10 { --epoch-color:#ffb322; --epoch-pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='m14 3 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z' fill='%23fff' fill-opacity='.24'/%3E%3C/svg%3E"); --epoch-size:28px 28px; }
 .slot[class*="epoch-"],.item-icon[class*="epoch-"],.stack-card[class*="epoch-"],.probabilities tbody tr,.auto-epoch {
   background-color:var(--epoch-color,#f6f5f1);
-  background-image:var(--epoch-pattern,none);
-  background-size:var(--epoch-size,auto);
-  background-position:var(--epoch-position,0 0);
+  isolation:isolate;
   color:#12231e;
+}
+.item-icon,.probabilities tbody tr,.auto-epoch { position:relative; }
+.epoch-pattern { display:none; position:absolute; inset:0; z-index:-1; overflow:hidden; border-radius:inherit; pointer-events:none; opacity:var(--epoch-opacity,1); }
+:is(.epoch-6,.epoch-7,.epoch-8,.epoch-9,.epoch-10) .epoch-pattern { display:block; }
+.probabilities .epoch-pattern { border-radius:9px; }
+.epoch-pattern::before {
+  content:''; position:absolute; inset:-28px;
+  background-image:var(--epoch-pattern);
+  background-size:var(--epoch-size);
+  background-position:var(--epoch-position,0 0);
+  animation:var(--epoch-motion) calc(var(--epoch-duration) * var(--epoch-pace,1)) var(--epoch-easing,linear) infinite;
+}
+.epoch-6 { --epoch-motion:epoch-bubbles; --epoch-duration:6s; }
+.epoch-7 { --epoch-motion:epoch-grid; --epoch-duration:7s; }
+.epoch-8 { --epoch-motion:epoch-rings; --epoch-duration:6s; --epoch-easing:ease-in-out; }
+.epoch-9 { --epoch-motion:epoch-diamonds; --epoch-duration:8s; --epoch-easing:ease-in-out; }
+.epoch-10 { --epoch-motion:epoch-stars; --epoch-duration:5s; --epoch-easing:ease-in-out; }
+.slot,.item-icon,.stack-card { --epoch-opacity:.8; --epoch-pace:1.2; --epoch-zoom:1.06; --epoch-slide:5px; }
+/* Only the pattern moves. The clipped layer keeps card art, text and borders still. */
+@keyframes epoch-bubbles {
+  from { transform:translateY(0); }
+  to { transform:translateY(-24px); }
+}
+@keyframes epoch-grid {
+  from { transform:translate(0,0); }
+  to { transform:translate(20px,20px); }
+}
+@keyframes epoch-rings {
+  0%,100% { transform:scale(1); }
+  50% { transform:scale(var(--epoch-zoom,1.1)); }
+}
+@keyframes epoch-diamonds {
+  0%,100% { transform:translate(0,0); }
+  50% { transform:translate(var(--epoch-slide,9px),var(--epoch-slide,9px)); }
+}
+@keyframes epoch-stars {
+  0%,100% { opacity:.45; }
+  50% { opacity:1; }
 }
 .slot[class*="epoch-"],.item-icon[class*="epoch-"],.stack-card[class*="epoch-"] { border-color:#293a33; box-shadow:inset 0 -3px 0 #172d2314; }
 .probabilities { font-size:13px; }

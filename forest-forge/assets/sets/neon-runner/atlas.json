@@ -4,7 +4,7 @@
   "sourceSheets": [
     "source.png"
   ],
-  "cell": 97,
+  "cell": 134,
   "frames": 22,
   "rows": [
     "cape",
@@ -71,16 +71,30 @@
     "glove-back",
     "glove-front"
   ],
-  "weaponRows": [],
+  "weaponRows": [
+    "plasma-sabre",
+    "magnet-hammer",
+    "mono-scythe",
+    "jet-lance",
+    "pulse-carbine",
+    "arc-caster",
+    "ring-cutter",
+    "ion-fork",
+    "hinge-blade",
+    "clamp-maul",
+    "capacitor-lance",
+    "rotor-glaive",
+    "cassette-launcher"
+  ],
   "viewBox": [
     450,
-    48,
-    702,
-    702
+    -58,
+    970,
+    970
   ],
   "anchor": [
-    0.42735042735042733,
-    0.9430199430199431
+    0.30927835051546393,
+    0.7917525773195876
   ],
-  "bodyHeight": 0.8404558404558404
+  "bodyHeight": 0.6082474226804123
 }

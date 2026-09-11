@@ -1,0 +1,16 @@
+Use case: stylized-concept.
+Asset type: one THREE-WEAPON concept sheet, ordinary gear for an existing mobile 2D game.
+Reference images are ONLY drawing-style anchors: match the game's near-black contour weight, chunky readable volumes, simple cel shading and restrained highlights. Do not copy their subjects, materials, color schemes or identical hilt templates.
+The user's key correction is COLOR VARIETY WITHIN EACH ERA. Each object must have its own clearly visible dominant palette, not a uniform bronze/gold or gray/brown tint across the sheet. The exact colors specified for each item are mandatory and take priority over reference colors. Keep the weapon designs practical, simple and ordinary for their era. No novelty animal-shaped or luxury weapons.
+
+ERA 9: Underworld.
+PALETTE PLAN: Basalt/cold-blue pick, oxblood/ivory cleaver, pale tarnished-green/black scattergun. Rough functional armory, no living weapons or demonic jewelry.
+
+1. SLAG PICK (melee): An upright heavy asymmetric BASALT-BLACK iron pick: a short square poll to the LEFT and one thick angular downward beak to the RIGHT. One narrow pale-gray working edge only. Its continuous slightly bent forged-iron stem is painted DULL COBALT BLUE, with a broad flattened smooth blue handhold at the bottom. No wraps, gold, gems, skulls or glowing cracks.
+
+2. EXECUTION CLEAVER (melee): An upright broad squat execution cleaver with an OXBLOOD-RED coated rectangular steel blade, one large circular hanging hole near the top corner and a pale-gray straight cutting edge. A short plain IVORY bone handhold has two smooth natural bulges and one iron joining collar. No faces, blood, teeth, eyes, runes or spiral straps. Heavy practical block shape.
+
+3. IRON SCATTERGUN (ranged): A compact double-barrel scattergun pointing RIGHT, slight three-quarter view showing TWO short dark open bores. The thick barrel housing is PALE TARNISHED GREEN metal, held by one plain dark iron band. Smooth BLACK curved wooden grip, small plain trigger guard. One dull-gray inner rim per bore; no glow, horns, jaws, dragon face, chains or fire. A blunt practical short gun.
+Drawing: one large base-color area, one broad hard-edged shadow, one restrained highlight per material, clean surfaces and a few large planes. Stay readable at 48-64px. Match the existing 2D game art, not flat clipart or polished realistic 3D. No microtexture, tiny bevel mosaics, chips, scratches, filigree, dense straps or decorative parts.
+Layout: ONE landscape 1536 x 1024 sheet with exactly THREE complete separated items, equally spaced columns: item 1 LEFT, item 2 CENTER, item 3 RIGHT. No repeated views, plenty of white gap and at least 50 px outside margin, no cropping. First two weapons are melee; the third is ranged. All objects need an obvious usable handhold; no hands are shown.
+Background: pure white, no cast shadows or checkerboards. No labels, text, numbers, panels, UI, borders, watermarks, people, scenery, projectiles, ammo piles, motion effects, floating parts, glow clouds, faces, gems or generic gold-capped brown spiral grips.

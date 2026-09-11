@@ -1,0 +1,22 @@
+Use case: stylized-concept. Production modular 2D WEAPON sprite sheet for Forest Forge.
+Input 1 is a STYLE REFERENCE: existing weapons. Keep its thick near-black outlines, large readable shapes and 2–3 broad cel-shaded planes, but draw ONLY the six new weapons specified below. Do not copy the old designs or include its characters or labels.
+Input 2 is this epoch's ARMOR CONCEPT reference: use its materials/color language so the weapons belong to this world. It is not an edit target; no body parts or armor on this sheet.
+
+Create one PORTRAIT 1024 x 1536 image containing exactly SIX complete isolated weapons in TWO COLUMNS and THREE ROWS of equal square cells. Fill cells in reading order: upper-left, upper-right, middle-left, middle-right, lower-left, lower-right. The top FOUR cells are melee; bottom TWO cells are ranged. Each weapon has at least 35 px of empty margin on all sides of its own cell. Full tips, handles, guards and stocks must fit. Do not overlap cells.
+Melee objects stand upright with the usable handgrip at the bottom and blade/head at top; do not tilt the entire object diagonally. Ranged guns point horizontally RIGHT, stocks/rear at LEFT; bows and magical ring foci remain upright as explicitly described. Show each object as it would be held by a side-view chibi hero, not from above. Every weapon needs a clear usable handgrip, sufficiently thick to read at small scale.
+Juicy saturated cartoon raster game art, consistent bold outline and simple broad highlights. These are visual variants for a small hero: no micro-detail, text, mechanical schematics, tiny screws, textures, lens flare, external glow, particles, projectiles, ammunition, effects, hands, heroes, scenery, ground, cast shadows, labels, borders or grid lines. No duplicate objects. All components of each weapon are physically connected.
+Background: genuinely transparent alpha, including enclosed negative-space holes. If real alpha is not available, use perfectly flat pure white #FFFFFF including all holes. NEVER paint a checkerboard, gradient or off-white paper.
+Keep the six silhouettes unmistakably different from each other. Preserve the exact row/column placement below.
+
+EPOCH 7: SPACE
+UPPER LEFT: METEOR MACE. A METEOR MACE: one large irregular dark rock head with THREE broad orange-filled cracks, held in a simple silver claw socket above a short dark-teal wrapped handle. Upright blunt club silhouette, thick rock outline, no little craters, particles or floating fragments.
+
+UPPER RIGHT: ORBIT CLEAVER. An ORBIT CLEAVER: gigantic almost semicircular navy/violet blade like a solid cut section of a planetary ring, one broad silver cutting rim, attached to a short chunky purple handle below the lower-left blade. Upright heavy cleaver, open crescent bite on one side, clear grip. Not a thin conventional sword.
+
+MIDDLE LEFT: GRAVITY ANCHOR. A GRAVITY ANCHOR used as a melee weapon: enormous teal and silver ANCHOR head at the TOP with two broad blunt upward-curled hooked arms, a central short silver spike, and a long straight dark shaft extending DOWN to a purple grip. Heavy wide anchor silhouette, clean three-part construction. No rope or chains.
+
+MIDDLE RIGHT: XENO SPEAR. A XENO SPEAR: long living-looking dark-teal shaft, organic lime chitin spear point made of TWO overlapping curved mandible-like plates joining to ONE long tip, one violet collar and simple teal handgrip. Tall narrow organic silhouette, no flesh, eyes, limbs or floating parts.
+
+LOWER LEFT: COMET LAUNCHER. A COMET LAUNCHER: large rounded ivory/orange space cannon, one fat horizontal tube from rear LEFT to circular muzzle RIGHT, orange front ring, ivory padded shell and one rear underside grey grip. Chunky friendly astronaut hardware. No rocket sticking out, exhaust or particles.
+
+LOWER RIGHT: VOID BEAMER. A VOID BEAMER: long lean navy gun pointing RIGHT with a silver triangular rear stock LEFT, a narrow black barrel and TWO thick violet structural rings around its front; a single violet oval core integrated in the receiver. Both rings physically attached to the barrel, no floating elements. Lower rear grip clear, no laser beam.

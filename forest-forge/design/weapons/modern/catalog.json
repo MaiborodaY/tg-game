@@ -1,0 +1,451 @@
+[
+  {
+    "id": "trench-knife",
+    "name": "Trench Knife",
+    "attack": "combo",
+    "kind": "melee",
+    "description": "A compact TRENCH KNIFE: broad short triangular grey-steel blade pointing UP, olive grip and a bold closed rectangular knuckle-guard with TWO large open finger spaces. One small beige wrap. Strong triangular dagger silhouette, not a sword.",
+    "epoch": 5,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      198,
+      40,
+      195,
+      468
+    ],
+    "grip": [
+      260,
+      395
+    ],
+    "fitExtent": 260,
+    "clearPoints": [
+      [
+        334,
+        328
+      ],
+      [
+        335,
+        416
+      ]
+    ],
+    "rotation": 35,
+    "atlas": "field-scout",
+    "thrustTurn": 55,
+    "crop": [
+      198,
+      40,
+      195,
+      468
+    ],
+    "pivot": [
+      0.3179,
+      0.7585
+    ],
+    "size": [
+      108.33,
+      260
+    ]
+  },
+  {
+    "id": "breach-hammer",
+    "name": "Breach Hammer",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "An industrial BREACH HAMMER: enormous rectangular charcoal steel sledge head with broad flat yellow end faces and ONE yellow stripe, heavy black straight handle and grey grip. Head wide and blocky, handle upright. No tiny hazard stripes or writing.",
+    "epoch": 5,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      590,
+      45,
+      356,
+      473
+    ],
+    "grip": [
+      767,
+      431
+    ],
+    "fitExtent": 310,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "field-scout",
+    "crop": [
+      590,
+      45,
+      356,
+      473
+    ],
+    "pivot": [
+      0.4972,
+      0.8161
+    ],
+    "size": [
+      233.32,
+      310
+    ]
+  },
+  {
+    "id": "rescue-axe",
+    "name": "Rescue Axe",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A bright RED RESCUE AXE: one large hooked red axe head with wide silver cutting edge on the RIGHT and a pronounced slim hook on the LEFT; bent black composite handle with a large red grip. Upright handle; recognizable sweeping hook profile, unlike the rectangular hammer.",
+    "epoch": 5,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      138,
+      545,
+      301,
+      493
+    ],
+    "grip": [
+      262,
+      935
+    ],
+    "fitExtent": 300,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "field-scout",
+    "crop": [
+      138,
+      545,
+      301,
+      493
+    ],
+    "pivot": [
+      0.412,
+      0.7911
+    ],
+    "size": [
+      183.16,
+      300
+    ]
+  },
+  {
+    "id": "shock-baton",
+    "name": "Shock Baton",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A slim SHOCK BATON: long dark telescopic club, simple navy handgrip near bottom, thick cylindrical cyan contact cap at top, ONE pale blue band. Straight narrow silhouette with a thick blunt rounded tip. No lightning, glow outside the outline, cords, or dangling pieces.",
+    "epoch": 5,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      723,
+      544,
+      89,
+      497
+    ],
+    "grip": [
+      767,
+      931
+    ],
+    "fitExtent": 290,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "field-scout",
+    "crop": [
+      723,
+      544,
+      89,
+      497
+    ],
+    "pivot": [
+      0.4944,
+      0.7787
+    ],
+    "size": [
+      51.93,
+      290
+    ]
+  },
+  {
+    "id": "assault-rifle",
+    "name": "Field Rifle",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A simplified OLIVE ASSAULT RIFLE: short box stock LEFT, single thin black barrel extending RIGHT, one broad curved magazine below center, tan foregrip panel. Side view, horizontal, grip accessible below center-left. No readable logos, no little screws, scope crosshairs or projectiles.",
+    "epoch": 5,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      15,
+      1166,
+      489,
+      269
+    ],
+    "grip": [
+      168,
+      1329
+    ],
+    "fitExtent": -390,
+    "clearPoints": [
+      [
+        77,
+        1271
+      ],
+      [
+        208,
+        1290
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "field-scout",
+    "crop": [
+      15,
+      1166,
+      489,
+      269
+    ],
+    "pivot": [
+      0.3129,
+      0.6059
+    ],
+    "size": [
+      390,
+      214.54
+    ]
+  },
+  {
+    "id": "rotary-gun",
+    "name": "Rotary Gun",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A chunky heavy ROTARY GUN: compact ochre motor housing LEFT, an oversized bundle of THREE large dark-grey barrels pointing RIGHT held by two broad silver rings, one large underside pistol grip near the rear. Horizontal, front-heavy industrial silhouette. No ammo belt or detached projectiles, no tiny details.",
+    "epoch": 5,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      527,
+      1129,
+      482,
+      296
+    ],
+    "grip": [
+      596,
+      1370
+    ],
+    "fitExtent": -400,
+    "clearPoints": [
+      [
+        640,
+        1161
+      ],
+      [
+        628,
+        1324
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "field-scout",
+    "crop": [
+      527,
+      1129,
+      482,
+      296
+    ],
+    "pivot": [
+      0.1432,
+      0.8142
+    ],
+    "size": [
+      400,
+      245.64
+    ]
+  },
+  {
+    "id": "chain-cleaver",
+    "name": "Chain Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A short chainsaw cleaver: broad upright rounded rectangular dark-steel cutting bar edged with SIX large simplified chain teeth, red compact motor block, black hooked pistol grip at the bottom. One pale grey inner blade plane. One coherent handheld silhouette, no cables, labels or tiny chain links.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      139.59,
+      330
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      128,
+      15,
+      206,
+      487
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/chain-cleaver-clean.png"
+  },
+  {
+    "id": "rail-breaker",
+    "name": "Rail Breaker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A massive railway-rail section forged into a short crowbar club. Heavy asymmetric dark-grey T-section head hooked to the RIGHT, a straight narrow steel grip stem with one wide blue rubber sleeve, forked blunt claw butt. Three large planar faces make the railway profile legible. Brutally oversized head, no small surface texture.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.7
+    ],
+    "size": [
+      177.42,
+      310
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      494,
+      19,
+      277,
+      484
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/rail-breaker-clean.png"
+  },
+  {
+    "id": "piston-lance",
+    "name": "Piston Lance",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "A handheld jackhammer used as a thrusting lance: long pointed silver demolition chisel UP, squat work-yellow pneumatic motor body below it with TWO thick black side handles, and one short black handgrip at bottom. Obvious industrial tool silhouette with exaggerated long chisel, no hoses, tiny vents or warning text.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.9
+    ],
+    "size": [
+      292.44,
+      440
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      856,
+      15,
+      327,
+      492
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/piston-lance-clean.png"
+  },
+  {
+    "id": "pressure-ram",
+    "name": "Pressure Ram",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An industrial pressure-ram maul: wide flat circular steel battering plate at TOP, one thick exposed red cylinder directly under it, joined to a short dark D-shaped rear handgrip at BOTTOM. One silver piston section only. Mushroom-like top-heavy impact silhouette, visibly powered construction, no hoses or extra tools.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.93
+    ],
+    "size": [
+      236.51,
+      300
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      62,
+      519,
+      339,
+      430
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/pressure-ram-clean.png"
+  },
+  {
+    "id": "hydraulic-jaws",
+    "name": "Hydraulic Jaws",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "Heavy rescue jaws as a close-combat weapon: TWO massive unequal black curved cutting jaws open in a V at the top, one broad orange hydraulic hinge block at their base, and one compact dark-blue offset handle below. Only one big silver hinge circle. Strong industrial pincer silhouette, no separate handles, cables or small details.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.47,
+      0.84
+    ],
+    "size": [
+      216.95,
+      300
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      473,
+      523,
+      303,
+      419
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/hydraulic-jaws-clean.png"
+  },
+  {
+    "id": "ram-knuckles",
+    "name": "Ram Knuckles",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An oversized solid industrial knuckle weapon: THREE blunt silver impact studs above a single wide charcoal oval knuckle-guard frame, with one red horizontal handgrip clearly visible inside the lower opening. Wide low silhouette, one chunky side pressure canister. It is a standalone held weapon, not a glove or hand. No fingers, wiring or spikes.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 0,
+    "pivot": [
+      0.61,
+      0.8
+    ],
+    "size": [
+      240,
+      180.15
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      810,
+      594,
+      401,
+      301
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/ram-knuckles-clean.png"
+  },
+  {
+    "id": "drum-shotgun",
+    "name": "Drum Shotgun",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A chunky fantasy-modern shotgun pointing horizontally RIGHT: one short thick dark barrel, slate-blue block receiver, ONE giant cream drum magazine underneath the center, a short black pistol grip behind the drum and a small red-brown butt at LEFT. Exaggerated drum-to-barrel ratio creates an unmistakable silhouette. No optics, rails, text or ammunition.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 0,
+    "pivot": [
+      0.27,
+      0.73
+    ],
+    "size": [
+      350,
+      149.03
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      314,
+      967,
+      620,
+      264
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/drum-shotgun-clean.png"
+  }
+]

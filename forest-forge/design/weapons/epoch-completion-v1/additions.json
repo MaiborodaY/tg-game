@@ -1,0 +1,1667 @@
+[
+  {
+    "id": "tusk-hook",
+    "name": "Tusk Hook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A single huge curved saber-tooth fang used as a hooked cleaver. Smooth broad ivory crescent blade, one ochre rawhide binding at its base, a short crooked dark-wood handgrip that follows the curve. Bare natural materials; exaggerated deep hook, no metal.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.85
+    ],
+    "size": [
+      189.83,
+      300
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      189,
+      39,
+      367,
+      580
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/tusk-hook-clean.png"
+  },
+  {
+    "id": "antler-fork",
+    "name": "Antler Fork",
+    "kind": "melee",
+    "attack": "thrust",
+    "description": "An asymmetrical elk-antler hunting fork. One long ivory antler tine points straight up and two shorter blunt side tines curve right; tied with a broad dark-brown hide knot to a long irregular wood shaft. Three very large clear tines only; no fine branches.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.82
+    ],
+    "size": [
+      168.39,
+      460
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      847,
+      18,
+      220,
+      601
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/antler-fork-clean.png",
+    "thrustTurn": 55
+  },
+  {
+    "id": "shell-mallet",
+    "name": "Shell Mallet",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A prehistoric hammer built from one oversized flattened river-snail shell with one broad spiral ridge. Rust-ochre shell mass extends strongly to the left, cream shell lip on the right, fixed with two thick tan lashings onto a short charcoal driftwood handle. Read as a shell, not a metal hammer.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.58,
+      0.79
+    ],
+    "size": [
+      230.73,
+      300
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      132,
+      669,
+      433,
+      563
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/shell-mallet-clean.png"
+  },
+  {
+    "id": "thorn-root",
+    "name": "Thornroot Cudgel",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A single thick bent forest root used as a cudgel: dark chestnut crook widens at the top into three huge pale thorn spikes on its outer right edge, one stubby root nub at the butt. Asymmetric zigzag silhouette, smooth bare narrow grip, one broad green moss patch only. No leaves, no many thorns, no metal.",
+    "epoch": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.31,
+      0.82
+    ],
+    "size": [
+      150.24,
+      320
+    ],
+    "source": "../epoch-completion-v1/prehistoric/concepts.png",
+    "sourceRect": [
+      834,
+      642,
+      277,
+      590
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric/thorn-root-clean.png"
+  },
+  {
+    "id": "obsidian-sawblade",
+    "name": "Obsidian Sawblade",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "Ancient obsidian-toothed sword: a wide flat oxblood-red wooden paddle with THREE enormous black obsidian teeth on each edge, a short integral narrow wooden handgrip, and one small ivory binding. Tapered paddle silhouette, black cutting teeth make the design. No metal hilt, no bronze.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      160.34,
+      360
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      179,
+      8,
+      212,
+      476
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/obsidian-sawblade-clean.png"
+  },
+  {
+    "id": "crocodile-cleaver",
+    "name": "Crocodile Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A broad ancient Egyptian iron cleaver shaped like a crocodile's long blunt snout, with ONE large downward tooth near the tip and a big angular mouth cutout. Dark grey iron blade, desaturated green glazed ceramic hooked handgrip, small linen cuff. One solid forged weapon, no face, no eyes, no tiny scales.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": -20,
+    "pivot": [
+      0.14,
+      0.8
+    ],
+    "size": [
+      320,
+      311.5
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      540,
+      47,
+      414,
+      403
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/crocodile-cleaver-clean.png"
+  },
+  {
+    "id": "war-oar",
+    "name": "War Oar",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A short thick ancient trireme war oar adapted as a weapon. Very broad rounded paddle blade of teal-painted wood at the top, a single pale iron edge along its RIGHT half, and a long exposed tan wood shaft blending into the blade. One broad lighter wood inset. Large paddle silhouette, no jewelry or ornaments.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      181.96,
+      430
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      175,
+      496,
+      201,
+      475
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/war-oar-clean.png"
+  },
+  {
+    "id": "sun-disk-mace",
+    "name": "Sun Disk Mace",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A simple sun-disk mace from an ancient desert culture. One massive flat terracotta disk with FOUR big triangular rim teeth, a recessed dark round central boss, and a short ivory bone handle below. Rust-red ceramic head, cream grip, small dark leather tie. Flat disk, not a gold jeweled relic.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.82
+    ],
+    "size": [
+      198.65,
+      290
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      583,
+      483,
+      324,
+      473
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/sun-disk-mace-clean.png"
+  },
+  {
+    "id": "scorpion-pincer",
+    "name": "Scorpion Pincer",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "A brutal ancient pincer dagger with TWO unequal crescent blades making an open scorpion-claw silhouette: long curved dark iron upper blade, shorter iron hooked lower blade, both joined at one dull copper rivet above a compact dark-red linen-wrapped straight grip. No chain, no animal face, no gems, no decorative gold.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.8
+    ],
+    "size": [
+      180.12,
+      330
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      164,
+      982,
+      274,
+      502
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/scorpion-pincer-clean.png"
+  },
+  {
+    "id": "lotus-staff",
+    "name": "Lotus Staff",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "bow",
+    "description": "An ancient caster staff with a large open lotus cup head: THREE broad ivory petals surrounding ONE thick dark-blue ceramic center, held by a simple teal faience collar. Straight dark wood staff below with one broad plain linen grip. Recognizably Egyptian lotus silhouette; no light beams, no particles, no ornate gold, no tiny petals.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 0,
+    "pivot": [
+      0.5,
+      0.74
+    ],
+    "size": [
+      232.56,
+      460
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      609,
+      963,
+      273,
+      540
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/lotus-staff-clean.png"
+  },
+  {
+    "id": "sawfish-sabre",
+    "name": "Sawfish Sabre",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A pirate sawfish sabre: one broad gently curved steel blade with THREE massive triangular teeth on its BACK edge; navy open D-shaped knuckle guard, smooth cream bone grip. The forward edge is clean and curved, the toothed back changes its silhouette. No fish face or eyes, no golden filigree.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 15,
+    "pivot": [
+      0.22,
+      0.75
+    ],
+    "size": [
+      296.27,
+      350
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      64,
+      25,
+      386,
+      456
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/sawfish-sabre-clean.png"
+  },
+  {
+    "id": "capstan-crusher",
+    "name": "Capstan Crusher",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A ship's capstan made into a crushing maul: squat dark-red wooden drum head with TWO thick crossed iron bars protruding to its sides, and a short tapered bare wooden handle beneath. One wide cream rope belt around the drum. Naval hand-built construction, irregular cross-shaped mass, no many planks or tiny bolts.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.82
+    ],
+    "size": [
+      297.03,
+      290
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      504,
+      34,
+      465,
+      454
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/capstan-crusher-clean.png"
+  },
+  {
+    "id": "whaling-hook",
+    "name": "Whaling Hook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An oversized whaler's gaff: long pale-iron HOOK turns down sharply at the top with ONE big backward barb, seated in a broad dark collar on a short chunky sea-green wooden haft. One off-white rope knot on the grip, blunt rounded butt. Bold crook silhouette, not a straight spear.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.28,
+      0.84
+    ],
+    "size": [
+      142.29,
+      360
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      175,
+      489,
+      200,
+      506
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/whaling-hook-clean.png"
+  },
+  {
+    "id": "sail-shears",
+    "name": "Sail Shears",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "Huge naval sail shears adapted as a sword, shown as one rigid partially open object: TWO long unequal silver blades, ONE navy pivot cap, a large dark-red oval grip and a smaller plain iron finger loop. Strong V-shaped cutting head, three broad highlights, no tiny screws. No hands.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.2,
+      0.86
+    ],
+    "size": [
+      204.38,
+      330
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      589,
+      489,
+      314,
+      507
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/sail-shears-clean.png"
+  },
+  {
+    "id": "bottle-breaker",
+    "name": "Bottle Breaker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An enormous pirate green-glass bottle used as a fighting club, oriented narrow neck/grip DOWN and broken wide bottom UP. THREE large uneven glass teeth on the broken upper edge, thick bottle shoulders, ONE tan rope knot around the lower narrow neck. Deep sea-green body with two broad planar highlights. No label, liquid, small shards or transparency clutter.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 35,
+    "pivot": [
+      0.45,
+      0.8
+    ],
+    "size": [
+      161.21,
+      280
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      110,
+      991,
+      285,
+      495
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/bottle-breaker-clean.png"
+  },
+  {
+    "id": "boarding-gunblade",
+    "name": "Boarding Gunblade",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "A short pirate gunblade with a broad curved silver cutlass blade extending UP from a chunky walnut flintlock-pistol grip. ONE fat charcoal pistol barrel sits parallel to the lower third of the blade and a single dull brass lock plate sits at the grip. The barrel is part of the sword, no shot effects. Simple oversized merged sabre-and-flintlock silhouette, no tiny mechanisms.",
+    "epoch": 4,
+    "era": "gunpowder",
+    "atlas": "musketeer",
+    "rotation": 0,
+    "pivot": [
+      0.18,
+      0.84
+    ],
+    "size": [
+      273.88,
+      350
+    ],
+    "source": "../epoch-completion-v1/gunpowder/concepts.png",
+    "sourceRect": [
+      519,
+      947,
+      421,
+      538
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/gunpowder/boarding-gunblade-clean.png"
+  },
+  {
+    "id": "chain-cleaver",
+    "name": "Chain Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A short chainsaw cleaver: broad upright rounded rectangular dark-steel cutting bar edged with SIX large simplified chain teeth, red compact motor block, black hooked pistol grip at the bottom. One pale grey inner blade plane. One coherent handheld silhouette, no cables, labels or tiny chain links.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      139.59,
+      330
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      128,
+      15,
+      206,
+      487
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/chain-cleaver-clean.png"
+  },
+  {
+    "id": "rail-breaker",
+    "name": "Rail Breaker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A massive railway-rail section forged into a short crowbar club. Heavy asymmetric dark-grey T-section head hooked to the RIGHT, a straight narrow steel grip stem with one wide blue rubber sleeve, forked blunt claw butt. Three large planar faces make the railway profile legible. Brutally oversized head, no small surface texture.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.7
+    ],
+    "size": [
+      177.42,
+      310
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      494,
+      19,
+      277,
+      484
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/rail-breaker-clean.png"
+  },
+  {
+    "id": "piston-lance",
+    "name": "Piston Lance",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "A handheld jackhammer used as a thrusting lance: long pointed silver demolition chisel UP, squat work-yellow pneumatic motor body below it with TWO thick black side handles, and one short black handgrip at bottom. Obvious industrial tool silhouette with exaggerated long chisel, no hoses, tiny vents or warning text.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.9
+    ],
+    "size": [
+      292.44,
+      440
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      856,
+      15,
+      327,
+      492
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/piston-lance-clean.png"
+  },
+  {
+    "id": "pressure-ram",
+    "name": "Pressure Ram",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An industrial pressure-ram maul: wide flat circular steel battering plate at TOP, one thick exposed red cylinder directly under it, joined to a short dark D-shaped rear handgrip at BOTTOM. One silver piston section only. Mushroom-like top-heavy impact silhouette, visibly powered construction, no hoses or extra tools.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.93
+    ],
+    "size": [
+      236.51,
+      300
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      62,
+      519,
+      339,
+      430
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/pressure-ram-clean.png"
+  },
+  {
+    "id": "hydraulic-jaws",
+    "name": "Hydraulic Jaws",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "Heavy rescue jaws as a close-combat weapon: TWO massive unequal black curved cutting jaws open in a V at the top, one broad orange hydraulic hinge block at their base, and one compact dark-blue offset handle below. Only one big silver hinge circle. Strong industrial pincer silhouette, no separate handles, cables or small details.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 35,
+    "pivot": [
+      0.47,
+      0.84
+    ],
+    "size": [
+      216.95,
+      300
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      473,
+      523,
+      303,
+      419
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/hydraulic-jaws-clean.png"
+  },
+  {
+    "id": "ram-knuckles",
+    "name": "Ram Knuckles",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An oversized solid industrial knuckle weapon: THREE blunt silver impact studs above a single wide charcoal oval knuckle-guard frame, with one red horizontal handgrip clearly visible inside the lower opening. Wide low silhouette, one chunky side pressure canister. It is a standalone held weapon, not a glove or hand. No fingers, wiring or spikes.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 0,
+    "pivot": [
+      0.61,
+      0.8
+    ],
+    "size": [
+      240,
+      180.15
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      810,
+      594,
+      401,
+      301
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/ram-knuckles-clean.png"
+  },
+  {
+    "id": "drum-shotgun",
+    "name": "Drum Shotgun",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A chunky fantasy-modern shotgun pointing horizontally RIGHT: one short thick dark barrel, slate-blue block receiver, ONE giant cream drum magazine underneath the center, a short black pistol grip behind the drum and a small red-brown butt at LEFT. Exaggerated drum-to-barrel ratio creates an unmistakable silhouette. No optics, rails, text or ammunition.",
+    "epoch": 5,
+    "era": "modern",
+    "atlas": "field-scout",
+    "rotation": 0,
+    "pivot": [
+      0.27,
+      0.73
+    ],
+    "size": [
+      350,
+      149.03
+    ],
+    "source": "../epoch-completion-v1/modern/concepts.png",
+    "sourceRect": [
+      314,
+      967,
+      620,
+      264
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/modern/drum-shotgun-clean.png"
+  },
+  {
+    "id": "ring-cutter",
+    "name": "Ring Cutter",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A near-future handheld ring cutter: a single large open C-shaped pale-steel cutting hoop, cyan inner edge, and an integral dark-purple handle closing only the lower left quarter. Clear giant open center and asymmetrical missing top-right sector. No floating pieces, glow, runes or gemstones.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.18,
+      0.87
+    ],
+    "size": [
+      258.4,
+      320
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      84,
+      16,
+      323,
+      400
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/ring-cutter-clean.png"
+  },
+  {
+    "id": "ion-fork",
+    "name": "Ion Fork",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "An oversized futuristic tuning-fork weapon: TWO very thick straight ivory prongs with a cyan inner face and a deep narrow open slot between them, joined to a cobalt body and one short smooth black grip beneath. Clean squared U outline, minimal three-part construction, no electrical sparks.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.88
+    ],
+    "size": [
+      180.89,
+      360
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      527,
+      8,
+      203,
+      404
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/ion-fork-clean.png"
+  },
+  {
+    "id": "hinge-blade",
+    "name": "Hinge Blade",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "A folding-tech sword locked into a striking zigzag: THREE broad silver blade plates joined at TWO large orange hinge blocks create a single angular S-shaped cutting blade, with a plain dark-blue slanted handgrip at bottom. All parts physically connected; no tiny segments, floating pieces or decorative circuitry.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.24,
+      0.86
+    ],
+    "size": [
+      217.19,
+      370
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      916,
+      6,
+      253,
+      431
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/hinge-blade-clean.png"
+  },
+  {
+    "id": "clamp-maul",
+    "name": "Clamp Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A futuristic compression maul with one enormous squared C-clamp head, thick graphite outer shell, bright orange opposing inner jaw pads, and a short off-center ivory handgrip under the left side. Its open jaw faces RIGHT. One bold asymmetric clamp silhouette; no screw threads, coils, wires or secondary handle.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.2,
+      0.86
+    ],
+    "size": [
+      232.86,
+      310
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      77,
+      463,
+      326,
+      434
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/clamp-maul-clean.png"
+  },
+  {
+    "id": "capacitor-lance",
+    "name": "Capacitor Lance",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "A future capacitor lance: ONE long narrow silver spike above a large rounded cobalt capacitor capsule, two broad white protective side fins, and a straight slim graphite shaft below ending in a cyan cuff. Long spear silhouette with one unusually bulbous middle chamber, no jets or floating energy.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.89
+    ],
+    "size": [
+      136.37,
+      460
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      558,
+      425,
+      142,
+      479
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/capacitor-lance-clean.png"
+  },
+  {
+    "id": "rotor-glaive",
+    "name": "Rotor Glaive",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A rotor-blade polearm: THREE huge asymmetrical swept silver fan blades fixed around ONE flat cyan circular hub at the top of a short dark-violet shaft. One fan blade is twice as long and points upper right. No rotating blur or separate moving parts, no propeller motor detail. Plain solid ivory grip section.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.37,
+      0.85
+    ],
+    "size": [
+      320.05,
+      370
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      860,
+      456,
+      378,
+      437
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/rotor-glaive-clean.png"
+  },
+  {
+    "id": "cassette-launcher",
+    "name": "Cassette Launcher",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A compact future weapon pointed RIGHT with TWO long white parallel accelerator rails forming a huge rectangular open muzzle, a chunky dark-grey rear receiver, ONE vivid lime rectangular power cassette hanging beneath its center, and an angled purple pistol grip. Strong open tuning-fork barrel, no conventional gun tube, no bullets or beam effects.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 0,
+    "pivot": [
+      0.16,
+      0.81
+    ],
+    "size": [
+      370,
+      188.63
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      346,
+      943,
+      561,
+      286
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/cassette-launcher-clean.png"
+  },
+  {
+    "id": "crater-pick",
+    "name": "Crater Pick",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An asteroid-miner's pick made from one huge crescent-shaped grey moon-rock shard, with ONE broad round crater visible on its face. Its short white grip extends from the thick lower side, joined by one orange clamp. Hooked rocky point at upper RIGHT, angular opposite end. No tiny craters, rubble, crystals or conventional metal axe head.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.83
+    ],
+    "size": [
+      313.62,
+      330
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      54,
+      38,
+      383,
+      403
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/crater-pick-clean.png"
+  },
+  {
+    "id": "airlock-cleaver",
+    "name": "Airlock Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A spaceship airlock panel repurposed as a massive cleaver: tall chunky off-white rounded rectangular bulkhead blade with a single thick dark cutting bevel down the RIGHT edge, ONE blue oval window near its top, an orange diagonal lower corner, and a dark handgrip through an open cutout near its bottom. No separate sword hilt, labels or many bolts.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.14,
+      0.75
+    ],
+    "size": [
+      209.52,
+      360
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      507,
+      8,
+      252,
+      433
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/airlock-cleaver-clean.png"
+  },
+  {
+    "id": "orbital-claw",
+    "name": "Orbital Claw",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A salvage grappler used as a handheld space claw: THREE large lime-and-dark-teal claw prongs curl inward from one small ivory hub, one prong much longer than the others, a short angular violet handle below. Open asymmetric claw outline; solid mechanically connected sections, no flexible tubes or tiny joints.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.38,
+      0.85
+    ],
+    "size": [
+      266.62,
+      340
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      896,
+      24,
+      327,
+      417
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/orbital-claw-clean.png"
+  },
+  {
+    "id": "gravity-dumbbell",
+    "name": "Gravity Dumbbell",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A cosmic crushing weapon shaped like an asymmetric dumbbell: an enormous flat dark-purple disk at TOP with one off-white rim and black central circular face, a narrow solid teal handgrip in the middle, and a much smaller matching disk at BOTTOM. Heavy black mass, clean planetary disk silhouette, no floating planets, sparkles or fine rings.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.49,
+      0.65
+    ],
+    "size": [
+      227.41,
+      280
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      54,
+      460,
+      333,
+      410
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/gravity-dumbbell-clean.png"
+  },
+  {
+    "id": "thruster-maul",
+    "name": "Thruster Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A salvaged spacecraft thruster used as a maul: one short fat white rocket-engine nacelle lies horizontally at the head, broad dark nozzle faces RIGHT, an orange fin on top, and a short dark-blue rigid mounting strut forms the grip below. One broad blue engine inset, no fire or cables. Distinct lopsided engine silhouette.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.37,
+      0.84
+    ],
+    "size": [
+      307.91,
+      320
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      460,
+      473,
+      382,
+      397
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/thruster-maul-clean.png"
+  },
+  {
+    "id": "solar-sail-blade",
+    "name": "Solar Sail Blade",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A large solid kite-shaped solar-sail blade: an asymmetrical folded rhomboid cutting panel, teal on the large left face, pale silver on the narrow right face, dark-violet perimeter frame, and a narrow ivory handle continuing from the lower corner. ONE bold central fold only. Looks built from spacecraft sail material, no grid of solar cells, no decoration.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 35,
+    "pivot": [
+      0.44,
+      0.84
+    ],
+    "size": [
+      191.55,
+      370
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      957,
+      437,
+      234,
+      452
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/solar-sail-blade-clean.png"
+  },
+  {
+    "id": "eclipse-launcher",
+    "name": "Eclipse Launcher",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A handheld space launcher pointing RIGHT: its muzzle is an enormous off-white circular accelerator ring held by TWO short solid braces to a very short purple rear receiver, with one small orange rear capsule and a dark angled pistol grip beneath. Huge hollow circular muzzle dominates, visible black open center, minimal foreshortening. No beams, loose satellites, lens flare or ordinary long barrel.",
+    "epoch": 7,
+    "era": "space",
+    "atlas": "lunar-scout",
+    "rotation": 0,
+    "pivot": [
+      0.2,
+      0.8
+    ],
+    "size": [
+      350,
+      283.81
+    ],
+    "source": "../epoch-completion-v1/space/concepts.png",
+    "sourceRect": [
+      421,
+      879,
+      423,
+      343
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/space/eclipse-launcher-clean.png"
+  },
+  {
+    "id": "mobius-blade",
+    "name": "Mobius Blade",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A blade made from ONE solid twisted ribbon forming a narrow open Moebius loop with a sharp upper tip. Mint-green front face and deep-teal underside, integral dark-blue handgrip formed by the narrow bottom bend. One impossible-looking broad twist, clearly connected material. No floating fragments, engravings or glow.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.88
+    ],
+    "size": [
+      168.78,
+      360
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      137,
+      13,
+      203,
+      433
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/mobius-blade-clean.png"
+  },
+  {
+    "id": "staircase-cleaver",
+    "name": "Staircase Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An impossible stair-step cleaver: THREE enormous offset rose-red rectangular blade blocks form one continuous ascending zigzag edge, pale ivory bevel along the right, joined to a short plum angular handgrip below. Solid connecting spine visible. Bold stepped silhouette, no separate floating cubes or gem facets.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.49,
+      0.86
+    ],
+    "size": [
+      190.83,
+      320
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      495,
+      11,
+      260,
+      436
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/staircase-cleaver-clean.png"
+  },
+  {
+    "id": "inside-out-mace",
+    "name": "Inside-Out Mace",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A paradox mace with an open hollow ivory cube as its head: the dark-purple inner cube face appears inverted toward the viewer, ONE mint diagonal solid brace holds it, and a short flat black handle extends below. Show only three broad cube faces and a clearly open center. No nested fine frames, floating parts or gold trim.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.85
+    ],
+    "size": [
+      196.51,
+      310
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      909,
+      35,
+      258,
+      407
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/inside-out-mace-clean.png"
+  },
+  {
+    "id": "hourglass-lance",
+    "name": "Hourglass Lance",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "A dimensional lance whose large spearhead is one long hourglass-shaped ivory frame: TWO solid pale-blue triangular glass panes pinch at its waist, rose-red angular end caps, and one short sharp ivory spike at top. Long dark-purple shaft below with a simple pale grip. One hourglass outline only, no sand grains, clocks, runes or sparkles.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      144.47,
+      470
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      164,
+      465,
+      154,
+      501
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/hourglass-lance-clean.png"
+  },
+  {
+    "id": "echo-fork",
+    "name": "Echo Fork",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A dimensional fighting fork with TWO thick unequal crescent prongs nested side by side and shifted vertically, joined by one broad lower bend. Dark-teal outer crescent, mint inner crescent, deep violet integral grip below. Repeated impossible curve creates the idea, but only two blades and three broad planes; no translucent ghost copies or particles.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.84
+    ],
+    "size": [
+      182.51,
+      350
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      505,
+      479,
+      243,
+      466
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/echo-fork-clean.png"
+  },
+  {
+    "id": "folded-door",
+    "name": "Folded Door",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A weapon built from a folded portal doorframe: one tall open ivory L-shaped rectangular frame folds once into a short horizontal amber cutting wing at the upper RIGHT, with dark-purple interior surfaces and an integral narrow lower grip. Big angular negative space, one impossible corner connection. No wall, scene inside portal, floating blocks or tiny decoration.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 35,
+    "pivot": [
+      0.33,
+      0.86
+    ],
+    "size": [
+      193.79,
+      320
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      923,
+      478,
+      281,
+      464
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/folded-door-clean.png"
+  },
+  {
+    "id": "inversion-caster",
+    "name": "Inversion Caster",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A compact dimensional caster pointing RIGHT: one chunky black square open muzzle nested inside one larger ivory square frame, offset from a short lavender folded rear housing; ONE amber bridge connects the frames, a crooked black pistol grip sits below. Only two square openings and a single broad impossible fold. No concentric multitudes, beams, lenses or ordinary gun barrel.",
+    "epoch": 8,
+    "era": "interdimensional",
+    "atlas": "rift-nomad",
+    "rotation": 0,
+    "pivot": [
+      0.17,
+      0.79
+    ],
+    "size": [
+      330,
+      224.37
+    ],
+    "source": "../epoch-completion-v1/interdimensional/concepts.png",
+    "sourceRect": [
+      450,
+      969,
+      403,
+      274
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/interdimensional/inversion-caster-clean.png"
+  },
+  {
+    "id": "rib-cleaver",
+    "name": "Rib Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An underworld cleaver assembled from THREE broad ivory rib plates fused to a dark bone spine. Tall broad solid bone cutting face on the RIGHT, three rounded rib humps on the LEFT, short oxblood leather grip beneath. Corpse-bone construction, clean cartoon ivory planes, no gore, fractures, runes or skull ornament.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.4,
+      0.84
+    ],
+    "size": [
+      190.84,
+      350
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      130,
+      10,
+      253,
+      464
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/rib-cleaver-clean.png"
+  },
+  {
+    "id": "furnace-poker",
+    "name": "Furnace Poker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "An enormous underworld furnace poker: a black iron shaft bends into a huge angular open hook at the TOP, one flat dull-orange heat-colored face inside the hook, and a thick smooth bone grip near the lower end. One short opposing iron barb. Long brutal S-shaped silhouette, no actual flame, cinders, chain or many spikes.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.45,
+      0.86
+    ],
+    "size": [
+      171.48,
+      440
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      555,
+      9,
+      182,
+      467
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/furnace-poker-clean.png"
+  },
+  {
+    "id": "coffin-maul",
+    "name": "Coffin Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A gravekeeper's maul whose head is ONE broad squat coffin-shaped dark-plum wooden block set horizontally, with ONE thick pale bone clamp crossing its face and a short crooked ivory bone handle beneath. The coffin has its characteristic clipped corners; no lettering, cross, hinges, fine planks or gold.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.46,
+      0.85
+    ],
+    "size": [
+      238,
+      300
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      870,
+      55,
+      334,
+      421
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/coffin-maul-clean.png"
+  },
+  {
+    "id": "grave-spade",
+    "name": "Grave Spade",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "An underworld grave spade used as a spear: broad pointed rusty-iron shovel blade with ONE massive missing bite in its right edge and a small dark-red inner plane, mounted directly on a long dark bone shaft with an open oval bone grip at bottom. Large broken spade silhouette, no dirt, rubble or tiny chips.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.74
+    ],
+    "size": [
+      207.71,
+      460
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      133,
+      490,
+      205,
+      454
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/grave-spade-clean.png"
+  },
+  {
+    "id": "shackle-hook",
+    "name": "Shackle Hook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A brutal underworld meat-hook weapon: ONE huge dark-steel S-shaped hook with one long sharp upper crook and a squared lower loop holding a solid short ivory grip. TWO very thick welded links connect the rigid grip, clearly fixed rather than a swinging chain. Small oxblood collar only, no long chain, gore or ornaments.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.9
+    ],
+    "size": [
+      145.89,
+      300
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      539,
+      493,
+      213,
+      438
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/shackle-hook-clean.png"
+  },
+  {
+    "id": "brimstone-censer",
+    "name": "Brimstone Censer",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A handheld underworld censer maul: a squat wide black iron urn head, THREE large orange inset vent windows across its face, one flat pointed lid, fixed directly to a short dark-red bone handle below. Heavy lantern-like impact silhouette. No chain, smoke, flame, filigree or many small holes.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 35,
+    "pivot": [
+      0.51,
+      0.84
+    ],
+    "size": [
+      187.24,
+      300
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      898,
+      508,
+      269,
+      431
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/brimstone-censer-clean.png"
+  },
+  {
+    "id": "jaw-scatterer",
+    "name": "Jaw Scatterer",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "An underworld scattergun pointing RIGHT, built from two huge ivory jawbones around a very short dark iron barrel: THREE large upper teeth and TWO lower teeth form a gaping muzzle, charcoal rear chamber, and a short curved dark-green bone grip under the back. Bone-and-iron weapon, not a living monster. No eyes, full animal body, glow, bullets or ornate carvings.",
+    "epoch": 9,
+    "era": "underworld",
+    "atlas": "ash-reaper",
+    "rotation": 0,
+    "pivot": [
+      0.16,
+      0.8
+    ],
+    "size": [
+      350,
+      210.29
+    ],
+    "source": "../epoch-completion-v1/underworld/concepts.png",
+    "sourceRect": [
+      386,
+      939,
+      491,
+      295
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/underworld/jaw-scatterer-clean.png"
+  },
+  {
+    "id": "wing-fan",
+    "name": "Wing Fan",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A divine fighting fan made from THREE enormous overlapping rigid ivory feather blades, each with ONE pale-blue bevel and one rounded silver tip. They spread asymmetrically from a small plain gold hinge and an integral narrow navy handgrip below. Broad fan silhouette, no tiny feather barbs, gems or filigree.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.75,
+      0.87
+    ],
+    "size": [
+      279.98,
+      330
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      33,
+      12,
+      375,
+      442
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/wing-fan-clean.png"
+  },
+  {
+    "id": "crescent-crook",
+    "name": "Crescent Crook",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A celestial crook: one enormous smooth silver crescent forms an open hook at top of a gently curved deep-blue shaft, with a plain ivory lower handgrip and one small flat warm-gold collar. Long moon-shaped hook with one sharp end and one blunt end. No stars, jewelry, face, glow or fine engraving.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.34,
+      0.87
+    ],
+    "size": [
+      213.69,
+      400
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      516,
+      7,
+      242,
+      453
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/crescent-crook-clean.png"
+  },
+  {
+    "id": "balance-maul",
+    "name": "Balance Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A divine judgment maul shaped as a simplified balance: a thick ivory crossbeam head carries TWO unequal solid gold circular weights fixed directly beneath its ends by short rigid navy bars; one short straight pale-blue handgrip continues below its center. Uneven broad T silhouette, solid connected weapon, no chains, fine scales, symbols or gems.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.54,
+      0.85
+    ],
+    "size": [
+      362.74,
+      330
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      811,
+      62,
+      421,
+      383
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/balance-maul-clean.png"
+  },
+  {
+    "id": "cloud-cleaver",
+    "name": "Cloud Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A solid divine cloud cleaver: broad ivory blade with THREE large rounded cloud lobes on the BACK edge, a continuous sharp pale-silver cutting edge on the RIGHT, one simple dark-blue bent grip below and a single gold rivet. It is rigid metal and enamel, not vapor. No mist, light rays, intricate curls or decorations.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.34,
+      0.85
+    ],
+    "size": [
+      206.25,
+      330
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      89,
+      474,
+      275,
+      440
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/cloud-cleaver-clean.png"
+  },
+  {
+    "id": "crown-breaker",
+    "name": "Crown Breaker",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A holy crown-shaped crusher: ONE massive low gold crown with THREE very large triangular points forms the impact head above a short ivory shaft and a wide dark-blue lower grip. The crown is plain solid metal with a single broad cream highlight, deliberately simple. No gemstones, tiny teeth, banners or engravings.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.82
+    ],
+    "size": [
+      222.16,
+      290
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      461,
+      476,
+      334,
+      436
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/crown-breaker-clean.png"
+  },
+  {
+    "id": "oath-tablet",
+    "name": "Oath Tablet",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A divine battle tablet used as a cleaver: one tall thick rounded-top ivory stone slab, a dark-blue beveled right cutting edge, ONE large recessed pale-gold vertical panel with NO writing, and a wide oval handhold cut directly through the bottom of the slab. No separate wrapped handle. Heavy sacred-tablet silhouette, no runes, inscriptions, scrollwork or ornament.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 35,
+    "pivot": [
+      0.48,
+      0.95
+    ],
+    "size": [
+      169.98,
+      320
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      920,
+      475,
+      230,
+      433
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/oath-tablet-clean.png"
+  },
+  {
+    "id": "choir-organ",
+    "name": "Choir Organ",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A small handheld celestial organ-cannon pointing horizontally RIGHT: THREE thick ivory organ pipes of clearly unequal length rest side-by-side in one compact dark-blue housing, a single pale-gold clamp joins them, and a curved coral-red pistol grip sits underneath the rear. THREE broad dark pipe openings, clean stepped pipe silhouette. No keys, musical notes, filigree, wings, beams or loose projectiles.",
+    "epoch": 10,
+    "era": "divine",
+    "atlas": "dawn-herald",
+    "rotation": 0,
+    "pivot": [
+      0.18,
+      0.79
+    ],
+    "size": [
+      340,
+      249.22
+    ],
+    "source": "../epoch-completion-v1/divine/concepts.png",
+    "sourceRect": [
+      422,
+      932,
+      412,
+      302
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/divine/choir-organ-clean.png"
+  },
+  {
+    "epoch": 1,
+    "id": "flint-axe",
+    "name": "Flint Axe",
+    "kind": "melee",
+    "attack": "swing",
+    "source": "../prehistoric-common-v1/concepts.png",
+    "tile": 0,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.34,
+      0.8
+    ],
+    "size": [
+      158.36,
+      310
+    ],
+    "sourceRect": [
+      70,
+      102,
+      424,
+      830
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric-reuse/flint-axe-clean.png"
+  },
+  {
+    "epoch": 1,
+    "id": "bone-cudgel",
+    "name": "Bone Cudgel",
+    "kind": "melee",
+    "attack": "swing",
+    "source": "../prehistoric-common-v1/concepts.png",
+    "tile": 1,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.33,
+      0.85
+    ],
+    "size": [
+      104.6,
+      300
+    ],
+    "sourceRect": [
+      589,
+      55,
+      311,
+      892
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric-reuse/bone-cudgel-clean.png"
+  },
+  {
+    "epoch": 1,
+    "id": "hide-sling",
+    "name": "Hide Sling",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "bow",
+    "source": "../prehistoric-common-v1/concepts.png",
+    "tile": 2,
+    "era": "prehistoric",
+    "atlas": "bone-warrior",
+    "rotation": 0,
+    "pivot": [
+      0.77,
+      0.15
+    ],
+    "size": [
+      142,
+      210
+    ],
+    "sourceRect": [
+      989,
+      162,
+      497,
+      735
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/prehistoric-reuse/hide-sling-clean.png"
+  }
+]

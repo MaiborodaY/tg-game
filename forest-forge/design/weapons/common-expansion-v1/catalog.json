@@ -1,0 +1,299 @@
+[
+  {
+    "epoch": 2,
+    "key": "ancient",
+    "name": "Ancient",
+    "nameRu": "Древняя",
+    "status": "concept-preview",
+    "image": "ancient/concepts.png",
+    "prompt": "ancient/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\bronze-axe-source.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "bronze-leaf-sword",
+        "name": "Bronze Leaf Sword",
+        "ru": "Листовидный бронзовый меч",
+        "role": "melee"
+      },
+      {
+        "id": "ribbed-bronze-mace",
+        "name": "Ribbed Bronze Mace",
+        "ru": "Ребристая бронзовая булава",
+        "role": "melee"
+      },
+      {
+        "id": "horn-recurve-bow",
+        "name": "Horn Recurve Bow",
+        "ru": "Роговой лук",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 3,
+    "key": "medieval",
+    "name": "Medieval",
+    "nameRu": "Средневековая",
+    "status": "concept-preview",
+    "image": "medieval/concepts.png",
+    "prompt": "medieval/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "military-pick",
+        "name": "Military Pick",
+        "ru": "Боевой клевец",
+        "role": "melee"
+      },
+      {
+        "id": "guard-billhook",
+        "name": "Guard Billhook",
+        "ru": "Боевой тесак с крюком",
+        "role": "melee"
+      },
+      {
+        "id": "hand-arbalest",
+        "name": "Hand Arbalest",
+        "ru": "Ручной арбалет",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 4,
+    "key": "gunpowder",
+    "name": "Gunpowder",
+    "nameRu": "Пороховая",
+    "status": "concept-preview",
+    "image": "gunpowder/concepts.png",
+    "prompt": "gunpowder/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\gunpowder/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "boarding-cutlass",
+        "name": "Boarding Cutlass",
+        "ru": "Абордажный тесак",
+        "role": "melee"
+      },
+      {
+        "id": "dock-hook",
+        "name": "Dock Hook",
+        "ru": "Абордажный крюк",
+        "role": "melee"
+      },
+      {
+        "id": "matchlock-musket",
+        "name": "Matchlock Musket",
+        "ru": "Фитильный мушкет",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 5,
+    "key": "modern",
+    "name": "Modern",
+    "nameRu": "Современная",
+    "status": "concept-preview",
+    "image": "modern/concepts.png",
+    "prompt": "modern/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\modern/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "field-machete",
+        "name": "Field Machete",
+        "ru": "Полевое мачете",
+        "role": "melee"
+      },
+      {
+        "id": "entrenching-shovel",
+        "name": "Entrenching Shovel",
+        "ru": "Сапёрная лопатка",
+        "role": "melee"
+      },
+      {
+        "id": "pump-shotgun",
+        "name": "Pump Shotgun",
+        "ru": "Помповый дробовик",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 6,
+    "key": "futuristic",
+    "name": "Futuristic",
+    "nameRu": "Футуристическая",
+    "status": "concept-preview",
+    "image": "futuristic/concepts.png",
+    "prompt": "futuristic/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\futuristic/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "shock-tonfa",
+        "name": "Shock Tonfa",
+        "ru": "Электротонфа",
+        "role": "melee"
+      },
+      {
+        "id": "mono-katar",
+        "name": "Monoblade Katar",
+        "ru": "Моноклинок-катар",
+        "role": "melee"
+      },
+      {
+        "id": "coil-pistol",
+        "name": "Coil Pistol",
+        "ru": "Катушечный пистолет",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 7,
+    "key": "space",
+    "name": "Space",
+    "nameRu": "Космическая",
+    "status": "concept-preview",
+    "image": "space/concepts.png",
+    "prompt": "space/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\space/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "boarding-spanner",
+        "name": "Boarding Spanner",
+        "ru": "Штурмовой ключ",
+        "role": "melee"
+      },
+      {
+        "id": "magnetic-cleaver",
+        "name": "Magnetic Cleaver",
+        "ru": "Магнитный тесак",
+        "role": "melee"
+      },
+      {
+        "id": "ion-revolver",
+        "name": "Ion Revolver",
+        "ru": "Ионный револьвер",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 8,
+    "key": "interdimensional",
+    "name": "Interdimensional",
+    "nameRu": "Межпространственная",
+    "status": "concept-preview",
+    "image": "interdimensional/concepts.png",
+    "prompt": "interdimensional/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\interdimensional/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "phase-knife",
+        "name": "Phase Knife",
+        "ru": "Фазовый нож",
+        "role": "melee"
+      },
+      {
+        "id": "resonance-fork",
+        "name": "Resonance Fork",
+        "ru": "Резонансный камертон",
+        "role": "melee"
+      },
+      {
+        "id": "aperture-projector",
+        "name": "Aperture Projector",
+        "ru": "Проектор разлома",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 9,
+    "key": "underworld",
+    "name": "Underworld",
+    "nameRu": "Подземный мир",
+    "status": "concept-preview",
+    "image": "underworld/concepts.png",
+    "prompt": "underworld/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\underworld/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "slag-pick",
+        "name": "Slag Pick",
+        "ru": "Шлаковый чекан",
+        "role": "melee"
+      },
+      {
+        "id": "execution-cleaver",
+        "name": "Execution Cleaver",
+        "ru": "Тесак палача",
+        "role": "melee"
+      },
+      {
+        "id": "iron-scattergun",
+        "name": "Iron Scattergun",
+        "ru": "Железный обрез",
+        "role": "ranged"
+      }
+    ]
+  },
+  {
+    "epoch": 10,
+    "key": "divine",
+    "name": "Divine",
+    "nameRu": "Божественная",
+    "status": "concept-preview",
+    "image": "divine/concepts.png",
+    "prompt": "divine/generation-prompt.txt",
+    "references": [
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\divine/concepts.png",
+      "C:\\WoL\\forest-forge-prototype\\design\\weapons\\medieval\\war-hammer-clean.png"
+    ],
+    "items": [
+      {
+        "id": "temple-spear",
+        "name": "Temple Spear",
+        "ru": "Храмовое копьё",
+        "role": "melee"
+      },
+      {
+        "id": "guardian-hatchet",
+        "name": "Guardian Hatchet",
+        "ru": "Топор стража",
+        "role": "melee"
+      },
+      {
+        "id": "temple-crossbow",
+        "name": "Temple Crossbow",
+        "ru": "Храмовый арбалет",
+        "role": "ranged"
+      }
+    ]
+  }
+]

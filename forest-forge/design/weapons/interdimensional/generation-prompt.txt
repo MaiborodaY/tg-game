@@ -1,0 +1,22 @@
+Use case: stylized-concept. Production modular 2D WEAPON sprite sheet for Forest Forge.
+Input 1 is a STYLE REFERENCE: existing weapons. Keep its thick near-black outlines, large readable shapes and 2–3 broad cel-shaded planes, but draw ONLY the six new weapons specified below. Do not copy the old designs or include its characters or labels.
+Input 2 is this epoch's ARMOR CONCEPT reference: use its materials/color language so the weapons belong to this world. It is not an edit target; no body parts or armor on this sheet.
+
+Create one PORTRAIT 1024 x 1536 image containing exactly SIX complete isolated weapons in TWO COLUMNS and THREE ROWS of equal square cells. Fill cells in reading order: upper-left, upper-right, middle-left, middle-right, lower-left, lower-right. The top FOUR cells are melee; bottom TWO cells are ranged. Each weapon has at least 35 px of empty margin on all sides of its own cell. Full tips, handles, guards and stocks must fit. Do not overlap cells.
+Melee objects stand upright with the usable handgrip at the bottom and blade/head at top; do not tilt the entire object diagonally. Ranged guns point horizontally RIGHT, stocks/rear at LEFT; bows and magical ring foci remain upright as explicitly described. Show each object as it would be held by a side-view chibi hero, not from above. Every weapon needs a clear usable handgrip, sufficiently thick to read at small scale.
+Juicy saturated cartoon raster game art, consistent bold outline and simple broad highlights. These are visual variants for a small hero: no micro-detail, text, mechanical schematics, tiny screws, textures, lens flare, external glow, particles, projectiles, ammunition, effects, hands, heroes, scenery, ground, cast shadows, labels, borders or grid lines. No duplicate objects. All components of each weapon are physically connected.
+Background: genuinely transparent alpha, including enclosed negative-space holes. If real alpha is not available, use perfectly flat pure white #FFFFFF including all holes. NEVER paint a checkerboard, gradient or off-white paper.
+Keep the six silhouettes unmistakably different from each other. Preserve the exact row/column placement below.
+
+EPOCH 8: INTERDIMENSIONAL
+UPPER LEFT: RIFT SICKLE. A RIFT SICKLE: one enormous flowing crescent hook blade in deep teal with a broad pale-mint inner edge, short curved dark-blue grip beneath it, ONE small golden oval at the joint. Elegant open crescent profile, physical continuous blade, no portal particles. Upright handle.
+
+UPPER RIGHT: PRISM AXE. A PRISM AXE: one huge triangular rose-and-aqua CRYSTAL axe head projecting RIGHT from a straight short violet shaft, only three or four large sharply separated opaque color facets. Asymmetric broad triangle silhouette. No shards, glitter, transparency haze or fine polygons.
+
+MIDDLE LEFT: PARADOX HAMMER. A PARADOX HAMMER: head made from TWO joined offset rectangular blocks, a larger ivory block high on LEFT and smaller ink-black block lower on RIGHT, ONE amber diamond in the connecting bridge; short straight dark handle below. Deliberately asymmetric stair-step silhouette, all pieces physically attached. No checker pattern.
+
+MIDDLE RIGHT: FOLDED SPEAR. A FOLDED SPEAR: long ivory and black spear with ONE obvious angular zigzag bend in its upper blade, as if a rigid ribbon is folded through right angles, sharp amber triangular point at the very top. Lower two-thirds is a straight navy shaft with simple grip. Keep one continuous connected object, not floating blade segments.
+
+LOWER LEFT: PORTAL FOCUS. A PORTAL FOCUS: broad vertical teal oval ring with a THICK mint rim, entirely empty background inside the opening, two small integrated navy outer tabs, mounted on one short straight dark handle BELOW the ring. It is a held magical ranged focus, not a thrown chakram. One contiguous ring-and-grip object, upright. No swirl in the hole, no beam.
+
+LOWER RIGHT: KALEIDOSCOPE EMITTER. A KALEIDOSCOPE EMITTER: horizontal magical ray weapon with THREE large connected amethyst triangular prism barrels fanning toward RIGHT from one rose-crystal body, aqua bands and a rear dark-violet pistol grip. One main wide prism visible, two shorter prisms alongside. Angular faceted fan silhouette, no conventional steel gun barrel, no effects.

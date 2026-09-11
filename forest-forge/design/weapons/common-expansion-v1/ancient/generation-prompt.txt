@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 2: Ancient. MATERIAL DIRECTION: Warm cast bronze, dark walnut, ivory horn and restrained dark red. Simple early metalworking, no gilded ornament.
+
+1. BRONZE LEAF SWORD (melee): A broad leaf-shaped double-edged bronze short sword, upright, with a single center ridge. Its narrow waist is the handhold: two smooth dark-red wooden scales fixed by ONE bronze pin; the flat bronze tang extends to a small plain fishtail butt. No spiral wrap, no round pommel and no jeweled guard.
+
+2. RIBBED BRONZE MACE (melee): A compact squat bronze mace with four broad blunt ribs forming a pear-shaped striking head. A short bare dark-walnut tapered stick handle enters the head directly. No grip wrapping or metal end cap. Visibly top-heavy, round and compact rather than blade-shaped.
+
+3. HORN RECURVE BOW (ranged): A practical upright recurve bow with two thick ivory horn limbs attached to a dark wooden center, visibly recurved tips, a taut dark bowstring on the LEFT and the bow's curve on the RIGHT. The handhold is the solid wooden center with one plain dark band. No arrow, quiver, feathers or detached parts. A clean narrow open C silhouette.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

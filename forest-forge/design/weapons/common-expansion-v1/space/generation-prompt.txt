@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 7: Space. MATERIAL DIRECTION: Workmanlike spacecraft gear: off-white ceramic, dark navy structure, gray steel and one restrained orange or lime detail. Practical shapes.
+
+1. BOARDING SPANNER (melee): An oversized but practical spacecraft spanner used as a melee weapon. Upright broad open U-shaped steel jaw at the top, a thick off-white tapered body below, one large dark-navy inset handhold cut into the lower half. One small orange rectangular marker, no lettering, tubes or electronics. Clearly a wrench, not a hammer or axe.
+
+2. MAGNETIC CLEAVER (melee): A short heavy trapezoidal gray boarding cleaver with one straight pale cutting edge and a plain dark band along its back. Integrated angled charcoal grip extending below the blade, with a large simple oval opening through it; one tiny orange switch. No circular gems, leather or white grip copied from the wrench. A solid broad blade silhouette.
+
+3. ION REVOLVER (ranged): A compact space revolver pointing RIGHT: off-white rounded cylindrical power drum in the middle, a short thick navy barrel with one lime ring at the muzzle, and a smooth swept-back dark-blue grip. One simple solid orange disc on the drum, no glow. No hammer mechanisms, bullet markings, ornaments or exposed cables. Rounded compact profile unlike the long beam guns and wide comet launcher.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

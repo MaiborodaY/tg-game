@@ -1,0 +1,432 @@
+[
+  {
+    "id": "plasma-sabre",
+    "name": "Plasma Sabre",
+    "attack": "combo",
+    "kind": "melee",
+    "description": "A PLASMA SABRE: long solid magenta energy blade enclosed by a sharply tapered charcoal frame, ONE pale pink stripe down its face, short black/cyan grip and small angular guard. Upright, pointed top, bold uninterrupted blade shape. The energy is fully inside the weapon silhouette: no ambient glow.",
+    "epoch": 6,
+    "tile": 0,
+    "source": "concepts.png",
+    "sourceRect": [
+      180,
+      31,
+      155,
+      464
+    ],
+    "grip": [
+      257,
+      435
+    ],
+    "fitExtent": 350,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "neon-runner",
+    "thrustTurn": 55,
+    "crop": [
+      180,
+      31,
+      155,
+      464
+    ],
+    "pivot": [
+      0.4968,
+      0.8707
+    ],
+    "size": [
+      116.92,
+      350
+    ]
+  },
+  {
+    "id": "magnet-hammer",
+    "name": "Magnet Hammer",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A MAGNET HAMMER: enormous open U-shaped horseshoe head with two squared prongs aimed UP, one red pole and one cyan pole, dark central block connecting to a stout straight grey grip underneath. Entire U gap empty background. Mechanically chunky, not a conventional solid hammer block.",
+    "epoch": 6,
+    "tile": 1,
+    "source": "concepts.png",
+    "sourceRect": [
+      603,
+      50,
+      314,
+      444
+    ],
+    "grip": [
+      760,
+      425
+    ],
+    "fitExtent": 300,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "neon-runner",
+    "crop": [
+      603,
+      50,
+      314,
+      444
+    ],
+    "pivot": [
+      0.5,
+      0.8446
+    ],
+    "size": [
+      212.16,
+      300
+    ]
+  },
+  {
+    "id": "mono-scythe",
+    "name": "Monoblade Scythe",
+    "attack": "swing",
+    "kind": "melee",
+    "description": "A futuristic MONOBLADE SCYTHE: tall slim black shaft with ONE huge clean cyan crescent blade curving RIGHT from the top and two broad silver structural panels. Long graceful sickle silhouette; no extra wires, floating pieces or energy haze. Shaft straight upright, one blade only.",
+    "epoch": 6,
+    "tile": 2,
+    "source": "concepts.png",
+    "sourceRect": [
+      162,
+      525,
+      326,
+      524
+    ],
+    "grip": [
+      214,
+      922
+    ],
+    "fitExtent": 480,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "neon-runner",
+    "crop": [
+      162,
+      525,
+      326,
+      524
+    ],
+    "pivot": [
+      0.1595,
+      0.7576
+    ],
+    "size": [
+      298.63,
+      480
+    ]
+  },
+  {
+    "id": "jet-lance",
+    "name": "Jet Lance",
+    "attack": "thrust",
+    "kind": "melee",
+    "description": "A white-and-orange JET LANCE: very long slim straight pole, narrow white spear tip with two large swept-back orange fins and a single dark cylindrical thruster housing integrated just below the tip. Small charcoal handgrip near lower half. Sleek spear silhouette, no exhaust or flame.",
+    "epoch": 6,
+    "tile": 3,
+    "source": "concepts.png",
+    "sourceRect": [
+      659,
+      522,
+      200,
+      538
+    ],
+    "grip": [
+      760,
+      949
+    ],
+    "fitExtent": 520,
+    "clearPoints": [],
+    "rotation": 35,
+    "atlas": "neon-runner",
+    "thrustTurn": 55,
+    "crop": [
+      659,
+      522,
+      200,
+      538
+    ],
+    "pivot": [
+      0.505,
+      0.7937
+    ],
+    "size": [
+      193.31,
+      520
+    ]
+  },
+  {
+    "id": "pulse-carbine",
+    "name": "Pulse Carbine",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "A sleek WHITE PULSE CARBINE: compact horizontal angular white body and stock LEFT, one short rectangular black muzzle RIGHT, large cyan oval power cell in the body and a dark pistol grip below the rear third. Futuristic clean bullpup shape, three broad surfaces only, no small buttons.",
+    "epoch": 6,
+    "tile": 4,
+    "source": "concepts.png",
+    "sourceRect": [
+      31,
+      1183,
+      473,
+      212
+    ],
+    "grip": [
+      184,
+      1338
+    ],
+    "fitExtent": -350,
+    "clearPoints": [
+      [
+        239,
+        1312
+      ]
+    ],
+    "rotation": 0,
+    "atlas": "neon-runner",
+    "crop": [
+      31,
+      1183,
+      473,
+      212
+    ],
+    "pivot": [
+      0.3235,
+      0.7311
+    ],
+    "size": [
+      350,
+      156.87
+    ]
+  },
+  {
+    "id": "arc-caster",
+    "name": "Arc Caster",
+    "attack": "shoot",
+    "kind": "ranged",
+    "pose": "crossbow",
+    "description": "An ARC CASTER: squat deep-blue gun body LEFT with one orange power drum underneath; at RIGHT TWO long thick parallel cyan-metal prongs make a large open tuning-fork muzzle. Horizontal with a rear lower grip. The fork must be attached to the body, with EMPTY WHITE between its prongs. No electricity or projectiles.",
+    "epoch": 6,
+    "tile": 5,
+    "source": "concepts.png",
+    "sourceRect": [
+      520,
+      1180,
+      477,
+      218
+    ],
+    "grip": [
+      573,
+      1349
+    ],
+    "fitExtent": -400,
+    "clearPoints": [],
+    "rotation": 0,
+    "atlas": "neon-runner",
+    "crop": [
+      520,
+      1180,
+      477,
+      218
+    ],
+    "pivot": [
+      0.1111,
+      0.7752
+    ],
+    "size": [
+      400,
+      182.81
+    ]
+  },
+  {
+    "id": "ring-cutter",
+    "name": "Ring Cutter",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A near-future handheld ring cutter: a single large open C-shaped pale-steel cutting hoop, cyan inner edge, and an integral dark-purple handle closing only the lower left quarter. Clear giant open center and asymmetrical missing top-right sector. No floating pieces, glow, runes or gemstones.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.18,
+      0.87
+    ],
+    "size": [
+      258.4,
+      320
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      84,
+      16,
+      323,
+      400
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/ring-cutter-clean.png"
+  },
+  {
+    "id": "ion-fork",
+    "name": "Ion Fork",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "An oversized futuristic tuning-fork weapon: TWO very thick straight ivory prongs with a cyan inner face and a deep narrow open slot between them, joined to a cobalt body and one short smooth black grip beneath. Clean squared U outline, minimal three-part construction, no electrical sparks.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.88
+    ],
+    "size": [
+      180.89,
+      360
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      527,
+      8,
+      203,
+      404
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/ion-fork-clean.png"
+  },
+  {
+    "id": "hinge-blade",
+    "name": "Hinge Blade",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "A folding-tech sword locked into a striking zigzag: THREE broad silver blade plates joined at TWO large orange hinge blocks create a single angular S-shaped cutting blade, with a plain dark-blue slanted handgrip at bottom. All parts physically connected; no tiny segments, floating pieces or decorative circuitry.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.24,
+      0.86
+    ],
+    "size": [
+      217.19,
+      370
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      916,
+      6,
+      253,
+      431
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/hinge-blade-clean.png"
+  },
+  {
+    "id": "clamp-maul",
+    "name": "Clamp Maul",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A futuristic compression maul with one enormous squared C-clamp head, thick graphite outer shell, bright orange opposing inner jaw pads, and a short off-center ivory handgrip under the left side. Its open jaw faces RIGHT. One bold asymmetric clamp silhouette; no screw threads, coils, wires or secondary handle.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.2,
+      0.86
+    ],
+    "size": [
+      232.86,
+      310
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      77,
+      463,
+      326,
+      434
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/clamp-maul-clean.png"
+  },
+  {
+    "id": "capacitor-lance",
+    "name": "Capacitor Lance",
+    "kind": "melee",
+    "attack": "thrust",
+    "thrustTurn": 55,
+    "description": "A future capacitor lance: ONE long narrow silver spike above a large rounded cobalt capacitor capsule, two broad white protective side fins, and a straight slim graphite shaft below ending in a cyan cuff. Long spear silhouette with one unusually bulbous middle chamber, no jets or floating energy.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.89
+    ],
+    "size": [
+      136.37,
+      460
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      558,
+      425,
+      142,
+      479
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/capacitor-lance-clean.png"
+  },
+  {
+    "id": "rotor-glaive",
+    "name": "Rotor Glaive",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A rotor-blade polearm: THREE huge asymmetrical swept silver fan blades fixed around ONE flat cyan circular hub at the top of a short dark-violet shaft. One fan blade is twice as long and points upper right. No rotating blur or separate moving parts, no propeller motor detail. Plain solid ivory grip section.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 35,
+    "pivot": [
+      0.37,
+      0.85
+    ],
+    "size": [
+      320.05,
+      370
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      860,
+      456,
+      378,
+      437
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/rotor-glaive-clean.png"
+  },
+  {
+    "id": "cassette-launcher",
+    "name": "Cassette Launcher",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "crossbow",
+    "description": "A compact future weapon pointed RIGHT with TWO long white parallel accelerator rails forming a huge rectangular open muzzle, a chunky dark-grey rear receiver, ONE vivid lime rectangular power cassette hanging beneath its center, and an angled purple pistol grip. Strong open tuning-fork barrel, no conventional gun tube, no bullets or beam effects.",
+    "epoch": 6,
+    "era": "futuristic",
+    "atlas": "neon-runner",
+    "rotation": 0,
+    "pivot": [
+      0.16,
+      0.81
+    ],
+    "size": [
+      370,
+      188.63
+    ],
+    "source": "../epoch-completion-v1/futuristic/concepts.png",
+    "sourceRect": [
+      346,
+      943,
+      561,
+      286
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/futuristic/cassette-launcher-clean.png"
+  }
+]

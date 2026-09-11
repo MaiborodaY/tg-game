@@ -1,0 +1,92 @@
+[
+  {
+    "owner": "bone-warrior",
+    "rows": 7,
+    "frames": 34,
+    "cell": 127,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4318,
+    "height": 889
+  },
+  {
+    "owner": "bronze-warrior",
+    "rows": 6,
+    "frames": 34,
+    "cell": 115,
+    "clipped": 0,
+    "empty": 0,
+    "width": 3910,
+    "height": 690
+  },
+  {
+    "owner": "musketeer",
+    "rows": 13,
+    "frames": 34,
+    "cell": 136,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4624,
+    "height": 1768
+  },
+  {
+    "owner": "field-scout",
+    "rows": 13,
+    "frames": 34,
+    "cell": 130,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4420,
+    "height": 1690
+  },
+  {
+    "owner": "neon-runner",
+    "rows": 13,
+    "frames": 34,
+    "cell": 134,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4556,
+    "height": 1742
+  },
+  {
+    "owner": "lunar-scout",
+    "rows": 13,
+    "frames": 34,
+    "cell": 131,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4454,
+    "height": 1703
+  },
+  {
+    "owner": "rift-nomad",
+    "rows": 13,
+    "frames": 34,
+    "cell": 136,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4624,
+    "height": 1768
+  },
+  {
+    "owner": "ash-reaper",
+    "rows": 13,
+    "frames": 34,
+    "cell": 142,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4828,
+    "height": 1846
+  },
+  {
+    "owner": "dawn-herald",
+    "rows": 13,
+    "frames": 34,
+    "cell": 132,
+    "clipped": 0,
+    "empty": 0,
+    "width": 4488,
+    "height": 1716
+  }
+]

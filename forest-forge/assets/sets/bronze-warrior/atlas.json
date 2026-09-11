@@ -4,7 +4,7 @@
   "sourceSheets": [
     "source.png"
   ],
-  "cell": 99,
+  "cell": 115,
   "frames": 22,
   "rows": [
     "cape",
@@ -71,16 +71,23 @@
     "glove-back",
     "glove-front"
   ],
-  "weaponRows": [],
+  "weaponRows": [
+    "obsidian-sawblade",
+    "crocodile-cleaver",
+    "war-oar",
+    "sun-disk-mace",
+    "scorpion-pincer",
+    "lotus-staff"
+  ],
   "viewBox": [
     450,
-    30,
-    720,
-    720
+    -26,
+    834,
+    834
   ],
   "anchor": [
-    0.4166666666666667,
-    0.9444444444444444
+    0.3597122302158273,
+    0.882494004796163
   ],
-  "bodyHeight": 0.8194444444444444
+  "bodyHeight": 0.7074340527577938
 }

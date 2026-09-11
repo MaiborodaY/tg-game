@@ -193,10 +193,10 @@ test('mastery levels are epoch-specific; level roll precedes XP and reaches cap 
 
 test('melee damage and ranged discount use the supported epoch even at maximum anvil level',()=>{
  const values=[];
- const pool=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===3);
- for(const id of ['bearded-axe','halberd','war-hammer','longbow']){const set=(pool.indexOf(id)+.5)/pool.length;const s=freshGame();s.hammers=1;s.anvilLevel=80;s.mastery[2].level=100;let calls=0;
- forge(s,()=>[0,.999,.999,set][calls++%4]);const i=s.forgingItems[0];values.push(i.value);assert.equal(i.sale,2);assert.equal(i.epoch,3);assert.equal(i.itemLevel,100);}
- assert.deepEqual(values,[1190,1190,1190,952]);
+ const pool=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===10);
+ for(const id of ['seraph-glaive','sun-maul','oath-bell','halo-bow']){const set=(pool.indexOf(id)+.5)/pool.length;const s=freshGame();s.hammers=1;s.anvilLevel=80;s.mastery[9].level=100;let calls=0;
+ forge(s,()=>[0,.999,.999,set][calls++%4]);const i=s.forgingItems[0];values.push(i.value);assert.equal(i.sale,7);assert.equal(i.epoch,10);assert.equal(i.itemLevel,100);}
+ assert.deepEqual(values,[11900000000,11900000000,11900000000,9520000000]);
 });
 
 test('auto continues with unresolved results, stops on zero/manual toggle, does not restart on loot',()=>{
@@ -429,10 +429,11 @@ test('existing incorrectly labelled Ancient gear keeps stats and gets Ancient id
 });
 
 
-test('unbuilt epochs never borrow old appearances and displayed forge chances match the roll',()=>{
+test('all ten completed epochs use their own weapons and displayed forge chances match the roll',()=>{
  for(let anvil=1;anvil<=80;anvil++){
-  const chances=FORGE_CHANCES[anvil-1];assert.ok(Math.abs(chances.reduce((a,b)=>a+b,0)-100)<1e-8);assert.ok(chances.slice(3).every(n=>n===0));
-  for(const roll of [0,.25,.5,.999]){const s=freshGame();s.anvilLevel=anvil;s.hammers=1;const rolls=[0,roll,0,.999];forge(s,()=>rolls.shift());const item=s.forgingItems[0];assert.equal(item.epoch,roll*100<chances[0]?1:roll*100<chances[0]+chances[1]?2:3);assert.equal(WEAPONS[item.weaponId].epoch,item.epoch);}
+  const chances=FORGE_CHANCES[anvil-1];assert.ok(Math.abs(chances.reduce((a,b)=>a+b,0)-100)<1e-8);chances.forEach((chance,i)=>assert.ok(Math.abs(chance-ANVILS[anvil-1].chances[i])<1e-8));
+  let before=0;
+  for(let epoch=1;epoch<=10;epoch++){const chance=chances[epoch-1];if(chance){const s=freshGame();s.anvilLevel=anvil;s.hammers=1;const rolls=[0,(before+chance/2)/100,0,.999];forge(s,()=>rolls.shift());const item=s.forgingItems[0];assert.equal(item.epoch,epoch);assert.equal(WEAPONS[item.weaponId].epoch,epoch);}before+=chance;}
  }
 });
 
@@ -482,6 +483,24 @@ test('all thirteen Medieval weapons forge, equip and retain identity and integer
  }
 });
 
+
+test('later epochs have ten melee and three ranged each; all forge, equip and reload',()=>{
+ for(let epoch=4;epoch<=10;epoch++){
+  const ids=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===epoch),anvil=FORGE_CHANCES.findIndex(c=>c[epoch-1]>0)+1,c=FORGE_CHANCES[anvil-1];
+  assert.equal(ids.filter(id=>!WEAPONS[id].range).length,10);assert.equal(ids.filter(id=>WEAPONS[id].range).length,3);
+  for(const [index,id] of ids.entries())for(const level of [1,100]){
+   const s=freshGame();s.hammers=1;s.anvilLevel=anvil;s.mastery[epoch-1].level=level;
+   const rolls=[0,(c.slice(0,epoch-1).reduce((a,b)=>a+b,0)+c[epoch-1]/2)/100,.999,(index+.5)/ids.length];
+   assert.equal(forge(s,()=>rolls.shift()),true);const item=s.forgingItems[0];assert.equal(item.weaponId,id);assert.equal(item.epoch,epoch);assert.equal(item.itemLevel,level);
+   assert.equal(item.value,Math.round(Math.round(2*10**(epoch-1)*(1+.05*(level-1)))*WEAPONS[id].multiplier));
+   finishForge(s);assert.equal(equip(s),true);assert.deepEqual(restore(JSON.stringify(s)).equipment.weapon,s.equipment.weapon);
+  }
+  for(const id of ids.filter(id=>WEAPONS[id].range)){
+   const s=freshGame();s.equipment.weapon={slot:'weapon',weaponId:id,epoch,quality:0,value:2};const enemy=s.enemies[0];enemy.x=s.heroX+.45;enemy.hp=enemy.maxHp=10000;enemy.damage=0;const x=s.heroX;
+   assert.ok(advance(s,1.35).some(e=>e.type==='heroHit'));assert.equal(s.heroX,x);assert.ok(enemy.x-x>.115);
+  }
+ }
+});
 
 test('expansion adds two melee and one ranged per epoch; all nine forge and preserve their own level and epoch',()=>{
  const groups=[['jaw-club','obsidian-pick','blowpipe'],['khopesh','trident','chakram'],['chain-flail','warden-key','crystal-staff']];

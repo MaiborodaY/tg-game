@@ -1,0 +1,22 @@
+Use case: stylized-concept. Production modular 2D WEAPON sprite sheet for Forest Forge.
+Input 1 is a STYLE REFERENCE: existing weapons. Keep its thick near-black outlines, large readable shapes and 2–3 broad cel-shaded planes, but draw ONLY the six new weapons specified below. Do not copy the old designs or include its characters or labels.
+Input 2 is this epoch's ARMOR CONCEPT reference: use its materials/color language so the weapons belong to this world. It is not an edit target; no body parts or armor on this sheet.
+
+Create one PORTRAIT 1024 x 1536 image containing exactly SIX complete isolated weapons in TWO COLUMNS and THREE ROWS of equal square cells. Fill cells in reading order: upper-left, upper-right, middle-left, middle-right, lower-left, lower-right. The top FOUR cells are melee; bottom TWO cells are ranged. Each weapon has at least 35 px of empty margin on all sides of its own cell. Full tips, handles, guards and stocks must fit. Do not overlap cells.
+Melee objects stand upright with the usable handgrip at the bottom and blade/head at top; do not tilt the entire object diagonally. Ranged guns point horizontally RIGHT, stocks/rear at LEFT; bows and magical ring foci remain upright as explicitly described. Show each object as it would be held by a side-view chibi hero, not from above. Every weapon needs a clear usable handgrip, sufficiently thick to read at small scale.
+Juicy saturated cartoon raster game art, consistent bold outline and simple broad highlights. These are visual variants for a small hero: no micro-detail, text, mechanical schematics, tiny screws, textures, lens flare, external glow, particles, projectiles, ammunition, effects, hands, heroes, scenery, ground, cast shadows, labels, borders or grid lines. No duplicate objects. All components of each weapon are physically connected.
+Background: genuinely transparent alpha, including enclosed negative-space holes. If real alpha is not available, use perfectly flat pure white #FFFFFF including all holes. NEVER paint a checkerboard, gradient or off-white paper.
+Keep the six silhouettes unmistakably different from each other. Preserve the exact row/column placement below.
+
+EPOCH 4: GUNPOWDER
+UPPER LEFT: OFFICER SABRE. An elegant LONG CURVED SABRE: gently curved narrow silver blade, an enormous open gold D-shaped knuckle guard, navy wrapped grip, gold pommel. Upright blade, point up, handle at bottom. Distinct long sweeping crescent edge.
+
+UPPER RIGHT: BOARDING AXE. A squat PIRATE BOARDING AXE: broad dark-iron crescent axe blade on the RIGHT, one short angular brass pick on the LEFT, short curved reddish wooden haft, large crimson wrap. Compact top-heavy asymmetric silhouette. Upright haft.
+
+MIDDLE LEFT: POWDER MAUL. A GRENADEER'S BARREL MAUL: one chunky horizontal wooden powder-keg cylinder as a hammer head, bound by two thick dark iron bands with brass end caps, on a short stout navy-wrapped wooden handle. No fuse, no explosion. Obvious wide barrel-shaped hammer silhouette, upright handle.
+
+MIDDLE RIGHT: BANNER PIKE. A long PARTISAN PIKE: large polished silver diamond center blade with two short flared side wings, brass socket, long straight warm-brown shaft, ONE compact folded blue pennant attached below the head. Upright long spear silhouette; entire butt and tip visible.
+
+LOWER LEFT: FLINTLOCK PISTOL. A chunky FLINTLOCK PISTOL: curved dark walnut grip, large simple brass lock plate, ONE long silver barrel pointing horizontally RIGHT. Single pistol only, no hands, readable curved grip and barrel, no smoke or bullets. Slight side view with minimal perspective.
+
+LOWER RIGHT: BRASS BLUNDERBUSS. A short heavy BLUNDERBUSS: large stock of reddish wood at LEFT and a wildly flared golden brass trumpet-like muzzle at RIGHT; dark barrel band, oversized simple trigger grip. Horizontal. Clearly much bulkier and wider-mouthed than the pistol. No smoke, projectiles or extra ammunition.

@@ -52,9 +52,9 @@ export async function createScene(canvas, previewSet = null) {
   window.addEventListener('storage', async event => {
     if(event.key!=='forest-forge-art-update'||!event.newValue)return;
     const {id,revision}=JSON.parse(event.newValue);artVersion=revision;
-    if(!art[id])return;
+    if(!art[id]&&!art[id+'-weapon'])return;
     const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${revision}`;
-    try{const meta=await fetch(`assets/sets/${id}/atlas.json?v=${revision}`).then(r=>r.json());await image.decode();rigs[id]=meta;art[id]=image;delete art[id+'-shoot'];loadingSets.delete(id+'-shoot');if(id===sets[0]){delete art.weaponAtlas;loadingSets.delete('weaponAtlas');}if(id===previewSet)previewRig=meta;}catch(error){console.error('Could not refresh equipment',error);}
+    try{const meta=await fetch(`assets/sets/${id}/atlas.json?v=${revision}`).then(r=>r.json());await image.decode();rigs[id]=meta;art[id]=image;delete art[id+'-shoot'];loadingSets.delete(id+'-shoot');delete art[id+'-weapon'];loadingSets.delete(id+'-weapon');if(id===previewSet)previewRig=meta;}catch(error){console.error('Could not refresh equipment',error);}
   });
   let previewRig=null;
   if(previewSet){
@@ -175,6 +175,7 @@ export async function createScene(canvas, previewSet = null) {
     const attackIndex = (state.heroAttackCount || 0) - (recovery ? 1 : 0);
     const weapon = previewRig ? (previewRig.slots.weapon ? {quality:['hunter-hides','bone-warrior','stone-guard'].indexOf(previewSet)} : null) : state.equipment.weapon;
     const ranged=Boolean(WEAPONS[weapon?.weaponId]?.range),customWeapon=Boolean(WEAPONS[weapon?.weaponId]?.sprite&&WEAPONS[weapon.weaponId].epoch===(weapon.epoch??1));
+    const weaponSource=WEAPONS[weapon?.weaponId]?.atlas||sets[0],weaponImage=art[weaponSource+'-weapon'];
     const throwing=customWeapon&&weapon.weaponId==='chakram';
     const shooting=ranged&&!throwing&&(state.phase==='fight'||recovery&&state.phase!=='dead');
     const attack=WEAPONS[weapon?.weaponId]?.attack;
@@ -186,7 +187,7 @@ export async function createScene(canvas, previewSet = null) {
       // One 2 s loop: .4 s return, .8 s living guard, .65 s preparation, .15 s strike.
       // Contact is at the clock wrap, exactly when the simulation applies damage.
       const cycle=Math.min(1,Math.max(0,(recovery?state.heroActionAge:state.heroClock)/HERO_ATTACK_INTERVAL));
-      const start=shooting?(['crossbow','blowpipe'].includes(weapon?.weaponId)?28:22):attackStart;
+      const start=shooting?(WEAPONS[weapon?.weaponId]?.pose==='crossbow'||['crossbow','blowpipe'].includes(weapon?.weaponId)?28:22):attackStart;
       const rest=shooting?start:0;
       const keys=[[0,start+3],[.06,start+4],[.14,start+5],[.2,rest],[.6,rest],[.77,start],[.925,start+1],[.965,start+2],[1,start+3]];
       if(shooting){keys[5][1]=start+1;keys[6][1]=start+2;}
@@ -200,9 +201,10 @@ export async function createScene(canvas, previewSet = null) {
       sourcePose=combatPoses[frame];pose=from.map((value,i)=>value+(to[i]-value)*blend);
       if(shooting)shotFrame=frame-22;else heroFrame=frame;
       // The extra spear/sword grip rotation is baked only into thrust cells.
-      if(['knight-sword','falchion','long-spear','trident'].includes(weapon?.weaponId)){
-        const fromTurn=a[1]>=16&&a[1]<=21?55:0,toTurn=b[1]>=16&&b[1]<=21?55:0;
-        weaponTurn=fromTurn+(toTurn-fromTurn)*blend-(frame>=16&&frame<=21?55:0);
+      const thrustTurn=WEAPONS[weapon?.weaponId]?.thrustTurn||(['knight-sword','falchion','long-spear','trident'].includes(weapon?.weaponId)?55:0);
+      if(thrustTurn){
+        const fromTurn=a[1]>=16&&a[1]<=21?thrustTurn:0,toTurn=b[1]>=16&&b[1]<=21?thrustTurn:0;
+        weaponTurn=fromTurn+(toTurn-fromTurn)*blend-(frame>=16&&frame<=21?thrustTurn:0);
       }
       if(!reducedMotion.matches&&cycle>.2&&cycle<.6){
         const t=(cycle-.2)/.4;guard=Math.sin(Math.PI*t)**2;
@@ -210,6 +212,14 @@ export async function createScene(canvas, previewSet = null) {
         pose[0]+=7*sway;pose[1]+=10*guard;pose[2]+=1.8*sway;
         pose[3]-=7*guard;pose[4]-=8*guard;
         pose[6]+=6*sway;pose[7]-=14*guard;pose[8]-=4*guard;
+      }
+      if(shooting&&weapon.weaponId==='deck-cannon'&&recovery&&!reducedMotion.matches){
+        // Heavy kick peaks 60 ms after contact, then settles over 320 ms.
+        const settle=Math.min(1,Math.max(0,(cycle-.03)/.16));
+        const kick=cycle<.03?Math.sin(cycle/.03*Math.PI/2):1-settle*settle*(3-2*settle);
+        pose[0]-=26*kick;pose[2]-=4*kick;
+        pose[3]-=34*kick;pose[4]-=9*kick;pose[5]-=4*kick;
+        pose[6]-=42*kick;pose[7]-=12*kick;pose[8]-=13*kick;
       }
     } else if ((state.phase==='walk'||state.phase==='victory')&&!reducedMotion.matches) heroFrame=1+Math.floor(time*10)%8;
     let chakramHand=null;
@@ -222,7 +232,7 @@ export async function createScene(canvas, previewSet = null) {
         y:(pose[1]-180+x*Math.sin(bodyAngle)+y*Math.cos(bodyAngle))*k/unit,angle:handAngle+bodyAngle};
     }
     if(!throwing||state.phase==='dead'||state.completed||chakramFlight?.returning&&!recovery)chakramFlight=null;
-    if(throwing&&art.weaponAtlas&&state.phase==='fight'&&state.heroClock>=HERO_ATTACK_INTERVAL*.85&&!chakramFlight){
+    if(throwing&&weaponImage&&state.phase==='fight'&&state.heroClock>=HERO_ATTACK_INTERVAL*.85&&!chakramFlight){
       const target=state.enemies.find(enemy=>enemy.id===state.targetId&&enemy.hp);
       if(target)chakramFlight={...chakramHand,targetId:target.id,returning:false};
     }
@@ -240,19 +250,23 @@ export async function createScene(canvas, previewSet = null) {
       for(const id of sources){const key=id+'-shoot';if(!art[key]&&!loadingSets.has(key)){loadingSets.add(key);const img=new Image();img.src=`assets/sets/${id}/shoot-atlas.png?v=${artVersion}`;img.decode().then(()=>art[key]=img).catch(console.error);}}
     }
     if(customWeapon){
-      if(!art.weaponAtlas&&!loadingSets.has('weaponAtlas')){loadingSets.add('weaponAtlas');const img=new Image();img.src=`assets/sets/${sets[0]}/weapon-atlas.png?v=${artVersion}`;img.decode().then(()=>art.weaponAtlas=img).catch(console.error);}
+      const key=weaponSource+'-weapon';
+      if(!art[key]&&!loadingSets.has(key)){
+        loadingSets.add(key);const img=new Image();img.src=`assets/sets/${weaponSource}/weapon-atlas.png?v=${artVersion}`;
+        Promise.all([img.decode(),rigs[weaponSource]||fetch(`assets/sets/${weaponSource}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Weapon metadata missing');return r.json();})]).then(([,meta])=>{rigs[weaponSource]=meta;art[key]=img;}).catch(console.error);
+      }
     }
     context.save();
     context.translate(heroX, base);
     for (let row=0;row<heroRig.rows.length;row++) {
       const name=heroRig.rows[row],slot=heroSlots[row];
-      const standalone = name === 'weapon' && customWeapon && art.weaponAtlas;
+      const standalone = name === 'weapon' && customWeapon && weaponImage;
       if(name==='weapon'&&chakramFlight)continue;
       if (name==='head-helmet' || name.endsWith('-booted') || slot && !equipped[slot] && !standalone) continue;
       if (equipped.legs && name==='shorts') continue;
       if (equipped.gloves && ['back-hand','front-hand'].includes(name)) continue;
       const sourceName=name==='head' && equipped.helmet ? 'head-helmet' : equipped.boots && ['back-leg','front-leg'].includes(name) ? name+'-booted' : name;
-      const source=standalone?sets[0]:slot?equipped[slot]:name==='head'&&equipped.helmet?equipped.helmet:sets[0],rig=rigs[source],cell=rig.cell,padded=hSize/rig.bodyHeight;
+      const source=standalone?weaponSource:slot?equipped[slot]:name==='head'&&equipped.helmet?equipped.helmet:sets[0],rig=rigs[source],cell=rig.cell,padded=hSize/rig.bodyHeight;
       const shotRow=rig.shootRows?.indexOf(sourceName)??-1,useShot=shooting&&shotRow>=0&&art[source+'-shoot'];
       context.save();
       const planted=combat&&/leg|boot|hip/.test(name);
@@ -299,7 +313,7 @@ export async function createScene(canvas, previewSet = null) {
           context.translate(px+vx*t*unit,py+(vy*t+100*t*t)*unit);context.rotate(spin*t);context.translate(-px,-py);
         }
       }
-      const image=standalone?art.weaponAtlas:useShot?art[source+'-shoot']:art[source];
+      const image=standalone?weaponImage:useShot?art[source+'-shoot']:art[source];
       const column=planted?0:standalone?(shooting?22+shotFrame:heroFrame):useShot?shotFrame:heroFrame;
       const sourceRow=standalone?rig.weaponRows.indexOf(weapon.weaponId):useShot?shotRow:rig.rows.indexOf(sourceName);
       context.drawImage(image,column*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
@@ -351,7 +365,7 @@ export async function createScene(canvas, previewSet = null) {
       const cell=heroRig.cell,padded=hSize/heroRig.bodyHeight,k=hSize/590;
       context.save();context.translate(x,y);context.rotate(spin);
       // Reuse the held weapon's atlas cell; no extra image or projectile damage logic.
-      context.drawImage(art.weaponAtlas,0,heroRig.weaponRows.indexOf('chakram')*cell,cell,cell,
+      context.drawImage(weaponImage,0,heroRig.weaponRows.indexOf('chakram')*cell,cell,cell,
         -padded*heroRig.anchor[0]-198.24*k,-padded*heroRig.anchor[1]+247.3*k,padded,padded);
       context.restore();
     }

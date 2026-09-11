@@ -10,10 +10,10 @@ art, set manifests and the existing fitting workshop.
 - From the repository root: `npm ci`, then `npm --prefix forest-forge start`.
 - The local workshop is at http://127.0.0.1:4173/sets.html.
 
-The older `C:/WoL/forest-forge-prototype` folder was left intact because another
-asset task was working there during the import. This repository folder is the
-source used by automatic publishing; changes to the old folder need to be copied
-and reviewed here before pushing.
+The full prototype from `C:/WoL/forest-forge-prototype` has been merged into this
+folder, including the later armor epochs, weapons and animated item backgrounds.
+This repository folder is the source used by automatic publishing. The original
+prototype remains a separate local copy; future changes belong here.
 
 ## Build and publish
 
@@ -71,7 +71,16 @@ chance; bosses always pay five times their biome hammer roll. Idle income is one
 hammer and one coin per minute, capped at four hours. New heroes have five
 hammers and no equipment.
 
-An epoch enters forging automatically only once it has both armor sets and
-weapons. Armor for later epochs can already be inspected in the local workshop.
-Generation prompts and fitting manifests live under `design/sets`; the balance
-sources live in `balance.mjs` and `design/`.
+All ten epochs have their own armor and weapons in the forge pool. There are
+130 weapons: ten melee and three ranged in each epoch. Ranged weapons retain
+80% damage and the same two-second attack interval. Weapon atlases load on demand;
+the handheld deck cannon has stronger recoil, and the chakram keeps its return.
+
+Futuristic through Divine share animated background patterns across the epoch
+list, Auto filters and item cards. Only the pattern layer moves; reduced motion
+keeps it static. The compact forge dialog and Telegram safe areas are preserved.
+
+Generation prompts, source art and fitting manifests live under `design/sets`
+and `design/weapons`. The latest weapon additions are indexed in
+`design/weapons/epoch-completion-v1/README.md`. Temporary build copies and logs
+stay outside Git. The balance sources live in `balance.mjs` and `design/`.

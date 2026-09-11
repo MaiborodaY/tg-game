@@ -1,0 +1,166 @@
+[
+  {
+    "id": "obsidian-sawblade",
+    "name": "Obsidian Sawblade",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "Ancient obsidian-toothed sword: a wide flat oxblood-red wooden paddle with THREE enormous black obsidian teeth on each edge, a short integral narrow wooden handgrip, and one small ivory binding. Tapered paddle silhouette, black cutting teeth make the design. No metal hilt, no bronze.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      160.34,
+      360
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      179,
+      8,
+      212,
+      476
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/obsidian-sawblade-clean.png"
+  },
+  {
+    "id": "crocodile-cleaver",
+    "name": "Crocodile Cleaver",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A broad ancient Egyptian iron cleaver shaped like a crocodile's long blunt snout, with ONE large downward tooth near the tip and a big angular mouth cutout. Dark grey iron blade, desaturated green glazed ceramic hooked handgrip, small linen cuff. One solid forged weapon, no face, no eyes, no tiny scales.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": -20,
+    "pivot": [
+      0.14,
+      0.8
+    ],
+    "size": [
+      320,
+      311.5
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      540,
+      47,
+      414,
+      403
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/crocodile-cleaver-clean.png"
+  },
+  {
+    "id": "war-oar",
+    "name": "War Oar",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A short thick ancient trireme war oar adapted as a weapon. Very broad rounded paddle blade of teal-painted wood at the top, a single pale iron edge along its RIGHT half, and a long exposed tan wood shaft blending into the blade. One broad lighter wood inset. Large paddle silhouette, no jewelry or ornaments.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.86
+    ],
+    "size": [
+      181.96,
+      430
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      175,
+      496,
+      201,
+      475
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/war-oar-clean.png"
+  },
+  {
+    "id": "sun-disk-mace",
+    "name": "Sun Disk Mace",
+    "kind": "melee",
+    "attack": "swing",
+    "description": "A simple sun-disk mace from an ancient desert culture. One massive flat terracotta disk with FOUR big triangular rim teeth, a recessed dark round central boss, and a short ivory bone handle below. Rust-red ceramic head, cream grip, small dark leather tie. Flat disk, not a gold jeweled relic.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.5,
+      0.82
+    ],
+    "size": [
+      198.65,
+      290
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      583,
+      483,
+      324,
+      473
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/sun-disk-mace-clean.png"
+  },
+  {
+    "id": "scorpion-pincer",
+    "name": "Scorpion Pincer",
+    "kind": "melee",
+    "attack": "combo",
+    "thrustTurn": 55,
+    "description": "A brutal ancient pincer dagger with TWO unequal crescent blades making an open scorpion-claw silhouette: long curved dark iron upper blade, shorter iron hooked lower blade, both joined at one dull copper rivet above a compact dark-red linen-wrapped straight grip. No chain, no animal face, no gems, no decorative gold.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 35,
+    "pivot": [
+      0.35,
+      0.8
+    ],
+    "size": [
+      180.12,
+      330
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      164,
+      982,
+      274,
+      502
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/scorpion-pincer-clean.png"
+  },
+  {
+    "id": "lotus-staff",
+    "name": "Lotus Staff",
+    "kind": "ranged",
+    "attack": "shoot",
+    "pose": "bow",
+    "description": "An ancient caster staff with a large open lotus cup head: THREE broad ivory petals surrounding ONE thick dark-blue ceramic center, held by a simple teal faience collar. Straight dark wood staff below with one broad plain linen grip. Recognizably Egyptian lotus silhouette; no light beams, no particles, no ornate gold, no tiny petals.",
+    "epoch": 2,
+    "era": "ancient",
+    "atlas": "bronze-warrior",
+    "rotation": 0,
+    "pivot": [
+      0.5,
+      0.74
+    ],
+    "size": [
+      232.56,
+      460
+    ],
+    "source": "../epoch-completion-v1/ancient/concepts.png",
+    "sourceRect": [
+      609,
+      963,
+      273,
+      540
+    ],
+    "cleanSource": "design/weapons/epoch-completion-v1/ancient/lotus-staff-clean.png"
+  }
+]

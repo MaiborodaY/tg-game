@@ -1,0 +1,162 @@
+{
+  "source": [
+    1254,
+    1254
+  ],
+  "parts": [
+    {
+      "id": "helmet",
+      "source": "source.png",
+      "crop": [
+        25,
+        51,
+        291,
+        273
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "chest",
+      "source": "source.png",
+      "crop": [
+        352,
+        62,
+        268,
+        256
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "cape",
+      "source": "source.png",
+      "crop": [
+        655,
+        40,
+        279,
+        297
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-back",
+      "source": "source.png",
+      "crop": [
+        56,
+        376,
+        221,
+        218
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-front",
+      "source": "source.png",
+      "crop": [
+        354,
+        378,
+        232,
+        216
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-back",
+      "source": "source.png",
+      "crop": [
+        672,
+        388,
+        209,
+        216
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-front",
+      "source": "source.png",
+      "crop": [
+        985,
+        385,
+        214,
+        213
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-back",
+      "source": "source.png",
+      "crop": [
+        51,
+        666,
+        219,
+        210
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-front",
+      "source": "source.png",
+      "crop": [
+        363,
+        665,
+        219,
+        216
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-back",
+      "source": "source.png",
+      "crop": [
+        690,
+        645,
+        188,
+        258
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-front",
+      "source": "source.png",
+      "crop": [
+        1013,
+        654,
+        157,
+        249
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-back",
+      "source": "../divine/parts-repair-source.png",
+      "crop": [
+        586,
+        342,
+        313,
+        326
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-front",
+      "source": "../divine/parts-repair-source.png",
+      "crop": [
+        1060,
+        343,
+        380,
+        330
+      ],
+      "edgeContact": false
+    }
+  ],
+  "viewBox": [
+    422,
+    2,
+    748,
+    748
+  ],
+  "cell": 103,
+  "clippedPixels": 0,
+  "emptyPartFrames": 0,
+  "atlasBytes": 340632,
+  "decodedBytes": 24273392
+}

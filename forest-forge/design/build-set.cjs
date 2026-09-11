@@ -46,6 +46,7 @@ function placement(part,p){const back=part.anchor.endsWith('back'),j=back?0:1;le
  });
  const shotPoses=[...rig.rangedPoses,...crossbowPoses];
  const allPoses=[...rig.poses,...shotPoses],shotRows=['back-arm','front-arm','back-hand','front-hand','glove-back','glove-front'];
+ const weaponEpoch={'bone-warrior':'prehistoric','bronze-warrior':'ancient',musketeer:'gunpowder','field-scout':'modern','neon-runner':'futuristic','lunar-scout':'space','rift-nomad':'interdimensional','ash-reaper':'underworld','dawn-herald':'divine'}[id];
  const weapons=id==='hunter-hides'?[{id:'slingshot',size:[154,170],pivot:[.60,.78]},{id:'short-bow',size:[109,350],pivot:[.80,.50]},{id:'gladius',size:[200,255],pivot:[.255,.79]},{id:'bronze-axe',size:[222,267],pivot:[.18,.81]},{id:'battle-spear',size:[205,292],pivot:[.145,.85]},
   {id:'knight-sword',size:[114,350],pivot:[0.5,0.8],rotation:35},
   {id:'falchion',size:[87,340],pivot:[0.49,0.8],rotation:35},
@@ -65,13 +66,13 @@ function placement(part,p){const back=part.anchor.endsWith('back'),j=back?0:1;le
   {id:'chakram',size:[168,171],pivot:[0.32,0.8],rotation:0},
   {id:'chain-flail',size:[44,220],pivot:[0.5,0.8],rotation:35},
   {id:'warden-key',size:[120,360],pivot:[0.5,0.85],rotation:35},
-  {id:'crystal-staff',size:[112,500],pivot:[0.49,0.8],rotation:0}]:[];
+  {id:'crystal-staff',size:[112,500],pivot:[0.49,0.8],rotation:0}]:weaponEpoch?JSON.parse(fs.readFileSync(path.join(__dirname,'weapons',weaponEpoch,'catalog.json'))):[];
  const weaponDefs=weapons.map(w=>`<image id="part-${w.id}" x="${-w.size[0]*w.pivot[0]}" y="${-w.size[1]*w.pivot[1]}" width="${w.size[0]}" height="${w.size[1]}" href="data:image/png;base64,${fs.readFileSync(path.join(root,'assets','weapons',w.id+'.png')).toString('base64')}"/>`).join('');
- const flailDefs=weapons.length?allPoses.map(p=>{
+ const flailDefs=weapons.some(w=>w.id==='chain-flail')?allPoses.map(p=>{
   const angle=p.frame>=9&&p.frame<=15?[60,135,190,160,185,230,290][p.frame-9]:-70+(p.frame>=1&&p.frame<=8?Math.sin((p.frame-1)*Math.PI/4)*10:0);
   return `<g id="part-chain-flail-${p.frame}"><image x="-22" y="-176" width="44" height="220" href="data:image/png;base64,${fs.readFileSync(path.join(root,'assets/weapons/chain-flail-handle.png')).toString('base64')}"/><g transform="translate(0 -164) rotate(${angle})"><image x="-52" y="-14" width="104" height="220" href="data:image/png;base64,${fs.readFileSync(path.join(root,'assets/weapons/chain-flail-weight.png')).toString('base64')}"/></g></g>`;
  }).join(''):'';
- const weaponPoses=weapons.flatMap(w=>allPoses.map(p=>`<g id="extra-${w.id}-${p.frame}">${placement({...w,id:w.id==='chain-flail'?w.id+'-'+p.frame:w.id,rotation:(w.rotation||0)+(p.frame>=16&&p.frame<22&&['knight-sword','falchion','long-spear','trident'].includes(w.id)?55:0),anchor:'hand-front',target:[0,0]},p)}</g>`)).join('');
+ const weaponPoses=weapons.flatMap(w=>allPoses.map(p=>`<g id="extra-${w.id}-${p.frame}">${placement({...w,id:w.id==='chain-flail'?w.id+'-'+p.frame:w.id,rotation:(w.rotation||0)+(p.frame>=16&&p.frame<22?(w.thrustTurn||(['knight-sword','falchion','long-spear','trident'].includes(w.id)?55:0)):0),anchor:'hand-front',target:[0,0]},p)}</g>`)).join('');
  const defs=weaponDefs+flailDefs+weaponPoses+parts.join('')+rows.flatMap(id=>allPoses.map(p=>{const part=spec.parts.find(v=>v.id===id);return `<g id="${id}-${p.frame}">${part?placement(part,p):id==='weapon'?'':body(id,p)}</g>`;})).join('');
  // Measure all poses before packing. Padding belongs to the atlas, not to the user's fit.
  const probeBox=[rig.viewBox[0]-700,rig.viewBox[1]-700,2100,2100],probeSize=1050;

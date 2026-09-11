@@ -1,0 +1,18 @@
+Use case: stylized-concept.
+Asset type: ONE new three-weapon concept sheet for an existing mobile 2D game.
+Input image 1 is existing weapon artwork for the indicated era; input image 2 is the game's War Hammer, a consistent drawing-style reference. Use these as DRAWING references only. Preserve their family of near-black contours, rounded chunky shapes, clean cel-shaded material volumes and restrained upper-left highlights. Do not copy the reference subjects, repeated grips or their sheet layout.
+
+The user wants additional ORDINARY weapons, not premium novelty content. Distinct designs should come from practical construction, proportions and handholds. Each of the three must have a genuinely different silhouette and grip construction. No repeated universal brown spiral leather grip with gold end caps. Do not add decorative complexity to simulate variety.
+
+Keep the detail budget small: large clean base-color shapes, one coherent shadow and one limited highlight per main material. Clear at 48-64 pixels. Match the existing game rendering without tiny faceted mosaics, realistic textures or an excessively heavy sticker border. All grip regions should be plainly usable by the same small cartoon hero; show no hands. Melee objects upright with their grips accessible below or within the body, ranged firearms and crossbows point RIGHT.
+
+ERA 9: Underworld. MATERIAL DIRECTION: Soot-gray forged iron, dark basalt, oxblood wood, simple bone and tiny dull ember-orange working edges. Ordinary rough infernal armory, no monster characters or demonic jewelry.
+
+1. SLAG PICK (melee): A heavy asymmetric charcoal-iron pick with a short blunt square poll on the LEFT and one thick angular downward beak on the RIGHT. One thin dull orange line along the working edge only. The handle is a continuous slightly bent forged-iron stem with a plain wider flattened handhold at the bottom. No leather, gold, gems, skulls or glowing cracks.
+
+2. EXECUTION CLEAVER (melee): A broad squat rectangular dark-steel execution cleaver, upright, with one large circular hanging hole near the top corner and a pale gray straight cutting edge. The short grip is plain ivory bone with two smooth natural bulges, joined by one dark iron collar. No face, blood, teeth, eyes, runes or spiral straps. Heavy simple block silhouette, not the existing pointed obsidian greatsword.
+
+3. IRON SCATTERGUN (ranged): A compact double-barrel infernal scattergun pointing RIGHT, with TWO short thick soot-gray barrels beside each other, two dark open bores with a small dull orange inner ring, one plain iron band and a smooth oxblood-red curved wooden grip. Slight three-quarter side view to read both bores. No horns, jaws, dragon face, bone decoration, fire or chains. A blunt utilitarian weapon, not the existing single wide cinder cannon.
+COMPOSITION: exactly THREE complete separate weapons in ONE landscape 1536 x 1024 sheet, left item 1, center item 2, right item 3. One weapon in each equally wide column. Similar visual prominence, all parts fully visible, clear gaps, at least 50 pixels of white outside margin. No duplicated views.
+BACKGROUND: uniform pure white, no shadows cast behind the objects. Do not reproduce any checkerboard or black background from a reference.
+AVOID: text, labels, letters, numbers, UI, panels, logos, watermarks, hands, heroes, scenery, floating particles, projectiles, detached ammo, flashes, light halos, animated elements, gold filigree, ornament clusters, extra straps, tiny screws, detailed grain, scratches and unnecessary facets. No animal heads or living novelty weapons. Do not show six items from a reference: this sheet has exactly THREE NEW designs.

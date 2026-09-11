@@ -1,0 +1,77 @@
+{
+  "total": 130,
+  "counts": [
+    {
+      "epoch": 1,
+      "name": "Prehistoric",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 2,
+      "name": "Ancient",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 3,
+      "name": "Medieval",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 4,
+      "name": "Gunpowder",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 5,
+      "name": "Modern",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 6,
+      "name": "Futuristic",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 7,
+      "name": "Space",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 8,
+      "name": "Interdimensional",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 9,
+      "name": "Underworld",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    },
+    {
+      "epoch": 10,
+      "name": "Divine",
+      "total": 13,
+      "melee": 10,
+      "ranged": 3
+    }
+  ],
+  "newWeaponsForgedEquippedRestored": 61,
+  "attackInterval": 2
+}

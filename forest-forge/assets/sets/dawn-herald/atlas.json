@@ -1,0 +1,101 @@
+{
+  "id": "dawn-herald",
+  "name": "Dawn Herald",
+  "sourceSheets": [
+    "source.png",
+    "../divine/parts-repair-source.png"
+  ],
+  "cell": 132,
+  "frames": 22,
+  "rows": [
+    "cape",
+    "back-leg",
+    "front-leg",
+    "leg-back",
+    "leg-front",
+    "boot-back",
+    "boot-front",
+    "back-arm",
+    "torso",
+    "shorts",
+    "hip-back",
+    "hip-front",
+    "chest",
+    "front-arm",
+    "shoulder-back",
+    "shoulder-front",
+    "head",
+    "helmet",
+    "weapon",
+    "glove-back",
+    "back-hand",
+    "glove-front",
+    "front-hand",
+    "head-helmet",
+    "back-leg-booted",
+    "front-leg-booted"
+  ],
+  "slots": {
+    "cape": [
+      0
+    ],
+    "legs": [
+      10,
+      11,
+      3,
+      4
+    ],
+    "boots": [
+      5,
+      6
+    ],
+    "chest": [
+      12
+    ],
+    "shoulders": [
+      14,
+      15
+    ],
+    "helmet": [
+      17
+    ],
+    "gloves": [
+      19,
+      21
+    ]
+  },
+  "shootRows": [
+    "back-arm",
+    "front-arm",
+    "back-hand",
+    "front-hand",
+    "glove-back",
+    "glove-front"
+  ],
+  "weaponRows": [
+    "dawn-rapier",
+    "seraph-glaive",
+    "sun-maul",
+    "oath-bell",
+    "halo-bow",
+    "judgment-trumpet",
+    "wing-fan",
+    "crescent-crook",
+    "balance-maul",
+    "cloud-cleaver",
+    "crown-breaker",
+    "oath-tablet",
+    "choir-organ"
+  ],
+  "viewBox": [
+    438,
+    -86,
+    958,
+    958
+  ],
+  "anchor": [
+    0.325678496868476,
+    0.8308977035490606
+  ],
+  "bodyHeight": 0.615866388308977
+}
