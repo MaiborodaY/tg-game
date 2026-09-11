@@ -38,7 +38,7 @@ test("a solo run can be abandoned from draft, round results, and active battle",
   assert.match(styles, /\.battle-playback-controls \.battle-playback-controls__abandon\s*\{[^}]*border-color:[^}]*color:/s);
 });
 
-test("main menu exposes every mode as a compact one-click action", () => {
+test("main menu exposes enabled modes as compact one-click actions and keeps daily challenges hidden", () => {
   assert.match(mainSource, /header\.className = "main-menu__header"/);
   assert.match(mainSource, /document\.createElement\("details"\)/);
   assert.match(mainSource, /picker\.className = "main-menu-language"/);
@@ -49,7 +49,8 @@ test("main menu exposes every mode as a compact one-click action", () => {
   assert.match(mainSource, /createBotDifficultyButton\("standard"\)/);
   assert.match(mainSource, /createBotDifficultyButton\("strong"\)/);
   assert.match(mainSource, /modeGrid\.append\(createOnlineModeButton\(\)\)/);
-  assert.match(mainSource, /modeGrid\.append\(createDailyChallengeButton\(\)\)/);
+  assert.match(mainSource, /const DAILY_CHALLENGE_MENU_ENABLED = false;/);
+  assert.match(mainSource, /if \(DAILY_CHALLENGE_MENU_ENABLED\) \{\s*modeGrid\.append\(createDailyChallengeButton\(\)\);\s*\}/);
   assert.match(mainSource, /modeGrid\.setAttribute\("role", "group"\)/);
   assert.match(mainSource, /modeGrid\.setAttribute\("aria-label", copy\.startRun\)/);
   assert.doesNotMatch(mainSource, /modeGrid\.setAttribute\("aria-label", copy\.botDifficulty\)/);

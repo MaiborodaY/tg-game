@@ -373,6 +373,8 @@ const FIELD_SLOT_BASE_CENTER_FROM_BOTTOM_RATIO = 31 / 108;
 const BATTLE_PRESENTATION_WATCHDOG_MS = 60_000;
 const FORCE_RENDERER_FAILURE = new URLSearchParams(window.location.search).get("draftRendererFail") === "1";
 const PVP_UI_ENABLED = import.meta.env.VITE_DRAFT_BATTLER_PVP_ENABLED === "true";
+// Keep daily-run support for saved history while the mode is absent from the menu.
+const DAILY_CHALLENGE_MENU_ENABLED = false;
 const PVP_API_ORIGIN = normalizePvpApiOrigin(import.meta.env.VITE_DRAFT_BATTLER_PVP_ORIGIN);
 const PVP_RULESET_VERSION = "draft-battler-pvp-v5";
 const soloRankingDelivery = new SoloRankingDelivery(soloRunStorage);
@@ -861,7 +863,9 @@ function createMainMenuOverlay(): HTMLElement {
   if (PVP_UI_ENABLED) {
     modeGrid.append(createOnlineModeButton());
   }
-  modeGrid.append(createDailyChallengeButton());
+  if (DAILY_CHALLENGE_MENU_ENABLED) {
+    modeGrid.append(createDailyChallengeButton());
+  }
 
   const howToButton = document.createElement("button");
   howToButton.className = "main-menu__button";
