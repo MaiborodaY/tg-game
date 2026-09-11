@@ -450,7 +450,7 @@ button:disabled { opacity:.55; cursor:default; }
 
 /* Activity navigation occupies its own row; hidden scenes do not animate. */
 #activities { flex:none; height:calc(58px + var(--safe-bottom,0px)); padding:4px 18px var(--safe-bottom,0px); background:#3e4556; border-top:3px solid #182c2a; display:flex; align-items:flex-start; gap:24px; }
-#activities button { position:relative; width:58px; height:49px; border:0; background:none; color:#fff; display:grid; justify-items:center; padding:0; cursor:pointer; }
+#activities button { position:relative; top:-14px; width:58px; height:49px; border:0; background:none; color:#fff; display:grid; justify-items:center; padding:0; cursor:pointer; }
 #activities img { width:36px; height:36px; } #activities small { font-size:10px; line-height:11px; }
 .activity-close { display:none; } .mine-open #mine-toggle img,.mine-open #mine-toggle small { display:none; }
 .mine-open #mine-toggle .activity-close { display:grid; place-items:center; width:45px;height:45px;border:3px solid #172b29;border-radius:50%;background:#ff5262;box-shadow:0 3px #922d3a;font:bold 36px/1 sans-serif; }
