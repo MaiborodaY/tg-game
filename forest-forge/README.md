@@ -43,6 +43,10 @@ unchanged. Telegram signs the launch data; the Worker checks it using its
 `BOT_TOKEN` secret and the existing Bro Battler authentication implementation.
 No WoL registration or character is required.
 
+Telegram 8.0+ requests fullscreen at launch. The forest extends beneath Telegram's
+native controls; the HUD respects both device and content safe-area insets. Older
+or unsupported clients keep the expanded window. Reopen the Mini App after an update.
+
 `GET /api/save` loads the authenticated Telegram player's snapshot, creating a
 clean hero if none exists. `PUT /api/save` saves one snapshot with its expected
 revision. A stale tab receives 409 and must load the newer save. Invalid or

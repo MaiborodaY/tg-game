@@ -612,16 +612,22 @@ function setupTelegram() {
   if (!tg || telegramInitialized) return;
   telegramInitialized = true;
   tg.ready(); tg.expand();
-  if (tg.isVersionAtLeast?.('6.1')) { tg.setHeaderColor('#72c851'); tg.setBackgroundColor('#fffaf0'); }
+  if (tg.isVersionAtLeast?.('6.1')) { tg.setHeaderColor(tg.isVersionAtLeast('6.9') ? '#72c851' : 'bg_color'); tg.setBackgroundColor('#fffaf0'); }
   if (tg.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes();
   function safeArea() {
-    const top = Math.max(tg.safeAreaInset?.top || 0, tg.contentSafeAreaInset?.top || 0);
-    const bottom = Math.max(tg.safeAreaInset?.bottom || 0, tg.contentSafeAreaInset?.bottom || 0);
-    document.documentElement.style.setProperty('--safe-top', `max(env(safe-area-inset-top, 0px), ${top}px)`);
-    document.documentElement.style.setProperty('--safe-bottom', `max(env(safe-area-inset-bottom, 0px), ${bottom}px)`);
+    // Telegram's content inset starts inside the device safe area (status bar/notch).
+    for (const edge of ['top', 'bottom']) {
+      document.documentElement.style.setProperty(`--safe-${edge}`, `calc(max(env(safe-area-inset-${edge}, 0px), ${tg.safeAreaInset?.[edge] || 0}px) + ${tg.contentSafeAreaInset?.[edge] || 0}px)`);
+    }
+    document.documentElement.classList.toggle('telegram-app', Boolean(tg.initData));
+    document.documentElement.classList.toggle('telegram-fullscreen', Boolean(tg.initData && tg.isFullscreen));
   }
   safeArea();
   tg.onEvent('safeAreaChanged', safeArea); tg.onEvent('contentSafeAreaChanged', safeArea);
+  tg.onEvent('fullscreenChanged', safeArea); tg.onEvent('fullscreenFailed', safeArea);
+  if (tg.initData && tg.isVersionAtLeast?.('8.0') && !tg.isFullscreen) {
+    try { tg.requestFullscreen(); } catch { /* Keep the expanded view if this client cannot enter fullscreen. */ }
+  }
   tg.onEvent('activated', start); tg.onEvent('deactivated', stop);
   tg.BackButton?.onClick(closeSheet);
   if (sheetSlot || anvilOpen || $('idle-dialog').open || $('auto-dialog').open) tg.BackButton?.show();

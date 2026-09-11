@@ -5,6 +5,8 @@ button { font:inherit; color:inherit; cursor:pointer; touch-action:manipulation;
 button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 [hidden] { display:none!important; }
 #game { width:100%; max-width:480px; height:100vh; height:100dvh; min-height:530px; background:var(--paper); display:flex; flex-direction:column; overflow:hidden; position:relative; isolation:isolate; }
+.telegram-app #game { height:var(--tg-viewport-stable-height, 100dvh); }
+.telegram-fullscreen body { background:var(--green); }
 #battle { height:59%; flex-shrink:0; position:relative; background:var(--green); border-bottom:4px solid var(--ink); overflow:hidden; }
 #scene { width:100%; height:100%; display:block; }
 .hud { position:absolute; top:calc(17px + var(--safe-top)); left:16px; right:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
@@ -171,7 +173,7 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 .ring-target { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:0; border:0; background:none; }
 .ring-target strong { font-size:12px; line-height:14px; }
 .ring-target[aria-pressed="true"] .item-icon { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue); }
-.ring-target[aria-pressed="true"]:after { content:'✓'; position:absolute; right:-5px; top:-5px; display:grid; place-items:center; width:17px; height:17px; border:2px solid var(--ink); border-radius:50%; background:var(--blue); color:white; font:bold 12px Arial,sans-serif; }
+.ring-target[aria-pressed="true"]:after { content:'вњ“'; position:absolute; right:-5px; top:-5px; display:grid; place-items:center; width:17px; height:17px; border:2px solid var(--ink); border-radius:50%; background:var(--blue); color:white; font:bold 12px Arial,sans-serif; }
 .button { border:2.5px solid var(--ink); border-radius:11px; padding:9px 10px 12px; box-shadow:inset 0 -4px 0 #0002; color:#fff; font-size:18px; min-height:47px; }
 .button:active { transform:translateY(2px); box-shadow:inset 0 -2px 0 #0002; }
 .red { background:var(--red); }
@@ -238,7 +240,7 @@ button:disabled { opacity:.55; cursor:default; }
 .probabilities thead th:not(:first-child) { text-align:right; }
 .probabilities td:last-child { color:#25382f; }
 @media(max-height:720px) { #battle { height:52%; } .forge-area { min-height:0; gap:6px; padding-top:5px; } .forge { height:98px; width:116px; } .forge-art { height:96px; width:116px; } }
-@media(max-height:620px) { #battle { height:45%; } #workshop { padding-bottom:3px; } .equipment { max-width:290px; } .forge-area { min-height:156px; gap:5px; padding-top:4px; } .forge,.forge-art { height:93px; width:112px; } .forge-row { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); } }
+@media(max-height:620px) { #battle { height:45%; } #workshop { padding-bottom:calc(3px + var(--safe-bottom)); } .equipment { max-width:290px; } .forge-area { min-height:156px; gap:5px; padding-top:4px; } .forge,.forge-art { height:93px; width:112px; } .forge-row { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); } }
 
 .result-summary { display:flex; align-items:center; justify-content:center; gap:4px; flex:1; min-width:0; padding:0 4px; }
 #results-remaining { font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -428,6 +430,9 @@ button:disabled { opacity:.55; cursor:default; }
   .level-hud h1 { font-size:18px; line-height:21px; }
 }
 /* Telegram waits for its own cloud hero; browser demo saves remain separate. */
+.telegram-app #battle { height:calc(59% - var(--safe-bottom)); }
+@media(max-height:720px) { .telegram-app #battle { height:calc(52% - var(--safe-bottom)); } }
+@media(max-height:620px) { .telegram-app #battle { height:calc(45% - var(--safe-bottom)); } }
 #cloud-status:not([hidden]) { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:24px; background:#102e25d9; }
 #cloud-status > div { max-width:340px; padding:22px; border:3px solid #183d34; border-radius:16px; background:#fffaf0; text-align:center; font-weight:700; }
 #cloud-retry { margin-top:12px; min-width:140px; }
