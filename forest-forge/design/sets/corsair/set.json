@@ -1,0 +1,341 @@
+{
+  "id": "corsair",
+  "name": "Corsair",
+  "quality": 1,
+  "epoch": 4,
+  "source": "source.png",
+  "grid": [
+    4,
+    4
+  ],
+  "cell": 96,
+  "background": "white",
+  "parts": [
+    {
+      "id": "helmet",
+      "slot": "helmet",
+      "tile": 0,
+      "anchor": "body",
+      "target": [
+        525,
+        72
+      ],
+      "size": [
+        450,
+        279
+      ],
+      "pivot": [
+        0,
+        0
+      ],
+      "rotation": 0,
+      "rect": [
+        0,
+        0,
+        345,
+        350
+      ]
+    },
+    {
+      "id": "chest",
+      "slot": "chest",
+      "tile": 1,
+      "anchor": "body",
+      "target": [
+        758.0000000000002,
+        419.4568965275497
+      ],
+      "size": [
+        170,
+        121
+      ],
+      "pivot": [
+        0.5117647058823529,
+        0.01652892561983471
+      ],
+      "rotation": 0,
+      "rect": [
+        345,
+        0,
+        290,
+        350
+      ]
+    },
+    {
+      "id": "cape",
+      "slot": "cape",
+      "tile": 2,
+      "anchor": "body",
+      "target": [
+        683,
+        432
+      ],
+      "size": [
+        211,
+        227
+      ],
+      "pivot": [
+        0.87,
+        0.04
+      ],
+      "rotation": 0,
+      "rect": [
+        635,
+        0,
+        325,
+        350
+      ]
+    },
+    {
+      "id": "shoulder-back",
+      "slot": "shoulders",
+      "tile": 4,
+      "anchor": "body",
+      "target": [
+        650.7413791652978,
+        439.9137930550992
+      ],
+      "size": [
+        90,
+        80
+      ],
+      "pivot": [
+        0.43333333333333335,
+        0.35
+      ],
+      "rotation": 0,
+      "rect": [
+        0,
+        350,
+        345,
+        275
+      ]
+    },
+    {
+      "id": "shoulder-front",
+      "slot": "shoulders",
+      "tile": 5,
+      "anchor": "body",
+      "target": [
+        838.4568965275496,
+        439.82758611019847
+      ],
+      "size": [
+        72,
+        80
+      ],
+      "pivot": [
+        0.3472222222222222,
+        0.275
+      ],
+      "rotation": 0,
+      "rect": [
+        345,
+        350,
+        290,
+        275
+      ]
+    },
+    {
+      "id": "glove-back",
+      "slot": "gloves",
+      "tile": 6,
+      "anchor": "hand-back",
+      "target": [
+        5.0862069449007095,
+        -13.172413889801419
+      ],
+      "size": [
+        80,
+        82
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "rotation": 36,
+      "rect": [
+        635,
+        350,
+        325,
+        275
+      ]
+    },
+    {
+      "id": "glove-front",
+      "slot": "gloves",
+      "tile": 7,
+      "anchor": "hand-front",
+      "target": [
+        -19.801724307152767,
+        -1.0000000000001137
+      ],
+      "size": [
+        84.96726878341633,
+        84.96726878341633
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "rotation": -38,
+      "rect": [
+        960,
+        350,
+        294,
+        275
+      ]
+    },
+    {
+      "id": "hip-back",
+      "slot": "legs",
+      "tile": 8,
+      "anchor": "hip-back",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        132,
+        103
+      ],
+      "pivot": [
+        0.48484848484848486,
+        0.0970873786407767
+      ],
+      "rotation": 0,
+      "rect": [
+        0,
+        625,
+        345,
+        305
+      ]
+    },
+    {
+      "id": "hip-front",
+      "slot": "legs",
+      "tile": 9,
+      "anchor": "hip-front",
+      "target": [
+        -12.71551736225183,
+        -7.629310417351235
+      ],
+      "size": [
+        94,
+        103
+      ],
+      "pivot": [
+        0.3617021276595745,
+        0.11650485436893204
+      ],
+      "rotation": -20,
+      "rect": [
+        345,
+        625,
+        290,
+        305
+      ]
+    },
+    {
+      "id": "leg-back",
+      "slot": "legs",
+      "tile": 10,
+      "anchor": "ankle-back",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        100,
+        90
+      ],
+      "pivot": [
+        0.3,
+        1.1111111111111112
+      ],
+      "rotation": 0,
+      "rect": [
+        635,
+        625,
+        325,
+        305
+      ]
+    },
+    {
+      "id": "leg-front",
+      "slot": "legs",
+      "tile": 11,
+      "anchor": "ankle-front",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        102,
+        90
+      ],
+      "pivot": [
+        0.6176470588235294,
+        1.1111111111111112
+      ],
+      "rotation": 0,
+      "rect": [
+        960,
+        625,
+        294,
+        305
+      ]
+    },
+    {
+      "id": "boot-back",
+      "slot": "boots",
+      "tile": 12,
+      "anchor": "ankle-back",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        110,
+        70
+      ],
+      "pivot": [
+        0.4727272727272727,
+        0.6285714285714286
+      ],
+      "rotation": 2,
+      "rect": [
+        0,
+        930,
+        345,
+        324
+      ]
+    },
+    {
+      "id": "boot-front",
+      "slot": "boots",
+      "tile": 13,
+      "anchor": "ankle-front",
+      "target": [
+        17.801724307152654,
+        2.543103472450298
+      ],
+      "size": [
+        120,
+        70
+      ],
+      "pivot": [
+        0.5083333333333333,
+        0.6285714285714286
+      ],
+      "rotation": 0,
+      "rect": [
+        345,
+        930,
+        290,
+        324
+      ]
+    }
+  ],
+  "showHair": true
+}

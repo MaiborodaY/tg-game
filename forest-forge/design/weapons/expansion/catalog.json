@@ -1,0 +1,65 @@
+[
+  {
+    "id": "jaw-club",
+    "name": "Jawbone Crusher",
+    "epoch": 1,
+    "attack": "swing",
+    "description": "A prehistoric jawbone club: ONE huge ivory beast LOWER JAW, U shaped and open in the middle, with only FIVE massive triangular teeth along the open upper jaw edge. No skull, no gore. The lower center is tightly lashed to a short thick wood handle with two broad ochre hide bands. Powerful asymmetric bone-jaw silhouette, visibly NOT an ordinary wooden club or axe. Stand upright: jaw head at top, straight short handle pointing down."
+  },
+  {
+    "id": "obsidian-pick",
+    "name": "Obsidian Pick",
+    "epoch": 1,
+    "attack": "swing",
+    "description": "A prehistoric pickaxe: ONE long sharply hooked glossy BLACK OBSIDIAN tusk-shaped pick, jutting to the RIGHT at the top of a plain curved wood handle. The head is one bold black crescent with large PURPLE facets, NO metal, no axe cutting blade. Tan leather lashings bind the stone to wood. Short wooden handle points vertically down, giant narrow crooked pick at top. Distinct pointed pick silhouette, not a symmetric axe."
+  },
+  {
+    "id": "blowpipe",
+    "name": "Feather Blowpipe",
+    "epoch": 1,
+    "attack": "shoot",
+    "description": "One prehistoric BLOWPIPE, a long simple horizontal hollow bamboo/wooden tube aiming RIGHT. Left mouthpiece smooth and narrow, long tube goes to right, a small dark oval at the right end. A broad dark brown leather grip near the LEFT quarter, TWO large turquoise feathers tied below the center. NO trigger, no stock, no gun mechanisms, no dart, no projectile. Simple warm orange wood, tan binding, large turquoise feather shapes. True horizontal profile, complete entire blowpipe."
+  },
+  {
+    "id": "khopesh",
+    "name": "Sun Khopesh",
+    "epoch": 2,
+    "attack": "swing",
+    "description": "An ancient Egyptian KHOPESH, not a normal sword. A thick golden BRONZE sickle-shaped blade with a strongly curved hook above a straight lower neck. The top blade bends conspicuously to the RIGHT then inward like a question mark; very clear sickle silhouette. Straight dark teal grip below a small gold collar, flat round bronze pommel. ONE broad amber facet on blade. No symbols, no ornament pattern. Upright vertical grip at bottom."
+  },
+  {
+    "id": "trident",
+    "name": "Tide Trident",
+    "epoch": 2,
+    "attack": "thrust",
+    "description": "An ancient bronze TRIDENT, three widely separated large bronze prongs atop a long straight wooden shaft. Center tine tallest, two outside prongs gently curve outward, all THREE tips clearly visible and thick. One broad turquoise binding directly below bronze fork. No waves, no magic effects. Whole upright vertical pole, prongs at top, wooden butt at bottom. Obvious forked silhouette, never a spear or halberd."
+  },
+  {
+    "id": "chakram",
+    "name": "Sun Chakram",
+    "epoch": 2,
+    "attack": "shoot",
+    "description": "One ancient fantasy throwing CHAKRAM: a thick golden bronze CIRCULAR ring blade with a very large clean transparent center hole. Exactly FOUR broad blunt triangular points along the outer perimeter evoke a sun; a short dark teal wrapped handgrip covers the bottom-left quarter of the ring. No handle sticking out, no central hub, no chains. Face-on ring, easy to read silhouette. No engravings or tiny ornaments. Whole complete intact circular blade."
+  },
+  {
+    "id": "chain-flail",
+    "name": "Iron Flail",
+    "epoch": 3,
+    "attack": "swing",
+    "description": "Detached handle and chain with weight; relative chain motion baked into the existing swing frames."
+  },
+  {
+    "id": "warden-key",
+    "name": "Warden Key",
+    "epoch": 3,
+    "attack": "swing",
+    "description": "A fantasy medieval GIANT KEY used as a heavy melee weapon. Upright oversized golden brass key: at the TOP a huge hollow hexagonal bow with a transparent center; below it a thick straight iron shaft; on the LOWER RIGHT of the shaft two large blocky squared key teeth; at the very bottom a short dark RED leather wrapped grip and tiny gold pommel. The whole silhouette must unmistakably look like an oversized dungeon key, not a sword or axe. Gold brass head, dark silver stem and red grip, only broad clean facets, no engraved detail."
+  },
+  {
+    "id": "crystal-staff",
+    "name": "Frost Crystal Staff",
+    "epoch": 3,
+    "attack": "shoot",
+    "description": "A fantasy medieval wizard STAFF: a long slightly crooked dark wooden staff topped by ONE large pale CYAN glowing faceted crystal held in TWO simple silver crescent prongs, with a large open gap around the crystal. A broad dark blue grip band near the lower quarter. Long staff, visible whole butt. Crystal has only three large facets with a white center highlight, the glow is contained WITHIN crystal, no exterior bloom or floating effects. The crystal is vertical elongated diamond, no sword blade, no extra gems. Tall clear staff silhouette upright."
+  }
+]

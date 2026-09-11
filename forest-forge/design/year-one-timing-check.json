@@ -1,0 +1,79 @@
+{
+  "samples": 5000,
+  "seed": 734192,
+  "visitHours": [
+    9,
+    21
+  ],
+  "jitterMinutes": 60,
+  "missedVisitProbability": 0.15,
+  "assumptions": "Funds always ready; upgrades start at next visit; finish automatically offline; no timer skips. Not a combat or economy simulation.",
+  "timerDays": 330,
+  "finalDays": {
+    "p10": 354.3564240626486,
+    "median": 356.8983270106255,
+    "p90": 359.8912488053708
+  },
+  "milestones": [
+    {
+      "level": 2,
+      "medianDays": 0.003472222222222222,
+      "upgradeCoins": 50,
+      "forgeCoins": 11
+    },
+    {
+      "level": 11,
+      "medianDays": 7.280657358991448,
+      "upgradeCoins": 803,
+      "forgeCoins": 18
+    },
+    {
+      "level": 20,
+      "medianDays": 19.512154267790418,
+      "upgradeCoins": 1762,
+      "forgeCoins": 30
+    },
+    {
+      "level": 29,
+      "medianDays": 40.286296979343106,
+      "upgradeCoins": 6192,
+      "forgeCoins": 51
+    },
+    {
+      "level": 38,
+      "medianDays": 73.14369691676175,
+      "upgradeCoins": 16524,
+      "forgeCoins": 86
+    },
+    {
+      "level": 47,
+      "medianDays": 114.50727506335049,
+      "upgradeCoins": 34776,
+      "forgeCoins": 146
+    },
+    {
+      "level": 56,
+      "medianDays": 166.45735273711358,
+      "upgradeCoins": 76191,
+      "forgeCoins": 247
+    },
+    {
+      "level": 65,
+      "medianDays": 229.00865004003023,
+      "upgradeCoins": 151148,
+      "forgeCoins": 416
+    },
+    {
+      "level": 74,
+      "medianDays": 302.72523913546075,
+      "upgradeCoins": 298800,
+      "forgeCoins": 704
+    },
+    {
+      "level": 80,
+      "medianDays": 356.8983270106255,
+      "upgradeCoins": 457812,
+      "forgeCoins": 998
+    }
+  ]
+}

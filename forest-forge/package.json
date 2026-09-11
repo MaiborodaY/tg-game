@@ -1,0 +1,11 @@
+{
+  "name": "forest-forge-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node design/build-share.cjs",
+    "start": "python design/serve.py",
+    "test": "node --test game.test.mjs",
+    "test:cloud": "node --experimental-strip-types --test ../workers/forest-forge/tests/*.test.mjs"
+  }
+}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#72c851">
+  <meta name="color-scheme" content="light">
+  <title>Forest Forge</title>
+  <link rel="icon" href="assets/helmet.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js" async></script>
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <section id="cloud-status" role="status" aria-live="polite" hidden>
+    <div><p id="cloud-message">Loading your hero…</p><button id="cloud-retry" class="button blue" hidden>Retry</button></div>
+  </section>
+  <main id="game" aria-label="Forest Forge">
+    <div id="outfit-preview" hidden><span><strong id="outfit-name">Outfit test</strong><small>Appearance only · progress is not saved</small></span><select id="weapon-choice" aria-label="Test weapon" hidden></select><a id="outfit-edit">Back to fit</a><a href="/">Exit test</a></div>
+    <section id="battle" aria-label="Automatic combat">
+      <canvas id="scene" aria-label="A knight fights goblins along a forest path"></canvas>
+      <header class="hud">
+        <div class="hero-hud">
+          <div class="avatar"><img src="assets/helmet.svg" alt="Hero portrait"></div>
+          <div id="item-level-hud" class="hero-power" aria-label="Item Level 0" title="Item Level">
+            <img src="assets/crossed-swords.webp" alt="">
+            <b id="item-level">0</b>
+          </div>
+        </div>
+        <div class="money" aria-label="Coins"><i class="coin" aria-hidden="true"></i><span id="coins">0</span></div>
+      </header>
+      <div class="level-hud"><div class="location">Whispering Woods</div><h1 id="level">Level 1–1</h1><div id="progress" class="progress" aria-label="Level progress"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="boss-node"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 16 0v5l-4 1v4H8v-4l-4-1Z" fill="currentColor"/><circle cx="8" cy="11" r="2"/><circle cx="16" cy="11" r="2"/><path d="m12 14-2 3h4Z"/></svg></i></div><div id="wave-label">Wave 1 / 10</div></div>
+      <div id="completed" class="completion" hidden><strong>Forest cleared!</strong><span>All 200 levels cleared.</span><button id="replay" class="button blue">Replay the forest</button></div>
+      <span id="item-level-change" aria-hidden="true" hidden><img src="assets/crossed-swords.webp" alt=""><span><span id="item-level-sign"></span><b id="item-level-amount"></b></span></span>
+      <button id="idle-loot" class="idle-loot" aria-label="Idle rewards" aria-haspopup="dialog" aria-controls="idle-dialog">
+        <span class="idle-art" aria-hidden="true"><i class="coin"></i><img class="hammer-icon" src="assets/hammer.webp" alt=""></span>
+        <span class="idle-sleep" aria-hidden="true"><i>z</i><i>z</i><i>z</i></span>
+      </button>
+    </section>
+    <section id="workshop" aria-label="Equipment and forge">
+
+      <div id="mastery-info" class="mastery-summary">
+        <button id="mastery-choice" aria-expanded="false" aria-controls="mastery-options" aria-label="Choose displayed mastery">
+          <span id="mastery-progress" aria-hidden="true"></span><span class="mastery-name"><span id="mastery-label"></span><span aria-hidden="true">▾</span></span><span id="mastery-xp"></span><span id="mastery-level"></span>
+        </button>
+        <div id="mastery-options" role="group" aria-label="Displayed mastery" hidden></div>
+      </div>
+      <div id="equipment" class="equipment" aria-label="Equipment slots"></div>
+      <div class="forge-area">
+        <div class="forge-row">
+          <div class="forge-tools"><div class="total-stats"><span><img src="assets/weapon.svg" alt="Damage"><b id="damage">2</b></span><span><svg class="heart" viewBox="0 0 40 36" aria-label="Maximum health"><path d="M20 33C-12 14 7-8 20 6 33-8 52 14 20 33Z"/></svg><b id="max-hp">20</b></span></div><button id="anvil-info" class="mini-button">Anvil Lv. 1</button><button id="auto-forge" class="mini-button" aria-pressed="false" aria-haspopup="dialog" aria-controls="auto-dialog">Auto OFF</button></div>
+          <div class="forge-center">
+            <button id="forge" class="forge" aria-label="Forge items"><span class="forge-art"><img id="forge-image" src="assets/anvil.svg" alt=""><span id="hammer" aria-hidden="true"><img class="hammer-icon" src="assets/hammer.webp" alt=""></span><span class="forge-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><img class="forge-flash" src="assets/forge-flash.svg" alt="" aria-hidden="true"><span class="forge-impact-ring" aria-hidden="true"></span></span><span class="hammer-balance"><img class="hammer-icon" src="assets/hammer.webp" alt=""><b id="hammers">0</b></span></button>
+            <button id="batch-choice" class="mini-button batch-choice" aria-expanded="false" aria-controls="batch-options" aria-label="Choose forge batch size"><span id="batch-label">×2</span><span aria-hidden="true">▾</span></button>
+            <div id="batch-options" class="batch-options" role="group" aria-label="Forge batch size" hidden></div>
+          </div>
+          <button id="results" class="result-stack" hidden aria-label="View forged items"><span class="stack-card stack-back-two"></span><span class="stack-card stack-back-one"></span><span class="stack-card stack-front"><img id="result-image" alt=""><span id="result-level" class="item-level"></span></span><b id="result-count"></b></button>
+        </div>
+        <div id="forge-hint" class="forge-hint" hidden></div>
+      </div>
+      <div id="forge-coins" aria-hidden="true"></div>
+      <span id="forge-result" class="item-icon" aria-hidden="true" hidden><img alt=""></span>
+      <div id="toast" role="status" class="toast"></div>
+      <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+      <section id="comparison" role="dialog" aria-modal="true" aria-labelledby="sheet-title" class="comparison" hidden>
+        <div class="sheet-top"><span id="sheet-title" class="ribbon">Equipped</span>
+          <div id="ring-targets" class="ring-targets" role="group" aria-label="Choose which ring slot to replace" hidden>
+            <button id="choose-ring1" class="ring-target" aria-pressed="false"><span id="ring1-card" class="item-icon"><img id="ring1-image" alt=""></span><strong>Ring 1</strong></button>
+            <button id="choose-ring2" class="ring-target" aria-pressed="false"><span id="ring2-card" class="item-icon"><img id="ring2-image" alt=""></span><strong>Ring 2</strong></button>
+          </div>
+          <button id="close-sheet" class="close" aria-label="Close comparison">×</button>
+        </div>
+        <div id="equipped-row" class="item-row"><span id="equipped-card" class="item-icon"><img id="equipped-image" alt=""><span id="equipped-level" class="item-level"></span></span><div class="item-details"><h2 id="equipped-name"></h2><small id="equipped-epoch" class="item-epoch"></small><p id="equipped-stat"></p></div></div>
+        <div id="new-row" class="new-row"><span class="new-tag">NEW</span><div class="item-row"><span id="new-card" class="item-icon"><img id="new-image" alt=""><span id="new-level" class="item-level"></span></span><div class="item-details"><h2 id="new-name"></h2><small id="new-epoch" class="item-epoch"></small><p><span id="new-stat"></span> <b id="difference"></b></p></div></div></div>
+        <div id="result-nav" class="result-nav" hidden><button id="previous-result" aria-label="Previous item">‹</button><span class="result-summary"><button id="equip-stronger" class="equip-stronger">Equip stronger</button><span id="results-remaining"></span><button id="sell-weaker" class="sell-weaker" hidden>Sell weaker</button></span><button id="next-result" aria-label="Next item">›</button></div>
+
+        <div id="sheet-actions" class="sheet-actions"><button id="sell" class="button red"><span>Sell</span><small><i class="coin" aria-hidden="true"></i><span id="sell-price">5</span></small></button><button id="equip" class="button blue">Equip</button></div>
+      </section>
+      <section id="anvil-dialog" class="comparison anvil-dialog" role="dialog" aria-modal="true" aria-labelledby="anvil-title" hidden>
+        <div class="sheet-top"><span id="anvil-title">Forging chances</span><button id="close-anvil" class="close" aria-label="Close anvil">×</button></div>
+        <div class="anvil-wallet" aria-label="Coins"><i class="coin" aria-hidden="true"></i><b id="anvil-coins">0</b></div>
+        <div id="probabilities-panel"><table class="probabilities"><thead><tr><th>Epoch</th><th id="current-anvil-level"></th><th id="next-anvil-level"></th></tr></thead><tbody id="probability-rows"></tbody></table></div>
+        <div class="anvil-upgrade">
+          <strong id="anvil-level"></strong>
+          <p id="upgrade-status"></p>
+          <div id="upgrade-progress-wrap" hidden><progress id="upgrade-progress" max="100" value="0" aria-label="Anvil upgrade progress"></progress><span id="upgrade-time"></span></div>
+          <button id="skip-anvil-coins" class="button blue" title="Up to 3× the upgrade cost, decreasing with time remaining" hidden><span>Skip</span><small><i class="coin" aria-hidden="true"></i><span id="skip-anvil-price"></span></small></button>
+          <button id="upgrade-anvil" class="button blue"></button><button id="skip-anvil-time" class="mini-button" hidden>Skip wait · Local</button>
+          <button id="new-game" class="new-game" hidden>Start a new hero · Local</button>
+        </div>
+      </section>
+    </section>
+    <div id="reward-flight" aria-hidden="true"></div>
+  </main>
+  <dialog id="bulk-sale-confirm" class="bulk-sale-confirm" aria-labelledby="bulk-sale-title" aria-describedby="bulk-sale-summary">
+    <h2 id="bulk-sale-title">Sell weaker items?</h2>
+    <p id="bulk-sale-summary"></p>
+    <div class="sheet-actions"><button id="cancel-bulk-sale" class="button cancel">Cancel</button><button id="confirm-bulk-sale" class="button red">Sell</button></div>
+  </dialog>
+  <dialog id="idle-dialog" class="idle-dialog" aria-labelledby="idle-title">
+    <div class="sheet-top"><h2 id="idle-title">Idle rewards</h2><button id="close-idle" class="close" aria-label="Close idle rewards" autofocus>×</button></div>
+    <div class="idle-rewards">
+      <div><span><img class="hammer-icon" src="assets/hammer.webp" alt=""><b id="idle-hammers">0</b></span><small>Hammers · 1/min</small></div>
+      <div><span><i class="coin" aria-hidden="true"></i><b id="idle-coins">0</b></span><small>Coins · 1/min</small></div>
+    </div>
+    <div class="idle-status"><span id="idle-time">0m / 4h</span><span id="idle-next">+1 in 60s</span></div>
+    <progress id="idle-progress" max="240" value="0" aria-label="Idle storage capacity"></progress>
+    <button id="collect-idle" class="button blue" disabled>Collect</button>
+  </dialog>
+  <dialog id="auto-dialog" class="auto-dialog" aria-labelledby="auto-title" aria-describedby="auto-hint">
+    <div class="sheet-top"><h2 id="auto-title">Auto forge</h2><button id="close-auto" class="close" aria-label="Close auto forge" autofocus>×</button></div>
+    <strong class="auto-keep">Keep</strong>
+    <div id="auto-epochs" role="group" aria-label="Epochs to keep"></div>
+    <p id="auto-hint">Unchecked epochs are sold after auto forging.</p>
+    <button id="run-auto" class="button blue">Start</button>
+  </dialog>
+</body>
+</html>

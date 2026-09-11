@@ -1,0 +1,20 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "forest-forge",
+  "account_id": "49cdef49a797b94dda3328ef3c4b2d6e",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-09-11",
+  "assets": {
+    "directory": "../../forest-forge/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "secrets": { "required": ["BOT_TOKEN"] },
+  "d1_databases": [{
+    "binding": "SAVES",
+    "database_name": "forest_forge_saves",
+    "database_id": "44edba72-7ee8-468b-afc8-c9707e13eec9",
+    "migrations_dir": "migrations"
+  }],
+  "observability": { "enabled": true }
+}

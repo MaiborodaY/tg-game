@@ -1,0 +1,131 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Equipment workshop — Forest Forge</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eeeade;color:#172b27;font:15px 'Trebuchet MS',sans-serif;padding:22px 14px}main{max-width:780px;margin:auto}h1{font-size:25px;margin:0 0 8px}p{color:#596052;line-height:1.5}.stage{margin-top:12px;border:2px solid #243830;border-radius:12px;overflow:hidden;background:#fffaf0}canvas{display:block;width:100%}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;align-items:center}button,select{font:inherit;color:inherit;background:#fffaf0;border:2px solid #536957;border-radius:7px;min-height:42px;padding:8px 12px;cursor:pointer}label{display:flex;gap:5px;align-items:center;min-height:35px}input{width:19px;height:19px;accent-color:#287c55}small{color:#596052}a{color:#216f54}.icons{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.icons img{width:56px;height:56px;background:#fffaf0;border-radius:8px;padding:3px}.source{width:100%;max-width:420px;border-radius:10px}details{margin:20px 0}summary{cursor:pointer;padding:8px 0}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #008dce;outline-offset:2px}
+:root{--fit-accent:#008dce;--fit-border:#536957}#fit-toggle[aria-pressed="true"]{background:#d1ecf3;border-color:var(--fit-accent)}.fit-preview-column{min-width:0}.fit-layout .stage{align-self:start}.fit-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}.fit-layout.editing{grid-template-columns:minmax(0,1fr) 250px}main:has(.editing){max-width:1040px}#fit-panel{padding:12px 0;min-width:0}#fit-panel[hidden]{display:none}#fit-panel label{margin-bottom:8px;flex-wrap:wrap}#fit-panel select{max-width:100%;min-width:0}#fit-panel input[type="number"]{width:86px;height:36px;font:inherit;padding:4px;border:1px solid var(--fit-border);border-radius:5px}.fit-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}.fit-fields label{display:block}#fit-angle{width:130px}#preview.fitting{touch-action:none;cursor:crosshair}#fit-panel small{display:block;line-height:1.5}@media(max-width:720px){.fit-layout.editing{grid-template-columns:minmax(0,1fr)}#fit-panel{padding-top:0}.fit-fields{grid-template-columns:repeat(4,minmax(0,1fr))}#fit-panel input[type="number"]{width:100%}}
+</style>
+<main><h1 id="set-title">Equipment workshop</h1><p>Generated raster equipment on the current hero. Toggle pieces to inspect their fit.</p>
+<nav aria-label="Ancient sets"><a href="?set=bronze-warrior">Bronze Warrior</a> · <a href="?set=temple-guard">Temple Guard</a> · <a href="?set=legionary">Legionary</a> · <a href="/?weapon=short-bow">Test weapons</a></nav>
+<nav aria-label="Medieval sets"><a href="?set=iron-knight">Iron Knight</a> · <a href="?set=forest-ranger">Forest Ranger</a> · <a href="?set=royal-guard">Royal Guard</a> · <a href="/?weapon=knight-sword">Test Medieval weapons</a></nav>
+<nav aria-label="Gunpowder sets"><a href="?set=musketeer">Musketeer</a> · <a href="?set=corsair">Corsair</a> · <a href="?set=grenadier">Grenadier</a></nav>
+<nav aria-label="Modern sets"><a href="?set=field-scout">Field Scout</a> · <a href="?set=commando">Commando</a> · <a href="?set=heavy-trooper">Heavy Trooper</a></nav>
+<nav aria-label="Futuristic sets"><a href="?set=neon-runner">Neon Runner</a> · <a href="?set=exo-trooper">Exo Trooper</a> · <a href="?set=reactor-guard">Reactor Guard</a></nav>
+<div class="controls"><button id="fit-toggle" disabled aria-pressed="false">Fit mode</button><button id="fit-apply" disabled>Apply to game</button><button id="fit-test" disabled title="Apply the current fit and test its appearance in battle">Test in game</button><button id="fit-compare" disabled aria-pressed="false">Compare original</button><small id="fit-message" role="status">Loading fit…</small></div>
+<div class="fit-layout"><div class="fit-preview-column"><div class="stage"><canvas id="preview" tabindex="0" aria-label="Equipped hero. In Fit mode, drag parts or use arrow keys to adjust."></canvas></div>
+<div class="controls" id="pieces"></div><div class="controls"><button id="all">Full set</button><button id="bare">Unequipped</button><select id="animation" aria-label="Animation"><option value="walk">Walk</option><option value="attack">Swing</option><option value="thrust">Thrust</option><option value="sword">Sword combo</option><option value="idle">Idle</option></select><button id="pause">Pause</button><button id="next">Frame →</button></div>
+<small id="status"></small>
+</div><aside id="fit-panel" hidden>
+<label>Part <select id="fit-part"></select></label>
+<div class="fit-fields">
+<label>X <input id="fit-x" type="number" step="1"></label><label>Y <input id="fit-y" type="number" step="1"></label>
+<label>Width <input id="fit-w" type="number" min="5" max="1000" step="1"></label><label>Height <input id="fit-h" type="number" min="5" max="1000" step="1"></label>
+</div>
+<label><input id="fit-lock" type="checkbox" checked> Keep proportions</label>
+<label>Rotation <input id="fit-angle" type="range" min="-180" max="180" step="1"><output id="fit-angle-value">0°</output></label>
+<label>Other parts <select id="fit-others"><option value="1">Show</option><option value="0.25">Fade</option><option value="0">Hide</option></select></label>
+<div class="controls"><button id="fit-undo" disabled>Undo</button><button id="fit-reset">Reset part</button><button id="fit-export">Export fit</button></div>
+<small>Drag a part to move it. Drag a corner to resize. Mouse wheel over the hero: rotate 1°, Shift: 10°. Arrow keys: 1 unit, Shift: 10. Editing pauses animation. Apply to game saves this fit to the project and rebuilds the sprites. Export is an optional backup.</small>
+</aside></div>
+<div class="icons" id="icons"></div>
+<details id="sources"><summary>Generated parts and corrections</summary></details>
+<p><a href="/">Back to the game</a></p></main>
+<script type="module">
+// Workshop-only source-part editing. Game rendering continues to use baked atlases.
+let fitActive=false,compareOriginal=false,fitApplying=false,fitReady=false,fitSpec,fitRig,fitParts=[],fitImages=new Map(),fitSelected='',fitDrawn=[],fitHandles=[],fitUndo=[],fitDrag=null;
+const fitSvg=document.createElementNS('http://www.w3.org/2000/svg','svg'),fitGroup=document.createElementNS(fitSvg.namespaceURI,'g');
+fitSvg.append(fitGroup);
+function svgMatrix(text){fitGroup.setAttribute('transform',text||'');const m=fitGroup.transform.baseVal.consolidate()?.matrix;return m?new DOMMatrix([m.a,m.b,m.c,m.d,m.e,m.f]):new DOMMatrix();}
+function fitPlacement(part,pose){
+ const j=part.anchor.endsWith('back')?0:1;let parent=svgMatrix(pose.body),x=part.target[0],y=part.target[1],angle=0;
+ if(part.anchor.startsWith('hand-')){const h=pose.anchors.hands[j];parent=parent.translate(...h).rotate(pose.anchors.handAngles?.[j]||0);}
+ if(part.anchor.startsWith('hip-')){parent=new DOMMatrix();const h=pose.anchors.hips[j],k=pose.anchors.knees?.[j];x+=h[0];y+=h[1]-40;angle=k?Math.max(-16,Math.min(16,Math.atan2(k[0]-h[0],k[1]-h[1])*180/Math.PI))*.35:0;}
+ if(part.anchor.startsWith('ankle-')){parent=new DOMMatrix();const a=pose.anchors.feet[j],k=pose.anchors.knees?.[j];x+=a[0];y+=a[1];angle=k?Math.max(-25,Math.min(25,Math.atan2(a[1]-k[1],a[0]-k[0])*180/Math.PI-90))*.45:0;}
+ let matrix=parent.translate(x,y).rotate(angle);
+ if(part.slot==='cape')matrix=matrix.multiply(svgMatrix(pose.cape));
+ return {matrix:matrix.rotate(part.rotation||0),parent};
+}
+function drawFitPart(id,x,size,large){
+ const part=fitParts.find(p=>p.id===id),asset=fitImages.get(id),pose=fitRig.poses[frame];
+ const bounds=meta.viewBox||fitRig.viewBox;
+ const screen=new DOMMatrix().translate(x-size*meta.anchor[0],317-size*meta.anchor[1]).scale(size/bounds[2],size/bounds[3]).translate(-bounds[0],-bounds[1]);
+ const placement=fitPlacement(part,pose),matrix=screen.multiply(placement.matrix),[w,h]=part.size,left=-w*part.pivot[0],top=-h*part.pivot[1];
+ ctx.save();if(fitActive&&part.id!==fitSelected)ctx.globalAlpha=Number($('fit-others').value);ctx.transform(matrix.a,matrix.b,matrix.c,matrix.d,matrix.e,matrix.f);ctx.drawImage(asset.image,left,top,w,h);ctx.restore();
+ if(large)fitDrawn.push({part,matrix,moveMatrix:screen.multiply(placement.parent),left,top,w,h,asset});
+}
+function drawFitSelection(){
+ fitHandles=[];const item=fitDrawn.find(v=>v.part.id===fitSelected);if(!item)return;
+ const {matrix,left,top,w,h}=item,points=[[left,top],[left+w,top],[left+w,top+h],[left,top+h]].map(([x,y])=>matrix.transformPoint({x,y}));
+ ctx.save();ctx.strokeStyle='#008dce';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+ const anchor=matrix.transformPoint({x:0,y:0});ctx.beginPath();ctx.arc(anchor.x,anchor.y,3,0,Math.PI*2);ctx.stroke();
+ points.forEach((p,index)=>{ctx.fillStyle='#fffaf0';ctx.fillRect(p.x-5,p.y-5,10,10);ctx.strokeRect(p.x-5,p.y-5,10,10);fitHandles.push({x:p.x,y:p.y,index,item});});ctx.restore();
+}
+function fitPart(){return fitParts.find(p=>p.id===fitSelected);}
+function syncFitFields(){const p=fitPart();if(!p)return;$('fit-part').value=p.id;for(const [id,v] of [['x',p.target[0]],['y',p.target[1]],['w',p.size[0]],['h',p.size[1]],['angle',p.rotation||0]])$('fit-'+id).value=Math.round(v*100)/100;$('fit-angle-value').textContent=`${Math.round(p.rotation||0)}°`;$('fit-undo').disabled=!fitUndo.length;}
+function rememberFit(){fitUndo.push(structuredClone(fitParts));if(fitUndo.length>80)fitUndo.shift();}
+function saveFit(){try{localStorage.setItem(`forest-forge-fit-${setId}`,JSON.stringify({parts:fitParts}));$('fit-message').textContent='Unsaved changes · click Apply to game.';}catch{$('fit-message').textContent='Browser storage unavailable · export to keep changes.';}syncFitFields();draw();}
+function selectFit(id){fitSelected=id;const p=fitPart();enabled.add(p.slot);const input=document.querySelector(`#pieces input[value="${p.slot}"]`);if(input)input.checked=true;syncFitFields();draw();}
+async function loadFit(){
+ if(!fitSpec){
+  const responses=await Promise.all([fetch(`design/sets/${setId}/set.json?v=${assetVersion}`),fetch(`design/hero-base-v2-poses.json?v=${assetVersion}`)]);if(responses.some(r=>!r.ok))throw Error('Could not load fitting sources');
+  [fitSpec,fitRig]=await Promise.all(responses.map(r=>r.json()));fitParts=structuredClone(fitSpec.parts);
+  await Promise.all(fitParts.map(async part=>{const image=new Image();image.src=`${assetPath}/${part.id}.png?v=${assetVersion}`;await image.decode();const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(image,0,0);fitImages.set(part.id,{image,pixels:cx.getImageData(0,0,c.width,c.height).data});}));
+  try{const saved=JSON.parse(localStorage.getItem(`forest-forge-fit-${setId}`));if(saved?.parts)for(const p of fitParts){const v=saved.parts.find(s=>s.id===p.id);if(v&&v.target?.length===2&&v.size?.length===2&&[...v.target,...v.size,v.rotation||0].every(Number.isFinite)&&v.size.every(n=>n>=5&&n<=1000)){p.target=v.target;p.size=v.size;p.rotation=v.rotation||0;}}}catch{}
+  for(const p of fitParts){const option=document.createElement('option');option.value=p.id;option.textContent=p.id.replaceAll('-',' ');$('fit-part').append(option);}fitSelected=fitParts.find(p=>p.id==='chest')?.id||fitParts[0].id;fitReady=true;
+ }
+}
+async function toggleFit(){
+ $('fit-toggle').disabled=true;
+ try{
+ await loadFit();compareOriginal=false;$('fit-panel').inert=false;$('fit-compare').setAttribute('aria-pressed','false');
+ fitActive=!fitActive;$('fit-toggle').setAttribute('aria-pressed',String(fitActive));$('fit-panel').hidden=!fitActive;document.querySelector('.fit-layout').classList.toggle('editing',fitActive);canvas.classList.toggle('fitting',fitActive);
+ if(fitActive){playing=false;selectFit(fitSelected);}$('fit-message').textContent='Showing your current fit · Apply to save it to the project.';
+ playLabel();resize();
+ }catch(e){$('fit-message').textContent=`Fit unavailable: ${e.message}`;fitSpec=null;}finally{$('fit-toggle').disabled=false;}
+}
+async function applyFit(){
+ if(fitApplying)return;fitApplying=true;playing=false;playLabel();$('fit-panel').inert=true;$('fit-toggle').disabled=true;$('fit-apply').disabled=true;$('fit-test').disabled=true;$('fit-compare').disabled=true;$('fit-apply').textContent='Applying…';$('fit-message').textContent='Saving and rebuilding sprites…';
+ try{
+ const response=await fetch('/__workshop/apply/'+setId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parts:fitParts})});
+ const result=await response.json().catch(()=>({error:'Restart the local preview with npm start to enable Apply.'}));if(!response.ok)throw Error(result.error||'Could not apply the fit');
+ fitSpec=result.spec;fitParts=structuredClone(result.spec.parts);const revision=Date.now(),nextMeta=await fetch(assetPath+'/atlas.json?v='+revision).then(r=>r.json()),nextImage=new Image();nextImage.src=assetPath+'/preview-atlas.png?v='+revision;await nextImage.decode();Object.assign(meta,nextMeta);image=nextImage;
+ document.querySelectorAll('#icons img').forEach(img=>img.src=assetPath+'/'+img.alt+'-icon.png?v='+revision);
+ try{localStorage.setItem('forest-forge-fit-'+setId,JSON.stringify({parts:fitParts}));localStorage.setItem('forest-forge-art-update',JSON.stringify({id:setId,revision}));}catch{}
+ compareOriginal=false;$('fit-compare').setAttribute('aria-pressed','false');syncFitFields();draw();$('fit-message').textContent='Applied to project and game sprites.';return true;
+ }catch(error){$('fit-message').textContent='Not applied: '+error.message;}
+ finally{fitApplying=false;$('fit-panel').inert=false;$('fit-toggle').disabled=false;$('fit-apply').disabled=false;$('fit-test').disabled=false;$('fit-compare').disabled=false;$('fit-apply').textContent='Apply to game';}
+}
+function fitPointer(event){const r=canvas.getBoundingClientRect();return{x:(event.clientX-r.left)*width/r.width,y:(event.clientY-r.top)*355/r.height};}
+function hitFit(item,point){const p=item.matrix.inverse().transformPoint(point),u=(p.x-item.left)/item.w,v=(p.y-item.top)/item.h;if(u<0||u>=1||v<0||v>=1)return false;const image=item.asset.image;return item.asset.pixels[(Math.floor(v*image.height)*image.width+Math.floor(u*image.width))*4+3]>24;}
+function startFitDrag(e){
+ if(!fitActive||fitApplying||compareOriginal||e.button!==0||!e.isPrimary)return;const point=fitPointer(e),handle=fitHandles.find(p=>Math.hypot(p.x-point.x,p.y-point.y)<12);
+ const item=handle?.item||[...fitDrawn].reverse().find(v=>(v.part.id===fitSelected||Number($('fit-others').value)>0)&&hitFit(v,point));if(!item)return;
+ e.preventDefault();canvas.focus();playing=false;playLabel();selectFit(item.part.id);rememberFit();fitDrag={pointer:e.pointerId,start:point,part:structuredClone(item.part),item,corner:handle?.index};canvas.setPointerCapture(e.pointerId);
+}
+function moveFitDrag(e){
+ if(!fitDrag||fitDrag.pointer!==e.pointerId)return;const d=fitDrag,point=fitPointer(e),p=fitPart();
+ if(d.corner===undefined){const inverse=d.item.moveMatrix.inverse(),a=inverse.transformPoint(d.start),b=inverse.transformPoint(point);p.target=[d.part.target[0]+b.x-a.x,d.part.target[1]+b.y-a.y];}
+ else{const local=d.item.matrix.inverse().transformPoint(point),sx=[0,3].includes(d.corner)?-d.part.pivot[0]:1-d.part.pivot[0],sy=d.corner<2?-d.part.pivot[1]:1-d.part.pivot[1];let w=Math.abs(sx)>.01?local.x/sx:d.part.size[0],h=Math.abs(sy)>.01?local.y/sy:d.part.size[1];if($('fit-lock').checked){const scale=Math.abs(w/d.part.size[0]-1)>Math.abs(h/d.part.size[1]-1)?w/d.part.size[0]:h/d.part.size[1];const bounded=Math.max(5/Math.min(...d.part.size),Math.min(1000/Math.max(...d.part.size),scale));w=d.part.size[0]*bounded;h=d.part.size[1]*bounded;}p.size=[Math.max(5,Math.min(1000,w)),Math.max(5,Math.min(1000,h))];}
+ syncFitFields();draw();
+}
+function endFitDrag(e){if(!fitDrag||e.pointerId!==fitDrag.pointer)return;fitDrag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);saveFit();}
+function initFitControls(){
+ $('fit-test').disabled=false;
+ $('fit-toggle').disabled=false;$('fit-apply').disabled=false;$('fit-compare').disabled=false;$('fit-apply').onclick=applyFit;$('fit-test').onclick=async()=>{if(await applyFit())location.href='/?outfit='+encodeURIComponent(setId);};$('fit-compare').onclick=()=>{compareOriginal=!compareOriginal;$('fit-panel').inert=compareOriginal;$('fit-compare').setAttribute('aria-pressed',String(compareOriginal));$('fit-message').textContent=compareOriginal?'Original saved build · click again to return to your fit.':'Showing your current fit.';draw();};$('fit-toggle').onclick=toggleFit;$('fit-part').onchange=()=>selectFit($('fit-part').value);$('fit-others').onchange=draw;
+ for(const name of ['x','y','w','h'])$('fit-'+name).onchange=()=>{const input=$('fit-'+name),value=input.valueAsNumber;if(!Number.isFinite(value)){syncFitFields();return;}rememberFit();const p=fitPart();if(name==='x'||name==='y')p.target[name==='x'?0:1]=value;else{const index=name==='w'?0:1,next=Math.max(5,Math.min(1000,value));if($('fit-lock').checked){const scale=Math.max(5/Math.min(...p.size),Math.min(1000/Math.max(...p.size),next/p.size[index]));p.size=p.size.map(n=>n*scale);}else p.size[index]=next;}saveFit();};
+ let rotating=false;$('fit-angle').oninput=()=>{if(!rotating){rememberFit();rotating=true;}fitPart().rotation=Number($('fit-angle').value);$('fit-angle-value').textContent=`${fitPart().rotation}°`;draw();};$('fit-angle').onchange=()=>{rotating=false;saveFit();};
+ $('fit-reset').onclick=()=>{rememberFit();fitParts[fitParts.findIndex(p=>p.id===fitSelected)]=structuredClone(fitSpec.parts.find(p=>p.id===fitSelected));saveFit();};
+ $('fit-undo').onclick=()=>{if(fitUndo.length){fitParts=fitUndo.pop();saveFit();}};
+ $('fit-export').onclick=()=>{const blob=new Blob([JSON.stringify({...fitSpec,parts:fitParts},null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${setId}-fit.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('fit-message').textContent='Fit exported · ready to apply and rebuild.';};
+ canvas.addEventListener('pointerdown',startFitDrag);canvas.addEventListener('pointermove',moveFitDrag);canvas.addEventListener('pointerup',endFitDrag);canvas.addEventListener('pointercancel',endFitDrag);canvas.addEventListener('lostpointercapture',endFitDrag);
+ canvas.addEventListener('wheel',e=>{if(!fitActive||fitApplying||compareOriginal||!fitPart()||fitDrag||e.ctrlKey||!e.deltaY)return;e.preventDefault();rememberFit();const p=fitPart(),step=e.shiftKey?10:1;p.rotation=(((p.rotation||0)+Math.sign(e.deltaY)*step+180)%360+360)%360-180;playing=false;playLabel();saveFit();},{passive:false});
+ canvas.addEventListener('keydown',e=>{if(!fitActive||fitApplying||compareOriginal)return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();$('fit-undo').click();return;}const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(!delta)return;e.preventDefault();rememberFit();const p=fitPart(),step=e.shiftKey?10:1;p.target=p.target.map((v,i)=>v+delta[i]*step);saveFit();});
+}
+const $=id=>document.getElementById(id),setId=new URLSearchParams(location.search).get('set')||'hunter-hides';if(!/^[a-z0-9-]+$/.test(setId))throw Error('Invalid set ID');const assetVersion=Date.now(),assetPath=`assets/sets/${setId}`,meta=await fetch(`${assetPath}/atlas.json?v=${assetVersion}`).then(r=>r.json());let image=new Image();$('set-title').textContent=meta.name;for(const [i,file] of meta.sourceSheets.entries()){const caption=document.createElement('p');caption.textContent=i?'Corrected parts':'Original parts sheet';const source=new Image();source.className='source';source.alt=caption.textContent;source.src=`design/sets/${setId}/${file}?v=${assetVersion}`;$('sources').append(caption,source);}image.src=`${assetPath}/preview-atlas.png?v=${assetVersion}`;await image.decode();
+const enabled=new Set(Object.keys(meta.slots));for(const slot of enabled){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=true;input.value=slot;input.onchange=()=>{input.checked?enabled.add(slot):enabled.delete(slot);draw();};label.append(input,document.createTextNode(slot[0].toUpperCase()+slot.slice(1)));$('pieces').append(label);const img=new Image();img.src=`${assetPath}/${slot}-icon.png?v=${assetVersion}`;img.alt=slot;$('icons').append(img);}
+const canvas=$('preview'),ctx=canvas.getContext('2d'),seqs={walk:[1,2,3,4,5,6,7,8],attack:[0,0,9,10,11,12,13,14,0,0],thrust:[0,0,16,17,18,19,20,21,0,0],sword:[0,0,9,10,11,12,13,14,0,0,0,0,16,17,18,19,20,21,0,0],idle:[0]};let frame=1,elapsed=0,width=600,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,last=performance.now(),lastDraw=0;
+function draw(){fitDrawn=[];ctx.fillStyle='#fffaf0';ctx.fillRect(0,0,width,355);ctx.fillStyle='#e6c182';ctx.fillRect(0,306,width,49);ctx.font='bold 13px Trebuchet MS';ctx.fillStyle='#405746';ctx.textAlign='center';ctx.fillText('Enlarged',width*.37,26);ctx.fillText('Game size',width*.84,26);for(const [x,h] of [[width*.37,232],[width*.84,59/1.5]]){const size=h/meta.bodyHeight;ctx.fillStyle='#b2915844';ctx.beginPath();ctx.ellipse(x,317,h*.27,Math.max(3,h*.03),0,0,Math.PI*2);ctx.fill();meta.rows.forEach((name,row)=>{if(name==='head-helmet'||name.endsWith('-booted'))return;if(enabled.has('gloves')&&['back-hand','front-hand'].includes(name))return;if(enabled.has('legs')&&name==='shorts')return;const slot=Object.keys(meta.slots).find(k=>meta.slots[k].includes(row));if(slot&&!enabled.has(slot))return;if(name==='head'&&enabled.has('helmet'))row=meta.rows.indexOf('head-helmet');if(enabled.has('boots')&&['back-leg','front-leg'].includes(name))row=meta.rows.indexOf(name+'-booted');if(fitReady&&!compareOriginal&&fitParts.some(p=>p.id===name)){drawFitPart(name,x,size,h===232);return;}ctx.save();if(fitActive&&!compareOriginal)ctx.globalAlpha=Number($('fit-others').value);const cell=meta.cell*2;ctx.drawImage(image,frame*cell,row*cell,cell,cell,x-size*meta.anchor[0],317-size*meta.anchor[1],size,size);ctx.restore();});}if(fitActive&&!compareOriginal)drawFitSelection();canvas.dataset.frame=frame;$('status').textContent=`Frame ${frame} · 39 px body in game · ${enabled.size} / ${Object.keys(meta.slots).length} visible slots`;}
+function resize(){width=canvas.parentElement.clientWidth;const d=Math.min(devicePixelRatio||1,2);canvas.width=width*d;canvas.height=355*d;canvas.style.height='355px';ctx.setTransform(d,0,0,d,0,0);draw();}function playLabel(){$('pause').textContent=playing?'Pause':'Play';}
+$('all').onclick=()=>{document.querySelectorAll('#pieces input').forEach(i=>{i.checked=true;enabled.add(i.value);});draw();};$('bare').onclick=()=>{enabled.clear();document.querySelectorAll('#pieces input').forEach(i=>i.checked=false);draw();};$('pause').onclick=()=>{playing=!playing;playLabel();};$('animation').onchange=()=>{elapsed=0;frame=seqs[$('animation').value][0];draw();};$('next').onclick=()=>{playing=false;playLabel();const seq=seqs[$('animation').value],i=(Math.round(elapsed*10)+1)%seq.length;frame=seq[i];elapsed=i/10;draw();};
+document.addEventListener('visibilitychange',()=>last=performance.now());function tick(t){const dt=Math.min(.05,(t-last)/1000);last=t;if(playing&&!document.hidden){elapsed+=dt;const seq=seqs[$('animation').value];frame=seq[Math.floor(elapsed*10)%seq.length];if(t-lastDraw>1000/30){draw();lastDraw=t;}}requestAnimationFrame(tick);}new ResizeObserver(resize).observe(canvas.parentElement);resize();playLabel();requestAnimationFrame(tick);
+await loadFit();draw();initFitControls();$('fit-message').textContent='Showing your current fit · Apply to save it to the project.';
+if(new URLSearchParams(location.search).get('fit')==='1')await toggleFit();
+</script></html>

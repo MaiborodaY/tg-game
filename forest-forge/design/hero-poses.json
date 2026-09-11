@@ -1,0 +1,202 @@
+{
+  "sourceCell": 160,
+  "pngCell": 120,
+  "viewBox": [
+    -8,
+    -12,
+    160,
+    160
+  ],
+  "anchor": [
+    64,
+    128
+  ],
+  "grip": [
+    80,
+    75
+  ],
+  "drawOrder": [
+    "cape",
+    "body",
+    "legs",
+    "chest",
+    "shoulders",
+    "back-forearm",
+    "helmet",
+    "weapon",
+    "gloves"
+  ],
+  "animations": {
+    "idle": [
+      0
+    ],
+    "walk": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "attack": [
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "contact": 12,
+    "defeat": [
+      15
+    ]
+  },
+  "poses": [
+    {
+      "frame": 0,
+      "body": "translate(0 0) rotate(0 55 88)",
+      "backArm": "rotate(0 43 65)",
+      "frontArm": "rotate(0 63 66)",
+      "backLeg": "M49 85 44 103 37 115",
+      "frontLeg": "M60 86 65 103 72 115",
+      "cape": "rotate(0 40 63)"
+    },
+    {
+      "frame": 1,
+      "body": "translate(0 0) rotate(0 55 88)",
+      "backArm": "rotate(12 43 65)",
+      "frontArm": "rotate(-10 63 66)",
+      "backLeg": "M49 85 43 101 33 115",
+      "frontLeg": "M60 86 65 101 78 115",
+      "cape": "rotate(-2 40 63)"
+    },
+    {
+      "frame": 2,
+      "body": "translate(0 1) rotate(0 55 88)",
+      "backArm": "rotate(6 43 65)",
+      "frontArm": "rotate(-5 63 66)",
+      "backLeg": "M49 85 45.5 100.5 37.5 113",
+      "frontLeg": "M60 86 61 101.5 67.5 115",
+      "cape": "rotate(-4 40 63)"
+    },
+    {
+      "frame": 3,
+      "body": "translate(0 2) rotate(0 55 88)",
+      "backArm": "rotate(0 43 65)",
+      "frontArm": "rotate(0 63 66)",
+      "backLeg": "M49 85 48 100 42 111",
+      "frontLeg": "M60 86 57 102 57 115",
+      "cape": "rotate(-2 40 63)"
+    },
+    {
+      "frame": 4,
+      "body": "translate(0 1) rotate(0 55 88)",
+      "backArm": "rotate(-6 43 65)",
+      "frontArm": "rotate(6 63 66)",
+      "backLeg": "M49 85 49.5 100.5 55 113",
+      "frontLeg": "M60 86 55 102 47 115",
+      "cape": "rotate(0 40 63)"
+    },
+    {
+      "frame": 5,
+      "body": "translate(0 0) rotate(0 55 88)",
+      "backArm": "rotate(-12 43 65)",
+      "frontArm": "rotate(12 63 66)",
+      "backLeg": "M49 85 51 101 68 115",
+      "frontLeg": "M60 86 53 102 37 115",
+      "cape": "rotate(2 40 63)"
+    },
+    {
+      "frame": 6,
+      "body": "translate(0 1) rotate(0 55 88)",
+      "backArm": "rotate(-6 43 65)",
+      "frontArm": "rotate(6 63 66)",
+      "backLeg": "M49 85 50 101.5 61 115",
+      "frontLeg": "M60 86 57.5 101 51 113",
+      "cape": "rotate(4 40 63)"
+    },
+    {
+      "frame": 7,
+      "body": "translate(0 2) rotate(0 55 88)",
+      "backArm": "rotate(0 43 65)",
+      "frontArm": "rotate(0 63 66)",
+      "backLeg": "M49 85 49 102 54 115",
+      "frontLeg": "M60 86 62 100 65 111",
+      "cape": "rotate(2 40 63)"
+    },
+    {
+      "frame": 8,
+      "body": "translate(0 1) rotate(0 55 88)",
+      "backArm": "rotate(6 43 65)",
+      "frontArm": "rotate(-5 63 66)",
+      "backLeg": "M49 85 46 101.5 43.5 115",
+      "frontLeg": "M60 86 63.5 100.5 71.5 113",
+      "cape": "rotate(0 40 63)"
+    },
+    {
+      "frame": 9,
+      "body": "translate(0 0.5) rotate(-1.5 55 88)",
+      "backArm": "rotate(2 43 65)",
+      "frontArm": "rotate(-33.5 63 66)",
+      "backLeg": "M49 85 43.5 103.5 36.5 115",
+      "frontLeg": "M60 86 64.5 103.5 72.5 115",
+      "cape": "rotate(-2 40 63)"
+    },
+    {
+      "frame": 10,
+      "body": "translate(0 1) rotate(-3 55 88)",
+      "backArm": "rotate(4 43 65)",
+      "frontArm": "rotate(-67 63 66)",
+      "backLeg": "M49 85 43 104 36 115",
+      "frontLeg": "M60 86 64 104 73 115",
+      "cape": "rotate(-4 40 63)"
+    },
+    {
+      "frame": 11,
+      "body": "translate(0 1) rotate(2.85 55 88)",
+      "backArm": "rotate(-10.3 43 65)",
+      "frontArm": "rotate(-4.6 63 66)",
+      "backLeg": "M49 85 43 104 34.7 115",
+      "frontLeg": "M60 86 67.25 103.35 76.9 115",
+      "cape": "rotate(-6 40 63)"
+    },
+    {
+      "frame": 12,
+      "body": "translate(0 1) rotate(6 55 88)",
+      "backArm": "rotate(-18 43 65)",
+      "frontArm": "rotate(29 63 66)",
+      "backLeg": "M49 85 43 104 34 115",
+      "frontLeg": "M60 86 69 103 79 115",
+      "cape": "rotate(-8 40 63)"
+    },
+    {
+      "frame": 13,
+      "body": "translate(0 0.5) rotate(4 55 88)",
+      "backArm": "rotate(-11.5 43 65)",
+      "frontArm": "rotate(19 63 66)",
+      "backLeg": "M49 85 43.5 103.5 35.5 115",
+      "frontLeg": "M60 86 67.5 103 75.5 115",
+      "cape": "rotate(-4 40 63)"
+    },
+    {
+      "frame": 14,
+      "body": "translate(0 0) rotate(2 55 88)",
+      "backArm": "rotate(-5 43 65)",
+      "frontArm": "rotate(9 63 66)",
+      "backLeg": "M49 85 44 103 37 115",
+      "frontLeg": "M60 86 66 103 72 115",
+      "cape": "rotate(0 40 63)"
+    },
+    {
+      "frame": 15,
+      "body": "translate(-7 5) rotate(69 58 88)",
+      "backArm": "rotate(0 43 65)",
+      "frontArm": "rotate(-86 63 66)",
+      "backLeg": "M49 85 44 103 37 115",
+      "frontLeg": "M60 86 65 103 72 115",
+      "cape": "rotate(0 40 63)"
+    }
+  ]
+}

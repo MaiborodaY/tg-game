@@ -1,0 +1,173 @@
+{
+  "source": [
+    1448,
+    1086
+  ],
+  "parts": [
+    {
+      "id": "helmet",
+      "source": "source.png",
+      "crop": [
+        33,
+        44,
+        332,
+        340
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "chest",
+      "source": "source.png",
+      "crop": [
+        413,
+        80,
+        291,
+        226
+      ],
+      "edgeContact": true
+    },
+    {
+      "id": "cape",
+      "source": "source.png",
+      "crop": [
+        737,
+        79,
+        338,
+        287
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "weapon",
+      "source": "source.png",
+      "crop": [
+        1108,
+        41,
+        301,
+        341
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-back",
+      "source": "source.png",
+      "crop": [
+        63,
+        425,
+        275,
+        267
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-front",
+      "source": "source.png",
+      "crop": [
+        436,
+        441,
+        217,
+        217
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-back",
+      "source": "gloves-source.png",
+      "crop": [
+        172,
+        166,
+        557,
+        550
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-front",
+      "source": "gloves-source.png",
+      "crop": [
+        970,
+        161,
+        659,
+        565
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-back",
+      "source": "source.png",
+      "crop": [
+        40,
+        761,
+        298,
+        252
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-front",
+      "source": "source.png",
+      "crop": [
+        415,
+        769,
+        278,
+        222
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-back",
+      "source": "separate-legs-boots-source.png",
+      "crop": [
+        50,
+        46,
+        353,
+        370
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-front",
+      "source": "separate-legs-boots-source.png",
+      "crop": [
+        482,
+        44,
+        354,
+        380
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-back",
+      "source": "separate-legs-boots-source.png",
+      "crop": [
+        931,
+        94,
+        309,
+        284
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-front",
+      "source": "separate-legs-boots-source.png",
+      "crop": [
+        1372,
+        92,
+        352,
+        284
+      ],
+      "edgeContact": false
+    }
+  ],
+  "viewBox": [
+    450,
+    -30,
+    932,
+    932
+  ],
+  "cell": 128,
+  "clippedPixels": 0,
+  "emptyPartFrames": 0,
+  "atlasBytes": 335143,
+  "decodedBytes": 37486592
+}

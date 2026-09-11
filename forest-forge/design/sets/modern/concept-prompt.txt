@@ -1,0 +1,23 @@
+Use case: stylized-concept.
+Asset type: Forest Forge armor costume concept sheet.
+Input image 1: approved GUNPOWDER concept sheet. Use ONLY its chunky colorful cartoon art treatment, bold contours, simple shading and page composition. These are NEW epochs; do not reuse its historical costumes.
+Input image 2: the game's actual bare hero. Preserve THIS exact friendly peach face with two black vertical eyes, small orange mouth, brown tousled hair, oversized head, very short stout limbs, compact body, closed fists, neutral standing stance and 3/4 RIGHT-facing orientation.
+
+Create ONE landscape 1536x1024 reference board containing THREE distinct full costumes at equal base-body scale on a warm ivory background. Three large full-body heroes across the page, title at top and each name beneath. A narrow grass-bordered dirt road along the bottom carries the same three heroes repeated small for readability, as in input 1. The small copies must faithfully match the large designs.
+
+Epoch 5: MODERN.
+Title text exactly: "MODERN / ARMOR CONCEPTS".
+Left label: "FIELD SCOUT". Middle label: "COMMANDO". Right label: "HEAVY TROOPER".
+
+LEFT / FIELD SCOUT: a compact olive-green soft field cap with a short brim and one broad khaki band, hair peeking out underneath. Light olive-green field vest with two large simple tan chest panels, khaki shirt sleeves, small rounded olive shoulder pads. Full brown gloves. Olive split hip panels over tan trouser legs and plain dark olive knee/shin guards. Complete short brown ankle boots. Short moss-green field cape with one broad darker fold. Lightest silhouette of the three: practical soft cloth and leather, clear cap shape, olive and khaki color blocks. No camouflage pattern and no extra straps or pockets.
+
+MIDDLE / COMMANDO: a bold crimson-red beret sloping to one side, with one plain small cream patch, no real-world emblem. Charcoal-blue fitted ballistic vest over dark blue cloth, ONE broad pale steel center panel; compact rounded blue-black shoulder guards. Full charcoal gloves, blue-gray trousers with simple dark knee guards, complete charcoal ankle boots with a single broad blue-gray collar. Short rich crimson cape, darker burgundy inside. Medium sturdy silhouette, red beret and red cape frame the deep blue body, face wide open. Avoid an all-black muddy costume.
+
+RIGHT / HEAVY TROOPER: a broad rounded ochre/tan modern combat helmet with one smooth dark gray rim and a modest top ridge, face completely open, no visor. Bulky but compact sand-gold ballistic chest plate over dark gray cloth, ONE broad lighter tan front panel and ONE simple horizontal charcoal belt. Big but simple rounded tan shoulder plates, full dark gray padded gloves. Two chunky sand-gold hip plates over charcoal trousers with large simple tan shin guards. Complete separate dark brown boots with broad tan toe caps. Short burnt-orange/tan cape with one shadow fold. Heaviest silhouette, recognizable as stylized modern body armor, NOT medieval plate armor or a spacesuit. No rails, antennas, hoses, cables or tiny tactical attachments.
+
+Make the three silhouettes and palettes unmistakably different while staying in one coherent modern military-adventure epoch. No country flags, real-world unit emblems, text printed on armor or political symbols.
+
+All three are costumes on the SAME existing small hero, not different characters. Match the reference body proportions and neutral unarmed pose exactly; same friendly face and skin tone, full face open and both eyes clearly visible. No beards, face masks or opaque eye visors.
+SEVEN modular armor slots must read clearly: headgear, shoulders, chest, gloves, leggings (hip panels and lower-leg coverings), complete separate boots, and a short cape behind the body. Chest ends at waist; hip panels belong to leggings. Boots have their own complete foot shape and finished ankle collar distinct from leg coverings. Full closed gloves cover the fists, no bracelets or hollow tubes.
+Art direction: juicy saturated color, crisp thick near-black outer outlines, SIMPLE two-to-three-region cel shading with one broad highlight per material. Bold shapes and big color masses must remain readable on a roughly 39px-tall game hero. Rounded game-asset shapes, not realistic military rendering. No micro-detail, tiny rivets, seam stitching, camouflage speckles, rows of pouches, repeated thin straps, realistic material texture, filigree or complex joint mechanisms.
+No weapons, shields, tools, ammunition, quivers, backpacks or held objects. No extra icons or inventory panels. No dark hollow 3D helmet sockets. Keep every part inside the page, no cropped hats or feet.

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<!-- Base V2: vector reconstruction of the approved concept, in source artwork coordinates.
+     The nine groups are independent layers. Poses substitute limb contours and BODY transform. -->
+<defs>
+<g id="back-leg"><g stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#ffc98b"><path d="{{BACK_LEG}}"/></g></g>
+<g id="front-leg"><g stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#ffc98b"><path d="{{FRONT_LEG}}"/></g></g>
+<g id="back-arm"><g transform="{{BODY}}" fill="#ffc98b" stroke="#0b151c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="{{BACK_ARM}}"/></g></g>
+<g id="torso"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M682 422Q711 410 747 422L800 429Q827 437 839 461L834 527Q791 552 683 532L681 482L659 492L639 455Q659 431 682 422Z" fill="#ffc98b" stroke="none"/><path d="M800 429Q827 437 839 461L834 527Q791 552 683 532L681 482" fill="none"/><path d="M702 424Q753 433 800 431L806 451Q769 465 713 442Z" stroke="none" fill="#f4ad70"/><path d="M686 484L686 527" stroke="#f4ad70" stroke-width="10"/></g></g>
+<g id="shorts"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"><path d="{{SHORTS}}" fill="#fff2d5"/><path d="{{SHORTS_SHADE}}" fill="#e8d5af" stroke="none"/><path d="{{SHORTS_SEAM}}"/></g></g>
+<g id="front-arm"><g transform="{{BODY}}" fill="#ffc98b" stroke="#0b151c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="{{FRONT_ARM}}"/></g></g>
+<g id="back-hand"><g transform="{{BODY}}"><g transform="{{BACK_HAND}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#ffc98b"><path d="M-27-24Q-35-4-29 13Q-21 28-3 25Q11 30 22 17Q29 8 21-6L17-24Z" stroke="none"/><path d="M-27-24Q-35-4-29 13Q-21 28-3 25Q11 30 22 17Q29 8 21-6" fill="none"/></g></g></g>
+<g id="front-hand"><g transform="{{BODY}}"><g transform="{{FRONT_HAND}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#ffc98b"><path d="M-24-23Q-7-42 16-29Q40-20 34 2Q30 25 9 34Q-8 37-25 19Q-36 8-26-8Q-33-17-24-23Z"/></g></g></g>
+<g id="head"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M680 282Q711 231 800 251Q882 250 888 315L884 366Q882 412 830 422Q758 435 712 400L682 392Q645 392 640 359Q638 331 660 321Z" fill="#ffc98b"/>
+  <path d="M722 274Q752 303 810 285L866 298L873 322Q849 314 843 287L805 299L775 278Q752 303 713 310Z" fill="#f4ad70" stroke="none"/>
+  <path d="M642 323L624 338L626 317L606 326L615 280L600 278Q598 263 614 244L641 215L656 199L651 188Q643 175 665 162Q697 143 738 158Q747 123 779 136Q817 135 850 171L883 157Q899 158 905 185L909 221Q938 253 930 290L908 280L909 305L891 298L878 276Q866 293 845 299L849 276Q830 293 816 294L811 253Q778 284 719 291L712 338Q711 363 696 347L685 325Q660 305 642 323Z" fill="#6c442c"/>
+  <path d="M900 223Q918 248 919 270L899 262L887 279L880 267Q865 282 854 281L858 263L847 272L849 276Q865 271 878 258L899 276L908 280L930 290Q938 253 909 221Z" fill="#563322" stroke="none"/>
+  <path d="M657 270Q678 240 708 230" fill="none" stroke="#523222" stroke-width="12"/>
+  <path d="M792 324L792 353M857 324L857 353" fill="none" stroke-width="19"/>
+  <path d="M815 391L825 391" fill="none" stroke="#f39960" stroke-width="8"/>
+</g></g>
+</defs>
+</svg>

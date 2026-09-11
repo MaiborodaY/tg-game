@@ -1,0 +1,19 @@
+Use case: stylized-concept, production equipment sprite parts for Forest Forge.
+Input 1 is the actual hero BODY PARTS LAYOUT AND GEOMETRY. Input 2 is the APPROVED GUNPOWDER COSTUME concept; use ONLY the character specified below.
+Generate ONE square 1536x1536 sheet with a strictly regular 4x4 grid of EXACTLY THIRTEEN COMPLETE ISOLATED ARMOR PIECES. Each cell 384x384; generous empty space at least 28 px between every silhouette and its cell border. All three deliberately empty cells MUST remain empty. Do not assemble a hero or include any skin or face. Keep each part's facing direction, handedness and outline proportions suited to the corresponding bare-body template.
+
+Cell layout:
+Row 1: [HEADGEAR ONLY, fitted CHEST ONLY neck to waist, short CAPE swept left, EMPTY].
+Row 2: [REAR SHOULDER, FRONT SHOULDER, complete CLOSED REAR GLOVE, complete CLOSED FRONT GLOVE].
+Row 3: [REAR HIP CLOTH PANEL, FRONT HIP CLOTH PANEL, REAR LOWER-LEG COVERING WITHOUT FOOT, FRONT LOWER-LEG COVERING WITHOUT FOOT].
+Row 4: [complete REAR SHORT ANKLE BOOT, complete FRONT SHORT ANKLE BOOT, EMPTY, EMPTY].
+
+Headgear is JUST the hat/shako above the face: no head, hair, ears, face, chin or neck. The game supplies hair and face beneath it. Render hat exterior in the same 3/4 RIGHT-facing angle as the concept; brim underside thin and flat, not a big black interior cavity. No low hanging side walls below the brim. Keep the whole feather/plume inside its tile.
+Chest stops at the waist with a finished bottom edge; no attached shoulders, arms, hands, long skirt or coat tails. Hip panels are two COMPLETE separate cloth shapes for the left/right legs, never a single pair of pants. Lower-leg coverings fit the template shins and end above the boots, with finished rounded exterior edges: no soles or toes, no empty tubes, no holes.
+Gloves cover complete fists including the palm and cuff, as seen from OUTSIDE in the template orientation. Simple mitten shape with one thumb lump, no skin stumps, open sockets, hollow cuffs, detached bracelets or detailed fingers.
+Boots are complete SHORT ankle footwear including closed toes, heels, soles and broad flat cuff bands. Leggings and boots MUST NOT be combined. No open oval tops, dark recessed rims, hollow interiors or cropped-off foot fragments. Orient the rear and front boots to cover their corresponding bare-foot template, not two identical mirrored shoes.
+Every sprite has its own continuous clean near-black outlined contour. Body-template straight crop edges are guides, not the finished item boundaries.
+Match the approved chunky juicy cartoon finish: saturated colors, heavy crisp near-black outlines, two or three broad cel-shaded regions, large clean highlights. No small rivets, stitching, mail, filigree, speckles, little buttons, or textures. Same light source and facing as the approved concept. Preserve the set's exact design and palette.
+Genuinely transparent alpha background. If alpha cannot be produced use pure #FFFFFF white, including all negative-space gaps. NEVER checkerboard, ivory, gray, cast shadows, grid lines, text, labels, watermarks, body parts, weapons or shields.
+
+Select ONLY the LEFT MUSKETEER. Headgear: wide dark navy cavalier hat, cobalt hatband, one thick sweeping ivory feather; no hair or head. Chest: fitted royal-blue tabard with ONE broad ivory diagonal sash and ivory waistband, no hip flaps. Cape: saturated cobalt with navy inner shadow, one broad fold. Shoulders: brown rounded leather caps with broad blue rims. Gloves: full closed warm dark-brown leather mittens with flat thick cuff bands. Hip panels: blue cloth with broad ivory edges. Separate lower-leg coverings: smooth cream cloth, same broad two-color shading. Boots: complete warm dark-brown short ankle boots with one plain lighter-brown cuff band, black sole, no shin attached.

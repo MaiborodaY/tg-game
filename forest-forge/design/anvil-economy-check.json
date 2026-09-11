@@ -1,0 +1,271 @@
+{
+  "assumptions": {
+    "daysOfTimers": 330,
+    "nominalVisitsPerDay": 2,
+    "missProbability": 0.15,
+    "soldShare": 0.9,
+    "referenceBattleLevel": "round(1 + 179*(anvilLevel-1)/79), static planning reference, not a player rule",
+    "income": "Expected monster kills and sales; not full combat, loot or mastery simulation",
+    "upgradeBudget": "60% of reference income earned during the preceding upgrade; daily references rounded to coins; first upgrade 50 coins; minimum 5% price growth; rounded up to two significant digits",
+    "seed": 819221,
+    "samplesPerScenario": 1000
+  },
+  "results": [
+    {
+      "label": "baseline",
+      "killsPerMinute": 12,
+      "minutesPerVisit": 22.5,
+      "p10": 352.3586692789492,
+      "median": 354.87145951774437,
+      "p90": 357.89544544751215
+    },
+    {
+      "label": "slower_combat",
+      "killsPerMinute": 8,
+      "minutesPerVisit": 22.5,
+      "p10": 360.4029206731939,
+      "median": 366.37109381691164,
+      "p90": 371.9160802134429
+    },
+    {
+      "label": "shorter_sessions",
+      "killsPerMinute": 12,
+      "minutesPerVisit": 15,
+      "p10": 361.8642767885842,
+      "median": 367.35732505684587,
+      "p90": 373.3592719979416
+    },
+    {
+      "label": "faster_combat",
+      "killsPerMinute": 18,
+      "minutesPerVisit": 22.5,
+      "p10": 352.35553442516056,
+      "median": 354.8901411923386,
+      "p90": 357.85672819641576
+    }
+  ],
+  "prices": [
+    0,
+    50,
+    53,
+    56,
+    110,
+    340,
+    1100,
+    2000,
+    3000,
+    4200,
+    4900,
+    5600,
+    6200,
+    6600,
+    7000,
+    7700,
+    9000,
+    10000,
+    12000,
+    13000,
+    15000,
+    20000,
+    23000,
+    26000,
+    30000,
+    32000,
+    35000,
+    38000,
+    42000,
+    48000,
+    51000,
+    65000,
+    69000,
+    78000,
+    84000,
+    90000,
+    95000,
+    110000,
+    120000,
+    130000,
+    140000,
+    150000,
+    160000,
+    170000,
+    180000,
+    200000,
+    220000,
+    240000,
+    260000,
+    280000,
+    300000,
+    340000,
+    360000,
+    400000,
+    420000,
+    470000,
+    500000,
+    530000,
+    560000,
+    600000,
+    640000,
+    680000,
+    730000,
+    790000,
+    860000,
+    930000,
+    990000,
+    1100000,
+    1200000,
+    1300000,
+    1400000,
+    1500000,
+    1600000,
+    1700000,
+    1800000,
+    1900000,
+    2000000,
+    2100000,
+    2300000,
+    2500000
+  ],
+  "milestones": [
+    {
+      "level": 2,
+      "oldPrice": 50,
+      "newPrice": 50,
+      "reference": {
+        "anvil": 1,
+        "battle": 1,
+        "monsterDay": 3780,
+        "salesDay": 1458,
+        "daily": 5238,
+        "hammersDay": 1620,
+        "averageSale": 1
+      }
+    },
+    {
+      "level": 5,
+      "oldPrice": 96,
+      "newPrice": 110,
+      "reference": {
+        "anvil": 3,
+        "battle": 6,
+        "monsterDay": 4789.565217391305,
+        "salesDay": 1458,
+        "daily": 6247.565217391305,
+        "hammersDay": 1620,
+        "averageSale": 1
+      }
+    },
+    {
+      "level": 10,
+      "oldPrice": 576,
+      "newPrice": 4200,
+      "reference": {
+        "anvil": 8,
+        "battle": 17,
+        "monsterDay": 6963.1578947368425,
+        "salesDay": 2187,
+        "daily": 9150.157894736843,
+        "hammersDay": 2430,
+        "averageSale": 1
+      }
+    },
+    {
+      "level": 20,
+      "oldPrice": 1762,
+      "newPrice": 13000,
+      "reference": {
+        "anvil": 18,
+        "battle": 40,
+        "monsterDay": 12078.947368421053,
+        "salesDay": 6591.375,
+        "daily": 18670.322368421053,
+        "hammersDay": 4185,
+        "averageSale": 1.75
+      }
+    },
+    {
+      "level": 30,
+      "oldPrice": 6885,
+      "newPrice": 48000,
+      "reference": {
+        "anvil": 28,
+        "battle": 62,
+        "monsterDay": 20946.315789473683,
+        "salesDay": 12150,
+        "daily": 33096.31578947368,
+        "hammersDay": 6750,
+        "averageSale": 2
+      }
+    },
+    {
+      "level": 40,
+      "oldPrice": 19872,
+      "newPrice": 130000,
+      "reference": {
+        "anvil": 38,
+        "battle": 85,
+        "monsterDay": 36307.8947368421,
+        "salesDay": 15385.544999999998,
+        "daily": 51693.4397368421,
+        "hammersDay": 8505,
+        "averageSale": 2.01
+      }
+    },
+    {
+      "level": 50,
+      "oldPrice": 44280,
+      "newPrice": 280000,
+      "reference": {
+        "anvil": 48,
+        "battle": 107,
+        "monsterDay": 62966.84210526316,
+        "salesDay": 27424.980000000003,
+        "daily": 90391.82210526316,
+        "hammersDay": 10260,
+        "averageSale": 2.97
+      }
+    },
+    {
+      "level": 60,
+      "oldPrice": 103194,
+      "newPrice": 600000,
+      "reference": {
+        "anvil": 58,
+        "battle": 130,
+        "monsterDay": 110742.63157894737,
+        "salesDay": 43794.674999999996,
+        "daily": 154537.30657894738,
+        "hammersDay": 12015,
+        "averageSale": 4.05
+      }
+    },
+    {
+      "level": 70,
+      "oldPrice": 224392,
+      "newPrice": 1300000,
+      "reference": {
+        "anvil": 68,
+        "battle": 153,
+        "monsterDay": 195394.73684210528,
+        "salesDay": 66922.2,
+        "daily": 262316.9368421053,
+        "hammersDay": 14580,
+        "averageSale": 5.1
+      }
+    },
+    {
+      "level": 80,
+      "oldPrice": 457812,
+      "newPrice": 2500000,
+      "reference": {
+        "anvil": 78,
+        "battle": 175,
+        "monsterDay": 336647.36842105264,
+        "salesDay": 97029.90000000001,
+        "daily": 433677.26842105266,
+        "hammersDay": 16335,
+        "averageSale": 6.6000000000000005
+      }
+    }
+  ]
+}

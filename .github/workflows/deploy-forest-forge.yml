@@ -1,0 +1,39 @@
+name: Deploy Forest Forge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "forest-forge/**"
+      - "workers/forest-forge/**"
+      - "workers/draft-battler-pvp/src/telegramAuth.ts"
+      - ".github/workflows/deploy-forest-forge.yml"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+concurrency:
+  group: forest-forge-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Test gameplay and cloud saves locally
+        run: npm --prefix forest-forge test && npm --prefix forest-forge run test:cloud
+      - name: Build lossless runtime assets
+        run: npm --prefix forest-forge run build
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --config workers/forest-forge/wrangler.jsonc

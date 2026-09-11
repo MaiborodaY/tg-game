@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/deploy-gladiator-api.yml"
+      - "workers/gladiator-api/**"
+      - "gladiator-arena/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
   workflow_dispatch:
 
 concurrency:

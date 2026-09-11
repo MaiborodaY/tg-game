@@ -1,0 +1,162 @@
+{
+  "source": [
+    1254,
+    1254
+  ],
+  "parts": [
+    {
+      "id": "helmet",
+      "source": "../futuristic/helmet-repair-source.png",
+      "crop": [
+        945,
+        162,
+        609,
+        503
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "chest",
+      "source": "source.png",
+      "crop": [
+        373,
+        76,
+        246,
+        237
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "cape",
+      "source": "source.png",
+      "crop": [
+        657,
+        77,
+        274,
+        240
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-back",
+      "source": "source.png",
+      "crop": [
+        59,
+        404,
+        223,
+        188
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-front",
+      "source": "source.png",
+      "crop": [
+        383,
+        396,
+        218,
+        193
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-back",
+      "source": "source.png",
+      "crop": [
+        685,
+        406,
+        193,
+        192
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-front",
+      "source": "source.png",
+      "crop": [
+        993,
+        406,
+        200,
+        187
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-back",
+      "source": "source.png",
+      "crop": [
+        55,
+        678,
+        217,
+        188
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-front",
+      "source": "source.png",
+      "crop": [
+        381,
+        669,
+        208,
+        193
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-back",
+      "source": "source.png",
+      "crop": [
+        694,
+        655,
+        191,
+        235
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-front",
+      "source": "source.png",
+      "crop": [
+        1010,
+        656,
+        163,
+        229
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-back",
+      "source": "source.png",
+      "crop": [
+        49,
+        979,
+        230,
+        180
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-front",
+      "source": "source.png",
+      "crop": [
+        371,
+        981,
+        232,
+        190
+      ],
+      "edgeContact": false
+    }
+  ],
+  "viewBox": [
+    450,
+    48,
+    702,
+    702
+  ],
+  "cell": 97,
+  "clippedPixels": 0,
+  "emptyPartFrames": 0,
+  "atlasBytes": 280466,
+  "decodedBytes": 21527792
+}

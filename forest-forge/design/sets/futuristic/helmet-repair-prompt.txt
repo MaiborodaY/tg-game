@@ -1,0 +1,10 @@
+Production armor sprite correction for Forest Forge.
+Input 1: existing EXO TROOPER parts sheet. Edit ONLY its helmet at the top left.
+Input 2: existing REACTOR GUARD parts sheet. Edit ONLY its helmet at the top left.
+Input 3: approved FUTURISTIC costume concept, authoritative for the intended helmet silhouette.
+Return ONE landscape image containing exactly TWO isolated corrected helmets side by side on a uniform PURE WHITE #FFFFFF background. LEFT = ivory/cobalt EXO TROOPER helmet. RIGHT = graphite/orange REACTOR GUARD helmet. No other objects, body, face, hair, skin, labels, grid or shadow. Leave wide margins around each helmet and a wide gap between them.
+
+Preserve each existing helmet's dome, top stripe, near-side circular ear disc, palette, 3/4 RIGHT-facing angle, bold crisp outlines and broad cel shading.
+CRITICAL CORRECTION: remove the thin dangling BLACK far-side line that descends down the RIGHT edge of each helmet's open face area. This unwanted black hook/strap must disappear completely. The helmet's RIGHTMOST FRONT EDGE must END immediately at the lower edge of the brow brim, at forehead height. There must be NO black line, strap, hook, chin guard, cheek flap or other projection hanging below the brow on the right side. The face opening is open downward and to the RIGHT, a clean empty white area. Keep only the broad NEAR-SIDE left ear cover. Do not replace the removed line with a colored plate, flesh, a face or any filler.
+On the exo helmet, keep the broad ivory dome and cobalt stripe; its near-side left cheek/ear cover remains ivory with a cobalt disc. On the reactor helmet keep the graphite dome with orange stripe and orange near-side disc. At the front on the RIGHT the thick outline terminates cleanly at the brim, with nothing hanging below it.
+These are two complete clean open-face helmet sprites as seen worn, no dark interior cavity, no face socket or realistic 3D empty-shell effect. Do not change the overall size of the dome or the ear discs. SOLID PURE WHITE BACKGROUND, absolutely no checkerboard.

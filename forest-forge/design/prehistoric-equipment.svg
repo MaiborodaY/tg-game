@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg"><defs>
+<!-- All pieces share the approved body's coordinates. Hand and shin anchors are posed offline. -->
+<g id="helmet-0"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="13" stroke-linejoin="round" fill="#f4dfb7">
+<path d="M628 330L596 345L608 302L593 295Q600 258 631 234L612 222L665 204L650 187Q691 169 727 177L744 148Q785 148 812 170L839 156L861 187L892 171L903 207L928 203L922 233Q949 263 943 302L922 299L924 341L901 333L894 390L872 379L876 309L852 288L835 305L817 281Q770 312 720 312L709 365L688 345L677 396L652 380L641 401L625 371L608 376Z"/>
+<path d="M631 312Q649 270 690 250L670 283L700 274L684 309L662 318L658 349L643 331Z" fill="#d5b687" stroke="none"/><path d="M738 217L767 221L761 201L797 223L808 213L830 250L805 240L808 263L776 245L745 253L756 235Z" fill="#d5b687" stroke="none"/>
+</g></g>
+<g id="helmet-1"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="13" stroke-linejoin="round" fill="#f5e9ce">
+<path d="M618 316Q592 278 623 235L677 187Q706 171 742 190L762 166Q808 163 848 203L882 238Q906 260 907 301L901 334L884 308L860 301L840 317L799 292L743 326L715 341L682 368L649 354L626 374L602 360Z"/>
+<path d="M744 190Q781 208 802 251M783 179Q823 204 833 245" fill="none"/><path d="M638 289Q635 264 656 250Q683 243 693 269L679 288Q660 272 650 301Z" fill="#b5a17f" stroke="none"/>
+<path d="M701 273Q724 289 708 371Q703 402 680 383Q663 362 680 315Z"/><path d="M888 277Q910 311 911 337Q936 339 946 316Q952 359 920 375Q891 384 883 351Z"/>
+</g></g>
+<g id="helmet-2"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="13" stroke-linejoin="round" fill="#747e8b">
+<path d="M604 290L646 224L701 203L742 166L806 153L857 178L869 200L911 214L948 277L935 324L864 302L822 281L759 309L711 330L701 373L656 401L614 378L597 324Z"/>
+<path d="M646 224L676 257L657 300L604 290M701 203L723 242M742 166L806 208L852 197M676 257L744 270L759 309M864 302L865 254L911 214M657 300L711 330L656 359L608 337" fill="none" stroke="#aab3bd" stroke-width="11"/>
+<path d="M715 260L734 248M878 274L896 284M639 349L652 340" fill="none" stroke="#56616e" stroke-width="12"/>
+</g></g>
+<g id="chest-0"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round">
+<path d="M685 420L714 428L757 449L801 431L828 439L834 534L785 552L684 535Z" fill="#885632"/><path d="M692 422L717 433L744 439L761 451L801 433L823 441L812 466L795 455L778 487L750 463L735 473L714 450L699 457Z" fill="#f4dfb7"/><path d="M688 514Q757 532 831 520L833 539Q754 550 683 533Z" fill="#b27a42"/>
+</g></g>
+<g id="chest-1"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round">
+<path d="M687 422L719 432L764 445L802 432L830 442L835 535Q759 555 683 535Z" fill="#60412e"/>
+<path d="M710 447Q732 455 754 455L755 482Q725 490 703 473Z M773 455L811 445Q827 465 814 478L774 486Z M704 487L756 496L754 521Q723 527 703 510Z M773 496L816 486L821 513L775 524Z" fill="#f5e9ce" stroke-width="8"/>
+<path d="M686 523Q752 540 833 525L835 543Q756 559 683 541Z" fill="#a26b3b"/>
+</g></g>
+<g id="chest-2"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round">
+<path d="M688 425L716 433L768 450L805 433L831 444L835 537L685 538Z" fill="#775032"/>
+<path d="M715 450L744 439L800 450L816 478L798 496L725 492L707 476Z M723 503L790 501L812 520L799 545L727 547L712 528Z" fill="#747e8b"/>
+<path d="M724 460L747 452L795 460M731 515L782 513" fill="none" stroke="#aab3bd" stroke-width="9"/>
+</g></g>
+<g id="shoulders-0"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#f4dfb7"><path d="M626 445Q645 411 685 418L713 441L705 465L687 457L680 477L660 466L641 480L646 459L619 464Z"/><path d="M811 433Q841 416 867 445L879 468L855 464L851 480L834 462L817 467Z"/><path d="M644 440L669 432L691 449M839 442L855 455" stroke="#d5b687" stroke-width="9" fill="none"/></g></g>
+<g id="shoulders-1"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#f5e9ce"><path d="M620 441Q643 413 683 418Q715 425 710 452L682 479L653 466L622 471L633 454Z"/><path d="M817 431Q852 420 867 444L864 455L883 465Q858 482 835 465Z"/><path d="M642 437Q671 431 686 448" fill="none" stroke="#b5a17f" stroke-width="9"/></g></g>
+<g id="shoulders-2"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round" fill="#747e8b"><path d="M619 442L649 417L683 414L710 439L702 461L676 476L644 470L615 457Z"/><path d="M818 435L847 424L868 442L881 469L853 478L830 463Z"/><path d="M636 445L657 429L682 428M834 439L854 441L865 460" fill="none" stroke="#aab3bd" stroke-width="9"/></g></g>
+<g id="cape-0"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round"><path d="M682 425L706 469Q657 542 646 610L617 631L607 612L585 622L578 602L554 609L555 586L530 583Q584 528 614 470Z" fill="#885632"/><path d="M662 452Q622 537 574 583L603 591L669 506Z" fill="#674329" stroke="none"/></g></g>
+<g id="cape-1"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round"><path d="M682 425L706 469Q657 542 646 610L617 631L607 612L585 622L578 602L554 609L555 586L530 583Q584 528 614 470Z" fill="#a44932"/><path d="M662 452Q622 537 574 583L603 591L669 506Z" fill="#743124" stroke="none"/></g></g>
+<g id="cape-2"><g transform="{{BODY}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round"><path d="M682 425L706 469Q657 542 646 610L617 631L607 612L585 622L578 602L554 609L555 586L530 583Q584 528 614 470Z" fill="#c68a2d"/><path d="M662 452Q622 537 574 583L603 591L669 506Z" fill="#986123" stroke="none"/></g></g>
+<!-- Weapon origin is the palm. Fingers are drawn over the grip in the game. -->
+<g id="weapon-0"><g transform="{{BODY}}"><g transform="{{GRIP}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round"><path d="M-22 44L-4 55L57-47L106-87L117-128L143-164L118-204L79-216L45-198L20-155L8-129L10-94Z" fill="#885632"/><path d="M32-115L62-160L87-181M53-86L88-110" fill="none" stroke="#674329" stroke-width="13"/><path d="M-1-20L22-3M12-44L37-27" fill="none" stroke="#b27a42" stroke-width="13"/></g></g></g>
+<g id="weapon-1"><g transform="{{BODY}}"><g transform="{{GRIP}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round"><path d="M-24 52L-8 61L116-149L98-158Z" fill="#966435"/><path d="M63-137L58-178L157-257L138-161L105-130Z" fill="#f5e9ce"/><path d="M73-168L138-227L106-146Z" fill="#d5c2a0" stroke="none"/><path d="M62-128L111-123M77-151L73-111" stroke="#966435" stroke-width="15"/></g></g></g>
+<g id="weapon-2"><g transform="{{BODY}}"><g transform="{{GRIP}}" stroke="#0b151c" stroke-width="12" stroke-linejoin="round"><path d="M-25 49L-7 60L113-161L97-175Z" fill="#966435"/><path d="M81-178L111-187L156-161L182-144L173-106L133-79L120-124L90-136L63-141L59-161Z" fill="#747e8b"/><path d="M132-164L164-144L155-117M67-154L91-167" fill="none" stroke="#aab3bd" stroke-width="10"/><path d="M100-185L97-139L109-128L116-177Z" fill="#b27a42"/></g></g></g>
+<!-- Cuffs and greaves use local coordinates, shared by both limbs. -->
+<g id="glove-0"><g stroke="#0b151c" stroke-width="10" stroke-linejoin="round"><path d="M-31-23L24-28L36 14L18 31L-25 28L-36 9Z" fill="#885632"/><path d="M-33-22L25-27L29-7L-31-2Z" fill="#b27a42"/><path d="M-21 12L19 6" stroke="#674329" stroke-width="8"/></g></g>
+<g id="glove-1"><g stroke="#0b151c" stroke-width="10" stroke-linejoin="round"><path d="M-31-23L24-28L36 14L18 31L-25 28L-36 9Z" fill="#60412e"/><path d="M-23-23Q-33-31-34-14L-29 11Q-37 27-20 28L2 22L-1-19Z" fill="#f5e9ce"/></g></g>
+<g id="glove-2"><g stroke="#0b151c" stroke-width="10" stroke-linejoin="round"><path d="M-31-23L24-28L36 14L18 31L-25 28L-36 9Z" fill="#60412e"/><path d="M-28-25L8-30L21-15L15 24L-21 31L-32 12Z" fill="#747e8b"/><path d="M-19-12L-1-17L5-7L1 15" fill="none" stroke="#aab3bd" stroke-width="8"/></g></g>
+<g id="shin-0"><g stroke="#0b151c" stroke-width="10" stroke-linejoin="round"><path d="M-31-8L31-8L26 45L-28 48Z" fill="#885632"/><path d="M-34-10L31-10L34 8L-33 11Z" fill="#f4dfb7"/><path d="M-24 19L23 32M-22 36L23 18" fill="none" stroke="#b27a42" stroke-width="8"/></g></g>
+<g id="shin-1"><g stroke="#0b151c" stroke-width="10" stroke-linejoin="round"><path d="M-31-8L31-8L26 45L-28 48Z" fill="#60412e"/><path d="M-27-6Q-36-18-40-2Q-44 11-30 13L-28 42Q-38 51-22 55L14 51Q27 48 18 39L21 9Q34 0 24-10Z" fill="#f5e9ce"/><path d="M-15 7L-12 39" stroke="#d5c2a0" stroke-width="9"/></g></g>
+<g id="shin-2"><g stroke="#0b151c" stroke-width="10" stroke-linejoin="round"><path d="M-31-8L31-8L26 45L-28 48Z" fill="#60412e"/><path d="M-30-8L23-12L33 7L22 48L-26 52L-37 25Z" fill="#747e8b"/><path d="M-22 4L6-1L12 13L6 39" fill="none" stroke="#aab3bd" stroke-width="9"/></g></g>
+</defs></svg>

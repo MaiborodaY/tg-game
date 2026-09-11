@@ -1,0 +1,410 @@
+import { ANVILS, COMBAT, EPOCHS, SALE_PRICES } from './balance.mjs';
+export { ANVILS, EPOCHS } from './balance.mjs';
+export const SLOTS = ['weapon', 'helmet', 'shoulders', 'chest', 'gloves', 'legs', 'cape', 'boots', 'belt', 'necklace', 'ring1', 'ring2'];
+export const WEAPONS = {
+  club: { name:'Hunter Club', range:0, multiplier:1, quality:0, epoch:1 },
+  spear: { name:'Bone Spear', range:0, multiplier:1, quality:1, epoch:1 },
+  slingshot: { sprite:true, name:'Hunter Slingshot', range:.40, multiplier:.8, quality:0, epoch:1 },
+  'short-bow': { sprite:true, name:'Short Bow', range:.46, multiplier:.8, quality:0, epoch:2 },
+  gladius: { sprite:true, name:'Gladius', range:0, multiplier:1, quality:2, epoch:2 },
+  'bronze-axe': { sprite:true, name:'Bronze Axe', range:0, multiplier:1, quality:0, epoch:2 },
+  'battle-spear': { sprite:true, name:'Battle Spear', range:0, multiplier:1, quality:1, epoch:2 },
+  'knight-sword': { sprite:true, name:'Knight Sword', range:0, multiplier:1, quality:0, epoch:3, attack:'combo' },
+  'falchion': { sprite:true, name:'Falchion', range:0, multiplier:1, quality:0, epoch:3, attack:'combo' },
+  'bearded-axe': { sprite:true, name:'Bearded Axe', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'double-axe': { sprite:true, name:'Double Axe', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'long-spear': { sprite:true, name:'Long Spear', range:0, multiplier:1, quality:0, epoch:3, attack:'thrust' },
+  'halberd': { sprite:true, name:'Halberd', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'spiked-mace': { sprite:true, name:'Spiked Mace', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'war-hammer': { sprite:true, name:'War Hammer', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'longbow': { sprite:true, name:'Longbow', range:.46, multiplier:.8, quality:0, epoch:3, attack:'shoot' },
+  'crossbow': { sprite:true, name:'Crossbow', range:.46, multiplier:.8, quality:0, epoch:3, attack:'shoot' },
+  'jaw-club': { sprite:true, name:'Jawbone Crusher', range:0, multiplier:1, quality:0, epoch:1, attack:'swing' },
+  'obsidian-pick': { sprite:true, name:'Obsidian Pick', range:0, multiplier:1, quality:0, epoch:1, attack:'swing' },
+  'blowpipe': { sprite:true, name:'Feather Blowpipe', range:.40, multiplier:.8, quality:0, epoch:1, attack:'shoot' },
+  'khopesh': { sprite:true, name:'Sun Khopesh', range:0, multiplier:1, quality:0, epoch:2, attack:'swing' },
+  'trident': { sprite:true, name:'Tide Trident', range:0, multiplier:1, quality:0, epoch:2, attack:'thrust' },
+  'chakram': { sprite:true, name:'Sun Chakram', range:.46, multiplier:.8, quality:0, epoch:2, attack:'shoot' },
+  'chain-flail': { sprite:true, name:'Iron Flail', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'warden-key': { sprite:true, name:'Warden Key', range:0, multiplier:1, quality:0, epoch:3, attack:'swing' },
+  'crystal-staff': { sprite:true, name:'Frost Crystal Staff', range:.46, multiplier:.8, quality:0, epoch:3, attack:'shoot' },
+};
+export const ARMOR_SETS = [['hunter-hides', 'bone-warrior'], ['bronze-warrior', 'temple-guard', 'legionary'], ['iron-knight', 'forest-ranger', 'royal-guard'], ['musketeer', 'corsair', 'grenadier'], ['field-scout', 'commando', 'heavy-trooper'], ['neon-runner', 'exo-trooper', 'reactor-guard']];
+// Only epochs with completed equipment participate in prototype forging.
+export const AVAILABLE_EPOCHS=ARMOR_SETS.flatMap((sets,i)=>sets.length&&Object.values(WEAPONS).some(w=>w.epoch===i+1)?[i+1]:[]);
+export const FORGE_CHANCES=ANVILS.map(row=>{const total=row.chances.reduce((sum,value,i)=>sum+(AVAILABLE_EPOCHS.includes(i+1)?value:0),0);return row.chances.map((value,i)=>!AVAILABLE_EPOCHS.includes(i+1)?0:total?value/total*100:i+1===AVAILABLE_EPOCHS.at(-1)?100:0);});
+export const DAMAGE_SLOTS = ['weapon', 'gloves', 'necklace', 'ring1', 'ring2', 'ring'];
+export const LABELS = { weapon: 'Weapon', helmet: 'Helmet', chest: 'Chestplate', legs: 'Leg armor', gloves: 'Gloves', cape: 'Cape', shoulders: 'Shoulders', boots: 'Boots', belt: 'Belt', necklace: 'Necklace', ring1: 'Ring 1', ring2: 'Ring 2' };
+export const SAVE_KEY = 'forest-forge-prototype-v1';
+export const MAX_LEVEL = 200;
+export const HERO_ATTACK_INTERVAL = 2;
+export const APPROACH_SPEED = .36 / 1.4;
+export const IDLE_REWARD_INTERVAL = 60000;
+export const IDLE_REWARD_CAP = 240;
+const NAMES = {
+  shoulders: ['Hunter Fur Shoulders', 'Bone Warrior Shoulders', 'Forest Guardian Pauldrons'],
+  boots: ['Hunter Leather Boots', 'Bone Warrior Boots', 'Forest Guardian Boots'],
+  belt: ['Hunter Belt', 'Bone Warrior Belt', 'Forest Guardian Belt'],
+  necklace: ['Hunter Necklace', 'Bone Warrior Necklace', 'Forest Guardian Necklace'],
+  ring: ['Hunter Ring', 'Bone Warrior Ring', 'Forest Guardian Ring'],
+  gloves: ['Hunter Leather Gloves', 'Bone Warrior Gloves', 'Forest Guardian Gauntlets'],
+  cape: ['Hunter Hide Cape', 'Bone Warrior Cape', 'Forest Guardian Cape'],
+  legs: ['Hunter Hide Leggings', 'Bone Warrior Leggings', 'Guardian Greaves'],
+  weapon: ['Hunter Club', 'Bone Spear', 'Forest Guardian Sword'],
+  helmet: ['Hunter Fur Hood', 'Bone Warrior Skull Helm', 'Forest Guardian Helmet'],
+  chest: ['Hunter Leather Vest', 'Bone Warrior Rib Armor', 'Forest Guardian Armor'],
+};
+// One string per wave. W warrior, A archer, H healer, B boss.
+export const WAVES = [
+  ['W','W','W','W','A','W','W','A','W','B'],
+  ['W','A','W','WW','W','A','WW','A','WW','B'],
+  ['W','WW','A','WA','WW','A','WA','WW','WA','B'],
+  ['WW','WA','WW','AA','WW','WA','WWA','AA','WWA','B'],
+  ['WW','WA','AA','WWW','WAA','WW','WWA','WWW','WAA','BW'],
+  ['WW','WA','WW','WH','WW','WAA','WWH','WA','WWA','BW'],
+  ['WW','WAA','WWW','WWH','AA','WAH','WWW','WWAA','WWAH','BA'],
+  ['WWW','WWA','WWH','WWAA','WWW','WAAH','WWWH','WWA','WWAA','BWW'],
+  ['WWW','WWAA','WWH','WWWA','WAAH','WWW','WWAAH','WWA','WWWA','BWA'],
+  ['WWH','WWW','WWAA','WWAH','WWWA','WWAA','WWWAH','WWW','WWAAH','BAA'],
+];
+const KINDS = { W: 'warrior', A: 'archer', H: 'healer', B: 'boss' };
+export function stats(s) {
+  const total = { hp: 20, damage: 2 };
+  for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += s.equipment[slot]?.value ?? 0;
+  return total;
+}
+export function itemLevel(s) {
+  return Math.floor(SLOTS.reduce((sum, slot) => {
+    const item = s.equipment[slot];
+    return sum + (item ? ((item.epoch ?? 1) - 1) * 100 + (item.itemLevel ?? 1) : 0);
+  }, 0) / SLOTS.length);
+}
+export function enemyFor(level, kind = 'warrior') {
+  const row = COMBAT[level - 1];
+  return { kind, boss: kind === 'boss',
+    name: { warrior: 'Goblin Warrior', archer: 'Goblin Archer', healer: 'Goblin Healer', boss: 'Goblin King' }[kind],
+    maxHp: row[kind + '_hp'], damage: kind === 'healer' ? 0 : row[kind + '_damage'],
+    healing: row.healing_per_3s, reward: row[kind === 'boss' ? 'boss_coins' : 'monster_coins'] };
+}
+function prepareEncounter(s) {
+  let x = s.heroX + .91;
+  const kinds = [...WAVES[Math.min(s.level, 10) - 1][s.encounter]].map(k => KINDS[k]);
+  kinds.sort((a,b) => ['warrior','boss','archer','healer'].indexOf(a) - ['warrior','boss','archer','healer'].indexOf(b));
+  s.enemies = kinds.map((kind, id) => {
+    const e = enemyFor(s.level, kind);
+    const member = { ...e, id, hp: e.maxHp, x, clock: 0, healClock: 0, engaged: false, moving: true, actionAge: 1, deadTime: 0 };
+    x += kind === 'boss' || kinds[id + 1] === 'boss' ? .19 : .11;
+    return member;
+  });
+  s.targetId = null; s.heroClock = 0; s.heroActionAge = 1;
+  s.phase = 'walk'; s.phaseTime = 0;
+}
+export function freshGame(now = Date.now()) {
+  const s = { version: 3, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
+    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
+    autoForge: false, autoSellEpochs: [], forgingAuto: false, selectedBatch: null, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
+  prepareEncounter(s); return s;
+}
+// A saved timestamp keeps the same four-hour buffer online and offline.
+export function idleRewards(s, now = Date.now()) {
+  return Math.min(IDLE_REWARD_CAP, Math.floor(Math.max(0, now - s.idleSince) / IDLE_REWARD_INTERVAL));
+}
+export function collectIdleRewards(s, now = Date.now()) {
+  const amount = idleRewards(s, now);
+  if (!amount) return 0;
+  s.hammers += amount; s.coins += amount;
+  // Keep partial minutes until full; time spent at capacity is not banked.
+  s.idleSince = amount === IDLE_REWARD_CAP ? now : s.idleSince + amount * IDLE_REWARD_INTERVAL;
+  return amount;
+}
+// One hammer per item. A partial batch spends only the remaining hammers.
+export function batchSize(s) { return COMBAT[s.highest - 1].batch_size; }
+export const BATCH_OPTIONS = [{ size:1, level:1 }, ...COMBAT.flatMap((row,i) => !i || row.batch_size !== COMBAT[i-1].batch_size ? [{ size:row.batch_size, level:i+1 }] : [])];
+export function forgeCost(s) { return Math.min(s.hammers, s.selectedBatch ?? batchSize(s), batchSize(s)); }
+export function forge(s, rng = Math.random) {
+  if (s.forging > 0 || s.hammers < 1) return false;
+  s.forgingAuto = s.autoForge;
+  const count = forgeCost(s), bases = { weapon:2, gloves:2, necklace:1, ring:1, helmet:5, chest:15, shoulders:5, legs:5, cape:5, boots:3, belt:3 };
+  for (let i = 0; i < count; i++) {
+    const bucket = SLOTS[Math.min(11, Math.floor(rng() * 12))];
+    const slot = bucket.startsWith('ring') ? 'ring' : bucket;
+    let roll = rng() * 100, epochIndex = 0;
+    const chances = FORGE_CHANCES[s.anvilLevel - 1];
+    while (epochIndex < 9 && roll >= chances[epochIndex]) roll -= chances[epochIndex++];
+    const mastery = s.mastery[epochIndex];
+    const itemLevel = 1 + Math.min(mastery.level - 1, Math.floor(rng() * mastery.level));
+    // Equipment art belongs to its own epoch; weapon types never carry over.
+    const appearance = rng(), pool = Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===epochIndex+1);
+    const weaponId=slot==='weapon'?pool[Math.min(pool.length-1,Math.floor(appearance*pool.length))]:undefined;
+    const quality = weaponId ? WEAPONS[weaponId].quality : Math.min((ARMOR_SETS[epochIndex]?.length??1)-1, Math.floor(appearance * (ARMOR_SETS[epochIndex]?.length??1)));
+    s.forgingItems.push({ slot, ...(weaponId?{weaponId}:{}), name: weaponId?WEAPONS[weaponId].name:epochIndex===0?NAMES[slot][quality]:`${epochIndex===1?['Bronze Warrior','Temple Guard','Legionary'][quality]:epochIndex===2?['Iron Knight','Forest Ranger','Royal Guard'][quality]:epochIndex===3?['Musketeer','Corsair','Grenadier'][quality]:epochIndex===4?['Field Scout','Commando','Heavy Trooper'][quality]:epochIndex===5?['Neon Runner','Exo Trooper','Reactor Guard'][quality]:EPOCHS[epochIndex]} ${LABELS[slot]||'Ring'}`, quality, epoch: epochIndex + 1, itemLevel,
+      sale: SALE_PRICES[epochIndex], value: Math.max(1, Math.round(Math.round(bases[slot] * 10 ** epochIndex * (1 + .05 * (itemLevel - 1))) * (WEAPONS[weaponId]?.multiplier??1))) });
+    s.lastEpoch = epochIndex + 1;
+    if (mastery.level < 100 && ++mastery.xp >= mastery.level + 4) { mastery.xp = 0; mastery.level++; }
+  }
+  s.hammers -= count; s.forging = 1.5;
+  if (!s.hammers) s.autoForge = false;
+  return true;
+}
+// The selected ready item stays separate so ongoing batches cannot change a comparison.
+export function browseResults(s, direction = 1) {
+  if (!s.pending || !s.results.length) return false;
+  if (direction > 0) { s.results.push(s.pending); s.pending = s.results.shift(); }
+  else { s.results.unshift(s.pending); s.pending = s.results.pop(); }
+  return true;
+}
+export function equip(s, targetSlot = s.pending?.slot) {
+  if (!s.pending) return false;
+  if (s.pending.slot === 'ring' ? !['ring1','ring2'].includes(targetSlot) : targetSlot !== s.pending.slot) return false;
+  const fraction = s.hp / stats(s).hp;
+  s.equipment[targetSlot] = { ...s.pending, slot: targetSlot };
+  s.pending = s.results.shift() ?? null;
+  s.hp = fraction * stats(s).hp; return true;
+}
+export function sell(s) {
+  if (!s.pending) return false;
+  s.coins += s.pending.sale; s.pending = s.results.shift() ?? null; return true;
+}
+export function equipStronger(s, preview = false) {
+  const equipment = { ...s.equipment }, chosen = {};
+  const items = [s.pending, ...s.results].filter(Boolean);
+  for (const item of items) {
+    const slot = item.slot === 'ring'
+      ? (equipment.ring1?.value ?? 0) <= (equipment.ring2?.value ?? 0) ? 'ring1' : 'ring2'
+      : item.slot;
+    if (item.value > (equipment[slot]?.value ?? 0)) {
+      equipment[slot] = { ...item, slot }; chosen[slot] = item;
+    }
+  }
+  const selected = new Set(Object.values(chosen));
+  if (!preview && selected.size) {
+    const fraction = s.hp / stats(s).hp;
+    s.equipment = equipment;
+    const remaining = items.filter(item => !selected.has(item));
+    s.pending = remaining.shift() ?? null; s.results = remaining;
+    s.hp = fraction * stats(s).hp;
+  }
+  return selected.size;
+}
+// Only ready items are considered. Preview uses the same comparison as the sale.
+export function sellWeaker(s, preview = false, selection = null) {
+  let count = 0, coins = 0;
+  const remaining = [];
+  for (const item of [s.pending, ...s.results]) {
+    if (!item) continue;
+    const equipped = item.slot === 'ring'
+      ? s.equipment.ring1 && s.equipment.ring2 && { value: Math.min(s.equipment.ring1.value, s.equipment.ring2.value) }
+      : s.equipment[item.slot];
+    if ((!selection || selection.has(item)) && equipped && item.value <= equipped.value) { count++; coins += item.sale; }
+    else if (!preview) remaining.push(item);
+  }
+  if (!preview && count) {
+    s.coins += coins;
+    s.pending = remaining.shift() ?? null;
+    s.results = remaining;
+  }
+  return { count, coins };
+}
+export function finishUpgrade(s, now = Date.now()) {
+  if (!s.upgradeEndsAt || now < s.upgradeEndsAt) return false;
+  s.anvilLevel++; s.upgradeEndsAt = 0; return true;
+}
+export function upgradeAnvil(s, now = Date.now()) {
+  finishUpgrade(s, now);
+  const next = ANVILS[s.anvilLevel];
+  if (!next || s.upgradeEndsAt || s.coins < next.coins) return false;
+  s.coins -= next.coins; s.upgradeEndsAt = now + next.minutes * 60000; return true;
+}
+export function anvilSkipCost(s, now = Date.now()) {
+  const next = ANVILS[s.anvilLevel], remaining = s.upgradeEndsAt - now;
+  return !next || remaining <= 0 ? 0 : Math.ceil(next.coins * 3 * Math.min(1, remaining / (next.minutes * 60000)));
+}
+export function skipAnvilUpgrade(s, now = Date.now()) {
+  if (finishUpgrade(s, now)) return true;
+  const cost = anvilSkipCost(s, now);
+  if (!cost || s.coins < cost) return false;
+  s.coins -= cost;
+  return finishUpgrade(s, s.upgradeEndsAt);
+}
+export function step(s, dt, rng = Math.random, now = Date.now()) {
+  const events = [];
+  if (finishUpgrade(s, now)) events.push({ type: 'anvilUpgraded' });
+  if (s.forging > 0) {
+    s.forging = Math.max(0, s.forging - dt);
+    if (!s.forging) {
+      const count = s.forgingItems.length, item = s.forgingItems.at(-1);
+      let soldCount = 0, soldCoins = 0;
+      for (const forged of s.forgingItems) {
+        if (s.forgingAuto && s.autoSellEpochs.includes(forged.epoch)) { soldCount++; soldCoins += forged.sale; }
+        else s.results.push(forged);
+      }
+      s.coins += soldCoins; s.forgingItems = []; s.forgingAuto = false;
+      if (!s.pending) s.pending = s.results.shift() ?? null;
+      events.push({ type: 'forged', count, item, soldCount, soldCoins });
+    }
+  }
+  if (s.autoForge && !s.forging) {
+    if (forge(s, rng)) events.push({ type: 'forgeStarted' });
+    else s.autoForge = false;
+  }
+  s.heroActionAge = Math.min(1, s.heroActionAge + dt);
+  for (const e of s.enemies) { e.actionAge = Math.min(1, e.actionAge + dt); e.deadTime = Math.max(0, e.deadTime - dt); }
+  if (s.completed) return events;
+  if (s.phase === 'dead' || s.phase === 'victory') {
+    if (s.phase === 'victory') s.heroX += APPROACH_SPEED / 2 * dt;
+    else for (const e of s.enemies) if (e.hp > 0) { e.x -= APPROACH_SPEED / 2 * dt; e.moving = true; e.engaged = false; }
+    s.phaseTime -= dt;
+    if (s.phaseTime > 0) return events;
+    if (s.phase === 'dead') {
+      s.encounter = 0; s.hp = stats(s).hp; events.push({ type: 'restart' });
+    } else if (s.encounter < 9) s.encounter++;
+    else if (s.level < MAX_LEVEL) {
+      s.level++; s.highest = Math.max(s.highest, s.level); s.encounter = 0; s.hp = stats(s).hp;
+      events.push({ type: 'level', level: s.level });
+    } else {
+      s.completed = true; s.phase = 'complete'; events.push({ type: 'complete' }); return events;
+    }
+    prepareEncounter(s); return events;
+  }
+  const living = s.enemies.filter(e => e.hp > 0).sort((a,b) => a.x - b.x);
+  const target = living[0], reach = WEAPONS[s.equipment.weapon?.weaponId]?.range || (target.boss ? .165 : .115);
+  const oldPhase = s.phase;
+  if (target.x - s.heroX > reach + .0001) {
+    s.heroX += Math.min(APPROACH_SPEED / 2 * dt, target.x - s.heroX - reach);
+  }
+  const melee = living.filter(e => e.kind === 'warrior' || e.boss);
+  const archers = living.filter(e => e.kind === 'archer');
+  for (const e of living) {
+    const index = melee.indexOf(e);
+    const distance = index >= 0 ? (e.boss ? .165 : .115) + (index === 1 ? .055 : index > 1 ? .15 + (index - 2) * .11 : 0)
+      : e.kind === 'archer' ? .46 + archers.indexOf(e) * .10 : .65;
+    e.moving = e.x - s.heroX > distance + .0001;
+    if (e.moving) e.x -= Math.min(APPROACH_SPEED / 2 * dt, e.x - s.heroX - distance);
+    const ready = !e.moving && index < 2;
+    if (ready && !e.engaged) e.clock = e.kind === 'archer' ? .70 : e.boss ? .58 : .68;
+    if (!ready) e.clock = 0;
+    e.engaged = ready;
+  }
+  const inReach = target.x - s.heroX <= reach + .0001;
+  s.phase = inReach ? 'fight' : 'walk';
+  if (inReach && (s.targetId !== target.id || oldPhase !== 'fight')) {
+    s.heroClock = .75;
+    if (target.boss) events.push({ type: 'boss' });
+  }
+  s.targetId = target.id;
+  if (inReach) {
+    s.heroClock += dt;
+    if (s.heroClock >= HERO_ATTACK_INTERVAL) {
+      s.heroClock -= HERO_ATTACK_INTERVAL; s.heroActionAge = 0; s.heroAttackCount++;
+      const damage = stats(s).damage; target.hp = Math.max(0, target.hp - damage);
+      events.push({ type: 'heroHit', value: damage, targetId: target.id });
+      if (!target.hp) {
+        target.deadTime = .6; target.engaged = false; target.moving = false;
+        s.kills++; s.coins += target.reward;
+        const loot = COMBAT[s.level - 1];
+        const hammers = target.boss || rng() < loot.hammer_drop_chance ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * (target.boss ? 5 : 1) : 0;
+        s.hammers += hammers;
+        events.push({ type: 'kill', value: target.reward, hammers, targetId: target.id });
+        if (s.enemies.every(e => e.hp === 0)) {
+          s.phase = 'victory'; s.phaseTime = .8; return events;
+        }
+      }
+    }
+  } else s.heroClock = 0;
+  for (const e of living) {
+    if (!e.hp || !e.engaged) continue;
+    if (e.kind === 'healer') {
+      e.healClock += dt;
+      if (e.healClock >= 3) {
+        e.healClock -= 3;
+        const patient = s.enemies.filter(a => a.id !== e.id && a.hp > 0 && a.hp < a.maxHp)
+          .sort((a,b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+        if (patient) {
+          const value = Math.min(e.healing, patient.maxHp - patient.hp);
+          patient.hp += value; e.actionAge = 0;
+          events.push({ type: 'heal', value, targetId: patient.id, sourceId: e.id });
+        }
+      }
+      continue;
+    }
+    const previous = e.clock; e.clock += dt;
+    if (e.kind === 'archer' && previous < .95 && e.clock >= .95) {
+      e.actionAge = 0; events.push({ type: 'enemyShot', sourceId: e.id });
+    }
+    if (e.clock >= 1.1) {
+      e.clock -= 1.1;
+      if (e.kind !== 'archer') e.actionAge = 0;
+      s.hp = Math.max(0, s.hp - e.damage);
+      events.push({ type: 'enemyHit', value: e.damage, sourceId: e.id, ranged: e.kind === 'archer' });
+      if (!s.hp) {
+        s.deaths++; s.phase = 'dead'; s.phaseTime = 1.8;
+        events.push({ type: 'death' }); return events;
+      }
+    }
+  }
+  return events;
+}
+export function replay(s) {
+  if (!s.completed) return false;
+  s.completed = false; s.level = 1; s.encounter = 0; s.hp = stats(s).hp;
+  prepareEncounter(s); return true;
+}
+export function restore(serialized, now = Date.now()) {
+  try {
+    const s = JSON.parse(serialized);
+    const nonnegative = n => Number.isFinite(n) && n >= 0;
+    const item = i => i && (SLOTS.includes(i.slot) || i.slot === 'ring') && typeof i.name === 'string' && Number.isFinite(i.value) && i.value > 0 && nonnegative(i.sale) && [0,1,2].includes(i.quality);
+    if (!s || ![1,2,3].includes(s.version) || !nonnegative(s.coins) || !Number.isInteger(s.level) || s.level < 1 || s.level > MAX_LEVEL ||
+      !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
+      !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
+      !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    const legacy = s.version < 3;
+    if (legacy) {
+      Object.assign(s, { hammers:0, autoForge:false, anvilLevel:1, upgradeEndsAt:0,
+        mastery:EPOCHS.map(() => ({level:1,xp:0})), lastEpoch:1, results:[], forgingItems:[] });
+    } else if (!Number.isInteger(s.hammers) || s.hammers < 0 || typeof s.autoForge !== 'boolean' ||
+      !Number.isInteger(s.anvilLevel) || s.anvilLevel < 1 || s.anvilLevel > 80 || !nonnegative(s.upgradeEndsAt) ||
+      (s.upgradeEndsAt && s.anvilLevel === 80) || !Number.isInteger(s.lastEpoch) || s.lastEpoch < 1 || s.lastEpoch > 10 ||
+      !Array.isArray(s.mastery) || s.mastery.length !== 10 || !s.mastery.every(m => Number.isInteger(m.level) && m.level >= 1 && m.level <= 100 && Number.isInteger(m.xp) && m.xp >= 0 && m.xp < m.level + 4 && (m.level < 100 || m.xp === 0)) ||
+      !Array.isArray(s.results) || !s.results.every(item) || !Array.isArray(s.forgingItems) || !s.forgingItems.every(item) ||
+      (s.forging > 0) !== (s.forgingItems.length > 0)) return freshGame(now);
+    for (const slot of SLOTS) s.equipment[slot] ??= null;
+    if (s.pending && ['ring1','ring2'].includes(s.pending.slot)) s.pending.slot = 'ring';
+    // Names are display text; old saves keep their item stats but use English labels.
+    for (const i of [...Object.values(s.equipment).filter(Boolean), ...(s.pending ? [s.pending] : []), ...s.results, ...s.forgingItems]) { i.value=Math.max(1,Math.round(i.value));
+      if(i.slot==='weapon'&&i.epoch===2&&WEAPONS[i.weaponId]?.epoch!==2){i.weaponId=WEAPONS[i.weaponId]?.range?'short-bow':i.quality===1?'battle-spear':i.quality===2?'gladius':'bronze-axe';i.quality=WEAPONS[i.weaponId].quality;}
+      i.name = (i.slot==='weapon'&&WEAPONS[i.weaponId]?.name)||((i.epoch??1)===1?NAMES[['ring1','ring2'].includes(i.slot)?'ring':i.slot][i.quality]:`${i.epoch===2?['Bronze Warrior','Temple Guard','Legionary'][i.quality]:i.epoch===3?['Iron Knight','Forest Ranger','Royal Guard'][i.quality]:i.epoch===4?['Musketeer','Corsair','Grenadier'][i.quality]:i.epoch===5?['Field Scout','Commando','Heavy Trooper'][i.quality]:i.epoch===6?['Neon Runner','Exo Trooper','Reactor Guard'][i.quality]:EPOCHS[i.epoch-1]} ${LABELS[i.slot]||'Ring'}`); }
+    if (s.version === 1) {
+      if (!Number.isInteger(s.encounter) || s.encounter < 0 || s.encounter > 3) return freshGame(now);
+      const fraction = Math.min(1, s.hp / (100 + (s.equipment.helmet?.value ?? 0) + (s.equipment.chest?.value ?? 0)));
+      s.version = 2; s.heroX = .24; s.encounter = Math.min(9, s.encounter * 3);
+      s.hp = fraction * stats(s).hp;
+      delete s.enemyHp; delete s.enemyClock;
+      prepareEncounter(s);
+      if (s.completed) { s.encounter = 9; prepareEncounter(s); s.phase = 'complete'; }
+      else if (!s.hp) { s.phase = 'dead'; s.phaseTime = 1.8; }
+    }
+    if (legacy) {
+      s.version = 3;
+      if (s.forging > 0) { s.forgingItems = [s.pending]; s.pending = null; }
+      if (s.completed && s.level < MAX_LEVEL) { s.completed = false; s.phase = "victory"; s.phaseTime = .8; }
+    }
+    if (!nonnegative(s.idleSince)) s.idleSince = now;
+    s.autoSellEpochs = Array.isArray(s.autoSellEpochs) ? s.autoSellEpochs.filter(epoch => Number.isInteger(epoch) && epoch >= 1 && epoch <= EPOCHS.length) : [];
+    s.forgingAuto = s.forging > 0 && s.forgingAuto === true;
+    s.selectedBatch = BATCH_OPTIONS.some(option => option.size === s.selectedBatch && option.level <= s.highest) ? s.selectedBatch : null;
+    s.heroAttackCount = Number.isSafeInteger(s.heroAttackCount) && s.heroAttackCount >= 0 ? s.heroAttackCount : 0;
+    finishUpgrade(s, now);
+    if (!Number.isInteger(s.encounter) || s.encounter < 0 || s.encounter > 9 || s.hp > stats(s).hp ||
+      !['walk','fight','dead','victory','complete'].includes(s.phase) || !['heroX','heroClock','heroActionAge'].every(k => nonnegative(s[k])) ||
+      !Number.isFinite(s.phaseTime) || (s.completed !== (s.phase === 'complete')) || (s.completed && (s.level !== MAX_LEVEL || s.encounter !== 9))) return freshGame(now);
+    const expected = [...WAVES[Math.min(s.level, 10) - 1][s.encounter]].map(k => KINDS[k]).sort();
+    if (!Array.isArray(s.enemies) || s.enemies.length !== expected.length ||
+      s.enemies.map(e => e.kind).sort().some((k,i) => k !== expected[i]) ||
+      !s.enemies.every((e,i) => e.id === i && ['hp','x','clock','healClock','actionAge','deadTime'].every(k => nonnegative(e[k])) && e.hp <= enemyFor(s.level,e.kind).maxHp)) return freshGame(now);
+    for (const e of s.enemies) Object.assign(e, enemyFor(s.level, e.kind), {hp:Math.ceil(e.hp)});
+    if ((s.phase === 'walk' || s.phase === 'fight') && !s.enemies.some(e => e.hp > 0)) return freshGame(now);
+    return s;
+  } catch { return freshGame(now); }
+}

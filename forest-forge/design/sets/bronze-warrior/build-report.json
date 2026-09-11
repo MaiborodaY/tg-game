@@ -1,0 +1,162 @@
+{
+  "source": [
+    1254,
+    1254
+  ],
+  "parts": [
+    {
+      "id": "helmet",
+      "source": "source.png",
+      "crop": [
+        25,
+        29,
+        276,
+        321
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "chest",
+      "source": "source.png",
+      "crop": [
+        359,
+        119,
+        234,
+        228
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "cape",
+      "source": "source.png",
+      "crop": [
+        633,
+        129,
+        282,
+        214
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-back",
+      "source": "source.png",
+      "crop": [
+        44,
+        408,
+        213,
+        211
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "shoulder-front",
+      "source": "source.png",
+      "crop": [
+        380,
+        409,
+        203,
+        210
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-back",
+      "source": "source.png",
+      "crop": [
+        681,
+        409,
+        183,
+        213
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "glove-front",
+      "source": "source.png",
+      "crop": [
+        993,
+        414,
+        198,
+        197
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-back",
+      "source": "source.png",
+      "crop": [
+        40,
+        696,
+        242,
+        183
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "hip-front",
+      "source": "source.png",
+      "crop": [
+        360,
+        681,
+        219,
+        208
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-back",
+      "source": "source.png",
+      "crop": [
+        688,
+        670,
+        197,
+        235
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "leg-front",
+      "source": "source.png",
+      "crop": [
+        998,
+        673,
+        178,
+        232
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-back",
+      "source": "source.png",
+      "crop": [
+        40,
+        991,
+        202,
+        193
+      ],
+      "edgeContact": false
+    },
+    {
+      "id": "boot-front",
+      "source": "source.png",
+      "crop": [
+        368,
+        989,
+        224,
+        192
+      ],
+      "edgeContact": false
+    }
+  ],
+  "viewBox": [
+    450,
+    30,
+    720,
+    720
+  ],
+  "cell": 99,
+  "clippedPixels": 0,
+  "emptyPartFrames": 0,
+  "atlasBytes": 283997,
+  "decodedBytes": 22424688
+}

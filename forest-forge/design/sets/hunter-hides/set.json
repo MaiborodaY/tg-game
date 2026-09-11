@@ -1,0 +1,358 @@
+{
+  "id": "hunter-hides",
+  "name": "Hunter Hides",
+  "quality": 0,
+  "epoch": 1,
+  "source": "source.png",
+  "grid": [
+    4,
+    3
+  ],
+  "cell": 96,
+  "background": "white",
+  "parts": [
+    {
+      "id": "helmet",
+      "slot": "helmet",
+      "tile": 0,
+      "anchor": "body",
+      "target": [
+        822,
+        330
+      ],
+      "size": [
+        370,
+        370
+      ],
+      "pivot": [
+        0.61,
+        0.66
+      ],
+      "rect": [
+        20,
+        30,
+        355,
+        365
+      ]
+    },
+    {
+      "id": "chest",
+      "slot": "chest",
+      "tile": 1,
+      "anchor": "body",
+      "target": [
+        758,
+        422
+      ],
+      "size": [
+        204,
+        136
+      ],
+      "pivot": [
+        0.5,
+        0
+      ],
+      "rect": [
+        400,
+        65,
+        315,
+        241
+      ],
+      "allowCrop": true
+    },
+    {
+      "id": "cape",
+      "slot": "cape",
+      "tile": 2,
+      "anchor": "body",
+      "target": [
+        683,
+        432
+      ],
+      "size": [
+        211,
+        227
+      ],
+      "pivot": [
+        0.87,
+        0.04
+      ],
+      "rect": [
+        730,
+        65,
+        348,
+        310
+      ]
+    },
+    {
+      "id": "weapon",
+      "slot": "weapon",
+      "tile": 3,
+      "anchor": "hand-front",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        184,
+        267
+      ],
+      "pivot": [
+        0.19,
+        0.83
+      ],
+      "rect": [
+        1100,
+        25,
+        330,
+        365
+      ]
+    },
+    {
+      "id": "shoulder-back",
+      "slot": "shoulders",
+      "tile": 4,
+      "anchor": "body",
+      "target": [
+        666,
+        445
+      ],
+      "size": [
+        113,
+        99
+      ],
+      "pivot": [
+        0.5,
+        0.38
+      ],
+      "rect": [
+        45,
+        420,
+        307,
+        290
+      ]
+    },
+    {
+      "id": "shoulder-front",
+      "slot": "shoulders",
+      "tile": 5,
+      "anchor": "body",
+      "target": [
+        841,
+        450
+      ],
+      "size": [
+        84,
+        76
+      ],
+      "pivot": [
+        0.5,
+        0.35
+      ],
+      "rect": [
+        425,
+        430,
+        245,
+        260
+      ]
+    },
+    {
+      "id": "glove-back",
+      "slot": "gloves",
+      "tile": 6,
+      "anchor": "hand-back",
+      "target": [
+        0,
+        -3
+      ],
+      "size": [
+        66,
+        74
+      ],
+      "pivot": [
+        0.48,
+        0.6
+      ],
+      "rect": [
+        0,
+        0,
+        887,
+        887
+      ],
+      "source": "gloves-source.png"
+    },
+    {
+      "id": "glove-front",
+      "slot": "gloves",
+      "tile": 7,
+      "anchor": "hand-front",
+      "target": [
+        -2,
+        -1
+      ],
+      "size": [
+        80,
+        69
+      ],
+      "pivot": [
+        0.6,
+        0.52
+      ],
+      "rect": [
+        887,
+        0,
+        887,
+        887
+      ],
+      "source": "gloves-source.png"
+    },
+    {
+      "id": "hip-back",
+      "slot": "legs",
+      "tile": 8,
+      "anchor": "hip-back",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        133,
+        109
+      ],
+      "pivot": [
+        0.5,
+        0.13
+      ],
+      "rect": [
+        25,
+        740,
+        320,
+        290
+      ]
+    },
+    {
+      "id": "hip-front",
+      "slot": "legs",
+      "tile": 9,
+      "anchor": "hip-front",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        127,
+        102
+      ],
+      "pivot": [
+        0.5,
+        0.13
+      ],
+      "rect": [
+        405,
+        750,
+        300,
+        270
+      ]
+    },
+    {
+      "id": "leg-back",
+      "slot": "legs",
+      "tile": 10,
+      "anchor": "ankle-back",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        100,
+        90
+      ],
+      "pivot": [
+        0.3,
+        1.1111111111111112
+      ],
+      "rect": [
+        0,
+        0,
+        444,
+        443
+      ],
+      "source": "separate-legs-boots-source.png"
+    },
+    {
+      "id": "leg-front",
+      "slot": "legs",
+      "tile": 11,
+      "anchor": "ankle-front",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        102,
+        90
+      ],
+      "pivot": [
+        0.6176470588235294,
+        1.1111111111111112
+      ],
+      "rect": [
+        444,
+        0,
+        443,
+        443
+      ],
+      "source": "separate-legs-boots-source.png"
+    },
+    {
+      "id": "boot-back",
+      "slot": "boots",
+      "tile": 10,
+      "anchor": "ankle-back",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        110,
+        70
+      ],
+      "pivot": [
+        0.4727272727272727,
+        0.6285714285714286
+      ],
+      "rect": [
+        887,
+        0,
+        444,
+        443
+      ],
+      "source": "separate-legs-boots-source.png"
+    },
+    {
+      "id": "boot-front",
+      "slot": "boots",
+      "tile": 11,
+      "anchor": "ankle-front",
+      "target": [
+        0,
+        0
+      ],
+      "size": [
+        120,
+        70
+      ],
+      "pivot": [
+        0.5083333333333333,
+        0.6285714285714286
+      ],
+      "rect": [
+        1331,
+        0,
+        443,
+        443
+      ],
+      "source": "separate-legs-boots-source.png"
+    }
+  ]
+}

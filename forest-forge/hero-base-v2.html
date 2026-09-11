@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New hero — Forest Forge</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eeeade;color:#172b27;font:15px 'Trebuchet MS',sans-serif;padding:22px 14px}main{max-width:740px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{line-height:1.5;color:#596052}.stage{border:2px solid #243830;border-radius:12px;overflow:hidden;background:#fffaf0}canvas{display:block;width:100%}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}select,button{font:inherit;color:inherit;background:#fffaf0;border:2px solid #536957;border-radius:7px;min-height:42px;padding:8px 12px;cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid #008dce;outline-offset:2px}small{display:block;margin:12px 0;color:#596052}a{color:#216f54}.strip{overflow:auto;margin:16px 0;background:#fffaf0;border-radius:8px}.strip canvas{width:1920px;height:160px}
+</style>
+<main>
+<h1>New hero</h1>
+<p>Unequipped body · enlarged view and actual game size.</p>
+<div class="stage"><canvas id="preview" aria-label="Hero walking and attacking, shown at two sizes"></canvas></div>
+<div class="controls"><select id="animation" aria-label="Animation"><option value="walk">Walk</option><option value="attack">Attack</option><option value="idle">Idle</option></select><button id="pause">Pause</button><button id="next">Frame →</button></div>
+<small id="status" aria-live="off"></small>
+<div class="strip"><canvas id="strip" width="1920" height="160" aria-label="Walk and attack frames"></canvas></div>
+<p><a href="/">Back to the game</a></p>
+</main>
+<script type="module">
+const atlas=new Image();atlas.src='assets/hero-base-v2.png';await atlas.decode();
+const rig=await fetch('design/hero-base-v2-poses.json').then(r=>r.json());
+const $=id=>document.getElementById(id),canvas=$('preview'),ctx=canvas.getContext('2d');
+const sequences={idle:[0],walk:rig.animations.walk,attack:[0,0,9,10,11,12,13,14,0,0]};
+let playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,elapsed=0,frame=1,last=performance.now(),lastDraw=0,width=640;
+function sprite(c,x,y,h,f){const size=h*700/590;c.drawImage(atlas,f*256,0,256,256,x-rig.renderAnchor[0]/256*size,y-rig.renderAnchor[1]/256*size,size,size);}
+function draw(){const height=350;ctx.clearRect(0,0,width,height);ctx.fillStyle='#fffaf0';ctx.fillRect(0,0,width,height);const bigX=width*.37,smallX=width*.82;
+ctx.fillStyle='#405746';ctx.font='bold 13px Trebuchet MS';ctx.textAlign='center';ctx.fillText('Enlarged',bigX,27);ctx.fillText('Game size',smallX,27);
+for(const [x,h] of [[bigX,238],[smallX,59/1.5]]){const zone=x===bigX?0:width*.66,zoneW=x===bigX?width*.66:width*.34;ctx.save();ctx.beginPath();ctx.rect(zone,45,zoneW,305);ctx.clip();ctx.fillStyle='#e6c182';ctx.fillRect(zone,303,zoneW,47);ctx.fillStyle='#b2915866';const speed=rig.walkStride/590*h*10/8,offset=$('animation').value==='walk'?elapsed*speed:0;for(let i=-1;i<15;i++){const px=zone+((i*41-offset)%(zoneW+82)+(zoneW+82))%(zoneW+82)-41;ctx.fillRect(px,324+i%2*12,8,3);}ctx.beginPath();ctx.ellipse(x,310,h*.24,Math.max(3,h*.028),0,0,Math.PI*2);ctx.fill();sprite(ctx,x,310,h,frame);ctx.restore();}
+$('status').textContent=`${$('animation').selectedOptions[0].text} · frame ${frame} · 39 px at game size`;canvas.dataset.frame=frame;
+}
+function resize(){width=canvas.parentElement.clientWidth;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(width*dpr);canvas.height=350*dpr;canvas.style.height='350px';ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
+function button(){ $('pause').textContent=playing?'Pause':'Play'; }
+$('pause').onclick=()=>{playing=!playing;button();};
+$('animation').onchange=()=>{elapsed=0;frame=sequences[$('animation').value][0];draw();};
+$('next').onclick=()=>{playing=false;button();const seq=sequences[$('animation').value];const i=(seq.indexOf(frame)+1)%seq.length;frame=seq[i];elapsed=i/($('animation').value==='attack'?9:10);draw();};
+document.addEventListener('visibilitychange',()=>{last=performance.now();});
+function tick(now){const dt=Math.min((now-last)/1000,.05);last=now;if(!document.hidden&&playing){elapsed+=dt;const seq=sequences[$('animation').value];frame=seq[Math.floor(elapsed*($('animation').value==='attack'?9:10))%seq.length];if(now-lastDraw>=1000/30){draw();lastDraw=now;}}requestAnimationFrame(tick);}
+const sc=$('strip').getContext('2d');sc.fillStyle='#fffaf0';sc.fillRect(0,0,1920,160);[0,...rig.animations.walk,...rig.animations.attack].forEach((f,i)=>{sprite(sc,i*128+55,140,106,f);sc.fillStyle='#536957';sc.font='12px sans-serif';sc.fillText(String(f),i*128+9,18);});
+new ResizeObserver(resize).observe(canvas.parentElement);button();resize();requestAnimationFrame(tick);
+</script>
+</html>
