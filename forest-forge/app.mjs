@@ -59,7 +59,7 @@ let sheetSlot = null, toastUntil = 0;
 let savedTime = 0, uiTime = 0, frameCount = 0;
 let running = false, raf = 0, last = 0, accumulated = 0;
 let telegramInitialized = false, returnFocus = null;
-let mineOpen=false, mineWaiting=false, mineSaleIndex=0;
+let mineOpen=false, mineSaleIndex=0, startupRewardsShown=false;
 const nodes = [...$('progress').children];
 const equipmentButtons = [];
 const compact = new Intl.NumberFormat('en', { notation:'compact', maximumFractionDigits:1 });
@@ -729,7 +729,11 @@ function updateMineUI() {
   const pages=Math.ceil(m.ore.length/8);
   $('mine-pages').hidden=pages<=1;setText('mine-page',`${mineInventoryPage+1} / ${pages}`);
   $('mine-prev').disabled=mineInventoryPage===0;$('mine-next').disabled=mineInventoryPage>=pages-1;
-  $('mine-collect').hidden=!pending;setText('mine-collect',`Collect ${pending} ore`);
+  $('mine-buffer').classList.toggle('full',m.bufferMinutes>=240);
+  $('mine-buffer').setAttribute('aria-label',`Mining rewards: ${pending} ore`);
+  setText('mine-buffer-time',`${Math.floor(m.bufferMinutes/60)}h ${m.bufferMinutes%60}m / 4h`);
+  $('mine-buffer-progress').value=m.bufferMinutes;
+  $('mine-rewards-collect').disabled=!pending;
   setText('mine-upgrade-title',m.upgradeEndsAt?'Upgrade in progress':next?`Upgrade to level ${m.level+1}`:'Maximum mine level');
   $('mine-cost').innerHTML=next&&!m.upgradeEndsAt?next.cost.map((n,i)=>n?`<span class="${m.ore[i]<n?'missing':''}"><img src="assets/mine/${mineResource(i).id==='crystal'?'crystal.svg':mineResource(i).id+'-icon.webp'}" alt="${mineResource(i).name}">${m.ore[i]}/${n}</span>`:'').join(''):'';
   $('mine-upgrade').hidden=!!m.upgradeEndsAt||!next;
@@ -750,7 +754,7 @@ function updateMineUI() {
   }
 }
 function takeMineOre() {
-  const loot=collectMine(state);mineWaiting=false;
+  const loot=collectMine(state);
   $('mine-rewards-dialog').close();updateMineUI();save(true);
   if(loot.some(Boolean)){
     const label=loot.map((n,i)=>n?`+${n} ${mineResource(i).name}`:'').filter(Boolean).join(' · ');
@@ -759,11 +763,11 @@ function takeMineOre() {
 }
 function setMineOpen(open) {
   closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
-  mineOpen=open;$('game').classList.toggle('mine-open',open);
+  mineOpen=open;$('mine-buffer').hidden=!open;$('game').classList.toggle('mine-open',open);
   $('workshop').hidden=open;$('mine-workshop').hidden=!open;$('mine-scene').hidden=!open;$('mine-heading').hidden=!open;
   $('mine-toggle').setAttribute('aria-pressed',String(open));$('mine-toggle').setAttribute('aria-label',open?'Close mine':'Open mine');
   accumulated=0;last=performance.now();uiTime=0;
-  if(open){settleMine(state);mineWaiting=state.mine.pending.some(Boolean);if(mineWaiting)$('mine-rewards-dialog').showModal();updateMineUI();window.Telegram?.WebApp?.BackButton?.show();}
+  if(open){settleMine(state);if(state.mine.pending.some(Boolean))$('mine-rewards-dialog').showModal();updateMineUI();window.Telegram?.WebApp?.BackButton?.show();}
   else {updateUI();window.Telegram?.WebApp?.BackButton?.hide();}
   save(true);
 }
@@ -783,7 +787,7 @@ $('mine-upgrade').addEventListener('click',()=>{if(upgradeMine(state)){updateMin
 $('mine-info').addEventListener('click',()=>{mineChancesPage=Math.floor(mineLevel(state.mine.level).newest/10);$('mine-info-dialog').showModal();updateMineUI();});
 $('mine-chances-prev').addEventListener('click',()=>{mineChancesPage=Math.max(0,mineChancesPage-1);updateMineUI();});
 $('mine-chances-next').addEventListener('click',()=>{mineChancesPage++;updateMineUI();});
-$('mine-collect').addEventListener('click',takeMineOre);$('mine-rewards-collect').addEventListener('click',takeMineOre);
+$('mine-buffer').addEventListener('click',()=>{settleMine(state);$('mine-rewards-dialog').showModal();updateMineUI();});$('mine-rewards-collect').addEventListener('click',takeMineOre);
 document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 
 function frame(now) {
@@ -792,7 +796,7 @@ function frame(now) {
   last = now; accumulated += dt;
   if(mineOpen){
     accumulated=0;uiTime+=dt;savedTime+=dt;
-    if(uiTime>=1){settleMine(state);if(!mineWaiting&&state.mine.pending.some(Boolean))takeMineOre();finishUpgrade(state);updateMineUI();uiTime=0;}
+    if(uiTime>=1){settleMine(state);finishUpgrade(state);updateMineUI();uiTime=0;}
     if(savedTime>=3){save();savedTime=0;}
     raf=requestAnimationFrame(frame);return;
   }
@@ -809,7 +813,7 @@ function frame(now) {
   }
   raf = requestAnimationFrame(frame);
 }
-function start() { $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);mineWaiting=state.mine.pending.some(Boolean);if(mineWaiting&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
+function start() { $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);if(state.mine.pending.some(Boolean)&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); if(!startupRewardsShown){startupRewardsShown=true;if(!mineOpen&&idleRewards(state)>0&&!document.querySelector('dialog[open]'))$('idle-loot').click();} running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
 function stop() { $('game').classList.add('page-paused'); running = false; cancelAnimationFrame(raf); save(true); }
 document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
 window.addEventListener('pagehide', stop);

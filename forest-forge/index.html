@@ -51,6 +51,10 @@
         <span class="idle-art" aria-hidden="true"><i class="coin"></i><img class="hammer-icon" src="assets/hammer.webp" alt=""></span>
         <span class="idle-sleep" aria-hidden="true"><i>z</i><i>z</i><i>z</i></span>
       </button>
+      <button id="mine-buffer" class="idle-loot" hidden aria-label="Mining rewards" aria-haspopup="dialog" aria-controls="mine-rewards-dialog">
+        <span class="idle-art" aria-hidden="true"><img class="hammer-icon" src="assets/mine/stone-icon.webp" alt=""></span>
+        <span class="idle-sleep" aria-hidden="true"><i>z</i><i>z</i><i>z</i></span>
+      </button>
     </section>
     <section id="workshop" aria-label="Equipment and forge">
 
@@ -118,7 +122,6 @@
     <section id="mine-workshop" hidden aria-label="Mine inventory">
       <div class="mine-inventory-title"><strong>Ore storage</strong><button id="mine-info" class="mini-button" aria-label="Mining probabilities">ⓘ</button></div>
       <div id="mine-ore-grid"></div><div id="mine-pages" hidden><button id="mine-prev" aria-label="Previous resources">‹</button> <span id="mine-page"></span> <button id="mine-next" aria-label="Next resources">›</button></div>
-      <button id="mine-collect" class="mini-button" hidden>Collect</button>
       <div class="mine-upgrade-block"><strong id="mine-upgrade-title"></strong><div id="mine-cost"></div>
         <div id="mine-upgrade-progress" hidden><progress id="mine-progress" max="100" value="0"></progress><span id="mine-time"></span></div>
         <button id="mine-upgrade" class="button blue">Upgrade</button>
@@ -151,7 +154,7 @@
   </dialog>
   <dialog id="mine-info-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining chances</h2><button class="close" data-close-mine aria-label="Close">×</button></div><table class="probabilities"><thead><tr><th>Resource</th><th id="mine-current-level"></th><th id="mine-next-level"></th></tr></thead><tbody id="mine-chances"></tbody></table><div class="mine-chances-pages"><button id="mine-chances-prev" class="mini-button" aria-label="Previous resources">‹</button><span id="mine-chances-page"></span><button id="mine-chances-next" class="mini-button" aria-label="Next resources">›</button></div><p>Production increases by 0.1 ore/min every level. Offline storage: 4 hours.</p></dialog>
   <dialog id="mine-sale-dialog" class="mine-dialog"><div class="sheet-top"><h2 id="mine-sale-name">Sell ore</h2><button class="close" data-close-mine aria-label="Close">×</button></div><label>Amount <input id="mine-sale-amount" type="number" min="1" step="1" inputmode="numeric"></label><button id="mine-sell" class="button blue">Sell</button></dialog>
-  <dialog id="mine-rewards-dialog" class="mine-dialog"><div class="sheet-top"><h2>While you were away</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-rewards"></div><p>Up to 4 hours of mining.</p><button id="mine-rewards-collect" class="button blue">Collect</button></dialog>
+  <dialog id="mine-rewards-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining rewards</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-rewards"></div><p id="mine-buffer-time">0h 0m / 4h</p><progress id="mine-buffer-progress" max="240" value="0"></progress><button id="mine-rewards-collect" class="button blue">Collect</button></dialog>
   <dialog id="portrait-dialog" class="mine-dialog" aria-labelledby="portrait-title"><div class="sheet-top"><h2 id="portrait-title">Choose portrait</h2><button id="close-portraits" class="close" aria-label="Close">×</button></div><div id="portrait-grid"></div></dialog>
 </body>
 </html>

@@ -276,7 +276,7 @@ button:disabled { opacity:.55; cursor:default; }
 .idle-rewards small { font-size:11px; font-weight:400; color:#52675a; }
 .idle-status { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; font-variant-numeric:tabular-nums; }
 #idle-next { color:#52675a; font-weight:400; }
-#idle-progress { display:block; height:9px; margin:7px 0 18px; }
+#idle-progress,#mine-buffer-progress { display:block; height:9px; margin:7px 0 18px; }
 #collect-idle { width:100%; font:23px/1.2 'Lilita UI',sans-serif; }
 .auto-dialog { width:min(390px,calc(100vw - 32px)); padding:16px; }
 .auto-dialog h2 { margin:0; font:25px/1.1 'Lilita UI',sans-serif; }
@@ -520,7 +520,6 @@ button:disabled { opacity:.55; cursor:default; }
 #mine-upgrade-progress {position:relative;height:44px;margin:0;border:2px solid #17332b;border-radius:8px;overflow:hidden;background:#41495c;}
 #mine-progress {width:100%;height:100%;border:0;display:block;appearance:none;background:#41495c;}#mine-progress::-webkit-progress-bar{background:#41495c;}#mine-progress::-webkit-progress-value{background:#11b2e0;}#mine-progress::-moz-progress-bar{background:#11b2e0;}
 #mine-time {position:absolute;inset:0;display:grid;place-items:center;color:white;font-weight:bold;text-shadow:0 1px #17332b;}
-#mine-collect{width:100%;margin-top:8px;background:#b9e6a2;}
 .mine-dialog {width:min(360px,calc(100vw - 32px));padding:18px;border:3px solid #17332b;border-radius:16px;background:#fffaf0;color:#17332b;}
 .mine-dialog::backdrop{background:#0009;}.mine-dialog h2{margin:0;font:24px 'Lilita UI',sans-serif;}.mine-dialog p{font-size:12px;}.mine-dialog .button{width:100%;margin-top:14px;}
 .mine-dialog label {display:flex;align-items:center;justify-content:space-between;margin-top:20px;}.mine-dialog input{width:120px;padding:8px;font-size:18px;border:2px solid #52675f;border-radius:7px;}
