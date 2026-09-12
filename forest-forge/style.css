@@ -50,16 +50,7 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 .reward-coin { width:24px; height:24px; }
 .idle-art .hammer-icon { position:absolute; left:0; top:2px; width:43px; height:43px; }
 .idle-loot:active .idle-art { transform:translateY(1px); }
-.idle-sleep { position:absolute; inset:0; pointer-events:none; color:#254b36; }
-.idle-sleep i { position:absolute; left:30px; top:12px; opacity:0; font:bold 9px/1 'Trebuchet MS',sans-serif; animation:idle-sleep 4.8s ease-out infinite; }
-.idle-sleep i:nth-child(2) { left:36px; top:8px; font-size:10px; animation-delay:-3.2s; }
-.idle-sleep i:nth-child(3) { left:42px; top:3px; font-size:11px; animation-delay:-1.6s; }
 .idle-loot.full .idle-art { animation:idle-full 3s ease-in-out infinite; }
-@keyframes idle-sleep {
-  0%,70%,100% { opacity:0; transform:translate(0,0); }
-  12% { opacity:.4; }
-  55% { opacity:0; transform:translate(3px,-8px); }
-}
 @keyframes idle-full {
   0%,100% { filter:drop-shadow(0 0 1px #fff0ad33); }
   50% { filter:drop-shadow(0 0 4px #ffe790bb); }
@@ -581,3 +572,15 @@ button:disabled { opacity:.55; cursor:default; }
 #comparison .item-icon > img.affix-badge {width:24px;height:24px;}
 .affix-inline {display:inline-block;width:26px;height:26px;object-fit:contain;vertical-align:middle;margin-right:5px;}
 #reforge-current .affix-inline,#reforge-new .affix-inline {width:32px;height:32px;}
+
+.mine-buffer { position:absolute;left:12px;bottom:12px;width:58px;height:62px;padding:3px 5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;background:#243735;
+  border:2px solid #e7e2c8;border-radius:12px;color:#fffaf0;z-index:2;box-shadow:0 3px 0 #122321;isolation:isolate; }
+.mine-buffer img { width:36px;height:36px;object-fit:contain;pointer-events:none; }
+.mine-buffer strong { font:14px/16px 'Lilita UI',sans-serif;white-space:nowrap;pointer-events:none; }
+.mine-buffer::before { content:'';position:absolute;inset:-4px;border:3px solid #ffe47e;border-radius:15px;opacity:0;pointer-events:none;z-index:-1; }
+.mine-buffer.ready::before { animation:mine-buffer-pulse 2.8s ease-in-out infinite; }
+.mine-buffer:active { transform:translateY(2px);box-shadow:0 1px 0 #122321; }
+#game.page-paused .mine-buffer::before { animation-play-state:paused; }
+@keyframes mine-buffer-pulse { 0%,100%{opacity:.15}50%{opacity:.75} }
+@media(prefers-reduced-motion:reduce){.mine-buffer.ready::before{animation:none;opacity:.45;}}

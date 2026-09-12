@@ -424,7 +424,7 @@ export function enemyFor(level, kind = 'warrior') {
   return { kind, boss: kind === 'boss',
     name: biome.names[kind === 'boss' && level % LEVELS_PER_BIOME ? 'commander' : kind],
     maxHp: row[kind + '_hp'], damage: kind === 'healer' ? 0 : row[kind + '_damage'],
-    healing: row.healing_per_3s, reward: row[kind === 'boss' ? 'boss_coins' : 'monster_coins'] };
+    healing: row.healing_per_2s, reward: row[kind === 'boss' ? 'boss_coins' : 'monster_coins'] };
 }
 function prepareEncounter(s) {
   let x = s.heroX + .91;
@@ -744,8 +744,8 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     if (!e.hp || !e.engaged) continue;
     if (e.kind === 'healer') {
       e.healClock += dt;
-      if (e.healClock >= 3) {
-        e.healClock -= 3;
+      if (e.healClock >= 2) {
+        e.healClock -= 2;
         const patient = s.enemies.filter(a => a.id !== e.id && a.hp > 0 && a.hp < a.maxHp)
           .sort((a,b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
         if (patient) {

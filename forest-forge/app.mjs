@@ -729,7 +729,8 @@ function updateMineUI() {
   const pages=Math.ceil(m.ore.length/8);
   $('mine-pages').hidden=pages<=1;setText('mine-page',`${mineInventoryPage+1} / ${pages}`);
   $('mine-prev').disabled=mineInventoryPage===0;$('mine-next').disabled=mineInventoryPage>=pages-1;
-  $('mine-buffer').classList.toggle('full',m.bufferMinutes>=240);
+  $('mine-buffer').classList.toggle('ready',pending>0);
+  setText('mine-buffer-count',compact.format(pending));
   $('mine-buffer').setAttribute('aria-label',`Mining rewards: ${pending} ore`);
   setText('mine-buffer-time',`${Math.floor(m.bufferMinutes/60)}h ${m.bufferMinutes%60}m / 4h`);
   $('mine-buffer-progress').value=m.bufferMinutes;
