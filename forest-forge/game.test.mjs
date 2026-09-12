@@ -62,14 +62,14 @@ test('short opening level, full boss escorts, and original enemy stats',()=>{
    assert.ok(s.enemies.length<=5);
    if(level===1&&n<9)assert.equal(s.enemies.length,1);
    if(level<6&&n<9)assert.ok(s.enemies.every(e=>e.kind!=='healer'));
-   if(n===9)assert.deepEqual(s.enemies.map(e=>e.kind),['warrior','warrior','boss','archer','healer']);
+   if(n===9)assert.deepEqual(s.enemies.map(e=>e.kind),level===1?['boss']:['warrior','warrior','boss','archer','healer']);
   }
   assert.equal(enemyFor(level).maxHp,10+2*(level-1));
-  assert.equal(enemyFor(level).damage,level<6?2:3);
+  assert.equal(enemyFor(level).damage,level===1?1:level<6?2:3);
   assert.equal(enemyFor(level,'archer').maxHp,level+4);
   assert.equal(enemyFor(level,'archer').damage,level<10?1:2);
-  assert.equal(enemyFor(level,'boss').maxHp,6*(10+2*(level-1)));
-  assert.equal(enemyFor(level,'boss').damage,level<6?5:level<10?6:7);
+  assert.equal(enemyFor(level,'boss').maxHp,level===1?30:6*(10+2*(level-1)));
+  assert.equal(enemyFor(level,'boss').damage,level===1?2:level<6?5:level<10?6:7);
   assert.equal(enemyFor(level,'healer').healing,level<10?3:6);
  }
  assert.ok(enemyFor(200).maxHp>enemyFor(100).maxHp);
@@ -180,10 +180,10 @@ test('idle rewards count whole minutes online and offline, cap at four hours, an
 test('early collection preserves partial minutes and old saves start an empty buffer without losing progress',()=>{
  const start=1000000,s=freshGame(start),before=structuredClone(s);
  assert.equal(collectIdleRewards(s,start+59999),0);assert.deepEqual(s,before);
- assert.equal(collectIdleRewards(s,start+95000),1);assert.equal(s.coins,1);assert.equal(s.hammers,6);
+ assert.equal(collectIdleRewards(s,start+95000),1);assert.equal(s.coins,1);assert.equal(s.hammers,16);
  const loaded=restore(JSON.stringify(s),start+119999);
  assert.equal(idleRewards(loaded,start+119999),0);assert.equal(collectIdleRewards(loaded,start+120000),1);
- assert.equal(loaded.coins,2);assert.equal(loaded.hammers,7);assert.equal(loaded.autoForge,false);
+ assert.equal(loaded.coins,2);assert.equal(loaded.hammers,17);assert.equal(loaded.autoForge,false);
  const old=wave(4,3);old.coins=713;old.hammers=18;delete old.idleSince;
  const migrated=restore(JSON.stringify(old),start);
  assert.equal(migrated.idleSince,start);assert.equal(idleRewards(migrated,start),0);
@@ -321,7 +321,7 @@ test('200 levels use ten waves each; death retains loot and no between-wave heal
  for(let level=1;level<=200;level++)for(let n=0;n<10;n++){
   const s=wave(level,n),local=(level-1)%20+1,min=local<=5?2:local<=10?3:local<=15?4:5,max=local<=15?min+1:7;
   assert.equal(s.enemies.some(e=>e.boss),n===9);
-  if(n===9)assert.deepEqual(s.enemies.map(e=>e.kind),['warrior','warrior','boss','archer','healer']);
+  if(n===9)assert.deepEqual(s.enemies.map(e=>e.kind),level===1?['boss']:['warrior','warrior','boss','archer','healer']);
   else if(level>1){
    assert.ok(s.enemies.length>=min&&s.enemies.length<=max);
    if(n<3)assert.equal(s.enemies.length,min);
@@ -393,14 +393,14 @@ test('runtime balance matches every approved CSV row',async()=>{
 
 test('bare hero survives first enemy, earns hammers, forges and equips first weapon; empty saves resume',()=>{
  const s=freshGame();s.selectedBatch=2;assert.ok(SLOTS.every(slot=>s.equipment[slot]===null));
- assert.equal(s.hammers,5);
+ assert.equal(s.hammers,15);
  const existing=structuredClone(s);existing.hammers=0;assert.equal(restore(JSON.stringify(existing)).hammers,0);
  assert.equal(s.hp,20);assert.deepEqual(stats(s),{hp:20,damage:2});
  assert.deepEqual(restore(JSON.stringify(s)),s);
  for(let n=0;n<450 && !s.kills;n++)step(s,1/30,()=>0);
- assert.equal(s.kills,1);assert.equal(s.hp,6);assert.equal(s.deaths,0);assert.equal(s.hammers,6);
+ assert.equal(s.kills,1);assert.equal(s.hp,13);assert.equal(s.deaths,0);assert.equal(s.hammers,16);
  assert.deepEqual(restore(JSON.stringify(s)),s);
- assert.equal(forge(s,()=>0),true);assert.equal(s.forgingItems.length,2);assert.equal(s.hammers,4);for(let n=0;n<46;n++)step(s,1/30,()=>0);
+ assert.equal(forge(s,()=>0),true);assert.equal(s.forgingItems.length,2);assert.equal(s.hammers,14);for(let n=0;n<46;n++)step(s,1/30,()=>0);
  const hp=s.hp;assert.equal(equip(s),true);assert.equal(stats(s).damage,4);assert.equal(stats(s).hp,20);assert.equal(s.hp,hp);
  assert.equal(s.equipment.helmet,null);assert.equal(s.equipment.chest,null);assert.deepEqual(restore(JSON.stringify(s)),s);
 });
@@ -798,10 +798,18 @@ test('compressed anvil keeps saved progress and running timers, caps old high le
 
 test('forty-level forge ladder includes fractional openings and week-long maximum',()=>{
  assert.equal(ANVILS.length,40);assert.equal(Math.max(...ANVILS.map(r=>r.minutes)),10080);
- assert.deepEqual(ANVILS[10].chances,[61.9,35,3,.1,0,0,0,0,0,0]);
+ assert.deepEqual(ANVILS[10].chances,[21.9,75,3,.1,0,0,0,0,0,0]);
  assert.deepEqual(ANVILS[39].chances,[0,0,0,0,0,0,0,45,50,5]);
  const ladder=[.05,.1,.25,.5,1,3,5,10,20,35,50,65];
- for(let epoch=1;epoch<10;epoch++)for(let age=0;age<ladder.length;age++){
+ for(let epoch=2;epoch<10;epoch++)for(let age=0;age<ladder.length;age++){
   const index=1+4*(epoch-1)+age;if(index<40)assert.equal(ANVILS[index].chances[epoch],ladder[age]);
  }
+});
+
+
+test('Ancient onboarding chances rise without reducing later rare tiers',()=>{
+ const chances=[5,10,20,35,45,55,65,75,75,75,75,75];
+ chances.forEach((value,i)=>assert.equal(ANVILS[i+1].chances[1],value));
+ for(let i=1;i<ANVILS.length;i++)assert.ok(ANVILS[i].chances[0]<=ANVILS[i-1].chances[0]);
+ const old=freshGame();old.hammers=5;old.coins=100;assert.equal(restore(JSON.stringify(old)).hammers,5);
 });

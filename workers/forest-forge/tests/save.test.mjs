@@ -1,3 +1,4 @@
+import { freshGame } from '../../../forest-forge/game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
@@ -41,13 +42,13 @@ test('first Telegram player starts clean and independent of WoL or another playe
   const {db,env}=fixture();
   try {
     const a=await (await worker.fetch(request(initData()),env)).json();
-    assert.equal(a.revision,0); assert.equal(a.state.coins,0); assert.equal(a.state.hammers,5);
+    assert.equal(a.revision,0); assert.equal(a.state.coins,0); assert.equal(a.state.hammers,15);
     assert.ok(Object.values(a.state.equipment).every(v=>v===null));
     const before=Date.now(); assert.ok(a.state.idleSince <= before && a.state.idleSince > before-3000);
     a.state.coins=75; a.state.hammers=22;
     assert.equal((await worker.fetch(request(initData(),{state:a.state,revision:a.revision}),env)).status,200);
     const other=await (await worker.fetch(request(initData(90002)),env)).json();
-    assert.equal(other.state.coins,0); assert.equal(other.state.hammers,5);
+    assert.equal(other.state.coins,0); assert.equal(other.state.hammers,15);
     const again=await (await worker.fetch(request(initData()),env)).json();
     assert.equal(again.state.coins,75); assert.equal(again.state.hammers,22); assert.equal(again.revision,1);
   } finally { db.close(); }
@@ -66,4 +67,19 @@ test('one revision can be written once; stale and malformed saves preserve the c
     const saved=await (await worker.fetch(request(data),env)).json();
     assert.equal(saved.revision,1); assert.equal(saved.state.coins,120);
   } finally { db.close(); }
+});
+
+
+test('reset replaces saved progress and stale pre-reset writes cannot restore it',async()=>{
+ const {db,env}=fixture(),data=initData();
+ try{
+  const original=await (await worker.fetch(request(data),env)).json();
+  original.state.coins=999;original.state.anvilLevel=11;original.state.mine.level=8;
+  await worker.fetch(request(data,{state:original.state,revision:0}),env);
+  const reset=freshGame();
+  assert.equal((await worker.fetch(request(data,{state:reset,revision:1}),env)).status,200);
+  assert.equal((await worker.fetch(request(data,{state:original.state,revision:1}),env)).status,409);
+  const saved=await (await worker.fetch(request(data),env)).json();
+  assert.equal(saved.revision,2);assert.deepEqual(saved.state,reset);
+ }finally{db.close();}
 });

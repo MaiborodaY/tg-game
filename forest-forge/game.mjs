@@ -354,7 +354,7 @@ const NAMES = {
 // Ten fixed waves per row: tutorial, then local levels 1–5, 6–10, 11–15, 16–20.
 // W warrior, A archer, H healer, B boss. The last row builds to seven enemies.
 export const WAVES = [
-  ['W','W','W','W','A','W','W','A','W','WWBAH'],
+  ['W','W','W','W','A','W','W','A','W','B'],
   ['WW','WA','WW','WA','WWW','WW','WWA','WAA','WWW','WWBAH'],
   ['WWW','WWA','WWH','WAA','WWAH','WWA','WWWA','WWWH','WWAA','WWBAH'],
   ['WWWA','WWAA','WWAH','WWWH','WWWAH','WWAA','WWWWA','WWWAA','WWWAH','WWBAH'],
@@ -451,7 +451,7 @@ function prepareEncounter(s) {
 }
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
-    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
+    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
   s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};

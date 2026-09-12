@@ -544,13 +544,22 @@ $('equip-stronger').addEventListener('click', () => {
 });
 $('equip').addEventListener('click', () => { if (equip(state, state.pending?.slot === 'ring' ? ringTarget : state.pending?.slot)) { afterItemAction(null); } });
 $('replay').addEventListener('click', () => { if (replay(state)) { void scene?.prepare(state.level); save(); updateUI(); } });
-$('new-game').addEventListener('click', () => {
-  if (confirm('Start a new hero? Your current equipment, coins, hammers, and progress will be reset.')) {
-    closeSheet(); state = freshGame(); void scene?.prepare(state.level); save(); updateUI();
-  }
+for (const id of ['new-game','reset-progress']) $(id).addEventListener('click', () => {
+  closeSheet(); $('portrait-dialog').close();
+  $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
+  $('reset-progress-dialog').showModal(); $('cancel-reset').focus();
+});
+for (const id of ['cancel-reset','cancel-reset-close']) $(id).addEventListener('click', () => $('reset-progress-dialog').close());
+$('confirm-reset').addEventListener('click', () => {
+  if (telegramLaunch && (!cloudReady || cloudBusy || cloudFailed)) return;
+  state = freshGame(); displayedHeroPower = null; masteryView = 0; mineInventoryPage = 0; mineChancesPage = 0;
+  $('item-level-change').getAnimations().forEach(animation => animation.cancel());
+  $('item-level-change').hidden = true;
+  setMineOpen(false); // Closes dialogs, refreshes the main screen and saves the fresh state immediately.
+  void scene?.prepare(state.level);
 });
 document.addEventListener('keydown', e => {
-  if ($('bulk-sale-confirm').open || $('idle-dialog').open || $('auto-dialog').open || (!sheetSlot && !anvilOpen)) return;
+  if ($('reset-progress-dialog').open || $('bulk-sale-confirm').open || $('idle-dialog').open || $('auto-dialog').open || (!sheetSlot && !anvilOpen)) return;
   if (e.key === 'Escape') closeSheet();
   if (e.key === 'Tab') {
     const dialog = anvilOpen ? $('anvil-dialog') : $('comparison');
@@ -561,6 +570,7 @@ document.addEventListener('keydown', e => {
 });
 
 function updateUI() {
+  $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   updateIdleRewards();
   const total = stats(state);
   const level = heroPower(state);
@@ -716,6 +726,7 @@ function mineRows(amounts) {
   return amounts.map((n,i)=>{const r=mineResource(i);return amounts[i]?`<div class="mine-resource-row"><img src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span><b>${amounts[i]}</b></div>`:'';}).join('');
 }
 function updateMineUI() {
+  $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   const m=state.mine, next=mineLevel(m.level), following=mineLevel(m.level+1), pending=m.pending.reduce((a,b)=>a+b,0);
   setText('coins',compact.format(state.coins));setText('mine-level',`Mine · Lv. ${m.level}`);
   const deposit=mineResource(Math.min(19,next.newest));
