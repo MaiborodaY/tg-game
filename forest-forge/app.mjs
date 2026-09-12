@@ -1,4 +1,4 @@
-import { COMPANIONS, hireCompanion, selectCompanion } from './game.mjs';
+import { COMPANIONS, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs?v=companions-menu';
@@ -100,6 +100,12 @@ for (const [i, name] of EPOCHS.entries()) {
 for(const companion of COMPANIONS) {
   const card=document.createElement('article');card.className='companion-card '+companion.id;
   card.innerHTML=`<img src="assets/companions/${companion.id}-card.webp" alt=""><div><h3>${companion.name}</h3><strong>${companion.role}</strong><p>${companion.description}</p><button class="button"><span class="companion-action"></span><span class="companion-price"><i class="coin" aria-hidden="true"></i>500</span></button></div>`;
+  if(companion.id==='druid'){
+    const upgrade=document.createElement('button');upgrade.className='button druid-upgrade';upgrade.hidden=true;
+    upgrade.innerHTML='<span>Upgrade</span><i class="coin" aria-hidden="true"></i><span class="druid-price"></span>';
+    upgrade.onclick=()=>{if(upgradeDruid(state)){save(true);updateUI();}};
+    card.querySelector('div').append(upgrade);
+  }
   card.dataset.kind=companion.id;
   card.querySelector('button').onclick=()=>{
     const changed=state.hiredCompanions.includes(companion.id)?selectCompanion(state,companion.id):hireCompanion(state,companion.id);
@@ -109,7 +115,7 @@ for(const companion of COMPANIONS) {
 }
 function updateCompanions() {
   if(!$('companions-dialog').open)return;
-  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind]);
+  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel]);
   if(displayedCompanions===key)return;
   displayedCompanions=key;
   $('companions-coins').textContent=compact.format(state.coins);
@@ -117,6 +123,17 @@ function updateCompanions() {
     const id=card.dataset.kind,owned=state.hiredCompanions.includes(id);
     const current=state.companion?.kind===id,selected=state.selectedCompanion===id;
     const button=card.querySelector('button');
+    if(id==='druid'){
+      const level=DRUID_LEVELS[state.druidLevel-1],next=DRUID_LEVELS[state.druidLevel];
+      card.querySelector('h3').textContent=owned?`Druid · Lv. ${state.druidLevel}`:'Druid';
+      card.querySelector('p').textContent=`+${compact.format(level.healing)} HP every 2 sec${owned&&next?' → +'+compact.format(next.healing):''}`;
+      const upgrade=card.querySelector('.druid-upgrade');upgrade.hidden=!owned;
+      upgrade.disabled=!next||state.coins<level.upgradeCost;
+      upgrade.querySelector('span').textContent=next?'Upgrade':'Max level';
+      upgrade.querySelector('.coin').hidden=!next;
+      upgrade.querySelector('.druid-price').textContent=next?compact.format(level.upgradeCost):'';
+      upgrade.setAttribute('aria-label',next?`Upgrade druid to level ${state.druidLevel+1} for ${level.upgradeCost} coins; heal ${next.healing} HP every 2 seconds`:'Druid maximum level');
+    }
     card.classList.toggle('active',current);
     const label=selected?(current?'Active':'Next wave'):owned?'Take along':'Hire';
     card.querySelector('.companion-action').textContent=label;
@@ -125,7 +142,7 @@ function updateCompanions() {
     button.setAttribute('aria-label',label+' '+id+(owned?'':' for 500 coins'));
   }
   const pending=state.selectedCompanion&&state.selectedCompanion!==state.companion?.kind;
-  $('companions-message').textContent=pending?COMPANIONS.find(c=>c.id===state.selectedCompanion).name+' will join next wave':'Changes apply next wave';
+  $('companions-message').textContent=pending?COMPANIONS.find(c=>c.id===state.selectedCompanion).name+' will join next wave':'Hire joins now · Switching next wave';
 }
 $('companions-toggle').onclick=()=>{$('companions-dialog').showModal();updateCompanions();};
 $('close-companions').onclick=()=>$('companions-dialog').close();

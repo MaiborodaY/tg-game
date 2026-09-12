@@ -1,4 +1,4 @@
-import { hireCompanion, selectCompanion } from './game.mjs';
+import { DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
@@ -42,29 +42,27 @@ test('turtle runs farther ahead and keeps its world position across waves',()=>{
  assert.equal(s.companion.x,s.heroX-.13);
 });
 
-test('druid regeneration heals exactly five fixed ticks over fifteen seconds',()=>{
- const s=freshGame();s.hp=1;s.phase='victory';s.phaseTime=30;
- s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1,regenRemaining:15,regenClock:0};
- let events=advance(s,2);assert.equal(s.hp,1);
- events.push(...advance(s,13));
- assert.equal(s.hp,11);assert.equal(events.filter(e=>e.type==='heroRegen').length,5);
- assert.ok(events.filter(e=>e.type==='heroRegen').every(e=>e.value===2));
- assert.equal(s.companion.regenRemaining,0);
- advance(s,3);assert.equal(s.hp,11);
+test('druid heals continuously every two seconds, caps at max health and resets on death',()=>{
+ const s=freshGame();s.hp=1;s.phase='victory';s.phaseTime=100;
+ s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1,regenClock:0};
+ advance(s,1);assert.equal(s.hp,1);let events=advance(s,1);assert.equal(s.hp,3);
+ events.push(...advance(s,16));assert.equal(s.hp,19);assert.equal(events.filter(e=>e.type==='heroRegen').length,9);
+ events=advance(s,2);assert.equal(s.hp,20);assert.equal(events.find(e=>e.type==='heroRegen').value,1);
+ s.phase='dead';s.phaseTime=10;s.hp=0;advance(s,2);assert.equal(s.hp,0);assert.equal(s.companion.regenClock,0);
 });
 
-test('druid casts only on injury, does not stack, caps healing and clears on death',()=>{
- const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.115;e.damage=0;e.hp=1000;
- s.phase='fight';s.targetId=e.id;s.heroClock=0;
- s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1};
- step(s,.01,()=>.999);assert.equal(s.companion.regenRemaining,undefined);
- s.hp=19;let events=step(s,.01,()=>.999);
- assert.equal(s.companion.regenRemaining,15);assert.equal(s.hp,19);
- events.push(...advance(s,3));assert.equal(s.hp,20);
- assert.equal(events.filter(e=>e.type==='regenerationApplied').length,1);
- assert.equal(events.find(e=>e.type==='heroRegen').value,1);
- s.phase='dead';s.phaseTime=0;s.hp=0;step(s,.01,()=>.999);
- assert.equal(s.companion.regenRemaining,0);assert.equal(s.companion.regenClock,0);
+test('druid levels cost coins, persist across selection and heal the upgraded amount',()=>{
+ const s=freshGame();s.coins=2000;assert.equal(upgradeDruid(s),false);assert.equal(hireCompanion(s,'druid'),true);
+ assert.equal(upgradeDruid(s),true);assert.equal(s.druidLevel,2);assert.equal(s.coins,500);
+ const before=structuredClone(s);assert.equal(upgradeDruid(s),false);assert.deepEqual(s,before);
+ s.selectedCompanion=null;const loaded=restore(JSON.stringify(s));assert.equal(loaded.druidLevel,2);assert.equal(loaded.coins,500);
+ loaded.hp=1;loaded.phase='victory';loaded.phaseTime=100;loaded.companion={kind:'druid',x:0,clock:0,actionAge:1,regenClock:0};
+ advance(loaded,2);assert.equal(loaded.hp,6);
+ s.druidLevel=100;s.coins=1e15;assert.equal(upgradeDruid(s),false);assert.equal(s.coins,1e15);
+ delete s.druidLevel;assert.equal(restore(JSON.stringify(s)).druidLevel,1);assert.equal(freshGame().druidLevel,1);
+ assert.deepEqual(DRUID_LEVELS[0],{healing:2,upgradeCost:1000});assert.equal(DRUID_LEVELS[1].healing,5);
+ assert.equal(DRUID_LEVELS[19].healing,240);assert.equal(DRUID_LEVELS[29].healing,2064);
+ assert.equal(DRUID_LEVELS[99].healing,7149820689);assert.equal(DRUID_LEVELS[99].upgradeCost,0);
 });
 
 test('archer companion follows, waits for range, and rewards a projectile kill once',()=>{
@@ -908,18 +906,18 @@ test('every companion costs 500, duplicate and failed hires do not spend coins',
  }
  assert.equal(s.coins,0);assert.equal(hireCompanion(s,'unknown'),false);
 });
-test('hired selection waits for the next wave and survives reload',()=>{
- const s=freshGame();s.coins=1000;
- hireCompanion(s,'archer');assert.equal(s.companion,null);
- s.phase='victory';s.phaseTime=0;step(s,1/30);
- assert.equal(s.companion.kind,'archer');
- hireCompanion(s,'druid');selectCompanion(s,'druid');
- assert.equal(s.companion.kind,'archer');
- const loaded=restore(JSON.stringify(s));
- assert.deepEqual(loaded.hiredCompanions,['archer','druid']);
- assert.equal(loaded.selectedCompanion,'druid');assert.equal(loaded.companion.kind,'archer');
+test('purchase joins immediately; switching owned companions waits for next wave and survives reload',()=>{
+ const s=freshGame();s.coins=1500;const enemies=structuredClone(s.enemies),hp=s.hp,phase=s.phase;
+ hireCompanion(s,'archer');assert.equal(s.companion.kind,'archer');assert.equal(s.selectedCompanion,'archer');
+ assert.equal(s.companion.x,s.heroX-.13);assert.deepEqual(s.enemies,enemies);assert.equal(s.hp,hp);assert.equal(s.phase,phase);
+ hireCompanion(s,'druid');assert.equal(s.companion.kind,'druid');assert.equal(s.selectedCompanion,'druid');
+ selectCompanion(s,'archer');assert.equal(s.companion.kind,'druid');
+ const loaded=restore(JSON.stringify(s));assert.deepEqual(loaded.hiredCompanions,['archer','druid']);
+ assert.equal(loaded.selectedCompanion,'archer');assert.equal(loaded.companion.kind,'druid');
  loaded.phase='victory';loaded.phaseTime=0;step(loaded,1/30);
- assert.equal(loaded.companion.kind,'druid');assert.equal(loaded.coins,0);
+ assert.equal(loaded.companion.kind,'archer');assert.equal(loaded.coins,500);
+ hireCompanion(loaded,'turtle');assert.equal(loaded.companion.kind,'turtle');assert.equal(loaded.companion.hp,30);
+ loaded.companion.hp=7;const before=structuredClone(loaded);assert.equal(hireCompanion(loaded,'turtle'),false);assert.deepEqual(loaded,before);
 });
 
 

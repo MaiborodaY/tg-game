@@ -432,15 +432,26 @@ export function enemyFor(level, kind = 'warrior') {
 }
 export const COMPANIONS = [
   {id:'archer',name:'Archer',role:'Ranged damage',description:'Fights from behind the hero'},
-  {id:'druid',name:'Druid',role:'Regeneration',description:'+2 HP every 3 sec for 15 seconds'},
+  {id:'druid',name:'Druid',role:'Regeneration',description:'+2 HP every 2 sec'},
   {id:'turtle',name:'Turtle',role:'Defender',description:'Runs ahead and blocks half the damage'},
 ];
+export const DRUID_LEVELS = Array.from({length:100},(_,i)=>({
+  healing:i===0?2:Math.round(5*1.24**(i-1)),
+  upgradeCost:i===99?0:Math.ceil(1000*1.22**i/10)*10
+}));
+export function upgradeDruid(s) {
+  const cost=DRUID_LEVELS[s.druidLevel-1]?.upgradeCost;
+  if(!s.hiredCompanions.includes('druid')||!cost||s.coins<cost)return false;
+  s.coins-=cost;s.druidLevel++;return true;
+}
 export function hireCompanion(s,id) {
   if(!COMPANIONS.some(c=>c.id===id)||s.hiredCompanions.includes(id))return false;
   const cost=500;
   if(s.coins<cost)return false;
   s.coins-=cost;s.hiredCompanions.push(id);
-  if(!s.selectedCompanion)s.selectedCompanion=id;
+  s.selectedCompanion=id;
+  s.companion={kind:id,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
+    ...(id==='turtle'?{hp:30,maxHp:30}:{})};
   return true;
 }
 export function selectCompanion(s,id) {
@@ -475,7 +486,7 @@ function prepareEncounter(s) {
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
-    autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    druidLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
@@ -706,20 +717,18 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   if(s.companion?.kind==='druid') {
     const c=s.companion;
     c.healAge=Math.min(1,(c.healAge ?? 1)+dt);
-    if(s.hp<=0 || s.phase==='dead'){c.regenRemaining=0;c.regenClock=0;}
-    else if(c.regenRemaining>0){
-      const elapsed=Math.min(dt,c.regenRemaining);
-      c.regenRemaining=Math.max(0,c.regenRemaining-elapsed);
-      c.regenClock=(c.regenClock||0)+elapsed;
-      while(c.regenClock>=3-1e-9){
-        c.regenClock=Math.max(0,c.regenClock-3);
-        const value=Math.min(2,hero.hp-s.hp);
+    if(s.hp<=0 || s.phase==='dead')c.regenClock=0;
+    else {
+      c.regenClock=(c.regenClock||0)+dt;
+      while(c.regenClock>=2-1e-9){
+        c.regenClock=Math.max(0,c.regenClock-2);
+        const value=Math.min(DRUID_LEVELS[s.druidLevel-1].healing,hero.hp-s.hp);
         s.hp+=value;
-        if(value>0){c.healAge=0;events.push({type:'heroRegen',value});}
+        if(value>0){c.healAge=0;c.actionAge=0;events.push({type:'heroRegen',value});}
       }
-      if(c.regenRemaining<1e-9)c.regenRemaining=0;
     }
   }
+
   if (s.phase === 'dead' || s.phase === 'victory') {
     s.doubleStrikeDelay = 0;
     if(s.companion){s.companion.shot=null;s.companion.moving=s.phase==='victory';if(s.companion.moving)s.companion.x+=APPROACH_SPEED/2*dt;}
@@ -794,11 +803,8 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     const c=s.companion, delta=s.heroX-.13-c.x;
     c.moving=Math.abs(delta)>.002;
     if(c.moving)c.x+=Math.sign(delta)*Math.min(Math.abs(delta),APPROACH_SPEED*.65*dt);
-    if(!c.moving && s.hp<hero.hp && !(c.regenRemaining>0)){
-      c.regenRemaining=15;c.regenClock=0;c.actionAge=0;
-      events.push({type:'regenerationApplied'});
-    }
   }
+
   if(s.companion?.kind==='archer') {
     const c=s.companion, destination=s.heroX-.13, delta=destination-c.x;
     c.moving=Math.abs(delta)>.002;
@@ -873,7 +879,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       s.hp = Math.max(0, s.hp - (blocked ? 0 : e.damage));
       events.push({ type: 'enemyHit', value: blocked ? 0 : e.damage, blocked, sourceId: e.id, ranged: e.kind === 'archer' });
       if (!s.hp) {
-        if(s.companion){s.companion.regenRemaining=0;s.companion.regenClock=0;}
+        if(s.companion){s.companion.regenClock=0;}
         s.deaths++; s.phase = 'dead'; s.phaseTime = 1.8;
         events.push({ type: 'death' }); return events;
       }
@@ -898,16 +904,17 @@ export function restore(serialized, now = Date.now()) {
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
     s.autoForgeCoins=Number.isSafeInteger(s.autoForgeCoins)&&s.autoForgeCoins>=0?s.autoForgeCoins:0;
     s.battleStats=Object.fromEntries(['bosses','maxHit','maxCrit','coins','hammers','runes'].map(k=>[k,Number.isSafeInteger(s.battleStats?.[k])&&s.battleStats[k]>=0?s.battleStats[k]:0]));
     s.hiredCompanions=Array.isArray(s.hiredCompanions)?[...new Set(s.hiredCompanions.filter(id=>COMPANIONS.some(c=>c.id===id)))]:[];
     s.selectedCompanion=s.hiredCompanions.includes(s.selectedCompanion)?s.selectedCompanion:null;
     if(s.companion){
       const c=s.companion;
+      if(c.kind==='druid'){delete c.regenRemaining;c.regenClock=Number.isFinite(c.regenClock)&&c.regenClock>=0?c.regenClock%2:0;}
       const valid=s.hiredCompanions.includes(c.kind)&&['x','clock','actionAge'].every(k=>nonnegative(c[k]))&&
         (c.kind!=='turtle'||nonnegative(c.hp)&&c.hp<=30&&c.maxHp===30)&&
-        (c.kind!=='druid'||(c.regenRemaining==null||nonnegative(c.regenRemaining)&&c.regenRemaining<=15)&&
-          (c.regenClock==null||nonnegative(c.regenClock)&&c.regenClock<3));
+        (c.kind!=='druid'||nonnegative(c.regenClock)&&c.regenClock<2);
       if(!valid)s.companion=null;
       else if(c.shot && (!Number.isInteger(c.shot.targetId)||!['remaining','fromX','toX'].every(k=>nonnegative(c.shot[k]))||c.shot.remaining>.18))c.shot=null;
     }

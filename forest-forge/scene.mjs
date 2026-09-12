@@ -419,7 +419,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
     context.restore();
     if (!state.completed && state.phase !== 'dead') bar(heroX, base - hSize - 9, state.hp / stats(state).hp, '#56df51');
-    if(companion?.regenRemaining>0 && state.hp>0 && state.phase!=='dead'){
+    if(companion?.kind==='druid' && companion.healAge<.7 && state.hp>0 && state.phase!=='dead'){
       context.save();
       if(companion.healAge<.3){
         context.globalAlpha=(1-companion.healAge/.3)*.22;
