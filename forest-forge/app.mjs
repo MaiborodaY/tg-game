@@ -1,6 +1,7 @@
+import { COMPANIONS, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
-import { createScene } from './scene.mjs';
+import { createScene } from './scene.mjs?v=companions-menu';
 import { AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 
 const $ = id => document.getElementById(id);
@@ -31,6 +32,8 @@ const requestedBiome=Number(new URLSearchParams(location.search).get('biome'));
 const previewBiome=localPreview&&!previewWeapon&&!previewSet&&Number.isInteger(requestedBiome)&&requestedBiome>=1&&requestedBiome<=BIOMES.length?requestedBiome:null;
 const previewBoss=previewBiome&&new URLSearchParams(location.search).get('boss')==='1';
 const previewReforge=localPreview && !previewWeapon && !previewSet && !previewBiome && new URLSearchParams(location.search).get('reforge')==='1';
+const requestedCompanion=new URLSearchParams(location.search).get('companion');
+const previewCompanion=localPreview && !window.Telegram?.WebApp?.initData && ['archer','druid','turtle'].includes(requestedCompanion)?requestedCompanion:null;
 let state;
 let artVersion=Date.now();
 window.addEventListener('storage',event=>{if(event.key==='forest-forge-art-update')artVersion=Date.now();});
@@ -50,6 +53,7 @@ if(previewBiome){
   const encounter=previewBoss?9:8;
   state.encounter=encounter?encounter-1:0;state.phase=encounter?'victory':'dead';state.phaseTime=0;step(state,1/30);
 }
+if(previewCompanion){if(!previewBiome&&!previewWeapon)state=freshGame();state.companion={kind:previewCompanion,x:state.heroX-.13,clock:0,actionAge:1,moving:false,shot:null,...(previewCompanion==='turtle'?{hp:30,maxHp:30}: {})};}
 let ringTarget = null, bulkSaleSelection = null;
 if(previewReforge){
   state=freshGame();state.coins=10000;state.hammers=50;state.anvilLevel=10;
@@ -91,8 +95,39 @@ for (const [i, name] of EPOCHS.entries()) {
   $('probability-rows').append(row);
 
 }
+
+for(const companion of COMPANIONS) {
+  const card=document.createElement('article');card.className='companion-card '+companion.id;
+  card.innerHTML=`<img src="assets/companions/${companion.id}-card.webp" alt=""><div><h3>${companion.name}</h3><strong>${companion.role}</strong><p>${companion.description}</p><button class="button"><span class="companion-action"></span><span class="companion-price"><i class="coin" aria-hidden="true"></i>500</span></button></div>`;
+  card.dataset.kind=companion.id;
+  card.querySelector('button').onclick=()=>{
+    const changed=state.hiredCompanions.includes(companion.id)?selectCompanion(state,companion.id):hireCompanion(state,companion.id);
+    if(changed){save(true);updateUI();}
+  };
+  $('companions-cards').append(card);
+}
+function updateCompanions() {
+  if(!$('companions-dialog').open)return;
+  $('companions-coins').textContent=compact.format(state.coins);
+  for(const card of $('companions-cards').children) {
+    const id=card.dataset.kind,owned=state.hiredCompanions.includes(id);
+    const current=state.companion?.kind===id,selected=state.selectedCompanion===id;
+    const button=card.querySelector('button');
+    card.classList.toggle('active',current);
+    const label=selected?(current?'Active':'Next wave'):owned?'Take along':'Hire';
+    card.querySelector('.companion-action').textContent=label;
+    card.querySelector('.companion-price').hidden=owned;
+    button.disabled=selected||(!owned&&state.coins<500);
+    button.setAttribute('aria-label',label+' '+id+(owned?'':' for 500 coins'));
+  }
+  const pending=state.selectedCompanion&&state.selectedCompanion!==state.companion?.kind;
+  $('companions-message').textContent=pending?COMPANIONS.find(c=>c.id===state.selectedCompanion).name+' will join next wave':'Changes apply next wave';
+}
+$('companions-toggle').onclick=()=>{$('companions-dialog').showModal();updateCompanions();};
+$('close-companions').onclick=()=>$('companions-dialog').close();
+
 const save = (force = false) => {
-  if(previewSet||previewWeapon||previewBiome||previewReforge)return;
+  if(previewSet||previewWeapon||previewBiome||previewReforge||previewCompanion)return;
   if (telegramLaunch) {
     if (!cloudReady) return;
     cloudDirty = true;
@@ -392,7 +427,7 @@ for (const epoch of AVAILABLE_EPOCHS) {
   $('auto-epochs').append(row);
 }
 // One clipped pattern layer per surface; item images remain the first child.
-for (const surface of document.querySelectorAll('.slot,.item-icon,.stack-card,.probabilities tbody th,.auto-epoch')) {
+for (const surface of document.querySelectorAll('.slot,.item-icon,.stack-card,.auto-epoch')) {
   const pattern = document.createElement('span');
   pattern.className = 'epoch-pattern'; pattern.setAttribute('aria-hidden', 'true');
   surface.append(pattern);
@@ -468,7 +503,9 @@ function updateAnvil() {
   setText('skip-anvil-price', skipCost.toLocaleString('en'));
   const durationLabel = next ? (next.minutes < 60 ? `${next.minutes} min` : `${(next.minutes / 60).toFixed(1)} h`) : '';
   setText('anvil-level', next ? `Anvil · Lv. ${state.anvilLevel} → ${state.anvilLevel + 1}${upgrading ? '' : ` · ${durationLabel}`}` : `Anvil · Lv. ${state.anvilLevel} · Max`);
-  setText('upgrade-anvil', state.upgradeEndsAt ? 'Upgrade in progress' : next ? `Upgrade · ${next.coins.toLocaleString('en')} coins` : 'Max level');
+  setText('upgrade-anvil-label', state.upgradeEndsAt ? 'Upgrade in progress' : next ? 'Upgrade' : 'Max level');
+  $('upgrade-anvil-cost').hidden=!!state.upgradeEndsAt||!next;
+  setText('upgrade-anvil-price',next?next.coins.toLocaleString('en'):'');
   $('upgrade-anvil').disabled = !!state.upgradeEndsAt || !next || state.coins < next.coins;
   $('skip-anvil-time').hidden=!localPreview||!state.upgradeEndsAt;
   $('new-game').hidden = !localPreview;
@@ -570,6 +607,7 @@ document.addEventListener('keydown', e => {
 });
 
 function updateUI() {
+  updateCompanions();
   $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   updateIdleRewards();
   const total = stats(state);
@@ -885,7 +923,8 @@ if(previewBiome){
   $('weapon-choice').value=`${previewBiome}${previewBoss?'&boss=1':''}`;$('weapon-choice').onchange=()=>location.href='/?biome='+$('weapon-choice').value;
   $('workshop').inert=true;$('replay').disabled=true;
 }
-try { scene = await createScene($('scene'),previewSet);if(previewSet)$('outfit-name').textContent=scene.previewName+' · Test';if(telegramLaunch)await loadCloud();else await scene.prepare(state.level);scene.render(state, 0); start(); }
+if(previewCompanion){$('outfit-preview').hidden=false;$('outfit-name').textContent=(previewCompanion==='turtle'?'Turtle':previewCompanion==='druid'?'Druid':'Archer')+' companion - Test';$('outfit-preview').querySelector('small').textContent='Progress is not saved';$('outfit-edit').hidden=true;}
+try { scene = await createScene($('scene'),previewSet,previewCompanion);if(previewSet)$('outfit-name').textContent=scene.previewName+' · Test';if(telegramLaunch)await loadCloud();else await scene.prepare(state.level);scene.render(state, 0); start(); }
 catch (error) { console.error(error); notify('Could not load the artwork. Refresh the page.'); }
 
 // Only available when explicitly opening ?debug=1 for local verification.

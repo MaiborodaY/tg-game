@@ -1,0 +1,26 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Спутники — анимации</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#faf4e5;color:#18302b;font:16px system-ui}main{max-width:1000px;margin:24px auto;padding:16px}h1{font-size:25px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}button,select,input{font:inherit}button,select{padding:10px;border:2px solid #28433c;border-radius:9px;background:white}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}article{text-align:center;background:#e5ebd7;border-radius:14px;overflow:hidden}h2{font-size:18px}canvas{display:block;width:100%;background:#729951}small{display:block;margin:14px;line-height:1.5}body.dark canvas{background:#263241}body.sand canvas{background:#e4c184}@media(max-width:650px){.cards{grid-template-columns:1fr}article{max-width:340px;width:100%;margin:auto}}
+</style><main><h1>Спутники · проверка анимаций</h1><nav>
+<select id="action" aria-label="Действие"><option value="0">Ожидание</option><option value="1">Ходьба</option><option value="2">Выстрел / лечение / удар щитом</option></select>
+<button id="pause">Пауза</button><select id="background" aria-label="Фон"><option value="">Лес</option><option value="dark">Тёмный фон</option><option value="sand">Песок</option></select>
+<label>Кадр <input id="frame" type="range" min="0" max="3" value="0"><output id="number">1</output></label>
+</nav><section class="cards">
+<article><h2>Лучница</h2><canvas width="384" height="320" data-name="archer"></canvas><small>Выстрел из лука</small></article>
+<article><h2>Друид</h2><canvas width="384" height="320" data-name="druid"></canvas><small>Лечение посохом</small></article>
+<article><h2>Черепаха</h2><canvas width="384" height="320" data-name="turtle"></canvas><small>Удар щитом</small></article>
+</section><p>Заготовки для игры. Кнопка «Пауза» и ползунок позволяют сравнить отдельные кадры. Боевая логика здесь не подключена.</p></main>
+<script type="module">
+const action=document.querySelector('#action'), slider=document.querySelector('#frame'), number=document.querySelector('#number');
+let paused=false, start=performance.now();
+const views=await Promise.all([...document.querySelectorAll('canvas')].map(async canvas=>{const image=new Image();image.src=canvas.dataset.name+'.webp?v=whole-figures';await image.decode();return {canvas,image,ctx:canvas.getContext('2d')};}));
+document.querySelector('#pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Продолжить':'Пауза';start=performance.now()-Number(slider.value)*180};
+document.querySelector('#background').onchange=e=>document.body.className=e.target.value;
+slider.oninput=()=>{paused=true;document.querySelector('#pause').textContent='Продолжить'};
+action.onchange=()=>{start=performance.now();slider.value=0};
+function draw(now){const row=Number(action.value);const duration=row===0?450:row===1?180:300;const frame=paused?Number(slider.value):Math.floor((now-start)/duration)%4;slider.value=frame;number.textContent=frame+1;
+for(const {canvas,image,ctx} of views){ctx.clearRect(0,0,384,320);ctx.strokeStyle='#496331';ctx.beginPath();ctx.moveTo(0,266);ctx.lineTo(384,266);ctx.stroke();ctx.drawImage(image,frame*256,row*256,256,256,64,26,256,256);
+ctx.drawImage(image,frame*256,row*256,256,256,285,240,64,64);}
+requestAnimationFrame(draw)}requestAnimationFrame(draw);
+</script></html>

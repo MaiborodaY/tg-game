@@ -1,3 +1,4 @@
+import { hireCompanion, selectCompanion } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
@@ -9,6 +10,88 @@ function wave(level,index) {
  const s=freshGame();s.level=s.highest=level;s.encounter=index?index-1:0;s.phase=index?'victory':'dead';s.phaseTime=0;step(s,1/30);return s;
 }
 function durable(s) { s.equipment.helmet=candidate('helmet',10000);s.equipment.weapon=candidate('weapon',2);s.hp=stats(s).hp;return s; }
+
+test('turtle intercepts only from the front, halves damage and never attacks',()=>{
+ const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.20;e.hp=1000;e.damage=4;
+ s.companion={kind:'turtle',x:s.heroX+.10,hp:30,maxHp:30,actionAge:1};
+ const events=step(s,.5,()=>.999);
+ assert.equal(s.hp,20);assert.equal(s.companion.hp,28);
+ assert.equal(events.find(e=>e.type==='tankHit').value,2);
+ assert.ok(!events.some(e=>e.type==='companionHit'));assert.equal(e.hp,1000);
+ s.companion.hp=1;e.clock=1.09;
+ assert.ok(step(s,.02,()=>.999).some(e=>e.type==='tankDown'));
+ advance(s,2);assert.ok(s.hp<20);assert.equal(s.companion.hp,0);
+ s.phase='victory';s.phaseTime=0;step(s,.01,()=>.999);
+ assert.equal(s.companion.hp,30);
+});
+
+test('turtle behind the hero cannot absorb hits remotely',()=>{
+ const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.115;e.engaged=true;e.clock=1.09;e.damage=4;
+ s.companion={kind:'turtle',x:s.heroX-.3,hp:30,maxHp:30,actionAge:1};
+ step(s,.02,()=>.999);assert.equal(s.hp,16);assert.equal(s.companion.hp,30);
+});
+
+test('turtle runs farther ahead and keeps its world position across waves',()=>{
+ const s=freshGame();s.enemies[0].x=s.heroX+5;
+ s.companion={kind:'turtle',x:s.heroX-.13,hp:30,maxHp:30,actionAge:1};
+ advance(s,3);assert.ok(s.companion.x-s.heroX>.20);
+ s.phase='victory';s.phaseTime=0;
+ const previous=s.companion.x;step(s,.01,()=>.999);
+ assert.ok(s.companion.x>=previous);assert.ok(s.companion.x>s.heroX);
+ s.phase='dead';s.phaseTime=0;s.hp=0;step(s,.01,()=>.999);
+ assert.equal(s.companion.x,s.heroX-.13);
+});
+
+test('druid regeneration heals exactly five fixed ticks over fifteen seconds',()=>{
+ const s=freshGame();s.hp=1;s.phase='victory';s.phaseTime=30;
+ s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1,regenRemaining:15,regenClock:0};
+ let events=advance(s,2);assert.equal(s.hp,1);
+ events.push(...advance(s,13));
+ assert.equal(s.hp,11);assert.equal(events.filter(e=>e.type==='heroRegen').length,5);
+ assert.ok(events.filter(e=>e.type==='heroRegen').every(e=>e.value===2));
+ assert.equal(s.companion.regenRemaining,0);
+ advance(s,3);assert.equal(s.hp,11);
+});
+
+test('druid casts only on injury, does not stack, caps healing and clears on death',()=>{
+ const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.115;e.damage=0;e.hp=1000;
+ s.phase='fight';s.targetId=e.id;s.heroClock=0;
+ s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1};
+ step(s,.01,()=>.999);assert.equal(s.companion.regenRemaining,undefined);
+ s.hp=19;let events=step(s,.01,()=>.999);
+ assert.equal(s.companion.regenRemaining,15);assert.equal(s.hp,19);
+ events.push(...advance(s,3));assert.equal(s.hp,20);
+ assert.equal(events.filter(e=>e.type==='regenerationApplied').length,1);
+ assert.equal(events.find(e=>e.type==='heroRegen').value,1);
+ s.phase='dead';s.phaseTime=0;s.hp=0;step(s,.01,()=>.999);
+ assert.equal(s.companion.regenRemaining,0);assert.equal(s.companion.regenClock,0);
+});
+
+test('archer companion follows, waits for range, and rewards a projectile kill once',()=>{
+ const s=freshGame();s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:1,moving:false,shot:null};
+ step(s,.01,()=>.999);
+ assert.equal(s.companion.shot,null);assert.ok(s.companion.x<s.heroX);
+ const e=s.enemies[0];e.x=s.heroX+.115;e.hp=1;e.damage=0;
+ s.phase='fight';s.targetId=e.id;s.heroClock=0;
+ s.companion.x=s.heroX-.13;s.companion.clock=2.39;
+ let events=step(s,.02,()=>.999);
+ assert.ok(s.companion.shot);assert.equal(e.hp,1);
+ events.push(...step(s,.19,()=>.999));
+ assert.equal(events.filter(e=>e.type==='companionHit').length,1);
+ assert.equal(events.filter(e=>e.type==='kill').length,1);
+ assert.equal(s.coins,e.reward);assert.equal(s.kills,1);assert.equal(s.phase,'victory');
+ step(s,.1,()=>.999);assert.equal(s.coins,e.reward);assert.equal(s.companion.shot,null);
+});
+
+test('archer projectile cannot damage another target or carry through a restart',()=>{
+ const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.115;e.damage=0;
+ s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:0,moving:false,shot:{targetId:999,remaining:.01,fromX:0,toX:1}};
+ s.phase='fight';s.targetId=e.id;s.heroClock=0;
+ const hp=e.hp;step(s,.02,()=>.999);assert.equal(e.hp,hp);
+ s.phase='dead';s.phaseTime=0;s.hp=0;s.companion.shot={targetId:e.id,remaining:.1};
+ step(s,.02,()=>.999);assert.equal(s.companion.shot,null);assert.equal(s.companion.clock,0);
+ assert.equal(s.companion.x,s.heroX-.13);
+});
 
 test('paid anvil skip scales with remaining time, preserves poor balances, and charges once',()=>{
  const s=freshGame();s.coins=1000;
@@ -812,4 +895,29 @@ test('Ancient onboarding chances rise without reducing later rare tiers',()=>{
  chances.forEach((value,i)=>assert.equal(ANVILS[i+1].chances[1],value));
  for(let i=1;i<ANVILS.length;i++)assert.ok(ANVILS[i].chances[0]<=ANVILS[i-1].chances[0]);
  const old=freshGame();old.hammers=5;old.coins=100;assert.equal(restore(JSON.stringify(old)).hammers,5);
+});
+
+test('every companion costs 500, duplicate and failed hires do not spend coins',()=>{
+ const s=freshGame();s.coins=499;
+ assert.equal(hireCompanion(s,'archer'),false);assert.equal(s.coins,499);
+ s.coins=1500;
+ for(const id of ['archer','druid','turtle']){
+   const before=s.coins;
+   assert.equal(hireCompanion(s,id),true);assert.equal(s.coins,before-500);
+   assert.equal(hireCompanion(s,id),false);assert.equal(s.coins,before-500);
+ }
+ assert.equal(s.coins,0);assert.equal(hireCompanion(s,'unknown'),false);
+});
+test('hired selection waits for the next wave and survives reload',()=>{
+ const s=freshGame();s.coins=1000;
+ hireCompanion(s,'archer');assert.equal(s.companion,null);
+ s.phase='victory';s.phaseTime=0;step(s,1/30);
+ assert.equal(s.companion.kind,'archer');
+ hireCompanion(s,'druid');selectCompanion(s,'druid');
+ assert.equal(s.companion.kind,'archer');
+ const loaded=restore(JSON.stringify(s));
+ assert.deepEqual(loaded.hiredCompanions,['archer','druid']);
+ assert.equal(loaded.selectedCompanion,'druid');assert.equal(loaded.companion.kind,'archer');
+ loaded.phase='victory';loaded.phaseTime=0;step(loaded,1/30);
+ assert.equal(loaded.companion.kind,'druid');assert.equal(loaded.coins,0);
 });

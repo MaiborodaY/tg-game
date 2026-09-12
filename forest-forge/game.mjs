@@ -430,7 +430,28 @@ export function enemyFor(level, kind = 'warrior') {
     maxHp: row[kind + '_hp'], damage: kind === 'healer' ? 0 : row[kind + '_damage'],
     healing: row.healing_per_2s, reward: row[kind === 'boss' ? 'boss_coins' : 'monster_coins'] };
 }
+export const COMPANIONS = [
+  {id:'archer',name:'Archer',role:'Ranged damage',description:'Fights from behind the hero'},
+  {id:'druid',name:'Druid',role:'Regeneration',description:'+2 HP every 3 sec for 15 seconds'},
+  {id:'turtle',name:'Turtle',role:'Defender',description:'Runs ahead and blocks half the damage'},
+];
+export function hireCompanion(s,id) {
+  if(!COMPANIONS.some(c=>c.id===id)||s.hiredCompanions.includes(id))return false;
+  const cost=500;
+  if(s.coins<cost)return false;
+  s.coins-=cost;s.hiredCompanions.push(id);
+  if(!s.selectedCompanion)s.selectedCompanion=id;
+  return true;
+}
+export function selectCompanion(s,id) {
+  if(!s.hiredCompanions.includes(id))return false;
+  s.selectedCompanion=id;return true;
+}
 function prepareEncounter(s) {
+  if(s.selectedCompanion && s.selectedCompanion!==s.companion?.kind){
+    s.companion={kind:s.selectedCompanion,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
+      ...(s.selectedCompanion==='turtle'?{hp:30,maxHp:30}:{})};
+  }
   let x = s.heroX + .91;
   const local = (s.level - 1) % LEVELS_PER_BIOME;
   const row = s.level === 1 ? 0 : 1 + Math.floor(local / 5);
@@ -446,11 +467,13 @@ function prepareEncounter(s) {
     x += kind === 'boss' || kinds[id + 1] === 'boss' ? .19 : .11;
     return member;
   });
+  if (s.companion) Object.assign(s.companion, {x:s.companion.kind==='turtle'&&s.phase!=='dead'?s.companion.x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null});
+  if(s.companion?.kind==='turtle')s.companion.hp=s.companion.maxHp;
   s.targetId = null; s.heroClock = 0; s.heroActionAge = 1; s.doubleStrikeDelay = 0;
   s.phase = 'walk'; s.phaseTime = 0;
 }
 export function freshGame(now = Date.now()) {
-  const s = { version: 3, affixVersion: 1, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
+  const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
@@ -670,12 +693,31 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     else s.autoForge = false;
   }
   s.heroActionAge = Math.min(1, s.heroActionAge + dt);
+  if (s.companion) s.companion.actionAge = Math.min(1,s.companion.actionAge+dt);
   for (const e of s.enemies) { e.actionAge = Math.min(1, e.actionAge + dt); e.deadTime = Math.max(0, e.deadTime - dt); }
   if (s.completed) return events;
   const bonuses = affixBonuses(s), hero = stats(s), interval = HERO_ATTACK_INTERVAL / (1 + bonuses.speed/100);
   if (s.hp > 0 && s.phase !== 'dead') s.hp = Math.min(hero.hp, s.hp + hero.hp * bonuses.regen / 100 * dt);
+  if(s.companion?.kind==='druid') {
+    const c=s.companion;
+    c.healAge=Math.min(1,(c.healAge ?? 1)+dt);
+    if(s.hp<=0 || s.phase==='dead'){c.regenRemaining=0;c.regenClock=0;}
+    else if(c.regenRemaining>0){
+      const elapsed=Math.min(dt,c.regenRemaining);
+      c.regenRemaining=Math.max(0,c.regenRemaining-elapsed);
+      c.regenClock=(c.regenClock||0)+elapsed;
+      while(c.regenClock>=3-1e-9){
+        c.regenClock=Math.max(0,c.regenClock-3);
+        const value=Math.min(2,hero.hp-s.hp);
+        s.hp+=value;
+        if(value>0){c.healAge=0;events.push({type:'heroRegen',value});}
+      }
+      if(c.regenRemaining<1e-9)c.regenRemaining=0;
+    }
+  }
   if (s.phase === 'dead' || s.phase === 'victory') {
     s.doubleStrikeDelay = 0;
+    if(s.companion){s.companion.shot=null;s.companion.moving=s.phase==='victory';if(s.companion.moving)s.companion.x+=APPROACH_SPEED/2*dt;}
     if (s.phase === 'victory') s.heroX += APPROACH_SPEED / 2 * dt;
     else for (const e of s.enemies) if (e.hp > 0) { e.x -= APPROACH_SPEED / 2 * dt; e.moving = true; e.engaged = false; }
     s.phaseTime -= dt;
@@ -697,14 +739,21 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   if (target.x - s.heroX > reach + .0001) {
     s.heroX += Math.min(APPROACH_SPEED / 2 * dt, target.x - s.heroX - reach);
   }
+  const tank=s.companion?.kind==='turtle' && s.companion.hp>0?s.companion:null;
+  if(tank){
+    const destination=Math.min(s.heroX+.26,target.x-.07),delta=destination-tank.x;
+    tank.moving=Math.abs(delta)>.002;
+    if(tank.moving)tank.x+=Math.sign(delta)*Math.min(Math.abs(delta),APPROACH_SPEED*1.1*dt);
+  }
+  const frontX=tank && tank.x>s.heroX?tank.x:s.heroX;
   const melee = living.filter(e => e.kind === 'warrior' || e.boss);
   const archers = living.filter(e => e.kind === 'archer');
   for (const e of living) {
     const index = melee.indexOf(e);
     const distance = index >= 0 ? (e.boss ? .165 : .115) + (index < 3 ? index * .035 : .18 + (index - 3) * .11)
       : e.kind === 'archer' ? .46 + archers.indexOf(e) * .10 : .65;
-    e.moving = e.x - s.heroX > distance + .0001;
-    if (e.moving) e.x -= Math.min(APPROACH_SPEED / 2 * dt, e.x - s.heroX - distance);
+    e.moving = e.x - frontX > distance + .0001;
+    if (e.moving) e.x -= Math.min(APPROACH_SPEED / 2 * dt, e.x - frontX - distance);
     const ready = !e.moving && index < 3;
     if (ready && !e.engaged) e.clock = e.kind === 'archer' ? .70 : e.boss ? .58 : .68;
     if (!ready) e.clock = 0;
@@ -731,19 +780,53 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       s.hp = Math.min(hero.hp,s.hp + dealt * bonuses.lifesteal/100);
       events.push({ type: 'heroHit', value: damage, targetId: target.id, critical, extra });
       if (!extra && target.hp > 0 && bonuses.double > 0 && rng() < bonuses.double/100) s.doubleStrikeDelay = interval * .16;
-      if (!target.hp) {
-        target.deadTime = .6; target.engaged = false; target.moving = false;
-        s.kills++; s.coins += target.reward;
-        const loot = COMBAT[s.level - 1];
-        const hammers = target.boss || rng() < loot.hammer_drop_chance ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * (target.boss ? 5 : 1) : 0;
-        s.hammers += hammers;
-        events.push({ type: 'kill', value: target.reward, hammers, targetId: target.id });
-        if (s.enemies.every(e => e.hp === 0)) {
-          s.phase = 'victory'; s.phaseTime = .8; return events;
-        }
-      }
     }
   } else { s.heroClock = 0; s.doubleStrikeDelay = 0; }
+
+  if(s.companion?.kind==='druid') {
+    const c=s.companion, delta=s.heroX-.13-c.x;
+    c.moving=Math.abs(delta)>.002;
+    if(c.moving)c.x+=Math.sign(delta)*Math.min(Math.abs(delta),APPROACH_SPEED*.65*dt);
+    if(!c.moving && s.hp<hero.hp && !(c.regenRemaining>0)){
+      c.regenRemaining=15;c.regenClock=0;c.actionAge=0;
+      events.push({type:'regenerationApplied'});
+    }
+  }
+  if(s.companion?.kind==='archer') {
+    const c=s.companion, destination=s.heroX-.13, delta=destination-c.x;
+    c.moving=Math.abs(delta)>.002;
+    if(c.moving)c.x+=Math.sign(delta)*Math.min(Math.abs(delta),APPROACH_SPEED*.65*dt);
+    if(c.shot){
+      c.shot.remaining-=dt;
+      if(c.shot.remaining<=0){
+        if(target.hp>0 && target.id===c.shot.targetId){
+          const damage=Math.max(1,Math.round(hero.damage*.33));
+          target.hp=Math.max(0,target.hp-damage);
+          events.push({type:'companionHit',value:damage,targetId:target.id});
+        }
+        c.shot=null;
+      }
+    }
+    if(target.hp>0 && !c.moving && target.x-c.x<=.65){
+      c.clock+=dt;
+      if(c.clock>=2.4){
+        c.clock-=2.4;c.actionAge=0;
+        c.shot={targetId:target.id,remaining:.18,fromX:c.x,toX:target.x};
+      }
+    }else c.clock=0;
+  }
+  if (!target.hp) {
+    target.deadTime = .6; target.engaged = false; target.moving = false;
+    s.kills++; s.coins += target.reward;
+    const loot = COMBAT[s.level - 1];
+    const hammers = target.boss || rng() < loot.hammer_drop_chance ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * (target.boss ? 5 : 1) : 0;
+    s.hammers += hammers;
+    events.push({ type: 'kill', value: target.reward, hammers, targetId: target.id });
+    if (s.enemies.every(e => e.hp === 0)) {
+      s.phase = 'victory'; s.phaseTime = .8; return events;
+    }
+  }
+
   for (const e of living) {
     if (!e.hp || !e.engaged) continue;
     if (e.kind === 'healer') {
@@ -767,10 +850,18 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     if (e.clock >= 1.1) {
       e.clock -= 1.1;
       if (e.kind !== 'archer') e.actionAge = 0;
+      if(tank && tank.hp>0 && tank.x>s.heroX && tank.x<e.x){
+        const damage=e.damage*.5;
+        tank.hp=Math.max(0,tank.hp-damage);tank.actionAge=0;
+        events.push({type:'tankHit',value:damage,sourceId:e.id});
+        if(!tank.hp){tank.moving=false;events.push({type:'tankDown'});}
+        continue;
+      }
       const blocked = bonuses.block > 0 && rng() < bonuses.block/100;
       s.hp = Math.max(0, s.hp - (blocked ? 0 : e.damage));
       events.push({ type: 'enemyHit', value: blocked ? 0 : e.damage, blocked, sourceId: e.id, ranged: e.kind === 'archer' });
       if (!s.hp) {
+        if(s.companion){s.companion.regenRemaining=0;s.companion.regenClock=0;}
         s.deaths++; s.phase = 'dead'; s.phaseTime = 1.8;
         events.push({ type: 'death' }); return events;
       }
@@ -795,6 +886,17 @@ export function restore(serialized, now = Date.now()) {
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    s.hiredCompanions=Array.isArray(s.hiredCompanions)?[...new Set(s.hiredCompanions.filter(id=>COMPANIONS.some(c=>c.id===id)))]:[];
+    s.selectedCompanion=s.hiredCompanions.includes(s.selectedCompanion)?s.selectedCompanion:null;
+    if(s.companion){
+      const c=s.companion;
+      const valid=s.hiredCompanions.includes(c.kind)&&['x','clock','actionAge'].every(k=>nonnegative(c[k]))&&
+        (c.kind!=='turtle'||nonnegative(c.hp)&&c.hp<=30&&c.maxHp===30)&&
+        (c.kind!=='druid'||(c.regenRemaining==null||nonnegative(c.regenRemaining)&&c.regenRemaining<=15)&&
+          (c.regenClock==null||nonnegative(c.regenClock)&&c.regenClock<3));
+      if(!valid)s.companion=null;
+      else if(c.shot && (!Number.isInteger(c.shot.targetId)||!['remaining','fromX','toX'].every(k=>nonnegative(c.shot[k]))||c.shot.remaining>.18))c.shot=null;
+    }
     const legacy = s.version < 3;
     if (legacy) {
       Object.assign(s, { hammers:0, autoForge:false, anvilLevel:1, upgradeEndsAt:0,

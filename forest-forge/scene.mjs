@@ -32,7 +32,7 @@ const combatPoses = {
 };
 
 // Cached landscape, sprites and a small coin burst; no engine or shaders.
-export async function createScene(canvas, previewSet = null) {
+export async function createScene(canvas, previewSet = null, previewCompanion = false) {
   const context = canvas.getContext('2d', { alpha: false });
   const art = {}, rigs = {};
   const sets = ARMOR_SETS[0], loadingSets = new Set();
@@ -61,6 +61,7 @@ export async function createScene(canvas, previewSet = null) {
     const response=await fetch(`assets/sets/${previewSet}/atlas.json?v=${artVersion}`);if(!response.ok)throw Error('Preview set unavailable');previewRig=await response.json();rigs[previewSet]=previewRig;
     if(!art[previewSet]){const image=new Image();image.src=`assets/sets/${previewSet}/atlas.png?v=${artVersion}`;await image.decode();art[previewSet]=image;}
   }
+  await Promise.all(['archer','druid','turtle'].map(async id=>{const image=new Image();image.src=`assets/companions/${id}.webp`;await image.decode();art['companion-'+id]=image;}));
   const heroRig = heroRigs[0];
   const heroSlots = heroRig.rows.map((_,row) => Object.keys(heroRig.slots).find(slot => heroRig.slots[slot].includes(row)));
   let width = 0, height = 0, titleY = 0, ratio = 1, landscape;
@@ -193,11 +194,11 @@ export async function createScene(canvas, previewSet = null) {
         if (coins.length > 30) coins.splice(0, coins.length - 30);
       }
     }
-    if (['heroHit','enemyHit','kill','heal'].includes(event.type)) {
-      numbers.push({ targetId: event.type === 'enemyHit' ? null : event.targetId,
-        text: event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' ? '+' : '') + compactNumber.format(event.value) + (event.critical ? '!' : ''),
-        color: event.type === 'heal' ? '#91ff9b' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: .8, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
-      if (event.type === 'kill' && event.hammers) numbers.push({ targetId:event.targetId,
+    if (['heroHit','companionHit','tankHit','heroRegen','enemyHit','kill','heal'].includes(event.type)) {
+      numbers.push({ tank:event.type==='tankHit', targetId: ['enemyHit','tankHit','heroRegen'].includes(event.type) ? null : event.targetId,
+        text: event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' || event.type === 'heroRegen' ? '+' : '') + compactNumber.format(event.value) + (event.critical ? '!' : ''),
+        color: ['heal','heroRegen'].includes(event.type) ? '#91ff9b' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: .8, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
+      if (event.type === 'kill' && event.hammers) numbers.push({ tank:event.type==='tankHit', targetId:event.targetId,
         text:'+' + event.hammers, color:'#c7efff', life:.8, reward:true, rewardRow:1, hammerIcon:true });
       if (numbers.length > 12) numbers.splice(0, numbers.length - 12);
     }
@@ -225,6 +226,31 @@ export async function createScene(canvas, previewSet = null) {
     context.restore();
     const base = height * .758, unit = Math.min(width / 390, 1.15);
     const heroX = width * .24, hSize = (59 / 1.5) * unit;
+    const companion=state.companion;
+    if(companion && (companion.kind!=='turtle'||companion.hp>0) && art['companion-'+companion.kind] && state.phase!=='dead' && !state.completed){
+      const c=companion, size=(c.kind==='turtle'?61:49)*unit, x=(c.x-camera)*width, floor=base+(c.kind==='turtle'?8:-3)*unit;
+      let row=c.moving?1:0, frame=Math.floor(time/(c.moving?.16:.4))%4;
+      if(c.kind==='druid' && c.actionAge<.8){row=2;frame=Math.min(3,Math.floor(c.actionAge/.2));}
+      else if(c.kind==='archer' && !c.moving && (c.clock>=2.04 || c.actionAge<.36)){
+        row=2;frame=c.actionAge<.36?(c.actionAge<.18?2:3):Math.min(1,Math.floor((c.clock-2.04)/.18));
+      }
+      context.fillStyle='#785b3844';context.beginPath();context.ellipse(x,floor+2,11*unit,2*unit,0,0,Math.PI*2);context.fill();
+      context.drawImage(art['companion-'+c.kind],frame*256,row*256,256,256,x-size/2,floor-size*240/256,size,size);
+      if(c.kind==='turtle'){
+        bar(x,floor-size*.61,c.hp/c.maxHp,'#70d5df',24*unit,.65);
+        if(c.actionAge<.2){context.save();context.globalAlpha=(1-c.actionAge/.2)*.65;context.strokeStyle='#b9f5ff';context.lineWidth=2*unit;context.beginPath();context.arc(x+12*unit,floor-16*unit,12*unit,-1.2,1.2);context.stroke();context.restore();}
+      }
+      if(c.shot){
+        const t=Math.max(0,Math.min(1,1-c.shot.remaining/.18));
+        const ax=(c.shot.fromX+(c.shot.toX-c.shot.fromX)*t-camera)*width;
+        const enemy=state.enemies.find(e=>e.id===c.shot.targetId);
+        const targetY=base+((state.enemies.length>1&&!enemy?.boss?(enemy.id%2?7:-5):0)-(enemy?.boss?bossSize:50)*.34)*unit;
+        const ay=(floor-27*unit)*(1-t)+targetY*t;
+        context.strokeStyle='#543c27';context.lineWidth=1.5*unit;context.beginPath();context.moveTo(ax-9*unit,ay);context.lineTo(ax+3*unit,ay);context.stroke();
+        context.fillStyle='#e8f3ef';context.beginPath();context.moveTo(ax+6*unit,ay);context.lineTo(ax+1*unit,ay-2*unit);context.lineTo(ax+1*unit,ay+2*unit);context.fill();
+      }
+    }
+
     // The counter advances on contact; recovery belongs to the preceding windup.
     const interval = attackInterval(state);
     const recovery = state.heroActionAge < interval * .2;
@@ -377,6 +403,21 @@ export async function createScene(canvas, previewSet = null) {
     }
     context.restore();
     if (!state.completed && state.phase !== 'dead') bar(heroX, base - hSize - 9, state.hp / stats(state).hp, '#56df51');
+    if(companion?.regenRemaining>0 && state.hp>0 && state.phase!=='dead'){
+      context.save();
+      if(companion.healAge<.3){
+        context.globalAlpha=(1-companion.healAge/.3)*.22;
+        context.fillStyle='#a3f68a';context.beginPath();context.ellipse(heroX,base-hSize*.45,hSize*.4,hSize*.65,0,0,Math.PI*2);context.fill();
+      }
+      for(let i=0;i<3;i++){
+        const t=reducedMotion.matches?i/3:(time*.6+i/3)%1;
+        const x=heroX+Math.sin(i*2.1+t*3)*17*unit,y=base-5*unit-t*(hSize+8);
+        context.globalAlpha=reducedMotion.matches?.65:Math.sin(t*Math.PI)*.8;
+        context.fillStyle=i%2?'#b8ed77':'#67c658';context.strokeStyle='#30673d';context.lineWidth=.65*unit;
+        context.beginPath();context.ellipse(x,y,3*unit,1.5*unit,-.8+i*.7,0,Math.PI*2);context.fill();context.stroke();
+      }
+      context.restore();
+    }
     const groups = state.enemies.length > 1;
     for (const e of state.enemies) {
       if (state.completed || (!e.hp && !e.deadTime)) continue;
@@ -407,7 +448,8 @@ export async function createScene(canvas, previewSet = null) {
       }
       if (e.hp) bar(x, floor - size * (biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
       if (e.kind === 'archer' && e.hp && e.actionAge < .15 && state.phase !== 'dead') {
-        const p = e.actionAge / .15, ax = (x - 9*unit)*(1-p) + (heroX + 8*unit)*p;
+        const tankX=companion?.kind==='turtle'&&companion.hp>0&&companion.x>state.heroX?(companion.x-camera)*width:heroX;
+        const p = e.actionAge / .15, ax = (x - 9*unit)*(1-p) + (tankX + 8*unit)*p;
         const ay = (floor - 14*unit)*(1-p) + (base - 28*unit)*p;
         context.strokeStyle = '#283b3a'; context.fillStyle = biome.shot; context.lineWidth = 1;
         if (biomeIndex===0 || biomeIndex===2 || biomeIndex===3 || biomeIndex===9) {
@@ -452,7 +494,7 @@ export async function createScene(canvas, previewSet = null) {
       const n = numbers[i]; n.life -= dt;
       if (n.life <= 0) { numbers.splice(i,1); continue; }
       const e = n.targetId === null ? null : state.enemies.find(e => e.id === n.targetId);
-      const age = .8 - n.life, anchorX = e ? (e.x-camera)*width : heroX;
+      const age = .8 - n.life, anchorX = n.tank && companion ? (companion.x-camera)*width : e ? (e.x-camera)*width : heroX;
       context.font = n.reward ? 'bold 11px "Trebuchet MS", sans-serif' : 'bold 12px "Trebuchet MS", sans-serif';
       // Damage rises above the target; loot occupies two separate rows below its feet.
       const x = n.reward ? Math.min(width - context.measureText(n.text).width - 6, anchorX + 24 * unit + age * 8) : anchorX;
