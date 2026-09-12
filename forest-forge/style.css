@@ -645,7 +645,7 @@ button:disabled { opacity:.55; cursor:default; }
 #batch-choice {background:#d8edf0;color:#183d42;}
 #anvil-info:active,#auto-forge:active,#batch-choice:active {box-shadow:none;transform:translateY(1px);}
 .forge-tools {position:relative;}
-#hero-info {position:absolute;left:8px;top:8px;z-index:1;width:27px;min-height:27px;padding:0;font:19px/23px 'Lilita UI',sans-serif;box-shadow:inset 0 -2px 0 #0002;}
+#hero-info {position:relative;flex-shrink:0;width:27px;min-height:27px;padding:0;font:19px/23px 'Lilita UI',sans-serif;box-shadow:inset 0 -2px 0 #0002;}
 #hero-stats-dialog {
   --stats-top:max(var(--safe-top),calc(var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px)));
   --stats-bottom:max(var(--safe-bottom),var(--tg-safe-area-inset-bottom,0px));
@@ -851,8 +851,8 @@ input,select,textarea {font-family:inherit;}
 #alchemy-active{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#alchemy-active:empty{display:none}#alchemy-active div{display:flex;align-items:center;gap:6px;background:#e1e9d9;border-radius:7px;padding:5px 8px}#alchemy-active img{width:20px;height:20px;object-fit:contain}#alchemy-active .coin{width:18px;height:18px}#alchemy-active span{color:#607267;font-size:11px}#alchemy-message:empty{display:none}
 @media(max-width:380px){#alchemy-dialog{padding:12px}.alchemy-heading-title{gap:8px}.alchemy-heading h2{font-size:26px}.alchemy-actions button{font-size:16px}.alchemy-actions button span{font-size:14px}.alchemy-recipe strong{font-size:20px}}
 
-#workshop > #alchemy-toggle{position:absolute;top:39px;left:0;width:44px;height:44px;padding:0;border:0;background:none;cursor:pointer;z-index:4}
-#alchemy-toggle img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 0 #18363830)}
+#alchemy-toggle{position:relative;width:36px;height:32px;padding:0;border:0;background:none;cursor:pointer;z-index:4}
+#alchemy-toggle img{display:block;width:36px;height:32px;object-fit:fill;filter:drop-shadow(0 2px 0 #18363830)}
 #alchemy-toggle:hover img{transform:translateY(-2px)}
 #alchemy-toggle:focus-visible{outline:3px solid #12b4e6;outline-offset:2px;border-radius:9px}
 
@@ -879,7 +879,6 @@ input,select,textarea {font-family:inherit;}
 #alchemy-active svg{width:17px;height:21px}#alchemy-message{margin:7px 0 0;font-size:11px}
 #idle-reagents img{width:26px;height:28px}
 @media(max-width:370px){.alchemy-row{gap:5px;padding:5px}.alchemy-row-copy strong{font-size:17px}.alchemy-row-copy small{font-size:10px}#alchemy-stocks img{width:26px}.alchemy-row>img{width:38px}}
-/* Reserve room for the corner stats button when equipment fills the phone width. */
-@media (max-width:450px) {
-  #game #workshop:has(> #hero-info) { padding-top:91px; }
-}
+
+
+.forge-shortcuts{display:flex;align-items:center;gap:8px;min-height:32px}
