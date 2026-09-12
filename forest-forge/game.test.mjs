@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
 import { anvilSkipCost, skipAnvilUpgrade, BIOMES, LEVELS_PER_BIOME, MAX_LEVEL } from './game.mjs';
 import { idleRewards, collectIdleRewards } from './game.mjs';
-import { freshGame, stats, itemLevel, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
+import { freshGame, stats, heroPower, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
 function advance(s, seconds) { const events=[]; for(let i=0;i<seconds*30;i++)events.push(...step(s,1/30,()=>.999)); return events; }
 function wave(level,index) {
  const s=freshGame();s.level=s.highest=level;s.encounter=index?index-1:0;s.phase=index?'victory':'dead';s.phaseTime=0;step(s,1/30);return s;
@@ -20,7 +20,7 @@ test('paid anvil skip scales with remaining time, preserves poor balances, and c
  assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.equal(loaded.anvilLevel,2);
  assert.equal(skipAnvilUpgrade(s,301000),true);assert.equal(s.coins,850);assert.equal(s.anvilLevel,2);
  assert.equal(skipAnvilUpgrade(s,301000),false);
- const last=freshGame();last.anvilLevel=80;last.coins=1e9;assert.equal(anvilSkipCost(last),0);assert.equal(skipAnvilUpgrade(last),false);
+ const last=freshGame();last.anvilLevel=ANVILS.length;last.coins=1e9;assert.equal(anvilSkipCost(last),0);assert.equal(skipAnvilUpgrade(last),false);
 });
 
 test('chosen batch controls manual and auto forging, persists, and spends partial remainder',()=>{
@@ -209,7 +209,7 @@ test('mastery levels are epoch-specific; level roll precedes XP and reaches cap 
  let calls=0;forge(s,()=>[0,0,.999,0][calls++%4]);
  assert.deepEqual(s.forgingItems.map(i=>i.itemLevel),[1,2]);assert.deepEqual(s.mastery[0],{level:2,xp:1});
  finishForge(s);s.anvilLevel=2;s.hammers=1;calls=0;
- forge(s,()=>[0,.999,.999,.3][calls++%4]);assert.equal(s.forgingItems[0].epoch,2);assert.equal(s.forgingItems[0].value,20);
+ forge(s,()=>[0,.99999,.999,.3][calls++%4]);assert.equal(s.forgingItems[0].epoch,2);assert.equal(s.forgingItems[0].value,20);
  assert.equal(s.mastery[1].xp,1);assert.equal(s.mastery[0].xp,1);
  finishForge(s);s.anvilLevel=1;s.hammers=2;s.mastery[0]={level:99,xp:102};calls=0;
  forge(s,()=>[0,0,.999,.999][calls++%4]);assert.deepEqual(s.forgingItems.map(i=>i.itemLevel),[99,100]);
@@ -220,7 +220,7 @@ test('mastery levels are epoch-specific; level roll precedes XP and reaches cap 
 test('melee damage and ranged discount use the supported epoch even at maximum anvil level',()=>{
  const values=[];
  const pool=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===10);
- for(const id of ['seraph-glaive','sun-maul','oath-bell','halo-bow']){const set=(pool.indexOf(id)+.5)/pool.length;const s=freshGame();s.hammers=1;s.anvilLevel=80;s.mastery[9].level=100;let calls=0;
+ for(const id of ['seraph-glaive','sun-maul','oath-bell','halo-bow']){const set=(pool.indexOf(id)+.5)/pool.length;const s=freshGame();s.hammers=1;s.anvilLevel=ANVILS.length;s.mastery[9].level=100;let calls=0;
  forge(s,()=>[0,.999,.999,set][calls++%4]);const i=s.forgingItems[0];values.push(i.value);assert.equal(i.sale,7);assert.equal(i.epoch,10);assert.equal(i.itemLevel,100);}
  assert.deepEqual(values,[11900000000,11900000000,11900000000,9520000000]);
 });
@@ -238,7 +238,7 @@ test('auto epoch filter sells only matching new rolls, keeps queued cards, and f
  const s=freshGame();s.selectedBatch=2;s.anvilLevel=2;s.coins=70;s.hammers=2;s.autoForge=true;s.autoSellEpochs=[1];
  s.pending={...candidate('weapon',7),epoch:1,itemLevel:1};s.results=[{...candidate('helmet',5),epoch:1,itemLevel:1}];
  const oldPending=structuredClone(s.pending),oldQueued=structuredClone(s.results[0]);
- const rolls=[0,0,0,0,0,.999,0,0];assert.equal(forge(s,()=>rolls.shift() ?? .999),true);
+ const rolls=[0,0,0,0,0,.99999,0,0];assert.equal(forge(s,()=>rolls.shift() ?? .999),true);
  assert.equal(s.autoForge,false);assert.equal(s.forgingAuto,true);assert.equal(s.hammers,0);assert.equal(s.coins,70);
  assert.equal(s.mastery[0].xp,1);assert.equal(s.mastery[1].xp,1);
  const loaded=restore(JSON.stringify(s));assert.equal(loaded.forgingAuto,true);assert.deepEqual(loaded.autoSellEpochs,[1]);
@@ -295,9 +295,9 @@ test('anvil charges at start once, uses old probabilities until deadline and com
  assert.equal(finishUpgrade(s,300999),false);
  const loaded=restore(JSON.stringify(s),301000);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);assert.equal(loaded.coins,850);
  assert.equal(finishUpgrade(loaded,9999999),false);assert.equal(loaded.anvilLevel,2);
- loaded.anvilLevel=80;assert.equal(upgradeAnvil(loaded),false);
- assert.equal(ANVILS.reduce((sum,row)=>sum+row.minutes,0),330*1440);
- assert.equal(ANVILS[79].coins,2500000);
+ loaded.anvilLevel=ANVILS.length;assert.equal(upgradeAnvil(loaded),false);
+ assert.equal(ANVILS.reduce((sum,row)=>sum+row.minutes,0),208500);
+ assert.equal(ANVILS.at(-1).coins,130000);
  for(const row of ANVILS)assert.ok(Math.abs(row.chances.reduce((a,b)=>a+b,0)-100)<.001);
 });
 
@@ -469,7 +469,7 @@ test('all weapons have identical attack cadence at contact and ranged damage sur
 });
 test('forge makes slingshots in epoch one and short bows from epoch two; discount is applied once',()=>{
  for(const [anvil,roll,id] of [[1,(Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===1).indexOf('slingshot')+.5)/Object.values(WEAPONS).filter(w=>w.epoch===1).length,'slingshot'],[2,0,'short-bow']]){
-  const s=freshGame();s.hammers=1;s.anvilLevel=anvil;const rolls=[0,anvil===1?0:.999,0,roll];forge(s,()=>rolls.shift() ?? .999);const i=s.forgingItems[0];assert.equal(i.weaponId,id);assert.equal(i.value,Math.round(1.6*10**(i.epoch-1)));
+  const s=freshGame();s.hammers=1;s.anvilLevel=anvil;const rolls=[0,anvil===1?0:.99999,0,roll];forge(s,()=>rolls.shift() ?? .999);const i=s.forgingItems[0];assert.equal(i.weaponId,id);assert.equal(i.value,Math.round(1.6*10**(i.epoch-1)));
   finishForge(s);equip(s);assert.equal(restore(JSON.stringify(s)).equipment.weapon.value,i.value);
  }
 });
@@ -493,7 +493,7 @@ test('three Ancient melee weapons forge from epoch two, equip and survive reload
 
 test('epoch identity stays fixed across all forged slots in the two completed epochs',()=>{
  for(const epoch of [1,2])for(let slot=0;slot<12;slot++)for(const appearance of [0,.34,.67,.999]){
-  const s=freshGame();s.hammers=1;s.anvilLevel=2;const rolls=[(slot+.1)/12,epoch===1?0:.999,0,appearance];forge(s,()=>rolls.shift() ?? .999);const i=s.forgingItems[0];assert.equal(i.epoch,epoch);
+  const s=freshGame();s.hammers=1;s.anvilLevel=2;const rolls=[(slot+.1)/12,epoch===1?0:.99999,0,appearance];forge(s,()=>rolls.shift() ?? .999);const i=s.forgingItems[0];assert.equal(i.epoch,epoch);
   if(i.slot==='weapon'){assert.equal(WEAPONS[i.weaponId].epoch,epoch);assert.equal(i.name,WEAPONS[i.weaponId].name);}else if(epoch===2){assert.match(i.name,/^(Bronze Warrior|Temple Guard|Legionary) /);assert.ok(i.quality<=2);}else assert.match(i.name,/^(Hunter|Bone) /);
  }
 });
@@ -504,7 +504,7 @@ test('existing incorrectly labelled Ancient gear keeps stats and gets Ancient id
 
 
 test('all ten completed epochs use their own weapons and displayed forge chances match the roll',()=>{
- for(let anvil=1;anvil<=80;anvil++){
+ for(let anvil=1;anvil<=ANVILS.length;anvil++){
   const chances=FORGE_CHANCES[anvil-1];assert.ok(Math.abs(chances.reduce((a,b)=>a+b,0)-100)<1e-8);chances.forEach((chance,i)=>assert.ok(Math.abs(chance-ANVILS[anvil-1].chances[i])<1e-8));
   let before=0;
   for(let epoch=1;epoch<=10;epoch++){const chance=chances[epoch-1];if(chance){const s=freshGame();s.anvilLevel=anvil;s.hammers=1;const rolls=[0,(before+chance/2)/100,0,.999];forge(s,()=>rolls.shift() ?? .999);const item=s.forgingItems[0];assert.equal(item.epoch,epoch);assert.equal(WEAPONS[item.weaponId].epoch,epoch);}before+=chance;}
@@ -526,19 +526,23 @@ test('equip stronger selects best ready gear and two rings, keeps ties and lefto
 });
 
 
-test('overall item level averages all twelve slots with epoch offsets and rounds down',()=>{
- const s=freshGame();assert.equal(itemLevel(s),0);
- s.equipment.weapon={...candidate('weapon',2),epoch:1,itemLevel:100};assert.equal(itemLevel(s),8);
- s.equipment.weapon.epoch=2;s.equipment.weapon.itemLevel=1;assert.equal(itemLevel(s),8);
- for(const slot of SLOTS)s.equipment[slot]={...candidate(slot,10),epoch:2,itemLevel:50};
- assert.equal(itemLevel(s),150);
- s.equipment.ring2=null;assert.equal(itemLevel(s),137);
- s.equipment.ring2={...candidate('ring2',10),epoch:2,itemLevel:50};
- s.equipment.helmet.itemLevel=51;assert.equal(itemLevel(s),150);
- s.equipment.helmet.itemLevel=62;assert.equal(itemLevel(s),151);
- assert.equal(itemLevel(restore(JSON.stringify(s))),151);
+test('hero power follows equipment stats and affixes rather than epoch or item level',()=>{
+ const s=freshGame();assert.equal(heroPower(s),4);
+ s.equipment.weapon={...candidate('weapon',343),epoch:2,itemLevel:1};
+ s.equipment.chest={...candidate('chest',2780),epoch:2,itemLevel:1};
+ assert.equal(heroPower(s),625);
+ s.equipment.weapon.epoch=3;s.equipment.weapon.itemLevel=100;
+ assert.equal(heroPower(s),625);
+ for(const [type,value,expected] of [['damage',10,660],['health',10,653],['speed',5,642],['double',5,638],['crit',3,630],['critDamage',15,628],['regen',.5,639],['block',3,633],['lifesteal',3,630]]){
+  s.equipment.weapon.affix={type,value};assert.equal(heroPower(s),expected,type);
+ }
+ delete s.equipment.weapon.affix;
+ s.equipment.weapon.reforgeOffer={type:'damage',value:10};assert.equal(heroPower(s),625);
+ resolveReforge(s,'weapon',true);assert.equal(heroPower(s),660);
+ s.hp=1;assert.equal(heroPower(s),660);
+ assert.equal(heroPower(restore(JSON.stringify(s))),660);
+ s.equipment.weapon=null;assert.equal(heroPower(s),282);
 });
-
 
 test('all thirteen Medieval weapons forge, equip and retain identity and integer damage after reload',()=>{
  const ids=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===3);assert.equal(ids.length,13);
@@ -777,4 +781,27 @@ test('mine: two future resources drop rarely without changing deposit or recipes
  settleMine(s,120000,()=>.99995);assert.equal(s.mine.pending[2],1);
  const loaded=restore(JSON.stringify(s),120000);assert.deepEqual(loaded.mine.pending,[0,1,1]);
  assert.equal(mineLevel(2).newest,1);assert.deepEqual(mineLevel(2).chances,[94.98,5,.01,.01]);
+});
+
+
+test('compressed anvil keeps saved progress and running timers, caps old high levels',()=>{
+ const s=freshGame(1000);s.anvilLevel=11;s.coins=54321;s.hammers=87;s.upgradeEndsAt=999999;
+ const loaded=restore(JSON.stringify(s),1000);
+ assert.equal(loaded.anvilLevel,11);assert.equal(loaded.upgradeEndsAt,999999);
+ assert.equal(loaded.coins,54321);assert.equal(loaded.hammers,87);
+ assert.equal(finishUpgrade(loaded,999998),false);assert.equal(finishUpgrade(loaded,999999),true);assert.equal(loaded.anvilLevel,12);
+ s.anvilLevel=79;const capped=restore(JSON.stringify(s),1000);
+ assert.equal(capped.anvilLevel,40);assert.equal(capped.upgradeEndsAt,0);assert.equal(capped.coins,54321);
+ assert.equal(upgradeAnvil(capped,1000),false);assert.equal(forge(capped,()=>.99999),true);
+ s.anvilLevel=39;const last=restore(JSON.stringify(s),1000);finishUpgrade(last,999999);assert.equal(last.anvilLevel,40);assert.equal(upgradeAnvil(last,999999),false);
+});
+
+test('forty-level forge ladder includes fractional openings and week-long maximum',()=>{
+ assert.equal(ANVILS.length,40);assert.equal(Math.max(...ANVILS.map(r=>r.minutes)),10080);
+ assert.deepEqual(ANVILS[10].chances,[61.9,35,3,.1,0,0,0,0,0,0]);
+ assert.deepEqual(ANVILS[39].chances,[0,0,0,0,0,0,0,45,50,5]);
+ const ladder=[.05,.1,.25,.5,1,3,5,10,20,35,50,65];
+ for(let epoch=1;epoch<10;epoch++)for(let age=0;age<ladder.length;age++){
+  const index=1+4*(epoch-1)+age;if(index<40)assert.equal(ANVILS[index].chances[epoch],ladder[age]);
+ }
 });

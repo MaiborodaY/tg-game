@@ -412,11 +412,15 @@ export function stats(s) {
   total.damage = Math.round(total.damage * (1 + bonuses.damage / 100));
   return total;
 }
-export function itemLevel(s) {
-  return Math.floor(SLOTS.reduce((sum, slot) => {
-    const item = s.equipment[slot];
-    return sum + (item ? ((item.epoch ?? 1) - 1) * 100 + (item.itemLevel ?? 1) : 0);
-  }, 0) / SLOTS.length);
+export function heroPower(s) {
+  const hero = stats(s), bonuses = affixBonuses(s);
+  // Normalize the innate 5% crit chance so an unenchanted hero stays damage + HP / 10.
+  const critical = (1 + Math.min(50, 5 + bonuses.crit) / 100 * (.5 + bonuses.critDamage / 100)) / 1.025;
+  const attack = hero.damage * (1 + bonuses.speed / 100) * (1 + .75 * bonuses.double / 100) * critical;
+  // Fixed ten-second recovery window; independent of the current enemy and missing HP.
+  const recovery = hero.hp * 10 * bonuses.regen / 100 + attack * 5 * bonuses.lifesteal / 100;
+  const defense = (hero.hp + recovery) / 10 * (1 + bonuses.block / 100);
+  return Math.round(attack + defense);
 }
 export function enemyFor(level, kind = 'warrior') {
   const row = COMBAT[level - 1];
@@ -801,6 +805,8 @@ export function restore(serialized, now = Date.now()) {
       !Array.isArray(s.mastery) || s.mastery.length !== 10 || !s.mastery.every(m => Number.isInteger(m.level) && m.level >= 1 && m.level <= 100 && Number.isInteger(m.xp) && m.xp >= 0 && m.xp < m.level + 4 && (m.level < 100 || m.xp === 0)) ||
       !Array.isArray(s.results) || !s.results.every(item) || !Array.isArray(s.forgingItems) || !s.forgingItems.every(item) ||
       (s.forging > 0) !== (s.forgingItems.length > 0)) return freshGame(now);
+    // Preserve old saves; levels beyond the compressed table have reached the new maximum.
+    if (s.anvilLevel >= ANVILS.length) { s.anvilLevel = ANVILS.length; s.upgradeEndsAt = 0; }
     for (const slot of SLOTS) s.equipment[slot] ??= null;
     // One-time reset for the switch from automatic affixes to paid enchanting.
     if(s.affixVersion!==1){

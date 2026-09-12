@@ -1,5 +1,5 @@
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
-import { freshGame, restore, stats, itemLevel, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
+import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs';
 import { AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 
@@ -66,7 +66,7 @@ const compact = new Intl.NumberFormat('en', { notation:'compact', maximumFractio
 let anvilOpen = false;
 let salePreview = null, saleUntil = 0;
 let resultInFlight = false;
-let displayedItemLevel = null;
+let displayedHeroPower = null;
 let masteryView = 0; // Zero selects the epoch with the highest current forge chance.
 try { const saved=Number(localStorage.getItem('forest-forge-mastery-view')); if(AVAILABLE_EPOCHS.includes(saved)) masteryView=saved; } catch {}
 for (const epoch of [0,...AVAILABLE_EPOCHS]) {
@@ -137,6 +137,9 @@ async function loadCloud() {
     const result = await response.json();
     if (!result.state || result.state.version !== 3 || !Number.isSafeInteger(result.revision)) throw Error('Invalid cloud save');
     state = restore(JSON.stringify(result.state)); cloudRevision = result.revision;
+    displayedHeroPower = null;
+    $('item-level-change').getAnimations().forEach(animation => animation.cancel());
+    $('item-level-change').hidden = true;
     await scene.prepare(state.level);
     cloudReady = true; cloudDirty = false; lastCloudSave = performance.now();
     $('cloud-status').hidden = true; $('game').inert = false; updateUI(); start();
@@ -560,11 +563,11 @@ document.addEventListener('keydown', e => {
 function updateUI() {
   updateIdleRewards();
   const total = stats(state);
-  const level = itemLevel(state);
+  const level = heroPower(state);
   setText('item-level', level);
-  $('item-level-hud').setAttribute('aria-label', `Item Level ${level}`);
-  if (displayedItemLevel !== null && displayedItemLevel !== level) {
-    const difference = level - displayedItemLevel, change = $('item-level-change');
+  $('item-level-hud').setAttribute('aria-label', `Power ${level}`);
+  if (displayedHeroPower !== null && displayedHeroPower !== level) {
+    const difference = level - displayedHeroPower, change = $('item-level-change');
     change.getAnimations().forEach(animation => animation.cancel());
     setText('item-level-sign', difference > 0 ? '+' : '−');
     setText('item-level-amount', compact.format(Math.abs(difference)));
@@ -577,7 +580,7 @@ function updateUI() {
       { transform:`translate(-50%,calc(-50% + ${rise}px))`, opacity:0 }
     ], { duration:2000, easing:'ease-out' }).onfinish = () => { change.hidden = true; };
   }
-  displayedItemLevel = level;
+  displayedHeroPower = level;
   setText('coins', compact.format(state.coins)); setText('damage', compact.format(total.damage)); setText('max-hp', compact.format(total.hp));
   const biomeIndex=Math.floor((state.level-1)/LEVELS_PER_BIOME),biome=BIOMES[biomeIndex];
   const levelLabel=`${biomeIndex+1}–${(state.level-1)%LEVELS_PER_BIOME+1}`;
