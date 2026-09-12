@@ -477,6 +477,7 @@ $('auto-forge').addEventListener('click', () => {
 });
 $('run-auto').addEventListener('click', () => {
   if (!state.autoForge && !state.hammers) return;
+  if(!state.autoForge)state.autoForgeCoins=0;
   state.autoForge = !state.autoForge; save(); updateUI(); $('auto-dialog').close();
 });
 $('hero-info').addEventListener('click',()=>{
@@ -729,6 +730,8 @@ function updateUI() {
     setText('result-count', compact.format(state.results.length + (state.pending ? 1 : 0)));
     if($('result-count').hidden!==(!state.pending))$('result-count').hidden = !state.pending;
   }
+  $('auto-earnings').hidden=!state.autoForge&&!state.autoForgeCoins;
+  setText('auto-earnings-value',compact.format(state.autoForgeCoins));
   setText('auto-forge', state.autoForge ? 'Auto ON' : 'Auto OFF');
   if($('auto-forge').getAttribute('aria-pressed')!==String(state.autoForge))$('auto-forge').setAttribute('aria-pressed', String(state.autoForge));
   setText('anvil-info', state.upgradeEndsAt ? `Lv. ${state.anvilLevel} · ${timeLeft()}` : `Anvil Lv. ${state.anvilLevel}`);

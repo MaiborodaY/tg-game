@@ -174,3 +174,14 @@ anvil-economy-recalculation.md. Таймеры прежние, 330 базовы�
 и убийства компаньонами. Руны сохраняются в поле runes, в старом сохранении стартуют с 0.
 Цена вновь выкованных вещей равна номеру эпохи (1–10 монет). Уже созданные вещи
 сохраняют записанную цену sale. Уровень и аффиксы на цену не влияют.
+
+
+## Approved hard biome curve (2026-09-12)
+Levels 1-20 retain their existing values. From biome 2 onward:
+- Warrior starts at 8,000 HP and 400 damage in 2-1.
+- For biome b and local level n: HP = round(8000 * 15^(b-2) * 4^((n-1)/19)); damage = round(400 * 10^(b-2) * 3^((n-1)/19)).
+- Archer/healer HP: 50% of warrior; archer damage: 65%.
+- Boss HP: 290% of warrior; boss damage: 235%.
+- Healer restores 5% of warrior HP every 2 seconds. Target selection and number of healers are unchanged.
+- Coin/hammer/rune rewards, equipment and anvil probabilities are unchanged.
+This replaces prior combat stat curves for levels 21-200; earlier descriptions below/above are historical.

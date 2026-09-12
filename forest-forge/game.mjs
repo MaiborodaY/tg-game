@@ -475,7 +475,7 @@ function prepareEncounter(s) {
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
-    autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
@@ -687,6 +687,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
         if (s.forgingAuto && s.autoSellEpochs.includes(forged.epoch)) { soldCount++; soldCoins += forged.sale; }
         else s.results.push(forged);
       }
+      s.autoForgeCoins += soldCoins;
       s.coins += soldCoins; s.forgingItems = []; s.forgingAuto = false;
       if (!s.pending) s.pending = s.results.shift() ?? null;
       events.push({ type: 'forged', count, item, soldCount, soldCoins });
@@ -897,6 +898,7 @@ export function restore(serialized, now = Date.now()) {
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    s.autoForgeCoins=Number.isSafeInteger(s.autoForgeCoins)&&s.autoForgeCoins>=0?s.autoForgeCoins:0;
     s.battleStats=Object.fromEntries(['bosses','maxHit','maxCrit','coins','hammers','runes'].map(k=>[k,Number.isSafeInteger(s.battleStats?.[k])&&s.battleStats[k]>=0?s.battleStats[k]:0]));
     s.hiredCompanions=Array.isArray(s.hiredCompanions)?[...new Set(s.hiredCompanions.filter(id=>COMPANIONS.some(c=>c.id===id)))]:[];
     s.selectedCompanion=s.hiredCompanions.includes(s.selectedCompanion)?s.selectedCompanion:null;

@@ -328,18 +328,18 @@ test('auto epoch filter sells only matching new rolls, keeps queued cards, and f
  loaded.phase='dead';loaded.phaseTime=100;
  const event=step(loaded,1.5).find(e=>e.type==='forged');
  assert.equal(event.count,2);assert.equal(event.soldCount,1);assert.equal(event.soldCoins,1);assert.equal(event.item.epoch,2);
- assert.equal(loaded.coins,71);assert.equal(loaded.hammers,0);assert.equal(loaded.forgingAuto,false);
+ assert.equal(loaded.autoForgeCoins,1);assert.equal(loaded.coins,71);assert.equal(loaded.hammers,0);assert.equal(loaded.forgingAuto,false);
  assert.deepEqual(loaded.pending,oldPending);assert.deepEqual(loaded.results[0],oldQueued);
  assert.equal(loaded.results.length,2);assert.equal(loaded.results[1].epoch,2);
- const again=restore(JSON.stringify(loaded));step(again,1.5);assert.equal(again.coins,71);assert.equal(again.results.length,2);
+ const again=restore(JSON.stringify(loaded));step(again,1.5);assert.equal(again.coins,71);assert.equal(again.autoForgeCoins,1);assert.equal(again.results.length,2);
 });
 
 test('manual forging keeps excluded epochs; stopping auto finishes the paid batch and can sell every new item',()=>{
  const manual=freshGame();manual.selectedBatch=2;manual.autoSellEpochs=[1];manual.hammers=2;forge(manual,()=>0);finishForge(manual);
- assert.equal(manual.coins,0);assert.ok(manual.pending);assert.equal(manual.results.length,1);
+ assert.equal(manual.autoForgeCoins,0);assert.equal(manual.coins,0);assert.ok(manual.pending);assert.equal(manual.results.length,1);
  const s=freshGame();s.selectedBatch=2;s.autoSellEpochs=[1];s.hammers=4;s.autoForge=true;forge(s,()=>0);s.autoForge=false;
  s.phase='dead';s.phaseTime=100;const events=step(s,1.5);
- assert.equal(events.find(e=>e.type==='forged').soldCoins,2);assert.equal(s.coins,2);assert.equal(s.hammers,2);
+ assert.equal(s.autoForgeCoins,2);assert.equal(events.find(e=>e.type==='forged').soldCoins,2);assert.equal(s.coins,2);assert.equal(s.hammers,2);
  assert.equal(s.pending,null);assert.deepEqual(s.results,[]);assert.equal(s.mastery[0].xp,2);
  step(s,1.5);assert.equal(s.coins,2);assert.equal(s.hammers,2);
 });
@@ -1007,4 +1007,14 @@ test('ordinary coin rewards are halved while boss rewards stay unchanged',async(
  }
  const s=freshGame();s.enemies[0].reward=4;s.coins=123;
  const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies[0].reward,2);assert.equal(loaded.coins,123);
+});
+
+test('hard biome curve keeps the first biome and updates saved enemies without resetting progress',()=>{
+ assert.equal(enemyFor(20).maxHp,87);assert.equal(enemyFor(20).damage,9);
+ for(const [level,hp,damage] of [[21,8000,400],[40,32000,1200],[41,120000,4000],[60,480000,12000]]){
+  assert.equal(enemyFor(level).maxHp,hp);assert.equal(enemyFor(level).damage,damage);
+ }
+ const s=wave(23,4);s.enemies.forEach(e=>{e.hp=100;e.maxHp=1000;e.damage=1;});s.coins=713;
+ const loaded=restore(JSON.stringify(s));assert.equal(loaded.level,23);assert.equal(loaded.encounter,s.encounter);assert.equal(loaded.coins,713);
+ for(const e of loaded.enemies){assert.equal(e.hp,100);assert.equal(e.damage,enemyFor(23,e.kind).damage);}
 });
