@@ -906,7 +906,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       const reagent=won&&allowed?rollReagent(s.highest,true,rng):-1;if(reagent>=0&&s.alchemy)s.alchemy.reagents[reagent]++;
       s.dungeons.last={outcome:won&&allowed?'won':lost?'lost':'timeout',id:run.id,floor:run.floor,...(won&&allowed?{rewards:run.rewards}:{})};
       s.dungeons.run=null;
-      return [...(reagent>=0?[{type:'reagent',rarity:reagent}]:[]),{type:'dungeonEnd'}];
+      return [...(reagent>=0?[{type:'reagent',rarity:reagent}]:[]),{type:'dungeonEnd',...(won?{battle:b}:{})}];
     }
     return events;
   }

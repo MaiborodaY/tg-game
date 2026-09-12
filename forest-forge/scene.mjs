@@ -324,7 +324,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = '#142e23'; context.fillRect(x - size / 2 - 2 * scale, y - 2 * scale, size + 4 * scale, 8 * scale);
     context.fillStyle = color; context.fillRect(x - size / 2, y, size * Math.max(0, Math.min(1, fraction)), 4 * scale);
   }
-  function render(state, dt) {
+  function render(state, dt, dungeonDeathAge=null) {
     if(state.mount?.owned&&state.mount.equipped&&!mountArt&&!mountLoading){
       mountLoading=true;const sprite=new Image();sprite.src='assets/dungeons/mount.webp';
       sprite.decode().then(()=>{mountArt=sprite;}).catch(error=>console.error('Could not load mount',error));
@@ -566,7 +566,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
     const groups = state.enemies.length > 1;
     for (const e of state.enemies) {
-      if (state.completed || (!e.hp && !e.deadTime)) continue;
+      if (state.completed || (!e.hp && !e.deadTime && dungeonDeathAge===null)) continue;
       const x = (e.x - camera) * width, size = (e.boss ? bossSize : 50) * unit;
       const floor = base + (groups && !e.boss ? (e.id % 2 ? 7 : -5) * unit : 0);
       let frame = 0;
@@ -597,8 +597,16 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         }
         // All poses share one scale and foot anchor; extended limbs retain padding.
         const anchorX=dungeonTheme.id==='mine'?192:160;
+        context.save();
+        if(!e.hp&&dungeonDeathAge!==null){
+          const fall=reducedMotion.matches?1:Math.min(1,dungeonDeathAge/.55);
+          context.translate(x,floor-size*.3*fall);
+          context.rotate(fall*fall*Math.PI/2);
+          context.translate(-x,-floor);
+        }
         context.drawImage(dungeonArt,pose*320,0,320,320,
           x-size*anchorX/256,floor-size*304/256,size*320/256,size*320/256);
+        context.restore();
         if(dungeonFx&&e.hp&&state.phase!=='dead'&&state.phase!=='victory'){
           const d=state.dungeonBattle,rank=Math.floor((d.floor-1)/50),still=reducedMotion.matches;
           context.save();
@@ -728,7 +736,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       context.strokeText(n.text,x,y); context.fillText(n.text,x,y); context.globalAlpha = 1;
     }
     // This is inside the canvas. DOM portrait, currency and level HUD stay bright.
-    const leaving=state.phase==='dead'||state.phase==='victory'&&state.encounter===9;
+    const leaving=dungeonDeathAge===null&&(state.phase==='dead'||state.phase==='victory'&&state.encounter===9);
     const shade=leaving?Math.max(0,Math.min(1,1-state.phaseTime/.45)):reveal/.55;
     if(shade>0){context.fillStyle=`rgba(8,19,18,${shade})`;context.fillRect(0,0,width,height);}
     if(levelTitle){

@@ -935,13 +935,25 @@ $('admin-dungeon-reset').onclick=async()=>{
  state.dungeons=freshGame().dungeons;displayedDungeon=null;save(true);updateDungeons();notify('Dungeons reset');
 };
 $('mount-action').onclick=()=>{if(state.mount.owned?toggleMount(state):claimMount(state)){save(true);updateUI();}};
-async function finishDungeonView(){
+async function finishDungeonView(battle=null){
   const result=state.dungeons.last;if(!result||dungeonTransitioning)return;
   dungeonTransitioning=true;startupRewardsShown=true;$('game').inert=true;
   const shade=$('dungeon-transition'),layer=$('reward-flight');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   shade.hidden=false;layer.replaceChildren();save(true);
   try{
+    if(battle&&result.outcome==='won'){
+      $('dungeon-status').textContent='';
+      await new Promise(resolve=>{
+        const started=performance.now();let previous=started;
+        const draw=now=>{
+          const elapsed=(now-started)/1000;
+          scene.render(battle,Math.min((now-previous)/1000,.1),elapsed);previous=now;
+          if(elapsed>=2)resolve();else requestAnimationFrame(draw);
+        };
+        draw(started);
+      });
+    }
     // Keep the last battle frame until black; the campaign must not flash first.
     await shade.animate([{opacity:0},{opacity:1}],{duration:reduced?0:200,fill:'forwards'}).finished;
     selectedDungeon=DUNGEONS.findIndex(d=>d.id===result.id);
@@ -1008,7 +1020,7 @@ async function finishDungeonView(){
 $('dungeon-leave').onclick=()=>{if(leaveDungeon(state))void finishDungeonView();};
 function processEvents(events) {
   for (const event of events) {
-    if(event.type==='dungeonEnd'){void finishDungeonView();continue;}
+    if(event.type==='dungeonEnd'){void finishDungeonView(event.battle);continue;}
     scene?.emit(event);
     if(event.type==='level')void scene?.prepare(state.level).catch(error=>{console.error(error);notify('Could not load this biome. Refresh the page.');});
     if (event.type === 'forgeStarted') updateUI();
@@ -1270,33 +1282,20 @@ function frame(now) {
   if (!running) return;
   const dt = Math.min((now - last) / 1000, .25);
   last = now; accumulated += dt;
-  if($('alchemy-dialog').open){accumulated=0;updateAlchemy();raf=requestAnimationFrame(frame);return;}
-  if(dungeonHubOpen){
-    accumulated=0;uiTime+=dt;savedTime+=dt;
-    if(uiTime>=1){updateDungeons();uiTime=0;}
-    if(savedTime>=3){save();savedTime=0;}
-    raf=requestAnimationFrame(frame);return;
-  }
-  if(atelierOpen){
-    accumulated=0;uiTime+=dt;savedTime+=dt;
-    if(uiTime>=1){finishUpgrade(state);updateUI();updateAtelier();uiTime=0;}
-    if(savedTime>=3){save();savedTime=0;}
-    raf=requestAnimationFrame(frame);return;
-  }
-  if(mineOpen){
-    accumulated=0;uiTime+=dt;savedTime+=dt;
-    if(uiTime>=1){settleMine(state);finishUpgrade(state);updateMineUI();uiTime=0;}
-    if(savedTime>=3){save();savedTime=0;}
-    raf=requestAnimationFrame(frame);return;
-  }
+  const backgroundBattle=mineOpen||atelierOpen||dungeonHubOpen;
   if (accumulated >= 1 / 30) {
     const elapsed = accumulated;
     while (accumulated >= 1 / 30 && !scene?.loading && !state.dungeons.last && !dungeonTransitioning) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
     if(dungeonTransitioning){accumulated=0;raf=requestAnimationFrame(frame);return;}
     if(scene?.loading||state.dungeons.last)accumulated=0;
-    scene?.render(state.dungeons.run?.battle??state, elapsed); frameCount++;
+    if(!backgroundBattle){scene?.render(state.dungeons.run?.battle??state, elapsed);frameCount++;}
     uiTime += elapsed; savedTime += elapsed;
-    if (uiTime >= .1) { updateUI(); uiTime = 0; }
+    if (uiTime >= (backgroundBattle?1:.1)) {
+      updateUI();
+      if(mineOpen){settleMine(state);updateMineUI();}
+      if(atelierOpen)updateAtelier();
+      uiTime = 0;
+    }
     if (savedTime >= 3) { save(); savedTime = 0; }
     if (toastUntil && now > toastUntil) { $('toast').classList.remove('visible'); toastUntil = 0; }
   }
