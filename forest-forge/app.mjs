@@ -778,7 +778,7 @@ $('mine-next').addEventListener('click',()=>{mineInventoryPage=Math.min(Math.cei
 $('mine-sale-amount').addEventListener('input',updateMineSale);
 $('mine-sell').addEventListener('click',()=>{if(sellOre(state,mineSaleIndex,Number($('mine-sale-amount').value))){$('mine-sale-dialog').close();updateMineUI();save(true);}});
 $('mine-upgrade').addEventListener('click',()=>{if(upgradeMine(state)){updateMineUI();save(true);}});
-$('mine-info').addEventListener('click',()=>{mineChancesPage=Math.floor(Math.floor((state.mine.level-1)/5)/10);$('mine-info-dialog').showModal();updateMineUI();});
+$('mine-info').addEventListener('click',()=>{mineChancesPage=Math.floor((mineLevel(state.mine.level).chances.length-1)/10);$('mine-info-dialog').showModal();updateMineUI();});
 $('mine-chances-prev').addEventListener('click',()=>{mineChancesPage=Math.max(0,mineChancesPage-1);updateMineUI();});
 $('mine-chances-next').addEventListener('click',()=>{mineChancesPage++;updateMineUI();});
 $('mine-collect').addEventListener('click',takeMineOre);$('mine-rewards-collect').addEventListener('click',takeMineOre);

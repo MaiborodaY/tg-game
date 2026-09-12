@@ -704,10 +704,10 @@ test('mine: preserves minute remainder and caps production time',()=>{
  collectMine(s,1000+10*3600000);assert.equal(settleMine(s,1000+10*3600000+59999,()=>0),0);
 });
 test('mine: one upgrade payment, rate changes mid-buffer, full buffer still finishes timer',()=>{
- const s=freshGame(0);s.mine.level=10;s.mine.ore=[10000,10000];s.mine.pending=[0,0];
+ const s=freshGame(0);s.mine.level=10;s.mine.ore=[10000,10000,10000];s.mine.pending=[0,0,0];
  assert.equal(upgradeMine(s,0),true);assert.equal(upgradeMine(s,0),false);
  const minutes=s.mine.upgradeEndsAt/60000;settleMine(s,10*3600000,()=>0);
- assert.equal(s.mine.level,11);assert.equal(s.mine.pending.reduce((a,b)=>a+b),minutes-1+(240-minutes+1)*2);
+ assert.equal(s.mine.level,11);assert.equal(s.mine.pending.reduce((a,b)=>a+b),Math.floor(((minutes-1)*19+(240-minutes+1)*20)/10));
  assert.equal(s.mine.bufferMinutes,240);assert.equal(s.mine.upgradeEndsAt,0);
  collectMine(s,10*3600000);assert.equal(settleMine(s,10*3600000+60000,()=>0),2);
 });
@@ -745,4 +745,26 @@ test('paid enchanting migration clears old affixes once across all item location
  assert.equal(reforge(loaded,'chest',()=>0),true);assert.equal(loaded.coins,4600);
  assert.equal(resolveReforge(loaded,'chest',true),true);
  const again=restore(JSON.stringify(loaded));assert.deepEqual(again.equipment.chest.affix,{type:'damage',value:3});assert.equal(again.equipment.chest.reforges,1);
+});
+
+test('mine: early coal, continuous rate and common-resource upgrade costs',()=>{
+ const chances=[[100],[95,5],[85,15],[70,30],[50,50]];
+ for(let l=1;l<=5;l++){assert.deepEqual(mineLevel(l).chances,chances[l-1]);assert.equal(mineLevel(l).rate,(l+9)/10);}
+ assert.equal(mineLevel(6).chances[2],1);
+ for(let l=1;l<=3;l++)assert.equal(mineLevel(l).cost[1]||0,0);
+ assert.ok(mineLevel(4).cost[1]>0);
+});
+test('mine: tenths survive collection and reload, offline equals online and overflow is discarded',()=>{
+ const s=freshGame(0);s.mine.level=2;s.mine.ore=[0,0];s.mine.pending=[0,0];
+ const offline=structuredClone(s);settleMine(offline,20*60000,()=>0);
+ let online=s,total=0;
+ for(let minute=1;minute<=20;minute++){
+  settleMine(online,minute*60000,()=>0);total+=collectMine(online,minute*60000).reduce((a,b)=>a+b);
+  online=restore(JSON.stringify(online),minute*60000);
+ }
+ assert.equal(total,22);assert.equal(offline.mine.pending.reduce((a,b)=>a+b),22);assert.equal(online.mine.remainder,0);
+ settleMine(offline,1000*60000,()=>0);assert.equal(offline.mine.pending.reduce((a,b)=>a+b),264);
+ collectMine(offline,1000*60000);assert.equal(settleMine(offline,1001*60000,()=>0),1);assert.equal(offline.mine.remainder,1);
+ const old=freshGame(0);old.mine.level=6;old.mine.ore=[12,8];old.mine.pending=[2,1];delete old.mine.remainder;
+ const loaded=restore(JSON.stringify(old),0);assert.equal(loaded.mine.level,6);assert.deepEqual(loaded.mine.ore,[12,8,0]);assert.equal(loaded.mine.remainder,0);
 });

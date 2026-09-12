@@ -450,7 +450,7 @@ export function freshGame(now = Date.now()) {
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
-  s.mine = {version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,lastAt:now,upgradeEndsAt:0};
+  s.mine = {version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
 }
 export const MINE_RESOURCES = [
@@ -465,8 +465,9 @@ export function mineResource(index) {
   return MINE_RESOURCES[index] || {id:'crystal',name:`Deep ore ${index+1}`,price:210+10*(index-19)};
 }
 export function mineLevel(level) {
-  const newest=Math.floor((level-1)/5), chances=Array(newest+1).fill(0), rate=1+Math.floor((level-1)/10);
+  const newest=level===1?0:Math.max(1,Math.floor((level-1)/5)+1), chances=Array(newest+1).fill(0), rate=(level+9)/10;
   if(!newest) chances[0]=100;
+  else if(level<=5){chances[1]=[0,5,15,30,50][level-1];chances[0]=100-chances[1];}
   else {
     chances[newest]=[1,15,30,45,60][(level-1)%5];
     const weights=[70,22,8].slice(0,Math.min(3,newest)), total=weights.reduce((a,b)=>a+b,0);
@@ -480,12 +481,15 @@ export function settleMine(s, now = Date.now(), rng = Math.random) {
   const m=s.mine, elapsed=Math.max(0,Math.floor((now-m.lastAt)/MINE_INTERVAL));
   const count=Math.min(MINE_CAP-m.bufferMinutes,elapsed);
   let produced=0;
+  m.remainder ??= 0;
   for(let n=1;n<=count;n++){
     const at=m.lastAt+n*MINE_INTERVAL;
     if(m.upgradeEndsAt && at>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
     const {chances,rate}=mineLevel(m.level);
     while(m.ore.length<chances.length){m.ore.push(0);m.pending.push(0);}
-    for(let hit=0;hit<rate;hit++){
+    const tenths=m.remainder+Math.round(rate*10),whole=Math.floor(tenths/10);
+    m.remainder=tenths%10;
+    for(let hit=0;hit<whole;hit++){
       let roll=rng()*100,index=0;
       while(index<chances.length-1 && roll>=chances[index])roll-=chances[index++];
       m.pending[index]++;produced++;
@@ -495,7 +499,7 @@ export function settleMine(s, now = Date.now(), rng = Math.random) {
   if(m.bufferMinutes===MINE_CAP)m.lastAt=Math.max(m.lastAt,now);
   else m.lastAt+=count*MINE_INTERVAL;
   if(m.upgradeEndsAt && now>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
-  while(m.ore.length<Math.floor((m.level-1)/5)+1){m.ore.push(0);m.pending.push(0);}
+  while(m.ore.length<mineLevel(m.level).chances.length){m.ore.push(0);m.pending.push(0);}
   return produced;
 }
 export function collectMine(s, now = Date.now()) {
@@ -827,10 +831,13 @@ export function restore(serialized, now = Date.now()) {
     }
     if (!nonnegative(s.idleSince)) s.idleSince = now;
     if (!s.mine || s.mine.version!==2 || !Number.isSafeInteger(s.mine.level) || s.mine.level<1 ||
-      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length===Math.floor((s.mine.level-1)/5)+1 && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
+      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=mineLevel(s.mine.level).chances.length && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
       !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>MINE_CAP ||
       !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt))
-      s.mine={version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,lastAt:now,upgradeEndsAt:0};
+      s.mine={version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
+    if(!Number.isInteger(s.mine.remainder)||s.mine.remainder<0||s.mine.remainder>9)s.mine.remainder=0;
+    while(s.mine.ore.length<mineLevel(s.mine.level).chances.length)s.mine.ore.push(0);
+    while(s.mine.pending.length<s.mine.ore.length)s.mine.pending.push(0);
     s.autoSellEpochs = Array.isArray(s.autoSellEpochs) ? s.autoSellEpochs.filter(epoch => Number.isInteger(epoch) && epoch >= 1 && epoch <= EPOCHS.length) : [];
     s.reforgeStop = Array.isArray(s.reforgeStop) ? [...new Set(s.reforgeStop.filter(id=>AFFIXES.some(a=>a.id===id)))] : [];
     s.forgingAuto = s.forging > 0 && s.forgingAuto === true;
