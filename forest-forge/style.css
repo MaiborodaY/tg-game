@@ -508,10 +508,6 @@ button:disabled { opacity:.55; cursor:default; }
 #mine-heading h1 { font:25px/1 'Lilita UI',sans-serif;margin:0 0 4px; } #mine-heading span{font-size:12px;}
 #mine-found {position:absolute;left:45%;bottom:35%;font:bold 17px sans-serif;color:#fff;text-shadow:0 2px #172b29;}
 #mine-found.pop {animation:ore-found 1.6s ease-out both;} @keyframes ore-found {0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-32px)}}
-.mine-veins {position:absolute;right:9%;bottom:25%;width:27%;height:28%;pointer-events:none;}
-.mine-veins i {display:none;position:absolute;width:25%;height:35%;background:#d89662;clip-path:polygon(30% 0,100% 20%,80% 100%,0 70%);box-shadow:inset 4px 3px #ffe4ab;}
-.mine-veins i:nth-child(2){left:45%;top:30%}.mine-veins i:nth-child(3){left:15%;top:65%;background:#65d6e5}.mine-veins i:nth-child(4){left:75%;top:65%;background:#65d6e5}
-.mine-open[data-mine-tier="iron"] .mine-veins i:nth-child(-n+2),.mine-open[data-mine-tier="crystal"] .mine-veins i {display:block;}
 #mine-workshop {flex:none;padding:12px 20px;background:#fffaf0;}
 .mine-inventory-title {display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}.mine-inventory-title strong{font:20px 'Lilita UI',sans-serif;}.mine-inventory-title button{width:30px;min-height:28px;padding:2px;}
 #mine-ore-grid {display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}

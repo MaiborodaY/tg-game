@@ -399,7 +399,7 @@ function updateAutoFilter() {
     const epoch = Number(row.dataset.epoch), chance = FORGE_CHANCES[state.anvilLevel-1][epoch-1];
     row.hidden = chance <= 0;
     row.querySelector('input').checked = !state.autoSellEpochs.includes(epoch);
-    row.querySelector('small').textContent = Number(chance.toFixed(2)) + '%';
+    row.querySelector('small').textContent = (chance >= 1 ? Math.round(chance) : Number(chance.toFixed(2))) + '%';
   }
   setText('run-auto', state.autoForge ? 'Stop' : state.hammers ? 'Start' : 'No hammers');
   $('run-auto').className = `button ${state.autoForge ? 'red' : 'blue'}`;
@@ -471,8 +471,8 @@ function updateAnvil() {
   $('new-game').hidden = !localPreview;
   setText('current-anvil-level', `Lv. ${state.anvilLevel}`); setText('next-anvil-level', next ? `Lv. ${state.anvilLevel + 1}` : 'Max');
   EPOCHS.forEach((name,i) => {
-    setText('chance-' + i, Number(FORGE_CHANCES[state.anvilLevel - 1][i].toFixed(2)) + '%');
-    setText('next-chance-' + i, next ? Number(FORGE_CHANCES[state.anvilLevel][i].toFixed(2)) + '%' : '—');
+    setText('chance-' + i, (FORGE_CHANCES[state.anvilLevel - 1][i] >= 1 ? Math.round(FORGE_CHANCES[state.anvilLevel - 1][i]) : Number(FORGE_CHANCES[state.anvilLevel - 1][i].toFixed(2))) + '%');
+    setText('next-chance-' + i, next ? (FORGE_CHANCES[state.anvilLevel][i] >= 1 ? Math.round(FORGE_CHANCES[state.anvilLevel][i]) : Number(FORGE_CHANCES[state.anvilLevel][i].toFixed(2))) + '%' : '—');
 
   });
 }
@@ -715,7 +715,9 @@ function mineRows(amounts) {
 function updateMineUI() {
   const m=state.mine, next=mineLevel(m.level), following=mineLevel(m.level+1), pending=m.pending.reduce((a,b)=>a+b,0);
   setText('coins',compact.format(state.coins));setText('mine-level',`Mine · Lv. ${m.level}`);
-  $('game').dataset.mineTier=m.level>=6?'crystal':m.level>=4?'iron':'stone';
+  const deposit=mineResource(Math.min(19,next.newest));
+  const depositPath=`assets/mine/deposit-${deposit.id}-v2.webp`;
+  if($('mine-deposit').getAttribute('src')!==depositPath)$('mine-deposit').src=depositPath;
   while($('mine-ore-grid').children.length<m.ore.length) addMineCard($('mine-ore-grid').children.length);
   setText('mine-rate',`${next.rate} ore / minute`);
   for(let i=0;i<$('mine-ore-grid').children.length;i++) {
@@ -743,7 +745,7 @@ function updateMineUI() {
     $('mine-chances-prev').disabled=mineChancesPage===0;$('mine-chances-next').disabled=mineChancesPage>=pages-1;
     $('mine-chances').innerHTML=Array.from({length:Math.min(10,total-mineChancesPage*10)},(_,offset)=>{
       const i=mineChancesPage*10+offset,r=mineResource(i),color=Math.min(10,1+Math.floor(i/2));
-      return `<tr class="epoch-${color} ore-${r.id}"><th scope="row"><span class="epoch-name"><img class="epoch-icon" src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span></span></th><td>${Number((next.chances[i]||0).toFixed(2))}%</td><td>${Number((following.chances[i]||0).toFixed(2))}%</td></tr>`;
+      return `<tr class="epoch-${color} ore-${r.id}"><th scope="row"><span class="epoch-name"><img class="epoch-icon" src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span></span></th><td>${(next.chances[i]>=1?Math.round(next.chances[i]):Number((next.chances[i]||0).toFixed(2)))}%</td><td>${(following.chances[i]>=1?Math.round(following.chances[i]):Number((following.chances[i]||0).toFixed(2)))}%</td></tr>`;
     }).join('');
   }
 }
@@ -778,7 +780,7 @@ $('mine-next').addEventListener('click',()=>{mineInventoryPage=Math.min(Math.cei
 $('mine-sale-amount').addEventListener('input',updateMineSale);
 $('mine-sell').addEventListener('click',()=>{if(sellOre(state,mineSaleIndex,Number($('mine-sale-amount').value))){$('mine-sale-dialog').close();updateMineUI();save(true);}});
 $('mine-upgrade').addEventListener('click',()=>{if(upgradeMine(state)){updateMineUI();save(true);}});
-$('mine-info').addEventListener('click',()=>{mineChancesPage=Math.floor((mineLevel(state.mine.level).chances.length-1)/10);$('mine-info-dialog').showModal();updateMineUI();});
+$('mine-info').addEventListener('click',()=>{mineChancesPage=Math.floor(mineLevel(state.mine.level).newest/10);$('mine-info-dialog').showModal();updateMineUI();});
 $('mine-chances-prev').addEventListener('click',()=>{mineChancesPage=Math.max(0,mineChancesPage-1);updateMineUI();});
 $('mine-chances-next').addEventListener('click',()=>{mineChancesPage++;updateMineUI();});
 $('mine-collect').addEventListener('click',takeMineOre);$('mine-rewards-collect').addEventListener('click',takeMineOre);

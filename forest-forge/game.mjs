@@ -450,7 +450,7 @@ export function freshGame(now = Date.now()) {
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
-  s.mine = {version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
+  s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
 }
 export const MINE_RESOURCES = [
@@ -474,7 +474,10 @@ export function mineLevel(level) {
     weights.forEach((w,i)=>chances[newest-1-i]=(100-chances[newest])*w/total);
   }
   const target=level<=10?[5,20,45,90,180,240,300,360,480,540][level-1]:Math.round((12+36*Math.min(19,level-11)/19)*60);
-  return {chances,rate,cost:chances.map(p=>p>=20?Math.max(1,Math.round(target*rate*p/100)):0),minutes:Math.max(1,Math.min(240,Math.round(target*.15)))};
+  const cost=chances.map(p=>p>=20?Math.max(1,Math.round(target*rate*p/100)):0);
+  const mostCommon=chances.indexOf(Math.max(...chances));
+  chances[mostCommon]-=.02;chances.push(.01,.01);
+  return {newest,chances,rate,cost,minutes:Math.max(1,Math.min(240,Math.round(target*.15)))};
 }
 export const MINE_INTERVAL = 60000, MINE_CAP = 240;
 export function settleMine(s, now = Date.now(), rng = Math.random) {
@@ -834,7 +837,7 @@ export function restore(serialized, now = Date.now()) {
       !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=mineLevel(s.mine.level).chances.length && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
       !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>MINE_CAP ||
       !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt))
-      s.mine={version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
+      s.mine={version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
     if(!Number.isInteger(s.mine.remainder)||s.mine.remainder<0||s.mine.remainder>9)s.mine.remainder=0;
     while(s.mine.ore.length<mineLevel(s.mine.level).chances.length)s.mine.ore.push(0);
     while(s.mine.pending.length<s.mine.ore.length)s.mine.pending.push(0);

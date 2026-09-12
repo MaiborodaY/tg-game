@@ -699,7 +699,7 @@ import {settleMine, collectMine, upgradeMine, sellOre, mineLevel, mineResource} 
 test('mine: preserves minute remainder and caps production time',()=>{
  const s=freshGame(1000);assert.equal(settleMine(s,60000,()=>0),0);
  assert.equal(settleMine(s,91000,()=>0),1);assert.equal(s.mine.lastAt,61000);
- assert.deepEqual(collectMine(s,91000),[1]);assert.deepEqual(collectMine(s,91000),[0]);
+ assert.deepEqual(collectMine(s,91000),[1,0,0]);assert.deepEqual(collectMine(s,91000),[0,0,0]);
  settleMine(s,1000+10*3600000,()=>0);assert.equal(s.mine.pending[0],240);
  collectMine(s,1000+10*3600000);assert.equal(settleMine(s,1000+10*3600000+59999,()=>0),0);
 });
@@ -726,9 +726,9 @@ test('mine: sale spends exact stock and adds shared gold',()=>{
  assert.equal(sellOre(s,2,2),false);assert.equal(sellOre(s,2,-1),false);assert.equal(sellOre(s,2,.5),false);
 });
 test('mine: reset old mine only once and preserve new inventory and hero',()=>{
- const s=freshGame(1000);s.coins=1234;s.mine.ore=[3];s.mine.pending=[2];s.mine.bufferMinutes=2;
+ const s=freshGame(1000);s.coins=1234;s.mine.ore=[3,0,0];s.mine.pending=[2,0,0];s.mine.bufferMinutes=2;
  assert.deepEqual(restore(JSON.stringify(s),1000).mine,s.mine);
- delete s.mine.version;const old=restore(JSON.stringify(s),9000);assert.equal(old.coins,1234);assert.equal(old.mine.lastAt,9000);assert.equal(old.mine.level,1);assert.deepEqual(old.mine.ore,[0]);
+ delete s.mine.version;const old=restore(JSON.stringify(s),9000);assert.equal(old.coins,1234);assert.equal(old.mine.lastAt,9000);assert.equal(old.mine.level,1);assert.deepEqual(old.mine.ore,[0,0,0]);
  assert.deepEqual(restore(JSON.stringify(old),10000).mine,old.mine);
 });
 
@@ -749,7 +749,7 @@ test('paid enchanting migration clears old affixes once across all item location
 
 test('mine: early coal, continuous rate and common-resource upgrade costs',()=>{
  const chances=[[100],[95,5],[85,15],[70,30],[50,50]];
- for(let l=1;l<=5;l++){assert.deepEqual(mineLevel(l).chances,chances[l-1]);assert.equal(mineLevel(l).rate,(l+9)/10);}
+ for(let l=1;l<=5;l++){const expected=[...chances[l-1]];expected[expected.indexOf(Math.max(...expected))]-=.02;expected.push(.01,.01);assert.deepEqual(mineLevel(l).chances,expected);assert.equal(mineLevel(l).rate,(l+9)/10);}
  assert.equal(mineLevel(6).chances[2],1);
  for(let l=1;l<=3;l++)assert.equal(mineLevel(l).cost[1]||0,0);
  assert.ok(mineLevel(4).cost[1]>0);
@@ -766,5 +766,13 @@ test('mine: tenths survive collection and reload, offline equals online and over
  settleMine(offline,1000*60000,()=>0);assert.equal(offline.mine.pending.reduce((a,b)=>a+b),264);
  collectMine(offline,1000*60000);assert.equal(settleMine(offline,1001*60000,()=>0),1);assert.equal(offline.mine.remainder,1);
  const old=freshGame(0);old.mine.level=6;old.mine.ore=[12,8];old.mine.pending=[2,1];delete old.mine.remainder;
- const loaded=restore(JSON.stringify(old),0);assert.equal(loaded.mine.level,6);assert.deepEqual(loaded.mine.ore,[12,8,0]);assert.equal(loaded.mine.remainder,0);
+ const loaded=restore(JSON.stringify(old),0);assert.equal(loaded.mine.level,6);assert.deepEqual(loaded.mine.ore,[12,8,0,0,0]);assert.equal(loaded.mine.remainder,0);
+});
+
+test('mine: two future resources drop rarely without changing deposit or recipes',()=>{
+ const row=mineLevel(1);assert.deepEqual(row.chances,[99.98,.01,.01]);assert.equal(row.newest,0);assert.deepEqual(row.cost,[5]);
+ const s=freshGame(0);settleMine(s,60000,()=>.99985);assert.equal(s.mine.pending[1],1);
+ settleMine(s,120000,()=>.99995);assert.equal(s.mine.pending[2],1);
+ const loaded=restore(JSON.stringify(s),120000);assert.deepEqual(loaded.mine.pending,[0,1,1]);
+ assert.equal(mineLevel(2).newest,1);assert.deepEqual(mineLevel(2).chances,[94.98,5,.01,.01]);
 });
