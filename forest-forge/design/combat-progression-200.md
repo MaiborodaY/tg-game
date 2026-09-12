@@ -15,7 +15,7 @@
 
 Характеристики уровней 1–10 остаются из `balance.md`: ближник начинает с 10 HP
 и 2 урона, лучник с 5 HP и 1 урона. Босс уровня 1: 60 HP и 5 урона.
-Целитель не атакует, лечит другого живого раненого союзника раз в две секунды.
+Целитель не атакует, лечит другого живого раненого союзника раз в 1,5 секунды.
 
 После уровня 10, при n = L−10:
 
@@ -80,7 +80,7 @@ HP уровней 1–20 сохранены. К исходным округлё�
 На уровнях 21 и 22 вводится соответственно 1/3 и 2/3 добавки множителя,
 с уровня 23 — полный множитель. Поэтому на 2–3 HP равны 775 / 415 / 2250.
 Дальше сохраняется исходный темп роста. Урон, награды и состав волн не меняются.
-Runtime и CSV используют поле `healing_per_2s`.
+Runtime и CSV используют поле `healing_per_tick`.
 
 Проверка: 30 прогонов на вариант через step(), шаг 1/30 секунды, ближнее оружие,
 фиксированные статы, без ковки по пути. Для 345/2800 с уровня 23 без аффиксов
@@ -185,3 +185,5 @@ Levels 1-20 retain their existing values. From biome 2 onward:
 - Healer restores 5% of warrior HP every 2 seconds. Target selection and number of healers are unchanged.
 - Coin/hammer/rune rewards, equipment and anvil probabilities are unchanged.
 This replaces prior combat stat curves for levels 21-200; earlier descriptions below/above are historical.
+
+Current healer values: `healing_per_tick` is HP per 1.5-second tick. Enemy healing increased by 25%, rounded to an integer. Druid unchanged.

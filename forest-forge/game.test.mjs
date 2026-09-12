@@ -151,7 +151,7 @@ test('short opening level, full boss escorts, and stronger first-biome health',(
   assert.equal(enemyFor(level,'archer').damage,level<10?1:2);
   assert.equal(enemyFor(level,'boss').maxHp,Math.round((level===1?30:6*(10+2*(level-1)))*(2+2*(level-1)/19)));
   assert.equal(enemyFor(level,'boss').damage,level===1?2:level<6?5:level<10?6:7);
-  assert.equal(enemyFor(level,'healer').healing,level<10?3:6);
+  assert.equal(enemyFor(level,'healer').healing,level<10?4:8);
  }
  assert.ok(enemyFor(200).maxHp>enemyFor(100).maxHp);
 });
@@ -197,7 +197,7 @@ test('fourth melee waits, replaces a fallen attacker; boss attacks alongside two
  for(const e of [...guards,boss])assert.ok(bossHits.some(hit=>hit.sourceId===e.id));
 });
 
-test('healer keeps healing every two seconds, never itself or a dead ally',()=>{
+test('healer keeps healing every 1.5 seconds, never itself or a dead ally',()=>{
  const s=durable(wave(16,6));
  const tank=s.enemies.find(e=>e.kind==='warrior');tank.hp=300;tank.maxHp=1000;
  const healer=s.enemies.find(e=>e.kind==='healer');healer.hp=3;const ownHp=healer.hp;
@@ -205,7 +205,7 @@ test('healer keeps healing every two seconds, never itself or a dead ally',()=>{
  const heals=[],ticks=[];
  for(let tick=0;tick<900;tick++)for(const event of step(s,1/30,()=>.999))if(event.type==='heal'){heals.push(event);ticks.push(tick);}
  assert.ok(heals.length>=12);
- for(let i=1;i<ticks.length;i++)assert.equal(ticks[i]-ticks[i-1],60);assert.ok(heals.every(e=>e.sourceId===healer.id&&e.targetId===tank.id&&e.value===healer.healing));
+ for(let i=1;i<ticks.length;i++)assert.equal(ticks[i]-ticks[i-1],45);assert.ok(heals.every(e=>e.sourceId===healer.id&&e.targetId===tank.id&&e.value===healer.healing));
  assert.equal(healer.hp,ownHp);assert.equal(dead.hp,0);
 });
 
@@ -1154,4 +1154,14 @@ test('death retreats across a biome boundary once, survives reload, and never go
   assert.equal(loaded.level,Math.max(1,level-1));assert.equal(loaded.highest,level);assert.equal(loaded.encounter,0);
   const saved=restore(JSON.stringify(loaded));assert.equal(saved.level,loaded.level);assert.equal(saved.highest,level);
  }
+});
+
+
+test('enemy healer buff applies across biomes and refreshes saved healers',()=>{
+ for(const [level,amount] of [[20,23],[21,500],[40,2000],[41,7500],[60,30000]]){
+  assert.equal(enemyFor(level,'healer').healing,amount);
+  const s=wave(level,9),healer=s.enemies.find(e=>e.kind==='healer');healer.healing=1;
+  const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies.find(e=>e.kind==='healer').healing,amount);
+ }
+ assert.equal(DRUID_LEVELS[0].healing,2);
 });
