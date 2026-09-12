@@ -446,7 +446,7 @@ function prepareEncounter(s) {
   s.phase = 'walk'; s.phaseTime = 0;
 }
 export function freshGame(now = Date.now()) {
-  const s = { version: 3, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
+  const s = { version: 3, affixVersion: 1, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
@@ -549,7 +549,6 @@ export function forge(s, rng = Math.random) {
     const quality = weaponId ? WEAPONS[weaponId].quality : Math.min((ARMOR_SETS[epochIndex]?.length??1)-1, Math.floor(appearance * (ARMOR_SETS[epochIndex]?.length??1)));
     s.forgingItems.push({ slot, ...(weaponId?{weaponId}:{}), name: weaponId?WEAPONS[weaponId].name:epochIndex===0?NAMES[slot][quality]:`${epochIndex===1?['Bronze Warrior','Temple Guard','Legionary'][quality]:epochIndex===2?['Iron Knight','Forest Ranger','Royal Guard'][quality]:epochIndex===3?['Musketeer','Corsair','Grenadier'][quality]:epochIndex===4?['Field Scout','Commando','Heavy Trooper'][quality]:epochIndex===5?['Neon Runner','Exo Trooper','Reactor Guard'][quality]:epochIndex===6?["Lunar Scout","Void Corsair","Xeno Warden"][quality]:epochIndex===7?["Rift Nomad","Prism Keeper","Paradox Knight"][quality]:epochIndex===8?["Ash Reaper","Ember Brute","Obsidian Tyrant"][quality]:epochIndex===9?["Dawn Herald","Storm Seraph","Sun Sovereign"][quality]:EPOCHS[epochIndex]} ${LABELS[slot]||'Ring'}`, quality, epoch: epochIndex + 1, itemLevel,
       sale: SALE_PRICES[epochIndex], value: Math.max(1, Math.round(Math.round(bases[slot] * 10 ** epochIndex * (1 + .05 * (itemLevel - 1))) * (WEAPONS[weaponId]?.multiplier??1))) });
-    if (epochIndex > 0) s.forgingItems.at(-1).affix = rollAffix(rng);
     s.lastEpoch = epochIndex + 1;
     if (mastery.level < 100 && ++mastery.xp >= mastery.level + 4) { mastery.xp = 0; mastery.level++; }
   }
@@ -796,6 +795,16 @@ export function restore(serialized, now = Date.now()) {
       !Array.isArray(s.results) || !s.results.every(item) || !Array.isArray(s.forgingItems) || !s.forgingItems.every(item) ||
       (s.forging > 0) !== (s.forgingItems.length > 0)) return freshGame(now);
     for (const slot of SLOTS) s.equipment[slot] ??= null;
+    // One-time reset for the switch from automatic affixes to paid enchanting.
+    if(s.affixVersion!==1){
+      const hpFraction=s.hp/stats(s).hp;
+      for(const i of [...Object.values(s.equipment),s.pending,...s.results,...s.forgingItems]){
+        if(!i)continue;
+        delete i.affix;delete i.reforgeOffer;delete i.reforges;
+      }
+      s.hp=hpFraction*stats(s).hp;s.affixVersion=1;
+    }
+
     if (s.pending && ['ring1','ring2'].includes(s.pending.slot)) s.pending.slot = 'ring';
     // Names are display text; old saves keep their item stats but use English labels.
     for (const i of [...Object.values(s.equipment).filter(Boolean), ...(s.pending ? [s.pending] : []), ...s.results, ...s.forgingItems]) { i.value=Math.max(1,Math.round(i.value));

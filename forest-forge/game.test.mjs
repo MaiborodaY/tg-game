@@ -606,13 +606,13 @@ test('death lets survivors march past without attacking; restart and boss comple
 });
 
 
-test('affixes share inclusive ranges; only epoch two onwards forges one',()=>{
+test('affixes share inclusive ranges; forging never adds an affix',()=>{
  for(const [n,a] of AFFIXES.entries())for(const [roll,value] of [[0,a.min],[.999,a.max]]){
   const rolls=[(n+.1)/9,roll];assert.deepEqual(rollAffix(()=>rolls.shift()),{type:a.id,value});
  }
  const s=freshGame();s.hammers=1;forge(s,()=>0);assert.equal(s.forgingItems[0].affix,undefined);
  const t=freshGame();t.anvilLevel=2;t.hammers=1;const rolls=[0,.999,0,0,7/9+.001,.999];forge(t,()=>rolls.shift());
- assert.deepEqual(t.forgingItems[0].affix,{type:'regen',value:.5});
+ assert.equal(t.forgingItems[0].affix,undefined);
  assert.deepEqual(restore(JSON.stringify(t)).forgingItems,t.forgingItems);
 });
 
@@ -730,4 +730,19 @@ test('mine: reset old mine only once and preserve new inventory and hero',()=>{
  assert.deepEqual(restore(JSON.stringify(s),1000).mine,s.mine);
  delete s.mine.version;const old=restore(JSON.stringify(s),9000);assert.equal(old.coins,1234);assert.equal(old.mine.lastAt,9000);assert.equal(old.mine.level,1);assert.deepEqual(old.mine.ore,[0]);
  assert.deepEqual(restore(JSON.stringify(old),10000).mine,old.mine);
+});
+
+test('paid enchanting migration clears old affixes once across all item locations',()=>{
+ const s=freshGame();delete s.affixVersion;s.coins=5000;
+ const make=slot=>({...candidate(slot,10),epoch:2,affix:{type:'health',value:10},reforgeOffer:{type:'speed',value:3},reforges:4});
+ s.equipment.chest=make('chest');s.pending=make('boots');s.results=[make('helmet')];s.forgingItems=[make('gloves')];s.forging=1;
+ s.hp=stats(s).hp/2;
+ const loaded=restore(JSON.stringify(s));
+ for(const item of [loaded.equipment.chest,loaded.pending,...loaded.results,...loaded.forgingItems]){
+  assert.ok(item);assert.equal(item.affix,undefined);assert.equal(item.reforgeOffer,undefined);assert.equal(item.reforges,undefined);
+ }
+ assert.equal(loaded.coins,5000);assert.equal(loaded.hp,stats(loaded).hp/2);
+ assert.equal(reforge(loaded,'chest',()=>0),true);assert.equal(loaded.coins,4600);
+ assert.equal(resolveReforge(loaded,'chest',true),true);
+ const again=restore(JSON.stringify(loaded));assert.deepEqual(again.equipment.chest.affix,{type:'damage',value:3});assert.equal(again.equipment.chest.reforges,1);
 });
