@@ -1,4 +1,4 @@
-import { ANVILS, COMBAT, EPOCHS, SALE_PRICES } from './balance.mjs';
+import { ANVILS, COMBAT, EPOCHS, SALE_PRICES, WORKSHOP_PRICES } from './balance.mjs';
 export { ANVILS, EPOCHS } from './balance.mjs';
 export const SLOTS = ['weapon', 'helmet', 'shoulders', 'chest', 'gloves', 'legs', 'cape', 'boots', 'belt', 'necklace', 'ring1', 'ring2'];
 export const WEAPONS = {
@@ -406,7 +406,7 @@ export function resolveReforge(s, slot, replace) {
 }
 export function stats(s) {
   const total = { hp: 20, damage: 2 };
-  for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += s.equipment[slot]?.value ?? 0;
+  for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += Math.round((s.equipment[slot]?.value ?? 0) * (1 + (s.workshop?.slots?.[slot] || 0) / 100));
   const bonuses = affixBonuses(s);
   total.hp = Math.round(total.hp * (1 + bonuses.health / 100));
   total.damage = Math.round(total.damage * (1 + bonuses.damage / 100));
@@ -504,9 +504,9 @@ function prepareEncounter(s) {
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
-    archerLevel: 1, druidLevel: 1, turtleLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
-  s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
+  s.mine = {version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
 }
 export const MINE_RESOURCES = [
@@ -535,6 +535,18 @@ export function mineLevel(level) {
   chances[mostCommon]-=.02;chances.push(.01,.01);
   return {newest,chances,rate,cost,minutes:Math.max(1,Math.min(240,Math.round(target*.15)))};
 }
+// null follows the deepest stratum; older strata retain their mastered distribution.
+export function mineProduction(m, level=m.level) {
+  const current=mineLevel(level),stratum=m.stratum;
+  if(stratum==null)return current;
+  if(stratum===0)return {...current,newest:0,chances:[100]};
+  const mastered=mineLevel(Math.min(level,5*stratum));
+  return {...mastered,rate:current.rate};
+}
+export function selectMineStratum(s,index,now=Date.now()) {
+  if(index!==null&&(!Number.isInteger(index)||index<0||index>mineLevel(s.mine.level).newest))return false;
+  settleMine(s,now);s.mine.stratum=index;return true;
+}
 export const MINE_INTERVAL = 60000, MINE_CAP = 240;
 export function settleMine(s, now = Date.now(), rng = Math.random) {
   const m=s.mine, elapsed=Math.max(0,Math.floor((now-m.lastAt)/MINE_INTERVAL));
@@ -544,7 +556,7 @@ export function settleMine(s, now = Date.now(), rng = Math.random) {
   for(let n=1;n<=count;n++){
     const at=m.lastAt+n*MINE_INTERVAL;
     if(m.upgradeEndsAt && at>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
-    const {chances,rate}=mineLevel(m.level);
+    const {chances,rate}=mineProduction(m);
     while(m.ore.length<chances.length){m.ore.push(0);m.pending.push(0);}
     const tenths=m.remainder+Math.round(rate*10),whole=Math.floor(tenths/10);
     m.remainder=tenths%10;
@@ -579,16 +591,45 @@ export function sellOre(s,index,amount) {
   s.mine.ore[index]-=amount;s.coins+=amount*mineResource(index).price;return true;
 }
 // A saved timestamp keeps the same four-hour buffer online and offline.
+export function idleCapacity(s) { return 240+30*(s.workshop?.storage||0); }
+export function idleRates(s) {
+  const n=s.workshop?.coins||0;
+  return {coins:n<=40?1+n*.1:n<=70?5+(n-40)*.5:n<=100?20+n-70:50+(n-100)*2,
+    hammers:1+(s.workshop?.hammers||0)*.05};
+}
 export function idleRewards(s, now = Date.now()) {
-  return Math.min(IDLE_REWARD_CAP, Math.floor(Math.max(0, now - s.idleSince) / IDLE_REWARD_INTERVAL));
+  return Math.min(idleCapacity(s),(s.idleStore?.minutes||0)+Math.floor(Math.max(0,now-s.idleSince)/60000));
+}
+export function idleLoot(s,now=Date.now()) {
+  const bank=s.idleStore||{minutes:0,coins:0,hammers:0},minutes=idleRewards(s,now),added=minutes-bank.minutes,rates=idleRates(s);
+  return {minutes,coins:Math.floor((bank.coins+added*Math.round(rates.coins*20))/20),
+    hammers:Math.floor((bank.hammers+added*Math.round(rates.hammers*20))/20)};
+}
+function settleIdle(s,now) {
+  const bank=s.idleStore??={minutes:0,coins:0,hammers:0},minutes=idleRewards(s,now),added=minutes-bank.minutes,rates=idleRates(s);
+  bank.coins+=added*Math.round(rates.coins*20);bank.hammers+=added*Math.round(rates.hammers*20);bank.minutes=minutes;
+  s.idleSince=minutes===idleCapacity(s)?now:s.idleSince+added*60000;
 }
 export function collectIdleRewards(s, now = Date.now()) {
-  const amount = idleRewards(s, now);
-  if (!amount) return 0;
-  s.hammers += amount; s.coins += amount;
-  // Keep partial minutes until full; time spent at capacity is not banked.
-  s.idleSince = amount === IDLE_REWARD_CAP ? now : s.idleSince + amount * IDLE_REWARD_INTERVAL;
-  return amount;
+  const amount=idleRewards(s,now);if(!amount)return 0;
+  settleIdle(s,now);const bank=s.idleStore;
+  s.coins+=Math.floor(bank.coins/20);s.hammers+=Math.floor(bank.hammers/20);
+  bank.coins%=20;bank.hammers%=20;bank.minutes=0;return amount;
+}
+export function workshopPrice(s,key) {
+  const slot=SLOTS.includes(key),level=slot?s.workshop.slots[key]:s.workshop[key];
+  return WORKSHOP_PRICES[slot?'slot':key]?.[level]??null;
+}
+export function upgradeWorkshop(s,key,now=Date.now()) {
+  const price=workshopPrice(s,key);if(price==null)return false;
+  if(key==='storage'){if(s.coins<price)return false;}
+  else if((s.mine.ore[price[0]]||0)<price[1])return false;
+  // Settle earned rewards at the old rate and capacity before purchasing.
+  settleIdle(s,now);
+  const fraction=s.hp/stats(s).hp;
+  if(key==='storage')s.coins-=price;else s.mine.ore[price[0]]-=price[1];
+  if(SLOTS.includes(key))s.workshop.slots[key]++;else s.workshop[key]++;
+  s.hp=fraction*stats(s).hp;return true;
 }
 // One hammer per item. A partial batch spends only the remaining hammers.
 export function batchSize(s) { return COMBAT[s.highest - 1].batch_size; }
@@ -713,7 +754,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       const count = s.forgingItems.length, item = s.forgingItems.at(-1);
       let soldCount = 0, soldCoins = 0;
       for (const forged of s.forgingItems) {
-        if (s.forgingAuto && s.autoSellEpochs.includes(forged.epoch)) { soldCount++; soldCoins += forged.sale; }
+        if (s.forgingAuto && (s.autoSellEpochs.includes(forged.epoch) || forged.slot==='weapon' && WEAPONS[forged.weaponId] && (s.autoWeaponFilter==='melee' && WEAPONS[forged.weaponId].range>0 || s.autoWeaponFilter==='ranged' && !WEAPONS[forged.weaponId].range))) { soldCount++; soldCoins += forged.sale; }
         else s.results.push(forged);
       }
       s.autoForgeCoins += soldCoins;
@@ -922,6 +963,11 @@ export function restore(serialized, now = Date.now()) {
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    const bounded=(value,max)=>Number.isInteger(value)?Math.max(0,Math.min(max,value)):0;
+    const workshop=s.workshop||{};
+    s.workshop={slots:Object.fromEntries(SLOTS.map(slot=>[slot,bounded(workshop.slots?.[slot],100)])),coins:bounded(workshop.coins,125),hammers:bounded(workshop.hammers,80),storage:bounded(workshop.storage,16)};
+    const bank=s.idleStore;
+    s.idleStore=bank&&Number.isInteger(bank.minutes)&&bank.minutes>=0&&bank.minutes<=idleCapacity(s)&&['coins','hammers'].every(k=>Number.isSafeInteger(bank[k])&&bank[k]>=0&&bank[k]<=idleCapacity(s)*2000+19)?bank:{minutes:0,coins:0,hammers:0};
     s.turtleLevel=Number.isInteger(s.turtleLevel)?Math.max(1,Math.min(100,s.turtleLevel)):1;
     s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
@@ -987,10 +1033,12 @@ export function restore(serialized, now = Date.now()) {
       !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=mineLevel(s.mine.level).chances.length && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
       !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>MINE_CAP ||
       !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt))
-      s.mine={version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
+      s.mine={version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
     if(!Number.isInteger(s.mine.remainder)||s.mine.remainder<0||s.mine.remainder>9)s.mine.remainder=0;
+    if(!Number.isInteger(s.mine.stratum)||s.mine.stratum<0||s.mine.stratum>mineLevel(s.mine.level).newest)s.mine.stratum=null;
     while(s.mine.ore.length<mineLevel(s.mine.level).chances.length)s.mine.ore.push(0);
     while(s.mine.pending.length<s.mine.ore.length)s.mine.pending.push(0);
+    s.autoWeaponFilter=['any','melee','ranged'].includes(s.autoWeaponFilter)?s.autoWeaponFilter:'any';
     s.autoSellEpochs = Array.isArray(s.autoSellEpochs) ? s.autoSellEpochs.filter(epoch => Number.isInteger(epoch) && epoch >= 1 && epoch <= EPOCHS.length) : [];
     s.reforgeStop = Array.isArray(s.reforgeStop) ? [...new Set(s.reforgeStop.filter(id=>AFFIXES.some(a=>a.id===id)))] : [];
     s.forgingAuto = s.forging > 0 && s.forgingAuto === true;

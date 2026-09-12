@@ -17,6 +17,7 @@ function initData(userId = 90001, age = 0) {
 function fixture() {
   const db = new DatabaseSync(':memory:');
   db.exec(readFileSync(new URL('../migrations/0001_saves.sql', import.meta.url),'utf8'));
+  db.exec(readFileSync(new URL('../migrations/0002_active_session.sql', import.meta.url),'utf8'));
   return { db, env:{BOT_TOKEN:token, SAVES:{prepare(sql) { return {bind(...args) { return {
     async first() { return db.prepare(sql).get(...args) || null; },
     async run() { return db.prepare(sql).run(...args); },
@@ -81,5 +82,41 @@ test('reset replaces saved progress and stale pre-reset writes cannot restore it
   assert.equal((await worker.fetch(request(data,{state:original.state,revision:1}),env)).status,409);
   const saved=await (await worker.fetch(request(data),env)).json();
   assert.equal(saved.revision,2);assert.deepEqual(saved.state,reset);
+ }finally{db.close();}
+});
+
+test('latest explicit session owns saves; old devices and legacy clients cannot take over by loading', async()=>{
+ const {db,env}=fixture(),data=initData();
+ const claim=()=>worker.fetch(new Request('https://game.example/api/save',{method:'POST',headers:{'x-telegram-init-data':data}}),env);
+ try{
+   const desktop=await (await claim()).json();
+   desktop.state.coins=500;
+   assert.equal((await worker.fetch(request(data,{state:desktop.state,revision:0,session:desktop.session}),env)).status,200);
+   const phone=await (await claim()).json();
+   assert.equal(phone.state.coins,500);assert.equal(phone.revision,1);
+   assert.notEqual(phone.session,desktop.session);
+   const stale=await worker.fetch(request(data,{state:{...desktop.state,coins:999},revision:1,session:desktop.session}),env);
+   assert.equal(stale.status,409);assert.equal((await stale.json()).error,'session_replaced');
+   const readonly=await (await worker.fetch(request(data),env)).json();
+   assert.equal(readonly.session,undefined);
+   assert.equal((await worker.fetch(request(data,{state:readonly.state,revision:1}),env)).status,409);
+   phone.state.coins=700;
+   assert.equal((await worker.fetch(request(data,{state:phone.state,revision:1,session:phone.session}),env)).status,200);
+   const back=await (await claim()).json();
+   assert.equal(back.state.coins,700);assert.equal(back.revision,2);
+   assert.equal((await worker.fetch(request(data,{state:phone.state,revision:2,session:phone.session}),env)).status,409);
+   assert.equal((await worker.fetch(request(data,{state:back.state,revision:2,session:back.session}),env)).status,200);
+ }finally{db.close();}
+});
+
+test('session migration preserves existing hero data and revision',()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+   db.exec(readFileSync(new URL('../migrations/0001_saves.sql',import.meta.url),'utf8'));
+   const state=JSON.stringify({...freshGame(),coins:321});
+   db.prepare('INSERT INTO player_saves VALUES (?, ?, ?, ?)').run('90001',state,17,123456);
+   db.exec(readFileSync(new URL('../migrations/0002_active_session.sql',import.meta.url),'utf8'));
+   const row=db.prepare('SELECT * FROM player_saves').get();
+   assert.equal(row.state_json,state);assert.equal(row.revision,17);assert.equal(row.updated_at,123456);assert.equal(row.active_session,null);
  }finally{db.close();}
 });

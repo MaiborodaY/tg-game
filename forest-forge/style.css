@@ -662,3 +662,54 @@ input,select,textarea {font-family:inherit;}
 
 .companion-card .companion-upgrade {display:flex;align-items:center;justify-content:center;gap:6px;margin-top:5px;}
 .companion-card.druid h3,.companion-card.archer h3 {font-size:22px;}
+/* Workshop activity: the battle canvas is suspended while this scene is visible. */
+.atelier-open #scene,.atelier-open .level-hud,.atelier-open #idle-loot,.atelier-open #completed {display:none;}
+.atelier-open #atelier-toggle > img{display:none;}
+.atelier-open #atelier-toggle .activity-close{display:grid;place-items:center;width:45px;height:45px;border:3px solid var(--ink);border-radius:50%;background:#ff5262;box-shadow:0 3px #922d3a;font:36px/1 'Lilita UI',sans-serif;}
+#atelier-scene{position:absolute;inset:0;overflow:hidden;background:#493b2d;container-type:size;}
+.atelier-art{position:absolute;left:50%;top:50%;width:max(100cqw,133.333cqh);aspect-ratio:4/3;transform:translate(-50%,-50%);}
+.atelier-background{width:100%;height:100%;display:block;}
+.atelier-hammer{position:absolute;width:14%;left:25%;top:48%;transform-origin:85% 85%;animation:atelier-strike 2.4s infinite;}
+.atelier-sparks{position:absolute;left:49%;top:63%;color:#ffe278;font-size:28px;animation:atelier-spark 2.4s infinite;opacity:0;}
+#atelier-scene h1{position:absolute;top:calc(67px + var(--safe-top));left:0;right:0;margin:0;text-align:center;color:white;font:26px 'Lilita UI',sans-serif;paint-order:stroke fill;-webkit-text-stroke:3px var(--ink);}
+@keyframes atelier-strike{0%,100%{transform:rotate(65deg)}50%,60%{transform:rotate(35deg);animation-timing-function:ease-in}74%,80%{transform:rotate(145deg)}}
+@keyframes atelier-spark{0%,72%,100%{opacity:0;transform:scale(.3)}76%{opacity:1;transform:scale(1)}90%{opacity:0;transform:translateY(-15px) scale(.6)}}
+#atelier-panel{flex:none;background:var(--paper);padding:14px clamp(12px,5vw,28px) 12px;border-top:1px solid var(--ink);}
+#atelier-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:14px;}
+.atelier-slot{min-width:0;padding:4px 1px 3px;border:2px solid var(--ink);border-radius:8px;background:#e6e9e3;color:var(--ink);cursor:pointer;font:14px 'Lilita UI',sans-serif;}
+.atelier-slot img{display:block;width:100%;height:38px;filter:grayscale(1);opacity:.75;}
+.atelier-slot strong{font-weight:400;}
+.atelier-slot:hover,.atelier-slot:focus-visible{background:#c5edf4;outline:2px solid #0bace0;outline-offset:1px;}
+.atelier-production{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:9px;}
+.atelier-production .button{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 4px;min-height:57px;font-size:17px;}
+.atelier-production img{width:33px;height:33px;object-fit:contain;}
+.atelier-production .coin{width:27px;height:27px;flex:none;}
+.atelier-production strong{display:block;font-size:16px;font-weight:400;}
+#atelier-storage{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;font-size:16px;background:#d4e9e9;color:var(--ink);}
+#atelier-upgrade-icon{display:block;width:64px;height:64px;object-fit:contain;margin:12px auto 4px;}
+#atelier-effect{text-align:center;font:22px 'Lilita UI',sans-serif;margin:12px 0;}
+#atelier-cost{display:flex;justify-content:center;margin:12px 0 16px;font:18px 'Lilita UI',sans-serif;}
+#atelier-cost span{display:flex;align-items:center;gap:8px;}#atelier-cost img{width:32px;height:32px;object-fit:contain;}
+#atelier-cost .missing{color:#b63747;}#atelier-buy{width:100%;}
+#strata-open{display:block;margin:5px auto 0;padding:3px 12px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);font:15px 'Lilita UI',sans-serif;pointer-events:auto;cursor:pointer;}
+#strata-dialog{max-height:80dvh;overflow:auto;}#strata-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;}
+.stratum-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#e3eee6;border:2px solid var(--ink);border-radius:9px;color:var(--ink);padding:7px 2px;font:14px 'Lilita UI',sans-serif;cursor:pointer;}
+.stratum-card img{width:43px;height:43px;object-fit:contain;}.stratum-card small{font-size:11px;}.stratum-card[aria-pressed=true]{background:#61d6f0;}
+#game.page-paused .atelier-hammer,#game.page-paused .atelier-sparks{animation-play-state:paused;}
+#game.atelier-open .forging *{animation-play-state:paused;}
+@media(prefers-reduced-motion:reduce){.atelier-hammer,.atelier-sparks{animation:none;}}
+@media(max-height:650px){#atelier-panel{padding-top:8px;padding-bottom:8px;}#atelier-grid{margin-bottom:8px;gap:4px;}.atelier-slot img{height:30px;}.atelier-production .button{min-height:44px;padding:5px;}}
+
+#atelier-upgrade-coin{display:block;width:48px;height:48px;margin:16px auto;}
+
+#atelier-storage > img{width:27px;height:27px;object-fit:contain;flex:none;}
+
+#auto-weapons{border:0;padding:0;margin:12px 0 0;min-width:0;}
+#auto-weapons legend{font:16px 'Lilita UI',sans-serif;margin-bottom:7px;}
+#auto-weapons > div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;}
+#auto-weapons label{position:relative;cursor:pointer;}
+#auto-weapons input{position:absolute;opacity:0;width:1px;height:1px;}
+#auto-weapons span{display:grid;place-items:center;min-height:40px;padding:4px;border:2px solid var(--ink);border-radius:7px;background:#d4e9e9;color:var(--ink);font:14px 'Lilita UI',sans-serif;text-align:center;}
+#auto-weapons input:checked + span{background:var(--blue);color:white;}
+#auto-weapons input:focus-visible + span{outline:3px solid #075cd7;outline-offset:2px;}
+.auto-dialog{max-height:calc(100dvh - 32px);overflow-y:auto;}

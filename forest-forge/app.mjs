@@ -1,3 +1,4 @@
+import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs';
 import { COMPANIONS, TURTLE_LEVELS, upgradeTurtle, ARCHER_LEVELS, upgradeArcher, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
@@ -39,7 +40,7 @@ let artVersion=Date.now();
 window.addEventListener('storage',event=>{if(event.key==='forest-forge-art-update')artVersion=Date.now();});
 let storageAvailable = true;
 const telegramLaunch = Boolean(new URLSearchParams(location.hash.slice(1)).get('tgWebAppData') || window.Telegram?.WebApp?.initData);
-let cloudInitData = '', cloudRevision = null, cloudReady = !telegramLaunch;
+let cloudInitData = '', cloudSession = null, cloudRevision = null, cloudReady = !telegramLaunch;
 let cloudBusy = false, cloudDirty = false, cloudFailed = false, lastCloudSave = 0;
 if (telegramLaunch) { state = freshGame(); $('cloud-status').hidden = false; $('game').inert = true; }
 else try { state = restore(localStorage.getItem(SAVE_KEY)); } catch { state = freshGame(); storageAvailable = false; }
@@ -63,6 +64,7 @@ let sheetSlot = null, toastUntil = 0;
 let savedTime = 0, uiTime = 0, frameCount = 0;
 let running = false, raf = 0, last = 0, accumulated = 0;
 let telegramInitialized = false, returnFocus = null;
+let atelierOpen=false, atelierKey=null;
 let mineOpen=false, mineSaleIndex=0, startupRewardsShown=false;
 const nodes = [...$('progress').children];
 const equipmentButtons = [];
@@ -160,18 +162,20 @@ const save = (force = false) => {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
   catch { if (storageAvailable) notify('Saving is unavailable in this browser'); storageAvailable = false; }
 };
-function cloudError(status, loading = false) {
+function cloudError(status, loading = false, code = '') {
   if (status === 413 && !loading) {
     state.autoForge = false; cloudDirty = true;
     notify('Item stack is too large to save. Sell items from the stack.');
     return;
   }
   cloudFailed = true; running = false; cancelAnimationFrame(raf);
+  $('game').classList.add('page-paused');
   $('game').inert = true; $('cloud-status').hidden = false; $('cloud-retry').hidden = false;
   $('cloud-message').textContent = status === 401 ? 'Session ended. Close and reopen the game in Telegram.' :
+    code === 'session_replaced' ? 'Game opened on another device. Continue there or take over here.' :
     status === 409 ? 'Another session saved newer progress. Load it to continue.' :
     loading ? 'Could not load your hero. Check your connection and try again.' : 'Saving paused. Check your connection and try again.';
-  $('cloud-retry').textContent = status === 401 ? 'Close game' : status === 409 ? 'Load saved hero' : 'Retry';
+  $('cloud-retry').textContent = status === 401 ? 'Close game' : status === 409 ? 'Continue here' : 'Retry';
   $('cloud-retry').onclick = () => {
     if (status === 401) { window.Telegram?.WebApp?.close(); return; }
     if (loading || status === 409) { void loadCloud(); return; }
@@ -179,6 +183,8 @@ function cloudError(status, loading = false) {
   };
 }
 async function loadCloud() {
+  cloudSession=null; running=false; cancelAnimationFrame(raf);
+  $('game').inert=true; $('game').classList.add('page-paused'); $('cloud-status').hidden=false;
   cloudReady = false; cloudFailed = false;
   $('cloud-retry').hidden = true; $('cloud-message').textContent = 'Loading your hero…';
   try {
@@ -190,11 +196,11 @@ async function loadCloud() {
     });
     setupTelegram(); cloudInitData = window.Telegram?.WebApp?.initData || '';
     if (!cloudInitData) { cloudError(401, true); return; }
-    const response = await fetch('/api/save', { headers: { 'x-telegram-init-data':cloudInitData }, cache:'no-store', signal:AbortSignal.timeout(10000) });
+    const response = await fetch('/api/save', { method:'POST', headers: { 'x-telegram-init-data':cloudInitData }, cache:'no-store', signal:AbortSignal.timeout(10000) });
     if (!response.ok) { cloudError(response.status, true); return; }
     const result = await response.json();
-    if (!result.state || result.state.version !== 3 || !Number.isSafeInteger(result.revision)) throw Error('Invalid cloud save');
-    state = restore(JSON.stringify(result.state)); cloudRevision = result.revision;
+    if (!result.state || result.state.version !== 3 || !Number.isSafeInteger(result.revision) || typeof result.session !== 'string' || !result.session) throw Error('Invalid cloud save');
+    state = restore(JSON.stringify(result.state)); cloudRevision = result.revision; cloudSession=result.session;
     displayedHeroPower = null;
     $('item-level-change').getAnimations().forEach(animation => animation.cancel());
     $('item-level-change').hidden = true;
@@ -207,16 +213,19 @@ async function flushCloud(force = false) {
   if (!cloudReady || cloudBusy || !cloudDirty || (!force && performance.now() - lastCloudSave < 10000)) return;
   cloudBusy = true; cloudDirty = false; lastCloudSave = performance.now();
   let saved = false;
-  const body = JSON.stringify({ state, revision:cloudRevision });
+  const session=cloudSession;
+  const body = JSON.stringify({ state, revision:cloudRevision, session });
   try {
     const response = await fetch('/api/save', { method:'PUT', headers:{'Content-Type':'application/json','x-telegram-init-data':cloudInitData}, body, keepalive:new TextEncoder().encode(body).length < 60000, signal:AbortSignal.timeout(10000) });
-    if (!response.ok) { cloudDirty = true; cloudError(response.status); return; }
+    if(session!==cloudSession)return;
+    if (!response.ok) { const error=await response.json().catch(()=>({})); if(session!==cloudSession)return; cloudDirty = true; cloudError(response.status,false,error.error); return; }
     const result = await response.json();
+    if(session!==cloudSession)return;
     if (!Number.isSafeInteger(result.revision)) throw Error('Invalid save response');
     cloudRevision = result.revision; cloudFailed = false;
     saved = true;
     $('cloud-status').hidden = true; $('game').inert = false; start();
-  } catch { cloudDirty = true; cloudError(0); }
+  } catch { if(session===cloudSession){cloudDirty = true; cloudError(0);} }
   finally {
     cloudBusy = false;
     if (saved && document.hidden && cloudDirty && !cloudFailed) void flushCloud(true);
@@ -365,18 +374,16 @@ function closeSheet() {
 }
 
 function updateIdleRewards() {
-  const now = Date.now(), amount = idleRewards(state, now), full = amount === IDLE_REWARD_CAP;
-  $('idle-loot').classList.toggle('full', full);
-  $('idle-loot').setAttribute('aria-label', `Idle rewards: ${amount} hammers and ${amount} coins${full ? ', storage full' : ''}`);
-  if (!$('idle-dialog').open) return;
-  const elapsed = Math.min(IDLE_REWARD_CAP * IDLE_REWARD_INTERVAL, Math.max(0, now - state.idleSince));
-  const minutes = Math.floor(elapsed / IDLE_REWARD_INTERVAL);
-  setText('idle-hammers', amount); setText('idle-coins', amount);
-  setText('idle-time', `${minutes >= 60 ? Math.floor(minutes / 60) + 'h ' : ''}${minutes % 60}m / 4h`);
-  setText('idle-next', full ? 'Storage full' : `+1 in ${Math.ceil((IDLE_REWARD_INTERVAL - elapsed % IDLE_REWARD_INTERVAL) / 1000)}s`);
-  $('idle-progress').value = elapsed / IDLE_REWARD_INTERVAL;
-  $('idle-progress').setAttribute('aria-valuetext', `${amount} of ${IDLE_REWARD_CAP} hammers and coins`);
-  $('collect-idle').disabled = !amount;
+  const now=Date.now(),loot=idleLoot(state,now),cap=idleCapacity(state),full=loot.minutes===cap;
+  $('idle-loot').classList.toggle('full',full);
+  $('idle-loot').setAttribute('aria-label',`Idle rewards: ${loot.hammers} hammers and ${loot.coins} coins${full?', storage full':''}`);
+  if(!$('idle-dialog').open)return;
+  setText('idle-hammers',loot.hammers);setText('idle-coins',loot.coins);
+  setText('idle-time',`${Math.floor(loot.minutes/60)}h ${loot.minutes%60}m / ${cap/60}h`);
+  setText('idle-next',full?'Storage full':`${idleRates(state).hammers.toFixed(2)} hammers · ${idleRates(state).coins.toFixed(1)} coins / min`);
+  $('idle-progress').max=cap;$('idle-progress').value=loot.minutes;
+  $('idle-progress').setAttribute('aria-valuetext',`${loot.minutes} of ${cap} minutes`);
+  $('collect-idle').disabled=!loot.minutes;
 }
 $('idle-loot').addEventListener('click', () => {
   if (sheetSlot || anvilOpen) closeSheet();
@@ -387,7 +394,7 @@ $('idle-loot').addEventListener('click', () => {
 });
 $('close-idle').addEventListener('click', () => $('idle-dialog').close());
 $('collect-idle').addEventListener('click', () => {
-  const amount = collectIdleRewards(state);
+  const loot=idleLoot(state), amount = collectIdleRewards(state);
   if (!amount) return;
   save(); updateUI(); $('idle-dialog').close();
   const layer = $('reward-flight'); layer.replaceChildren();
@@ -398,6 +405,7 @@ $('collect-idle').addEventListener('click', () => {
     ['coin', document.querySelector('.money > .coin').getBoundingClientRect(), 24]
   ];
   for (const [kind, target, size] of targets) {
+    if(!(kind==='hammer'?loot.hammers:loot.coins))continue;
     const hammer = kind === 'hammer', endX = target.x + target.width / 2 - bounds.x, endY = target.y + target.height / 2 - bounds.y;
     for (let i = 0; i < count; i++) {
       const particle = document.createElement(hammer ? 'img' : 'i');
@@ -475,7 +483,9 @@ for (const surface of document.querySelectorAll('.slot,.item-icon,.stack-card,.a
   pattern.className = 'epoch-pattern'; pattern.setAttribute('aria-hidden', 'true');
   surface.append(pattern);
 }
+$('auto-weapons').addEventListener('change',event=>{if(event.target.name==='auto-weapon'){state.autoWeaponFilter=event.target.value;save();updateAutoFilter();}});
 function updateAutoFilter() {
+  for(const input of $('auto-weapons').querySelectorAll('input'))input.checked=input.value===state.autoWeaponFilter;
   for (const row of $('auto-epochs').children) {
     const epoch = Number(row.dataset.epoch), chance = FORGE_CHANCES[state.anvilLevel-1][epoch-1];
     row.hidden = chance <= 0;
@@ -843,7 +853,8 @@ function updateMineUI() {
   $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   const m=state.mine, next=mineLevel(m.level), following=mineLevel(m.level+1), pending=m.pending.reduce((a,b)=>a+b,0);
   setText('coins',compact.format(state.coins));setText('runes',compact.format(state.runes));setText('mine-level',`Mine · Lv. ${m.level}`);
-  const deposit=mineResource(Math.min(19,next.newest));
+  const production=mineProduction(m),deposit=mineResource(Math.min(19,production.newest));
+  setText('strata-open',`${deposit.name} ▾`);
   const depositPath=`assets/mine/deposit-${deposit.id}-v2.webp`;
   if($('mine-deposit').getAttribute('src')!==depositPath)$('mine-deposit').src=depositPath;
   while($('mine-ore-grid').children.length<m.ore.length) addMineCard($('mine-ore-grid').children.length);
@@ -872,13 +883,14 @@ function updateMineUI() {
   if(m.upgradeEndsAt){const seconds=Math.max(0,Math.ceil((m.upgradeEndsAt-Date.now())/1000));$('mine-progress').value=100*(1-seconds/(next.minutes*60));setText('mine-time',`${Math.floor(seconds/3600)?Math.floor(seconds/3600)+'h ':''}${Math.floor(seconds/60)%60}m ${seconds%60}s`);}
   if($('mine-rewards-dialog').open)$('mine-rewards').innerHTML=mineRows(m.pending);
   if($('mine-info-dialog').open){
+    const current=mineProduction(m),future=mineProduction(m,m.level+1);
     const total=Math.max(20,following.chances.length), pages=Math.ceil(total/10);
     setText('mine-current-level',`Lv. ${m.level}`);setText('mine-next-level',`Lv. ${m.level+1}`);
     setText('mine-chances-page',`${mineChancesPage+1} / ${pages}`);
     $('mine-chances-prev').disabled=mineChancesPage===0;$('mine-chances-next').disabled=mineChancesPage>=pages-1;
     $('mine-chances').innerHTML=Array.from({length:Math.min(10,total-mineChancesPage*10)},(_,offset)=>{
       const i=mineChancesPage*10+offset,r=mineResource(i),color=Math.min(10,1+Math.floor(i/2));
-      return `<tr class="epoch-${color} ore-${r.id}"><th scope="row"><span class="epoch-name"><img class="epoch-icon" src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span></span></th><td>${(next.chances[i]>=1?Math.round(next.chances[i]):Number((next.chances[i]||0).toFixed(2)))}%</td><td>${(following.chances[i]>=1?Math.round(following.chances[i]):Number((following.chances[i]||0).toFixed(2)))}%</td></tr>`;
+      return `<tr class="epoch-${color} ore-${r.id}"><th scope="row"><span class="epoch-name"><img class="epoch-icon" src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span></span></th><td>${(current.chances[i]>=1?Math.round(current.chances[i]):Number((current.chances[i]||0).toFixed(2)))}%</td><td>${(future.chances[i]>=1?Math.round(future.chances[i]):Number((future.chances[i]||0).toFixed(2)))}%</td></tr>`;
     }).join('');
   }
 }
@@ -919,6 +931,7 @@ function takeMineOre() {
   }
 }
 function setMineOpen(open) {
+  if(atelierOpen)setAtelierOpen(false);
   closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
   displayedForgeItems=null;
   mineOpen=open;$('mine-buffer').hidden=!open;$('game').classList.toggle('mine-open',open);
@@ -929,6 +942,53 @@ function setMineOpen(open) {
   else {updateUI();window.Telegram?.WebApp?.BackButton?.hide();}
   save(true);
 }
+function setAtelierOpen(open) {
+  if(open&&mineOpen)setMineOpen(false);
+  closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+  atelierOpen=open;$('game').classList.toggle('atelier-open',open);
+  $('workshop').hidden=open;$('atelier-panel').hidden=!open;$('atelier-scene').hidden=!open;
+  $('atelier-toggle').setAttribute('aria-pressed',String(open));$('atelier-toggle').setAttribute('aria-label',open?'Close workshop':'Open workshop');
+  accumulated=0;last=performance.now();uiTime=0;updateUI();updateAtelier();
+  if(open)window.Telegram?.WebApp?.BackButton?.show();else window.Telegram?.WebApp?.BackButton?.hide();save(true);
+}
+function atelierValue(key,level) {
+  if(SLOTS.includes(key))return `+${level}% ${DAMAGE_SLOTS.includes(key)?'damage':'HP'}`;
+  if(key==='storage')return `${4+level*.5} h`;
+  const copy={workshop:{...state.workshop,[key]:level}};
+  return `${idleRates(copy)[key].toFixed(key==='coins'?1:2)} / min`;
+}
+function updateAtelier() {
+  if(!atelierOpen)return;
+  setText('atelier-coins-rate',`${idleRates(state).coins.toFixed(1)} / min`);
+  setText('atelier-hammers-rate',`${idleRates(state).hammers.toFixed(2)} / min`);
+  setText('atelier-storage-time',`Storage · ${idleCapacity(state)/60} hours`);
+  for(const button of $('atelier-grid').children){const key=button.dataset.slot;button.querySelector('strong').textContent=`+${state.workshop.slots[key]}%`;button.setAttribute('aria-label',`${LABELS[key]||'Ring'}: ${atelierValue(key,state.workshop.slots[key])}`);}
+  if(!$('atelier-dialog').open)return;
+  const key=atelierKey,slot=SLOTS.includes(key),level=slot?state.workshop.slots[key]:state.workshop[key],price=workshopPrice(state,key);
+  setText('atelier-title',slot?(LABELS[key]||'Ring')+' upgrades':key==='storage'?'Storage':key==='coins'?'Coin production':'Hammer production');
+  $('atelier-upgrade-icon').src=slot?`assets/${key}.svg`:key==='hammers'?'assets/hammer.webp':key==='coins'?'assets/mine/gold-icon.webp':'assets/workshop/crate.svg';
+  $('atelier-upgrade-icon').hidden=key==='coins';$('atelier-upgrade-coin').hidden=key!=='coins';
+  setText('atelier-effect',`${atelierValue(key,level)}${price!==null?' → '+atelierValue(key,level+1):''}`);
+  const enough=price!==null&&(key==='storage'?state.coins>=price:(state.mine.ore[price[0]]||0)>=price[1]);
+  $('atelier-cost').innerHTML=price===null?'':key==='storage'?`<span class="${enough?'':'missing'}"><i class="coin"></i>${state.coins.toLocaleString('en-US')} / ${price.toLocaleString('en-US')}</span>`:`<span class="${enough?'':'missing'}"><img src="assets/mine/${mineResource(price[0]).id}-icon.webp" alt="${mineResource(price[0]).name}">${(state.mine.ore[price[0]]||0).toLocaleString('en-US')} / ${price[1].toLocaleString('en-US')}</span>`;
+  $('atelier-buy').disabled=!enough;setText('atelier-buy',price===null?'Max':key==='storage'?'Expand':'Upgrade');
+}
+function openAtelierUpgrade(key){atelierKey=key;$('atelier-dialog').showModal();updateAtelier();}
+for(const slot of SLOTS){const button=document.createElement('button');button.className='atelier-slot';button.dataset.slot=slot;button.innerHTML=`<img src="assets/${slot}.svg" alt=""><strong>+0%</strong>`;button.onclick=()=>openAtelierUpgrade(slot);$('atelier-grid').append(button);}
+for(const key of ['coins','hammers','storage'])$('atelier-'+key).onclick=()=>openAtelierUpgrade(key);
+$('atelier-toggle').onclick=()=>setAtelierOpen(!atelierOpen);
+$('atelier-buy').onclick=()=>{if(upgradeWorkshop(state,atelierKey)){save(true);updateUI();updateAtelier();}};
+$('strata-open').onclick=()=>{
+  settleMine(state);$('strata-grid').replaceChildren();
+  const newest=mineLevel(state.mine.level).newest;
+  for(let i=-1;i<=newest;i++){
+    const index=i<0?null:i,production=mineProduction({...state.mine,stratum:index}),resource=mineResource(production.newest),button=document.createElement('button');
+    button.className='stratum-card';button.setAttribute('aria-pressed',String((state.mine.stratum??null)===index));
+    button.innerHTML=`<img src="assets/mine/${resource.id==='crystal'?'crystal.svg':resource.id+'-icon.webp'}" alt=""><strong>${index===null?'Deepest':resource.name}</strong><small>${production.rate} / min · ${Math.round(production.chances[production.newest])}%</small>`;
+    button.onclick=()=>{if(selectMineStratum(state,index)){save(true);$('strata-dialog').close();updateMineUI();}};$('strata-grid').append(button);
+  }
+  $('strata-dialog').showModal();
+};
 $('mine-toggle').addEventListener('click',()=>setMineOpen(!mineOpen));
 function addMineCard(i){
   const r=mineResource(i);
@@ -952,6 +1012,12 @@ function frame(now) {
   if (!running) return;
   const dt = Math.min((now - last) / 1000, .25);
   last = now; accumulated += dt;
+  if(atelierOpen){
+    accumulated=0;uiTime+=dt;savedTime+=dt;
+    if(uiTime>=1){finishUpgrade(state);updateUI();updateAtelier();uiTime=0;}
+    if(savedTime>=3){save();savedTime=0;}
+    raf=requestAnimationFrame(frame);return;
+  }
   if(mineOpen){
     accumulated=0;uiTime+=dt;savedTime+=dt;
     if(uiTime>=1){settleMine(state);finishUpgrade(state);updateMineUI();uiTime=0;}
@@ -1008,7 +1074,7 @@ function setupTelegram() {
     } catch { /* Keep the current view if this client cannot change fullscreen. */ }
   }
   tg.onEvent('activated', start); tg.onEvent('deactivated', stop);
-  tg.BackButton?.onClick(()=>{const dialog=document.querySelector('.mine-dialog[open]');if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else closeSheet();});
+  tg.BackButton?.onClick(()=>{const dialog=document.querySelector('.mine-dialog[open]');if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else if(atelierOpen)setAtelierOpen(false);else closeSheet();});
   if (sheetSlot || anvilOpen || $('idle-dialog').open || $('auto-dialog').open) tg.BackButton?.show();
 }
 // The external Telegram SDK is optional; normal browser startup never waits for it.

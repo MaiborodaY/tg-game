@@ -10,12 +10,19 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     if (url.pathname !== '/api/save') return json({ error: 'not_found' }, 404);
-    if (!['GET', 'PUT'].includes(request.method)) return json({ error: 'method_not_allowed' }, 405);
+    if (!['GET', 'POST', 'PUT'].includes(request.method)) return json({ error: 'method_not_allowed' }, 405);
     if (!env.BOT_TOKEN) return json({ error: 'auth_unavailable' }, 503);
     const auth = await verifyTelegramInitData(request.headers.get('x-telegram-init-data') || '', env.BOT_TOKEN);
     if (!auth.ok) return json({ error: 'telegram_session_expired' }, 401);
     const id = auth.identity.userId;
     try {
+      if (request.method === 'POST') {
+        const session = crypto.randomUUID();
+        const row = await env.SAVES.prepare(
+          'INSERT INTO player_saves (telegram_id, state_json, updated_at, active_session) VALUES (?, ?, ?, ?) ON CONFLICT(telegram_id) DO UPDATE SET active_session = excluded.active_session RETURNING state_json, revision'
+        ).bind(id, JSON.stringify(freshGame()), Date.now(), session).first();
+        return json({ userId:id, state:JSON.parse(row.state_json), revision:row.revision, session });
+      }
       if (request.method === 'GET') {
         let row = await env.SAVES.prepare('SELECT state_json, revision FROM player_saves WHERE telegram_id = ?').bind(id).first();
         if (!row) {
@@ -41,15 +48,20 @@ export default {
       try { payload = JSON.parse(await new Blob(chunks).text()); }
       catch { return json({ error: 'invalid_save' }, 400); }
       const s = payload?.state;
+      const session = payload?.session ?? null;
+      if (session !== null && (typeof session !== 'string' || session.length > 64)) return json({ error:'invalid_save' }, 400);
       // Shape validation only. This PvE snapshot API does not make client combat authoritative.
       if (!Number.isSafeInteger(payload?.revision) || payload.revision < 0 || !s || s.version !== 3 ||
           !['coins', 'hammers', 'level', 'anvilLevel', 'idleSince'].every(k => Number.isFinite(s[k]) && s[k] >= 0) ||
           !s.equipment || !SLOTS.every(slot => Object.hasOwn(s.equipment, slot)) ||
           !Array.isArray(s.mastery) || s.mastery.length !== EPOCHS.length ||
           !Array.isArray(s.results) || !Array.isArray(s.forgingItems)) return json({ error: 'invalid_save' }, 400);
-      const row = await env.SAVES.prepare('UPDATE player_saves SET state_json = ?, revision = revision + 1, updated_at = ? WHERE telegram_id = ? AND revision = ? RETURNING revision')
-        .bind(JSON.stringify(s), Date.now(), id, payload.revision).first();
-      if (!row) return json({ error: 'save_conflict' }, 409);
+      const row = await env.SAVES.prepare('UPDATE player_saves SET state_json = ?, revision = revision + 1, updated_at = ? WHERE telegram_id = ? AND revision = ? AND active_session IS ? RETURNING revision')
+        .bind(JSON.stringify(s), Date.now(), id, payload.revision, session).first();
+      if (!row) {
+        const current = await env.SAVES.prepare('SELECT active_session FROM player_saves WHERE telegram_id = ?').bind(id).first();
+        return json({ error:current && current.active_session !== session ? 'session_replaced' : 'save_conflict' }, 409);
+      }
       return json({ revision: row.revision });
     } catch {
       console.error('Forest Forge save operation failed');

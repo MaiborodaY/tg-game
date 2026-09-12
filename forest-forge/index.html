@@ -28,7 +28,7 @@
         </div>
         <span id="mine-found" aria-live="polite"></span>
       </div>
-      <div id="mine-heading" hidden><h1 id="mine-level">Mine · Lv. 1</h1><span id="mine-rate">1 ore / minute</span></div>
+      <div id="atelier-scene" hidden><div class="atelier-art"><img class="atelier-background" src="assets/workshop/interior.webp" alt="Blacksmith working at an anvil"><img class="atelier-hammer" src="assets/hammer.webp" alt=""><span class="atelier-sparks" aria-hidden="true">✦</span></div><h1>Workshop</h1></div><div id="mine-heading" hidden><h1 id="mine-level">Mine · Lv. 1</h1><span id="mine-rate">1 ore / minute</span><button id="strata-open" aria-haspopup="dialog">Stone ▾</button></div>
       <header class="hud">
         <div class="hero-hud">
           <button id="choose-portrait" class="avatar" aria-label="Choose portrait" aria-haspopup="dialog" aria-controls="portrait-dialog"><img id="hero-portrait" src="assets/helmet.svg" alt="Hero portrait"></button>
@@ -127,7 +127,12 @@
         <button id="mine-upgrade" class="button blue">Upgrade</button>
       </div>
     </section>
-    <nav id="activities" aria-label="Activities"><button id="mine-toggle" aria-label="Open mine" aria-pressed="false"><img src="assets/mine/pickaxe-nav.webp" alt=""><span class="activity-close" aria-hidden="true">×</span></button><button id="companions-toggle" aria-label="Open companions" aria-haspopup="dialog"><img src="assets/companions/navigation.webp" alt=""></button></nav>
+    <section id="atelier-panel" hidden aria-label="Workshop upgrades">
+      <div id="atelier-grid"></div>
+      <div class="atelier-production"><button id="atelier-coins" class="button blue"><i class="coin" aria-hidden="true"></i><span>Coins<strong id="atelier-coins-rate"></strong></span></button><button id="atelier-hammers" class="button blue"><img src="assets/hammer.webp" alt=""><span>Hammers<strong id="atelier-hammers-rate"></strong></span></button></div>
+      <button id="atelier-storage" class="button"><img src="assets/workshop/crate.svg" alt=""> <span id="atelier-storage-time">Storage · 4 hours</span> <span aria-hidden="true">›</span></button>
+    </section>
+    <nav id="activities" aria-label="Activities"><button id="mine-toggle" aria-label="Open mine" aria-pressed="false"><img src="assets/mine/pickaxe-nav.webp" alt=""><span class="activity-close" aria-hidden="true">×</span></button><button id="companions-toggle" aria-label="Open companions" aria-haspopup="dialog"><img src="assets/companions/navigation.webp" alt=""></button><button id="atelier-toggle" aria-label="Open workshop" aria-pressed="false"><img src="assets/anvil.svg" alt=""><span class="activity-close" aria-hidden="true">×</span></button></nav>
     <div id="reward-flight" aria-hidden="true"></div>
   </main>
   <dialog id="bulk-sale-confirm" class="bulk-sale-confirm" aria-labelledby="bulk-sale-title" aria-describedby="bulk-sale-summary">
@@ -155,7 +160,8 @@
     <div class="sheet-top"><h2 id="auto-title">Auto forge</h2><button id="close-auto" class="close" aria-label="Close auto forge" autofocus>×</button></div>
     <strong class="auto-keep">Keep</strong>
     <div id="auto-epochs" role="group" aria-label="Epochs to keep"></div>
-    <p id="auto-hint">Unchecked epochs are sold after auto forging.</p>
+    <fieldset id="auto-weapons"><legend>Keep weapons</legend><div><label><input type="radio" name="auto-weapon" value="any" checked><span>Any</span></label><label><input type="radio" name="auto-weapon" value="melee"><span>Melee only</span></label><label><input type="radio" name="auto-weapon" value="ranged"><span>Ranged only</span></label></div></fieldset>
+    <p id="auto-hint">Other epochs and weapon types are sold automatically.</p>
     <button id="run-auto" class="button blue">Start</button>
   </dialog>
   <dialog id="mine-info-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining chances</h2><button class="close" data-close-mine aria-label="Close">×</button></div><table class="probabilities"><thead><tr><th>Resource</th><th id="mine-current-level"></th><th id="mine-next-level"></th></tr></thead><tbody id="mine-chances"></tbody></table><div class="mine-chances-pages"><button id="mine-chances-prev" class="mini-button" aria-label="Previous resources">‹</button><span id="mine-chances-page"></span><button id="mine-chances-next" class="mini-button" aria-label="Next resources">›</button></div><p>Production increases by 0.1 ore/min every level. Offline storage: 4 hours.</p></dialog>
@@ -163,6 +169,8 @@
   <dialog id="mine-rewards-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining rewards</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-rewards"></div><p id="mine-buffer-time">0h 0m / 4h</p><progress id="mine-buffer-progress" max="240" value="0"></progress><button id="mine-rewards-collect" class="button blue">Collect</button></dialog>
   <dialog id="portrait-dialog" class="mine-dialog" aria-labelledby="portrait-title"><div class="sheet-top"><h2 id="portrait-title">Profile</h2><button id="close-portraits" class="close" aria-label="Close">×</button></div><div id="portrait-grid"></div><button id="reset-progress" class="button red">Reset progress</button></dialog>
   <dialog id="reset-progress-dialog" class="mine-dialog" aria-labelledby="reset-progress-title"><div class="sheet-top"><h2 id="reset-progress-title">Reset progress?</h2><button id="cancel-reset-close" class="close" aria-label="Cancel">×</button></div><p>Your equipment, coins, hammers, forge, mine and battle progress will be deleted. This cannot be undone. Your portrait will stay.</p><button id="cancel-reset" class="button">Cancel</button><button id="confirm-reset" class="button red">Reset and start again</button></dialog>
+<dialog id="atelier-dialog" class="mine-dialog" aria-labelledby="atelier-title"><div class="sheet-top"><h2 id="atelier-title"></h2><button class="close" data-close-mine aria-label="Close">×</button></div><img id="atelier-upgrade-icon" alt=""><i id="atelier-upgrade-coin" class="coin" hidden aria-hidden="true"></i><p id="atelier-effect"></p><div id="atelier-cost"></div><button id="atelier-buy" class="button blue">Upgrade</button></dialog>
+<dialog id="strata-dialog" class="mine-dialog" aria-labelledby="strata-title"><div class="sheet-top"><h2 id="strata-title">Mine strata</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="strata-grid"></div></dialog>
 <dialog id="companions-dialog" aria-labelledby="companions-title">
 <div class="sheet-top"><h2 id="companions-title">Companions</h2><button id="close-companions" class="close" aria-label="Close companions">&times;</button></div>
 <div class="companions-intro"><span>One companion at a time</span><strong><i class="coin" aria-hidden="true"></i> <span id="companions-coins"></span></strong></div>

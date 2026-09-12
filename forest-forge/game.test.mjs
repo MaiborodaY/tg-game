@@ -1072,3 +1072,71 @@ test('upgraded turtle joins at its level on next wave and fully blocks final hit
  s.companion.x=s.heroX+.10;s.companion.hp=1;const hp=s.hp;
  const events=step(s,.02,()=>.999);assert.ok(events.some(e=>e.type==='tankDown'));assert.equal(s.companion.hp,0);assert.equal(s.hp,hp);
 });
+import { upgradeWorkshop, workshopPrice, idleRates, idleCapacity, idleLoot, mineProduction, selectMineStratum } from './game.mjs';
+
+test('workshop slot bonuses persist across equipment replacement, preserve health fraction and do not change item values',()=>{
+ const s=freshGame(0);s.equipment.chest=candidate('chest',100);s.hp=60;s.mine.ore[0]=20;
+ assert.equal(upgradeWorkshop(s,'chest',0),true);assert.equal(s.mine.ore[0],17);assert.equal(s.equipment.chest.value,100);assert.equal(stats(s).hp,121);assert.equal(s.hp,60.5);
+ s.equipment.chest=candidate('chest',200);assert.equal(stats(s).hp,222);
+ const saved=restore(JSON.stringify(s),0);assert.equal(saved.workshop.slots.chest,1);assert.equal(stats(saved).hp,222);
+ s.workshop.slots.chest=100;const before=structuredClone(s);assert.equal(upgradeWorkshop(s,'chest',0),false);assert.deepEqual(s,before);
+});
+test('workshop recipes match approved starts, maxima and softened coin multipliers',()=>{
+ const s=freshGame(0);assert.deepEqual(workshopPrice(s,'weapon'),[0,3]);assert.deepEqual(workshopPrice(s,'coins'),[0,15]);assert.deepEqual(workshopPrice(s,'hammers'),[0,30]);assert.equal(workshopPrice(s,'storage'),5000);
+ s.workshop.coins=124;assert.deepEqual(workshopPrice(s,'coins'),[19,4944]);s.workshop.coins=125;
+ s.workshop.hammers=80;s.workshop.storage=16;assert.deepEqual(idleRates(s),{coins:100,hammers:5});assert.equal(idleCapacity(s),720);
+ for(const key of ['coins','hammers','storage'])assert.equal(workshopPrice(s,key),null);
+ const initial=freshGame(0),before=structuredClone(initial);assert.equal(upgradeWorkshop(initial,'coins',60000),false);assert.deepEqual(initial,before);
+});
+test('idle production keeps fractional ore-independent rates through repeated collection and save',()=>{
+ let s=freshGame(0);s.workshop.hammers=1;s.workshop.coins=1;
+ for(let n=1;n<=20;n++){collectIdleRewards(s,n*60000);s=restore(JSON.stringify(s),n*60000);}
+ assert.equal(s.hammers,36);assert.equal(s.coins,22);assert.equal(s.idleStore.hammers,0);assert.equal(s.idleStore.coins,0);
+});
+test('idle rate purchases preserve old rewards and expanded storage does not grant past overflow',()=>{
+ const s=freshGame(0);s.mine.ore[0]=100;s.coins=5000;
+ assert.equal(upgradeWorkshop(s,'hammers',120*60000),true);
+ assert.deepEqual(idleLoot(s,140*60000),{minutes:140,coins:140,hammers:141});
+ assert.equal(upgradeWorkshop(s,'storage',600*60000),true);
+ assert.equal(idleLoot(s,600*60000).minutes,240);assert.equal(idleLoot(s,630*60000).minutes,270);assert.equal(idleLoot(s,900*60000).minutes,270);
+ const before=idleLoot(s,900*60000);collectIdleRewards(s,900*60000);assert.equal(s.coins,before.coins);assert.equal(s.hammers,15+before.hammers);
+});
+test('max offline production caps both resources at twelve hours and resets cleanly',()=>{
+ const s=freshGame(0);s.workshop.coins=125;s.workshop.hammers=80;s.workshop.storage=16;
+ assert.deepEqual(idleLoot(s,24*3600000),{minutes:720,coins:72000,hammers:3600});
+ collectIdleRewards(s,24*3600000);assert.equal(s.coins,72000);assert.equal(s.hammers,3615);assert.equal(collectIdleRewards(s,24*3600000),0);
+ const fresh=freshGame(0);assert.deepEqual(idleRates(fresh),{coins:1,hammers:1});assert.equal(idleCapacity(fresh),240);
+});
+test('legacy saves preserve progress and idle time with zero workshop levels',()=>{
+ const s=freshGame(0);delete s.workshop;delete s.idleStore;s.coins=123;s.mine.ore[0]=77;
+ const loaded=restore(JSON.stringify(s),120000);assert.equal(loaded.coins,123);assert.equal(loaded.mine.ore[0],77);assert.equal(loaded.workshop.slots.weapon,0);assert.equal(idleLoot(loaded,120000).coins,2);
+});
+test('old strata retain mastered chances and current speed; switching settles previous production first',()=>{
+ const s=freshGame(0);s.mine.level=20;
+ assert.equal(selectMineStratum(s,0,0),true);assert.equal(mineProduction(s.mine).rate,2.9);assert.deepEqual(mineProduction(s.mine).chances,[100]);
+ settleMine(s,60000,()=>.99);assert.equal(s.mine.pending[0],2);
+ assert.equal(selectMineStratum(s,1,60000),true);assert.equal(s.mine.pending[0],2);assert.equal(mineProduction(s.mine).chances[1],50);
+ settleMine(s,120000,()=>.75);assert.equal(s.mine.pending[1],3);assert.equal(s.mine.pending[0],2);
+ assert.equal(restore(JSON.stringify(s),120000).mine.stratum,1);
+ const before=structuredClone(s);assert.equal(selectMineStratum(s,99,120000),false);assert.deepEqual(s,before);
+ assert.equal(selectMineStratum(s,null,120000),true);assert.equal(mineProduction(s.mine).newest,mineLevel(20).newest);
+});
+
+test('auto weapon filter combines with epochs, preserves armor and pays each sale once',()=>{
+ for(const filter of ['any','melee','ranged']){
+  const s=freshGame(0);s.autoWeaponFilter=filter;s.autoSellEpochs=[2];s.forgingAuto=true;s.forging=.01;
+  s.forgingItems=[{...candidate('weapon',2),weaponId:'club',epoch:1,sale:1},{...candidate('weapon',2),weaponId:'slingshot',epoch:1,sale:1},{...candidate('helmet',5),epoch:1,sale:1},{...candidate('weapon',20),weaponId:'battle-spear',epoch:2,sale:2}];
+  const loaded=restore(JSON.stringify(s),0);assert.equal(loaded.autoWeaponFilter,filter);
+  const events=step(loaded,.02,()=>.999,0),items=[loaded.pending,...loaded.results].filter(Boolean);
+  assert.ok(items.some(i=>i.slot==='helmet'));
+  assert.equal(items.some(i=>i.weaponId==='club'),filter!=='ranged');assert.equal(items.some(i=>i.weaponId==='slingshot'),filter!=='melee');assert.ok(!items.some(i=>i.epoch===2));
+  assert.equal(loaded.coins,filter==='any'?2:3);assert.equal(loaded.autoForgeCoins,loaded.coins);
+  assert.equal(events.find(e=>e.type==='forged').soldCount,filter==='any'?1:2);
+  step(loaded,.02,()=>.999,0);assert.equal(loaded.coins,filter==='any'?2:3);
+ }
+});
+test('manual forging ignores weapon filter and old saves keep any weapon',()=>{
+ const s=freshGame(0);s.autoWeaponFilter='melee';s.forgingAuto=false;s.forging=.01;s.forgingItems=[{...candidate('weapon',2),weaponId:'slingshot',epoch:1,sale:1}];
+ step(s,.02,()=>.999,0);assert.equal(s.pending.weaponId,'slingshot');assert.equal(s.coins,0);
+ delete s.autoWeaponFilter;assert.equal(restore(JSON.stringify(s),0).autoWeaponFilter,'any');s.autoWeaponFilter='invalid';assert.equal(restore(JSON.stringify(s),0).autoWeaponFilter,'any');
+});
