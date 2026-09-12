@@ -103,8 +103,8 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 .forge:disabled { cursor:default; }
 #hammer { display:none; position:absolute; left:58%; top:-28px; width:44px; height:44px; transform-origin:84% 90%; pointer-events:none; }
 #hammer .hammer-icon { display:block; width:100%; height:100%; }
-.forging #hammer { display:block; animation:forge-hammer 1.5s linear both paused; animation-delay:var(--forge-time,0s); }
-.forging #forge-image { transform-origin:50% 85%; animation:forge-impact 1.5s linear both paused; animation-delay:var(--forge-time,0s); }
+.forging #hammer { display:block; animation:forge-hammer 1.5s linear both; }
+.forging #forge-image { transform-origin:50% 85%; animation:forge-impact 1.5s linear both; }
 .forge-sparks { position:absolute; left:60%; top:23%; pointer-events:none; }
 .forge-sparks i { position:absolute; width:3px; height:7px; border-radius:2px; background:#ffd05a; opacity:0; --spark-x:-23px; --spark-y:-17px; }
 .forge-sparks i:nth-child(2) { --spark-x:22px; --spark-y:-12px; }
@@ -112,11 +112,11 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 .forge-sparks i:nth-child(4) { --spark-x:-34px; --spark-y:6px; width:3px; height:3px; background:#ffb534; }
 .forge-sparks i:nth-child(5) { --spark-x:34px; --spark-y:4px; width:4px; height:3px; background:#ffb534; }
 .forge-sparks i:nth-child(6) { --spark-x:14px; --spark-y:-31px; width:2px; height:5px; background:#fff4bb; }
-.forging .forge-sparks i { animation:forge-spark 1.5s linear both paused; animation-delay:var(--forge-time,0s); }
+.forging .forge-sparks i { animation:forge-spark 1.5s linear both; }
 .forge-art > .forge-flash { position:absolute; left:60%; top:23%; width:33px; height:33px; opacity:0; pointer-events:none; }
 .forge-impact-ring { position:absolute; left:60%; top:23%; width:34px; height:11px; border:2px solid #ffe592; border-radius:50%; opacity:0; pointer-events:none; }
-.forging .forge-flash { animation:forge-flash 1.5s linear both paused; animation-delay:var(--forge-time,0s); }
-.forging .forge-impact-ring { animation:forge-ring 1.5s linear both paused; animation-delay:var(--forge-time,0s); }
+.forging .forge-flash { animation:forge-flash 1.5s linear both; }
+.forging .forge-impact-ring { animation:forge-ring 1.5s linear both; }
 @keyframes forge-hammer {
   0% { opacity:0; transform:rotate(5deg); }
   5% { opacity:1; transform:rotate(5deg); }
@@ -625,3 +625,5 @@ button:disabled { opacity:.55; cursor:default; }
 @keyframes table-rings{50%{background-size:112px 112px}}
 @keyframes table-diamonds{50%{background-position:9px 9px,9px 9px}}
 @keyframes table-stars{50%{background-position:7px -5px}}
+
+#game.page-paused .forging *,#game.mine-open .forging *{animation-play-state:paused}

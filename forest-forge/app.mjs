@@ -70,6 +70,7 @@ const compact = new Intl.NumberFormat('en', { notation:'compact', maximumFractio
 let anvilOpen = false;
 let salePreview = null, saleUntil = 0;
 let resultInFlight = false;
+let displayedForgeItems = null, displayedBatch = null, displayedMastery = null, displayedCompanions = null;
 let displayedHeroPower = null;
 let masteryView = 0; // Zero selects the epoch with the highest current forge chance.
 try { const saved=Number(localStorage.getItem('forest-forge-mastery-view')); if(AVAILABLE_EPOCHS.includes(saved)) masteryView=saved; } catch {}
@@ -108,6 +109,9 @@ for(const companion of COMPANIONS) {
 }
 function updateCompanions() {
   if(!$('companions-dialog').open)return;
+  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind]);
+  if(displayedCompanions===key)return;
+  displayedCompanions=key;
   $('companions-coins').textContent=compact.format(state.coins);
   for(const card of $('companions-cards').children) {
     const id=card.dataset.kind,owned=state.hiredCompanions.includes(id);
@@ -211,6 +215,9 @@ function setText(id, value, affix) {
   }else if(element.textContent!==text || element.dataset.affix){element.textContent=text;delete element.dataset.affix;}
 }
 function itemArt(img, item) {
+  const key=JSON.stringify([item,artVersion]);
+  if(img._artKey===key)return;
+  img._artKey=key;
   const card=img.parentElement;
   let badge=card.querySelector(':scope > .affix-badge');
   if(item.affix){
@@ -608,12 +615,12 @@ document.addEventListener('keydown', e => {
 
 function updateUI() {
   updateCompanions();
-  $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
+  if($('confirm-reset').disabled!==(telegramLaunch && (!cloudReady || cloudBusy || cloudFailed)))$('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   updateIdleRewards();
   const total = stats(state);
   const level = heroPower(state);
   setText('item-level', level);
-  $('item-level-hud').setAttribute('aria-label', `Power ${level}`);
+  if($('item-level-hud').getAttribute('aria-label')!==String(`Power ${level}`))$('item-level-hud').setAttribute('aria-label', `Power ${level}`);
   if (displayedHeroPower !== null && displayedHeroPower !== level) {
     const difference = level - displayedHeroPower, change = $('item-level-change');
     change.getAnimations().forEach(animation => animation.cancel());
@@ -639,9 +646,13 @@ function updateUI() {
   }
   setText('wave-label', `Wave ${state.encounter + 1} / 10`);
   nodes.forEach((n, i) => { n.classList.toggle('passed', state.completed || i < state.encounter); n.classList.toggle('active', !state.completed && i === state.encounter); });
-  $('progress').setAttribute('aria-label', `Wave ${state.encounter + 1} of 10, level ${levelLabel}`);
+  if($('progress').getAttribute('aria-label')!==String(`Wave ${state.encounter + 1} of 10, level ${levelLabel}`))$('progress').setAttribute('aria-label', `Wave ${state.encounter + 1} of 10, level ${levelLabel}`);
   equipmentButtons.forEach((b, i) => {
     const item = state.equipment[SLOTS[i]];
+    const key=JSON.stringify([item,artVersion]);
+    if(b._itemKey===key)return;
+    b._itemKey=key;
+    if(!item)delete b.firstElementChild._artKey;
     const cls = item ? `slot epoch-${item.epoch ?? 1}` : 'slot vacant';
     b.firstElementChild.style.opacity = item ? '1' : '.25';
     if (b.className !== cls) b.className = cls;
@@ -650,54 +661,69 @@ function updateUI() {
     b.setAttribute('aria-label', item ? `${LABELS[item.slot]}: ${item.name}, ${describe(item)}` : `${LABELS[SLOTS[i]]}: Empty`);
   });
   const forging = state.forging > 0;
-  $('forge').disabled = forging;
-  $('forge').classList.toggle('forging', forging);
-  $('forge').style.setProperty('--forge-time', `${-(1.5 - state.forging)}s`);
+  if($('forge').disabled!==forging)$('forge').disabled=forging;
+  if(forging && (displayedForgeItems!==state.forgingItems || !$('forge').classList.contains('forging'))){
+    $('forge').classList.add('forging');
+    for(const animation of $('forge').getAnimations({subtree:true})){
+      if(animation.animationName?.startsWith('forge-'))animation.currentTime=(1.5-state.forging)*1000;
+    }
+    displayedForgeItems=state.forgingItems;
+  }else if(!forging){
+    if($('forge').classList.contains('forging'))$('forge').classList.remove('forging');displayedForgeItems=null;
+  }
   $('forge').classList.toggle('poor', !state.hammers);
   $('forge').classList.toggle('first-forge', state.hammers > 0 && state.mastery.every(m => m.level === 1 && m.xp === 0));
-  $('forge').setAttribute('aria-label', `Forge ${forgeCost(state)} items for ${forgeCost(state)} hammers`);
+  if($('forge').getAttribute('aria-label')!==String(`Forge ${forgeCost(state)} items for ${forgeCost(state)} hammers`))$('forge').setAttribute('aria-label', `Forge ${forgeCost(state)} items for ${forgeCost(state)} hammers`);
   setText('hammers', state.hammers.toLocaleString('en').replaceAll(',', ' '));
   setText('batch-label', `×${state.selectedBatch ?? 1}`);
-  $('batch-choice').setAttribute('aria-label', `Choose batch size, currently ${state.selectedBatch ?? 1}`);
-  for (const [i, option] of BATCH_OPTIONS.entries()) {
-    const button = $('batch-options').children[i], unlocked = state.highest >= option.level;
-    button.disabled = !unlocked;
-    button.textContent = unlocked ? `×${option.size}` : `×${option.size} · Level ${Math.floor((option.level-1)/LEVELS_PER_BIOME)+1}–${(option.level-1)%LEVELS_PER_BIOME+1} 🔒`;
-    button.setAttribute('aria-pressed', String(option.size === (state.selectedBatch ?? 1)));
+  if($('batch-choice').getAttribute('aria-label')!==String(`Choose batch size, currently ${state.selectedBatch ?? 1}`))$('batch-choice').setAttribute('aria-label', `Choose batch size, currently ${state.selectedBatch ?? 1}`);
+  const batchKey=state.highest+':'+state.selectedBatch;
+  if(displayedBatch!==batchKey){
+    displayedBatch=batchKey;
+    for (const [i, option] of BATCH_OPTIONS.entries()) {
+      const button = $('batch-options').children[i], unlocked = state.highest >= option.level;
+      button.disabled = !unlocked;
+      button.textContent = unlocked ? `×${option.size}` : `×${option.size} · Level ${Math.floor((option.level-1)/LEVELS_PER_BIOME)+1}–${(option.level-1)%LEVELS_PER_BIOME+1} 🔒`;
+      button.setAttribute('aria-pressed', String(option.size === (state.selectedBatch ?? 1)));
+    }
   }
   // Keep the displayed stack until the one incoming batch card lands.
   if (!resultInFlight) {
     if (salePreview && performance.now() >= saleUntil) salePreview = null;
     const preview = state.pending ?? salePreview;
-    $('results').hidden = !preview; $('results').disabled = !state.pending;
-    $('results').style.visibility = '';
+    if($('results').hidden!==(!preview))$('results').hidden = !preview; $('results').disabled = !state.pending;
+    if($('results').style.visibility!==(''))$('results').style.visibility = '';
     if (preview) itemArt($('result-image'), preview);
     setText('result-level', preview?.itemLevel ? `lv.${preview.itemLevel}` : '');
     for (const [selector, item] of [['.stack-front',preview],['.stack-back-one',state.results[0] ?? salePreview],['.stack-back-two',state.results[1] ?? salePreview]]) {
       const card = document.querySelector(selector);
-      card.className = `stack-card ${selector.slice(1)} epoch-${item?.epoch ?? 1}`;
+      if(card.className!==(`stack-card ${selector.slice(1)} epoch-${item?.epoch ?? 1}`))card.className = `stack-card ${selector.slice(1)} epoch-${item?.epoch ?? 1}`;
     }
     setText('result-count', compact.format(state.results.length + (state.pending ? 1 : 0)));
-    $('result-count').hidden = !state.pending;
+    if($('result-count').hidden!==(!state.pending))$('result-count').hidden = !state.pending;
   }
   setText('auto-forge', state.autoForge ? 'Auto ON' : 'Auto OFF');
-  $('auto-forge').setAttribute('aria-pressed', String(state.autoForge));
+  if($('auto-forge').getAttribute('aria-pressed')!==String(state.autoForge))$('auto-forge').setAttribute('aria-pressed', String(state.autoForge));
   setText('anvil-info', state.upgradeEndsAt ? `Lv. ${state.anvilLevel} · ${timeLeft()}` : `Anvil Lv. ${state.anvilLevel}`);
-  const chances=FORGE_CHANCES[state.anvilLevel-1];
-  const shownEpoch=masteryView||AVAILABLE_EPOCHS.reduce((best,epoch)=>chances[epoch-1]>chances[best-1]?epoch:best,AVAILABLE_EPOCHS[0]);
-  const mastery = state.mastery[shownEpoch - 1];
-  setText('mastery-label', EPOCHS[shownEpoch - 1]);
-  setText('mastery-level', `Max Lv. ${mastery.level}`);
-  setText('mastery-xp', mastery.level === 100 ? 'MAX' : `${mastery.xp} / ${mastery.level + 4} XP`);
-  $('mastery-progress').style.setProperty('--fill', `${mastery.level === 100 ? 100 : mastery.xp / (mastery.level + 4) * 100}%`);
-  $('mastery-choice').setAttribute('aria-label', `${masteryView?'':'Auto: '}${EPOCHS[shownEpoch-1]} mastery, ${$('mastery-xp').textContent}, maximum item level ${mastery.level}. Choose displayed epoch`);
-  for(const button of $('mastery-options').children)button.setAttribute('aria-pressed',String(Number(button.dataset.epoch)===masteryView));
-  $('forge-hint').hidden = storageAvailable;
+  const masteryKey=JSON.stringify([state.anvilLevel,masteryView,state.mastery]);
+  if(displayedMastery!==masteryKey){
+    displayedMastery=masteryKey;
+    const chances=FORGE_CHANCES[state.anvilLevel-1];
+    const shownEpoch=masteryView||AVAILABLE_EPOCHS.reduce((best,epoch)=>chances[epoch-1]>chances[best-1]?epoch:best,AVAILABLE_EPOCHS[0]);
+    const mastery = state.mastery[shownEpoch - 1];
+    setText('mastery-label', EPOCHS[shownEpoch - 1]);
+    setText('mastery-level', `Max Lv. ${mastery.level}`);
+    setText('mastery-xp', mastery.level === 100 ? 'MAX' : `${mastery.xp} / ${mastery.level + 4} XP`);
+    $('mastery-progress').style.setProperty('--fill', `${mastery.level === 100 ? 100 : mastery.xp / (mastery.level + 4) * 100}%`);
+    if($('mastery-choice').getAttribute('aria-label')!==String(`${masteryView?'':'Auto: '}${EPOCHS[shownEpoch-1]} mastery, ${$('mastery-xp').textContent}, maximum item level ${mastery.level}. Choose displayed epoch`))$('mastery-choice').setAttribute('aria-label', `${masteryView?'':'Auto: '}${EPOCHS[shownEpoch-1]} mastery, ${$('mastery-xp').textContent}, maximum item level ${mastery.level}. Choose displayed epoch`);
+    for(const button of $('mastery-options').children)button.setAttribute('aria-pressed',String(Number(button.dataset.epoch)===masteryView));
+  }
+  if($('forge-hint').hidden!==(storageAvailable))$('forge-hint').hidden = storageAvailable;
   setText('forge-hint', 'Progress is not being saved: storage unavailable');
   if (anvilOpen) updateAnvil();
   if ($('auto-dialog').open) updateAutoFilter();
   if (sheetSlot) fillSheet();
-  $('completed').hidden = !state.completed;
+  if($('completed').hidden!==(!state.completed))$('completed').hidden = !state.completed;
 }
 
 let scene;
@@ -705,6 +731,7 @@ function processEvents(events) {
   for (const event of events) {
     scene?.emit(event);
     if(event.type==='level')void scene?.prepare(state.level).catch(error=>{console.error(error);notify('Could not load this biome. Refresh the page.');});
+    if (event.type === 'forgeStarted') updateUI();
     if (event.type === 'forged') {
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const keptCount = event.count - event.soldCount;
@@ -816,6 +843,7 @@ function takeMineOre() {
 }
 function setMineOpen(open) {
   closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+  displayedForgeItems=null;
   mineOpen=open;$('mine-buffer').hidden=!open;$('game').classList.toggle('mine-open',open);
   $('workshop').hidden=open;$('mine-workshop').hidden=!open;$('mine-scene').hidden=!open;$('mine-heading').hidden=!open;
   $('mine-toggle').setAttribute('aria-pressed',String(open));$('mine-toggle').setAttribute('aria-label',open?'Close mine':'Open mine');
@@ -857,7 +885,6 @@ function frame(now) {
     const elapsed = accumulated;
     while (accumulated >= 1 / 30 && !scene?.loading) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
     if(scene?.loading)accumulated=0;
-    if (state.forging > 0) $('forge').style.setProperty('--forge-time', `${-(1.5 - state.forging)}s`);
     scene?.render(state, elapsed); frameCount++;
     uiTime += elapsed; savedTime += elapsed;
     if (uiTime >= .1) { updateUI(); uiTime = 0; }
@@ -866,7 +893,7 @@ function frame(now) {
   }
   raf = requestAnimationFrame(frame);
 }
-function start() { $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);if(state.mine.pending.some(Boolean)&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); if(!startupRewardsShown){startupRewardsShown=true;if(!mineOpen&&idleRewards(state)>0&&!document.querySelector('dialog[open]'))$('idle-loot').click();} running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
+function start() { displayedForgeItems=null; $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);if(state.mine.pending.some(Boolean)&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); if(!startupRewardsShown){startupRewardsShown=true;if(!mineOpen&&idleRewards(state)>0&&!document.querySelector('dialog[open]'))$('idle-loot').click();} running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
 function stop() { $('game').classList.add('page-paused'); running = false; cancelAnimationFrame(raf); save(true); }
 document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
 window.addEventListener('pagehide', stop);

@@ -61,7 +61,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     const response=await fetch(`assets/sets/${previewSet}/atlas.json?v=${artVersion}`);if(!response.ok)throw Error('Preview set unavailable');previewRig=await response.json();rigs[previewSet]=previewRig;
     if(!art[previewSet]){const image=new Image();image.src=`assets/sets/${previewSet}/atlas.png?v=${artVersion}`;await image.decode();art[previewSet]=image;}
   }
-  await Promise.all(['archer','druid','turtle'].map(async id=>{const image=new Image();image.src=`assets/companions/${id}.webp`;await image.decode();art['companion-'+id]=image;}));
+  let companionArtKind=null;
   const heroRig = heroRigs[0];
   const heroSlots = heroRig.rows.map((_,row) => Object.keys(heroRig.slots).find(slot => heroRig.slots[slot].includes(row)));
   let width = 0, height = 0, titleY = 0, ratio = 1, landscape;
@@ -208,6 +208,17 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = color; context.fillRect(x - size / 2, y, size * Math.max(0, Math.min(1, fraction)), 4 * scale);
   }
   function render(state, dt) {
+    const wantedCompanion=state.companion?.kind??null;
+    if(wantedCompanion!==companionArtKind){
+      if(companionArtKind)delete art['companion-'+companionArtKind];
+      companionArtKind=wantedCompanion;
+      if(wantedCompanion){
+        const image=new Image();image.src=`assets/companions/${wantedCompanion}.webp`;
+        image.decode().then(()=>{
+          if(companionArtKind===wantedCompanion)art['companion-'+wantedCompanion]=image;
+        }).catch(error=>console.error('Could not load companion',error));
+      }
+    }
     if (loading) { context.fillStyle='#081312';context.fillRect(0,0,width,height);return; }
     const biome = BIOMES[biomeIndex];
     const bossSize = state.level % LEVELS_PER_BIOME === 0 ? 128 : 88;
