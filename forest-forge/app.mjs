@@ -43,6 +43,7 @@ let artVersion=Date.now();
 window.addEventListener('storage',event=>{if(event.key==='forest-forge-art-update')artVersion=Date.now();});
 let storageAvailable = true;
 const telegramLaunch = Boolean(new URLSearchParams(location.hash.slice(1)).get('tgWebAppData') || window.Telegram?.WebApp?.initData);
+let cloudUserId = null;
 let cloudInitData = '', cloudSession = null, cloudRevision = null, cloudReady = !telegramLaunch;
 let cloudBusy = false, cloudDirty = false, cloudFailed = false, lastCloudSave = 0;
 if (telegramLaunch) { state = freshGame(); $('cloud-status').hidden = false; $('game').inert = true; }
@@ -209,7 +210,7 @@ async function loadCloud() {
     if (!response.ok) { cloudError(response.status, true); return; }
     const result = await response.json();
     if (!result.state || result.state.version !== 3 || !Number.isSafeInteger(result.revision) || typeof result.session !== 'string' || !result.session) throw Error('Invalid cloud save');
-    state = restore(JSON.stringify(result.state)); cloudRevision = result.revision; cloudSession=result.session;
+    state = restore(JSON.stringify(result.state)); cloudRevision = result.revision; cloudSession=result.session; cloudUserId=String(result.userId);
     displayedHeroPower = null;
     $('item-level-change').getAnimations().forEach(animation => animation.cancel());
     $('item-level-change').hidden = true;
@@ -821,6 +822,8 @@ function updateDungeons(){
   if(!$('dungeons-dialog').open&&!$('tier-rewards-dialog').open&&!dungeonHubOpen)return;
   const wins=dungeonDay(state),d=DUNGEONS[selectedDungeon],cleared=state.dungeons.cleared[selectedDungeon];
   dungeonFloor=Math.max(1,Math.min(dungeonFloor,cleared+1,200));
+  $('admin-dungeon-reset').hidden=cloudUserId!=='297730487';
+  $('admin-dungeon-reset').disabled=cloudBusy||!cloudReady||cloudFailed||!!state.dungeons.run||dungeonTransitioning;
   const key=JSON.stringify([selectedDungeon,dungeonFloor,wins,state.dungeons.cleared,state.mount,state.highest,state.mine.level,dungeonStarting,Math.floor(Date.now()/60000)]);
   if(displayedDungeon===key)return;displayedDungeon=key;
   [...$('dungeon-choices').children].forEach((b,i)=>{
@@ -925,6 +928,11 @@ $('dungeon-fight').onclick=async()=>{
     dungeonStarting=false;dungeonTransitioning=false;$('game').inert=telegramLaunch&&(!cloudReady||cloudFailed);
     accumulated=0;last=performance.now();updateUI();
   }
+};
+$('admin-dungeon-reset').onclick=async()=>{
+ if(cloudUserId!=='297730487'||cloudBusy||!cloudReady||cloudFailed||state.dungeons.run||dungeonTransitioning)return;
+ if(!confirm('Reset dungeon floors and daily wins? Earned rewards and your mount stay.'))return;
+ state.dungeons=freshGame().dungeons;displayedDungeon=null;save(true);updateDungeons();notify('Dungeons reset');
 };
 $('mount-action').onclick=()=>{if(state.mount.owned?toggleMount(state):claimMount(state)){save(true);updateUI();}};
 async function finishDungeonView(){
@@ -1077,7 +1085,7 @@ function updateMineUI() {
     const r=mineResource(i);
     const card=$('mine-ore-grid').children[i], unlocked=i<m.ore.length;
     card.hidden=!unlocked||Math.floor(i/8)!==mineInventoryPage;card.disabled=!unlocked;card.querySelector('strong').textContent=unlocked?compact.format(m.ore[i]):'Locked';
-    card.querySelector('small').textContent=r.name;card.setAttribute('aria-label',`${r.name}: ${m.ore[i]}, sell`);
+    card.setAttribute('aria-label',`${r.name}: ${m.ore[i]}, sell`);
   }
   const pages=Math.ceil(m.ore.length/8);
   $('mine-pages').hidden=pages<=1;setText('mine-page',`${mineInventoryPage+1} / ${pages}`);
@@ -1225,7 +1233,7 @@ $('mine-buffer').addEventListener('click',()=>{settleMine(state);$('mine-rewards
 document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 
 
-let alchemyType='damage',alchemyDisplay='';
+let alchemyType='damage',alchemyDisplay='',potionStatusMarkup='';
 const alchemyRarities=Object.fromEntries(POTIONS.map(p=>[p.id,0]));
 function potionIcon(color){return `<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 3h12v7h-2v10l11 17q4 8-6 8H15q-10 0-6-8l11-17V10h-2Z" fill="${color}" stroke="#183638" stroke-width="3"/></svg>`;}
 function reagentIcon(color){const i=ALCHEMY_RARITIES.findIndex(r=>r.color===color);return `<img class="alchemy-item-art" src="assets/alchemy/reagent-${Math.max(0,i)}.webp" alt="">`;}
@@ -1233,7 +1241,7 @@ function updateAlchemy(){
  const a=state.alchemy;if(!a)return;const now=Date.now(),skill=alchemySkill(state);
  const active=POTIONS.map(p=>{const b=a.active[p.id],remaining=b?(p.combat?b.remaining:(b.endsAt-now)/1000):0;return remaining>0?{p,b,remaining:Math.ceil(remaining)}:null;}).filter(Boolean);
  const status=active.map(({p,b,remaining})=>`<button data-potion-open title="${p.name}: +${b.value}%" aria-label="${p.name}, ${Math.ceil(remaining/60)} minutes remaining">${potionIcon(ALCHEMY_RARITIES[b.rarity].color)}<span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
- if($('potion-status').innerHTML!==status)$('potion-status').innerHTML=status;
+ if(potionStatusMarkup!==status){$('potion-status').innerHTML=status;potionStatusMarkup=status;}
  if(!$('alchemy-dialog').open)return;
  const key=JSON.stringify([a.xp,a.reagents,a.potions,active,alchemyType,alchemyRarities,state.coins]);if(key===alchemyDisplay)return;alchemyDisplay=key;
  setText('alchemy-level',`Lv. ${skill.level}`);setText('alchemy-xp',skill.needed?`${skill.xp} / ${skill.needed} XP`:'MAX');$('alchemy-progress').max=skill.needed||1;$('alchemy-progress').value=skill.needed?skill.xp:1;
