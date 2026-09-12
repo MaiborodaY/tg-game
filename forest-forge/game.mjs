@@ -450,60 +450,70 @@ export function freshGame(now = Date.now()) {
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 5,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
-  s.mine = {level:1,ore:[0,0,0,0],pending:[0,0,0,0],lastAt:now,upgradeEndsAt:0};
+  s.mine = {version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
 }
 export const MINE_RESOURCES = [
-  {id:'stone',name:'Stone',price:1,color:'#929ba0'},
-  {id:'coal',name:'Coal',price:5,color:'#454854'},
-  {id:'iron',name:'Iron',price:15,color:'#cd8659'},
-  {id:'crystal',name:'Crystal',price:40,color:'#75d7eb'},
-];
-// Starter balance. Each row is a level; costs purchase that level from the previous one.
-export const MINE_LEVELS = [
-  {chances:[100,0,0,0],cost:[0,0,0,0],minutes:0},
-  {chances:[99,1,0,0],cost:[30,0,0,0],minutes:5},
-  {chances:[90,10,0,0],cost:[60,1,0,0],minutes:15},
-  {chances:[75,24,1,0],cost:[100,10,0,0],minutes:30},
-  {chances:[55,35,10,0],cost:[150,25,1,0],minutes:60},
-  {chances:[35,40,24,1],cost:[200,50,15,0],minutes:120},
-  {chances:[20,35,40,5],cost:[250,80,40,1],minutes:180},
-  {chances:[10,25,50,15],cost:[300,120,80,10],minutes:240},
-  {chances:[5,15,50,30],cost:[350,160,150,30],minutes:360},
-  {chances:[0,10,40,50],cost:[400,200,250,60],minutes:480},
-];
+  ['stone','Stone',2],['coal','Coal',3],['copper','Copper ore',5],['iron','Iron ore',8],
+  ['silver','Silver ore',12],['gold','Gold ore',18],['amber','Amber',26],['amethyst','Amethyst',36],
+  ['emerald','Emerald',48],['ruby','Ruby',65],['sapphire','Sapphire',85],['diamond','Diamond',110],
+  ['obsidian','Obsidian',140],['mithril','Mithril',150],['adamantite','Adamantite',160],
+  ['moonstone','Moonstone',170],['void-crystal','Void crystal',180],['earth-heart','Earth heart',190],
+  ['sun-crystal','Sun crystal',200],['star-ore','Star ore',210],
+].map(([id,name,price])=>({id,name,price}));
+export function mineResource(index) {
+  return MINE_RESOURCES[index] || {id:'crystal',name:`Deep ore ${index+1}`,price:210+10*(index-19)};
+}
+export function mineLevel(level) {
+  const newest=Math.floor((level-1)/5), chances=Array(newest+1).fill(0), rate=1+Math.floor((level-1)/10);
+  if(!newest) chances[0]=100;
+  else {
+    chances[newest]=[1,15,30,45,60][(level-1)%5];
+    const weights=[70,22,8].slice(0,Math.min(3,newest)), total=weights.reduce((a,b)=>a+b,0);
+    weights.forEach((w,i)=>chances[newest-1-i]=(100-chances[newest])*w/total);
+  }
+  const target=level<=10?[5,20,45,90,180,240,300,360,480,540][level-1]:Math.round((12+36*Math.min(19,level-11)/19)*60);
+  return {chances,rate,cost:chances.map(p=>p>=20?Math.max(1,Math.round(target*rate*p/100)):0),minutes:Math.max(1,Math.min(240,Math.round(target*.15)))};
+}
 export const MINE_INTERVAL = 60000, MINE_CAP = 240;
 export function settleMine(s, now = Date.now(), rng = Math.random) {
-  const m=s.mine, slots=Math.max(0,MINE_CAP-m.pending.reduce((a,b)=>a+b,0));
-  const elapsed=Math.max(0,Math.floor((now-m.lastAt)/MINE_INTERVAL)), count=Math.min(slots,elapsed);
+  const m=s.mine, elapsed=Math.max(0,Math.floor((now-m.lastAt)/MINE_INTERVAL));
+  const count=Math.min(MINE_CAP-m.bufferMinutes,elapsed);
+  let produced=0;
   for(let n=1;n<=count;n++){
     const at=m.lastAt+n*MINE_INTERVAL;
     if(m.upgradeEndsAt && at>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
-    const chances=MINE_LEVELS[m.level-1].chances;let roll=rng()*100,index=0;
-    while(index<3 && roll>=chances[index])roll-=chances[index++];
-    m.pending[index]++;
+    const {chances,rate}=mineLevel(m.level);
+    while(m.ore.length<chances.length){m.ore.push(0);m.pending.push(0);}
+    for(let hit=0;hit<rate;hit++){
+      let roll=rng()*100,index=0;
+      while(index<chances.length-1 && roll>=chances[index])roll-=chances[index++];
+      m.pending[index]++;produced++;
+    }
   }
-  if(elapsed>=slots)m.lastAt=Math.max(m.lastAt,now);
+  m.bufferMinutes+=count;
+  if(m.bufferMinutes===MINE_CAP)m.lastAt=Math.max(m.lastAt,now);
   else m.lastAt+=count*MINE_INTERVAL;
   if(m.upgradeEndsAt && now>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
-  return count;
+  while(m.ore.length<Math.floor((m.level-1)/5)+1){m.ore.push(0);m.pending.push(0);}
+  return produced;
 }
 export function collectMine(s, now = Date.now()) {
   settleMine(s,now);
   const loot=[...s.mine.pending];
-  loot.forEach((n,i)=>s.mine.ore[i]+=n);s.mine.pending=[0,0,0,0];
+  loot.forEach((n,i)=>s.mine.ore[i]+=n);s.mine.pending=loot.map(()=>0);s.mine.bufferMinutes=0;
   return loot;
 }
 export function upgradeMine(s, now = Date.now()) {
   settleMine(s,now);
-  const m=s.mine,next=MINE_LEVELS[m.level];
-  if(!next || m.upgradeEndsAt || next.cost.some((n,i)=>m.ore[i]<n))return false;
+  const m=s.mine,next=mineLevel(m.level);
+  if(m.upgradeEndsAt || next.cost.some((n,i)=>(m.ore[i]||0)<n))return false;
   next.cost.forEach((n,i)=>m.ore[i]-=n);m.upgradeEndsAt=now+next.minutes*60000;
   return true;
 }
 export function sellOre(s,index,amount) {
-  if(!Number.isInteger(index)||!MINE_RESOURCES[index]||!Number.isSafeInteger(amount)||amount<1||s.mine.ore[index]<amount)return false;
-  s.mine.ore[index]-=amount;s.coins+=amount*MINE_RESOURCES[index].price;return true;
+  if(!Number.isInteger(index)||index<0||index>=s.mine.ore.length||!Number.isSafeInteger(amount)||amount<1||s.mine.ore[index]<amount)return false;
+  s.mine.ore[index]-=amount;s.coins+=amount*mineResource(index).price;return true;
 }
 // A saved timestamp keeps the same four-hour buffer online and offline.
 export function idleRewards(s, now = Date.now()) {
@@ -619,7 +629,7 @@ export function upgradeAnvil(s, now = Date.now()) {
 }
 export function anvilSkipCost(s, now = Date.now()) {
   const next = ANVILS[s.anvilLevel], remaining = s.upgradeEndsAt - now;
-  return !next || remaining <= 0 ? 0 : Math.ceil(next.coins * 3 * Math.min(1, remaining / (next.minutes * 60000)));
+  return !next || remaining <= 0 ? 0 : Math.ceil(next.coins * 5 * Math.min(1, remaining / (next.minutes * 60000)));
 }
 export function skipAnvilUpgrade(s, now = Date.now()) {
   if (finishUpgrade(s, now)) return true;
@@ -807,10 +817,11 @@ export function restore(serialized, now = Date.now()) {
       if (s.completed && s.level < MAX_LEVEL) { s.completed = false; s.phase = "victory"; s.phaseTime = .8; }
     }
     if (!nonnegative(s.idleSince)) s.idleSince = now;
-    if (!s.mine || !Number.isInteger(s.mine.level) || s.mine.level<1 || s.mine.level>MINE_LEVELS.length ||
-      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length===4 && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
-      s.mine.pending.reduce((a,b)=>a+b,0)>MINE_CAP || !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt) ||
-      s.mine.level===MINE_LEVELS.length && s.mine.upgradeEndsAt) s.mine={level:1,ore:[0,0,0,0],pending:[0,0,0,0],lastAt:now,upgradeEndsAt:0};
+    if (!s.mine || s.mine.version!==2 || !Number.isSafeInteger(s.mine.level) || s.mine.level<1 ||
+      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length===Math.floor((s.mine.level-1)/5)+1 && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
+      !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>MINE_CAP ||
+      !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt))
+      s.mine={version:2,level:1,ore:[0],pending:[0],bufferMinutes:0,lastAt:now,upgradeEndsAt:0};
     s.autoSellEpochs = Array.isArray(s.autoSellEpochs) ? s.autoSellEpochs.filter(epoch => Number.isInteger(epoch) && epoch >= 1 && epoch <= EPOCHS.length) : [];
     s.reforgeStop = Array.isArray(s.reforgeStop) ? [...new Set(s.reforgeStop.filter(id=>AFFIXES.some(a=>a.id===id)))] : [];
     s.forgingAuto = s.forging > 0 && s.forgingAuto === true;

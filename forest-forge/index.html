@@ -7,7 +7,7 @@
   <meta name="color-scheme" content="light">
   <title>Forest Forge</title>
   <link rel="icon" href="assets/helmet.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=ore-colors-3">
   <script src="https://telegram.org/js/telegram-web-app.js" async></script>
   <script type="module" src="app.mjs"></script>
 </head>
@@ -29,16 +29,21 @@
         </div>
         <span id="mine-found" aria-live="polite"></span>
       </div>
-      <div id="mine-heading" hidden><h1 id="mine-level">Mine · Lv. 1</h1><span>1 ore / minute</span></div>
+      <div id="mine-heading" hidden><h1 id="mine-level">Mine · Lv. 1</h1><span id="mine-rate">1 ore / minute</span></div>
       <header class="hud">
         <div class="hero-hud">
-          <div class="avatar"><img src="assets/helmet.svg" alt="Hero portrait"></div>
+          <button id="choose-portrait" class="avatar" aria-label="Choose portrait" aria-haspopup="dialog" aria-controls="portrait-dialog"><img id="hero-portrait" src="assets/helmet.svg" alt="Hero portrait"></button>
+          <div class="hero-details"><div id="hero-name" class="hero-name">Hero</div>
           <div id="item-level-hud" class="hero-power" aria-label="Item Level 0" title="Item Level">
             <img src="assets/crossed-swords.webp" alt="">
             <b id="item-level">0</b>
           </div>
+          </div>
         </div>
-        <div class="money" aria-label="Coins"><i class="coin" aria-hidden="true"></i><span id="coins">0</span></div>
+        <div class="currencies">
+          <div class="money" aria-label="Coins"><i class="coin" aria-hidden="true"></i><span id="coins">0</span></div>
+          <div class="money rune-balance" aria-label="Runes: 0"><img src="assets/rune.webp" alt=""><span id="runes">0</span></div>
+        </div>
       </header>
       <div class="level-hud"><div id="location" class="location">Whispering Woods</div><h1 id="level">Level 1–1</h1><div id="progress" class="progress" aria-label="Level progress"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="boss-node"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 16 0v5l-4 1v4H8v-4l-4-1Z" fill="currentColor"/><circle cx="8" cy="11" r="2"/><circle cx="16" cy="11" r="2"/><path d="m12 14-2 3h4Z"/></svg></i></div><div id="wave-label">Wave 1 / 10</div></div>
       <div id="completed" class="completion" hidden><strong>Journey complete!</strong><span>All 10 biomes cleared.</span><button id="replay" class="button blue">Play again</button></div>
@@ -113,7 +118,7 @@
     </section>
     <section id="mine-workshop" hidden aria-label="Mine inventory">
       <div class="mine-inventory-title"><strong>Ore storage</strong><button id="mine-info" class="mini-button" aria-label="Mining probabilities">ⓘ</button></div>
-      <div id="mine-ore-grid"></div>
+      <div id="mine-ore-grid"></div><div id="mine-pages" hidden><button id="mine-prev" aria-label="Previous resources">‹</button> <span id="mine-page"></span> <button id="mine-next" aria-label="Next resources">›</button></div>
       <button id="mine-collect" class="mini-button" hidden>Collect</button>
       <div class="mine-upgrade-block"><strong id="mine-upgrade-title"></strong><div id="mine-cost"></div>
         <div id="mine-upgrade-progress" hidden><progress id="mine-progress" max="100" value="0"></progress><span id="mine-time"></span></div>
@@ -145,8 +150,9 @@
     <p id="auto-hint">Unchecked epochs are sold after auto forging.</p>
     <button id="run-auto" class="button blue">Start</button>
   </dialog>
-  <dialog id="mine-info-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining chances</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-chances"></div><p>1 ore per minute. Offline storage: 4 hours.</p></dialog>
+  <dialog id="mine-info-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining chances</h2><button class="close" data-close-mine aria-label="Close">×</button></div><table class="probabilities"><thead><tr><th>Resource</th><th id="mine-current-level"></th><th id="mine-next-level"></th></tr></thead><tbody id="mine-chances"></tbody></table><div class="mine-chances-pages"><button id="mine-chances-prev" class="mini-button" aria-label="Previous resources">‹</button><span id="mine-chances-page"></span><button id="mine-chances-next" class="mini-button" aria-label="Next resources">›</button></div><p>Production increases every 10 levels. Offline storage: 4 hours.</p></dialog>
   <dialog id="mine-sale-dialog" class="mine-dialog"><div class="sheet-top"><h2 id="mine-sale-name">Sell ore</h2><button class="close" data-close-mine aria-label="Close">×</button></div><label>Amount <input id="mine-sale-amount" type="number" min="1" step="1" inputmode="numeric"></label><button id="mine-sell" class="button blue">Sell</button></dialog>
   <dialog id="mine-rewards-dialog" class="mine-dialog"><div class="sheet-top"><h2>While you were away</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-rewards"></div><p>Up to 4 hours of mining.</p><button id="mine-rewards-collect" class="button blue">Collect</button></dialog>
+  <dialog id="portrait-dialog" class="mine-dialog" aria-labelledby="portrait-title"><div class="sheet-top"><h2 id="portrait-title">Choose portrait</h2><button id="close-portraits" class="close" aria-label="Close">×</button></div><div id="portrait-grid"></div></dialog>
 </body>
 </html>

@@ -13,10 +13,10 @@ function durable(s) { s.equipment.helmet=candidate('helmet',10000);s.equipment.w
 test('paid anvil skip scales with remaining time, preserves poor balances, and charges once',()=>{
  const s=freshGame();s.coins=1000;
  assert.equal(anvilSkipCost(s,1000),0);assert.equal(skipAnvilUpgrade(s,1000),false);
- upgradeAnvil(s,1000);assert.equal(anvilSkipCost(s,1000),450);assert.equal(anvilSkipCost(s,151000),225);
- const loaded=restore(JSON.stringify(s),151000);assert.equal(anvilSkipCost(loaded,151000),225);
- loaded.coins=224;const before=structuredClone(loaded);assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.deepEqual(loaded,before);
- loaded.coins=225;assert.equal(skipAnvilUpgrade(loaded,151000),true);assert.equal(loaded.coins,0);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);
+ upgradeAnvil(s,1000);assert.equal(anvilSkipCost(s,1000),750);assert.equal(anvilSkipCost(s,151000),375);
+ const loaded=restore(JSON.stringify(s),151000);assert.equal(anvilSkipCost(loaded,151000),375);
+ loaded.coins=374;const before=structuredClone(loaded);assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.deepEqual(loaded,before);
+ loaded.coins=375;assert.equal(skipAnvilUpgrade(loaded,151000),true);assert.equal(loaded.coins,0);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);
  assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.equal(loaded.anvilLevel,2);
  assert.equal(skipAnvilUpgrade(s,301000),true);assert.equal(s.coins,850);assert.equal(s.anvilLevel,2);
  assert.equal(skipAnvilUpgrade(s,301000),false);
@@ -695,34 +695,39 @@ test('stop filter persists, blocks matched offers without spending, and Keep rel
 });
 
 
-import {settleMine, collectMine, upgradeMine, sellOre, MINE_LEVELS} from './game.mjs';
-test('mine: accrues each minute, preserves remainder and caps at four hours',()=>{
+import {settleMine, collectMine, upgradeMine, sellOre, mineLevel, mineResource} from './game.mjs';
+test('mine: preserves minute remainder and caps production time',()=>{
  const s=freshGame(1000);assert.equal(settleMine(s,60000,()=>0),0);
  assert.equal(settleMine(s,91000,()=>0),1);assert.equal(s.mine.lastAt,61000);
- assert.deepEqual(collectMine(s,91000),[1,0,0,0]);assert.deepEqual(collectMine(s,91000),[0,0,0,0]);
+ assert.deepEqual(collectMine(s,91000),[1]);assert.deepEqual(collectMine(s,91000),[0]);
  settleMine(s,1000+10*3600000,()=>0);assert.equal(s.mine.pending[0],240);
  collectMine(s,1000+10*3600000);assert.equal(settleMine(s,1000+10*3600000+59999,()=>0),0);
- assert.equal(settleMine(s,1000+10*3600000+60000,()=>0),1);
 });
-test('mine: upgrades spend ore once and change probabilities at completion',()=>{
- const s=freshGame(0);s.mine.ore[0]=30;assert.equal(upgradeMine(s,0),true);assert.equal(s.mine.ore[0],0);
- assert.equal(upgradeMine(s,0),false);settleMine(s,6*60000,()=>.995);
- assert.equal(s.mine.level,2);assert.equal(s.mine.upgradeEndsAt,0);assert.deepEqual(s.mine.pending,[4,2,0,0]);
- settleMine(s,7*60000,()=>.995);assert.equal(s.mine.level,2);
- for(const l of MINE_LEVELS)assert.equal(l.chances.reduce((a,b)=>a+b),100);
+test('mine: one upgrade payment, rate changes mid-buffer, full buffer still finishes timer',()=>{
+ const s=freshGame(0);s.mine.level=10;s.mine.ore=[10000,10000];s.mine.pending=[0,0];
+ assert.equal(upgradeMine(s,0),true);assert.equal(upgradeMine(s,0),false);
+ const minutes=s.mine.upgradeEndsAt/60000;settleMine(s,10*3600000,()=>0);
+ assert.equal(s.mine.level,11);assert.equal(s.mine.pending.reduce((a,b)=>a+b),minutes-1+(240-minutes+1)*2);
+ assert.equal(s.mine.bufferMinutes,240);assert.equal(s.mine.upgradeEndsAt,0);
+ collectMine(s,10*3600000);assert.equal(settleMine(s,10*3600000+60000,()=>0),2);
 });
-test('mine: full storage does not stop upgrade timer or retain overflow',()=>{
- const s=freshGame(0);s.mine.ore[0]=30;upgradeMine(s,0);s.mine.pending[0]=240;
- settleMine(s,6*60000);assert.equal(s.mine.level,2);collectMine(s,6*60000);
- assert.equal(settleMine(s,6*60000+1),0);
+test('mine: recipes avoid rare ore and progression continues beyond initial catalog',()=>{
+ for(let l=1;l<=1000;l++){
+  const row=mineLevel(l);assert.ok(Math.abs(row.chances.reduce((a,b)=>a+b)-100)<1e-9);
+  row.cost.forEach((n,i)=>{if(n)assert.ok(row.chances[i]>=20);});assert.ok(row.minutes<=240);
+ }
+ assert.deepEqual(mineLevel(1).cost,[5]);assert.equal(mineResource(20).price,220);
+ const s=freshGame(0);s.mine.level=101;s.mine.ore=Array(21).fill(0);s.mine.pending=Array(21).fill(0);
+ assert.equal(settleMine(s,60000,()=>.999),11);assert.equal(restore(JSON.stringify(s),60000).mine.level,101);
 });
 test('mine: sale spends exact stock and adds shared gold',()=>{
- const s=freshGame(0);s.mine.ore[2]=3;const coins=s.coins;
- assert.equal(sellOre(s,2,2),true);assert.equal(s.coins,coins+30);assert.equal(s.mine.ore[2],1);
+ const s=freshGame(0);s.mine.level=11;s.mine.ore=[0,0,3];s.mine.pending=[0,0,0];
+ assert.equal(sellOre(s,2,2),true);assert.equal(s.coins,10);assert.equal(s.mine.ore[2],1);
  assert.equal(sellOre(s,2,2),false);assert.equal(sellOre(s,2,-1),false);assert.equal(sellOre(s,2,.5),false);
 });
-test('mine: persists inventory and initializes old saves without resetting hero',()=>{
- const s=freshGame(1000);s.coins=1234;s.mine.ore=[3,4,5,6];s.mine.pending=[2,0,0,0];
+test('mine: reset old mine only once and preserve new inventory and hero',()=>{
+ const s=freshGame(1000);s.coins=1234;s.mine.ore=[3];s.mine.pending=[2];s.mine.bufferMinutes=2;
  assert.deepEqual(restore(JSON.stringify(s),1000).mine,s.mine);
- delete s.mine;const old=restore(JSON.stringify(s),9000);assert.equal(old.coins,1234);assert.equal(old.mine.lastAt,9000);assert.equal(old.mine.level,1);
+ delete s.mine.version;const old=restore(JSON.stringify(s),9000);assert.equal(old.coins,1234);assert.equal(old.mine.lastAt,9000);assert.equal(old.mine.level,1);assert.deepEqual(old.mine.ore,[0]);
+ assert.deepEqual(restore(JSON.stringify(old),10000).mine,old.mine);
 });

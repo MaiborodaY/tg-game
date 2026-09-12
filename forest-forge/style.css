@@ -10,18 +10,35 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 #battle { height:59%; flex-shrink:0; position:relative; background:var(--biome-ground,var(--green)); border-bottom:4px solid var(--ink); overflow:hidden; }
 #scene { width:100%; height:100%; display:block; }
 .hud { position:absolute; top:calc(17px + var(--safe-top)); left:16px; right:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
-.hero-hud { display:flex; align-items:center; gap:7px; }
-.avatar { width:40px; height:42px; border:2px solid var(--ink); border-radius:8px; background:#bce4f3; }
+.hero-hud { display:flex; align-items:center; gap:0; width:clamp(108px,30vw,144px); flex-shrink:0; }
+.avatar { position:relative; z-index:1; flex-shrink:0; width:40px; height:42px; border:2px solid var(--ink); border-radius:8px; background:#bce4f3; }
+.hero-details { flex:1; min-width:0; margin-left:-4px; padding:1px 5px 1px 8px; border:2px solid var(--ink); border-radius:0 8px 8px 0; background:rgba(0,0,0,.65); }
+.hero-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:12px/13px 'Lilita UI','Trebuchet MS',sans-serif; color:#fff; paint-order:stroke fill; -webkit-text-stroke:2px var(--ink); }
 .avatar img { display:block; width:100%; height:100%; }
-.hero-power { position:relative; display:flex; align-items:center; gap:4px; font-size:19px; color:var(--paper); paint-order:stroke fill; -webkit-text-stroke:2px var(--ink); }
-.hero-power > img { width:23px; height:23px; flex-shrink:0; }
+.avatar { padding:0; overflow:hidden; }
+#portrait-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding-top:12px; }
+#portrait-dialog { max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px); overflow:hidden; }
+#portrait-dialog[open] { display:flex; flex-direction:column; }
+#portrait-dialog .sheet-top { flex-shrink:0; }
+#portrait-dialog #portrait-grid { min-height:0; grid-auto-rows:max-content; overflow-y:auto; overscroll-behavior:contain; padding:4px; }
+#portrait-grid button { padding:0; aspect-ratio:1; overflow:hidden; border:3px solid var(--ink); border-radius:12px; background:#bce4f3; }
+#portrait-grid button[aria-pressed="true"] { border-color:#08a9ed; box-shadow:0 0 0 2px var(--ink); }
+#portrait-grid img { display:block; width:100%; height:100%; object-fit:cover; }
+.hero-power { position:relative; display:flex; align-items:center; gap:3px; font:15px/17px 'Lilita One',sans-serif; color:#ffcf54; paint-order:stroke fill; -webkit-text-stroke:2px var(--ink); text-shadow:0 1px var(--ink); white-space:nowrap; }
+.hero-power b { font-weight:400; }
+.hero-power > img { width:17px; height:17px; flex-shrink:0; }
 @font-face { font-family:'Lilita One'; src:url('assets/fonts/lilita-one-numbers.ttf') format('truetype'); font-style:normal; font-weight:400; font-display:swap; }
 #item-level-change { position:absolute; z-index:7; left:50%; top:max(200px,50%); transform:translate(-50%,-50%); display:flex; align-items:center; gap:6px; font-family:'Lilita One',sans-serif; font-weight:400; font-size:34px; line-height:1.15; white-space:nowrap; pointer-events:none; color:var(--paper); paint-order:stroke fill; -webkit-text-stroke:3px var(--ink); text-shadow:0 2px 0 var(--ink); }
 #item-level-change img { width:30px; height:30px; object-fit:contain; }
 #item-level-amount { font-weight:400; }
 #item-level-change.increased { color:#6aff79; }
 #item-level-change.decreased { color:#ff666e; }
-.money { background:var(--ink); color:#fff; padding:4px 10px 4px 6px; display:flex; align-items:center; gap:7px; border-radius:11px; font-size:20px; min-width:74px; justify-content:center; }
+.money { position:relative; background:rgba(0,0,0,.65); border:2px solid var(--ink); color:#fff; padding:0 6px 0 18px; display:flex; align-items:center; border-radius:7px; font:15px/18px 'Lilita One',sans-serif; min-width:64px; justify-content:center; }
+.money > span { paint-order:stroke fill; -webkit-text-stroke:2px var(--ink); text-shadow:0 1px var(--ink); }
+.currencies { position:relative; flex-shrink:0; }
+.rune-balance { position:absolute; top:calc(100% + 9px); right:0; width:100%; }
+.rune-balance img { position:absolute; left:-9px; top:50%; transform:translateY(-50%); width:26px; height:26px; object-fit:contain; }
+.money > .coin { position:absolute; left:-9px; top:50%; transform:translateY(-50%); width:26px; height:26px; border-color:var(--ink); }
 .coin { display:inline-block; width:20px; height:20px; border:2px solid #9f610b; border-radius:50%; background:#ffc638; box-shadow:inset 0 0 0 3px #ffe891; flex-shrink:0; vertical-align:middle; }
 .idle-loot { position:absolute; left:10px; bottom:8px; width:58px; height:53px; padding:0; border:0; border-radius:8px; background:transparent; z-index:2; }
 .idle-art { position:absolute; left:0; bottom:0; width:52px; height:44px; pointer-events:none; }
@@ -432,11 +449,12 @@ button:disabled { opacity:.55; cursor:default; }
 
 @media(max-width:360px) {
   .hud { left:10px; right:10px; }
-  .hero-hud { gap:5px; }
+  .hero-name { font-size:10px; line-height:11px; }
   .avatar { width:34px; height:36px; }
-  .hero-power { font-size:15px; gap:3px; }
-  .hero-power > img { width:18px; height:18px; }
-  .money { font-size:17px; min-width:66px; gap:4px; padding:4px 7px 4px 4px; }
+  .hero-power { font-size:13px; line-height:15px; gap:2px; }
+  .hero-power > img { width:15px; height:15px; }
+  .money { font-size:13px; line-height:16px; min-width:58px; padding:0 5px 0 16px; }
+  .money > .coin { width:24px; height:24px; }
   .location { font-size:11px; line-height:13px; }
   .level-hud h1 { font-size:18px; line-height:21px; }
 }
@@ -501,9 +519,9 @@ button:disabled { opacity:.55; cursor:default; }
 .ore-card img {width:42px;height:42px;} .ore-card strong {font-size:15px;} .ore-card small{font-size:10px;}
 .ore-card:disabled {opacity:.4;cursor:default;}
 .mine-upgrade-block {margin-top:12px;text-align:center;}.mine-upgrade-block>strong {font-size:15px;}
-#mine-cost {display:flex;justify-content:center;gap:12px;margin:6px 0;font-size:12px;}#mine-cost span{display:flex;align-items:center;gap:3px;}#mine-cost img{width:24px;height:24px;}#mine-cost .missing{color:#b5333e;}
-#mine-upgrade {width:100%;min-height:40px;font-size:18px;padding:7px;}
-#mine-upgrade-progress {position:relative;height:32px;margin:10px 0;border:2px solid #17332b;border-radius:8px;overflow:hidden;background:#41495c;}
+#mine-cost {display:flex;justify-content:center;gap:12px;height:24px;margin:6px 0;font-size:12px;}#mine-cost span{display:flex;align-items:center;gap:3px;}#mine-cost img{width:24px;height:24px;}#mine-cost .missing{color:#b5333e;}
+#mine-upgrade {width:100%;height:44px;min-height:44px;margin:0;font-size:18px;padding:7px;}
+#mine-upgrade-progress {position:relative;height:44px;margin:0;border:2px solid #17332b;border-radius:8px;overflow:hidden;background:#41495c;}
 #mine-progress {width:100%;height:100%;border:0;display:block;appearance:none;background:#41495c;}#mine-progress::-webkit-progress-bar{background:#41495c;}#mine-progress::-webkit-progress-value{background:#11b2e0;}#mine-progress::-moz-progress-bar{background:#11b2e0;}
 #mine-time {position:absolute;inset:0;display:grid;place-items:center;color:white;font-weight:bold;text-shadow:0 1px #17332b;}
 #mine-collect{width:100%;margin-top:8px;background:#b9e6a2;}
@@ -529,3 +547,42 @@ button:disabled { opacity:.55; cursor:default; }
 .telegram-compact .forge-row { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); }
 .telegram-compact .forge,.telegram-compact .forge-art { width:112px; height:93px; }
 .telegram-compact #activities button { height:56px; }
+
+/* Mining probabilities share the anvil palette and compact row layout. */
+#mine-info-dialog { --epoch-row:clamp(20px,calc((100dvh - 260px) / 10),30px); }
+#mine-info-dialog .sheet-top h2 { font:24px/1.1 'Lilita UI',sans-serif; margin:0; }
+#mine-info-dialog .probabilities tbody tr { background-image:var(--epoch-pattern,none); background-size:var(--epoch-size,auto); background-position:var(--epoch-position,0 0); }
+#mine-info-dialog .epoch-icon { object-fit:contain; }
+#mine-info-dialog .mine-chances-pages { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:8px; }
+#mine-info-dialog p { font-size:12px; margin:8px 0 0; }
+
+/* Individual ore colors; anvil epoch colors remain independent. */
+#mine-info-dialog .ore-stone { --epoch-color:#e9dfc5; }
+#mine-info-dialog .ore-coal { --epoch-color:#91b0cc; }
+#mine-info-dialog .ore-copper { --epoch-color:#ff944f; }
+#mine-info-dialog .ore-iron { --epoch-color:#58cbe8; }
+#mine-info-dialog .ore-silver { --epoch-color:#addcf7; }
+#mine-info-dialog .ore-gold { --epoch-color:#ffdb28; }
+#mine-info-dialog .ore-amber { --epoch-color:#ffa72e; }
+#mine-info-dialog .ore-amethyst { --epoch-color:#c85bf4; }
+#mine-info-dialog .ore-emerald { --epoch-color:#36e88d; }
+#mine-info-dialog .ore-ruby { --epoch-color:#ff506e; }
+#mine-info-dialog .ore-sapphire { --epoch-color:#528fff; }
+#mine-info-dialog .ore-diamond { --epoch-color:#63eee9; }
+#mine-info-dialog .ore-obsidian { --epoch-color:#9973cb; }
+#mine-info-dialog .ore-mithril { --epoch-color:#28d9cd; }
+#mine-info-dialog .ore-adamantite { --epoch-color:#a0db38; }
+#mine-info-dialog .ore-moonstone { --epoch-color:#b98af7; }
+#mine-info-dialog .ore-void-crystal { --epoch-color:#b74fcd; }
+#mine-info-dialog .ore-earth-heart { --epoch-color:#e57b52; }
+#mine-info-dialog .ore-sun-crystal { --epoch-color:#ff8c22; }
+#mine-info-dialog .ore-star-ore { --epoch-color:#e2c83b; }
+
+/* Affix identity stays visible without covering the item level. */
+.slot > img.affix-badge,.item-icon > img.affix-badge,.stack-card > img.affix-badge,#comparison .item-icon > img.affix-badge {
+  position:absolute;left:-3px;top:-3px;width:20px;height:20px;padding:1px;box-sizing:border-box;
+  object-fit:contain;background:#263b3b;border:1px solid #fffaf0;border-radius:5px;z-index:4;pointer-events:none;
+}
+#comparison .item-icon > img.affix-badge {width:24px;height:24px;}
+.affix-inline {display:inline-block;width:26px;height:26px;object-fit:contain;vertical-align:middle;margin-right:5px;}
+#reforge-current .affix-inline,#reforge-new .affix-inline {width:32px;height:32px;}

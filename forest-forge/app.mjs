@@ -1,9 +1,27 @@
-import { MINE_RESOURCES, MINE_LEVELS, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
+import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, itemLevel, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs';
 import { AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 
 const $ = id => document.getElementById(id);
+const portraits = [['helmet','Knight'],['goblin','Smug goblin'],['pot-knight','Pot knight'],['duck','Duck wizard'],['wizard','Sleepy wizard'],['cat','Cat knight'],['pirate','Skeleton pirate'],["hamster-king","Hamster king"],["frog-alchemist","Frog alchemist"],["grumpy-dwarf","Grumpy dwarf"],["orc-chef","Orc chef"],["mushroom","Nervous mushroom"],["owl-librarian","Owl librarian"],["pig-barbarian","Pig barbarian"],["raccoon-thief","Raccoon thief"],["slime-knight","Slime knight"],["turtle-samurai","Turtle samurai"],["goat-wizard","Goat wizard"],["old-vampire","Old vampire"],["carrot-knight","Carrot knight"],["angry-fairy","Angry fairy"],["button-mummy","Button-eyed mummy"],["shark-pirate","Shark pirate"],["sheep-necromancer","Sheep necromancer"],["cyclops","Cyclops"],["wood-golem","Wood golem"],["chicken-musketeer","Chicken musketeer"]];
+let portrait = 'helmet';
+try { const saved=localStorage.getItem('forest-forge-portrait'); if(portraits.some(([id])=>id===saved)) portrait=saved; } catch {}
+for(const [id,name] of portraits) {
+  const button=document.createElement('button'),img=document.createElement('img');
+  img.src=id==='helmet'?'assets/helmet.svg':`assets/portraits/${id}.webp`; img.alt=name;
+  button.setAttribute('aria-label',name); button.setAttribute('aria-pressed',String(id===portrait)); button.append(img);
+  if(id===portrait) $('hero-portrait').src=img.src;
+  button.addEventListener('click',()=>{
+    portrait=id; $('hero-portrait').src=img.src;
+    for(const option of $('portrait-grid').children) option.setAttribute('aria-pressed',String(option===button));
+    try { localStorage.setItem('forest-forge-portrait',id); } catch {}
+    $('portrait-dialog').close();
+  });
+  $('portrait-grid').append(button);
+}
+$('choose-portrait').addEventListener('click',()=>$('portrait-dialog').showModal());
+$('close-portraits').addEventListener('click',()=>$('portrait-dialog').close());
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||/^(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}$/.test(location.hostname);
 const requestedOutfit=new URLSearchParams(location.search).get('outfit');
 const previewSet=localPreview&&[...ARMOR_SETS.flat(),'stone-guard'].includes(requestedOutfit)?requestedOutfit:null;
@@ -144,8 +162,26 @@ async function flushCloud(force = false) {
   }
 }
 function notify(text) { $('toast').textContent = text; $('toast').classList.add('visible'); toastUntil = performance.now() + 2200; }
-function setText(id, value) { const text = String(value); if ($(id).textContent !== text) $(id).textContent = text; }
-function itemArt(img, item) { if(item.slot==='weapon'&&WEAPONS[item.weaponId]?.sprite&&WEAPONS[item.weaponId].epoch===(item.epoch??1)){const path=`assets/weapons/${item.weaponId}-icon.png?v=${artVersion}`;if(img.getAttribute('src')!==path)img.src=path;return;}const set=item.slot==='weapon'?((item.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard'][item.quality]:undefined):ARMOR_SETS[(item.epoch??1)-1]?.[item.quality];const path = set && ['weapon','helmet','chest','shoulders','cape','gloves','legs','boots'].includes(item.slot) ? `assets/sets/${set}/${item.slot}-icon.png?v=${artVersion}` : `assets/${item.slot === 'ring' ? 'ring1' : item.slot}${(item.epoch??1)>ARMOR_SETS.length?'':'-'+item.quality}.svg`; if (img.getAttribute('src') !== path) img.src = path; }
+function setText(id, value, affix) {
+  const element=$(id),text=String(value);
+  if(affix){
+    const path=`assets/affixes/${affix.type}.webp`;
+    if(element.dataset.affix!==affix.type || element.textContent!==text){
+      const icon=document.createElement('img');icon.className='affix-inline';icon.src=path;icon.alt='';
+      element.replaceChildren(icon,document.createTextNode(text));element.dataset.affix=affix.type;
+    }
+  }else if(element.textContent!==text || element.dataset.affix){element.textContent=text;delete element.dataset.affix;}
+}
+function itemArt(img, item) {
+  const card=img.parentElement;
+  let badge=card.querySelector(':scope > .affix-badge');
+  if(item.affix){
+    if(!badge){badge=document.createElement('img');badge.className='affix-badge';card.append(badge);}
+    const path=`assets/affixes/${item.affix.type}.webp`;
+    if(badge.getAttribute('src')!==path)badge.src=path;
+    badge.alt=describeAffix(item.affix);badge.title=badge.alt;
+  }else badge?.remove();
+ if(item.slot==='weapon'&&WEAPONS[item.weaponId]?.sprite&&WEAPONS[item.weaponId].epoch===(item.epoch??1)){const path=`assets/weapons/${item.weaponId}-icon.png?v=${artVersion}`;if(img.getAttribute('src')!==path)img.src=path;return;}const set=item.slot==='weapon'?((item.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard'][item.quality]:undefined):ARMOR_SETS[(item.epoch??1)-1]?.[item.quality];const path = set && ['weapon','helmet','chest','shoulders','cape','gloves','legs','boots'].includes(item.slot) ? `assets/sets/${set}/${item.slot}-icon.png?v=${artVersion}` : `assets/${item.slot === 'ring' ? 'ring1' : item.slot}${(item.epoch??1)>ARMOR_SETS.length?'':'-'+item.quality}.svg`; if (img.getAttribute('src') !== path) img.src = path; }
 function describe(item) { return `${DAMAGE_SLOTS.includes(item.slot) ? 'Damage' : 'Health'} ${compact.format(item.value)}`; }
 function describeAffix(affix) { return affix ? `${AFFIXES.find(a=>a.id===affix.type).name} +${affix.value}%${affix.type==='regen'?' / sec':''}` : 'No affix'; }
 
@@ -166,7 +202,7 @@ function fillSheet() {
   const offer = !candidate && old?.reforgeOffer;
   setText('sheet-title',offer ? 'Reforge' : 'Equipped');
   $('equipped-affix').hidden = !old?.affix || !!offer;
-  setText('equipped-affix',describeAffix(old?.affix));
+  setText('equipped-affix',describeAffix(old?.affix),old?.affix);
   $('reforge-panel').hidden = !!candidate || !reforgeCost(old);
   $('reforge-choice').hidden = !offer;
   $('reforge-roll').hidden = false;
@@ -178,8 +214,8 @@ function fillSheet() {
   setText('reforge-filter',matched ? '✓ Matched ▾' : `Stop when: ${state.reforgeStop.length ? state.reforgeStop.length+' selected' : 'Any'} ▾`);
   $('reforge-filter').classList.toggle('matched',matched);
   for (const input of $('reforge-filters').querySelectorAll('input')) input.checked=state.reforgeStop.includes(input.value);
-  setText('reforge-current',describeAffix(old?.affix));
-  setText('reforge-new',describeAffix(offer));
+  setText('reforge-current',describeAffix(old?.affix),old?.affix);
+  setText('reforge-new',describeAffix(offer),offer);
   $('reforge-new').className = offer && old?.affix?.type === offer.type ? (offer.value > old.affix.value ? 'better' : offer.value < old.affix.value ? 'worse' : '') : '';
   $('ring-targets').hidden = !ringChoice;
   if (ringChoice) for (const slot of ['ring1','ring2']) {
@@ -188,12 +224,12 @@ function fillSheet() {
     button.setAttribute('aria-label', `${LABELS[slot]}: ${item ? `${item.name}, ${describe(item)}` : 'Empty'}`);
     $(`${slot}-card`).className = `item-icon epoch-${item?.epoch ?? 1}${item ? '' : ' empty'}`;
     if (item) itemArt($(`${slot}-image`), item);
-    else $(`${slot}-image`).src = `assets/${slot}.svg`;
+    else { $(`${slot}-image`).src = `assets/${slot}.svg`; $(`${slot}-card`).querySelector('.affix-badge')?.remove(); }
   }
   $('equip').setAttribute('aria-label', ringChoice ? `Equip in ${LABELS[ringTarget]}` : 'Equip item');
   $('equipped-card').className = `item-icon epoch-${old?.epoch ?? 1}${old ? '' : ' empty'}`;
   if (old) itemArt($('equipped-image'), old);
-  else $('equipped-image').src = `assets/${ringChoice ? ringTarget : candidate?.slot ?? sheetSlot}.svg`;
+  else { $('equipped-image').src = `assets/${ringChoice ? ringTarget : candidate?.slot ?? sheetSlot}.svg`; $('equipped-card').querySelector('.affix-badge')?.remove(); }
   setText('equipped-name', old ? old.name : 'Nothing equipped');
   setText('equipped-epoch', old ? EPOCHS[(old.epoch ?? 1) - 1] : 'Empty slot');
   setText('equipped-level', old ? `lv.${old.itemLevel ?? 1}` : '');
@@ -210,7 +246,7 @@ function fillSheet() {
   for (const id of ['sell', 'equip', 'choose-ring1', 'choose-ring2']) $(id).disabled = !!bulkSaleSelection || !!offer;
   if (candidate) {
     $('new-affix').hidden = !candidate.affix;
-    setText('new-affix',describeAffix(candidate.affix));
+    setText('new-affix',describeAffix(candidate.affix),candidate.affix);
     $('new-card').className = `item-icon epoch-${candidate.epoch ?? 1}`;
     itemArt($('new-image'), candidate);
     setText('new-name', candidate.name); setText('new-stat', describe(candidate));
@@ -443,7 +479,7 @@ function updateAnvil() {
 for (const slot of ['ring1','ring2']) $(`choose-${slot}`).addEventListener('click', () => { ringTarget = slot; fillSheet(); });
 $('reforge-roll').addEventListener('click',()=>{
   if (!sheetSlot || sheetSlot==='pending' || !reforge(state,ringTarget || sheetSlot)) return;
-  save(true); updateUI(); $('reforge-keep').focus({preventScroll:true});
+  save(true); updateUI(); if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('reforge-new').querySelector('.affix-inline')?.animate([{transform:'scale(.8)'},{transform:'scale(1.15)'},{transform:'scale(1)'}],{duration:220}); $('reforge-keep').focus({preventScroll:true});
 });
 for (const affix of AFFIXES) {
   const label=document.createElement('label'),input=document.createElement('input');
@@ -558,7 +594,7 @@ function updateUI() {
     const cls = item ? `slot epoch-${item.epoch ?? 1}` : 'slot vacant';
     b.firstElementChild.style.opacity = item ? '1' : '.25';
     if (b.className !== cls) b.className = cls;
-    if (item) itemArt(b.firstElementChild, item);
+    if (item) itemArt(b.firstElementChild, item);else b.querySelector('.affix-badge')?.remove();
     b.querySelector('.item-level').textContent = item?.itemLevel ? `lv.${item.itemLevel}` : '';
     b.setAttribute('aria-label', item ? `${LABELS[item.slot]}: ${item.name}, ${describe(item)}` : `${LABELS[SLOTS[i]]}: Empty`);
   });
@@ -672,34 +708,50 @@ function processEvents(events) {
     if (['kill', 'death', 'level', 'complete', 'forged', 'forgeStarted', 'anvilUpgraded'].includes(event.type)) save();
   }
 }
+let mineInventoryPage=0, mineChancesPage=0;
 function mineRows(amounts) {
-  return MINE_RESOURCES.map((r,i)=>amounts[i]?`<div class="mine-resource-row"><img src="assets/mine/${r.id}.svg" alt=""><span>${r.name}</span><b>${amounts[i]}</b></div>`:'').join('');
+  return amounts.map((n,i)=>{const r=mineResource(i);return amounts[i]?`<div class="mine-resource-row"><img src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span><b>${amounts[i]}</b></div>`:'';}).join('');
 }
 function updateMineUI() {
-  const m=state.mine, next=MINE_LEVELS[m.level], pending=m.pending.reduce((a,b)=>a+b,0);
+  const m=state.mine, next=mineLevel(m.level), following=mineLevel(m.level+1), pending=m.pending.reduce((a,b)=>a+b,0);
   setText('coins',compact.format(state.coins));setText('mine-level',`Mine · Lv. ${m.level}`);
   $('game').dataset.mineTier=m.level>=6?'crystal':m.level>=4?'iron':'stone';
-  for(const [i,r] of MINE_RESOURCES.entries()) {
-    const card=$('mine-ore-grid').children[i], unlocked=MINE_LEVELS.slice(0,m.level).some(l=>l.chances[i]>0);
-    card.disabled=!unlocked;card.querySelector('strong').textContent=unlocked?compact.format(m.ore[i]):'Locked';
+  while($('mine-ore-grid').children.length<m.ore.length) addMineCard($('mine-ore-grid').children.length);
+  setText('mine-rate',`${next.rate} ore / minute`);
+  for(let i=0;i<$('mine-ore-grid').children.length;i++) {
+    const r=mineResource(i);
+    const card=$('mine-ore-grid').children[i], unlocked=i<m.ore.length;
+    card.hidden=!unlocked||Math.floor(i/8)!==mineInventoryPage;card.disabled=!unlocked;card.querySelector('strong').textContent=unlocked?compact.format(m.ore[i]):'Locked';
     card.querySelector('small').textContent=r.name;card.setAttribute('aria-label',`${r.name}: ${m.ore[i]}, sell`);
   }
+  const pages=Math.ceil(m.ore.length/8);
+  $('mine-pages').hidden=pages<=1;setText('mine-page',`${mineInventoryPage+1} / ${pages}`);
+  $('mine-prev').disabled=mineInventoryPage===0;$('mine-next').disabled=mineInventoryPage>=pages-1;
   $('mine-collect').hidden=!pending;setText('mine-collect',`Collect ${pending} ore`);
   setText('mine-upgrade-title',m.upgradeEndsAt?'Upgrade in progress':next?`Upgrade to level ${m.level+1}`:'Maximum mine level');
-  $('mine-cost').innerHTML=next&&!m.upgradeEndsAt?next.cost.map((n,i)=>n?`<span class="${m.ore[i]<n?'missing':''}"><img src="assets/mine/${MINE_RESOURCES[i].id}.svg" alt="${MINE_RESOURCES[i].name}">${m.ore[i]}/${n}</span>`:'').join(''):'';
+  $('mine-cost').innerHTML=next&&!m.upgradeEndsAt?next.cost.map((n,i)=>n?`<span class="${m.ore[i]<n?'missing':''}"><img src="assets/mine/${mineResource(i).id==='crystal'?'crystal.svg':mineResource(i).id+'-icon.webp'}" alt="${mineResource(i).name}">${m.ore[i]}/${n}</span>`:'').join(''):'';
   $('mine-upgrade').hidden=!!m.upgradeEndsAt||!next;
   $('mine-upgrade').disabled=!next||next.cost.some((n,i)=>m.ore[i]<n);
   if(next)setText('mine-upgrade',`Upgrade · ${next.minutes<60?next.minutes+'m':next.minutes/60+'h'}`);
   $('mine-upgrade-progress').hidden=!m.upgradeEndsAt;
   if(m.upgradeEndsAt){const seconds=Math.max(0,Math.ceil((m.upgradeEndsAt-Date.now())/1000));$('mine-progress').value=100*(1-seconds/(next.minutes*60));setText('mine-time',`${Math.floor(seconds/3600)?Math.floor(seconds/3600)+'h ':''}${Math.floor(seconds/60)%60}m ${seconds%60}s`);}
   if($('mine-rewards-dialog').open)$('mine-rewards').innerHTML=mineRows(m.pending);
-  if($('mine-info-dialog').open)$('mine-chances').innerHTML=MINE_RESOURCES.map((r,i)=>`<div class="mine-resource-row"><img src="assets/mine/${r.id}.svg" alt=""><span>${r.name}</span><b>${MINE_LEVELS[m.level-1].chances[i]}%${next?' → '+next.chances[i]+'%':''}</b></div>`).join('');
+  if($('mine-info-dialog').open){
+    const total=Math.max(20,following.chances.length), pages=Math.ceil(total/10);
+    setText('mine-current-level',`Lv. ${m.level}`);setText('mine-next-level',`Lv. ${m.level+1}`);
+    setText('mine-chances-page',`${mineChancesPage+1} / ${pages}`);
+    $('mine-chances-prev').disabled=mineChancesPage===0;$('mine-chances-next').disabled=mineChancesPage>=pages-1;
+    $('mine-chances').innerHTML=Array.from({length:Math.min(10,total-mineChancesPage*10)},(_,offset)=>{
+      const i=mineChancesPage*10+offset,r=mineResource(i),color=Math.min(10,1+Math.floor(i/2));
+      return `<tr class="epoch-${color} ore-${r.id}"><th scope="row"><span class="epoch-name"><img class="epoch-icon" src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><span>${r.name}</span></span></th><td>${Number((next.chances[i]||0).toFixed(2))}%</td><td>${Number((following.chances[i]||0).toFixed(2))}%</td></tr>`;
+    }).join('');
+  }
 }
 function takeMineOre() {
   const loot=collectMine(state);mineWaiting=false;
   $('mine-rewards-dialog').close();updateMineUI();save(true);
   if(loot.some(Boolean)){
-    const label=loot.map((n,i)=>n?`+${n} ${MINE_RESOURCES[i].name}`:'').filter(Boolean).join(' · ');
+    const label=loot.map((n,i)=>n?`+${n} ${mineResource(i).name}`:'').filter(Boolean).join(' · ');
     $('mine-found').textContent=label;$('mine-found').classList.remove('pop');void $('mine-found').offsetWidth;$('mine-found').classList.add('pop');
   }
 }
@@ -714,15 +766,21 @@ function setMineOpen(open) {
   save(true);
 }
 $('mine-toggle').addEventListener('click',()=>setMineOpen(!mineOpen));
-for(const [i,r] of MINE_RESOURCES.entries()){
-  const button=document.createElement('button');button.className='ore-card';button.innerHTML=`<img src="assets/mine/${r.id}.svg" alt=""><strong>0</strong><small>${r.name}</small>`;
+function addMineCard(i){
+  const r=mineResource(i);
+  const button=document.createElement('button');button.className='ore-card';button.innerHTML=`<img src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><strong>0</strong><small>${r.name}</small>`;
   button.addEventListener('click',()=>{mineSaleIndex=i;setText('mine-sale-name',r.name);$('mine-sale-amount').value=state.mine.ore[i];$('mine-sale-amount').max=state.mine.ore[i];updateMineSale();$('mine-sale-dialog').showModal();});$('mine-ore-grid').append(button);
 }
-function updateMineSale(){const n=Number($('mine-sale-amount').value);$('mine-sell').disabled=!Number.isSafeInteger(n)||n<1||n>state.mine.ore[mineSaleIndex];setText('mine-sell',`Sell · ${Number.isSafeInteger(n)&&n>0?compact.format(n*MINE_RESOURCES[mineSaleIndex].price):0} coins`);}
+for(let i=0;i<state.mine.ore.length;i++)addMineCard(i);
+function updateMineSale(){const n=Number($('mine-sale-amount').value);$('mine-sell').disabled=!Number.isSafeInteger(n)||n<1||n>state.mine.ore[mineSaleIndex];setText('mine-sell',`Sell · ${Number.isSafeInteger(n)&&n>0?compact.format(n*mineResource(mineSaleIndex).price):0} coins`);}
+$('mine-prev').addEventListener('click',()=>{mineInventoryPage=Math.max(0,mineInventoryPage-1);updateMineUI();});
+$('mine-next').addEventListener('click',()=>{mineInventoryPage=Math.min(Math.ceil(state.mine.ore.length/8)-1,mineInventoryPage+1);updateMineUI();});
 $('mine-sale-amount').addEventListener('input',updateMineSale);
 $('mine-sell').addEventListener('click',()=>{if(sellOre(state,mineSaleIndex,Number($('mine-sale-amount').value))){$('mine-sale-dialog').close();updateMineUI();save(true);}});
 $('mine-upgrade').addEventListener('click',()=>{if(upgradeMine(state)){updateMineUI();save(true);}});
-$('mine-info').addEventListener('click',()=>{$('mine-info-dialog').showModal();updateMineUI();});
+$('mine-info').addEventListener('click',()=>{mineChancesPage=Math.floor(Math.floor((state.mine.level-1)/5)/10);$('mine-info-dialog').showModal();updateMineUI();});
+$('mine-chances-prev').addEventListener('click',()=>{mineChancesPage=Math.max(0,mineChancesPage-1);updateMineUI();});
+$('mine-chances-next').addEventListener('click',()=>{mineChancesPage++;updateMineUI();});
 $('mine-collect').addEventListener('click',takeMineOre);$('mine-rewards-collect').addEventListener('click',takeMineOre);
 document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 
@@ -759,6 +817,7 @@ function setupTelegram() {
   const tg = window.Telegram?.WebApp;
   if (!tg || telegramInitialized) return;
   telegramInitialized = true;
+  $('hero-name').textContent = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || 'Hero';
   tg.ready(); tg.expand();
   if (tg.isVersionAtLeast?.('6.1')) { tg.setHeaderColor(tg.isVersionAtLeast('6.9') ? BIOMES[Math.floor((state.level-1)/LEVELS_PER_BIOME)].ground : 'bg_color'); tg.setBackgroundColor('#fffaf0'); }
   if (tg.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes();
