@@ -1,0 +1,8 @@
+{
+  "cameraFollowsHero": true,
+  "turtleAhead": true,
+  "campaignRestored": true,
+  "reentry": true,
+  "reducedMotion": true,
+  "errors": []
+}

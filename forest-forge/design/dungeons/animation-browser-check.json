@@ -1,0 +1,140 @@
+[
+  {
+    "engine": "chromium",
+    "id": "treasury",
+    "poses": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shift": [
+      2,
+      120
+    ],
+    "frames": 126,
+    "assets": [
+      "http://127.0.0.1:4176/assets/dungeons/treasury-animation.webp"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "id": "forge",
+    "poses": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shift": [
+      2,
+      120
+    ],
+    "frames": 357,
+    "assets": [
+      "http://127.0.0.1:4176/assets/dungeons/forge-animation.webp"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "id": "mine",
+    "poses": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shift": [
+      2,
+      120
+    ],
+    "frames": 126,
+    "assets": [
+      "http://127.0.0.1:4176/assets/dungeons/mine-animation.webp"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "id": "treasury",
+    "poses": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shift": [
+      2,
+      120
+    ],
+    "frames": 126,
+    "assets": [
+      "http://127.0.0.1:4176/assets/dungeons/treasury-animation.webp"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "id": "forge",
+    "poses": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shift": [
+      2,
+      120
+    ],
+    "frames": 358,
+    "assets": [
+      "http://127.0.0.1:4176/assets/dungeons/forge-animation.webp"
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "id": "mine",
+    "poses": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shift": [
+      2,
+      120
+    ],
+    "frames": 126,
+    "assets": [
+      "http://127.0.0.1:4176/assets/dungeons/mine-animation.webp"
+    ],
+    "errors": []
+  }
+]

@@ -1,9 +1,11 @@
+import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs';
 import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs';
 import { COMPANIONS, TURTLE_LEVELS, upgradeTurtle, ARCHER_LEVELS, upgradeArcher, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs?v=companions-menu';
 import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
+import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs';
 
 const $ = id => document.getElementById(id);
 const portraits = [['helmet','Knight'],['goblin','Smug goblin'],['pot-knight','Pot knight'],['duck','Duck wizard'],['wizard','Sleepy wizard'],['cat','Cat knight'],['pirate','Skeleton pirate'],["hamster-king","Hamster king"],["frog-alchemist","Frog alchemist"],["grumpy-dwarf","Grumpy dwarf"],["orc-chef","Orc chef"],["mushroom","Nervous mushroom"],["owl-librarian","Owl librarian"],["pig-barbarian","Pig barbarian"],["raccoon-thief","Raccoon thief"],["slime-knight","Slime knight"],["turtle-samurai","Turtle samurai"],["goat-wizard","Goat wizard"],["old-vampire","Old vampire"],["carrot-knight","Carrot knight"],["angry-fairy","Angry fairy"],["button-mummy","Button-eyed mummy"],["shark-pirate","Shark pirate"],["sheep-necromancer","Sheep necromancer"],["cyclops","Cyclops"],["wood-golem","Wood golem"],["chicken-musketeer","Chicken musketeer"]];
@@ -35,6 +37,7 @@ const previewBoss=previewBiome&&new URLSearchParams(location.search).get('boss')
 const previewReforge=localPreview && !previewWeapon && !previewSet && !previewBiome && new URLSearchParams(location.search).get('reforge')==='1';
 const requestedCompanion=new URLSearchParams(location.search).get('companion');
 const previewCompanion=localPreview && !window.Telegram?.WebApp?.initData && ['archer','druid','turtle'].includes(requestedCompanion)?requestedCompanion:null;
+const previewDungeons=localPreview&&!window.Telegram?.WebApp?.initData&&new URLSearchParams(location.search).get('dungeons')==='1';
 let state;
 let artVersion=Date.now();
 window.addEventListener('storage',event=>{if(event.key==='forest-forge-art-update')artVersion=Date.now();});
@@ -61,6 +64,12 @@ if(previewReforge){
   for(const [slot,type,value] of [['ring1','speed',4],['ring2','health',7]]) state.equipment[slot]={slot,name:'Bronze Warrior Ring',quality:0,epoch:2,itemLevel:12,value:10,sale:1,affix:{type,value}};
 }
 let sheetSlot = null, toastUntil = 0;
+if(previewDungeons){
+  state=freshGame();state.highest=20;state.coins=12000;state.hammers=200;
+  const bases=[2,5,5,15,2,5,5,3,3,1,1,1];
+  for(const [i,slot] of SLOTS.entries())state.equipment[slot]={slot,name:'Knight '+LABELS[slot],epoch:3,quality:0,itemLevel:1,value:bases[i]*100,sale:100,...(slot==='weapon'?{weaponId:'knight-sword'}:{})};
+  state.hp=stats(state).hp;state.dungeons.cleared=[9,9,9];state.hiredCompanions=['archer','druid','turtle'];state.selectedCompanion=requestedCompanion==='turtle'?'turtle':'druid';
+}
 let savedTime = 0, uiTime = 0, frameCount = 0;
 let running = false, raf = 0, last = 0, accumulated = 0;
 let telegramInitialized = false, returnFocus = null;
@@ -152,7 +161,7 @@ $('companions-toggle').onclick=()=>{$('companions-dialog').showModal();updateCom
 $('close-companions').onclick=()=>$('companions-dialog').close();
 
 const save = (force = false) => {
-  if(previewSet||previewWeapon||previewBiome||previewReforge||previewCompanion)return;
+  if(previewSet||previewWeapon||previewBiome||previewReforge||previewCompanion||previewDungeons)return;
   if (telegramLaunch) {
     if (!cloudReady) return;
     cloudDirty = true;
@@ -378,6 +387,7 @@ function updateIdleRewards() {
   $('idle-loot').classList.toggle('full',full);
   $('idle-loot').setAttribute('aria-label',`Idle rewards: ${loot.hammers} hammers and ${loot.coins} coins${full?', storage full':''}`);
   if(!$('idle-dialog').open)return;
+  $('idle-reagents').innerHTML=idleReagents(state,now).map((n,i)=>n?`<span title="${ALCHEMY_RARITIES[i].name}">${reagentIcon(ALCHEMY_RARITIES[i].color)}<b>${n}</b></span>`:'').join('');
   setText('idle-hammers',loot.hammers);setText('idle-coins',loot.coins);
   setText('idle-time',`${Math.floor(loot.minutes/60)}h ${loot.minutes%60}m / ${cap/60}h`);
   setText('idle-next',full?'Storage full':`${idleRates(state).hammers.toFixed(2)} hammers · ${idleRates(state).coins.toFixed(1)} coins / min`);
@@ -671,6 +681,8 @@ document.addEventListener('keydown', e => {
 });
 
 function updateUI() {
+  updateAlchemy();
+  updateDungeons();
   updateCompanions();
   if($('confirm-reset').disabled!==(telegramLaunch && (!cloudReady || cloudBusy || cloudFailed)))$('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   updateIdleRewards();
@@ -786,8 +798,209 @@ function updateUI() {
 }
 
 let scene;
+let selectedDungeon=0, dungeonFloor=1, displayedDungeon=null, dungeonStarting=false, dungeonHubOpen=false, dungeonActive=null, dungeonTransitioning=false;
+for(const [index,dungeon] of DUNGEONS.entries()){
+  const card=document.createElement('article');card.className='dungeon-choice';card.style.setProperty('--dungeon-color',dungeon.color);
+  card.innerHTML=`<img src="assets/dungeons/${dungeon.id}-banner.webp" alt=""><h2>${dungeon.name}</h2><small class="dungeon-card-cleared"></small><span class="dungeon-card-resource">${index===0?'<i class="coin" aria-hidden="true"></i>':`<img src="assets/${index===1?'hammer.webp':'mine/stone-icon.webp'}" alt="${dungeon.resource}">`} ${dungeon.resource}</span><div class="dungeon-card-action"><strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3a6 6 0 1 1-3 11l-6 7-4-4 7-6a6 6 0 0 1 6-8Zm2 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" fill="#f4e6be" stroke="#17282a" stroke-width="1.7"/></svg> <span></span></strong><button class="button blue" aria-label="Open ${dungeon.name}">Open</button></div>`;
+  card.querySelector('button').onclick=()=>{selectedDungeon=index;dungeonFloor=Math.min(200,state.dungeons.cleared[index]+1);displayedDungeon=null;$('dungeons-dialog').showModal();updateDungeons();};
+  $('dungeon-choices').append(card);
+}
+function updateDungeons(){
+  const run=state.dungeons.run,active=!!run;
+  if(dungeonActive!==active){
+    dungeonActive=active;$('game').classList.toggle('dungeon-active',active);
+    $('dungeon-combat').hidden=!active;$('workshop').inert=active||!!previewSet;
+    for(const id of ['mine-toggle','companions-toggle','atelier-toggle','dungeons-toggle','choose-portrait'])$(id).disabled=active;
+  }
+  if(run){
+    const d=DUNGEONS.find(d=>d.id===run.id),e=run.battle.enemies[0];
+    setText('dungeon-location',d.name);setText('dungeon-depth',`Stage ${Math.floor((run.floor-1)/10)+1}–${(run.floor-1)%10+1}`);
+    setText('dungeon-timer',`${Math.ceil(Math.max(0,90-run.battle.dungeonBattle.time))}s`);
+    setText('dungeon-status',e.shield?'Coin shield · damage reduced':e.charging?'Charging a heavy smash…':run.id==='mine'&&e.strength>1?`Fury · +${Math.round((e.strength-1)*100)}% damage`:d.mechanic);
+  }
+  if(!$('dungeons-dialog').open&&!$('tier-rewards-dialog').open&&!dungeonHubOpen)return;
+  const wins=dungeonDay(state),d=DUNGEONS[selectedDungeon],cleared=state.dungeons.cleared[selectedDungeon];
+  dungeonFloor=Math.max(1,Math.min(dungeonFloor,cleared+1,200));
+  const key=JSON.stringify([selectedDungeon,dungeonFloor,wins,state.dungeons.cleared,state.mount,state.highest,state.mine.level,dungeonStarting,Math.floor(Date.now()/60000)]);
+  if(displayedDungeon===key)return;displayedDungeon=key;
+  [...$('dungeon-choices').children].forEach((b,i)=>{
+    b.querySelector('.dungeon-card-action span').textContent=`${2-wins[i]}/2`;
+    const next=Math.min(200,state.dungeons.cleared[i]+1);
+    b.querySelector('.dungeon-card-cleared').textContent=`${Math.floor((next-1)/10)+1}–${(next-1)%10+1}${state.dungeons.cleared[i]===200?' · Cleared':''}`;
+  });
+  setText('dungeon-unlock',state.highest<2?'Defeat the boss of 1–1 to unlock.':'');
+  setText('dungeons-title',d.name);
+  setText('dungeon-floor',`Stage ${Math.floor((dungeonFloor-1)/10)+1}–${(dungeonFloor-1)%10+1}`);
+  $('dungeon-prev').disabled=dungeonFloor<=1;$('dungeon-next').disabled=dungeonFloor>=Math.min(200,cleared+1);
+  const bossArt=$('dungeon-boss-art'),source=`assets/dungeons/${d.id}.webp`;
+  if(bossArt.getAttribute('src')!==source){bossArt.style.visibility='hidden';bossArt.onload=()=>{bossArt.style.visibility='';};bossArt.src=source;}
+  const banner=`assets/dungeons/${d.id}-banner.webp`;
+  if($('dungeon-banner').getAttribute('src')!==banner)$('dungeon-banner').src=banner;
+  bossArt.alt=d.boss;
+  const rank=Math.floor((dungeonFloor-1)/50);
+  setText('dungeon-boss-name',d.boss);setText('dungeon-mechanic',selectedDungeon===0?`A coin shield blocks 65% damage every ${12-rank} seconds.`:selectedDungeon===1?`Charges for 2 seconds, then strikes for ${(2.6+rank*.2).toFixed(1)}× damage. The turtle can intercept it.`:`Gains 25% damage every ${20-rank*2} seconds. Finish it quickly.`);
+  const loot=dungeonRewards(state,d.id,dungeonFloor);
+  $('dungeon-rewards').innerHTML=dungeonLootMarkup(loot);
+  $('dungeon-fight').disabled=dungeonStarting||state.highest<2||wins[selectedDungeon]>=2;
+  setText('dungeon-fight',dungeonStarting?'Loading…':'Enter');
+  $('dungeon-sweep').disabled=$('dungeon-fight').disabled||cleared<1;
+  const sweepStage=`${Math.floor((cleared-1)/10)+1}–${(cleared-1)%10+1}`;
+  $('dungeon-sweep').title=cleared<1?'Defeat a boss first.':wins[selectedDungeon]>=2?'No keys left today.':`Sweep stage ${sweepStage}`;
+  setText('dungeon-keys',`${2-wins[selectedDungeon]}/2`);
+  $('dungeon-keys').parentElement.setAttribute('aria-label',`${2-wins[selectedDungeon]} of 2 keys remaining`);
+  setText('dungeon-sweep-info',cleared<1?'Sweep Last unlocks after your first victory.':`Sweep Last gives stage ${sweepStage} rewards instantly for one key.`);
+  const bonus=Math.floor(cleared/5),goal=Math.min(200,(bonus+1)*5);
+  const bonusName=selectedDungeon===0?'coins from enemies':selectedDungeon===1?'hammer drop chance':'mine production';
+  const increment=selectedDungeon===1?.25:1,nextStage=`${Math.floor((goal-1)/10)+1}–${(goal-1)%10+1}`;
+  setText('dungeon-bonus-current',`${['Coins from mobs','Drop chance','Ore per minute'][selectedDungeon]} +${bonus*increment}%`);
+  setText('dungeon-bonus-next',`· Next +${increment}% at ${nextStage}`);
+  $('dungeon-bonus-next').hidden=cleared>=200;
+  $('dungeon-bonus-coin').hidden=selectedDungeon!==0;
+  const bonusIcon=$('dungeon-bonus-icon'),bonusSource=selectedDungeon===1?'assets/hammer.webp':'assets/mine/pickaxe-nav.webp';
+  bonusIcon.hidden=selectedDungeon===0;
+  if(selectedDungeon!==0&&bonusIcon.getAttribute('src')!==bonusSource)bonusIcon.src=bonusSource;
+  $('dungeon-bonus').setAttribute('aria-label',`Permanent: +${bonus*increment}${selectedDungeon===1?' percentage points':'%'} ${bonusName}${cleared<200?`. Next increase at ${nextStage}`:''}`);
+  setText('dungeon-bonus-description',`Permanently increases ${bonusName} by ${increment}${selectedDungeon===1?' percentage points':'%'} every 5 stages.`);
+  const ready=state.dungeons.cleared.every(n=>n>=10),owned=state.mount.owned;
+  $('tier-rewards-toggle').classList.toggle('has-reward',ready&&!owned);
+  $('tier-rewards-toggle').setAttribute('aria-label',ready&&!owned?'Tier rewards: reward available':'Tier rewards');
+  $('mount-condition').hidden=ready||owned;
+  $('mount-action').hidden=!ready&&!owned;
+  setText('mount-action',owned?(state.mount.equipped?'Dismount':'Ride'):'Claim');
+  $('mount-action').setAttribute('aria-label',owned?(state.mount.equipped?'Dismount Rustback':'Ride Rustback'):'Claim Rustback');
+  const mins=Math.max(1,Math.ceil(((state.dungeons.day+1)*86400000-Date.now())/60000));
+  setText('dungeon-reset',`Wins reset in ${Math.floor(mins/60)}h ${mins%60}m · Leaving or reloading ends the fight.`);
+}
+function dungeonLootMarkup(loot){
+  if(!loot)return '';
+  return (loot.coins?`<span title="Coins"><i class="coin" aria-hidden="true"></i>${compact.format(loot.coins)}</span>`:'')+
+    (loot.hammers?`<span title="Hammers"><img src="assets/hammer.webp" alt="Hammers">${compact.format(loot.hammers)}</span>`:'')+
+    loot.ore.map((n,i)=>n?`<span title="${mineResource(i).name}"><img src="assets/mine/${mineResource(i).id==='crystal'?'crystal.svg':mineResource(i).id+'-icon.webp'}" alt="${mineResource(i).name}">${compact.format(n)}</span>`:'').join('');
+}
+function openDungeons(){
+  if(mineOpen)setMineOpen(false);if(atelierOpen)setAtelierOpen(false);
+  closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+  dungeonFloor=Math.min(200,state.dungeons.cleared[selectedDungeon]+1);displayedDungeon=null;
+  setDungeonHub(true);updateDungeons();
+}
+function setDungeonHub(open){
+  dungeonHubOpen=open;$('dungeon-hub').hidden=!open;$('game').classList.toggle('dungeon-hub-open',open);
+  $('dungeons-toggle').setAttribute('aria-pressed',String(open));accumulated=0;
+  if(open)window.Telegram?.WebApp?.BackButton?.show();else window.Telegram?.WebApp?.BackButton?.hide();
+}
+$('dungeons-toggle').onclick=()=>dungeonHubOpen?setDungeonHub(false):openDungeons();
+$('dungeon-hub-back').onclick=()=>setDungeonHub(false);
+$('tier-rewards-toggle').onclick=()=>{$('tier-rewards-dialog').showModal();updateDungeons();};
+$('close-tier-rewards').onclick=()=>$('tier-rewards-dialog').close();
+$('tier-rewards-dialog').addEventListener('click',event=>{
+  const box=$('tier-rewards-dialog').getBoundingClientRect();
+  if(event.target===$('tier-rewards-dialog')&&(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom))$('tier-rewards-dialog').close();
+});
+$('close-dungeons').onclick=()=>$('dungeons-dialog').close();
+$('dungeons-dialog').addEventListener('close',()=>{$('dungeon-info').hidden=true;$('dungeon-info-toggle').setAttribute('aria-expanded','false');});
+$('dungeon-info-toggle').onclick=()=>{const info=$('dungeon-info');info.hidden=!info.hidden;$('dungeon-info-toggle').setAttribute('aria-expanded',String(!info.hidden));};
+$('dungeon-prev').onclick=()=>{dungeonFloor--;updateDungeons();};
+$('dungeon-next').onclick=()=>{dungeonFloor++;updateDungeons();};
+$('dungeon-sweep').onclick=()=>{
+  if(dungeonStarting||dungeonTransitioning)return;
+  if(sweepDungeon(state,DUNGEONS[selectedDungeon].id)){$('dungeons-dialog').close();void finishDungeonView();}
+};
+$('dungeon-fight').onclick=async()=>{
+  if(dungeonStarting||dungeonTransitioning)return;
+  const id=DUNGEONS[selectedDungeon].id,floor=dungeonFloor;
+  const shade=$('dungeon-transition'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  dungeonStarting=true;dungeonTransitioning=true;$('game').inert=true;updateDungeons();
+  $('dungeons-dialog').close();shade.hidden=false;
+  try {
+    await shade.animate([{opacity:0},{opacity:1}],{duration:reduced?0:200,fill:'forwards'}).finished;
+    setDungeonHub(false);await scene.prepareDungeon(id);
+    if(enterDungeon(state,id,floor)){updateUI();scene.render(state.dungeons.run.battle,0);save(true);}
+    else {await scene.prepare(state.level);openDungeons();notify('This floor is unavailable.');}
+    await shade.animate([{opacity:1},{opacity:0}],{duration:reduced?0:220,fill:'forwards'}).finished;
+  } catch(error){
+    if(state.dungeons.run){leaveDungeon(state);state.dungeons.last=null;}
+    await scene.prepare(state.level);openDungeons();save(true);console.error(error);notify('Could not load the dungeon. Try again.');
+  } finally {
+    shade.hidden=true;shade.getAnimations().forEach(a=>a.cancel());
+    dungeonStarting=false;dungeonTransitioning=false;$('game').inert=telegramLaunch&&(!cloudReady||cloudFailed);
+    accumulated=0;last=performance.now();updateUI();
+  }
+};
+$('mount-action').onclick=()=>{if(state.mount.owned?toggleMount(state):claimMount(state)){save(true);updateUI();}};
+async function finishDungeonView(){
+  const result=state.dungeons.last;if(!result||dungeonTransitioning)return;
+  dungeonTransitioning=true;startupRewardsShown=true;$('game').inert=true;
+  const shade=$('dungeon-transition'),layer=$('reward-flight');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  shade.hidden=false;layer.replaceChildren();save(true);
+  try{
+    // Keep the last battle frame until black; the campaign must not flash first.
+    await shade.animate([{opacity:0},{opacity:1}],{duration:reduced?0:200,fill:'forwards'}).finished;
+    selectedDungeon=DUNGEONS.findIndex(d=>d.id===result.id);
+    setDungeonHub(false);
+    await scene.prepare(state.level);
+    updateUI();
+    // Measure the existing destinations before the hub covers the adventure.
+    // Coin and hammer endpoints are exactly those used by idle reward flight.
+    const targets={
+      coin:document.querySelector('.money > .coin').getBoundingClientRect(),
+      hammer:document.querySelector('.hammer-balance > .hammer-icon').getBoundingClientRect(),
+      ore:$('mine-toggle').querySelector('img').getBoundingClientRect()
+    };
+    openDungeons();state.dungeons.last=null;updateUI();save(true);
+    await shade.animate([{opacity:1},{opacity:0}],{duration:reduced?0:220,fill:'forwards'}).finished;
+    shade.hidden=true;
+    const loot=result.outcome==='won'?result.rewards:null;
+    if(loot||['lost','timeout'].includes(result.outcome)){
+      const label=document.createElement('div');label.className='dungeon-reward-burst';
+      label.innerHTML=loot?dungeonLootMarkup(loot):result.outcome==='lost'?'Defeated':'Time is up';
+      if(loot)for(const span of label.children)span.lastChild.textContent='+'+span.lastChild.textContent;
+      layer.append(label);
+      const animations=[label.animate([{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.65},{opacity:0}],{duration:reduced?900:1150,fill:'both'}).finished];
+      if(loot&&!reduced){
+        const bounds=layer.getBoundingClientRect(),centerX=bounds.width/2,centerY=bounds.height/2;
+        const resources=[
+          {amount:loot.coins,kind:'coin',source:null,target:targets.coin,size:24},
+          {amount:loot.hammers,kind:'hammer',source:'assets/hammer.webp',target:targets.hammer,size:32},
+          ...loot.ore.map((amount,i)=>({amount,kind:'ore',source:`assets/mine/${mineResource(i).id==='crystal'?'crystal.svg':mineResource(i).id+'-icon.webp'}`,target:targets.ore,size:32}))
+        ].filter(r=>r.amount>0);
+        for(const [group,{amount,kind,source,target,size}] of resources.entries()){
+          const rect=target,endX=rect.x+rect.width/2-bounds.x,endY=rect.y+rect.height/2-bounds.y;
+          const count=Math.min(3,amount);
+          for(let i=0;i<count;i++){
+            const particle=document.createElement(source?'img':'i');particle.className=`reward-particle reward-${kind}${source?'':' coin'}`;
+            if(source){particle.src=source;particle.alt='';}particle.style.width=particle.style.height=`${size}px`;particle.style.objectFit='contain';
+            const hammer=kind==='hammer',spread=i-(count-1)/2;
+            const x=centerX+(hammer?-24:kind==='coin'?24:(group-(resources.length-1)/2)*48)+spread*12,y=centerY+spread*9;
+            const bendX=hammer?centerX-65:Math.min(bounds.width-24,endX+35),bendY=hammer?(y+endY)/2:y-65,angle=hammer?-16+i*9:0;
+            // Same 850 ms burst and curved flight as collecting idle rewards.
+            const keys=[
+              {offset:0,transform:`translate(${centerX-size/2}px,${centerY-size/2}px) scale(.2) rotate(${angle}deg)`,opacity:0},
+              {offset:.16,transform:`translate(${x-size/2}px,${y-size/2}px) scale(1.08) rotate(${angle}deg)`,opacity:1},
+              {offset:.24,transform:`translate(${x-size/2}px,${y-size/2}px) scale(1) rotate(${angle}deg)`,opacity:1}
+            ];
+            for(let frame=1;frame<=8;frame++){
+              const progress=frame/8,t=progress*progress,u=1-t;
+              const px=u*u*x+2*u*t*bendX+t*t*endX,py=u*u*y+2*u*t*bendY+t*t*endY;
+              keys.push({offset:.24+.76*progress,transform:`translate(${px-size/2}px,${py-size/2}px) scale(${1+(rect.width/size-1)*t}) rotate(${angle*u}deg)`,opacity:1});
+            }
+            layer.append(particle);
+            animations.push(particle.animate(keys,{duration:850,delay:i*55,fill:'both'}).finished.then(()=>particle.remove()));
+          }
+        }
+      }
+      await Promise.all(animations);label.remove();
+    }
+  }catch(error){console.error(error);state.dungeons.last=null;openDungeons();updateUI();save(true);}
+  finally{
+    shade.hidden=true;shade.getAnimations().forEach(a=>a.cancel());layer.replaceChildren();
+    dungeonTransitioning=false;$('game').inert=telegramLaunch&&(!cloudReady||cloudFailed);accumulated=0;last=performance.now();
+  }
+}
+$('dungeon-leave').onclick=()=>{if(leaveDungeon(state))void finishDungeonView();};
 function processEvents(events) {
   for (const event of events) {
+    if(event.type==='dungeonEnd'){void finishDungeonView();continue;}
     scene?.emit(event);
     if(event.type==='level')void scene?.prepare(state.level).catch(error=>{console.error(error);notify('Could not load this biome. Refresh the page.');});
     if (event.type === 'forgeStarted') updateUI();
@@ -842,6 +1055,7 @@ function processEvents(events) {
       }
     }
     if (event.type === 'anvilUpgraded') notify(`Anvil reached level ${state.anvilLevel}`);
+    if(event.type==='reagent'){setText('toast',`${ALCHEMY_RARITIES[event.rarity].name} reagent +1`);$('toast').classList.add('visible');toastUntil=performance.now()+1500;}
     if (['kill', 'death', 'restart', 'level', 'complete', 'forged', 'forgeStarted', 'anvilUpgraded'].includes(event.type)) save();
   }
 }
@@ -931,6 +1145,7 @@ function takeMineOre() {
   }
 }
 function setMineOpen(open) {
+  if(open&&dungeonHubOpen)setDungeonHub(false);
   if(atelierOpen)setAtelierOpen(false);
   closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
   displayedForgeItems=null;
@@ -943,6 +1158,7 @@ function setMineOpen(open) {
   save(true);
 }
 function setAtelierOpen(open) {
+  if(open&&dungeonHubOpen)setDungeonHub(false);
   if(open&&mineOpen)setMineOpen(false);
   closeSheet();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
   atelierOpen=open;$('game').classList.toggle('atelier-open',open);
@@ -992,7 +1208,7 @@ $('strata-open').onclick=()=>{
 $('mine-toggle').addEventListener('click',()=>setMineOpen(!mineOpen));
 function addMineCard(i){
   const r=mineResource(i);
-  const button=document.createElement('button');button.className='ore-card';button.innerHTML=`<img src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><strong>0</strong><small>${r.name}</small>`;
+  const button=document.createElement('button');button.className='ore-card';button.innerHTML=`<img src="assets/mine/${r.id==='crystal'?'crystal.svg':r.id+'-icon.webp'}" alt=""><strong>0</strong>`;
   button.addEventListener('click',()=>{mineSaleIndex=i;setText('mine-sale-name',r.name);$('mine-sale-amount').value=state.mine.ore[i];$('mine-sale-amount').max=state.mine.ore[i];updateMineSale();$('mine-sale-dialog').showModal();});$('mine-ore-grid').append(button);
 }
 for(let i=0;i<state.mine.ore.length;i++)addMineCard(i);
@@ -1008,10 +1224,51 @@ $('mine-chances-next').addEventListener('click',()=>{mineChancesPage++;updateMin
 $('mine-buffer').addEventListener('click',()=>{settleMine(state);$('mine-rewards-dialog').showModal();updateMineUI();});$('mine-rewards-collect').addEventListener('click',takeMineOre);
 document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 
+
+let alchemyType='damage',alchemyDisplay='';
+const alchemyRarities=Object.fromEntries(POTIONS.map(p=>[p.id,0]));
+function potionIcon(color){return `<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 3h12v7h-2v10l11 17q4 8-6 8H15q-10 0-6-8l11-17V10h-2Z" fill="${color}" stroke="#183638" stroke-width="3"/></svg>`;}
+function reagentIcon(color){const i=ALCHEMY_RARITIES.findIndex(r=>r.color===color);return `<img class="alchemy-item-art" src="assets/alchemy/reagent-${Math.max(0,i)}.webp" alt="">`;}
+function updateAlchemy(){
+ const a=state.alchemy;if(!a)return;const now=Date.now(),skill=alchemySkill(state);
+ const active=POTIONS.map(p=>{const b=a.active[p.id],remaining=b?(p.combat?b.remaining:(b.endsAt-now)/1000):0;return remaining>0?{p,b,remaining:Math.ceil(remaining)}:null;}).filter(Boolean);
+ const status=active.map(({p,b,remaining})=>`<button data-potion-open title="${p.name}: +${b.value}%" aria-label="${p.name}, ${Math.ceil(remaining/60)} minutes remaining">${potionIcon(ALCHEMY_RARITIES[b.rarity].color)}<span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
+ if($('potion-status').innerHTML!==status)$('potion-status').innerHTML=status;
+ if(!$('alchemy-dialog').open)return;
+ const key=JSON.stringify([a.xp,a.reagents,a.potions,active,alchemyType,alchemyRarities,state.coins]);if(key===alchemyDisplay)return;alchemyDisplay=key;
+ setText('alchemy-level',`Lv. ${skill.level}`);setText('alchemy-xp',skill.needed?`${skill.xp} / ${skill.needed} XP`:'MAX');$('alchemy-progress').max=skill.needed||1;$('alchemy-progress').value=skill.needed?skill.xp:1;
+ $('alchemy-stocks').innerHTML=ALCHEMY_RARITIES.map((r,i)=>`<span title="${r.name}" aria-label="${r.name}: ${a.reagents[i]}">${reagentIcon(r.color)}<b>${compact.format(a.reagents[i])}</b></span>`).join('');
+ // Keep the focused select/button while the real-time buff counter updates.
+ const focused=document.activeElement,focusId=focused?.id;
+ $('alchemy-recipes').innerHTML=POTIONS.map((p,index)=>{
+  const rarity=alchemyRarities[p.id],r=ALCHEMY_RARITIES[rarity],effect=potionEffect(state,p.id,rarity),stock=a.potions[index*5+rarity],open=alchemyType===p.id,busy=active.some(x=>x.p.id===p.id);
+  const duration=`${Math.floor(effect.seconds/60)} min${effect.seconds%60?` ${effect.seconds%60}s`:''}`,label=({damage:'Damage',health:'Max HP',ore:'Ore production',coins:'Passive coins',hammers:'Passive hammers'})[p.id];
+  return `<article class="alchemy-entry ${open?'is-open':''}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${effect.value}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity">${potionIcon('#b8d2c1')}${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-ingredients"><select id="alchemy-rarity-${p.id}" data-rarity="${p.id}" aria-label="${p.name} rarity">${ALCHEMY_RARITIES.map((v,i)=>`<option value="${i}" ${i===rarity?'selected':''}>${v.name}</option>`).join('')}</select><span title="Reagents owned / required" class="${a.reagents[rarity]?'':'missing'}">${reagentIcon(r.color)} ${a.reagents[rarity]} / 1</span></div><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Active':`Use ${stock}`}</button></div></div></article>`;
+ }).join('');
+ if(focusId&&focused?.closest('#alchemy-recipes'))$(focusId)?.focus({preventScroll:true});
+ $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<div title="${p.name}">${potionIcon(ALCHEMY_RARITIES[b.rarity].color)}<b>+${b.value}%</b><span>${Math.ceil(remaining/60)} min</span></div>`).join('');
+}
+function openAlchemy(){if(!$('alchemy-dialog').open)$('alchemy-dialog').showModal();alchemyDisplay='';setText('alchemy-message','');updateAlchemy();}
+$('alchemy-toggle').onclick=openAlchemy;$('potion-status').onclick=openAlchemy;$('alchemy-close').onclick=()=>$('alchemy-dialog').close();
+$('alchemy-recipes').addEventListener('change',e=>{const type=e.target.dataset.rarity;if(type){alchemyRarities[type]=Number(e.target.value);updateAlchemy();}});
+$('alchemy-recipes').addEventListener('click',e=>{
+ const row=e.target.closest('[data-recipe]'),brew=e.target.closest('[data-brew]'),use=e.target.closest('[data-use]');
+ if(row){alchemyType=alchemyType===row.dataset.recipe?'':row.dataset.recipe;setText('alchemy-message','');updateAlchemy();}
+ if(brew&&brewPotion(state,brew.dataset.brew,alchemyRarities[brew.dataset.brew])){setText('alchemy-message','Potion brewed');save(true);updateAlchemy();}
+ if(use&&drinkPotion(state,use.dataset.use,alchemyRarities[use.dataset.use])){setText('alchemy-message','Potion activated');save(true);updateUI();updateAlchemy();}
+});
+
 function frame(now) {
   if (!running) return;
   const dt = Math.min((now - last) / 1000, .25);
   last = now; accumulated += dt;
+  if($('alchemy-dialog').open){accumulated=0;updateAlchemy();raf=requestAnimationFrame(frame);return;}
+  if(dungeonHubOpen){
+    accumulated=0;uiTime+=dt;savedTime+=dt;
+    if(uiTime>=1){updateDungeons();uiTime=0;}
+    if(savedTime>=3){save();savedTime=0;}
+    raf=requestAnimationFrame(frame);return;
+  }
   if(atelierOpen){
     accumulated=0;uiTime+=dt;savedTime+=dt;
     if(uiTime>=1){finishUpgrade(state);updateUI();updateAtelier();uiTime=0;}
@@ -1026,9 +1283,10 @@ function frame(now) {
   }
   if (accumulated >= 1 / 30) {
     const elapsed = accumulated;
-    while (accumulated >= 1 / 30 && !scene?.loading) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
-    if(scene?.loading)accumulated=0;
-    scene?.render(state, elapsed); frameCount++;
+    while (accumulated >= 1 / 30 && !scene?.loading && !state.dungeons.last && !dungeonTransitioning) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
+    if(dungeonTransitioning){accumulated=0;raf=requestAnimationFrame(frame);return;}
+    if(scene?.loading||state.dungeons.last)accumulated=0;
+    scene?.render(state.dungeons.run?.battle??state, elapsed); frameCount++;
     uiTime += elapsed; savedTime += elapsed;
     if (uiTime >= .1) { updateUI(); uiTime = 0; }
     if (savedTime >= 3) { save(); savedTime = 0; }
@@ -1036,7 +1294,7 @@ function frame(now) {
   }
   raf = requestAnimationFrame(frame);
 }
-function start() { displayedForgeItems=null; $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);if(state.mine.pending.some(Boolean)&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); if(!startupRewardsShown){startupRewardsShown=true;if(!mineOpen&&idleRewards(state)>0&&!document.querySelector('dialog[open]'))$('idle-loot').click();} running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
+function start() { displayedForgeItems=null; $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);if(state.mine.pending.some(Boolean)&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); if(state.dungeons.last)void finishDungeonView(); if(!startupRewardsShown){startupRewardsShown=true;if(!mineOpen&&!dungeonTransitioning&&idleRewards(state)>0&&!document.querySelector('dialog[open]'))$('idle-loot').click();} running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
 function stop() { $('game').classList.add('page-paused'); running = false; cancelAnimationFrame(raf); save(true); }
 document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
 window.addEventListener('pagehide', stop);
@@ -1074,7 +1332,7 @@ function setupTelegram() {
     } catch { /* Keep the current view if this client cannot change fullscreen. */ }
   }
   tg.onEvent('activated', start); tg.onEvent('deactivated', stop);
-  tg.BackButton?.onClick(()=>{const dialog=document.querySelector('.mine-dialog[open]');if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else if(atelierOpen)setAtelierOpen(false);else closeSheet();});
+  tg.BackButton?.onClick(()=>{if(dungeonTransitioning)return;const dialog=document.querySelector('.mine-dialog[open]');if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else if(atelierOpen)setAtelierOpen(false);else if(dungeonHubOpen)setDungeonHub(false);else closeSheet();});
   if (sheetSlot || anvilOpen || $('idle-dialog').open || $('auto-dialog').open) tg.BackButton?.show();
 }
 // The external Telegram SDK is optional; normal browser startup never waits for it.
@@ -1094,14 +1352,16 @@ if(previewBiome){
   $('workshop').inert=true;$('replay').disabled=true;
 }
 if(previewCompanion){$('outfit-preview').hidden=false;$('outfit-name').textContent=(previewCompanion==='turtle'?'Turtle':previewCompanion==='druid'?'Druid':'Archer')+' companion - Test';$('outfit-preview').querySelector('small').textContent='Progress is not saved';$('outfit-edit').hidden=true;}
+if(previewDungeons){$('outfit-preview').hidden=false;$('outfit-name').textContent='Dungeons · Green equipment test';$('outfit-preview').querySelector('small').textContent='Progress is not saved';$('outfit-edit').hidden=true;startupRewardsShown=true;}
 try { scene = await createScene($('scene'),previewSet,previewCompanion);if(previewSet)$('outfit-name').textContent=scene.previewName+' · Test';if(telegramLaunch)await loadCloud();else await scene.prepare(state.level);scene.render(state, 0); start(); }
 catch (error) { console.error(error); notify('Could not load the artwork. Refresh the page.'); }
+if(previewDungeons)openDungeons();else if(state.dungeons.last)void finishDungeonView();
 
 // Only available when explicitly opening ?debug=1 for local verification.
 if (localPreview && new URLSearchParams(location.search).get('debug') === '1') {
   window.__forestForge = {
     snapshot: () => structuredClone(state),
-    advance(seconds) { for (let i = 0; i < seconds * 30; i++) processEvents(step(state, 1 / 30)); updateUI(); scene?.render(state, 0); save(); },
+    advance(seconds) { for (let i = 0; i < seconds * 30 && !state.dungeons.last && !dungeonTransitioning; i++) processEvents(step(state, 1 / 30)); if(!dungeonTransitioning){updateUI(); scene?.render(state.dungeons.run?.battle??state, 0);} save(); },
     get frames() { return frameCount; },
   };
 }

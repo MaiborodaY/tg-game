@@ -1,0 +1,27 @@
+[
+  {
+    "mode": "timeout",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "mode": "left",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "mode": "reduced",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "mode": "reload",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "mode": "idle",
+    "passed": true,
+    "errors": []
+  }
+]

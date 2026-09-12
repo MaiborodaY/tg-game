@@ -404,12 +404,75 @@ export function resolveReforge(s, slot, replace) {
   s.hp = fraction * stats(s).hp;
   return true;
 }
+
+export const ALCHEMY_RARITIES = [
+ {name:'Common',color:'#a8b7b1',cost:50,xp:1},
+ {name:'Uncommon',color:'#43df70',cost:150,xp:3},
+ {name:'Rare',color:'#46cef0',cost:500,xp:10},
+ {name:'Epic',color:'#b679fa',cost:1500,xp:30},
+ {name:'Legendary',color:'#ffcd45',cost:5000,xp:100},
+];
+export const POTIONS = [
+ {id:'damage',name:'Might',label:'Damage',base:[5,8,12,18,25],combat:true},
+ {id:'health',name:'Vitality',label:'Max HP',base:[10,15,20,30,50],combat:true},
+ {id:'ore',name:'Prospector',label:'Ore production',base:[10,20,30,40,50]},
+ {id:'coins',name:'Fortune',label:'Passive coins',base:[15,25,40,60,75]},
+ {id:'hammers',name:'Industry',label:'Passive hammers',base:[10,15,25,35,50]},
+];
+export function alchemySkill(s) {
+ let level=1,xp=s.alchemy?.xp||0;
+ while(level<100 && xp>=10+5*(level-1)){xp-=10+5*(level-1);level++;}
+ return {level,xp,needed:level===100?0:10+5*(level-1)};
+}
+export function potionEffect(s,type,rarity) {
+ const potion=POTIONS.find(p=>p.id===type);if(!potion||!Number.isInteger(rarity)||rarity<0||rarity>4)return null;
+ const t=(alchemySkill(s).level-1)/99;
+ return {value:Math.round(potion.base[rarity]*(1+t)*100)/100,seconds:Math.round((potion.combat?600:1800)*(1+5*t))};
+}
+export function reagentChances(highest,boss=false) {
+ const b=Math.max(0,Math.min(9,Math.floor((highest-1)/20))),m=boss?5:1;
+ return [4,1+.15*b,.2+.05*b,.02+.01*b,.002+.001*b].map(p=>p*m/500);
+}
+export function rollReagent(highest,boss=false,rng=Math.random) {
+ let roll=rng();const chances=reagentChances(highest,boss);
+ // Rarest first keeps the rare outcomes at the low end of the roll.
+ for(let i=4;i>=0;i--){if(roll<chances[i])return i;roll-=chances[i];}return -1;
+}
+export function brewPotion(s,type,rarity) {
+ const a=s.alchemy,r=ALCHEMY_RARITIES[rarity],p=POTIONS.findIndex(p=>p.id===type);
+ if(!a||!r||p<0||a.reagents[rarity]<1||s.coins<r.cost)return false;
+ a.reagents[rarity]--;s.coins-=r.cost;a.potions[p*5+rarity]++;a.xp=Math.min(25245,a.xp+r.xp);return true;
+}
+export function drinkPotion(s,type,rarity,now=Date.now()) {
+ const a=s.alchemy,p=POTIONS.findIndex(p=>p.id===type),effect=potionEffect(s,type,rarity);
+ if(!a||p<0||!effect||a.potions[p*5+rarity]<1||s.dungeons?.run)return false;
+ const active=a.active[type];if(active&&(POTIONS[p].combat?active.remaining>0:active.endsAt>now))return false;
+ if(!POTIONS[p].combat){settleIdle(s,now);settleMine(s,now);if(active)(a.previous??={})[type]={...active};}
+ const fraction=s.hp/stats(s).hp;
+ a.potions[p*5+rarity]--;a.active[type]={rarity,value:effect.value,...(POTIONS[p].combat?{remaining:effect.seconds}:{startsAt:now,endsAt:now+effect.seconds*1000})};
+ s.hp=fraction*stats(s).hp;return true;
+}
+function passivePotionBonus(s,type,from,to) {
+ if(to<=from)return 0;
+ return [s.alchemy?.previous?.[type],s.alchemy?.active[type]].reduce((sum,b)=>sum+(b?b.value/100*Math.max(0,Math.min(to,b.endsAt)-Math.max(from,b.startsAt))/(to-from):0),0);
+}
+export function idleReagents(s,now=Date.now()) {
+ const a=s.alchemy;if(!a)return [0,0,0,0,0];
+ const added=idleRewards(s,now)-(s.idleStore?.minutes||0),loot=[...a.pending];
+ for(let n=1;n<=added;n++)if((a.idleMinutes+n)%5===0){
+  let hash=(a.seed^Math.floor((a.idleMinutes+n)/5))>>>0;hash=Math.imul(hash^(hash>>>16),0x45d9f3b);hash=Math.imul(hash^(hash>>>16),0x45d9f3b);hash=(hash^(hash>>>16))>>>0;
+  const r=rollReagent(s.highest,true,()=>hash/4294967296);if(r>=0)loot[r]++;
+ }return loot;
+}
+
 export function stats(s) {
   const total = { hp: 20, damage: 2 };
   for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += Math.round((s.equipment[slot]?.value ?? 0) * (1 + (s.workshop?.slots?.[slot] || 0) / 100));
   const bonuses = affixBonuses(s);
   total.hp = Math.round(total.hp * (1 + bonuses.health / 100));
   total.damage = Math.round(total.damage * (1 + bonuses.damage / 100));
+  if(s.mount?.owned && s.mount.equipped){total.hp=Math.round(total.hp*1.2);total.damage=Math.round(total.damage*1.2);}
+  for(const [type,key] of [['damage','damage'],['health','hp']]){const b=s.alchemy?.active[type];if(b?.remaining>0)total[key]=Math.round(total[key]*(1+b.value/100));}
   return total;
 }
 export function heroPower(s) {
@@ -501,12 +564,80 @@ function prepareEncounter(s) {
   s.targetId = null; s.heroClock = 0; s.heroActionAge = 1; s.doubleStrikeDelay = 0;
   s.phase = 'walk'; s.phaseTime = 0;
 }
+export const DUNGEONS = [
+  {id:'treasury',name:'Sunken Treasury',boss:'Gulp the Hoarder',resource:'Coins',color:'#d8ac4e',ground:'#334c3f',road:'#bbaa76',mechanic:'Coin shield',description:'Raises a coin shield every 12 seconds. Damage is reduced while it shines.'},
+  {id:'forge',name:'Cursed Forge',boss:'Furnace Fist',resource:'Hammers',color:'#eb9358',ground:'#463d4c',road:'#9c7968',mechanic:'Charged smash',description:'Stops to charge a heavy strike. The turtle can intercept it.'},
+  {id:'mine',name:'Crystal Depths',boss:'Shardclaw',resource:'Ore',color:'#67d2d3',ground:'#354655',road:'#8794a0',mechanic:'Growing fury',description:'Grows stronger every 20 seconds. Bring enough damage to finish the fight.'},
+];
+export function dungeonDay(s,now=Date.now()) {
+  const day=Math.floor(now/86400000);
+  // Never roll the allowance backwards if the device clock moves back.
+  if(day>s.dungeons.day){s.dungeons.day=day;s.dungeons.wins=[0,0,0];}
+  return s.dungeons.wins;
+}
+export function dungeonBoss(id,floor) {
+  const entry=DUNGEONS.find(d=>d.id===id);
+  if(!entry||!Number.isInteger(floor)||floor<1||floor>200)return null;
+  const power=floor<=10?[.8,2.1,4.5,9,18,32,55,85,135,220][floor-1]:220*1e8**((floor-10)/190);
+  const damage=floor<=10?[3,4,6,8,12,18,26,36,50,62][floor-1]:Math.round(.28*power);
+  return {kind:'boss',boss:true,name:entry.boss,maxHp:Math.round(120*power),damage,healing:0,reward:0};
+}
+export function dungeonRewards(s,id,floor) {
+  const index=DUNGEONS.findIndex(d=>d.id===id);
+  if(index<0||!dungeonBoss(id,floor))return null;
+  const coins=index===0?COMBAT[floor-1].boss_coins*6:0;
+  const hammers=index===1?(6+2*COMBAT[floor-1].batch_size)*3:0;
+  const mine=mineLevel(s.mine.level),total=index===2?Math.max(1,Math.round(mine.rate*(8+floor*.2)))*3:0;
+  const ore=Array(Math.max(s.mine.ore.length,mine.newest+1)).fill(0),top=mine.newest;
+  if(top===0)ore[0]=total;
+  else {ore[top]=Math.ceil(total*.6);ore[top-1]=total-ore[top];}
+  return {coins,hammers,ore};
+}
+export function enterDungeon(s,id,floor,now=Date.now()) {
+  const index=DUNGEONS.findIndex(d=>d.id===id),boss=dungeonBoss(id,floor);
+  if(s.highest<2||s.dungeons.run||!boss||floor>s.dungeons.cleared[index]+1||dungeonDay(s,now)[index]>=2)return false;
+  const kind=s.selectedCompanion;
+  const battle={alchemy:s.alchemy,equipment:structuredClone(s.equipment),workshop:structuredClone(s.workshop),mount:{...s.mount},
+    level:s.level,highest:s.highest,encounter:9,completed:false,phase:'walk',phaseTime:0,heroX:.24,heroClock:0,heroActionAge:1,heroAttackCount:0,doubleStrikeDelay:0,targetId:null,
+    archerLevel:s.archerLevel,druidLevel:s.druidLevel,turtleLevel:s.turtleLevel,companion:kind?{kind,x:.11,clock:0,actionAge:1,healAge:1,moving:true,shot:null,...(kind==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})}:null,
+    forging:0,autoForge:false,battleStats:{maxHit:0,maxCrit:0},
+    enemies:[{...boss,baseDamage:boss.damage,id:0,hp:boss.maxHp,x:1.02,clock:0,healClock:0,actionAge:1,deadTime:0,engaged:false,moving:true}],dungeonBattle:{id,floor,time:0}};
+  battle.hp=stats(battle).hp;
+  s.dungeons.last=null;s.dungeons.run={id,floor,rewards:dungeonRewards(s,id,floor),battle};
+  return true;
+}
+export function leaveDungeon(s) {
+  if(!s.dungeons.run)return false;
+  s.dungeons.last={outcome:'left',id:s.dungeons.run.id,floor:s.dungeons.run.floor};s.dungeons.run=null;return true;
+}
+export function sweepDungeon(s,id,now=Date.now(),rng=Math.random) {
+  const index=DUNGEONS.findIndex(d=>d.id===id),floor=s.dungeons.cleared[index];
+  if(s.highest<2||s.dungeons.run||!dungeonBoss(id,floor)||dungeonDay(s,now)[index]>=2)return false;
+  const rewards=dungeonRewards(s,id,floor);
+  s.coins+=rewards.coins;s.hammers+=rewards.hammers;
+  rewards.ore.forEach((n,i)=>{s.mine.ore[i]=(s.mine.ore[i]||0)+n;s.mine.pending[i]??=0;});
+  s.dungeons.wins[index]++;
+  const reagent=rollReagent(s.highest,true,rng);if(reagent>=0&&s.alchemy)s.alchemy.reagents[reagent]++;
+  s.dungeons.last={outcome:'won',id,floor,rewards};return true;
+}
+export function claimMount(s) {
+  if(s.dungeons.run||s.mount.owned||!s.dungeons.cleared.every(n=>n>=10))return false;
+  const fraction=s.hp/stats(s).hp;
+  s.mount={owned:true,equipped:true};s.hp=fraction*stats(s).hp;return true;
+}
+export function toggleMount(s) {
+  if(!s.mount.owned||s.dungeons.run)return false;
+  const fraction=s.hp/stats(s).hp;s.mount.equipped=!s.mount.equipped;s.hp=fraction*stats(s).hp;return true;
+}
+
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
     workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
+  s.alchemy={xp:0,reagents:[0,0,0,0,0],potions:Array(25).fill(0),active:{},previous:{},pending:[0,0,0,0,0],idleMinutes:0,seed:Math.abs(Math.floor(now))%2147483647,oreRemainder:0};
   s.mine = {version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
+  s.dungeons={day:Math.floor(now/86400000),wins:[0,0,0],cleared:[0,0,0],run:null,last:null};s.mount={owned:false,equipped:false};
   prepareEncounter(s); return s;
 }
 export const MINE_RESOURCES = [
@@ -558,12 +689,19 @@ export function settleMine(s, now = Date.now(), rng = Math.random) {
     if(m.upgradeEndsAt && at>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
     const {chances,rate}=mineProduction(m);
     while(m.ore.length<chances.length){m.ore.push(0);m.pending.push(0);}
-    const tenths=m.remainder+Math.round(rate*10),whole=Math.floor(tenths/10);
+    const boost=s.alchemy?(s.alchemy.oreRemainder||0)+Math.round(rate*10)*passivePotionBonus(s,'ore',at-MINE_INTERVAL,at):0;
+    const extraTenths=Math.floor(boost+1e-9);if(s.alchemy)s.alchemy.oreRemainder=Math.max(0,boost-extraTenths);
+    const tenths=m.remainder+Math.round(rate*10)+extraTenths,whole=Math.floor(tenths/10);
     m.remainder=tenths%10;
     for(let hit=0;hit<whole;hit++){
       let roll=rng()*100,index=0;
       while(index<chances.length-1 && roll>=chances[index])roll-=chances[index++];
       m.pending[index]++;produced++;
+      if(s.dungeons){
+        const bonus=(s.dungeons.oreRemainder||0)+Math.floor(s.dungeons.cleared[2]/5);
+        const extra=Math.floor(bonus/100);
+        s.dungeons.oreRemainder=bonus%100;m.pending[index]+=extra;produced+=extra;
+      }
     }
   }
   m.bufferMinutes+=count;
@@ -602,18 +740,23 @@ export function idleRewards(s, now = Date.now()) {
 }
 export function idleLoot(s,now=Date.now()) {
   const bank=s.idleStore||{minutes:0,coins:0,hammers:0},minutes=idleRewards(s,now),added=minutes-bank.minutes,rates=idleRates(s);
-  return {minutes,coins:Math.floor((bank.coins+added*Math.round(rates.coins*20))/20),
-    hammers:Math.floor((bank.hammers+added*Math.round(rates.hammers*20))/20)};
+  const from=s.idleSince,to=from+added*60000;
+  return {minutes,coins:Math.floor((bank.coins+added*Math.round(rates.coins*20)*(1+passivePotionBonus(s,'coins',from,to)))/20),
+    hammers:Math.floor((bank.hammers+added*Math.round(rates.hammers*20)*(1+passivePotionBonus(s,'hammers',from,to)))/20)};
 }
 function settleIdle(s,now) {
   const bank=s.idleStore??={minutes:0,coins:0,hammers:0},minutes=idleRewards(s,now),added=minutes-bank.minutes,rates=idleRates(s);
-  bank.coins+=added*Math.round(rates.coins*20);bank.hammers+=added*Math.round(rates.hammers*20);bank.minutes=minutes;
+  const from=s.idleSince,to=from+added*60000;
+  if(s.alchemy){s.alchemy.pending=idleReagents(s,now);s.alchemy.idleMinutes+=added;}
+  bank.coins+=added*Math.round(rates.coins*20)*(1+passivePotionBonus(s,'coins',from,to));
+  bank.hammers+=added*Math.round(rates.hammers*20)*(1+passivePotionBonus(s,'hammers',from,to));bank.minutes=minutes;
   s.idleSince=minutes===idleCapacity(s)?now:s.idleSince+added*60000;
 }
 export function collectIdleRewards(s, now = Date.now()) {
   const amount=idleRewards(s,now);if(!amount)return 0;
   settleIdle(s,now);const bank=s.idleStore;
   s.coins+=Math.floor(bank.coins/20);s.hammers+=Math.floor(bank.hammers/20);
+  if(s.alchemy){s.alchemy.pending.forEach((n,i)=>s.alchemy.reagents[i]+=n);s.alchemy.pending=[0,0,0,0,0];}
   bank.coins%=20;bank.hammers%=20;bank.minutes=0;return amount;
 }
 export function workshopPrice(s,key) {
@@ -746,8 +889,40 @@ export function skipAnvilUpgrade(s, now = Date.now()) {
   return finishUpgrade(s, s.upgradeEndsAt);
 }
 export function step(s, dt, rng = Math.random, now = Date.now()) {
+  if(s.dungeons?.run){
+    const run=s.dungeons.run,b=run.battle,index=DUNGEONS.findIndex(d=>d.id===run.id);
+    const rootHpFraction=s.hp/stats(s).hp;
+    b.alchemy=s.alchemy;
+    const events=step(b,Math.min(dt,Math.max(0,90-b.dungeonBattle.time)),rng,now);
+    s.hp=rootHpFraction*stats(s).hp;
+    const won=b.phase==='victory',lost=b.phase==='dead',timeout=b.dungeonBattle.time>=90-1e-8;
+    if(won||lost||timeout){
+      const allowed=dungeonDay(s,now)[index]<2;
+      if(won&&allowed){
+        s.coins+=run.rewards.coins;s.hammers+=run.rewards.hammers;
+        run.rewards.ore.forEach((n,i)=>{s.mine.ore[i]=(s.mine.ore[i]||0)+n;s.mine.pending[i]??=0;});
+        s.dungeons.wins[index]++;s.dungeons.cleared[index]=Math.max(s.dungeons.cleared[index],run.floor);
+      }
+      const reagent=won&&allowed?rollReagent(s.highest,true,rng):-1;if(reagent>=0&&s.alchemy)s.alchemy.reagents[reagent]++;
+      s.dungeons.last={outcome:won&&allowed?'won':lost?'lost':'timeout',id:run.id,floor:run.floor,...(won&&allowed?{rewards:run.rewards}:{})};
+      s.dungeons.run=null;
+      return [...(reagent>=0?[{type:'reagent',rarity:reagent}]:[]),{type:'dungeonEnd'}];
+    }
+    return events;
+  }
   const events = [];
-  if (finishUpgrade(s, now)) events.push({ type: 'anvilUpgraded' });
+  if(s.dungeonBattle){
+    const d=s.dungeonBattle,e=s.enemies[0];
+    d.time+=dt;
+    const rank=Math.floor((d.floor-1)/50),period=12-rank,duty=3+rank*.25,chargePeriod=10-rank*.5;
+    e.shield=d.id==='treasury' && d.time%period>=period-duty;
+    const charging=d.id==='forge' && d.time%chargePeriod>=chargePeriod-2;
+    if(e.charging&&!charging){e.smash=true;e.clock=1.1;}
+    e.charging=charging;
+    e.strength=d.id==='mine'?1+Math.floor(d.time/(20-rank*2))*.25:e.smash?2.6+rank*.2:1;
+    e.damage=e.baseDamage*e.strength;
+  }
+  if (!s.dungeonBattle && finishUpgrade(s, now)) events.push({ type: 'anvilUpgraded' });
   if (s.forging > 0) {
     s.forging = Math.max(0, s.forging - dt);
     if (!s.forging) {
@@ -771,6 +946,11 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   if (s.companion) s.companion.actionAge = Math.min(1,s.companion.actionAge+dt);
   for (const e of s.enemies) { e.actionAge = Math.min(1, e.actionAge + dt); e.deadTime = Math.max(0, e.deadTime - dt); }
   if (s.completed) return events;
+  if(s.alchemy && !['dead','victory','complete'].includes(s.phase)){
+    const fraction=s.hp/stats(s).hp;let expired=false;
+    for(const type of ['damage','health']){const b=s.alchemy.active[type];if(b?.remaining>0){b.remaining=Math.max(0,b.remaining-dt);if(!b.remaining)expired=true;}}
+    if(expired){s.hp=fraction*stats(s).hp;events.push({type:'potionExpired'});}
+  }
   const bonuses = affixBonuses(s), hero = stats(s), interval = HERO_ATTACK_INTERVAL / (1 + bonuses.speed/100);
   if (s.hp > 0 && s.phase !== 'dead') s.hp = Math.min(hero.hp, s.hp + hero.hp * bonuses.regen / 100 * dt);
   if(s.companion?.kind==='druid') {
@@ -847,7 +1027,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       if (!extra) s.heroClock -= interval;
       s.heroActionAge = 0; s.heroAttackCount++;
       const critical = rng() < Math.min(50,bonuses.crit)/100;
-      const damage = Math.round(hero.damage * (critical ? 1.5 + bonuses.critDamage/100 : 1));
+      const damage = Math.max(1,Math.round(hero.damage * (critical ? 1.5 + bonuses.critDamage/100 : 1)*(target.shield?.35:1)));
       s.battleStats.maxHit=Math.max(s.battleStats.maxHit,damage);
       if(critical)s.battleStats.maxCrit=Math.max(s.battleStats.maxCrit,damage);
       const dealt = Math.min(target.hp,damage);
@@ -872,7 +1052,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       c.shot.remaining-=dt;
       if(c.shot.remaining<=0){
         if(target.hp>0 && target.id===c.shot.targetId){
-          const damage=ARCHER_LEVELS[s.archerLevel-1].damage;
+          const damage=Math.max(1,Math.round(ARCHER_LEVELS[s.archerLevel-1].damage*(target.shield?.35:1)));
           target.hp=Math.max(0,target.hp-damage);
           events.push({type:'companionHit',value:damage,targetId:target.id});
         }
@@ -888,17 +1068,21 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     }
   }
   if (!target.hp) {
+    if(s.dungeonBattle){s.phase='victory';s.phaseTime=.8;return events;}
     target.deadTime = .6; target.engaged = false; target.moving = false;
-    s.kills++; s.coins += target.reward;
+    const coinReward=Math.round(target.reward*(1+Math.floor((s.dungeons?.cleared[0]||0)/5)*.01));
+    s.kills++; s.coins += coinReward;
     const loot = COMBAT[s.level - 1];
     const hammers = target.boss
       ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * 5
-      : rng() < loot.hammer_drop_chance ? 1 : 0;
+      : rng() < loot.hammer_drop_chance+Math.floor((s.dungeons?.cleared[1]||0)/5)*.0025 ? 1 : 0;
     const runes = rng() < .001 ? 1 : 0;
     s.hammers += hammers; s.runes += runes;
+    const reagent=rollReagent(s.level,target.boss,rng);
+    if(reagent>=0&&s.alchemy){s.alchemy.reagents[reagent]++;events.push({type:'reagent',rarity:reagent});}
     if(target.boss)s.battleStats.bosses++;
-    s.battleStats.coins+=target.reward;s.battleStats.hammers+=hammers;s.battleStats.runes+=runes;
-    events.push({ type: 'kill', value: target.reward, hammers, runes, targetId: target.id });
+    s.battleStats.coins+=coinReward;s.battleStats.hammers+=hammers;s.battleStats.runes+=runes;
+    events.push({ type: 'kill', value: coinReward, hammers, runes, targetId: target.id });
     if (s.enemies.every(e => e.hp === 0)) {
       s.phase = 'victory'; s.phaseTime = .8; return events;
     }
@@ -920,12 +1104,14 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       }
       continue;
     }
+    if(e.charging)continue;
     const previous = e.clock; e.clock += dt;
     if (e.kind === 'archer' && previous < .95 && e.clock >= .95) {
       e.actionAge = 0; events.push({ type: 'enemyShot', sourceId: e.id });
     }
     if (e.clock >= 1.1) {
       e.clock -= 1.1;
+      e.smash=false;
       if (e.kind !== 'archer') e.actionAge = 0;
       if(tank && tank.hp>0 && tank.x>s.heroX && tank.x<e.x){
         const damage=e.damage*.5;
@@ -939,6 +1125,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       events.push({ type: 'enemyHit', value: blocked ? 0 : e.damage, blocked, sourceId: e.id, ranged: e.kind === 'archer' });
       if (!s.hp) {
         if(s.companion){s.companion.regenClock=0;}
+        if(s.dungeonBattle){s.phase='dead';s.phaseTime=1.8;return events;}
         s.deaths++; s.phase = 'dead'; s.phaseTime = 1.8;
         events.push({ type: 'death' }); return events;
       }
@@ -964,10 +1151,23 @@ export function restore(serialized, now = Date.now()) {
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
     const bounded=(value,max)=>Number.isInteger(value)?Math.max(0,Math.min(max,value)):0;
+    const d=s.dungeons;
+    const triplet=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isInteger(n)&&n>=0);
+    s.dungeons=d&&triplet(d.cleared)&&d.cleared.every(n=>n<=200)&&triplet(d.wins)&&d.wins.every(n=>n<=2)&&Number.isSafeInteger(d.day)&&d.day>=0?d:{day:Math.floor(now/86400000),wins:[0,0,0],cleared:[0,0,0],run:null,last:null};
+    if(s.dungeons.run){s.dungeons.last={outcome:'interrupted',id:s.dungeons.run.id,floor:s.dungeons.run.floor};s.dungeons.run=null;}
+    if(s.dungeons.last&&!dungeonBoss(s.dungeons.last.id,s.dungeons.last.floor))s.dungeons.last=null;
+    if(s.dungeons.oreRemainder!==undefined)s.dungeons.oreRemainder=bounded(s.dungeons.oreRemainder,99);
+    const owned=s.mount?.owned===true&&s.dungeons.cleared.every(n=>n>=10);
+    s.mount={owned,equipped:owned&&s.mount.equipped===true};
+    dungeonDay(s,now);
+    const a=s.alchemy||{},counts=(v,n)=>Array.from({length:n},(_,i)=>bounded(v?.[i],1e9));
+    s.alchemy={xp:bounded(a.xp,25245),reagents:counts(a.reagents,5),potions:counts(a.potions,25),pending:counts(a.pending,5),idleMinutes:bounded(a.idleMinutes,1e12),seed:bounded(a.seed??Math.floor(s.idleSince||1),2147483647),oreRemainder:nonnegative(a.oreRemainder)&&a.oreRemainder<1?a.oreRemainder:0,active:{},previous:{}};
+    for(const p of POTIONS){const b=a.active?.[p.id];if(b&&Number.isInteger(b.rarity)&&b.rarity>=0&&b.rarity<5&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&(p.combat?nonnegative(b.remaining)&&b.remaining<=3600:nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt&&b.endsAt-b.startsAt<=10800000))s.alchemy.active[p.id]={...b};}
+    for(const p of POTIONS.filter(p=>!p.combat)){const b=a.previous?.[p.id];if(b&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt&&b.endsAt-b.startsAt<=10800000)s.alchemy.previous[p.id]={...b};}
     const workshop=s.workshop||{};
     s.workshop={slots:Object.fromEntries(SLOTS.map(slot=>[slot,bounded(workshop.slots?.[slot],100)])),coins:bounded(workshop.coins,125),hammers:bounded(workshop.hammers,80),storage:bounded(workshop.storage,16)};
     const bank=s.idleStore;
-    s.idleStore=bank&&Number.isInteger(bank.minutes)&&bank.minutes>=0&&bank.minutes<=idleCapacity(s)&&['coins','hammers'].every(k=>Number.isSafeInteger(bank[k])&&bank[k]>=0&&bank[k]<=idleCapacity(s)*2000+19)?bank:{minutes:0,coins:0,hammers:0};
+    s.idleStore=bank&&Number.isInteger(bank.minutes)&&bank.minutes>=0&&bank.minutes<=idleCapacity(s)&&['coins','hammers'].every(k=>Number.isFinite(bank[k])&&bank[k]>=0&&bank[k]<=idleCapacity(s)*5000+19)?bank:{minutes:0,coins:0,hammers:0};
     s.turtleLevel=Number.isInteger(s.turtleLevel)?Math.max(1,Math.min(100,s.turtleLevel)):1;
     s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;

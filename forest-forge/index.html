@@ -45,6 +45,7 @@
         </div>
       </header>
       <div class="level-hud"><div id="location" class="location">Whispering Woods</div><h1 id="level">Level 1–1</h1><div id="progress" class="progress" aria-label="Level progress"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="boss-node"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 16 0v5l-4 1v4H8v-4l-4-1Z" fill="currentColor"/><circle cx="8" cy="11" r="2"/><circle cx="16" cy="11" r="2"/><path d="m12 14-2 3h4Z"/></svg></i></div><div id="wave-label">Wave 1 / 10</div></div>
+      <div id="dungeon-combat" hidden><small id="dungeon-location"></small><strong id="dungeon-depth"></strong><span id="dungeon-timer"></span><span id="dungeon-status"></span><button id="dungeon-leave" aria-label="Leave dungeon">Leave</button></div>
       <div id="completed" class="completion" hidden><strong>Journey complete!</strong><span>All 10 biomes cleared.</span><button id="replay" class="button blue">Play again</button></div>
       <span id="item-level-change" aria-hidden="true" hidden><img src="assets/crossed-swords.webp" alt=""><span><span id="item-level-sign"></span><b id="item-level-amount"></b></span></span>
       <button id="idle-loot" class="idle-loot" aria-label="Idle rewards" aria-haspopup="dialog" aria-controls="idle-dialog">
@@ -57,6 +58,7 @@
     </section>
     <section id="workshop" aria-label="Equipment and forge">
       <button id="hero-info" class="mini-button" aria-label="Hero stats" aria-haspopup="dialog" aria-controls="hero-stats-dialog">?</button>
+      <button id="alchemy-toggle" aria-label="Open alchemy" aria-haspopup="dialog" title="Alchemy"><img src="assets/alchemy/flask.webp" alt=""></button>
 
       <div id="mastery-info" class="mastery-summary" hidden>
         <button id="mastery-choice" aria-expanded="false" aria-controls="mastery-options" aria-label="Choose displayed mastery">
@@ -132,10 +134,25 @@
       <div class="atelier-production"><button id="atelier-coins" class="button blue"><i class="coin" aria-hidden="true"></i><span>Coins<strong id="atelier-coins-rate"></strong></span></button><button id="atelier-hammers" class="button blue"><img src="assets/hammer.webp" alt=""><span>Hammers<strong id="atelier-hammers-rate"></strong></span></button></div>
       <button id="atelier-storage" class="button"><img src="assets/workshop/crate.svg" alt=""> <span id="atelier-storage-time">Storage · 4 hours</span> <span aria-hidden="true">›</span></button>
     </section>
-    <nav id="activities" aria-label="Activities"><button id="mine-toggle" aria-label="Open mine" aria-pressed="false"><img src="assets/mine/pickaxe-nav.webp" alt=""><span class="activity-close" aria-hidden="true">×</span></button><button id="companions-toggle" aria-label="Open companions" aria-haspopup="dialog"><img src="assets/companions/navigation.webp" alt=""></button><button id="atelier-toggle" aria-label="Open workshop" aria-pressed="false"><img src="assets/anvil.svg" alt=""><span class="activity-close" aria-hidden="true">×</span></button></nav>
+    <section id="dungeon-hub" aria-labelledby="dungeon-hub-title" hidden>
+      <div class="dungeon-hub-heading"><div class="dungeon-title-row"><h1 id="dungeon-hub-title">Dungeons</h1><button id="tier-rewards-toggle" aria-haspopup="dialog" aria-controls="tier-rewards-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18v4H3zM5 14h14v7H5zM12 10v11M12 10C3 10 4 2 8 4l4 6Zm0 0c9 0 8-8 4-6l-4 6Z" fill="#f4c663" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Tier rewards</button></div><p>Two victories in each dungeon every day.<br>Defeats never spend a key.</p></div>
+      <p id="dungeon-unlock" class="dungeon-note"></p>
+      <div class="dungeon-hub-list"><div id="dungeon-choices" aria-label="Choose dungeon"></div>
+        <p id="dungeon-reset" class="dungeon-note"></p></div>
+      <button id="dungeon-hub-back" class="close" aria-label="Back to adventure">‹</button>
+    </section>
+    <div id="potion-status" aria-label="Active potions"></div>
+    <nav id="activities" aria-label="Activities"><button id="mine-toggle" aria-label="Open mine" aria-pressed="false"><img src="assets/mine/pickaxe-nav.webp" alt=""><span class="activity-close" aria-hidden="true">×</span></button><button id="companions-toggle" aria-label="Open companions" aria-haspopup="dialog"><img src="assets/companions/navigation.webp" alt=""></button><button id="atelier-toggle" aria-label="Open workshop" aria-pressed="false"><img src="assets/anvil.svg" alt=""><span class="activity-close" aria-hidden="true">×</span></button><button id="dungeons-toggle" aria-label="Open dungeons" aria-haspopup="dialog"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M9 56V28L18 9l25-3 13 22v28Z" fill="#887b9b" stroke="#162c2d" stroke-width="4" stroke-linejoin="round"/><path d="M21 56V32q0-19 21-5l3 29Z" fill="#243039" stroke="#162c2d" stroke-width="4"/><path d="m26 14 7-5 7 7-7 7Z" fill="#6ee0d8" stroke="#162c2d" stroke-width="3"/><path d="m10 39 9 1M45 38l10-4M18 10l6 10M12 50l8-2" fill="none" stroke="#162c2d" stroke-width="3"/><path d="M27 51h13M29 44h10" stroke="#b9a17b" stroke-width="3"/></svg><span class="activity-close" aria-hidden="true">×</span></button></nav>
     <div id="reward-flight" aria-hidden="true"></div>
+    <div id="dungeon-transition" aria-hidden="true" hidden></div>
   </main>
-  <dialog id="bulk-sale-confirm" class="bulk-sale-confirm" aria-labelledby="bulk-sale-title" aria-describedby="bulk-sale-summary">
+  <dialog id="alchemy-dialog" aria-labelledby="alchemy-title">
+ <header class="alchemy-heading"><div class="alchemy-heading-art" aria-hidden="true"></div><div class="alchemy-heading-title"><h2 id="alchemy-title">Alchemy</h2><b id="alchemy-level"></b></div><button id="alchemy-close" class="close" aria-label="Close alchemy">×</button><div class="alchemy-experience"><progress id="alchemy-progress" max="10" value="0" aria-label="Alchemy experience"></progress><span id="alchemy-xp"></span></div></header>
+ <div id="alchemy-stocks" aria-label="Reagent inventory"></div>
+ <div id="alchemy-recipes"></div>
+ <div id="alchemy-active"></div><p id="alchemy-message" role="status"></p>
+</dialog>
+<dialog id="bulk-sale-confirm" class="bulk-sale-confirm" aria-labelledby="bulk-sale-title" aria-describedby="bulk-sale-summary">
     <h2 id="bulk-sale-title">Sell weaker items?</h2>
     <p id="bulk-sale-summary"></p>
     <div class="sheet-actions"><button id="cancel-bulk-sale" class="button cancel">Cancel</button><button id="confirm-bulk-sale" class="button red">Sell</button></div>
@@ -146,15 +163,18 @@
       <div><span><img class="hammer-icon" src="assets/hammer.webp" alt=""><b id="idle-hammers">0</b></span><small>Hammers · 1/min</small></div>
       <div><span><i class="coin" aria-hidden="true"></i><b id="idle-coins">0</b></span><small>Coins · 1/min</small></div>
     </div>
+    <div id="idle-reagents" class="alchemy-reagents" aria-label="Reagent rewards"></div>
     <div class="idle-status"><span id="idle-time">0m / 4h</span><span id="idle-next">+1 in 60s</span></div>
     <progress id="idle-progress" max="240" value="0" aria-label="Idle storage capacity"></progress>
     <button id="collect-idle" class="button blue" disabled>Collect</button>
   </dialog>
   <dialog id="hero-stats-dialog" class="mine-dialog" aria-labelledby="hero-stats-title">
     <div class="sheet-top"><h2 id="hero-stats-title">Hero stats</h2><button id="close-hero-stats" class="close" aria-label="Close hero stats" autofocus>×</button></div>
+    <div class="hero-stats-scroll" tabindex="0" role="region" aria-label="Character statistics">
     <div id="hero-stats-base"></div>
     <h3>Total affixes</h3><div id="hero-stats-affixes"></div>
     <h3>Battle statistics</h3><div id="hero-battle-stats"></div>
+    </div>
   </dialog>
   <dialog id="auto-dialog" class="auto-dialog" aria-labelledby="auto-title" aria-describedby="auto-hint">
     <div class="sheet-top"><h2 id="auto-title">Auto forge</h2><button id="close-auto" class="close" aria-label="Close auto forge" autofocus>×</button></div>
@@ -171,6 +191,34 @@
   <dialog id="reset-progress-dialog" class="mine-dialog" aria-labelledby="reset-progress-title"><div class="sheet-top"><h2 id="reset-progress-title">Reset progress?</h2><button id="cancel-reset-close" class="close" aria-label="Cancel">×</button></div><p>Your equipment, coins, hammers, forge, mine and battle progress will be deleted. This cannot be undone. Your portrait will stay.</p><button id="cancel-reset" class="button">Cancel</button><button id="confirm-reset" class="button red">Reset and start again</button></dialog>
 <dialog id="atelier-dialog" class="mine-dialog" aria-labelledby="atelier-title"><div class="sheet-top"><h2 id="atelier-title"></h2><button class="close" data-close-mine aria-label="Close">×</button></div><img id="atelier-upgrade-icon" alt=""><i id="atelier-upgrade-coin" class="coin" hidden aria-hidden="true"></i><p id="atelier-effect"></p><div id="atelier-cost"></div><button id="atelier-buy" class="button blue">Upgrade</button></dialog>
 <dialog id="strata-dialog" class="mine-dialog" aria-labelledby="strata-title"><div class="sheet-top"><h2 id="strata-title">Mine strata</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="strata-grid"></div></dialog>
+<dialog id="dungeons-dialog" class="mine-dialog dungeon-dialog" aria-labelledby="dungeons-title">
+  <div class="dungeon-preview">
+    <img id="dungeon-banner" alt="">
+    <img id="dungeon-boss-art" alt="">
+    <h2 id="dungeons-title">Dungeons</h2>
+    <button id="close-dungeons" class="close" aria-label="Close dungeons" autofocus>×</button>
+    <button id="dungeon-info-toggle" aria-label="Dungeon details" aria-expanded="false" aria-controls="dungeon-info">ⓘ</button>
+  </div>
+  <section class="dungeon-detail">
+    <div class="dungeon-floor"><button id="dungeon-prev" aria-label="Previous floor">‹</button><strong id="dungeon-floor"></strong><button id="dungeon-next" aria-label="Next floor">›</button></div>
+    <div id="dungeon-rewards" class="dungeon-rewards" role="group" aria-label="Stage rewards"></div>
+    <div id="dungeon-bonus" class="dungeon-bonus"><strong><i id="dungeon-bonus-coin" class="coin" aria-hidden="true" hidden></i><img id="dungeon-bonus-icon" alt=""><span id="dungeon-bonus-current"></span></strong><small id="dungeon-bonus-next"></small></div>
+    <div class="dungeon-keys"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3a6 6 0 1 1-3 11l-6 7-4-4 7-6a6 6 0 0 1 6-8Zm2 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" fill="#f4c76c" stroke="#17282a" stroke-width="1.7"/></svg><strong id="dungeon-keys"></strong></div>
+    <div class="dungeon-actions"><button id="dungeon-sweep" class="button blue">Sweep Last</button><button id="dungeon-fight" class="button blue">Enter</button></div>
+    <div id="dungeon-info" hidden><h3 id="dungeon-boss-name"></h3><p id="dungeon-mechanic"></p><p>Time limit: 90 seconds. Defeats never spend a key.</p><p id="dungeon-sweep-info"></p><p id="dungeon-bonus-description"></p></div>
+  </section>
+</dialog>
+<dialog id="tier-rewards-dialog" class="mine-dialog tier-rewards-dialog" aria-labelledby="tier-rewards-title">
+  <div class="sheet-top"><h2 id="tier-rewards-title">Tier rewards</h2><button id="close-tier-rewards" class="close" aria-label="Close tier rewards" autofocus>×</button></div>
+  <ul class="mount-rewards" aria-label="Mount rewards">
+    <li class="mount-reward-row">
+      <img class="mount-reward-art" src="assets/dungeons/mount-icon.webp" alt="Rustback, a saddle dinosaur">
+      <div class="mount-reward-info"><h3>Rustback</h3><div class="mount-stats"><span title="+20% damage"><img src="assets/weapon.svg" alt="Damage">+20%</span><span title="+20% health"><svg class="heart" viewBox="0 0 40 36" aria-label="Health"><path d="M20 33C-12 14 7-8 20 6 33-8 52 14 20 33Z"/></svg>+20%</span></div></div>
+      <div id="mount-condition" aria-label="Clear stage 1–10 in all three dungeons"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M6 11V7a6 6 0 0 1 12 0v4" fill="none" stroke="currentColor" stroke-width="4"/><rect x="2" y="10" width="20" height="17" rx="3" fill="currentColor"/><path d="M12 16v5" stroke="#fffaf0" stroke-width="3" stroke-linecap="round"/></svg><span><strong>Tier 1</strong><small>All 3 dungeons</small></span></div>
+      <button id="mount-action" class="button blue" hidden></button>
+    </li>
+  </ul>
+</dialog>
 <dialog id="companions-dialog" aria-labelledby="companions-title">
 <div class="sheet-top"><h2 id="companions-title">Companions</h2><button id="close-companions" class="close" aria-label="Close companions">&times;</button></div>
 <div class="companions-intro"><span>One companion at a time</span><strong><i class="coin" aria-hidden="true"></i> <span id="companions-coins"></span></strong></div>

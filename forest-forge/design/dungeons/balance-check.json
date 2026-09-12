@@ -1,0 +1,8456 @@
+{
+  "note": "Doubled boss health and stronger early damage; one resource per dungeon. Deterministic 30 Hz; no affixes, companion only where marked; first-clear rewards at mine level 1.",
+  "simulations": [
+    {
+      "epoch": 1,
+      "itemLevel": 1,
+      "floor": 1,
+      "starter": true,
+      "id": "treasury",
+      "stats": {
+        "hp": 65,
+        "damage": 9
+      },
+      "time": 24.7,
+      "outcome": "won",
+      "hpRemaining": 8
+    },
+    {
+      "epoch": 1,
+      "itemLevel": 1,
+      "floor": 1,
+      "starter": true,
+      "id": "forge",
+      "stats": {
+        "hp": 65,
+        "damage": 9
+      },
+      "time": 22.7,
+      "outcome": "won",
+      "hpRemaining": 10.4
+    },
+    {
+      "epoch": 1,
+      "itemLevel": 1,
+      "floor": 1,
+      "starter": true,
+      "id": "mine",
+      "stats": {
+        "hp": 65,
+        "damage": 9
+      },
+      "time": 22.7,
+      "outcome": "won",
+      "hpRemaining": 8.8
+    },
+    {
+      "epoch": 1,
+      "itemLevel": 1,
+      "floor": 1,
+      "starter": true,
+      "companion": "druid",
+      "id": "treasury",
+      "stats": {
+        "hp": 65,
+        "damage": 9
+      },
+      "time": 24.7,
+      "outcome": "won",
+      "hpRemaining": 30
+    },
+    {
+      "epoch": 1,
+      "itemLevel": 1,
+      "floor": 1,
+      "starter": true,
+      "companion": "druid",
+      "id": "forge",
+      "stats": {
+        "hp": 65,
+        "damage": 9
+      },
+      "time": 22.7,
+      "outcome": "won",
+      "hpRemaining": 30.4
+    },
+    {
+      "epoch": 1,
+      "itemLevel": 1,
+      "floor": 1,
+      "starter": true,
+      "companion": "druid",
+      "id": "mine",
+      "stats": {
+        "hp": 65,
+        "damage": 9
+      },
+      "time": 22.7,
+      "outcome": "won",
+      "hpRemaining": 28.8
+    },
+    {
+      "epoch": 2,
+      "itemLevel": 1,
+      "floor": 10,
+      "id": "treasury",
+      "stats": {
+        "hp": 430,
+        "damage": 72
+      },
+      "time": 9.5,
+      "outcome": "lost",
+      "hpRemaining": 0
+    },
+    {
+      "epoch": 2,
+      "itemLevel": 1,
+      "floor": 10,
+      "id": "forge",
+      "stats": {
+        "hp": 430,
+        "damage": 72
+      },
+      "time": 10,
+      "outcome": "lost",
+      "hpRemaining": 0
+    },
+    {
+      "epoch": 2,
+      "itemLevel": 1,
+      "floor": 10,
+      "id": "mine",
+      "stats": {
+        "hp": 430,
+        "damage": 72
+      },
+      "time": 9.5,
+      "outcome": "lost",
+      "hpRemaining": 0
+    },
+    {
+      "epoch": 3,
+      "itemLevel": 1,
+      "floor": 10,
+      "id": "treasury",
+      "stats": {
+        "hp": 4120,
+        "damage": 702
+      },
+      "time": 75.5,
+      "outcome": "lost",
+      "hpRemaining": 0
+    },
+    {
+      "epoch": 3,
+      "itemLevel": 1,
+      "floor": 10,
+      "id": "forge",
+      "stats": {
+        "hp": 4120,
+        "damage": 702
+      },
+      "time": 72.2,
+      "outcome": "lost",
+      "hpRemaining": 0
+    },
+    {
+      "epoch": 3,
+      "itemLevel": 1,
+      "floor": 10,
+      "id": "mine",
+      "stats": {
+        "hp": 4120,
+        "damage": 702
+      },
+      "time": 60.1,
+      "outcome": "lost",
+      "hpRemaining": 0
+    },
+    {
+      "epoch": 3,
+      "itemLevel": 5,
+      "floor": 10,
+      "id": "treasury",
+      "stats": {
+        "hp": 4940,
+        "damage": 842
+      },
+      "time": 81.6,
+      "outcome": "won",
+      "hpRemaining": 476
+    },
+    {
+      "epoch": 3,
+      "itemLevel": 5,
+      "floor": 10,
+      "id": "forge",
+      "stats": {
+        "hp": 4940,
+        "damage": 842
+      },
+      "time": 65.6,
+      "outcome": "won",
+      "hpRemaining": 1182.8
+    },
+    {
+      "epoch": 3,
+      "itemLevel": 5,
+      "floor": 10,
+      "id": "mine",
+      "stats": {
+        "hp": 4940,
+        "damage": 842
+      },
+      "time": 65.6,
+      "outcome": "won",
+      "hpRemaining": 336.5
+    },
+    {
+      "epoch": 10,
+      "itemLevel": 100,
+      "floor": 200,
+      "workshop": 100,
+      "mount": true,
+      "id": "treasury",
+      "stats": {
+        "hp": 585480000024,
+        "damage": 99960000002
+      },
+      "time": 75.6,
+      "outcome": "won",
+      "hpRemaining": 172760000024
+    },
+    {
+      "epoch": 10,
+      "itemLevel": 100,
+      "floor": 200,
+      "workshop": 100,
+      "mount": true,
+      "id": "forge",
+      "stats": {
+        "hp": 585480000024,
+        "damage": 99960000002
+      },
+      "time": 55.6,
+      "outcome": "won",
+      "hpRemaining": 263928000024
+    },
+    {
+      "epoch": 10,
+      "itemLevel": 100,
+      "floor": 200,
+      "workshop": 100,
+      "mount": true,
+      "id": "mine",
+      "stats": {
+        "hp": 585480000024,
+        "damage": 99960000002
+      },
+      "time": 55.6,
+      "outcome": "won",
+      "hpRemaining": 175840000024
+    }
+  ],
+  "floors": [
+    {
+      "floor": 1,
+      "stage": "1-1",
+      "hp": 96,
+      "damage": 3,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 300,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            48,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 2,
+      "stage": "1-2",
+      "hp": 252,
+      "damage": 4,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 360,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            48,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 3,
+      "stage": "1-3",
+      "hp": 540,
+      "damage": 6,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 420,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            54,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 4,
+      "stage": "1-4",
+      "hp": 1080,
+      "damage": 8,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 480,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            54,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 5,
+      "stage": "1-5",
+      "hp": 2160,
+      "damage": 12,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 540,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            54,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 6,
+      "stage": "1-6",
+      "hp": 3840,
+      "damage": 18,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 600,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            54,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 7,
+      "stage": "1-7",
+      "hp": 6600,
+      "damage": 26,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 660,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            54,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 8,
+      "stage": "1-8",
+      "hp": 10200,
+      "damage": 36,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 720,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            60,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 9,
+      "stage": "1-9",
+      "hp": 16200,
+      "damage": 50,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 780,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            60,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 10,
+      "stage": "1-10",
+      "hp": 26400,
+      "damage": 62,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 840,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 60,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            60,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 11,
+      "stage": "2-1",
+      "hp": 29088,
+      "damage": 68,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 864,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            60,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 12,
+      "stage": "2-2",
+      "hp": 32049,
+      "damage": 75,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 888,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            60,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 13,
+      "stage": "2-3",
+      "hp": 35312,
+      "damage": 82,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 900,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            66,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 14,
+      "stage": "2-4",
+      "hp": 38907,
+      "damage": 91,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 924,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            66,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 15,
+      "stage": "2-5",
+      "hp": 42868,
+      "damage": 100,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 948,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            66,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 16,
+      "stage": "2-6",
+      "hp": 47232,
+      "damage": 110,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 972,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            66,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 17,
+      "stage": "2-7",
+      "hp": 52040,
+      "damage": 121,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 996,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            66,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 18,
+      "stage": "2-8",
+      "hp": 57338,
+      "damage": 134,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1020,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            72,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 19,
+      "stage": "2-9",
+      "hp": 63176,
+      "damage": 147,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1044,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            72,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 20,
+      "stage": "2-10",
+      "hp": 69608,
+      "damage": 162,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1080,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 84,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            72,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 21,
+      "stage": "3-1",
+      "hp": 76694,
+      "damage": 179,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1104,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            72,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 22,
+      "stage": "3-2",
+      "hp": 84502,
+      "damage": 197,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1128,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            72,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 23,
+      "stage": "3-3",
+      "hp": 93105,
+      "damage": 217,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1152,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            78,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 24,
+      "stage": "3-4",
+      "hp": 102584,
+      "damage": 239,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1188,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            78,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 25,
+      "stage": "3-5",
+      "hp": 113027,
+      "damage": 264,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1212,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            78,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 26,
+      "stage": "3-6",
+      "hp": 124534,
+      "damage": 291,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1248,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            78,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 27,
+      "stage": "3-7",
+      "hp": 137212,
+      "damage": 320,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1284,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            78,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 28,
+      "stage": "3-8",
+      "hp": 151182,
+      "damage": 353,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1308,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            84,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 29,
+      "stage": "3-9",
+      "hp": 166573,
+      "damage": 389,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1344,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            84,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 30,
+      "stage": "3-10",
+      "hp": 183531,
+      "damage": 428,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1380,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 108,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            84,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 31,
+      "stage": "4-1",
+      "hp": 202216,
+      "damage": 472,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1416,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            84,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 32,
+      "stage": "4-2",
+      "hp": 222802,
+      "damage": 520,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1452,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            84,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 33,
+      "stage": "4-3",
+      "hp": 245485,
+      "damage": 573,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1488,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            90,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 34,
+      "stage": "4-4",
+      "hp": 270477,
+      "damage": 631,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1524,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            90,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 35,
+      "stage": "4-5",
+      "hp": 298013,
+      "damage": 695,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1560,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            90,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 36,
+      "stage": "4-6",
+      "hp": 328353,
+      "damage": 766,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1596,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            90,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 37,
+      "stage": "4-7",
+      "hp": 361781,
+      "damage": 844,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1632,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            90,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 38,
+      "stage": "4-8",
+      "hp": 398613,
+      "damage": 930,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1680,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            96,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 39,
+      "stage": "4-9",
+      "hp": 439194,
+      "damage": 1025,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1716,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            96,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 40,
+      "stage": "4-10",
+      "hp": 483907,
+      "damage": 1129,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1764,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 132,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            96,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 41,
+      "stage": "5-1",
+      "hp": 533172,
+      "damage": 1244,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1812,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            96,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 42,
+      "stage": "5-2",
+      "hp": 587452,
+      "damage": 1371,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1848,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            96,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 43,
+      "stage": "5-3",
+      "hp": 647258,
+      "damage": 1510,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1896,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            102,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 44,
+      "stage": "5-4",
+      "hp": 713153,
+      "damage": 1664,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1944,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            102,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 45,
+      "stage": "5-5",
+      "hp": 785757,
+      "damage": 1833,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 1992,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            102,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 46,
+      "stage": "5-6",
+      "hp": 865752,
+      "damage": 2020,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2040,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            102,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 47,
+      "stage": "5-7",
+      "hp": 953891,
+      "damage": 2226,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2100,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            102,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 48,
+      "stage": "5-8",
+      "hp": 1051003,
+      "damage": 2452,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2148,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            108,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 49,
+      "stage": "5-9",
+      "hp": 1158002,
+      "damage": 2702,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2196,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            108,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 50,
+      "stage": "5-10",
+      "hp": 1275894,
+      "damage": 2977,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2256,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 156,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            108,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 51,
+      "stage": "6-1",
+      "hp": 1405788,
+      "damage": 3280,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2316,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            108,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 52,
+      "stage": "6-2",
+      "hp": 1548906,
+      "damage": 3614,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2364,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            108,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 53,
+      "stage": "6-3",
+      "hp": 1706594,
+      "damage": 3982,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2424,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            114,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 54,
+      "stage": "6-4",
+      "hp": 1880336,
+      "damage": 4387,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2484,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            114,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 55,
+      "stage": "6-5",
+      "hp": 2071766,
+      "damage": 4834,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2556,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            114,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 56,
+      "stage": "6-6",
+      "hp": 2282685,
+      "damage": 5326,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2616,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            114,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 57,
+      "stage": "6-7",
+      "hp": 2515077,
+      "damage": 5869,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2676,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            114,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 58,
+      "stage": "6-8",
+      "hp": 2771128,
+      "damage": 6466,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2748,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            120,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 59,
+      "stage": "6-9",
+      "hp": 3053246,
+      "damage": 7124,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2820,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            120,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 60,
+      "stage": "6-10",
+      "hp": 3364086,
+      "damage": 7850,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2892,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 180,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            120,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 61,
+      "stage": "7-1",
+      "hp": 3706571,
+      "damage": 8649,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 2964,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            120,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 62,
+      "stage": "7-2",
+      "hp": 4083924,
+      "damage": 9529,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3036,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            120,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 63,
+      "stage": "7-3",
+      "hp": 4499693,
+      "damage": 10499,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3108,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            126,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 64,
+      "stage": "7-4",
+      "hp": 4957790,
+      "damage": 11568,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3192,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            126,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 65,
+      "stage": "7-5",
+      "hp": 5462525,
+      "damage": 12746,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3264,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            126,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 66,
+      "stage": "7-6",
+      "hp": 6018644,
+      "damage": 14044,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3348,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            126,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 67,
+      "stage": "7-7",
+      "hp": 6631380,
+      "damage": 15473,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3432,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            126,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 68,
+      "stage": "7-8",
+      "hp": 7306497,
+      "damage": 17048,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3516,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            132,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 69,
+      "stage": "7-9",
+      "hp": 8050344,
+      "damage": 18784,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3600,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            132,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 70,
+      "stage": "7-10",
+      "hp": 8869920,
+      "damage": 20696,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3696,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 204,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            132,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 71,
+      "stage": "8-1",
+      "hp": 9772934,
+      "damage": 22804,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3792,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            132,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 72,
+      "stage": "8-2",
+      "hp": 10767881,
+      "damage": 25125,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3888,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            132,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 73,
+      "stage": "8-3",
+      "hp": 11864119,
+      "damage": 27683,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 3984,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            138,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 74,
+      "stage": "8-4",
+      "hp": 13071962,
+      "damage": 30501,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4080,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            138,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 75,
+      "stage": "8-5",
+      "hp": 14402770,
+      "damage": 33606,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4176,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            138,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 76,
+      "stage": "8-6",
+      "hp": 15869063,
+      "damage": 37028,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4284,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            138,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 77,
+      "stage": "8-7",
+      "hp": 17484635,
+      "damage": 40797,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4392,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            138,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 78,
+      "stage": "8-8",
+      "hp": 19264681,
+      "damage": 44951,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4500,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            144,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 79,
+      "stage": "8-9",
+      "hp": 21225947,
+      "damage": 49527,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4620,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            144,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 80,
+      "stage": "8-10",
+      "hp": 23386883,
+      "damage": 54569,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4728,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 228,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            144,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 81,
+      "stage": "9-1",
+      "hp": 25767816,
+      "damage": 60125,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4848,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            144,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 82,
+      "stage": "9-2",
+      "hp": 28391143,
+      "damage": 66246,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 4968,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            144,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 83,
+      "stage": "9-3",
+      "hp": 31281541,
+      "damage": 72990,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5100,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            150,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 84,
+      "stage": "9-4",
+      "hp": 34466200,
+      "damage": 80421,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5220,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            150,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 85,
+      "stage": "9-5",
+      "hp": 37975077,
+      "damage": 88609,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5352,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            150,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 86,
+      "stage": "9-6",
+      "hp": 41841180,
+      "damage": 97629,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5484,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            150,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 87,
+      "stage": "9-7",
+      "hp": 46100877,
+      "damage": 107569,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5628,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            150,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 88,
+      "stage": "9-8",
+      "hp": 50794238,
+      "damage": 118520,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5760,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            156,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 89,
+      "stage": "9-9",
+      "hp": 55965413,
+      "damage": 130586,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 5904,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            156,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 90,
+      "stage": "9-10",
+      "hp": 61663047,
+      "damage": 143880,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 6060,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 252,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            156,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 91,
+      "stage": "10-1",
+      "hp": 67940735,
+      "damage": 158528,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 6204,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            156,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 92,
+      "stage": "10-2",
+      "hp": 74857532,
+      "damage": 174668,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 6360,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            156,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 93,
+      "stage": "10-3",
+      "hp": 82478503,
+      "damage": 192450,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 6516,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            162,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 94,
+      "stage": "10-4",
+      "hp": 90875337,
+      "damage": 212042,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 6684,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            162,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 95,
+      "stage": "10-5",
+      "hp": 100127021,
+      "damage": 233630,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 6852,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            162,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 96,
+      "stage": "10-6",
+      "hp": 110320586,
+      "damage": 257415,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 7020,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            162,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 97,
+      "stage": "10-7",
+      "hp": 121551920,
+      "damage": 283621,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 7200,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            162,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 98,
+      "stage": "10-8",
+      "hp": 133926674,
+      "damage": 312496,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 7380,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            168,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 99,
+      "stage": "10-9",
+      "hp": 147561258,
+      "damage": 344310,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 7560,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            168,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 100,
+      "stage": "10-10",
+      "hp": 162583928,
+      "damage": 379362,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 7752,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 276,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            168,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 101,
+      "stage": "11-1",
+      "hp": 179136001,
+      "damage": 417984,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 7944,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            168,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 102,
+      "stage": "11-2",
+      "hp": 197373180,
+      "damage": 460537,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 8148,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            168,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 103,
+      "stage": "11-3",
+      "hp": 217467019,
+      "damage": 507423,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 8352,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            174,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 104,
+      "stage": "11-4",
+      "hp": 239606538,
+      "damage": 559082,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 8556,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            174,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 105,
+      "stage": "11-5",
+      "hp": 264000000,
+      "damage": 616000,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 8772,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            174,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 106,
+      "stage": "11-6",
+      "hp": 290876871,
+      "damage": 678713,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 8988,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            174,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 107,
+      "stage": "11-7",
+      "hp": 320489978,
+      "damage": 747810,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 9216,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            174,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 108,
+      "stage": "11-8",
+      "hp": 353117886,
+      "damage": 823942,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 9444,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            180,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 109,
+      "stage": "11-9",
+      "hp": 389067523,
+      "damage": 907824,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 9684,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            180,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 110,
+      "stage": "11-10",
+      "hp": 428677059,
+      "damage": 1000246,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 9924,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 300,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            180,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 111,
+      "stage": "12-1",
+      "hp": 472319097,
+      "damage": 1102078,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 10176,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            180,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 112,
+      "stage": "12-2",
+      "hp": 520404171,
+      "damage": 1214276,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 10428,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            180,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 113,
+      "stage": "12-3",
+      "hp": 573384610,
+      "damage": 1337897,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 10692,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            186,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 114,
+      "stage": "12-4",
+      "hp": 631758793,
+      "damage": 1474104,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 10956,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            186,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 115,
+      "stage": "12-5",
+      "hp": 696075837,
+      "damage": 1624177,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 11232,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            186,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 116,
+      "stage": "12-6",
+      "hp": 766940764,
+      "damage": 1789528,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 11508,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            186,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 117,
+      "stage": "12-7",
+      "hp": 845020188,
+      "damage": 1971714,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 11796,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            186,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 118,
+      "stage": "12-8",
+      "hp": 931048593,
+      "damage": 2172447,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 12096,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            192,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 119,
+      "stage": "12-9",
+      "hp": 1025835233,
+      "damage": 2393616,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 12396,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            192,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 120,
+      "stage": "12-10",
+      "hp": 1130271753,
+      "damage": 2637301,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 12708,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 324,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            192,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 121,
+      "stage": "13-1",
+      "hp": 1245340572,
+      "damage": 2905795,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 13020,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            192,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 122,
+      "stage": "13-2",
+      "hp": 1372124126,
+      "damage": 3201623,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 13344,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            192,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 123,
+      "stage": "13-3",
+      "hp": 1511815048,
+      "damage": 3527568,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 13680,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            198,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 124,
+      "stage": "13-4",
+      "hp": 1665727389,
+      "damage": 3886697,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 14016,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            198,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 125,
+      "stage": "13-5",
+      "hp": 1835308982,
+      "damage": 4282388,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 14376,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            198,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 126,
+      "stage": "13-6",
+      "hp": 2022155054,
+      "damage": 4718362,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 14736,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            198,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 127,
+      "stage": "13-7",
+      "hp": 2228023239,
+      "damage": 5198721,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 15096,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            198,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 128,
+      "stage": "13-8",
+      "hp": 2454850108,
+      "damage": 5727984,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 15480,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            204,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 129,
+      "stage": "13-9",
+      "hp": 2704769389,
+      "damage": 6311129,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 15864,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            204,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 130,
+      "stage": "13-10",
+      "hp": 2980132034,
+      "damage": 6953641,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 16260,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 348,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            204,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 131,
+      "stage": "14-1",
+      "hp": 3283528340,
+      "damage": 7661566,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 16668,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            204,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 132,
+      "stage": "14-2",
+      "hp": 3617812310,
+      "damage": 8441562,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 17088,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            204,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 133,
+      "stage": "14-3",
+      "hp": 3986128504,
+      "damage": 9300967,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 17508,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            210,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 134,
+      "stage": "14-4",
+      "hp": 4391941618,
+      "damage": 10247864,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 17952,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            210,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 135,
+      "stage": "14-5",
+      "hp": 4839069077,
+      "damage": 11291161,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 18396,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            210,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 136,
+      "stage": "14-6",
+      "hp": 5331716940,
+      "damage": 12440673,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 18852,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            210,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 137,
+      "stage": "14-7",
+      "hp": 5874519475,
+      "damage": 13707212,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 19332,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            210,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 138,
+      "stage": "14-8",
+      "hp": 6472582744,
+      "damage": 15102693,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 19812,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            216,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 139,
+      "stage": "14-9",
+      "hp": 7131532640,
+      "damage": 16640243,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 20304,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            216,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 140,
+      "stage": "14-10",
+      "hp": 7857567806,
+      "damage": 18334325,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 20820,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 372,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            216,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 141,
+      "stage": "15-1",
+      "hp": 8657517948,
+      "damage": 20200875,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 21336,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            216,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 142,
+      "stage": "15-2",
+      "hp": 9538908078,
+      "damage": 22257452,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 21864,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            216,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 143,
+      "stage": "15-3",
+      "hp": 10510029303,
+      "damage": 24523402,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 22416,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            222,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 144,
+      "stage": "15-4",
+      "hp": 11580016815,
+      "damage": 27020039,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 22980,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            222,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 145,
+      "stage": "15-5",
+      "hp": 12758935830,
+      "damage": 29770850,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 23556,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            222,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 146,
+      "stage": "15-6",
+      "hp": 14057876263,
+      "damage": 32801711,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 24144,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            222,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 147,
+      "stage": "15-7",
+      "hp": 15489057054,
+      "damage": 36141133,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 24744,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            222,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 148,
+      "stage": "15-8",
+      "hp": 17065941110,
+      "damage": 39820529,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 25356,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            228,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 149,
+      "stage": "15-9",
+      "hp": 18803361944,
+      "damage": 43874511,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 25992,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            228,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 150,
+      "stage": "15-10",
+      "hp": 20717663217,
+      "damage": 48341214,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 26640,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 396,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            228,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 151,
+      "stage": "16-1",
+      "hp": 22826852478,
+      "damage": 53262656,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 27312,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            228,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 152,
+      "stage": "16-2",
+      "hp": 25150770557,
+      "damage": 58685131,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 27996,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            228,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 153,
+      "stage": "16-3",
+      "hp": 27711278206,
+      "damage": 64659649,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 28692,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            234,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 154,
+      "stage": "16-4",
+      "hp": 30532461743,
+      "damage": 71242411,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 29412,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            234,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 155,
+      "stage": "16-5",
+      "hp": 33640859623,
+      "damage": 78495339,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 30144,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            234,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 156,
+      "stage": "16-6",
+      "hp": 37065712082,
+      "damage": 86486662,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 30900,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            234,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 157,
+      "stage": "16-7",
+      "hp": 40839236202,
+      "damage": 95291551,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 31668,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            234,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 158,
+      "stage": "16-8",
+      "hp": 44996928965,
+      "damage": 104992834,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 32460,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            240,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 159,
+      "stage": "16-9",
+      "hp": 49577901169,
+      "damage": 115681769,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 33276,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            240,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 160,
+      "stage": "16-10",
+      "hp": 54625245341,
+      "damage": 127458906,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 34104,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 420,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            240,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 161,
+      "stage": "17-1",
+      "hp": 60186441101,
+      "damage": 140435029,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 34956,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            240,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 162,
+      "stage": "17-2",
+      "hp": 66313801792,
+      "damage": 154732204,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 35832,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            240,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 163,
+      "stage": "17-3",
+      "hp": 73064966588,
+      "damage": 170484922,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 36732,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            246,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 164,
+      "stage": "17-4",
+      "hp": 80503442696,
+      "damage": 187841366,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 37644,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            246,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 165,
+      "stage": "17-5",
+      "hp": 88699202758,
+      "damage": 206964806,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 38592,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            246,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 166,
+      "stage": "17-6",
+      "hp": 97729343074,
+      "damage": 228035134,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 39552,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            246,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 167,
+      "stage": "17-7",
+      "hp": 107678808837,
+      "damage": 251250554,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 40548,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            246,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 168,
+      "stage": "17-8",
+      "hp": 118641193195,
+      "damage": 276829451,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 41556,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            252,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 169,
+      "stage": "17-9",
+      "hp": 130719617674,
+      "damage": 305012441,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 42600,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            252,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 170,
+      "stage": "17-10",
+      "hp": 144027702223,
+      "damage": 336064639,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 43656,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 444,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            252,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 171,
+      "stage": "18-1",
+      "hp": 158690634020,
+      "damage": 370278146,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 44748,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            252,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 172,
+      "stage": "18-2",
+      "hp": 174846345093,
+      "damage": 407974805,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 45876,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            252,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 173,
+      "stage": "18-3",
+      "hp": 192646809820,
+      "damage": 449509223,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 47016,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            258,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 174,
+      "stage": "18-4",
+      "hp": 212259474535,
+      "damage": 495272107,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 48192,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            258,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 175,
+      "stage": "18-5",
+      "hp": 233868832668,
+      "damage": 545693943,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 49404,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            258,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 176,
+      "stage": "18-6",
+      "hp": 257678160249,
+      "damage": 601249041,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 50628,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            258,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 177,
+      "stage": "18-7",
+      "hp": 283911428094,
+      "damage": 662459999,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 51900,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            258,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 178,
+      "stage": "18-8",
+      "hp": 312815408664,
+      "damage": 729902620,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 53196,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            264,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 179,
+      "stage": "18-9",
+      "hp": 344661997422,
+      "damage": 804211327,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 54528,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            264,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 180,
+      "stage": "18-10",
+      "hp": 379750770508,
+      "damage": 886085131,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 55896,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 468,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            264,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 181,
+      "stage": "19-1",
+      "hp": 418411802810,
+      "damage": 976294207,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 57288,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            264,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 182,
+      "stage": "19-2",
+      "hp": 461008772928,
+      "damage": 1075687137,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 58716,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            264,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 183,
+      "stage": "19-3",
+      "hp": 507942384249,
+      "damage": 1185198897,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 60192,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            270,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 184,
+      "stage": "19-4",
+      "hp": 559654134296,
+      "damage": 1305859647,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 61692,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            270,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 185,
+      "stage": "19-5",
+      "hp": 616630467840,
+      "damage": 1438804425,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 63240,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            270,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 186,
+      "stage": "19-6",
+      "hp": 679407352804,
+      "damage": 1585283823,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 64812,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            270,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 187,
+      "stage": "19-7",
+      "hp": 748575322043,
+      "damage": 1746675751,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 66432,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            270,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 188,
+      "stage": "19-8",
+      "hp": 824785028391,
+      "damage": 1924498400,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 68100,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            276,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 189,
+      "stage": "19-9",
+      "hp": 908753365261,
+      "damage": 2120424519,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 69804,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            276,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 190,
+      "stage": "19-10",
+      "hp": 1001270210353,
+      "damage": 2336297157,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 71544,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 492,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            276,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 191,
+      "stage": "20-1",
+      "hp": 1103205855918,
+      "damage": 2574146997,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 73332,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            276,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 192,
+      "stage": "20-2",
+      "hp": 1215519195464,
+      "damage": 2836211456,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 75168,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            276,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 193,
+      "stage": "20-3",
+      "hp": 1339266743933,
+      "damage": 3124955736,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 77040,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            282,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 194,
+      "stage": "20-4",
+      "hp": 1475612576170,
+      "damage": 3443096011,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 78972,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            282,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 195,
+      "stage": "20-5",
+      "hp": 1625839277214,
+      "damage": 3793624980,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 80940,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            282,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 196,
+      "stage": "20-6",
+      "hp": 1791360007376,
+      "damage": 4179840017,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 82968,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            282,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 197,
+      "stage": "20-7",
+      "hp": 1973731795632,
+      "damage": 4605374190,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 85044,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            282,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 198,
+      "stage": "20-8",
+      "hp": 2174670186367,
+      "damage": 5074230435,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 87168,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            288,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 199,
+      "stage": "20-9",
+      "hp": 2396065377240,
+      "damage": 5590819214,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 89352,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            288,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    },
+    {
+      "floor": 200,
+      "stage": "20-10",
+      "hp": 2640000000000,
+      "damage": 6160000000,
+      "firstClearRewards": [
+        {
+          "id": "treasury",
+          "coins": 91584,
+          "hammers": 0,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "forge",
+          "coins": 0,
+          "hammers": 516,
+          "ore": [
+            0,
+            0,
+            0
+          ],
+          "first": true
+        },
+        {
+          "id": "mine",
+          "coins": 0,
+          "hammers": 0,
+          "ore": [
+            288,
+            0,
+            0
+          ],
+          "first": true
+        }
+      ]
+    }
+  ]
+}

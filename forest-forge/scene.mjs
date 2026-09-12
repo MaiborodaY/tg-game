@@ -1,5 +1,5 @@
 const compactNumber = new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1});
-import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME } from './game.mjs';
+import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs';
 
 // Existing atlas poses: body x/y/angle, then each hand's x/y/angle.
 // Source coordinates match design/hero-base-v2-poses.json and build-set.cjs.
@@ -62,6 +62,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     if(!art[previewSet]){const image=new Image();image.src=`assets/sets/${previewSet}/atlas.png?v=${artVersion}`;await image.decode();art[previewSet]=image;}
   }
   let companionArtKind=null;
+  let dungeonTheme=null, dungeonArt=null, dungeonBackdrop=null, dungeonFx=null, dungeonImpact=null, shieldImpact=1, mountArt=null, mountLoading=false;
   const heroRig = heroRigs[0];
   const heroSlots = heroRig.rows.map((_,row) => Object.keys(heroRig.slots).find(slot => heroRig.slots[slot].includes(row)));
   let width = 0, height = 0, titleY = 0, ratio = 1, landscape;
@@ -74,6 +75,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   const coins = [];
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   async function prepare(level) {
+    if(dungeonTheme){dungeonTheme=null;dungeonArt=null;dungeonBackdrop=null;dungeonFx=null;dungeonImpact=null;shieldImpact=1;numbers.length=0;coins.length=0;resize();}
     const index = Math.floor((level - 1) / LEVELS_PER_BIOME);
     wantedBiome=index;
     if (index === biomeIndex) { loading=false; return; }
@@ -92,8 +94,87 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     biomeIndex = index; biomeSprites = sprites; scenery = decor; biomeHeights = heights;
     resize(); reveal = .55; loading = false;
   }
+  async function prepareDungeon(id) {
+    loading=true;
+    try {
+      const sprite=new Image(),backdrop=new Image();sprite.src=`assets/dungeons/${id}-animation.webp`;backdrop.src=`assets/dungeons/${id}-banner.webp`;
+      await Promise.all([sprite.decode(),backdrop.decode()]);
+      dungeonTheme=DUNGEONS.find(d=>d.id===id);dungeonArt=sprite;dungeonBackdrop=backdrop;
+      // Bake six frames per effect once, for the active boss only (1.125 MiB RGBA).
+      // Gradients and paths never need rebuilding during combat.
+      dungeonFx=document.createElement('canvas');dungeonFx.width=768;dungeonFx.height=384;
+      const fx=dungeonFx.getContext('2d');
+      for(let row=0;row<3;row++)for(let frame=0;frame<6;frame++){
+        const t=frame/5,angle=frame*Math.PI/3;
+        fx.save();fx.translate(frame*128,row*128);fx.beginPath();fx.rect(0,0,128,128);fx.clip();fx.lineCap='round';fx.lineJoin='round';
+        if(id==='treasury'){
+          if(row===0){
+            const glow=fx.createRadialGradient(64,62,24,64,62,58);
+            glow.addColorStop(0,'#ffdd6b06');glow.addColorStop(.7,'#ffc7410d');glow.addColorStop(.88,'#ffcb4d45');glow.addColorStop(1,'#ffe9a500');
+            fx.fillStyle=glow;fx.fillRect(4,2,120,124);
+            fx.strokeStyle='#91612599';fx.lineWidth=5;fx.beginPath();fx.ellipse(64,64,47,53,0,0,Math.PI*2);fx.stroke();
+            fx.strokeStyle='#ffcf68';fx.lineWidth=2.3;fx.stroke();
+            fx.strokeStyle='#fff3b7';fx.lineWidth=2.5;fx.globalAlpha=.55+.25*Math.cos(angle);
+            fx.beginPath();fx.ellipse(64,64,43,49,0,3.45,4.6);fx.stroke();
+            fx.globalAlpha=.35+.2*Math.sin(angle);fx.beginPath();fx.ellipse(64,64,43,49,0,.3,1);fx.stroke();
+            fx.globalAlpha=.65+.25*Math.sin(angle);fx.fillStyle='#fff5c0';
+            for(const [x,y,s] of [[27,30,5],[99,84,3]]){fx.beginPath();fx.moveTo(x-s,y);fx.lineTo(x-1,y-1);fx.lineTo(x,y-s);fx.lineTo(x+1,y-1);fx.lineTo(x+s,y);fx.lineTo(x+1,y+1);fx.lineTo(x,y+s);fx.lineTo(x-1,y+1);fx.closePath();fx.fill();}
+          }else if(row===1){
+            fx.globalAlpha=1-t*.85;fx.strokeStyle='#ffeaa0';fx.lineWidth=3-t*2;fx.beginPath();fx.ellipse(64,64,8+t*34,12+t*42,0,0,Math.PI*2);fx.stroke();
+            fx.fillStyle='#fff7cc';
+            for(let i=0;i<4;i++){const a=i*Math.PI/2+.4,r=12+t*39,x=64+Math.cos(a)*r,y=64+Math.sin(a)*r,s=4-t*2;fx.beginPath();fx.moveTo(x-s,y);fx.lineTo(x,y-s*1.6);fx.lineTo(x+s,y);fx.lineTo(x,y+s*1.6);fx.closePath();fx.fill();}
+          }
+        }else if(id==='forge'){
+          if(row===0){
+            const glow=fx.createRadialGradient(64,70,5,64,66,52);
+            glow.addColorStop(0,`rgba(255,239,137,${.22+t*.35})`);glow.addColorStop(.3,`rgba(255,153,40,${.2+t*.4})`);glow.addColorStop(.65,'#ff681a40');glow.addColorStop(1,'#ff501000');
+            fx.fillStyle=glow;fx.fillRect(8,8,112,112);
+            fx.globalAlpha=.3+t*.6;fx.strokeStyle='#ffbf62';fx.lineWidth=2;fx.beginPath();fx.moveTo(43,75);fx.lineTo(44,48);fx.lineTo(65,39);fx.lineTo(86,52);fx.stroke();
+            for(let i=0;i<3;i++){const rise=(t+i/3)%1,x=42+i*21+Math.sin(i*2+t*3)*8,y=58-rise*48;fx.globalAlpha=Math.sin(rise*Math.PI)*(.35+t*.5);fx.fillStyle=i===1?'#fff0a4':'#ffb23e';fx.fillRect(x,y,3,5);}
+          }else if(row===1){
+            fx.globalAlpha=1-t*.9;fx.translate(64,64);fx.rotate(-.4+t*.7);fx.translate(-64,-64);
+            fx.fillStyle='#9e3c19b0';fx.beginPath();fx.moveTo(110,105);fx.bezierCurveTo(31,93,9,41,24,11);fx.bezierCurveTo(31,63,73,79,110,105);fx.fill();
+            fx.fillStyle='#ff8b26';fx.beginPath();fx.moveTo(111,99);fx.bezierCurveTo(38,86,18,43,27,12);fx.bezierCurveTo(35,49,59,66,111,99);fx.fill();
+            fx.fillStyle='#fff0a3';fx.beginPath();fx.moveTo(88,84);fx.bezierCurveTo(42,61,32,31,30,19);fx.bezierCurveTo(42,58,65,65,88,84);fx.fill();
+          }else{
+            const glow=fx.createRadialGradient(64,64,0,64,64,52);glow.addColorStop(0,'#fff3beaa');glow.addColorStop(.35,'#ffb12d88');glow.addColorStop(1,'#ff692000');fx.globalAlpha=1-t;fx.fillStyle=glow;fx.fillRect(10,10,108,108);
+            fx.fillStyle='#ffc655';fx.strokeStyle='#a54826';fx.lineWidth=2;fx.beginPath();
+            for(let i=0;i<16;i++){const a=i*Math.PI/8,r=(i%2?9:25)*(1+t*.65),x=64+Math.cos(a)*r,y=64+Math.sin(a)*r;i?fx.lineTo(x,y):fx.moveTo(x,y);}fx.closePath();fx.fill();fx.stroke();
+            fx.fillStyle='#fff5cd';fx.beginPath();fx.arc(64,64,10*(1-t*.7),0,Math.PI*2);fx.fill();
+            for(let i=0;i<5;i++){const a=i*1.25+.3,r=22+t*32;fx.fillStyle=i%2?'#ffe7a1':'#ff932c';fx.fillRect(64+Math.cos(a)*r,64+Math.sin(a)*r,4-t*2,4-t*2);}
+          }
+        }else{
+          if(row===0){
+            for(const [i,[x,y]] of [[34,68],[67,45],[107,77]].entries()){
+              const glow=fx.createRadialGradient(x,y,2,x,y,20);glow.addColorStop(0,'#d9ffffa0');glow.addColorStop(.28,'#89f6fa80');glow.addColorStop(1,'#489cef00');
+              fx.globalAlpha=.65+.15*Math.sin(angle+i*2);fx.fillStyle=glow;fx.fillRect(x-20,y-20,40,40);
+              fx.strokeStyle='#e2ffff';fx.lineWidth=1.5;fx.beginPath();fx.moveTo(x-3,y-5);fx.lineTo(x,y-10);fx.lineTo(x+3,y-4);fx.stroke();
+            }
+          }else if(row===1){
+            fx.globalAlpha=1-t*.9;fx.translate(64,64);fx.rotate(-.3+t*.6);fx.translate(-64,-64);
+            fx.fillStyle='#3899cea0';fx.beginPath();fx.moveTo(106,109);fx.bezierCurveTo(17,91,7,47,35,12);fx.bezierCurveTo(23,57,61,84,106,109);fx.fill();
+            fx.fillStyle='#b8fcff';fx.beginPath();fx.moveTo(85,93);fx.bezierCurveTo(30,64,25,40,35,15);fx.bezierCurveTo(34,57,55,72,85,93);fx.fill();
+            fx.strokeStyle='#d4ffff';fx.lineWidth=2;for(let i=0;i<2;i++){const x=50+i*30-t*20,y=38+i*35+t*14;fx.beginPath();fx.moveTo(x,y-5);fx.lineTo(x+3,y);fx.lineTo(x,y+6);fx.lineTo(x-3,y);fx.closePath();fx.stroke();}
+          }else{
+            fx.globalAlpha=1-t*.75;
+            for(const [start,end] of [[[34,68],[67,45]],[[67,45],[107,77]]]){
+              fx.beginPath();fx.moveTo(...start);
+              for(let i=1;i<5;i++){const p=i/5;fx.lineTo(start[0]+(end[0]-start[0])*p+(i%2?5:-5),start[1]+(end[1]-start[1])*p+Math.sin(i*4+frame)*6);}
+              fx.lineTo(...end);fx.strokeStyle='#4278d459';fx.lineWidth=9;fx.stroke();fx.strokeStyle='#64e6f2';fx.lineWidth=4;fx.stroke();fx.strokeStyle='#e6ffff';fx.lineWidth=1.5;fx.stroke();
+            }
+            fx.fillStyle='#dcffff';fx.strokeStyle='#548bbf';fx.lineWidth=1;
+            for(const [x,baseY] of [[47,29],[91,48]]){const y=baseY-t*16,s=4-t*2;fx.beginPath();fx.moveTo(x,y-s*2);fx.lineTo(x+s,y);fx.lineTo(x,y+s*2);fx.lineTo(x-s,y);fx.closePath();fx.fill();fx.stroke();}
+          }
+        }
+        fx.restore();
+      }
+      dungeonImpact=null;shieldImpact=1;
+      numbers.length=0;coins.length=0;levelTitle=null;reveal=0;resize();
+    } finally {loading=false;}
+  }
   function resize() {
     const bounds = canvas.getBoundingClientRect();
+    if(!bounds.width||!bounds.height)return;
     width = bounds.width; height = bounds.height;
     const hudBottom=canvas.parentElement?.querySelector('.level-hud')?.getBoundingClientRect().bottom ?? bounds.top;
     titleY=Math.min(height-24,Math.max(height*.48,hudBottom-bounds.top+25));
@@ -101,9 +182,31 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     landscape = document.createElement('canvas');
-    landscape.width = canvas.width; landscape.height = canvas.height;
+    landscape.width = canvas.width * (dungeonTheme ? 2 : 1); landscape.height = canvas.height;
     const c = landscape.getContext('2d', { alpha: false });
-    c.scale(landscape.width / width, landscape.height / height);
+    c.scale(canvas.width / width, canvas.height / height);
+    if(dungeonTheme){
+      // A dungeon banner is not a repeating tile. Cache enough scenery for the
+      // approach, then move the view with the hero without wrapping a seam.
+      const d=dungeonTheme,top=height*.585,bottom=height*.795,sceneWidth=width*2;
+      c.fillStyle=d.ground;c.fillRect(0,0,sceneWidth,height);
+      const cropWidth=Math.min(dungeonBackdrop.width,dungeonBackdrop.height*sceneWidth/top);
+      c.drawImage(dungeonBackdrop,(dungeonBackdrop.width-cropWidth)/2,0,cropWidth,dungeonBackdrop.height,0,0,sceneWidth,top);
+      c.fillStyle='#111e2840';c.fillRect(0,0,sceneWidth,top);
+      c.strokeStyle='#17282c';c.lineWidth=3;
+      c.fillStyle=d.road;c.fillRect(0,top,sceneWidth,bottom-top);
+      c.beginPath();c.moveTo(0,top);c.lineTo(sceneWidth,top);c.moveTo(0,bottom);c.lineTo(sceneWidth,bottom);c.stroke();
+      for(let i=0;i<14;i++){
+        const x=((i*73+17)%397)/397*sceneWidth,y=height*(.86+(i%2)*.095);
+        c.fillStyle=d.color;c.strokeStyle='#1b2a30';c.lineWidth=2;
+        c.beginPath();
+        if(d.id==='treasury'){c.ellipse(x,y,8+i%4,4,0,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#fff1ab';c.fillRect(x-3,y-1,5,1);}
+        else if(d.id==='mine'){c.moveTo(x-7,y);c.lineTo(x-10,y-13);c.lineTo(x-3,y-27);c.lineTo(x+6,y-19);c.lineTo(x+7,y);c.closePath();c.fill();c.stroke();c.strokeStyle='#b7f6ed';c.beginPath();c.moveTo(x-3,y-24);c.lineTo(x,y-3);c.stroke();}
+        else {c.roundRect(x-10,y-12,20,13,3);c.fill();c.stroke();c.fillStyle='#ffc26d';c.fillRect(x-5,y-7,10,2);}
+      }
+      c.fillStyle='#16252824';for(let i=0;i<36;i++)c.fillRect((i*47%389)/389*sceneWidth,top+7+(i*29%71)/71*(bottom-top-14),8,2);
+      return;
+    }
     const biome = BIOMES[biomeIndex];
     c.fillStyle = biome.ground; c.fillRect(0, 0, width, height);
     const roadTop = height * .585, roadBottom = height * .795;
@@ -165,6 +268,15 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
   }
   function emit(event) {
+    if(dungeonTheme){
+      const enemy=previousEnemies?.find(e=>e.id===(event.targetId??event.sourceId));
+      if(enemy?.boss){
+        if(enemy.shield&&['heroHit','companionHit'].includes(event.type))shieldImpact=0;
+        if(['enemyHit','tankHit'].includes(event.type)&&['forge','mine'].includes(dungeonTheme.id)){
+          dungeonImpact={age:0,tank:event.type==='tankHit',heavy:dungeonTheme.id==='forge'&&enemy.strength>1};
+        }
+      }
+    }
     if (['restart','level','complete'].includes(event.type)) {
       chakramFlight = null;
       reveal = .55;
@@ -213,6 +325,10 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = color; context.fillRect(x - size / 2, y, size * Math.max(0, Math.min(1, fraction)), 4 * scale);
   }
   function render(state, dt) {
+    if(state.mount?.owned&&state.mount.equipped&&!mountArt&&!mountLoading){
+      mountLoading=true;const sprite=new Image();sprite.src='assets/dungeons/mount.webp';
+      sprite.decode().then(()=>{mountArt=sprite;}).catch(error=>console.error('Could not load mount',error));
+    }
     const wantedCompanion=state.companion?.kind??null;
     if(wantedCompanion!==companionArtKind){
       if(companionArtKind)delete art['companion-'+companionArtKind];
@@ -226,22 +342,31 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
     if (loading) { context.fillStyle='#081312';context.fillRect(0,0,width,height);return; }
     const biome = BIOMES[biomeIndex];
-    const bossSize = state.level % LEVELS_PER_BIOME === 0 ? 128 : 88;
+    const bossSize = dungeonTheme ? 110 : state.level % LEVELS_PER_BIOME === 0 ? 128 : 88;
     previousBossSize=bossSize;
     time += dt;
     reveal = Math.max(0, reveal - dt);
     if (levelTitle && (levelTitle.age += dt) >= 2) levelTitle = null;
-    if (previousEnemies !== state.enemies) { numbers.length = 0; coins.length = 0; chakramFlight = null; previousEnemies = state.enemies; }
+    if (previousEnemies !== state.enemies) { numbers.length = 0; coins.length = 0; chakramFlight = null; dungeonImpact=null;shieldImpact=1;previousEnemies = state.enemies; }
+    shieldImpact=Math.min(1,shieldImpact+dt);
+    if(dungeonImpact&&(dungeonImpact.age+=dt)>=.48)dungeonImpact=null;
     if (reducedMotion.matches) coins.length = 0;
     const camera = state.heroX - .24;
-    // Copy two exact pixel slices: fractional tile edges leave a dark seam during fades.
-    const pixels=landscape.width, shift=((Math.round(camera*pixels)%pixels)+pixels)%pixels;
     context.save();context.setTransform(1,0,0,1,0,0);
-    context.drawImage(landscape,shift,0,pixels-shift,landscape.height,0,0,pixels-shift,canvas.height);
-    if(shift)context.drawImage(landscape,0,0,shift,landscape.height,pixels-shift,0,shift,canvas.height);
+    if(dungeonTheme){
+      const shift=Math.max(0,Math.min(landscape.width-canvas.width,Math.round(camera*canvas.width)));
+      context.drawImage(landscape,shift,0,canvas.width,landscape.height,0,0,canvas.width,canvas.height);
+    }else{
+      // Copy exact pixel slices: fractional tile edges leave a dark seam during fades.
+      const pixels=landscape.width,shift=((Math.round(camera*pixels)%pixels)+pixels)%pixels;
+      context.drawImage(landscape,shift,0,pixels-shift,landscape.height,0,0,pixels-shift,canvas.height);
+      if(shift)context.drawImage(landscape,0,0,shift,landscape.height,pixels-shift,0,shift,canvas.height);
+    }
     context.restore();
     const base = height * .758, unit = Math.min(width / 390, 1.15);
     const heroX = width * .24, hSize = (59 / 1.5) * unit;
+    const mounted=state.mount?.owned&&state.mount.equipped&&mountArt;
+    const mountLift=mounted?20*unit:0;
     const companion=state.companion;
     if(companion && (companion.kind!=='turtle'||companion.hp>0) && art['companion-'+companion.kind] && state.phase!=='dead' && !state.completed){
       const c=companion, size=(c.kind==='turtle'?61:49)*unit, x=(c.x-camera)*width, floor=base+(c.kind==='turtle'?8:-3)*unit;
@@ -327,7 +452,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const dx=30.24*Math.cos(handAngle)+51.3*Math.sin(handAngle),dy=30.24*Math.sin(handAngle)-51.3*Math.cos(handAngle);
       const x=pose[6]-750+dx,y=pose[7]-530+dy;
       chakramHand={x:state.heroX+(pose[0]+x*Math.cos(bodyAngle)-y*Math.sin(bodyAngle))*k/width,
-        y:(pose[1]-180+x*Math.sin(bodyAngle)+y*Math.cos(bodyAngle))*k/unit,angle:handAngle+bodyAngle};
+        y:((pose[1]-180+x*Math.sin(bodyAngle)+y*Math.cos(bodyAngle))*k-mountLift)/unit,angle:handAngle+bodyAngle};
     }
     if(!throwing||state.phase==='dead'||state.completed||chakramFlight?.returning&&!recovery)chakramFlight=null;
     if(throwing&&weaponImage&&state.phase==='fight'&&(state.heroClock>=interval*.85 || state.doubleStrikeDelay > 0 && state.doubleStrikeDelay < interval*.08)&&!chakramFlight){
@@ -354,10 +479,15 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         Promise.all([img.decode(),rigs[weaponSource]||fetch(`assets/sets/${weaponSource}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Weapon metadata missing');return r.json();})]).then(([,meta])=>{rigs[weaponSource]=meta;art[key]=img;}).catch(console.error);
       }
     }
+    if(mounted){
+      const size=70*unit,walk=!reducedMotion.matches&&state.phase==='walk',frame=walk?Math.floor(time*8)%4:0;
+      context.drawImage(mountArt,frame*256,0,256,256,heroX-size*.52,base-size*242/256,size,size);
+    }
     context.save();
-    context.translate(heroX, base);
+    context.translate(heroX, base-mountLift);
     for (let row=0;row<heroRig.rows.length;row++) {
       const name=heroRig.rows[row],slot=heroSlots[row];
+      if(mounted&&(/leg|boot|shorts|hip/.test(name)||slot==='legs'||slot==='boots'))continue;
       const standalone = name === 'weapon' && customWeapon && weaponImage;
       if(name==='weapon'&&chakramFlight)continue;
       if (name==='head-helmet' || name.endsWith('-booted') || slot && !equipped[slot] && !standalone) continue;
@@ -418,16 +548,16 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       context.restore();
     }
     context.restore();
-    if (!state.completed && state.phase !== 'dead') bar(heroX, base - hSize - 9, state.hp / stats(state).hp, '#56df51');
+    if (!state.completed && state.phase !== 'dead') bar(heroX, base - mountLift - hSize - 9, state.hp / stats(state).hp, '#56df51');
     if(companion?.kind==='druid' && companion.healAge<.7 && state.hp>0 && state.phase!=='dead'){
       context.save();
       if(companion.healAge<.3){
         context.globalAlpha=(1-companion.healAge/.3)*.22;
-        context.fillStyle='#a3f68a';context.beginPath();context.ellipse(heroX,base-hSize*.45,hSize*.4,hSize*.65,0,0,Math.PI*2);context.fill();
+        context.fillStyle='#a3f68a';context.beginPath();context.ellipse(heroX,base-mountLift-hSize*.45,hSize*.4,hSize*.65,0,0,Math.PI*2);context.fill();
       }
       for(let i=0;i<3;i++){
         const t=reducedMotion.matches?i/3:(time*.6+i/3)%1;
-        const x=heroX+Math.sin(i*2.1+t*3)*17*unit,y=base-5*unit-t*(hSize+8);
+        const x=heroX+Math.sin(i*2.1+t*3)*17*unit,y=base-mountLift-5*unit-t*(hSize+8);
         context.globalAlpha=reducedMotion.matches?.65:Math.sin(t*Math.PI)*.8;
         context.fillStyle=i%2?'#b8ed77':'#67c658';context.strokeStyle='#30673d';context.lineWidth=.65*unit;
         context.beginPath();context.ellipse(x,y,3*unit,1.5*unit,-.8+i*.7,0,Math.PI*2);context.fill();context.stroke();
@@ -456,17 +586,63 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       }
       context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(x, floor + (e.boss ? 2 : 1), size * .3, e.boss ? 3 : 1.5, 0, 0, Math.PI * 2); context.fill();
       const row = e.boss ? 3 : ['warrior','archer','healer'].indexOf(e.kind);
-      if (biomeSprites) {
+      if(dungeonTheme&&e.boss&&dungeonArt){
+        let pose=0;
+        if(e.hp&&state.phase!=='dead'&&state.phase!=='victory'){
+          if(e.charging)pose=4;
+          else if(e.moving){if(!reducedMotion.matches)pose=Math.floor(time*8)%4;}
+          // actionAge resets on the actual hit, including a turtle intercept.
+          else if(e.actionAge<.42)pose=e.actionAge<.12?5:e.actionAge<.26?6:7;
+          else if(e.engaged&&e.clock>=.85)pose=4;
+        }
+        // All poses share one scale and foot anchor; extended limbs retain padding.
+        const anchorX=dungeonTheme.id==='mine'?192:160;
+        context.drawImage(dungeonArt,pose*320,0,320,320,
+          x-size*anchorX/256,floor-size*304/256,size*320/256,size*320/256);
+        if(dungeonFx&&e.hp&&state.phase!=='dead'&&state.phase!=='victory'){
+          const d=state.dungeonBattle,rank=Math.floor((d.floor-1)/50),still=reducedMotion.matches;
+          context.save();
+          if(e.shield){
+            const period=12-rank,age=d.time%period-(period-3-rank*.25),remaining=period-d.time%period;
+            context.globalAlpha=still?.75:Math.min(1,age/.16,remaining/.2);
+            context.drawImage(dungeonFx,(still?0:Math.floor(d.time*8)%6)*128,0,128,128,x-size*.56,floor-size*1.01,size*1.12,size*1.12);
+            if(!still&&shieldImpact<.36){context.globalAlpha=1-shieldImpact/.36;context.drawImage(dungeonFx,Math.min(5,Math.floor(shieldImpact/.36*6))*128,128,128,128,x-size*.58,floor-size*.63,size*.43,size*.43);}
+          }else if(d.id==='forge'&&e.charging){
+            const heat=Math.max(0,Math.min(1,(d.time%(10-rank*.5)-(8-rank*.5))/2));
+            context.globalAlpha=still?.65:.45+heat*.55;
+            context.drawImage(dungeonFx,Math.min(5,Math.floor(heat*6))*128,0,128,128,x-size*.6,floor-size*.76,size*.6,size*.6);
+          }else if(d.id==='mine'&&e.strength>1){
+            const surge=d.time%(20-rank*2);
+            context.globalAlpha=Math.min(.85,.38+(e.strength-1)*.12);
+            context.drawImage(dungeonFx,(still?0:Math.floor(d.time*6)%6)*128,0,128,128,x-size*.43,floor-size*.78,size*.65,size*.65);
+            if(!still&&surge<.6){context.globalAlpha=1-surge/.6;context.drawImage(dungeonFx,Math.min(5,Math.floor(surge*10))*128,256,128,128,x-size*.43,floor-size*.78,size*.65,size*.65);}
+          }
+          if(!still&&dungeonImpact){
+            const hit=dungeonImpact,t=Math.min(1,hit.age/.48),frame=Math.min(5,Math.floor(t*6));
+            // The flash stays at the actual recipient, including an intercepted smash.
+            hit.x??=hit.tank&&companion?companion.x:state.heroX;
+            hit.y??=hit.tank?base-23*unit:base-mountLift-hSize*.55;
+            context.globalAlpha=(1-t)*(hit.heavy?1:.6);
+            const trail=size*(hit.heavy?.82:.62);
+            context.drawImage(dungeonFx,frame*128,128,128,128,x-size*.77,floor-size*.65,trail,trail);
+            if(d.id==='forge'){
+              const flash=size*(hit.heavy?.66:.36),hitX=(hit.x-camera)*width;
+              context.drawImage(dungeonFx,frame*128,256,128,128,hitX-flash/2,hit.y-flash/2,flash,flash);
+            }
+          }
+          context.restore();
+        }
+      } else if (biomeSprites) {
         const pose = [0,1,2,3,4,1,2,3,4,5,5,5,6,6,0,7][frame];
         context.drawImage(biomeSprites,pose*192,row*192,192,192,x-size/2,floor-size*180/192,size,size);
       } else {
         context.drawImage(art[e.kind],frame*192,0,192,192,x-size/2,floor-size*180/192,size,size);
       }
-      if (e.hp) bar(x, floor - size * (biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
+      if (e.hp) bar(x, floor - size * (dungeonTheme?.id ? .92 : biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
       if (e.kind === 'archer' && e.hp && e.actionAge < .15 && state.phase !== 'dead') {
         const tankX=companion?.kind==='turtle'&&companion.hp>0&&companion.x>state.heroX?(companion.x-camera)*width:heroX;
         const p = e.actionAge / .15, ax = (x - 9*unit)*(1-p) + (tankX + 8*unit)*p;
-        const ay = (floor - 14*unit)*(1-p) + (base - 28*unit)*p;
+        const ay = (floor - 14*unit)*(1-p) + (base - 28*unit-(tankX===heroX?mountLift:0))*p;
         context.strokeStyle = '#283b3a'; context.fillStyle = biome.shot; context.lineWidth = 1;
         if (biomeIndex===0 || biomeIndex===2 || biomeIndex===3 || biomeIndex===9) {
           context.beginPath();context.moveTo(ax+6.5,ay);context.lineTo(ax,ay);context.stroke();
@@ -568,5 +744,5 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, prepare, get loading(){return loading;}, previewName:previewRig?.name };
+  return { render, emit, prepare, prepareDungeon, get loading(){return loading;}, previewName:previewRig?.name };
 }
