@@ -1,4 +1,4 @@
-import { DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
+import { TURTLE_LEVELS, upgradeTurtle, ARCHER_LEVELS, upgradeArcher, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
@@ -71,7 +71,7 @@ test('archer companion follows, waits for range, and rewards a projectile kill o
  assert.equal(s.companion.shot,null);assert.ok(s.companion.x<s.heroX);
  const e=s.enemies[0];e.x=s.heroX+.115;e.hp=1;e.damage=0;
  s.phase='fight';s.targetId=e.id;s.heroClock=0;
- s.companion.x=s.heroX-.13;s.companion.clock=2.39;
+ s.companion.x=s.heroX-.13;s.companion.clock=.99;
  let events=step(s,.02,()=>.999);
  assert.ok(s.companion.shot);assert.equal(e.hp,1);
  events.push(...step(s,.19,()=>.999));
@@ -1015,4 +1015,60 @@ test('hard biome curve keeps the first biome and updates saved enemies without r
  const s=wave(23,4);s.enemies.forEach(e=>{e.hp=100;e.maxHp=1000;e.damage=1;});s.coins=713;
  const loaded=restore(JSON.stringify(s));assert.equal(loaded.level,23);assert.equal(loaded.encounter,s.encounter);assert.equal(loaded.coins,713);
  for(const e of loaded.enemies){assert.equal(e.hp,100);assert.equal(e.damage,enemyFor(23,e.kind).damage);}
+});
+
+test('archer upgrade prices and level persist, while failed upgrades do not mutate state',()=>{
+ const s=freshGame();s.coins=2000;assert.equal(upgradeArcher(s),false);
+ hireCompanion(s,'archer');assert.equal(upgradeArcher(s),true);assert.equal(s.archerLevel,2);assert.equal(s.coins,500);
+ const before=structuredClone(s);assert.equal(upgradeArcher(s),false);assert.deepEqual(s,before);
+ const loaded=restore(JSON.stringify(s));assert.equal(loaded.archerLevel,2);assert.equal(loaded.coins,500);
+ s.archerLevel=100;s.coins=1e15;assert.equal(upgradeArcher(s),false);assert.equal(s.coins,1e15);
+ delete s.archerLevel;assert.equal(restore(JSON.stringify(s)).archerLevel,1);assert.equal(freshGame().archerLevel,1);
+ assert.equal(ARCHER_LEVELS.length,100);assert.equal(ARCHER_LEVELS[0].damage,3);assert.equal(ARCHER_LEVELS[1].damage,7);assert.equal(ARCHER_LEVELS[29].damage,2890);
+ assert.deepEqual(ARCHER_LEVELS.map(l=>l.upgradeCost),DRUID_LEVELS.map(l=>l.upgradeCost));
+});
+test('archer fires each second for fixed level damage independent of hero equipment and affixes',()=>{
+ for(const heroDamage of [2,10000]){
+  const s=freshGame();s.equipment.weapon=candidate('weapon',heroDamage);s.equipment.weapon.affix={type:'damage',value:10};
+  s.archerLevel=2;const e=s.enemies[0];e.x=s.heroX+.115;e.hp=e.maxHp=100000;e.damage=0;
+  s.phase='fight';s.targetId=e.id;s.heroClock=-100;
+  s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:1,shot:null};
+  const hits=advance(s,3.3).filter(e=>e.type==='companionHit');assert.equal(hits.length,3);assert.ok(hits.every(e=>e.value===7));
+ }
+});
+test('archer banks only one shot while travelling and keeps charge after losing a target',()=>{
+ const s=freshGame();s.companion={kind:'archer',x:s.heroX-.5,clock:.8,actionAge:1,shot:null};s.enemies[0].x=s.heroX+10;
+ advance(s,4);assert.equal(s.companion.clock,1);assert.equal(s.companion.shot,null);
+ const e=s.enemies[0];e.x=s.heroX+.115;e.hp=100;e.damage=0;s.heroClock=-100;s.phase='fight';s.targetId=e.id;s.companion.x=s.heroX-.13;
+ step(s,.01,()=>.999);assert.ok(s.companion.shot);assert.equal(s.companion.clock,0);
+ const events=advance(s,.5);assert.equal(events.filter(e=>e.type==='companionHit').length,1);assert.equal(s.companion.shot,null);
+ const charge=s.companion.clock;e.x=s.heroX+10;step(s,.01,()=>.999);assert.ok(s.companion.clock>=charge);
+});
+
+
+test('turtle upgrades preserve damaged shell, persist level and refill next wave',()=>{
+ const s=freshGame();s.coins=2000;assert.equal(upgradeTurtle(s),false);
+ hireCompanion(s,'turtle');s.companion.hp=7;
+ assert.equal(upgradeTurtle(s),true);assert.equal(s.turtleLevel,2);assert.equal(s.coins,500);
+ assert.equal(s.companion.hp,7);assert.equal(s.companion.maxHp,50);
+ const before=structuredClone(s);assert.equal(upgradeTurtle(s),false);assert.deepEqual(s,before);
+ const loaded=restore(JSON.stringify(s));assert.equal(loaded.turtleLevel,2);assert.equal(loaded.companion.hp,7);assert.equal(loaded.companion.maxHp,50);
+ loaded.phase='victory';loaded.phaseTime=0;step(loaded,.01,()=>.999);assert.equal(loaded.companion.hp,50);
+ loaded.companion.hp=0;loaded.coins=2000;assert.equal(upgradeTurtle(loaded),true);assert.equal(loaded.companion.hp,0);assert.equal(loaded.companion.maxHp,62);
+ loaded.phase='victory';loaded.phaseTime=0;step(loaded,.01,()=>.999);assert.equal(loaded.companion.hp,62);
+ const legacy=freshGame();legacy.coins=500;hireCompanion(legacy,'turtle');delete legacy.turtleLevel;
+ assert.equal(restore(JSON.stringify(legacy)).turtleLevel,1);assert.equal(restore(JSON.stringify(legacy)).companion.hp,30);
+ s.turtleLevel=100;s.coins=1e15;assert.equal(upgradeTurtle(s),false);assert.equal(s.coins,1e15);
+ assert.equal(TURTLE_LEVELS.length,100);assert.equal(TURTLE_LEVELS[0].hp,30);assert.equal(TURTLE_LEVELS[1].hp,50);assert.equal(TURTLE_LEVELS[29].hp,20643);
+ assert.deepEqual(TURTLE_LEVELS.map(l=>l.upgradeCost),DRUID_LEVELS.map(l=>l.upgradeCost));
+});
+
+test('upgraded turtle joins at its level on next wave and fully blocks final hit',()=>{
+ const s=freshGame();s.coins=3000;hireCompanion(s,'turtle');hireCompanion(s,'druid');
+ assert.equal(upgradeTurtle(s),true);selectCompanion(s,'turtle');assert.equal(s.companion.kind,'druid');
+ s.phase='victory';s.phaseTime=0;step(s,.01,()=>.999);
+ assert.equal(s.companion.kind,'turtle');assert.equal(s.companion.hp,50);
+ const e=s.enemies[0];e.x=s.heroX+.20;e.hp=1000;e.damage=100;e.clock=1.09;e.engaged=true;
+ s.companion.x=s.heroX+.10;s.companion.hp=1;const hp=s.hp;
+ const events=step(s,.02,()=>.999);assert.ok(events.some(e=>e.type==='tankDown'));assert.equal(s.companion.hp,0);assert.equal(s.hp,hp);
 });

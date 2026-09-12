@@ -433,12 +433,30 @@ export function enemyFor(level, kind = 'warrior') {
 export const COMPANIONS = [
   {id:'archer',name:'Archer',role:'Ranged damage',description:'Fights from behind the hero'},
   {id:'druid',name:'Druid',role:'Regeneration',description:'+2 HP every 2 sec'},
-  {id:'turtle',name:'Turtle',role:'Defender',description:'Runs ahead and blocks half the damage'},
+  {id:'turtle',name:'Turtle',role:'Defender',description:'Protects the hero until its shell breaks'},
 ];
 export const DRUID_LEVELS = Array.from({length:100},(_,i)=>({
   healing:i===0?2:Math.round(5*1.24**(i-1)),
   upgradeCost:i===99?0:Math.ceil(1000*1.22**i/10)*10
 }));
+export const ARCHER_LEVELS = DRUID_LEVELS.map((level,i)=>({
+  damage:i===0?3:Math.round(7*1.24**(i-1)),upgradeCost:level.upgradeCost
+}));
+export const TURTLE_LEVELS = DRUID_LEVELS.map((level,i)=>({
+  hp:i===0?30:Math.round(50*1.24**(i-1)),upgradeCost:level.upgradeCost
+}));
+export function upgradeTurtle(s) {
+  const cost=TURTLE_LEVELS[s.turtleLevel-1]?.upgradeCost;
+  if(!s.hiredCompanions.includes('turtle')||!cost||s.coins<cost)return false;
+  s.coins-=cost;s.turtleLevel++;
+  if(s.companion?.kind==='turtle')s.companion.maxHp=TURTLE_LEVELS[s.turtleLevel-1].hp;
+  return true;
+}
+export function upgradeArcher(s) {
+  const cost=ARCHER_LEVELS[s.archerLevel-1]?.upgradeCost;
+  if(!s.hiredCompanions.includes('archer')||!cost||s.coins<cost)return false;
+  s.coins-=cost;s.archerLevel++;return true;
+}
 export function upgradeDruid(s) {
   const cost=DRUID_LEVELS[s.druidLevel-1]?.upgradeCost;
   if(!s.hiredCompanions.includes('druid')||!cost||s.coins<cost)return false;
@@ -451,7 +469,7 @@ export function hireCompanion(s,id) {
   s.coins-=cost;s.hiredCompanions.push(id);
   s.selectedCompanion=id;
   s.companion={kind:id,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
-    ...(id==='turtle'?{hp:30,maxHp:30}:{})};
+    ...(id==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})};
   return true;
 }
 export function selectCompanion(s,id) {
@@ -461,7 +479,7 @@ export function selectCompanion(s,id) {
 function prepareEncounter(s) {
   if(s.selectedCompanion && s.selectedCompanion!==s.companion?.kind){
     s.companion={kind:s.selectedCompanion,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
-      ...(s.selectedCompanion==='turtle'?{hp:30,maxHp:30}:{})};
+      ...(s.selectedCompanion==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})};
   }
   let x = s.heroX + .91;
   const local = (s.level - 1) % LEVELS_PER_BIOME;
@@ -486,7 +504,7 @@ function prepareEncounter(s) {
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
-    druidLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    archerLevel: 1, druidLevel: 1, turtleLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
@@ -813,20 +831,20 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       c.shot.remaining-=dt;
       if(c.shot.remaining<=0){
         if(target.hp>0 && target.id===c.shot.targetId){
-          const damage=Math.max(1,Math.round(hero.damage*.33));
+          const damage=ARCHER_LEVELS[s.archerLevel-1].damage;
           target.hp=Math.max(0,target.hp-damage);
           events.push({type:'companionHit',value:damage,targetId:target.id});
         }
         c.shot=null;
       }
     }
+    c.clock=Math.min(1,c.clock+dt);
     if(target.hp>0 && !c.moving && target.x-c.x<=.65){
-      c.clock+=dt;
-      if(c.clock>=2.4){
-        c.clock-=2.4;c.actionAge=0;
+      if(c.clock>=1){
+        c.clock-=1;c.actionAge=0;
         c.shot={targetId:target.id,remaining:.18,fromX:c.x,toX:target.x};
       }
-    }else c.clock=0;
+    }
   }
   if (!target.hp) {
     target.deadTime = .6; target.engaged = false; target.moving = false;
@@ -904,6 +922,8 @@ export function restore(serialized, now = Date.now()) {
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    s.turtleLevel=Number.isInteger(s.turtleLevel)?Math.max(1,Math.min(100,s.turtleLevel)):1;
+    s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
     s.autoForgeCoins=Number.isSafeInteger(s.autoForgeCoins)&&s.autoForgeCoins>=0?s.autoForgeCoins:0;
     s.battleStats=Object.fromEntries(['bosses','maxHit','maxCrit','coins','hammers','runes'].map(k=>[k,Number.isSafeInteger(s.battleStats?.[k])&&s.battleStats[k]>=0?s.battleStats[k]:0]));
@@ -913,7 +933,7 @@ export function restore(serialized, now = Date.now()) {
       const c=s.companion;
       if(c.kind==='druid'){delete c.regenRemaining;c.regenClock=Number.isFinite(c.regenClock)&&c.regenClock>=0?c.regenClock%2:0;}
       const valid=s.hiredCompanions.includes(c.kind)&&['x','clock','actionAge'].every(k=>nonnegative(c[k]))&&
-        (c.kind!=='turtle'||nonnegative(c.hp)&&c.hp<=30&&c.maxHp===30)&&
+        (c.kind!=='turtle'||nonnegative(c.hp)&&c.hp<=TURTLE_LEVELS[s.turtleLevel-1].hp&&c.maxHp===TURTLE_LEVELS[s.turtleLevel-1].hp)&&
         (c.kind!=='druid'||nonnegative(c.regenClock)&&c.regenClock<2);
       if(!valid)s.companion=null;
       else if(c.shot && (!Number.isInteger(c.shot.targetId)||!['remaining','fromX','toX'].every(k=>nonnegative(c.shot[k]))||c.shot.remaining>.18))c.shot=null;

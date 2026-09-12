@@ -1,4 +1,4 @@
-import { COMPANIONS, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
+import { COMPANIONS, TURTLE_LEVELS, upgradeTurtle, ARCHER_LEVELS, upgradeArcher, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs?v=companions-menu';
@@ -53,7 +53,7 @@ if(previewBiome){
   const encounter=previewBoss?9:8;
   state.encounter=encounter?encounter-1:0;state.phase=encounter?'victory':'dead';state.phaseTime=0;step(state,1/30);
 }
-if(previewCompanion){if(!previewBiome&&!previewWeapon)state=freshGame();state.companion={kind:previewCompanion,x:state.heroX-.13,clock:0,actionAge:1,moving:false,shot:null,...(previewCompanion==='turtle'?{hp:30,maxHp:30}: {})};}
+if(previewCompanion){if(!previewBiome&&!previewWeapon)state=freshGame();state.companion={kind:previewCompanion,x:state.heroX-.13,clock:0,actionAge:1,moving:false,shot:null,...(previewCompanion==='turtle'?{hp:TURTLE_LEVELS[state.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[state.turtleLevel-1].hp}: {})};}
 let ringTarget = null, bulkSaleSelection = null;
 if(previewReforge){
   state=freshGame();state.coins=10000;state.hammers=50;state.anvilLevel=10;
@@ -100,10 +100,10 @@ for (const [i, name] of EPOCHS.entries()) {
 for(const companion of COMPANIONS) {
   const card=document.createElement('article');card.className='companion-card '+companion.id;
   card.innerHTML=`<img src="assets/companions/${companion.id}-card.webp" alt=""><div><h3>${companion.name}</h3><strong>${companion.role}</strong><p>${companion.description}</p><button class="button"><span class="companion-action"></span><span class="companion-price"><i class="coin" aria-hidden="true"></i>500</span></button></div>`;
-  if(companion.id==='druid'){
-    const upgrade=document.createElement('button');upgrade.className='button druid-upgrade';upgrade.hidden=true;
-    upgrade.innerHTML='<span>Upgrade</span><i class="coin" aria-hidden="true"></i><span class="druid-price"></span>';
-    upgrade.onclick=()=>{if(upgradeDruid(state)){save(true);updateUI();}};
+  {
+    const upgrade=document.createElement('button');upgrade.className='button companion-upgrade';upgrade.hidden=true;
+    upgrade.innerHTML='<span>Upgrade</span><i class="coin" aria-hidden="true"></i><span class="companion-upgrade-price"></span>';
+    upgrade.onclick=()=>{if((companion.id==='druid'?upgradeDruid:companion.id==='archer'?upgradeArcher:upgradeTurtle)(state)){save(true);updateUI();}};
     card.querySelector('div').append(upgrade);
   }
   card.dataset.kind=companion.id;
@@ -115,7 +115,7 @@ for(const companion of COMPANIONS) {
 }
 function updateCompanions() {
   if(!$('companions-dialog').open)return;
-  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel]);
+  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel,state.archerLevel,state.turtleLevel]);
   if(displayedCompanions===key)return;
   displayedCompanions=key;
   $('companions-coins').textContent=compact.format(state.coins);
@@ -123,16 +123,18 @@ function updateCompanions() {
     const id=card.dataset.kind,owned=state.hiredCompanions.includes(id);
     const current=state.companion?.kind===id,selected=state.selectedCompanion===id;
     const button=card.querySelector('button');
-    if(id==='druid'){
-      const level=DRUID_LEVELS[state.druidLevel-1],next=DRUID_LEVELS[state.druidLevel];
-      card.querySelector('h3').textContent=owned?`Druid · Lv. ${state.druidLevel}`:'Druid';
-      card.querySelector('p').textContent=`+${compact.format(level.healing)} HP every 2 sec${owned&&next?' → +'+compact.format(next.healing):''}`;
-      const upgrade=card.querySelector('.druid-upgrade');upgrade.hidden=!owned;
+    {
+      const druid=id==='druid',turtle=id==='turtle',number=state[id+'Level'],levels=druid?DRUID_LEVELS:turtle?TURTLE_LEVELS:ARCHER_LEVELS;
+      const level=levels[number-1],next=levels[number],name=druid?'Druid':turtle?'Turtle':'Archer';
+      const value=druid?level.healing:turtle?level.hp:level.damage,nextValue=next&&(druid?next.healing:turtle?next.hp:next.damage),unit=druid?'HP every 2 sec':turtle?'shell HP':'damage every 1 sec';
+      card.querySelector('h3').textContent=owned?`${name} · Lv. ${number}`:name;
+      card.querySelector('p').textContent=`${druid?'+':''}${compact.format(value)} ${unit}${owned&&next?' → '+compact.format(nextValue):''}`;
+      const upgrade=card.querySelector('.companion-upgrade');upgrade.hidden=!owned;
       upgrade.disabled=!next||state.coins<level.upgradeCost;
       upgrade.querySelector('span').textContent=next?'Upgrade':'Max level';
       upgrade.querySelector('.coin').hidden=!next;
-      upgrade.querySelector('.druid-price').textContent=next?compact.format(level.upgradeCost):'';
-      upgrade.setAttribute('aria-label',next?`Upgrade druid to level ${state.druidLevel+1} for ${level.upgradeCost} coins; heal ${next.healing} HP every 2 seconds`:'Druid maximum level');
+      upgrade.querySelector('.companion-upgrade-price').textContent=next?compact.format(level.upgradeCost):'';
+      upgrade.setAttribute('aria-label',next?`Upgrade ${name} to level ${number+1} for ${level.upgradeCost} coins; ${nextValue} ${unit}`:`${name} maximum level`);
     }
     card.classList.toggle('active',current);
     const label=selected?(current?'Active':'Next wave'):owned?'Take along':'Hire';
