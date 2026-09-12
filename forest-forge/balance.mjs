@@ -19,11 +19,11 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 188,
-    "minutes": 5,
+    "coins": 130,
+    "minutes": 3,
     "chances": [
-      95.0,
-      5.0,
+      95,
+      5,
       0,
       0,
       0,
@@ -35,11 +35,11 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 375,
-    "minutes": 15,
+    "coins": 190,
+    "minutes": 6,
     "chances": [
-      90.0,
-      10.0,
+      85,
+      15,
       0,
       0,
       0,
@@ -51,12 +51,12 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 750,
-    "minutes": 40,
+    "coins": 250,
+    "minutes": 9,
     "chances": [
-      80.0,
-      20.0,
-      0,
+      79.98,
+      20,
+      0.02,
       0,
       0,
       0,
@@ -67,27 +67,11 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 1250,
-    "minutes": 120,
+    "coins": 490,
+    "minutes": 23,
     "chances": [
-      65.0,
-      35.0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 1875,
-    "minutes": 240,
-    "chances": [
-      54.95,
-      45,
+      69.95,
+      30,
       0.05,
       0,
       0,
@@ -99,11 +83,11 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 2750,
-    "minutes": 360,
+    "coins": 650,
+    "minutes": 46,
     "chances": [
-      44.9,
-      55,
+      59.9,
+      40,
       0.1,
       0,
       0,
@@ -115,14 +99,174 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 4000,
+    "coins": 830,
+    "minutes": 71,
+    "chances": [
+      49.75,
+      50,
+      0.25,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 1220,
+    "minutes": 139,
+    "chances": [
+      39,
+      60,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 1500,
+    "minutes": 174,
+    "chances": [
+      25,
+      70,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 1820,
+    "minutes": 215,
+    "chances": [
+      0,
+      79.98,
+      20,
+      0.02,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 2720,
+    "minutes": 268,
+    "chances": [
+      0,
+      69.95,
+      30,
+      0.05,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 3140,
+    "minutes": 321,
+    "chances": [
+      0,
+      59.9,
+      40,
+      0.1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 3620,
+    "minutes": 374,
+    "chances": [
+      0,
+      49.75,
+      50,
+      0.25,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 4130,
+    "minutes": 427,
+    "chances": [
+      0,
+      39,
+      60,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 4620,
+    "minutes": 480,
+    "chances": [
+      0,
+      25,
+      70,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 5270,
+    "minutes": 540,
+    "chances": [
+      0,
+      0,
+      79.98,
+      20,
+      0.02,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 6150,
     "minutes": 600,
     "chances": [
-      34.75,
-      65,
-      0.25,
       0,
       0,
+      69.95,
+      30,
+      0.05,
       0,
       0,
       0,
@@ -131,14 +275,62 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 4750,
+    "coins": 6730,
+    "minutes": 660,
+    "chances": [
+      0,
+      0,
+      59.9,
+      40,
+      0.1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 7430,
+    "minutes": 720,
+    "chances": [
+      0,
+      0,
+      49.75,
+      50,
+      0.25,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 8110,
+    "minutes": 780,
+    "chances": [
+      0,
+      0,
+      39,
+      60,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 8630,
     "minutes": 840,
     "chances": [
-      24.5,
-      75,
-      0.5,
       0,
       0,
+      25,
+      70,
+      5,
       0,
       0,
       0,
@@ -147,15 +339,63 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 5250,
+    "coins": 9260,
+    "minutes": 900,
+    "chances": [
+      0,
+      0,
+      0,
+      79.98,
+      20,
+      0.02,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 10330,
+    "minutes": 960,
+    "chances": [
+      0,
+      0,
+      0,
+      69.95,
+      30,
+      0.05,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 11380,
+    "minutes": 1020,
+    "chances": [
+      0,
+      0,
+      0,
+      59.9,
+      40,
+      0.1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 13020,
     "minutes": 1080,
     "chances": [
-      23.95,
-      75,
-      1,
-      0.05,
       0,
       0,
+      0,
+      49.75,
+      50,
+      0.25,
       0,
       0,
       0,
@@ -163,376 +403,312 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 6125,
+    "coins": 14570,
+    "minutes": 1152,
+    "chances": [
+      0,
+      0,
+      0,
+      39,
+      60,
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 16150,
+    "minutes": 1224,
+    "chances": [
+      0,
+      0,
+      0,
+      25,
+      70,
+      5,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 18840,
+    "minutes": 1296,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      79.98,
+      20,
+      0.02,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 20580,
+    "minutes": 1368,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      69.95,
+      30,
+      0.05,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 22330,
     "minutes": 1440,
     "chances": [
-      21.9,
-      75,
-      3,
+      0,
+      0,
+      0,
+      0,
+      59.9,
+      40,
       0.1,
-      0,
-      0,
-      0,
       0,
       0,
       0
     ]
   },
   {
-    "coins": 7000,
+    "coins": 28440,
+    "minutes": 1512,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      49.75,
+      50,
+      0.25,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 36200,
+    "minutes": 1584,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      39,
+      60,
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 46090,
+    "minutes": 1656,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      25,
+      70,
+      5,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 58690,
+    "minutes": 1728,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      79.98,
+      20,
+      0.02,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 74720,
     "minutes": 1800,
     "chances": [
-      19.75,
-      75,
-      5,
-      0.25,
       0,
       0,
       0,
       0,
+      0,
+      69.95,
+      30,
+      0.05,
       0,
       0
     ]
   },
   {
-    "coins": 7750,
+    "coins": 95140,
+    "minutes": 1872,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      59.9,
+      40,
+      0.1,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 121130,
+    "minutes": 1944,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      49.75,
+      50,
+      0.25,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 154220,
+    "minutes": 2016,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      39,
+      60,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 196360,
+    "minutes": 2088,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      25,
+      70,
+      5,
+      0,
+      0
+    ]
+  },
+  {
+    "coins": 250000,
     "minutes": 2160,
     "chances": [
-      14.5,
-      75,
-      10,
-      0.5,
       0,
       0,
       0,
       0,
       0,
-      0
-    ]
-  },
-  {
-    "coins": 8250,
-    "minutes": 2880,
-    "chances": [
       0,
-      78.95,
+      79.98,
       20,
-      1,
-      0.05,
-      0,
-      0,
-      0,
-      0,
+      0.02,
       0
     ]
   },
   {
-    "coins": 8750,
-    "minutes": 3240,
-    "chances": [
-      0,
-      61.9,
-      35,
-      3,
-      0.1,
-      0,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 9625,
-    "minutes": 3600,
-    "chances": [
-      0,
-      44.75,
-      50,
-      5,
-      0.25,
-      0,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 11250,
-    "minutes": 4320,
-    "chances": [
-      0,
-      24.5,
-      65,
-      10,
-      0.5,
-      0,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 12500,
-    "minutes": 4320,
-    "chances": [
-      0,
-      0,
-      78.95,
-      20,
-      1,
-      0.05,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 15000,
-    "minutes": 4800,
-    "chances": [
-      0,
-      0,
-      61.9,
-      35,
-      3,
-      0.1,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 16250,
-    "minutes": 5280,
-    "chances": [
-      0,
-      0,
-      44.75,
-      50,
-      5,
-      0.25,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 18750,
-    "minutes": 5760,
-    "chances": [
-      0,
-      0,
-      24.5,
-      65,
-      10,
-      0.5,
-      0,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 25000,
-    "minutes": 5760,
-    "chances": [
-      0,
-      0,
-      0,
-      78.95,
-      20,
-      1,
-      0.05,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 28750,
-    "minutes": 6240,
-    "chances": [
-      0,
-      0,
-      0,
-      61.9,
-      35,
-      3,
-      0.1,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 32500,
-    "minutes": 6720,
-    "chances": [
-      0,
-      0,
-      0,
-      44.75,
-      50,
-      5,
-      0.25,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 37500,
-    "minutes": 7200,
-    "chances": [
-      0,
-      0,
-      0,
-      24.5,
-      65,
-      10,
-      0.5,
-      0,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 40000,
-    "minutes": 7200,
-    "chances": [
-      0,
-      0,
-      0,
-      0,
-      78.95,
-      20,
-      1,
-      0.05,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 43750,
-    "minutes": 7680,
-    "chances": [
-      0,
-      0,
-      0,
-      0,
-      61.9,
-      35,
-      3,
-      0.1,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 47500,
-    "minutes": 8160,
-    "chances": [
-      0,
-      0,
-      0,
-      0,
-      44.75,
-      50,
-      5,
-      0.25,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 52500,
-    "minutes": 8640,
-    "chances": [
-      0,
-      0,
-      0,
-      0,
-      24.5,
-      65,
-      10,
-      0.5,
-      0,
-      0
-    ]
-  },
-  {
-    "coins": 60000,
-    "minutes": 8640,
+    "coins": 287180,
+    "minutes": 2232,
     "chances": [
       0,
       0,
       0,
       0,
       0,
-      78.95,
-      20,
-      1,
+      0,
+      69.95,
+      30,
       0.05,
       0
     ]
   },
   {
-    "coins": 63750,
-    "minutes": 9120,
+    "coins": 329880,
+    "minutes": 2304,
     "chances": [
       0,
       0,
       0,
       0,
       0,
-      61.9,
-      35,
-      3,
+      0,
+      59.9,
+      40,
       0.1,
       0
     ]
   },
   {
-    "coins": 81250,
-    "minutes": 9600,
+    "coins": 378930,
+    "minutes": 2376,
     "chances": [
       0,
       0,
       0,
       0,
       0,
-      44.75,
+      0,
+      49.75,
       50,
-      5,
       0.25,
       0
     ]
   },
   {
-    "coins": 86250,
-    "minutes": 10080,
+    "coins": 435280,
+    "minutes": 2448,
     "chances": [
       0,
       0,
       0,
       0,
       0,
-      24.5,
-      65,
-      10,
-      0.5,
+      0,
+      39,
+      60,
+      1,
       0
     ]
   },
   {
-    "coins": 97500,
-    "minutes": 10080,
+    "coins": 500000,
+    "minutes": 2520,
     "chances": [
       0,
       0,
@@ -540,15 +716,47 @@ export const ANVILS = [
       0,
       0,
       0,
-      78.95,
+      25,
+      70,
+      5,
+      0
+    ]
+  },
+  {
+    "coins": 574350,
+    "minutes": 2592,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      79.98,
       20,
-      1,
+      0.02
+    ]
+  },
+  {
+    "coins": 659760,
+    "minutes": 2664,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      69.95,
+      30,
       0.05
     ]
   },
   {
-    "coins": 105000,
-    "minutes": 10080,
+    "coins": 757860,
+    "minutes": 2736,
     "chances": [
       0,
       0,
@@ -556,15 +764,15 @@ export const ANVILS = [
       0,
       0,
       0,
-      61.9,
-      35,
-      3,
+      0,
+      59.9,
+      40,
       0.1
     ]
   },
   {
-    "coins": 112500,
-    "minutes": 10080,
+    "coins": 870560,
+    "minutes": 2808,
     "chances": [
       0,
       0,
@@ -572,16 +780,49 @@ export const ANVILS = [
       0,
       0,
       0,
-      44.75,
+      0,
+      49.85,
       50,
-      5,
+      0.15
+    ]
+  },
+  {
+    "coins": 1000000,
+    "minutes": 2880,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      39.75,
+      60,
       0.25
     ]
   },
   {
-    "coins": 118750,
-    "minutes": 10080,
+    "coins": 1174620,
+    "minutes": 3024,
     "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      29.6,
+      70,
+      0.4
+    ]
+  },
+  {
+    "coins": 1379730,
+    "minutes": 3168,
+    "chances": [
+      0,
       0,
       0,
       0,
@@ -589,14 +830,13 @@ export const ANVILS = [
       0,
       0,
       24.5,
-      65,
-      10,
+      75,
       0.5
     ]
   },
   {
-    "coins": 137500,
-    "minutes": 10080,
+    "coins": 1620660,
+    "minutes": 3312,
     "chances": [
       0,
       0,
@@ -605,14 +845,30 @@ export const ANVILS = [
       0,
       0,
       0,
-      79,
-      20,
+      24.25,
+      75,
+      0.75
+    ]
+  },
+  {
+    "coins": 1903660,
+    "minutes": 3456,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      24,
+      75,
       1
     ]
   },
   {
-    "coins": 150000,
-    "minutes": 10080,
+    "coins": 2236070,
+    "minutes": 3600,
     "chances": [
       0,
       0,
@@ -621,14 +877,62 @@ export const ANVILS = [
       0,
       0,
       0,
-      62,
-      35,
+      23.5,
+      75,
+      1.5
+    ]
+  },
+  {
+    "coins": 2626530,
+    "minutes": 3744,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      23,
+      75,
+      2
+    ]
+  },
+  {
+    "coins": 3085170,
+    "minutes": 3888,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      22.5,
+      75,
+      2.5
+    ]
+  },
+  {
+    "coins": 3623900,
+    "minutes": 4032,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      22,
+      75,
       3
     ]
   },
   {
-    "coins": 162500,
-    "minutes": 10080,
+    "coins": 4256700,
+    "minutes": 4176,
     "chances": [
       0,
       0,
@@ -637,8 +941,24 @@ export const ANVILS = [
       0,
       0,
       0,
-      45,
-      50,
+      21,
+      75,
+      4
+    ]
+  },
+  {
+    "coins": 5000000,
+    "minutes": 4320,
+    "chances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20,
+      75,
       5
     ]
   }
@@ -646,342 +966,342 @@ export const ANVILS = [
 export const COMBAT = [
   {
     "battle_level": 1,
-    "warrior_hp": 10,
-    "warrior_damage": 1,
-    "archer_hp": 5,
-    "archer_damage": 1,
-    "healer_hp": 5,
-    "healing_per_2s": 3,
-    "boss_hp": 30,
-    "boss_damage": 2,
-    "monster_coins": 4,
-    "boss_coins": 25,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 2,
-    "warrior_hp": 12,
-    "warrior_damage": 2,
-    "archer_hp": 6,
-    "archer_damage": 1,
-    "healer_hp": 6,
-    "healing_per_2s": 3,
-    "boss_hp": 72,
-    "boss_damage": 5,
-    "monster_coins": 4,
-    "boss_coins": 30,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 3,
-    "warrior_hp": 14,
-    "warrior_damage": 2,
-    "archer_hp": 7,
-    "archer_damage": 1,
-    "healer_hp": 7,
-    "healing_per_2s": 3,
-    "boss_hp": 84,
-    "boss_damage": 5,
-    "monster_coins": 5,
-    "boss_coins": 35,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 4,
-    "warrior_hp": 16,
-    "warrior_damage": 2,
-    "archer_hp": 8,
-    "archer_damage": 1,
-    "healer_hp": 8,
-    "healing_per_2s": 3,
-    "boss_hp": 96,
-    "boss_damage": 5,
-    "monster_coins": 5,
-    "boss_coins": 40,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 5,
-    "warrior_hp": 18,
-    "warrior_damage": 2,
-    "archer_hp": 9,
-    "archer_damage": 1,
-    "healer_hp": 9,
-    "healing_per_2s": 3,
-    "boss_hp": 108,
-    "boss_damage": 5,
-    "monster_coins": 6,
-    "boss_coins": 45,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 6,
     "warrior_hp": 20,
-    "warrior_damage": 3,
+    "warrior_damage": 1,
     "archer_hp": 10,
     "archer_damage": 1,
     "healer_hp": 10,
     "healing_per_2s": 3,
-    "boss_hp": 120,
-    "boss_damage": 6,
-    "monster_coins": 6,
-    "boss_coins": 50,
+    "boss_hp": 60,
+    "boss_damage": 2,
+    "monster_coins": 4,
+    "boss_coins": 25,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 2
   },
   {
-    "battle_level": 7,
-    "warrior_hp": 22,
-    "warrior_damage": 3,
-    "archer_hp": 11,
-    "archer_damage": 1,
-    "healer_hp": 11,
-    "healing_per_2s": 3,
-    "boss_hp": 132,
-    "boss_damage": 6,
-    "monster_coins": 6,
-    "boss_coins": 55,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 8,
-    "warrior_hp": 24,
-    "warrior_damage": 3,
-    "archer_hp": 12,
-    "archer_damage": 1,
-    "healer_hp": 12,
-    "healing_per_2s": 3,
-    "boss_hp": 144,
-    "boss_damage": 6,
-    "monster_coins": 6,
-    "boss_coins": 60,
-    "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
-    "batch_size": 2
-  },
-  {
-    "battle_level": 9,
-    "warrior_hp": 26,
-    "warrior_damage": 3,
+    "battle_level": 2,
+    "warrior_hp": 25,
+    "warrior_damage": 2,
     "archer_hp": 13,
     "archer_damage": 1,
     "healer_hp": 13,
     "healing_per_2s": 3,
-    "boss_hp": 156,
+    "boss_hp": 152,
+    "boss_damage": 5,
+    "monster_coins": 4,
+    "boss_coins": 30,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 3,
+    "warrior_hp": 31,
+    "warrior_damage": 2,
+    "archer_hp": 15,
+    "archer_damage": 1,
+    "healer_hp": 15,
+    "healing_per_2s": 3,
+    "boss_hp": 186,
+    "boss_damage": 5,
+    "monster_coins": 5,
+    "boss_coins": 35,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 4,
+    "warrior_hp": 37,
+    "warrior_damage": 2,
+    "archer_hp": 19,
+    "archer_damage": 1,
+    "healer_hp": 19,
+    "healing_per_2s": 3,
+    "boss_hp": 222,
+    "boss_damage": 5,
+    "monster_coins": 5,
+    "boss_coins": 40,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 5,
+    "warrior_hp": 44,
+    "warrior_damage": 2,
+    "archer_hp": 22,
+    "archer_damage": 1,
+    "healer_hp": 22,
+    "healing_per_2s": 3,
+    "boss_hp": 261,
+    "boss_damage": 5,
+    "monster_coins": 6,
+    "boss_coins": 45,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 6,
+    "warrior_hp": 51,
+    "warrior_damage": 3,
+    "archer_hp": 25,
+    "archer_damage": 1,
+    "healer_hp": 25,
+    "healing_per_2s": 3,
+    "boss_hp": 303,
+    "boss_damage": 6,
+    "monster_coins": 6,
+    "boss_coins": 50,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 7,
+    "warrior_hp": 58,
+    "warrior_damage": 3,
+    "archer_hp": 29,
+    "archer_damage": 1,
+    "healer_hp": 29,
+    "healing_per_2s": 3,
+    "boss_hp": 347,
+    "boss_damage": 6,
+    "monster_coins": 6,
+    "boss_coins": 55,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 8,
+    "warrior_hp": 66,
+    "warrior_damage": 3,
+    "archer_hp": 33,
+    "archer_damage": 1,
+    "healer_hp": 33,
+    "healing_per_2s": 3,
+    "boss_hp": 394,
+    "boss_damage": 6,
+    "monster_coins": 6,
+    "boss_coins": 60,
+    "hammer_drop_chance": 0.2,
+    "hammer_min": 2,
+    "hammer_max": 4,
+    "batch_size": 2
+  },
+  {
+    "battle_level": 9,
+    "warrior_hp": 74,
+    "warrior_damage": 3,
+    "archer_hp": 37,
+    "archer_damage": 1,
+    "healer_hp": 37,
+    "healing_per_2s": 3,
+    "boss_hp": 443,
     "boss_damage": 6,
     "monster_coins": 7,
     "boss_coins": 65,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 2
   },
   {
     "battle_level": 10,
-    "warrior_hp": 28,
+    "warrior_hp": 83,
     "warrior_damage": 3,
-    "archer_hp": 14,
+    "archer_hp": 41,
     "archer_damage": 2,
-    "healer_hp": 14,
+    "healer_hp": 41,
     "healing_per_2s": 6,
-    "boss_hp": 168,
+    "boss_hp": 495,
     "boss_damage": 7,
     "monster_coins": 7,
     "boss_coins": 70,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 1,
-    "hammer_max": 3,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 2
   },
   {
     "battle_level": 11,
-    "warrior_hp": 31,
+    "warrior_hp": 95,
     "warrior_damage": 3,
-    "archer_hp": 16,
+    "archer_hp": 49,
     "archer_damage": 2,
-    "healer_hp": 16,
+    "healer_hp": 49,
     "healing_per_2s": 6,
-    "boss_hp": 188,
+    "boss_hp": 574,
     "boss_damage": 8,
     "monster_coins": 7,
     "boss_coins": 72,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 12,
-    "warrior_hp": 35,
+    "warrior_hp": 111,
     "warrior_damage": 4,
-    "archer_hp": 18,
+    "archer_hp": 57,
     "archer_damage": 2,
-    "healer_hp": 18,
+    "healer_hp": 57,
     "healing_per_2s": 9,
-    "boss_hp": 211,
+    "boss_hp": 666,
     "boss_damage": 9,
     "monster_coins": 7,
     "boss_coins": 74,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 13,
-    "warrior_hp": 39,
+    "warrior_hp": 127,
     "warrior_damage": 4,
-    "archer_hp": 20,
+    "archer_hp": 65,
     "archer_damage": 3,
-    "healer_hp": 20,
+    "healer_hp": 65,
     "healing_per_2s": 9,
-    "boss_hp": 236,
+    "boss_hp": 770,
     "boss_damage": 10,
     "monster_coins": 8,
     "boss_coins": 75,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 14,
-    "warrior_hp": 44,
+    "warrior_hp": 148,
     "warrior_damage": 5,
-    "archer_hp": 22,
+    "archer_hp": 74,
     "archer_damage": 3,
-    "healer_hp": 22,
+    "healer_hp": 74,
     "healing_per_2s": 9,
-    "boss_hp": 264,
+    "boss_hp": 889,
     "boss_damage": 11,
     "monster_coins": 8,
     "boss_coins": 77,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 15,
-    "warrior_hp": 49,
+    "warrior_hp": 170,
     "warrior_damage": 5,
-    "archer_hp": 25,
+    "archer_hp": 87,
     "archer_damage": 3,
-    "healer_hp": 25,
+    "healer_hp": 87,
     "healing_per_2s": 12,
-    "boss_hp": 296,
+    "boss_hp": 1028,
     "boss_damage": 12,
     "monster_coins": 8,
     "boss_coins": 79,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 16,
-    "warrior_hp": 55,
+    "warrior_hp": 197,
     "warrior_damage": 6,
-    "archer_hp": 28,
+    "archer_hp": 100,
     "archer_damage": 4,
-    "healer_hp": 28,
+    "healer_hp": 100,
     "healing_per_2s": 12,
-    "boss_hp": 332,
+    "boss_hp": 1188,
     "boss_damage": 13,
     "monster_coins": 8,
     "boss_coins": 81,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 17,
-    "warrior_hp": 62,
+    "warrior_hp": 228,
     "warrior_damage": 6,
-    "archer_hp": 31,
+    "archer_hp": 114,
     "archer_damage": 4,
-    "healer_hp": 31,
+    "healer_hp": 114,
     "healing_per_2s": 12,
-    "boss_hp": 371,
+    "boss_hp": 1367,
     "boss_damage": 15,
     "monster_coins": 9,
     "boss_coins": 83,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 18,
-    "warrior_hp": 69,
+    "warrior_hp": 261,
     "warrior_damage": 7,
-    "archer_hp": 35,
+    "archer_hp": 133,
     "archer_damage": 5,
-    "healer_hp": 35,
+    "healer_hp": 133,
     "healing_per_2s": 15,
-    "boss_hp": 416,
+    "boss_hp": 1576,
     "boss_damage": 16,
     "monster_coins": 9,
     "boss_coins": 85,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 19,
-    "warrior_hp": 78,
+    "warrior_hp": 304,
     "warrior_damage": 8,
-    "archer_hp": 39,
+    "archer_hp": 152,
     "archer_damage": 5,
-    "healer_hp": 39,
+    "healer_hp": 152,
     "healing_per_2s": 18,
-    "boss_hp": 466,
+    "boss_hp": 1815,
     "boss_damage": 18,
     "monster_coins": 9,
     "boss_coins": 87,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {
     "battle_level": 20,
-    "warrior_hp": 87,
+    "warrior_hp": 348,
     "warrior_damage": 9,
-    "archer_hp": 43,
+    "archer_hp": 172,
     "archer_damage": 6,
-    "healer_hp": 43,
+    "healer_hp": 172,
     "healing_per_2s": 18,
-    "boss_hp": 522,
+    "boss_hp": 2088,
     "boss_damage": 20,
     "monster_coins": 10,
     "boss_coins": 90,
     "hammer_drop_chance": 0.2,
-    "hammer_min": 6,
-    "hammer_max": 12,
+    "hammer_min": 2,
+    "hammer_max": 4,
     "batch_size": 4
   },
   {

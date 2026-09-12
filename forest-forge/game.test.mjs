@@ -7,7 +7,7 @@ import { idleRewards, collectIdleRewards } from './game.mjs';
 import { freshGame, stats, heroPower, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
 function advance(s, seconds) { const events=[]; for(let i=0;i<seconds*30;i++)events.push(...step(s,1/30,()=>.999)); return events; }
 function wave(level,index) {
- const s=freshGame();s.level=s.highest=level;s.encounter=index?index-1:0;s.phase=index?'victory':'dead';s.phaseTime=0;step(s,1/30);return s;
+ const s=freshGame();s.level=s.highest=level;s.encounter=index-1;s.phase='victory';s.phaseTime=0;step(s,1/30);return s;
 }
 function durable(s) { s.equipment.helmet=candidate('helmet',10000);s.equipment.weapon=candidate('weapon',2);s.hp=stats(s).hp;return s; }
 
@@ -94,13 +94,13 @@ test('archer projectile cannot damage another target or carry through a restart'
 test('paid anvil skip scales with remaining time, preserves poor balances, and charges once',()=>{
  const s=freshGame();s.coins=1000;
  assert.equal(anvilSkipCost(s,1000),0);assert.equal(skipAnvilUpgrade(s,1000),false);
- upgradeAnvil(s,1000);assert.equal(anvilSkipCost(s,1000),940);assert.equal(anvilSkipCost(s,151000),470);
- const loaded=restore(JSON.stringify(s),151000);assert.equal(anvilSkipCost(loaded,151000),470);
- loaded.coins=469;const before=structuredClone(loaded);assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.deepEqual(loaded,before);
- loaded.coins=470;assert.equal(skipAnvilUpgrade(loaded,151000),true);assert.equal(loaded.coins,0);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);
- assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.equal(loaded.anvilLevel,2);
- assert.equal(skipAnvilUpgrade(s,301000),true);assert.equal(s.coins,812);assert.equal(s.anvilLevel,2);
- assert.equal(skipAnvilUpgrade(s,301000),false);
+ upgradeAnvil(s,1000);assert.equal(anvilSkipCost(s,1000),650);assert.equal(anvilSkipCost(s,91000),325);
+ const loaded=restore(JSON.stringify(s),91000);assert.equal(anvilSkipCost(loaded,91000),325);
+ loaded.coins=324;const before=structuredClone(loaded);assert.equal(skipAnvilUpgrade(loaded,91000),false);assert.deepEqual(loaded,before);
+ loaded.coins=325;assert.equal(skipAnvilUpgrade(loaded,91000),true);assert.equal(loaded.coins,0);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);
+ assert.equal(skipAnvilUpgrade(loaded,91000),false);assert.equal(loaded.anvilLevel,2);
+ assert.equal(skipAnvilUpgrade(s,181000),true);assert.equal(s.coins,870);assert.equal(s.anvilLevel,2);
+ assert.equal(skipAnvilUpgrade(s,181000),false);
  const last=freshGame();last.anvilLevel=ANVILS.length;last.coins=1e9;assert.equal(anvilSkipCost(last),0);assert.equal(skipAnvilUpgrade(last),false);
 });
 
@@ -134,7 +134,7 @@ test('forge drops only connected sets across every slot and preserves old owned 
  assert.equal(loaded.equipment.weapon.value,17);
 });
 
-test('short opening level, full boss escorts, and original enemy stats',()=>{
+test('short opening level, full boss escorts, and stronger first-biome health',()=>{
  assert.deepEqual(stats(freshGame()),{hp:20,damage:2});
  assert.ok(WAVES.every(row=>row.length===10));
  for(let level=1;level<=10;level++){
@@ -145,11 +145,11 @@ test('short opening level, full boss escorts, and original enemy stats',()=>{
    if(level<6&&n<9)assert.ok(s.enemies.every(e=>e.kind!=='healer'));
    if(n===9)assert.deepEqual(s.enemies.map(e=>e.kind),level===1?['boss']:['warrior','warrior','boss','archer','healer']);
   }
-  assert.equal(enemyFor(level).maxHp,10+2*(level-1));
+  assert.equal(enemyFor(level).maxHp,Math.round((10+2*(level-1))*(2+2*(level-1)/19)));
   assert.equal(enemyFor(level).damage,level===1?1:level<6?2:3);
-  assert.equal(enemyFor(level,'archer').maxHp,level+4);
+  assert.equal(enemyFor(level,'archer').maxHp,Math.round((level+4)*(2+2*(level-1)/19)));
   assert.equal(enemyFor(level,'archer').damage,level<10?1:2);
-  assert.equal(enemyFor(level,'boss').maxHp,level===1?30:6*(10+2*(level-1)));
+  assert.equal(enemyFor(level,'boss').maxHp,Math.round((level===1?30:6*(10+2*(level-1)))*(2+2*(level-1)/19)));
   assert.equal(enemyFor(level,'boss').damage,level===1?2:level<6?5:level<10?6:7);
   assert.equal(enemyFor(level,'healer').healing,level<10?3:6);
  }
@@ -235,7 +235,7 @@ test('ordinary enemies drop one hammer at 20 percent, one payout per kill',()=>{
 });
 
 test('bosses always give five times their biome hammer roll, including high rolls, and only once',()=>{
- for (const [roll,quantity] of [[0,5],[.5,10],[.999,15]]) {
+ for (const [roll,quantity] of [[0,10],[.5,15],[.999,20]]) {
   const s=wave(1,9),boss=s.enemies.find(e=>e.boss);s.hammers=0;boss.hp=1;boss.x=s.heroX+.165;
   const events=step(s,1.3,()=>roll);
   assert.equal(events.find(e=>e.type==='kill').hammers,quantity);
@@ -369,16 +369,16 @@ test('rings replace only the chosen slot, including while another batch is being
 });
 
 test('anvil charges at start once, uses old probabilities until deadline and completes offline once',()=>{
- const s=freshGame();s.coins=149;assert.equal(upgradeAnvil(s,1000),false);s.coins=1000;
- assert.equal(upgradeAnvil(s,1000),true);assert.equal(s.coins,812);assert.equal(s.upgradeEndsAt,301000);
- assert.equal(upgradeAnvil(s,2000),false);assert.equal(s.coins,812);assert.equal(s.anvilLevel,1);
+ const s=freshGame();s.coins=129;assert.equal(upgradeAnvil(s,1000),false);s.coins=1000;
+ assert.equal(upgradeAnvil(s,1000),true);assert.equal(s.coins,870);assert.equal(s.upgradeEndsAt,181000);
+ assert.equal(upgradeAnvil(s,2000),false);assert.equal(s.coins,870);assert.equal(s.anvilLevel,1);
  s.hammers=1;forge(s,()=>.999);assert.equal(s.forgingItems[0].epoch,1);
- assert.equal(finishUpgrade(s,300999),false);
- const loaded=restore(JSON.stringify(s),301000);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);assert.equal(loaded.coins,812);
+ assert.equal(finishUpgrade(s,180999),false);
+ const loaded=restore(JSON.stringify(s),181000);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);assert.equal(loaded.coins,870);
  assert.equal(finishUpgrade(loaded,9999999),false);assert.equal(loaded.anvilLevel,2);
  loaded.anvilLevel=ANVILS.length;assert.equal(upgradeAnvil(loaded),false);
- assert.equal(ANVILS.reduce((sum,row)=>sum+row.minutes,0),208500);
- assert.equal(ANVILS.at(-1).coins,162500);
+ assert.equal(ANVILS.reduce((sum,row)=>sum+row.minutes,0),97776);
+ assert.equal(ANVILS.at(-1).coins,5000000);
  for(const row of ANVILS)assert.ok(Math.abs(row.chances.reduce((a,b)=>a+b,0)-100)<.001);
 });
 
@@ -419,7 +419,7 @@ test('200 levels use ten waves each; death retains loot and no between-wave heal
  assert.ok(step(last,1/30).some(e=>e.type==='complete'));assert.ok(restore(JSON.stringify(last)).completed);replay(last);assert.equal(last.level,1);assert.equal(last.highest,200);
 });
 
-test('biomes change only after their twentieth boss, and death retries the same biome',()=>{
+test('biomes change only after their twentieth boss, and death retreats to the previous level',()=>{
  assert.equal(BIOMES.length*LEVELS_PER_BIOME,MAX_LEVEL);
  assert.equal(new Set(BIOMES.flatMap(b=>Object.values(b.names))).size,50);
  for(let i=0;i<BIOMES.length;i++){
@@ -434,7 +434,7 @@ test('biomes change only after their twentieth boss, and death retries the same 
    assert.ok(events.some(e=>e.type==='level'&&e.level===last+1));
    assert.equal((s.level-1)%LEVELS_PER_BIOME+1,1);
    s.hp=0;s.phase='dead';s.phaseTime=0;step(s,1/30);
-   assert.equal(s.level,last+1);assert.equal(s.encounter,0);assert.equal(s.enemies[0].name,BIOMES[i+1].names.warrior);
+   assert.equal(s.level,last);assert.equal(s.highest,last+1);assert.equal(s.encounter,0);assert.equal(s.enemies[0].name,BIOMES[i].names.warrior);
   }else assert.ok(s.completed);
   assert.equal(s.coins,731);assert.equal(s.hammers,97);
  }
@@ -478,8 +478,8 @@ test('bare hero survives first enemy, earns hammers, forges and equips first wea
  const existing=structuredClone(s);existing.hammers=0;assert.equal(restore(JSON.stringify(existing)).hammers,0);
  assert.equal(s.hp,20);assert.deepEqual(stats(s),{hp:20,damage:2});
  assert.deepEqual(restore(JSON.stringify(s)),s);
- for(let n=0;n<450 && !s.kills;n++)step(s,1/30,()=>0);
- assert.equal(s.kills,1);assert.equal(s.hp,12);assert.equal(s.deaths,0);assert.equal(s.hammers,16);
+ for(let n=0;n<900 && !s.kills;n++)step(s,1/30,()=>0);
+ assert.equal(s.kills,1);assert.equal(s.hp,2);assert.equal(s.deaths,0);assert.equal(s.hammers,16);
  assert.deepEqual(restore(JSON.stringify(s)),s);
  assert.equal(forge(s,()=>0),true);assert.equal(s.forgingItems.length,2);assert.equal(s.hammers,14);for(let n=0;n<46;n++)step(s,1/30,()=>0);
  const hp=s.hp;assert.equal(equip(s),true);assert.equal(stats(s).damage,4);assert.equal(stats(s).hp,20);assert.equal(s.hp,hp);
@@ -685,7 +685,7 @@ test('death lets survivors march past without attacking; restart and boss comple
  assert.equal(forge(s,()=>0),true);const events=advance(s,.7);
  assert.equal(s.heroX,heroX);assert.ok(old.every((e,i)=>e.x<x[i]&&e.moving&&!e.engaged));assert.ok(!events.some(e=>e.type==='enemyHit'));
  const loaded=restore(JSON.stringify(s));assert.deepEqual(loaded,s);
- assert.ok(advance(s,1.2).some(e=>e.type==='restart'));assert.equal(s.level,4);assert.equal(s.encounter,0);assert.equal(s.hp,stats(s).hp);assert.notEqual(s.enemies,old);assert.equal(s.coins,77);assert.ok(s.pending);
+ assert.ok(advance(s,1.2).some(e=>e.type==='restart'));assert.equal(s.level,3);assert.equal(s.highest,4);assert.equal(s.encounter,0);assert.equal(s.hp,stats(s).hp);assert.notEqual(s.enemies,old);assert.equal(s.coins,77);assert.ok(s.pending);
  const boss=wave(1,9);boss.enemies.forEach(e=>{e.hp=e.boss?1:0;e.damage=0;if(e.boss)e.x=boss.heroX+.165;});
  assert.ok(advance(boss,1.3).some(e=>e.type==='kill'));assert.equal(boss.phase,'victory');const start=boss.heroX;
  step(boss,.4);assert.ok(boss.heroX>start);assert.equal(boss.level,1);
@@ -865,31 +865,35 @@ test('mine: two future resources drop rarely without changing deposit or recipes
 });
 
 
-test('compressed anvil keeps saved progress and running timers, caps old high levels',()=>{
+test('expanded anvil keeps saved progress and running timers, caps old high levels',()=>{
  const s=freshGame(1000);s.anvilLevel=11;s.coins=54321;s.hammers=87;s.upgradeEndsAt=999999;
  const loaded=restore(JSON.stringify(s),1000);
  assert.equal(loaded.anvilLevel,11);assert.equal(loaded.upgradeEndsAt,999999);
  assert.equal(loaded.coins,54321);assert.equal(loaded.hammers,87);
  assert.equal(finishUpgrade(loaded,999998),false);assert.equal(finishUpgrade(loaded,999999),true);assert.equal(loaded.anvilLevel,12);
  s.anvilLevel=79;const capped=restore(JSON.stringify(s),1000);
- assert.equal(capped.anvilLevel,40);assert.equal(capped.upgradeEndsAt,0);assert.equal(capped.coins,54321);
+ assert.equal(capped.anvilLevel,60);assert.equal(capped.upgradeEndsAt,0);assert.equal(capped.coins,54321);
  assert.equal(upgradeAnvil(capped,1000),false);assert.equal(forge(capped,()=>.99999),true);
- s.anvilLevel=39;const last=restore(JSON.stringify(s),1000);finishUpgrade(last,999999);assert.equal(last.anvilLevel,40);assert.equal(upgradeAnvil(last,999999),false);
+ s.anvilLevel=59;const last=restore(JSON.stringify(s),1000);finishUpgrade(last,999999);assert.equal(last.anvilLevel,60);assert.equal(upgradeAnvil(last,999999),false);
 });
 
-test('forty-level forge ladder includes fractional openings and week-long maximum',()=>{
- assert.equal(ANVILS.length,40);assert.equal(Math.max(...ANVILS.map(r=>r.minutes)),10080);
- assert.deepEqual(ANVILS[10].chances,[21.9,75,3,.1,0,0,0,0,0,0]);
- assert.deepEqual(ANVILS[39].chances,[0,0,0,0,0,0,0,45,50,5]);
- const ladder=[.05,.1,.25,.5,1,3,5,10,20,35,50,65];
- for(let epoch=2;epoch<10;epoch++)for(let age=0;age<ladder.length;age++){
-  const index=1+4*(epoch-1)+age;if(index<40)assert.equal(ANVILS[index].chances[epoch],ladder[age]);
+test('sixty-level forge has three-day timers, rising odds and agreed price anchors',()=>{
+ assert.equal(ANVILS.length,60);assert.equal(Math.max(...ANVILS.map(r=>r.minutes)),4320);
+ assert.deepEqual(ANVILS[59].chances,[0,0,0,0,0,0,0,20,75,5]);
+ assert.deepEqual([29,39,49,59].map(i=>ANVILS[i].coins),[22330,250000,1000000,5000000]);
+ for(let i=0;i<60;i++){
+  assert.ok(Math.abs(ANVILS[i].chances.reduce((a,b)=>a+b)-100)<1e-8);
+  if(i)for(let e=1;e<10;e++)assert.ok(ANVILS[i].chances.slice(e).reduce((a,b)=>a+b)>=ANVILS[i-1].chances.slice(e).reduce((a,b)=>a+b)-1e-8);
  }
+ for(let epoch=2;epoch<10;epoch++){
+  const index=3+6*(epoch-2);assert.equal(ANVILS[index].chances[epoch],.02);assert.equal(ANVILS[index].chances[epoch-1],20);
+ }
+ const old=freshGame(1000);old.anvilLevel=40;old.coins=1000000;
+ const loaded=restore(JSON.stringify(old),1000);assert.equal(loaded.anvilLevel,40);assert.equal(upgradeAnvil(loaded,1000),true);
 });
-
 
 test('Ancient onboarding chances rise without reducing later rare tiers',()=>{
- const chances=[5,10,20,35,45,55,65,75,75,75,75,75];
+ const chances=[5,15,20,30,40,50,60,70,79.98,69.95,59.9,49.75];
  chances.forEach((value,i)=>assert.equal(ANVILS[i+1].chances[1],value));
  for(let i=1;i<ANVILS.length;i++)assert.ok(ANVILS[i].chances[0]<=ANVILS[i-1].chances[0]);
  const old=freshGame();old.hammers=5;old.coins=100;assert.equal(restore(JSON.stringify(old)).hammers,5);
@@ -1007,8 +1011,8 @@ test('ordinary coin rewards are halved while boss rewards stay unchanged',async(
  const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies[0].reward,2);assert.equal(loaded.coins,123);
 });
 
-test('hard biome curve keeps the first biome and updates saved enemies without resetting progress',()=>{
- assert.equal(enemyFor(20).maxHp,87);assert.equal(enemyFor(20).damage,9);
+test('hard biome curve strengthens the first biome and updates saved enemies without resetting progress',()=>{
+ assert.equal(enemyFor(20).maxHp,348);assert.equal(enemyFor(20).damage,9);
  for(const [level,hp,damage] of [[21,8000,400],[40,32000,1200],[41,120000,4000],[60,480000,12000]]){
   assert.equal(enemyFor(level).maxHp,hp);assert.equal(enemyFor(level).damage,damage);
  }
@@ -1139,4 +1143,15 @@ test('manual forging ignores weapon filter and old saves keep any weapon',()=>{
  const s=freshGame(0);s.autoWeaponFilter='melee';s.forgingAuto=false;s.forging=.01;s.forgingItems=[{...candidate('weapon',2),weaponId:'slingshot',epoch:1,sale:1}];
  step(s,.02,()=>.999,0);assert.equal(s.pending.weaponId,'slingshot');assert.equal(s.coins,0);
  delete s.autoWeaponFilter;assert.equal(restore(JSON.stringify(s),0).autoWeaponFilter,'any');s.autoWeaponFilter='invalid';assert.equal(restore(JSON.stringify(s),0).autoWeaponFilter,'any');
+});
+
+
+test('death retreats across a biome boundary once, survives reload, and never goes below level one',()=>{
+ for(const level of [1,21]){
+  const s=wave(level,0);s.hp=1;s.phase='fight';s.enemies[0].x=s.heroX+.115;s.enemies[0].clock=1.1;s.enemies[0].engaged=true;s.targetId=s.enemies[0].id;s.heroClock=0;
+  assert.ok(step(s,1/30,()=>.999).some(e=>e.type==='death'));
+  const loaded=restore(JSON.stringify(s));advance(loaded,2);
+  assert.equal(loaded.level,Math.max(1,level-1));assert.equal(loaded.highest,level);assert.equal(loaded.encounter,0);
+  const saved=restore(JSON.stringify(loaded));assert.equal(saved.level,loaded.level);assert.equal(saved.highest,level);
+ }
 });

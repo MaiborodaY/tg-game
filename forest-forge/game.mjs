@@ -796,7 +796,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     s.phaseTime -= dt;
     if (s.phaseTime > 0) return events;
     if (s.phase === 'dead') {
-      s.encounter = 0; s.hp = stats(s).hp; events.push({ type: 'restart' });
+      s.level = Math.max(1, s.level - 1); s.encounter = 0; s.hp = stats(s).hp; events.push({ type: 'restart' });
     } else if (s.encounter < 9) s.encounter++;
     else if (s.level < MAX_LEVEL) {
       s.level++; s.highest = Math.max(s.highest, s.level); s.encounter = 0; s.hp = stats(s).hp;

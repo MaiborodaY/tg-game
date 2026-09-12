@@ -842,7 +842,7 @@ function processEvents(events) {
       }
     }
     if (event.type === 'anvilUpgraded') notify(`Anvil reached level ${state.anvilLevel}`);
-    if (['kill', 'death', 'level', 'complete', 'forged', 'forgeStarted', 'anvilUpgraded'].includes(event.type)) save();
+    if (['kill', 'death', 'restart', 'level', 'complete', 'forged', 'forgeStarted', 'anvilUpgraded'].includes(event.type)) save();
   }
 }
 let mineInventoryPage=0, mineChancesPage=0;
