@@ -56,6 +56,7 @@
       </button>
     </section>
     <section id="workshop" aria-label="Equipment and forge">
+      <button id="hero-info" class="mini-button" aria-label="Hero stats" aria-haspopup="dialog" aria-controls="hero-stats-dialog">?</button>
 
       <div id="mastery-info" class="mastery-summary" hidden>
         <button id="mastery-choice" aria-expanded="false" aria-controls="mastery-options" aria-label="Choose displayed mastery">
@@ -100,6 +101,7 @@
           <button id="reforge-roll" class="button blue"><span>Reforge</span><i class="coin" aria-hidden="true"></i><span id="reforge-price"></span></button>
         </div>
         <div id="new-row" class="new-row"><span class="new-tag">NEW</span><div class="item-row"><span id="new-card" class="item-icon"><img id="new-image" alt=""><span id="new-level" class="item-level"></span></span><div class="item-details"><h2 id="new-name"></h2><small id="new-epoch" class="item-epoch"></small><p><span id="new-stat"></span> <b id="difference"></b></p></div></div><p id="new-affix" class="affix-line" hidden></p></div>
+        <label id="transfer-affix-row" class="transfer-affix-row" hidden><input id="transfer-affix" type="checkbox"><span>Transfer affix</span><span class="transfer-price"><img src="assets/rune.webp" alt="Runes"><b id="transfer-affix-price">20</b></span></label>
         <div id="result-nav" class="result-nav" hidden><button id="previous-result" aria-label="Previous item">‹</button><span class="result-summary"><button id="equip-stronger" class="equip-stronger">Equip stronger</button><span id="results-remaining"></span><button id="sell-weaker" class="sell-weaker" hidden>Sell weaker</button></span><button id="next-result" aria-label="Next item">›</button></div>
 
         <div id="sheet-actions" class="sheet-actions"><button id="sell" class="button red"><span>Sell</span><small><i class="coin" aria-hidden="true"></i><span id="sell-price">5</span></small></button><button id="equip" class="button blue">Equip</button></div>
@@ -109,7 +111,6 @@
         <div class="anvil-wallet" aria-label="Coins"><i class="coin" aria-hidden="true"></i><b id="anvil-coins">0</b></div>
         <div id="probabilities-panel"><table class="probabilities"><thead><tr><th>Epoch</th><th id="current-anvil-level"></th><th id="next-anvil-level"></th></tr></thead><tbody id="probability-rows"></tbody></table></div>
         <div class="anvil-upgrade">
-          <strong id="anvil-level"></strong>
           <div id="upgrade-progress-wrap" hidden><progress id="upgrade-progress" max="100" value="0" aria-label="Anvil upgrade progress"></progress><span id="upgrade-time"></span></div>
           <button id="skip-anvil-coins" class="button blue" title="Up to 3× the upgrade cost, decreasing with time remaining" hidden><span>Skip</span><small><i class="coin" aria-hidden="true"></i><span id="skip-anvil-price"></span></small></button>
           <button id="upgrade-anvil" class="button blue"><span id="upgrade-anvil-label">Upgrade</span><span id="upgrade-anvil-cost"><i class="coin" aria-hidden="true"></i><span id="upgrade-anvil-price"></span></span></button>
@@ -143,6 +144,12 @@
     <div class="idle-status"><span id="idle-time">0m / 4h</span><span id="idle-next">+1 in 60s</span></div>
     <progress id="idle-progress" max="240" value="0" aria-label="Idle storage capacity"></progress>
     <button id="collect-idle" class="button blue" disabled>Collect</button>
+  </dialog>
+  <dialog id="hero-stats-dialog" class="mine-dialog" aria-labelledby="hero-stats-title">
+    <div class="sheet-top"><h2 id="hero-stats-title">Hero stats</h2><button id="close-hero-stats" class="close" aria-label="Close hero stats" autofocus>×</button></div>
+    <div id="hero-stats-base"></div>
+    <h3>Total affixes</h3><div id="hero-stats-affixes"></div>
+    <h3>Battle statistics</h3><div id="hero-battle-stats"></div>
   </dialog>
   <dialog id="auto-dialog" class="auto-dialog" aria-labelledby="auto-title" aria-describedby="auto-hint">
     <div class="sheet-top"><h2 id="auto-title">Auto forge</h2><button id="close-auto" class="close" aria-label="Close auto forge" autofocus>×</button></div>

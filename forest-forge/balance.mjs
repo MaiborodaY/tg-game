@@ -19,7 +19,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 150,
+    "coins": 188,
     "minutes": 5,
     "chances": [
       95.0,
@@ -35,7 +35,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 300,
+    "coins": 375,
     "minutes": 15,
     "chances": [
       90.0,
@@ -51,7 +51,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 600,
+    "coins": 750,
     "minutes": 40,
     "chances": [
       80.0,
@@ -67,7 +67,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 1000,
+    "coins": 1250,
     "minutes": 120,
     "chances": [
       65.0,
@@ -83,7 +83,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 1500,
+    "coins": 1875,
     "minutes": 240,
     "chances": [
       54.95,
@@ -99,7 +99,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 2200,
+    "coins": 2750,
     "minutes": 360,
     "chances": [
       44.9,
@@ -115,7 +115,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 3200,
+    "coins": 4000,
     "minutes": 600,
     "chances": [
       34.75,
@@ -131,7 +131,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 3800,
+    "coins": 4750,
     "minutes": 840,
     "chances": [
       24.5,
@@ -147,7 +147,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 4200,
+    "coins": 5250,
     "minutes": 1080,
     "chances": [
       23.95,
@@ -163,7 +163,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 4900,
+    "coins": 6125,
     "minutes": 1440,
     "chances": [
       21.9,
@@ -179,7 +179,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 5600,
+    "coins": 7000,
     "minutes": 1800,
     "chances": [
       19.75,
@@ -195,7 +195,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 6200,
+    "coins": 7750,
     "minutes": 2160,
     "chances": [
       14.5,
@@ -211,7 +211,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 6600,
+    "coins": 8250,
     "minutes": 2880,
     "chances": [
       0,
@@ -227,7 +227,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 7000,
+    "coins": 8750,
     "minutes": 3240,
     "chances": [
       0,
@@ -243,7 +243,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 7700,
+    "coins": 9625,
     "minutes": 3600,
     "chances": [
       0,
@@ -259,7 +259,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 9000,
+    "coins": 11250,
     "minutes": 4320,
     "chances": [
       0,
@@ -275,7 +275,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 10000,
+    "coins": 12500,
     "minutes": 4320,
     "chances": [
       0,
@@ -291,7 +291,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 12000,
+    "coins": 15000,
     "minutes": 4800,
     "chances": [
       0,
@@ -307,7 +307,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 13000,
+    "coins": 16250,
     "minutes": 5280,
     "chances": [
       0,
@@ -323,7 +323,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 15000,
+    "coins": 18750,
     "minutes": 5760,
     "chances": [
       0,
@@ -339,7 +339,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 20000,
+    "coins": 25000,
     "minutes": 5760,
     "chances": [
       0,
@@ -355,7 +355,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 23000,
+    "coins": 28750,
     "minutes": 6240,
     "chances": [
       0,
@@ -371,7 +371,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 26000,
+    "coins": 32500,
     "minutes": 6720,
     "chances": [
       0,
@@ -387,7 +387,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 30000,
+    "coins": 37500,
     "minutes": 7200,
     "chances": [
       0,
@@ -403,7 +403,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 32000,
+    "coins": 40000,
     "minutes": 7200,
     "chances": [
       0,
@@ -419,7 +419,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 35000,
+    "coins": 43750,
     "minutes": 7680,
     "chances": [
       0,
@@ -435,7 +435,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 38000,
+    "coins": 47500,
     "minutes": 8160,
     "chances": [
       0,
@@ -451,7 +451,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 42000,
+    "coins": 52500,
     "minutes": 8640,
     "chances": [
       0,
@@ -467,7 +467,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 48000,
+    "coins": 60000,
     "minutes": 8640,
     "chances": [
       0,
@@ -483,7 +483,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 51000,
+    "coins": 63750,
     "minutes": 9120,
     "chances": [
       0,
@@ -499,7 +499,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 65000,
+    "coins": 81250,
     "minutes": 9600,
     "chances": [
       0,
@@ -515,7 +515,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 69000,
+    "coins": 86250,
     "minutes": 10080,
     "chances": [
       0,
@@ -531,7 +531,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 78000,
+    "coins": 97500,
     "minutes": 10080,
     "chances": [
       0,
@@ -547,7 +547,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 84000,
+    "coins": 105000,
     "minutes": 10080,
     "chances": [
       0,
@@ -563,7 +563,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 90000,
+    "coins": 112500,
     "minutes": 10080,
     "chances": [
       0,
@@ -579,7 +579,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 95000,
+    "coins": 118750,
     "minutes": 10080,
     "chances": [
       0,
@@ -595,7 +595,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 110000,
+    "coins": 137500,
     "minutes": 10080,
     "chances": [
       0,
@@ -611,7 +611,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 120000,
+    "coins": 150000,
     "minutes": 10080,
     "chances": [
       0,
@@ -627,7 +627,7 @@ export const ANVILS = [
     ]
   },
   {
-    "coins": 130000,
+    "coins": 162500,
     "minutes": 10080,
     "chances": [
       0,

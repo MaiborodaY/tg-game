@@ -414,8 +414,8 @@ export function stats(s) {
 }
 export function heroPower(s) {
   const hero = stats(s), bonuses = affixBonuses(s);
-  // Normalize the innate 5% crit chance so an unenchanted hero stays damage + HP / 10.
-  const critical = (1 + Math.min(50, 5 + bonuses.crit) / 100 * (.5 + bonuses.critDamage / 100)) / 1.025;
+  // Critical damage contributes only when equipment grants critical chance.
+  const critical = 1 + Math.min(50, bonuses.crit) / 100 * (.5 + bonuses.critDamage / 100);
   const attack = hero.damage * (1 + bonuses.speed / 100) * (1 + .75 * bonuses.double / 100) * critical;
   // Fixed ten-second recovery window; independent of the current enemy and missing HP.
   const recovery = hero.hp * 10 * bonuses.regen / 100 + attack * 5 * bonuses.lifesteal / 100;
@@ -428,7 +428,7 @@ export function enemyFor(level, kind = 'warrior') {
   return { kind, boss: kind === 'boss',
     name: biome.names[kind === 'boss' && level % LEVELS_PER_BIOME ? 'commander' : kind],
     maxHp: row[kind + '_hp'], damage: kind === 'healer' ? 0 : row[kind + '_damage'],
-    healing: row.healing_per_2s, reward: row[kind === 'boss' ? 'boss_coins' : 'monster_coins'] };
+    healing: row.healing_per_2s, reward: kind === 'boss' ? row.boss_coins : Math.floor(row.monster_coins / 2) };
 }
 export const COMPANIONS = [
   {id:'archer',name:'Archer',role:'Ranged damage',description:'Fights from behind the hero'},
@@ -476,7 +476,7 @@ export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
-    mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
+    mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.mine = {version:2,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   prepareEncounter(s); return s;
 }
@@ -597,11 +597,15 @@ export function browseResults(s, direction = 1) {
   else { s.results.unshift(s.pending); s.pending = s.results.pop(); }
   return true;
 }
-export function equip(s, targetSlot = s.pending?.slot) {
+export function equip(s, targetSlot = s.pending?.slot, transferAffix = false) {
   if (!s.pending) return false;
   if (s.pending.slot === 'ring' ? !['ring1','ring2'].includes(targetSlot) : targetSlot !== s.pending.slot) return false;
+  const source = s.equipment[targetSlot], cost = (s.pending.epoch ?? 1) * 10;
+  if (transferAffix && (!source?.affix || (s.pending.epoch ?? 1) < 2 || !Number.isSafeInteger(s.runes) || s.runes < cost)) return false;
   const fraction = s.hp / stats(s).hp;
-  s.equipment[targetSlot] = { ...s.pending, slot: targetSlot };
+  const next = { ...s.pending, slot: targetSlot };
+  if (transferAffix) { next.affix = { ...source.affix }; delete next.reforgeOffer; s.runes -= cost; }
+  s.equipment[targetSlot] = next;
   s.pending = s.results.shift() ?? null;
   s.hp = fraction * stats(s).hp; return true;
 }
@@ -773,8 +777,10 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     if (s.heroClock >= interval || extra) {
       if (!extra) s.heroClock -= interval;
       s.heroActionAge = 0; s.heroAttackCount++;
-      const critical = rng() < Math.min(50,5 + bonuses.crit)/100;
+      const critical = rng() < Math.min(50,bonuses.crit)/100;
       const damage = Math.round(hero.damage * (critical ? 1.5 + bonuses.critDamage/100 : 1));
+      s.battleStats.maxHit=Math.max(s.battleStats.maxHit,damage);
+      if(critical)s.battleStats.maxCrit=Math.max(s.battleStats.maxCrit,damage);
       const dealt = Math.min(target.hp,damage);
       target.hp = Math.max(0, target.hp - damage);
       s.hp = Math.min(hero.hp,s.hp + dealt * bonuses.lifesteal/100);
@@ -824,6 +830,8 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       : rng() < loot.hammer_drop_chance ? 1 : 0;
     const runes = rng() < .001 ? 1 : 0;
     s.hammers += hammers; s.runes += runes;
+    if(target.boss)s.battleStats.bosses++;
+    s.battleStats.coins+=target.reward;s.battleStats.hammers+=hammers;s.battleStats.runes+=runes;
     events.push({ type: 'kill', value: target.reward, hammers, runes, targetId: target.id });
     if (s.enemies.every(e => e.hp === 0)) {
       s.phase = 'victory'; s.phaseTime = .8; return events;
@@ -889,6 +897,7 @@ export function restore(serialized, now = Date.now()) {
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
       !s.equipment || !SLOTS.every(k => s.equipment[k] == null || item(s.equipment?.[k]) && s.equipment[k].slot === k) || (s.pending !== null && !item(s.pending)) ||
       !['forging','kills','deaths'].every(k => nonnegative(s[k])) || (s.forging > 0 && s.version < 3 && !s.pending) || typeof s.completed !== 'boolean') return freshGame(now);
+    s.battleStats=Object.fromEntries(['bosses','maxHit','maxCrit','coins','hammers','runes'].map(k=>[k,Number.isSafeInteger(s.battleStats?.[k])&&s.battleStats[k]>=0?s.battleStats[k]:0]));
     s.hiredCompanions=Array.isArray(s.hiredCompanions)?[...new Set(s.hiredCompanions.filter(id=>COMPANIONS.some(c=>c.id===id)))]:[];
     s.selectedCompanion=s.hiredCompanions.includes(s.selectedCompanion)?s.selectedCompanion:null;
     if(s.companion){

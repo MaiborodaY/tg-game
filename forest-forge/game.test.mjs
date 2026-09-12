@@ -96,12 +96,12 @@ test('archer projectile cannot damage another target or carry through a restart'
 test('paid anvil skip scales with remaining time, preserves poor balances, and charges once',()=>{
  const s=freshGame();s.coins=1000;
  assert.equal(anvilSkipCost(s,1000),0);assert.equal(skipAnvilUpgrade(s,1000),false);
- upgradeAnvil(s,1000);assert.equal(anvilSkipCost(s,1000),750);assert.equal(anvilSkipCost(s,151000),375);
- const loaded=restore(JSON.stringify(s),151000);assert.equal(anvilSkipCost(loaded,151000),375);
- loaded.coins=374;const before=structuredClone(loaded);assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.deepEqual(loaded,before);
- loaded.coins=375;assert.equal(skipAnvilUpgrade(loaded,151000),true);assert.equal(loaded.coins,0);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);
+ upgradeAnvil(s,1000);assert.equal(anvilSkipCost(s,1000),940);assert.equal(anvilSkipCost(s,151000),470);
+ const loaded=restore(JSON.stringify(s),151000);assert.equal(anvilSkipCost(loaded,151000),470);
+ loaded.coins=469;const before=structuredClone(loaded);assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.deepEqual(loaded,before);
+ loaded.coins=470;assert.equal(skipAnvilUpgrade(loaded,151000),true);assert.equal(loaded.coins,0);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);
  assert.equal(skipAnvilUpgrade(loaded,151000),false);assert.equal(loaded.anvilLevel,2);
- assert.equal(skipAnvilUpgrade(s,301000),true);assert.equal(s.coins,850);assert.equal(s.anvilLevel,2);
+ assert.equal(skipAnvilUpgrade(s,301000),true);assert.equal(s.coins,812);assert.equal(s.anvilLevel,2);
  assert.equal(skipAnvilUpgrade(s,301000),false);
  const last=freshGame();last.anvilLevel=ANVILS.length;last.coins=1e9;assert.equal(anvilSkipCost(last),0);assert.equal(skipAnvilUpgrade(last),false);
 });
@@ -228,8 +228,8 @@ test('ordinary enemies drop one hammer at 20 percent, one payout per kill',()=>{
   const s=freshGame();s.hammers=0;s.enemies[0].hp=1;s.enemies[0].x=s.heroX+.115;
   let calls=0;const rng=()=>calls++===0?.999:calls===2?roll:roll===0?0:.999;
   const events=step(s,1.3,rng);assert.equal(events.find(e=>e.type==='kill').hammers,qty);
-  assert.equal(s.hammers,qty);assert.equal(s.coins,4);
-  step(s,.01,()=>0);assert.equal(s.hammers,qty);assert.equal(s.coins,4);
+  assert.equal(s.hammers,qty);assert.equal(s.coins,2);
+  step(s,.01,()=>0);assert.equal(s.hammers,qty);assert.equal(s.coins,2);
  }
  const last=wave(200,9);last.hammers=0;last.equipment.weapon=candidate('weapon',1e15);
  const boss=last.enemies.find(e=>e.boss);boss.x=last.heroX+.165;
@@ -372,15 +372,15 @@ test('rings replace only the chosen slot, including while another batch is being
 
 test('anvil charges at start once, uses old probabilities until deadline and completes offline once',()=>{
  const s=freshGame();s.coins=149;assert.equal(upgradeAnvil(s,1000),false);s.coins=1000;
- assert.equal(upgradeAnvil(s,1000),true);assert.equal(s.coins,850);assert.equal(s.upgradeEndsAt,301000);
- assert.equal(upgradeAnvil(s,2000),false);assert.equal(s.coins,850);assert.equal(s.anvilLevel,1);
+ assert.equal(upgradeAnvil(s,1000),true);assert.equal(s.coins,812);assert.equal(s.upgradeEndsAt,301000);
+ assert.equal(upgradeAnvil(s,2000),false);assert.equal(s.coins,812);assert.equal(s.anvilLevel,1);
  s.hammers=1;forge(s,()=>.999);assert.equal(s.forgingItems[0].epoch,1);
  assert.equal(finishUpgrade(s,300999),false);
- const loaded=restore(JSON.stringify(s),301000);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);assert.equal(loaded.coins,850);
+ const loaded=restore(JSON.stringify(s),301000);assert.equal(loaded.anvilLevel,2);assert.equal(loaded.upgradeEndsAt,0);assert.equal(loaded.coins,812);
  assert.equal(finishUpgrade(loaded,9999999),false);assert.equal(loaded.anvilLevel,2);
  loaded.anvilLevel=ANVILS.length;assert.equal(upgradeAnvil(loaded),false);
  assert.equal(ANVILS.reduce((sum,row)=>sum+row.minutes,0),208500);
- assert.equal(ANVILS.at(-1).coins,130000);
+ assert.equal(ANVILS.at(-1).coins,162500);
  for(const row of ANVILS)assert.ok(Math.abs(row.chances.reduce((a,b)=>a+b,0)-100)<.001);
 });
 
@@ -481,7 +481,7 @@ test('bare hero survives first enemy, earns hammers, forges and equips first wea
  assert.equal(s.hp,20);assert.deepEqual(stats(s),{hp:20,damage:2});
  assert.deepEqual(restore(JSON.stringify(s)),s);
  for(let n=0;n<450 && !s.kills;n++)step(s,1/30,()=>0);
- assert.equal(s.kills,1);assert.equal(s.hp,13);assert.equal(s.deaths,0);assert.equal(s.hammers,16);
+ assert.equal(s.kills,1);assert.equal(s.hp,12);assert.equal(s.deaths,0);assert.equal(s.hammers,16);
  assert.deepEqual(restore(JSON.stringify(s)),s);
  assert.equal(forge(s,()=>0),true);assert.equal(s.forgingItems.length,2);assert.equal(s.hammers,14);for(let n=0;n<46;n++)step(s,1/30,()=>0);
  const hp=s.hp;assert.equal(equip(s),true);assert.equal(stats(s).damage,4);assert.equal(stats(s).hp,20);assert.equal(s.hp,hp);
@@ -616,7 +616,7 @@ test('hero power follows equipment stats and affixes rather than epoch or item l
  assert.equal(heroPower(s),625);
  s.equipment.weapon.epoch=3;s.equipment.weapon.itemLevel=100;
  assert.equal(heroPower(s),625);
- for(const [type,value,expected] of [['damage',10,660],['health',10,653],['speed',5,642],['double',5,638],['crit',3,630],['critDamage',15,628],['regen',.5,639],['block',3,633],['lifesteal',3,630]]){
+ for(const [type,value,expected] of [['damage',10,660],['health',10,653],['speed',5,642],['double',5,638],['crit',3,630],['critDamage',15,625],['regen',.5,639],['block',3,633],['lifesteal',3,630]]){
   s.equipment.weapon.affix={type,value};assert.equal(heroPower(s),expected,type);
  }
  delete s.equipment.weapon.affix;
@@ -928,6 +928,9 @@ test('runes drop independently at 0.1 percent from any enemy and survive reload'
   const s=wave(10,9);for(const e of s.enemies)e.x=s.heroX+5+e.id;const target=s.enemies.find(e=>e.kind===kind);target.hp=1;target.x=s.heroX+.115;
   const rolls=[.9,.9,roll];const events=step(s,1.3,()=>rolls.shift()??.9);
   assert.equal(s.runes,amount);assert.equal(events.find(e=>e.type==='kill').runes,amount);
+  const kill=events.find(e=>e.type==='kill');
+  assert.deepEqual(s.battleStats,{bosses:kind==='boss'?1:0,maxHit:2,maxCrit:0,coins:kill.value,hammers:kill.hammers,runes:amount});
+  assert.deepEqual(restore(JSON.stringify(s)).battleStats,s.battleStats);
   step(s,.01,()=>.9);assert.equal(s.runes,amount);assert.equal(restore(JSON.stringify(s)).runes,amount);
  }
  const old=freshGame();delete old.runes;old.coins=123;const loaded=restore(JSON.stringify(old));assert.equal(loaded.runes,0);assert.equal(loaded.coins,123);
@@ -939,4 +942,69 @@ test('newly forged item sale prices are one through ten by epoch',()=>{
   const chances=FORGE_CHANCES[s.anvilLevel-1],roll=(chances.slice(0,epoch-1).reduce((a,b)=>a+b,0)+chances[epoch-1]/2)/100;
   const rng=[0,roll,0,0];forge(s,()=>rng.shift()??.9);assert.equal(s.forgingItems[0].sale,epoch);
  }
+});
+
+
+test('affix transfer charges destination epoch, replaces its affix and preserves HP fraction',()=>{
+ for(const epoch of [2,3,10]){
+  const s=freshGame();s.runes=100;
+  s.equipment.chest={...candidate('chest',80),epoch:2,affix:{type:'health',value:10}};
+  s.hp=stats(s).hp/2;
+  s.pending={...candidate('chest',180),epoch,affix:{type:'speed',value:3}};
+  const old=s.equipment.chest;
+  assert.equal(equip(s,'chest',true),true);assert.equal(s.runes,100-epoch*10);
+  assert.deepEqual(s.equipment.chest.affix,{type:'health',value:10});assert.notEqual(s.equipment.chest.affix,old.affix);
+  assert.equal(s.hp/stats(s).hp,.5);assert.equal(s.pending,null);
+  const loaded=restore(JSON.stringify(s));assert.deepEqual(loaded.equipment.chest.affix,s.equipment.chest.affix);assert.equal(loaded.runes,s.runes);
+  assert.equal(equip(s,'chest',true),false);assert.equal(s.runes,100-epoch*10);
+ }
+});
+
+test('invalid or unaffordable transfer leaves currency, equipment and queue untouched',()=>{
+ for(const reason of ['poor','empty','prehistoric','wrongSlot']){
+  const s=freshGame();s.runes=reason==='poor'?19:100;
+  s.equipment.helmet={...candidate('helmet',5),epoch:2,...(reason==='empty'?{}:{affix:{type:'regen',value:.5}})};
+  s.pending={...candidate('helmet',10),epoch:reason==='prehistoric'?1:2};s.results=[candidate('boots',5)];
+  const before=structuredClone(s);assert.equal(equip(s,reason==='wrongSlot'?'boots':'helmet',true),false);assert.deepEqual(s,before);
+ }
+});
+
+test('ring transfer uses only the chosen ring and normal equip remains free',()=>{
+ const s=freshGame();s.runes=80;
+ s.equipment.ring1={...candidate('ring1',5),epoch:2,affix:{type:'crit',value:3}};
+ s.equipment.ring2={...candidate('ring2',6),epoch:2,affix:{type:'speed',value:5}};
+ const first=structuredClone(s.equipment.ring1);
+ s.pending={...candidate('ring',7),epoch:4};
+ assert.equal(equip(s,'ring2',true),true);assert.equal(s.runes,40);assert.deepEqual(s.equipment.ring1,first);
+ assert.deepEqual(s.equipment.ring2.affix,{type:'speed',value:5});
+ s.pending={...candidate('ring',8),epoch:4};assert.equal(equip(s,'ring2'),true);assert.equal(s.runes,40);assert.equal(s.equipment.ring2.affix,undefined);
+});
+
+
+test('critical hits require an affix and cap at fifty percent',()=>{
+ for(const [chance,roll,expected] of [[0,0,false],[3,.029,true],[3,.03,false],[60,.499,true],[60,.5,false]]){
+  const s=freshGame();s.equipment.weapon={...candidate('weapon',10),affix:{type:'crit',value:chance}};
+  const target=s.enemies[0];target.hp=target.maxHp=1000;target.x=s.heroX+.115;
+  const hit=step(s,1.3,()=>roll).find(e=>e.type==='heroHit');
+  assert.equal(hit.critical,expected);assert.equal(hit.value,expected?18:12);
+  assert.equal(s.battleStats.maxHit,hit.value);assert.equal(s.battleStats.maxCrit,expected?hit.value:0);
+ }
+});
+
+test('legacy battle counters survive and new statistics start at zero',()=>{
+ const s=freshGame();delete s.battleStats;s.kills=45;s.deaths=3;s.coins=800;
+ const loaded=restore(JSON.stringify(s));
+ assert.equal(loaded.kills,45);assert.equal(loaded.deaths,3);assert.equal(loaded.coins,800);
+ assert.deepEqual(loaded.battleStats,{bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0});
+ assert.deepEqual(freshGame().battleStats,loaded.battleStats);
+});
+
+test('ordinary coin rewards are halved while boss rewards stay unchanged',async()=>{
+ const {COMBAT}=await import('./balance.mjs');
+ for(let level=1;level<=MAX_LEVEL;level++){
+  for(const kind of ['warrior','archer','healer'])assert.equal(enemyFor(level,kind).reward,Math.floor(COMBAT[level-1].monster_coins/2));
+  assert.equal(enemyFor(level,'boss').reward,COMBAT[level-1].boss_coins);
+ }
+ const s=freshGame();s.enemies[0].reward=4;s.coins=123;
+ const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies[0].reward,2);assert.equal(loaded.coins,123);
 });

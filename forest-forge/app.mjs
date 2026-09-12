@@ -2,7 +2,7 @@ import { COMPANIONS, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
 import { createScene } from './scene.mjs?v=companions-menu';
-import { AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
+import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 
 const $ = id => document.getElementById(id);
 const portraits = [['helmet','Knight'],['goblin','Smug goblin'],['pot-knight','Pot knight'],['duck','Duck wizard'],['wizard','Sleepy wizard'],['cat','Cat knight'],['pirate','Skeleton pirate'],["hamster-king","Hamster king"],["frog-alchemist","Frog alchemist"],["grumpy-dwarf","Grumpy dwarf"],["orc-chef","Orc chef"],["mushroom","Nervous mushroom"],["owl-librarian","Owl librarian"],["pig-barbarian","Pig barbarian"],["raccoon-thief","Raccoon thief"],["slime-knight","Slime knight"],["turtle-samurai","Turtle samurai"],["goat-wizard","Goat wizard"],["old-vampire","Old vampire"],["carrot-knight","Carrot knight"],["angry-fairy","Angry fairy"],["button-mummy","Button-eyed mummy"],["shark-pirate","Shark pirate"],["sheep-necromancer","Sheep necromancer"],["cyclops","Cyclops"],["wood-golem","Wood golem"],["chicken-musketeer","Chicken musketeer"]];
@@ -240,11 +240,24 @@ for (const slot of SLOTS) {
   $('equipment').append(button); equipmentButtons.push(button);
 }
 
+let transferCandidate = null, transferSource = null;
+$('transfer-affix').addEventListener('change',fillSheet);
 function fillSheet() {
   const candidate = sheetSlot === 'pending' ? state.pending : null;
   const ringChoice = candidate?.slot === 'ring' || ['ring1','ring2'].includes(sheetSlot);
   const old = state.equipment[ringChoice ? ringTarget : candidate ? candidate.slot : sheetSlot];
   const offer = !candidate && old?.reforgeOffer;
+  if (candidate !== transferCandidate || old !== transferSource) $('transfer-affix').checked = false;
+  transferCandidate = candidate; transferSource = old;
+  const transferable = !!candidate && !!old?.affix && (candidate.epoch ?? 1) >= 2;
+  const transferCost = (candidate?.epoch ?? 1) * 10;
+  $('transfer-affix-row').hidden = !transferable;
+  if (!transferable) $('transfer-affix').checked = false;
+  $('transfer-affix').disabled = !transferable || (state.runes < transferCost && !$('transfer-affix').checked) || !!bulkSaleSelection;
+  $('transfer-affix-row').classList.toggle('unaffordable',state.runes < transferCost);
+  $('transfer-affix-row').title = state.runes < transferCost ? `Requires ${transferCost} runes` : candidate?.affix ? `Replaces ${describeAffix(candidate.affix)}` : '';
+  setText('transfer-affix-price',transferCost);
+  const transfer = transferable && $('transfer-affix').checked;
   setText('sheet-title',offer ? 'Reforge' : 'Equipped');
   $('equipped-affix').hidden = !old?.affix || !!offer;
   setText('equipped-affix',describeAffix(old?.affix),old?.affix);
@@ -289,11 +302,13 @@ function fillSheet() {
   $('sell-weaker').setAttribute('aria-label', `Sell ${weaker.count} weaker or equal items`);
   if (bulkSaleSelection) setText('bulk-sale-summary', `Sell ${weaker.count} weaker or equal items for ${weaker.coins.toLocaleString('en')} coins?`);
   for (const id of ['sell', 'equip', 'choose-ring1', 'choose-ring2']) $(id).disabled = !!bulkSaleSelection || !!offer;
+  if (transfer && state.runes < transferCost) $('equip').disabled = true;
   if (candidate) {
-    $('new-affix').hidden = !candidate.affix;
-    setText('new-affix',describeAffix(candidate.affix),candidate.affix);
+    const previewAffix = transfer ? old.affix : candidate.affix;
+    $('new-affix').hidden = !previewAffix;
+    setText('new-affix',(transfer ? 'Transfer: ' : '') + describeAffix(previewAffix),previewAffix);
     $('new-card').className = `item-icon epoch-${candidate.epoch ?? 1}`;
-    itemArt($('new-image'), candidate);
+    itemArt($('new-image'), transfer ? {...candidate,affix:old.affix} : candidate);
     setText('new-name', candidate.name); setText('new-stat', describe(candidate));
     setText('new-epoch', EPOCHS[(candidate.epoch ?? 1) - 1]);
     setText('new-level', `lv.${candidate.itemLevel ?? 1}`);
@@ -304,6 +319,7 @@ function fillSheet() {
   }
 }
 function openSheet(slot) {
+  $('transfer-affix').checked = false;
   $('batch-options').hidden = true; $('batch-choice').setAttribute('aria-expanded', 'false');
   if (slot === 'pending' && !state.pending) return;
   returnFocus = document.activeElement;
@@ -315,6 +331,7 @@ function openSheet(slot) {
   if (telegramInitialized) window.Telegram.WebApp.BackButton?.show();
 }
 function closeSheet() {
+  if($('hero-stats-dialog').open){$('hero-stats-dialog').close();return;}
   if ($('reforge-filters').matches(':popover-open')) $('reforge-filters').hidePopover();
   if ($('auto-dialog').open) { $('auto-dialog').close(); return; }
   if ($('idle-dialog').open) { $('idle-dialog').close(); return; }
@@ -451,6 +468,7 @@ function updateAutoFilter() {
   $('run-auto').disabled = !state.autoForge && !state.hammers;
 }
 $('auto-forge').addEventListener('click', () => {
+  if(state.autoForge){state.autoForge=false;save();updateUI();return;}
   if (sheetSlot || anvilOpen) closeSheet();
   $('batch-options').hidden = true; $('batch-choice').setAttribute('aria-expanded', 'false');
   $('mastery-options').hidden = true; $('mastery-choice').setAttribute('aria-expanded', 'false');
@@ -461,6 +479,17 @@ $('run-auto').addEventListener('click', () => {
   if (!state.autoForge && !state.hammers) return;
   state.autoForge = !state.autoForge; save(); updateUI(); $('auto-dialog').close();
 });
+$('hero-info').addEventListener('click',()=>{
+  const total=stats(state),bonuses=affixBonuses(state);
+  $('hero-stats-base').innerHTML=`<div><span>Damage</span><b>${total.damage.toLocaleString('en-US')}</b></div><div><span>Max health</span><b>${total.hp.toLocaleString('en-US')}</b></div>`;
+  $('hero-stats-affixes').innerHTML=AFFIXES.map(a=>`<div><span class="stats-affix-name"><img src="assets/affixes/${a.id}.webp" alt="">${a.name}</span><b>${Number(bonuses[a.id].toFixed(1))}%${a.id==='regen'?' / sec':''}${a.id==='crit'&&bonuses.crit>50?' (50% cap)':''}</b></div>`).join('');
+  const battle=state.battleStats;
+  $('hero-battle-stats').innerHTML=[['Enemies defeated',state.kills],['Bosses defeated',battle.bosses],['Deaths',state.deaths],['Largest hit',battle.maxHit],['Largest critical hit',battle.maxCrit],['Coins from enemies',battle.coins],['Hammers from enemies',battle.hammers],['Runes from enemies',battle.runes]].map(([label,value])=>`<div><span>${label}</span><b>${value.toLocaleString('en-US')}</b></div>`).join('');
+  $('hero-stats-dialog').showModal();
+  if(telegramInitialized)window.Telegram.WebApp.BackButton?.show();
+});
+$('close-hero-stats').addEventListener('click',()=>$('hero-stats-dialog').close());
+$('hero-stats-dialog').addEventListener('close',()=>{if(telegramInitialized&&!sheetSlot&&!anvilOpen)window.Telegram.WebApp.BackButton?.hide();});
 $('close-auto').addEventListener('click', () => $('auto-dialog').close());
 $('auto-dialog').addEventListener('close', () => {
   if (telegramInitialized && !sheetSlot && !anvilOpen) window.Telegram.WebApp.BackButton?.hide();
@@ -508,8 +537,6 @@ function updateAnvil() {
   $('skip-anvil-coins').disabled = !skipCost || state.coins < skipCost;
   $('skip-anvil-coins').setAttribute('aria-label', `Skip upgrade for ${skipCost.toLocaleString('en')} coins`);
   setText('skip-anvil-price', skipCost.toLocaleString('en'));
-  const durationLabel = next ? (next.minutes < 60 ? `${next.minutes} min` : `${(next.minutes / 60).toFixed(1)} h`) : '';
-  setText('anvil-level', next ? `Anvil · Lv. ${state.anvilLevel} → ${state.anvilLevel + 1}${upgrading ? '' : ` · ${durationLabel}`}` : `Anvil · Lv. ${state.anvilLevel} · Max`);
   setText('upgrade-anvil-label', state.upgradeEndsAt ? 'Upgrade in progress' : next ? 'Upgrade' : 'Max level');
   $('upgrade-anvil-cost').hidden=!!state.upgradeEndsAt||!next;
   setText('upgrade-anvil-price',next?next.coins.toLocaleString('en'):'');
@@ -586,7 +613,7 @@ $('equip-stronger').addEventListener('click', () => {
   const selected = state.pending;
   if (equipStronger(state)) afterItemAction(null, selected === state.pending);
 });
-$('equip').addEventListener('click', () => { if (equip(state, state.pending?.slot === 'ring' ? ringTarget : state.pending?.slot)) { afterItemAction(null); } });
+$('equip').addEventListener('click', () => { if (equip(state, state.pending?.slot === 'ring' ? ringTarget : state.pending?.slot, $('transfer-affix').checked)) { afterItemAction(null); } });
 $('replay').addEventListener('click', () => { if (replay(state)) { void scene?.prepare(state.level); save(); updateUI(); } });
 for (const id of ['new-game','reset-progress']) $(id).addEventListener('click', () => {
   closeSheet(); $('portrait-dialog').close();
@@ -837,8 +864,36 @@ function takeMineOre() {
   const loot=collectMine(state);
   $('mine-rewards-dialog').close();updateMineUI();save(true);
   if(loot.some(Boolean)){
-    const label=loot.map((n,i)=>n?`+${n} ${mineResource(i).name}`:'').filter(Boolean).join(' · ');
-    $('mine-found').textContent=label;$('mine-found').classList.remove('pop');void $('mine-found').offsetWidth;$('mine-found').classList.add('pop');
+    const layer=$('reward-flight');layer.replaceChildren();
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const bounds=layer.getBoundingClientRect(),cx=bounds.width/2,cy=bounds.height/2;
+    const resources=loot.map((amount,index)=>({amount,index})).filter(r=>r.amount>0);
+    let emitted=0;
+    for(const {amount,index} of resources){
+      if(emitted>=16)break;
+      const card=$('mine-ore-grid').children[index];
+      const destination=card&&!card.hidden?card.querySelector('img'):document.querySelector('.mine-inventory-title');
+      const target=destination.getBoundingClientRect(),ex=target.x+target.width/2-bounds.x,ey=target.y+target.height/2-bounds.y;
+      const count=Math.min(resources.length>8?1:2,amount,16-emitted);
+      for(let i=0;i<count;i++){
+        const particle=document.createElement('img');particle.className='reward-particle';particle.src=card.querySelector('img').src;particle.alt='';
+        particle.style.width='32px';particle.style.height='32px';particle.style.objectFit='contain';
+        const angle=emitted*2.4,x=cx+Math.cos(angle)*32,y=cy+Math.sin(angle)*20;
+        const keys=[
+          {offset:0,transform:`translate(${cx-16}px,${cy-16}px) scale(.2)`,opacity:0},
+          {offset:.16,transform:`translate(${x-16}px,${y-16}px) scale(1.08)`,opacity:1},
+          {offset:.24,transform:`translate(${x-16}px,${y-16}px) scale(1)`,opacity:1}
+        ];
+        for(let frame=1;frame<=8;frame++){
+          const progress=frame/8,t=progress*progress,u=1-t;
+          const px=u*u*x+2*u*t*(x+(ex-cx)*.4)+t*t*ex,py=u*u*y+2*u*t*(y-55)+t*t*ey;
+          keys.push({offset:.24+.76*progress,transform:`translate(${px-16}px,${py-16}px) scale(${1-.3*t})`,opacity:1});
+        }
+        layer.append(particle);
+        particle.animate(keys,{duration:850,delay:emitted*30,fill:'both'}).onfinish=()=>particle.remove();
+        emitted++;
+      }
+    }
   }
 }
 function setMineOpen(open) {

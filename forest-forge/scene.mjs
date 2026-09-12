@@ -70,6 +70,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   let reveal = 0, levelTitle = null;
   let chakramFlight = null;
   const numbers = [];
+  let numberSequence = 0;
   const coins = [];
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   async function prepare(level) {
@@ -196,9 +197,11 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       }
     }
     if (['heroHit','companionHit','tankHit','heroRegen','enemyHit','kill','heal'].includes(event.type)) {
-      numbers.push({ tank:event.type==='tankHit', targetId: ['enemyHit','tankHit','heroRegen'].includes(event.type) ? null : event.targetId,
-        text: event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' || event.type === 'heroRegen' ? '+' : '') + compactNumber.format(event.value) + (event.critical ? '!' : ''),
-        color: ['heal','heroRegen'].includes(event.type) ? '#91ff9b' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: .8, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
+      const healing = ['heal','heroRegen'].includes(event.type), critical = !!event.critical;
+      const duration = healing ? 1.25 : critical ? 1.05 : .85;
+      numbers.push({ healing, critical, drift: (++numberSequence % 2 ? -1 : 1) * (16 + numberSequence % 3 * 5), duration, tank:event.type==='tankHit', targetId: ['enemyHit','tankHit','heroRegen'].includes(event.type) ? null : event.targetId,
+        text: event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' || event.type === 'heroRegen' ? '+' : '') + compactNumber.format(event.value),
+        color: critical ? '#ff535c' : healing ? '#88ff9c' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: duration, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
       if (event.type === 'kill' && event.hammers) numbers.push({ tank:event.type==='tankHit', targetId:event.targetId,
         text:'+' + event.hammers, color:'#c7efff', life:.8, reward:true, rewardRow:1, hammerIcon:true });
       if(event.type==='kill' && event.runes) numbers.push({targetId:event.targetId,text:'+1',color:'#e3b4ff',life:1.4,duration:1.4,reward:true,rewardRow:2,runeIcon:true});
@@ -509,6 +512,27 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       if (n.life <= 0) { numbers.splice(i,1); continue; }
       const e = n.targetId === null ? null : state.enemies.find(e => e.id === n.targetId);
       const age = (n.duration || .8) - n.life, anchorX = n.tank && companion ? (companion.x-camera)*width : e ? (e.x-camera)*width : heroX;
+      if (!n.reward) {
+        // Capture the hit position once so the number separates from a moving character.
+        n.originX ??= n.tank && companion ? companion.x : e ? e.x : state.heroX;
+        n.originY ??= base - (e ? (e.boss ? bossSize : 50)*unit*(biomeHeights?.[e.boss?3:['warrior','archer','healer'].indexOf(e.kind)] ?? .63) : hSize) - 10;
+        const still = reducedMotion.matches, progress = Math.min(1,age/n.duration);
+        const travelX = still ? 0 : n.healing ? Math.sin(progress*Math.PI*2)*4 : n.drift*progress;
+        const travelY = still ? 0 : n.healing ? -32*progress : -70*progress+46*progress*progress;
+        const pop = still ? 1 : n.healing ? 1+.08*Math.sin(Math.min(1,age/.2)*Math.PI) : age<.1 ? .7+age/.1*.6 : age<.25 ? 1.3-(age-.1)/.15*.3 : 1;
+        const fontSize = n.critical ? 21 : n.healing ? 16 : 17;
+        context.save();
+        context.font = `${fontSize}px "Lilita UI", "Trebuchet MS", sans-serif`;
+        const margin = context.measureText(n.text).width*1.3/2+4;
+        const x = Math.max(margin,Math.min(width-margin,(n.originX-camera)*width+travelX*unit));
+        context.translate(x,n.originY+travelY*unit);context.scale(pop,pop);
+        if(!still&&!n.healing)context.rotate(Math.sign(n.drift)*.09*progress);
+        context.textAlign='center';context.textBaseline='middle';context.lineJoin='round';
+        context.globalAlpha=Math.min(1,n.life/.25);context.lineWidth=n.critical?4:3.5;
+        context.strokeStyle='#142725';context.fillStyle=n.color;
+        context.strokeText(n.text,0,0);context.fillText(n.text,0,0);context.restore();
+        continue;
+      }
       context.font = n.runeIcon ? 'bold 16px "Trebuchet MS", sans-serif' : n.reward ? 'bold 11px "Trebuchet MS", sans-serif' : 'bold 12px "Trebuchet MS", sans-serif';
       // Damage rises above the target; loot occupies two separate rows below its feet.
       const x = n.reward ? Math.min(width - context.measureText(n.text).width - 6, anchorX + 24 * unit + age * 8) : anchorX;
