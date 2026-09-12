@@ -906,7 +906,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       const reagent=won&&allowed?rollReagent(s.highest,true,rng):-1;if(reagent>=0&&s.alchemy)s.alchemy.reagents[reagent]++;
       s.dungeons.last={outcome:won&&allowed?'won':lost?'lost':'timeout',id:run.id,floor:run.floor,...(won&&allowed?{rewards:run.rewards}:{})};
       s.dungeons.run=null;
-      return [...(reagent>=0?[{type:'reagent',rarity:reagent}]:[]),{type:'dungeonEnd',...(won?{battle:b}:{})}];
+      return [...(reagent>=0?[{type:'reagent',rarity:reagent,targetId:0}]:[]),{type:'dungeonEnd',...(won?{battle:b}:{})}];
     }
     return events;
   }
@@ -1079,7 +1079,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     const runes = rng() < .001 ? 1 : 0;
     s.hammers += hammers; s.runes += runes;
     const reagent=rollReagent(s.level,target.boss,rng);
-    if(reagent>=0&&s.alchemy){s.alchemy.reagents[reagent]++;events.push({type:'reagent',rarity:reagent});}
+    if(reagent>=0&&s.alchemy){s.alchemy.reagents[reagent]++;events.push({type:'reagent',rarity:reagent,targetId:target.id});}
     if(target.boss)s.battleStats.bosses++;
     s.battleStats.coins+=coinReward;s.battleStats.hammers+=hammers;s.battleStats.runes+=runes;
     events.push({ type: 'kill', value: coinReward, hammers, runes, targetId: target.id });

@@ -44,8 +44,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       rigs[id]=meta;return meta;
     })),
     document.fonts.load('32px "Lilita UI"'),
-    Promise.all(['warrior','archer','boss','healer','tree','hammer','rune'].map(async name => {
-      const img = new Image(); img.src = ['hammer','rune'].includes(name) ? `assets/${name}.webp` : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}.png`;
+    Promise.all(['warrior','archer','boss','healer','tree','hammer','rune',...Array.from({length:5},(_,i)=>`reagent-${i}`)].map(async name => {
+      const img = new Image(); img.src = name.startsWith('reagent-') ? `assets/alchemy/${name}.webp` : ['hammer','rune'].includes(name) ? `assets/${name}.webp` : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}.png`;
       await img.decode(); art[name] = img;
     }))
   ]);
@@ -179,7 +179,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     const hudBottom=canvas.parentElement?.querySelector('.level-hud')?.getBoundingClientRect().bottom ?? bounds.top;
     titleY=Math.min(height-24,Math.max(height*.48,hudBottom-bounds.top+25));
     ratio = Math.min(devicePixelRatio || 1, 1.5);
-    canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+    const pixelWidth=Math.round(width*ratio),pixelHeight=Math.round(height*ratio);
+    if(canvas.width!==pixelWidth)canvas.width=pixelWidth;
+    if(canvas.height!==pixelHeight)canvas.height=pixelHeight;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     landscape = document.createElement('canvas');
     landscape.width = canvas.width * (dungeonTheme ? 2 : 1); landscape.height = canvas.height;
@@ -294,6 +296,14 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         chakramFlight.hitY=(previousEnemies.length>1&&!target.boss?(target.id%2?7:-5):0)-(target.boss?previousBossSize:50)*.34;
       }
     }
+    if(event.type==='reagent'){
+      const enemy=previousEnemies?.find(e=>e.id===event.targetId);
+      if(enemy){
+        const lane=previousEnemies.length>1&&!enemy.boss?(enemy.id%2?7:-5):0;
+        if(!reducedMotion.matches)coins.push({reagent:event.rarity,x:enemy.x,y:lane-18,age:0,vx:-16,vy:-105,life:1.15,spin:0});
+        numbers.push({targetId:event.targetId,text:'+1',color:'#e5f5cf',life:1.4,duration:1.4,reward:true,rewardRow:3,reagentIcon:event.rarity});
+      }
+    }
     if (event.type === 'kill' && !reducedMotion.matches) {
       const enemy = previousEnemies?.find(e => e.id === event.targetId);
       if (enemy) {
@@ -324,7 +334,12 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = '#142e23'; context.fillRect(x - size / 2 - 2 * scale, y - 2 * scale, size + 4 * scale, 8 * scale);
     context.fillStyle = color; context.fillRect(x - size / 2, y, size * Math.max(0, Math.min(1, fraction)), 4 * scale);
   }
-  function render(state, dt, dungeonDeathAge=null) {
+  function render(state, dt, dungeonDeathAge=null, returning=false) {
+    if(returning){
+      reveal=0;levelTitle=null;numbers.length=0;coins.length=0;
+      chakramFlight=null;dungeonImpact=null;shieldImpact=1;
+      resize();
+    }
     if(state.mount?.owned&&state.mount.equipped&&!mountArt&&!mountLoading){
       mountLoading=true;const sprite=new Image();sprite.src='assets/dungeons/mount.webp';
       sprite.decode().then(()=>{mountArt=sprite;}).catch(error=>console.error('Could not load mount',error));
@@ -684,6 +699,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const y = base + (coin.y + coin.vy * t + 150 * t * t) * unit;
       const radiusX = (1.2 + 2 * Math.abs(Math.cos(t * 15 + coin.spin))) * unit;
       context.globalAlpha = Math.min(1, (coin.life - t) / .18);
+      if(coin.reagent!==undefined){context.drawImage(art[`reagent-${coin.reagent}`],x-12*unit,y-12*unit,24*unit,24*unit);context.globalAlpha=1;continue;}
       if(coin.rune){context.drawImage(art.rune,x-10*unit,y-10*unit,20*unit,20*unit);context.globalAlpha=1;continue;}
       context.fillStyle = '#ffcb42'; context.strokeStyle = '#92571e'; context.lineWidth = 1.2 * unit;
       context.beginPath(); context.ellipse(x, y, radiusX, 3.5 * unit, -.2, 0, Math.PI * 2); context.fill(); context.stroke();
@@ -730,6 +746,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         context.beginPath(); context.moveTo(x - 8, y - 6); context.lineTo(x - 8, y - 2);
         context.strokeStyle = '#fff1a8'; context.stroke(); context.lineWidth = 3;
       }
+      if(n.reagentIcon!==undefined){context.drawImage(art[`reagent-${n.reagentIcon}`],x-23,y-18,20,20);}
       if (n.runeIcon) context.drawImage(art.rune,x-23,y-18,20,20);
       if (n.hammerIcon) context.drawImage(art.hammer, x - 15, y - 13, 13, 14);
       context.strokeStyle = '#142725'; context.fillStyle = n.color;

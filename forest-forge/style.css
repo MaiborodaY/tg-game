@@ -500,8 +500,9 @@ button:disabled { opacity:.55; cursor:default; }
 #game.page-paused .mine-miner-body,#game.page-paused .mine-miner-arms,#game.page-paused .mine-impact i{animation-play-state:paused;}
 @media(prefers-reduced-motion:reduce){.mine-miner-body,.mine-miner-arms,.mine-impact i{animation:none;}}
 
-#mine-heading { position:absolute;top:calc(54px + var(--safe-top,0px));left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 2px #231a15;pointer-events:none; }
-#mine-heading h1 { font:25px/1 'Lilita UI',sans-serif;margin:0 0 4px; } #mine-heading span{font-size:12px;}
+#mine-heading { position:absolute;top:calc(17px + var(--safe-top,0px));left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 2px #231a15;pointer-events:none; }
+#mine-heading h1 { font:22px/1.1 'Lilita UI',sans-serif;max-width:calc(100% - 260px);margin:0 auto 4px; }
+@media(max-width:360px){#mine-heading h1{font-size:18px;}} #mine-heading span{font-size:12px;}
 #mine-found {position:absolute;left:45%;bottom:35%;font:bold 17px sans-serif;color:#fff;text-shadow:0 2px #172b29;}
 #mine-found.pop {animation:ore-found 1.6s ease-out both;} @keyframes ore-found {0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-32px)}}
 #mine-workshop {flex:none;padding:12px 20px;background:#fffaf0;}
@@ -520,7 +521,7 @@ button:disabled { opacity:.55; cursor:default; }
 .mine-dialog::backdrop,#alchemy-dialog::backdrop,#companions-dialog::backdrop{background:#0009;}.mine-dialog h2{margin:0;font:24px 'Lilita UI',sans-serif;}.mine-dialog p{font-size:12px;}.mine-dialog .button{width:100%;margin-top:14px;}
 .mine-dialog label {display:flex;align-items:center;justify-content:space-between;margin-top:20px;}.mine-dialog input{width:120px;padding:8px;font-size:18px;border:2px solid #52675f;border-radius:7px;}
 .mine-resource-row {display:flex;align-items:center;gap:10px;padding:7px 0;}.mine-resource-row img {width:36px;height:36px;}.mine-resource-row b{margin-left:auto;}
-@media(max-height:700px){#mine-workshop{padding:8px 16px;}.mine-upgrade-block{margin-top:7px;}.ore-card img{width:32px;height:32px;}.mine-inventory-title{margin-bottom:4px;}#mine-heading{top:calc(46px + var(--safe-top,0px));}}
+@media(max-height:700px){#mine-workshop{padding:8px 16px;}.mine-upgrade-block{margin-top:7px;}.ore-card img{width:32px;height:32px;}.mine-inventory-title{margin-bottom:4px;}#mine-heading{top:calc(17px + var(--safe-top,0px));}}
 @media(prefers-reduced-motion:reduce){#mine-found.pop{animation:none}}
 
 /* Reserve navigation inside the visible Telegram window, only compacting tight layouts. */
@@ -819,14 +820,14 @@ input,select,textarea {font-family:inherit;}
 #dungeon-status {font-size:13px;margin-top:7px;color:#ffdf95;}
 #dungeon-leave {position:absolute;top:36px;right:0;background:#142825a8;color:white;border:2px solid #96a9a5;border-radius:8px;padding:6px 10px;font:13px "Lilita UI",sans-serif;pointer-events:auto;cursor:pointer;}
 @media(max-width:400px){
-  #dungeon-combat{top:calc(var(--safe-top) + 65px);display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"name depth timer" "status status leave";align-items:center;gap:4px 8px;}
+  #dungeon-combat{top:calc(var(--safe-top) + 65px);}
   .telegram-compact #dungeon-combat{top:calc(var(--safe-top) + 48px);}
-  #dungeon-combat small{grid-area:name;max-width:none;margin:0;text-align:left;font-size:12px;}
-  #dungeon-combat strong{grid-area:depth;font-size:18px;}
-  #dungeon-timer{grid-area:timer;margin:0;font-size:18px;padding:2px 8px;}
-  #dungeon-status{grid-area:status;text-align:left;margin:0;font-size:12px;}
-  #dungeon-leave{grid-area:leave;position:static;font-size:12px;padding:4px 8px;}
+  #dungeon-combat small{max-width:calc(100% - 120px);font-size:12px;}
+  #dungeon-combat strong{font-size:20px;}
+  #dungeon-timer{font-size:18px;margin-top:2px;}
+  #dungeon-status{font-size:12px;margin-top:4px;}
 }
+
 .dungeon-active .level-hud,.dungeon-active #idle-loot,.dungeon-active #completed {display:none;}
 .dungeon-active #workshop {opacity:.6;}
 .dungeon-active #workshop * {animation-play-state:paused!important;}
@@ -839,7 +840,7 @@ input,select,textarea {font-family:inherit;}
 .alchemy-types{display:flex;gap:4px;margin:10px 0}.alchemy-types button{flex:1;min-width:0;font:inherit;font-size:11px;background:#dcebed;border:2px solid #385b59;border-radius:8px;padding:8px 2px}.alchemy-types button[aria-pressed=true]{background:#12b4e6;color:white}
 .alchemy-reagents{display:flex;gap:5px;justify-content:center;margin:10px 0}.alchemy-reagents button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;border:2px solid #657977;border-radius:9px;background:#eef0e6;font:inherit;padding:4px 1px}.alchemy-reagents button[aria-pressed=true]{outline:3px solid var(--rarity);outline-offset:1px}.alchemy-reagents svg{width:32px;height:37px}.alchemy-reagents small{font-size:10px}.alchemy-reagents>span{display:flex;align-items:center;gap:3px}
 .alchemy-recipe{display:flex;flex-direction:column;gap:6px;text-align:center;background:#e9eee2;border-radius:10px;padding:12px 6px;margin:12px 0}.alchemy-recipe h3{margin:0;font-size:19px}.alchemy-recipe strong{font-size:22px}.alchemy-recipe small,.alchemy-recipe span{font-size:12px}
-.alchemy-actions{display:flex;gap:8px;margin-top:8px}.alchemy-actions button{flex:1;font-size:13px;min-height:46px}#alchemy-message{font-size:12px;text-align:center;margin:10px 0 0}#alchemy-active{font-size:12px;margin-top:10px}#alchemy-active div{display:flex;justify-content:space-between;padding:3px 0}
+.alchemy-actions{display:flex;gap:8px;margin-top:8px}.alchemy-actions button{flex:1;font-size:13px;min-height:46px}#alchemy-message{font-size:12px;text-align:center;margin:10px 0 0}#alchemy-active{font-size:12px;margin-top:10px}#alchemy-active button{display:flex;justify-content:space-between;padding:3px 0}
 #potion-status{display:flex;justify-content:center;gap:6px;background:#fff9ed}#potion-status:empty{display:none}#potion-status button{display:flex;align-items:center;border:0;background:transparent;font:inherit;font-size:11px;padding:3px}#potion-status svg{width:20px;height:25px}
 @media(max-width:380px){#alchemy-dialog{padding:10px}.alchemy-reagents small{font-size:9px}.alchemy-actions button{font-size:11px}}
 
@@ -858,7 +859,7 @@ input,select,textarea {font-family:inherit;}
 .alchemy-recipe{position:relative;display:grid;grid-template-columns:80px 1fr;gap:5px 10px;text-align:left;padding:15px 10px;margin:16px 0 12px;background:#eeeede;min-height:104px;box-sizing:border-box}.alchemy-recipe h3{font-size:16px;align-self:end}.alchemy-recipe strong{font-size:23px}.alchemy-recipe small{font-size:11px;color:#536357}#alchemy-potion-art{grid-row:1 / 4;display:grid;place-items:center;background:#fff8e5;border:2px solid var(--rarity);border-radius:12px}#alchemy-potion-art svg{height:68px;width:65px}#alchemy-owned{position:absolute;right:9px;top:-10px;display:flex;align-items:center;gap:3px;background:#25463e;color:#fff8e5;border-radius:7px;padding:2px 7px;font-size:14px}#alchemy-owned svg{width:18px;height:22px}
 .alchemy-actions button{font-size:18px;min-height:52px;display:flex;align-items:center;justify-content:center;gap:10px}.alchemy-actions button span{display:flex;align-items:center;gap:4px;font-size:16px}.alchemy-actions .coin{width:17px;height:17px;display:inline-block;vertical-align:middle;flex-shrink:0}
 
-#alchemy-active{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#alchemy-active:empty{display:none}#alchemy-active div{display:flex;align-items:center;gap:6px;background:#e1e9d9;border-radius:7px;padding:5px 8px}#alchemy-active img{width:20px;height:20px;object-fit:contain}#alchemy-active .coin{width:18px;height:18px}#alchemy-active span{color:#607267;font-size:11px}#alchemy-message:empty{display:none}
+#alchemy-active{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#alchemy-active:empty{display:none}#alchemy-active button{display:flex;align-items:center;gap:6px;background:#e1e9d9;border-radius:7px;padding:5px 8px}#alchemy-active img{width:20px;height:20px;object-fit:contain}#alchemy-active .coin{width:18px;height:18px}#alchemy-active span{color:#607267;font-size:11px}#alchemy-message:empty{display:none}
 @media(max-width:380px){#alchemy-dialog{padding:12px}.alchemy-heading-title{gap:8px}.alchemy-heading h2{font-size:26px}.alchemy-actions button{font-size:16px}.alchemy-actions button span{font-size:14px}.alchemy-recipe strong{font-size:20px}}
 
 #alchemy-toggle{position:relative;width:36px;height:32px;padding:0;border:0;background:none;cursor:pointer;z-index:4}
@@ -880,7 +881,7 @@ input,select,textarea {font-family:inherit;}
 .alchemy-row{display:flex;align-items:center;gap:7px;width:100%;min-height:62px;border:0;background:none;text-align:left;padding:6px 8px;color:#193333;font:inherit;cursor:pointer}
 .alchemy-row>img{width:43px;height:49px;flex-shrink:0}
 .alchemy-row-copy{flex:1;min-width:0}.alchemy-row-copy strong{display:block;font-size:19px}.alchemy-row-copy small{display:block;font-size:11px;line-height:1.25;margin-top:2px}
-.alchemy-stock{display:flex;gap:2px;align-items:center;font-size:14px}.alchemy-stock svg{width:14px;height:20px}
+.alchemy-stock{display:flex;gap:2px;align-items:center;font-size:14px}.alchemy-stock img{width:18px;height:24px;object-fit:contain;flex-shrink:0}
 .alchemy-chevron{font-size:23px;width:12px}.alchemy-body{padding:0 8px 8px}.alchemy-body[hidden]{display:none}
 .alchemy-ingredients{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
 .alchemy-ingredients select{font:14px 'Lilita UI',sans-serif;color:#193333;border:1px solid #a6b398;border-radius:7px;padding:7px;background:#f3f3df;max-width:58%;min-height:36px}
@@ -901,3 +902,14 @@ input,select,textarea {font-family:inherit;}
 #admin-dungeon-reset{align-self:center;margin:6px auto;color:#a33c3c}
 .alchemy-shortcut #potion-status:has(button:nth-child(2)){display:grid;grid-template-columns:repeat(3,max-content);width:max-content;column-gap:2px}
 .alchemy-shortcut #potion-status:has(button:nth-child(2)) button{font-size:8px;line-height:8px;height:8px;padding:0 1px}
+
+.telegram-compact #mine-heading{top:var(--safe-top);}
+
+#alchemy-active button{border:1px solid #b5c4b1;color:var(--ink);font:inherit;cursor:pointer;min-height:36px;}
+#alchemy-active img{width:24px;height:30px;}
+
+#auto-earnings{opacity:1;transition:opacity .5s ease;}
+#auto-earnings.fading{opacity:0;}
+@media(prefers-reduced-motion:reduce){#auto-earnings{transition:none;}}
+
+.alchemy-item-art.reagent-art{mix-blend-mode:normal;}
