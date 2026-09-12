@@ -1,6 +1,6 @@
 // Approved design CSVs. Data only; no runtime CSV parsing.
 export const EPOCHS = ["Prehistoric","Ancient","Medieval","Gunpowder","Modern","Futuristic","Space","Interdimensional","Underworld","Divine"];
-export const SALE_PRICES = [1,1,2,2,2,3,4,5,6,7];
+export const SALE_PRICES = [1,2,3,4,5,6,7,8,9,10];
 export const ANVILS = [
   {
     "coins": 0,

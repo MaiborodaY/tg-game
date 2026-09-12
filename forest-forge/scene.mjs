@@ -44,8 +44,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       rigs[id]=meta;return meta;
     })),
     document.fonts.load('32px "Lilita UI"'),
-    Promise.all(['warrior','archer','boss','healer','tree','hammer'].map(async name => {
-      const img = new Image(); img.src = name === 'hammer' ? 'assets/hammer.webp' : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}.png`;
+    Promise.all(['warrior','archer','boss','healer','tree','hammer','rune'].map(async name => {
+      const img = new Image(); img.src = ['hammer','rune'].includes(name) ? `assets/${name}.webp` : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}.png`;
       await img.decode(); art[name] = img;
     }))
   ]);
@@ -191,6 +191,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
           vx: (i / (count - 1) - .5) * 96 + Math.random() * 8 - 4,
           vy: -72 - Math.random() * 18, life: .62 + Math.random() * .10, spin: Math.random() * Math.PI,
         });
+        if(event.runes) coins.push({rune:true,x:enemy.x,y:lane-18,age:0,vx:16,vy:-105,life:1.15,spin:0});
         if (coins.length > 30) coins.splice(0, coins.length - 30);
       }
     }
@@ -200,6 +201,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         color: ['heal','heroRegen'].includes(event.type) ? '#91ff9b' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: .8, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
       if (event.type === 'kill' && event.hammers) numbers.push({ tank:event.type==='tankHit', targetId:event.targetId,
         text:'+' + event.hammers, color:'#c7efff', life:.8, reward:true, rewardRow:1, hammerIcon:true });
+      if(event.type==='kill' && event.runes) numbers.push({targetId:event.targetId,text:'+1',color:'#e3b4ff',life:1.4,duration:1.4,reward:true,rewardRow:2,runeIcon:true});
       if (numbers.length > 12) numbers.splice(0, numbers.length - 12);
     }
   }
@@ -495,6 +497,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const y = base + (coin.y + coin.vy * t + 150 * t * t) * unit;
       const radiusX = (1.2 + 2 * Math.abs(Math.cos(t * 15 + coin.spin))) * unit;
       context.globalAlpha = Math.min(1, (coin.life - t) / .18);
+      if(coin.rune){context.drawImage(art.rune,x-10*unit,y-10*unit,20*unit,20*unit);context.globalAlpha=1;continue;}
       context.fillStyle = '#ffcb42'; context.strokeStyle = '#92571e'; context.lineWidth = 1.2 * unit;
       context.beginPath(); context.ellipse(x, y, radiusX, 3.5 * unit, -.2, 0, Math.PI * 2); context.fill(); context.stroke();
       context.strokeStyle = '#fff1a8'; context.lineWidth = unit;
@@ -505,8 +508,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const n = numbers[i]; n.life -= dt;
       if (n.life <= 0) { numbers.splice(i,1); continue; }
       const e = n.targetId === null ? null : state.enemies.find(e => e.id === n.targetId);
-      const age = .8 - n.life, anchorX = n.tank && companion ? (companion.x-camera)*width : e ? (e.x-camera)*width : heroX;
-      context.font = n.reward ? 'bold 11px "Trebuchet MS", sans-serif' : 'bold 12px "Trebuchet MS", sans-serif';
+      const age = (n.duration || .8) - n.life, anchorX = n.tank && companion ? (companion.x-camera)*width : e ? (e.x-camera)*width : heroX;
+      context.font = n.runeIcon ? 'bold 16px "Trebuchet MS", sans-serif' : n.reward ? 'bold 11px "Trebuchet MS", sans-serif' : 'bold 12px "Trebuchet MS", sans-serif';
       // Damage rises above the target; loot occupies two separate rows below its feet.
       const x = n.reward ? Math.min(width - context.measureText(n.text).width - 6, anchorX + 24 * unit + age * 8) : anchorX;
       const y = n.reward ? base + 12 + (n.rewardRow || 0) * 16 - age * 12
@@ -519,6 +522,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         context.beginPath(); context.moveTo(x - 8, y - 6); context.lineTo(x - 8, y - 2);
         context.strokeStyle = '#fff1a8'; context.stroke(); context.lineWidth = 3;
       }
+      if (n.runeIcon) context.drawImage(art.rune,x-23,y-18,20,20);
       if (n.hammerIcon) context.drawImage(art.hammer, x - 15, y - 13, 13, 14);
       context.strokeStyle = '#142725'; context.fillStyle = n.color;
       context.strokeText(n.text,x,y); context.fillText(n.text,x,y); context.globalAlpha = 1;

@@ -223,8 +223,8 @@ test('killing one member keeps the wave active, pays once, and retargets the nex
 function finishForge(s) { s.phase='dead'; s.phaseTime=100; advance(s,1.6); }
 function candidate(slot='chest', value=20) { return {slot,name:slot==='weapon'?'Hunter Club':slot==='helmet'?'Hunter Fur Hood':'Hunter Leather Vest',quality:0,value,sale:1}; }
 
-test('ordinary enemies drop hammers at 20 percent, inclusive ranges, one payout per kill',()=>{
- for (const [roll,qty] of [[.2,0],[.199,3],[.1,3],[0,1]]) {
+test('ordinary enemies drop one hammer at 20 percent, one payout per kill',()=>{
+ for (const [roll,qty] of [[.2,0],[.199,1],[.1,1],[0,1]]) {
   const s=freshGame();s.hammers=0;s.enemies[0].hp=1;s.enemies[0].x=s.heroX+.115;
   let calls=0;const rng=()=>calls++===0?.999:calls===2?roll:roll===0?0:.999;
   const events=step(s,1.3,rng);assert.equal(events.find(e=>e.type==='kill').hammers,qty);
@@ -304,7 +304,7 @@ test('melee damage and ranged discount use the supported epoch even at maximum a
  const values=[];
  const pool=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===10);
  for(const id of ['seraph-glaive','sun-maul','oath-bell','halo-bow']){const set=(pool.indexOf(id)+.5)/pool.length;const s=freshGame();s.hammers=1;s.anvilLevel=ANVILS.length;s.mastery[9].level=100;let calls=0;
- forge(s,()=>[0,.999,.999,set][calls++%4]);const i=s.forgingItems[0];values.push(i.value);assert.equal(i.sale,7);assert.equal(i.epoch,10);assert.equal(i.itemLevel,100);}
+ forge(s,()=>[0,.999,.999,set][calls++%4]);const i=s.forgingItems[0];values.push(i.value);assert.equal(i.sale,10);assert.equal(i.epoch,10);assert.equal(i.itemLevel,100);}
  assert.deepEqual(values,[11900000000,11900000000,11900000000,9520000000]);
 });
 
@@ -920,4 +920,23 @@ test('hired selection waits for the next wave and survives reload',()=>{
  assert.equal(loaded.selectedCompanion,'druid');assert.equal(loaded.companion.kind,'archer');
  loaded.phase='victory';loaded.phaseTime=0;step(loaded,1/30);
  assert.equal(loaded.companion.kind,'druid');assert.equal(loaded.coins,0);
+});
+
+
+test('runes drop independently at 0.1 percent from any enemy and survive reload',()=>{
+ for(const kind of ['warrior','archer','healer','boss'])for(const [roll,amount] of [[0,1],[.000999,1],[.001,0],[.9,0]]){
+  const s=wave(10,9);for(const e of s.enemies)e.x=s.heroX+5+e.id;const target=s.enemies.find(e=>e.kind===kind);target.hp=1;target.x=s.heroX+.115;
+  const rolls=[.9,.9,roll];const events=step(s,1.3,()=>rolls.shift()??.9);
+  assert.equal(s.runes,amount);assert.equal(events.find(e=>e.type==='kill').runes,amount);
+  step(s,.01,()=>.9);assert.equal(s.runes,amount);assert.equal(restore(JSON.stringify(s)).runes,amount);
+ }
+ const old=freshGame();delete old.runes;old.coins=123;const loaded=restore(JSON.stringify(old));assert.equal(loaded.runes,0);assert.equal(loaded.coins,123);
+});
+
+test('newly forged item sale prices are one through ten by epoch',()=>{
+ for(let epoch=1;epoch<=10;epoch++){
+  const s=freshGame();s.hammers=1;s.anvilLevel=FORGE_CHANCES.findIndex(row=>row[epoch-1]>0)+1;
+  const chances=FORGE_CHANCES[s.anvilLevel-1],roll=(chances.slice(0,epoch-1).reduce((a,b)=>a+b,0)+chances[epoch-1]/2)/100;
+  const rng=[0,roll,0,0];forge(s,()=>rng.shift()??.9);assert.equal(s.forgingItems[0].sale,epoch);
+ }
 });

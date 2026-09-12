@@ -473,7 +473,7 @@ function prepareEncounter(s) {
   s.phase = 'walk'; s.phaseTime = 0;
 }
 export function freshGame(now = Date.now()) {
-  const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
+  const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
     autoForge: false, autoSellEpochs: [], reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, completed: false };
@@ -819,9 +819,12 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     target.deadTime = .6; target.engaged = false; target.moving = false;
     s.kills++; s.coins += target.reward;
     const loot = COMBAT[s.level - 1];
-    const hammers = target.boss || rng() < loot.hammer_drop_chance ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * (target.boss ? 5 : 1) : 0;
-    s.hammers += hammers;
-    events.push({ type: 'kill', value: target.reward, hammers, targetId: target.id });
+    const hammers = target.boss
+      ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * 5
+      : rng() < loot.hammer_drop_chance ? 1 : 0;
+    const runes = rng() < .001 ? 1 : 0;
+    s.hammers += hammers; s.runes += runes;
+    events.push({ type: 'kill', value: target.reward, hammers, runes, targetId: target.id });
     if (s.enemies.every(e => e.hp === 0)) {
       s.phase = 'victory'; s.phaseTime = .8; return events;
     }
@@ -940,6 +943,7 @@ export function restore(serialized, now = Date.now()) {
       if (s.forging > 0) { s.forgingItems = [s.pending]; s.pending = null; }
       if (s.completed && s.level < MAX_LEVEL) { s.completed = false; s.phase = "victory"; s.phaseTime = .8; }
     }
+    if (!Number.isSafeInteger(s.runes) || s.runes < 0) s.runes = 0;
     if (!nonnegative(s.idleSince)) s.idleSince = now;
     if (!s.mine || s.mine.version!==2 || !Number.isSafeInteger(s.mine.level) || s.mine.level<1 ||
       !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=mineLevel(s.mine.level).chances.length && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||

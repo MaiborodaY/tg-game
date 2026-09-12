@@ -45,12 +45,12 @@ test('first Telegram player starts clean and independent of WoL or another playe
     assert.equal(a.revision,0); assert.equal(a.state.coins,0); assert.equal(a.state.hammers,15);
     assert.ok(Object.values(a.state.equipment).every(v=>v===null));
     const before=Date.now(); assert.ok(a.state.idleSince <= before && a.state.idleSince > before-3000);
-    a.state.coins=75; a.state.hammers=22;
+    a.state.coins=75; a.state.hammers=22; a.state.runes=3;
     assert.equal((await worker.fetch(request(initData(),{state:a.state,revision:a.revision}),env)).status,200);
     const other=await (await worker.fetch(request(initData(90002)),env)).json();
     assert.equal(other.state.coins,0); assert.equal(other.state.hammers,15);
     const again=await (await worker.fetch(request(initData()),env)).json();
-    assert.equal(again.state.coins,75); assert.equal(again.state.hammers,22); assert.equal(again.revision,1);
+    assert.equal(again.state.coins,75); assert.equal(again.state.hammers,22); assert.equal(again.revision,1); assert.equal(again.state.runes,3);
   } finally { db.close(); }
 });
 

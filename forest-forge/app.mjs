@@ -636,7 +636,7 @@ function updateUI() {
     ], { duration:2000, easing:'ease-out' }).onfinish = () => { change.hidden = true; };
   }
   displayedHeroPower = level;
-  setText('coins', compact.format(state.coins)); setText('damage', compact.format(total.damage)); setText('max-hp', compact.format(total.hp));
+  setText('coins', compact.format(state.coins)); setText('runes', compact.format(state.runes)); document.querySelector('.rune-balance').setAttribute('aria-label', `Runes: ${state.runes}`); setText('damage', compact.format(total.damage)); setText('max-hp', compact.format(total.hp));
   const biomeIndex=Math.floor((state.level-1)/LEVELS_PER_BIOME),biome=BIOMES[biomeIndex];
   const levelLabel=`${biomeIndex+1}–${(state.level-1)%LEVELS_PER_BIOME+1}`;
   setText('level', `Level ${levelLabel}`);
@@ -793,7 +793,7 @@ function mineRows(amounts) {
 function updateMineUI() {
   $('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   const m=state.mine, next=mineLevel(m.level), following=mineLevel(m.level+1), pending=m.pending.reduce((a,b)=>a+b,0);
-  setText('coins',compact.format(state.coins));setText('mine-level',`Mine · Lv. ${m.level}`);
+  setText('coins',compact.format(state.coins));setText('runes',compact.format(state.runes));setText('mine-level',`Mine · Lv. ${m.level}`);
   const deposit=mineResource(Math.min(19,next.newest));
   const depositPath=`assets/mine/deposit-${deposit.id}-v2.webp`;
   if($('mine-deposit').getAttribute('src')!==depositPath)$('mine-deposit').src=depositPath;
