@@ -503,31 +503,14 @@ export const COMPANIONS = [
 ];
 export const DRUID_LEVELS = Array.from({length:100},(_,i)=>({
   healing:i===0?2:Math.round(5*1.24**(i-1)),
-  upgradeCost:i===99?0:Math.ceil(1000*1.11**i/10-1e-8)*10
+  xpRequired:i===99?0:Math.ceil(1000*1.11**i/10-1e-8)*10
 }));
 export const ARCHER_LEVELS = DRUID_LEVELS.map((level,i)=>({
-  damage:i===0?3:Math.round(7*1.24**(i-1)),upgradeCost:level.upgradeCost
+  damage:i===0?3:Math.round(7*1.24**(i-1)),xpRequired:level.xpRequired
 }));
 export const TURTLE_LEVELS = DRUID_LEVELS.map((level,i)=>({
-  hp:i===0?30:Math.round(50*1.24**(i-1)),upgradeCost:level.upgradeCost
+  hp:i===0?30:Math.round(50*1.24**(i-1)),xpRequired:level.xpRequired
 }));
-export function upgradeTurtle(s) {
-  const cost=TURTLE_LEVELS[s.turtleLevel-1]?.upgradeCost;
-  if(!s.hiredCompanions.includes('turtle')||!cost||s.coins<cost)return false;
-  s.coins-=cost;s.turtleLevel++;
-  if(s.companion?.kind==='turtle')s.companion.maxHp=TURTLE_LEVELS[s.turtleLevel-1].hp;
-  return true;
-}
-export function upgradeArcher(s) {
-  const cost=ARCHER_LEVELS[s.archerLevel-1]?.upgradeCost;
-  if(!s.hiredCompanions.includes('archer')||!cost||s.coins<cost)return false;
-  s.coins-=cost;s.archerLevel++;return true;
-}
-export function upgradeDruid(s) {
-  const cost=DRUID_LEVELS[s.druidLevel-1]?.upgradeCost;
-  if(!s.hiredCompanions.includes('druid')||!cost||s.coins<cost)return false;
-  s.coins-=cost;s.druidLevel++;return true;
-}
 export function hireCompanion(s,id) {
   if(!COMPANIONS.some(c=>c.id===id)||s.hiredCompanions.includes(id))return false;
   const cost=500;
@@ -644,7 +627,7 @@ export function toggleMount(s) {
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
-    workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
+    workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, companionXp: {archer:0,druid:0,turtle:0}, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', keepAffixes: AFFIXES.map(a=>a.id), reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.alchemy={xp:0,reagents:[0,0,0,0,0],potions:Array(25).fill(0),active:{},previous:{},pending:[0,0,0,0,0],idleMinutes:0,seed:Math.abs(Math.floor(now))%2147483647,oreRemainder:0};
   s.mine = {version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
@@ -861,7 +844,7 @@ export function equipStronger(s, preview = false) {
   return selected.size;
 }
 // Only ready items are considered. Preview uses the same comparison as the sale.
-export function sellWeaker(s, preview = false, selection = null) {
+export function sellWeaker(s, preview = false) {
   let count = 0, coins = 0;
   const remaining = [];
   for (const item of [s.pending, ...s.results]) {
@@ -869,8 +852,8 @@ export function sellWeaker(s, preview = false, selection = null) {
     const equipped = item.slot === 'ring'
       ? s.equipment.ring1 && s.equipment.ring2 && { value: Math.min(s.equipment.ring1.value, s.equipment.ring2.value) }
       : s.equipment[item.slot];
-    const affixWeaker = !item.affix || (item.slot === 'ring' ? ['ring1','ring2'] : [item.slot]).every(slot => s.equipment[slot]?.affix?.type === item.affix.type && s.equipment[slot].affix.value >= item.affix.value);
-    if ((!selection || selection.has(item)) && equipped && item.value <= equipped.value && affixWeaker) { count++; coins += item.sale; }
+    const protectedAffix = item.affix && s.keepAffixes.includes(item.affix.type);
+    if (equipped && item.value <= equipped.value && !protectedAffix) { count++; coins += item.sale; }
     else if (!preview) remaining.push(item);
   }
   if (!preview && count) {
@@ -942,7 +925,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       const count = s.forgingItems.length, item = s.forgingItems.at(-1);
       let soldCount = 0, soldCoins = 0;
       for (const forged of s.forgingItems) {
-        if (s.forgingAuto && (s.autoSellEpochs.includes(forged.epoch) || forged.slot==='weapon' && WEAPONS[forged.weaponId] && (s.autoWeaponFilter==='melee' && WEAPONS[forged.weaponId].range>0 || s.autoWeaponFilter==='ranged' && !WEAPONS[forged.weaponId].range))) { soldCount++; soldCoins += forged.sale; }
+        if (s.forgingAuto && (!forged.affix || !s.keepAffixes.includes(forged.affix.type)) && (s.autoSellEpochs.includes(forged.epoch) || forged.slot==='weapon' && WEAPONS[forged.weaponId] && (s.autoWeaponFilter==='melee' && WEAPONS[forged.weaponId].range>0 || s.autoWeaponFilter==='ranged' && !WEAPONS[forged.weaponId].range))) { soldCount++; soldCoins += forged.sale; }
         else s.results.push(forged);
       }
       s.autoForgeCoins += soldCoins;
@@ -1085,6 +1068,16 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     target.deadTime = .6; target.engaged = false; target.moving = false;
     const coinReward=Math.round(target.reward*(1+Math.floor((s.dungeons?.cleared[0]||0)/5)*.01));
     s.kills++; s.coins += coinReward;
+    const companion=s.companion?.kind;
+    if(companion && s[companion+'Level']<100){
+      s.companionXp[companion]+=target.reward;
+      while(s[companion+'Level']<100 && s.companionXp[companion]>=DRUID_LEVELS[s[companion+'Level']-1].xpRequired){
+        s.companionXp[companion]-=DRUID_LEVELS[s[companion+'Level']-1].xpRequired;
+        s[companion+'Level']++;
+      }
+      if(s[companion+'Level']===100)s.companionXp[companion]=0;
+      if(companion==='turtle')s.companion.maxHp=TURTLE_LEVELS[s.turtleLevel-1].hp;
+    }
     const loot = COMBAT[s.level - 1];
     const hammers = target.boss
       ? (loot.hammer_min + Math.min(loot.hammer_max - loot.hammer_min, Math.floor(rng() * (loot.hammer_max - loot.hammer_min + 1)))) * 5
@@ -1184,6 +1177,7 @@ export function restore(serialized, now = Date.now()) {
     s.turtleLevel=Number.isInteger(s.turtleLevel)?Math.max(1,Math.min(100,s.turtleLevel)):1;
     s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
+    s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-1,Number.isSafeInteger(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
     s.autoForgeCoins=Number.isSafeInteger(s.autoForgeCoins)&&s.autoForgeCoins>=0?s.autoForgeCoins:0;
     s.battleStats=Object.fromEntries(['bosses','maxHit','maxCrit','coins','hammers','runes'].map(k=>[k,Number.isSafeInteger(s.battleStats?.[k])&&s.battleStats[k]>=0?s.battleStats[k]:0]));
     s.hiredCompanions=Array.isArray(s.hiredCompanions)?[...new Set(s.hiredCompanions.filter(id=>COMPANIONS.some(c=>c.id===id)))]:[];
@@ -1260,6 +1254,7 @@ export function restore(serialized, now = Date.now()) {
     while(s.mine.ore.length<mineLevel(s.mine.level).chances.length)s.mine.ore.push(0);
     while(s.mine.pending.length<s.mine.ore.length)s.mine.pending.push(0);
     s.autoWeaponFilter=['any','melee','ranged'].includes(s.autoWeaponFilter)?s.autoWeaponFilter:'any';
+    s.keepAffixes=Array.isArray(s.keepAffixes)?[...new Set(s.keepAffixes.filter(id=>AFFIXES.some(a=>a.id===id)))]:AFFIXES.map(a=>a.id);
     s.autoSellEpochs = Array.isArray(s.autoSellEpochs) ? s.autoSellEpochs.filter(epoch => Number.isInteger(epoch) && epoch >= 1 && epoch <= EPOCHS.length) : [];
     s.reforgeStop = Array.isArray(s.reforgeStop) ? [...new Set(s.reforgeStop.filter(id=>AFFIXES.some(a=>a.id===id)))] : [];
     s.forgingAuto = s.forging > 0 && s.forgingAuto === true;

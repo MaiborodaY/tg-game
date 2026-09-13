@@ -239,8 +239,13 @@ progress::-webkit-progress-value { background:#549a59; border-radius:8px; }
 progress::-moz-progress-bar { background:#549a59; border-radius:8px; }
 .item-level { position:absolute; left:50%; transform:translateX(-50%); bottom:0; white-space:nowrap; font-size:10px; color:#fffaf0; -webkit-text-stroke:2px #142927; paint-order:stroke fill; pointer-events:none; }
 .comparison { max-height:calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom)); overflow:auto; overscroll-behavior:contain; }
-.result-nav { display:flex; align-items:center; justify-content:space-between; font-size:12px; margin-bottom:8px; }
-.result-nav > button { flex-shrink:0; width:30px; height:32px; background:#e0e8dc; border:1px solid #9cab99; border-radius:6px; font-size:23px; }
+.result-nav { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; min-height:32px; margin-bottom:8px; }
+.result-actions { grid-column:3; justify-self:end; display:flex; align-items:center; gap:4px; }
+#equip-and-sell { height:28px; padding:0 5px; border:1px solid #93b6a0; border-radius:5px; background:#e0f0e3; color:#28563b; font:10px 'Lilita UI',sans-serif; white-space:nowrap; }
+.affix-filter-toggle { display:grid; place-items:center; width:28px; height:28px; padding:5px; border:1px solid #b5b9a9; border-radius:5px; background:#eeeade; color:var(--ink); }
+.affix-filter-toggle svg { width:17px; height:17px; fill:currentColor; }
+#new-row { touch-action:pan-y; user-select:none; -webkit-user-select:none; }
+#new-row.swipe-hint::after { content:'Swipe to browse'; position:absolute; right:6px; top:-9px; padding:2px 5px; border-radius:4px; background:var(--paper); color:#52675a; font:10px 'Lilita UI',sans-serif; pointer-events:none; }
 button:disabled { opacity:.55; cursor:default; }
 .forge:disabled { opacity:1; }
 .anvil-dialog { position:fixed; left:50%; right:auto; transform:translateX(-50%); width:min(460px,calc(100% - 20px)); bottom:calc(8px + var(--safe-bottom)); }
@@ -255,12 +260,9 @@ button:disabled { opacity:.55; cursor:default; }
 @media(max-height:720px) { #battle { height:52%; } .forge-area { min-height:0; gap:6px; padding-top:5px; } .forge { height:98px; width:116px; } .forge-art { height:96px; width:116px; } }
 @media(max-height:620px) { #battle { height:45%; } #workshop { padding-bottom:calc(3px + var(--safe-bottom)); } .equipment { max-width:290px; } .forge-area { min-height:156px; gap:5px; padding-top:4px; } .forge,.forge-art { height:93px; width:112px; } .forge-row { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); } }
 
-.result-summary { display:flex; align-items:center; justify-content:center; gap:4px; flex:1; min-width:0; padding:0 4px; }
-#results-remaining { font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sell-weaker { flex-shrink:0; height:28px; padding:0 5px; border:1px solid #c7aaa1; border-radius:5px; background:#f7e9df; color:#903f36; font-size:10px; }
-.equip-stronger { flex-shrink:0; height:28px; padding:0 5px; border:1px solid #93b6a0; border-radius:5px; background:#e0f0e3; color:#28563b; font-size:10px; }
-.bulk-sale-confirm,.idle-dialog,.auto-dialog { position:fixed; inset:50% auto auto 50%; transform:translate(-50%,-50%); margin:0; width:min(340px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; padding:18px; border:3px solid var(--ink); border-radius:14px; background:var(--paper); color:var(--ink); box-shadow:0 4px 0 #10272544; }
-.bulk-sale-confirm::backdrop,.idle-dialog::backdrop,.auto-dialog::backdrop { background:#102725aa; }
+#results-remaining { grid-column:2; padding:0 6px; text-align:center; font:11px 'Lilita UI',sans-serif; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.idle-dialog,.auto-dialog { position:fixed; inset:50% auto auto 50%; transform:translate(-50%,-50%); margin:0; width:min(340px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; padding:18px; border:3px solid var(--ink); border-radius:14px; background:var(--paper); color:var(--ink); box-shadow:0 4px 0 #10272544; }
+.idle-dialog::backdrop,.auto-dialog::backdrop { background:#102725aa; }
 .idle-dialog { width:min(320px,calc(100vw - 32px)); padding:16px; }
 .idle-dialog h2 { margin:0; font:24px/1.1 'Lilita UI',sans-serif; }
 .idle-dialog .sheet-top { gap:8px; margin-bottom:18px; }
@@ -287,13 +289,8 @@ button:disabled { opacity:.55; cursor:default; }
 .auto-epoch small { font:16px 'Lilita UI',sans-serif; font-variant-numeric:tabular-nums; }
 #auto-hint { margin:10px 0 18px; color:#52675a; font:11px/1.4 'Lilita UI',sans-serif; }
 #run-auto { width:100%; font:24px 'Lilita UI',sans-serif; }
-.bulk-sale-confirm h2 { margin:0 0 10px; font-size:19px; }
-#bulk-sale-summary { margin:0 0 18px; font-size:14px; line-height:1.5; font-weight:400; }
-.bulk-sale-confirm .cancel { background:#e0e8dc; color:var(--ink); }
 @media(max-width:360px) {
-  .result-nav > button { width:24px; flex-shrink:0; }
-  .result-summary { gap:3px; padding:0 3px; }
-  .sell-weaker,.equip-stronger { font-size:9px; padding:0 4px; }
+  #equip-and-sell { font-size:9px; padding:0 4px; }
   #results-remaining { font-size:10px; }
 }
 
@@ -660,11 +657,24 @@ button:disabled { opacity:.55; cursor:default; }
 
 #game.page-paused .forging *,#game.mine-open .forging *{animation-play-state:paused}
 
-.transfer-affix-row {display:flex;align-items:center;gap:8px;margin:8px 0;padding:6px 9px;min-height:32px;border:1px solid #a0b7a6;border-radius:8px;background:#edf4e9;font:14px 'Lilita UI',sans-serif;cursor:pointer;}
-.transfer-affix-row input {width:20px;height:20px;margin:0;accent-color:#08a9ed;flex-shrink:0;}
-.transfer-price {margin-left:auto;display:flex;align-items:center;gap:4px;white-space:nowrap;}
-.transfer-price img {width:21px;height:21px;object-fit:contain;}
+#comparison #equipped-affix-row {display:flex;align-items:center;gap:8px; padding:6px 8px;}
+#equipped-affix {flex:1;min-width:0;}
+.transfer-affix-row {display:flex;align-items:center;gap:4px;min-height:32px;flex-shrink:0;font:11px 'Lilita UI',sans-serif;cursor:pointer;}
+.transfer-affix-row input {width:17px;height:17px;margin:0;accent-color:#08a9ed;flex-shrink:0;}
+.transfer-price {display:flex;align-items:center;gap:2px;white-space:nowrap;}
+.transfer-price img {width:17px;height:17px;object-fit:contain;}
 .transfer-affix-row.unaffordable .transfer-price {color:#ab3b48;}
+#keep-affixes-dialog {--panel-height:var(--game-viewport-height,var(--tg-viewport-stable-height,100dvh));position:fixed;inset:calc((var(--panel-height) + var(--safe-top) - var(--safe-bottom))/2) auto auto 50%;transform:translate(-50%,-50%);margin:0;width:min(310px,calc(100vw - 24px));max-height:calc(var(--panel-height) - var(--safe-top) - var(--safe-bottom) - 24px);padding:14px;overflow-y:auto;}
+#keep-affixes-dialog .sheet-top {gap:8px;margin-bottom:12px;}
+#keep-affixes-dialog h2 {margin:0;font:23px/1.1 'Lilita UI',sans-serif;}
+#keep-affixes-dialog .sheet-top p {margin:5px 0 0;color:#52675a;font:11px 'Lilita UI',sans-serif;}
+#keep-affixes-dialog .close {flex:none;}
+#keep-affixes-list {display:grid;gap:4px;}
+#keep-affixes-list label {display:flex;align-items:center;justify-content:flex-start;gap:9px;min-height:37px;margin:0;padding:5px 8px;border-radius:6px;background:#ececde;font:15px 'Lilita UI',sans-serif;cursor:pointer;}
+#keep-affixes-list img {width:24px;height:24px;object-fit:contain;}
+#keep-affixes-list input {flex:none;margin:0 0 0 auto;padding:0;width:19px;height:19px;accent-color:#319158;}
+#keep-affixes-note {margin:12px 0 0;text-align:center;color:#52675a;font:11px 'Lilita UI',sans-serif;}
+#auto-affix-filter {display:block;margin-top:12px;min-height:32px;}
 
 /* Forge controls share the main action-button treatment. */
 #anvil-info,#auto-forge,#batch-choice {font-family:'Lilita UI',sans-serif;font-size:14px;line-height:16px;color:white;background:var(--blue);border-color:#183d42;box-shadow:inset 0 -3px 0 #0002;}
@@ -705,7 +715,9 @@ input,select,textarea {font-family:inherit;}
 #auto-earnings {position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-size:13px;line-height:17px;}
 #auto-earnings .coin {width:14px;height:14px;flex-shrink:0;}
 
-.companion-card .companion-upgrade {display:flex;align-items:center;justify-content:center;gap:6px;margin-top:5px;}
+.companion-xp {margin-top:7px;font-size:11px;color:#36544a;}
+.companion-xp span {display:block;margin-bottom:3px;}
+.companion-xp progress {display:block;width:100%;height:8px;accent-color:#529b56;}
 .companion-card.druid h3,.companion-card.archer h3 {font-size:22px;}
 /* Workshop activity: the battle canvas is suspended while this scene is visible. */
 .atelier-open #scene,.atelier-open .level-hud,.atelier-open #idle-loot,.atelier-open #completed {display:none;}
