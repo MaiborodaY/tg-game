@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
 import { anvilSkipCost, skipAnvilUpgrade, BIOMES, LEVELS_PER_BIOME, MAX_LEVEL } from './game.mjs';
 import { idleRewards, collectIdleRewards } from './game.mjs';
+import { drinkPotion } from './game.mjs';
 import { freshGame, stats, heroPower, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
 function advance(s, seconds) { const events=[]; for(let i=0;i<seconds*30;i++)events.push(...step(s,1/30,()=>.999)); return events; }
 function wave(level,index) {
@@ -286,16 +287,34 @@ test('batch spends one hammer per item, keeps coins, rolls once, and resumes ani
 });
 
 test('mastery levels are epoch-specific; level roll precedes XP and reaches cap 100',()=>{
- const s=freshGame();s.selectedBatch=2;s.hammers=2;s.mastery[0]={level:1,xp:4};
- let calls=0;forge(s,()=>[0,0,.999,0][calls++%4]);
+ const s=freshGame();s.selectedBatch=2;s.hammers=2;s.mastery[0]={level:1,xp:2};
+ let calls=0;forge(s,()=>[0,0,.999,0,.999][calls++%5]);
  assert.deepEqual(s.forgingItems.map(i=>i.itemLevel),[1,2]);assert.deepEqual(s.mastery[0],{level:2,xp:1});
  finishForge(s);s.anvilLevel=2;s.hammers=1;calls=0;
- forge(s,()=>[0,.99999,.999,.3][calls++%4]);assert.equal(s.forgingItems[0].epoch,2);assert.equal(s.forgingItems[0].value,20);
+ forge(s,()=>[0,.99999,.999,.3,.999][calls++%5]);assert.equal(s.forgingItems[0].epoch,2);assert.equal(s.forgingItems[0].value,20);
  assert.equal(s.mastery[1].xp,1);assert.equal(s.mastery[0].xp,1);
- finishForge(s);s.anvilLevel=1;s.hammers=2;s.mastery[0]={level:99,xp:102};calls=0;
- forge(s,()=>[0,0,.999,.999][calls++%4]);assert.deepEqual(s.forgingItems.map(i=>i.itemLevel),[99,100]);
+ finishForge(s);s.anvilLevel=1;s.hammers=2;s.mastery[0]={level:99,xp:51};calls=0;
+ forge(s,()=>[0,0,.999,.999,.999][calls++%5]);assert.deepEqual(s.forgingItems.map(i=>i.itemLevel),[99,100]);
  assert.deepEqual(s.mastery[0],{level:100,xp:0});
  finishForge(s);s.hammers=1;forge(s,()=>0);assert.equal(s.forgingItems[0].itemLevel,1);assert.equal(s.forgingItems[0].value,2);
+});
+
+test('cheaper mastery reaches level 100 after 2698 items of its epoch',()=>{
+ const s=freshGame();s.hammers=2698;
+ for(let i=0;i<2697;i++){assert.equal(forge(s,()=>0),true);finishForge(s);}
+ assert.deepEqual(s.mastery[0],{level:99,xp:51});
+ assert.equal(forge(s,()=>0),true);assert.deepEqual(s.mastery[0],{level:100,xp:0});
+ assert.ok(s.mastery.slice(1).every(m=>m.level===1&&m.xp===0));
+});
+
+test('old mastery keeps earned levels and carries unspent XP through cheaper thresholds once',()=>{
+ const s=freshGame(1000);s.coins=713;s.hammers=91;
+ s.mastery[0]={level:1,xp:4};s.mastery[1]={level:30,xp:33};
+ s.mastery[2]={level:99,xp:102};s.mastery[3]={level:50,xp:0};
+ const loaded=restore(JSON.stringify(s),1000);
+ assert.deepEqual(loaded.mastery.slice(0,4),[{level:2,xp:1},{level:31,xp:16},{level:100,xp:0},{level:50,xp:0}]);
+ assert.equal(loaded.coins,713);assert.equal(loaded.hammers,91);
+ assert.deepEqual(restore(JSON.stringify(loaded),1000),loaded);
 });
 
 test('melee damage and ranged discount use the supported epoch even at maximum anvil level',()=>{
@@ -625,6 +644,22 @@ test('hero power follows equipment stats and affixes rather than epoch or item l
  s.equipment.weapon=null;assert.equal(heroPower(s),282);
 });
 
+test('hero power keeps permanent bonuses but stays stable when combat potions start and expire',()=>{
+ const s=freshGame(1000);
+ s.equipment.weapon={...candidate('weapon',100),affix:{type:'damage',value:10}};
+ s.equipment.chest={...candidate('chest',1000),affix:{type:'health',value:10}};
+ s.workshop.slots.weapon=10;s.workshop.slots.chest=20;s.mount={owned:true,equipped:true};
+ const permanent=stats(s);assert.deepEqual(permanent,{hp:1610,damage:148});assert.equal(heroPower(s),309);
+ s.hp=permanent.hp;s.alchemy.potions[0]=1;s.alchemy.potions[5]=1;
+ assert.ok(drinkPotion(s,'damage',0,1000));assert.equal(heroPower(s),309);
+ assert.ok(drinkPotion(s,'health',0,1000));assert.deepEqual(stats(s),{hp:1771,damage:155});
+ const active=structuredClone(s);assert.equal(heroPower(s),309);assert.deepEqual(s,active);
+ s.alchemy.active.damage.remaining=.01;s.alchemy.active.health.remaining=.01;
+ const events=step(s,1/30,()=>.999,1000);
+ assert.ok(events.some(e=>e.type==='potionExpired'));
+ assert.deepEqual(stats(s),permanent);assert.equal(heroPower(s),309);
+});
+
 test('all thirteen Medieval weapons forge, equip and retain identity and integer damage after reload',()=>{
  const ids=Object.keys(WEAPONS).filter(id=>WEAPONS[id].epoch===3);assert.equal(ids.length,13);
  const anvil=FORGE_CHANCES.findIndex(row=>row[2]>0)+1,c=FORGE_CHANCES[anvil-1];
@@ -693,14 +728,38 @@ test('death lets survivors march past without attacking; restart and boss comple
 });
 
 
-test('affixes share inclusive ranges; forging never adds an affix',()=>{
+test('affixes share inclusive ranges',()=>{
  for(const [n,a] of AFFIXES.entries())for(const [roll,value] of [[0,a.min],[.999,a.max]]){
   const rolls=[(n+.1)/9,roll];assert.deepEqual(rollAffix(()=>rolls.shift()),{type:a.id,value});
  }
- const s=freshGame();s.hammers=1;forge(s,()=>0);assert.equal(s.forgingItems[0].affix,undefined);
- const t=freshGame();t.anvilLevel=2;t.hammers=1;const rolls=[0,.999,0,0,7/9+.001,.999];forge(t,()=>rolls.shift());
- assert.equal(t.forgingItems[0].affix,undefined);
- assert.deepEqual(restore(JSON.stringify(t)).forgingItems,t.forgingItems);
+});
+
+test('forged weapon affix chance grows with pre-forge epoch mastery, not rolled item level',()=>{
+ for(const [level,chance] of [[1,.0005],[20,.01],[50,.025],[100,.05]])for(const success of [true,false]){
+  const s=freshGame();s.hammers=1;s.mastery[0]={level,xp:level===100?0:Math.ceil((level+4)/2)-1};
+  const rolls=[0,0,0,0,chance-(success?.000001:0),.999,.999];
+  assert.equal(forge(s,()=>rolls.shift()),true);
+  assert.equal(s.forgingItems[0].itemLevel,1);
+  assert.deepEqual(s.forgingItems[0].affix,success?{type:'double',value:5}:undefined);
+ }
+ const s=freshGame();s.hammers=1;s.anvilLevel=2;s.mastery[0].level=100;
+ const rolls=[0,.99999,0,0,.001];forge(s,()=>rolls.shift());
+ assert.equal(s.forgingItems[0].epoch,2);assert.equal(s.forgingItems[0].affix,undefined);
+ const armor=freshGame();armor.hammers=1;armor.mastery[0].level=100;let calls=0;
+ forge(armor,()=>calls++===0?.1:0);
+ assert.equal(armor.forgingItems[0].slot,'helmet');assert.equal(armor.forgingItems[0].affix,undefined);assert.equal(calls,4);
+});
+
+test('batch rolls each weapon affix once and preserves a prehistoric affix through forge reload and equip',()=>{
+ const s=freshGame(1000);s.hammers=2;s.coins=713;s.selectedBatch=2;s.mastery[0].level=100;
+ const rolls=[0,0,.999,0,0,0,.999,0,0,0,0,.999];
+ assert.equal(forge(s,()=>rolls.shift()),true);assert.equal(rolls.length,0);
+ assert.equal(s.hammers,0);assert.equal(s.coins,713);
+ assert.deepEqual(s.forgingItems.map(i=>i.affix),[{type:'damage',value:10},undefined]);
+ const loaded=restore(JSON.stringify(s),1000);assert.deepEqual(loaded.forgingItems,s.forgingItems);
+ finishForge(loaded);assert.equal(equip(loaded),true);
+ assert.deepEqual(loaded.equipment.weapon.affix,{type:'damage',value:10});assert.equal(stats(loaded).damage,15);
+ const again=restore(JSON.stringify(loaded),1000);assert.deepEqual(again.equipment,loaded.equipment);assert.equal(again.coins,713);
 });
 
 test('reforge pays once, persists the choice, preserves rings and caps the item price',()=>{
@@ -1108,20 +1167,23 @@ test('workshop slot bonuses persist across equipment replacement, preserve healt
  const saved=restore(JSON.stringify(s),0);assert.equal(saved.workshop.slots.chest,1);assert.equal(stats(saved).hp,222);
  s.workshop.slots.chest=100;const before=structuredClone(s);assert.equal(upgradeWorkshop(s,'chest',0),false);assert.deepEqual(s,before);
 });
-test('workshop recipes match approved starts, maxima and softened coin multipliers',()=>{
- const s=freshGame(0);assert.deepEqual(workshopPrice(s,'weapon'),[0,3]);assert.deepEqual(workshopPrice(s,'coins'),[0,15]);assert.deepEqual(workshopPrice(s,'hammers'),[0,30]);assert.equal(workshopPrice(s,'storage'),5000);
+test('workshop recipes keep prices and triple only the upgraded coin income',()=>{
+ const s=freshGame(0);assert.deepEqual(workshopPrice(s,'weapon'),[0,3]);assert.deepEqual(workshopPrice(s,'coins'),[0,15]);assert.deepEqual(workshopPrice(s,'hammers'),[0,30]);assert.equal(workshopPrice(s,'storage'),15000);
  s.workshop.coins=124;assert.deepEqual(workshopPrice(s,'coins'),[19,4944]);s.workshop.coins=125;
- s.workshop.hammers=80;s.workshop.storage=16;assert.deepEqual(idleRates(s),{coins:100,hammers:5});assert.equal(idleCapacity(s),720);
+ s.workshop.hammers=80;s.workshop.storage=16;assert.deepEqual(idleRates(s),{coins:298,hammers:5});assert.equal(idleCapacity(s),720);
  for(const key of ['coins','hammers','storage'])assert.equal(workshopPrice(s,key),null);
+ for(const [level,coins] of [[0,1],[1,1.3],[40,13],[41,14.5],[70,58],[71,61],[100,148],[101,154],[125,298]]){
+  s.workshop.coins=level;assert.equal(idleRates(s).coins,coins);
+ }
  const initial=freshGame(0),before=structuredClone(initial);assert.equal(upgradeWorkshop(initial,'coins',60000),false);assert.deepEqual(initial,before);
 });
 test('idle production keeps fractional ore-independent rates through repeated collection and save',()=>{
  let s=freshGame(0);s.workshop.hammers=1;s.workshop.coins=1;
  for(let n=1;n<=20;n++){collectIdleRewards(s,n*60000);s=restore(JSON.stringify(s),n*60000);}
- assert.equal(s.hammers,36);assert.equal(s.coins,22);assert.equal(s.idleStore.hammers,0);assert.equal(s.idleStore.coins,0);
+ assert.equal(s.hammers,36);assert.equal(s.coins,26);assert.equal(s.idleStore.hammers,0);assert.equal(s.idleStore.coins,0);
 });
 test('idle rate purchases preserve old rewards and expanded storage does not grant past overflow',()=>{
- const s=freshGame(0);s.mine.ore[0]=100;s.coins=5000;
+ const s=freshGame(0);s.mine.ore[0]=100;s.coins=15000;
  assert.equal(upgradeWorkshop(s,'hammers',120*60000),true);
  assert.deepEqual(idleLoot(s,140*60000),{minutes:140,coins:140,hammers:141});
  assert.equal(upgradeWorkshop(s,'storage',600*60000),true);
@@ -1130,9 +1192,27 @@ test('idle rate purchases preserve old rewards and expanded storage does not gra
 });
 test('max offline production caps both resources at twelve hours and resets cleanly',()=>{
  const s=freshGame(0);s.workshop.coins=125;s.workshop.hammers=80;s.workshop.storage=16;
- assert.deepEqual(idleLoot(s,24*3600000),{minutes:720,coins:72000,hammers:3600});
- collectIdleRewards(s,24*3600000);assert.equal(s.coins,72000);assert.equal(s.hammers,3615);assert.equal(collectIdleRewards(s,24*3600000),0);
+ assert.deepEqual(idleLoot(s,24*3600000),{minutes:720,coins:214560,hammers:3600});
+ collectIdleRewards(s,24*3600000);assert.equal(s.coins,214560);assert.equal(s.hammers,3615);assert.equal(collectIdleRewards(s,24*3600000),0);
  const fresh=freshGame(0);assert.deepEqual(idleRates(fresh),{coins:1,hammers:1});assert.equal(idleCapacity(fresh),240);
+});
+test('shared storage expands mining without backfilling full time and survives saving',()=>{
+ const s=freshGame(0);s.coins=14999;
+ const before=structuredClone(s);
+ assert.equal(upgradeWorkshop(s,'storage',600*60000),false);assert.deepEqual(s,before);
+ s.coins=15000;assert.equal(upgradeWorkshop(s,'storage',600*60000),true);
+ assert.equal(s.coins,0);assert.equal(s.mine.bufferMinutes,240);
+ const stored=s.mine.pending.reduce((a,b)=>a+b,0);
+ settleMine(s,600*60000);assert.equal(s.mine.pending.reduce((a,b)=>a+b,0),stored);
+ settleMine(s,630*60000);assert.equal(s.mine.bufferMinutes,270);
+ assert.equal(idleCapacity(s),270);assert.equal(idleLoot(s,630*60000).minutes,270);
+ const loaded=restore(JSON.stringify(s),630*60000);
+ assert.deepEqual(loaded.mine,s.mine);assert.equal(loaded.workshop.storage,1);
+ const loot=collectMine(loaded,630*60000);assert.equal(loaded.mine.bufferMinutes,0);
+ assert.deepEqual(loot,s.mine.pending);
+ loaded.workshop.storage=16;settleMine(loaded,2000*60000);
+ assert.equal(loaded.mine.bufferMinutes,720);
+ assert.equal(restore(JSON.stringify(loaded),2000*60000).mine.bufferMinutes,720);
 });
 test('legacy saves preserve progress and idle time with zero workshop levels',()=>{
  const s=freshGame(0);delete s.workshop;delete s.idleStore;s.coins=123;s.mine.ore[0]=77;

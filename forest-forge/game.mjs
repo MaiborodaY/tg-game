@@ -1,5 +1,7 @@
 import { ANVILS, COMBAT, EPOCHS, SALE_PRICES, WORKSHOP_PRICES } from './balance.mjs';
 export { ANVILS, EPOCHS } from './balance.mjs';
+export const MASTERY_XP = Array.from({ length: 99 }, (_, i) => Math.ceil((i + 5) / 2));
+export const MASTERY_AFFIX_CHANCE_PER_LEVEL = .0005;
 export const SLOTS = ['weapon', 'helmet', 'shoulders', 'chest', 'gloves', 'legs', 'cape', 'boots', 'belt', 'necklace', 'ring1', 'ring2'];
 export const WEAPONS = {
   club: { name:'Hunter Club', range:0, multiplier:1, quality:0, epoch:1 },
@@ -465,18 +467,19 @@ export function idleReagents(s,now=Date.now()) {
  }return loot;
 }
 
-export function stats(s) {
+export function stats(s, includePotions = true) {
   const total = { hp: 20, damage: 2 };
   for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += Math.round((s.equipment[slot]?.value ?? 0) * (1 + (s.workshop?.slots?.[slot] || 0) / 100));
   const bonuses = affixBonuses(s);
   total.hp = Math.round(total.hp * (1 + bonuses.health / 100));
   total.damage = Math.round(total.damage * (1 + bonuses.damage / 100));
   if(s.mount?.owned && s.mount.equipped){total.hp=Math.round(total.hp*1.2);total.damage=Math.round(total.damage*1.2);}
-  for(const [type,key] of [['damage','damage'],['health','hp']]){const b=s.alchemy?.active[type];if(b?.remaining>0)total[key]=Math.round(total[key]*(1+b.value/100));}
+  if(includePotions)for(const [type,key] of [['damage','damage'],['health','hp']]){const b=s.alchemy?.active[type];if(b?.remaining>0)total[key]=Math.round(total[key]*(1+b.value/100));}
   return total;
 }
 export function heroPower(s) {
-  const hero = stats(s), bonuses = affixBonuses(s);
+  // Show permanent power; active potions still affect combat and the stat display.
+  const hero = stats(s, false), bonuses = affixBonuses(s);
   // Critical damage contributes only when equipment grants critical chance.
   const critical = 1 + Math.min(50, bonuses.crit) / 100 * (.5 + bonuses.critDamage / 100);
   const attack = hero.damage * (1 + bonuses.speed / 100) * (1 + .75 * bonuses.double / 100) * critical;
@@ -686,10 +689,10 @@ export function selectMineStratum(s,index,now=Date.now()) {
   if(index!==null&&(!Number.isInteger(index)||index<0||index>mineLevel(s.mine.level).newest))return false;
   settleMine(s,now);s.mine.stratum=index;return true;
 }
-export const MINE_INTERVAL = 60000, MINE_CAP = 240;
+export const MINE_INTERVAL = 60000;
 export function settleMine(s, now = Date.now(), rng = Math.random) {
   const m=s.mine, elapsed=Math.max(0,Math.floor((now-m.lastAt)/MINE_INTERVAL));
-  const count=Math.min(MINE_CAP-m.bufferMinutes,elapsed);
+  const capacity=idleCapacity(s),count=Math.min(capacity-m.bufferMinutes,elapsed);
   let produced=0;
   m.remainder ??= 0;
   for(let n=1;n<=count;n++){
@@ -713,7 +716,7 @@ export function settleMine(s, now = Date.now(), rng = Math.random) {
     }
   }
   m.bufferMinutes+=count;
-  if(m.bufferMinutes===MINE_CAP)m.lastAt=Math.max(m.lastAt,now);
+  if(m.bufferMinutes===capacity)m.lastAt=Math.max(m.lastAt,now);
   else m.lastAt+=count*MINE_INTERVAL;
   if(m.upgradeEndsAt && now>=m.upgradeEndsAt){m.level++;m.upgradeEndsAt=0;}
   while(m.ore.length<mineLevel(m.level).chances.length){m.ore.push(0);m.pending.push(0);}
@@ -736,11 +739,11 @@ export function sellOre(s,index,amount) {
   if(!Number.isInteger(index)||index<0||index>=s.mine.ore.length||!Number.isSafeInteger(amount)||amount<1||s.mine.ore[index]<amount)return false;
   s.mine.ore[index]-=amount;s.coins+=amount*mineResource(index).price;return true;
 }
-// A saved timestamp keeps the same four-hour buffer online and offline.
+// Storage sets the accumulation limit for idle rewards and mining.
 export function idleCapacity(s) { return 240+30*(s.workshop?.storage||0); }
 export function idleRates(s) {
   const n=s.workshop?.coins||0;
-  return {coins:n<=40?1+n*.1:n<=70?5+(n-40)*.5:n<=100?20+n-70:50+(n-100)*2,
+  return {coins:n<=40?1+n*.3:n<=70?13+(n-40)*1.5:n<=100?58+(n-70)*3:148+(n-100)*6,
     hammers:1+(s.workshop?.hammers||0)*.05};
 }
 export function idleRewards(s, now = Date.now()) {
@@ -777,6 +780,7 @@ export function upgradeWorkshop(s,key,now=Date.now()) {
   else if((s.mine.ore[price[0]]||0)<price[1])return false;
   // Settle earned rewards at the old rate and capacity before purchasing.
   settleIdle(s,now);
+  if(key==='storage')settleMine(s,now);
   const fraction=s.hp/stats(s).hp;
   if(key==='storage')s.coins-=price;else s.mine.ore[price[0]]-=price[1];
   if(SLOTS.includes(key))s.workshop.slots[key]++;else s.workshop[key]++;
@@ -803,9 +807,10 @@ export function forge(s, rng = Math.random) {
     const weaponId=slot==='weapon'?pool[Math.min(pool.length-1,Math.floor(appearance*pool.length))]:undefined;
     const quality = weaponId ? WEAPONS[weaponId].quality : Math.min((ARMOR_SETS[epochIndex]?.length??1)-1, Math.floor(appearance * (ARMOR_SETS[epochIndex]?.length??1)));
     s.forgingItems.push({ slot, ...(weaponId?{weaponId}:{}), name: weaponId?WEAPONS[weaponId].name:epochIndex===0?NAMES[slot][quality]:`${epochIndex===1?['Bronze Warrior','Temple Guard','Legionary'][quality]:epochIndex===2?['Iron Knight','Forest Ranger','Royal Guard'][quality]:epochIndex===3?['Musketeer','Corsair','Grenadier'][quality]:epochIndex===4?['Field Scout','Commando','Heavy Trooper'][quality]:epochIndex===5?['Neon Runner','Exo Trooper','Reactor Guard'][quality]:epochIndex===6?["Lunar Scout","Void Corsair","Xeno Warden"][quality]:epochIndex===7?["Rift Nomad","Prism Keeper","Paradox Knight"][quality]:epochIndex===8?["Ash Reaper","Ember Brute","Obsidian Tyrant"][quality]:epochIndex===9?["Dawn Herald","Storm Seraph","Sun Sovereign"][quality]:EPOCHS[epochIndex]} ${LABELS[slot]||'Ring'}`, quality, epoch: epochIndex + 1, itemLevel,
-      sale: SALE_PRICES[epochIndex], value: Math.max(1, Math.round(Math.round(bases[slot] * 10 ** epochIndex * (1 + .05 * (itemLevel - 1))) * (WEAPONS[weaponId]?.multiplier??1))) });
+      sale: SALE_PRICES[epochIndex], value: Math.max(1, Math.round(Math.round(bases[slot] * 10 ** epochIndex * (1 + .05 * (itemLevel - 1))) * (WEAPONS[weaponId]?.multiplier??1))),
+      ...(weaponId && rng() < mastery.level * MASTERY_AFFIX_CHANCE_PER_LEVEL ? {affix:rollAffix(rng)} : {}) });
     s.lastEpoch = epochIndex + 1;
-    if (mastery.level < 100 && ++mastery.xp >= mastery.level + 4) { mastery.xp = 0; mastery.level++; }
+    if (mastery.level < 100 && ++mastery.xp >= MASTERY_XP[mastery.level - 1]) { mastery.xp = 0; mastery.level++; }
   }
   s.hammers -= count; s.forging = 1.5;
   if (!s.hammers) s.autoForge = false;
@@ -1152,7 +1157,7 @@ export function restore(serialized, now = Date.now()) {
     const nonnegative = n => Number.isFinite(n) && n >= 0;
     const affix = a => a && AFFIXES.some(d => d.id === a.type && Number.isFinite(a.value) && a.value >= d.min && a.value <= d.max && Math.abs((a.value-d.min)/d.step-Math.round((a.value-d.min)/d.step)) < 1e-8);
     const item = i => i && (SLOTS.includes(i.slot) || i.slot === 'ring') && typeof i.name === 'string' && Number.isFinite(i.value) && i.value > 0 && nonnegative(i.sale) && [0,1,2].includes(i.quality)
-      && (i.affix == null || i.epoch >= 2 && affix(i.affix)) && (i.reforgeOffer == null || i.epoch >= 2 && affix(i.reforgeOffer))
+      && (i.affix == null || (i.epoch >= 2 || i.slot === 'weapon') && affix(i.affix)) && (i.reforgeOffer == null || i.epoch >= 2 && affix(i.reforgeOffer))
       && (i.reforges == null || Number.isInteger(i.reforges) && i.reforges >= 0 && i.reforges <= 10);
     if (!s || ![1,2,3].includes(s.version) || !nonnegative(s.coins) || !Number.isInteger(s.level) || s.level < 1 || s.level > MAX_LEVEL ||
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
@@ -1202,6 +1207,14 @@ export function restore(serialized, now = Date.now()) {
       !Array.isArray(s.mastery) || s.mastery.length !== 10 || !s.mastery.every(m => Number.isInteger(m.level) && m.level >= 1 && m.level <= 100 && Number.isInteger(m.xp) && m.xp >= 0 && m.xp < m.level + 4 && (m.level < 100 || m.xp === 0)) ||
       !Array.isArray(s.results) || !s.results.every(item) || !Array.isArray(s.forgingItems) || !s.forgingItems.every(item) ||
       (s.forging > 0) !== (s.forgingItems.length > 0)) return freshGame(now);
+    // The validation above accepts the previous XP limits. Keep earned levels and
+    // apply any unspent XP to the cheaper thresholds, including its remainder.
+    for (const mastery of s.mastery) {
+      while (mastery.level < 100 && mastery.xp >= MASTERY_XP[mastery.level - 1]) {
+        mastery.xp -= MASTERY_XP[mastery.level - 1]; mastery.level++;
+      }
+      if (mastery.level === 100) mastery.xp = 0;
+    }
     // Preserve old saves; levels beyond the compressed table have reached the new maximum.
     if (s.anvilLevel >= ANVILS.length) { s.anvilLevel = ANVILS.length; s.upgradeEndsAt = 0; }
     for (const slot of SLOTS) s.equipment[slot] ??= null;
@@ -1239,7 +1252,7 @@ export function restore(serialized, now = Date.now()) {
     if (!nonnegative(s.idleSince)) s.idleSince = now;
     if (!s.mine || s.mine.version!==2 || !Number.isSafeInteger(s.mine.level) || s.mine.level<1 ||
       !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=Math.max(MINE_RESOURCES.length,mineLevel(s.mine.level).chances.length) && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
-      !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>MINE_CAP ||
+      !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>idleCapacity(s) ||
       !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt))
       s.mine={version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
     if(!Number.isInteger(s.mine.remainder)||s.mine.remainder<0||s.mine.remainder>9)s.mine.remainder=0;
