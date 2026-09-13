@@ -7,9 +7,9 @@
   <meta name="color-scheme" content="light">
   <title>Forest Forge</title>
   <link rel="icon" href="assets/helmet.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=druid-talents-20260913">
+  <link rel="stylesheet" href="style.css?v=archer-talents-20260914">
   <script src="https://telegram.org/js/telegram-web-app.js" async></script>
-  <script type="module" src="app.mjs?v=druid-talents-20260913"></script>
+  <script type="module" src="app.mjs?v=archer-talents-20260914"></script>
 </head>
 <body>
   <section id="cloud-status" role="status" aria-live="polite" hidden>
@@ -19,6 +19,7 @@
     <div id="outfit-preview" hidden><span><strong id="outfit-name">Outfit test</strong><small>Appearance only · progress is not saved</small></span><select id="weapon-choice" aria-label="Test weapon" hidden></select><a id="outfit-edit">Back to fit</a><a href="/">Exit test</a></div>
     <section id="battle" aria-label="Automatic combat">
       <canvas id="scene" aria-label="A knight fights goblins along a forest path"></canvas>
+      <div id="companion-skills" hidden aria-label="Companion abilities"><button id="companion-auto" aria-pressed="true">Auto ON</button><div id="companion-skill-buttons"></div></div>
       <div id="mine-scene" hidden aria-label="Miner working in a cave">
         <img id="mine-background" class="mine-cave" src="assets/mine/cave-background.webp" alt="">
         <img id="mine-deposit" class="mine-deposit" src="assets/mine/deposit-stone-v2.webp" alt="">
@@ -133,9 +134,9 @@
       <button id="atelier-storage" class="button"><img src="assets/workshop/crate.svg" alt=""> <span id="atelier-storage-time">Storage · 4 hours</span> <span aria-hidden="true">›</span></button>
     </section>
     <section id="dungeon-hub" aria-labelledby="dungeon-hub-title" hidden>
-      <div class="dungeon-hub-heading"><div class="dungeon-title-row"><h1 id="dungeon-hub-title">Dungeons</h1><button id="tier-rewards-toggle" aria-haspopup="dialog" aria-controls="tier-rewards-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18v4H3zM5 14h14v7H5zM12 10v11M12 10C3 10 4 2 8 4l4 6Zm0 0c9 0 8-8 4-6l-4 6Z" fill="#f4c663" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Tier rewards</button></div><p>Two victories in each dungeon every day.<br>Defeats never spend a key.</p></div>
+      <div class="dungeon-hub-heading"><div class="dungeon-title-row"><h1 id="dungeon-hub-title">Dungeons</h1><button id="tier-rewards-toggle" aria-haspopup="dialog" aria-controls="tier-rewards-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18v4H3zM5 14h14v7H5zM12 10v11M12 10C3 10 4 2 8 4l4 6Zm0 0c9 0 8-8 4-6l-4 6Z" fill="#f4c663" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Tier rewards</button></div><p>10 keys daily. Choose any dungeon.<br>Defeats never spend a key.</p></div>
       <p id="dungeon-unlock" class="dungeon-note"></p>
-      <div class="dungeon-hub-list"><div id="dungeon-choices" aria-label="Choose dungeon"></div>
+      <div class="dungeon-hub-list"><div class="dungeon-shared-keys"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3a6 6 0 1 1-3 11l-6 7-4-4 7-6a6 6 0 0 1 6-8Zm2 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" fill="#f4c76c" stroke="#17282a" stroke-width="1.7"/></svg><strong id="dungeon-shared-keys">10/10</strong></div><div id="dungeon-choices" aria-label="Choose dungeon"></div>
         <button id="admin-dungeon-reset" class="mini-button" hidden>Reset dungeons</button><p id="dungeon-reset" class="dungeon-note"></p></div>
       <button id="dungeon-hub-back" class="close" aria-label="Back to adventure">‹</button>
     </section>
@@ -155,7 +156,6 @@
   <dialog id="alchemy-dialog" aria-labelledby="alchemy-title">
  <header class="alchemy-heading"><div class="alchemy-heading-art" aria-hidden="true"></div><div class="alchemy-heading-title"><h2 id="alchemy-title">Alchemy</h2><b id="alchemy-level"></b></div><button id="alchemy-close" class="close" aria-label="Close alchemy">×</button><div class="alchemy-experience"><progress id="alchemy-progress" max="10" value="0" aria-label="Alchemy experience"></progress><span id="alchemy-xp"></span></div></header>
  <div id="alchemy-stocks" aria-label="Reagent inventory"></div>
- <div id="alchemy-active" role="group" aria-label="Active potions"></div>
  <div id="alchemy-recipes" tabindex="0" role="region" aria-label="Potion recipes"></div>
  <p id="alchemy-message" role="status"></p>
 </dialog>

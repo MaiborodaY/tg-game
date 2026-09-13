@@ -1,5 +1,5 @@
 const compactNumber = new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1});
-import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs?v=druid-talents-20260913';
+import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs?v=archer-talents-20260914';
 
 // Existing atlas poses: body x/y/angle, then each hand's x/y/angle.
 // Source coordinates match design/hero-base-v2-poses.json and build-set.cjs.
@@ -47,6 +47,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     })),
     fetch('assets/enemy-atlas.json').then(r => { if (!r.ok) throw Error('Enemy atlas metadata missing'); return r.json(); }),
     document.fonts.load('32px "Lilita UI"'),
+    (async()=>{const img=new Image();img.src='assets/talents/druid-icons.webp';await img.decode();art['druid-talents']=img;})(),
     Promise.all(['warrior','archer','boss','healer','tree','hammer','rune',...Array.from({length:5},(_,i)=>`reagent-${i}`)].map(async name => {
       const img = new Image(); img.src = name.startsWith('reagent-') ? `assets/alchemy/${name}.webp` : ['hammer','rune'].includes(name) ? `assets/${name}.webp` : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}-sheet.png`;
       await img.decode(); art[name] = img;
@@ -77,7 +78,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   let time = 0, previousEnemies = null, previousBossSize = 128;
   let biomeIndex = 0, wantedBiome = 0, biomeSprites = null, scenery = null, biomeHeights = null, loading = false;
   let reveal = 0, levelTitle = null, resizeCount=0;
-  let chakramFlight = null;
+  let chakramFlight = null, druidImpactAt=-10;
+  let rainVisualState=null,rainSpawnClock=0;const rainArrows=[];
   let equipmentPreview=null;
   const numbers = [];
   let numberSequence = 0;
@@ -287,6 +289,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
   }
   function emit(event) {
+    if(event.type==='enemyHit'&&!event.blocked)druidImpactAt=time;
     if(dungeonTheme){
       const enemy=previousEnemies?.find(e=>e.id===(event.targetId??event.sourceId));
       if(enemy?.boss){
@@ -341,7 +344,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const duration = healing ? 1.25 : critical ? 1.05 : .85;
       numbers.push({ xp, originX:xp?event.x:undefined, companion:xp?event.companion:undefined, healing, critical, drift: (++numberSequence % 2 ? -1 : 1) * (16 + numberSequence % 3 * 5), duration, tank:event.type==='tankHit', targetId: ['enemyHit','tankHit','heroRegen'].includes(event.type) ? null : event.targetId,
         text: xp ? '+'+compactNumber.format(event.value)+' XP' : event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' || event.type === 'heroRegen' ? '+' : '') + compactNumber.format(event.value),
-        color: xp ? '#d9a0ff' : event.source==='lifesteal' ? '#ffa0a8' : critical ? '#ff535c' : healing ? '#88ff9c' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: duration, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
+        color: xp ? '#d9a0ff' : event.source==='shield' ? '#78caff' : event.source==='lifesteal' ? '#ffa0a8' : critical ? '#ff535c' : healing ? '#88ff9c' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: duration, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
       if (event.type === 'kill' && event.hammers) numbers.push({ tank:event.type==='tankHit', targetId:event.targetId,
         text:'+' + event.hammers, color:'#c7efff', life:.8, reward:true, rewardRow:1, hammerIcon:true });
       if(event.type==='kill' && event.runes) numbers.push({targetId:event.targetId,text:'+1',color:'#e3b4ff',life:1.4,duration:1.4,reward:true,rewardRow:2,runeIcon:true});
@@ -362,6 +365,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       mountLoading=true;const sprite=new Image();sprite.src='assets/dungeons/mount.webp';
       sprite.decode().then(()=>{mountArt=sprite;}).catch(error=>console.error('Could not load mount',error));
     }
+    if(state.companion?.kind!=='archer'||state.hp<=0||state.phase==='dead'){rainArrows.length=0;rainSpawnClock=0;}
     const wantedCompanion=state.companion?.kind??null;
     if(wantedCompanion!==companionArtKind){
       if(companionArtKind)delete art['companion-'+companionArtKind];
@@ -406,25 +410,70 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const c=companion, size=(c.kind==='turtle'?61:49)*unit, x=(c.x-camera)*width, floor=base+(c.kind==='turtle'?8:-3)*unit;
       let row=c.moving?1:0, frame=Math.floor(time/(c.moving?.16:.4))%4;
       if(c.kind==='druid' && c.actionAge<.8){row=2;frame=Math.min(3,Math.floor(c.actionAge/.2));}
-      else if(c.kind==='archer' && !c.moving && (c.clock>=2.04 || c.actionAge<.36)){
-        row=2;frame=c.actionAge<.36?(c.actionAge<.18?2:3):Math.min(1,Math.floor((c.clock-2.04)/.18));
+      else if(c.kind==='archer' && (!c.moving||state.archerCombat?.barrage>0) && c.actionAge<.36){
+        row=2;frame=c.actionAge<.18?2:3;
       }
       context.fillStyle='#785b3844';context.beginPath();context.ellipse(x,floor+2,11*unit,2*unit,0,0,Math.PI*2);context.fill();
       context.drawImage(art['companion-'+c.kind],frame*256,row*256,256,256,x-size/2,floor-size*240/256,size,size);
       if(c.kind==='turtle'){
         bar(x,floor-size*.61,c.hp/c.maxHp,'#70d5df',24*unit,.65);
+        const t=state.turtleCombat||{};context.save();
+        if(t.respite>0){context.fillStyle='#b6eb8e';for(let i=0;i<3;i++){const f=reducedMotion.matches?.5:(time*.65+i/3)%1;context.globalAlpha=Math.sin(f*Math.PI);const px=x+(i-1)*9*unit,py=floor-10*unit-f*size*.5;context.fillRect(px-3*unit,py,6*unit,2*unit);context.fillRect(px-unit,py-2*unit,2*unit,6*unit);}}
+        if(t.fortress>0){context.globalAlpha=.8;context.strokeStyle='#f6d779';context.lineWidth=2*unit;context.beginPath();context.ellipse(x,floor-size*.26,size*.4,size*.34,0,0,Math.PI*2);context.stroke();for(let i=0;i<3;i++){context.fillStyle='#b79855';context.fillRect(x+(i-1)*11*unit-3*unit,floor-size*.55,6*unit,5*unit);}}
+        if(t.slamVisual>0||t.shockwave>0){const f=t.shockwave>0?1-t.shockwave/.6:1-t.slamVisual/.5;context.globalAlpha=1-f;context.strokeStyle=t.shockwave>0?'#ffe69e':'#d1b77f';context.lineWidth=2*unit;context.beginPath();context.ellipse(x,floor+2*unit,(12+f*70)*unit,(3+f*13)*unit,0,0,Math.PI*2);context.stroke();}
+        context.restore();
         if(c.actionAge<.2){context.save();context.globalAlpha=(1-c.actionAge/.2)*.65;context.strokeStyle='#b9f5ff';context.lineWidth=2*unit;context.beginPath();context.arc(x+12*unit,floor-16*unit,12*unit,-1.2,1.2);context.stroke();context.restore();}
       }
-      if(c.shot){
-        const t=Math.max(0,Math.min(1,1-c.shot.remaining/.18));
-        const ax=(c.shot.fromX+(c.shot.toX-c.shot.fromX)*t-camera)*width;
-        const enemy=state.enemies.find(e=>e.id===c.shot.targetId);
+      for(const shot of [c.shot,state.archerCombat?.extraShot].filter(Boolean)){
+        const t=Math.max(0,Math.min(1,1-shot.remaining/.18));
+        const ax=(shot.fromX+(shot.toX-shot.fromX)*t-camera)*width;
+        const enemy=state.enemies.find(e=>e.id===shot.targetId);
         const targetY=base+((state.enemies.length>1&&!enemy?.boss?(enemy.id%2?7:-5):0)-(enemy?.boss?bossSize:50)*.34)*unit;
         const ay=(floor-27*unit)*(1-t)+targetY*t;
-        context.strokeStyle='#543c27';context.lineWidth=1.5*unit;context.beginPath();context.moveTo(ax-9*unit,ay);context.lineTo(ax+3*unit,ay);context.stroke();
+        context.strokeStyle=shot.barrage?'#f4c35e':'#543c27';context.lineWidth=1.5*unit;context.beginPath();context.moveTo(ax-9*unit,ay);context.lineTo(ax+3*unit,ay);context.stroke();
         context.fillStyle='#e8f3ef';context.beginPath();context.moveTo(ax+6*unit,ay);context.lineTo(ax+1*unit,ay-2*unit);context.lineTo(ax+1*unit,ay+2*unit);context.fill();
       }
     }
+
+      if(companion?.kind==='turtle'&&companion.hp<=0&&state.turtleCombat?.shockwave>0&&state.hp>0){const f=1-state.turtleCombat.shockwave/.6,x=(companion.x-camera)*width;context.save();context.globalAlpha=1-f;context.strokeStyle='#ffe69e';context.lineWidth=2*unit;context.beginPath();context.ellipse(x,base+10*unit,(12+f*70)*unit,(3+f*13)*unit,0,0,Math.PI*2);context.stroke();context.restore();}
+      if(companion?.kind==='archer'&&state.hp>0&&state.phase!=='dead'){
+        const effects=state.archerCombat;
+        context.save();
+        if(rainVisualState!==state||returning){rainArrows.length=0;rainSpawnClock=0;rainVisualState=state;}
+        if(effects?.rain>0){
+          rainSpawnClock-=dt;
+          if(rainSpawnClock<=0){
+            rainSpawnClock=.09+Math.random()*.1;
+            for(const enemy of state.enemies.filter(e=>e.hp>0))rainArrows.push({x:enemy.x+(Math.random()-.5)*.065,ground:(Math.random()-.5)*12,age:-Math.random()*.16,fall:.35+Math.random()*.2,stay:1.2+Math.random()*.6});
+          }
+        }else rainSpawnClock=0;
+        context.strokeStyle='#f5dc92';context.fillStyle='#fff2bf';context.lineWidth=1.4*unit;
+        for(let i=rainArrows.length-1;i>=0;i--){
+          const arrow=rainArrows[i];arrow.age+=dt;
+          if(arrow.age>arrow.fall+arrow.stay){rainArrows.splice(i,1);continue;}
+          if(arrow.age<0)continue;
+          const fall=reducedMotion.matches?1:Math.min(1,arrow.age/arrow.fall),air=(1-fall)*100*unit;
+          const ax=(arrow.x-camera)*width+air*.35,ay=base+arrow.ground*unit-air;
+          context.globalAlpha=Math.min(1,(arrow.fall+arrow.stay-arrow.age)/.4);
+          context.beginPath();context.moveTo(ax+8*unit,ay-20*unit);context.lineTo(ax,ay);context.stroke();
+          context.beginPath();context.moveTo(ax,ay+2*unit);context.lineTo(ax-2*unit,ay-5*unit);context.lineTo(ax+4*unit,ay-3*unit);context.closePath();context.fill();
+          context.beginPath();context.moveTo(ax+7*unit,ay-17*unit);context.lineTo(ax+4*unit,ay-22*unit);context.lineTo(ax+10*unit,ay-20*unit);context.fill();
+        }
+        if(effects?.piercing){
+          const ax=(effects.piercing.x-camera)*width,ay=base-28*unit;
+          context.save();context.translate(ax,ay);context.scale(2,2);context.translate(-ax,-ay);
+          context.globalAlpha=1;context.strokeStyle='#ffe097';context.lineWidth=4*unit;
+          context.shadowColor='#efb853';context.shadowBlur=7*unit;context.beginPath();context.moveTo(ax-39*unit,ay);context.lineTo(ax-4*unit,ay);context.stroke();
+          context.fillStyle='#fff4d1';context.beginPath();context.moveTo(ax+9*unit,ay);context.lineTo(ax-8*unit,ay-7*unit);context.lineTo(ax-5*unit,ay);context.lineTo(ax-8*unit,ay+7*unit);context.closePath();context.fill();
+          context.shadowBlur=0;context.restore();
+        }
+        context.strokeStyle='#f4bf68';context.globalAlpha=.85;context.lineWidth=1.3*unit;
+        for(const enemy of state.enemies.filter(e=>e.hp>0&&e.archerMark>0)){
+          const ax=(enemy.x-camera)*width,ay=base-(enemy.boss?bossSize:50)*.75*unit;
+          context.beginPath();context.arc(ax,ay,4*unit,0,Math.PI*2);context.moveTo(ax-7*unit,ay);context.lineTo(ax+7*unit,ay);context.moveTo(ax,ay-7*unit);context.lineTo(ax,ay+7*unit);context.stroke();
+        }
+        context.restore();
+      }
 
     // The counter advances on contact; recovery belongs to the preceding windup.
     const interval = attackInterval(state);
@@ -599,32 +648,77 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     if (!state.completed && state.phase !== 'dead') bar(heroX, base - mountLift - hSize - 9, state.hp / stats(state).hp, '#56df51');
     if(companion?.kind==='druid'&&state.hp>0&&state.phase!=='dead'){
       const buffs=state.druidCombat||{};
-      if(buffs.shield>0)bar(heroX,base-mountLift-hSize-15,Math.min(1,buffs.shield/(stats(state).hp*.1)),'#a7d9dc',35,.65);
-      if(buffs.bark>0||buffs.wind>0){
-        context.save();context.strokeStyle=buffs.wind>0?'#efffa4':'#b1c889';context.lineWidth=2*unit;context.globalAlpha=.65;
-        context.beginPath();context.ellipse(heroX,base-mountLift-hSize*.45,hSize*.4,hSize*.61,0,0,Math.PI*2);context.stroke();context.restore();
+      if(buffs.blessing>0&&state.druidTalents?.blessing){
+        const radius=6,x=heroX-35/2+6,y=base-mountLift-hSize-25,fraction=Math.min(1,buffs.blessing/2),atlas=art['druid-talents'],cell=atlas.width/4;
+        context.save();context.globalAlpha=1;
+        context.beginPath();context.arc(x,y,radius,0,Math.PI*2);context.clip();
+        context.drawImage(atlas,0,cell*2,cell,cell,x-radius,y-radius,radius*2,radius*2);
+        context.fillStyle='#10271dcc';context.beginPath();context.moveTo(x,y);context.arc(x,y,radius,-Math.PI/2,-Math.PI/2+(1-fraction)*Math.PI*2);context.closePath();context.fill();
+        context.restore();context.save();context.strokeStyle='#263e2b';context.lineWidth=2;
+        context.beginPath();context.arc(x,y,radius,0,Math.PI*2);context.stroke();
+        context.strokeStyle='#efda7d';context.lineWidth=1.5;context.beginPath();context.arc(x,y,radius,-Math.PI/2+(1-fraction)*Math.PI*2,Math.PI*1.5);context.stroke();context.restore();
+      }
+      if(buffs.shield>0)bar(heroX,base-mountLift-hSize-15,Math.min(1,Math.max(3/35,buffs.shield/(stats(state).hp*.1))),'#a7d9dc',35,.65);
+      // Fixed-size, procedural effects: no particle queues, blur passes or per-frame assets.
+      const still=reducedMotion.matches,pulse=still?0:Math.sin(time*4),impact=still?0:Math.max(0,1-(time-druidImpactAt)/.22);
+      context.save();context.translate(heroX,base-mountLift);context.scale(unit,unit);
+      const body=hSize/unit;
+      if(buffs.regrowth>0){
+        context.globalAlpha=Math.min(1,buffs.regrowth/.35);context.lineWidth=1.3;context.strokeStyle='#396635';
+        for(let i=0;i<4;i++){
+          const x=(i-1.5)*10,y=3+(i%2)*3,lift=still?.5:(time*.65+i*.23)%1;
+          context.beginPath();context.moveTo(x,y);context.quadraticCurveTo(x-3,y-6,x+1,y-12);context.stroke();
+          context.fillStyle=i%2?'#a7df6d':'#67b44a';context.beginPath();context.ellipse(x-3,y-7,4,2,.5,0,Math.PI*2);context.ellipse(x+3,y-10,4,2,-.6,0,Math.PI*2);context.fill();
+          context.globalAlpha=Math.sin(lift*Math.PI)*.8;context.fillStyle='#d8f6aa';context.fillRect(x+Math.sin(i+lift*3)*3,-10-lift*body*.8,2,3);context.globalAlpha=Math.min(1,buffs.regrowth/.35);
+        }
+      }
+      if(buffs.bark>0){
+        const fade=Math.min(1,buffs.bark/.4),spread=still?0:(1-fade)*8;
+        for(let i=0;i<3;i++){
+          context.save();context.translate((i===0?-1:1)*(body*.34+spread),-body*(i===2?.25:.62)+(1-fade)*8);context.rotate(i===0?-.18:.18);
+          context.globalAlpha=fade;context.lineWidth=1.5;context.strokeStyle='#493626';context.fillStyle=impact>0?'#d1a159':'#805638';
+          context.beginPath();context.moveTo(-5,-12);context.lineTo(3,-15);context.lineTo(7,-7);context.lineTo(5,10);context.lineTo(-2,14);context.lineTo(-6,5);context.closePath();context.fill();context.stroke();
+          context.strokeStyle='#c69a62';context.lineWidth=1;context.beginPath();context.moveTo(-2,-9);context.lineTo(1,-4);context.lineTo(-1,3);context.lineTo(1,9);context.stroke();
+          context.fillStyle='#779549';context.beginPath();context.ellipse(0,-11,4,2,-.3,0,Math.PI*2);context.fill();
+          if(impact>0){context.globalAlpha=impact;context.fillStyle='#e6bd7a';context.fillRect(-9,-10,2,4);context.fillRect(9,3,3,2);}
+          context.restore();
+        }
+      }
+      if(buffs.shield>0){
+        const density=Math.min(1,buffs.shield/(stats(state).hp*.1));context.globalAlpha=.35+density*.4+impact*.2;context.strokeStyle=impact>0?'#d1f2ff':'#85c9eb';context.lineWidth=1.2;
+        for(let side=-1;side<=1;side+=2){context.beginPath();context.moveTo(side*body*.22,-3);context.quadraticCurveTo(side*body*.59,-body*.4,side*body*.3,-body*.85);context.moveTo(side*body*.43,-body*.4);context.lineTo(side*body*.57,-body*.5);context.moveTo(side*body*.43,-body*.58);context.lineTo(side*body*.3,-body*.68);context.stroke();}
       }
       if(buffs.bloom>0){
-        context.save();context.fillStyle='#72c46a';context.globalAlpha=.2;context.beginPath();context.ellipse(heroX,base+2*unit,62*unit,13*unit,0,0,Math.PI*2);context.fill();context.globalAlpha=.85;
+        const fade=Math.min(1,buffs.bloom/.5);context.globalAlpha=.18*fade;context.fillStyle='#9abd64';context.beginPath();context.ellipse(0,4,49,10,0,0,Math.PI*2);context.fill();
         for(let i=0;i<7;i++){
-          const a=i*Math.PI*2/7,x=heroX+Math.cos(a)*49*unit,y=base+Math.sin(a)*9*unit;
-          context.fillStyle=i%2?'#f6c3d8':'#f8ecc2';
-          for(let petal=0;petal<5;petal++){const p=petal*Math.PI*2/5;context.beginPath();context.arc(x+Math.cos(p)*2*unit,y+Math.sin(p)*2*unit,1.8*unit,0,Math.PI*2);context.fill();}
-          context.fillStyle='#f4ce62';context.beginPath();context.arc(x,y,1.3*unit,0,Math.PI*2);context.fill();
-        }context.restore();
+          const angle=i*Math.PI*2/7,x=Math.cos(angle)*40,y=4+Math.sin(angle)*8;
+          context.globalAlpha=fade*(.8+pulse*.1);context.fillStyle=i%2?'#efc4d2':'#fff1be';context.beginPath();
+          for(let k=0;k<5;k++){const v=k*Math.PI*2/5;context.moveTo(x+Math.cos(v)*2+2,y+Math.sin(v)*2);context.arc(x+Math.cos(v)*2,y+Math.sin(v)*2,2,0,Math.PI*2);}context.fill();
+          context.fillStyle='#d9a844';context.fillRect(x-1,y-1,2,2);
+          const lift=still?.5:(time*.45+i/7)%1;context.globalAlpha=Math.sin(lift*Math.PI)*fade;context.fillStyle='#f7df95';context.beginPath();context.ellipse(x+Math.sin(lift*4+i)*6,y-lift*35,2.5,1.3,lift*3,0,Math.PI*2);context.fill();
+        }
+        if(!still){const wave=(time*.7)%1;context.globalAlpha=(1-wave)*.3*fade;context.strokeStyle='#f9dc9b';context.lineWidth=1.3;context.beginPath();context.ellipse(0,4,30+wave*40,6+wave*9,0,0,Math.PI*2);context.stroke();}
       }
+      if(buffs.wind>0){
+        const fade=Math.min(1,buffs.wind/.4);context.globalAlpha=fade;context.strokeStyle='#b48b39';context.lineWidth=1;
+        for(let i=0;i<4;i++){
+          const angle=still?i*Math.PI/2:time*1.5+i*Math.PI/2,x=Math.cos(angle)*body*.46,y=-body*.5+Math.sin(angle)*body*.4;
+          context.fillStyle=i%2?'#ffe39b':'#eec05c';context.beginPath();context.ellipse(x,y,5,2.4,angle,0,Math.PI*2);context.fill();context.stroke();
+        }
+      }
+      context.restore();
     }
     if(companion?.kind==='druid' && companion.healAge<.7 && state.hp>0 && state.phase!=='dead'){
       context.save();
       if(companion.healAge<.3){
         context.globalAlpha=(1-companion.healAge/.3)*.22;
-        context.fillStyle='#a3f68a';context.beginPath();context.ellipse(heroX,base-mountLift-hSize*.45,hSize*.4,hSize*.65,0,0,Math.PI*2);context.fill();
+        context.fillStyle=companion.shieldHeal?'#83cfff':'#a3f68a';context.beginPath();context.ellipse(heroX,base-mountLift-hSize*.45,hSize*.4,hSize*.65,0,0,Math.PI*2);context.fill();
       }
       for(let i=0;i<3;i++){
         const t=reducedMotion.matches?i/3:(time*.6+i/3)%1;
         const x=heroX+Math.sin(i*2.1+t*3)*17*unit,y=base-mountLift-5*unit-t*(hSize+8);
         context.globalAlpha=reducedMotion.matches?.65:Math.sin(t*Math.PI)*.8;
-        context.fillStyle=i%2?'#b8ed77':'#67c658';context.strokeStyle='#30673d';context.lineWidth=.65*unit;
+        context.fillStyle=companion.shieldHeal?(i%2?'#b1e3ff':'#62b4f4'):(i%2?'#b8ed77':'#67c658');context.strokeStyle=companion.shieldHeal?'#30678d':'#30673d';context.lineWidth=.65*unit;
         context.beginPath();context.ellipse(x,y,3*unit,1.5*unit,-.8+i*.7,0,Math.PI*2);context.fill();context.stroke();
       }
       context.restore();
@@ -634,10 +728,11 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       if (state.completed || (!e.hp && !e.deadTime && dungeonDeathAge===null)) continue;
       const x = (e.x - camera) * width, size = (e.boss ? bossSize : 50) * unit;
       const floor = base + (groups && !e.boss ? (e.id % 2 ? 7 : -5) * unit : 0);
+      if(e.stun>0&&e.hp>0){context.save();context.fillStyle='#ffe58a';context.strokeStyle='#9b7c38';context.lineWidth=.7*unit;for(let i=0;i<3;i++){const a=reducedMotion.matches?i*2.094:time*3+i*2.094,sx=x+Math.cos(a)*10*unit,sy=floor-size*.94+Math.sin(a)*3*unit;context.beginPath();context.moveTo(sx,sy-3*unit);context.lineTo(sx+unit,sy-unit);context.lineTo(sx+3*unit,sy);context.lineTo(sx+unit,sy+unit);context.lineTo(sx,sy+3*unit);context.lineTo(sx-unit,sy+unit);context.lineTo(sx-3*unit,sy);context.lineTo(sx-unit,sy-unit);context.closePath();context.fill();context.stroke();}context.restore();}
       let frame = 0;
       if (!e.hp) frame = 15;
       else if (state.phase === 'dead' && !reducedMotion.matches) frame = 1 + Math.floor(time * 6) % 8;
-      else if (state.phase !== 'dead' && state.phase !== 'victory') {
+      else if (!e.stun && state.phase !== 'dead' && state.phase !== 'victory') {
         if (e.moving && !reducedMotion.matches) frame = 1 + Math.floor(time * 6) % 8;
         else if (e.kind === 'archer' || e.kind === 'healer') {
           const clock = e.kind === 'healer' ? e.healClock - 2.05 : e.clock;
@@ -663,6 +758,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
           else if(e.actionAge<.42)pose=e.actionAge<.12?5:e.actionAge<.26?6:7;
           else if(e.engaged&&e.clock>=.85)pose=4;
         }
+        if(e.stun>0)pose=0;
         // All poses share one scale and foot anchor; extended limbs retain padding.
         const anchorX=dungeonTheme.id==='mine'?192:160;
         context.save();
@@ -719,7 +815,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       if (e.hp) bar(x, floor - size * (dungeonTheme?.id ? .92 : biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
       }
       if (e.kind === 'archer' && e.hp && e.actionAge < .15 && state.phase !== 'dead') {
-        const tankX=companion?.kind==='turtle'&&companion.hp>0&&companion.x>state.heroX?(companion.x-camera)*width:heroX;
+        const tankX=companion?.kind==='turtle'&&state.turtleTalents?.shell&&companion.hp>0&&companion.x>state.heroX?(companion.x-camera)*width:heroX;
         const p = e.actionAge / .15, ax = (x - 9*unit)*(1-p) + (tankX + 8*unit)*p;
         const ay = (floor - 14*unit)*(1-p) + (base - 28*unit-(tankX===heroX?mountLift:0))*p;
         context.strokeStyle = '#283b3a'; context.fillStyle = biome.shot; context.lineWidth = 1;

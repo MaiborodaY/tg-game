@@ -1,7 +1,9 @@
+import { castCompanionSkill } from './game.mjs';
 import { expandInventory } from './game.mjs';
 import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs';
 import { TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
 import { DRUID_TALENTS, learnDruidTalent, resetDruidTalents, enterDungeon, prepareEncounter } from './game.mjs';
+import { ARCHER_TALENTS, learnArcherTalent, resetArcherTalents, leaveDungeon } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
@@ -10,6 +12,92 @@ import { idleRewards, collectIdleRewards } from './game.mjs';
 import { drinkPotion } from './game.mjs';
 import { freshGame, stats, heroPower, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
 function advance(s, seconds) { const events=[]; for(let i=0;i<seconds*30;i++)events.push(...step(s,1/30,()=>.999)); return events; }
+
+test('ability upgrades are optional leaves; core abilities unlock without buying their upgrades',()=>{
+ for(const kind of ['archer','druid']){
+  const s=freshGame();s.coins=500;hireCompanion(s,kind);s[kind+'Level']=40;
+  const learn=kind==='archer'?learnArcherTalent:learnDruidTalent,defs=kind==='archer'?ARCHER_TALENTS:DRUID_TALENTS;
+  const root=kind==='archer'?'shot':'touch',ultimate=kind==='archer'?'barrage':'bloom';
+  const upgrades=kind==='archer'?['downpour','heavy','composure','quiver']:['spring','sap','thickBark','awakening','evergreen'];
+  assert.ok(upgrades.every(id=>!defs.some(t=>t.requires.includes(id))));
+  assert.equal(learn(s,root),true);assert.equal(learn(s,ultimate),false);
+  assert.equal(learn(s,upgrades[0]),false);
+  for(const id of kind==='archer'?['sharp','eye']:['herbs','roots'])for(let i=0;i<10;i++)assert.equal(learn(s,id),true);
+  for(let i=0;i<4;i++)assert.equal(learn(s,kind==='archer'?'precision':'lastLeaf'),true);
+  for(const id of kind==='archer'?['rain','pierce']:['regrowth','bark'])assert.equal(learn(s,id),true);
+  assert.ok(upgrades.every(id=>!s[kind+'Talents'][id]));
+  assert.equal(learn(s,ultimate),true);
+  assert.equal(learn(s,kind==='archer'?'hunt':'secondWind'),true);
+  for(const id of upgrades)assert.equal(learn(s,id),true);
+  assert.deepEqual(restore(JSON.stringify(s))[kind+'Talents'],s[kind+'Talents']);
+ }
+});
+test('new branch rules preserve ranks earned before an upgrade gained its skill prerequisite',()=>{
+ const s=freshGame();s.coins=1000;hireCompanion(s,'archer');hireCompanion(s,'druid');s.archerLevel=s.druidLevel=40;
+ s.archerTalents={shot:1,sharp:10,double:5,rain:1,heavy:2,quiver:3};
+ s.druidTalents={touch:1,roots:10,reserve:5,bark:1,awakening:2,evergreen:3};
+ const loaded=restore(JSON.stringify(s));assert.deepEqual(loaded.archerTalents,s.archerTalents);assert.deepEqual(loaded.druidTalents,s.druidTalents);
+ assert.equal(learnArcherTalent(loaded,'quiver'),false);assert.equal(learnDruidTalent(loaded,'evergreen'),false);
+});
+
+test('archer root costs the first point; builds obey prerequisites, survive saves and reset independently',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.heroClock=-100;s.phase='fight';s.targetId=0;
+ Object.assign(s.enemies[0],{x:s.heroX+.115,hp:10000,maxHp:10000,damage:0});
+ assert.equal(advance(s,3).filter(e=>e.type==='companionHit').length,0);
+ assert.equal(learnArcherTalent(s,'sharp'),false);assert.equal(learnArcherTalent(s,'shot'),true);assert.equal(learnArcherTalent(s,'sharp'),false);
+ assert.equal(advance(s,1.3).filter(e=>e.type==='companionHit').length,1);
+ s.archerLevel=100;for(let pass=0;pass<20;pass++)for(const t of ARCHER_TALENTS)learnArcherTalent(s,t.id);
+ assert.equal(Object.values(s.archerTalents).reduce((a,b)=>a+b,0),100);
+ prepareEncounter(s);
+ assert.deepEqual(restore(JSON.stringify(s)).archerTalents,s.archerTalents);
+ s.druidTalents={touch:1};s.archerCombat.rainCooldown=12;s.archerCombat.rain=3;
+ assert.equal(resetArcherTalents(s),true);assert.deepEqual(s.druidTalents,{touch:1});assert.equal(s.archerCombat.rain,0);assert.equal(s.archerCombat.rainCooldown,12);
+ delete s.archerTalents;delete s.archerCombat;const old=restore(JSON.stringify(s));assert.equal(old.archerLevel,100);assert.deepEqual(old.archerTalents,{});
+});
+test('archer passives increase own damage and crits; Weak Spot increases only hero damage and expires',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.archerLevel=20;s.archerTalents={shot:1,sharp:10,eye:10,precision:10,execute:10,mark:10};
+ const e=s.enemies[0];Object.assign(e,{x:s.heroX+.115,hp:1e6,maxHp:1e7,damage:0});s.phase='fight';s.targetId=0;s.heroClock=-100;
+ s.companion.shot={targetId:0,remaining:.01,fromX:s.companion.x,toX:e.x};
+ const hit=step(s,.02,()=>0).find(e=>e.type==='companionHit');assert.equal(hit.value,Math.round(ARCHER_LEVELS[19].damage*1.05*1.1*1.8));assert.equal(hit.critical,true);assert.equal(e.archerMark,2);
+ s.equipment.weapon=candidate('weapon',100);s.heroClock=10;s.companion.clock=-100;
+ assert.equal(step(s,.02,()=>.999).find(e=>e.type==='heroHit').value,Math.round(stats(s).damage*1.03));
+ s.companion.shot=null;s.heroClock=-100;s.enemies[0].x=s.heroX+10;advance(s,2.1);assert.equal(e.archerMark,0);
+});
+test('Double Shot follows a kill to the next enemy and never recursively procs',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.archerTalents={shot:1,double:10};
+ const e=s.enemies[0];Object.assign(e,{x:s.heroX+.115,hp:1,damage:0});s.enemies.push({...e,id:1,x:e.x+.01,hp:100,maxHp:100});s.phase='fight';s.targetId=0;s.heroClock=-100;
+ s.companion.shot={targetId:0,remaining:.01,fromX:s.companion.x,toX:e.x};
+ const events=[];for(let i=0;i<18;i++)events.push(...step(s,1/30,()=>0));
+ const hits=events.filter(e=>e.type==='companionHit');assert.deepEqual(hits.map(e=>e.targetId),[0,1]);assert.equal(s.kills,1);assert.equal(s.archerCombat.doubleDelay,0);
+});
+test('Rain hits all living enemies per pulse, pays all kills once and grants kill cooldown reduction',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.archerTalents={shot:1,rain:1,downpour:10,hunt:1};s.phase='fight';s.targetId=0;s.heroClock=-100;
+ const e=s.enemies[0];s.enemies=Array.from({length:4},(_,id)=>({...e,id,x:s.heroX+.115+id*.04,hp:1,maxHp:1,damage:0}));
+ s.archerCombat.rain=3;s.archerCombat.rainClock=.99;s.archerCombat.rainCooldown=15;s.archerCombat.pierceCooldown=20;
+ const events=step(s,.02,()=>.999);assert.deepEqual(events.filter(e=>e.type==='kill').map(e=>e.targetId),[0,1,2,3]);
+ assert.equal(s.kills,4);assert.equal(s.coins,e.reward*4);assert.equal(s.companionXp.archer,e.reward*4);assert.ok(Math.abs(s.archerCombat.rainCooldown-10.98)<1e-8);
+ s.archerTalents.shot=0;step(s,.02,()=>.999);assert.equal(s.kills,4);
+});
+test('Piercing Arrow travels through the whole line including healer and scales on actual pierced enemies',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.archerLevel=10;s.archerTalents={shot:1,pierce:1,heavy:10};s.phase='fight';s.targetId=0;s.heroClock=-100;
+ const e=s.enemies[0];s.enemies=Array.from({length:4},(_,id)=>({...e,id,kind:id===3?'healer':'warrior',x:s.heroX+.115+id*.1,hp:1e6,maxHp:1e6,damage:0}));
+ s.enemies[1].hp=0;
+ const hits=advance(s,.8).filter(e=>e.type==='companionHit');assert.deepEqual(hits.map(e=>e.targetId),[0,2,3]);
+ assert.deepEqual(hits.map(e=>e.value),[1.2,1.45,1.7].map(n=>Math.round(ARCHER_LEVELS[9].damage*n)));
+ assert.equal(s.archerCombat.piercing,null);
+});
+test('Barrage replaces normal shots, duration and cooldown talents work, and cooldowns persist through dungeon entry',()=>{
+ for(const quiver of [0,10]){
+  const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.archerLevel=10;s.archerTalents={shot:1,barrage:1,quiver,composure:10,double:10};s.phase='fight';s.targetId=0;s.heroClock=-100;
+  Object.assign(s.enemies[0],{x:s.heroX+.115,hp:1e7,maxHp:1e7,damage:0});
+  const events=advance(s,5+quiver*.1+.2);const hits=events.filter(e=>e.type==='companionHit');
+  assert.equal(hits.length,quiver?24:20);assert.ok(hits.every(e=>e.value===Math.round(ARCHER_LEVELS[9].damage*.75*(1+quiver*.025))));assert.equal(s.archerCombat.barrage,0);
+  s.highest=2;const cooldown=s.archerCombat.barrageCooldown;assert.equal(enterDungeon(s,'treasury',1),true);assert.equal(s.dungeons.run.battle.archerCombat.barrageCooldown,cooldown);
+  assert.equal(learnArcherTalent(s,'sharp'),false);assert.equal(resetArcherTalents(s),false);
+  s.archerCombat.piercing={x:.3,fromX:.1,toX:1,hitIds:[]};s.archerCombat.rain=2;
+  assert.equal(leaveDungeon(s),true);assert.equal(s.archerCombat.piercing,null);assert.equal(s.archerCombat.rain,0);assert.equal(s.archerCombat.barrageCooldown,cooldown);
+ }
+});
 
 test('druid starts with one unspent point; root unlocks healing, and ranks obey level and prerequisites',()=>{
  const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.hp=1;s.phase='victory';s.phaseTime=100;
@@ -28,7 +116,9 @@ test('druid speed reaches 2s and the reduced healing passives add before Second 
 });
 test('druid overheal shield absorbs damage, Oak Skin reduces damage, and roots preserve health fraction',()=>{
  const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidLevel=20;s.druidTalents={touch:1,reserve:10};s.hp=20;s.phase='victory';s.phaseTime=100;
- advance(s,3);assert.equal(s.druidCombat.shield,2);
+ const shieldEvents=advance(s,3);assert.equal(s.druidCombat.shield,2);assert.equal(s.companion.healAge,0);assert.equal(s.companion.actionAge,0);assert.equal(s.companion.shieldHeal,true);assert.equal(shieldEvents.find(e=>e.source==='shield')?.value,2);
+ const cappedEvents=advance(s,3);assert.ok(!cappedEvents.some(e=>e.source==='shield'));
+ s.hp=10;advance(s,3);assert.equal(s.companion.shieldHeal,false);s.hp=20;
  s.phase='fight';s.targetId=0;s.enemies[0].x=s.heroX+.115;s.enemies[0].clock=1.09;s.enemies[0].engaged=true;s.enemies[0].damage=10;
  step(s,.02,()=>.999);assert.equal(s.hp,12);assert.equal(s.druidCombat.shield,0);
  s.druidTalents.bark=1;s.druidTalents.thickBark=10;s.druidCombat.bark=4;s.druidCombat.barkCooldown=25;s.hp=20;s.enemies[0].clock=1.09;
@@ -148,12 +238,12 @@ test('shop prehistoric armor keeps its affix after buying, equipping and restori
  assert.deepEqual(restored.shop,s.shop);
 });
 
-test('turtle intercepts only from the front, halves damage and never attacks',()=>{
+test('turtle intercepts only from the front, reduces damage by 25% and never attacks without talents',()=>{
  const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.20;e.hp=1000;e.damage=4;
- s.companion={kind:'turtle',x:s.heroX+.10,hp:30,maxHp:30,actionAge:1};
+ s.turtleTalents={shell:1};s.companion={kind:'turtle',x:s.heroX+.10,hp:30,maxHp:30,actionAge:1};
  const events=step(s,.5,()=>.999);
- assert.equal(s.hp,20);assert.equal(s.companion.hp,28);
- assert.equal(events.find(e=>e.type==='tankHit').value,2);
+ assert.equal(s.hp,20);assert.equal(s.companion.hp,27);
+ assert.equal(events.find(e=>e.type==='tankHit').value,3);
  assert.ok(!events.some(e=>e.type==='companionHit'));assert.equal(e.hp,1000);
  s.companion.hp=1;e.clock=1.09;
  assert.ok(step(s,.02,()=>.999).some(e=>e.type==='tankDown'));
@@ -164,13 +254,13 @@ test('turtle intercepts only from the front, halves damage and never attacks',()
 
 test('turtle behind the hero cannot absorb hits remotely',()=>{
  const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.115;e.engaged=true;e.clock=1.09;e.damage=4;
- s.companion={kind:'turtle',x:s.heroX-.3,hp:30,maxHp:30,actionAge:1};
+ s.turtleTalents={shell:1};s.companion={kind:'turtle',x:s.heroX-.3,hp:30,maxHp:30,actionAge:1};
  step(s,.02,()=>.999);assert.equal(s.hp,16);assert.equal(s.companion.hp,30);
 });
 
 test('turtle runs farther ahead and keeps its world position across waves',()=>{
  const s=freshGame();s.enemies[0].x=s.heroX+5;
- s.companion={kind:'turtle',x:s.heroX-.13,hp:30,maxHp:30,actionAge:1};
+ s.turtleTalents={shell:1};s.companion={kind:'turtle',x:s.heroX-.13,hp:30,maxHp:30,actionAge:1};
  advance(s,3);assert.ok(s.companion.x-s.heroX>.20);
  s.phase='victory';s.phaseTime=0;
  const previous=s.companion.x;step(s,.01,()=>.999);
@@ -192,7 +282,7 @@ test('druid heals continuously every three seconds, caps at max health and reset
 
 
 test('archer companion follows, waits for range, and rewards a projectile kill once',()=>{
- const s=freshGame();s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:1,moving:false,shot:null};
+ const s=freshGame();s.archerTalents={shot:1};s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:1,moving:false,shot:null};
  step(s,.01,()=>.999);
  assert.equal(s.companion.shot,null);assert.ok(s.companion.x<s.heroX);
  const e=s.enemies[0];e.x=s.heroX+.115;e.hp=1;e.damage=0;
@@ -209,7 +299,7 @@ test('archer companion follows, waits for range, and rewards a projectile kill o
 
 test('archer projectile cannot damage another target or carry through a restart',()=>{
  const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.115;e.damage=0;
- s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:0,moving:false,shot:{targetId:999,remaining:.01,fromX:0,toX:1}};
+ s.archerTalents={shot:1};s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:0,moving:false,shot:{targetId:999,remaining:.01,fromX:0,toX:1}};
  s.phase='fight';s.targetId=e.id;s.heroClock=0;
  const hp=e.hp;step(s,.02,()=>.999);assert.equal(e.hp,hp);
  s.phase='dead';s.phaseTime=0;s.hp=0;s.companion.shot={targetId:e.id,remaining:.1};
@@ -1253,15 +1343,15 @@ test('archer fires each second for fixed level damage independent of hero equipm
   const s=freshGame();s.equipment.weapon=candidate('weapon',heroDamage);s.equipment.weapon.affix={type:'damage',value:10};
   s.archerLevel=2;const e=s.enemies[0];e.x=s.heroX+.115;e.hp=e.maxHp=100000;e.damage=0;
   s.phase='fight';s.targetId=e.id;s.heroClock=-100;
-  s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:1,shot:null};
+  s.archerTalents={shot:1};s.companion={kind:'archer',x:s.heroX-.13,clock:0,actionAge:1,shot:null};
   const hits=advance(s,3.3).filter(e=>e.type==='companionHit');assert.equal(hits.length,3);assert.ok(hits.every(e=>e.value===7));
  }
 });
 test('archer banks only one shot while travelling and keeps charge after losing a target',()=>{
- const s=freshGame();s.companion={kind:'archer',x:s.heroX-.5,clock:.8,actionAge:1,shot:null};s.enemies[0].x=s.heroX+10;
+ const s=freshGame();s.archerTalents={shot:1};s.companion={kind:'archer',x:s.heroX-.5,clock:.8,actionAge:1,shot:null};s.enemies[0].x=s.heroX+10;
  advance(s,4);assert.equal(s.companion.clock,1);assert.equal(s.companion.shot,null);
  const e=s.enemies[0];e.x=s.heroX+.115;e.hp=100;e.damage=0;s.heroClock=-100;s.phase='fight';s.targetId=e.id;s.companion.x=s.heroX-.13;
- step(s,.01,()=>.999);assert.ok(s.companion.shot);assert.equal(s.companion.clock,0);
+ step(s,.01,()=>.999);assert.ok(s.companion.shot);assert.ok(Math.abs(s.companion.clock-.01)<1e-8);
  const events=advance(s,.5);assert.equal(events.filter(e=>e.type==='companionHit').length,1);assert.equal(s.companion.shot,null);
  const charge=s.companion.clock;e.x=s.heroX+10;step(s,.01,()=>.999);assert.ok(s.companion.clock>=charge);
 });
@@ -1271,7 +1361,7 @@ test('archer banks only one shot while travelling and keeps charge after losing 
 
 test('upgraded turtle joins at its level on next wave and fully blocks final hit',()=>{
  const s=freshGame();s.coins=3000;hireCompanion(s,'turtle');hireCompanion(s,'druid');
- s.turtleLevel=2;selectCompanion(s,'turtle');assert.equal(s.companion.kind,'druid');
+ s.turtleTalents={shell:1};s.turtleLevel=2;selectCompanion(s,'turtle');assert.equal(s.companion.kind,'druid');
  s.phase='victory';s.phaseTime=0;step(s,.01,()=>.999);
  assert.equal(s.companion.kind,'turtle');assert.equal(s.companion.hp,50);
  const e=s.enemies[0];e.x=s.heroX+.20;e.hp=1000;e.damage=100;e.clock=1.09;e.engaged=true;
@@ -1507,4 +1597,90 @@ test('melee and ranged affixes add to damage only for the equipped weapon type a
  s.equipment.weapon.weaponId='slingshot';assert.equal(stats(s).damage,130);
  const loaded=restore(JSON.stringify(s));assert.equal(stats(loaded).damage,130);assert.deepEqual(loaded.equipment.helmet.affix,s.equipment.helmet.affix);
  s.equipment.weapon=null;assert.equal(stats(s).damage,2);
+});
+
+test('manual companion abilities keep passive attacks, respect cooldowns and persist auto mode',()=>{
+ for(const kind of ['archer','druid']){
+  const s=freshGame();s.coins=5000;hireCompanion(s,kind);s[kind+'Level']=40;
+  s[kind+'Talents']=kind==='archer'?{shot:1,rain:1,pierce:1,barrage:1}:{touch:1,regrowth:1,bark:1,bloom:1};
+  s.companionAuto=false;assert.equal(restore(JSON.stringify(s)).companionAuto,false);s.phase='fight';s.companion.x=.2;s.hp=stats(s).hp*.4;
+  for(const enemy of s.enemies){enemy.x=.45;enemy.engaged=true;enemy.hp=enemy.maxHp=1e9;enemy.damage=0;}
+  const skills=kind==='archer'?['rain','pierce','barrage']:['regrowth','bark','bloom'];
+  const events=advance(s,.1);assert.ok(!events.some(e=>e.type===kind+'Skill'));
+  s.phase='fight';s.hp=10;s.companion.x=.2;for(const enemy of s.enemies){enemy.hp=1e9;enemy.x=.45;enemy.engaged=true;}
+  for(const skill of skills){assert.equal(castCompanionSkill(s,skill)?.skill,skill);assert.equal(castCompanionSkill(s,skill),null);assert.ok(s[kind+'Combat'][skill+'Cooldown']>0);}
+  s.phase='dead';assert.equal(castCompanionSkill(s,skills[0]),null);
+ }
+ assert.equal(freshGame().companionAuto,true);
+});
+
+test('manual companion casting targets the dungeon battle and auto off reaches its simulation',()=>{
+ for(const kind of ['archer','druid']){
+  const s=freshGame();s.coins=5000;s.highest=2;hireCompanion(s,kind);s.companionAuto=false;
+  const skill=kind==='archer'?'rain':'bark';s[kind+'Talents']=kind==='archer'?{shot:1,rain:1}:{touch:1,bark:1};
+  assert.equal(enterDungeon(s,'treasury',1),true);const b=s.dungeons.run.battle;
+  b.phase='fight';b.hp=10;b.companion.x=.2;b.enemies[0].x=.4;b.enemies[0].engaged=true;
+  const events=step(s,1/30,()=>.999);assert.equal(b.companionAuto,false);assert.ok(!events.some(e=>e.type===kind+'Skill'));
+  b.phase='fight';b.hp=10;b.companion.x=.2;b.enemies[0].x=.4;
+  assert.equal(castCompanionSkill(s,skill)?.skill,skill);assert.ok(b[kind+'Combat'][skill+'Cooldown']>0);
+ }
+});
+
+test('Downpour extends Rain by half a second per rank and its final partial pulse deals damage',()=>{
+ for(const rank of [0,1,10]){
+  const s=freshGame();s.coins=500;hireCompanion(s,'archer');s.archerLevel=40;s.archerTalents={shot:1,rain:1,downpour:rank};s.companionAuto=false;s.phase='fight';s.heroClock=-100;s.companion.clock=-100;
+  const e=s.enemies[0];Object.assign(e,{x:s.heroX+.115,hp:1e9,maxHp:1e9,damage:0});
+  assert.equal(castCompanionSkill(s,'rain')?.skill,'rain');assert.equal(s.archerCombat.rain,3+rank*.5);assert.equal(s.archerCombat.rainCooldown,30);const saved=freshGame();saved.archerCombat.rainCooldown=30;assert.equal(restore(JSON.stringify(saved)).archerCombat.rainCooldown,30);
+  const duration=3+rank*.5,events=advance(s,duration+.1).filter(e=>e.type==='companionHit');
+  const damage=ARCHER_LEVELS[39].damage*(.4+rank*.01);
+  assert.equal(events.reduce((n,e)=>n+e.value,0),Math.floor(duration)*Math.round(damage)+(duration%1?Math.round(damage*.5):0));
+  assert.equal(s.archerCombat.rain,0);assert.equal(s.archerCombat.rainClock,0);
+ }
+});
+
+test('Oak Skin lasts five seconds and Thick Bark adds duration while preserving cooldown',()=>{
+ for(const rank of [0,1,10]){
+  const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidLevel=40;s.druidTalents={touch:1,bark:1,thickBark:rank};s.companionAuto=false;s.phase='fight';
+  assert.equal(castCompanionSkill(s,'bark')?.skill,'bark');assert.equal(s.druidCombat.bark,5+rank*.5);assert.equal(s.druidCombat.barkCooldown,25);
+  assert.equal(restore(JSON.stringify(s)).druidCombat.bark,5+rank*.5);
+ }
+});
+import {TURTLE_TALENTS,learnTurtleTalent,resetTurtleTalents} from './game.mjs';
+
+test('turtle starts untrained, spends one point at level one, and optional upgrades never block Fortress',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'turtle');assert.deepEqual(s.turtleTalents,{});assert.equal(castCompanionSkill(s,'respite'),null);
+ assert.equal(learnTurtleTalent(s,'shell'),true);assert.equal(learnTurtleTalent(s,'vitality'),false);s.turtleLevel=40;
+ for(let i=0;i<10;i++){learnTurtleTalent(s,'vitality');learnTurtleTalent(s,'layers');}for(let i=0;i<5;i++)learnTurtleTalent(s,'spirit');
+ assert.equal(learnTurtleTalent(s,'slam'),true);assert.equal(learnTurtleTalent(s,'respite'),true);assert.equal(learnTurtleTalent(s,'fortress'),true);
+ assert.equal(TURTLE_TALENTS.length,15);assert.equal(Object.values(s.turtleTalents).reduce((a,b)=>a+b,0),29);
+ const ratio=s.companion.hp/s.companion.maxHp;s.companion.hp=0;assert.equal(learnTurtleTalent(s,'mending'),true);assert.equal(s.companion.hp,0);
+ s.turtleCombat.fortressCooldown=40;assert.equal(resetTurtleTalents(s),true);assert.equal(s.turtleCombat.fortressCooldown,40);assert.equal(s.companion.hp,0);assert.equal(ratio,1);
+});
+test('Shell Slam hits and stuns every enemy including bosses and healers for three seconds',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'turtle');s.turtleTalents={shell:1,slam:1,concussion:10,heavy:10};s.companionAuto=false;s.phase='fight';s.companion.x=s.heroX+.08;s.heroClock=-100;
+ const e=s.enemies[0];s.enemies=Array.from({length:4},(_,id)=>({...e,id,kind:id===3?'healer':'warrior',boss:id===2,x:s.heroX+.2+id*.04,hp:1000,maxHp:1000,damage:0,healing:100,engaged:true,clock:1,healClock:1.49}));
+ assert.equal(castCompanionSkill(s,'slam')?.skill,'slam');const events=step(s,.01,()=>.999);
+ assert.equal(events.filter(e=>e.type==='companionHit').length,4);assert.ok(s.enemies.every(e=>e.stun===3));assert.equal(events.filter(e=>e.type==='heal'||e.type==='enemyHit'||e.type==='tankHit').length,0);
+ const hp=s.companion.hp;advance(s,2.9);assert.ok(s.enemies.every(e=>e.stun>0));assert.equal(s.companion.hp,hp);advance(s,.2);assert.ok(s.enemies.every(e=>e.stun===0));
+});
+test('Respite heals a living turtle by 30 percent and cannot revive it; cooldowns and ranks persist',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'turtle');s.turtleLevel=40;s.turtleTalents={shell:1,respite:1,healing:10};s.companionAuto=false;s.phase='fight';s.companion.x=s.heroX+.08;s.companion.hp=5;s.enemies[0].x=s.heroX+.2;s.enemies[0].damage=0;s.heroClock=-100;
+ assert.equal(castCompanionSkill(s,'respite')?.skill,'respite');advance(s,4);assert.ok(Math.abs(s.companion.hp-14)<1e-7);
+ s.companion.hp=0;s.turtleCombat.respiteCooldown=0;assert.equal(castCompanionSkill(s,'respite'),null);advance(s,.1);assert.equal(s.companion.hp,0);
+ const saved=freshGame();saved.turtleLevel=40;saved.turtleTalents={shell:1,healing:10};saved.turtleCombat.fortressCooldown=55;
+ const loaded=restore(JSON.stringify(saved));assert.deepEqual(loaded.turtleTalents,saved.turtleTalents);assert.equal(loaded.turtleCombat.fortressCooldown,55);
+});
+test('Thorns kill rewards are paid once and Fortress uses absorbed damage with a capped wave',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'turtle');s.turtleTalents={shell:1,thorns:10};s.companionAuto=false;s.phase='fight';s.companion.x=s.heroX+.1;s.heroClock=-100;
+ const e=s.enemies[0];Object.assign(e,{x:s.heroX+.2,hp:.1,damage:4,clock:1.09,engaged:true});const events=step(s,.02,()=>.999);assert.equal(s.kills,1);assert.equal(events.filter(e=>e.type==='kill').length,1);
+ const f=freshGame();f.coins=500;hireCompanion(f,'turtle');f.turtleTalents={shell:1,fortress:1,wave:10};f.companionAuto=false;f.phase='fight';f.companion.x=f.heroX+.1;f.companion.hp=10;f.heroClock=-100;
+ Object.assign(f.enemies[0],{x:f.heroX+.2,hp:1000,maxHp:1000,damage:4,clock:1.09,engaged:true});
+ assert.equal(castCompanionSkill(f,'fortress')?.skill,'fortress');assert.equal(f.companion.hp,19);step(f,.02,()=>.999);assert.equal(f.companion.hp,18);assert.equal(f.turtleCombat.absorbed,3);
+ f.turtleCombat.absorbed=10000;f.turtleCombat.fortress=.01;f.enemies[0].damage=0;const wave=step(f,.02,()=>.999).find(e=>e.type==='companionHit');assert.equal(wave.value,13.5);
+});
+test('turtle abilities and stun work in dungeons, and Fortress cannot be cast when dead',()=>{
+ const s=freshGame();s.coins=500;s.highest=2;hireCompanion(s,'turtle');s.turtleTalents={shell:1,slam:1,fortress:1};s.companionAuto=false;enterDungeon(s,'forge',1);
+ const b=s.dungeons.run.battle;b.phase='fight';b.companion.x=.4;b.enemies[0].x=.6;b.enemies[0].clock=1.09;b.enemies[0].engaged=true;
+ assert.equal(castCompanionSkill(s,'slam')?.skill,'slam');step(s,.01,()=>.999);assert.ok(b.enemies[0].stun>0);const skillTime=b.dungeonBattle.time-(b.dungeonBattle.stunDelay||0);step(s,.2,()=>.999);assert.ok(Math.abs(b.dungeonBattle.time-b.dungeonBattle.stunDelay-skillTime)<1e-8);
+ b.companion.hp=0;assert.equal(castCompanionSkill(s,'fortress'),null);assert.ok(s.turtleCombat.slamCooldown>0);leaveDungeon(s);assert.ok(s.turtleCombat.slamCooldown>0);
 });

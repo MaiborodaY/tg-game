@@ -19,16 +19,18 @@ function win(s,id='treasury',floor=1){
   finish(s);assert.equal(s.dungeons.last.outcome,'won');
 }
 
-test('dungeons unlock after 1–1, progress sequentially and count two wins independently',()=>{
-  const locked=freshGame(now);assert.equal(enterDungeon(locked,'treasury',1,now),false);
-  const s=hero();for(const floor of [0,2,201,NaN])assert.equal(enterDungeon(s,'treasury',floor,now),false);
-  win(s);win(s,'treasury',2);
-  assert.equal(enterDungeon(s,'treasury',3,now),false);
-  assert.deepEqual(s.dungeons.wins,[2,0,0]);assert.deepEqual(s.dungeons.cleared,[2,0,0]);
-  win(s,'forge');win(s,'mine');assert.deepEqual(s.dungeons.wins,[2,1,1]);
-  const saved=restore(JSON.stringify(s),now);assert.deepEqual(saved.dungeons,s.dungeons);
-  dungeonDay(saved,now-day);assert.deepEqual(saved.dungeons.wins,[2,1,1]);
-  dungeonDay(saved,now+day);assert.deepEqual(saved.dungeons.wins,[0,0,0]);assert.deepEqual(saved.dungeons.cleared,[2,1,1]);
+test('dungeons share ten daily keys across victories and sweeps and refill without accumulating',()=>{
+ const locked=freshGame(now);assert.equal(enterDungeon(locked,'treasury',1,now),false);
+ const s=hero();for(const floor of [0,2,201,NaN])assert.equal(enterDungeon(s,'treasury',floor,now),false);
+ win(s);win(s,'treasury',2);win(s,'forge');win(s,'mine');
+ assert.deepEqual(s.dungeons.wins,[2,1,1]);assert.deepEqual(s.dungeons.cleared,[2,1,1]);
+ const legacy=restore(JSON.stringify(s),now);assert.deepEqual(legacy.dungeons.wins,[2,1,1]);
+ for(let i=0;i<6;i++)assert.equal(sweepDungeon(s,'treasury',now,()=>.999),true);
+ assert.deepEqual(s.dungeons.wins,[8,1,1]);
+ for(const id of ['treasury','forge','mine']){assert.equal(sweepDungeon(s,id,now),false);assert.equal(enterDungeon(s,id,1,now),false);}
+ const saved=restore(JSON.stringify(s),now);assert.deepEqual(saved.dungeons,s.dungeons);
+ dungeonDay(saved,now-day);assert.deepEqual(saved.dungeons.wins,[8,1,1]);
+ dungeonDay(saved,now+day*3);assert.deepEqual(saved.dungeons.wins,[0,0,0]);assert.deepEqual(saved.dungeons.cleared,[2,1,1]);
 });
 
 test('a victory pays once and leaves the campaign fight and paid forge intact',()=>{
@@ -59,11 +61,11 @@ test('dungeon ore mixes evolve through stages and pay the same amounts at every 
   for(const level of [1,6,96]){
     s.mine.level=level;
     for(const [floor,expected] of [
-      [1,[[0,22],[1,2]]], [10,[[0,17],[1,12]]],
-      [11,[[0,12],[1,18]]], [15,[[0,13],[1,19]]],
-      [16,[[0,12],[1,20],[2,1]]], [20,[[0,7],[1,22],[2,7]]],
-      [21,[[1,14],[2,22]]], [30,[[1,9],[2,26],[3,9]]],
-      [200,[[18,300],[19,1201]]],
+      [1,[[0,22],[1,2]]], [10,[[0,15],[1,10]]],
+      [11,[[0,10],[1,15]]], [15,[[0,10],[1,16]]],
+      [16,[[0,9],[1,16],[2,1]]], [20,[[0,5],[1,16],[2,5]]],
+      [21,[[1,11],[2,16]]], [30,[[1,6],[2,16],[3,6]]],
+      [200,[[18,13],[19,52]]],
     ]){
       const loot=dungeonRewards(s,'mine',floor);
       assert.equal(loot.coins,0);assert.equal(loot.hammers,0);
@@ -139,6 +141,7 @@ test('sweep pays the last cleared stage like a fight, spends a win and leaves pr
     for(const key of ['level','highest','encounter','heroX','hp','enemies','heroClock','kills','deaths','battleStats','forging','forgingItems','autoForge'])assert.deepEqual(swept[key],before[key],key);
     assert.deepEqual(restore(JSON.stringify(swept),now).dungeons,swept.dungeons);
     assert.equal(sweepDungeon(swept,id,now,()=>.999),true);
+    for(let i=0;i<8;i++)assert.equal(sweepDungeon(swept,id,now,()=>.999),true);
     const paid=structuredClone(swept);
     assert.equal(sweepDungeon(swept,id,now,()=>.999),false);assert.deepEqual(swept,paid);
     assert.equal(sweepDungeon(swept,id,now+day,()=>.999),true);
@@ -167,24 +170,24 @@ test('five-floor enemy loot milestones apply to the actual kill and event amount
   }
 });
 
-test('all 200 floors grow; early gear clears entrance, upgraded green clears ten, late upgrades clear 200',()=>{
+test('all 200 floors grow from 300 HP / 4 damage; stronger gear and affixes are needed to progress',()=>{
   for(const id of ['treasury','forge','mine']){
     let previous=0;
     for(let floor=1;floor<=200;floor++){const b=dungeonBoss(id,floor);assert.ok(b.maxHp>previous);previous=b.maxHp;}
-    const early=hero(1);early.equipment.weapon.weaponId='slingshot';assert.ok(enterDungeon(early,id,1,now));assert.ok(finish(early)<90);assert.equal(early.dungeons.last.outcome,'won');
-    for(const [epoch,itemLevel] of [[2,1],[3,1],[3,5]]){
+    const early=hero(1);early.equipment.weapon.weaponId='slingshot';assert.ok(enterDungeon(early,id,1,now));assert.ok(finish(early)<90);assert.equal(early.dungeons.last.outcome,'lost');
+    for(const [epoch,itemLevel] of [[2,1],[3,5],[4,1]]){
       const s=hero(epoch,itemLevel);s.dungeons.cleared=[9,9,9];enterDungeon(s,id,10,now);finish(s);
-      assert.equal(s.dungeons.last.outcome,itemLevel===5?'won':'lost');
+      assert.equal(s.dungeons.last.outcome,epoch===4?'won':'lost');
     }
     const end=hero(10,100);end.dungeons.cleared=[199,199,199];claimMount(end);
-    for(const slot of SLOTS)end.workshop.slots[slot]=100;
+    for(const [i,slot] of SLOTS.entries()){end.workshop.slots[slot]=100;end.equipment[slot].affix=i%2?{type:'speed',value:10}:{type:'meleeDamage',value:40};}end.equipment.weapon.weaponId='club';
     enterDungeon(end,id,200,now);assert.ok(finish(end)<90);assert.equal(end.dungeons.last.outcome,'won');
   }
 });
 
-test('the first stage threatens a 9-damage, 65-HP hero and cannot be healed away by a level-one druid',()=>{
+test('the first stage defeats a 9-damage, 65-HP hero even with a trained level-one druid',()=>{
   for(const companion of [null,'druid'])for(const id of ['treasury','forge','mine']){
-    const s=hero(1);s.equipment.weapon.weaponId='slingshot';s.equipment.chest.value+=4;s.selectedCompanion=companion;
+    const s=hero(1);s.equipment.weapon.weaponId='slingshot';s.equipment.chest.value+=4;s.selectedCompanion=companion;if(companion)s.druidTalents={touch:1};
     assert.deepEqual(stats(s),{damage:9,hp:65});enterDungeon(s,id,1,now);
     let lowest=65,hit=0;
     while(s.dungeons.run){
@@ -192,7 +195,31 @@ test('the first stage threatens a 9-damage, 65-HP hero and cannot be healed away
       const events=step(s,1/30,()=>.999,now);lowest=Math.min(lowest,b.hp);
       for(const e of events)if(e.type==='enemyHit')hit=Math.max(hit,e.value);
     }
-    assert.equal(s.dungeons.last.outcome,'won');assert.ok(hit>=3);
+    assert.equal(s.dungeons.last.outcome,'lost');assert.ok(hit>=4);
     assert.ok(lowest<(companion?33:12),`${id}: ${lowest} HP remains`);
   }
+});
+
+test('a 19-damage, 157-HP melee hero narrowly clears entrance but cannot skip progression',()=>{
+ for(const id of ['treasury','forge','mine'])for(const floor of [1,2]){
+  const s=freshGame(now);s.highest=2;s.equipment.weapon={slot:'weapon',value:17};s.equipment.chest={slot:'chest',value:137};s.dungeons.cleared=[floor-1,floor-1,floor-1];s.hp=stats(s).hp;
+  enterDungeon(s,id,floor,now);const b=s.dungeons.run.battle,seconds=finish(s);
+  assert.equal(s.dungeons.last.outcome,floor===1?'won':'lost');if(floor===1){assert.ok(seconds>30&&seconds<50);assert.ok(b.hp>0&&b.hp<40);}
+ }
+});
+
+ test('ore rewards stay supplementary and sell for less than treasury rewards on all floors',async()=>{
+  const {mineResource}=await import('./game.mjs');const s=freshGame(now);let previous=0;
+  for(let floor=1;floor<=200;floor++){
+   const ore=dungeonRewards(s,'mine',floor).ore,total=ore.reduce((a,b)=>a+b,0),sale=ore.reduce((a,b,i)=>a+b*mineResource(i).price,0);
+   assert.ok(ore.every(n=>Number.isSafeInteger(n)&&n>=0));assert.ok(total>=previous);previous=total;
+   assert.ok(sale<dungeonRewards(s,'treasury',floor).coins,`floor ${floor}`);
+  }
+  assert.equal(dungeonRewards(s,'mine',1).ore.reduce((a,b)=>a+b,0),24);
+  assert.equal(dungeonRewards(s,'mine',200).ore.reduce((a,b)=>a+b,0),65);
+ });
+
+test('unlimited local runs advance progress without consuming shared keys',()=>{
+ const s=hero();s.dungeons.wins=[10,0,0];assert.ok(enterDungeon(s,'mine',1,now,true));s.dungeons.run.battle.equipment.weapon.value=1e20;finish(s);assert.equal(s.dungeons.last.outcome,'won');assert.equal(s.dungeons.cleared[2],1);assert.deepEqual(s.dungeons.wins,[10,0,0]);
+ assert.ok(sweepDungeon(s,'mine',now,()=>.999,true));assert.deepEqual(s.dungeons.wins,[10,0,0]);
 });

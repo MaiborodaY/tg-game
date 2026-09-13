@@ -1,17 +1,19 @@
+import { TURTLE_TALENTS, learnTurtleTalent, resetTurtleTalents } from './game.mjs?v=archer-talents-20260914';
+import { castCompanionSkill } from './game.mjs?v=archer-talents-20260914';
 import { SALE_PRICES } from './balance.mjs';
-import { prepareEncounter } from './game.mjs?v=druid-talents-20260913';
-import { expandInventory } from './game.mjs?v=druid-talents-20260913';
-import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs?v=druid-talents-20260913';
-import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs?v=druid-talents-20260913';
-import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs?v=druid-talents-20260913';
-import { settleIdle, idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs?v=druid-talents-20260913';
-import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs?v=druid-talents-20260913';
-import { DRUID_TALENTS, learnDruidTalent, resetDruidTalents } from './game.mjs?v=druid-talents-20260913';
-import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs?v=druid-talents-20260913';
-import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs?v=druid-talents-20260913';
-import { createScene } from './scene.mjs?v=druid-talents-20260913';
-import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs?v=druid-talents-20260913';
-import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs?v=druid-talents-20260913';
+import { prepareEncounter } from './game.mjs?v=archer-talents-20260914';
+import { expandInventory } from './game.mjs?v=archer-talents-20260914';
+import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs?v=archer-talents-20260914';
+import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs?v=archer-talents-20260914';
+import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs?v=archer-talents-20260914';
+import { settleIdle, idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs?v=archer-talents-20260914';
+import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs?v=archer-talents-20260914';
+import { DRUID_TALENTS, learnDruidTalent, resetDruidTalents, ARCHER_TALENTS, learnArcherTalent, resetArcherTalents } from './game.mjs?v=archer-talents-20260914';
+import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs?v=archer-talents-20260914';
+import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs?v=archer-talents-20260914';
+import { createScene } from './scene.mjs?v=archer-talents-20260914';
+import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs?v=archer-talents-20260914';
+import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs?v=archer-talents-20260914';
 
 const $ = id => document.getElementById(id);
 const portraits = [['helmet','Knight'],['goblin','Smug goblin'],['pot-knight','Pot knight'],['duck','Duck wizard'],['wizard','Sleepy wizard'],['cat','Cat knight'],['pirate','Skeleton pirate'],["hamster-king","Hamster king"],["frog-alchemist","Frog alchemist"],["grumpy-dwarf","Grumpy dwarf"],["orc-chef","Orc chef"],["mushroom","Nervous mushroom"],["owl-librarian","Owl librarian"],["pig-barbarian","Pig barbarian"],["raccoon-thief","Raccoon thief"],["slime-knight","Slime knight"],["turtle-samurai","Turtle samurai"],["goat-wizard","Goat wizard"],["old-vampire","Old vampire"],["carrot-knight","Carrot knight"],["angry-fairy","Angry fairy"],["button-mummy","Button-eyed mummy"],["shark-pirate","Shark pirate"],["sheep-necromancer","Sheep necromancer"],["cyclops","Cyclops"],["wood-golem","Wood golem"],["chicken-musketeer","Chicken musketeer"]];
@@ -147,9 +149,9 @@ for(const companion of COMPANIONS) {
     const changed=state.hiredCompanions.includes(companion.id)?selectCompanion(state,companion.id):hireCompanion(state,companion.id);
     if(changed){save(true);updateUI();}
   };
-  if(companion.id==='druid'){
+  if(['druid','archer','turtle'].includes(companion.id)){
     const talentsButton=document.createElement('button');talentsButton.className='button companion-talents';talentsButton.textContent='Talents';
-    talentsButton.onclick=()=>{selectedDruidTalent='touch';$('druid-talents-dialog').showModal();updateDruidTalents();};
+    talentsButton.onclick=()=>{openCompanionTalents(companion.id);};
     card.querySelector('.companion-xp').before(talentsButton);
   }
   if(localPreview){
@@ -159,10 +161,12 @@ for(const companion of COMPANIONS) {
       const level=Number(input.value);if(!Number.isInteger(level)||level<1||level>100){input.value=state[companion.id+'Level'];return;}
       state[companion.id+'Level']=level;state.companionXp[companion.id]=0;
       if(companion.id==='druid'&&Object.values(state.druidTalents).reduce((sum,n)=>sum+n,0)>level)resetDruidTalents(state);
+      if(companion.id==='turtle'&&Object.values(state.turtleTalents).reduce((sum,n)=>sum+n,0)>level)resetTurtleTalents(state);
+      if(companion.id==='archer'&&Object.values(state.archerTalents).reduce((sum,n)=>sum+n,0)>level)resetArcherTalents(state);
       for(const battle of [state,state.dungeons.run?.battle]){
         if(!battle)continue;battle[companion.id+'Level']=level;
         if(companion.id==='turtle'&&battle.companion?.kind==='turtle'){
-          const c=battle.companion,fraction=c.maxHp?c.hp/c.maxHp:1;c.maxHp=TURTLE_LEVELS[level-1].hp;c.hp=c.maxHp*fraction;
+          const c=battle.companion,fraction=c.maxHp?c.hp/c.maxHp:1;c.maxHp=Math.round(TURTLE_LEVELS[level-1].hp*(1+(state.turtleTalents.vitality||0)*.01));c.hp=c.maxHp*fraction;
         }
       }
       save(true);updateUI();
@@ -173,7 +177,7 @@ for(const companion of COMPANIONS) {
 }
 function updateCompanions() {
   if(!$('companions-dialog').open)return;
-  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel,state.archerLevel,state.turtleLevel,state.companionXp,state.druidTalents]);
+  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel,state.archerLevel,state.turtleLevel,state.companionXp,state.druidTalents,state.archerTalents,state.turtleTalents]);
   if(displayedCompanions===key)return;
   displayedCompanions=key;
   $('companions-coins').textContent=compact.format(state.coins);
@@ -185,13 +189,15 @@ function updateCompanions() {
       const druid=id==='druid',turtle=id==='turtle',number=state[id+'Level'],levels=druid?DRUID_LEVELS:turtle?TURTLE_LEVELS:ARCHER_LEVELS;
       const level=levels[number-1],next=levels[number],name=druid?'Druid':turtle?'Turtle':'Archer';
       const healBonus=1+(state.druidTalents.herbs||0)*.005;
-      const value=druid?level.healing*healBonus:turtle?level.hp:level.damage,nextValue=next&&(druid?next.healing*healBonus:turtle?next.hp:next.damage),unit=druid?`HP every ${+(3-(state.druidTalents.swiftness||0)*.1).toFixed(1)}s`:turtle?'shell HP':'damage every 1 sec';
+      const value=druid?level.healing*healBonus:turtle?Math.round(level.hp*(1+(state.turtleTalents.vitality||0)*.01)):level.damage*(1+(state.archerTalents.sharp||0)*.005),nextValue=next&&(druid?next.healing*healBonus:turtle?Math.round(next.hp*(1+(state.turtleTalents.vitality||0)*.01)):next.damage*(1+(state.archerTalents.sharp||0)*.005)),unit=druid?`HP every ${+(3-(state.druidTalents.swiftness||0)*.1).toFixed(1)}s`:turtle?'shell HP':`damage every ${+(1-(state.archerTalents.swiftness||0)*.02).toFixed(2)}s`;
       card.querySelector('h3').textContent=owned?`${name} · Lv. ${number}`:name;
       const levelInput=card.querySelector('.companion-test-level input');if(levelInput&&document.activeElement!==levelInput)levelInput.value=number;
       card.querySelector('p').textContent=`${druid?'+':''}${compact.format(value)} ${unit}${owned&&next?' → '+compact.format(nextValue):''}`;
-      if(druid){
-        if(!state.druidTalents.touch)card.querySelector('p').textContent="Learn Nature’s Touch to unlock healing";
-        const available=state.druidLevel-Object.values(state.druidTalents).reduce((sum,n)=>sum+n,0);
+      {
+        if(druid&&!state.druidTalents.touch)card.querySelector('p').textContent="Learn Nature’s Touch to unlock healing";
+        if(id==='archer'&&!state.archerTalents.shot)card.querySelector('p').textContent='Learn True Shot to unlock shooting';
+        if(turtle&&!state.turtleTalents.shell)card.querySelector('p').textContent='Learn Shell to unlock protection';
+        const available=number-Object.values(state[id+'Talents']).reduce((sum,n)=>sum+n,0);
         const talentButton=card.querySelector('.companion-talents');talentButton.textContent='Talents'+(owned&&available?' · '+available:'');talentButton.disabled=!owned;
       }
       const progress=card.querySelector('.companion-xp');progress.hidden=!owned;
@@ -212,47 +218,82 @@ function updateCompanions() {
 }
 $('companions-toggle').onclick=()=>{$('companions-dialog').showModal();updateCompanions();};
 $('close-companions').onclick=()=>$('companions-dialog').close();
-let selectedDruidTalent='touch',druidTalentKey='',confirmTalentReset=false;
-for(const [index,t] of DRUID_TALENTS.entries()){
+let selectedDruidTalent='touch',druidTalentKey='',confirmTalentReset=false,talentCompanion='druid',talentDefinitions=DRUID_TALENTS;
+function openCompanionTalents(kind){
+  talentCompanion=kind;talentDefinitions=kind==='turtle'?TURTLE_TALENTS:kind==='archer'?ARCHER_TALENTS:DRUID_TALENTS;
+  selectedDruidTalent=talentDefinitions[0].id;druidTalentKey='';confirmTalentReset=false;
+  const dialog=$('druid-talents-dialog');dialog.dataset.companion=kind;
+  dialog.querySelector('.talents-header>img').src='assets/companions/'+kind+'-card.webp';
+  $('druid-talent-tree').setAttribute('aria-label',(kind==='turtle'?'Turtle':kind==='archer'?'Archer':'Druid')+' talent tree');
+  $('druid-talent-tree').querySelectorAll('.talent-node,.talent-row-label').forEach(n=>n.remove());
+  $('druid-talent-links').innerHTML='<defs><marker id="talent-arrow" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M 0 0 L 5 3 L 0 6" fill="none" stroke="context-stroke" stroke-width="1.5"/></marker></defs>';
+for(const [index,t] of talentDefinitions.entries()){
+  const iconIndex=talentCompanion==='archer'?(index===0?2:index===2?0:index):index;
   const node=document.createElement('button');node.className='talent-node '+(t.kind||'');node.dataset.talent=t.id;
   node.style.left=(t.col+1)*25+'%';node.style.top=(30+t.row*60)/440*100+'%';
-  node.innerHTML=`<i class="talent-art" style="--icon-x:${index%4*100/3}%;--icon-y:${Math.floor(index/4)*100/3}%" aria-hidden="true"></i><span class="talent-rank"></span>${t.kind==='ultimate'?'<span class="talent-label">Bloom</span>':''}`;
+  node.innerHTML=`<i class="talent-art" style="--icon-x:${iconIndex%4*100/3}%;--icon-y:${Math.floor(iconIndex/4)*100/3}%" aria-hidden="true"></i><span class="talent-rank"></span>${t.kind==='ultimate'?'<span class="talent-label">'+t.name+'</span>':''}`;
   node.onclick=()=>{selectedDruidTalent=t.id;updateDruidTalents();};$('druid-talent-tree').append(node);
   for(const id of t.requires){
-    const parent=DRUID_TALENTS.find(n=>n.id===id),x1=(parent.col+1)*80,y1=30+parent.row*60+22,x2=(t.col+1)*80,y2=30+t.row*60-25;
+    const parent=talentDefinitions.find(n=>n.id===id),px=(parent.col+1)*80,py=30+parent.row*60,x=(t.col+1)*80,y=30+t.row*60;
+    // Distant prerequisites stay in the description, not as wires around other nodes.
+    if(t.row>parent.row+1)continue;
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.dataset.parent=id;path.dataset.child=t.id;
-    const route=parent.row<t.row-1?`M ${x1} ${y1} v 7 H ${x2-34} V ${y2-8} H ${x2} V ${y2}`:`M ${x1} ${y1} V ${(y1+y2)/2} H ${x2} V ${y2}`;
-    path.setAttribute('d',route+` m -3 -4 l 3 4 l 3 -4`);$('druid-talent-links').append(path);
+    const sameRow=parent.row===t.row,side=x<px?-1:1;
+    let route;
+    if(sameRow)route=`M ${px+side*26} ${py} H ${x-side*27}`;
+    else if(t.row===parent.row+1){
+      const y1=py+24,y2=y-27,middle=(y1+y2)/2;
+      route=x===px?`M ${px} ${y1} V ${y2}`:`M ${px} ${y1} V ${middle-2} Q ${px} ${middle},${px+side*4} ${middle} H ${x-side*4} Q ${x} ${middle},${x} ${middle+2} V ${y2}`;
+    }
+    path.setAttribute('d',route);path.setAttribute('marker-end','url(#talent-arrow)');$('druid-talent-links').append(path);
   }
 }
-for(let row=0;row<7;row++){const label=document.createElement('span');label.className='talent-row-label';label.textContent=row+1;label.style.top=(30+row*60)/440*100+'%';$('druid-talent-tree').append(label);}
+for(let row=0;row<7;row++){
+  const label=document.createElement('span');label.className='talent-row-label';label.dataset.row=row;label.setAttribute('role','img');
+  label.innerHTML=talentCompanion==='turtle'?'<svg viewBox="0 0 32 36" aria-hidden="true"><path class="row-emblem" d="M16 2L28 10L28 26L16 34L4 26L4 10Z"/><path class="row-detail" d="M16 6L24 12L24 24L16 30L8 24L8 12Z"/></svg>':talentCompanion==='druid'
+    ?'<svg viewBox="0 0 32 36" aria-hidden="true"><path class="row-emblem" d="M27 3C24 9 6 5 4 20C2 29 10 33 19 28C28 23 28 12 27 3Z"/><path class="row-detail" d="M5 33L23 10M9 27L8 19M15 21L23 20"/></svg>'
+    :'<svg viewBox="0 0 32 36" aria-hidden="true"><path class="row-emblem" d="M25 2C17 2 8 8 5 17L9 16L4 22C4 27 8 30 13 29L17 24L16 28C24 24 28 13 25 2Z"/><path class="row-detail" d="M5 34L22 7M9 27L8 23M18 14L24 11"/></svg>';
+  const number=document.createElement('b');number.textContent=row+1;label.append(number);
+  label.style.top=(30+row*60)/440*100+'%';$('druid-talent-tree').append(label);
+}
+  dialog.showModal();updateDruidTalents();
+}
 function updateDruidTalents(){
   if(!$('druid-talents-dialog').open)return;
-  const r=state.druidTalents,spent=Object.values(r).reduce((sum,n)=>sum+n,0),available=state.druidLevel-spent;
-  const key=JSON.stringify([r,state.druidLevel,selectedDruidTalent,!!state.dungeons.run,confirmTalentReset]);if(druidTalentKey===key)return;druidTalentKey=key;
-  $('druid-talents-title').textContent=`Druid · Lv. ${state.druidLevel}`;$('druid-talents-spent').textContent=spent;$('druid-talents-available').textContent=available;
+  const r=state[talentCompanion+'Talents'],level=state[talentCompanion+'Level'],name=talentCompanion==='turtle'?'Turtle':talentCompanion==='archer'?'Archer':'Druid',spent=Object.values(r).reduce((sum,n)=>sum+n,0),available=level-spent;
+  const key=JSON.stringify([talentCompanion,r,level,selectedDruidTalent,!!state.dungeons.run,confirmTalentReset]);if(druidTalentKey===key)return;druidTalentKey=key;
+  $('druid-talents-title').textContent=`${name} · Lv. ${level}`;$('druid-talents-spent').textContent=spent;$('druid-talents-available').textContent=available;
+  for(const label of $('druid-talent-tree').querySelectorAll('.talent-row-label')){
+    const row=Number(label.dataset.row),talents=talentDefinitions.filter(t=>t.row===row);
+    const learned=talents.some(t=>r[t.id]>0);
+    label.classList.toggle('unlocked',learned);
+    label.setAttribute('aria-label',`Row ${row+1}: ${learned?'points invested':'no points invested'}`);
+  }
   for(const node of $('druid-talent-tree').querySelectorAll('.talent-node')){
-    const t=DRUID_TALENTS.find(t=>t.id===node.dataset.talent),rank=r[t.id]||0;
-    const earlier=DRUID_TALENTS.filter(n=>n.row<t.row).reduce((sum,n)=>sum+(r[n.id]||0),0);
-    const locked=earlier<(t.row?1+(t.row-1)*5:0)||t.requires.some(id=>!r[id]);
+    const t=talentDefinitions.find(t=>t.id===node.dataset.talent),rank=r[t.id]||0;
+    const locked=spent<t.points||t.requires.some(id=>!r[id]);
     node.classList.toggle('locked',locked);node.classList.toggle('learned',rank>0);node.classList.toggle('maxed',rank===t.max);node.classList.toggle('available',!locked&&available>0&&rank<t.max);
     node.setAttribute('aria-pressed',String(t.id===selectedDruidTalent));node.setAttribute('aria-label',`${t.name}, rank ${rank} of ${t.max}${locked?', locked':''}`);node.querySelector('.talent-rank').textContent=`${rank}/${t.max}`;
   }
-  for(const path of $('druid-talent-links').children)path.classList.toggle('learned',!!r[path.dataset.parent]&&!!r[path.dataset.child]);
-  const t=DRUID_TALENTS.find(t=>t.id===selectedDruidTalent),index=DRUID_TALENTS.indexOf(t),rank=r[t.id]||0;
-  $('druid-talent-icon').style.setProperty('--icon-x',index%4*100/3+'%');$('druid-talent-icon').style.setProperty('--icon-y',Math.floor(index/4)*100/3+'%');
+  for(const path of $('druid-talent-links').querySelectorAll('path[data-child]')){
+    path.classList.toggle('learned',!!r[path.dataset.parent]&&!!r[path.dataset.child]);
+    path.classList.toggle('selected-link',path.dataset.child===selectedDruidTalent||path.dataset.parent===selectedDruidTalent);
+  }
+  const t=talentDefinitions.find(t=>t.id===selectedDruidTalent),index=talentDefinitions.indexOf(t),rank=r[t.id]||0;
+  const iconIndex=talentCompanion==='archer'?(index===0?2:index===2?0:index):index;
+  $('druid-talent-icon').style.setProperty('--icon-x',iconIndex%4*100/3+'%');$('druid-talent-icon').style.setProperty('--icon-y',Math.floor(iconIndex/4)*100/3+'%');
+  $('druid-talent-icon').dataset.talent=t.id;
   $('druid-talent-name').textContent=t.name;$('druid-talent-rank').textContent=`Rank ${rank}/${t.max} · ${t.kind==='active'||t.kind==='ultimate'?'Automatic ability':t.kind==='skill'?'Basic skill':'Passive'}`;
-  $('druid-talent-description').textContent=t.id==='touch'?`Heals ${compact.format(DRUID_LEVELS[state.druidLevel-1].healing*(1+(r.herbs||0)*.005))} HP every ${+(3-(r.swiftness||0)*.1).toFixed(1)}s. Healing grows with the druid’s level.`:t.description;
-  const earlier=DRUID_TALENTS.filter(n=>n.row<t.row).reduce((sum,n)=>sum+(r[n.id]||0),0),required=t.row?1+(t.row-1)*5:0,missing=t.requires.filter(id=>!r[id]);
-  const reason=state.dungeons.run?'Finish the dungeon to change talents.':missing.length?'Requires '+missing.map(id=>DRUID_TALENTS.find(n=>n.id===id).name).join(', '):earlier<required?`Requires ${required} points in earlier rows.`:rank===t.max?'Maximum rank':available<=0?'Next point at the next druid level.':'';
-  if(t.id==='swiftness')$('druid-talent-description').textContent=`Healing interval: 3s → ${+(3-rank*.1).toFixed(1)}s.${rank<t.max?' Next rank: '+(+(2.9-rank*.1).toFixed(1))+'s.':''}`;
+  $('druid-talent-description').textContent=t.id==='touch'?`Heals ${compact.format(DRUID_LEVELS[state.druidLevel-1].healing*(1+(r.herbs||0)*.005))} HP every ${+(3-(r.swiftness||0)*.1).toFixed(1)}s.`:t.id==='shot'?`Deals ${compact.format(ARCHER_LEVELS[level-1].damage*(1+(r.sharp||0)*.005))} damage every ${+(1-(r.swiftness||0)*.02).toFixed(2)}s.`:t.description;
+  const required=t.points,missing=t.requires.filter(id=>!r[id]);
+  const reason=state.dungeons.run?'Finish the dungeon to change talents.':missing.length?'Requires '+missing.map(id=>talentDefinitions.find(n=>n.id===id).name).join(', '):spent<required?`Requires ${required} points spent.`:rank===t.max?'Maximum rank':available<=0?'Next point at the next companion level.':'';
   $('druid-talent-requirement').textContent=reason;$('druid-talent-requirement').hidden=!reason||rank===t.max;
   $('learn-druid-talent').hidden=rank===t.max;
   $('learn-druid-talent').disabled=!!reason;$('learn-druid-talent').textContent=rank===t.max?'Fully learned':rank?'Upgrade · 1 point':'Learn · 1 point';
   $('reset-druid-talents').disabled=!spent||!!state.dungeons.run;$('reset-druid-talents').textContent=confirmTalentReset?'Confirm reset · return all points':'Reset talents';
 }
-$('learn-druid-talent').onclick=()=>{if(learnDruidTalent(state,selectedDruidTalent)){confirmTalentReset=false;save(true);updateUI();}};
-$('reset-druid-talents').onclick=()=>{if(!confirmTalentReset){confirmTalentReset=true;updateDruidTalents();return;}if(resetDruidTalents(state)){confirmTalentReset=false;save(true);updateUI();}};
+$('learn-druid-talent').onclick=()=>{if((talentCompanion==='turtle'?learnTurtleTalent:talentCompanion==='archer'?learnArcherTalent:learnDruidTalent)(state,selectedDruidTalent)){confirmTalentReset=false;save(true);updateUI();}};
+$('reset-druid-talents').onclick=()=>{if(!confirmTalentReset){confirmTalentReset=true;updateDruidTalents();return;}if((talentCompanion==='turtle'?resetTurtleTalents:talentCompanion==='archer'?resetArcherTalents:resetDruidTalents)(state)){confirmTalentReset=false;save(true);updateUI();}};
 $('close-druid-talents').onclick=()=>$('druid-talents-dialog').close();
 $('druid-talents-dialog').addEventListener('close',()=>{confirmTalentReset=false;druidTalentKey='';});
 if(localPreview){
@@ -1153,7 +1194,45 @@ document.addEventListener('keydown', e => {
   }
 });
 
+let companionSkillKey='';
+$('companion-auto').onclick=()=>{state.companionAuto=state.companionAuto===false;updateCompanionSkills();save(true);};
+$('companion-skill-buttons').onclick=event=>{
+  const button=event.target.closest('[data-skill]');if(!button||dungeonTransitioning)return;
+  const effect=castCompanionSkill(state,button.dataset.skill);
+  if(effect){processEvents([effect]);updateCompanionSkills();save(true);}
+};
+function updateCompanionSkills(){
+  const battle=state.dungeons.run?.battle??state,kind=battle.companion?.kind;
+  const definitions=kind==='turtle'?TURTLE_TALENTS:kind==='archer'?ARCHER_TALENTS:kind==='druid'?DRUID_TALENTS:[];
+  const ranks=battle[kind+'Talents']??{},combat=battle[kind+'Combat']??{};
+  const skills=definitions.filter(t=>(t.kind==='active'||t.kind==='ultimate')&&ranks[t.id]);
+  const bar=$('companion-skills');bar.hidden=mineOpen||atelierOpen||dungeonHubOpen||!skills.length;
+  const key=kind+':'+skills.map(t=>t.id).join(',');
+  if(key!==companionSkillKey){
+    companionSkillKey=key;$('companion-skill-buttons').replaceChildren();
+    for(const t of skills){
+      const button=document.createElement('button'),icon=document.createElement('i'),number=document.createElement('b'),index=definitions.indexOf(t);
+      button.className='companion-skill';button.dataset.skill=t.id;button.title=t.name;icon.className='talent-art';
+      icon.style.backgroundImage='url(assets/talents/'+kind+'-icons.webp)';icon.style.setProperty('--icon-x',(index%4)*100/3+'%');icon.style.setProperty('--icon-y',Math.floor(index/4)*100/3+'%');
+      button.append(icon,number);$('companion-skill-buttons').append(button);
+    }
+  }
+  const auto=state.companionAuto!==false;$('companion-auto').textContent='Auto '+(auto?'ON':'OFF');$('companion-auto').setAttribute('aria-pressed',String(auto));
+  const durations=kind==='turtle'?{slam:20,respite:30,fortress:60}:kind==='archer'?{rain:30,pierce:20,barrage:60*(1-(ranks.composure||0)*.005)}:{regrowth:18,bark:25,bloom:60*(1-(ranks.awakening||0)*.005)};
+  const activeDurations=kind==='turtle'?{slam:.5,respite:4,fortress:5+(ranks.endurance||0)*.2}:kind==='archer'?{rain:3+(ranks.downpour||0)*.5,barrage:5+(ranks.quiver||0)*.1,pierce:combat.piercing?combat.piercing.toX-combat.piercing.fromX:0}:{regrowth:6*(1+(ranks.spring||0)*.01),bark:5+(ranks.thickBark||0)*.5,bloom:8+(ranks.evergreen||0)*.2};
+  const alive=battle.enemies.filter(e=>e.hp>0),ready=battle.hp>0&&!battle.completed&&['fight','walk'].includes(battle.phase)&&(kind==='turtle'?battle.companion.hp>0&&alive.length&&alive[0].x-battle.companion.x<=.7:kind==='archer'?alive.length&&alive[0].x-battle.companion.x<=.65:battle.phase==='fight'||alive.some(e=>e.engaged));
+  for(const button of $('companion-skill-buttons').children){
+    const skill=button.dataset.skill,remaining=combat[skill+'Cooldown']||0,t=skills.find(t=>t.id===skill);
+    button.disabled=!ready||remaining>0||dungeonTransitioning;button.classList.toggle('cooling',remaining>0);
+    const active=skill==='slam'?(combat.slamVisual||0):skill==='pierce'?(combat.piercing?Math.max(0,combat.piercing.toX-combat.piercing.x):0):(combat[skill]||0),shown=active>0?active:remaining;
+    button.classList.toggle('active',active>0);
+    button.style.setProperty('--cooldown',Math.min(1,shown/(active>0?activeDurations[skill]:durations[skill]))*360+'deg');button.querySelector('b').textContent=shown>0?Math.ceil(shown):'';
+    button.setAttribute('aria-label',t.name+(active>0?' · Active · '+Math.ceil(active)+'s':remaining>0?' · '+Math.ceil(remaining)+'s':' · Ready'));
+  }
+}
+
 function updateUI() {
+  updateCompanionSkills();
   updateAlchemy();
   updateDungeons();
   updateCompanions();
@@ -1292,7 +1371,7 @@ let scene;
 let selectedDungeon=0, dungeonFloor=1, displayedDungeon=null, dungeonStarting=false, dungeonHubOpen=false, dungeonActive=null, dungeonTransitioning=false;
 for(const [index,dungeon] of DUNGEONS.entries()){
   const card=document.createElement('article');card.className='dungeon-choice';card.style.setProperty('--dungeon-color',dungeon.color);
-  card.innerHTML=`<img src="assets/dungeons/${dungeon.id}-banner.webp" alt=""><h2>${dungeon.name}</h2><small class="dungeon-card-cleared"></small><span class="dungeon-card-resource">${index===0?'<i class="coin" aria-hidden="true"></i>':`<img src="assets/${index===1?'hammer.webp':'mine/stone-icon.webp'}" alt="${dungeon.resource}">`} ${dungeon.resource}</span><div class="dungeon-card-action"><strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3a6 6 0 1 1-3 11l-6 7-4-4 7-6a6 6 0 0 1 6-8Zm2 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" fill="#f4e6be" stroke="#17282a" stroke-width="1.7"/></svg> <span></span></strong><button class="button blue" aria-label="Open ${dungeon.name}">Open</button></div>`;
+  card.innerHTML=`<img src="assets/dungeons/${dungeon.id}-banner.webp" alt=""><h2>${dungeon.name}</h2><small class="dungeon-card-cleared"></small><span class="dungeon-card-resource">${index===0?'<i class="coin" aria-hidden="true"></i>':`<img src="assets/${index===1?'hammer.webp':'mine/stone-icon.webp'}" alt="${dungeon.resource}">`} ${dungeon.resource}</span><div class="dungeon-card-action"><button class="button blue" aria-label="Open ${dungeon.name}">Open</button></div>`;
   card.querySelector('button').onclick=()=>{selectedDungeon=index;dungeonFloor=Math.min(200,state.dungeons.cleared[index]+1);displayedDungeon=null;$('dungeons-dialog').showModal();updateDungeons();};
   $('dungeon-choices').append(card);
 }
@@ -1312,13 +1391,13 @@ function updateDungeons(){
   if(!$('dungeons-dialog').open&&!$('tier-rewards-dialog').open&&!dungeonHubOpen)return;
   const unlimited=localPreview&&$('test-unlimited-dungeons').checked;
   const wins=dungeonDay(state),d=DUNGEONS[selectedDungeon],cleared=state.dungeons.cleared[selectedDungeon];
+  const keys=Math.max(0,10-wins.reduce((a,b)=>a+b,0));
   dungeonFloor=Math.max(1,Math.min(dungeonFloor,cleared+1,200));
   $('admin-dungeon-reset').hidden=cloudUserId!=='297730487';
   $('admin-dungeon-reset').disabled=cloudBusy||!cloudReady||cloudFailed||!!state.dungeons.run||dungeonTransitioning;
   const key=JSON.stringify([unlimited,selectedDungeon,dungeonFloor,wins,state.dungeons.cleared,state.mount,state.highest,dungeonStarting,Math.floor(Date.now()/60000)]);
   if(displayedDungeon===key)return;displayedDungeon=key;
   [...$('dungeon-choices').children].forEach((b,i)=>{
-    b.querySelector('.dungeon-card-action span').textContent=unlimited?'∞':`${2-wins[i]}/2`;
     const next=Math.min(200,state.dungeons.cleared[i]+1);
     b.querySelector('.dungeon-card-cleared').textContent=`${Math.floor((next-1)/10)+1}–${(next-1)%10+1}${state.dungeons.cleared[i]===200?' · Cleared':''}`;
   });
@@ -1335,13 +1414,15 @@ function updateDungeons(){
   setText('dungeon-boss-name',d.boss);setText('dungeon-mechanic',selectedDungeon===0?`A coin shield blocks 65% damage every ${12-rank} seconds.`:selectedDungeon===1?`Charges for 2 seconds, then strikes for ${(2.6+rank*.2).toFixed(1)}× damage. The turtle can intercept it.`:`Gains 25% damage every ${20-rank*2} seconds. Finish it quickly.`);
   const loot=dungeonRewards(state,d.id,dungeonFloor);
   $('dungeon-rewards').innerHTML=dungeonLootMarkup(loot);
-  $('dungeon-fight').disabled=dungeonStarting||state.highest<2||(!unlimited&&wins[selectedDungeon]>=2);
+  $('dungeon-fight').disabled=dungeonStarting||state.highest<2||(!unlimited&&keys<=0);
   setText('dungeon-fight',dungeonStarting?'Loading…':'Enter');
   $('dungeon-sweep').disabled=$('dungeon-fight').disabled||cleared<1;
   const sweepStage=`${Math.floor((cleared-1)/10)+1}–${(cleared-1)%10+1}`;
-  $('dungeon-sweep').title=cleared<1?'Defeat a boss first.':!unlimited&&wins[selectedDungeon]>=2?'No keys left today.':`Sweep stage ${sweepStage}`;
-  setText('dungeon-keys',unlimited?'∞':`${2-wins[selectedDungeon]}/2`);
-  $('dungeon-keys').parentElement.setAttribute('aria-label',unlimited?'Unlimited entries':`${2-wins[selectedDungeon]} of 2 keys remaining`);
+  $('dungeon-sweep').title=cleared<1?'Defeat a boss first.':!unlimited&&keys<=0?'No keys left today.':`Sweep stage ${sweepStage}`;
+  setText('dungeon-shared-keys',unlimited?'∞':`${keys}/10`);
+  $('dungeon-shared-keys').parentElement.setAttribute('aria-label',unlimited?'Unlimited entries':`${keys} of 10 shared keys remaining`);
+  setText('dungeon-keys',unlimited?'∞':`${keys}/10`);
+  $('dungeon-keys').parentElement.setAttribute('aria-label',unlimited?'Unlimited entries':`${keys} of 10 shared keys remaining`);
   setText('dungeon-sweep-info',cleared<1?'Sweep Last unlocks after your first victory.':`Sweep Last gives stage ${sweepStage} rewards instantly for one key.`);
   const bonus=Math.floor(cleared/5),goal=Math.min(200,(bonus+1)*5);
   const bonusName=selectedDungeon===0?'coins from enemies':selectedDungeon===1?'hammer drop chance':'mine production';
@@ -1363,7 +1444,7 @@ function updateDungeons(){
   setText('mount-action',owned?(state.mount.equipped?'Dismount':'Ride'):'Claim');
   $('mount-action').setAttribute('aria-label',owned?(state.mount.equipped?'Dismount Rustback':'Ride Rustback'):'Claim Rustback');
   const mins=Math.max(1,Math.ceil(((state.dungeons.day+1)*86400000-Date.now())/60000));
-  setText('dungeon-reset',unlimited?'Unlimited entries · Victories advance progress.':`Wins reset in ${Math.floor(mins/60)}h ${mins%60}m · Leaving or reloading ends the fight.`);
+  setText('dungeon-reset',unlimited?'Unlimited entries · Victories advance progress.':`Keys refill in ${Math.floor(mins/60)}h ${mins%60}m · Leaving or reloading ends the fight.`);
 }
 function dungeonLootMarkup(loot){
   if(!loot)return '';
@@ -1424,7 +1505,7 @@ $('dungeon-fight').onclick=async()=>{
 if(localPreview){
   const controls=document.createElement('div');controls.className='local-test-controls';
   controls.innerHTML='<label><input id="test-unlimited-dungeons" type="checkbox"> Unlimited entries</label><button id="test-dungeons-reset" class="mini-button">Reset progress</button>';
-  $('dungeon-choices').before(controls);
+  $('dungeon-shared-keys').parentElement.before(controls);
   $('test-unlimited-dungeons').onchange=()=>{displayedDungeon=null;updateDungeons();};
   $('test-dungeons-reset').onclick=()=>{
     if(state.dungeons.run||dungeonStarting||dungeonTransitioning)return;
@@ -1719,6 +1800,7 @@ function updateAtelier() {
   const enough=price!==null&&(free||(key==='storage'?state.coins>=price:(state.mine.ore[price[0]]||0)>=price[1]));
   $('atelier-cost').parentElement.hidden=price===null;
   $('atelier-cost').innerHTML=price===null?'':free?'Free':key==='storage'?`<span class="${enough?'':'missing'}"><i class="coin"></i>${state.coins.toLocaleString('en-US')} / ${price.toLocaleString('en-US')}</span>`:`<span class="${enough?'':'missing'}"><img src="assets/mine/${mineResource(price[0]).id}-icon.webp" alt="${mineResource(price[0]).name}">${(state.mine.ore[price[0]]||0).toLocaleString('en-US')} / ${price[1].toLocaleString('en-US')}</span>`;
+  if(localPreview){$('test-workshop-max').hidden=!slot;$('test-workshop-max').disabled=!enough;}
   $('atelier-buy').disabled=!enough;setText('atelier-buy',price===null?'Max':key==='storage'?'Expand':'Upgrade');
 }
 function openAtelierUpgrade(key){atelierKey=key;$('atelier-dialog').showModal();updateAtelier();}
@@ -1729,6 +1811,14 @@ if(localPreview){
   const controls=document.createElement('div');controls.className='local-test-controls';
   controls.innerHTML='<label><input id="test-free-upgrades" type="checkbox"> Free upgrades</label><button id="test-workshop-reset" class="mini-button">Reset upgrades</button>';
   $('atelier-panel').append(controls);
+  const maxButton=document.createElement('button');maxButton.id='test-workshop-max';maxButton.className='mini-button';maxButton.textContent='Upgrade max · Local';maxButton.style.cssText='display:block;margin:8px auto 0';
+  $('atelier-dialog').append(maxButton);
+  maxButton.onclick=()=>{
+    if(!SLOTS.includes(atelierKey))return;
+    const now=Date.now(),free=$('test-free-upgrades').checked;let changed=false;
+    while(upgradeWorkshop(state,atelierKey,now,free))changed=true;
+    if(changed){save(true);updateUI();}updateAtelier();
+  };
   $('test-free-upgrades').onchange=()=>updateAtelier();
   $('test-workshop-reset').onclick=()=>{
     const now=Date.now(),fraction=state.hp/stats(state).hp;
@@ -1777,45 +1867,54 @@ function updateAlchemy(){
  const active=POTIONS.map(p=>{const b=a.active[p.id],remaining=b?(p.combat?b.remaining:(b.endsAt-now)/1000):0;return remaining>0?{p,b,remaining:Math.ceil(remaining)}:null;}).filter(Boolean);
  $('alchemy-toggle').classList.toggle('has-potion',active.length>0);
  if(!$('alchemy-dialog').open)return;
- const activeRoot=$('alchemy-active');
- const activeKey=JSON.stringify(active.map(({p,b})=>[p.id,b.value]));
- if(activeRoot.dataset.key!==activeKey){
- $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${Number(b.value.toFixed(1))}% ${p.label}" aria-label="${p.name}, +${Number(b.value.toFixed(1))}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
-  activeRoot.dataset.key=activeKey;
- }
- active.forEach(({p,b,remaining},i)=>{
-  const button=activeRoot.children[i],timer=button.querySelector('span');
+ const activeKey=JSON.stringify(active.map(({p,b})=>[p.id,b.value,b.rarity]));
+ active.forEach(({p,remaining})=>{
+  const timer=$('alchemy-timer-'+p.id);if(!timer)return;
   const text=remaining>=60?`${Math.ceil(remaining/60)}m`:`${remaining}s`;
   if(timer.textContent!==text)timer.textContent=text;
-  const label=`${p.name}, +${Number(b.value.toFixed(1))}% ${p.label}, ${Math.ceil(remaining/60)} min remaining`;
-  if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
  });
  const key=JSON.stringify([a.xp,a.reagents,a.potions,activeKey,alchemyType,alchemyRarity,state.coins,!!state.dungeons.run]);if(key===alchemyDisplay)return;alchemyDisplay=key;
  setText('alchemy-level',`Lv. ${skill.level}`);setText('alchemy-xp',skill.needed?`${skill.xp} / ${skill.needed} XP`:'MAX');$('alchemy-progress').max=skill.needed||1;$('alchemy-progress').value=skill.needed?skill.xp:1;
  $('alchemy-stocks').innerHTML=ALCHEMY_RARITIES.map((r,i)=>`<button type="button" data-alchemy-grade="${i}" style="--rarity:${r.color}" title="${r.name}" aria-pressed="${i===alchemyRarity}" aria-label="${r.name}: ${a.reagents[i]}">${reagentIcon(r.color)}<b>${compact.format(a.reagents[i])}</b></button>`).join('');
  // Keep the focused select/button while the real-time buff counter updates.
  const focused=document.activeElement,focusId=focused?.id;
- $('alchemy-recipes').innerHTML=POTIONS.map((p,index)=>{
+ const recipeScroll=$('alchemy-recipes').scrollTop;
+ $('alchemy-recipes').innerHTML=[true,false].map(combat=>{
+  const group=POTIONS.filter(p=>!!p.combat===combat),id=combat?'combat':'production',r=ALCHEMY_RARITIES[alchemyRarity];
+  const allActive=group.every(p=>active.some(x=>x.p.id===p.id));
+  const usable=group.some(p=>{const buff=active.find(x=>x.p.id===p.id);return a.potions[POTIONS.indexOf(p)*5+alchemyRarity]>0&&(allActive?buff.b.rarity===alchemyRarity:!buff);});
+  return `<section class="alchemy-section"><div class="alchemy-group"><strong>${combat?'Combat':'Production'}</strong><button id="alchemy-brew-all-${id}" class="button blue" data-brew-group="${id}" ${a.reagents[alchemyRarity]<group.length||state.coins<r.cost*group.length?'disabled':''}><span>Brew all</span><small><i class="coin" aria-hidden="true"></i>${compact.format(r.cost*group.length)} ${reagentIcon(r.color)}${group.length}</small></button><button id="alchemy-use-all-${id}" class="button" data-use-group="${id}" ${!usable||state.dungeons.run?'disabled':''}>${allActive?'Extend all':'Use all'}</button></div>`+group.map(p=>{
+  const index=POTIONS.indexOf(p);
   const rarity=alchemyRarity,r=ALCHEMY_RARITIES[rarity],effect=potionEffect(state,p.id,rarity),stock=a.potions[index*5+rarity],open=alchemyType===p.id,buff=active.find(x=>x.p.id===p.id),busy=!!buff&&buff.b.rarity!==rarity;
   const duration=`${Math.floor(effect.seconds/60)} min${effect.seconds%60?` ${effect.seconds%60}s`:''}`,label=p.label;
-  return `<article class="alchemy-entry ${open?'is-open':''}" style="--rarity:${r.color}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${Number(effect.value.toFixed(1))}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt="">${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <span class="alchemy-price ${state.coins<r.cost?'missing':''}"><i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</span><span class="alchemy-price ${a.reagents[rarity]<1?'missing':''}">${reagentIcon(r.color)} 1</span></button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Other rarity active':buff?'Extend':'Use'}</button></div></div></article>`;
- }).join('');
+  return `<article class="alchemy-entry ${open?'is-open':''}" style="--rarity:${r.color}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${Number(effect.value.toFixed(1))}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-row-status"><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt="">${stock}</span>${buff?`<small id="alchemy-timer-${p.id}" class="alchemy-timer" title="Active effect remaining">${buff.remaining>=60?Math.ceil(buff.remaining/60)+'m':buff.remaining+'s'}</small>`:''}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <span class="alchemy-price ${state.coins<r.cost?'missing':''}"><i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</span><span class="alchemy-price ${a.reagents[rarity]<1?'missing':''}">${reagentIcon(r.color)} 1</span></button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Other rarity active':buff?'Extend':'Use'}</button></div></div></article>`;
+ }).join('')+'</section>';}).join('');
+ $('alchemy-recipes').scrollTop=recipeScroll;
  if(focusId&&focused?.closest('#alchemy-recipes'))$(focusId)?.focus({preventScroll:true});
 }
 function openAlchemy(){if(!$('alchemy-dialog').open)$('alchemy-dialog').showModal();alchemyDisplay='';setText('alchemy-message','');updateAlchemy();}
 $('alchemy-toggle').onclick=openAlchemy;$('alchemy-close').onclick=()=>$('alchemy-dialog').close();
-$('alchemy-active').addEventListener('click',e=>{
- const button=e.target.closest('[data-active-potion]');if(!button)return;
- const potion=POTIONS.find(p=>p.id===button.dataset.activePotion),buff=state.alchemy.active[potion.id];
- const remaining=buff?(potion.combat?buff.remaining:(buff.endsAt-Date.now())/1000):0;
- setText('alchemy-message',remaining>0?`${potion.name}: +${Number(buff.value.toFixed(1))}% ${potion.label} · ${Math.ceil(remaining/60)} min${potion.combat?' of battle':''} remaining`:'Effect ended');
-});
 $('alchemy-stocks').addEventListener('click',e=>{
  const button=e.target.closest('[data-alchemy-grade]');if(!button)return;
  alchemyRarity=Number(button.dataset.alchemyGrade);updateAlchemy();
  $('alchemy-stocks').querySelector(`[data-alchemy-grade="${alchemyRarity}"]`)?.focus({preventScroll:true});
 });
 $('alchemy-recipes').addEventListener('click',e=>{
+ const bulk=e.target.closest('[data-brew-group],[data-use-group]');
+ if(bulk){
+  const brewing=bulk.hasAttribute('data-brew-group'),combat=(bulk.dataset.brewGroup??bulk.dataset.useGroup)==='combat';
+  const group=POTIONS.filter(p=>!!p.combat===combat),r=ALCHEMY_RARITIES[alchemyRarity],now=Date.now();
+  let changed=false;
+  if(brewing){
+   if(state.alchemy.reagents[alchemyRarity]<group.length||state.coins<r.cost*group.length)return;
+   for(const p of group)changed=brewPotion(state,p.id,alchemyRarity)||changed;
+  }else{
+   const running=group.filter(p=>{const b=state.alchemy.active[p.id];return b&&(p.combat?b.remaining>0:b.endsAt>now);});
+   for(const p of group)if(running.length===group.length||!running.includes(p))changed=drinkPotion(state,p.id,alchemyRarity,now)||changed;
+  }
+  if(changed){setText('alchemy-message','');save(true);updateUI();}
+  return;
+ }
  const row=e.target.closest('[data-recipe]'),brew=e.target.closest('[data-brew]'),use=e.target.closest('[data-use]');
  if(row){alchemyType=alchemyType===row.dataset.recipe?'':row.dataset.recipe;setText('alchemy-message','');updateAlchemy();}
  if(brew&&brewPotion(state,brew.dataset.brew,alchemyRarity)){setText('alchemy-message','');save(true);updateAlchemy();}
