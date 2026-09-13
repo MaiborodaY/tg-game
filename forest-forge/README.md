@@ -32,7 +32,8 @@ machine-specific dependency path is needed. Editors and source concepts are not
 part of the public bundle.
 
 Pushing relevant changes to `main` triggers Cloudflare Workers Builds for the
-existing `forest-forge` Worker. GitHub Actions deployment is disabled and its
+existing `forest-forge` Worker through the `Forest Forge main` build trigger.
+There is no preview-branch deployment trigger. GitHub Actions deployment is disabled and its
 workflow has been removed. Node 22 and build caching are enabled.
 
 Build command (repository root):
