@@ -70,7 +70,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   let biomeIndex = 0, wantedBiome = 0, biomeSprites = null, scenery = null, biomeHeights = null, loading = false;
   let reveal = 0, levelTitle = null, resizeCount=0;
   let chakramFlight = null;
-  let heroCache=null, heroCacheBuilds=0;
+  let heroCache=null, heroCacheBuilds=0, equipmentPreview=null;
   const numbers = [];
   let numberSequence = 0;
   const coins = [];
@@ -414,7 +414,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     const interval = attackInterval(state);
     const recovery = state.heroActionAge < interval * .2;
     const attackIndex = (state.heroAttackCount || 0) - (recovery ? 1 : 0);
-    const weapon = previewRig ? (previewRig.slots.weapon ? {quality:['hunter-hides','bone-warrior','stone-guard'].indexOf(previewSet)} : null) : state.equipment.weapon;
+    const visualEquipment=equipmentPreview??state.equipment;
+    const weapon = previewRig ? (previewRig.slots.weapon ? {quality:['hunter-hides','bone-warrior','stone-guard'].indexOf(previewSet)} : null) : visualEquipment.weapon;
     const ranged=Boolean(WEAPONS[weapon?.weaponId]?.range),customWeapon=Boolean(WEAPONS[weapon?.weaponId]?.sprite&&WEAPONS[weapon.weaponId].epoch===(weapon.epoch??1));
     const weaponSource=WEAPONS[weapon?.weaponId]?.atlas||sets[0],weaponImage=art[weaponSource+'-weapon'];
     const throwing=customWeapon&&weapon.weaponId==='chakram';
@@ -479,7 +480,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
     context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(heroX, base + 2, hSize * .3, 3, 0, 0, Math.PI * 2); context.fill();
     let equipped = Object.fromEntries(Object.keys(heroRig.slots).map(slot => {
-      const item=state.equipment[slot],id=slot==='weapon'&&customWeapon?undefined:previewRig?(previewRig.slots[slot]?previewSet:undefined):(slot==='weapon'?((item?.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard']:[]):ARMOR_SETS[(item?.epoch??1)-1])?.[item?.quality];
+      const item=visualEquipment[slot],id=slot==='weapon'&&customWeapon?undefined:previewRig?(previewRig.slots[slot]?previewSet:undefined):(slot==='weapon'?((item?.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard']:[]):ARMOR_SETS[(item?.epoch??1)-1])?.[item?.quality];
       if(id&&!art[id]&&!loadingSets.has(id)){
         loadingSets.add(id);const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${artVersion}`;
         Promise.all([image.decode(),fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Equipment metadata missing');return r.json();})]).then(([,meta])=>{rigs[id]=meta;art[id]=image;}).catch(error=>console.error('Could not load equipment',id,error));
@@ -809,5 +810,5 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, prepare, prepareDungeon, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,heroCacheBuilds,heroCacheFrames:heroCache?.frames.size??0,heroCacheBytes:heroCache?heroCache.strip.width*heroCache.strip.height*4:0,loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
+  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,heroCacheBuilds,heroCacheFrames:heroCache?.frames.size??0,heroCacheBytes:heroCache?heroCache.strip.width*heroCache.strip.height*4:0,loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
 }

@@ -923,3 +923,6 @@ input,select,textarea {font-family:inherit;}
 #profiler-controls label{display:flex;flex-direction:column;gap:4px;width:100%;font-size:13px;}
 #profiler-controls select{min-width:0;width:100%;padding:6px;font:inherit;color:inherit;}
 #profiler-controls small{width:100%;font-size:12px;}
+
+#profiler-controls .profiler-outfit{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;}
+#profiler-outfit{width:18px;height:18px;margin:0;accent-color:#17332e;}
