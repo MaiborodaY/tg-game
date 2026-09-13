@@ -226,8 +226,8 @@ test('ordinary enemies drop one hammer at 20 percent, one payout per kill',()=>{
   const s=freshGame();s.hammers=0;s.enemies[0].hp=1;s.enemies[0].x=s.heroX+.115;
   let calls=0;const rng=()=>calls++===0?.999:calls===2?roll:roll===0?0:.999;
   const events=step(s,1.3,rng);assert.equal(events.find(e=>e.type==='kill').hammers,qty);
-  assert.equal(s.hammers,qty);assert.equal(s.coins,2);
-  step(s,.01,()=>0);assert.equal(s.hammers,qty);assert.equal(s.coins,2);
+  assert.equal(s.hammers,qty);assert.equal(s.coins,4);
+  step(s,.01,()=>0);assert.equal(s.hammers,qty);assert.equal(s.coins,4);
  }
  const last=wave(200,9);last.hammers=0;last.equipment.weapon=candidate('weapon',1e15);
  const boss=last.enemies.find(e=>e.boss);boss.x=last.heroX+.165;
@@ -378,7 +378,7 @@ test('anvil charges at start once, uses old probabilities until deadline and com
  assert.equal(finishUpgrade(loaded,9999999),false);assert.equal(loaded.anvilLevel,2);
  loaded.anvilLevel=ANVILS.length;assert.equal(upgradeAnvil(loaded),false);
  assert.equal(ANVILS.reduce((sum,row)=>sum+row.minutes,0),97776);
- assert.equal(ANVILS.at(-1).coins,5000000);
+ assert.equal(ANVILS.at(-1).coins,25000000);
  for(const row of ANVILS)assert.ok(Math.abs(row.chances.reduce((a,b)=>a+b,0)-100)<.001);
 });
 
@@ -880,7 +880,8 @@ test('expanded anvil keeps saved progress and running timers, caps old high leve
 test('sixty-level forge has three-day timers, rising odds and agreed price anchors',()=>{
  assert.equal(ANVILS.length,60);assert.equal(Math.max(...ANVILS.map(r=>r.minutes)),4320);
  assert.deepEqual(ANVILS[59].chances,[0,0,0,0,0,0,0,20,75,5]);
- assert.deepEqual([29,39,49,59].map(i=>ANVILS[i].coins),[22330,250000,1000000,5000000]);
+ assert.deepEqual(ANVILS.slice(0,5).map(row=>row.coins),[0,130,190,250,490]);
+ assert.deepEqual([9,19,29,39,49,59].map(i=>ANVILS[i].coins),[2730,16220,66990,1000000,5000000,25000000]);
  for(let i=0;i<60;i++){
   assert.ok(Math.abs(ANVILS[i].chances.reduce((a,b)=>a+b)-100)<1e-8);
   if(i)for(let e=1;e<10;e++)assert.ok(ANVILS[i].chances.slice(e).reduce((a,b)=>a+b)>=ANVILS[i-1].chances.slice(e).reduce((a,b)=>a+b)-1e-8);
@@ -888,8 +889,12 @@ test('sixty-level forge has three-day timers, rising odds and agreed price ancho
  for(let epoch=2;epoch<10;epoch++){
   const index=3+6*(epoch-2);assert.equal(ANVILS[index].chances[epoch],.02);assert.equal(ANVILS[index].chances[epoch-1],20);
  }
- const old=freshGame(1000);old.anvilLevel=40;old.coins=1000000;
+ const old=freshGame(1000);old.anvilLevel=40;old.coins=1177440;
  const loaded=restore(JSON.stringify(old),1000);assert.equal(loaded.anvilLevel,40);assert.equal(upgradeAnvil(loaded,1000),true);
+ assert.equal(loaded.coins,0);assert.equal(loaded.upgradeEndsAt,1000+2232*60000);
+ const last=freshGame(1000);last.anvilLevel=59;last.coins=24999999;
+ assert.equal(upgradeAnvil(last,1000),false);assert.equal(last.coins,24999999);assert.equal(last.upgradeEndsAt,0);
+ last.coins++;assert.equal(upgradeAnvil(last,1000),true);assert.equal(last.coins,0);assert.equal(last.upgradeEndsAt,1000+4320*60000);
 });
 
 test('Ancient onboarding chances rise without reducing later rare tiers',()=>{
@@ -1001,14 +1006,20 @@ test('legacy battle counters survive and new statistics start at zero',()=>{
  assert.deepEqual(freshGame().battleStats,loaded.battleStats);
 });
 
-test('ordinary coin rewards are halved while boss rewards stay unchanged',async()=>{
+test('ordinary coin rewards use the biome table directly and refresh saved enemies',async()=>{
  const {COMBAT}=await import('./balance.mjs');
+ assert.deepEqual(COMBAT.slice(0,20).map(row=>row.monster_coins),[4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,10]);
+ assert.deepEqual(Array.from({length:10},(_,i)=>[enemyFor(i*20+1).reward,enemyFor(i*20+20).reward]),
+   [[4,10],[15,18],[27,33],[49,60],[89,108],[162,195],[293,354],[531,642],[963,1163],[1744,2108]]);
  for(let level=1;level<=MAX_LEVEL;level++){
-  for(const kind of ['warrior','archer','healer'])assert.equal(enemyFor(level,kind).reward,Math.floor(COMBAT[level-1].monster_coins/2));
+  for(const kind of ['warrior','archer','healer'])assert.equal(enemyFor(level,kind).reward,COMBAT[level-1].monster_coins);
   assert.equal(enemyFor(level,'boss').reward,COMBAT[level-1].boss_coins);
  }
- const s=freshGame();s.enemies[0].reward=4;s.coins=123;
- const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies[0].reward,2);assert.equal(loaded.coins,123);
+ const s=freshGame();s.enemies[0].reward=2;s.coins=123;
+ const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies[0].reward,4);assert.equal(loaded.coins,123);
+ const target=loaded.enemies[0];target.hp=1;target.damage=0;target.x=loaded.heroX+.115;
+ const events=step(loaded,1.3,()=>.999);
+ assert.equal(events.find(e=>e.type==='kill').value,4);assert.equal(loaded.coins,127);assert.equal(loaded.battleStats.coins,4);
 });
 
 test('hard biome curve strengthens the first biome and updates saved enemies without resetting progress',()=>{

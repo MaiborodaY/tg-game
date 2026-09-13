@@ -491,7 +491,7 @@ export function enemyFor(level, kind = 'warrior') {
   return { kind, boss: kind === 'boss',
     name: biome.names[kind === 'boss' && level % LEVELS_PER_BIOME ? 'commander' : kind],
     maxHp: row[kind + '_hp'], damage: kind === 'healer' ? 0 : row[kind + '_damage'],
-    healing: row.healing_per_tick, reward: kind === 'boss' ? row.boss_coins : Math.floor(row.monster_coins / 2) };
+    healing: row.healing_per_tick, reward: kind === 'boss' ? row.boss_coins : row.monster_coins };
 }
 export const COMPANIONS = [
   {id:'archer',name:'Archer',role:'Ranged damage',description:'Fights from behind the hero'},
