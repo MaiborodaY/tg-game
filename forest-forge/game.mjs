@@ -41,8 +41,8 @@ export const WEAPONS = {
   'breach-hammer': { sprite:true, name:'Breach Hammer', range:0, multiplier:1, quality:0, epoch:5, attack:'swing', atlas:'field-scout' },
   'rescue-axe': { sprite:true, name:'Rescue Axe', range:0, multiplier:1, quality:0, epoch:5, attack:'swing', atlas:'field-scout' },
   'shock-baton': { sprite:true, name:'Shock Baton', range:0, multiplier:1, quality:0, epoch:5, attack:'swing', atlas:'field-scout' },
-  'assault-rifle': { sprite:true, name:'Field Rifle', range:.46, multiplier:.8, quality:0, epoch:5, attack:'shoot', atlas:'field-scout', pose:'crossbow' },
-  'rotary-gun': { sprite:true, name:'Rotary Gun', range:.46, multiplier:.8, quality:0, epoch:5, attack:'shoot', atlas:'field-scout', pose:'crossbow' },
+  'assault-rifle': { sprite:true, name:'Field Rifle', interval:.5, range:.46, multiplier:.8, quality:0, epoch:5, attack:'shoot', atlas:'field-scout', pose:'crossbow' },
+  'rotary-gun': { sprite:true, name:'Rotary Gun', interval:.25, range:.46, multiplier:.8, quality:0, epoch:5, attack:'shoot', atlas:'field-scout', pose:'crossbow' },
   'plasma-sabre': { sprite:true, name:'Plasma Sabre', range:0, multiplier:1, quality:0, epoch:6, attack:'combo', atlas:'neon-runner', thrustTurn:55 },
   'magnet-hammer': { sprite:true, name:'Magnet Hammer', range:0, multiplier:1, quality:0, epoch:6, attack:'swing', atlas:'neon-runner' },
   'mono-scythe': { sprite:true, name:'Monoblade Scythe', range:0, multiplier:1, quality:0, epoch:6, attack:'swing', atlas:'neon-runner' },
@@ -95,7 +95,7 @@ export const WEAPONS = {
   'pressure-ram': {"sprite":true,"name":"Pressure Ram","range":0,"multiplier":1,"quality":0,"epoch":5,"attack":"swing","atlas":"field-scout"},
   'hydraulic-jaws': {"sprite":true,"name":"Hydraulic Jaws","range":0,"multiplier":1,"quality":0,"epoch":5,"attack":"swing","atlas":"field-scout"},
   'ram-knuckles': {"sprite":true,"name":"Ram Knuckles","range":0,"multiplier":1,"quality":0,"epoch":5,"attack":"swing","atlas":"field-scout"},
-  'drum-shotgun': {"sprite":true,"name":"Drum Shotgun","range":0.46,"multiplier":0.8,"quality":0,"epoch":5,"attack":"shoot","atlas":"field-scout","pose":"crossbow"},
+  'drum-shotgun': {"interval":1,"sprite":true,"name":"Drum Shotgun","range":0.46,"multiplier":0.8,"quality":0,"epoch":5,"attack":"shoot","atlas":"field-scout","pose":"crossbow"},
   'ring-cutter': {"sprite":true,"name":"Ring Cutter","range":0,"multiplier":1,"quality":0,"epoch":6,"attack":"swing","atlas":"neon-runner"},
   'ion-fork': {"sprite":true,"name":"Ion Fork","range":0,"multiplier":1,"quality":0,"epoch":6,"attack":"thrust","atlas":"neon-runner","thrustTurn":55},
   'hinge-blade': {"sprite":true,"name":"Hinge Blade","range":0,"multiplier":1,"quality":0,"epoch":6,"attack":"combo","atlas":"neon-runner","thrustTurn":55},
@@ -366,13 +366,15 @@ const KINDS = { W: 'warrior', A: 'archer', H: 'healer', B: 'boss' };
 export const AFFIXES = [
   { id:'damage', name:'Damage', min:3, max:10, step:.1 },
   { id:'health', name:'Health', min:3, max:10, step:.1 },
-  { id:'speed', name:'Attack speed', min:1, max:5, step:.1 },
-  { id:'crit', name:'Critical chance', min:1, max:3, step:.1 },
-  { id:'critDamage', name:'Critical damage', min:5, max:15, step:.1 },
-  { id:'lifesteal', name:'Lifesteal', min:1, max:3, step:.1 },
-  { id:'block', name:'Block chance', min:1, max:3, step:.1 },
+  { id:'speed', name:'Attack speed', min:1, max:10, step:.1 },
+  { id:'crit', name:'Critical chance', min:1, max:5, step:.1 },
+  { id:'critDamage', name:'Critical damage', min:5, max:50, step:.1 },
+  { id:'lifesteal', name:'Lifesteal', min:1, max:5, step:.1 },
+  { id:'block', name:'Block chance', min:1, max:4, step:.1 },
   { id:'regen', name:'Health regen', min:.1, max:.5, step:.1 },
-  { id:'double', name:'Double strike', min:1, max:5, step:.1 },
+  { id:'meleeDamage', name:'Melee damage', min:12, max:40, step:.1 },
+  { id:'rangedDamage', name:'Ranged damage', min:6, max:20, step:.1 },
+  { id:'double', name:'Double strike', min:1, max:10, step:.1 },
 ];
 export const REFORGE_PRICES = [0,400,800,1600,3125,6250,12500,25000,50000,100000];
 export function rollAffix(rng = Math.random) {
@@ -385,7 +387,7 @@ export function affixBonuses(s) {
   for (const item of Object.values(s.equipment)) if (item?.affix) bonuses[item.affix.type] += item.affix.value;
   return bonuses;
 }
-export function attackInterval(s) { return HERO_ATTACK_INTERVAL / (1 + affixBonuses(s).speed / 100); }
+export function attackInterval(s) { return (WEAPONS[s.equipment.weapon?.weaponId]?.interval ?? HERO_ATTACK_INTERVAL) / (1 + affixBonuses(s).speed / 100); }
 export function reforgeCost(item) {
   const base = REFORGE_PRICES[(item?.epoch ?? 1)-1] || 0;
   return Math.ceil(base * (10 + Math.min(10,item?.reforges || 0)) / 10);
@@ -480,9 +482,12 @@ export function stats(s, includePotions = true) {
   for (const slot of SLOTS) total[DAMAGE_SLOTS.includes(slot) ? 'damage' : 'hp'] += Math.round((s.equipment[slot]?.value ?? 0) * (1 + (s.workshop?.slots?.[slot] || 0) / 100));
   const bonuses = affixBonuses(s);
   total.hp = Math.round(total.hp * (1 + bonuses.health / 100));
-  total.damage = Math.round(total.damage * (1 + bonuses.damage / 100));
+  const weapon=s.equipment.weapon;
+  const typedDamage=weapon?(WEAPONS[weapon.weaponId]?.range>0?bonuses.rangedDamage:bonuses.meleeDamage):0;
+  total.damage = Math.round(total.damage * (1 + (bonuses.damage+typedDamage) / 100));
   if(s.mount?.owned && s.mount.equipped){total.hp=Math.round(total.hp*1.2);total.damage=Math.round(total.damage*1.2);}
   if(includePotions)for(const [type,key] of [['damage','damage'],['health','hp']]){const b=s.alchemy?.active[type];if(b?.remaining>0)total[key]=Math.round(total[key]*(1+b.value/100));}
+  total.damage *= (WEAPONS[s.equipment.weapon?.weaponId]?.interval ?? HERO_ATTACK_INTERVAL) / HERO_ATTACK_INTERVAL;
   return total;
 }
 export function heroPower(s) {
@@ -490,7 +495,7 @@ export function heroPower(s) {
   const hero = stats(s, false), bonuses = affixBonuses(s);
   // Critical damage contributes only when equipment grants critical chance.
   const critical = 1 + Math.min(50, bonuses.crit) / 100 * (.5 + bonuses.critDamage / 100);
-  const attack = hero.damage * (1 + bonuses.speed / 100) * (1 + .75 * bonuses.double / 100) * critical;
+  const attack = hero.damage * HERO_ATTACK_INTERVAL / attackInterval(s) * (1 + .75 * bonuses.double / 100) * critical;
   // Fixed ten-second recovery window; independent of the current enemy and missing HP.
   const recovery = hero.hp * 10 * bonuses.regen / 100 + attack * 5 * bonuses.lifesteal / 100;
   const defense = (hero.hp + recovery) / 10 * (1 + bonuses.block / 100);
@@ -533,7 +538,7 @@ export function selectCompanion(s,id) {
   if(!s.hiredCompanions.includes(id))return false;
   s.selectedCompanion=id;return true;
 }
-function prepareEncounter(s) {
+export function prepareEncounter(s) {
   if(s.selectedCompanion && s.selectedCompanion!==s.companion?.kind){
     s.companion={kind:s.selectedCompanion,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
       ...(s.selectedCompanion==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})};
@@ -595,9 +600,9 @@ export function dungeonRewards(s,id,floor) {
   }
   return {coins,hammers,ore};
 }
-export function enterDungeon(s,id,floor,now=Date.now()) {
+export function enterDungeon(s,id,floor,now=Date.now(),unlimited=false) {
   const index=DUNGEONS.findIndex(d=>d.id===id),boss=dungeonBoss(id,floor);
-  if(s.highest<2||s.dungeons.run||!boss||floor>s.dungeons.cleared[index]+1||dungeonDay(s,now)[index]>=2)return false;
+  if(s.highest<2||s.dungeons.run||!boss||floor>s.dungeons.cleared[index]+1||(!unlimited&&dungeonDay(s,now)[index]>=2))return false;
   const kind=s.selectedCompanion;
   const battle={alchemy:s.alchemy,equipment:structuredClone(s.equipment),workshop:structuredClone(s.workshop),mount:{...s.mount},
     level:s.level,highest:s.highest,encounter:9,completed:false,phase:'walk',phaseTime:0,heroX:.24,heroClock:0,heroActionAge:1,heroAttackCount:0,doubleStrikeDelay:0,targetId:null,
@@ -605,20 +610,20 @@ export function enterDungeon(s,id,floor,now=Date.now()) {
     forging:0,autoForge:false,battleStats:{maxHit:0,maxCrit:0},
     enemies:[{...boss,baseDamage:boss.damage,id:0,hp:boss.maxHp,x:1.02,clock:0,healClock:0,actionAge:1,deadTime:0,engaged:false,moving:true}],dungeonBattle:{id,floor,time:0}};
   battle.hp=stats(battle).hp;
-  s.dungeons.last=null;s.dungeons.run={id,floor,rewards:dungeonRewards(s,id,floor),battle};
+  s.dungeons.last=null;s.dungeons.run={id,floor,rewards:dungeonRewards(s,id,floor),battle,...(unlimited?{unlimited:true}:{})};
   return true;
 }
 export function leaveDungeon(s) {
   if(!s.dungeons.run)return false;
   s.dungeons.last={outcome:'left',id:s.dungeons.run.id,floor:s.dungeons.run.floor};s.dungeons.run=null;return true;
 }
-export function sweepDungeon(s,id,now=Date.now(),rng=Math.random) {
+export function sweepDungeon(s,id,now=Date.now(),rng=Math.random,unlimited=false) {
   const index=DUNGEONS.findIndex(d=>d.id===id),floor=s.dungeons.cleared[index];
-  if(s.highest<2||s.dungeons.run||!dungeonBoss(id,floor)||dungeonDay(s,now)[index]>=2)return false;
+  if(s.highest<2||s.dungeons.run||!dungeonBoss(id,floor)||(!unlimited&&dungeonDay(s,now)[index]>=2))return false;
   const rewards=dungeonRewards(s,id,floor);
   s.coins+=rewards.coins;s.hammers+=rewards.hammers;
   rewards.ore.forEach((n,i)=>{s.mine.ore[i]=(s.mine.ore[i]||0)+n;s.mine.pending[i]??=0;});
-  s.dungeons.wins[index]++;
+  s.dungeons.wins[index]=Math.min(2,s.dungeons.wins[index]+1);
   const reagent=rollReagent(s.highest,true,rng);if(reagent>=0&&s.alchemy)s.alchemy.reagents[reagent]++;
   s.dungeons.last={outcome:'won',id,floor,rewards};return true;
 }
@@ -746,7 +751,7 @@ export function idleLoot(s,now=Date.now()) {
   return {minutes,coins:Math.floor((bank.coins+added*Math.round(rates.coins*20)*(1+passivePotionBonus(s,'coins',from,to)))/20),
     hammers:Math.floor((bank.hammers+added*Math.round(rates.hammers*20)*(1+passivePotionBonus(s,'hammers',from,to)))/20)};
 }
-function settleIdle(s,now) {
+export function settleIdle(s,now) {
   const bank=s.idleStore??={minutes:0,coins:0,hammers:0},minutes=idleRewards(s,now),added=minutes-bank.minutes,rates=idleRates(s);
   const from=s.idleSince,to=from+added*60000;
   if(s.alchemy){s.alchemy.pending=idleReagents(s,now);s.alchemy.idleMinutes+=added;}
@@ -765,15 +770,17 @@ export function workshopPrice(s,key) {
   const slot=SLOTS.includes(key),level=slot?s.workshop.slots[key]:s.workshop[key];
   return WORKSHOP_PRICES[slot?'slot':key]?.[level]??null;
 }
-export function upgradeWorkshop(s,key,now=Date.now()) {
+export function upgradeWorkshop(s,key,now=Date.now(),free=false) {
   const price=workshopPrice(s,key);if(price==null)return false;
-  if(key==='storage'){if(s.coins<price)return false;}
-  else if((s.mine.ore[price[0]]||0)<price[1])return false;
+  if(!free){
+    if(key==='storage'){if(s.coins<price)return false;}
+    else if((s.mine.ore[price[0]]||0)<price[1])return false;
+  }
   // Settle earned rewards at the old rate and capacity before purchasing.
   settleIdle(s,now);
   if(key==='storage')settleMine(s,now);
   const fraction=s.hp/stats(s).hp;
-  if(key==='storage')s.coins-=price;else s.mine.ore[price[0]]-=price[1];
+  if(!free){if(key==='storage')s.coins-=price;else s.mine.ore[price[0]]-=price[1];}
   if(SLOTS.includes(key))s.workshop.slots[key]++;else s.workshop[key]++;
   s.hp=fraction*stats(s).hp;return true;
 }
@@ -955,11 +962,11 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     s.hp=rootHpFraction*stats(s).hp;
     const won=b.phase==='victory',lost=b.phase==='dead',timeout=b.dungeonBattle.time>=90-1e-8;
     if(won||lost||timeout){
-      const allowed=dungeonDay(s,now)[index]<2;
+      const allowed=run.unlimited||dungeonDay(s,now)[index]<2;
       if(won&&allowed){
         s.coins+=run.rewards.coins;s.hammers+=run.rewards.hammers;
         run.rewards.ore.forEach((n,i)=>{s.mine.ore[i]=(s.mine.ore[i]||0)+n;s.mine.pending[i]??=0;});
-        s.dungeons.wins[index]++;s.dungeons.cleared[index]=Math.max(s.dungeons.cleared[index],run.floor);
+        s.dungeons.wins[index]=Math.min(2,s.dungeons.wins[index]+1);s.dungeons.cleared[index]=Math.max(s.dungeons.cleared[index],run.floor);
       }
       const reagent=won&&allowed?rollReagent(s.highest,true,rng):-1;if(reagent>=0&&s.alchemy)s.alchemy.reagents[reagent]++;
       s.dungeons.last={outcome:won&&allowed?'won':lost?'lost':'timeout',id:run.id,floor:run.floor,...(won&&allowed?{rewards:run.rewards}:{})};
@@ -1009,7 +1016,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     for(const potion of POTIONS){if(!potion.combat)continue;const b=s.alchemy.active[potion.id];if(b?.remaining>0){b.remaining=Math.max(0,b.remaining-dt);if(!b.remaining)expired=true;}}
     if(expired){s.hp=fraction*stats(s).hp;events.push({type:'potionExpired'});}
   }
-  const bonuses = affixBonuses(s), hero = stats(s), interval = HERO_ATTACK_INTERVAL / (1 + bonuses.speed/100);
+  const bonuses = affixBonuses(s), hero = stats(s), interval = attackInterval(s);
   if (s.hp > 0 && s.phase !== 'dead') s.hp = Math.min(hero.hp, s.hp + hero.hp * bonuses.regen / 100 * dt);
   if(s.companion?.kind==='druid') {
     const c=s.companion;

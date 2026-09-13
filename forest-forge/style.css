@@ -591,10 +591,10 @@ button:disabled { opacity:.55; cursor:default; }
 
 /* Affix identity stays visible without covering the item level. */
 .slot > img.affix-badge,.item-icon > img.affix-badge,.stack-card > img.affix-badge,#comparison .item-icon > img.affix-badge {
-  position:absolute;left:-3px;top:-3px;width:20px;height:20px;padding:1px;box-sizing:border-box;
-  object-fit:contain;background:#263b3b;border:1px solid #fffaf0;border-radius:5px;z-index:4;pointer-events:none;
+  position:absolute;left:1px;top:1px;width:16px;height:16px;padding:0;box-sizing:border-box;
+  object-fit:contain;background:none;border:0;border-radius:0;filter:drop-shadow(0 1px 1px #142e2d66);z-index:4;pointer-events:none;
 }
-#comparison .item-icon > img.affix-badge {width:24px;height:24px;}
+#comparison .item-icon > img.affix-badge {width:18px;height:18px;}
 .affix-inline {display:inline-block;width:26px;height:26px;object-fit:contain;vertical-align:middle;margin-right:5px;}
 #reforge-current .affix-inline,#reforge-new .affix-inline {width:32px;height:32px;}
 
@@ -657,7 +657,7 @@ button:disabled { opacity:.55; cursor:default; }
 
 #game.page-paused .forging *,#game.mine-open .forging *{animation-play-state:paused}
 
-#comparison #equipped-affix-row {display:flex;align-items:center;gap:8px; padding:6px 8px;}
+#comparison #equipped-affix-row {display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
 #equipped-affix {flex:1;min-width:0;}
 .transfer-affix-row {display:flex;align-items:center;gap:4px;min-height:32px;flex-shrink:0;font:11px 'Lilita UI',sans-serif;cursor:pointer;}
 .transfer-affix-row input {width:17px;height:17px;margin:0;accent-color:#08a9ed;flex-shrink:0;}
@@ -1133,3 +1133,38 @@ input,select,textarea {font-family:inherit;}
 #alchemy-dialog .alchemy-actions .alchemy-price img{width:20px;height:22px;object-fit:contain;}
 #alchemy-dialog .alchemy-actions .alchemy-price.missing{color:#842a2a;}
 #alchemy-dialog .alchemy-actions button:first-child{font-size:14px;gap:5px;}
+
+#companions-dialog .companion-test-level{float:right;display:flex;align-items:center;gap:3px;margin:2px 0 3px 5px;font-size:10px;}
+#companions-dialog .companion-test-level input{width:43px;padding:3px;border:1px solid #819580;border-radius:5px;background:var(--paper);color:var(--ink);font:12px 'Lilita UI',sans-serif;}
+
+#test-level-toggle{position:absolute;pointer-events:auto;top:19px;left:calc(50% + 66px);padding:1px 4px;border:1px solid #617d6b;border-radius:5px;background:#e4efda;color:var(--ink);font-size:13px;}
+#test-level-dialog{width:min(310px,calc(100vw - 32px));padding:14px;}
+#test-level-dialog h2{font-size:21px;}
+#test-level-dialog label{gap:8px;font-size:13px;}
+#test-level-dialog select{min-width:0;max-width:210px;font:12px 'Lilita UI',sans-serif;padding:6px;}
+#test-level-dialog input{width:60px;}
+#test-level-go{width:100%;margin-top:14px;}
+
+#test-equipment-dialog{width:min(320px,calc(100vw - 32px));padding:14px;max-height:calc(100dvh - 30px);overflow:auto;}
+#test-equipment-dialog h2{font-size:21px;}
+#test-equipment-dialog label{gap:8px;font-size:13px;}
+#test-equipment-dialog select{max-width:190px;min-width:0;padding:6px;font:12px 'Lilita UI',sans-serif;}
+#test-equipment-dialog input{width:60px;}
+#test-equipment-result{font-size:12px;}
+#test-equipment-apply,#test-equipment-open{width:100%;margin-top:10px;font-size:15px;}
+
+.local-test-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0;font-size:12px}.local-test-controls label{display:flex;align-items:center;gap:5px}.local-test-controls input{accent-color:#4d9860}.local-test-controls .mini-button{padding:6px 8px}
+
+#test-equipment-epoch,#test-equipment-epoch option{background-color:var(--epoch-color);color:#142e2d}
+
+#local-saves-dialog{max-height:85dvh;overflow:auto}#local-saves-dialog>p{font-size:12px}.local-save-card{display:grid;gap:7px;padding:10px;margin:10px 0;border:1px solid #8da393;border-radius:10px;background:#f2f1e8}.local-save-card small{font-size:11px;color:#536b62}.local-save-actions{display:flex;flex-wrap:wrap;gap:6px}.local-save-actions button{padding:6px 9px}#local-save-new{width:100%;font-size:14px}
+
+.colored-item-name{color:var(--epoch-color);paint-order:stroke fill;-webkit-text-stroke:1.5px #142e2d;text-shadow:0 1px #142e2d}
+
+#comparison .item-affix-caption,#inventory-item-affix.item-affix-caption{margin:4px 0 0;padding:0;border:0;background:none;color:#64706c;font:400 13px/1.3 'Lilita UI',sans-serif}
+
+.item-affix-caption .affix-inline{width:16px;height:16px;margin-right:4px;vertical-align:-3px}
+
+.currencies .money{width:max-content;min-width:52px;gap:3px;padding:0 5px 0 2px;white-space:nowrap;flex-shrink:0}.currencies .money>.coin,.currencies .rune-balance img{position:static;transform:none;width:17px;height:17px;flex-shrink:0}.currencies .money>span{flex-shrink:0}
+
+@media(max-width:380px){.currencies{flex-direction:column;align-items:flex-end;gap:3px}.currencies .money{min-width:48px;font-size:11px;line-height:16px}}

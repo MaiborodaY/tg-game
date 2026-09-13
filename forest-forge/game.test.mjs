@@ -621,9 +621,9 @@ test('ranged hero stops at range, hits before contact, and does not retreat when
  const events=advance(s,1.35);assert.equal(s.heroX,x);assert.ok(events.some(e=>e.type==='heroHit'));assert.ok(e.x-s.heroX>.115);assert.ok(e.moving);
  advance(s,4);assert.equal(s.heroX,x);assert.ok(Math.abs(e.x-s.heroX-.115)<.001);assert.ok(e.engaged);assert.ok(s.heroAttackCount>=3);
 });
-test('all weapons have identical attack cadence at contact and ranged damage survives saving',()=>{
+test('standard weapons share attack cadence and ranged damage survives saving',()=>{
  const counts=[];
- for(const id of Object.keys(WEAPONS)){
+ for(const id of Object.keys(WEAPONS).filter(id=>!WEAPONS[id].interval)){
   const s=freshGame(),ranged=['slingshot','short-bow'].includes(id);s.equipment.weapon={slot:'weapon',weaponId:id,name:id,quality:WEAPONS[id].quality,value:2,sale:1,epoch:WEAPONS[id].epoch,itemLevel:1};
   const e=s.enemies[0];e.x=s.heroX+.115;e.hp=e.maxHp=1000;e.damage=0;
   const events=[],hits=[];for(let frame=0;frame<150;frame++){const batch=step(s,1/30,()=>.999);events.push(...batch);if(batch.some(e=>e.type==='heroHit'))hits.push((frame+1)/30);}counts.push(hits.length);assert.equal(events.find(e=>e.type==='heroHit').value,4);assert.ok(Math.abs(hits[0]-1.25)<=1/30);for(let i=1;i<hits.length;i++)assert.ok(Math.abs(hits[i]-hits[i-1]-2)<1e-9);
@@ -794,7 +794,7 @@ test('death lets survivors march past without attacking; restart and boss comple
 
 test('affixes share inclusive ranges',()=>{
  for(const [n,a] of AFFIXES.entries())for(const [roll,value] of [[0,a.min],[1.1/(Math.round((a.max-a.min)/.1)+1),Number((a.min+.1).toFixed(1))],[.999,a.max]]){
-  const rolls=[(n+.1)/9,roll];assert.deepEqual(rollAffix(()=>rolls.shift()),{type:a.id,value});
+  const rolls=[(n+.1)/AFFIXES.length,roll];assert.deepEqual(rollAffix(()=>rolls.shift()),{type:a.id,value});
  }
 });
 
@@ -804,7 +804,7 @@ test('forged weapon affix chance grows with pre-forge epoch mastery, not rolled 
   const rolls=[0,0,0,0,chance-(success?.000001:0),.999,.999];
   assert.equal(forge(s,()=>rolls.shift()),true);
   assert.equal(s.forgingItems[0].itemLevel,1);
-  assert.deepEqual(s.forgingItems[0].affix,success?{type:'double',value:5}:undefined);
+  assert.deepEqual(s.forgingItems[0].affix,success?{type:'double',value:10}:undefined);
  }
  const s=freshGame();s.hammers=1;s.anvilLevel=2;s.mastery[0].level=100;
  const rolls=[0,.99999,0,0,.001];forge(s,()=>rolls.shift());
@@ -911,7 +911,7 @@ test('reroll replaces only the offer, charges the next price, and keeps equipped
  assert.equal(reforge(s,'ring1',()=>0),true);assert.equal(s.coins,600);
  assert.equal(reforge(s,'ring1',()=>.999),true);assert.equal(s.coins,160);
  assert.deepEqual(s.equipment.ring1.affix,{type:'speed',value:4});
- assert.deepEqual(s.equipment.ring1.reforgeOffer,{type:'double',value:5});
+ assert.deepEqual(s.equipment.ring1.reforgeOffer,{type:'double',value:10});
  assert.equal(reforgeCost(s.equipment.ring1),480);
  const before=structuredClone(s);assert.equal(reforge(s,'ring1'),false);assert.deepEqual(s,before);
  assert.equal(resolveReforge(s,'ring1',false),true);assert.deepEqual(s.equipment.ring1.affix,{type:'speed',value:4});assert.equal(s.coins,160);
@@ -1399,4 +1399,47 @@ test('inventory bulk sale keeps equal, stronger, affixed and unfilled slots; rin
  assert.deepEqual(sellWeaker(s,false,true,true),{count:2,coins:2});assert.equal(s.inventory.length,5);assert.equal(s.pending,pending);assert.equal(s.coins,2);
  assert.equal(sellWeaker(s,false,true,false).count,1);assert.equal(s.inventory.length,4);assert.equal(s.coins,3);
  s.equipment.ring2=null;s.inventory.push(candidate('ring',1));assert.equal(sellWeaker(s,false,true,false).count,0);
+});
+
+test('rotary gun fires every quarter second for one eighth damage, including saved gear',()=>{
+ const s=freshGame();s.equipment.weapon={slot:'weapon',weaponId:'rotary-gun',name:'Rotary Gun',quality:0,value:798,sale:5,epoch:5,itemLevel:1};
+ const e=s.enemies[0];e.x=s.heroX+.115;e.hp=e.maxHp=100000;e.damage=0;
+ const hits=[];for(let frame=0;frame<150;frame++)for(const event of step(s,1/30,()=>.999))if(event.type==='heroHit'){assert.equal(event.value,100);hits.push((frame+1)/30);}
+ assert.equal(hits.length,20);
+ for(let i=1;i<hits.length;i++)assert.ok(Math.abs(hits[i]-hits[i-1]-.25)<=1/30);
+ const serial=freshGame();serial.equipment.weapon=s.equipment.weapon;assert.equal(stats(restore(JSON.stringify(serial))).damage,100);
+});
+
+test('drum shotgun halves the attack interval and per-shot damage without changing DPS',()=>{
+ const s=freshGame();s.equipment.weapon={slot:'weapon',weaponId:'drum-shotgun',name:'Drum Shotgun',quality:0,value:798,sale:5,epoch:5,itemLevel:1};
+ const e=s.enemies[0];e.x=s.heroX+.115;e.hp=e.maxHp=100000;e.damage=0;
+ const hits=[];for(let frame=0;frame<150;frame++)for(const event of step(s,1/30,()=>.999))if(event.type==='heroHit'){assert.equal(event.value,400);hits.push((frame+1)/30);}
+ assert.equal(hits.length,5);
+ for(let i=1;i<hits.length;i++)assert.ok(Math.abs(hits[i]-hits[i-1]-1)<1e-9);
+ const serial=freshGame();serial.equipment.weapon=s.equipment.weapon;assert.equal(stats(restore(JSON.stringify(serial))).damage,400);
+});
+
+test('field rifle fires twice a second and attack speed scales fast weapons proportionally',async()=>{
+ const {attackInterval,heroPower}=await import('./game.mjs');
+ const s=freshGame();s.equipment.weapon={slot:'weapon',weaponId:'crossbow',name:'Test',quality:0,value:798,sale:5,epoch:5,itemLevel:1};
+ const power=heroPower(s);s.equipment.weapon.weaponId='assault-rifle';
+ assert.equal(attackInterval(s),.5);assert.equal(stats(s).damage,200);assert.equal(heroPower(s),power);
+ const e=s.enemies[0];e.x=s.heroX+.115;e.hp=e.maxHp=100000;e.damage=0;
+ const hits=[];for(let frame=0;frame<150;frame++)for(const event of step(s,1/30,()=>.999))if(event.type==='heroHit'){assert.equal(event.value,200);hits.push((frame+1)/30);}
+ assert.equal(hits.length,10);for(let i=1;i<hits.length;i++)assert.ok(Math.abs(hits[i]-hits[i-1]-.5)<1e-9);
+ for(const [id,interval] of [['assault-rifle',.5],['rotary-gun',.25],['drum-shotgun',1]]){
+  s.equipment.weapon.weaponId=id;delete s.equipment.weapon.affix;
+  const damage=stats(s).damage;s.equipment.weapon.affix={type:'speed',value:5};
+  assert.equal(stats(s).damage,damage);assert.equal(attackInterval(s),interval/1.05);
+ }
+});
+
+test('melee and ranged affixes add to damage only for the equipped weapon type and survive saves',()=>{
+ const s=freshGame();s.equipment.weapon={slot:'weapon',weaponId:'club',name:'Club',value:98,epoch:1,quality:0,itemLevel:1,sale:1,affix:{type:'damage',value:10}};
+ s.equipment.helmet={...candidate('helmet',5),affix:{type:'meleeDamage',value:40}};
+ s.equipment.chest={...candidate('chest',5),affix:{type:'rangedDamage',value:20}};
+ assert.equal(stats(s).damage,150);
+ s.equipment.weapon.weaponId='slingshot';assert.equal(stats(s).damage,130);
+ const loaded=restore(JSON.stringify(s));assert.equal(stats(loaded).damage,130);assert.deepEqual(loaded.equipment.helmet.affix,s.equipment.helmet.affix);
+ s.equipment.weapon=null;assert.equal(stats(s).damage,2);
 });
