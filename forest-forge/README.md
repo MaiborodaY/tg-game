@@ -31,10 +31,33 @@ images use lossless WebP with a visible-pixel comparison. No prior QA output or
 machine-specific dependency path is needed. Editors and source concepts are not
 part of the public bundle.
 
-Pushing relevant changes to `main` triggers `.github/workflows/deploy-forest-forge.yml`:
-install, local tests, build, deploy. It uses the existing `CLOUDFLARE_API_TOKEN`
-repository secret. The Worker config is `workers/forest-forge/wrangler.jsonc`.
-Production gameplay testing is performed by the owner, not by the workflow.
+Pushing relevant changes to `main` triggers Cloudflare Workers Builds for the
+existing `forest-forge` Worker. GitHub Actions deployment is disabled and its
+workflow has been removed. Node 22 and build caching are enabled.
+
+Build command (repository root):
+```
+npm ci && npm --prefix forest-forge test && npm --prefix forest-forge run test:cloud && npm --prefix forest-forge run build
+```
+Deploy command: `npx wrangler deploy --config workers/forest-forge/wrangler.jsonc`.
+The build uses the existing Cloudflare-managed Workers Builds token. Set
+`NODE_VERSION=22` and `SKIP_DEPENDENCY_INSTALL=1` in its build variables so that
+only the explicit `npm ci` above installs dependencies.
+
+Build watch paths: `forest-forge/*`, `workers/forest-forge/*`,
+`workers/draft-battler-pvp/src/telegramAuth.ts`, `package.json`, and
+`package-lock.json`. Only `main` is watched. Cloudflare watch-path `*` matches
+nested paths too. Shared dependency/authentication changes intentionally rebuild
+the game; changes confined to other games do not.
+
+The two Pages projects already exclude the Forest Forge directories and former
+workflow path. Other games' workflows are unchanged. A Forest Forge-only push
+therefore does not deploy them. Changes to shared root dependencies can still
+trigger the projects that depend on them.
+
+Confirm a successful Cloudflare build for the pushed commit and its active Worker
+version before calling it live. No database migration is part of this publishing
+change. Production gameplay testing is performed by the owner.
 
 ## Telegram saves
 
