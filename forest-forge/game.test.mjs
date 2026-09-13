@@ -1,4 +1,5 @@
 import { expandInventory } from './game.mjs';
+import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs';
 import { TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,6 +13,76 @@ function wave(level,index) {
  const s=freshGame();s.level=s.highest=level;s.encounter=index-1;s.phase='victory';s.phaseTime=0;step(s,1/30);return s;
 }
 function durable(s) { s.equipment.helmet=candidate('helmet',10000);s.equipment.weapon=candidate('weapon',2);s.hp=stats(s).hp;return s; }
+
+test('shop rolls ten items up to 100 independently of mastery and guarantees both weapon ranges',()=>{
+ const now=SHOP_REFRESH_INTERVAL*10+1000;
+ for(let level=1;level<=ANVILS.length;level++){
+   const s=freshGame(now);s.anvilLevel=level;const before=JSON.stringify(s);
+   assert.equal(refreshShop(s,now,()=>.999999),true);
+   assert.equal(s.shop.offers.length,10);
+   assert.equal(WEAPONS[s.shop.offers[0].item.weaponId].range,0);
+   assert.ok(WEAPONS[s.shop.offers[1].item.weaponId].range>0);
+   assert.ok(s.shop.offers.every(o=>o.item.itemLevel===100));
+   assert.equal(JSON.stringify({...s,shop:null}),before);
+ }
+});
+
+test('shop gives exactly five times the rare-epoch probability and caps the total from later epochs first',()=>{
+ const s=freshGame();s.anvilLevel=5;
+ refreshShop(s,0,()=>.997499);assert.ok(s.shop.offers.every(o=>o.item.epoch===2));
+ refreshShop(s,SHOP_REFRESH_INTERVAL,()=>.997501);assert.ok(s.shop.offers.every(o=>o.item.epoch===3));
+ s.anvilLevel=60;
+ refreshShop(s,2*SHOP_REFRESH_INTERVAL,()=>.74999);assert.equal(s.shop.offers[0].item.epoch,9);
+ refreshShop(s,3*SHOP_REFRESH_INTERVAL,()=>.75001);assert.equal(s.shop.offers[0].item.epoch,10);
+ refreshShop(s,4*SHOP_REFRESH_INTERVAL,()=>0);assert.ok(s.shop.offers.every(o=>o.item.epoch===9));
+});
+
+test('shop affixes use a fixed half percent on every item type and add fifty percent to price',()=>{
+ for(const chance of [.004999,.005]){
+   const s=freshGame();s.anvilLevel=5;
+   const rolls=Array.from({length:10},(_,i)=>[...(i<2?[]:[(SLOTS.indexOf(i===2?'helmet':i===3?'ring1':'chest')+.1)/12]),.999999,.999999,0,chance,...(chance<.005?[.1,.2]:[])]).flat();
+   refreshShop(s,0,()=>rolls.shift()??.5);
+   assert.ok(s.shop.offers.every(o=>!!o.item.affix===(chance<.005)));
+   assert.ok(s.shop.offers.every(o=>o.price===(chance<.005?3000:2000)));
+   assert.equal(s.shop.offers[2].item.slot,'helmet');assert.equal(s.shop.offers[3].item.slot,'ring');
+ }
+ const s=freshGame();s.anvilLevel=60;
+ refreshShop(s,0,()=>.999999);assert.equal(s.shop.offers[0].price,4374000);
+});
+
+test('shop stock and purchases survive reload and forge upgrades until the six-hour refresh',()=>{
+ const now=SHOP_REFRESH_INTERVAL*10+1000,s=freshGame(now);s.coins=10000;
+ refreshShop(s,now,()=>.5);assert.equal(buyShopItem(s,0,s.shop.cycle,now),true);
+ const restored=restore(JSON.stringify(s),now+1000);assert.deepEqual(restored.shop,s.shop);assert.deepEqual(restored.inventory,s.inventory);
+ restored.anvilLevel=20;
+ assert.equal(refreshShop(restored,now+2000,()=>{throw Error('must not reroll');}),false);
+ assert.equal(refreshShop(restored,11*SHOP_REFRESH_INTERVAL,()=>.5),true);
+ assert.ok(restored.shop.offers.every(o=>!o.bought));assert.equal(restored.inventory.length,1);
+});
+
+test('shop purchase rejects insufficient coins, full inventory, duplicate and expired offers without charging',()=>{
+ const now=SHOP_REFRESH_INTERVAL*10+1000,s=freshGame(now);refreshShop(s,now,()=>.5);
+ const cycle=s.shop.cycle,offer=s.shop.offers[0];
+ assert.equal(buyShopItem(s,0,cycle,now),false);assert.equal(s.inventory.length,0);
+ s.coins=offer.price*3;s.inventory=Array.from({length:s.inventoryCapacity},()=>structuredClone(offer.item));
+ assert.equal(buyShopItem(s,0,cycle,now),false);assert.equal(s.coins,offer.price*3);
+ s.inventory=[];assert.equal(buyShopItem(s,0,cycle,now),true);assert.equal(s.coins,offer.price*2);
+ assert.equal(buyShopItem(s,0,cycle,now),false);assert.equal(s.inventory.length,1);
+ assert.equal(buyShopItem(s,1,cycle,(cycle+1)*SHOP_REFRESH_INTERVAL),false);
+ refreshShop(s,(cycle+1)*SHOP_REFRESH_INTERVAL,()=>.5);
+ assert.equal(buyShopItem(s,0,cycle,(cycle+1)*SHOP_REFRESH_INTERVAL),false);assert.equal(s.coins,offer.price*2);
+});
+
+test('shop prehistoric armor keeps its affix after buying, equipping and restoring',()=>{
+ const now=SHOP_REFRESH_INTERVAL*10+1000,s=freshGame(now);s.coins=10000;
+ const rolls=Array.from({length:10},(_,i)=>[...(i<2?[]:[.1]),0,0,0,0,0,0]).flat();
+ refreshShop(s,now,()=>rolls.shift()??0);
+ assert.equal(s.shop.offers[2].item.slot,'helmet');assert.equal(buyShopItem(s,2,s.shop.cycle,now),true);
+ assert.equal(equip(s,'helmet',false,0),true);
+ const restored=restore(JSON.stringify(s),now);
+ assert.deepEqual(restored.equipment.helmet,s.equipment.helmet);assert.ok(restored.equipment.helmet.affix);
+ assert.deepEqual(restored.shop,s.shop);
+});
 
 test('turtle intercepts only from the front, halves damage and never attacks',()=>{
  const s=freshGame(),e=s.enemies[0];e.x=s.heroX+.20;e.hp=1000;e.damage=4;

@@ -1,6 +1,7 @@
 import { expandInventory } from './game.mjs';
 import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs';
 import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs';
+import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs';
 import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs';
 import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
@@ -299,6 +300,47 @@ for (const slot of SLOTS) {
 
 
 let inventorySlot='', inventorySelected=null, inventoryDisplay='';
+let shopDisplay='';
+$('shop-toggle').onclick=()=>{closeSheet();$('shop-dialog').showModal();shopDisplay='';updateShop();window.Telegram?.WebApp?.BackButton?.show();};
+$('shop-close').onclick=()=>$('shop-dialog').close();
+$('shop-dialog').addEventListener('close',()=>{if(!sheetSlot&&!anvilOpen)window.Telegram?.WebApp?.BackButton?.hide();});
+function updateShop(){
+ if(!$('shop-dialog').open)return;
+ const now=Date.now();
+ if(refreshShop(state,now)){shopDisplay='';save(true);}
+ setText('shop-balance',compact.format(state.coins));
+ const seconds=Math.max(0,Math.ceil(((state.shop.cycle+1)*SHOP_REFRESH_INTERVAL-now)/1000));
+ setText('shop-timer',`New stock in ${Math.floor(seconds/3600)}:${String(Math.floor(seconds/60)%60).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`);
+ const full=state.inventory.length>=state.inventoryCapacity;
+ const key=JSON.stringify([state.shop,artVersion,state.equipment,state.workshop.slots,full,state.shop.offers.map(o=>state.coins>=o.price),cloudReady,cloudFailed]);if(key===shopDisplay)return;shopDisplay=key;
+ const grid=$('shop-grid'),scroll=grid.scrollTop,cycle=state.shop.cycle;grid.replaceChildren();
+ state.shop.offers.forEach((offer,index)=>{
+   const tile=document.createElement('div');tile.className='shop-offer'+(offer.bought?' sold':'');
+   const button=document.createElement('span');button.className='slot epoch-'+offer.item.epoch;button.setAttribute('role','img');
+   button.setAttribute('aria-label',`${offer.item.name}, level ${offer.item.itemLevel}, ${offer.bought?'sold':offer.price+' coins'}`);
+   const img=document.createElement('img');img.alt='';const level=document.createElement('span');level.className='item-level';level.textContent='lv.'+offer.item.itemLevel;button.append(img,level);itemArt(img,offer.item);
+   const price=document.createElement('span');price.className='shop-price';price.setAttribute('aria-label',button.getAttribute('aria-label'));
+   if(!offer.bought){const coin=document.createElement('i');coin.className='coin';coin.setAttribute('aria-hidden','true');price.append(coin);}
+   const text=document.createElement('span');text.textContent=offer.bought?'Sold':compact.format(offer.price);price.append(text);price.title=offer.bought?'Sold':offer.price.toLocaleString('en-US')+' coins';
+   const art=document.createElement('div');art.className='shop-art';art.append(button,price);
+   const details=document.createElement('div');details.className='shop-details';
+   const slot=offer.item.slot==='ring'?((state.equipment.ring1?.value??0)<=(state.equipment.ring2?.value??0)?'ring1':'ring2'):offer.item.slot;
+   const stat=document.createElement('strong');stat.className='shop-stat';stat.textContent=describe(offer.item,slot);
+   const multiplier=1+(state.workshop.slots[slot]||0)/100;
+   const diff=Math.round(offer.item.value*multiplier)-Math.round((state.equipment[slot]?.value??0)*multiplier);
+   const comparison=document.createElement('span');comparison.className='shop-difference '+(diff>0?'better':diff<0?'worse':'equal');comparison.textContent=diff>0?'+'+compact.format(diff):diff<0?'−'+compact.format(Math.abs(diff)):'= 0';comparison.title='Compared with equipped item';
+   const name=document.createElement('strong');name.className='shop-name';name.textContent=offer.item.name;
+   const epoch=document.createElement('small');epoch.className='shop-epoch';epoch.textContent=EPOCHS[offer.item.epoch-1];
+   const statsLine=document.createElement('div');statsLine.className='shop-stat-line';statsLine.append(stat,comparison);
+   details.append(name,epoch,statsLine);
+   if(offer.item.affix){const affix=document.createElement('span');affix.className='shop-affix';affix.textContent=describeAffix(offer.item.affix);details.append(affix);}
+   const buy=document.createElement('button');buy.className='button blue shop-purchase';buy.textContent=offer.bought?'Sold':'Buy';buy.disabled=offer.bought||full||state.coins<offer.price||telegramLaunch&&(!cloudReady||cloudFailed);
+   buy.setAttribute('aria-label',(offer.bought?'Sold: ':'Buy ')+offer.item.name);buy.title=full?'Inventory full':state.coins<offer.price?'Not enough coins':'';
+   buy.onclick=()=>{if(telegramLaunch&&(!cloudReady||cloudFailed))return;if(buyShopItem(state,index,cycle)){save(true);shopDisplay='';}updateUI();};
+   tile.append(art,details,buy);grid.append(tile);
+ });
+ grid.scrollTop=scroll;
+}
 for(const slot of ['all',...SLOTS.filter(s=>!s.startsWith('ring')),'ring']){
  const button=document.createElement('button');button.type='button';button.dataset.slot=slot;
  button.setAttribute('aria-label',slot==='all'?'All items':slot==='ring'?'Rings':LABELS[slot]);
@@ -1037,7 +1079,7 @@ function updateUI() {
   if (anvilOpen) updateAnvil();
   if ($('auto-dialog').open) updateAutoFilter();
   if (sheetSlot) fillSheet();
-  updateInventory();if($('inventory-item-dialog').open)updateInventoryItem();
+  updateShop();updateInventory();if($('inventory-item-dialog').open)updateInventoryItem();
   if($('completed').hidden!==(!state.completed))$('completed').hidden = !state.completed;
 }
 
@@ -1633,7 +1675,7 @@ function setupTelegram() {
     } catch { /* Keep the current view if this client cannot change fullscreen. */ }
   }
   tg.onEvent('activated', start); tg.onEvent('deactivated', stop);
-  tg.BackButton?.onClick(()=>{if(dungeonTransitioning)return;const dialog=document.querySelector('.mine-dialog[open]');if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else if(atelierOpen)setAtelierOpen(false);else if(dungeonHubOpen)setDungeonHub(false);else closeSheet();});
+  tg.BackButton?.onClick(()=>{if(dungeonTransitioning)return;const dialog=[...document.querySelectorAll('dialog[open]')].at(-1);if(dialog)dialog.close();else if(mineOpen)setMineOpen(false);else if(atelierOpen)setAtelierOpen(false);else if(dungeonHubOpen)setDungeonHub(false);else closeSheet();});
   if (sheetSlot || anvilOpen || $('idle-dialog').open || $('auto-dialog').open) tg.BackButton?.show();
 }
 // The external Telegram SDK is optional; normal browser startup never waits for it.

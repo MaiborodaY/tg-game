@@ -628,7 +628,7 @@ export function toggleMount(s) {
 
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
-    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], inventory: [], inventoryCapacity: 32, skipSellConfirm: false, keepReplaced: true, forgingItems: [], forging: 0, hammers: 15,
+    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], inventory: [], inventoryCapacity: 32, shop:null, skipSellConfirm: false, keepReplaced: true, forgingItems: [], forging: 0, hammers: 15,
     workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, companionXp: {archer:0,druid:0,turtle:0}, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', keepAffixes: AFFIXES.map(a=>a.id), reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.alchemy={xp:0,reagents:[0,0,0,0,0],potions:Array(POTIONS.length*5).fill(0),active:{},previous:{},pending:[0,0,0,0,0],idleMinutes:0,seed:Math.abs(Math.floor(now))%2147483647,oreRemainder:0};
@@ -775,6 +775,44 @@ export function upgradeWorkshop(s,key,now=Date.now()) {
 export function batchSize(s) { return COMBAT[s.highest - 1].batch_size; }
 export const BATCH_OPTIONS = [{ size:1, level:1 }, ...COMBAT.flatMap((row,i) => !i || row.batch_size !== COMBAT[i-1].batch_size ? [{ size:row.batch_size, level:i+1 }] : [])];
 export function forgeCost(s) { return Math.min(s.hammers, s.selectedBatch ?? 1, batchSize(s)); }
+export const SHOP_REFRESH_INTERVAL = 6 * 60 * 60 * 1000;
+export function refreshShop(s, now = Date.now(), rng = Math.random) {
+  const cycle = Math.floor(now / SHOP_REFRESH_INTERVAL);
+  if (s.shop?.cycle === cycle) return false;
+  let remaining = 100;
+  const chances = FORGE_CHANCES[s.anvilLevel - 1].map(() => 0);
+  for (let i = chances.length - 1; i >= 0; i--) {
+    chances[i] = Math.min(remaining, FORGE_CHANCES[s.anvilLevel - 1][i] * 5);
+    remaining -= chances[i];
+  }
+  const offers = [], bases = { weapon:2, gloves:2, necklace:1, ring:1, helmet:5, chest:15, shoulders:5, legs:5, cape:5, boots:3, belt:3 };
+  for (let i = 0; i < 10; i++) {
+    const bucket = i < 2 ? 'weapon' : SLOTS[Math.min(11, Math.floor(rng() * 12))];
+    const slot = bucket.startsWith('ring') ? 'ring' : bucket;
+    let roll = rng() * 100, epochIndex = 0;
+    while (epochIndex < 9 && roll >= chances[epochIndex]) roll -= chances[epochIndex++];
+    const itemLevel = 1 + Math.min(99, Math.floor(rng() * 100));
+    const appearance = rng(), pool = Object.keys(WEAPONS).filter(id => WEAPONS[id].epoch === epochIndex + 1 && (i > 1 || (i === 1 ? WEAPONS[id].range > 0 : !WEAPONS[id].range)));
+    const weaponId = slot === 'weapon' ? pool[Math.min(pool.length - 1, Math.floor(appearance * pool.length))] : undefined;
+    const quality = weaponId ? WEAPONS[weaponId].quality : Math.min((ARMOR_SETS[epochIndex]?.length ?? 1)-1, Math.floor(appearance * (ARMOR_SETS[epochIndex]?.length ?? 1)));
+    const item = { slot, ...(weaponId ? {weaponId} : {}), name: weaponId ? WEAPONS[weaponId].name : epochIndex === 0 ? NAMES[slot][quality] : `${epochIndex===1?['Bronze Warrior','Temple Guard','Legionary'][quality]:epochIndex===2?['Iron Knight','Forest Ranger','Royal Guard'][quality]:epochIndex===3?['Musketeer','Corsair','Grenadier'][quality]:epochIndex===4?['Field Scout','Commando','Heavy Trooper'][quality]:epochIndex===5?['Neon Runner','Exo Trooper','Reactor Guard'][quality]:epochIndex===6?['Lunar Scout','Void Corsair','Xeno Warden'][quality]:epochIndex===7?['Rift Nomad','Prism Keeper','Paradox Knight'][quality]:epochIndex===8?['Ash Reaper','Ember Brute','Obsidian Tyrant'][quality]:['Dawn Herald','Storm Seraph','Sun Sovereign'][quality]} ${LABELS[slot] || 'Ring'}`,
+      quality, epoch:epochIndex+1, itemLevel, sale:SALE_PRICES[epochIndex],
+      value:Math.max(1, Math.round(Math.round(bases[slot] * 10 ** epochIndex * (1 + .05 * (itemLevel - 1))) * (WEAPONS[weaponId]?.multiplier ?? 1))),
+      ...(rng() < .005 ? {affix:rollAffix(rng)} : {}) };
+    const basePrice = Math.round(2000 * 3 ** (epochIndex - 2) * (.5 + .5 * (itemLevel - 1) / 99) / 10) * 10;
+    offers.push({item, price:basePrice * (item.affix ? 1.5 : 1), bought:false});
+  }
+  s.shop = {cycle, offers};
+  return true;
+}
+export function buyShopItem(s, index, cycle, now = Date.now()) {
+  const offer = s.shop?.offers[index];
+  if (!Number.isInteger(index) || cycle !== s.shop?.cycle || cycle !== Math.floor(now / SHOP_REFRESH_INTERVAL) || !offer || offer.bought || s.coins < offer.price || s.inventory.length >= s.inventoryCapacity) return false;
+  s.coins -= offer.price;
+  s.inventory.push(structuredClone(offer.item));
+  offer.bought = true;
+  return true;
+}
 export function forge(s, rng = Math.random) {
   if (s.forging > 0 || s.hammers < 1) return false;
   s.forgingAuto = s.autoForge;
@@ -1173,7 +1211,7 @@ export function restore(serialized, now = Date.now()) {
     const nonnegative = n => Number.isFinite(n) && n >= 0;
     const affix = a => a && AFFIXES.some(d => d.id === a.type && Number.isFinite(a.value) && a.value >= d.min && a.value <= d.max && Math.abs((a.value-d.min)/d.step-Math.round((a.value-d.min)/d.step)) < 1e-8);
     const item = i => i && (SLOTS.includes(i.slot) || i.slot === 'ring') && typeof i.name === 'string' && Number.isFinite(i.value) && i.value > 0 && nonnegative(i.sale) && [0,1,2].includes(i.quality)
-      && (i.affix == null || (i.epoch >= 2 || i.slot === 'weapon') && affix(i.affix)) && (i.reforgeOffer == null || i.epoch >= 2 && affix(i.reforgeOffer))
+      && (i.affix == null || affix(i.affix)) && (i.reforgeOffer == null || i.epoch >= 2 && affix(i.reforgeOffer))
       && (i.reforges == null || Number.isInteger(i.reforges) && i.reforges >= 0 && i.reforges <= 10);
     if (!s || ![1,2,3].includes(s.version) || !nonnegative(s.coins) || !Number.isInteger(s.level) || s.level < 1 || s.level > MAX_LEVEL ||
       !Number.isInteger(s.highest) || s.highest < s.level || s.highest > MAX_LEVEL || !nonnegative(s.hp) ||
@@ -1202,6 +1240,8 @@ export function restore(serialized, now = Date.now()) {
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
     s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-.0001,Number.isFinite(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
     s.inventory=Array.isArray(s.inventory)?s.inventory.filter(item):[];
+    const shop=s.shop;
+    s.shop=shop && Number.isSafeInteger(shop.cycle) && shop.cycle>=0 && Array.isArray(shop.offers) && shop.offers.length===10 && shop.offers.every(o=>o && item(o.item) && Number.isInteger(o.item.epoch) && o.item.epoch>=1 && o.item.epoch<=10 && Number.isInteger(o.item.itemLevel) && o.item.itemLevel>=1 && o.item.itemLevel<=100 && Number.isSafeInteger(o.price) && o.price>0 && typeof o.bought==='boolean') ? shop : null;
     s.keepReplaced=s.keepReplaced!==false;
     s.skipSellConfirm=s.skipSellConfirm===true;
     s.inventoryCapacity=s.inventoryCapacity===100?100:32;
