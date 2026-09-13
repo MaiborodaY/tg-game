@@ -68,7 +68,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   let width = 0, height = 0, titleY = 0, ratio = 1, landscape;
   let time = 0, previousEnemies = null, previousBossSize = 128;
   let biomeIndex = 0, wantedBiome = 0, biomeSprites = null, scenery = null, biomeHeights = null, loading = false;
-  let reveal = 0, levelTitle = null;
+  let reveal = 0, levelTitle = null, resizeCount=0;
   let chakramFlight = null;
   const numbers = [];
   let numberSequence = 0;
@@ -173,6 +173,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     } finally {loading=false;}
   }
   function resize() {
+    resizeCount++;
     const bounds = canvas.getBoundingClientRect();
     if(!bounds.width||!bounds.height)return;
     width = bounds.width; height = bounds.height;
@@ -769,5 +770,5 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, prepare, prepareDungeon, get loading(){return loading;}, previewName:previewRig?.name };
+  return { render, emit, prepare, prepareDungeon, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
 }

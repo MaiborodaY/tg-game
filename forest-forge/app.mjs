@@ -85,6 +85,7 @@ let resultInFlight = false;
 let displayedForgeItems = null, displayedBatch = null, displayedMastery = null, displayedCompanions = null;
 let displayedHeroPower = null;
 let autoEarningsUntil=0,displayedAutoEarnings=null;
+let performanceRecording=null,performanceReport='';
 let masteryView = 0; // Zero selects the epoch with the highest current forge chance.
 try { const saved=Number(localStorage.getItem('forest-forge-mastery-view')); if(AVAILABLE_EPOCHS.includes(saved)) masteryView=saved; } catch {}
 for (const epoch of [0,...AVAILABLE_EPOCHS]) {
@@ -534,9 +535,57 @@ $('hero-info').addEventListener('click',()=>{
   $('hero-stats-affixes').innerHTML=AFFIXES.map(a=>`<div><span class="stats-affix-name"><img src="assets/affixes/${a.id}.webp" alt="">${a.name}</span><b>${Number(bonuses[a.id].toFixed(1))}%${a.id==='regen'?' / sec':''}${a.id==='crit'&&bonuses.crit>50?' (50% cap)':''}</b></div>`).join('');
   const battle=state.battleStats;
   $('hero-battle-stats').innerHTML=[['Enemies defeated',state.kills],['Bosses defeated',battle.bosses],['Deaths',state.deaths],['Largest hit',battle.maxHit],['Largest critical hit',battle.maxCrit],['Coins from enemies',battle.coins],['Hammers from enemies',battle.hammers],['Runes from enemies',battle.runes]].map(([label,value])=>`<div><span>${label}</span><b>${value.toLocaleString('en-US')}</b></div>`).join('');
+  $('profiler-controls').hidden=cloudUserId!=='297730487';
+  $('profiler-start').disabled=!!performanceRecording;
+  $('profiler-report').hidden=!performanceReport;
   $('hero-stats-dialog').showModal();
   if(telegramInitialized)window.Telegram.WebApp.BackButton?.show();
 });
+function finishPerformanceRecording(reason='complete'){
+ const record=performanceRecording;if(!record)return;
+ performanceRecording=null;clearTimeout(record.timeout);record.observer?.disconnect();
+ const duration=performance.now()-record.started,rows=record.rows;
+ const round=n=>Math.round(n*100)/100;
+ const metric=values=>{const sorted=values.slice().sort((a,b)=>a-b);return {count:sorted.length,mean:round(sorted.reduce((a,b)=>a+b,0)/(sorted.length||1)),p95:round(sorted[Math.floor(sorted.length*.95)]||0),max:round(sorted.at(-1)||0)};};
+ const groups={};
+ for(const key of new Set(rows.map(r=>r.view+'/'+r.phase))){
+   const group=rows.filter(r=>r.view+'/'+r.phase===key),renders=group.filter(r=>r.rendered);
+   const time=group.reduce((sum,r)=>sum+r.interval,0);
+   groups[key]={seconds:round(time/1000),renderFPS:time?round(renders.length*1000/time):0,rafGapMs:metric(group.map(r=>r.interval)),renderGapMs:metric(renders.filter(r=>r.renderInterval!==null).map(r=>r.renderInterval)),cpuMs:metric(group.map(r=>r.cpu)),stepMs:metric(group.map(r=>r.step)),eventsMs:metric(group.map(r=>r.events)),renderSubmissionMs:metric(renders.map(r=>r.render)),uiMs:metric(group.filter(r=>r.ui>0).map(r=>r.ui)),saveMs:metric(group.filter(r=>r.save>0).map(r=>r.save)),gapsOver50ms:group.filter(r=>r.interval>50).length};
+ }
+ const timeline=[];
+ for(let second=0;second<Math.ceil(duration/1000);second++){
+   const group=rows.filter(r=>r.at>=second*1000&&r.at<(second+1)*1000);
+   timeline.push({second,frames:group.filter(r=>r.rendered).length,maxGapMs:round(Math.max(0,...group.map(r=>r.interval))),maxCpuMs:round(Math.max(0,...group.map(r=>r.cpu))),phases:[...new Set(group.map(r=>r.view+'/'+r.phase))]});
+ }
+ const resources=performance.getEntriesByType('resource').filter(r=>r.startTime>=record.started);
+ performanceReport=JSON.stringify({version:1,baseBuild:'ea445a0',reason,seconds:round(duration/1000),device:record.device,start:record.context,end:{level:state.level,phase:state.phase,autoForge:state.autoForge},groups,timeline,worstFrames:rows.slice().sort((a,b)=>b.interval-a.interval).slice(0,20),longTasks:record.longTasksSupported?record.longTasks:'unsupported',resources:{count:resources.length,transferBytes:resources.reduce((n,r)=>n+(r.transferSize||0),0)},scene:scene?.diagnostics,note:'CPU timings measure JavaScript and canvas command submission, not GPU completion. Render target is 30 FPS. Hidden sections intentionally render no battle frames.'},null,2);
+ $('profiler-output').value=performanceReport;$('profiler-start').disabled=false;$('profiler-report').hidden=false;
+ $('profiler-badge').textContent='Profile ready';
+}
+$('profiler-start').onclick=()=>{
+ if(cloudUserId!=='297730487'||performanceRecording)return;
+ const canvas=$('scene');
+ const record={started:performance.now(),lastFrame:null,lastRender:null,rows:[],longTasks:[],lastBadge:-1,
+ device:{userAgent:navigator.userAgent,viewport:[innerWidth,innerHeight],dpr:devicePixelRatio,canvas:[canvas.width,canvas.height],reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,telegramPlatform:window.Telegram?.WebApp?.platform},
+ context:{scene:scene?.diagnostics,level:state.level,phase:state.phase,autoForge:state.autoForge,companion:state.companion?.kind,potions:Object.keys(state.alchemy.active),equipment:Object.fromEntries(Object.entries(state.equipment).map(([slot,item])=>[slot,item?{epoch:item.epoch,quality:item.quality,weaponId:item.weaponId}:null]))}};
+ record.longTasksSupported=typeof PerformanceObserver!=='undefined'&&PerformanceObserver.supportedEntryTypes?.includes('longtask');
+ if(record.longTasksSupported){record.observer=new PerformanceObserver(list=>{for(const e of list.getEntries())if(record.longTasks.length<100)record.longTasks.push({at:Math.round(e.startTime-record.started),duration:Math.round(e.duration)});});record.observer.observe({type:'longtask'});}
+ performanceRecording=record;record.timeout=setTimeout(()=>finishPerformanceRecording(),30000);
+ $('hero-stats-dialog').close();$('profiler-badge').hidden=false;$('profiler-badge').textContent='Recording · 30s';
+};
+$('profiler-badge').onclick=()=>{
+ if(cloudUserId!=='297730487')return;
+ if(performanceRecording)finishPerformanceRecording('manual');
+ $('profiler-message').textContent='';$('profiler-dialog').showModal();
+};
+$('profiler-report').onclick=()=>{if(cloudUserId==='297730487'){$('profiler-message').textContent='';$('profiler-dialog').showModal();}};
+$('profiler-close').onclick=()=>{$('profiler-dialog').close();$('profiler-badge').hidden=true;};
+$('profiler-copy').onclick=async()=>{
+ try{await navigator.clipboard.writeText(performanceReport);$('profiler-message').textContent='Copied';}
+ catch{$('profiler-output').focus();$('profiler-output').select();$('profiler-message').textContent='Select and copy the report';}
+};
+
 $('close-hero-stats').addEventListener('click',()=>$('hero-stats-dialog').close());
 $('hero-stats-dialog').addEventListener('close',()=>{if(telegramInitialized&&!sheetSlot&&!anvilOpen)window.Telegram.WebApp.BackButton?.hide();});
 $('close-auto').addEventListener('click', () => $('auto-dialog').close());
@@ -1304,29 +1353,49 @@ $('alchemy-recipes').addEventListener('click',e=>{
 
 function frame(now) {
   if (!running) return;
+  const record=performanceRecording,profileStart=record?performance.now():0;
+  const sample=record?{at:Math.round(profileStart-record.started),interval:record.lastFrame===null?0:now-record.lastFrame,phase:state.dungeons.run?.battle.phase??state.phase,view:mineOpen?'mine':atelierOpen?'workshop':dungeonHubOpen?'dungeons':$('alchemy-dialog').open?'alchemy':'battle',step:0,events:0,render:0,ui:0,save:0,rendered:false,renderInterval:null}:null;
+  if(record)record.lastFrame=now;
+  try{
   const dt = Math.min((now - last) / 1000, .25);
   last = now; accumulated += dt;
   const backgroundBattle=mineOpen||atelierOpen||dungeonHubOpen;
   if (accumulated >= 1 / 30) {
     const elapsed = accumulated;
-    while (accumulated >= 1 / 30 && !scene?.loading && !state.dungeons.last && !dungeonTransitioning) { processEvents(step(state, 1 / 30)); accumulated -= 1 / 30; }
+    while (accumulated >= 1 / 30 && !scene?.loading && !state.dungeons.last && !dungeonTransitioning) {
+      if(sample){let t=performance.now();const events=step(state,1/30);sample.step+=performance.now()-t;t=performance.now();processEvents(events);sample.events+=performance.now()-t;}
+      else processEvents(step(state,1/30));
+      accumulated-=1/30;
+    }
     if(dungeonTransitioning){accumulated=0;raf=requestAnimationFrame(frame);return;}
     if(scene?.loading||state.dungeons.last)accumulated=0;
-    if(!backgroundBattle){scene?.render(state.dungeons.run?.battle??state, elapsed);frameCount++;}
+    if(!backgroundBattle){const t=sample?performance.now():0;scene?.render(state.dungeons.run?.battle??state, elapsed);frameCount++;if(sample){sample.render=performance.now()-t;sample.rendered=true;sample.renderInterval=record.lastRender===null?null:Math.round((now-record.lastRender)*100)/100;record.lastRender=now;}}
     uiTime += elapsed; savedTime += elapsed;
     if (uiTime >= (backgroundBattle?1:.1)) {
+      const t=sample?performance.now():0;
       updateUI();
       if(mineOpen){settleMine(state);updateMineUI();}
       if(atelierOpen)updateAtelier();
       uiTime = 0;
+      if(sample)sample.ui=performance.now()-t;
     }
-    if (savedTime >= 3) { save(); savedTime = 0; }
+    if (savedTime >= 3) { const t=sample?performance.now():0;save(); savedTime = 0;if(sample)sample.save=performance.now()-t; }
     if (toastUntil && now > toastUntil) { $('toast').classList.remove('visible'); toastUntil = 0; }
   }
   raf = requestAnimationFrame(frame);
+  }finally{
+    if(sample){
+      sample.cpu=performance.now()-profileStart;
+      for(const key of ['interval','step','events','render','ui','save','cpu'])sample[key]=Math.round(sample[key]*100)/100;
+      record.rows.push(sample);
+      const second=Math.floor((performance.now()-record.started)/1000);
+      if(second!==record.lastBadge){record.lastBadge=second;$('profiler-badge').textContent=`Recording · ${Math.max(0,30-second)}s`;}
+      if(record.rows.length>=10000)finishPerformanceRecording('sample limit');
+    }
+  }
 }
 function start() { displayedForgeItems=null; $('game').classList.remove('page-paused'); if (running || document.hidden || !scene || !cloudReady || cloudFailed) return; if (finishUpgrade(state)) save(); if(mineOpen){settleMine(state);if(state.mine.pending.some(Boolean)&&!$('mine-rewards-dialog').open)$('mine-rewards-dialog').showModal();updateMineUI();}else updateUI(); if(state.dungeons.last)void finishDungeonView(); if(!startupRewardsShown){startupRewardsShown=true;if(!mineOpen&&!dungeonTransitioning&&idleRewards(state)>0&&!document.querySelector('dialog[open]'))$('idle-loot').click();} running = true; last = performance.now(); accumulated = 0; raf = requestAnimationFrame(frame); }
-function stop() { $('game').classList.add('page-paused'); running = false; cancelAnimationFrame(raf); save(true); }
+function stop() { if(performanceRecording)finishPerformanceRecording('page hidden');$('game').classList.add('page-paused'); running = false; cancelAnimationFrame(raf); save(true); }
 document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
 window.addEventListener('pagehide', stop);
 window.addEventListener('pageshow', start);
