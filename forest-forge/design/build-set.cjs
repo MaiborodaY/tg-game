@@ -96,6 +96,16 @@ function placement(part,p){const back=part.anchor.endsWith('back'),j=back?0:1;le
  if(weapons.length){
   const weaponSvg=`<svg xmlns="http://www.w3.org/2000/svg" width="${cell*allPoses.length}" height="${cell*weapons.length}"><defs>${weaponDefs}${flailDefs}${weaponPoses}</defs>${weapons.flatMap((w,row)=>allPoses.map((p,f)=>`<svg x="${f*cell}" y="${row*cell}" width="${cell}" height="${cell}" viewBox="${viewBox.join(' ')}"><use href="#extra-${w.id}-${p.frame}"/></svg>`)).join('')}</svg>`;
   await sharp(Buffer.from(weaponSvg)).png().toFile(path.join(out,'weapon-atlas.png'));
+  // Copy raster cells exactly, matching the shipping layout without resampling.
+  const weaponPixels=await sharp(path.join(out,'weapon-atlas.png')).ensureAlpha().raw().toBuffer(),width=8*cell,height=Math.ceil(allPoses.length/8)*cell;
+  for(const [row,w] of weapons.entries()){
+   const packed=Buffer.alloc(width*height*4);
+   for(let f=0;f<allPoses.length;f++)for(let y=0;y<cell;y++){
+    const from=((row*cell+y)*cell*allPoses.length+f*cell)*4,to=((Math.floor(f/8)*cell+y)*width+f%8*cell)*4;
+    weaponPixels.copy(packed,to,from,from+cell*4);
+   }
+   await sharp(packed,{raw:{width,height,channels:4}}).png().toFile(path.join(process.env.SET_OUTPUT_DIR?out:path.join(root,'assets/weapons'),w.id+'-atlas.png'));
+  }
  }
  // Check every cell boundary; clipping is a placement error, not something to ship silently.
  const raw=await sharp(path.join(out,'atlas.png')).ensureAlpha().raw().toBuffer();let clipped=0;for(let r=0;r<rows.length;r++)for(let f=0;f<frames;f++)for(let y=0;y<cell;y++)for(let x=0;x<cell;x++)if((!x||!y||x===cell-1||y===cell-1)&&raw[((r*cell+y)*cell*frames+f*cell+x)*4+3]>20)clipped++;

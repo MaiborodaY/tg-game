@@ -35,10 +35,12 @@ const combatPoses = {
 export async function createScene(canvas, previewSet = null, previewCompanion = false) {
   const context = canvas.getContext('2d', { alpha: false });
   const art = {}, rigs = {};
+  const equipmentLastUsed = new Map();
+  let nextArtCleanup = 0;
   const sets = ARMOR_SETS[0], loadingSets = new Set();
   let artVersion=Date.now();
   const [heroRigs] = await Promise.all([
-    Promise.all(sets.map(async id => {
+    Promise.all(sets.slice(0,1).map(async id => {
       const meta = await fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r => { if (!r.ok) throw Error('Hero atlas metadata missing'); return r.json(); });
       const image = new Image(); image.src = `assets/sets/${id}/atlas.png?v=${artVersion}`; await image.decode(); art[id] = image;
       rigs[id]=meta;return meta;
@@ -52,9 +54,13 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   window.addEventListener('storage', async event => {
     if(event.key!=='forest-forge-art-update'||!event.newValue)return;
     const {id,revision}=JSON.parse(event.newValue);artVersion=revision;
-    if(!art[id]&&!art[id+'-weapon'])return;
-    const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${revision}`;
-    try{const meta=await fetch(`assets/sets/${id}/atlas.json?v=${revision}`).then(r=>r.json());await image.decode();rigs[id]=meta;art[id]=image;delete art[id+'-shoot'];loadingSets.delete(id+'-shoot');delete art[id+'-weapon'];loadingSets.delete(id+'-weapon');if(id===previewSet)previewRig=meta;}catch(error){console.error('Could not refresh equipment',error);}
+    if(!rigs[id])return;
+    try{
+      const meta=await fetch(`assets/sets/${id}/atlas.json?v=${revision}`).then(r=>r.json());rigs[id]=meta;
+      if(art[id]){const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${revision}`;await image.decode();art[id]=image;if(id!==sets[0])equipmentLastUsed.set(id,performance.now());}
+      for(const key of [id+'-shoot',...(meta.weaponRows||[]).map(weapon=>weapon+'-weapon')]){delete art[key];loadingSets.delete(key);equipmentLastUsed.delete(key);}
+      if(id===previewSet)previewRig=meta;
+    }catch(error){console.error('Could not refresh equipment',error);}
   });
   let previewRig=null;
   if(previewSet){
@@ -417,8 +423,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     const visualEquipment=equipmentPreview??state.equipment;
     const weapon = previewRig ? (previewRig.slots.weapon ? {quality:['hunter-hides','bone-warrior','stone-guard'].indexOf(previewSet)} : null) : visualEquipment.weapon;
     const ranged=Boolean(WEAPONS[weapon?.weaponId]?.range),customWeapon=Boolean(WEAPONS[weapon?.weaponId]?.sprite&&WEAPONS[weapon.weaponId].epoch===(weapon.epoch??1));
-    const weaponSource=WEAPONS[weapon?.weaponId]?.atlas||sets[0],compactGladius=customWeapon&&weapon.weaponId==='gladius';
-    const weaponKey=compactGladius?'gladius-weapon':weaponSource+'-weapon',weaponImage=art[weaponKey];
+    const weaponSource=WEAPONS[weapon?.weaponId]?.atlas||sets[0];
+    const weaponKey=weapon?.weaponId+'-weapon',weaponImage=art[weaponKey];
+    const artNow=performance.now();
     const throwing=customWeapon&&weapon.weaponId==='chakram';
     const shooting=ranged&&!throwing&&(state.phase==='fight'||recovery&&state.phase!=='dead');
     const attack=WEAPONS[weapon?.weaponId]?.attack;
@@ -482,6 +489,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(heroX, base + 2, hSize * .3, 3, 0, 0, Math.PI * 2); context.fill();
     let equipped = Object.fromEntries(Object.keys(heroRig.slots).map(slot => {
       const item=visualEquipment[slot],id=slot==='weapon'&&customWeapon?undefined:previewRig?(previewRig.slots[slot]?previewSet:undefined):(slot==='weapon'?((item?.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard']:[]):ARMOR_SETS[(item?.epoch??1)-1])?.[item?.quality];
+      if(id&&id!==sets[0])equipmentLastUsed.set(id,artNow);
       if(id&&!art[id]&&!loadingSets.has(id)){
         loadingSets.add(id);const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${artVersion}`;
         Promise.all([image.decode(),fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Equipment metadata missing');return r.json();})]).then(([,meta])=>{rigs[id]=meta;art[id]=image;}).catch(error=>console.error('Could not load equipment',id,error));
@@ -490,13 +498,21 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }));
     if(ranged&&!throwing){
       const sources=new Set([sets[0],...Object.values(equipped).filter(Boolean)]);
-      for(const id of sources){const key=id+'-shoot';if(!art[key]&&!loadingSets.has(key)){loadingSets.add(key);const img=new Image();img.src=`assets/sets/${id}/shoot-atlas.png?v=${artVersion}`;img.decode().then(()=>art[key]=img).catch(console.error);}}
+      for(const id of sources){const key=id+'-shoot';equipmentLastUsed.set(key,artNow);if(!art[key]&&!loadingSets.has(key)){loadingSets.add(key);const img=new Image();img.src=`assets/sets/${id}/shoot-atlas.png?v=${artVersion}`;img.decode().then(()=>art[key]=img).catch(console.error);}}
     }
     if(customWeapon){
-      const key=weaponKey;
+      const key=weaponKey;equipmentLastUsed.set(key,artNow);
       if(!art[key]&&!loadingSets.has(key)){
-        loadingSets.add(key);const img=new Image();img.src=compactGladius?`assets/weapons/gladius-atlas.png?v=${artVersion}`:`assets/sets/${weaponSource}/weapon-atlas.png?v=${artVersion}`;
+        loadingSets.add(key);const img=new Image();img.src=`assets/weapons/${weapon.weaponId}-atlas.png?v=${artVersion}`;
         Promise.all([img.decode(),rigs[weaponSource]||fetch(`assets/sets/${weaponSource}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Weapon metadata missing');return r.json();})]).then(([,meta])=>{rigs[weaponSource]=meta;art[key]=img;}).catch(console.error);
+      }
+    }
+    // Keep recent outfits for quick swaps; release only unused loaded images.
+    // Pending loads keep their guard until they complete, then can be evicted here.
+    if(artNow>=nextArtCleanup){
+      nextArtCleanup=artNow+1000;
+      for(const [key,lastUsed] of equipmentLastUsed)if(artNow-lastUsed>=10000&&art[key]){
+        delete art[key];loadingSets.delete(key);equipmentLastUsed.delete(key);
       }
     }
     if(profile?.mode==='hide-equipment')equipped={};
@@ -565,9 +581,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       }
       const image=standalone?weaponImage:useShot?art[source+'-shoot']:art[source];
       const column=planted?0:standalone?(shooting?22+shotFrame:heroFrame):useShot?shotFrame:heroFrame;
-      // Gladius keeps the original 128 px cells, packed into eight columns.
-      const sourceRow=standalone?(compactGladius?Math.floor(column/8):rig.weaponRows.indexOf(weapon.weaponId)):useShot?shotRow:rig.rows.indexOf(sourceName);
-      const sourceColumn=standalone&&compactGladius?column%8:column;
+      // Weapon frames retain their source resolution, packed into eight columns.
+      const sourceRow=standalone?Math.floor(column/8):useShot?shotRow:rig.rows.indexOf(sourceName);
+      const sourceColumn=standalone?column%8:column;
       context.drawImage(image,sourceColumn*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
       context.restore();
     }
@@ -696,7 +712,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const cell=heroRig.cell,padded=hSize/heroRig.bodyHeight,k=hSize/590;
       context.save();context.translate(x,y);context.rotate(spin);
       // Reuse the held weapon's atlas cell; no extra image or projectile damage logic.
-      context.drawImage(weaponImage,0,heroRig.weaponRows.indexOf('chakram')*cell,cell,cell,
+      context.drawImage(weaponImage,0,0,cell,cell,
         -padded*heroRig.anchor[0]-198.24*k,-padded*heroRig.anchor[1]+247.3*k,padded,padded);
       context.restore();
     }
@@ -778,5 +794,5 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
+  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,equipmentImages:Object.entries(art).filter(([key])=>key===sets[0]||equipmentLastUsed.has(key)).map(([key,i])=>({key,width:i.naturalWidth,height:i.naturalHeight})),loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
 }

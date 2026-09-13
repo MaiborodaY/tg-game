@@ -6,15 +6,38 @@ const sharp = require('sharp');
 const root = path.resolve(__dirname, '..');
 
 (async () => {
+  const {WEAPONS} = await import(require('node:url').pathToFileURL(path.join(root, 'game.mjs')).href);
+  const packedWeapons = new Set();
   const sources = new Set(JSON.parse(await fs.readFile(path.join(__dirname, 'build-inputs.json'), 'utf8')));
   await fs.mkdir(path.join(root, 'qa'), {recursive:true});
   // dist is a generated directory inside this package.
   await fs.rm(path.join(root, 'dist'), {recursive:true, force:true});
   for (const set of await fs.readdir(path.join(root, 'assets/sets'))) {
     for (const name of await fs.readdir(path.join(root, 'assets/sets', set))) {
-      if (/^(atlas\.(png|json)|shoot-atlas\.png|weapon-atlas\.png)$|-icon\.png$/.test(name)) sources.add(`assets/sets/${set}/${name}`);
+      if (/^(atlas\.(png|json)|shoot-atlas\.png)$|-icon\.png$/.test(name)) sources.add(`assets/sets/${set}/${name}`);
     }
   }
+  // Split source weapon rows before shipping; retain every original RGBA pixel.
+  for (const set of new Set(Object.values(WEAPONS).filter(w => w.sprite).map(w => w.atlas || 'hunter-hides'))) {
+    const folder = path.join(root, 'assets/sets', set);
+    const meta = JSON.parse(await fs.readFile(path.join(folder, 'atlas.json'), 'utf8'));
+    const {data, info} = await sharp(path.join(folder, 'weapon-atlas.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const cell = meta.cell, frames = info.width / cell, width = 8 * cell, height = Math.ceil(frames / 8) * cell;
+    if (!Number.isInteger(frames) || info.height !== meta.weaponRows.length * cell) throw Error(`Invalid weapon atlas: ${set}`);
+    for (const [row, id] of meta.weaponRows.entries()) {
+      if (!WEAPONS[id]?.sprite || (WEAPONS[id].atlas || 'hunter-hides') !== set) continue;
+      const pixels = Buffer.alloc(width * height * 4);
+      for (let frame = 0; frame < frames; frame++) for (let y = 0; y < cell; y++) {
+        const from = ((row * cell + y) * info.width + frame * cell) * 4;
+        const to = ((Math.floor(frame / 8) * cell + y) * width + frame % 8 * cell) * 4;
+        data.copy(pixels, to, from, from + cell * 4);
+      }
+      const source = `assets/weapons/${id}-atlas.png`;
+      await sharp(pixels, {raw:{width,height,channels:4}}).png().toFile(path.join(root, source));
+      sources.add(source); packedWeapons.add(id);
+    }
+  }
+  for (const [id, weapon] of Object.entries(WEAPONS)) if (weapon.sprite && !packedWeapons.has(id)) throw Error(`Missing weapon frames: ${id}`);
   for (const name of await fs.readdir(path.join(root, 'assets/weapons'))) {
     if (name.endsWith('-icon.png')) sources.add(`assets/weapons/${name}`);
   }

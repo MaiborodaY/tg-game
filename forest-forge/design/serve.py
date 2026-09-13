@@ -78,8 +78,9 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                     error = next((line for line in result.stderr.splitlines() if line.startswith('Error:')), 'Could not build this fit')
                     return self.reply(422, {'error': error})
                 destination = ROOT / 'assets' / 'sets' / set_id
+                weapon_files = {f'{weapon}-atlas.png' for weapon in json.loads((output / 'atlas.json').read_text(encoding='utf-8')).get('weaponRows', [])}
                 for file in output.iterdir():
-                    target = folder / file.name if file.name == 'build-report.json' else ROOT / 'qa' / f'{set_id}-poses.png' if file.name == 'poses.png' else destination / file.name
+                    target = ROOT / 'assets' / 'weapons' / file.name if file.name in weapon_files else folder / file.name if file.name == 'build-report.json' else ROOT / 'qa' / f'{set_id}-poses.png' if file.name == 'poses.png' else destination / file.name
                     os.replace(file, target)
                 os.replace(candidate, manifest)
             self.reply(200, {'ok': True, 'id': set_id, 'spec': spec})

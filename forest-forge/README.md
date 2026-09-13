@@ -31,6 +31,18 @@ images use lossless WebP with a visible-pixel comparison. No prior QA output or
 machine-specific dependency path is needed. Editors and source concepts are not
 part of the public bundle.
 
+Weapon rows are automatically packed into `assets/weapons/<id>-atlas.png` during
+this build (eight columns, original cell size and all poses). The large source
+weapon sheets remain editable but are excluded from `dist`. The fitting workshop
+also refreshes compact weapon sheets after a successful set build.
+
+The scene keeps the base body loaded and fetches other equipment on demand.
+Equipment images unused for ten seconds are released from the scene on the next
+render cleanup (at most once per second). Shared images stay while any equipped
+slot needs them; quick swaps reuse recent images. Browser memory reclamation is
+asynchronous. Profiling reports list retained equipment image keys and dimensions;
+the byte estimate describes referenced decoded images, not measured GPU memory.
+
 Pushing relevant changes to `main` triggers Cloudflare Workers Builds for the
 existing `forest-forge` Worker through the `Forest Forge main` build trigger.
 There is no preview-branch deployment trigger. GitHub Actions deployment is disabled and its
