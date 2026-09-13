@@ -31,6 +31,16 @@ images use lossless WebP with a visible-pixel comparison. No prior QA output or
 machine-specific dependency path is needed. Editors and source concepts are not
 part of the public bundle.
 
+Unchanged images reuse verified WebP files from `forest-forge-assets` inside
+`npm_config_cache` (or `~/.npm` when running the script directly). Workers Builds
+preserves the npm cache between builds. Source and output hashes also let unchanged
+enemy, armor and weapon atlases skip packing. Changing an atlas rebuilds its group;
+changing one PNG re-encodes that image. Script or Sharp version changes invalidate
+the cache. Missing cache entries use the normal pixel-checked build. `dist` is
+always recreated, so gameplay/UI changes and removed assets are applied normally.
+The build log reports reused and rebuilt counts. This is a build-time disk cache,
+not a runtime hero image cache.
+
 Weapon rows are automatically packed into `assets/weapons/<id>-atlas.png` during
 this build (eight columns, original cell size and all poses). The large source
 weapon sheets remain editable but are excluded from `dist`. The fitting workshop

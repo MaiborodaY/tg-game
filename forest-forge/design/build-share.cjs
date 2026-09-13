@@ -9,13 +9,36 @@ const root = path.resolve(__dirname, '..');
   const {WEAPONS} = await import(require('node:url').pathToFileURL(path.join(root, 'game.mjs')).href);
   const packedWeapons = new Set();
   const sources = new Set(JSON.parse(await fs.readFile(path.join(__dirname, 'build-inputs.json'), 'utf8')));
+  // Workers Builds preserves npm's cache, including this game's own subdirectory.
+  const cacheDir = path.join(process.env.npm_config_cache || path.join(require('node:os').homedir(), '.npm'), 'forest-forge-assets');
+  await fs.mkdir(cacheDir, {recursive:true});
+  const version = crypto.createHash('sha256').update((await fs.readFile(__filename, 'utf8')).replaceAll('\r\n', '\n')).update(JSON.stringify(sharp.versions)).digest('hex');
+  let cache = {version, packs:{}, images:{}};
+  try {
+    const previous = JSON.parse(await fs.readFile(path.join(cacheDir, 'manifest.json'), 'utf8'));
+    if (previous.version === version) cache = previous;
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  const reused = {packs:0, images:0}, rebuilt = {packs:0, images:0};
   await fs.mkdir(path.join(root, 'qa'), {recursive:true});
   // dist is a generated directory inside this package.
   await fs.rm(path.join(root, 'dist'), {recursive:true, force:true});
   // Trim only transparent margins; all sixteen poses keep their original pixels.
   const enemyFrames = {};
   for (const kind of ['warrior', 'archer', 'boss', 'healer']) {
-    const {data, info} = await sharp(path.join(root, `assets/enemy-${kind}.png`)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const input = await fs.readFile(path.join(root, `assets/enemy-${kind}.png`));
+    const source = `assets/enemy-${kind}-sheet.png`, id = `enemy/${kind}`;
+    const key = crypto.createHash('sha256').update(input).digest('hex');
+    const cached = cache.packs[id];
+    let unchanged = cached?.key === key;
+    if (unchanged) for (const [file, hash] of Object.entries(cached.outputs)) {
+      try { if (crypto.createHash('sha256').update(await fs.readFile(path.join(root, file))).digest('hex') !== hash) unchanged = false; }
+      catch (error) { if (error.code !== 'ENOENT') throw error; unchanged = false; }
+    }
+    if (unchanged) {
+      sources.add(source); enemyFrames[kind] = cached.frame; reused.packs++; continue;
+    }
+    rebuilt.packs++;
+    const {data, info} = await sharp(input).ensureAlpha().raw().toBuffer({resolveWithObject:true});
     const cell = 192, frames = 16, columns = 4;
     if (info.width !== cell * frames || info.height !== cell) throw Error(`Invalid enemy atlas: ${kind}`);
     let left = cell, top = cell, right = -1, bottom = -1;
@@ -33,10 +56,11 @@ const root = path.resolve(__dirname, '..');
       const to = ((Math.floor(frame / columns) * height + y) * width * columns + frame % columns * width) * 4;
       data.copy(pixels, to, from, from + width * 4);
     }
-    const source = `assets/enemy-${kind}-sheet.png`;
-    await sharp(pixels, {raw:{width:width * columns, height:height * (frames / columns), channels:4}}).png().toFile(path.join(root, source));
+    const output = await sharp(pixels, {raw:{width:width * columns, height:height * (frames / columns), channels:4}}).png().toBuffer();
+    await fs.writeFile(path.join(root, source), output);
     sources.add(source);
     enemyFrames[kind] = {x:left, y:top, width, height, columns};
+    cache.packs[id] = {key, outputs:{[source]:crypto.createHash('sha256').update(output).digest('hex')}, frame:enemyFrames[kind]};
   }
   await fs.writeFile(path.join(root, 'assets/enemy-atlas.json'), JSON.stringify(enemyFrames, null, 2) + '\n');
   for (const set of await fs.readdir(path.join(root, 'assets/sets'))) {
@@ -45,8 +69,23 @@ const root = path.resolve(__dirname, '..');
       if (/^atlas\.json$|-icon\.png$/.test(name)) sources.add(`assets/sets/${set}/${name}`);
     }
     const meta = JSON.parse(await fs.readFile(path.join(folder, 'atlas.json'), 'utf8'));
-    const normal = await sharp(path.join(folder, 'atlas.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-    const shot = await sharp(path.join(folder, 'shoot-atlas.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const normalInput = await fs.readFile(path.join(folder, 'atlas.png')), shotInput = await fs.readFile(path.join(folder, 'shoot-atlas.png'));
+    const {packed, shootFrames, ...inputMeta} = meta;
+    const id = `armor/${set}`, key = crypto.createHash('sha256').update(normalInput).update(shotInput).update(JSON.stringify(inputMeta)).digest('hex');
+    const cached = cache.packs[id];
+    let unchanged = cached?.key === key;
+    if (unchanged) for (const [file, hash] of Object.entries(cached.outputs)) {
+      try { if (crypto.createHash('sha256').update(await fs.readFile(path.join(root, file))).digest('hex') !== hash) unchanged = false; }
+      catch (error) { if (error.code !== 'ENOENT') throw error; unchanged = false; }
+    }
+    if (unchanged) {
+      for (const file of Object.keys(cached.outputs)) sources.add(file);
+      reused.packs++; continue;
+    }
+    rebuilt.packs++;
+    const outputs = {};
+    const normal = await sharp(normalInput).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const shot = await sharp(shotInput).ensureAlpha().raw().toBuffer({resolveWithObject:true});
     const cell = meta.cell;
     meta.shootFrames = shot.info.width / cell;
     if (normal.info.width !== meta.frames * cell || normal.info.height !== meta.rows.length * cell ||
@@ -68,16 +107,37 @@ const root = path.resolve(__dirname, '..');
         }
       }
       const source = `assets/sets/${set}/${slot}-sheet.png`;
-      await sharp(pixels, {raw:{width,height,channels:4}}).png().toFile(path.join(root, source));
+      const output = await sharp(pixels, {raw:{width,height,channels:4}}).png().toBuffer();
+      await fs.writeFile(path.join(root, source), output);
+      outputs[source] = crypto.createHash('sha256').update(output).digest('hex');
       sources.add(source); meta.packed[slot] = {columns, rows, shootRows};
     }
-    await fs.writeFile(path.join(folder, 'atlas.json'), JSON.stringify(meta, null, 2) + '\n');
+    const output = JSON.stringify(meta, null, 2) + '\n';
+    await fs.writeFile(path.join(folder, 'atlas.json'), output);
+    outputs[`assets/sets/${set}/atlas.json`] = crypto.createHash('sha256').update(output).digest('hex');
+    cache.packs[id] = {key, outputs};
   }
   // Split source weapon rows before shipping; retain every original RGBA pixel.
   for (const set of new Set(Object.values(WEAPONS).filter(w => w.sprite).map(w => w.atlas || 'hunter-hides'))) {
     const folder = path.join(root, 'assets/sets', set);
     const meta = JSON.parse(await fs.readFile(path.join(folder, 'atlas.json'), 'utf8'));
-    const {data, info} = await sharp(path.join(folder, 'weapon-atlas.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const input = await fs.readFile(path.join(folder, 'weapon-atlas.png'));
+    const ids = meta.weaponRows.filter(id => WEAPONS[id]?.sprite && (WEAPONS[id].atlas || 'hunter-hides') === set);
+    const packId = `weapons/${set}`, key = crypto.createHash('sha256').update(input).update(JSON.stringify([meta.cell, meta.weaponRows, ids])).digest('hex');
+    const cached = cache.packs[packId];
+    let unchanged = cached?.key === key;
+    if (unchanged) for (const [file, hash] of Object.entries(cached.outputs)) {
+      try { if (crypto.createHash('sha256').update(await fs.readFile(path.join(root, file))).digest('hex') !== hash) unchanged = false; }
+      catch (error) { if (error.code !== 'ENOENT') throw error; unchanged = false; }
+    }
+    if (unchanged) {
+      for (const file of Object.keys(cached.outputs)) sources.add(file);
+      for (const id of ids) packedWeapons.add(id);
+      reused.packs++; continue;
+    }
+    rebuilt.packs++;
+    const outputs = {};
+    const {data, info} = await sharp(input).ensureAlpha().raw().toBuffer({resolveWithObject:true});
     const cell = meta.cell, frames = info.width / cell, width = 8 * cell, height = Math.ceil(frames / 8) * cell;
     if (!Number.isInteger(frames) || info.height !== meta.weaponRows.length * cell) throw Error(`Invalid weapon atlas: ${set}`);
     for (const [row, id] of meta.weaponRows.entries()) {
@@ -89,9 +149,12 @@ const root = path.resolve(__dirname, '..');
         data.copy(pixels, to, from, from + cell * 4);
       }
       const source = `assets/weapons/${id}-atlas.png`;
-      await sharp(pixels, {raw:{width,height,channels:4}}).png().toFile(path.join(root, source));
+      const output = await sharp(pixels, {raw:{width,height,channels:4}}).png().toBuffer();
+      await fs.writeFile(path.join(root, source), output);
+      outputs[source] = crypto.createHash('sha256').update(output).digest('hex');
       sources.add(source); packedWeapons.add(id);
     }
+    cache.packs[packId] = {key, outputs};
   }
   for (const [id, weapon] of Object.entries(WEAPONS)) if (weapon.sprite && !packedWeapons.has(id)) throw Error(`Missing weapon frames: ${id}`);
   for (const name of await fs.readdir(path.join(root, 'assets/weapons'))) {
@@ -109,16 +172,31 @@ const root = path.resolve(__dirname, '..');
     const originalBytes = output.length;
     const target = source.replace(/\.png$/, '.webp');
     if (source.endsWith('.png')) {
-      const original = await sharp(output).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-      output = await sharp(output).webp({lossless:true, effort:6}).toBuffer();
-      const decoded = await sharp(output).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-      if (original.info.width !== decoded.info.width || original.info.height !== decoded.info.height) throw Error(`Dimensions changed: ${source}`);
-      // RGB under fully transparent pixels is invisible and may be discarded by WebP.
-      for (let i = 0; i < original.data.length; i += 4) {
-        if (original.data[i+3] !== decoded.data[i+3] || (original.data[i+3] &&
-          (original.data[i] !== decoded.data[i] || original.data[i+1] !== decoded.data[i+1] || original.data[i+2] !== decoded.data[i+2]))) throw Error(`Visible pixel changed: ${source}`);
+      const key = crypto.createHash('sha256').update(output).digest('hex');
+      const cacheFile = path.join(cacheDir, crypto.createHash('sha256').update(source).digest('hex') + '.webp');
+      let cached = cache.images[source], encoded;
+      if (cached?.key === key) {
+        try {
+          const previous = await fs.readFile(cacheFile);
+          if (crypto.createHash('sha256').update(previous).digest('hex') === cached.sha256) encoded = previous;
+        } catch (error) { if (error.code !== 'ENOENT') throw error; }
       }
-      images.push({source, target, before:originalBytes, after:output.length, width:original.info.width, height:original.info.height, identicalVisiblePixels:true});
+      if (encoded) { output = encoded; reused.images++; }
+      else {
+        rebuilt.images++;
+        const original = await sharp(output).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+        output = await sharp(output).webp({lossless:true, effort:6}).toBuffer();
+        const decoded = await sharp(output).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+        if (original.info.width !== decoded.info.width || original.info.height !== decoded.info.height) throw Error(`Dimensions changed: ${source}`);
+        // RGB under fully transparent pixels is invisible and may be discarded by WebP.
+        for (let i = 0; i < original.data.length; i += 4) {
+          if (original.data[i+3] !== decoded.data[i+3] || (original.data[i+3] &&
+            (original.data[i] !== decoded.data[i] || original.data[i+1] !== decoded.data[i+1] || original.data[i+2] !== decoded.data[i+2]))) throw Error(`Visible pixel changed: ${source}`);
+        }
+        await fs.writeFile(cacheFile, output);
+        cached = cache.images[source] = {key, sha256:crypto.createHash('sha256').update(output).digest('hex'), width:original.info.width, height:original.info.height};
+      }
+      images.push({source, target, before:originalBytes, after:output.length, width:cached.width, height:cached.height, identicalVisiblePixels:true});
     } else if (source === 'app.mjs' || source === 'scene.mjs') {
       output = Buffer.from(output.toString('utf8').replaceAll('.png', '.webp'));
     }
@@ -135,5 +213,6 @@ const root = path.resolve(__dirname, '..');
   await fs.writeFile(path.join(root, 'qa/cloudflare-files.json'), JSON.stringify(files, null, 2));
   await fs.writeFile(path.join(root, 'qa/cloudflare-manifest.json'), JSON.stringify(Object.fromEntries(files.map(f => [f.path,{hash:f.hash,size:f.size}])), null, 2));
   await fs.writeFile(path.join(root, 'qa/webp-build.json'), JSON.stringify({before, after, savedPercent:100*(1-after/before), files:files.length, images}, null, 2));
-  console.log(JSON.stringify({before, after, images:images.length, files:files.length, savedPercent:Math.round(100*(1-after/before))}));
+  await fs.writeFile(path.join(cacheDir, 'manifest.json'), JSON.stringify(cache));
+  console.log(JSON.stringify({before, after, images:images.length, files:files.length, savedPercent:Math.round(100*(1-after/before)), reused, rebuilt}));
 })().catch(error => {console.error(error); process.exitCode = 1;});
