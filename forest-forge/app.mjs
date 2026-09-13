@@ -901,7 +901,7 @@ function updateDungeons(){
   dungeonFloor=Math.max(1,Math.min(dungeonFloor,cleared+1,200));
   $('admin-dungeon-reset').hidden=cloudUserId!=='297730487';
   $('admin-dungeon-reset').disabled=cloudBusy||!cloudReady||cloudFailed||!!state.dungeons.run||dungeonTransitioning;
-  const key=JSON.stringify([selectedDungeon,dungeonFloor,wins,state.dungeons.cleared,state.mount,state.highest,state.mine.level,dungeonStarting,Math.floor(Date.now()/60000)]);
+  const key=JSON.stringify([selectedDungeon,dungeonFloor,wins,state.dungeons.cleared,state.mount,state.highest,dungeonStarting,Math.floor(Date.now()/60000)]);
   if(displayedDungeon===key)return;displayedDungeon=key;
   [...$('dungeon-choices').children].forEach((b,i)=>{
     b.querySelector('.dungeon-card-action span').textContent=`${2-wins[i]}/2`;

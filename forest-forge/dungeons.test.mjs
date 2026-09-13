@@ -54,11 +54,36 @@ test('each dungeon pays its own resource equally for a new stage and a repeat cl
   }
 });
 
-test('ore rewards never bypass the current mine stratum unlock',()=>{
-  const s=hero();s.mine.level=16;
-  const ore=dungeonRewards(s,'mine',10);
-  assert.equal(ore.coins,0);assert.equal(ore.hammers,0);
-  assert.ok(ore.ore[3]>0&&ore.ore[4]>0);assert.ok(ore.ore.slice(5).every(n=>!n));
+test('dungeon ore mixes evolve through stages and pay the same amounts at every mine level',()=>{
+  const s=hero();
+  for(const level of [1,6,96]){
+    s.mine.level=level;
+    for(const [floor,expected] of [
+      [1,[[0,22],[1,2]]], [10,[[0,17],[1,12]]],
+      [11,[[0,12],[1,18]]], [15,[[0,13],[1,19]]],
+      [16,[[0,12],[1,20],[2,1]]], [20,[[0,7],[1,22],[2,7]]],
+      [21,[[1,14],[2,22]]], [30,[[1,9],[2,26],[3,9]]],
+      [200,[[18,300],[19,1201]]],
+    ]){
+      const loot=dungeonRewards(s,'mine',floor);
+      assert.equal(loot.coins,0);assert.equal(loot.hammers,0);
+      assert.deepEqual(loot.ore.flatMap((n,i)=>n?[[i,n]]:[]),expected);
+    }
+  }
+});
+
+test('high-tier ore from a battle and Sweep survives reload with a level-one mine',()=>{
+  const manual=hero(10,100);manual.dungeons.cleared[2]=191;
+  manual.mine.ore=[7,8,9];manual.mine.pending=[1,2,3];manual.mine.bufferMinutes=3;
+  const swept=structuredClone(manual);
+  win(manual,'mine',191);
+  assert.equal(sweepDungeon(swept,'mine',now,()=>.999),true);
+  for(const s of [manual,swept]){
+    assert.deepEqual(s.mine.ore.slice(0,3),[7,8,9]);assert.ok(s.mine.ore[19]>0);
+    const saved=restore(JSON.stringify(s),now);
+    assert.deepEqual(saved.mine,s.mine);assert.equal(saved.mine.level,1);
+  }
+  assert.deepEqual(swept.mine,manual.mine);
 });
 
 test('loss, timeout, leaving and reload never consume a win or move the campaign',()=>{

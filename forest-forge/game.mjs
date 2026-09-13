@@ -587,10 +587,18 @@ export function dungeonRewards(s,id,floor) {
   if(index<0||!dungeonBoss(id,floor))return null;
   const coins=index===0?COMBAT[floor-1].boss_coins*6:0;
   const hammers=index===1?(6+2*COMBAT[floor-1].batch_size)*3:0;
-  const mine=mineLevel(s.mine.level),total=index===2?Math.max(1,Math.round(mine.rate*(8+floor*.2)))*3:0;
-  const ore=Array(Math.max(s.mine.ore.length,mine.newest+1)).fill(0),top=mine.newest;
-  if(top===0)ore[0]=total;
-  else {ore[top]=Math.ceil(total*.6);ore[top-1]=total-ore[top];}
+  const tier=Math.floor((floor-1)/10),stage=(floor-1)%10;
+  const ore=Array(Math.max(s.mine.ore.length,index===2?Math.min(MINE_RESOURCES.length,tier+2):0)).fill(0);
+  if(index===2){
+    const total=Math.round(24*1.021**(floor-1));
+    if(tier===0){ore[1]=Math.round(total*(.1+stage/30));ore[0]=total-ore[1];}
+    else {
+      // Later stages introduce the next material while retaining the previous one.
+      const next=Math.max(0,stage-4)*.04;
+      ore[tier-1]=Math.round(total*(.4-next));ore[tier]=total-ore[tier-1];
+      if(tier+1<MINE_RESOURCES.length){ore[tier+1]=Math.round(total*next);ore[tier]-=ore[tier+1];}
+    }
+  }
   return {coins,hammers,ore};
 }
 export function enterDungeon(s,id,floor,now=Date.now()) {
@@ -1230,7 +1238,7 @@ export function restore(serialized, now = Date.now()) {
     if (!Number.isSafeInteger(s.runes) || s.runes < 0) s.runes = 0;
     if (!nonnegative(s.idleSince)) s.idleSince = now;
     if (!s.mine || s.mine.version!==2 || !Number.isSafeInteger(s.mine.level) || s.mine.level<1 ||
-      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=mineLevel(s.mine.level).chances.length && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
+      !['ore','pending'].every(key=>Array.isArray(s.mine[key]) && s.mine[key].length>0 && s.mine[key].length<=Math.max(MINE_RESOURCES.length,mineLevel(s.mine.level).chances.length) && s.mine[key].every(n=>Number.isSafeInteger(n)&&n>=0)) ||
       !Number.isInteger(s.mine.bufferMinutes) || s.mine.bufferMinutes<0 || s.mine.bufferMinutes>MINE_CAP ||
       !nonnegative(s.mine.lastAt) || !nonnegative(s.mine.upgradeEndsAt))
       s.mine={version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};

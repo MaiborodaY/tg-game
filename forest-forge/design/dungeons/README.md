@@ -18,9 +18,16 @@ campaign boss of 1–1 (highest level 2).
 - The next floor unlocks on victory. Cleared floors can be repeated; first and
   repeat victories on the same floor award the same resources.
 - Each dungeon awards only its own resource: Treasury gives coins, Forge gives
-  hammers, Depths gives ore. The main reward amounts retain the original values.
-  Ore uses the mine's unlocked tier (60%) and preceding tier
-  (40%), or only stone at mine level 1. Higher mine levels improve the amount.
+  hammers, Depths gives a mixture of two or three ores.
+  Tier 1 shifts from mostly stone toward coal (10% to 40% coal). Later tiers
+  start with 60% of their main material and 40% of the previous one. Stages
+  6–10 gradually replace part of the older ore with the next material, up to
+  20%. At tier 20, that share goes to star ore instead of adding another type.
+  Total ore grows by 2.1% per stage, rounded to whole units: 24 at 1–1,
+  188 at 10–10 and 1,501 at 20–10. Allocation preserves that total.
+  Mine level and mining upgrades do not affect dungeon rewards, either in a
+  battle or through Sweep Last.
+  Dungeon ore is retained even when the mine has not unlocked its stratum yet.
 - Every five cleared floors: Treasury adds 1% enemy coins; Forge adds 0.25
   percentage points to normal enemy hammer chance; Depths adds 1% mine output.
   Mine fractions accumulate, so a small bonus does not disappear on rounding.
@@ -113,7 +120,7 @@ weapon rendering while the legs are hidden and the torso is raised onto the sadd
 
 ## Local verification
 
-- `npm test`: 124 tests, including thirteen dungeon and ten alchemy tests.
+- `npm test`: 125 tests, including fourteen dungeon and ten alchemy tests.
 - `npm run test:cloud`: six existing local API tests; no schema migration.
 - `npm run build`: the shipping manifest includes all eleven dungeon assets.
 - `animation-browser-check.json`: local Chromium and WebKit checks for all eight
