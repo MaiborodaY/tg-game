@@ -17,3 +17,6 @@ The druid's staff hand was corrected in the generated source. Clipped druid
 idle frame 4 and walk frame 8 reuse intact frames 1 and 6 respectively.
 These are four-pose animations, not interpolated full-motion animations;
 generated pose/proportion differences may remain. Runtime copies live in assets/companions. Hiring costs 500 coins per companion; one companion is active and selection changes at the next wave.
+
+All three companions share upgrade prices: 1,000 coins for level 1 → 2, then +11% per level, rounded up to ten coins without accumulating intermediate rounding. For current level L < 100, the cost is `ceil(1000 * 1.11^(L-1) / 10) * 10`; runtime rounding excludes floating-point noise at exact multiples of ten. Level 100 cannot be upgraded.
+Examples: 50 → 51 costs 166,280; 99 → 100 costs 27,647,250. Total upgrade cost from level 1 to 100 is about 279 million coins per companion. Character stats, hiring prices and saved levels are unchanged.

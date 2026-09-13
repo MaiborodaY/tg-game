@@ -500,7 +500,7 @@ export const COMPANIONS = [
 ];
 export const DRUID_LEVELS = Array.from({length:100},(_,i)=>({
   healing:i===0?2:Math.round(5*1.24**(i-1)),
-  upgradeCost:i===99?0:Math.ceil(1000*1.22**i/10)*10
+  upgradeCost:i===99?0:Math.ceil(1000*1.11**i/10-1e-8)*10
 }));
 export const ARCHER_LEVELS = DRUID_LEVELS.map((level,i)=>({
   damage:i===0?3:Math.round(7*1.24**(i-1)),upgradeCost:level.upgradeCost
@@ -649,15 +649,15 @@ export function freshGame(now = Date.now()) {
   prepareEncounter(s); return s;
 }
 export const MINE_RESOURCES = [
-  ['stone','Stone',2],['coal','Coal',3],['copper','Copper ore',5],['iron','Iron ore',8],
-  ['silver','Silver ore',12],['gold','Gold ore',18],['amber','Amber',26],['amethyst','Amethyst',36],
-  ['emerald','Emerald',48],['ruby','Ruby',65],['sapphire','Sapphire',85],['diamond','Diamond',110],
-  ['obsidian','Obsidian',140],['mithril','Mithril',150],['adamantite','Adamantite',160],
-  ['moonstone','Moonstone',170],['void-crystal','Void crystal',180],['earth-heart','Earth heart',190],
-  ['sun-crystal','Sun crystal',200],['star-ore','Star ore',210],
+  ['stone','Stone',3],['coal','Coal',4],['copper','Copper ore',6],['iron','Iron ore',9],
+  ['silver','Silver ore',13],['gold','Gold ore',19],['amber','Amber',27],['amethyst','Amethyst',37],
+  ['emerald','Emerald',49],['ruby','Ruby',66],['sapphire','Sapphire',86],['diamond','Diamond',111],
+  ['obsidian','Obsidian',141],['mithril','Mithril',151],['adamantite','Adamantite',161],
+  ['moonstone','Moonstone',171],['void-crystal','Void crystal',181],['earth-heart','Earth heart',191],
+  ['sun-crystal','Sun crystal',201],['star-ore','Star ore',211],
 ].map(([id,name,price])=>({id,name,price}));
 export function mineResource(index) {
-  return MINE_RESOURCES[index] || {id:'crystal',name:`Deep ore ${index+1}`,price:210+10*(index-19)};
+  return MINE_RESOURCES[index] || {id:'crystal',name:`Deep ore ${index+1}`,price:211+10*(index-19)};
 }
 export function mineLevel(level) {
   const newest=level===1?0:Math.max(1,Math.floor((level-1)/5)+1), chances=Array(newest+1).fill(0), rate=(level+9)/10;

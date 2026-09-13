@@ -803,13 +803,13 @@ test('mine: recipes avoid rare ore and progression continues beyond initial cata
   const row=mineLevel(l);assert.ok(Math.abs(row.chances.reduce((a,b)=>a+b)-100)<1e-9);
   row.cost.forEach((n,i)=>{if(n)assert.ok(row.chances[i]>=20);});assert.ok(row.minutes<=240);
  }
- assert.deepEqual(mineLevel(1).cost,[5]);assert.equal(mineResource(20).price,220);
+ assert.deepEqual(mineLevel(1).cost,[5]);assert.equal(mineResource(20).price,221);
  const s=freshGame(0);s.mine.level=101;s.mine.ore=Array(21).fill(0);s.mine.pending=Array(21).fill(0);
  assert.equal(settleMine(s,60000,()=>.999),11);assert.equal(restore(JSON.stringify(s),60000).mine.level,101);
 });
 test('mine: sale spends exact stock and adds shared gold',()=>{
  const s=freshGame(0);s.mine.level=11;s.mine.ore=[0,0,3];s.mine.pending=[0,0,0];
- assert.equal(sellOre(s,2,2),true);assert.equal(s.coins,10);assert.equal(s.mine.ore[2],1);
+ assert.equal(sellOre(s,2,2),true);assert.equal(s.coins,12);assert.equal(s.mine.ore[2],1);
  assert.equal(sellOre(s,2,2),false);assert.equal(sellOre(s,2,-1),false);assert.equal(sellOre(s,2,.5),false);
 });
 test('mine: reset old mine only once and preserve new inventory and hero',()=>{
@@ -1030,6 +1030,18 @@ test('hard biome curve strengthens the first biome and updates saved enemies wit
  const s=wave(23,4);s.enemies.forEach(e=>{e.hp=100;e.maxHp=1000;e.damage=1;});s.coins=713;
  const loaded=restore(JSON.stringify(s));assert.equal(loaded.level,23);assert.equal(loaded.encounter,s.encounter);assert.equal(loaded.coins,713);
  for(const e of loaded.enemies){assert.equal(e.hp,100);assert.equal(e.damage,enemyFor(23,e.kind).damage);}
+});
+
+test('companions use the softer shared prices, charge once and preserve purchased levels on reload',()=>{
+ assert.deepEqual([0,1,9,29,49,69,98,99].map(i=>DRUID_LEVELS[i].upgradeCost),[1000,1110,2560,20630,166280,1340560,27647250,0]);
+ for(const [kind,upgrade] of [['archer',upgradeArcher],['druid',upgradeDruid],['turtle',upgradeTurtle]]){
+  const s=freshGame(1000);s.coins=500;hireCompanion(s,kind);
+  s[kind+'Level']=50;s.coins=166279;
+  const before=structuredClone(s);assert.equal(upgrade(s),false);assert.deepEqual(s,before);
+  s.coins++;assert.equal(upgrade(s),true);assert.equal(s.coins,0);assert.equal(s[kind+'Level'],51);
+  const paid=structuredClone(s);assert.equal(upgrade(s),false);assert.deepEqual(s,paid);
+  const loaded=restore(JSON.stringify(s),1000);assert.equal(loaded[kind+'Level'],51);assert.equal(loaded.coins,0);
+ }
 });
 
 test('archer upgrade prices and level persist, while failed upgrades do not mutate state',()=>{
