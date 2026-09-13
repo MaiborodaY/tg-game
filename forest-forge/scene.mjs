@@ -335,7 +335,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = '#142e23'; context.fillRect(x - size / 2 - 2 * scale, y - 2 * scale, size + 4 * scale, 8 * scale);
     context.fillStyle = color; context.fillRect(x - size / 2, y, size * Math.max(0, Math.min(1, fraction)), 4 * scale);
   }
-  function render(state, dt, dungeonDeathAge=null, returning=false) {
+  function render(state, dt, dungeonDeathAge=null, returning=false, profile=null) {
     if(returning){
       reveal=0;levelTitle=null;numbers.length=0;coins.length=0;
       chakramFlight=null;dungeonImpact=null;shieldImpact=1;
@@ -368,13 +368,14 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     if(dungeonImpact&&(dungeonImpact.age+=dt)>=.48)dungeonImpact=null;
     if (reducedMotion.matches) coins.length = 0;
     const camera = state.heroX - .24;
+    const backgroundCamera=profile?.mode==='static-background'?profile.backgroundCamera:camera;
     context.save();context.setTransform(1,0,0,1,0,0);
     if(dungeonTheme){
-      const shift=Math.max(0,Math.min(landscape.width-canvas.width,Math.round(camera*canvas.width)));
+      const shift=Math.max(0,Math.min(landscape.width-canvas.width,Math.round(backgroundCamera*canvas.width)));
       context.drawImage(landscape,shift,0,canvas.width,landscape.height,0,0,canvas.width,canvas.height);
     }else{
       // Copy exact pixel slices: fractional tile edges leave a dark seam during fades.
-      const pixels=landscape.width,shift=((Math.round(camera*pixels)%pixels)+pixels)%pixels;
+      const pixels=landscape.width,shift=((Math.round(backgroundCamera*pixels)%pixels)+pixels)%pixels;
       context.drawImage(landscape,shift,0,pixels-shift,landscape.height,0,0,pixels-shift,canvas.height);
       if(shift)context.drawImage(landscape,0,0,shift,landscape.height,pixels-shift,0,shift,canvas.height);
     }
@@ -460,7 +461,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         pose[3]-=34*kick;pose[4]-=9*kick;pose[5]-=4*kick;
         pose[6]-=42*kick;pose[7]-=12*kick;pose[8]-=13*kick;
       }
-    } else if ((state.phase==='walk'||state.phase==='victory')&&!reducedMotion.matches) heroFrame=1+Math.floor(time*10)%8;
+    } else if ((state.phase==='walk'||state.phase==='victory')&&!reducedMotion.matches&&profile?.mode!=='freeze-walk') heroFrame=1+Math.floor(time*10)%8;
     let chakramHand=null;
     if(throwing&&pose){
       // Ring centre relative to the same 168x171 sprite and .32/.8 grip used by build-set.cjs.
@@ -476,7 +477,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       if(target)chakramFlight={...chakramHand,targetId:target.id,returning:false};
     }
     context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(heroX, base + 2, hSize * .3, 3, 0, 0, Math.PI * 2); context.fill();
-    const equipped = Object.fromEntries(Object.keys(heroRig.slots).map(slot => {
+    let equipped = Object.fromEntries(Object.keys(heroRig.slots).map(slot => {
       const item=state.equipment[slot],id=slot==='weapon'&&customWeapon?undefined:previewRig?(previewRig.slots[slot]?previewSet:undefined):(slot==='weapon'?((item?.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard']:[]):ARMOR_SETS[(item?.epoch??1)-1])?.[item?.quality];
       if(id&&!art[id]&&!loadingSets.has(id)){
         loadingSets.add(id);const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${artVersion}`;
@@ -495,8 +496,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         Promise.all([img.decode(),rigs[weaponSource]||fetch(`assets/sets/${weaponSource}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Weapon metadata missing');return r.json();})]).then(([,meta])=>{rigs[weaponSource]=meta;art[key]=img;}).catch(console.error);
       }
     }
+    if(profile?.mode==='hide-equipment')equipped={};
     if(mounted){
-      const size=70*unit,walk=!reducedMotion.matches&&state.phase==='walk',frame=walk?Math.floor(time*8)%4:0;
+      const size=70*unit,walk=profile?.mode!=='freeze-walk'&&!reducedMotion.matches&&state.phase==='walk',frame=walk?Math.floor(time*8)%4:0;
       context.drawImage(mountArt,frame*256,0,256,256,heroX-size*.52,base-size*242/256,size,size);
     }
     context.save();
@@ -504,7 +506,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     for (let row=0;row<heroRig.rows.length;row++) {
       const name=heroRig.rows[row],slot=heroSlots[row];
       if(mounted&&(/leg|boot|shorts|hip/.test(name)||slot==='legs'||slot==='boots'))continue;
-      const standalone = name === 'weapon' && customWeapon && weaponImage;
+      const standalone = name === 'weapon' && customWeapon && weaponImage && profile?.mode!=='hide-equipment';
       if(name==='weapon'&&chakramFlight)continue;
       if (name==='head-helmet' || name.endsWith('-booted') || slot && !equipped[slot] && !standalone) continue;
       if (equipped.legs && name==='shorts') continue;

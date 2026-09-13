@@ -174,7 +174,14 @@
     <div id="hero-stats-base"></div>
     <h3>Total affixes</h3><div id="hero-stats-affixes"></div>
     <h3>Battle statistics</h3><div id="hero-battle-stats"></div>
-    <div id="profiler-controls" hidden><button id="profiler-start" class="mini-button">Record performance · 30s</button><button id="profiler-report" class="mini-button" hidden>Last report</button></div>
+    <div id="profiler-controls" hidden>
+      <label>Test mode <select id="profiler-mode">
+        <option value="normal">Normal</option><option value="static-background">Static background</option>
+        <option value="freeze-walk">Freeze hero walk pose</option><option value="hide-equipment">Hide hero equipment</option>
+      </select></label>
+      <label>iPhone Low Power Mode <select id="profiler-power"><option value="unknown">Not specified</option><option value="off">Off</option><option value="on">On</option></select></label>
+      <small>One change per recording. Resets after 30s. Enemy spawns are marked in every report.</small>
+      <button id="profiler-start" class="mini-button">Record performance · 30s</button><button id="profiler-report" class="mini-button" hidden>Last report</button></div>
     </div>
   </dialog>
   <dialog id="auto-dialog" class="auto-dialog" aria-labelledby="auto-title" aria-describedby="auto-hint">

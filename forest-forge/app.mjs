@@ -537,6 +537,7 @@ $('hero-info').addEventListener('click',()=>{
   $('hero-battle-stats').innerHTML=[['Enemies defeated',state.kills],['Bosses defeated',battle.bosses],['Deaths',state.deaths],['Largest hit',battle.maxHit],['Largest critical hit',battle.maxCrit],['Coins from enemies',battle.coins],['Hammers from enemies',battle.hammers],['Runes from enemies',battle.runes]].map(([label,value])=>`<div><span>${label}</span><b>${value.toLocaleString('en-US')}</b></div>`).join('');
   $('profiler-controls').hidden=cloudUserId!=='297730487';
   $('profiler-start').disabled=!!performanceRecording;
+  $('profiler-mode').disabled=$('profiler-power').disabled=!!performanceRecording;
   $('profiler-report').hidden=!performanceReport;
   $('hero-stats-dialog').showModal();
   if(telegramInitialized)window.Telegram.WebApp.BackButton?.show();
@@ -559,14 +560,15 @@ function finishPerformanceRecording(reason='complete'){
    timeline.push({second,frames:group.filter(r=>r.rendered).length,maxGapMs:round(Math.max(0,...group.map(r=>r.interval))),maxCpuMs:round(Math.max(0,...group.map(r=>r.cpu))),phases:[...new Set(group.map(r=>r.view+'/'+r.phase))]});
  }
  const resources=performance.getEntriesByType('resource').filter(r=>r.startTime>=record.started);
- performanceReport=JSON.stringify({version:1,baseBuild:'ea445a0',reason,seconds:round(duration/1000),device:record.device,start:record.context,end:{level:state.level,phase:state.phase,autoForge:state.autoForge},groups,timeline,worstFrames:rows.slice().sort((a,b)=>b.interval-a.interval).slice(0,20),longTasks:record.longTasksSupported?record.longTasks:'unsupported',resources:{count:resources.length,transferBytes:resources.reduce((n,r)=>n+(r.transferSize||0),0)},scene:scene?.diagnostics,note:'CPU timings measure JavaScript and canvas command submission, not GPU completion. Render target is 30 FPS. Hidden sections intentionally render no battle frames.'},null,2);
+ performanceReport=JSON.stringify({version:2,baseBuild:'cc565dd',experiment:record.experiment,reason,seconds:round(duration/1000),device:record.device,start:record.context,end:{level:state.level,phase:state.phase,autoForge:state.autoForge},groups,timeline,spawns:record.spawns.map(spawn=>({...spawn,nearbyFrames:rows.filter(r=>r.at>=spawn.at-200&&r.at<=spawn.at+250)})),worstFrames:rows.slice().sort((a,b)=>b.interval-a.interval).slice(0,20),longTasks:record.longTasksSupported?record.longTasks:'unsupported',resources:{count:resources.length,transferBytes:resources.reduce((n,r)=>n+(r.transferSize||0),0)},scene:scene?.diagnostics,note:'CPU timings measure JavaScript and canvas command submission, not GPU completion. Render target is 30 FPS. Hidden sections intentionally render no battle frames. Spawn stepMsUpperBound includes the whole simulation step, not only enemy creation. Visual experiments do not change stats or unload cached images. Low Power Mode is user-reported.'},null,2);
+ $('profiler-mode').disabled=$('profiler-power').disabled=false;
  $('profiler-output').value=performanceReport;$('profiler-start').disabled=false;$('profiler-report').hidden=false;
  $('profiler-badge').textContent='Profile ready';
 }
 $('profiler-start').onclick=()=>{
  if(cloudUserId!=='297730487'||performanceRecording)return;
  const canvas=$('scene');
- const record={started:performance.now(),lastFrame:null,lastRender:null,rows:[],longTasks:[],lastBadge:-1,
+ const record={started:performance.now(),lastFrame:null,lastRender:null,rows:[],spawns:[],longTasks:[],lastBadge:-1,experiment:{mode:$('profiler-mode').value,backgroundCamera:(state.dungeons.run?.battle??state).heroX-.24,lowPowerMode:$('profiler-power').value},
  device:{userAgent:navigator.userAgent,viewport:[innerWidth,innerHeight],dpr:devicePixelRatio,canvas:[canvas.width,canvas.height],reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,telegramPlatform:window.Telegram?.WebApp?.platform},
  context:{scene:scene?.diagnostics,level:state.level,phase:state.phase,autoForge:state.autoForge,companion:state.companion?.kind,potions:Object.keys(state.alchemy.active),equipment:Object.fromEntries(Object.entries(state.equipment).map(([slot,item])=>[slot,item?{epoch:item.epoch,quality:item.quality,weaponId:item.weaponId}:null]))}};
  record.longTasksSupported=typeof PerformanceObserver!=='undefined'&&PerformanceObserver.supportedEntryTypes?.includes('longtask');
@@ -1363,13 +1365,18 @@ function frame(now) {
   if (accumulated >= 1 / 30) {
     const elapsed = accumulated;
     while (accumulated >= 1 / 30 && !scene?.loading && !state.dungeons.last && !dungeonTransitioning) {
-      if(sample){let t=performance.now();const events=step(state,1/30);sample.step+=performance.now()-t;t=performance.now();processEvents(events);sample.events+=performance.now()-t;}
+      if(sample){
+        const battle=state.dungeons.run?.battle??state,enemies=battle.enemies;
+        let t=performance.now();const events=step(state,1/30),stepMs=performance.now()-t;sample.step+=stepMs;
+        if(battle.enemies!==enemies)record.spawns.push({at:Math.round(t-record.started),level:battle.level,enemyCount:battle.enemies.length,stepMsUpperBound:Math.round(stepMs*100)/100});
+        t=performance.now();processEvents(events);sample.events+=performance.now()-t;
+      }
       else processEvents(step(state,1/30));
       accumulated-=1/30;
     }
     if(dungeonTransitioning){accumulated=0;raf=requestAnimationFrame(frame);return;}
     if(scene?.loading||state.dungeons.last)accumulated=0;
-    if(!backgroundBattle){const t=sample?performance.now():0;scene?.render(state.dungeons.run?.battle??state, elapsed);frameCount++;if(sample){sample.render=performance.now()-t;sample.rendered=true;sample.renderInterval=record.lastRender===null?null:Math.round((now-record.lastRender)*100)/100;record.lastRender=now;}}
+    if(!backgroundBattle){const t=sample?performance.now():0;scene?.render(state.dungeons.run?.battle??state, elapsed,null,false,record?.experiment);frameCount++;if(sample){sample.render=performance.now()-t;sample.rendered=true;sample.renderInterval=record.lastRender===null?null:Math.round((now-record.lastRender)*100)/100;record.lastRender=now;}}
     uiTime += elapsed; savedTime += elapsed;
     if (uiTime >= (backgroundBattle?1:.1)) {
       const t=sample?performance.now():0;
