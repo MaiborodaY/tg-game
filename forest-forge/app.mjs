@@ -1354,15 +1354,13 @@ $('mine-buffer').addEventListener('click',()=>{settleMine(state);$('mine-rewards
 document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 
 
-let alchemyType='damage',alchemyDisplay='',potionStatusMarkup='';
+let alchemyType='damage',alchemyDisplay='';
 const alchemyRarities=Object.fromEntries(POTIONS.map(p=>[p.id,0]));
-function potionIcon(color){return `<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 3h12v7h-2v10l11 17q4 8-6 8H15q-10 0-6-8l11-17V10h-2Z" fill="${color}" stroke="#183638" stroke-width="3"/></svg>`;}
 function reagentIcon(color){const i=ALCHEMY_RARITIES.findIndex(r=>r.color===color);return `<img class="alchemy-item-art reagent-art" src="assets/alchemy/reagent-${Math.max(0,i)}.webp" alt="">`;}
 function updateAlchemy(){
  const a=state.alchemy;if(!a)return;const now=Date.now(),skill=alchemySkill(state);
  const active=POTIONS.map(p=>{const b=a.active[p.id],remaining=b?(p.combat?b.remaining:(b.endsAt-now)/1000):0;return remaining>0?{p,b,remaining:Math.ceil(remaining)}:null;}).filter(Boolean);
- const status=active.map(({p,b,remaining})=>`<button data-potion-open title="${p.name}: +${b.value}%" aria-label="${p.name}, ${Math.ceil(remaining/60)} minutes remaining">${potionIcon(ALCHEMY_RARITIES[b.rarity].color)}<span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
- if(potionStatusMarkup!==status){$('potion-status').innerHTML=status;potionStatusMarkup=status;}
+ $('alchemy-toggle').classList.toggle('has-potion',active.length>0);
  if(!$('alchemy-dialog').open)return;
  if(document.activeElement?.matches('#alchemy-recipes select'))return;
  const key=JSON.stringify([a.xp,a.reagents,a.potions,active,alchemyType,alchemyRarities,state.coins]);if(key===alchemyDisplay)return;alchemyDisplay=key;
@@ -1379,7 +1377,7 @@ function updateAlchemy(){
  $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${b.value}% ${p.label}" aria-label="${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
 }
 function openAlchemy(){if(!$('alchemy-dialog').open)$('alchemy-dialog').showModal();alchemyDisplay='';setText('alchemy-message','');updateAlchemy();}
-$('alchemy-toggle').onclick=openAlchemy;$('potion-status').onclick=openAlchemy;$('alchemy-close').onclick=()=>$('alchemy-dialog').close();
+$('alchemy-toggle').onclick=openAlchemy;$('alchemy-close').onclick=()=>$('alchemy-dialog').close();
 $('alchemy-active').addEventListener('click',e=>{
  const button=e.target.closest('[data-active-potion]');if(!button)return;
  const potion=POTIONS.find(p=>p.id===button.dataset.activePotion),buff=state.alchemy.active[potion.id];
