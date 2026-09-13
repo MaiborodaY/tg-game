@@ -498,18 +498,19 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       }
     }
     if(profile?.mode==='hide-equipment')equipped={};
+    else if(profile?.hiddenSlot)delete equipped[profile.hiddenSlot];
     if(mounted){
       const size=70*unit,walk=profile?.mode!=='freeze-walk'&&!reducedMotion.matches&&state.phase==='walk',frame=walk?Math.floor(time*8)%4:0;
       context.drawImage(mountArt,frame*256,0,256,256,heroX-size*.52,base-size*242/256,size,size);
     }
     // Walking/rest poses have no limb interpolation. Keep one small strip for the
     // current outfit, baking each of its nine frames only when first needed.
-    const cacheable=!combat&&state.phase!=='dead'&&!chakramFlight;
+    const cacheable=profile?.heroCache!==false&&!combat&&state.phase!=='dead'&&!chakramFlight;
     let heroContext=context, bakeFrame=false;
     if(cacheable){
       const sources=[...new Set([sets[0],...Object.values(equipped).filter(Boolean),...(customWeapon&&weaponImage?[weaponSource]:[])])];
       const images=[...sources.map(id=>art[id]),weaponImage];
-      const key=JSON.stringify([equipped,customWeapon?weapon.weaponId:null,Boolean(mounted),profile?.mode==='hide-equipment',width,height,ratio,artVersion]);
+      const key=JSON.stringify([equipped,customWeapon?weapon.weaponId:null,Boolean(mounted),profile?.mode==='hide-equipment',profile?.hiddenSlot,width,height,ratio,artVersion]);
       if(!heroCache||heroCache.key!==key||images.some((image,i)=>image!==heroCache.images[i])){
         // Bound full source cells, including transparent padding, without GPU readback.
         const sizes=sources.map(id=>({rig:rigs[id],size:hSize/rigs[id].bodyHeight}));
@@ -537,7 +538,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     if(!cacheable||bakeFrame)for (let row=0;row<heroRig.rows.length;row++) {
       const name=heroRig.rows[row],slot=heroSlots[row];
       if(mounted&&(/leg|boot|shorts|hip/.test(name)||slot==='legs'||slot==='boots'))continue;
-      const standalone = name === 'weapon' && customWeapon && weaponImage && profile?.mode!=='hide-equipment';
+      const standalone = name === 'weapon' && customWeapon && weaponImage && profile?.mode!=='hide-equipment' && profile?.hiddenSlot!=='weapon';
       if(name==='weapon'&&chakramFlight)continue;
       if (name==='head-helmet' || name.endsWith('-booted') || slot && !equipped[slot] && !standalone) continue;
       if (equipped.legs && name==='shorts') continue;
@@ -712,7 +713,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         } else { context.beginPath();context.ellipse(ax,ay,3,2,0,0,Math.PI*2);context.fill();context.stroke(); }
       }
     }
-    if(chakramFlight&&chakramHand){
+    if(chakramFlight&&chakramHand&&profile?.hiddenSlot!=='weapon'&&profile?.mode!=='hide-equipment'){
       const flight=chakramFlight,returning=flight.returning;
       const target=state.enemies.find(enemy=>enemy.id===flight.targetId);
       const progress=Math.min(1,Math.max(0,returning?state.heroActionAge/(interval*.2):(state.heroClock/interval-.85)/.15));

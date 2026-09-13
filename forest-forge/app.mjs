@@ -537,7 +537,7 @@ $('hero-info').addEventListener('click',()=>{
   $('hero-battle-stats').innerHTML=[['Enemies defeated',state.kills],['Bosses defeated',battle.bosses],['Deaths',state.deaths],['Largest hit',battle.maxHit],['Largest critical hit',battle.maxCrit],['Coins from enemies',battle.coins],['Hammers from enemies',battle.hammers],['Runes from enemies',battle.runes]].map(([label,value])=>`<div><span>${label}</span><b>${value.toLocaleString('en-US')}</b></div>`).join('');
   $('profiler-controls').hidden=cloudUserId!=='297730487';
   $('profiler-start').disabled=!!performanceRecording;
-  $('profiler-mode').disabled=$('profiler-power').disabled=!!performanceRecording;
+  $('profiler-mode').disabled=$('profiler-power').disabled=$('profiler-cache').disabled=$('profiler-slot').disabled=!!performanceRecording;
   $('profiler-report').hidden=!performanceReport;
   $('hero-stats-dialog').showModal();
   if(telegramInitialized)window.Telegram.WebApp.BackButton?.show();
@@ -560,20 +560,22 @@ function finishPerformanceRecording(reason='complete'){
    timeline.push({second,frames:group.filter(r=>r.rendered).length,maxGapMs:round(Math.max(0,...group.map(r=>r.interval))),maxCpuMs:round(Math.max(0,...group.map(r=>r.cpu))),phases:[...new Set(group.map(r=>r.view+'/'+r.phase))]});
  }
  const resources=performance.getEntriesByType('resource').filter(r=>r.startTime>=record.started);
- performanceReport=JSON.stringify({version:2,baseBuild:'cc565dd',experiment:record.experiment,reason,seconds:round(duration/1000),device:record.device,start:record.context,end:{level:state.level,phase:state.phase,autoForge:state.autoForge},groups,timeline,spawns:record.spawns.map(spawn=>({...spawn,nearbyFrames:rows.filter(r=>r.at>=spawn.at-200&&r.at<=spawn.at+250)})),worstFrames:rows.slice().sort((a,b)=>b.interval-a.interval).slice(0,20),longTasks:record.longTasksSupported?record.longTasks:'unsupported',resources:{count:resources.length,transferBytes:resources.reduce((n,r)=>n+(r.transferSize||0),0)},scene:scene?.diagnostics,note:'CPU timings measure JavaScript and canvas command submission, not GPU completion. Render target is 30 FPS. Hidden sections intentionally render no battle frames. Spawn stepMsUpperBound includes the whole simulation step, not only enemy creation. Visual experiments do not change stats or unload cached images. Low Power Mode is user-reported.'},null,2);
- $('profiler-mode').disabled=$('profiler-power').disabled=false;
+ performanceReport=JSON.stringify({version:3,baseBuild:'75ee8b3',experiment:record.experiment,reason,seconds:round(duration/1000),device:record.device,start:record.context,end:{level:state.level,phase:state.phase,autoForge:state.autoForge},groups,timeline,spawns:record.spawns.map(spawn=>({...spawn,nearbyFrames:rows.filter(r=>r.at>=spawn.at-200&&r.at<=spawn.at+250)})),worstFrames:rows.slice().sort((a,b)=>b.interval-a.interval).slice(0,20),longTasks:record.longTasksSupported?record.longTasks:'unsupported',resources:{count:resources.length,transferBytes:resources.reduce((n,r)=>n+(r.transferSize||0),0)},scene:scene?.diagnostics,note:'CPU timings measure JavaScript and canvas command submission, not GPU completion. Render target is 30 FPS. Hidden sections intentionally render no battle frames. Spawn stepMsUpperBound includes the whole simulation step, not only enemy creation. Visual experiments do not change stats or unload cached images. Low Power Mode is user-reported.'},null,2);
+ $('profiler-mode').disabled=$('profiler-power').disabled=$('profiler-cache').disabled=$('profiler-slot').disabled=false;
  $('profiler-output').value=performanceReport;$('profiler-start').disabled=false;$('profiler-report').hidden=false;
  $('profiler-badge').textContent='Profile ready';
 }
 $('profiler-start').onclick=()=>{
  if(cloudUserId!=='297730487'||performanceRecording)return;
  const canvas=$('scene');
- const record={started:performance.now(),lastFrame:null,lastRender:null,rows:[],spawns:[],longTasks:[],lastBadge:-1,experiment:{mode:$('profiler-mode').value,backgroundCamera:(state.dungeons.run?.battle??state).heroX-.24,lowPowerMode:$('profiler-power').value},
+ const record={started:performance.now(),lastFrame:null,lastRender:null,rows:[],spawns:[],longTasks:[],lastBadge:-1,experiment:{mode:$('profiler-mode').value,heroCache:$('profiler-cache').value==='on',hiddenSlot:$('profiler-slot').value,backgroundCamera:(state.dungeons.run?.battle??state).heroX-.24,lowPowerMode:$('profiler-power').value},
  device:{userAgent:navigator.userAgent,viewport:[innerWidth,innerHeight],dpr:devicePixelRatio,canvas:[canvas.width,canvas.height],reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,telegramPlatform:window.Telegram?.WebApp?.platform},
  context:{scene:scene?.diagnostics,level:state.level,phase:state.phase,autoForge:state.autoForge,companion:state.companion?.kind,potions:Object.keys(state.alchemy.active),equipment:Object.fromEntries(Object.entries(state.equipment).map(([slot,item])=>[slot,item?{epoch:item.epoch,quality:item.quality,weaponId:item.weaponId}:null]))}};
  record.longTasksSupported=typeof PerformanceObserver!=='undefined'&&PerformanceObserver.supportedEntryTypes?.includes('longtask');
  if(record.longTasksSupported){record.observer=new PerformanceObserver(list=>{for(const e of list.getEntries())if(record.longTasks.length<100)record.longTasks.push({at:Math.round(e.startTime-record.started),duration:Math.round(e.duration)});});record.observer.observe({type:'longtask'});}
- performanceRecording=record;record.timeout=setTimeout(()=>finishPerformanceRecording(),30000);
+ performanceRecording=record;
+ $('profiler-mode').disabled=$('profiler-power').disabled=$('profiler-cache').disabled=$('profiler-slot').disabled=true;
+ record.timeout=setTimeout(()=>finishPerformanceRecording(),30000);
  $('hero-stats-dialog').close();$('profiler-badge').hidden=false;$('profiler-badge').textContent='Recording · 30s';
 };
 $('profiler-badge').onclick=()=>{
@@ -1087,7 +1089,7 @@ function processEvents(events) {
   for (const event of events) {
     if(event.type==='dungeonEnd'){void finishDungeonView(event.battle);continue;}
     if(!mineOpen&&!atelierOpen&&!dungeonHubOpen)scene?.emit(event);
-    if(event.type==='level')void scene?.prepare(state.level).catch(error=>{console.error(error);notify('Could not load this biome. Refresh the page.');});
+    if(event.type==='level'||event.type==='restart')void scene?.prepare(state.level).catch(error=>{console.error(error);notify('Could not load this biome. Refresh the page.');});
     if (event.type === 'forgeStarted') updateUI();
     if (event.type === 'forged') {
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
