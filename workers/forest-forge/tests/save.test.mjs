@@ -66,7 +66,8 @@ test('one revision can be written once; stale and malformed saves preserve the c
     assert.equal((await worker.fetch(request(data,{revision:1,state:{version:3}}),env)).status,400);
     assert.equal((await worker.fetch(request(data,'x'.repeat(1_000_001)),env)).status,413);
     const saved=await (await worker.fetch(request(data),env)).json();
-    assert.equal(saved.revision,1); assert.equal(saved.state.coins,120);
+    // Either concurrent request can win; rejected writes must preserve that winner.
+    assert.equal(saved.revision,1); assert.equal(saved.state.coins,[120,999][results.findIndex(r=>r.status===200)]);
   } finally { db.close(); }
 });
 
