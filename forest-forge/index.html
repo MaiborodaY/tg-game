@@ -9,7 +9,7 @@
   <link rel="icon" href="assets/helmet.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css?v=epoch-table-fix">
   <script src="https://telegram.org/js/telegram-web-app.js" async></script>
-  <script type="module" src="app.mjs"></script>
+  <script type="module" src="app.mjs?v=alchemy-scaling-2"></script>
 </head>
 <body>
   <section id="cloud-status" role="status" aria-live="polite" hidden>
@@ -152,11 +152,13 @@
     <p class="mastery-next-row"><img class="hammer-icon" src="assets/hammer.webp" alt=""><span id="mastery-next"></span></p>
     <div class="mastery-affix-row"><span>Weapon affix chance</span><strong id="mastery-affix-chance"></strong></div>
   </dialog>
+
   <dialog id="alchemy-dialog" aria-labelledby="alchemy-title">
  <header class="alchemy-heading"><div class="alchemy-heading-art" aria-hidden="true"></div><div class="alchemy-heading-title"><h2 id="alchemy-title">Alchemy</h2><b id="alchemy-level"></b></div><button id="alchemy-close" class="close" aria-label="Close alchemy">×</button><div class="alchemy-experience"><progress id="alchemy-progress" max="10" value="0" aria-label="Alchemy experience"></progress><span id="alchemy-xp"></span></div></header>
  <div id="alchemy-stocks" aria-label="Reagent inventory"></div>
+ <div id="alchemy-active" role="group" aria-label="Active potions"></div>
  <div id="alchemy-recipes" tabindex="0" role="region" aria-label="Potion recipes"></div>
- <div id="alchemy-active" role="group" aria-label="Active potions"></div><p id="alchemy-message" role="status"></p>
+ <p id="alchemy-message" role="status"></p>
 </dialog>
 <dialog id="keep-affixes-dialog" class="mine-dialog" aria-labelledby="keep-affixes-title" aria-describedby="keep-affixes-note">
     <div class="sheet-top"><div><h2 id="keep-affixes-title">Keep affixes</h2><p>Auto Forge · Equip &amp; Sell</p></div><button id="close-keep-affixes" class="close" aria-label="Close affix filter" autofocus>×</button></div>

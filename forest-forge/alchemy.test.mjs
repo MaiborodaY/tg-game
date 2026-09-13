@@ -63,10 +63,10 @@ test('reagent drop is rare in all biomes, with fivefold boss odds',()=>{
  assert.ok(Math.abs(reagentChances(1).reduce((a,b)=>a+b,0)-.010444)<1e-12);
 });
 
-test('companion XP potion has fixed five tiers and appends stock without shifting old potions',()=>{
+test('companion XP potion scales with alchemy across five tiers and appends stock without shifting old potions',()=>{
  const s=supply();s.alchemy.potions[24]=7;
- for(let r=0;r<5;r++){assert.deepEqual(potionEffect(s,'companion-xp',r),{value:10+10*r,seconds:600});assert.ok(brewPotion(s,'companion-xp',r));assert.equal(s.alchemy.potions[25+r],1);}
- s.alchemy.xp=25245;assert.deepEqual(potionEffect(s,'companion-xp',4),{value:50,seconds:600});
+ for(let r=0;r<5;r++){s.alchemy.xp=0;assert.deepEqual(potionEffect(s,'companion-xp',r),{value:10+10*r,seconds:600});assert.ok(brewPotion(s,'companion-xp',r));assert.equal(s.alchemy.potions[25+r],1);}
+ s.alchemy.xp=25245;assert.deepEqual(potionEffect(s,'companion-xp',4),{value:100,seconds:3600});
  const old=structuredClone(s);old.alchemy.potions.length=25;
  const loaded=restore(JSON.stringify(old),1000);assert.equal(loaded.alchemy.potions.length,POTIONS.length*5);assert.equal(loaded.alchemy.potions[24],7);assert.deepEqual(loaded.alchemy.potions.slice(25),[0,0,0,0,0]);
 });
@@ -83,4 +83,21 @@ test('companion XP bonus preserves fractions across saves without affecting gold
  const remaining=s.alchemy.active['companion-xp'].remaining;
  const loaded=restore(JSON.stringify(s),86401000);assert.equal(loaded.alchemy.active['companion-xp'].remaining,remaining);
  loaded.phase='fight';loaded.alchemy.active['companion-xp'].remaining=.01;step(loaded,1/30,()=>.999,86401000);assert.equal(loaded.alchemy.active['companion-xp'].remaining,0);
+});
+
+test('same rarity extends combat and passive potions, blocks other rarity and survives long saves',()=>{
+ for(const type of ['damage','health','ore','coins','hammers','companion-xp']){
+  const s=supply(),index=POTIONS.findIndex(p=>p.id===type);s.alchemy.potions[index*5]=30;s.alchemy.potions[index*5+1]=1;
+  assert.ok(drinkPotion(s,type,0,1000));const original={...s.alchemy.active[type]},duration=potionEffect(s,type,0).seconds;
+  const before=JSON.stringify(s);assert.equal(drinkPotion(s,type,1,1000),false);assert.equal(JSON.stringify(s),before);
+  for(let i=0;i<20;i++)assert.ok(drinkPotion(s,type,0,1000));
+  const b=s.alchemy.active[type];assert.equal(b.value,original.value);assert.equal(s.alchemy.potions[index*5],9);
+  if(POTIONS[index].combat)assert.equal(b.remaining,21*duration);else {assert.equal(b.startsAt,1000);assert.equal(b.endsAt,1000+21*duration*1000);}
+  const loaded=restore(JSON.stringify(s),1000);assert.deepEqual(loaded.alchemy.active[type],b);
+ }
+});
+test('extending passive potion preserves elapsed production without double credit',()=>{
+ const a=supply(),b=structuredClone(a);for(const s of [a,b]){s.alchemy.potions[10]=2;assert.ok(drinkPotion(s,'ore',0,1000));}
+ assert.ok(drinkPotion(a,'ore',0,61000));settleMine(a,121000);settleMine(b,121000);
+ assert.deepEqual(a.mine.ore,b.mine.ore);assert.deepEqual(a.mine.pending,b.mine.pending);assert.equal(a.mine.remainder,b.mine.remainder);
 });

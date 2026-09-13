@@ -429,7 +429,6 @@ export function alchemySkill(s) {
 }
 export function potionEffect(s,type,rarity) {
  const potion=POTIONS.find(p=>p.id===type);if(!potion||!Number.isInteger(rarity)||rarity<0||rarity>4)return null;
- if(type==='companion-xp')return {value:potion.base[rarity],seconds:600};
  const t=(alchemySkill(s).level-1)/99;
  return {value:Math.round(potion.base[rarity]*(1+t)*100)/100,seconds:Math.round((potion.combat?600:1800)*(1+5*t))};
 }
@@ -450,7 +449,14 @@ export function brewPotion(s,type,rarity) {
 export function drinkPotion(s,type,rarity,now=Date.now()) {
  const a=s.alchemy,p=POTIONS.findIndex(p=>p.id===type),effect=potionEffect(s,type,rarity);
  if(!a||p<0||!effect||a.potions[p*5+rarity]<1||s.dungeons?.run)return false;
- const active=a.active[type];if(active&&(POTIONS[p].combat?active.remaining>0:active.endsAt>now))return false;
+ const active=a.active[type],running=active&&(POTIONS[p].combat?active.remaining>0:active.endsAt>now);
+ if(running){
+  if(active.rarity!==rarity)return false;
+  a.potions[p*5+rarity]--;
+  if(POTIONS[p].combat)active.remaining+=effect.seconds;
+  else active.endsAt+=effect.seconds*1000;
+  return true;
+ }
  if(!POTIONS[p].combat){settleIdle(s,now);settleMine(s,now);if(active)(a.previous??={})[type]={...active};}
  const fraction=s.hp/stats(s).hp;
  a.potions[p*5+rarity]--;a.active[type]={rarity,value:effect.value,...(POTIONS[p].combat?{remaining:effect.seconds}:{startsAt:now,endsAt:now+effect.seconds*1000})};
@@ -1229,8 +1235,8 @@ export function restore(serialized, now = Date.now()) {
     dungeonDay(s,now);
     const a=s.alchemy||{},counts=(v,n)=>Array.from({length:n},(_,i)=>bounded(v?.[i],1e9));
     s.alchemy={xp:bounded(a.xp,25245),reagents:counts(a.reagents,5),potions:counts(a.potions,POTIONS.length*5),pending:counts(a.pending,5),idleMinutes:bounded(a.idleMinutes,1e12),seed:bounded(a.seed??Math.floor(s.idleSince||1),2147483647),oreRemainder:nonnegative(a.oreRemainder)&&a.oreRemainder<1?a.oreRemainder:0,active:{},previous:{}};
-    for(const p of POTIONS){const b=a.active?.[p.id];if(b&&Number.isInteger(b.rarity)&&b.rarity>=0&&b.rarity<5&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&(p.combat?nonnegative(b.remaining)&&b.remaining<=3600:nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt&&b.endsAt-b.startsAt<=10800000))s.alchemy.active[p.id]={...b};}
-    for(const p of POTIONS.filter(p=>!p.combat)){const b=a.previous?.[p.id];if(b&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt&&b.endsAt-b.startsAt<=10800000)s.alchemy.previous[p.id]={...b};}
+    for(const p of POTIONS){const b=a.active?.[p.id];if(b&&Number.isInteger(b.rarity)&&b.rarity>=0&&b.rarity<5&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&(p.combat?nonnegative(b.remaining):nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt))s.alchemy.active[p.id]={...b};}
+    for(const p of POTIONS.filter(p=>!p.combat)){const b=a.previous?.[p.id];if(b&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt)s.alchemy.previous[p.id]={...b};}
     const workshop=s.workshop||{};
     s.workshop={slots:Object.fromEntries(SLOTS.map(slot=>[slot,bounded(workshop.slots?.[slot],100)])),coins:bounded(workshop.coins,125),hammers:bounded(workshop.hammers,80),storage:bounded(workshop.storage,16)};
     const bank=s.idleStore;

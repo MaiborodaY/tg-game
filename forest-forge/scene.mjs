@@ -1,5 +1,5 @@
 const compactNumber = new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1});
-import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs';
+import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs?v=alchemy-scaling-2';
 
 // Existing atlas poses: body x/y/angle, then each hand's x/y/angle.
 // Source coordinates match design/hero-base-v2-poses.json and build-set.cjs.

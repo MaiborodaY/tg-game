@@ -1,14 +1,14 @@
-import { expandInventory } from './game.mjs';
-import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs';
-import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs';
-import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs';
-import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs';
-import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
-import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
-import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
-import { createScene } from './scene.mjs?v=lifesteal-heal';
-import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
-import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs';
+import { expandInventory } from './game.mjs?v=alchemy-scaling-2';
+import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs?v=alchemy-scaling-2';
+import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs?v=alchemy-scaling-2';
+import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs?v=alchemy-scaling-2';
+import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs?v=alchemy-scaling-2';
+import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs?v=alchemy-scaling-2';
+import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs?v=alchemy-scaling-2';
+import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs?v=alchemy-scaling-2';
+import { createScene } from './scene.mjs?v=alchemy-scaling-2';
+import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs?v=alchemy-scaling-2';
+import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs?v=alchemy-scaling-2';
 
 const $ = id => document.getElementById(id);
 const portraits = [['helmet','Knight'],['goblin','Smug goblin'],['pot-knight','Pot knight'],['duck','Duck wizard'],['wizard','Sleepy wizard'],['cat','Cat knight'],['pirate','Skeleton pirate'],["hamster-king","Hamster king"],["frog-alchemist","Frog alchemist"],["grumpy-dwarf","Grumpy dwarf"],["orc-chef","Orc chef"],["mushroom","Nervous mushroom"],["owl-librarian","Owl librarian"],["pig-barbarian","Pig barbarian"],["raccoon-thief","Raccoon thief"],["slime-knight","Slime knight"],["turtle-samurai","Turtle samurai"],["goat-wizard","Goat wizard"],["old-vampire","Old vampire"],["carrot-knight","Carrot knight"],["angry-fairy","Angry fairy"],["button-mummy","Button-eyed mummy"],["shark-pirate","Shark pirate"],["sheep-necromancer","Sheep necromancer"],["cyclops","Cyclops"],["wood-golem","Wood golem"],["chicken-musketeer","Chicken musketeer"]];
@@ -1540,7 +1540,7 @@ document.querySelectorAll('[data-close-mine]').forEach(b=>b.addEventListener('cl
 
 
 let alchemyType='damage',alchemyDisplay='';
-const alchemyRarities=Object.fromEntries(POTIONS.map(p=>[p.id,0]));
+let alchemyRarity=0;
 function reagentIcon(color){const i=ALCHEMY_RARITIES.findIndex(r=>r.color===color);return `<img class="alchemy-item-art reagent-art" src="assets/alchemy/reagent-${Math.max(0,i)}.webp" alt="">`;}
 function updateAlchemy(){
  const a=state.alchemy;if(!a)return;const now=Date.now(),skill=alchemySkill(state);
@@ -1550,26 +1550,25 @@ function updateAlchemy(){
  const activeRoot=$('alchemy-active');
  const activeKey=JSON.stringify(active.map(({p,b})=>[p.id,b.value]));
  if(activeRoot.dataset.key!==activeKey){
- $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${b.value}% ${p.label}" aria-label="${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
+ $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${Number(b.value.toFixed(1))}% ${p.label}" aria-label="${p.name}, +${Number(b.value.toFixed(1))}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
   activeRoot.dataset.key=activeKey;
  }
  active.forEach(({p,b,remaining},i)=>{
   const button=activeRoot.children[i],timer=button.querySelector('span');
-  const text=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+  const text=remaining>=60?`${Math.ceil(remaining/60)}m`:`${remaining}s`;
   if(timer.textContent!==text)timer.textContent=text;
-  const label=`${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining`;
+  const label=`${p.name}, +${Number(b.value.toFixed(1))}% ${p.label}, ${Math.ceil(remaining/60)} min remaining`;
   if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
  });
- if(document.activeElement?.matches('#alchemy-recipes select'))return;
- const key=JSON.stringify([a.xp,a.reagents,a.potions,activeKey,alchemyType,alchemyRarities,state.coins,!!state.dungeons.run]);if(key===alchemyDisplay)return;alchemyDisplay=key;
+ const key=JSON.stringify([a.xp,a.reagents,a.potions,activeKey,alchemyType,alchemyRarity,state.coins,!!state.dungeons.run]);if(key===alchemyDisplay)return;alchemyDisplay=key;
  setText('alchemy-level',`Lv. ${skill.level}`);setText('alchemy-xp',skill.needed?`${skill.xp} / ${skill.needed} XP`:'MAX');$('alchemy-progress').max=skill.needed||1;$('alchemy-progress').value=skill.needed?skill.xp:1;
- $('alchemy-stocks').innerHTML=ALCHEMY_RARITIES.map((r,i)=>`<span title="${r.name}" aria-label="${r.name}: ${a.reagents[i]}">${reagentIcon(r.color)}<b>${compact.format(a.reagents[i])}</b></span>`).join('');
+ $('alchemy-stocks').innerHTML=ALCHEMY_RARITIES.map((r,i)=>`<button type="button" data-alchemy-grade="${i}" style="--rarity:${r.color}" title="${r.name}" aria-pressed="${i===alchemyRarity}" aria-label="${r.name}: ${a.reagents[i]}">${reagentIcon(r.color)}<b>${compact.format(a.reagents[i])}</b></button>`).join('');
  // Keep the focused select/button while the real-time buff counter updates.
  const focused=document.activeElement,focusId=focused?.id;
  $('alchemy-recipes').innerHTML=POTIONS.map((p,index)=>{
-  const rarity=alchemyRarities[p.id],r=ALCHEMY_RARITIES[rarity],effect=potionEffect(state,p.id,rarity),stock=a.potions[index*5+rarity],open=alchemyType===p.id,busy=active.some(x=>x.p.id===p.id);
+  const rarity=alchemyRarity,r=ALCHEMY_RARITIES[rarity],effect=potionEffect(state,p.id,rarity),stock=a.potions[index*5+rarity],open=alchemyType===p.id,buff=active.find(x=>x.p.id===p.id),busy=!!buff&&buff.b.rarity!==rarity;
   const duration=`${Math.floor(effect.seconds/60)} min${effect.seconds%60?` ${effect.seconds%60}s`:''}`,label=p.label;
-  return `<article class="alchemy-entry ${open?'is-open':''}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${effect.value}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt="">${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-ingredients"><select id="alchemy-rarity-${p.id}" data-rarity="${p.id}" aria-label="${p.name} rarity">${ALCHEMY_RARITIES.map((v,i)=>`<option value="${i}" ${i===rarity?'selected':''}>${v.name}</option>`).join('')}</select><span title="Reagents owned / required" class="${a.reagents[rarity]?'':'missing'}">${reagentIcon(r.color)} ${a.reagents[rarity]} / 1</span></div><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Active':'Use'}</button></div></div></article>`;
+  return `<article class="alchemy-entry ${open?'is-open':''}" style="--rarity:${r.color}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${Number(effect.value.toFixed(1))}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt="">${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <span class="alchemy-price ${state.coins<r.cost?'missing':''}"><i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</span><span class="alchemy-price ${a.reagents[rarity]<1?'missing':''}">${reagentIcon(r.color)} 1</span></button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Other rarity active':buff?'Extend':'Use'}</button></div></div></article>`;
  }).join('');
  if(focusId&&focused?.closest('#alchemy-recipes'))$(focusId)?.focus({preventScroll:true});
 }
@@ -1579,14 +1578,18 @@ $('alchemy-active').addEventListener('click',e=>{
  const button=e.target.closest('[data-active-potion]');if(!button)return;
  const potion=POTIONS.find(p=>p.id===button.dataset.activePotion),buff=state.alchemy.active[potion.id];
  const remaining=buff?(potion.combat?buff.remaining:(buff.endsAt-Date.now())/1000):0;
- setText('alchemy-message',remaining>0?`${potion.name}: +${buff.value}% ${potion.label} · ${Math.ceil(remaining/60)} min${potion.combat?' of battle':''} remaining`:'Effect ended');
+ setText('alchemy-message',remaining>0?`${potion.name}: +${Number(buff.value.toFixed(1))}% ${potion.label} · ${Math.ceil(remaining/60)} min${potion.combat?' of battle':''} remaining`:'Effect ended');
 });
-$('alchemy-recipes').addEventListener('change',e=>{const type=e.target.dataset.rarity;if(type){alchemyRarities[type]=Number(e.target.value);e.target.blur();updateAlchemy();}});
+$('alchemy-stocks').addEventListener('click',e=>{
+ const button=e.target.closest('[data-alchemy-grade]');if(!button)return;
+ alchemyRarity=Number(button.dataset.alchemyGrade);updateAlchemy();
+ $('alchemy-stocks').querySelector(`[data-alchemy-grade="${alchemyRarity}"]`)?.focus({preventScroll:true});
+});
 $('alchemy-recipes').addEventListener('click',e=>{
  const row=e.target.closest('[data-recipe]'),brew=e.target.closest('[data-brew]'),use=e.target.closest('[data-use]');
  if(row){alchemyType=alchemyType===row.dataset.recipe?'':row.dataset.recipe;setText('alchemy-message','');updateAlchemy();}
- if(brew&&brewPotion(state,brew.dataset.brew,alchemyRarities[brew.dataset.brew])){setText('alchemy-message','Potion brewed');save(true);updateAlchemy();}
- if(use&&drinkPotion(state,use.dataset.use,alchemyRarities[use.dataset.use])){setText('alchemy-message','Potion activated');save(true);updateUI();updateAlchemy();}
+ if(brew&&brewPotion(state,brew.dataset.brew,alchemyRarity)){setText('alchemy-message','');save(true);updateAlchemy();}
+ if(use&&drinkPotion(state,use.dataset.use,alchemyRarity)){setText('alchemy-message','');save(true);updateUI();updateAlchemy();}
 });
 
 function frame(now) {

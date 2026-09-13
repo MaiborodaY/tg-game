@@ -924,7 +924,7 @@ input,select,textarea {font-family:inherit;}
 #alchemy-dialog .alchemy-heading .close{width:32px;height:32px;right:10px;top:10px;font-size:26px}
 #alchemy-dialog .alchemy-experience{left:14px;right:14px;bottom:9px}
 #alchemy-stocks{display:flex;justify-content:space-between;gap:4px;padding:8px 2px}
-#alchemy-stocks>span{display:flex;align-items:center;gap:2px;min-width:0;font-size:13px}
+#alchemy-stocks>button{display:flex;align-items:center;gap:2px;min-width:0;font-size:13px}
 .alchemy-item-art{object-fit:contain;mix-blend-mode:multiply}
 #alchemy-stocks img{width:26px;height:28px}
 #alchemy-recipes{display:flex;flex-direction:column;gap:6px;flex-shrink:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#8da58d transparent;padding:2px 4px 3px 2px}
@@ -1104,3 +1104,32 @@ input,select,textarea {font-family:inherit;}
 @media(max-width:380px){#inventory-dialog .sheet-top{flex-wrap:wrap;}#inventory-close{margin-left:auto;}#inventory-title{font-size:19px;}#inventory-total{font-size:9px;}#inventory-expand,#inventory-sell-all{padding:3px 4px;font-size:9px;}}
 
 @media(max-width:380px){#inventory-dialog .sheet-top{display:grid;grid-template-columns:auto 1fr auto;}#inventory-title{grid-column:1;}#inventory-total{grid-column:2;}#inventory-close{grid-column:3;grid-row:1;}#inventory-expand{grid-column:1;grid-row:2;}#inventory-sell-all{grid-column:2;grid-row:2;justify-self:start;}}
+
+#alchemy-stocks>button{position:relative;padding-bottom:6px;}
+#alchemy-stocks>button::after{content:'';position:absolute;bottom:0;left:2px;right:2px;height:3px;border-radius:3px;background:var(--rarity);opacity:.7;}
+
+
+#alchemy-active{justify-content:flex-start;flex-wrap:wrap;gap:3px 12px;margin:0 0 6px;padding:0;border:0;}
+#alchemy-active button{flex-direction:row;gap:3px;width:auto;min-height:28px;padding:0;border:0;border-radius:0;background:none;}
+#alchemy-active button:hover{background:none;}
+#alchemy-active img{width:20px;height:25px;}
+#alchemy-active span{font-size:11px;line-height:14px;}
+
+#alchemy-active{flex-wrap:nowrap;justify-content:space-between;gap:3px;}
+#alchemy-active button{gap:1px;min-width:0;flex:0 1 auto;}
+#alchemy-active img{width:17px;height:23px;flex:none;}
+#alchemy-active span{font-size:10px;}
+
+
+
+#alchemy-stocks>button{flex:1;justify-content:center;padding:5px 2px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font:inherit;font-size:12px;cursor:pointer;}
+#alchemy-stocks>button[aria-pressed=true]{background:color-mix(in srgb,var(--rarity) 24%,var(--paper));}
+.alchemy-ingredients{justify-content:flex-end;}
+
+.alchemy-entry{border-left:3px solid var(--rarity);background:color-mix(in srgb,var(--rarity) 12%,var(--paper));}
+.alchemy-entry.is-open{border-color:#a5b19b;border-left-color:var(--rarity);background:color-mix(in srgb,var(--rarity) 22%,var(--paper));}
+
+#alchemy-dialog .alchemy-actions .alchemy-price{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+#alchemy-dialog .alchemy-actions .alchemy-price img{width:20px;height:22px;object-fit:contain;}
+#alchemy-dialog .alchemy-actions .alchemy-price.missing{color:#842a2a;}
+#alchemy-dialog .alchemy-actions button:first-child{font-size:14px;gap:5px;}
