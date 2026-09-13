@@ -70,7 +70,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   let biomeIndex = 0, wantedBiome = 0, biomeSprites = null, scenery = null, biomeHeights = null, loading = false;
   let reveal = 0, levelTitle = null, resizeCount=0;
   let chakramFlight = null;
-  let heroCache=null, heroCacheBuilds=0, equipmentPreview=null;
+  let equipmentPreview=null;
   const numbers = [];
   let numberSequence = 0;
   const coins = [];
@@ -504,39 +504,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const size=70*unit,walk=profile?.mode!=='freeze-walk'&&!reducedMotion.matches&&state.phase==='walk',frame=walk?Math.floor(time*8)%4:0;
       context.drawImage(mountArt,frame*256,0,256,256,heroX-size*.52,base-size*242/256,size,size);
     }
-    // Walking/rest poses have no limb interpolation. Keep one small strip for the
-    // current outfit, baking each of its nine frames only when first needed.
-    const cacheable=profile?.heroCache!==false&&!combat&&state.phase!=='dead'&&!chakramFlight;
-    let heroContext=context, bakeFrame=false;
-    if(cacheable){
-      const sources=[...new Set([sets[0],...Object.values(equipped).filter(Boolean),...(customWeapon&&weaponImage?[weaponSource]:[])])];
-      const images=[...sources.map(id=>art[id]),weaponImage];
-      const key=JSON.stringify([equipped,customWeapon?weapon.weaponId:null,Boolean(mounted),profile?.mode==='hide-equipment',profile?.hiddenSlot,width,height,ratio,artVersion]);
-      if(!heroCache||heroCache.key!==key||images.some((image,i)=>image!==heroCache.images[i])){
-        // Bound full source cells, including transparent padding, without GPU readback.
-        const sizes=sources.map(id=>({rig:rigs[id],size:hSize/rigs[id].bodyHeight}));
-        const left=Math.min(...sizes.map(({rig,size})=>-size*rig.anchor[0]));
-        const top=Math.min(...sizes.map(({rig,size})=>-size*rig.anchor[1]));
-        const right=Math.max(...sizes.map(({rig,size})=>size*(1-rig.anchor[0])));
-        const bottom=Math.max(...sizes.map(({rig,size})=>size*(1-rig.anchor[1])));
-        // Match the scene's physical pixel grid to avoid a second resampling pass.
-        const x=(Math.floor((heroX+left)*ratio)-1)/ratio-heroX;
-        const y=(Math.floor((base-mountLift+top)*ratio)-1)/ratio-(base-mountLift);
-        const w=Math.ceil((right-x)*ratio)+1,h=Math.ceil((bottom-y)*ratio)+1;
-        const strip=document.createElement('canvas');strip.width=w*9;strip.height=h;
-        heroCache={key,images,strip,x,y,w,h,frames:new Set()};
-        heroCacheBuilds++;
-      }
-      bakeFrame=!heroCache.frames.has(heroFrame);
-      if(bakeFrame){
-        heroContext=heroCache.strip.getContext('2d');
-        heroContext.save();
-        heroContext.setTransform(ratio,0,0,ratio,heroFrame*heroCache.w-heroCache.x*ratio,-heroCache.y*ratio);
-      }
-    }
     context.save();
     context.translate(heroX, base-mountLift);
-    if(!cacheable||bakeFrame)for (let row=0;row<heroRig.rows.length;row++) {
+    for (let row=0;row<heroRig.rows.length;row++) {
       const name=heroRig.rows[row],slot=heroSlots[row];
       if(mounted&&(/leg|boot|shorts|hip/.test(name)||slot==='legs'||slot==='boots'))continue;
       const standalone = name === 'weapon' && customWeapon && weaponImage && profile?.mode!=='hide-equipment' && profile?.hiddenSlot!=='weapon';
@@ -547,14 +517,14 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const sourceName=name==='head' && equipped.helmet ? 'head-helmet' : equipped.boots && ['back-leg','front-leg'].includes(name) ? name+'-booted' : name;
       const source=standalone?weaponSource:slot?equipped[slot]:name==='head'&&equipped.helmet?equipped.helmet:sets[0],rig=rigs[source],cell=rig.cell,padded=hSize/rig.bodyHeight;
       const shotRow=rig.shootRows?.indexOf(sourceName)??-1,useShot=shooting&&shotRow>=0&&art[source+'-shoot'];
-      heroContext.save();
+      context.save();
       const planted=combat&&/leg|boot|hip/.test(name);
       if(combat&&!planted){
         const k=hSize/590, radians=Math.PI/180;
         // Move the existing body cell into the interpolated pose, keeping feet fixed.
-        heroContext.translate(pose[0]*k,pose[1]*k-180*k);
-        heroContext.rotate(pose[2]*radians);
-        heroContext.translate(0,180*k);
+        context.translate(pose[0]*k,pose[1]*k-180*k);
+        context.rotate(pose[2]*radians);
+        context.translate(0,180*k);
         const arm=name==='back-arm'||name==='front-arm';
         const held=name==='weapon'||/hand|glove/.test(name);
         if(arm||held){
@@ -562,26 +532,26 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
           if(arm){
             const sx=hand===3?666:826,sy=hand===3?447:463;
             const ax=sourcePose[hand]-sx,ay=sourcePose[hand+1]-sy,bx=pose[hand]-sx,by=pose[hand+1]-sy;
-            heroContext.translate((sx-750)*k,(sy-710)*k);
-            heroContext.rotate(Math.atan2(by,bx));
-            heroContext.scale(Math.hypot(bx,by)/Math.hypot(ax,ay),1);
-            heroContext.rotate(-Math.atan2(ay,ax));
-            heroContext.translate((750-sx)*k,(710-sy)*k);
+            context.translate((sx-750)*k,(sy-710)*k);
+            context.rotate(Math.atan2(by,bx));
+            context.scale(Math.hypot(bx,by)/Math.hypot(ax,ay),1);
+            context.rotate(-Math.atan2(ay,ax));
+            context.translate((750-sx)*k,(710-sy)*k);
           }else{
-            heroContext.translate((pose[hand]-750)*k,(pose[hand+1]-710)*k);
-            heroContext.rotate((pose[hand+2]-sourcePose[hand+2]+(standalone?weaponTurn:0))*radians);
-            heroContext.translate((750-sourcePose[hand])*k,(710-sourcePose[hand+1])*k);
+            context.translate((pose[hand]-750)*k,(pose[hand+1]-710)*k);
+            context.rotate((pose[hand+2]-sourcePose[hand+2]+(standalone?weaponTurn:0))*radians);
+            context.translate((750-sourcePose[hand])*k,(710-sourcePose[hand+1])*k);
           }
         }
         if(name==='cape'&&guard){
-          heroContext.translate(0,-hSize*.46);heroContext.rotate(guard*.035);heroContext.translate(0,hSize*.46);
+          context.translate(0,-hSize*.46);context.rotate(guard*.035);context.translate(0,hSize*.46);
         }
-        heroContext.translate(0,-180*k);heroContext.rotate(-sourcePose[2]*radians);
-        heroContext.translate(-sourcePose[0]*k,(180-sourcePose[1])*k);
+        context.translate(0,-180*k);context.rotate(-sourcePose[2]*radians);
+        context.translate(-sourcePose[0]*k,(180-sourcePose[1])*k);
       }
       if (state.phase === 'dead') {
         const t=Math.max(0,1.8-state.phaseTime);
-        heroContext.globalAlpha=Math.max(0,1-Math.max(0,t-.55)/.65);
+        context.globalAlpha=Math.max(0,1-Math.max(0,t-.55)/.65);
         if (!reducedMotion.matches) {
           // Equipment shares the impulse and pivot of the limb it covers.
           const head=['head','helmet'].includes(name),leg=/leg|boot|hip/.test(name),arm=/arm|hand|glove/.test(name)||name==='weapon';
@@ -589,19 +559,14 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
           const px=(leg?(back?-.14:.14):arm?(back?-.25:.28):0)*hSize,py=(head?-.83:leg?-.18:-.5)*hSize;
           const vx=head?-20:leg?(back?-32:34):arm?(back?-52:55):6,vy=head?-72:leg?-35:arm?-48:-48;
           const spin=head?-2:leg?(back?-2.5:2.5):arm?(back?-3:3):.7;
-          heroContext.translate(px+vx*t*unit,py+(vy*t+100*t*t)*unit);heroContext.rotate(spin*t);heroContext.translate(-px,-py);
+          context.translate(px+vx*t*unit,py+(vy*t+100*t*t)*unit);context.rotate(spin*t);context.translate(-px,-py);
         }
       }
       const image=standalone?weaponImage:useShot?art[source+'-shoot']:art[source];
       const column=planted?0:standalone?(shooting?22+shotFrame:heroFrame):useShot?shotFrame:heroFrame;
       const sourceRow=standalone?rig.weaponRows.indexOf(weapon.weaponId):useShot?shotRow:rig.rows.indexOf(sourceName);
-      heroContext.drawImage(image,column*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
-      heroContext.restore();
-    }
-    if(cacheable){
-      if(bakeFrame){heroContext.restore();heroCache.frames.add(heroFrame);}
-      const {strip,x,y,w,h}=heroCache;
-      context.drawImage(strip,heroFrame*w,0,w,h,x,y,w/ratio,h/ratio);
+      context.drawImage(image,column*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
+      context.restore();
     }
     context.restore();
     if (!state.completed && state.phase !== 'dead') bar(heroX, base - mountLift - hSize - 9, state.hp / stats(state).hp, '#56df51');
@@ -810,5 +775,5 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,heroCacheBuilds,heroCacheFrames:heroCache?.frames.size??0,heroCacheBytes:heroCache?heroCache.strip.width*heroCache.strip.height*4:0,loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
+  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
 }
