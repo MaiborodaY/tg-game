@@ -83,5 +83,67 @@
     0.42735042735042733,
     0.9430199430199431
   ],
-  "bodyHeight": 0.8404558404558404
+  "bodyHeight": 0.8404558404558404,
+  "shootFrames": 12,
+  "packed": {
+    "cape": {
+      "columns": 8,
+      "rows": [
+        "cape"
+      ],
+      "shootRows": []
+    },
+    "legs": {
+      "columns": 8,
+      "rows": [
+        "hip-back",
+        "hip-front",
+        "leg-back",
+        "leg-front"
+      ],
+      "shootRows": []
+    },
+    "boots": {
+      "columns": 8,
+      "rows": [
+        "boot-back",
+        "boot-front"
+      ],
+      "shootRows": []
+    },
+    "chest": {
+      "columns": 8,
+      "rows": [
+        "chest"
+      ],
+      "shootRows": []
+    },
+    "shoulders": {
+      "columns": 8,
+      "rows": [
+        "shoulder-back",
+        "shoulder-front"
+      ],
+      "shootRows": []
+    },
+    "helmet": {
+      "columns": 8,
+      "rows": [
+        "helmet",
+        "head-helmet"
+      ],
+      "shootRows": []
+    },
+    "gloves": {
+      "columns": 8,
+      "rows": [
+        "glove-back",
+        "glove-front"
+      ],
+      "shootRows": [
+        "glove-back",
+        "glove-front"
+      ]
+    }
+  }
 }

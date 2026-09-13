@@ -94,5 +94,74 @@
     0.3246753246753247,
     0.7878787878787878
   ],
-  "bodyHeight": 0.6385281385281385
+  "bodyHeight": 0.6385281385281385,
+  "shootFrames": 12,
+  "packed": {
+    "cape": {
+      "columns": 8,
+      "rows": [
+        "cape"
+      ],
+      "shootRows": []
+    },
+    "legs": {
+      "columns": 8,
+      "rows": [
+        "hip-back",
+        "hip-front",
+        "leg-back",
+        "leg-front"
+      ],
+      "shootRows": []
+    },
+    "boots": {
+      "columns": 8,
+      "rows": [
+        "boot-back",
+        "boot-front"
+      ],
+      "shootRows": []
+    },
+    "chest": {
+      "columns": 8,
+      "rows": [
+        "chest"
+      ],
+      "shootRows": []
+    },
+    "shoulders": {
+      "columns": 8,
+      "rows": [
+        "shoulder-back",
+        "shoulder-front"
+      ],
+      "shootRows": []
+    },
+    "helmet": {
+      "columns": 8,
+      "rows": [
+        "helmet",
+        "head-helmet"
+      ],
+      "shootRows": []
+    },
+    "weapon": {
+      "columns": 8,
+      "rows": [
+        "weapon"
+      ],
+      "shootRows": []
+    },
+    "gloves": {
+      "columns": 8,
+      "rows": [
+        "glove-back",
+        "glove-front"
+      ],
+      "shootRows": [
+        "glove-back",
+        "glove-front"
+      ]
+    }
+  }
 }

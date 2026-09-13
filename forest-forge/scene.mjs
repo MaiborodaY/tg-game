@@ -42,7 +42,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   const [heroRigs] = await Promise.all([
     Promise.all(sets.slice(0,1).map(async id => {
       const meta = await fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r => { if (!r.ok) throw Error('Hero atlas metadata missing'); return r.json(); });
-      const image = new Image(); image.src = `assets/sets/${id}/atlas.png?v=${artVersion}`; await image.decode(); art[id] = image;
+      const image = new Image(); image.src = `assets/sets/${id}/body-sheet.png?v=${artVersion}`; await image.decode(); art[id+'-body'] = image;
       rigs[id]=meta;return meta;
     })),
     document.fonts.load('32px "Lilita UI"'),
@@ -51,25 +51,26 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       await img.decode(); art[name] = img;
     }))
   ]);
+  let heroRig = heroRigs[0];
   window.addEventListener('storage', async event => {
     if(event.key!=='forest-forge-art-update'||!event.newValue)return;
     const {id,revision}=JSON.parse(event.newValue);artVersion=revision;
     if(!rigs[id])return;
     try{
-      const meta=await fetch(`assets/sets/${id}/atlas.json?v=${revision}`).then(r=>r.json());rigs[id]=meta;
-      if(art[id]){const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${revision}`;await image.decode();art[id]=image;if(id!==sets[0])equipmentLastUsed.set(id,performance.now());}
-      for(const key of [id+'-shoot',...(meta.weaponRows||[]).map(weapon=>weapon+'-weapon')]){delete art[key];loadingSets.delete(key);equipmentLastUsed.delete(key);}
+      const meta=await fetch(`assets/sets/${id}/atlas.json?v=${revision}`).then(r=>r.json());
+      if(id===sets[0]){const image=new Image();image.src=`assets/sets/${id}/body-sheet.png?v=${revision}`;await image.decode();art[id+'-body']=image;heroRig=meta;}
+      rigs[id]=meta;
+      for(const key of [...Object.keys(meta.slots).map(slot=>id+'-'+slot),...(meta.weaponRows||[]).map(weapon=>weapon+'-weapon')]){delete art[key];loadingSets.delete(key);equipmentLastUsed.delete(key);}
       if(id===previewSet)previewRig=meta;
     }catch(error){console.error('Could not refresh equipment',error);}
   });
   let previewRig=null;
   if(previewSet){
     const response=await fetch(`assets/sets/${previewSet}/atlas.json?v=${artVersion}`);if(!response.ok)throw Error('Preview set unavailable');previewRig=await response.json();rigs[previewSet]=previewRig;
-    if(!art[previewSet]){const image=new Image();image.src=`assets/sets/${previewSet}/atlas.png?v=${artVersion}`;await image.decode();art[previewSet]=image;}
+    await Promise.all(Object.keys(previewRig.slots).map(async slot=>{const image=new Image();image.src=`assets/sets/${previewSet}/${slot}-sheet.png?v=${artVersion}`;await image.decode();art[previewSet+'-'+slot]=image;}));
   }
   let companionArtKind=null;
   let dungeonTheme=null, dungeonArt=null, dungeonBackdrop=null, dungeonFx=null, dungeonImpact=null, shieldImpact=1, mountArt=null, mountLoading=false;
-  const heroRig = heroRigs[0];
   const heroSlots = heroRig.rows.map((_,row) => Object.keys(heroRig.slots).find(slot => heroRig.slots[slot].includes(row)));
   let width = 0, height = 0, titleY = 0, ratio = 1, landscape;
   let time = 0, previousEnemies = null, previousBossSize = 128;
@@ -489,17 +490,14 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(heroX, base + 2, hSize * .3, 3, 0, 0, Math.PI * 2); context.fill();
     let equipped = Object.fromEntries(Object.keys(heroRig.slots).map(slot => {
       const item=visualEquipment[slot],id=slot==='weapon'&&customWeapon?undefined:previewRig?(previewRig.slots[slot]?previewSet:undefined):(slot==='weapon'?((item?.epoch??1)===1?['hunter-hides','bone-warrior','stone-guard']:[]):ARMOR_SETS[(item?.epoch??1)-1])?.[item?.quality];
-      if(id&&id!==sets[0])equipmentLastUsed.set(id,artNow);
-      if(id&&!art[id]&&!loadingSets.has(id)){
-        loadingSets.add(id);const image=new Image();image.src=`assets/sets/${id}/atlas.png?v=${artVersion}`;
-        Promise.all([image.decode(),fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Equipment metadata missing');return r.json();})]).then(([,meta])=>{rigs[id]=meta;art[id]=image;}).catch(error=>console.error('Could not load equipment',id,error));
+      const key=id+'-'+slot;
+      if(id)equipmentLastUsed.set(key,artNow);
+      if(id&&!art[key]&&!loadingSets.has(key)){
+        loadingSets.add(key);const image=new Image();image.src=`assets/sets/${id}/${slot}-sheet.png?v=${artVersion}`;
+        Promise.all([image.decode(),rigs[id]||fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Equipment metadata missing');return r.json();})]).then(([,meta])=>{rigs[id]=meta;art[key]=image;}).catch(error=>console.error('Could not load equipment',id,slot,error));
       }
-      return [slot,art[id]?id:undefined];
+      return [slot,art[key]?id:undefined];
     }));
-    if(ranged&&!throwing){
-      const sources=new Set([sets[0],...Object.values(equipped).filter(Boolean)]);
-      for(const id of sources){const key=id+'-shoot';equipmentLastUsed.set(key,artNow);if(!art[key]&&!loadingSets.has(key)){loadingSets.add(key);const img=new Image();img.src=`assets/sets/${id}/shoot-atlas.png?v=${artVersion}`;img.decode().then(()=>art[key]=img).catch(console.error);}}
-    }
     if(customWeapon){
       const key=weaponKey;equipmentLastUsed.set(key,artNow);
       if(!art[key]&&!loadingSets.has(key)){
@@ -533,7 +531,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       if (equipped.gloves && ['back-hand','front-hand'].includes(name)) continue;
       const sourceName=name==='head' && equipped.helmet ? 'head-helmet' : equipped.boots && ['back-leg','front-leg'].includes(name) ? name+'-booted' : name;
       const source=standalone?weaponSource:slot?equipped[slot]:name==='head'&&equipped.helmet?equipped.helmet:sets[0],rig=rigs[source],cell=rig.cell,padded=hSize/rig.bodyHeight;
-      const shotRow=rig.shootRows?.indexOf(sourceName)??-1,useShot=shooting&&shotRow>=0&&art[source+'-shoot'];
+      const sheet=slot||(name==='head'&&equipped.helmet?'helmet':'body'),layout=rig.packed[sheet];
+      const shotRow=layout?.shootRows.indexOf(sourceName)??-1,useShot=!standalone&&shooting&&shotRow>=0;
       context.save();
       const planted=combat&&/leg|boot|hip/.test(name);
       if(combat&&!planted){
@@ -579,11 +578,11 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
           context.translate(px+vx*t*unit,py+(vy*t+100*t*t)*unit);context.rotate(spin*t);context.translate(-px,-py);
         }
       }
-      const image=standalone?weaponImage:useShot?art[source+'-shoot']:art[source];
+      const image=standalone?weaponImage:art[source+'-'+sheet];
       const column=planted?0:standalone?(shooting?22+shotFrame:heroFrame):useShot?shotFrame:heroFrame;
-      // Weapon frames retain their source resolution, packed into eight columns.
-      const sourceRow=standalone?Math.floor(column/8):useShot?shotRow:rig.rows.indexOf(sourceName);
-      const sourceColumn=standalone?column%8:column;
+      // All sheets copy full-resolution cells; shooting rows follow ordinary poses.
+      const cellIndex=standalone?column:useShot?layout.rows.length*rig.frames+shotRow*rig.shootFrames+column:layout.rows.indexOf(sourceName)*rig.frames+column;
+      const columns=standalone?8:layout.columns,sourceRow=Math.floor(cellIndex/columns),sourceColumn=cellIndex%columns;
       context.drawImage(image,sourceColumn*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
       context.restore();
     }
@@ -794,5 +793,5 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   }
   resize();
   const observer = new ResizeObserver(resize); observer.observe(canvas);
-  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,equipmentImages:Object.entries(art).filter(([key])=>key===sets[0]||equipmentLastUsed.has(key)).map(([key,i])=>({key,width:i.naturalWidth,height:i.naturalHeight})),loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
+  return { render, emit, prepare, prepareDungeon, set equipmentPreview(value){equipmentPreview=value;chakramFlight=null;}, get diagnostics(){const images=Object.values(art).filter(i=>i instanceof HTMLImageElement);return {resizeCount,equipmentImages:Object.entries(art).filter(([key])=>key===sets[0]+'-body'||equipmentLastUsed.has(key)).map(([key,i])=>({key,width:i.naturalWidth,height:i.naturalHeight})),loadedImages:images.length,decodedImageBytesEstimate:images.reduce((n,i)=>n+i.naturalWidth*i.naturalHeight*4,0),canvas:[canvas.width,canvas.height]};}, get loading(){return loading;}, previewName:previewRig?.name };
 }

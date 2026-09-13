@@ -36,6 +36,12 @@ this build (eight columns, original cell size and all poses). The large source
 weapon sheets remain editable but are excluded from `dist`. The fitting workshop
 also refreshes compact weapon sheets after a successful set build.
 
+Armor sheets are packed per item in `assets/sets/<set>/<slot>-sheet.png`.
+The base body uses its own sheet. Helmet sheets include their matching head;
+gloves include shooting poses. `atlas.json` records the packed row order while
+preserving the original cell size, anchors and body scale. Full body and shooting
+source atlases remain available to the fitting tools but are excluded from `dist`.
+
 The scene keeps the base body loaded and fetches other equipment on demand.
 Equipment images unused for ten seconds are released from the scene on the next
 render cleanup (at most once per second). Shared images stay while any equipped

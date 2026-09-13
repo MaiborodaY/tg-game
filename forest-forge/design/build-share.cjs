@@ -13,9 +13,38 @@ const root = path.resolve(__dirname, '..');
   // dist is a generated directory inside this package.
   await fs.rm(path.join(root, 'dist'), {recursive:true, force:true});
   for (const set of await fs.readdir(path.join(root, 'assets/sets'))) {
-    for (const name of await fs.readdir(path.join(root, 'assets/sets', set))) {
-      if (/^(atlas\.(png|json)|shoot-atlas\.png)$|-icon\.png$/.test(name)) sources.add(`assets/sets/${set}/${name}`);
+    const folder = path.join(root, 'assets/sets', set);
+    for (const name of await fs.readdir(folder)) {
+      if (/^atlas\.json$|-icon\.png$/.test(name)) sources.add(`assets/sets/${set}/${name}`);
     }
+    const meta = JSON.parse(await fs.readFile(path.join(folder, 'atlas.json'), 'utf8'));
+    const normal = await sharp(path.join(folder, 'atlas.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const shot = await sharp(path.join(folder, 'shoot-atlas.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const cell = meta.cell;
+    meta.shootFrames = shot.info.width / cell;
+    if (normal.info.width !== meta.frames * cell || normal.info.height !== meta.rows.length * cell ||
+        !Number.isInteger(meta.shootFrames) || shot.info.height !== meta.shootRows.length * cell) throw Error(`Invalid armor atlas: ${set}`);
+    const groups = Object.fromEntries(Object.entries(meta.slots).map(([slot, rows]) => [slot, [...rows.map(r => meta.rows[r]), ...(slot === 'helmet' ? ['head-helmet'] : [])]]));
+    if (set === 'hunter-hides') groups.body = meta.rows.filter((name, row) => name !== 'head-helmet' && !Object.values(meta.slots).some(rows => rows.includes(row)));
+    meta.packed = {};
+    for (const [slot, rows] of Object.entries(groups)) {
+      const columns = slot === 'body' ? 16 : 8, width = columns * cell;
+      const shootRows = meta.shootRows.filter(name => rows.includes(name));
+      const height = Math.ceil((rows.length * meta.frames + shootRows.length * meta.shootFrames) / columns) * cell;
+      const pixels = Buffer.alloc(width * height * 4);
+      let index = 0;
+      for (const [names, allRows, atlas, frames] of [[rows, meta.rows, normal, meta.frames], [shootRows, meta.shootRows, shot, meta.shootFrames]]) {
+        for (const name of names) for (let f = 0; f < frames; f++, index++) for (let y = 0; y < cell; y++) {
+          const from = ((allRows.indexOf(name) * cell + y) * atlas.info.width + f * cell) * 4;
+          const to = ((Math.floor(index / columns) * cell + y) * width + index % columns * cell) * 4;
+          atlas.data.copy(pixels, to, from, from + cell * 4);
+        }
+      }
+      const source = `assets/sets/${set}/${slot}-sheet.png`;
+      await sharp(pixels, {raw:{width,height,channels:4}}).png().toFile(path.join(root, source));
+      sources.add(source); meta.packed[slot] = {columns, rows, shootRows};
+    }
+    await fs.writeFile(path.join(folder, 'atlas.json'), JSON.stringify(meta, null, 2) + '\n');
   }
   // Split source weapon rows before shipping; retain every original RGBA pixel.
   for (const set of new Set(Object.values(WEAPONS).filter(w => w.sprite).map(w => w.atlas || 'hunter-hides'))) {

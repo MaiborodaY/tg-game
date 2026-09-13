@@ -112,7 +112,23 @@ function placement(part,p){const back=part.anchor.endsWith('back'),j=back?0:1;le
  let emptyParts=0;
  for(const part of spec.parts){const r=rows.indexOf(part.id);for(let f=0;f<frames;f++){let visible=false;for(let y=0;y<cell&&!visible;y++)for(let x=0;x<cell;x++)if(raw[((r*cell+y)*cell*frames+f*cell+x)*4+3]>20){visible=true;break;}if(!visible)emptyParts++;}}
  const slots=Object.fromEntries(['cape','legs','boots','chest','shoulders','helmet','weapon','gloves'].map(slot=>[slot,spec.parts.filter(p=>p.slot===slot).map(p=>rows.indexOf(p.id))]).filter(([,indices])=>indices.length));
- fs.writeFileSync(path.join(out,'atlas.json'),JSON.stringify({id:spec.id,name:spec.name,sourceSheets:[...new Set([spec.source,...spec.parts.map(p=>p.source||spec.source)])],cell,frames,rows,slots,shootRows:shotRows,weaponRows:weapons.map(w=>w.id),viewBox,anchor:rig.anchor.map((v,i)=>(v-viewBox[i])/side),bodyHeight:rig.bodyHeight/side},null,2)+'\n');
+ // Each item keeps its own layers, including the helmet's head and shooting gloves.
+ const groups=Object.fromEntries(Object.entries(slots).map(([slot,indices])=>[slot,[...indices.map(r=>rows[r]),...(slot==='helmet'?['head-helmet']:[])]]));
+ if(id==='hunter-hides')groups.body=rows.filter((name,row)=>name!=='head-helmet'&&!Object.values(slots).some(indices=>indices.includes(row)));
+ const shotRaw=await sharp(path.join(out,'shoot-atlas.png')).ensureAlpha().raw().toBuffer(),packed={};
+ for(const [slot,names] of Object.entries(groups)){
+  const shootRows=shotRows.filter(name=>names.includes(name)),columns=slot==='body'?16:8,width=columns*cell,height=Math.ceil((names.length*frames+shootRows.length*shotPoses.length)/columns)*cell,pixels=Buffer.alloc(width*height*4);
+  let index=0;
+  for(const [selected,allRows,data,count] of [[names,rows,raw,frames],[shootRows,shotRows,shotRaw,shotPoses.length]]){
+   for(const name of selected)for(let f=0;f<count;f++,index++)for(let y=0;y<cell;y++){
+    const from=((allRows.indexOf(name)*cell+y)*cell*count+f*cell)*4,to=((Math.floor(index/columns)*cell+y)*width+index%columns*cell)*4;
+    data.copy(pixels,to,from,from+cell*4);
+   }
+  }
+  await sharp(pixels,{raw:{width,height,channels:4}}).png().toFile(path.join(out,slot+'-sheet.png'));
+  packed[slot]={columns,rows:names,shootRows};
+ }
+ fs.writeFileSync(path.join(out,'atlas.json'),JSON.stringify({id:spec.id,name:spec.name,sourceSheets:[...new Set([spec.source,...spec.parts.map(p=>p.source||spec.source)])],cell,frames,rows,slots,shootRows:shotRows,weaponRows:weapons.map(w=>w.id),viewBox,anchor:rig.anchor.map((v,i)=>(v-viewBox[i])/side),bodyHeight:rig.bodyHeight/side,shootFrames:shotPoses.length,packed},null,2)+'\n');
  // head-helmet must stay beneath the hood, not on top of equipment.
  const composeSorted=f=>rows.filter(id=>!['head-helmet','shorts','back-hand','front-hand','back-leg-booted','front-leg-booted'].includes(id)).map(id=>`<use href="#${id==='head'?'head-helmet':['back-leg','front-leg'].includes(id)?id+'-booted':id}-${f}"/>`).join('');
  const preview=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="#fffaf0"/><defs>${defs}</defs>${[0,2,4,6,10,12].map((f,i)=>`<svg x="${i%3*400}" y="${Math.floor(i/3)*400}" width="400" height="400" viewBox="${viewBox.join(' ')}">${composeSorted(f)}</svg>`).join('')}</svg>`;
