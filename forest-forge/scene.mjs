@@ -417,7 +417,8 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     const visualEquipment=equipmentPreview??state.equipment;
     const weapon = previewRig ? (previewRig.slots.weapon ? {quality:['hunter-hides','bone-warrior','stone-guard'].indexOf(previewSet)} : null) : visualEquipment.weapon;
     const ranged=Boolean(WEAPONS[weapon?.weaponId]?.range),customWeapon=Boolean(WEAPONS[weapon?.weaponId]?.sprite&&WEAPONS[weapon.weaponId].epoch===(weapon.epoch??1));
-    const weaponSource=WEAPONS[weapon?.weaponId]?.atlas||sets[0],weaponImage=art[weaponSource+'-weapon'];
+    const weaponSource=WEAPONS[weapon?.weaponId]?.atlas||sets[0],compactGladius=customWeapon&&weapon.weaponId==='gladius';
+    const weaponKey=compactGladius?'gladius-weapon':weaponSource+'-weapon',weaponImage=art[weaponKey];
     const throwing=customWeapon&&weapon.weaponId==='chakram';
     const shooting=ranged&&!throwing&&(state.phase==='fight'||recovery&&state.phase!=='dead');
     const attack=WEAPONS[weapon?.weaponId]?.attack;
@@ -492,9 +493,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       for(const id of sources){const key=id+'-shoot';if(!art[key]&&!loadingSets.has(key)){loadingSets.add(key);const img=new Image();img.src=`assets/sets/${id}/shoot-atlas.png?v=${artVersion}`;img.decode().then(()=>art[key]=img).catch(console.error);}}
     }
     if(customWeapon){
-      const key=weaponSource+'-weapon';
+      const key=weaponKey;
       if(!art[key]&&!loadingSets.has(key)){
-        loadingSets.add(key);const img=new Image();img.src=`assets/sets/${weaponSource}/weapon-atlas.png?v=${artVersion}`;
+        loadingSets.add(key);const img=new Image();img.src=compactGladius?`assets/weapons/gladius-atlas.png?v=${artVersion}`:`assets/sets/${weaponSource}/weapon-atlas.png?v=${artVersion}`;
         Promise.all([img.decode(),rigs[weaponSource]||fetch(`assets/sets/${weaponSource}/atlas.json?v=${artVersion}`).then(r=>{if(!r.ok)throw Error('Weapon metadata missing');return r.json();})]).then(([,meta])=>{rigs[weaponSource]=meta;art[key]=img;}).catch(console.error);
       }
     }
@@ -564,8 +565,10 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       }
       const image=standalone?weaponImage:useShot?art[source+'-shoot']:art[source];
       const column=planted?0:standalone?(shooting?22+shotFrame:heroFrame):useShot?shotFrame:heroFrame;
-      const sourceRow=standalone?rig.weaponRows.indexOf(weapon.weaponId):useShot?shotRow:rig.rows.indexOf(sourceName);
-      context.drawImage(image,column*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
+      // Gladius keeps the original 128 px cells, packed into eight columns.
+      const sourceRow=standalone?(compactGladius?Math.floor(column/8):rig.weaponRows.indexOf(weapon.weaponId)):useShot?shotRow:rig.rows.indexOf(sourceName);
+      const sourceColumn=standalone&&compactGladius?column%8:column;
+      context.drawImage(image,sourceColumn*cell,sourceRow*cell,cell,cell,-padded*rig.anchor[0],-padded*rig.anchor[1],padded,padded);
       context.restore();
     }
     context.restore();
