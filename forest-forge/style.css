@@ -272,7 +272,6 @@ button:disabled { opacity:.55; cursor:default; }
 .idle-rewards b { font:30px/1 'Lilita UI',sans-serif; font-variant-numeric:tabular-nums; }
 .idle-rewards small { font-size:11px; font-weight:400; color:#52675a; }
 .idle-status { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; font-variant-numeric:tabular-nums; }
-#idle-next { color:#52675a; font-weight:400; }
 #idle-progress,#mine-buffer-progress { display:block; height:9px; margin:7px 0 18px; }
 #collect-idle { width:100%; font:23px/1.2 'Lilita UI',sans-serif; }
 .auto-dialog { width:min(390px,calc(100vw - 32px)); padding:16px; }
@@ -425,6 +424,9 @@ button:disabled { opacity:.55; cursor:default; }
 #anvil-title { font:clamp(20px, 5.8vw, 24px)/1.1 'Lilita UI',sans-serif; color:var(--ink); }
 .anvil-wallet { display:flex; align-items:center; justify-content:center; gap:6px; width:max-content; max-width:100%; margin:0 auto 3px; padding:2px 8px; border-radius:9px; background:var(--ink); color:var(--paper); font:18px/22px 'Lilita UI',sans-serif; }
 .epoch-name { display:flex; align-items:center; gap:5px; }
+.epoch-mastery { width:100%; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; }
+.epoch-detail-mark { margin-left:auto; opacity:.55; }
+#probability-rows tr { cursor:pointer; }
 .epoch-icon { width:min(24px, calc(var(--epoch-row) - 4px)); height:min(24px, calc(var(--epoch-row) - 4px)); flex:none; }
 .probabilities { table-layout:fixed; border-spacing:0 3px; }
 .probabilities th:first-child { width:60%; }
@@ -519,6 +521,26 @@ button:disabled { opacity:.55; cursor:default; }
 #mine-time {position:absolute;inset:0;display:grid;place-items:center;color:white;font-weight:bold;text-shadow:0 1px #17332b;}
 .mine-dialog {width:min(360px,calc(100vw - 32px));padding:18px;border:3px solid #17332b;border-radius:16px;background:#fffaf0;color:#17332b;}
 .mine-dialog::backdrop,#alchemy-dialog::backdrop,#companions-dialog::backdrop{background:#0009;}.mine-dialog h2{margin:0;font:24px 'Lilita UI',sans-serif;}.mine-dialog p{font-size:12px;}.mine-dialog .button{width:100%;margin-top:14px;}
+#mastery-dialog { --mastery-height:var(--game-viewport-height,var(--tg-viewport-stable-height,100dvh)); position:fixed; inset:calc((var(--mastery-height) + var(--safe-top) - var(--safe-bottom))/2) auto auto 50%; transform:translate(-50%,-50%); margin:0; width:min(310px,calc(100vw - 32px)); max-width:none; max-height:calc(var(--mastery-height) - var(--safe-top) - var(--safe-bottom) - 32px); overflow:auto; padding:16px; box-shadow:0 5px 0 #10272566,inset 0 0 0 3px #fff; }
+#mastery-dialog .sheet-top { align-items:center; gap:10px; margin:0 0 16px; }
+#mastery-dialog h2 { font-size:24px; line-height:1.05; overflow-wrap:anywhere; }
+.mastery-eyebrow { display:block; margin-bottom:3px; color:#697e71; font-size:12px; }
+#mastery-dialog .close { flex:none; width:32px; height:32px; font-size:27px; }
+.mastery-rank-row { display:flex; align-items:center; justify-content:center; gap:18px; margin:0 0 18px; }
+.mastery-crest { display:grid; place-items:center; width:76px; height:80px; flex:none; border:3px solid var(--ink); border-radius:16px 16px 30px 30px; background:linear-gradient(135deg,#ffffff66,transparent 65%),var(--epoch-color); box-shadow:inset 0 0 0 3px #ffffff65,0 3px 0 #10272526; transform:rotate(-5deg); }
+.mastery-crest svg { width:56px; height:56px; transform:rotate(5deg); }
+#mastery-rank { display:block; font-size:34px; line-height:1.1; }
+#mastery-range { display:block; margin-top:5px; font-size:12px; color:#5a7266; }
+.mastery-meter-wrap { position:relative; height:28px; border:2px solid var(--ink); border-radius:9px; overflow:hidden; background:#dde5d7; }
+#mastery-meter { display:block; appearance:none; border:0; width:100%; height:100%; background:transparent; }
+#mastery-meter::-webkit-progress-bar { background:transparent; }
+#mastery-meter::-webkit-progress-value { background:linear-gradient(#ffffff55,transparent),var(--epoch-color); border-right:2px solid #10272544; }
+#mastery-meter::-moz-progress-bar { background:linear-gradient(#ffffff55,transparent),var(--epoch-color); border-right:2px solid #10272544; }
+#mastery-meter-label { position:absolute; inset:0; display:grid; place-items:center; font-size:14px; color:white; -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; pointer-events:none; }
+#mastery-dialog .mastery-next-row { display:flex; align-items:center; justify-content:center; gap:6px; margin:10px 0 0; font-size:12px; }
+.mastery-next-row .hammer-icon { width:20px; height:20px; }
+.mastery-affix-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; padding:9px 10px; border:1px solid #d0c7a2; border-radius:8px; background:#f2ecd5; font-size:12px; }
+.mastery-affix-row strong { color:#715025; font-size:17px; white-space:nowrap; }
 .mine-dialog label {display:flex;align-items:center;justify-content:space-between;margin-top:20px;}.mine-dialog input{width:120px;padding:8px;font-size:18px;border:2px solid #52675f;border-radius:7px;}
 .mine-resource-row {display:flex;align-items:center;gap:10px;padding:7px 0;}.mine-resource-row img {width:36px;height:36px;}.mine-resource-row b{margin-left:auto;}
 @media(max-height:700px){#mine-workshop{padding:8px 16px;}.mine-upgrade-block{margin-top:7px;}.ore-card img{width:32px;height:32px;}.mine-inventory-title{margin-bottom:4px;}#mine-heading{top:calc(17px + var(--safe-top,0px));}}
@@ -704,10 +726,21 @@ input,select,textarea {font-family:inherit;}
 .atelier-production .coin{width:27px;height:27px;flex:none;}
 .atelier-production strong{display:block;font-size:16px;font-weight:400;}
 #atelier-storage{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;font-size:16px;background:#d4e9e9;color:var(--ink);}
-#atelier-upgrade-icon{display:block;width:64px;height:64px;object-fit:contain;margin:12px auto 4px;}
-#atelier-effect{text-align:center;font:22px 'Lilita UI',sans-serif;margin:12px 0;}
-#atelier-cost{display:flex;justify-content:center;margin:12px 0 16px;font:18px 'Lilita UI',sans-serif;}
-#atelier-cost span{display:flex;align-items:center;gap:8px;}#atelier-cost img{width:32px;height:32px;object-fit:contain;}
+#atelier-dialog{width:min(340px,calc(100vw - 32px));padding:16px;}
+#atelier-dialog .sheet-top{gap:8px;margin-bottom:0;}
+.atelier-heading{display:flex;align-items:center;gap:10px;min-width:0;}
+#atelier-dialog h2{font-size:23px;}
+.atelier-icon{display:grid;place-items:center;width:46px;height:46px;flex:none;background:#e3ecdf;border:2px solid #869d8c;border-radius:12px;}
+#atelier-upgrade-icon{display:block;width:36px;height:36px;object-fit:contain;margin:0;}
+#atelier-dialog #atelier-upgrade-coin{width:30px;height:30px;margin:0;}
+#atelier-subtitle{margin:10px 0 12px;color:#52675a;font:14px 'Lilita UI',sans-serif;}
+#atelier-effect{display:grid;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);align-items:center;gap:5px;text-align:center;background:#edf0e5;border:1px solid #a6b39b;border-radius:12px;padding:9px 5px;font-family:'Lilita UI',sans-serif;}
+#atelier-effect small{display:block;font-size:12px;color:#52675a;margin-bottom:3px;}
+#atelier-effect strong{display:block;font-size:23px;font-weight:400;white-space:nowrap;}
+.atelier-arrow{font-size:28px;color:#6c8873;}.atelier-after strong{color:#277546;}
+.atelier-price{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;font:14px 'Lilita UI',sans-serif;color:#52675a;}
+#atelier-cost{display:flex;justify-content:center;font:16px 'Lilita UI',sans-serif;color:var(--ink);}
+#atelier-cost span{display:flex;align-items:center;gap:5px;}#atelier-cost img{width:25px;height:25px;object-fit:contain;}
 #atelier-cost .missing{color:#b63747;}#atelier-buy{width:100%;}
 #strata-open{display:block;margin:5px auto 0;padding:3px 12px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);font:15px 'Lilita UI',sans-serif;pointer-events:auto;cursor:pointer;}
 #strata-dialog{max-height:80dvh;overflow:auto;}#strata-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;}
@@ -834,7 +867,9 @@ input,select,textarea {font-family:inherit;}
 @media (max-height:690px) {.dungeon-preview {height:144px;}#dungeon-boss-art {height:104px;}.dungeon-detail {padding:8px 12px 14px;}.dungeon-actions {margin-top:14px;}}
 
 /* Alchemy uses the existing cream sheets and game buttons. */
-#alchemy-dialog{width:min(440px,calc(100vw - 24px));max-height:90dvh;overflow:auto;background:#fff9ed;color:#193333;border:3px solid #193333;border-radius:18px;padding:14px;font-family:inherit;box-sizing:border-box}
+#alchemy-dialog{--alchemy-height:var(--game-viewport-height,var(--tg-viewport-stable-height,100dvh));width:min(360px,calc(100vw - 32px));max-width:none;max-height:min(560px,calc(var(--alchemy-height) - var(--safe-top) - var(--safe-bottom) - 32px));position:fixed;inset:calc((var(--alchemy-height) + var(--safe-top) - var(--safe-bottom))/2) auto auto 50%;transform:translate(-50%,-50%);margin:0;overflow:hidden;background:var(--paper);color:#193333;border:3px solid #193333;border-radius:15px;padding:10px;font-family:inherit;box-sizing:border-box}
+#alchemy-dialog[open]{display:flex;flex-direction:column}
+#alchemy-dialog>*{flex-shrink:0}
 .alchemy-bench{height:85px;background:linear-gradient(#dcebdd,#edf2dc);border-radius:12px;margin:8px 0}.alchemy-bench svg{height:100%;width:100%}
 .alchemy-skill{display:flex;justify-content:space-between;gap:8px;font-size:14px}#alchemy-progress{width:100%;height:9px;accent-color:#7c55b0}
 .alchemy-types{display:flex;gap:4px;margin:10px 0}.alchemy-types button{flex:1;min-width:0;font:inherit;font-size:11px;background:#dcebed;border:2px solid #385b59;border-radius:8px;padding:8px 2px}.alchemy-types button[aria-pressed=true]{background:#12b4e6;color:white}
@@ -842,10 +877,9 @@ input,select,textarea {font-family:inherit;}
 .alchemy-recipe{display:flex;flex-direction:column;gap:6px;text-align:center;background:#e9eee2;border-radius:10px;padding:12px 6px;margin:12px 0}.alchemy-recipe h3{margin:0;font-size:19px}.alchemy-recipe strong{font-size:22px}.alchemy-recipe small,.alchemy-recipe span{font-size:12px}
 .alchemy-actions{display:flex;gap:8px;margin-top:8px}.alchemy-actions button{flex:1;font-size:13px;min-height:46px}#alchemy-message{font-size:12px;text-align:center;margin:10px 0 0}#alchemy-active{font-size:12px;margin-top:10px}#alchemy-active button{display:flex;justify-content:space-between;padding:3px 0}
 #potion-status{display:flex;justify-content:center;gap:6px;background:#fff9ed}#potion-status:empty{display:none}#potion-status button{display:flex;align-items:center;border:0;background:transparent;font:inherit;font-size:11px;padding:3px}#potion-status svg{width:20px;height:25px}
-@media(max-width:380px){#alchemy-dialog{padding:10px}.alchemy-reagents small{font-size:9px}.alchemy-actions button{font-size:11px}}
+@media(max-width:380px){.alchemy-reagents small{font-size:9px}.alchemy-actions button{font-size:11px}}
 
 /* Compact alchemy sheet, matching the illustrated dungeon cards. */
-#alchemy-dialog{padding:12px;overflow-x:hidden;border-radius:15px}
 .alchemy-heading{position:relative;isolation:isolate;min-height:106px;margin:-12px -12px 14px;padding:14px 60px 34px 18px;box-sizing:border-box;border-bottom:3px solid var(--ink);overflow:hidden;background:radial-gradient(ellipse at 15% 100%,#467b65,transparent 65%),linear-gradient(120deg,#213e3b,#243f4c);color:#fff8e5}
 .alchemy-heading::after{content:"";position:absolute;inset:5px;border:1px solid #e3efb52b;border-radius:9px;pointer-events:none;z-index:-1}
 .alchemy-heading-art{position:absolute;right:58px;top:-16px;width:100px;height:120px;background:url('assets/alchemy/flask.webp') center/contain no-repeat;transform:rotate(16deg);opacity:.75;z-index:-1}
@@ -859,8 +893,8 @@ input,select,textarea {font-family:inherit;}
 .alchemy-recipe{position:relative;display:grid;grid-template-columns:80px 1fr;gap:5px 10px;text-align:left;padding:15px 10px;margin:16px 0 12px;background:#eeeede;min-height:104px;box-sizing:border-box}.alchemy-recipe h3{font-size:16px;align-self:end}.alchemy-recipe strong{font-size:23px}.alchemy-recipe small{font-size:11px;color:#536357}#alchemy-potion-art{grid-row:1 / 4;display:grid;place-items:center;background:#fff8e5;border:2px solid var(--rarity);border-radius:12px}#alchemy-potion-art svg{height:68px;width:65px}#alchemy-owned{position:absolute;right:9px;top:-10px;display:flex;align-items:center;gap:3px;background:#25463e;color:#fff8e5;border-radius:7px;padding:2px 7px;font-size:14px}#alchemy-owned svg{width:18px;height:22px}
 .alchemy-actions button{font-size:18px;min-height:52px;display:flex;align-items:center;justify-content:center;gap:10px}.alchemy-actions button span{display:flex;align-items:center;gap:4px;font-size:16px}.alchemy-actions .coin{width:17px;height:17px;display:inline-block;vertical-align:middle;flex-shrink:0}
 
-#alchemy-active{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#alchemy-active:empty{display:none}#alchemy-active button{display:flex;align-items:center;gap:6px;background:#e1e9d9;border-radius:7px;padding:5px 8px}#alchemy-active img{width:20px;height:20px;object-fit:contain}#alchemy-active .coin{width:18px;height:18px}#alchemy-active span{color:#607267;font-size:11px}#alchemy-message:empty{display:none}
-@media(max-width:380px){#alchemy-dialog{padding:12px}.alchemy-heading-title{gap:8px}.alchemy-heading h2{font-size:26px}.alchemy-actions button{font-size:16px}.alchemy-actions button span{font-size:14px}.alchemy-recipe strong{font-size:20px}}
+#alchemy-active{display:flex;justify-content:center;gap:7px;margin-top:8px;padding-top:7px;border-top:1px solid #bdc9b3}#alchemy-active:empty{display:none}#alchemy-active button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:50px;min-width:0;min-height:48px;padding:2px;border:0;border-radius:8px;background:#e6ecdc;font:inherit}#alchemy-active button:hover{background:#d8e5ca}#alchemy-active img{display:block;width:27px;height:29px;object-fit:contain}#alchemy-active span{color:#38584c;font:11px/14px 'Lilita One',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}#alchemy-message:empty{display:none}
+@media(max-width:380px){.alchemy-heading-title{gap:8px}.alchemy-heading h2{font-size:26px}.alchemy-actions button{font-size:16px}.alchemy-actions button span{font-size:14px}.alchemy-recipe strong{font-size:20px}}
 
 #alchemy-toggle{position:relative;width:36px;height:32px;padding:0;border:0;background:none;cursor:pointer;z-index:4}
 #alchemy-toggle img{display:block;width:36px;height:32px;object-fit:fill;filter:drop-shadow(0 2px 0 #18363830)}
@@ -868,19 +902,23 @@ input,select,textarea {font-family:inherit;}
 #alchemy-toggle:focus-visible{outline:3px solid #12b4e6;outline-offset:2px;border-radius:9px}
 
 /* Alchemy recipe accordion. */
-#alchemy-dialog{width:440px;max-width:calc(100vw - 20px);padding:8px;max-height:92dvh}
-#alchemy-dialog .alchemy-heading{margin:-8px -8px 0;min-height:86px;padding-top:10px}
-#alchemy-dialog .alchemy-heading-art{height:88px;top:-3px}
-#alchemy-stocks{display:flex;justify-content:space-between;gap:4px;padding:10px 4px}
-#alchemy-stocks>span{display:flex;align-items:center;gap:2px;min-width:0;font-size:14px}
+#alchemy-dialog .alchemy-heading{margin:-10px -10px 0;min-height:76px;padding:12px 54px 28px 14px}
+#alchemy-dialog .alchemy-heading h2{font-size:25px}
+#alchemy-dialog .alchemy-heading-art{width:80px;height:88px;right:48px;top:-4px}
+#alchemy-dialog .alchemy-heading .close{width:32px;height:32px;right:10px;top:10px;font-size:26px}
+#alchemy-dialog .alchemy-experience{left:14px;right:14px;bottom:9px}
+#alchemy-stocks{display:flex;justify-content:space-between;gap:4px;padding:8px 2px}
+#alchemy-stocks>span{display:flex;align-items:center;gap:2px;min-width:0;font-size:13px}
 .alchemy-item-art{object-fit:contain;mix-blend-mode:multiply}
-#alchemy-stocks img{width:30px;height:32px}
-#alchemy-recipes{display:flex;flex-direction:column;gap:5px}
+#alchemy-stocks img{width:26px;height:28px}
+#alchemy-recipes{display:flex;flex-direction:column;gap:6px;flex-shrink:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#8da58d transparent;padding:2px 4px 3px 2px}
+#alchemy-recipes:focus-visible{outline:2px solid #075cd7;outline-offset:-2px;border-radius:10px}
+#alchemy-recipes>.alchemy-entry{flex-shrink:0}
 .alchemy-entry{border:1px solid #b9bba5;border-radius:12px;background:#f4f0df;overflow:hidden}
 .alchemy-entry.is-open{background:#e0e9ce;border-color:#8ca685}
 .alchemy-row{display:flex;align-items:center;gap:7px;width:100%;min-height:62px;border:0;background:none;text-align:left;padding:6px 8px;color:#193333;font:inherit;cursor:pointer}
-.alchemy-row>img{width:43px;height:49px;flex-shrink:0}
-.alchemy-row-copy{flex:1;min-width:0}.alchemy-row-copy strong{display:block;font-size:19px}.alchemy-row-copy small{display:block;font-size:11px;line-height:1.25;margin-top:2px}
+.alchemy-row>img{width:36px;height:42px;flex-shrink:0}
+.alchemy-row-copy{flex:1;min-width:0}.alchemy-row-copy strong{display:block;font-size:17px}.alchemy-row-copy small{display:block;font-size:11px;line-height:1.25;margin-top:2px}
 .alchemy-stock{display:flex;gap:2px;align-items:center;font-size:14px}.alchemy-stock img{width:18px;height:24px;object-fit:contain;flex-shrink:0}
 .alchemy-chevron{font-size:23px;width:12px}.alchemy-body{padding:0 8px 8px}.alchemy-body[hidden]{display:none}
 .alchemy-ingredients{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
@@ -889,7 +927,7 @@ input,select,textarea {font-family:inherit;}
 #alchemy-dialog .alchemy-actions{gap:7px;margin-top:4px}#alchemy-dialog .alchemy-actions button{min-height:41px;font-size:16px;padding:5px;gap:5px}#alchemy-dialog .alchemy-actions button:first-child{flex:2}#alchemy-dialog .alchemy-actions button:last-child{flex:1;background:#d7e8e5;color:#254a43}#alchemy-dialog .alchemy-actions button:disabled{opacity:.5}
 #alchemy-active svg{width:17px;height:21px}#alchemy-message{margin:7px 0 0;font-size:11px}
 #idle-reagents img{width:26px;height:28px}
-@media(max-width:370px){.alchemy-row{gap:5px;padding:5px}.alchemy-row-copy strong{font-size:17px}.alchemy-row-copy small{font-size:10px}#alchemy-stocks img{width:26px}.alchemy-row>img{width:38px}}
+@media(max-width:370px){.alchemy-row{gap:5px;padding:5px}.alchemy-row-copy small{font-size:10px}.alchemy-row>img{width:32px}}
 
 
 .forge-shortcuts{display:flex;align-items:center;gap:8px;min-height:32px}

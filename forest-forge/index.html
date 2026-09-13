@@ -146,11 +146,18 @@
     <div id="reward-flight" aria-hidden="true"></div>
     <div id="dungeon-transition" aria-hidden="true" hidden></div>
   </main>
+  <dialog id="mastery-dialog" class="mine-dialog" aria-labelledby="mastery-title">
+    <div class="sheet-top"><div><span class="mastery-eyebrow">Mastery</span><h2 id="mastery-title"></h2></div><button id="close-mastery" class="close" aria-label="Close mastery" autofocus>×</button></div>
+    <div class="mastery-rank-row"><div class="mastery-crest" aria-hidden="true"><svg viewBox="0 0 48 48"><use id="mastery-emblem"></use></svg></div><div><strong id="mastery-rank"></strong><span id="mastery-range"></span></div></div>
+    <div class="mastery-meter-wrap"><progress id="mastery-meter" value="0" max="3" aria-label="Mastery experience"></progress><span id="mastery-meter-label" aria-hidden="true"></span></div>
+    <p class="mastery-next-row"><img class="hammer-icon" src="assets/hammer.webp" alt=""><span id="mastery-next"></span></p>
+    <div class="mastery-affix-row"><span>Weapon affix chance</span><strong id="mastery-affix-chance"></strong></div>
+  </dialog>
   <dialog id="alchemy-dialog" aria-labelledby="alchemy-title">
  <header class="alchemy-heading"><div class="alchemy-heading-art" aria-hidden="true"></div><div class="alchemy-heading-title"><h2 id="alchemy-title">Alchemy</h2><b id="alchemy-level"></b></div><button id="alchemy-close" class="close" aria-label="Close alchemy">×</button><div class="alchemy-experience"><progress id="alchemy-progress" max="10" value="0" aria-label="Alchemy experience"></progress><span id="alchemy-xp"></span></div></header>
  <div id="alchemy-stocks" aria-label="Reagent inventory"></div>
- <div id="alchemy-recipes"></div>
- <div id="alchemy-active"></div><p id="alchemy-message" role="status"></p>
+ <div id="alchemy-recipes" tabindex="0" role="region" aria-label="Potion recipes"></div>
+ <div id="alchemy-active" role="group" aria-label="Active potions"></div><p id="alchemy-message" role="status"></p>
 </dialog>
 <dialog id="bulk-sale-confirm" class="bulk-sale-confirm" aria-labelledby="bulk-sale-title" aria-describedby="bulk-sale-summary">
     <h2 id="bulk-sale-title">Sell weaker items?</h2>
@@ -160,11 +167,11 @@
   <dialog id="idle-dialog" class="idle-dialog" aria-labelledby="idle-title">
     <div class="sheet-top"><h2 id="idle-title">Idle rewards</h2><button id="close-idle" class="close" aria-label="Close idle rewards" autofocus>×</button></div>
     <div class="idle-rewards">
-      <div><span><img class="hammer-icon" src="assets/hammer.webp" alt=""><b id="idle-hammers">0</b></span><small>Hammers · 1/min</small></div>
-      <div><span><i class="coin" aria-hidden="true"></i><b id="idle-coins">0</b></span><small>Coins · 1/min</small></div>
+      <div><span><img class="hammer-icon" src="assets/hammer.webp" alt=""><b id="idle-hammers">0</b></span><small id="idle-hammers-rate">Hammers · 1/min</small></div>
+      <div><span><i class="coin" aria-hidden="true"></i><b id="idle-coins">0</b></span><small id="idle-coins-rate">Coins · 1/min</small></div>
     </div>
     <div id="idle-reagents" class="alchemy-reagents" aria-label="Reagent rewards"></div>
-    <div class="idle-status"><span id="idle-time">0m / 4h</span><span id="idle-next">+1 in 60s</span></div>
+    <div class="idle-status"><span id="idle-time">0m / 4h</span></div>
     <progress id="idle-progress" max="240" value="0" aria-label="Idle storage capacity"></progress>
     <button id="collect-idle" class="button blue" disabled>Collect</button>
   </dialog>
@@ -200,7 +207,12 @@
   <dialog id="mine-rewards-dialog" class="mine-dialog"><div class="sheet-top"><h2>Mining rewards</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="mine-rewards"></div><p id="mine-buffer-time">0h 0m / 4h</p><progress id="mine-buffer-progress" max="240" value="0"></progress><button id="mine-rewards-collect" class="button blue">Collect</button></dialog>
   <dialog id="portrait-dialog" class="mine-dialog" aria-labelledby="portrait-title"><div class="sheet-top"><h2 id="portrait-title">Profile</h2><button id="close-portraits" class="close" aria-label="Close">×</button></div><div id="portrait-grid"></div><button id="reset-progress" class="button red">Reset progress</button></dialog>
   <dialog id="reset-progress-dialog" class="mine-dialog" aria-labelledby="reset-progress-title"><div class="sheet-top"><h2 id="reset-progress-title">Reset progress?</h2><button id="cancel-reset-close" class="close" aria-label="Cancel">×</button></div><p>Your equipment, coins, hammers, forge, mine and battle progress will be deleted. This cannot be undone. Your portrait will stay.</p><button id="cancel-reset" class="button">Cancel</button><button id="confirm-reset" class="button red">Reset and start again</button></dialog>
-<dialog id="atelier-dialog" class="mine-dialog" aria-labelledby="atelier-title"><div class="sheet-top"><h2 id="atelier-title"></h2><button class="close" data-close-mine aria-label="Close">×</button></div><img id="atelier-upgrade-icon" alt=""><i id="atelier-upgrade-coin" class="coin" hidden aria-hidden="true"></i><p id="atelier-effect"></p><div id="atelier-cost"></div><button id="atelier-buy" class="button blue">Upgrade</button></dialog>
+<dialog id="atelier-dialog" class="mine-dialog" aria-labelledby="atelier-title">
+  <div class="sheet-top"><div class="atelier-heading"><div class="atelier-icon"><img id="atelier-upgrade-icon" alt=""><i id="atelier-upgrade-coin" class="coin" hidden aria-hidden="true"></i></div><h2 id="atelier-title"></h2></div><button class="close" data-close-mine aria-label="Close">×</button></div>
+  <p id="atelier-subtitle"></p>
+  <div id="atelier-effect"><div><small>Now</small><strong id="atelier-current"></strong></div><span class="atelier-arrow" aria-hidden="true">›</span><div class="atelier-after"><small id="atelier-next-label">After</small><strong id="atelier-next-value"></strong></div></div>
+  <div class="atelier-price"><span>Cost</span><div id="atelier-cost"></div></div><button id="atelier-buy" class="button blue">Upgrade</button>
+</dialog>
 <dialog id="strata-dialog" class="mine-dialog" aria-labelledby="strata-title"><div class="sheet-top"><h2 id="strata-title">Mine strata</h2><button class="close" data-close-mine aria-label="Close">×</button></div><div id="strata-grid"></div></dialog>
 <dialog id="dungeons-dialog" class="mine-dialog dungeon-dialog" aria-labelledby="dungeons-title">
   <div class="dungeon-preview">

@@ -1,4 +1,5 @@
 import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs';
+import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs';
 import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs';
 import { COMPANIONS, TURTLE_LEVELS, upgradeTurtle, ARCHER_LEVELS, upgradeArcher, DRUID_LEVELS, upgradeDruid, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
@@ -94,6 +95,7 @@ const profilerOutfit={
  belt:{epoch:2,quality:2},necklace:{epoch:3,quality:2},ring1:{epoch:3,quality:2},ring2:{epoch:2,quality:0}
 };
 let masteryView = 0; // Zero selects the epoch with the highest current forge chance.
+let masteryEpoch = 1;
 try { const saved=Number(localStorage.getItem('forest-forge-mastery-view')); if(AVAILABLE_EPOCHS.includes(saved)) masteryView=saved; } catch {}
 for (const epoch of [0,...AVAILABLE_EPOCHS]) {
   const button=document.createElement('button');button.textContent=epoch?EPOCHS[epoch-1]:'Auto';button.dataset.epoch=epoch;
@@ -112,11 +114,20 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('mastery-options
 
 for (const [i, name] of EPOCHS.entries()) {
   const row = document.createElement('tr'); row.className = `epoch-${i + 1}`;
-  row.innerHTML = `<th scope="row"><span class="epoch-name"><svg class="epoch-icon" viewBox="0 0 48 48" aria-hidden="true"><use href="assets/epoch-icons.svg#epoch-${i+1}"></use></svg><span>${name}</span></span></th><td id="chance-${i}"></td><td id="next-chance-${i}"></td>`;
+  row.innerHTML = `<th scope="row"><button class="epoch-name epoch-mastery" aria-label="${name} mastery" aria-haspopup="dialog"><svg class="epoch-icon" viewBox="0 0 48 48" aria-hidden="true"><use href="assets/epoch-icons.svg#epoch-${i+1}"></use></svg><span>${name}</span><span class="epoch-detail-mark" aria-hidden="true">›</span></button></th><td id="chance-${i}"></td><td id="next-chance-${i}"></td>`;
+  row.addEventListener('click',()=>{
+    masteryEpoch=i+1;displayedMastery=null;
+    row.querySelector('button').focus({preventScroll:true});
+    $('mastery-dialog').className=`mine-dialog epoch-${masteryEpoch}`;
+    $('mastery-dialog').showModal();updateUI();
+  });
   if (!AVAILABLE_EPOCHS.includes(i+1)) row.title = 'Equipment coming soon';
   $('probability-rows').append(row);
 
 }
+
+$('close-mastery').addEventListener('click',()=>$('mastery-dialog').close());
+$('mastery-dialog').addEventListener('click',e=>{if(e.target===$('mastery-dialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 
 for(const companion of COMPANIONS) {
   const card=document.createElement('article');card.className='companion-card '+companion.id;
@@ -407,7 +418,8 @@ function updateIdleRewards() {
     const potion=state.alchemy?.active[type];
     if(potion&&potion.startsAt<=now&&potion.endsAt>now)rates[type]*=1+potion.value/100;
   }
-  setText('idle-next',full?'Storage full':`${Number(rates.hammers.toFixed(3))} hammers · ${Number(rates.coins.toFixed(3))} coins / min`);
+  setText('idle-hammers-rate',`Hammers · ${Math.round(rates.hammers*10)/10}/min`);
+  setText('idle-coins-rate',`Coins · ${Math.round(rates.coins*10)/10}/min`);
   $('idle-progress').max=cap;$('idle-progress').value=loot.minutes;
   $('idle-progress').setAttribute('aria-valuetext',`${loot.minutes} of ${cap} minutes`);
   $('collect-idle').disabled=!loot.minutes;
@@ -743,7 +755,7 @@ $('confirm-reset').addEventListener('click', () => {
   void scene?.prepare(state.level);
 });
 document.addEventListener('keydown', e => {
-  if ($('reset-progress-dialog').open || $('bulk-sale-confirm').open || $('idle-dialog').open || $('auto-dialog').open || (!sheetSlot && !anvilOpen)) return;
+  if ($('mastery-dialog').open || $('reset-progress-dialog').open || $('bulk-sale-confirm').open || $('idle-dialog').open || $('auto-dialog').open || (!sheetSlot && !anvilOpen)) return;
   if (e.key === 'Escape') closeSheet();
   if (e.key === 'Tab') {
     const dialog = anvilOpen ? $('anvil-dialog') : $('comparison');
@@ -862,10 +874,21 @@ function updateUI() {
     const mastery = state.mastery[shownEpoch - 1];
     setText('mastery-label', EPOCHS[shownEpoch - 1]);
     setText('mastery-level', `Max Lv. ${mastery.level}`);
-    setText('mastery-xp', mastery.level === 100 ? 'MAX' : `${mastery.xp} / ${mastery.level + 4} XP`);
-    $('mastery-progress').style.setProperty('--fill', `${mastery.level === 100 ? 100 : mastery.xp / (mastery.level + 4) * 100}%`);
+    setText('mastery-xp', mastery.level === 100 ? 'MAX' : `${mastery.xp} / ${MASTERY_XP[mastery.level - 1]} XP`);
+    $('mastery-progress').style.setProperty('--fill', `${mastery.level === 100 ? 100 : mastery.xp / MASTERY_XP[mastery.level - 1] * 100}%`);
     if($('mastery-choice').getAttribute('aria-label')!==String(`${masteryView?'':'Auto: '}${EPOCHS[shownEpoch-1]} mastery, ${$('mastery-xp').textContent}, maximum item level ${mastery.level}. Choose displayed epoch`))$('mastery-choice').setAttribute('aria-label', `${masteryView?'':'Auto: '}${EPOCHS[shownEpoch-1]} mastery, ${$('mastery-xp').textContent}, maximum item level ${mastery.level}. Choose displayed epoch`);
     for(const button of $('mastery-options').children)button.setAttribute('aria-pressed',String(Number(button.dataset.epoch)===masteryView));
+    if($('mastery-dialog').open){
+      const m=state.mastery[masteryEpoch-1],max=m.level===100,need=MASTERY_XP[m.level-1];
+      setText('mastery-title',EPOCHS[masteryEpoch-1]);
+      $('mastery-emblem').setAttribute('href',`assets/epoch-icons.svg#epoch-${masteryEpoch}`);
+      setText('mastery-rank',`Lv. ${m.level}`);
+      setText('mastery-range',m.level===1?'Item level 1':`Item levels 1–${m.level}`);
+      setText('mastery-affix-chance',`${Number((m.level*MASTERY_AFFIX_CHANCE_PER_LEVEL*100).toFixed(2))}%`);
+      $('mastery-meter').max=max?1:need;$('mastery-meter').value=max?1:m.xp;
+      setText('mastery-meter-label',max?'MASTERED':`${m.xp} / ${need} XP`);
+      setText('mastery-next',max?'Keep forging for the perfect gear.':`${need-m.xp} more ${need-m.xp===1?'forge':'forges'} to Lv. ${m.level+1}`);
+    }
   }
   if($('forge-hint').hidden!==(storageAvailable))$('forge-hint').hidden = storageAvailable;
   setText('forge-hint', 'Progress is not being saved: storage unavailable');
@@ -1172,7 +1195,7 @@ function updateMineUI() {
   const now=Date.now(),orePotion=state.alchemy?.active.ore;
   const oreBoost=orePotion&&orePotion.startsAt<=now&&orePotion.endsAt>now?1+orePotion.value/100:1;
   const oreRate=production.rate*oreBoost*(1+Math.floor((state.dungeons?.cleared[2]||0)/5)/100);
-  setText('mine-rate',`${Number(oreRate.toFixed(3))} ore / minute`);
+  setText('mine-rate',`${Math.round(oreRate*10)/10} ore / minute`);
   for(let i=0;i<$('mine-ore-grid').children.length;i++) {
     const r=mineResource(i);
     const card=$('mine-ore-grid').children[i], unlocked=i<m.ore.length;
@@ -1185,7 +1208,8 @@ function updateMineUI() {
   $('mine-buffer').classList.toggle('ready',pending>0);
   setText('mine-buffer-count',compact.format(pending));
   $('mine-buffer').setAttribute('aria-label',`Mining rewards: ${pending} ore`);
-  setText('mine-buffer-time',`${Math.floor(m.bufferMinutes/60)}h ${m.bufferMinutes%60}m / 4h`);
+  setText('mine-buffer-time',`${Math.floor(m.bufferMinutes/60)}h ${m.bufferMinutes%60}m / ${idleCapacity(state)/60}h`);
+  $('mine-buffer-progress').max=idleCapacity(state);
   $('mine-buffer-progress').value=m.bufferMinutes;
   $('mine-rewards-collect').disabled=!pending;
   setText('mine-upgrade-title',m.upgradeEndsAt?'Upgrade in progress':next?`Upgrade to level ${m.level+1}`:'Maximum mine level');
@@ -1269,24 +1293,28 @@ function setAtelierOpen(open) {
   if(open)window.Telegram?.WebApp?.BackButton?.show();else window.Telegram?.WebApp?.BackButton?.hide();save(true);
 }
 function atelierValue(key,level) {
-  if(SLOTS.includes(key))return `+${level}% ${DAMAGE_SLOTS.includes(key)?'damage':'HP'}`;
+  if(SLOTS.includes(key))return `+${level}%`;
   if(key==='storage')return `${4+level*.5} h`;
   const copy={workshop:{...state.workshop,[key]:level}};
-  return `${idleRates(copy)[key].toFixed(key==='coins'?1:2)} / min`;
+  return `${Number(idleRates(copy)[key].toFixed(key==='coins'?1:2))}/min`;
 }
 function updateAtelier() {
   if(!atelierOpen)return;
-  setText('atelier-coins-rate',`${idleRates(state).coins.toFixed(1)} / min`);
-  setText('atelier-hammers-rate',`${idleRates(state).hammers.toFixed(2)} / min`);
+  setText('atelier-coins-rate',atelierValue('coins',state.workshop.coins));
+  setText('atelier-hammers-rate',atelierValue('hammers',state.workshop.hammers));
   setText('atelier-storage-time',`Storage · ${idleCapacity(state)/60} hours`);
   for(const button of $('atelier-grid').children){const key=button.dataset.slot;button.querySelector('strong').textContent=`+${state.workshop.slots[key]}%`;button.setAttribute('aria-label',`${LABELS[key]||'Ring'}: ${atelierValue(key,state.workshop.slots[key])}`);}
   if(!$('atelier-dialog').open)return;
   const key=atelierKey,slot=SLOTS.includes(key),level=slot?state.workshop.slots[key]:state.workshop[key],price=workshopPrice(state,key);
-  setText('atelier-title',slot?(LABELS[key]||'Ring')+' upgrades':key==='storage'?'Storage':key==='coins'?'Coin production':'Hammer production');
+  setText('atelier-title',slot?(LABELS[key]||'Ring'):key==='storage'?'Storage':key==='coins'?'Idle coins':'Idle hammers');
+  setText('atelier-subtitle',slot?(DAMAGE_SLOTS.includes(key)?'More damage from this gear':'More health from this gear'):key==='storage'?'More time for coins, hammers & ore':'Earn while away');
   $('atelier-upgrade-icon').src=slot?`assets/${key}.svg`:key==='hammers'?'assets/hammer.webp':key==='coins'?'assets/mine/gold-icon.webp':'assets/workshop/crate.svg';
   $('atelier-upgrade-icon').hidden=key==='coins';$('atelier-upgrade-coin').hidden=key!=='coins';
-  setText('atelier-effect',`${atelierValue(key,level)}${price!==null?' → '+atelierValue(key,level+1):''}`);
+  setText('atelier-current',atelierValue(key,level));
+  setText('atelier-next-value',price===null?'Max':atelierValue(key,level+1));
+  setText('atelier-next-label',price===null?'Fully upgraded':'After');
   const enough=price!==null&&(key==='storage'?state.coins>=price:(state.mine.ore[price[0]]||0)>=price[1]);
+  $('atelier-cost').parentElement.hidden=price===null;
   $('atelier-cost').innerHTML=price===null?'':key==='storage'?`<span class="${enough?'':'missing'}"><i class="coin"></i>${state.coins.toLocaleString('en-US')} / ${price.toLocaleString('en-US')}</span>`:`<span class="${enough?'':'missing'}"><img src="assets/mine/${mineResource(price[0]).id}-icon.webp" alt="${mineResource(price[0]).name}">${(state.mine.ore[price[0]]||0).toLocaleString('en-US')} / ${price[1].toLocaleString('en-US')}</span>`;
   $('atelier-buy').disabled=!enough;setText('atelier-buy',price===null?'Max':key==='storage'?'Expand':'Upgrade');
 }
@@ -1348,7 +1376,7 @@ function updateAlchemy(){
   return `<article class="alchemy-entry ${open?'is-open':''}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${effect.value}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt="">${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-ingredients"><select id="alchemy-rarity-${p.id}" data-rarity="${p.id}" aria-label="${p.name} rarity">${ALCHEMY_RARITIES.map((v,i)=>`<option value="${i}" ${i===rarity?'selected':''}>${v.name}</option>`).join('')}</select><span title="Reagents owned / required" class="${a.reagents[rarity]?'':'missing'}">${reagentIcon(r.color)} ${a.reagents[rarity]} / 1</span></div><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Active':`Use ${stock}`}</button></div></div></article>`;
  }).join('');
  if(focusId&&focused?.closest('#alchemy-recipes'))$(focusId)?.focus({preventScroll:true});
- $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" aria-label="${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img src="assets/alchemy/${p.id}.webp" alt=""><b>+${b.value}%</b><span>${Math.ceil(remaining/60)} min</span></button>`).join('');
+ $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${b.value}% ${p.label}" aria-label="${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
 }
 function openAlchemy(){if(!$('alchemy-dialog').open)$('alchemy-dialog').showModal();alchemyDisplay='';setText('alchemy-message','');updateAlchemy();}
 $('alchemy-toggle').onclick=openAlchemy;$('potion-status').onclick=openAlchemy;$('alchemy-close').onclick=()=>$('alchemy-dialog').close();
