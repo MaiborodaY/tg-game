@@ -1,6 +1,7 @@
 import { expandInventory } from './game.mjs';
 import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs';
 import { TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
+import { DRUID_TALENTS, learnDruidTalent, resetDruidTalents, enterDungeon, prepareEncounter } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AFFIXES, rollAffix, reforge, reforgeCost, resolveReforge, attackInterval } from './game.mjs';
@@ -9,6 +10,69 @@ import { idleRewards, collectIdleRewards } from './game.mjs';
 import { drinkPotion } from './game.mjs';
 import { freshGame, stats, heroPower, forge, forgeCost, equip, equipStronger, sell, sellWeaker, step, restore, replay, enemyFor, WAVES, SLOTS, batchSize, browseResults, upgradeAnvil, finishUpgrade, ANVILS, FORGE_CHANCES, WEAPONS } from './game.mjs';
 function advance(s, seconds) { const events=[]; for(let i=0;i<seconds*30;i++)events.push(...step(s,1/30,()=>.999)); return events; }
+
+test('druid starts with one unspent point; root unlocks healing, and ranks obey level and prerequisites',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.hp=1;s.phase='victory';s.phaseTime=100;
+ advance(s,3);assert.equal(s.hp,1);assert.equal(learnDruidTalent(s,'swiftness'),false);
+ assert.equal(learnDruidTalent(s,'touch'),true);assert.equal(learnDruidTalent(s,'touch'),false);
+ advance(s,3);assert.equal(s.hp,4.5);assert.equal(learnDruidTalent(s,'herbs'),false);
+ s.druidLevel=100;for(let pass=0;pass<20;pass++)for(const t of DRUID_TALENTS)learnDruidTalent(s,t.id);
+ assert.equal(Object.values(s.druidTalents).reduce((a,b)=>a+b,0),100);
+ assert.ok(DRUID_TALENTS.every(t=>(s.druidTalents[t.id]||0)<=t.max));
+ const loaded=restore(JSON.stringify(s));assert.deepEqual(loaded.druidTalents,s.druidTalents);
+});
+test('druid speed reaches 2s and the reduced healing passives add before Second Wind',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidTalents={touch:1,swiftness:10,herbs:10,lastLeaf:10};s.hp=1;s.phase='victory';s.phaseTime=100;
+ advance(s,1.9);assert.equal(s.hp,1);advance(s,.1);assert.ok(Math.abs(s.hp-(1+3.5*1.15))<1e-8);
+ s.druidCombat.wind=5;s.druidTalents.secondWind=1;const hp=s.hp;advance(s,2);assert.ok(Math.abs(s.hp-hp-3.5*1.15*1.25)<1e-8);
+});
+test('druid overheal shield absorbs damage, Oak Skin reduces damage, and roots preserve health fraction',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidLevel=20;s.druidTalents={touch:1,reserve:10};s.hp=20;s.phase='victory';s.phaseTime=100;
+ advance(s,3);assert.equal(s.druidCombat.shield,2);
+ s.phase='fight';s.targetId=0;s.enemies[0].x=s.heroX+.115;s.enemies[0].clock=1.09;s.enemies[0].engaged=true;s.enemies[0].damage=10;
+ step(s,.02,()=>.999);assert.equal(s.hp,12);assert.equal(s.druidCombat.shield,0);
+ s.druidTalents.bark=1;s.druidTalents.thickBark=10;s.druidCombat.bark=4;s.druidCombat.barkCooldown=25;s.hp=20;s.enemies[0].clock=1.09;
+ step(s,.02,()=>.999);assert.equal(s.hp,12);
+ s.druidLevel=100;s.hp=10;assert.equal(learnDruidTalent(s,'roots'),true);assert.equal(s.hp/stats(s).hp,.5);
+ s.druidTalents.roots=10;s.hp=stats(s).hp*.5;s.hiredCompanions.push('archer');selectCompanion(s,'archer');prepareEncounter(s);assert.equal(s.hp/stats(s).hp,.5);
+});
+test('druid active healing includes fractional duration ranks and Bloom damages only from real healing',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidTalents={touch:1,regrowth:1,spring:10,sap:10};s.hp=1;s.phase='victory';s.phaseTime=100;
+ s.druidCombat.regrowth=6.6;s.druidCombat.regrowthCooldown=18;
+ const events=advance(s,6.6);const healed=events.filter(e=>e.type==='heroRegen').reduce((sum,e)=>sum+e.value,0);
+ assert.ok(Math.abs(healed-(3.5*2+3.5*.1*1.2*6.6))<1e-8);
+ s.druidTalents={touch:1,bloom:1};s.druidCombat.bloom=2;s.druidCombat.bloomClock=0;s.druidCombat.regrowth=0;s.hp=10;
+ s.phase='fight';s.targetId=0;s.heroClock=0;s.enemies[0].x=s.heroX+.115;s.enemies[0].hp=s.enemies[0].maxHp=100;s.enemies[0].damage=0;
+ const bloomEvents=advance(s,1);assert.equal(bloomEvents.filter(e=>e.type==='companionHit').length,1);assert.ok(Math.abs(bloomEvents.find(e=>e.type==='companionHit').value-.35)<1e-8);
+ s.hp=20;s.druidCombat.bloom=2;s.druidCombat.bloomClock=0;assert.equal(advance(s,1).filter(e=>e.type==='companionHit').length,0);
+});
+test('Second Wind prevents lethal hits for five seconds, boosts all healing, and keeps the resulting HP',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidTalents={touch:1,secondWind:1};s.hp=5;s.phase='fight';s.targetId=0;
+ const e=s.enemies[0];e.x=s.heroX+.115;e.engaged=true;e.clock=1.09;e.damage=100;e.hp=e.maxHp=1000;
+ let events=step(s,.02,()=>.999);assert.equal(s.hp,1);assert.equal(s.druidCombat.wind,5);assert.equal(events.filter(e=>e.skill==='secondWind').length,1);
+ e.clock=1.09;step(s,.02,()=>.999);assert.equal(s.hp,1);e.damage=0;
+ s.companion.regenClock=2.99;step(s,.02,()=>.999);assert.equal(s.hp,1+3.5*1.25);
+ advance(s,5);assert.ok(s.hp>0);assert.equal(s.druidCombat.wind,0);assert.ok(s.druidCombat.windCooldown>80);
+ e.damage=100;e.clock=1.09;step(s,.02,()=>.999);assert.equal(s.phase,'dead');
+});
+test('druid abilities autocast at missing-health thresholds and share cooldowns across dungeon entry',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidTalents={touch:1,regrowth:1,bark:1,bloom:1,evergreen:10,awakening:10};s.hp=8;s.phase='fight';s.targetId=0;
+ s.enemies[0].x=s.heroX+.115;s.enemies[0].damage=0;
+ const events=step(s,.02,()=>.999);assert.deepEqual(events.filter(e=>e.type==='druidSkill').map(e=>e.skill),['regrowth','bark','bloom']);
+ assert.equal(s.druidCombat.bloomCooldown,57);assert.ok(s.druidCombat.bloom>9.9);
+ assert.equal(step(s,.02,()=>.999).filter(e=>e.type==='druidSkill').length,0);
+ s.highest=2;assert.equal(enterDungeon(s,'treasury',1),true);assert.deepEqual(s.dungeons.run.battle.druidTalents,s.druidTalents);
+ assert.equal(s.dungeons.run.battle.druidCombat,s.druidCombat);assert.equal(learnDruidTalent(s,'herbs'),false);assert.equal(resetDruidTalents(s),false);
+ step(s,.1,()=>.999);assert.ok(s.druidCombat.bloomCooldown<57);
+});
+test('talent reset refunds points without healing or refreshing cooldowns; old saves keep level and resources',()=>{
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidLevel=20;
+ learnDruidTalent(s,'touch');for(let i=0;i<10;i++)learnDruidTalent(s,'roots');
+ s.hp=stats(s).hp*.5;s.druidCombat.windCooldown=80;s.druidCombat.bloomCooldown=50;
+ assert.equal(resetDruidTalents(s),true);assert.equal(s.hp,10);assert.deepEqual(s.druidTalents,{});assert.equal(s.druidCombat.windCooldown,80);assert.equal(s.druidCombat.bloomCooldown,50);
+ s.coins=123;delete s.druidTalents;delete s.druidCombat;
+ const loaded=restore(JSON.stringify(s));assert.equal(loaded.druidLevel,20);assert.equal(loaded.coins,123);assert.deepEqual(loaded.druidTalents,{});
+});
 function wave(level,index) {
  const s=freshGame();s.level=s.highest=level;s.encounter=index-1;s.phase='victory';s.phaseTime=0;step(s,1/30);return s;
 }
@@ -117,6 +181,7 @@ test('turtle runs farther ahead and keeps its world position across waves',()=>{
 
 test('druid heals continuously every three seconds, caps at max health and resets on death',()=>{
  const s=freshGame();s.hp=1;s.phase='victory';s.phaseTime=100;
+ s.druidTalents={touch:1};
  s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1,regenClock:0};
  advance(s,2);assert.equal(s.hp,1);let events=advance(s,1);assert.equal(s.hp,4.5);
  events.push(...advance(s,12));assert.equal(s.hp,18.5);assert.equal(events.filter(e=>e.type==='heroRegen').length,5);

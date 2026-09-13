@@ -487,6 +487,9 @@ export function stats(s, includePotions = true) {
   total.damage = Math.round(total.damage * (1 + (bonuses.damage+typedDamage) / 100));
   if(s.mount?.owned && s.mount.equipped){total.hp=Math.round(total.hp*1.2);total.damage=Math.round(total.damage*1.2);}
   if(includePotions)for(const [type,key] of [['damage','damage'],['health','hp']]){const b=s.alchemy?.active[type];if(b?.remaining>0)total[key]=Math.round(total[key]*(1+b.value/100));}
+  if(s.companion?.kind==='druid'&&s.druidTalents?.touch){
+    total.hp=Math.round(total.hp*(1+(s.druidTalents.roots||0)*.005));
+  }
   total.damage *= (WEAPONS[s.equipment.weapon?.weaponId]?.interval ?? HERO_ATTACK_INTERVAL) / HERO_ATTACK_INTERVAL;
   return total;
 }
@@ -524,14 +527,55 @@ export const ARCHER_LEVELS = DRUID_LEVELS.map((level,i)=>({
 export const TURTLE_LEVELS = DRUID_LEVELS.map((level,i)=>({
   hp:i===0?30:Math.round(50*1.24**(i-1)),xpRequired:level.xpRequired
 }));
+// Rows and prerequisites also drive the talent screen. One point per druid level.
+export const DRUID_TALENTS = [
+  {id:'touch',name:"Nature's Touch",row:0,col:1,max:1,kind:'skill',requires:[],description:'Unlocks the normal heal. Healing grows with the druid’s level.'},
+  {id:'herbs',name:'Healing Herbs',row:1,col:0,max:10,requires:['touch'],description:'+0.5% to all druid healing per rank.'},
+  {id:'swiftness',name:'Swift Recovery',row:1,col:1,max:10,requires:['touch'],description:'Reduces the normal healing interval by 0.1s per rank. 3s → 2s at rank 10.'},
+  {id:'roots',name:'Strong Roots',row:1,col:2,max:10,requires:['touch'],description:'+0.5% maximum hero health per rank while the druid is present.'},
+  {id:'lastLeaf',name:'Last Leaf',row:2,col:0,max:10,requires:['herbs'],description:'+1% druid healing per rank while the hero is below 30% health.'},
+  {id:'reserve',name:'Living Reserve',row:2,col:2,max:10,requires:['roots'],description:'1% of overhealing becomes a shield per rank. Shield limit: 10% of maximum health.'},
+  {id:'regrowth',name:'Regrowth',row:3,col:0,max:1,kind:'active',requires:['lastLeaf'],description:'Heals for 10% of a normal heal each second for 6s. Cooldown: 18s.'},
+  {id:'bark',name:'Oak Skin',row:3,col:2,max:1,kind:'active',requires:['reserve'],description:'Reduces incoming damage by 15% for 4s. Cooldown: 25s.'},
+  {id:'blessing',name:'Grove Blessing',row:4,col:0,max:10,requires:['regrowth'],description:'Normal heals grant +0.3% hero damage per rank for 2s. Refreshes; does not stack.'},
+  {id:'spring',name:'Long Spring',row:4,col:1,max:10,requires:['regrowth'],description:'+1% duration to Regrowth per rank. Its healing rate stays the same.'},
+  {id:'awakening',name:'Awakening',row:4,col:2,max:10,requires:['bark'],description:'Reduces Bloom’s cooldown by 0.5% per rank.'},
+  {id:'sap',name:'Nourishing Sap',row:5,col:0,max:10,requires:['regrowth'],description:'+2% Regrowth healing per rank.'},
+  {id:'thickBark',name:'Thick Bark',row:5,col:1,max:10,requires:['bark'],description:'Oak Skin blocks an extra 0.5% damage per rank. Up to 20% reduction.'},
+  {id:'evergreen',name:'Evergreen',row:5,col:2,max:10,requires:['awakening'],description:'+0.2s duration to Bloom per rank. Up to 10s.'},
+  {id:'secondWind',name:'Second Wind',row:6,col:0,max:1,kind:'passive',requires:['sap'],description:'Lethal damage leaves 1 HP. For 5s, health cannot fall below 1 and all healing is increased by 25%. Cooldown: 90s.'},
+  {id:'bloom',name:'Bloom',row:6,col:1,max:1,kind:'ultimate',requires:['thickBark'],description:'For 8s, heals for 20% of a normal heal each second. Half the actual healing damages the nearest enemy within range. Cooldown: 60s.'},
+];
+export function learnDruidTalent(s,id) {
+  const t=DRUID_TALENTS.find(t=>t.id===id),r=s.druidTalents||{};
+  if(!t||!s.hiredCompanions.includes('druid')||s.dungeons.run||(r[id]||0)>=t.max)return false;
+  const spent=DRUID_TALENTS.reduce((sum,t)=>sum+(r[t.id]||0),0);
+  const earlier=DRUID_TALENTS.filter(n=>n.row<t.row).reduce((sum,n)=>sum+(r[n.id]||0),0);
+  if(spent>=s.druidLevel||earlier<(t.row?1+(t.row-1)*5:0)||t.requires.some(id=>!r[id]))return false;
+  const fraction=s.hp/stats(s).hp;
+  s.druidTalents={...r,[id]:(r[id]||0)+1};s.hp=fraction*stats(s).hp;
+  return true;
+}
+export function resetDruidTalents(s) {
+  if(s.dungeons.run)return false;
+  const fraction=s.hp/stats(s).hp;
+  s.druidTalents={};s.hp=fraction*stats(s).hp;
+  // Preserve cooldowns, so resetting a build cannot refresh its abilities.
+  if(s.druidCombat)for(const key of ['regrowth','bark','bloom','wind','shield','blessing','regrowthClock','bloomClock'])s.druidCombat[key]=0;
+  if(s.companion?.kind==='druid')s.companion.regenClock=0;
+  return true;
+}
 export function hireCompanion(s,id) {
   if(!COMPANIONS.some(c=>c.id===id)||s.hiredCompanions.includes(id))return false;
   const cost=500;
   if(s.coins<cost)return false;
+  const fraction=s.hp/stats(s).hp;
   s.coins-=cost;s.hiredCompanions.push(id);
   s.selectedCompanion=id;
   s.companion={kind:id,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
     ...(id==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})};
+  if(s.druidCombat)for(const key of ['regrowth','bark','bloom','wind','shield','blessing','regrowthClock','bloomClock'])s.druidCombat[key]=0;
+  s.hp=fraction*stats(s).hp;
   return true;
 }
 export function selectCompanion(s,id) {
@@ -540,8 +584,11 @@ export function selectCompanion(s,id) {
 }
 export function prepareEncounter(s) {
   if(s.selectedCompanion && s.selectedCompanion!==s.companion?.kind){
+    const fraction=s.hp/stats(s).hp;
     s.companion={kind:s.selectedCompanion,x:s.heroX-.13,clock:0,actionAge:1,moving:true,shot:null,
       ...(s.selectedCompanion==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})};
+    if(s.druidCombat)for(const key of ['regrowth','bark','bloom','wind','shield','blessing','regrowthClock','bloomClock'])s.druidCombat[key]=0;
+    s.hp=fraction*stats(s).hp;
   }
   let x = s.heroX + .91;
   const local = (s.level - 1) % LEVELS_PER_BIOME;
@@ -604,7 +651,7 @@ export function enterDungeon(s,id,floor,now=Date.now(),unlimited=false) {
   const index=DUNGEONS.findIndex(d=>d.id===id),boss=dungeonBoss(id,floor);
   if(s.highest<2||s.dungeons.run||!boss||floor>s.dungeons.cleared[index]+1||(!unlimited&&dungeonDay(s,now)[index]>=2))return false;
   const kind=s.selectedCompanion;
-  const battle={alchemy:s.alchemy,equipment:structuredClone(s.equipment),workshop:structuredClone(s.workshop),mount:{...s.mount},
+  const battle={alchemy:s.alchemy,druidTalents:{...s.druidTalents},druidCombat:(s.druidCombat??={}),equipment:structuredClone(s.equipment),workshop:structuredClone(s.workshop),mount:{...s.mount},
     level:s.level,highest:s.highest,encounter:9,completed:false,phase:'walk',phaseTime:0,heroX:.24,heroClock:0,heroActionAge:1,heroAttackCount:0,doubleStrikeDelay:0,targetId:null,
     archerLevel:s.archerLevel,druidLevel:s.druidLevel,turtleLevel:s.turtleLevel,companion:kind?{kind,x:.11,clock:0,actionAge:1,healAge:1,moving:true,shot:null,...(kind==='turtle'?{hp:TURTLE_LEVELS[s.turtleLevel-1].hp,maxHp:TURTLE_LEVELS[s.turtleLevel-1].hp}:{})}:null,
     forging:0,autoForge:false,battleStats:{maxHit:0,maxCrit:0},
@@ -638,7 +685,7 @@ export function toggleMount(s) {
 }
 
 export function freshGame(now = Date.now()) {
-  const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
+  const s = { version: 3, affixVersion: 1, druidTalents:{}, druidCombat:{regrowthCooldown:0,barkCooldown:0,bloomCooldown:0,windCooldown:0,regrowth:0,bark:0,bloom:0,wind:0,blessing:0,regrowthClock:0,bloomClock:0,shield:0}, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], inventory: [], inventoryCapacity: 32, shop:null, skipSellConfirm: false, keepReplaced: true, forgingItems: [], forging: 0, hammers: 15,
     workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, companionXp: {archer:0,druid:0,turtle:0}, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', keepAffixes: AFFIXES.map(a=>a.id), reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
@@ -1017,18 +1064,52 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     if(expired){s.hp=fraction*stats(s).hp;events.push({type:'potionExpired'});}
   }
   const bonuses = affixBonuses(s), hero = stats(s), interval = attackInterval(s);
-  if (s.hp > 0 && s.phase !== 'dead') s.hp = Math.min(hero.hp, s.hp + hero.hp * bonuses.regen / 100 * dt);
+  const talents=s.companion?.kind==='druid'&&s.druidTalents?.touch?s.druidTalents:{};
+  const druid=s.druidCombat??={};
+  for(const key of ['regrowthCooldown','barkCooldown','bloomCooldown','windCooldown','wind','blessing','bark'])druid[key]=Math.max(0,(druid[key]||0)-dt);
+  const healingReceived=talents.secondWind&&druid.wind>0?1.25:1;
+  if (s.hp > 0 && s.phase !== 'dead') s.hp = Math.min(hero.hp, s.hp + hero.hp * bonuses.regen / 100 * dt*healingReceived);
+  let bloomHealing=0;
   if(s.companion?.kind==='druid') {
     const c=s.companion;
     c.healAge=Math.min(1,(c.healAge ?? 1)+dt);
-    if(s.hp<=0 || s.phase==='dead')c.regenClock=0;
+    if(s.hp<=0 || s.phase==='dead'||!talents.touch){c.regenClock=0;druid.regrowth=0;druid.bloom=0;druid.shield=0;druid.bark=0;druid.blessing=0;druid.wind=0;}
     else {
-      c.regenClock=(c.regenClock||0)+dt;
-      while(c.regenClock>=3-1e-9){
-        c.regenClock=Math.max(0,c.regenClock-3);
-        const value=Math.min(DRUID_LEVELS[s.druidLevel-1].healing,hero.hp-s.hp);
+      const heal=(amount)=>{
+        const power=amount*(1+(talents.herbs||0)*.005+(s.hp<hero.hp*.3?(talents.lastLeaf||0)*.01:0))*healingReceived;
+        const value=Math.max(0,Math.min(power,hero.hp-s.hp));
         s.hp+=value;
+        if(talents.reserve)druid.shield=Math.min(hero.hp*.1,(druid.shield||0)+(power-value)*talents.reserve*.01);
         if(value>0){c.healAge=0;c.actionAge=0;events.push({type:'heroRegen',value});}
+        return value;
+      };
+      const baseHeal=DRUID_LEVELS[s.druidLevel-1].healing;
+      const healInterval=3-(talents.swiftness||0)*.1;
+      c.regenClock=(c.regenClock||0)+dt;
+      while(c.regenClock>=healInterval-1e-9){
+        c.regenClock=Math.max(0,c.regenClock-healInterval);
+        heal(baseHeal);
+        if(talents.blessing)druid.blessing=2;
+      }
+      const fighting=s.phase==='fight'||s.phase==='walk'&&s.enemies.some(e=>e.hp>0&&e.engaged);
+      if(fighting&&talents.regrowth&&!druid.regrowthCooldown&&s.hp<hero.hp*.9){
+        druid.regrowth=6*(1+(talents.spring||0)*.01);druid.regrowthClock=0;druid.regrowthCooldown=18;
+        c.actionAge=0;events.push({type:'druidSkill',skill:'regrowth'});
+      }
+      if(fighting&&talents.bark&&!druid.barkCooldown&&s.hp<hero.hp*.7){
+        druid.bark=4;druid.barkCooldown=25;c.actionAge=0;events.push({type:'druidSkill',skill:'bark'});
+      }
+      if(fighting&&talents.bloom&&!druid.bloomCooldown&&s.hp<hero.hp*.5){
+        druid.bloom=8+(talents.evergreen||0)*.2;druid.bloomClock=0;druid.bloomCooldown=60*(1-(talents.awakening||0)*.005);
+        c.actionAge=0;events.push({type:'druidSkill',skill:'bloom'});
+      }
+      for(const skill of ['regrowth','bloom'])if(druid[skill]>0){
+        const elapsed=Math.min(dt,druid[skill]),clock=skill+'Clock';
+        druid[skill]=druid[skill]-dt<1e-9?0:druid[skill]-dt;druid[clock]=(druid[clock]||0)+elapsed;
+        const amount=baseHeal*(skill==='regrowth'?.1*(1+(talents.sap||0)*.02):.2);
+        while(druid[clock]>=1-1e-9){const actual=heal(amount);if(skill==='bloom')bloomHealing+=actual;druid[clock]=Math.max(0,druid[clock]-1);}
+        // A fractional last tick makes every duration rank useful.
+        if(!druid[skill]&&druid[clock]>0){const actual=heal(amount*druid[clock]);if(skill==='bloom')bloomHealing+=actual;druid[clock]=0;}
       }
     }
   }
@@ -1092,12 +1173,12 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       if (!extra) s.heroClock -= interval;
       s.heroActionAge = 0; s.heroAttackCount++;
       const critical = rng() < Math.min(50,bonuses.crit)/100;
-      const damage = Math.max(1,Math.round(hero.damage * (critical ? 1.5 + bonuses.critDamage/100 : 1)*(target.shield?.35:1)));
+      const damage = Math.max(1,Math.round(hero.damage * (talents.blessing&&druid.blessing>0?1+talents.blessing*.003:1) * (critical ? 1.5 + bonuses.critDamage/100 : 1)*(target.shield?.35:1)));
       s.battleStats.maxHit=Math.max(s.battleStats.maxHit,damage);
       if(critical)s.battleStats.maxCrit=Math.max(s.battleStats.maxCrit,damage);
       const dealt = Math.min(target.hp,damage);
       target.hp = Math.max(0, target.hp - damage);
-      const healed = Math.min(hero.hp-s.hp,dealt * bonuses.lifesteal/100);
+      const healed = Math.min(hero.hp-s.hp,dealt * bonuses.lifesteal/100*healingReceived);
       s.hp += healed;
       if(healed>0)events.push({type:'heroRegen',value:healed,source:'lifesteal'});
       events.push({ type: 'heroHit', value: damage, targetId: target.id, critical, extra });
@@ -1133,6 +1214,10 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
         c.shot={targetId:target.id,remaining:.18,fromX:c.x,toX:target.x};
       }
     }
+  }
+  if(bloomHealing>0&&target.hp>0&&target.x-s.heroX<=.65){
+    const damage=bloomHealing*.5*(target.shield?.35:1);
+    target.hp=Math.max(0,target.hp-damage);events.push({type:'companionHit',value:damage,targetId:target.id});
   }
   if (!target.hp) {
     if(s.dungeonBattle){s.phase='victory';s.phaseTime=.8;return events;}
@@ -1201,8 +1286,11 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
         continue;
       }
       const blocked = bonuses.block > 0 && rng() < bonuses.block/100;
-      s.hp = Math.max(0, s.hp - (blocked ? 0 : e.damage));
-      events.push({ type: 'enemyHit', value: blocked ? 0 : e.damage, blocked, sourceId: e.id, ranged: e.kind === 'archer' });
+      let damage=blocked?0:e.damage*(talents.bark&&druid.bark>0?1-.15-(talents.thickBark||0)*.005:1);
+      if(talents.reserve){const absorbed=Math.min(damage,druid.shield||0);druid.shield=(druid.shield||0)-absorbed;damage-=absorbed;}
+      if(talents.secondWind&&s.hp-damage<=0&&!druid.windCooldown){druid.wind=5;druid.windCooldown=90;events.push({type:'druidSkill',skill:'secondWind'});}
+      s.hp = Math.max(talents.secondWind&&druid.wind>0?1:0, s.hp-damage);
+      events.push({ type: 'enemyHit', value: damage, blocked, sourceId: e.id, ranged: e.kind === 'archer' });
       if (!s.hp) {
         if(s.companion){s.companion.regenClock=0;}
         if(s.dungeonBattle){s.phase='dead';s.phaseTime=1.8;return events;}
@@ -1251,6 +1339,15 @@ export function restore(serialized, now = Date.now()) {
     s.turtleLevel=Number.isInteger(s.turtleLevel)?Math.max(1,Math.min(100,s.turtleLevel)):1;
     s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
+    const talentRanks=s.druidTalents||{};s.druidTalents={};let talentSpent=0;
+    for(const t of DRUID_TALENTS){
+      const earlier=DRUID_TALENTS.filter(n=>n.row<t.row).reduce((sum,n)=>sum+(s.druidTalents[n.id]||0),0);
+      if(earlier<(t.row?1+(t.row-1)*5:0)||t.requires.some(id=>!s.druidTalents[id]))continue;
+      const rank=Math.min(bounded(talentRanks[t.id],t.max),s.druidLevel-talentSpent);
+      if(rank){s.druidTalents[t.id]=rank;talentSpent+=rank;}
+    }
+    const effects=s.druidCombat||{};
+    s.druidCombat=Object.fromEntries(Object.entries({regrowthCooldown:18,barkCooldown:25,bloomCooldown:60,windCooldown:90,regrowth:6.6,bark:4,bloom:10,wind:5,blessing:2,regrowthClock:1,bloomClock:1,shield:stats(s).hp*.1}).map(([key,max])=>[key,nonnegative(effects[key])?Math.min(max,effects[key]):0]));
     s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-.0001,Number.isFinite(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
     s.inventory=Array.isArray(s.inventory)?s.inventory.filter(item):[];
     const shop=s.shop;
@@ -1264,10 +1361,10 @@ export function restore(serialized, now = Date.now()) {
     s.selectedCompanion=s.hiredCompanions.includes(s.selectedCompanion)?s.selectedCompanion:null;
     if(s.companion){
       const c=s.companion;
-      if(c.kind==='druid'){delete c.regenRemaining;c.regenClock=Number.isFinite(c.regenClock)&&c.regenClock>=0?c.regenClock%2:0;}
+      if(c.kind==='druid'){delete c.regenRemaining;c.regenClock=Number.isFinite(c.regenClock)&&c.regenClock>=0?c.regenClock%(3-(s.druidTalents.swiftness||0)*.1):0;}
       const valid=s.hiredCompanions.includes(c.kind)&&['x','clock','actionAge'].every(k=>nonnegative(c[k]))&&
         (c.kind!=='turtle'||nonnegative(c.hp)&&c.hp<=TURTLE_LEVELS[s.turtleLevel-1].hp&&c.maxHp===TURTLE_LEVELS[s.turtleLevel-1].hp)&&
-        (c.kind!=='druid'||nonnegative(c.regenClock)&&c.regenClock<2);
+        (c.kind!=='druid'||nonnegative(c.regenClock)&&c.regenClock<3);
       if(!valid)s.companion=null;
       else if(c.shot && (!Number.isInteger(c.shot.targetId)||!['remaining','fromX','toX'].every(k=>nonnegative(c.shot[k]))||c.shot.remaining>.18))c.shot=null;
     }

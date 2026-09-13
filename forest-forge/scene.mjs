@@ -1,5 +1,5 @@
 const compactNumber = new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1});
-import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs?v=typed-damage-20260913';
+import { stats, ARMOR_SETS, WEAPONS, attackInterval, BIOMES, LEVELS_PER_BIOME, DUNGEONS } from './game.mjs?v=druid-talents-20260913';
 
 // Existing atlas poses: body x/y/angle, then each hand's x/y/angle.
 // Source coordinates match design/hero-base-v2-poses.json and build-set.cjs.
@@ -335,6 +335,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         if (coins.length > 30) coins.splice(0, coins.length - 30);
       }
     }
+    if(event.type==='druidSkill')numbers.push({targetId:null,healing:true,text:({regrowth:'Regrowth',bark:'Oak Skin',bloom:'Bloom',secondWind:'Second Wind'})[event.skill],color:'#cff3a7',life:1.4,duration:1.4,drift:0});
     if (['heroHit','companionHit','tankHit','heroRegen','enemyHit','kill','heal','companionXp'].includes(event.type)) {
       const xp=event.type==='companionXp', healing = xp || ['heal','heroRegen'].includes(event.type), critical = !!event.critical;
       const duration = healing ? 1.25 : critical ? 1.05 : .85;
@@ -596,6 +597,23 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     }
     context.restore();
     if (!state.completed && state.phase !== 'dead') bar(heroX, base - mountLift - hSize - 9, state.hp / stats(state).hp, '#56df51');
+    if(companion?.kind==='druid'&&state.hp>0&&state.phase!=='dead'){
+      const buffs=state.druidCombat||{};
+      if(buffs.shield>0)bar(heroX,base-mountLift-hSize-15,Math.min(1,buffs.shield/(stats(state).hp*.1)),'#a7d9dc',35,.65);
+      if(buffs.bark>0||buffs.wind>0){
+        context.save();context.strokeStyle=buffs.wind>0?'#efffa4':'#b1c889';context.lineWidth=2*unit;context.globalAlpha=.65;
+        context.beginPath();context.ellipse(heroX,base-mountLift-hSize*.45,hSize*.4,hSize*.61,0,0,Math.PI*2);context.stroke();context.restore();
+      }
+      if(buffs.bloom>0){
+        context.save();context.fillStyle='#72c46a';context.globalAlpha=.2;context.beginPath();context.ellipse(heroX,base+2*unit,62*unit,13*unit,0,0,Math.PI*2);context.fill();context.globalAlpha=.85;
+        for(let i=0;i<7;i++){
+          const a=i*Math.PI*2/7,x=heroX+Math.cos(a)*49*unit,y=base+Math.sin(a)*9*unit;
+          context.fillStyle=i%2?'#f6c3d8':'#f8ecc2';
+          for(let petal=0;petal<5;petal++){const p=petal*Math.PI*2/5;context.beginPath();context.arc(x+Math.cos(p)*2*unit,y+Math.sin(p)*2*unit,1.8*unit,0,Math.PI*2);context.fill();}
+          context.fillStyle='#f4ce62';context.beginPath();context.arc(x,y,1.3*unit,0,Math.PI*2);context.fill();
+        }context.restore();
+      }
+    }
     if(companion?.kind==='druid' && companion.healAge<.7 && state.hp>0 && state.phase!=='dead'){
       context.save();
       if(companion.healAge<.3){

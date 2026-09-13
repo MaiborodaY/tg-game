@@ -7,9 +7,9 @@
   <meta name="color-scheme" content="light">
   <title>Forest Forge</title>
   <link rel="icon" href="assets/helmet.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=typed-damage-20260913">
+  <link rel="stylesheet" href="style.css?v=druid-talents-20260913">
   <script src="https://telegram.org/js/telegram-web-app.js" async></script>
-  <script type="module" src="app.mjs?v=typed-damage-20260913"></script>
+  <script type="module" src="app.mjs?v=druid-talents-20260913"></script>
 </head>
 <body>
   <section id="cloud-status" role="status" aria-live="polite" hidden>
@@ -260,6 +260,13 @@
 <div id="companions-cards"></div><p id="companions-message" aria-live="polite">Active companion gains XP from kills</p>
 </dialog>
 <button id="profiler-badge" hidden aria-label="Performance recording status"></button>
+<dialog id="druid-talents-dialog" aria-labelledby="druid-talents-title">
+  <header class="talents-header"><img src="assets/companions/druid-card.webp" alt=""><div><h2 id="druid-talents-title">Druid · Lv. 1</h2><span>Talents</span></div><button id="close-druid-talents" class="close" aria-label="Close talents">×</button></header>
+  <div class="talents-points"><span>Spent: <b id="druid-talents-spent">0</b></span><span>Available: <b id="druid-talents-available">1</b></span></div>
+  <div class="talents-scroll"><div id="druid-talent-tree" aria-label="Druid talent tree"><svg id="druid-talent-links" viewBox="0 0 320 440" preserveAspectRatio="none" aria-hidden="true"></svg></div></div>
+  <section class="talent-details" aria-live="polite"><div class="talent-details-heading"><i id="druid-talent-icon" class="talent-art" aria-hidden="true"></i><div><h3 id="druid-talent-name"></h3><span id="druid-talent-rank"></span></div></div><p id="druid-talent-description"></p><p id="druid-talent-requirement"></p><button id="learn-druid-talent" class="button blue">Learn · 1 point</button></section>
+  <button id="reset-druid-talents" class="mini-button">Reset talents</button>
+</dialog>
 <dialog id="profiler-dialog" class="mine-dialog" aria-labelledby="profiler-title">
  <div class="sheet-top"><h2 id="profiler-title">Performance report</h2><button id="profiler-close" class="close" aria-label="Close profiler">×</button></div>
  <textarea id="profiler-output" readonly aria-label="Performance report"></textarea>

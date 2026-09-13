@@ -1,16 +1,17 @@
 import { SALE_PRICES } from './balance.mjs';
-import { prepareEncounter } from './game.mjs?v=typed-damage-20260913';
-import { expandInventory } from './game.mjs?v=typed-damage-20260913';
-import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs?v=typed-damage-20260913';
-import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs?v=typed-damage-20260913';
-import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs?v=typed-damage-20260913';
-import { settleIdle, idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs?v=typed-damage-20260913';
-import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs?v=typed-damage-20260913';
-import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs?v=typed-damage-20260913';
-import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs?v=typed-damage-20260913';
-import { createScene } from './scene.mjs?v=typed-damage-20260913';
-import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs?v=typed-damage-20260913';
-import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs?v=typed-damage-20260913';
+import { prepareEncounter } from './game.mjs?v=druid-talents-20260913';
+import { expandInventory } from './game.mjs?v=druid-talents-20260913';
+import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs?v=druid-talents-20260913';
+import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs?v=druid-talents-20260913';
+import { refreshShop, buyShopItem, SHOP_REFRESH_INTERVAL } from './game.mjs?v=druid-talents-20260913';
+import { settleIdle, idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs?v=druid-talents-20260913';
+import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs?v=druid-talents-20260913';
+import { DRUID_TALENTS, learnDruidTalent, resetDruidTalents } from './game.mjs?v=druid-talents-20260913';
+import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs?v=druid-talents-20260913';
+import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs?v=druid-talents-20260913';
+import { createScene } from './scene.mjs?v=druid-talents-20260913';
+import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs?v=druid-talents-20260913';
+import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs?v=druid-talents-20260913';
 
 const $ = id => document.getElementById(id);
 const portraits = [['helmet','Knight'],['goblin','Smug goblin'],['pot-knight','Pot knight'],['duck','Duck wizard'],['wizard','Sleepy wizard'],['cat','Cat knight'],['pirate','Skeleton pirate'],["hamster-king","Hamster king"],["frog-alchemist","Frog alchemist"],["grumpy-dwarf","Grumpy dwarf"],["orc-chef","Orc chef"],["mushroom","Nervous mushroom"],["owl-librarian","Owl librarian"],["pig-barbarian","Pig barbarian"],["raccoon-thief","Raccoon thief"],["slime-knight","Slime knight"],["turtle-samurai","Turtle samurai"],["goat-wizard","Goat wizard"],["old-vampire","Old vampire"],["carrot-knight","Carrot knight"],["angry-fairy","Angry fairy"],["button-mummy","Button-eyed mummy"],["shark-pirate","Shark pirate"],["sheep-necromancer","Sheep necromancer"],["cyclops","Cyclops"],["wood-golem","Wood golem"],["chicken-musketeer","Chicken musketeer"]];
@@ -146,12 +147,18 @@ for(const companion of COMPANIONS) {
     const changed=state.hiredCompanions.includes(companion.id)?selectCompanion(state,companion.id):hireCompanion(state,companion.id);
     if(changed){save(true);updateUI();}
   };
+  if(companion.id==='druid'){
+    const talentsButton=document.createElement('button');talentsButton.className='button companion-talents';talentsButton.textContent='Talents';
+    talentsButton.onclick=()=>{selectedDruidTalent='touch';$('druid-talents-dialog').showModal();updateDruidTalents();};
+    card.querySelector('.companion-xp').before(talentsButton);
+  }
   if(localPreview){
     const label=document.createElement('label');label.className='companion-test-level';label.textContent='Lv. ';
     const input=document.createElement('input');input.type='number';input.min='1';input.max='100';input.step='1';input.value=state[companion.id+'Level'];input.setAttribute('aria-label',companion.name+' test level');
     input.onchange=()=>{
       const level=Number(input.value);if(!Number.isInteger(level)||level<1||level>100){input.value=state[companion.id+'Level'];return;}
       state[companion.id+'Level']=level;state.companionXp[companion.id]=0;
+      if(companion.id==='druid'&&Object.values(state.druidTalents).reduce((sum,n)=>sum+n,0)>level)resetDruidTalents(state);
       for(const battle of [state,state.dungeons.run?.battle]){
         if(!battle)continue;battle[companion.id+'Level']=level;
         if(companion.id==='turtle'&&battle.companion?.kind==='turtle'){
@@ -166,7 +173,7 @@ for(const companion of COMPANIONS) {
 }
 function updateCompanions() {
   if(!$('companions-dialog').open)return;
-  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel,state.archerLevel,state.turtleLevel,state.companionXp]);
+  const key=JSON.stringify([state.coins,state.hiredCompanions,state.selectedCompanion,state.companion?.kind,state.druidLevel,state.archerLevel,state.turtleLevel,state.companionXp,state.druidTalents]);
   if(displayedCompanions===key)return;
   displayedCompanions=key;
   $('companions-coins').textContent=compact.format(state.coins);
@@ -177,10 +184,16 @@ function updateCompanions() {
     {
       const druid=id==='druid',turtle=id==='turtle',number=state[id+'Level'],levels=druid?DRUID_LEVELS:turtle?TURTLE_LEVELS:ARCHER_LEVELS;
       const level=levels[number-1],next=levels[number],name=druid?'Druid':turtle?'Turtle':'Archer';
-      const value=druid?level.healing:turtle?level.hp:level.damage,nextValue=next&&(druid?next.healing:turtle?next.hp:next.damage),unit=druid?'HP every 3 sec':turtle?'shell HP':'damage every 1 sec';
+      const healBonus=1+(state.druidTalents.herbs||0)*.005;
+      const value=druid?level.healing*healBonus:turtle?level.hp:level.damage,nextValue=next&&(druid?next.healing*healBonus:turtle?next.hp:next.damage),unit=druid?`HP every ${+(3-(state.druidTalents.swiftness||0)*.1).toFixed(1)}s`:turtle?'shell HP':'damage every 1 sec';
       card.querySelector('h3').textContent=owned?`${name} · Lv. ${number}`:name;
       const levelInput=card.querySelector('.companion-test-level input');if(levelInput&&document.activeElement!==levelInput)levelInput.value=number;
       card.querySelector('p').textContent=`${druid?'+':''}${compact.format(value)} ${unit}${owned&&next?' → '+compact.format(nextValue):''}`;
+      if(druid){
+        if(!state.druidTalents.touch)card.querySelector('p').textContent="Learn Nature’s Touch to unlock healing";
+        const available=state.druidLevel-Object.values(state.druidTalents).reduce((sum,n)=>sum+n,0);
+        const talentButton=card.querySelector('.companion-talents');talentButton.textContent='Talents'+(owned&&available?' · '+available:'');talentButton.disabled=!owned;
+      }
       const progress=card.querySelector('.companion-xp');progress.hidden=!owned;
       const xp=state.companionXp[id];
       progress.querySelector('span').textContent=next?compact.format(xp)+' / '+compact.format(level.xpRequired)+' XP':'Max level';
@@ -199,6 +212,49 @@ function updateCompanions() {
 }
 $('companions-toggle').onclick=()=>{$('companions-dialog').showModal();updateCompanions();};
 $('close-companions').onclick=()=>$('companions-dialog').close();
+let selectedDruidTalent='touch',druidTalentKey='',confirmTalentReset=false;
+for(const [index,t] of DRUID_TALENTS.entries()){
+  const node=document.createElement('button');node.className='talent-node '+(t.kind||'');node.dataset.talent=t.id;
+  node.style.left=(t.col+1)*25+'%';node.style.top=(30+t.row*60)/440*100+'%';
+  node.innerHTML=`<i class="talent-art" style="--icon-x:${index%4*100/3}%;--icon-y:${Math.floor(index/4)*100/3}%" aria-hidden="true"></i><span class="talent-rank"></span>${t.kind==='ultimate'?'<span class="talent-label">Bloom</span>':''}`;
+  node.onclick=()=>{selectedDruidTalent=t.id;updateDruidTalents();};$('druid-talent-tree').append(node);
+  for(const id of t.requires){
+    const parent=DRUID_TALENTS.find(n=>n.id===id),x1=(parent.col+1)*80,y1=30+parent.row*60+22,x2=(t.col+1)*80,y2=30+t.row*60-25;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.dataset.parent=id;path.dataset.child=t.id;
+    const route=parent.row<t.row-1?`M ${x1} ${y1} v 7 H ${x2-34} V ${y2-8} H ${x2} V ${y2}`:`M ${x1} ${y1} V ${(y1+y2)/2} H ${x2} V ${y2}`;
+    path.setAttribute('d',route+` m -3 -4 l 3 4 l 3 -4`);$('druid-talent-links').append(path);
+  }
+}
+for(let row=0;row<7;row++){const label=document.createElement('span');label.className='talent-row-label';label.textContent=row+1;label.style.top=(30+row*60)/440*100+'%';$('druid-talent-tree').append(label);}
+function updateDruidTalents(){
+  if(!$('druid-talents-dialog').open)return;
+  const r=state.druidTalents,spent=Object.values(r).reduce((sum,n)=>sum+n,0),available=state.druidLevel-spent;
+  const key=JSON.stringify([r,state.druidLevel,selectedDruidTalent,!!state.dungeons.run,confirmTalentReset]);if(druidTalentKey===key)return;druidTalentKey=key;
+  $('druid-talents-title').textContent=`Druid · Lv. ${state.druidLevel}`;$('druid-talents-spent').textContent=spent;$('druid-talents-available').textContent=available;
+  for(const node of $('druid-talent-tree').querySelectorAll('.talent-node')){
+    const t=DRUID_TALENTS.find(t=>t.id===node.dataset.talent),rank=r[t.id]||0;
+    const earlier=DRUID_TALENTS.filter(n=>n.row<t.row).reduce((sum,n)=>sum+(r[n.id]||0),0);
+    const locked=earlier<(t.row?1+(t.row-1)*5:0)||t.requires.some(id=>!r[id]);
+    node.classList.toggle('locked',locked);node.classList.toggle('learned',rank>0);node.classList.toggle('maxed',rank===t.max);node.classList.toggle('available',!locked&&available>0&&rank<t.max);
+    node.setAttribute('aria-pressed',String(t.id===selectedDruidTalent));node.setAttribute('aria-label',`${t.name}, rank ${rank} of ${t.max}${locked?', locked':''}`);node.querySelector('.talent-rank').textContent=`${rank}/${t.max}`;
+  }
+  for(const path of $('druid-talent-links').children)path.classList.toggle('learned',!!r[path.dataset.parent]&&!!r[path.dataset.child]);
+  const t=DRUID_TALENTS.find(t=>t.id===selectedDruidTalent),index=DRUID_TALENTS.indexOf(t),rank=r[t.id]||0;
+  $('druid-talent-icon').style.setProperty('--icon-x',index%4*100/3+'%');$('druid-talent-icon').style.setProperty('--icon-y',Math.floor(index/4)*100/3+'%');
+  $('druid-talent-name').textContent=t.name;$('druid-talent-rank').textContent=`Rank ${rank}/${t.max} · ${t.kind==='active'||t.kind==='ultimate'?'Automatic ability':t.kind==='skill'?'Basic skill':'Passive'}`;
+  $('druid-talent-description').textContent=t.id==='touch'?`Heals ${compact.format(DRUID_LEVELS[state.druidLevel-1].healing*(1+(r.herbs||0)*.005))} HP every ${+(3-(r.swiftness||0)*.1).toFixed(1)}s. Healing grows with the druid’s level.`:t.description;
+  const earlier=DRUID_TALENTS.filter(n=>n.row<t.row).reduce((sum,n)=>sum+(r[n.id]||0),0),required=t.row?1+(t.row-1)*5:0,missing=t.requires.filter(id=>!r[id]);
+  const reason=state.dungeons.run?'Finish the dungeon to change talents.':missing.length?'Requires '+missing.map(id=>DRUID_TALENTS.find(n=>n.id===id).name).join(', '):earlier<required?`Requires ${required} points in earlier rows.`:rank===t.max?'Maximum rank':available<=0?'Next point at the next druid level.':'';
+  if(t.id==='swiftness')$('druid-talent-description').textContent=`Healing interval: 3s → ${+(3-rank*.1).toFixed(1)}s.${rank<t.max?' Next rank: '+(+(2.9-rank*.1).toFixed(1))+'s.':''}`;
+  $('druid-talent-requirement').textContent=reason;$('druid-talent-requirement').hidden=!reason||rank===t.max;
+  $('learn-druid-talent').hidden=rank===t.max;
+  $('learn-druid-talent').disabled=!!reason;$('learn-druid-talent').textContent=rank===t.max?'Fully learned':rank?'Upgrade · 1 point':'Learn · 1 point';
+  $('reset-druid-talents').disabled=!spent||!!state.dungeons.run;$('reset-druid-talents').textContent=confirmTalentReset?'Confirm reset · return all points':'Reset talents';
+}
+$('learn-druid-talent').onclick=()=>{if(learnDruidTalent(state,selectedDruidTalent)){confirmTalentReset=false;save(true);updateUI();}};
+$('reset-druid-talents').onclick=()=>{if(!confirmTalentReset){confirmTalentReset=true;updateDruidTalents();return;}if(resetDruidTalents(state)){confirmTalentReset=false;save(true);updateUI();}};
+$('close-druid-talents').onclick=()=>$('druid-talents-dialog').close();
+$('druid-talents-dialog').addEventListener('close',()=>{confirmTalentReset=false;druidTalentKey='';});
 if(localPreview){
  const trigger=document.createElement('button');trigger.id='test-level-toggle';trigger.textContent='⚙';trigger.setAttribute('aria-label','Choose test biome and level');document.querySelector('.level-hud').append(trigger);
  const dialog=document.createElement('dialog');dialog.id='test-level-dialog';dialog.className='mine-dialog';
@@ -1101,6 +1157,7 @@ function updateUI() {
   updateAlchemy();
   updateDungeons();
   updateCompanions();
+  updateDruidTalents();
   if($('confirm-reset').disabled!==(telegramLaunch && (!cloudReady || cloudBusy || cloudFailed)))$('confirm-reset').disabled = telegramLaunch && (!cloudReady || cloudBusy || cloudFailed);
   updateIdleRewards();
   const total = stats(state);
