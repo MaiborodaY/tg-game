@@ -179,10 +179,10 @@ button:focus-visible { outline:3px solid #075cd7; outline-offset:3px; }
 .item-row p { margin:0; font-size:15px; }
 .new-row { position:relative; border:1.5px solid #d6d4cc; background:#ecebe5; border-radius:11px; margin:14px 0 11px; padding:20px 8px 9px; }
 .new-tag { position:absolute; top:-8px; left:9px; border:2px solid var(--ink); background:#258c42; color:white; border-radius:5px; font-size:10px; padding:2px 5px; }
-#difference { display:inline-block; margin-left:5px; white-space:nowrap; }
-#difference.better { color:#168d36; }
-#difference.worse { color:#cf3939; }
-#difference.equal { color:#6a706a; }
+#difference, #inventory-item-difference { display:inline-block; margin-left:5px; white-space:nowrap; }
+#difference.better, #inventory-item-difference.better { color:#168d36; }
+#difference.worse, #inventory-item-difference.worse { color:#cf3939; }
+#difference.equal, #inventory-item-difference.equal { color:#6a706a; }
 .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .ring-targets { display:flex; gap:10px; }
 .ring-target { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:0; border:0; background:none; }
@@ -327,7 +327,7 @@ button:disabled { opacity:.55; cursor:default; }
 #comparison h2 { margin:0 0 3px; font:400 17px/1.12 'Lilita UI',sans-serif; overflow-wrap:anywhere; }
 #comparison .item-epoch { display:block; margin-bottom:4px; color:#7d8178; font:400 11px/1.15 'Lilita UI',sans-serif; }
 #comparison .item-row p { font:400 18px/1.2 'Lilita UI',sans-serif; }
-#comparison #difference { font-weight:400; margin-left:4px; }
+#comparison #difference, #inventory-item-difference { font-weight:400; margin-left:4px; }
 #comparison .new-row { margin:15px 0 9px; padding:13px 8px 8px; }
 #comparison .new-tag { font:400 11px/1 'Lilita UI',sans-serif; }
 #comparison .sheet-actions .button { min-height:58px; padding:7px 9px 10px; font:400 24px/1 'Lilita UI',sans-serif; }
@@ -712,7 +712,7 @@ input,select,textarea {font-family:inherit;}
 #hero-stats-affixes>div {align-items:center;}
 
 .forge-output {position:relative;width:72px;height:78px;justify-self:center;}
-#auto-earnings {position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-size:13px;line-height:17px;}
+#auto-earnings {position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-size:13px;line-height:17px;}
 #auto-earnings .coin {width:14px;height:14px;flex-shrink:0;}
 
 .companion-xp {margin-top:7px;font-size:11px;color:#36544a;}
@@ -975,3 +975,91 @@ input,select,textarea {font-family:inherit;}
 
 #profiler-controls .profiler-outfit{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;}
 #profiler-outfit{width:18px;height:18px;margin:0;accent-color:#17332e;}
+
+#equip-sell-dialog{width:min(330px,calc(100vw - 32px));padding:16px;}
+#equip-sell-dialog h2{font-size:24px;}
+#equip-sell-dialog p{font-size:15px;margin:12px 0;}
+#equip-sell-dialog .equip-sell-hint{font-size:12px;opacity:.75;}
+.equip-sell-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:16px;}
+.equip-sell-actions .button{font-size:16px;}
+#cancel-equip-sell{background:#dde7d6;color:var(--ink);}
+#inventory-toggle{position:absolute;left:-12px;top:-39px;width:38px;height:36px;background:none;border:0;padding:0;}
+#inventory-toggle svg{width:36px;height:36px;}
+#inventory-count{position:absolute;right:-4px;bottom:0;min-width:14px;padding:1px 3px;border-radius:8px;background:var(--ink);color:var(--paper);font-size:9px;}
+.keep-replaced{display:flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap;}
+.keep-replaced input{width:13px;height:13px;accent-color:#54985c;}
+#inventory-dialog{width:min(380px,calc(100vw - 24px));height:min(520px,calc(100dvh - var(--safe-top) - var(--safe-bottom) - 36px));padding:12px;overflow:hidden;}
+#inventory-dialog[open]{display:flex;flex-direction:column;}
+#inventory-dialog .sheet-top{flex:none;gap:8px;}
+#inventory-total{font-size:11px;opacity:.7;margin-right:auto;}
+.inventory-layout{display:flex;gap:8px;min-height:0;flex:1;}
+#inventory-slots{display:flex;flex-direction:column;gap:4px;width:33px;flex:none;overflow:auto;scrollbar-width:none;}
+#inventory-slots button{width:32px;height:32px;flex:none;padding:3px;border:2px solid #85998d;border-radius:7px;background:#eeeede;font-size:23px;}
+#inventory-slots img{width:100%;height:100%;object-fit:contain;}
+#inventory-slots button[aria-pressed=true]{background:#f8dc67;border-color:var(--ink);}
+.inventory-main{display:flex;flex-direction:column;min-width:0;flex:1;}
+.inventory-filters{display:flex;gap:4px;margin-bottom:8px;}
+.inventory-filters select{min-width:0;flex:1;width:0;font-size:10px;padding:5px 2px;background:#e0eff0;border:1.5px solid var(--ink);border-radius:6px;}
+#inventory-reset{border:0;background:none;font-size:21px;padding:0 2px;}
+#inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,var(--inventory-card,48px));grid-auto-rows:var(--inventory-card,48px);align-content:start;gap:5px;overflow:auto;min-height:0;flex:1;padding:1px;}
+#inventory-grid .slot{width:var(--inventory-card,48px);height:var(--inventory-card,48px);}
+#inventory-empty{font-size:12px;text-align:center;}
+#inventory-item-dialog{width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);overflow:auto;padding:12px;}
+#inventory-item-dialog h3{font-size:17px;margin:0 0 3px;}
+#inventory-item-dialog .item-row{gap:10px;}
+#inventory-item-dialog small{font-size:10px;opacity:.65;}
+#inventory-item-dialog p{margin:4px 0;}
+#inventory-item-affix{color:#7b39ab;}
+#inventory-item-dialog label{margin-top:9px;font-size:11px;gap:5px;justify-content:flex-start;}
+#inventory-item-dialog input{width:13px;height:13px;padding:0;}
+#inventory-item-dialog select{max-width:160px;font-size:11px;border:1px solid #819889;border-radius:5px;background:var(--paper);padding:4px;}
+#inventory-item-dialog .button{min-height:36px;font-size:15px;padding:6px;margin-top:8px;}
+.inventory-actions{display:flex;gap:6px;}
+#inventory-reforge,#inventory-sell{display:flex;align-items:center;justify-content:center;gap:5px;} #inventory-item-dialog .coin{width:14px;height:14px;flex:none;}
+.inventory-filter{position:relative;min-width:0;flex:1;}
+.inventory-filter>button{display:flex;align-items:center;gap:4px;width:100%;height:29px;border:1.5px solid var(--ink);border-radius:6px;padding:4px;background:var(--epoch-color,#e0eff0);font-size:10px;text-align:left;}
+.inventory-filter>button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.inventory-filter img{width:16px;height:16px;object-fit:contain;flex:none;}
+.inventory-filter-options{position:absolute;left:0;top:calc(100% + 3px);z-index:10;min-width:100%;width:145px;max-height:260px;overflow:auto;border:2px solid var(--ink);border-radius:7px;background:var(--paper);box-shadow:0 3px 8px #0004;}
+.inventory-filter:last-of-type .inventory-filter-options{left:auto;right:0;}
+.inventory-filter-options button{display:flex;align-items:center;gap:5px;width:100%;border:0;border-bottom:1px solid #17332b33;background:var(--epoch-color,var(--paper));padding:7px;font-size:11px;text-align:left;}
+.inventory-filter-options button[aria-pressed=true]{box-shadow:inset 3px 0 var(--ink);}
+
+#inventory-expand{display:flex;align-items:center;justify-content:center;gap:3px;width:auto;flex:none;height:28px;min-height:28px;margin:0;padding:3px 6px;border-radius:6px;box-shadow:inset 0 -2px 0 #0002;font-size:10px;line-height:1;white-space:nowrap;}
+#inventory-expand[hidden]{display:none;}
+#inventory-total{white-space:nowrap;margin-right:0;}
+#inventory-expand img,#inventory-expand-confirm img{width:15px;height:15px;object-fit:contain;}
+#inventory-expand-dialog{width:min(320px,calc(100vw - 32px));padding:14px;}
+#inventory-expand-dialog h2{font-size:21px;}
+#inventory-expand-dialog p{text-align:center;font-size:13px;}
+#inventory-expand-dialog .inventory-capacity-upgrade{font-size:26px;color:#168d36;margin:16px 0 8px;}
+#inventory-expand-confirm{display:flex;align-items:center;justify-content:center;gap:4px;}
+#inventory-expand-dialog .button{font-size:15px;min-height:38px;}
+
+#inventory-dialog .sheet-top{gap:5px;}
+#inventory-title{font-size:20px;min-width:0;}
+#inventory-close{flex:0 0 32px;width:32px;height:32px;min-width:32px;margin-left:auto;font-size:26px;line-height:26px;}
+#inventory-expand-cancel{background:#dde7d6;color:var(--ink);}
+
+#sell-confirm-dialog{width:min(320px,calc(100vw - 32px));padding:14px;}
+#sell-confirm-dialog h2{font-size:23px;}#sell-confirm-dialog h3{font-size:17px;margin:12px 0 5px;}
+#sell-confirm-dialog .close{flex:none;width:32px;height:32px;}
+#sell-confirm-dialog .button{font-size:17px;min-height:40px;}
+#sell-confirm-cancel{background:#dde7d6;color:var(--ink);}
+#sell-confirm-accept{display:flex;align-items:center;justify-content:center;gap:5px;}
+#sell-confirm-accept .coin{width:15px;height:15px;flex:none;}
+#sell-confirm-dialog .keep-replaced{font-size:12px;justify-content:flex-start;gap:6px;}
+#sell-never-ask{flex:none;width:14px;height:14px;margin:0;}
+
+#sell-confirm-dialog{max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px);overflow:auto;}
+.sell-compare-row{padding:8px;background:#eeede5;border:1px solid #d5d7ce;border-radius:9px;margin:9px 0;}
+.sell-compare-label{display:block;font-size:10px;color:#69766b;margin-bottom:5px;}
+.sell-compare-row .item-row{gap:8px;min-height:0;}
+.sell-compare-row .item-icon{width:46px;height:46px;flex:none;}
+.sell-compare-details{min-width:0;}
+#sell-confirm-dialog .sell-compare-row h3{font-size:14px;margin:0 0 4px;}
+#sell-confirm-dialog .sell-compare-row p{font-size:12px;margin:3px 0 0;}
+.sell-compare-affix{color:#7b39ab;}
+.sell-compare-affix .affix-inline{width:16px;height:16px;}
+#sell-compare-difference{margin-left:5px;white-space:nowrap;}
+#sell-compare-difference.better{color:#168d36;}#sell-compare-difference.worse{color:#cf3939;}#sell-compare-difference.equal{color:#6a706a;}

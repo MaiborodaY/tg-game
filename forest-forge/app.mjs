@@ -1,10 +1,11 @@
+import { expandInventory } from './game.mjs';
 import { ALCHEMY_RARITIES, POTIONS, alchemySkill, potionEffect, brewPotion, drinkPotion, idleReagents } from './game.mjs';
 import { MASTERY_XP, MASTERY_AFFIX_CHANCE_PER_LEVEL } from './game.mjs';
 import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mineProduction, selectMineStratum } from './game.mjs';
 import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
-import { createScene } from './scene.mjs?v=companions-menu';
+import { createScene } from './scene.mjs?v=companion-xp';
 import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs';
 
@@ -296,13 +297,76 @@ for (const slot of SLOTS) {
   $('equipment').append(button); equipmentButtons.push(button);
 }
 
+
+let inventorySlot='', inventorySelected=null, inventoryDisplay='';
+for(const slot of ['all',...SLOTS.filter(s=>!s.startsWith('ring')),'ring']){
+ const button=document.createElement('button');button.type='button';button.dataset.slot=slot;
+ button.setAttribute('aria-label',slot==='all'?'All items':slot==='ring'?'Rings':LABELS[slot]);
+ if(slot==='all')button.textContent='▦';else{const img=document.createElement('img');img.src='assets/'+(slot==='ring'?'ring1':slot)+'.svg';img.alt='';button.append(img);}
+ button.onclick=()=>{inventorySlot=slot==='all'?'':slot;inventoryDisplay='';updateInventory();};$('inventory-slots').append(button);
+}
+for(const [id,entries] of [['inventory-epoch',[{value:'',name:'Epoch: All'},...EPOCHS.map((name,i)=>({value:String(i+1),name,epoch:i+1}))]],['inventory-affix',[{value:'',name:'Affix: All'},{value:'none',name:'No affix'},...AFFIXES.map(a=>({value:a.id,name:a.name,icon:a.id}))]]]){
+ const trigger=$(id),list=$(id+'-options');
+ for(const entry of entries){const button=document.createElement('button');button.type='button';button.value=entry.value;button.className=entry.epoch?'epoch-'+entry.epoch:'';
+ if(entry.icon){const img=document.createElement('img');img.src='assets/affixes/'+entry.icon+'.webp';img.alt='';button.append(img);}
+ const text=document.createElement('span');text.textContent=entry.name;button.append(text);
+ button.onclick=()=>{trigger.value=entry.value;list.hidden=true;trigger.setAttribute('aria-expanded','false');inventoryDisplay='';updateInventory();trigger.focus();};list.append(button);}
+ trigger.onclick=()=>{const open=list.hidden;for(const other of ['inventory-epoch','inventory-affix']){$(other+'-options').hidden=true;$(other).setAttribute('aria-expanded','false');}list.hidden=!open;trigger.setAttribute('aria-expanded',String(open));};
+}
+document.addEventListener('click',event=>{if(!event.target.closest('.inventory-filter'))for(const id of ['inventory-epoch','inventory-affix']){$(id+'-options').hidden=true;$(id).setAttribute('aria-expanded','false');}});
+for(const dialog of ['inventory-dialog','inventory-item-dialog'])$(dialog).addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('.inventory-filter-options:not([hidden])')){event.preventDefault();event.stopPropagation();for(const id of ['inventory-epoch','inventory-affix']){$(id+'-options').hidden=true;$(id).setAttribute('aria-expanded','false');}}});
+$('inventory-reset').onclick=()=>{inventorySlot='';$('inventory-epoch').value='';$('inventory-affix').value='';inventoryDisplay='';updateInventory();};
+$('inventory-toggle').onclick=()=>{closeSheet();$('inventory-dialog').showModal();inventoryDisplay='';updateInventory();};
+$('inventory-expand').onclick=()=>{$('inventory-expand-confirm').disabled=state.runes<20;$('inventory-expand-dialog').showModal();};
+for(const id of ['inventory-expand-close','inventory-expand-cancel'])$(id).onclick=()=>$('inventory-expand-dialog').close();
+$('inventory-expand-confirm').onclick=()=>{if(expandInventory(state)){save(true);$('inventory-expand-dialog').close();inventoryDisplay='';updateUI();}};
+$('inventory-close').onclick=()=>$('inventory-dialog').close();
+$('inventory-item-close').onclick=()=>$('inventory-item-dialog').close();
+$('inventory-item-dialog').addEventListener('close',()=>{if(sheetSlot==='inventory')return;inventorySelected=null;inventoryDisplay='';updateInventory();});
+for(const id of ['keep-replaced'])$(id).onchange=()=>{state.keepReplaced=$(id).checked;save(true);updateUI();};
+$('inventory-ring').onchange=updateInventoryItem;
+$('inventory-reforge').onclick=()=>{if(inventorySelected===null)return;openSheet('inventory');$('inventory-item-dialog').close();$('inventory-dialog').close();$('close-sheet').focus({preventScroll:true});};
+
+$('inventory-equip').onclick=()=>{const item=state.inventory[inventorySelected];if(item&&equip(state,item.slot==='ring'?$('inventory-ring').value:item.slot,false,inventorySelected)){inventorySelected=null;$('inventory-item-dialog').close();save(true);updateUI();}};
+function updateInventory(){
+ setText('inventory-count',state.inventory.length);$('keep-replaced').checked=state.keepReplaced;
+ if(!$('inventory-dialog').open)return;
+ const size=equipmentButtons[0].getBoundingClientRect();$('inventory-dialog').style.setProperty('--inventory-card',size.width+'px');
+ const key=JSON.stringify([state.inventory,inventorySlot,$('inventory-epoch').value,$('inventory-affix').value,artVersion,state.inventoryCapacity]);if(key===inventoryDisplay)return;inventoryDisplay=key;
+ for(const id of ['inventory-epoch','inventory-affix']){const trigger=$(id),option=[...$(id+'-options').children].find(b=>b.value===trigger.value);trigger.className=option.className;trigger.replaceChildren(...[...option.childNodes].map(n=>n.cloneNode(true)));const arrow=document.createElement('b');arrow.textContent='▾';trigger.append(arrow);for(const b of $(id+'-options').children)b.setAttribute('aria-pressed',String(b===option));}
+ setText('inventory-total',state.inventory.length+' / '+state.inventoryCapacity);$('inventory-expand').hidden=state.inventoryCapacity===100;
+ for(const button of $('inventory-slots').children)button.setAttribute('aria-pressed',String(button.dataset.slot===(inventorySlot||'all')));
+ const grid=$('inventory-grid'),scroll=grid.scrollTop;grid.replaceChildren();
+ state.inventory.map((item,index)=>({item,index})).sort((a,b)=>(b.item.itemLevel||1)-(a.item.itemLevel||1)).forEach(({item,index})=>{
+ const epoch=$('inventory-epoch').value,affix=$('inventory-affix').value;
+ if(inventorySlot&&item.slot!==inventorySlot||epoch!==''&&(item.epoch??1)!==Number(epoch)||affix&&(affix==='none'?!!item.affix:item.affix?.type!==affix))return;
+ const button=document.createElement('button');button.className='slot epoch-'+(item.epoch??1);button.setAttribute('aria-label',item.name+', '+describe(item,item.slot==='ring'?'ring1':item.slot));
+ const img=document.createElement('img');img.alt='';const level=document.createElement('span');level.className='item-level';level.textContent='lv.'+(item.itemLevel||1);button.append(img,level);itemArt(img,item);
+ button.onclick=()=>{inventorySelected=index;$('inventory-ring').value=(state.equipment.ring1?.value??0)<=(state.equipment.ring2?.value??0)?'ring1':'ring2';$('inventory-item-dialog').showModal();updateInventoryItem();};grid.append(button);
+ });grid.scrollTop=scroll;$('inventory-empty').hidden=!!grid.children.length;
+ setText('inventory-empty',state.inventory.length?'No items match these filters.':'No saved items yet. Turn on Keep replaced items when equipping gear.');
+}
+function updateInventoryItem(){
+ const item=state.inventory[inventorySelected];if(!item)return;
+ const card=$('inventory-item-art');card.className='item-icon epoch-'+(item.epoch??1);itemArt(card.querySelector('img'),item);card.querySelector('.item-level').textContent='lv.'+(item.itemLevel||1);
+ setText('inventory-item-name',item.name);setText('inventory-item-epoch',EPOCHS[(item.epoch??1)-1]);setText('inventory-item-stat',describe(item,item.slot==='ring'?$('inventory-ring').value:item.slot));setText('inventory-item-affix',item.affix?describeAffix(item.affix):'');$('inventory-item-affix').hidden=!item.affix;
+ $('inventory-ring-row').hidden=item.slot!=='ring';
+ const targetSlot=item.slot==='ring'?$('inventory-ring').value:item.slot;
+ const multiplier=1+(state.workshop?.slots?.[targetSlot]||0)/100;
+ const diff=Math.round(item.value*multiplier)-Math.round((state.equipment[targetSlot]?.value??0)*multiplier);
+ setText('inventory-item-difference',diff>0?'+'+compact.format(diff):diff<0?'−'+compact.format(Math.abs(diff)):'= 0');
+ $('inventory-item-difference').className=diff>0?'better':diff<0?'worse':'equal';
+ $('inventory-reforge').hidden=!reforgeCost(item);
+ setText('inventory-sell-price',compact.format(item.sale));
+}
+
 let transferCandidate = null, transferSource = null;
 $('transfer-affix').addEventListener('change',fillSheet);
 function fillSheet() {
   const candidate = sheetSlot === 'pending' ? state.pending : null;
   const ringChoice = candidate?.slot === 'ring' || ['ring1','ring2'].includes(sheetSlot);
-  const targetSlot=ringChoice ? ringTarget : candidate ? candidate.slot : sheetSlot;
-  const old = state.equipment[targetSlot];
+  const targetSlot=sheetSlot==='inventory' ? state.inventory[inventorySelected]?.slot : ringChoice ? ringTarget : candidate ? candidate.slot : sheetSlot;
+  const old = sheetSlot==='inventory' ? state.inventory[inventorySelected] : state.equipment[targetSlot];
   const offer = !candidate && old?.reforgeOffer;
   if (candidate !== transferCandidate || old !== transferSource) $('transfer-affix').checked = false;
   transferCandidate = candidate; transferSource = old;
@@ -315,7 +379,7 @@ function fillSheet() {
   $('transfer-affix-row').title = state.runes < transferCost ? `Requires ${transferCost} runes` : candidate?.affix ? `Replaces ${describeAffix(candidate.affix)}` : '';
   setText('transfer-affix-price',transferCost);
   const transfer = transferable && $('transfer-affix').checked;
-  setText('sheet-title',offer ? 'Reforge' : 'Equipped');
+  setText('sheet-title',offer || sheetSlot==='inventory' ? 'Reforge' : 'Equipped');
   $('equipped-affix-row').hidden = !old?.affix || !!offer;
   setText('equipped-affix',describeAffix(old?.affix),old?.affix);
   $('reforge-panel').hidden = !!candidate || !reforgeCost(old);
@@ -358,6 +422,9 @@ function fillSheet() {
   $('new-row').hidden = !candidate; $('sheet-actions').hidden = !candidate;
   for (const id of ['sell', 'equip', 'choose-ring1', 'choose-ring2']) $(id).disabled = !!offer;
   if (transfer && state.runes < transferCost) $('equip').disabled = true;
+  const bagFull=!!candidate && !!old && state.keepReplaced && state.inventory.length>=state.inventoryCapacity;
+  if(bagFull)$('equip').disabled=true;
+  setText('equip',bagFull?'Inventory full':'Equip');
   if (candidate) {
     const previewAffix = transfer ? old.affix : candidate.affix;
     $('new-affix').hidden = !previewAffix;
@@ -401,12 +468,14 @@ function closeSheet() {
   if ($('reforge-filters').matches(':popover-open')) $('reforge-filters').hidePopover();
   if ($('auto-dialog').open) { $('auto-dialog').close(); return; }
   if ($('idle-dialog').open) { $('idle-dialog').close(); return; }
-  if (sheetSlot && sheetSlot !== 'pending' && resolveReforge(state,ringTarget || sheetSlot,false)) save(true);
+  if (sheetSlot && sheetSlot !== 'pending' && resolveReforge(state,sheetSlot==='inventory'?inventorySelected:ringTarget || sheetSlot,false)) save(true);
   anvilOpen = false; $('anvil-dialog').hidden = true;
+  const backToInventory=sheetSlot==='inventory';
   sheetSlot = null; $('comparison').hidden = true; $('sheet-backdrop').hidden = true;
   $('equipment').inert = false; document.querySelector('.forge-area').inert = false;
   if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
   if (telegramInitialized) window.Telegram.WebApp.BackButton?.hide();
+  if(backToInventory){$('inventory-dialog').showModal();inventoryDisplay='';updateInventory();$('inventory-item-dialog').showModal();updateInventoryItem();}
 }
 
 function updateIdleRewards() {
@@ -702,13 +771,14 @@ function updateAnvil() {
 }
 for (const slot of ['ring1','ring2']) $(`choose-${slot}`).addEventListener('click', () => { ringTarget = slot; fillSheet(); });
 $('reforge-roll').addEventListener('click',()=>{
-  if (!sheetSlot || sheetSlot==='pending' || !reforge(state,ringTarget || sheetSlot)) return;
+  if (!sheetSlot || sheetSlot==='pending' || !reforge(state,sheetSlot==='inventory'?inventorySelected:ringTarget || sheetSlot)) return;
   save(true); updateUI(); if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('reforge-new').querySelector('.affix-inline')?.animate([{transform:'scale(.8)'},{transform:'scale(1.15)'},{transform:'scale(1)'}],{duration:220}); $('reforge-keep').focus({preventScroll:true});
 });
 for (const affix of AFFIXES) {
   const label=document.createElement('label'),input=document.createElement('input');
   input.type='checkbox';input.value=affix.id;
-  label.append(input,document.createTextNode(affix.name));$('reforge-filters').append(label);
+  const icon=document.createElement('img');icon.src='assets/affixes/'+affix.id+'.webp';icon.alt='';icon.className='affix-inline';
+  label.append(input,icon,document.createTextNode(affix.name));$('reforge-filters').append(label);
   input.addEventListener('change',()=>{
     state.reforgeStop=state.reforgeStop.filter(id=>id!==affix.id);
     if(input.checked)state.reforgeStop.push(affix.id);
@@ -728,13 +798,49 @@ $('reforge-filter').addEventListener('click',()=>{
 $('reforge-filters').addEventListener('toggle',event=>$('reforge-filter').setAttribute('aria-expanded',String(event.newState==='open')));
 $('reforge-filters').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();$('reforge-filters').hidePopover();$('reforge-filter').focus({preventScroll:true});}});
 for (const [id,replace] of [['reforge-keep',false],['reforge-replace',true]]) $(id).addEventListener('click',()=>{
-  if (!resolveReforge(state,ringTarget || sheetSlot,replace)) return;
+  if (!resolveReforge(state,sheetSlot==='inventory'?inventorySelected:ringTarget || sheetSlot,replace)) return;
   save(true); updateUI(); $('reforge-roll').focus({preventScroll:true});
 });
 $('close-sheet').addEventListener('click', closeSheet);
 $('sheet-backdrop').addEventListener('click', closeSheet);
-$('sell').addEventListener('click', () => { if (sell(state)) { afterItemAction(); } });
-$('equip-and-sell').addEventListener('click', () => {
+for(const id of ['sell','inventory-sell'])$(id).onclick=()=>{
+  const index=id==='inventory-sell'?inventorySelected:null;
+  if(id==='inventory-sell'&&index===null)return;
+  const item=index===null?state.pending:state.inventory[index];if(!item)return;
+  const slot=item.slot==='ring'?(index===null?ringTarget:$('inventory-ring').value):item.slot;
+  const multiplier=1+(state.workshop?.slots?.[slot]||0)/100;
+  const better=Math.round(item.value*multiplier)>Math.round((state.equipment[slot]?.value??0)*multiplier);
+  const finish=()=>{
+    if((index===null?state.pending:state.inventory[index])!==item)return;
+    if(!sell(state,index))return;
+    if(index===null)afterItemAction();else{inventorySelected=null;$('inventory-item-dialog').close();save(true);updateUI();}
+  };
+  if(state.skipSellConfirm||!better&&!item.affix){finish();return;}
+  const equipped=state.equipment[slot];
+  for(const [key,gear] of [['equipped',equipped],['selling',item]]){
+    const card=$('sell-'+key+'-art');card.hidden=!gear;
+    if(gear){card.className='item-icon epoch-'+(gear.epoch??1);itemArt(card.querySelector('img'),gear);card.querySelector('.item-level').textContent='lv.'+(gear.itemLevel??1);}
+    setText('sell-'+key+'-name',gear?gear.name:'Nothing equipped');
+    setText('sell-'+key+'-stat',gear?describe(gear,slot):'');
+    setText('sell-'+key+'-affix',gear?.affix?describeAffix(gear.affix):'',gear?.affix);
+    $('sell-'+key+'-affix').hidden=!gear?.affix;
+  }
+  const diff=Math.round(item.value*multiplier)-Math.round((equipped?.value??0)*multiplier);
+  setText('sell-compare-difference',diff>0?'+'+compact.format(diff):diff<0?'−'+compact.format(Math.abs(diff)):'= 0');
+  $('sell-compare-difference').className=diff>0?'better':diff<0?'worse':'equal';
+  setText('sell-confirm-price',compact.format(item.sale));$('sell-never-ask').checked=false;
+  $('sell-confirm-accept').onclick=()=>{
+    if($('sell-never-ask').checked){state.skipSellConfirm=true;save(true);}
+    $('sell-confirm-dialog').close();finish();
+  };
+  $('sell-confirm-dialog').showModal();
+};
+for(const id of ['sell-confirm-close','sell-confirm-cancel'])$(id).onclick=()=>$('sell-confirm-dialog').close();
+$('sell-confirm-dialog').addEventListener('close',()=>{$('sell-confirm-accept').onclick=null;});
+$('equip-and-sell').addEventListener('click', () => $('equip-sell-dialog').showModal());
+for(const id of ['cancel-equip-sell','close-equip-sell'])$(id).onclick=()=>$('equip-sell-dialog').close();
+$('confirm-equip-sell').addEventListener('click', () => {
+  $('equip-sell-dialog').close();
   const selected = state.pending;
   const equipped = equipStronger(state), sold = sellWeaker(state);
   if (equipped || sold.count) afterItemAction(null, selected === state.pending);
@@ -775,6 +881,7 @@ $('confirm-reset').addEventListener('click', () => {
   void scene?.prepare(state.level);
 });
 document.addEventListener('keydown', e => {
+  if(e.key==='Escape' && $('reforge-filters').matches(':popover-open')){e.preventDefault();$('reforge-filters').hidePopover();$('reforge-filter').focus({preventScroll:true});return;}
   if (document.querySelector('dialog[open]') || (!sheetSlot && !anvilOpen)) return;
   if (sheetSlot === 'pending' && ['ArrowLeft','ArrowRight'].includes(e.key) && !e.target.matches('input,select,textarea')) {
     e.preventDefault(); browseReady(e.key === 'ArrowRight' ? 1 : -1); return;
@@ -918,6 +1025,7 @@ function updateUI() {
   if (anvilOpen) updateAnvil();
   if ($('auto-dialog').open) updateAutoFilter();
   if (sheetSlot) fillSheet();
+  updateInventory();if($('inventory-item-dialog').open)updateInventoryItem();
   if($('completed').hidden!==(!state.completed))$('completed').hidden = !state.completed;
 }
 

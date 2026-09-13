@@ -1,3 +1,4 @@
+import { expandInventory } from './game.mjs';
 import { TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -1261,6 +1262,7 @@ test('kills grant base XP only to the active companion and can cross multiple le
   const e=s.enemies[0];e.hp=1;e.x=s.heroX+.115;e.reward=2130;e.damage=0;
   const events=step(s,1.3,()=>.999);
   assert.ok(events.some(e=>e.type==='kill'));assert.equal(s.coins,2343);
+  assert.deepEqual(events.find(e=>e.type==='companionXp'),{type:'companionXp',value:2130,x:s.companion.x,companion:id});
   assert.equal(s[id+'Level'],3);assert.equal(s.companionXp[id],1010);
   for(const other of ['archer','druid','turtle'].filter(x=>x!==id)){assert.equal(s[other+'Level'],1);assert.equal(s.companionXp[other],0);}
   if(id==='turtle'){assert.equal(s.companion.hp,7);assert.equal(s.companion.maxHp,62);}
@@ -1276,4 +1278,43 @@ test('companion XP preserves old purchased levels and stops at level 100',()=>{
  assert.equal(s.druidLevel,100);assert.equal(s.companionXp.druid,0);
  assert.deepEqual([0,1,9,29,49,69,98,99].map(i=>DRUID_LEVELS[i].xpRequired),[1000,1110,2560,20630,166280,1340560,27647250,0]);
  assert.equal(DRUID_LEVELS[29].healing,2064);assert.equal(ARCHER_LEVELS[29].damage,2890);assert.equal(TURTLE_LEVELS[29].hp,20643);
+});
+
+test('keeping replaced equipment stores only displaced items and inventory survives reload',()=>{
+ const s=freshGame();s.keepReplaced=true;s.equipment.boots={...candidate('boots',20),epoch:2};s.pending={...candidate('boots',40),epoch:2};const old=structuredClone(s.equipment.boots);
+ assert.equal(equip(s,'boots'),true);assert.deepEqual(s.inventory,[old]);
+ const pending={...candidate('weapon',10),epoch:2};s.pending=pending;
+ assert.equal(equip(s,'boots',false,0),true);assert.equal(s.equipment.boots.value,20);assert.equal(s.inventory[0].value,40);assert.equal(s.pending,pending);
+ const loaded=restore(JSON.stringify(s));assert.deepEqual(loaded.inventory,s.inventory.map(i=>({...i,name:'Bronze Warrior Boots'})));assert.equal(loaded.keepReplaced,true);
+ const coins=s.coins;assert.equal(sell(s,0),true);assert.equal(s.coins,coins+old.sale);assert.equal(s.inventory.length,0);assert.equal(s.pending,pending);assert.equal(sell(s,0),false);
+ const legacy=freshGame();delete legacy.inventory;delete legacy.keepReplaced;assert.deepEqual(restore(JSON.stringify(legacy)).inventory,[]);
+});
+test('bulk equip keeps displaced gear outside mass sale and disabled keep retains old behavior',()=>{
+ for(const keep of [true,false]){const s=freshGame();s.keepReplaced=keep;s.equipment.boots=candidate('boots',10);s.pending=candidate('boots',20);s.results=[candidate('boots',30)];
+ assert.equal(equipStronger(s),1);sellWeaker(s);assert.equal(s.equipment.boots.value,30);assert.equal(s.inventory.length,keep?1:0);if(keep)assert.equal(s.inventory[0].value,10);}
+});
+test('inventory rings replace the chosen slot and reforge operates on saved gear only',()=>{
+ const s=freshGame();s.keepReplaced=true;s.coins=5000;s.equipment.ring2={...candidate('ring2',10),epoch:2};s.inventory=[{...candidate('ring',30),epoch:2}];
+ assert.equal(equip(s,'boots',false,0),false);assert.equal(equip(s,'ring2',false,0),true);assert.equal(s.equipment.ring2.value,30);assert.equal(s.inventory[0].slot,'ring');
+ const equipped=structuredClone(s.equipment),hp=s.hp;assert.equal(reforge(s,0,()=>0),true);assert.equal(s.coins,4600);assert.ok(s.inventory[0].reforgeOffer);assert.equal(resolveReforge(s,0,true),true);assert.equal(s.inventory[0].affix.type,'damage');assert.deepEqual(s.equipment,equipped);assert.equal(s.hp,hp);
+ assert.deepEqual(restore(JSON.stringify(s)).inventory,s.inventory.map(i=>({...i,name:'Bronze Warrior Ring'})));
+});
+
+test('inventory equip swaps in place even when keeping forged replacements is disabled',()=>{
+ const s=freshGame();s.keepReplaced=false;s.equipment.boots=candidate('boots',10);s.inventory=[candidate('helmet',5),candidate('boots',30)];
+ assert.equal(equip(s,'boots',false,1),true);assert.equal(s.equipment.boots.value,30);assert.equal(s.inventory.length,2);assert.equal(s.inventory[1].value,10);assert.equal(s.inventory[0].slot,'helmet');assert.equal(s.keepReplaced,false);
+ assert.equal(equip(s,'helmet',false,0),true);assert.equal(s.inventory.length,1);assert.equal(s.equipment.helmet.value,5);
+});
+
+test('inventory capacity blocks new storage but permits swaps and one expansion',()=>{
+ const s=freshGame();const old={slot:'boots',name:'Boots',epoch:3,quality:0,itemLevel:1,value:10,sale:1};
+ s.equipment.boots={...old};s.inventory=Array.from({length:32},()=>({...old}));s.keepReplaced=true;s.pending={...old,value:20};
+ const before=JSON.stringify(s);assert.equal(equip(s),false);assert.equal(equipStronger(s),0);assert.equal(JSON.stringify(s),before);
+ assert.equal(equip(s,'boots',false,0),true);assert.equal(s.inventory.length,32);
+ s.runes=19;assert.equal(expandInventory(s),false);assert.equal(s.runes,19);
+ s.runes=25;assert.equal(expandInventory(s),true);assert.equal(s.runes,5);assert.equal(s.inventoryCapacity,100);
+ assert.equal(expandInventory(s),false);assert.equal(s.runes,5);assert.equal(equip(s),true);assert.equal(s.inventory.length,33);
+ assert.equal(restore(JSON.stringify(s)).inventoryCapacity,100);
+ s.inventory=Array.from({length:100},()=>({...old}));s.pending={...old,value:30};assert.equal(equip(s),false);
+ s.keepReplaced=false;assert.equal(equip(s),true);assert.equal(s.inventory.length,100);
 });

@@ -391,14 +391,14 @@ export function reforgeCost(item) {
   return Math.ceil(base * (10 + Math.min(10,item?.reforges || 0)) / 10);
 }
 export function reforge(s, slot, rng = Math.random) {
-  const item = s.equipment[slot], cost = reforgeCost(item);
+  const item = Number.isInteger(slot) ? s.inventory[slot] : s.equipment[slot], cost = reforgeCost(item);
   if (!item || !cost || s.coins < cost) return false;
   if (item.reforgeOffer && s.reforgeStop?.includes(item.reforgeOffer.type)) return false;
   item.reforgeOffer = rollAffix(rng); item.reforges = Math.min(10,(item.reforges || 0)+1); s.coins -= cost;
   return true;
 }
 export function resolveReforge(s, slot, replace) {
-  const item = s.equipment[slot];
+  const item = Number.isInteger(slot) ? s.inventory[slot] : s.equipment[slot];
   if (!item?.reforgeOffer) return false;
   const fraction = s.hp / stats(s).hp;
   if (replace) item.affix = item.reforgeOffer;
@@ -626,7 +626,7 @@ export function toggleMount(s) {
 
 export function freshGame(now = Date.now()) {
   const s = { version: 3, affixVersion: 1, hiredCompanions:[], selectedCompanion:null, companion:null, coins: 0, runes: 0, level: 1, highest: 1, encounter: 0, hp: 20, heroX: .24, heroAttackCount: 0,
-    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], forgingItems: [], forging: 0, hammers: 15,
+    equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], inventory: [], inventoryCapacity: 32, skipSellConfirm: false, keepReplaced: true, forgingItems: [], forging: 0, hammers: 15,
     workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, companionXp: {archer:0,druid:0,turtle:0}, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', keepAffixes: AFFIXES.map(a=>a.id), reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
   s.alchemy={xp:0,reagents:[0,0,0,0,0],potions:Array(25).fill(0),active:{},previous:{},pending:[0,0,0,0,0],idleMinutes:0,seed:Math.abs(Math.floor(now))%2147483647,oreRemainder:0};
@@ -806,21 +806,35 @@ export function browseResults(s, direction = 1) {
   else { s.results.unshift(s.pending); s.pending = s.results.pop(); }
   return true;
 }
-export function equip(s, targetSlot = s.pending?.slot, transferAffix = false) {
-  if (!s.pending) return false;
-  if (s.pending.slot === 'ring' ? !['ring1','ring2'].includes(targetSlot) : targetSlot !== s.pending.slot) return false;
-  const source = s.equipment[targetSlot], cost = (s.pending.epoch ?? 1) * 10;
-  if (transferAffix && (!source?.affix || (s.pending.epoch ?? 1) < 2 || !Number.isSafeInteger(s.runes) || s.runes < cost)) return false;
+export function expandInventory(s){
+  if(s.inventoryCapacity===100 || s.runes<20)return false;
+  s.runes-=20;s.inventoryCapacity=100;return true;
+}
+export function equip(s, targetSlot = s.pending?.slot, transferAffix = false, inventoryIndex = null) {
+  const candidate = inventoryIndex === null ? s.pending : s.inventory[inventoryIndex];
+  if (!candidate) return false;
+  if (candidate.slot === 'ring' ? !['ring1','ring2'].includes(targetSlot) : targetSlot !== candidate.slot) return false;
+  const source = s.equipment[targetSlot], cost = (candidate.epoch ?? 1) * 10;
+  if (transferAffix && (!source?.affix || (candidate.epoch ?? 1) < 2 || !Number.isSafeInteger(s.runes) || s.runes < cost)) return false;
+  if(inventoryIndex===null && source && s.keepReplaced && s.inventory.length >= s.inventoryCapacity)return false;
   const fraction = s.hp / stats(s).hp;
-  const next = { ...s.pending, slot: targetSlot };
+  const next = { ...candidate, slot: targetSlot };
   if (transferAffix) { next.affix = { ...source.affix }; delete next.reforgeOffer; s.runes -= cost; }
   s.equipment[targetSlot] = next;
-  s.pending = s.results.shift() ?? null;
+  if (inventoryIndex === null) {
+    s.pending = s.results.shift() ?? null;
+    if (source && s.keepReplaced) s.inventory.push({...source,slot:targetSlot.startsWith('ring')?'ring':targetSlot});
+  } else if (source) s.inventory[inventoryIndex] = {...source,slot:targetSlot.startsWith('ring')?'ring':targetSlot};
+  else s.inventory.splice(inventoryIndex,1);
   s.hp = fraction * stats(s).hp; return true;
 }
-export function sell(s) {
-  if (!s.pending) return false;
-  s.coins += s.pending.sale; s.pending = s.results.shift() ?? null; return true;
+export function sell(s, inventoryIndex = null) {
+  const item = inventoryIndex === null ? s.pending : s.inventory[inventoryIndex];
+  if (!item) return false;
+  s.coins += item.sale;
+  if (inventoryIndex === null) s.pending = s.results.shift() ?? null;
+  else s.inventory.splice(inventoryIndex,1);
+  return true;
 }
 export function equipStronger(s, preview = false) {
   const equipment = { ...s.equipment }, chosen = {};
@@ -833,9 +847,11 @@ export function equipStronger(s, preview = false) {
       equipment[slot] = { ...item, slot }; chosen[slot] = item;
     }
   }
+  if(s.keepReplaced && s.inventory.length+Object.keys(chosen).filter(slot=>s.equipment[slot]).length>s.inventoryCapacity)return 0;
   const selected = new Set(Object.values(chosen));
   if (!preview && selected.size) {
     const fraction = s.hp / stats(s).hp;
+    if(s.keepReplaced)for(const slot of Object.keys(chosen)){const old=s.equipment[slot];if(old)s.inventory.push({...old,slot:slot.startsWith('ring')?'ring':slot});}
     s.equipment = equipment;
     const remaining = items.filter(item => !selected.has(item));
     s.pending = remaining.shift() ?? null; s.results = remaining;
@@ -1071,6 +1087,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     const companion=s.companion?.kind;
     if(companion && s[companion+'Level']<100){
       s.companionXp[companion]+=target.reward;
+      events.push({type:'companionXp',value:target.reward,x:s.companion.x,companion});
       while(s[companion+'Level']<100 && s.companionXp[companion]>=DRUID_LEVELS[s[companion+'Level']-1].xpRequired){
         s.companionXp[companion]-=DRUID_LEVELS[s[companion+'Level']-1].xpRequired;
         s[companion+'Level']++;
@@ -1178,6 +1195,10 @@ export function restore(serialized, now = Date.now()) {
     s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
     s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-1,Number.isSafeInteger(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
+    s.inventory=Array.isArray(s.inventory)?s.inventory.filter(item):[];
+    s.keepReplaced=s.keepReplaced!==false;
+    s.skipSellConfirm=s.skipSellConfirm===true;
+    s.inventoryCapacity=s.inventoryCapacity===100?100:32;
     s.autoForgeCoins=Number.isSafeInteger(s.autoForgeCoins)&&s.autoForgeCoins>=0?s.autoForgeCoins:0;
     s.battleStats=Object.fromEntries(['bosses','maxHit','maxCrit','coins','hammers','runes'].map(k=>[k,Number.isSafeInteger(s.battleStats?.[k])&&s.battleStats[k]>=0?s.battleStats[k]:0]));
     s.hiredCompanions=Array.isArray(s.hiredCompanions)?[...new Set(s.hiredCompanions.filter(id=>COMPANIONS.some(c=>c.id===id)))]:[];
@@ -1215,7 +1236,7 @@ export function restore(serialized, now = Date.now()) {
     // One-time reset for the switch from automatic affixes to paid enchanting.
     if(s.affixVersion!==1){
       const hpFraction=s.hp/stats(s).hp;
-      for(const i of [...Object.values(s.equipment),s.pending,...s.results,...s.forgingItems]){
+      for(const i of [...Object.values(s.equipment),s.pending,...s.results,...s.forgingItems,...s.inventory]){
         if(!i)continue;
         delete i.affix;delete i.reforgeOffer;delete i.reforges;
       }
@@ -1224,7 +1245,7 @@ export function restore(serialized, now = Date.now()) {
 
     if (s.pending && ['ring1','ring2'].includes(s.pending.slot)) s.pending.slot = 'ring';
     // Names are display text; old saves keep their item stats but use English labels.
-    for (const i of [...Object.values(s.equipment).filter(Boolean), ...(s.pending ? [s.pending] : []), ...s.results, ...s.forgingItems]) { i.value=Math.max(1,Math.round(i.value));
+    for (const i of [...Object.values(s.equipment).filter(Boolean), ...(s.pending ? [s.pending] : []), ...s.results, ...s.forgingItems, ...s.inventory]) { i.value=Math.max(1,Math.round(i.value));
       if(i.slot==='weapon'&&i.epoch===2&&WEAPONS[i.weaponId]?.epoch!==2){i.weaponId=WEAPONS[i.weaponId]?.range?'short-bow':i.quality===1?'battle-spear':i.quality===2?'gladius':'bronze-axe';i.quality=WEAPONS[i.weaponId].quality;}
       i.name = (i.slot==='weapon'&&WEAPONS[i.weaponId]?.name)||((i.epoch??1)===1?NAMES[['ring1','ring2'].includes(i.slot)?'ring':i.slot][i.quality]:`${i.epoch===2?['Bronze Warrior','Temple Guard','Legionary'][i.quality]:i.epoch===3?['Iron Knight','Forest Ranger','Royal Guard'][i.quality]:i.epoch===4?['Musketeer','Corsair','Grenadier'][i.quality]:i.epoch===5?['Field Scout','Commando','Heavy Trooper'][i.quality]:i.epoch===6?['Neon Runner','Exo Trooper','Reactor Guard'][i.quality]:i.epoch===7?["Lunar Scout","Void Corsair","Xeno Warden"][i.quality]:i.epoch===8?["Rift Nomad","Prism Keeper","Paradox Knight"][i.quality]:i.epoch===9?["Ash Reaper","Ember Brute","Obsidian Tyrant"][i.quality]:i.epoch===10?["Dawn Herald","Storm Seraph","Sun Sovereign"][i.quality]:EPOCHS[i.epoch-1]} ${LABELS[i.slot]||'Ring'}`); }
     if (s.version === 1) {
