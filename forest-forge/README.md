@@ -42,6 +42,12 @@ gloves include shooting poses. `atlas.json` records the packed row order while
 preserving the original cell size, anchors and body scale. Full body and shooting
 source atlases remain available to the fitting tools but are excluded from `dist`.
 
+First-biome enemies use `assets/enemy-<kind>-sheet.png` and `enemy-atlas.json`.
+The build trims transparent margins with at least a two-pixel border and packs all sixteen
+full-resolution poses in four columns, retaining their original foot positions.
+Original enemy strips stay editable and are excluded from `dist`. The scene
+releases these images on entering another biome and loads them again on return.
+
 The scene keeps the base body loaded and fetches other equipment on demand.
 Equipment images unused for ten seconds are released from the scene on the next
 render cleanup (at most once per second). Shared images stay while any equipped

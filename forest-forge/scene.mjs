@@ -39,15 +39,16 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   let nextArtCleanup = 0;
   const sets = ARMOR_SETS[0], loadingSets = new Set();
   let artVersion=Date.now();
-  const [heroRigs] = await Promise.all([
+  const [heroRigs, enemyFrames] = await Promise.all([
     Promise.all(sets.slice(0,1).map(async id => {
       const meta = await fetch(`assets/sets/${id}/atlas.json?v=${artVersion}`).then(r => { if (!r.ok) throw Error('Hero atlas metadata missing'); return r.json(); });
       const image = new Image(); image.src = `assets/sets/${id}/body-sheet.png?v=${artVersion}`; await image.decode(); art[id+'-body'] = image;
       rigs[id]=meta;return meta;
     })),
+    fetch('assets/enemy-atlas.json').then(r => { if (!r.ok) throw Error('Enemy atlas metadata missing'); return r.json(); }),
     document.fonts.load('32px "Lilita UI"'),
     Promise.all(['warrior','archer','boss','healer','tree','hammer','rune',...Array.from({length:5},(_,i)=>`reagent-${i}`)].map(async name => {
-      const img = new Image(); img.src = name.startsWith('reagent-') ? `assets/alchemy/${name}.webp` : ['hammer','rune'].includes(name) ? `assets/${name}.webp` : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}.png`;
+      const img = new Image(); img.src = name.startsWith('reagent-') ? `assets/alchemy/${name}.webp` : ['hammer','rune'].includes(name) ? `assets/${name}.webp` : name === 'tree' ? 'assets/tree.svg' : `assets/enemy-${name}-sheet.png`;
       await img.decode(); art[name] = img;
     }))
   ]);
@@ -88,7 +89,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
     wantedBiome=index;
     if (index === biomeIndex) { loading=false; return; }
     loading = true;
-    let sprites = null, decor = null, heights = null;
+    let sprites = null, decor = null, heights = null, forestSprites = null;
     if (index) {
       [sprites, decor, heights] = await Promise.all([...['enemies.png', 'scenery.svg'].map(async file => {
         const image = new Image(); image.src = `assets/biomes/${BIOMES[index].id}/${file}`;
@@ -97,8 +98,15 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         if(!response.ok)throw Error(`Could not load ${BIOMES[index].name} sprite metadata`);
         return (await response.json()).bodyHeights;
       })]);
+    } else {
+      forestSprites = await Promise.all(Object.keys(enemyFrames).map(async kind => {
+        const image = new Image(); image.src = `assets/enemy-${kind}-sheet.png`;
+        await image.decode(); return [kind, image];
+      }));
     }
     if(index!==wantedBiome)return; // A local reset or cloud reload can change location while images load.
+    if (forestSprites) Object.assign(art, Object.fromEntries(forestSprites));
+    else for (const kind of Object.keys(enemyFrames)) delete art[kind];
     biomeIndex = index; biomeSprites = sprites; scenery = decor; biomeHeights = heights;
     resize(); reveal = .55; loading = false;
   }
@@ -623,6 +631,9 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
           else if (e.clock >= windup) frame = e.clock < (e.boss ? .82 : .88) ? 9 : e.clock < 1.02 ? 10 : 11;
         }
       }
+      // Keep projectiles below active even when their shooter is outside the view.
+      const margin = Math.max(size / 2, e.boss ? 26.5 : 18.5) + 2;
+      if (dungeonTheme || (x + margin >= 0 && x - margin <= width)) {
       context.fillStyle = '#785b3844'; context.beginPath(); context.ellipse(x, floor + (e.boss ? 2 : 1), size * .3, e.boss ? 3 : 1.5, 0, 0, Math.PI * 2); context.fill();
       const row = e.boss ? 3 : ['warrior','archer','healer'].indexOf(e.kind);
       if(dungeonTheme&&e.boss&&dungeonArt){
@@ -683,9 +694,12 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         const pose = [0,1,2,3,4,1,2,3,4,5,5,5,6,6,0,7][frame];
         context.drawImage(biomeSprites,pose*192,row*192,192,192,x-size/2,floor-size*180/192,size,size);
       } else {
-        context.drawImage(art[e.kind],frame*192,0,192,192,x-size/2,floor-size*180/192,size,size);
+        const cell = enemyFrames[e.kind], scale = size / 192;
+        context.drawImage(art[e.kind],frame%cell.columns*cell.width,Math.floor(frame/cell.columns)*cell.height,cell.width,cell.height,
+          x-size/2+cell.x*scale,floor-size*180/192+cell.y*scale,cell.width*scale,cell.height*scale);
       }
       if (e.hp) bar(x, floor - size * (dungeonTheme?.id ? .92 : biomeHeights?.[row] ?? .63) - (e.boss ? 6 : 3), e.hp/e.maxHp, e.boss ? '#f49c3b' : e.kind === 'healer' ? '#56dfb4' : '#f45152', e.boss ? 49 : 17.5, e.boss ? 1 : .5);
+      }
       if (e.kind === 'archer' && e.hp && e.actionAge < .15 && state.phase !== 'dead') {
         const tankX=companion?.kind==='turtle'&&companion.hp>0&&companion.x>state.heroX?(companion.x-camera)*width:heroX;
         const p = e.actionAge / .15, ax = (x - 9*unit)*(1-p) + (tankX + 8*unit)*p;

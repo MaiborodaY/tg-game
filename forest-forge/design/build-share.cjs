@@ -12,6 +12,33 @@ const root = path.resolve(__dirname, '..');
   await fs.mkdir(path.join(root, 'qa'), {recursive:true});
   // dist is a generated directory inside this package.
   await fs.rm(path.join(root, 'dist'), {recursive:true, force:true});
+  // Trim only transparent margins; all sixteen poses keep their original pixels.
+  const enemyFrames = {};
+  for (const kind of ['warrior', 'archer', 'boss', 'healer']) {
+    const {data, info} = await sharp(path.join(root, `assets/enemy-${kind}.png`)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const cell = 192, frames = 16, columns = 4;
+    if (info.width !== cell * frames || info.height !== cell) throw Error(`Invalid enemy atlas: ${kind}`);
+    let left = cell, top = cell, right = -1, bottom = -1;
+    for (let y = 0; y < cell; y++) for (let x = 0; x < info.width; x++) if (data[(y * info.width + x) * 4 + 3]) {
+      left = Math.min(left, x % cell); top = Math.min(top, y);
+      right = Math.max(right, x % cell); bottom = Math.max(bottom, y);
+    }
+    if (right < left) throw Error(`Empty enemy atlas: ${kind}`);
+    // Preserve the source sampling grid when browsers minify the sprites.
+    left = Math.max(0, Math.floor((left - 2) / 4) * 4); top = Math.max(0, Math.floor((top - 2) / 4) * 4);
+    const width = Math.min(cell, Math.ceil((right + 3) / 4) * 4) - left, height = Math.min(cell, Math.ceil((bottom + 3) / 4) * 4) - top;
+    const pixels = Buffer.alloc(width * columns * height * (frames / columns) * 4);
+    for (let frame = 0; frame < frames; frame++) for (let y = 0; y < height; y++) {
+      const from = ((top + y) * info.width + frame * cell + left) * 4;
+      const to = ((Math.floor(frame / columns) * height + y) * width * columns + frame % columns * width) * 4;
+      data.copy(pixels, to, from, from + width * 4);
+    }
+    const source = `assets/enemy-${kind}-sheet.png`;
+    await sharp(pixels, {raw:{width:width * columns, height:height * (frames / columns), channels:4}}).png().toFile(path.join(root, source));
+    sources.add(source);
+    enemyFrames[kind] = {x:left, y:top, width, height, columns};
+  }
+  await fs.writeFile(path.join(root, 'assets/enemy-atlas.json'), JSON.stringify(enemyFrames, null, 2) + '\n');
   for (const set of await fs.readdir(path.join(root, 'assets/sets'))) {
     const folder = path.join(root, 'assets/sets', set);
     for (const name of await fs.readdir(folder)) {

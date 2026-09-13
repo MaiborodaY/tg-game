@@ -1,0 +1,30 @@
+{
+  "warrior": {
+    "x": 8,
+    "y": 52,
+    "width": 164,
+    "height": 132,
+    "columns": 4
+  },
+  "archer": {
+    "x": 8,
+    "y": 56,
+    "width": 160,
+    "height": 128,
+    "columns": 4
+  },
+  "boss": {
+    "x": 24,
+    "y": 56,
+    "width": 160,
+    "height": 128,
+    "columns": 4
+  },
+  "healer": {
+    "x": 8,
+    "y": 24,
+    "width": 176,
+    "height": 160,
+    "columns": 4
+  }
+}
