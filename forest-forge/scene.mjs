@@ -340,7 +340,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const duration = healing ? 1.25 : critical ? 1.05 : .85;
       numbers.push({ xp, originX:xp?event.x:undefined, companion:xp?event.companion:undefined, healing, critical, drift: (++numberSequence % 2 ? -1 : 1) * (16 + numberSequence % 3 * 5), duration, tank:event.type==='tankHit', targetId: ['enemyHit','tankHit','heroRegen'].includes(event.type) ? null : event.targetId,
         text: xp ? '+'+compactNumber.format(event.value)+' XP' : event.blocked ? 'Block' : (event.type === 'kill' || event.type === 'heal' || event.type === 'heroRegen' ? '+' : '') + compactNumber.format(event.value),
-        color: xp ? '#d9a0ff' : critical ? '#ff535c' : healing ? '#88ff9c' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: duration, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
+        color: xp ? '#d9a0ff' : event.source==='lifesteal' ? '#ffa0a8' : critical ? '#ff535c' : healing ? '#88ff9c' : event.type === 'kill' ? '#ffeb73' : event.type === 'enemyHit' ? '#ffddd8' : '#fffbed', life: duration, reward: event.type === 'kill', coinIcon: event.type === 'kill' });
       if (event.type === 'kill' && event.hammers) numbers.push({ tank:event.type==='tankHit', targetId:event.targetId,
         text:'+' + event.hammers, color:'#c7efff', life:.8, reward:true, rewardRow:1, hammerIcon:true });
       if(event.type==='kill' && event.runes) numbers.push({targetId:event.targetId,text:'+1',color:'#e3b4ff',life:1.4,duration:1.4,reward:true,rewardRow:2,runeIcon:true});

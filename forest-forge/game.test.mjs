@@ -44,12 +44,12 @@ test('turtle runs farther ahead and keeps its world position across waves',()=>{
  assert.equal(s.companion.x,s.heroX-.13);
 });
 
-test('druid heals continuously every two seconds, caps at max health and resets on death',()=>{
+test('druid heals continuously every three seconds, caps at max health and resets on death',()=>{
  const s=freshGame();s.hp=1;s.phase='victory';s.phaseTime=100;
  s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1,regenClock:0};
- advance(s,1);assert.equal(s.hp,1);let events=advance(s,1);assert.equal(s.hp,3);
- events.push(...advance(s,16));assert.equal(s.hp,19);assert.equal(events.filter(e=>e.type==='heroRegen').length,9);
- events=advance(s,2);assert.equal(s.hp,20);assert.equal(events.find(e=>e.type==='heroRegen').value,1);
+ advance(s,2);assert.equal(s.hp,1);let events=advance(s,1);assert.equal(s.hp,4.5);
+ events.push(...advance(s,12));assert.equal(s.hp,18.5);assert.equal(events.filter(e=>e.type==='heroRegen').length,5);
+ events=advance(s,3);assert.equal(s.hp,20);assert.equal(events.find(e=>e.type==='heroRegen').value,1.5);
  s.phase='dead';s.phaseTime=10;s.hp=0;advance(s,2);assert.equal(s.hp,0);assert.equal(s.companion.regenClock,0);
 });
 
@@ -722,7 +722,7 @@ test('death lets survivors march past without attacking; restart and boss comple
 
 
 test('affixes share inclusive ranges',()=>{
- for(const [n,a] of AFFIXES.entries())for(const [roll,value] of [[0,a.min],[.999,a.max]]){
+ for(const [n,a] of AFFIXES.entries())for(const [roll,value] of [[0,a.min],[1.1/(Math.round((a.max-a.min)/.1)+1),Number((a.min+.1).toFixed(1))],[.999,a.max]]){
   const rolls=[(n+.1)/9,roll];assert.deepEqual(rollAffix(()=>rolls.shift()),{type:a.id,value});
  }
 });
@@ -798,7 +798,8 @@ test('regen uses max HP per second; block prevents damage; lifesteal uses actual
  s.equipment.chest.affix={type:'block',value:3};s.enemies[0].x=s.heroX+.115;s.enemies[0].damage=10;s.enemies[0].engaged=true;s.enemies[0].clock=1.09;
  const events=step(s,.02,()=>0);assert.equal(s.hp,50.5);assert.ok(events.some(e=>e.blocked));
  s.equipment.chest.affix={type:'lifesteal',value:3};s.equipment.weapon=candidate('weapon',1000);s.enemies[0].hp=2;s.heroClock=2;
- const before=s.hp;step(s,.01,()=>.999);assert.ok(Math.abs(s.hp-before-.06)<1e-8);
+ const before=s.hp;const heals=step(s,.01,()=>.999);assert.ok(Math.abs(s.hp-before-.06)<1e-8);
+ const heal=heals.find(e=>e.type==='heroRegen'&&e.source==='lifesteal');assert.ok(heal);assert.ok(Math.abs(heal.value-.06)<1e-8);
 });
 
 
@@ -819,7 +820,7 @@ test('keep-affix preferences default safely and survive reload without changing 
  assert.deepEqual(restore(JSON.stringify(loaded)).keepAffixes,['speed','damage']);
 });
 
-test('kept affixes override auto epoch and weapon filters for a paid batch after reload',()=>{
+test('auto epoch and weapon filters override kept affixes for a paid batch after reload',()=>{
  for(const filter of ['epoch','weapon']) {
   const s=freshGame();s.keepAffixes=['speed'];s.autoSellEpochs=filter==='epoch'?[1]:[];s.autoWeaponFilter=filter==='weapon'?'melee':'any';
   s.phase='dead';s.phaseTime=100;s.forgingAuto=true;s.forging=.01;
@@ -827,9 +828,9 @@ test('kept affixes override auto epoch and weapon filters for a paid batch after
   s.pending=candidate('helmet',1);
   s.forgingItems=[{...weapon,affix:{type:'speed',value:1}},{...weapon,affix:{type:'damage',value:3}},{...weapon}];
   const loaded=restore(JSON.stringify(s));const events=step(loaded,.1);
-  assert.equal(events.find(e=>e.type==='forged').soldCount,2);assert.equal(loaded.coins,2);
-  assert.equal(loaded.pending.slot,'helmet');assert.equal(loaded.results.length,1);assert.equal(loaded.results[0].affix.type,'speed');
-  step(loaded,.1);assert.equal(loaded.coins,2);
+  assert.equal(events.find(e=>e.type==='forged').soldCount,3);assert.equal(loaded.coins,3);
+  assert.equal(loaded.pending.slot,'helmet');assert.equal(loaded.results.length,0);
+  step(loaded,.1);assert.equal(loaded.coins,3);
  }
 });
 
@@ -1249,7 +1250,7 @@ test('enemy healer buff applies across biomes and refreshes saved healers',()=>{
   const s=wave(level,9),healer=s.enemies.find(e=>e.kind==='healer');healer.healing=1;
   const loaded=restore(JSON.stringify(s));assert.equal(loaded.enemies.find(e=>e.kind==='healer').healing,amount);
  }
- assert.equal(DRUID_LEVELS[0].healing,2);
+ assert.equal(DRUID_LEVELS[0].healing,3.5);
 });
 
 // Exercise the real campaign kill path; no separate XP-grant API.
@@ -1263,11 +1264,11 @@ test('kills grant base XP only to the active companion and can cross multiple le
   const events=step(s,1.3,()=>.999);
   assert.ok(events.some(e=>e.type==='kill'));assert.equal(s.coins,2343);
   assert.deepEqual(events.find(e=>e.type==='companionXp'),{type:'companionXp',value:2130,x:s.companion.x,companion:id});
-  assert.equal(s[id+'Level'],3);assert.equal(s.companionXp[id],1010);
+  assert.equal(s[id+'Level'],3);assert.equal(s.companionXp[id],482.5);
   for(const other of ['archer','druid','turtle'].filter(x=>x!==id)){assert.equal(s[other+'Level'],1);assert.equal(s.companionXp[other],0);}
   if(id==='turtle'){assert.equal(s.companion.hp,7);assert.equal(s.companion.maxHp,62);}
   const xp=s.companionXp[id];step(s,.01,()=>.999);assert.equal(s.companionXp[id],xp);
-  const loaded=restore(JSON.stringify(s));assert.equal(loaded[id+'Level'],3);assert.equal(loaded.companionXp[id],1010);
+  const loaded=restore(JSON.stringify(s));assert.equal(loaded[id+'Level'],3);assert.equal(loaded.companionXp[id],482.5);
  }
 });
 test('companion XP preserves old purchased levels and stops at level 100',()=>{
@@ -1276,8 +1277,8 @@ test('companion XP preserves old purchased levels and stops at level 100',()=>{
  const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidLevel=99;s.companionXp.druid=DRUID_LEVELS[98].xpRequired-1;
  const e=s.enemies[0];e.hp=1;e.x=s.heroX+.115;step(s,1.3,()=>.999);
  assert.equal(s.druidLevel,100);assert.equal(s.companionXp.druid,0);
- assert.deepEqual([0,1,9,29,49,69,98,99].map(i=>DRUID_LEVELS[i].xpRequired),[1000,1110,2560,20630,166280,1340560,27647250,0]);
- assert.equal(DRUID_LEVELS[29].healing,2064);assert.equal(ARCHER_LEVELS[29].damage,2890);assert.equal(TURTLE_LEVELS[29].hp,20643);
+ assert.deepEqual([0,1,9,29,49,69,98,99].map(i=>DRUID_LEVELS[i].xpRequired),[1000,1110,2560,20630,166280,1340560,27647250,0].map(x=>x*1.25));
+ assert.equal(DRUID_LEVELS[29].healing,3612);assert.equal(ARCHER_LEVELS[29].damage,2890);assert.equal(TURTLE_LEVELS[29].hp,20643);
 });
 
 test('keeping replaced equipment stores only displaced items and inventory survives reload',()=>{
@@ -1317,4 +1318,14 @@ test('inventory capacity blocks new storage but permits swaps and one expansion'
  assert.equal(restore(JSON.stringify(s)).inventoryCapacity,100);
  s.inventory=Array.from({length:100},()=>({...old}));s.pending={...old,value:30};assert.equal(equip(s),false);
  s.keepReplaced=false;assert.equal(equip(s),true);assert.equal(s.inventory.length,100);
+});
+
+test('inventory bulk sale keeps equal, stronger, affixed and unfilled slots; rings compare with weaker equipped',()=>{
+ const s=freshGame();s.equipment.weapon={value:10};s.equipment.ring1={value:20};s.equipment.ring2={value:30};
+ s.pending=candidate('weapon',1);const pending=s.pending;
+ s.inventory=[candidate('weapon',9),candidate('weapon',10),candidate('weapon',11),{...candidate('weapon',2),affix:{type:'speed',value:1}},candidate('helmet',1),candidate('ring',19),candidate('ring',20)];
+ const before=JSON.stringify(s);assert.deepEqual(sellWeaker(s,true,true,true),{count:2,coins:2});assert.equal(JSON.stringify(s),before);
+ assert.deepEqual(sellWeaker(s,false,true,true),{count:2,coins:2});assert.equal(s.inventory.length,5);assert.equal(s.pending,pending);assert.equal(s.coins,2);
+ assert.equal(sellWeaker(s,false,true,false).count,1);assert.equal(s.inventory.length,4);assert.equal(s.coins,3);
+ s.equipment.ring2=null;s.inventory.push(candidate('ring',1));assert.equal(sellWeaker(s,false,true,false).count,0);
 });

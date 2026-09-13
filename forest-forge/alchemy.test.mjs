@@ -1,3 +1,4 @@
+import { POTIONS, hireCompanion, heroPower } from './game.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {freshGame,restore,stats,step,alchemySkill,potionEffect,brewPotion,drinkPotion,reagentChances,idleLoot,idleReagents,collectIdleRewards,settleMine,rollReagent,enterDungeon,leaveDungeon} from './game.mjs';
 function supply(){const s=freshGame(1000);s.coins=1e6;s.alchemy.reagents.fill(10);return s;}
@@ -60,4 +61,26 @@ test('reagent drop is rare in all biomes, with fivefold boss odds',()=>{
   normal.forEach((p,i)=>{assert.ok(Math.abs(p-old[i]/500)<1e-12);assert.ok(Math.abs(boss[i]-p*5)<1e-12);});
  }
  assert.ok(Math.abs(reagentChances(1).reduce((a,b)=>a+b,0)-.010444)<1e-12);
+});
+
+test('companion XP potion has fixed five tiers and appends stock without shifting old potions',()=>{
+ const s=supply();s.alchemy.potions[24]=7;
+ for(let r=0;r<5;r++){assert.deepEqual(potionEffect(s,'companion-xp',r),{value:10+10*r,seconds:600});assert.ok(brewPotion(s,'companion-xp',r));assert.equal(s.alchemy.potions[25+r],1);}
+ s.alchemy.xp=25245;assert.deepEqual(potionEffect(s,'companion-xp',4),{value:50,seconds:600});
+ const old=structuredClone(s);old.alchemy.potions.length=25;
+ const loaded=restore(JSON.stringify(old),1000);assert.equal(loaded.alchemy.potions.length,POTIONS.length*5);assert.equal(loaded.alchemy.potions[24],7);assert.deepEqual(loaded.alchemy.potions.slice(25),[0,0,0,0,0]);
+});
+test('companion XP bonus preserves fractions across saves without affecting gold or hero power',()=>{
+ let s=supply();hireCompanion(s,'druid');s.alchemy.potions[25]=1;
+ const power=heroPower(s),heroStats=stats(s);assert.ok(drinkPotion(s,'companion-xp',0,1000));assert.equal(heroPower(s),power);assert.deepEqual(stats(s),heroStats);
+ assert.equal(drinkPotion(s,'companion-xp',0,1000),false);
+ for(let i=0;i<10;i++){
+  s.phase='fight';s.heroClock=10;s.targetId=null;s.companion={kind:'druid',x:s.heroX-.13,clock:0,actionAge:1,shot:null};const e=s.enemies[0];e.hp=1;e.x=s.heroX+.115;e.reward=1;e.damage=0;
+  const coins=s.coins;const events=step(s,1.3,()=>.999,1000);assert.ok(events.some(e=>e.type==='companionXp'&&e.value===1.1),JSON.stringify({i,events}));assert.equal(s.coins,coins+1);
+  s=restore(JSON.stringify(s),1000);s.enemies=freshGame(1000).enemies;
+ }
+ assert.equal(s.companionXp.druid,11);
+ const remaining=s.alchemy.active['companion-xp'].remaining;
+ const loaded=restore(JSON.stringify(s),86401000);assert.equal(loaded.alchemy.active['companion-xp'].remaining,remaining);
+ loaded.phase='fight';loaded.alchemy.active['companion-xp'].remaining=.01;step(loaded,1/30,()=>.999,86401000);assert.equal(loaded.alchemy.active['companion-xp'].remaining,0);
 });

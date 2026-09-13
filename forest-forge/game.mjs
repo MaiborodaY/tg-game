@@ -364,15 +364,15 @@ export const WAVES = [
 ];
 const KINDS = { W: 'warrior', A: 'archer', H: 'healer', B: 'boss' };
 export const AFFIXES = [
-  { id:'damage', name:'Damage', min:3, max:10, step:1 },
-  { id:'health', name:'Health', min:3, max:10, step:1 },
-  { id:'speed', name:'Attack speed', min:1, max:5, step:1 },
-  { id:'crit', name:'Critical chance', min:1, max:3, step:1 },
-  { id:'critDamage', name:'Critical damage', min:5, max:15, step:1 },
-  { id:'lifesteal', name:'Lifesteal', min:1, max:3, step:1 },
-  { id:'block', name:'Block chance', min:1, max:3, step:1 },
+  { id:'damage', name:'Damage', min:3, max:10, step:.1 },
+  { id:'health', name:'Health', min:3, max:10, step:.1 },
+  { id:'speed', name:'Attack speed', min:1, max:5, step:.1 },
+  { id:'crit', name:'Critical chance', min:1, max:3, step:.1 },
+  { id:'critDamage', name:'Critical damage', min:5, max:15, step:.1 },
+  { id:'lifesteal', name:'Lifesteal', min:1, max:3, step:.1 },
+  { id:'block', name:'Block chance', min:1, max:3, step:.1 },
   { id:'regen', name:'Health regen', min:.1, max:.5, step:.1 },
-  { id:'double', name:'Double strike', min:1, max:5, step:1 },
+  { id:'double', name:'Double strike', min:1, max:5, step:.1 },
 ];
 export const REFORGE_PRICES = [0,400,800,1600,3125,6250,12500,25000,50000,100000];
 export function rollAffix(rng = Math.random) {
@@ -420,6 +420,7 @@ export const POTIONS = [
  {id:'ore',name:'Prospector',label:'Ore production',base:[10,20,30,40,50]},
  {id:'coins',name:'Fortune',label:'Passive coins',base:[15,25,40,60,75]},
  {id:'hammers',name:'Industry',label:'Passive hammers',base:[10,15,25,35,50]},
+ {id:'companion-xp',name:'Companion XP',label:'Companion XP',base:[10,20,30,40,50],combat:true},
 ];
 export function alchemySkill(s) {
  let level=1,xp=s.alchemy?.xp||0;
@@ -428,6 +429,7 @@ export function alchemySkill(s) {
 }
 export function potionEffect(s,type,rarity) {
  const potion=POTIONS.find(p=>p.id===type);if(!potion||!Number.isInteger(rarity)||rarity<0||rarity>4)return null;
+ if(type==='companion-xp')return {value:potion.base[rarity],seconds:600};
  const t=(alchemySkill(s).level-1)/99;
  return {value:Math.round(potion.base[rarity]*(1+t)*100)/100,seconds:Math.round((potion.combat?600:1800)*(1+5*t))};
 }
@@ -498,12 +500,12 @@ export function enemyFor(level, kind = 'warrior') {
 }
 export const COMPANIONS = [
   {id:'archer',name:'Archer',role:'Ranged damage',description:'Fights from behind the hero'},
-  {id:'druid',name:'Druid',role:'Regeneration',description:'+2 HP every 2 sec'},
+  {id:'druid',name:'Druid',role:'Regeneration',description:'+3.5 HP every 3 sec'},
   {id:'turtle',name:'Turtle',role:'Defender',description:'Protects the hero until its shell breaks'},
 ];
 export const DRUID_LEVELS = Array.from({length:100},(_,i)=>({
-  healing:i===0?2:Math.round(5*1.24**(i-1)),
-  xpRequired:i===99?0:Math.ceil(1000*1.11**i/10-1e-8)*10
+  healing:(i===0?2:Math.round(5*1.24**(i-1)))*1.75,
+  xpRequired:i===99?0:Math.ceil(1000*1.11**i/10-1e-8)*10*1.25
 }));
 export const ARCHER_LEVELS = DRUID_LEVELS.map((level,i)=>({
   damage:i===0?3:Math.round(7*1.24**(i-1)),xpRequired:level.xpRequired
@@ -629,7 +631,7 @@ export function freshGame(now = Date.now()) {
     equipment: Object.fromEntries(SLOTS.map(slot => [slot, null])), pending: null, results: [], inventory: [], inventoryCapacity: 32, skipSellConfirm: false, keepReplaced: true, forgingItems: [], forging: 0, hammers: 15,
     workshop: {slots:Object.fromEntries(SLOTS.map(slot=>[slot,0])),coins:0,hammers:0,storage:0}, idleStore:{minutes:0,coins:0,hammers:0}, archerLevel: 1, druidLevel: 1, turtleLevel: 1, companionXp: {archer:0,druid:0,turtle:0}, autoForge: false, autoForgeCoins: 0, autoSellEpochs: [], autoWeaponFilter: 'any', keepAffixes: AFFIXES.map(a=>a.id), reforgeStop: [], forgingAuto: false, selectedBatch: 1, anvilLevel: 1, upgradeEndsAt: 0, idleSince: now,
     mastery: EPOCHS.map(() => ({ level: 1, xp: 0 })), lastEpoch: 1, kills: 0, deaths: 0, battleStats: {bosses:0,maxHit:0,maxCrit:0,coins:0,hammers:0,runes:0}, completed: false };
-  s.alchemy={xp:0,reagents:[0,0,0,0,0],potions:Array(25).fill(0),active:{},previous:{},pending:[0,0,0,0,0],idleMinutes:0,seed:Math.abs(Math.floor(now))%2147483647,oreRemainder:0};
+  s.alchemy={xp:0,reagents:[0,0,0,0,0],potions:Array(POTIONS.length*5).fill(0),active:{},previous:{},pending:[0,0,0,0,0],idleMinutes:0,seed:Math.abs(Math.floor(now))%2147483647,oreRemainder:0};
   s.mine = {version:2,stratum:null,level:1,ore:[0,0,0],pending:[0,0,0],bufferMinutes:0,remainder:0,lastAt:now,upgradeEndsAt:0};
   s.dungeons={day:Math.floor(now/86400000),wins:[0,0,0],cleared:[0,0,0],run:null,last:null};s.mount={owned:false,equipped:false};
   prepareEncounter(s); return s;
@@ -860,22 +862,22 @@ export function equipStronger(s, preview = false) {
   return selected.size;
 }
 // Only ready items are considered. Preview uses the same comparison as the sale.
-export function sellWeaker(s, preview = false) {
+export function sellWeaker(s, preview = false, inventory = false, keepAffixes = true) {
   let count = 0, coins = 0;
   const remaining = [];
-  for (const item of [s.pending, ...s.results]) {
+  for (const item of inventory ? s.inventory : [s.pending, ...s.results]) {
     if (!item) continue;
     const equipped = item.slot === 'ring'
       ? s.equipment.ring1 && s.equipment.ring2 && { value: Math.min(s.equipment.ring1.value, s.equipment.ring2.value) }
       : s.equipment[item.slot];
-    const protectedAffix = item.affix && s.keepAffixes.includes(item.affix.type);
-    if (equipped && item.value <= equipped.value && !protectedAffix) { count++; coins += item.sale; }
+    const protectedAffix = item.affix && (inventory ? keepAffixes : s.keepAffixes.includes(item.affix.type));
+    if (equipped && (inventory ? item.value < equipped.value : item.value <= equipped.value) && !protectedAffix) { count++; coins += item.sale; }
     else if (!preview) remaining.push(item);
   }
   if (!preview && count) {
     s.coins += coins;
-    s.pending = remaining.shift() ?? null;
-    s.results = remaining;
+    if(inventory)s.inventory=remaining;
+    else {s.pending = remaining.shift() ?? null;s.results = remaining;}
   }
   return { count, coins };
 }
@@ -941,7 +943,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       const count = s.forgingItems.length, item = s.forgingItems.at(-1);
       let soldCount = 0, soldCoins = 0;
       for (const forged of s.forgingItems) {
-        if (s.forgingAuto && (!forged.affix || !s.keepAffixes.includes(forged.affix.type)) && (s.autoSellEpochs.includes(forged.epoch) || forged.slot==='weapon' && WEAPONS[forged.weaponId] && (s.autoWeaponFilter==='melee' && WEAPONS[forged.weaponId].range>0 || s.autoWeaponFilter==='ranged' && !WEAPONS[forged.weaponId].range))) { soldCount++; soldCoins += forged.sale; }
+        if (s.forgingAuto && (s.autoSellEpochs.includes(forged.epoch) || forged.slot==='weapon' && WEAPONS[forged.weaponId] && (s.autoWeaponFilter==='melee' && WEAPONS[forged.weaponId].range>0 || s.autoWeaponFilter==='ranged' && !WEAPONS[forged.weaponId].range))) { soldCount++; soldCoins += forged.sale; }
         else s.results.push(forged);
       }
       s.autoForgeCoins += soldCoins;
@@ -960,7 +962,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
   if (s.completed) return events;
   if(s.alchemy && !['dead','victory','complete'].includes(s.phase)){
     const fraction=s.hp/stats(s).hp;let expired=false;
-    for(const type of ['damage','health']){const b=s.alchemy.active[type];if(b?.remaining>0){b.remaining=Math.max(0,b.remaining-dt);if(!b.remaining)expired=true;}}
+    for(const potion of POTIONS){if(!potion.combat)continue;const b=s.alchemy.active[potion.id];if(b?.remaining>0){b.remaining=Math.max(0,b.remaining-dt);if(!b.remaining)expired=true;}}
     if(expired){s.hp=fraction*stats(s).hp;events.push({type:'potionExpired'});}
   }
   const bonuses = affixBonuses(s), hero = stats(s), interval = HERO_ATTACK_INTERVAL / (1 + bonuses.speed/100);
@@ -971,8 +973,8 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     if(s.hp<=0 || s.phase==='dead')c.regenClock=0;
     else {
       c.regenClock=(c.regenClock||0)+dt;
-      while(c.regenClock>=2-1e-9){
-        c.regenClock=Math.max(0,c.regenClock-2);
+      while(c.regenClock>=3-1e-9){
+        c.regenClock=Math.max(0,c.regenClock-3);
         const value=Math.min(DRUID_LEVELS[s.druidLevel-1].healing,hero.hp-s.hp);
         s.hp+=value;
         if(value>0){c.healAge=0;c.actionAge=0;events.push({type:'heroRegen',value});}
@@ -1044,7 +1046,9 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       if(critical)s.battleStats.maxCrit=Math.max(s.battleStats.maxCrit,damage);
       const dealt = Math.min(target.hp,damage);
       target.hp = Math.max(0, target.hp - damage);
-      s.hp = Math.min(hero.hp,s.hp + dealt * bonuses.lifesteal/100);
+      const healed = Math.min(hero.hp-s.hp,dealt * bonuses.lifesteal/100);
+      s.hp += healed;
+      if(healed>0)events.push({type:'heroRegen',value:healed,source:'lifesteal'});
       events.push({ type: 'heroHit', value: damage, targetId: target.id, critical, extra });
       if (!extra && target.hp > 0 && bonuses.double > 0 && rng() < bonuses.double/100) s.doubleStrikeDelay = interval * .16;
     }
@@ -1086,8 +1090,10 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
     s.kills++; s.coins += coinReward;
     const companion=s.companion?.kind;
     if(companion && s[companion+'Level']<100){
-      s.companionXp[companion]+=target.reward;
-      events.push({type:'companionXp',value:target.reward,x:s.companion.x,companion});
+      const buff=s.alchemy?.active['companion-xp'];
+      const xp=target.reward*(1+(buff?.remaining>0?buff.value/100:0));
+      s.companionXp[companion]=Math.round((s.companionXp[companion]+xp)*10000)/10000;
+      events.push({type:'companionXp',value:xp,x:s.companion.x,companion});
       while(s[companion+'Level']<100 && s.companionXp[companion]>=DRUID_LEVELS[s[companion+'Level']-1].xpRequired){
         s.companionXp[companion]-=DRUID_LEVELS[s[companion+'Level']-1].xpRequired;
         s[companion+'Level']++;
@@ -1184,7 +1190,7 @@ export function restore(serialized, now = Date.now()) {
     s.mount={owned,equipped:owned&&s.mount.equipped===true};
     dungeonDay(s,now);
     const a=s.alchemy||{},counts=(v,n)=>Array.from({length:n},(_,i)=>bounded(v?.[i],1e9));
-    s.alchemy={xp:bounded(a.xp,25245),reagents:counts(a.reagents,5),potions:counts(a.potions,25),pending:counts(a.pending,5),idleMinutes:bounded(a.idleMinutes,1e12),seed:bounded(a.seed??Math.floor(s.idleSince||1),2147483647),oreRemainder:nonnegative(a.oreRemainder)&&a.oreRemainder<1?a.oreRemainder:0,active:{},previous:{}};
+    s.alchemy={xp:bounded(a.xp,25245),reagents:counts(a.reagents,5),potions:counts(a.potions,POTIONS.length*5),pending:counts(a.pending,5),idleMinutes:bounded(a.idleMinutes,1e12),seed:bounded(a.seed??Math.floor(s.idleSince||1),2147483647),oreRemainder:nonnegative(a.oreRemainder)&&a.oreRemainder<1?a.oreRemainder:0,active:{},previous:{}};
     for(const p of POTIONS){const b=a.active?.[p.id];if(b&&Number.isInteger(b.rarity)&&b.rarity>=0&&b.rarity<5&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&(p.combat?nonnegative(b.remaining)&&b.remaining<=3600:nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt&&b.endsAt-b.startsAt<=10800000))s.alchemy.active[p.id]={...b};}
     for(const p of POTIONS.filter(p=>!p.combat)){const b=a.previous?.[p.id];if(b&&nonnegative(b.value)&&b.value<=Math.max(...p.base)*2&&nonnegative(b.startsAt)&&nonnegative(b.endsAt)&&b.endsAt>=b.startsAt&&b.endsAt-b.startsAt<=10800000)s.alchemy.previous[p.id]={...b};}
     const workshop=s.workshop||{};
@@ -1194,7 +1200,7 @@ export function restore(serialized, now = Date.now()) {
     s.turtleLevel=Number.isInteger(s.turtleLevel)?Math.max(1,Math.min(100,s.turtleLevel)):1;
     s.archerLevel=Number.isInteger(s.archerLevel)?Math.max(1,Math.min(100,s.archerLevel)):1;
     s.druidLevel=Number.isInteger(s.druidLevel)?Math.max(1,Math.min(100,s.druidLevel)):1;
-    s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-1,Number.isSafeInteger(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
+    s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-.0001,Number.isFinite(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
     s.inventory=Array.isArray(s.inventory)?s.inventory.filter(item):[];
     s.keepReplaced=s.keepReplaced!==false;
     s.skipSellConfirm=s.skipSellConfirm===true;

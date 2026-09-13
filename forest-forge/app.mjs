@@ -5,7 +5,7 @@ import { idleLoot, idleRates, idleCapacity, workshopPrice, upgradeWorkshop, mine
 import { COMPANIONS, TURTLE_LEVELS, ARCHER_LEVELS, DRUID_LEVELS, hireCompanion, selectCompanion } from './game.mjs';
 import { mineResource, mineLevel, settleMine, collectMine, upgradeMine, sellOre } from './game.mjs';
 import { freshGame, restore, stats, heroPower, forgeCost, forge, equip, equipStronger, sell, sellWeaker, step, replay, batchSize, BATCH_OPTIONS, browseResults, upgradeAnvil, finishUpgrade, anvilSkipCost, skipAnvilUpgrade, idleRewards, collectIdleRewards, IDLE_REWARD_INTERVAL, IDLE_REWARD_CAP, ANVILS, AVAILABLE_EPOCHS, FORGE_CHANCES, EPOCHS, WEAPONS, ARMOR_SETS, SLOTS, DAMAGE_SLOTS, LABELS, SAVE_KEY, BIOMES, LEVELS_PER_BIOME, enemyFor } from './game.mjs';
-import { createScene } from './scene.mjs?v=companion-xp';
+import { createScene } from './scene.mjs?v=lifesteal-heal';
 import { affixBonuses, AFFIXES, reforge, reforgeCost, resolveReforge } from './game.mjs';
 import { DUNGEONS, dungeonDay, dungeonRewards, enterDungeon, leaveDungeon, sweepDungeon, claimMount, toggleMount } from './game.mjs';
 
@@ -158,7 +158,7 @@ function updateCompanions() {
     {
       const druid=id==='druid',turtle=id==='turtle',number=state[id+'Level'],levels=druid?DRUID_LEVELS:turtle?TURTLE_LEVELS:ARCHER_LEVELS;
       const level=levels[number-1],next=levels[number],name=druid?'Druid':turtle?'Turtle':'Archer';
-      const value=druid?level.healing:turtle?level.hp:level.damage,nextValue=next&&(druid?next.healing:turtle?next.hp:next.damage),unit=druid?'HP every 2 sec':turtle?'shell HP':'damage every 1 sec';
+      const value=druid?level.healing:turtle?level.hp:level.damage,nextValue=next&&(druid?next.healing:turtle?next.hp:next.damage),unit=druid?'HP every 3 sec':turtle?'shell HP':'damage every 1 sec';
       card.querySelector('h3').textContent=owned?`${name} · Lv. ${number}`:name;
       card.querySelector('p').textContent=`${druid?'+':''}${compact.format(value)} ${unit}${owned&&next?' → '+compact.format(nextValue):''}`;
       const progress=card.querySelector('.companion-xp');progress.hidden=!owned;
@@ -320,6 +320,18 @@ $('inventory-toggle').onclick=()=>{closeSheet();$('inventory-dialog').showModal(
 $('inventory-expand').onclick=()=>{$('inventory-expand-confirm').disabled=state.runes<20;$('inventory-expand-dialog').showModal();};
 for(const id of ['inventory-expand-close','inventory-expand-cancel'])$(id).onclick=()=>$('inventory-expand-dialog').close();
 $('inventory-expand-confirm').onclick=()=>{if(expandInventory(state)){save(true);$('inventory-expand-dialog').close();inventoryDisplay='';updateUI();}};
+$('inventory-keep-affixes').onchange=()=>{$('inventory-sell-all').onclick();};
+$('inventory-sell-all').onclick=()=>{
+ const {count,coins}=sellWeaker(state,true,true,$('inventory-keep-affixes').checked);
+ setText('inventory-sell-summary',count?`Sell ${count} weaker items from your inventory?`:'No weaker items to sell.');
+ setText('inventory-sell-price',coins);$('inventory-sell-confirm').disabled=!count;
+ if(!$('inventory-sell-dialog').open)$('inventory-sell-dialog').showModal();
+};
+for(const id of ['inventory-sell-close','inventory-sell-cancel'])$(id).onclick=()=>$('inventory-sell-dialog').close();
+$('inventory-sell-confirm').onclick=()=>{
+ sellWeaker(state,false,true,$('inventory-keep-affixes').checked);save(true);
+ $('inventory-sell-dialog').close();inventoryDisplay='';updateUI();
+};
 $('inventory-close').onclick=()=>$('inventory-dialog').close();
 $('inventory-item-close').onclick=()=>$('inventory-item-dialog').close();
 $('inventory-item-dialog').addEventListener('close',()=>{if(sheetSlot==='inventory')return;inventorySelected=null;inventoryDisplay='';updateInventory();});
@@ -1493,19 +1505,31 @@ function updateAlchemy(){
  const active=POTIONS.map(p=>{const b=a.active[p.id],remaining=b?(p.combat?b.remaining:(b.endsAt-now)/1000):0;return remaining>0?{p,b,remaining:Math.ceil(remaining)}:null;}).filter(Boolean);
  $('alchemy-toggle').classList.toggle('has-potion',active.length>0);
  if(!$('alchemy-dialog').open)return;
+ const activeRoot=$('alchemy-active');
+ const activeKey=JSON.stringify(active.map(({p,b})=>[p.id,b.value]));
+ if(activeRoot.dataset.key!==activeKey){
+ $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${b.value}% ${p.label}" aria-label="${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
+  activeRoot.dataset.key=activeKey;
+ }
+ active.forEach(({p,b,remaining},i)=>{
+  const button=activeRoot.children[i],timer=button.querySelector('span');
+  const text=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+  if(timer.textContent!==text)timer.textContent=text;
+  const label=`${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining`;
+  if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
+ });
  if(document.activeElement?.matches('#alchemy-recipes select'))return;
- const key=JSON.stringify([a.xp,a.reagents,a.potions,active,alchemyType,alchemyRarities,state.coins]);if(key===alchemyDisplay)return;alchemyDisplay=key;
+ const key=JSON.stringify([a.xp,a.reagents,a.potions,activeKey,alchemyType,alchemyRarities,state.coins,!!state.dungeons.run]);if(key===alchemyDisplay)return;alchemyDisplay=key;
  setText('alchemy-level',`Lv. ${skill.level}`);setText('alchemy-xp',skill.needed?`${skill.xp} / ${skill.needed} XP`:'MAX');$('alchemy-progress').max=skill.needed||1;$('alchemy-progress').value=skill.needed?skill.xp:1;
  $('alchemy-stocks').innerHTML=ALCHEMY_RARITIES.map((r,i)=>`<span title="${r.name}" aria-label="${r.name}: ${a.reagents[i]}">${reagentIcon(r.color)}<b>${compact.format(a.reagents[i])}</b></span>`).join('');
  // Keep the focused select/button while the real-time buff counter updates.
  const focused=document.activeElement,focusId=focused?.id;
  $('alchemy-recipes').innerHTML=POTIONS.map((p,index)=>{
   const rarity=alchemyRarities[p.id],r=ALCHEMY_RARITIES[rarity],effect=potionEffect(state,p.id,rarity),stock=a.potions[index*5+rarity],open=alchemyType===p.id,busy=active.some(x=>x.p.id===p.id);
-  const duration=`${Math.floor(effect.seconds/60)} min${effect.seconds%60?` ${effect.seconds%60}s`:''}`,label=({damage:'Damage',health:'Max HP',ore:'Ore production',coins:'Passive coins',hammers:'Passive hammers'})[p.id];
-  return `<article class="alchemy-entry ${open?'is-open':''}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${effect.value}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt="">${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-ingredients"><select id="alchemy-rarity-${p.id}" data-rarity="${p.id}" aria-label="${p.name} rarity">${ALCHEMY_RARITIES.map((v,i)=>`<option value="${i}" ${i===rarity?'selected':''}>${v.name}</option>`).join('')}</select><span title="Reagents owned / required" class="${a.reagents[rarity]?'':'missing'}">${reagentIcon(r.color)} ${a.reagents[rarity]} / 1</span></div><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Active':`Use ${stock}`}</button></div></div></article>`;
+  const duration=`${Math.floor(effect.seconds/60)} min${effect.seconds%60?` ${effect.seconds%60}s`:''}`,label=p.label;
+  return `<article class="alchemy-entry ${open?'is-open':''}"><button id="alchemy-row-${p.id}" class="alchemy-row" data-recipe="${p.id}" aria-expanded="${open}" aria-controls="alchemy-body-${p.id}"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt=""><span class="alchemy-row-copy"><strong>${p.name}</strong><small>+${effect.value}% ${label} for ${duration}${p.combat?' of battle':''}</small></span><span class="alchemy-stock" title="Ready at ${r.name} rarity"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp?v=2" alt="">${stock}</span><span class="alchemy-chevron" aria-hidden="true">${open?'⌄':'›'}</span></button><div id="alchemy-body-${p.id}" class="alchemy-body" ${open?'':'hidden'}><div class="alchemy-ingredients"><select id="alchemy-rarity-${p.id}" data-rarity="${p.id}" aria-label="${p.name} rarity">${ALCHEMY_RARITIES.map((v,i)=>`<option value="${i}" ${i===rarity?'selected':''}>${v.name}</option>`).join('')}</select><span title="Reagents owned / required" class="${a.reagents[rarity]?'':'missing'}">${reagentIcon(r.color)} ${a.reagents[rarity]} / 1</span></div><div class="alchemy-actions"><button id="alchemy-brew-${p.id}" data-brew="${p.id}" class="button blue" title="Instant brew · +${r.xp} XP" ${a.reagents[rarity]<1||state.coins<r.cost?'disabled':''}>Brew <i class="coin" aria-hidden="true"></i> ${r.cost.toLocaleString('en-US')}</button><button id="alchemy-use-${p.id}" data-use="${p.id}" class="button" ${!stock||busy||state.dungeons.run?'disabled':''}>${busy?'Active':'Use'}</button></div></div></article>`;
  }).join('');
  if(focusId&&focused?.closest('#alchemy-recipes'))$(focusId)?.focus({preventScroll:true});
- $('alchemy-active').innerHTML=active.map(({p,b,remaining})=>`<button type="button" data-active-potion="${p.id}" title="${p.name}: +${b.value}% ${p.label}" aria-label="${p.name}, +${b.value}% ${p.label}, ${Math.ceil(remaining/60)} min remaining"><img class="alchemy-item-art" src="assets/alchemy/${p.id}.webp" alt=""><span>${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</span></button>`).join('');
 }
 function openAlchemy(){if(!$('alchemy-dialog').open)$('alchemy-dialog').showModal();alchemyDisplay='';setText('alchemy-message','');updateAlchemy();}
 $('alchemy-toggle').onclick=openAlchemy;$('alchemy-close').onclick=()=>$('alchemy-dialog').close();
