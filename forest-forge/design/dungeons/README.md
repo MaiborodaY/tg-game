@@ -153,3 +153,16 @@ weapon rendering while the legs are hidden and the torso is raised onto the sadd
   to the hub; combat remains paused until the reveal finishes.
 
 These are local checks with isolated browser saves, not production gameplay tests.
+
+
+## Spore Grove / Sporemane (2026-09-14)
+
+Approved environment, header and boss concept generated with imagegen using the shipped mine/treasury banners and mine/forge bosses as style references. Source directory: C:/Users/Waldiris/.codex/generated_images/01a090b0-4ec2-7902-b960-a05abd44f255.
+- Background: exec-62ed2b94-d485-4858-83d7-63e948417df3.png, resized to 960x640 WebP.
+- Banner: exec-5b7d27b5-a622-4817-8a5d-5aaa40aab480.png, white margins trimmed, 960x213 WebP.
+- Boss: exec-0e38c192-e66e-4445-931d-89ed5bf6019f.png, transparent 256px preview.
+- Animation: exec-d29c82ca-6707-47cd-943b-7bee90cc76f7.png. One generated 4x2 sheet: four walk/idle poses then windup, punch, follow-through, recovery. Shared global 280px content scale using sprite-pipeline normalization; packed as 8x320 frames with foot anchor y=304. Thick outlines, moss/root body, violet fungi, amber pods; no scenery or effects baked into sprites.
+
+Gameplay: fourth shared-key dungeon; existing boss HP/damage curve. Every 14s, two-second warning followed by 1.5x strike and four seconds of 50% reduced hero healing. Stun delays the warning/attack cycle. Spore animation uses six cached frames, no persistent particle list.
+Rewards: 2 Common guaranteed; Uncommon chance rises 10% each floor to floor10; Rare rises across floors11-60; Epic61-120; Legendary121-200. Completed bonus tiers remain guaranteed; only the current extra reagent is rolled at victory or Sweep. Preview does not roll. No rewards for loss, leaving or reloading.
+Mount now requires floor10 in all four dungeons; previously earned mounts survive migration. Three-entry dungeon saves expand to four entries without resetting progress or spent keys.

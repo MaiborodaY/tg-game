@@ -1270,3 +1270,15 @@ input,select,textarea {font-family:inherit;}
 
 .dungeon-shared-keys{display:flex;align-items:center;gap:6px;align-self:flex-start;flex-shrink:0;margin:auto 0 9px 4px;font:20px "Lilita UI",sans-serif;color:var(--ink);}
 .dungeon-shared-keys svg{width:23px;height:23px;}
+
+.dungeon-bonus[hidden]{display:none;}
+.dungeon-rewards .dungeon-reagent-chance{font-size:15px;color:#745086;}
+#dungeon-rewards.reagent-rewards{display:block;padding:0;overflow:hidden;text-align:left;background:#e7eadd;}
+.reagent-guaranteed,.reagent-bonus{padding:9px 12px;}
+.reagent-rewards small{display:block;font-size:13px;line-height:1.2;color:#65716b;margin-bottom:6px;}
+.reagent-bonus{background:#f1eaf4;border-top:1px solid #dedce0;}
+.reagent-bonus small{color:#79558b;}
+.reagent-items{display:flex;flex-wrap:wrap;gap:7px 14px;}
+#dungeon-rewards .reagent-items span{justify-content:flex-start;font-size:18px;white-space:nowrap;}
+#dungeon-rewards .reagent-items img{width:24px;height:24px;}
+@media(max-width:350px){#dungeon-rewards .reagent-items span{font-size:16px;}.reagent-items{gap:6px 10px;}}

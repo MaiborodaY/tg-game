@@ -77,7 +77,7 @@ if(previewDungeons){
   state=freshGame();state.highest=20;state.coins=12000;state.hammers=200;
   const bases=[2,5,5,15,2,5,5,3,3,1,1,1];
   for(const [i,slot] of SLOTS.entries())state.equipment[slot]={slot,name:'Knight '+LABELS[slot],epoch:3,quality:0,itemLevel:1,value:bases[i]*100,sale:100,...(slot==='weapon'?{weaponId:'knight-sword'}:{})};
-  state.hp=stats(state).hp;state.dungeons.cleared=[9,9,9];state.hiredCompanions=['archer','druid','turtle'];state.selectedCompanion=requestedCompanion==='turtle'?'turtle':'druid';
+  state.hp=stats(state).hp;state.dungeons.cleared=[9,9,9,9];state.hiredCompanions=['archer','druid','turtle'];state.selectedCompanion=requestedCompanion==='turtle'?'turtle':'druid';
 }
 let savedTime = 0, uiTime = 0, frameCount = 0;
 let running = false, raf = 0, last = 0, accumulated = 0;
@@ -1371,7 +1371,7 @@ let scene;
 let selectedDungeon=0, dungeonFloor=1, displayedDungeon=null, dungeonStarting=false, dungeonHubOpen=false, dungeonActive=null, dungeonTransitioning=false;
 for(const [index,dungeon] of DUNGEONS.entries()){
   const card=document.createElement('article');card.className='dungeon-choice';card.style.setProperty('--dungeon-color',dungeon.color);
-  card.innerHTML=`<img src="assets/dungeons/${dungeon.id}-banner.webp" alt=""><h2>${dungeon.name}</h2><small class="dungeon-card-cleared"></small><span class="dungeon-card-resource">${index===0?'<i class="coin" aria-hidden="true"></i>':`<img src="assets/${index===1?'hammer.webp':'mine/stone-icon.webp'}" alt="${dungeon.resource}">`} ${dungeon.resource}</span><div class="dungeon-card-action"><button class="button blue" aria-label="Open ${dungeon.name}">Open</button></div>`;
+  card.innerHTML=`<img src="assets/dungeons/${dungeon.id}-banner.webp" alt=""><h2>${dungeon.name}</h2><small class="dungeon-card-cleared"></small><span class="dungeon-card-resource">${index===0?'<i class="coin" aria-hidden="true"></i>':`<img src="assets/${index===1?'hammer.webp':index===2?'mine/stone-icon.webp':'alchemy/reagent-1.webp'}" alt="${dungeon.resource}">`} ${dungeon.resource}</span><div class="dungeon-card-action"><button class="button blue" aria-label="Open ${dungeon.name}">Open</button></div>`;
   card.querySelector('button').onclick=()=>{selectedDungeon=index;dungeonFloor=Math.min(200,state.dungeons.cleared[index]+1);displayedDungeon=null;$('dungeons-dialog').showModal();updateDungeons();};
   $('dungeon-choices').append(card);
 }
@@ -1386,7 +1386,7 @@ function updateDungeons(){
     const d=DUNGEONS.find(d=>d.id===run.id),e=run.battle.enemies[0];
     setText('dungeon-location',d.name);setText('dungeon-depth',`Stage ${Math.floor((run.floor-1)/10)+1}–${(run.floor-1)%10+1}`);
     setText('dungeon-timer',`${Math.ceil(Math.max(0,90-run.battle.dungeonBattle.time))}s`);
-    setText('dungeon-status',e.shield?'Coin shield · damage reduced':e.charging?'Charging a heavy smash…':run.id==='mine'&&e.strength>1?`Fury · +${Math.round((e.strength-1)*100)}% damage`:d.mechanic);
+    setText('dungeon-status',run.battle.dungeonBattle.spores>0?'Spores · Healing −50%':run.id==='greenhouse'&&e.charging?'Spore burst incoming…':e.shield?'Coin shield · damage reduced':e.charging?'Charging a heavy smash…':run.id==='mine'&&e.strength>1?`Fury · +${Math.round((e.strength-1)*100)}% damage`:d.mechanic);
   }
   if(!$('dungeons-dialog').open&&!$('tier-rewards-dialog').open&&!dungeonHubOpen)return;
   const unlimited=localPreview&&$('test-unlimited-dungeons').checked;
@@ -1411,9 +1411,10 @@ function updateDungeons(){
   if($('dungeon-banner').getAttribute('src')!==banner)$('dungeon-banner').src=banner;
   bossArt.alt=d.boss;
   const rank=Math.floor((dungeonFloor-1)/50);
-  setText('dungeon-boss-name',d.boss);setText('dungeon-mechanic',selectedDungeon===0?`A coin shield blocks 65% damage every ${12-rank} seconds.`:selectedDungeon===1?`Charges for 2 seconds, then strikes for ${(2.6+rank*.2).toFixed(1)}× damage. The turtle can intercept it.`:`Gains 25% damage every ${20-rank*2} seconds. Finish it quickly.`);
+  setText('dungeon-boss-name',d.boss);setText('dungeon-mechanic',selectedDungeon===0?`A coin shield blocks 65% damage every ${12-rank} seconds.`:selectedDungeon===1?`Charges for 2 seconds, then strikes for ${(2.6+rank*.2).toFixed(1)}× damage. The turtle can intercept it.`:selectedDungeon===2?`Gains 25% damage every ${20-rank*2} seconds. Finish it quickly.`:'Every 14s, charges for 2s and strikes for 1.5× damage. Hero healing is reduced by 50% for 4s.');
   const loot=dungeonRewards(state,d.id,dungeonFloor);
-  $('dungeon-rewards').innerHTML=dungeonLootMarkup(loot);
+  $('dungeon-rewards').classList.toggle('reagent-rewards',!!loot.reagents);
+  $('dungeon-rewards').innerHTML=dungeonLootMarkup(loot,true);
   $('dungeon-fight').disabled=dungeonStarting||state.highest<2||(!unlimited&&keys<=0);
   setText('dungeon-fight',dungeonStarting?'Loading…':'Enter');
   $('dungeon-sweep').disabled=$('dungeon-fight').disabled||cleared<1;
@@ -1424,6 +1425,7 @@ function updateDungeons(){
   setText('dungeon-keys',unlimited?'∞':`${keys}/10`);
   $('dungeon-keys').parentElement.setAttribute('aria-label',unlimited?'Unlimited entries':`${keys} of 10 shared keys remaining`);
   setText('dungeon-sweep-info',cleared<1?'Sweep Last unlocks after your first victory.':`Sweep Last gives stage ${sweepStage} rewards instantly for one key.`);
+  $('dungeon-bonus').hidden=selectedDungeon===3;$('dungeon-bonus-description').hidden=selectedDungeon===3;
   const bonus=Math.floor(cleared/5),goal=Math.min(200,(bonus+1)*5);
   const bonusName=selectedDungeon===0?'coins from enemies':selectedDungeon===1?'hammer drop chance':'mine production';
   const increment=selectedDungeon===1?.25:1,nextStage=`${Math.floor((goal-1)/10)+1}–${(goal-1)%10+1}`;
@@ -1436,7 +1438,7 @@ function updateDungeons(){
   if(selectedDungeon!==0&&bonusIcon.getAttribute('src')!==bonusSource)bonusIcon.src=bonusSource;
   $('dungeon-bonus').setAttribute('aria-label',`Permanent: +${bonus*increment}${selectedDungeon===1?' percentage points':'%'} ${bonusName}${cleared<200?`. Next increase at ${nextStage}`:''}`);
   setText('dungeon-bonus-description',`Permanently increases ${bonusName} by ${increment}${selectedDungeon===1?' percentage points':'%'} every 5 stages.`);
-  const ready=state.dungeons.cleared.every(n=>n>=10),owned=state.mount.owned;
+  const ready=DUNGEONS.every((_,i)=>state.dungeons.cleared[i]>=10),owned=state.mount.owned;
   $('tier-rewards-toggle').classList.toggle('has-reward',ready&&!owned);
   $('tier-rewards-toggle').setAttribute('aria-label',ready&&!owned?'Tier rewards: reward available':'Tier rewards');
   $('mount-condition').hidden=ready||owned;
@@ -1446,10 +1448,17 @@ function updateDungeons(){
   const mins=Math.max(1,Math.ceil(((state.dungeons.day+1)*86400000-Date.now())/60000));
   setText('dungeon-reset',unlimited?'Unlimited entries · Victories advance progress.':`Keys refill in ${Math.floor(mins/60)}h ${mins%60}m · Leaving or reloading ends the fight.`);
 }
-function dungeonLootMarkup(loot){
+function dungeonLootMarkup(loot,detailed=false){
   if(!loot)return '';
+  if(detailed&&loot.reagents){
+    const guaranteed=loot.reagents.map((n,i)=>n?`<span><img src="assets/alchemy/reagent-${i}.webp" alt="">${n} ${ALCHEMY_RARITIES[i].name}</span>`:'').join('');
+    const bonus=loot.bonus;
+    return `<div class="reagent-guaranteed"><small>Guaranteed</small><div class="reagent-items">${guaranteed}</div></div>`+(bonus?`<div class="reagent-bonus"><small>Bonus · ${Number((bonus.chance*100).toFixed(2))}% chance</small><div class="reagent-items"><span><img src="assets/alchemy/reagent-${bonus.rarity}.webp" alt="">1 ${ALCHEMY_RARITIES[bonus.rarity].name}</span></div></div>`:'');
+  }
   return (loot.coins?`<span title="Coins"><i class="coin" aria-hidden="true"></i>${compact.format(loot.coins)}</span>`:'')+
     (loot.hammers?`<span title="Hammers"><img src="assets/hammer.webp" alt="Hammers">${compact.format(loot.hammers)}</span>`:'')+
+    (loot.reagents||[]).map((n,i)=>n?`<span title="${ALCHEMY_RARITIES[i].name} reagent"><img src="assets/alchemy/reagent-${i}.webp" alt="${ALCHEMY_RARITIES[i].name}">${n}</span>`:'').join('')+
+    (loot.bonus?`<span class="dungeon-reagent-chance" title="Chance for one extra ${ALCHEMY_RARITIES[loot.bonus.rarity].name} reagent"><img src="assets/alchemy/reagent-${loot.bonus.rarity}.webp" alt="${ALCHEMY_RARITIES[loot.bonus.rarity].name}">+1 · ${Number((loot.bonus.chance*100).toFixed(2))}%</span>`:'')+
     loot.ore.map((n,i)=>n?`<span title="${mineResource(i).name}"><img src="assets/mine/${mineResource(i).id==='crystal'?'crystal.svg':mineResource(i).id+'-icon.webp'}" alt="${mineResource(i).name}">${compact.format(n)}</span>`:'').join('');
 }
 function openDungeons(){
@@ -1549,7 +1558,8 @@ async function finishDungeonView(battle=null){
     const targets={
       coin:document.querySelector('.money > .coin').getBoundingClientRect(),
       hammer:document.querySelector('.hammer-balance > .hammer-icon').getBoundingClientRect(),
-      ore:$('mine-toggle').querySelector('img').getBoundingClientRect()
+      ore:$('mine-toggle').querySelector('img').getBoundingClientRect(),
+      reagent:$('alchemy-toggle').getBoundingClientRect()
     };
     openDungeons();state.dungeons.last=null;updateUI();save(true);
     await shade.animate([{opacity:1},{opacity:0}],{duration:reduced?0:220,fill:'forwards'}).finished;
@@ -1566,6 +1576,7 @@ async function finishDungeonView(battle=null){
         const resources=[
           {amount:loot.coins,kind:'coin',source:null,target:targets.coin,size:24},
           {amount:loot.hammers,kind:'hammer',source:'assets/hammer.webp',target:targets.hammer,size:32},
+          ...(loot.reagents||[]).map((amount,i)=>({amount,kind:'reagent',source:`assets/alchemy/reagent-${i}.webp`,target:targets.reagent,size:28})),
           ...loot.ore.map((amount,i)=>({amount,kind:'ore',source:`assets/mine/${mineResource(i).id==='crystal'?'crystal.svg':mineResource(i).id+'-icon.webp'}`,target:targets.ore,size:32}))
         ].filter(r=>r.amount>0);
         for(const [group,{amount,kind,source,target,size}] of resources.entries()){

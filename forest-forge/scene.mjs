@@ -115,7 +115,7 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
   async function prepareDungeon(id) {
     loading=true;
     try {
-      const sprite=new Image(),backdrop=new Image();sprite.src=`assets/dungeons/${id}-animation.webp`;backdrop.src=`assets/dungeons/${id}-banner.webp`;
+      const sprite=new Image(),backdrop=new Image();sprite.src=`assets/dungeons/${id}-animation.webp`;backdrop.src=`assets/dungeons/${id}-${id==='greenhouse'?'background':'banner'}.webp`;
       await Promise.all([sprite.decode(),backdrop.decode()]);
       dungeonTheme=DUNGEONS.find(d=>d.id===id);dungeonArt=sprite;dungeonBackdrop=backdrop;
       // Bake six frames per effect once, for the active boss only (1.125 MiB RGBA).
@@ -125,7 +125,14 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       for(let row=0;row<3;row++)for(let frame=0;frame<6;frame++){
         const t=frame/5,angle=frame*Math.PI/3;
         fx.save();fx.translate(frame*128,row*128);fx.beginPath();fx.rect(0,0,128,128);fx.clip();fx.lineCap='round';fx.lineJoin='round';
-        if(id==='treasury'){
+        if(id==='greenhouse'){
+          for(let i=0;i<12;i++){
+            const a=i*2.4,spread=row===0?22:48,r=spread*(.4+(i%4)/5),x=64+Math.cos(a)*r,y=64+Math.sin(a)*r-t*12;
+            fx.globalAlpha=row===0?.25+t*.5:.25+(i%3)*.12;fx.fillStyle=i%3?'#b28ddd':'#ecc467';
+            fx.beginPath();fx.ellipse(x,y,5+i%4,6+i%4,0,0,Math.PI*2);fx.fill();
+          }
+        }else if(id==='treasury'){
+
           if(row===0){
             const glow=fx.createRadialGradient(64,62,24,64,62,58);
             glow.addColorStop(0,'#ffdd6b06');glow.addColorStop(.7,'#ffc7410d');glow.addColorStop(.88,'#ffcb4d45');glow.addColorStop(1,'#ffe9a500');
@@ -212,12 +219,13 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
       const d=dungeonTheme,top=height*.585,bottom=height*.795,sceneWidth=width*2;
       c.fillStyle=d.ground;c.fillRect(0,0,sceneWidth,height);
       const cropWidth=Math.min(dungeonBackdrop.width,dungeonBackdrop.height*sceneWidth/top);
-      c.drawImage(dungeonBackdrop,(dungeonBackdrop.width-cropWidth)/2,0,cropWidth,dungeonBackdrop.height,0,0,sceneWidth,top);
+      c.drawImage(dungeonBackdrop,(dungeonBackdrop.width-cropWidth)/2,0,cropWidth,d.id==='greenhouse'?dungeonBackdrop.height*.59:dungeonBackdrop.height,0,0,sceneWidth,top);
       c.fillStyle='#111e2840';c.fillRect(0,0,sceneWidth,top);
       c.strokeStyle='#17282c';c.lineWidth=3;
       c.fillStyle=d.road;c.fillRect(0,top,sceneWidth,bottom-top);
       c.beginPath();c.moveTo(0,top);c.lineTo(sceneWidth,top);c.moveTo(0,bottom);c.lineTo(sceneWidth,bottom);c.stroke();
-      for(let i=0;i<14;i++){
+      if(d.id==='greenhouse'){c.drawImage(dungeonBackdrop,0,dungeonBackdrop.height*.8,dungeonBackdrop.width,dungeonBackdrop.height*.2,0,bottom,sceneWidth,height-bottom);c.fillStyle='#102b2540';c.fillRect(0,bottom,sceneWidth,height-bottom);}
+      for(let i=0;i<(d.id==='greenhouse'?0:14);i++){
         const x=((i*73+17)%397)/397*sceneWidth,y=height*(.86+(i%2)*.095);
         c.fillStyle=d.color;c.strokeStyle='#1b2a30';c.lineWidth=2;
         c.beginPath();
@@ -774,7 +782,10 @@ export async function createScene(canvas, previewSet = null, previewCompanion = 
         if(dungeonFx&&e.hp&&state.phase!=='dead'&&state.phase!=='victory'){
           const d=state.dungeonBattle,rank=Math.floor((d.floor-1)/50),still=reducedMotion.matches;
           context.save();
-          if(e.shield){
+          if(d.id==='greenhouse'){
+            if(e.charging){context.globalAlpha=.85;context.drawImage(dungeonFx,(still?3:Math.floor(time*8)%6)*128,0,128,128,x-size*.45,floor-size*1.1,size*.9,size*.9);}
+            if(d.spores>0){const left=(state.heroX-camera)*width,span=Math.max(size,x-left+size*.65);context.globalAlpha=Math.min(1,d.spores/.5);context.drawImage(dungeonFx,(still?2:Math.floor(time*6)%6)*128,128,128,128,left-size*.35,floor-size*.85,span,size);}
+          }else if(e.shield){
             const period=12-rank,age=d.time%period-(period-3-rank*.25),remaining=period-d.time%period;
             context.globalAlpha=still?.75:Math.min(1,age/.16,remaining/.2);
             context.drawImage(dungeonFx,(still?0:Math.floor(d.time*8)%6)*128,0,128,128,x-size*.56,floor-size*1.01,size*1.12,size*1.12);

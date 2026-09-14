@@ -23,14 +23,14 @@ test('dungeons share ten daily keys across victories and sweeps and refill witho
  const locked=freshGame(now);assert.equal(enterDungeon(locked,'treasury',1,now),false);
  const s=hero();for(const floor of [0,2,201,NaN])assert.equal(enterDungeon(s,'treasury',floor,now),false);
  win(s);win(s,'treasury',2);win(s,'forge');win(s,'mine');
- assert.deepEqual(s.dungeons.wins,[2,1,1]);assert.deepEqual(s.dungeons.cleared,[2,1,1]);
- const legacy=restore(JSON.stringify(s),now);assert.deepEqual(legacy.dungeons.wins,[2,1,1]);
+ assert.deepEqual(s.dungeons.wins,[2,1,1,0]);assert.deepEqual(s.dungeons.cleared,[2,1,1,0]);
+ const legacy=restore(JSON.stringify(s),now);assert.deepEqual(legacy.dungeons.wins,[2,1,1,0]);
  for(let i=0;i<6;i++)assert.equal(sweepDungeon(s,'treasury',now,()=>.999),true);
- assert.deepEqual(s.dungeons.wins,[8,1,1]);
+ assert.deepEqual(s.dungeons.wins,[8,1,1,0]);
  for(const id of ['treasury','forge','mine']){assert.equal(sweepDungeon(s,id,now),false);assert.equal(enterDungeon(s,id,1,now),false);}
  const saved=restore(JSON.stringify(s),now);assert.deepEqual(saved.dungeons,s.dungeons);
- dungeonDay(saved,now-day);assert.deepEqual(saved.dungeons.wins,[8,1,1]);
- dungeonDay(saved,now+day*3);assert.deepEqual(saved.dungeons.wins,[0,0,0]);assert.deepEqual(saved.dungeons.cleared,[2,1,1]);
+ dungeonDay(saved,now-day);assert.deepEqual(saved.dungeons.wins,[8,1,1,0]);
+ dungeonDay(saved,now+day*3);assert.deepEqual(saved.dungeons.wins,[0,0,0,0]);assert.deepEqual(saved.dungeons.cleared,[2,1,1,0]);
 });
 
 test('a victory pays once and leaves the campaign fight and paid forge intact',()=>{
@@ -100,14 +100,14 @@ test('loss, timeout, leaving and reload never consume a win or move the campaign
     if(outcome==='timeout'){s.dungeons.run.battle.equipment.weapon.value=0;s.dungeons.run.battle.equipment.gloves=null;s.dungeons.run.battle.equipment.necklace=null;s.dungeons.run.battle.equipment.ring1=null;s.dungeons.run.battle.equipment.ring2=null;s.dungeons.run.battle.equipment.chest.value=1e20;s.dungeons.run.battle.hp=1e20;finish(s);}
     if(outcome==='left')leaveDungeon(s);
     if(outcome==='interrupted')s=restore(JSON.stringify(s),now);
-    assert.equal(s.dungeons.last.outcome,outcome);assert.deepEqual(s.dungeons.wins,[0,0,0]);
+    assert.equal(s.dungeons.last.outcome,outcome);assert.deepEqual(s.dungeons.wins,[0,0,0,0]);
     assert.equal(s.level,20);assert.equal(s.encounter,7);assert.equal(s.coins,0);assert.equal(s.deaths,0);
   }
 });
 
-test('first mount requires all three tens, adds stats once and preserves injured health proportion',()=>{
-  const s=hero();s.dungeons.cleared=[10,10,9];assert.equal(claimMount(s),false);
-  s.dungeons.cleared[2]=10;const before=stats(s);s.hp=before.hp/2;
+test('first mount requires all four tens, adds stats once and preserves injured health proportion',()=>{
+  const s=hero();s.dungeons.cleared=[10,10,10,9];assert.equal(claimMount(s),false);
+  s.dungeons.cleared[3]=10;const before=stats(s);s.hp=before.hp/2;
   assert.equal(claimMount(s),true);assert.equal(claimMount(s),false);
   assert.equal(stats(s).damage,Math.round(before.damage*1.2));assert.equal(s.hp,stats(s).hp/2);
   const saved=restore(JSON.stringify(s),now);assert.deepEqual(saved.mount,{owned:true,equipped:true});
@@ -115,7 +115,7 @@ test('first mount requires all three tens, adds stats once and preserves injured
 });
 
 test('treasury shields reduce hits, forge telegraphs one smash, and crystal fury ramps',()=>{
-  const s=hero();s.dungeons.cleared=[199,199,199];enterDungeon(s,'treasury',10,now);
+  const s=hero();s.dungeons.cleared=[199,199,199,199];enterDungeon(s,'treasury',10,now);
   const b=s.dungeons.run.battle,e=b.enemies[0];e.x=b.heroX+.115;e.engaged=true;b.phase='fight';b.targetId=0;b.heroClock=1.99;
   b.dungeonBattle.time=9;const shieldHit=step(b,.02,()=>.999,now).find(e=>e.type==='heroHit');
   assert.ok(e.shield);assert.equal(shieldHit.value,Math.round(stats(b).damage*.35));
@@ -183,7 +183,7 @@ test('all 200 floors grow from 300 HP / 20 damage; stronger gear and affixes are
       const s=hero(epoch,itemLevel);s.dungeons.cleared=[9,9,9];enterDungeon(s,id,10,now);finish(s);
       assert.equal(s.dungeons.last.outcome,epoch===4?'won':'lost');
     }
-    const end=hero(10,100);end.dungeons.cleared=[199,199,199];claimMount(end);
+    const end=hero(10,100);end.dungeons.cleared=[199,199,199,199];claimMount(end);
     for(const [i,slot] of SLOTS.entries()){end.workshop.slots[slot]=100;end.equipment[slot].affix=i%2?{type:'speed',value:10}:{type:'meleeDamage',value:40};}end.equipment.weapon.weaponId='club';
     enterDungeon(end,id,200,now);assert.ok(finish(end)<90);assert.equal(end.dungeons.last.outcome,'lost');
   }
@@ -226,4 +226,52 @@ test('a 19-damage, 157-HP melee hero cannot survive the stronger entrance bosses
 test('unlimited local runs advance progress without consuming shared keys',()=>{
  const s=hero();s.dungeons.wins=[10,0,0];assert.ok(enterDungeon(s,'mine',1,now,true));s.dungeons.run.battle.equipment.weapon.value=1e20;finish(s);assert.equal(s.dungeons.last.outcome,'won');assert.equal(s.dungeons.cleared[2],1);assert.deepEqual(s.dungeons.wins,[10,0,0]);
  assert.ok(sweepDungeon(s,'mine',now,()=>.999,true));assert.deepEqual(s.dungeons.wins,[10,0,0]);
+});
+
+test('greenhouse rewards improve on all 200 floors and bonus rolls never replace guaranteed reagents',()=>{
+ const s=hero();let previous=0,guaranteed=[0,0,0,0,0];
+ for(let floor=1;floor<=200;floor++){
+  const preview=dungeonRewards(s,'greenhouse',floor),miss=dungeonRewards(s,'greenhouse',floor,()=>.999999),hit=dungeonRewards(s,'greenhouse',floor,()=>0);
+  assert.deepEqual(miss.reagents,preview.reagents);assert.equal(miss.bonus,undefined);assert.equal(hit.bonus,undefined);
+  const weights=[1,3,10,30,100],value=preview.reagents.reduce((a,n,i)=>a+n*weights[i],0)+(preview.bonus?preview.bonus.chance*weights[preview.bonus.rarity]:0);
+  assert.ok(value>previous);previous=value;preview.reagents.forEach((n,i)=>assert.ok(n>=guaranteed[i]));guaranteed=preview.reagents;
+  assert.equal(hit.reagents.reduce((a,n)=>a+n,0)-miss.reagents.reduce((a,n)=>a+n,0),preview.bonus?1:0);
+ }
+ assert.deepEqual(dungeonRewards(s,'greenhouse',1).bonus,{rarity:1,chance:.1});
+ assert.deepEqual(dungeonRewards(s,'greenhouse',10).reagents,[2,1,0,0,0]);
+ assert.deepEqual(dungeonRewards(s,'greenhouse',200).reagents,[2,1,1,1,1]);
+});
+test('greenhouse victory and Sweep pay actual reagents once and share keys with other dungeons',()=>{
+ for(const roll of [0,.999]){
+  const s=hero();s.dungeons.cleared[3]=10;const before=[...s.alchemy.reagents];assert.ok(enterDungeon(s,'greenhouse',11,now));s.dungeons.run.battle.equipment.weapon.value=1e20;
+  while(s.dungeons.run)step(s,1/30,()=>roll,now);
+  assert.equal(s.dungeons.last.outcome,'won');const reward=s.dungeons.last.rewards;assert.equal(reward.bonus,undefined);
+  assert.deepEqual(s.alchemy.reagents,before.map((n,i)=>n+reward.reagents[i]));assert.equal(s.dungeons.wins[3],1);
+  assert.ok(sweepDungeon(s,'greenhouse',now,()=>roll));assert.deepEqual(s.alchemy.reagents,before.map((n,i)=>n+2*reward.reagents[i]));assert.equal(s.dungeons.wins[3],2);
+  s.dungeons.wins=[8,0,0,2];assert.equal(sweepDungeon(s,'greenhouse',now),false);assert.equal(enterDungeon(s,'treasury',1,now),false);
+  assert.deepEqual(restore(JSON.stringify(s),now).alchemy.reagents,s.alchemy.reagents);
+ }
+});
+test('legacy dungeon progress and earned mount survive adding greenhouse, but new mounts need all four',()=>{
+ const s=hero();s.dungeons.cleared=[10,11,12];s.dungeons.wins=[2,1,0];s.mount={owned:true,equipped:true};
+ const saved=restore(JSON.stringify(s),now);assert.deepEqual(saved.dungeons.cleared,[10,11,12,0]);assert.deepEqual(saved.dungeons.wins,[2,1,0,0]);assert.deepEqual(saved.mount,s.mount);
+ saved.mount={owned:false,equipped:false};assert.equal(claimMount(saved),false);saved.dungeons.cleared[3]=10;assert.equal(claimMount(saved),true);
+});
+test('Sporemane warns before a 1.5x burst and halves hero healing for four seconds',()=>{
+ const s=hero();assert.ok(enterDungeon(s,'greenhouse',1,now));const b=s.dungeons.run.battle,e=b.enemies[0];
+ b.phase='fight';b.heroClock=0;b.targetId=0;b.companionAuto=false;e.x=b.heroX+.115;e.engaged=true;e.hp=e.maxHp=1e9;
+ b.dungeonBattle.time=12;step(b,.01,()=>.999,now);assert.equal(e.charging,true);
+ b.dungeonBattle.time=13.99;const burst=step(b,.02,()=>.999,now);assert.ok(burst.some(x=>x.type==='sporeBurst'));assert.equal(burst.find(x=>x.type==='enemyHit').value,e.baseDamage*1.5);assert.equal(b.dungeonBattle.spores,4);
+ const affected=structuredClone(b),normal=structuredClone(b);for(const state of [affected,normal]){state.phase='victory';state.phaseTime=100;state.hp=1;state.equipment.chest.affix={type:'regen',value:1};}normal.dungeonBattle.spores=0;
+ step(affected,.1,()=>.999,now);step(normal,.1,()=>.999,now);assert.ok(Math.abs((affected.hp-1)*2-(normal.hp-1))<1e-8);
+ step(affected,4,()=>.999,now);assert.equal(affected.dungeonBattle.spores,0);
+});
+
+test('greenhouse loss and interrupted runs give no reagents and consume no keys',()=>{
+ for(const outcome of ['lost','left','reload']){
+  let s=hero();const reagents=[...s.alchemy.reagents];enterDungeon(s,'greenhouse',1,now);
+  if(outcome==='lost'){s.dungeons.run.battle.hp=.1;s.dungeons.run.battle.equipment.weapon.value=0;finish(s);}
+  else if(outcome==='left')leaveDungeon(s);else s=restore(JSON.stringify(s),now);
+  assert.equal(s.dungeons.run,null);assert.deepEqual(s.alchemy.reagents,reagents);assert.deepEqual(s.dungeons.wins,[0,0,0,0]);assert.equal(s.dungeons.cleared[3],0);
+ }
 });
