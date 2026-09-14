@@ -692,8 +692,8 @@ export function dungeonBoss(id,floor) {
   const entry=DUNGEONS.find(d=>d.id===id);
   if(!entry||!Number.isInteger(floor)||floor<1||floor>200)return null;
   const power=floor<=10?[.8,2.1,4.5,9,18,32,55,85,135,220][floor-1]:220*1e8**((floor-10)/190);
-  // Rebase every floor on 300 HP / 4 damage, preserving progression ratios.
-  const damage=Math.round((floor<=10?[3,4,6,8,12,18,26,36,50,62][floor-1]:.28*power)*4/3);
+  // Keep the health curve and multiply every boss's previous damage by five.
+  const damage=5*Math.round((floor<=10?[3,4,6,8,12,18,26,36,50,62][floor-1]:.28*power)*4/3);
   return {kind:'boss',boss:true,name:entry.boss,maxHp:Math.round(375*power),damage,healing:0,reward:0};
 }
 export function dungeonRewards(s,id,floor) {
@@ -704,14 +704,13 @@ export function dungeonRewards(s,id,floor) {
   const tier=Math.floor((floor-1)/10),stage=(floor-1)%10;
   const ore=Array(Math.max(s.mine.ore.length,index===2?Math.min(MINE_RESOURCES.length,tier+2):0)).fill(0);
   if(index===2){
-    const total=Math.round(24*1.005**(floor-1));
-    if(tier===0){ore[1]=Math.round(total*(.1+stage/30));ore[0]=total-ore[1];}
-    else {
-      // Later stages introduce the next material while retaining the previous one.
-      const next=Math.max(0,stage-4)*.04;
-      ore[tier-1]=Math.round(total*(.4-next));ore[tier]=total-ore[tier-1];
-      if(tier+1<MINE_RESOURCES.length){ore[tier+1]=Math.round(total*next);ore[tier]-=ore[tier+1];}
-    }
+    // Smoothly replace older ore; sale value tracks 125% of the gold dungeon reward.
+    const lower=Math.min(MINE_RESOURCES.length-1,Math.floor(floor/10)),upper=Math.min(MINE_RESOURCES.length-1,lower+1);
+    const share=lower===upper?0:(floor%10)/10;
+    const budget=COMBAT[floor-1].boss_coins*6*1.25;
+    const total=Math.floor(budget/(mineResource(lower).price*(1-share)+mineResource(upper).price*share));
+    const newer=Math.floor(total*share);
+    ore[lower]=total-newer;if(newer)ore[upper]=newer;
   }
   return {coins,hammers,ore};
 }

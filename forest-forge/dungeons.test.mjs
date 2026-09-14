@@ -61,11 +61,15 @@ test('dungeon ore mixes evolve through stages and pay the same amounts at every 
   for(const level of [1,6,96]){
     s.mine.level=level;
     for(const [floor,expected] of [
-      [1,[[0,22],[1,2]]], [10,[[0,15],[1,10]]],
-      [11,[[0,10],[1,15]]], [15,[[0,10],[1,16]]],
-      [16,[[0,9],[1,16],[2,1]]], [20,[[0,5],[1,16],[2,5]]],
-      [21,[[1,11],[2,16]]], [30,[[1,6],[2,16],[3,6]]],
-      [200,[[18,13],[19,52]]],
+      [1,[[0,54],[1,6]]],
+      [10,[[1,131]]],
+      [11,[[1,116],[2,12]]],
+      [15,[[1,59],[2,59]]],
+      [16,[[1,47],[2,69]]],
+      [20,[[2,112]]],
+      [21,[[2,99],[3,10]]],
+      [30,[[3,95]]],
+      [200,[[19,271]]],
     ]){
       const loot=dungeonRewards(s,'mine',floor);
       assert.equal(loot.coins,0);assert.equal(loot.hammers,0);
@@ -170,10 +174,10 @@ test('five-floor enemy loot milestones apply to the actual kill and event amount
   }
 });
 
-test('all 200 floors grow from 300 HP / 4 damage; stronger gear and affixes are needed to progress',()=>{
+test('all 200 floors grow from 300 HP / 20 damage; stronger gear and affixes are needed to progress',()=>{
   for(const id of ['treasury','forge','mine']){
     let previous=0;
-    for(let floor=1;floor<=200;floor++){const b=dungeonBoss(id,floor);assert.ok(b.maxHp>previous);previous=b.maxHp;}
+    for(let floor=1;floor<=200;floor++){const b=dungeonBoss(id,floor);assert.ok(b.maxHp>previous);previous=b.maxHp;if(floor===1)assert.equal(b.damage,20);if(floor===13)assert.equal(b.damage,550);}
     const early=hero(1);early.equipment.weapon.weaponId='slingshot';assert.ok(enterDungeon(early,id,1,now));assert.ok(finish(early)<90);assert.equal(early.dungeons.last.outcome,'lost');
     for(const [epoch,itemLevel] of [[2,1],[3,5],[4,1]]){
       const s=hero(epoch,itemLevel);s.dungeons.cleared=[9,9,9];enterDungeon(s,id,10,now);finish(s);
@@ -181,7 +185,7 @@ test('all 200 floors grow from 300 HP / 4 damage; stronger gear and affixes are 
     }
     const end=hero(10,100);end.dungeons.cleared=[199,199,199];claimMount(end);
     for(const [i,slot] of SLOTS.entries()){end.workshop.slots[slot]=100;end.equipment[slot].affix=i%2?{type:'speed',value:10}:{type:'meleeDamage',value:40};}end.equipment.weapon.weaponId='club';
-    enterDungeon(end,id,200,now);assert.ok(finish(end)<90);assert.equal(end.dungeons.last.outcome,'won');
+    enterDungeon(end,id,200,now);assert.ok(finish(end)<90);assert.equal(end.dungeons.last.outcome,'lost');
   }
 });
 
@@ -200,23 +204,23 @@ test('the first stage defeats a 9-damage, 65-HP hero even with a trained level-o
   }
 });
 
-test('a 19-damage, 157-HP melee hero narrowly clears entrance but cannot skip progression',()=>{
+test('a 19-damage, 157-HP melee hero cannot survive the stronger entrance bosses',()=>{
  for(const id of ['treasury','forge','mine'])for(const floor of [1,2]){
   const s=freshGame(now);s.highest=2;s.equipment.weapon={slot:'weapon',value:17};s.equipment.chest={slot:'chest',value:137};s.dungeons.cleared=[floor-1,floor-1,floor-1];s.hp=stats(s).hp;
-  enterDungeon(s,id,floor,now);const b=s.dungeons.run.battle,seconds=finish(s);
-  assert.equal(s.dungeons.last.outcome,floor===1?'won':'lost');if(floor===1){assert.ok(seconds>30&&seconds<50);assert.ok(b.hp>0&&b.hp<40);}
+  enterDungeon(s,id,floor,now);const seconds=finish(s);
+  assert.equal(s.dungeons.last.outcome,'lost');assert.ok(seconds<30);
  }
 });
 
- test('ore rewards stay supplementary and sell for less than treasury rewards on all floors',async()=>{
+ test('ore rewards improve every floor and stay within the allowed 150 percent gold value',async()=>{
   const {mineResource}=await import('./game.mjs');const s=freshGame(now);let previous=0;
   for(let floor=1;floor<=200;floor++){
    const ore=dungeonRewards(s,'mine',floor).ore,total=ore.reduce((a,b)=>a+b,0),sale=ore.reduce((a,b,i)=>a+b*mineResource(i).price,0);
-   assert.ok(ore.every(n=>Number.isSafeInteger(n)&&n>=0));assert.ok(total>=previous);previous=total;
-   assert.ok(sale<dungeonRewards(s,'treasury',floor).coins,`floor ${floor}`);
+   assert.ok(ore.every(n=>Number.isSafeInteger(n)&&n>=0));assert.ok(sale>previous,`floor ${floor} must improve`);previous=sale;
+   assert.ok(sale<=dungeonRewards(s,'treasury',floor).coins*1.5,`floor ${floor}`);assert.ok(sale>=dungeonRewards(s,'treasury',floor).coins,`floor ${floor}`);
   }
-  assert.equal(dungeonRewards(s,'mine',1).ore.reduce((a,b)=>a+b,0),24);
-  assert.equal(dungeonRewards(s,'mine',200).ore.reduce((a,b)=>a+b,0),65);
+  assert.equal(dungeonRewards(s,'mine',1).ore.reduce((a,b)=>a+b,0),60);
+  assert.equal(dungeonRewards(s,'mine',200).ore.reduce((a,b)=>a+b,0),271);
  });
 
 test('unlimited local runs advance progress without consuming shared keys',()=>{
