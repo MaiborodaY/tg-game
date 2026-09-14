@@ -127,10 +127,10 @@ test('druid overheal shield absorbs damage, Oak Skin reduces damage, and roots p
  s.druidTalents.roots=10;s.hp=stats(s).hp*.5;s.hiredCompanions.push('archer');selectCompanion(s,'archer');prepareEncounter(s);assert.equal(s.hp/stats(s).hp,.5);
 });
 test('druid active healing includes fractional duration ranks and Bloom damages only from real healing',()=>{
- const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidTalents={touch:1,regrowth:1,spring:10,sap:10};s.hp=1;s.phase='victory';s.phaseTime=100;
- s.druidCombat.regrowth=6.6;s.druidCombat.regrowthCooldown=18;
- const events=advance(s,6.6);const healed=events.filter(e=>e.type==='heroRegen').reduce((sum,e)=>sum+e.value,0);
- assert.ok(Math.abs(healed-(3.5*2+3.5*.1*1.2*6.6))<1e-8);
+ const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidTalents={touch:1,regrowth:1,spring:1,sap:10};s.hp=1;s.phase='victory';s.phaseTime=100;
+ s.druidCombat.regrowth=5.5;s.druidCombat.regrowthCooldown=20;
+ const events=advance(s,5.5);const healed=events.filter(e=>e.type==='heroRegen').reduce((sum,e)=>sum+e.value,0);
+ assert.ok(Math.abs(healed-(3.5+3.5*.3*1.2*5.5))<1e-8);
  s.druidTalents={touch:1,bloom:1};s.druidCombat.bloom=2;s.druidCombat.bloomClock=0;s.druidCombat.regrowth=0;s.hp=10;
  s.phase='fight';s.targetId=0;s.heroClock=0;s.enemies[0].x=s.heroX+.115;s.enemies[0].hp=s.enemies[0].maxHp=100;s.enemies[0].damage=0;
  const bloomEvents=advance(s,1);assert.equal(bloomEvents.filter(e=>e.type==='companionHit').length,1);assert.ok(Math.abs(bloomEvents.find(e=>e.type==='companionHit').value-.35)<1e-8);
@@ -1683,4 +1683,12 @@ test('turtle abilities and stun work in dungeons, and Fortress cannot be cast wh
  const b=s.dungeons.run.battle;b.phase='fight';b.companion.x=.4;b.enemies[0].x=.6;b.enemies[0].clock=1.09;b.enemies[0].engaged=true;
  assert.equal(castCompanionSkill(s,'slam')?.skill,'slam');step(s,.01,()=>.999);assert.ok(b.enemies[0].stun>0);const skillTime=b.dungeonBattle.time-(b.dungeonBattle.stunDelay||0);step(s,.2,()=>.999);assert.ok(Math.abs(b.dungeonBattle.time-b.dungeonBattle.stunDelay-skillTime)<1e-8);
  b.companion.hp=0;assert.equal(castCompanionSkill(s,'fortress'),null);assert.ok(s.turtleCombat.slamCooldown>0);leaveDungeon(s);assert.ok(s.turtleCombat.slamCooldown>0);
+});
+
+test('Regrowth lasts 5 to 10 seconds with Long Spring and preserves its 20 second cooldown on reload',()=>{
+ for(const rank of [0,1,10]){
+  const s=freshGame();s.coins=500;hireCompanion(s,'druid');s.druidLevel=100;s.druidTalents={touch:1,regrowth:1,spring:rank};s.phase='fight';s.companionAuto=false;
+  assert.ok(castCompanionSkill(s,'regrowth'));assert.equal(s.druidCombat.regrowth,5+rank*.5);assert.equal(s.druidCombat.regrowthCooldown,20);
+  const saved=restore(JSON.stringify(s));assert.equal(saved.druidCombat.regrowth,5+rank*.5);assert.equal(saved.druidCombat.regrowthCooldown,20);
+ }
 });

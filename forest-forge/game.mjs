@@ -536,10 +536,10 @@ export const DRUID_TALENTS = [
   {id:'roots',name:'Strong Roots',row:1,col:2,points:1,max:10,requires:['touch'],description:"+0.5% hero max HP per rank with the druid."},
   {id:'lastLeaf',name:'Last Leaf',row:2,col:0,points:6,max:10,requires:["touch"],description:"+1% healing per rank when the hero is below 30% HP."},
   {id:'reserve',name:'Living Reserve',row:2,col:2,points:6,max:10,requires:["touch"],description:"Converts 1% of excess healing per rank into a shield. Shield cap: 10% max HP."},
-  {id:'regrowth',name:'Regrowth',row:3,col:0,points:11,max:1,kind:'active',requires:["touch"],description:"Heals for 10% of a normal heal each second for 6s. Cooldown: 18s."},
+  {id:'regrowth',name:'Regrowth',row:3,col:0,points:11,max:1,kind:'active',requires:["touch"],description:"Heals for 30% of a normal heal each second for 5s. Cooldown: 20s."},
   {id:'bark',name:'Oak Skin',row:3,col:2,points:11,max:1,kind:'active',requires:["touch"],description:"Reduces damage taken by 15% for 5s. Cooldown: 25s."},
   {id:'blessing',name:'Grove Blessing',row:2,col:1,points:16,max:10,requires:["touch"],description:"Normal heals grant +0.3% hero damage per rank for 2s."},
-  {id:'spring',name:'Long Spring',row:4,col:0,points:0,max:10,requires:["regrowth"],description:"+1% Regrowth duration per rank."},
+  {id:'spring',name:'Long Spring',row:4,col:0,points:0,max:10,requires:["regrowth"],description:"+0.5s Regrowth duration per rank."},
   {id:'awakening',name:'Awakening',row:6,col:0,points:0,max:10,requires:["bloom"],description:"−0.5% Bloom cooldown per rank."},
   {id:'sap',name:'Nourishing Sap',row:4,col:1,points:0,max:10,requires:["regrowth"],description:"+2% Regrowth healing per rank."},
   {id:'thickBark',name:'Thick Bark',row:4,col:2,points:0,max:10,requires:["bark"],description:"+0.5% damage reduction and +0.5s Oak Skin duration per rank."},
@@ -1082,7 +1082,7 @@ export function castCompanionSkill(s,skill) {
     if(skill==='barrage'){combat.barrage=5+(t.quiver||0)*.1;combat.barrageCooldown=60*(1-(t.composure||0)*.005);c.clock=0;}
   }else if(kind==='druid'){
     if(!['regrowth','bark','bloom'].includes(skill)||!(s.phase==='fight'||living.some(e=>e.engaged)))return null;
-    if(skill==='regrowth')Object.assign(combat,{regrowth:6*(1+(t.spring||0)*.01),regrowthClock:0,regrowthCooldown:18});
+    if(skill==='regrowth')Object.assign(combat,{regrowth:5+(t.spring||0)*.5,regrowthClock:0,regrowthCooldown:20});
     if(skill==='bark')Object.assign(combat,{bark:5+(t.thickBark||0)*.5,barkCooldown:25});
     if(skill==='bloom')Object.assign(combat,{bloom:8+(t.evergreen||0)*.2,bloomClock:0,bloomCooldown:60*(1-(t.awakening||0)*.005)});
   }else if(kind==='turtle'){
@@ -1219,7 +1219,7 @@ export function step(s, dt, rng = Math.random, now = Date.now()) {
       for(const skill of ['regrowth','bloom'])if(druid[skill]>0){
         const elapsed=Math.min(dt,druid[skill]),clock=skill+'Clock';
         druid[skill]=druid[skill]-dt<1e-9?0:druid[skill]-dt;druid[clock]=(druid[clock]||0)+elapsed;
-        const amount=baseHeal*(skill==='regrowth'?.1*(1+(talents.sap||0)*.02):.2);
+        const amount=baseHeal*(skill==='regrowth'?.3*(1+(talents.sap||0)*.02):.2);
         while(druid[clock]>=1-1e-9){const actual=heal(amount);if(skill==='bloom')bloomHealing+=actual;druid[clock]=Math.max(0,druid[clock]-1);}
         // A fractional last tick makes every duration rank useful.
         if(!druid[skill]&&druid[clock]>0){const actual=heal(amount*druid[clock]);if(skill==='bloom')bloomHealing+=actual;druid[clock]=0;}
@@ -1524,7 +1524,7 @@ export function restore(serialized, now = Date.now()) {
     s.companionAuto=s.companionAuto!==false;
     s.archerCombat={...Object.fromEntries(Object.entries({rainCooldown:30,pierceCooldown:20,barrageCooldown:60,rain:8,rainClock:1,barrage:6,doubleDelay:.12}).map(([key,max])=>[key,nonnegative(arrowEffects[key])?Math.min(max,arrowEffects[key]):0])),piercing:null,extraShot:null};
     const effects=s.druidCombat||{};
-    s.druidCombat=Object.fromEntries(Object.entries({regrowthCooldown:18,barkCooldown:25,bloomCooldown:60,windCooldown:90,regrowth:6.6,bark:10,bloom:10,wind:5,blessing:2,regrowthClock:1,bloomClock:1,shield:stats(s).hp*.1}).map(([key,max])=>[key,nonnegative(effects[key])?Math.min(max,effects[key]):0]));
+    s.druidCombat=Object.fromEntries(Object.entries({regrowthCooldown:20,barkCooldown:25,bloomCooldown:60,windCooldown:90,regrowth:10,bark:10,bloom:10,wind:5,blessing:2,regrowthClock:1,bloomClock:1,shield:stats(s).hp*.1}).map(([key,max])=>[key,nonnegative(effects[key])?Math.min(max,effects[key]):0]));
     s.companionXp=Object.fromEntries(COMPANIONS.map(({id})=>[id,s[id+'Level']===100?0:Math.min(DRUID_LEVELS[s[id+'Level']-1].xpRequired-.0001,Number.isFinite(s.companionXp?.[id])?Math.max(0,s.companionXp[id]):0)]));
     s.inventory=Array.isArray(s.inventory)?s.inventory.filter(item):[];
     const shop=s.shop;

@@ -1218,8 +1218,8 @@ function updateCompanionSkills(){
     }
   }
   const auto=state.companionAuto!==false;$('companion-auto').textContent='Auto '+(auto?'ON':'OFF');$('companion-auto').setAttribute('aria-pressed',String(auto));
-  const durations=kind==='turtle'?{slam:20,respite:30,fortress:60}:kind==='archer'?{rain:30,pierce:20,barrage:60*(1-(ranks.composure||0)*.005)}:{regrowth:18,bark:25,bloom:60*(1-(ranks.awakening||0)*.005)};
-  const activeDurations=kind==='turtle'?{slam:.5,respite:4,fortress:5+(ranks.endurance||0)*.2}:kind==='archer'?{rain:3+(ranks.downpour||0)*.5,barrage:5+(ranks.quiver||0)*.1,pierce:combat.piercing?combat.piercing.toX-combat.piercing.fromX:0}:{regrowth:6*(1+(ranks.spring||0)*.01),bark:5+(ranks.thickBark||0)*.5,bloom:8+(ranks.evergreen||0)*.2};
+  const durations=kind==='turtle'?{slam:20,respite:30,fortress:60}:kind==='archer'?{rain:30,pierce:20,barrage:60*(1-(ranks.composure||0)*.005)}:{regrowth:20,bark:25,bloom:60*(1-(ranks.awakening||0)*.005)};
+  const activeDurations=kind==='turtle'?{slam:.5,respite:4,fortress:5+(ranks.endurance||0)*.2}:kind==='archer'?{rain:3+(ranks.downpour||0)*.5,barrage:5+(ranks.quiver||0)*.1,pierce:combat.piercing?combat.piercing.toX-combat.piercing.fromX:0}:{regrowth:5+(ranks.spring||0)*.5,bark:5+(ranks.thickBark||0)*.5,bloom:8+(ranks.evergreen||0)*.2};
   const alive=battle.enemies.filter(e=>e.hp>0),ready=battle.hp>0&&!battle.completed&&['fight','walk'].includes(battle.phase)&&(kind==='turtle'?battle.companion.hp>0&&alive.length&&alive[0].x-battle.companion.x<=.7:kind==='archer'?alive.length&&alive[0].x-battle.companion.x<=.65:battle.phase==='fight'||alive.some(e=>e.engaged));
   for(const button of $('companion-skill-buttons').children){
     const skill=button.dataset.skill,remaining=combat[skill+'Cooldown']||0,t=skills.find(t=>t.id===skill);

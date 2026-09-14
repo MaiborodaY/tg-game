@@ -124,6 +124,8 @@
   "assets/portraits/wood-golem.webp",
   "assets/portraits/chicken-musketeer.webp",
   "assets/affixes/damage.webp",
+  "assets/affixes/meleeDamage.webp",
+  "assets/affixes/rangedDamage.webp",
   "assets/affixes/health.webp",
   "assets/affixes/speed.webp",
   "assets/affixes/crit.webp",
