@@ -1,19 +1,23 @@
 # First thirty waves: balance verification — 2026-09-17
 
-Published on 2026-09-17 from commit `48543e4` to the existing BroTD Infinity URL
-through Pages Preview deployment `224eac10`. The scope is waves 1–30
-(rounds 1-1, 1-2 and 1-3).
-Every definition from 31 through 400 remains identical to the original snapshot,
-including all of Level 2. The remaining campaign requires a later rebalance.
+**Historical opening report.** The 2026-09-18 continuation preserves definitions
+1–30 but replaces 31–400; its current rules and limited validation are in
+[CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md). The battle reports below were not rerun
+for that continuation. The user will playtest the later campaign.
 
-**Latest user-requested change:** wave 10 now omits the melee goblin from its
+The opening release was published on 2026-09-17 from commit `48543e4` to the
+existing BroTD Infinity URL through Pages Preview deployment `224eac10`.
+Its scope was waves 1–30 (rounds 1-1, 1-2 and 1-3). At that point definitions
+31–400, including all of Level 2, remained unchanged; that boundary is now superseded.
+
+**Subsequent opening correction:** wave 10 omits the melee goblin from its
 second arrival. It has five enemies (chief + two goblins + two archers), entering
 4 + 1 at the original times. The chief remains 450 HP / 18 damage; no stats were
-increased to compensate. Waves 1–9 and 11–400 are unchanged by this last edit,
+increased to compensate. That particular edit left waves 1–9 and 11–400 unchanged,
 including wave 11. Kill gold for wave 10 is now 24, down from 25.
 The broad progression reports below predate this removal; only the focused combat
-checks explicitly marked current were rerun. Their old completion and repeat
-statistics must not be presented as measurements of the latest configuration.
+checks described below were rerun at the time. Their old completion and repeat
+statistics must not be presented as measurements of the current continuation.
 
 | Wave | Enemies | Total HP | Arrivals |
 | --- | ---: | ---: | --- |
@@ -63,7 +67,7 @@ dip without sharply increasing the damage of all eight enemies.
 
 Every encounter in 1–30 except the explicitly reduced wave 10 increases total HP.
 Each ordinary spawn position in 11–30 also has nondecreasing HP and damage.
-The current 9/10/11 comparisons are recorded below. Further retained controlled
+The post-correction 9/10/11 comparisons are recorded below. Further retained controlled
 cases for the unchanged later encounters use eight fighters,
 including two archers and the specified number of healers; the remaining places
 are swordsmen, all at the listed level:
@@ -86,11 +90,12 @@ These are controlled comparisons, not a promise that every composition's outcome
 survivor count, remaining HP and duration all move monotonically. Target selection,
 healing and attack timing can improve one result despite higher enemy stats.
 
-**Deferred boundary:** wave 31 remains at its previous 1054 total HP, below wave
-30's 1680. The requested limited scope deliberately stops at 30; the 30→31 boundary
-and the later campaign are not presented as complete or ready for a full campaign release.
+**Historical boundary, now replaced:** wave 31 had 1054 total HP, below wave
+30's 1680. The opening work stopped at 30. The new continuation raises wave 31
+to 1695 and carries the curve through 400; these old battle results do not validate
+the new boundary or later encounters.
 
-## Current focused combat checks
+## Historical focused combat checks after the escort removal
 
 The harness runs `createBattle` / `updateBattle` with 1/60-second battle steps.
 Every scenario starts with full HP, as the game does. No combat formulas are
@@ -104,7 +109,7 @@ reimplemented in the harness.
 - These equal-level armies are controlled comparisons, not claims about what
   players naturally own on their first attempt.
 
-The latest removal was checked in **27 real battles**: waves 9, 10 and 11 for
+The escort removal was checked in **27 real battles**: waves 9, 10 and 11 for
 eight-fighter armies with zero, one or two healers, each at Lv3, Lv4 and Lv5.
 Every army has two archers, with swordsmen filling the remaining places.
 Results are in `%TEMP%/brotd-wave10-escort-controls.json`.
@@ -271,8 +276,10 @@ for attack space; a deliberately crowded fifteen-swordsman army had waits up to
 in that case never attacked before the other fighters won. This is a remaining
 crowding limitation, not a claim that all formations have been exhaustively tested.
 
-Hero stat growth remains 5% per level. Recruitment, merging, resource rates and
-the king's combat stats are unchanged. The release also includes the rendered-frame
-FPS counter. All 73 Node tests and the Vite build passed before publication;
-the stable alias's HTML, JavaScript and CSS match the local build byte for byte.
-King upgrades and skills remain design proposals and are not part of this release.
+For that opening release, hero stat growth stayed at 5% per level; recruitment,
+merging, resource rates and the king's combat stats were unchanged. The release
+also included the rendered-frame FPS counter. Its 73 Node tests and Vite build
+passed before publication, and its stable-alias HTML, JavaScript and CSS matched
+that local build byte for byte. This is a historical release record, not a claim
+that the latest campaign changes are deployed or fully balance-tested. King
+upgrades and skills were not part of that release.

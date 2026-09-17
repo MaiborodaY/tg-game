@@ -1,4 +1,5 @@
 import { openingContinuationSpawns } from './opening-curve.mjs';
+import { campaignContinuationSpawns } from './campaign-curve.mjs';
 
 export const CAMPAIGN_VERSION = 3;
 export const WAVES_PER_ROUND = 10;
@@ -15,6 +16,7 @@ const LEVEL_2_GOLD_MULTIPLIER = 2;
 export const ENEMY_TYPES = Object.freeze({
   goblin: Object.freeze({ name: 'Torch goblin', hp: 60, damage: 7, reward: 1 }),
   goblinArcher: Object.freeze({ name: 'Goblin archer', hp: 32, damage: 4, reward: 1 }),
+  goblinHealer: Object.freeze({ name: 'Goblin healer', hp: 70, damage: 3, heal: 12, reward: 1 }),
   goblinChief: Object.freeze({ name: 'Goblin chief', hp: 650, damage: 18, reward: 20, isBoss: true }),
   ogre: Object.freeze({ name: 'Ogre brute', hp: 1100, damage: 22, reward: 20, isBoss: true, isFinalBoss: true }),
   boar: Object.freeze({ name: 'Boar', hp: 80, damage: 8, reward: 2 }),
@@ -271,11 +273,17 @@ const UNCALIBRATED_WAVES = Object.freeze([
   }),
 ]);
 
-// Rebalance only the first three rounds. Keeping this overlay separate preserves
-// every later encounter until its own progression is explicitly calibrated.
+// Keep the tested opening intact; both biomes continue from its last HP/damage tier.
 function openingWave(wave) {
   const number = wave.number;
-  if (number > 30) return wave;
+  if (number > 30) {
+    const spawns = campaignContinuationSpawns(number).map(spawn => ({ ...spawn, reward: ENEMY_TYPES[spawn.type].reward }));
+    const boss = spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss);
+    const name = boss ? ENEMY_TYPES[boss.type].name : `${wave.levelNumber === 1 ? 'Forest' : 'Graveyard'} assault ${wave.waveInRound}`;
+    return defineWave(number, name, boss ? 'The commander and its guard advance in groups of up to four.'
+      : spawns.some(spawn => spawn.type === 'goblinHealer') ? 'A goblin healer supports the advancing squads.'
+        : 'Stronger squads advance. Their strength carries forward from the previous round.', spawns);
+  }
   if (number > 10) {
     const spawns = openingContinuationSpawns(number).map(spawn => ({ ...spawn, reward: ENEMY_TYPES[spawn.type].reward }));
     return defineWave(number, number % 10 === 0 ? 'The war chief' : `Forest assault ${wave.waveInRound}`,

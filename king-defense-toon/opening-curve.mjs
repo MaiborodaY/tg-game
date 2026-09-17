@@ -1,5 +1,5 @@
-// Only rounds two and three are calibrated here. The rest of the campaign stays
-// separate until its armies, progression and encounters have been checked.
+// Preserve the calibrated second and third rounds. campaign-curve.mjs continues
+// their final HP/damage tier through the rest of both levels.
 const ROUND_HEALTH = [
   [866, 878, 890, 902, 914, 926, 938, 950, 1120, 1250],
   [1265, 1277, 1289, 1301, 1313, 1325, 1337, 1349, 1500, 1680],

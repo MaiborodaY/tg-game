@@ -15,9 +15,10 @@ test('the first three tutorial waves retain their composition, stats, timing and
     '28e3aaae9436bb385d84ebfe7728e41732f18536b8637a23da20148280397403');
 });
 
-test('calibration is limited to the first thirty waves', () => {
-  assert.equal(createHash('sha256').update(JSON.stringify(WAVE_DEFINITIONS.slice(30))).digest('hex'),
-    'dddf8e1f0e4a1789e2afa755c56bdba5ed18618b4e465b5fd3e5f402151b7735');
+test('extending the campaign preserves the calibrated first thirty waves', () => {
+  // Captured from the released opening before extending rounds 4–40.
+  assert.equal(createHash('sha256').update(JSON.stringify(WAVE_DEFINITIONS.slice(0, 30))).digest('hex'),
+    '3658798c3adb80372f2d54727ce9cc95288df7626bc638c9ea07236b12867156');
   const ordinary = WAVE_DEFINITIONS.slice(10, 30).filter(wave => !wave.hasBoss);
   assert.equal(ordinary.length, 18);
   for (const wave of ordinary) {
@@ -37,11 +38,6 @@ test('calibration is limited to the first thirty waves', () => {
   for (const number of [0, 10, 31, 400, NaN, 11.5]) {
     assert.throws(() => openingContinuationSpawns(number), RangeError);
   }
-});
-
-test('removing the first chief escort leaves every other encounter unchanged', () => {
-  assert.equal(createHash('sha256').update(JSON.stringify(WAVE_DEFINITIONS.filter(wave => wave.number !== 10))).digest('hex'),
-    '91de1eed75b40a1220559d5c6c27afe4a3e3601789ce108815bd9b36c47e3d36');
 });
 
 test('every round ends with one supported boss, with main bosses only in rounds 10 and 20', () => {
@@ -69,8 +65,13 @@ test('every round ends with one supported boss, with main bosses only in rounds 
     assert.deepEqual(opening.map(spawn => getEnemyCombatType(spawn.type)).sort(),
       ['goblin', 'goblin', 'goblinArcher', mainBoss ? 'ogre' : 'goblinChief'].sort(), label(wave));
     const support = wave.spawns.filter(spawn => spawn.at === 14.8);
-    assert.deepEqual(support.map(spawn => getEnemyCombatType(spawn.type)).sort(),
-      wave.number === 10 ? ['goblinArcher'] : ['goblin', 'goblinArcher'], label(wave));
+    if (wave.number <= 30) {
+      assert.deepEqual(support.map(spawn => getEnemyCombatType(spawn.type)).sort(),
+        wave.number === 10 ? ['goblinArcher'] : ['goblin', 'goblinArcher'], label(wave));
+    } else {
+      assert.ok(support.length >= 2 && support.length <= 4, label(wave));
+      assert.ok(support.every(spawn => !ENEMY_TYPES[spawn.type].isBoss), label(wave));
+    }
     assert.ok(wave.spawns.every(spawn => [.8, 14.8, 28.8].includes(spawn.at)), label(wave));
   }
 });
@@ -128,25 +129,6 @@ test('all 400 waves retain at most four enemies per arrival and valid distinct s
     }
     assert.deepEqual(wave.spawns.map(spawn => spawn.at),
       [...wave.spawns].sort((a, b) => a.at - b.at).map(spawn => spawn.at), label(wave));
-  }
-});
-
-test('uncalibrated later undead counterparts retain their original triple stats and double rewards', () => {
-  const mappedTypes = {
-    goblin: 'skeleton', goblinArcher: 'skeletonArcher', boar: 'ghoul',
-    goblinChief: 'cryptSpider', ogre: 'cryptKing',
-  };
-  for (let index = 30; index < 200; index += 1) {
-    const forest = WAVE_DEFINITIONS[index];
-    const graveyard = WAVE_DEFINITIONS[index + 200];
-    assert.equal(graveyard.total, forest.total, label(forest));
-    assert.equal(graveyard.roundNumber, forest.roundNumber);
-    assert.equal(graveyard.waveInRound, forest.waveInRound);
-    assert.deepEqual(graveyard.spawns, forest.spawns.map(spawn => ({
-      ...spawn, type: mappedTypes[spawn.type], hp: spawn.hp * 3,
-      damage: spawn.damage * 3, reward: spawn.reward * 2,
-    })), label(forest));
-    assert.equal(graveyard.reward, forest.reward * 2, label(forest));
   }
 });
 

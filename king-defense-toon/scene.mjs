@@ -10,6 +10,7 @@ import { allyDeathOpacity } from './ally-animation.mjs';
 import { KING_IMAGE_URL, UNIT_IMAGES } from './asset-web.mjs';
 import { GOBLIN_ARCHER_IMAGE_URL, GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.mjs';
 import { GOBLIN_CHIEF_IMAGE_URL, GOBLIN_CHIEF_GEOMETRY } from './goblin-chief-art.mjs';
+import { GOBLIN_HEALER_IMAGE_URL, GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_IMAGE_URL, GOBLIN_HEAL_PULSE_FRAMES } from './goblin-healer-art.mjs';
 import { OGRE_IMAGE_URL, OGRE_GEOMETRY } from './ogre-art.mjs';
 import { UNDEAD_ART } from './undead-art.mjs';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.mjs';
@@ -19,6 +20,7 @@ import { tinyLancerFrame } from './tiny-lancer.mjs';
 import { TINY_TORCH_LAYOUT, tinyTorchFrame } from './tiny-torch.mjs';
 import { TINY_GOBLIN_ARCHER_LAYOUT, tinyGoblinArcherFrame } from './tiny-goblin-archer.mjs';
 import { TINY_GOBLIN_CHIEF_LAYOUT, tinyGoblinChiefFrame } from './tiny-goblin-chief.mjs';
+import { tinyGoblinHealerFrame, goblinHealPulseFrame } from './tiny-goblin-healer.mjs';
 import { TINY_BOAR_LAYOUT, tinyBoarFrame } from './tiny-boar.mjs';
 import { TINY_KING_LAYOUT, tinyKingFrame } from './tiny-king.mjs';
 import { TINY_ARCHER_LAYOUT, tinyArcherFrame, tinyMonkIdleFrame, tinyMonkRunFrame, tinyMonkHealFrame } from './tiny-support.mjs';
@@ -138,6 +140,15 @@ const GOBLIN_CHIEF_ANIMATION_METADATA = {
   bakedShadow: false,
   renderHeight: 52,
   frameFor: tinyGoblinChiefFrame,
+  horizontalFacing: true,
+};
+const GOBLIN_HEALER_ANIMATION_METADATA = {
+  ...GOBLIN_HEALER_GEOMETRY,
+  pixelArt: true,
+  fullCells: true,
+  bakedShadow: false,
+  renderHeight: 40,
+  frameFor: tinyGoblinHealerFrame,
   horizontalFacing: true,
 };
 const OGRE_ANIMATION_METADATA = {
@@ -435,7 +446,7 @@ function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0
     context.ellipse(x, feet + 0.5, 11, 2.3, 0, 0, Math.PI * 2);
     context.fill();
   }
-  const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'ogre', 'boar'].includes(type)
+  const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
     || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
@@ -528,7 +539,7 @@ function drawChiefWindup(context, actor) {
   context.restore();
 }
 
-function drawEffect(context, effect) {
+function drawEffect(context, effect, goblinHealPulse = null, renderScale = 1) {
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
@@ -593,6 +604,26 @@ function drawEffect(context, effect) {
     context.stroke();
   } else if (effect.type === 'heal') {
     if (!(effect.amount > 0)) {
+      context.restore();
+      return;
+    }
+    if (effect.sourceType === 'goblinHealer' && goblinHealPulse) {
+      const { rect, groundAnchor } = GOBLIN_HEAL_PULSE_FRAMES[goblinHealPulseFrame(p)];
+      const scale = .5 * renderScale;
+      context.imageSmoothingEnabled = false;
+      // Combat effects target the torso (-27px); this authored ring is anchored to the recipient's feet.
+      context.drawImage(goblinHealPulse, rect.x, rect.y, rect.width, rect.height,
+        targetX - groundAnchor.x * scale, targetY + 27 - groundAnchor.y * scale,
+        rect.width * scale, rect.height * scale);
+      context.font = '11px "Lilita One", sans-serif';
+      context.textAlign = 'center';
+      context.lineJoin = 'round';
+      context.lineWidth = 2.5;
+      context.strokeStyle = '#244635';
+      const label = `+${Math.round(effect.amount)}`;
+      context.strokeText(label, targetX, targetY - 20 - p * 12);
+      context.fillStyle = '#baf3a7';
+      context.fillText(label, targetX, targetY - 20 - p * 12);
       context.restore();
       return;
     }
@@ -675,18 +706,20 @@ function drawEffect(context, effect) {
 let sceneAssetsPromise;
 
 async function loadSceneAssets() {
-  const [maps, goblinSource, allySources, monkRunSource, monkHealSource, goblinArcherSource, goblinChiefSource, boarSource, ogreSource, undeadSources] = await Promise.all([
+  const [maps, goblinSource, allySources, monkRunSource, monkHealSource, goblinArcherSource, goblinChiefSource, boarSource, ogreSource, undeadSources, goblinHealerSource, goblinHealPulse] = await Promise.all([
     Promise.all([createTinyMap(), createGraveyardMap()]), loadImage(GOBLIN_URL),
     Promise.all(Object.entries(ALLY_ANIMATION_URLS).map(async ([type, url]) => [type, await loadImage(url)])),
     loadImage(MONK_RUN_URL), loadImage(MONK_HEAL_URL), loadImage(GOBLIN_ARCHER_IMAGE_URL), loadImage(GOBLIN_CHIEF_IMAGE_URL),
     loadImage(BOAR_URL), loadImage(OGRE_IMAGE_URL),
     Promise.all(Object.entries(UNDEAD_ENEMY_ART).map(async ([type, art]) => [type, await loadImage(art.url)])),
+    loadImage(GOBLIN_HEALER_IMAGE_URL), loadImage(GOBLIN_HEAL_PULSE_IMAGE_URL),
   ]);
   const goblinArt = {
     animations: {
       goblin: prepareAnimation(goblinSource, TORCH_ANIMATION_METADATA),
       goblinArcher: prepareAnimation(goblinArcherSource, GOBLIN_ARCHER_ANIMATION_METADATA),
       goblinChief: prepareAnimation(goblinChiefSource, GOBLIN_CHIEF_ANIMATION_METADATA),
+      goblinHealer: prepareAnimation(goblinHealerSource, GOBLIN_HEALER_ANIMATION_METADATA),
       ogre: prepareAnimation(ogreSource, OGRE_ANIMATION_METADATA),
       boar: prepareAnimation(boarSource, BOAR_ANIMATION_METADATA),
     },
@@ -742,7 +775,7 @@ async function loadSceneAssets() {
       if (cast) animation.cast = prepareAnimation(cast, allyAnimations.healer.cast.metadata);
       (allyAnimations[type].ranks ??= {})[level] = animation;
     })));
-  return { maps, goblinArt, allyAnimations };
+  return { maps, goblinArt, allyAnimations, goblinHealPulse };
 }
 
 export async function createScene(canvas, {
@@ -755,7 +788,7 @@ export async function createScene(canvas, {
     sceneAssetsPromise = null;
     throw error;
   });
-  const { maps, goblinArt, allyAnimations } = await sceneAssetsPromise;
+  const { maps, goblinArt, allyAnimations, goblinHealPulse } = await sceneAssetsPromise;
   const unitImages = UNIT_IMAGES;
   // Crop tightly around the formation while keeping first-row health and level labels.
   const view = formationOnly ? FORMATION_VIEW : BATTLE_VIEW;
@@ -904,7 +937,7 @@ export async function createScene(canvas, {
           actor.type === 'king', actor, state.time, enemyArt, allyAnimations, null, actorScale);
       }
       for (const actor of actors) drawHealth(context, actor, actorScale);
-      for (const effect of state.battle.effects) drawEffect(context, effect);
+      for (const effect of state.battle.effects) drawEffect(context, effect, goblinHealPulse, actorScale);
       drawKing(context, false, state.battle.king, state.time, false);
     } else {
       if (ghost) {

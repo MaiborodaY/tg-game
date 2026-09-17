@@ -91,7 +91,7 @@ Native sprite colors change every 25 personal levels: **1–25 blue, 26–50 pur
 
 ## Kill rewards and wave progression
 
-Both **Level 1: Whispering Woods** and **Level 2: Forgotten Graveyard** contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20. Wave 5 is an ordinary encounter. This rebalance covers **global waves 1–30 only: Level 1 rounds 1–3**. **Waves 31–400 retain their previous definitions**, including all of Level 2; the distant campaign has not been calibrated as part of this opening update.
+Both **Level 1: Whispering Woods** and **Level 2: Forgotten Graveyard** contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20. Wave 5 is an ordinary encounter. **Waves 1–30 are preserved; waves 31–400 now continue the same HP curve**, gaining 430 total HP per round, with gradually larger squads and tapering damage growth. Level 2 continues from the forest endpoint rather than resetting to a three-times-opening formula. [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) records the implementation and its untested gameplay assumptions.
 
 The first three waves retain their existing stats, composition and schedules. The first round has **3 / 4 / 5 / 5 / 6 / 6 / 7 / 8 / 9 / 5 enemies** and total HP **180 / 184 / 264 / 306 / 366 / 426 / 506 / 620 / 790 / 750**. Wave 10 has a chief, two goblins and two archers, arriving **4 + 1 at 0.8 and 14.8 simulation seconds**: the second arrival is now one archer. Global waves **11–19 and 21–29** each have **four goblins, two archers and two boars**, arriving **4 + 4** on that schedule. Waves 20 and 30 retain a chief, three goblins and two archers, arriving **4 + 2**. Every simultaneous arrival stays at four enemies or fewer.
 
@@ -110,17 +110,20 @@ The first three waves retain their existing stats, composition and schedules. Th
 
 The opening chiefs have **450 / 688 / 924 HP** at global waves 10 / 20 / 30, respectively. Their encounters bypass the old 1.25× total-HP floor. The user's removal of the second-arrival goblin on wave 10 leaves its chief unchanged at **450 HP / 18 damage**, without a compensating buff, and creates the explicit total-HP exception **wave 9→10: 790 → 750**. All other steps through 30 rise, including transitions **750 → 866** and **1,250 → 1,265** between rounds; no post-boss relief was added. Larger HP and shared damage increases close rounds 2–3. Composition, damage, timing and available allied roles also affect difficulty; total HP alone does not prove a harder fight for every army. See [README.md](README.md) for opening roles and schedules and [opening-curve.mjs](opening-curve.mjs) for the round 2–3 allocation.
 
-Combat checks use the actual engine through [scripts/combat-balance.mjs](scripts/combat-balance.mjs); [OPENING_BALANCE.md](OPENING_BALANCE.md) records the scenarios, results and limitations. Explicit test armies and levels are not a natural first-clear simulation or an income/recruitment forecast. Recruitment probabilities, **5% personal-level stat growth**, merging, capture rules, prices and income rates are unchanged.
+Historical opening combat checks used the actual engine through [scripts/combat-balance.mjs](scripts/combat-balance.mjs); [OPENING_BALANCE.md](OPENING_BALANCE.md) records those scenarios, results and limitations. Explicit test armies and levels are not a natural first-clear simulation or an income/recruitment forecast. Current continuation checks cover static wave invariants and short healer-mechanic/render cases; no full battles or progression simulations were rerun. Recruitment probabilities, **5% personal-level stat growth**, merging, capture rules, prices and income rates are unchanged.
 
 A separate resource-linked harness, [scripts/early-campaign.mjs](scripts/early-campaign.mjs), earns its cells and fighters using the actual APIs. **Historical snapshot before the wave-10 goblin removal:** six thirty-wave scenarios completed at ×1/×3 in **452 battles without timeouts**, with one requiring 102 attempts. Ninth/tenth waves accounted for **90 of 138 defeats (65.2%)**, and a majority within each round. These runs have not been repeated for the five-enemy wave 10 and do not validate the current revision. The documented management policy and fixed seeds are not a population sample or a promised completion time.
 
-**Deferred boundary:** the old wave 31 has ten enemies and **1,054 total HP**, below wave 30's **1,680**. This round transition, the remaining forest rounds and the level boundary have not been rebalanced. Level 2 still uses skeletons, skeleton archers and ghouls, with three times the **earlier forest baseline** stats and twice the per-kill reward by role. It does not inherit the new first-30-wave overlay; for example, its first chief remains **1,950 HP / 54 damage**, rather than three times the new first chief. The final Crypt King retains **13,248 HP / 156 damage**. These unchanged definitions are not presented as a verified 400-wave difficulty curve.
+The former post-opening drop is removed: waves **30→31** rise from **1,680 to 1,695 total HP**, and **200→201** rise from **8,990 to 9,005**. Ordinary wave counts rise from eight to sixteen over the continuation; boss encounters grow from six to ten enemies, including the boss. At most four arrive at once, with 14 simulation seconds between arrivals. The final Crypt King now has **11,434 HP / 120 damage** within a **17,590-HP** encounter; the old extreme late scaling is replaced by linear HP growth and slower damage growth near the player level cap. This is a configured progression, not a verified victory curve.
+
+Forest rounds **1-11 through 1-20** replace one second-arrival archer with a **Goblin healer**. Its one-gold reward matches that archer. It heals other non-healer enemies, including bosses, for **35–48 flat HP** per cast, capped by missing HP; it cannot sustain itself or another healer. There is no Level 2 healer yet. The support role changes tactics without adding an extra squad or altering capture probabilities.
 
 Current per-enemy kill rewards stay fixed within each level:
 
 | Enemy role | Level 1 gold | Level 2 gold |
 | --- | --- | --- |
 | Ordinary melee / archer | 1 | 2 |
+| Goblin healer | 1 | Not present |
 | Boar / ghoul | 2 | 4 |
 | Chief / Crypt Spider | 20 | 40 |
 | Ogre / Crypt King | 20 | 40 |
@@ -145,13 +148,13 @@ Current per-enemy kill rewards stay fixed within each level:
 | 1-2 | 78 | 115 | 550 |
 | 1-3 | 78 | 115 | 550 |
 | First 30 waves | 214 | 315 | 1,650 |
-| All Level 1 definitions | 2,734 | 3,668 | 11,000 |
-| All Level 2 definitions, unchanged | 2,761 | 7,390 | 11,000 |
-| Entire campaign definitions | 5,495 | 11,058 | 22,000 |
+| All Level 1 definitions | 1,907 | 2,709 | 11,000 |
+| All Level 2 definitions | 2,790 | 7,630 | 11,000 |
+| Entire campaign definitions | 4,697 | 10,339 | 22,000 |
 
 The first clear of each wave awards **10 × wave-in-round number**: 10, 20, …, 100, totaling **550 per round, 11,000 per level and 22,000 across the campaign**. Level 2's doubled kill rewards do not multiply first-clear bonuses. First-clear history stores global IDs **1–400** independently from current progress, so retreat and replay cannot repeat a bonus. Global waves 11 and 201 each grant 10 first-clear gold; wave 200 grants 100.
 
-Clearing the first 30 waves once awards **1,965 kill/first-clear gold** before other income. Arithmetic over all current definitions gives **33,058 gold** for the whole campaign: **14,668 in Level 1** and **18,390 in Level 2**. These sums exclude retries, Barracks sales and building income, and do not demonstrate that an account can complete the campaign or predict its completion time. Migrated accounts retain previously claimed first-clear rewards and cannot claim them again. Per-enemy payouts and first-clear bonuses are unchanged; changes to wave composition change the total kill income.
+Clearing the first 30 waves once awards **1,965 kill/first-clear gold** before other income. Arithmetic over all current definitions gives **32,339 gold** for the whole campaign: **13,709 in Level 1** and **18,630 in Level 2**. These sums exclude retries, Barracks sales and building income, and do not demonstrate that an account can complete the campaign or predict its completion time. Migrated accounts retain previously claimed first-clear rewards and cannot claim them again. Per-enemy payouts and first-clear bonuses are unchanged; changes to wave composition change the total kill income.
 
 Defeat retreats one global wave, with **1-1 Wave 1** as the minimum. Losing **1-2 Wave 1** prepares **1-1 Wave 10**; losing **2-1 Wave 1** prepares **1-20 Wave 10**. Deployed and reserve fighters, personal levels, recruitment counts, unlocked cells, resources and buildings are kept, and the army and king recover between attempts. Kills remain rewarded on failed attempts; losing without kills grants no reward. Clearing a round's tenth wave advances to the next round. Victory at **1-20 Wave 10** advances to **2-1 Wave 1**. Only victory at **2-20 Wave 10** completes the campaign and permits replay from **1-1 Wave 1**.
 

@@ -13,6 +13,7 @@ const BASE_RULES = {
   king: { range: 42, interval: 1.2, duration: .7, speed: 0 },
   goblin: { range: 34, interval: 1.45, duration: .7, speed: 60 },
   goblinArcher: { range: 120, interval: 1.8, duration: .8, speed: 53 },
+  goblinHealer: { range: 34, healRange: 95, interval: 2.6, duration: .8, speed: 48 },
   goblinChief: { range: 43, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .7 },
   ogre: { range: 43, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .7 },
   boar: { range: 34, interval: 1.65, duration: .8, speed: 56, impactFraction: .5 },
@@ -68,6 +69,8 @@ export function createBattle(formation = [], waveNumber = 1) {
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const living = actors => actors.filter(unit => unit.hp > 0);
 const isBusy = unit => ['attack', 'shoot', 'heal'].includes(unit.action);
+const isEnemyHealer = unit => getEnemyCombatType(unit.type) === 'goblinHealer';
+const isRangedEnemy = unit => ['goblinArcher', 'goblinHealer'].includes(getEnemyCombatType(unit.type));
 
 // Merge exact segment intervals inside the land rectangles: melee cannot cut across water.
 function hasLandPath(from, to) {
@@ -247,13 +250,16 @@ function beginAction(unit, target, action) {
 
 function resolveImpact(battle, unit, events) {
   const target = findActor(battle, unit.targetId);
-  if (!target || target.hp <= 0) return;
+  if (unit.hp <= 0 || !target || target.hp <= 0) return;
   unit.targetX = target.x;
   unit.targetY = target.y;
   if (unit.action === 'heal') {
     // The king is never healable, including an already queued cast.
     if (target.type === 'king' || target.side !== unit.side) return;
-    if (distance(unit, target) > unit.range + 8) return;
+    // Enemy support cannot sustain itself or another healer indefinitely.
+    if (isEnemyHealer(unit) && (target.id === unit.id || isEnemyHealer(target))) return;
+    const healRange = RULES[getEnemyCombatType(unit.type)].healRange ?? unit.range;
+    if (distance(unit, target) > healRange + 8) return;
     const amount = Math.min(unit.heal, target.maxHp - target.hp);
     if (!amount) return;
     target.hp += amount;
@@ -261,7 +267,7 @@ function resolveImpact(battle, unit, events) {
   } else if (unit.action === 'shoot') {
     const royalShot = unit.type === 'king';
     // Royal bolts only counter ranged enemies; nearby melee threats still receive sword strikes.
-    if (royalShot && (target.side !== 'enemy' || getEnemyCombatType(target.type) !== 'goblinArcher'
+    if (royalShot && (target.side !== 'enemy' || !isRangedEnemy(target)
       || distance(unit, target) > RULES.goblinArcher.range + 8)) return;
     // Damage lands with the arrow, rather than before it reaches its target.
     addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
@@ -366,13 +372,61 @@ function actKing(battle, unit) {
   // Defend locally first. A distant melee unit must not distract the king from an archer shooting him.
   const meleeTarget = nearest(unit, battle.enemies.filter(enemy => hasLandPath(unit, enemy)), unit.range + 6);
   const target = meleeTarget ?? nearest(unit,
-    battle.enemies.filter(enemy => getEnemyCombatType(enemy.type) === 'goblinArcher'), RULES.goblinArcher.range);
+    battle.enemies.filter(isRangedEnemy), RULES.goblinArcher.range);
   if (!target) { unit.action = 'idle'; return; }
   unit.targetX = target.x;
   unit.targetY = target.y;
   faceToward(unit, target);
   if (unit.cooldown <= 0) beginAction(unit, target, meleeTarget ? 'attack' : 'shoot');
   else unit.action = 'idle';
+}
+
+function actEnemyHealer(battle, unit, dt) {
+  const fighters = living(battle.enemies).filter(target => target.side === unit.side && target.id !== unit.id && !isEnemyHealer(target));
+  if (!fighters.length) {
+    // A support-only remainder still advances and fights instead of waiting for enrage.
+    unit.focusId = null;
+    unit.followId = null;
+    unit.following = false;
+    return false;
+  }
+  const healRange = RULES.goblinHealer.healRange;
+  const wounded = fighters.filter(target => target.hp < target.maxHp)
+    .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
+  const current = wounded.find(target => target.id === unit.focusId);
+  const urgent = wounded[0];
+  const target = current && current.hp / current.maxHp <= urgent.hp / urgent.maxHp + .2 ? current : urgent;
+  if (target) {
+    unit.focusId = target.id;
+    unit.following = false;
+    if (distance(unit, target) <= healRange - 12) {
+      if (unit.cooldown <= 0) beginAction(unit, target, 'heal');
+      else unit.action = 'idle';
+    } else moveToward(unit, target, dt, healRange - 14);
+    return true;
+  }
+
+  unit.focusId = null;
+  const opponents = living(battle.allies).length ? living(battle.allies) : living([battle.king]);
+  if (!opponents.length) return true;
+  const front = [...fighters].sort((a, b) => distance(a, nearest(a, opponents)) - distance(b, nearest(b, opponents)))[0];
+  const followed = fighters.find(target => target.id === unit.followId);
+  const leader = followed && distance(followed, nearest(followed, opponents)) <= distance(front, nearest(front, opponents)) + 45
+    ? followed : front;
+  const opponent = nearest(leader, opponents);
+  const apart = Math.max(1, distance(leader, opponent));
+  // Stay behind the fighters even when the army turns into the king's side peninsula.
+  const goal = clampToLand(unit, {
+    x: leader.x + (leader.x - opponent.x) / apart * healRange * .65,
+    y: leader.y + (leader.y - opponent.y) / apart * healRange * .65,
+  });
+  unit.followId = leader.id;
+  const separation = distance(unit, goal);
+  if (separation > 24) unit.following = true;
+  if (separation < 10) unit.following = false;
+  if (unit.following) moveToward(unit, goal, dt, 8);
+  else unit.action = 'idle';
+  return true;
 }
 
 function act(battle, unit, dt) {
@@ -385,6 +439,7 @@ function act(battle, unit, dt) {
     actHealer(battle, unit, dt);
     return;
   }
+  if (isEnemyHealer(unit) && actEnemyHealer(battle, unit, dt)) return;
 
   const opponents = unit.side === 'enemy'
     ? (living(battle.allies).length ? battle.allies : [battle.king])
