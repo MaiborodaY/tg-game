@@ -1,0 +1,187 @@
+{
+  "image": "ghoul-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 204,
+        "height": 220
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 204,
+        "y": 0,
+        "width": 189,
+        "height": 220
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 393,
+        "y": 0,
+        "width": 193,
+        "height": 220
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 586,
+        "y": 0,
+        "width": 182,
+        "height": 220
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 220,
+        "width": 201,
+        "height": 174
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 201,
+        "y": 220,
+        "width": 189,
+        "height": 174
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 390,
+        "y": 220,
+        "width": 196,
+        "height": 174
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 586,
+        "y": 220,
+        "width": 182,
+        "height": 174
+      }
+    },
+    {
+      "index": 8,
+      "action": "attack-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 394,
+        "width": 206,
+        "height": 182
+      }
+    },
+    {
+      "index": 9,
+      "action": "attack-right",
+      "pose": 1,
+      "rect": {
+        "x": 206,
+        "y": 394,
+        "width": 180,
+        "height": 182
+      }
+    },
+    {
+      "index": 10,
+      "action": "attack-right",
+      "pose": 2,
+      "rect": {
+        "x": 386,
+        "y": 394,
+        "width": 215,
+        "height": 182
+      }
+    },
+    {
+      "index": 11,
+      "action": "attack-right",
+      "pose": 3,
+      "rect": {
+        "x": 601,
+        "y": 394,
+        "width": 167,
+        "height": 182
+      }
+    },
+    {
+      "index": 12,
+      "action": "attack-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 576,
+        "width": 206,
+        "height": 192
+      }
+    },
+    {
+      "index": 13,
+      "action": "attack-down",
+      "pose": 1,
+      "rect": {
+        "x": 206,
+        "y": 576,
+        "width": 185,
+        "height": 192
+      }
+    },
+    {
+      "index": 14,
+      "action": "attack-down",
+      "pose": 2,
+      "rect": {
+        "x": 391,
+        "y": 576,
+        "width": 193,
+        "height": 192
+      }
+    },
+    {
+      "index": 15,
+      "action": "attack-down",
+      "pose": 3,
+      "rect": {
+        "x": 584,
+        "y": 576,
+        "width": 184,
+        "height": 192
+      }
+    }
+  ],
+  "impactPose": 2,
+  "note": "Explicit crop regions use empty gutters to retain reaching claws. Use these rectangles rather than a strict equal grid. Side attack uses the bare-shoulder left arm; front attack uses the cloth-shoulder right arm. Feet anchors and playback need integration. No death sequence or attack effects."
+}

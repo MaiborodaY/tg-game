@@ -1,6 +1,6 @@
 # Skeleton axeman concept v1
 
-Generated with built-in imagegen from the approved skeleton-footman concept. This is a proposal for the third and final ordinary troop type of level two. The design is not yet approved and no axeman animation assets or gameplay rules have been made.
+Generated with built-in imagegen from the approved skeleton-footman concept. This proposal was declined because it looked too similar to the footman; the ghoul was selected as the third ordinary type. The axeman is retained only as unused concept history. No axeman animation assets or gameplay rules have been made.
 
 - skeleton-axeman-v1.png: source concept, 1931867 bytes.
 - skeleton-axeman-v1.webp: 768 x 768 preview, quality 90, 191690 bytes.

@@ -8,7 +8,7 @@ Add further second-level character concepts and approved animation assets here. 
 | --- | --- | --- |
 | Skeleton footman | Approved design; 16-frame generated animation sheet | [768px WebP, 139900 bytes](skeleton-footman/skeleton-footman-768-lite.webp) |
 | Skeleton archer | Approved design; 16-frame generated animation sheet | [768px WebP, 191040 bytes](skeleton-archer/skeleton-archer-768-lite.webp) |
-| Skeleton axeman | Proposed third ordinary type; concept awaiting approval | [768px concept WebP, 191690 bytes](concepts/skeleton-axeman-v1.webp) |
+| Ghoul | Approved third ordinary type; 16-frame generated animation sheet | [768px WebP, 145084 bytes](ghoul/ghoul-768-lite.webp) |
 
 ## Footman
 
@@ -20,8 +20,10 @@ The archer shares the ivory skeleton anatomy, brown leather and purple cloth of 
 
 [Original PNG](concepts/skeleton-archer-v1.png) and [built-in imagegen prompt](concepts/skeleton-archer-v1.prompt.md).
 
-## Third ordinary troop proposal
+## Ghoul
 
-The [skeleton axeman concept](concepts/skeleton-axeman-v1.webp) adds a two-handed axe, plain open iron helmet and a small shoulder plate. Its proposed role is a slower, harder-hitting melee troop. This design and its mechanics are still proposals; no animation sheet or stats have been created. See the [source and generation notes](concepts/skeleton-axeman-v1.prompt.md).
+The approved [ghoul concept](concepts/ghoul-v1.webp) adds a hunched blue-grey body, long clawed arms and purple faction cloth. Its intended role is an agile melee troop. The sheet provides idle, stalking movement, side swipes and downward swipes. Use the [frame rectangles](ghoul/ghoul-768.frames.json) and [generation notes](ghoul/README.md). Stats, foot anchors and playback remain unimplemented.
 
-The ordinary troop lineup is intended to stop at three types: footman, archer and the proposed axeman. The second-level mini-boss and final boss are future work.
+The ordinary troop lineup is complete at three approved designs: footman, archer and ghoul. Their lightweight WebP sheets total 476024 bytes. The second-level mini-boss and final boss remain future work.
+
+The earlier [skeleton axeman](concepts/skeleton-axeman-v1.webp) was declined because it looked too similar to the footman. Its concept and prompt are retained as unused art history; it is not a fourth troop type.
