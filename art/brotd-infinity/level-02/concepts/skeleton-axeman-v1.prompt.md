@@ -1,0 +1,17 @@
+# Skeleton axeman concept v1
+
+Generated with built-in imagegen from the approved skeleton-footman concept. This is a proposal for the third and final ordinary troop type of level two. The design is not yet approved and no axeman animation assets or gameplay rules have been made.
+
+- skeleton-axeman-v1.png: source concept, 1931867 bytes.
+- skeleton-axeman-v1.webp: 768 x 768 preview, quality 90, 191690 bytes.
+
+Proposed role: a slower melee fighter with a stronger committed strike than the footman. This is a design suggestion only; no HP, damage or attack speed has been selected. A plain open iron helmet, one small shoulder plate and a two-handed axe distinguish the silhouette while retaining the ivory bones and purple faction cloth. Planned ordinary lineup: footman, archer and, if approved, axeman. Mini-boss and final boss remain separate future concepts.
+
+## Prompt
+
+Use case: precise-object-edit / character variation.
+Edit the supplied approved skeleton footman concept into a proposal for the THIRD AND LAST ORDINARY ENEMY TYPE of level two in BroTD Infinity: a SKELETON AXEMAN. Make ONE complete character concept illustration, ONE full-body pose, not a sprite sheet.
+Keep the EXACT faction art language: chunky low-resolution pixel game art, clean dark navy stepped outlines, flat 2-3tone shading, ivory cartoon bones, muted dusty-purple ragged fabric, brown leather, forest ruins with ochre path and olive grass and teal conifers. Same big angular skull and simple dark eye sockets as the base foot soldier, short sturdy skeletal limbs and bare bone feet. Keep the ordinary soldier HEIGHT about the same as the reference; slightly broader stance and shoulders, no giant body. This enemy stands beside the plain sword-and-buckler footman and the purple-hooded archer as an ordinary troop, not a leader.
+Replace sword and shield with ONE simple functional TWO-HANDED BATTLE AXE: weathered wooden haft about 75percent of his body height, ONE medium-sized chipped grey iron axe blade at the upper end, clearly an axe not a hammer, not an enormous fantasy weapon. Both bony hands grip two distinct spots along the same haft in a plausible ready stance; axe held diagonally across the body with the blade raised to the right side of the image, everything entirely in frame. Axe blade is roughly the size of his skull, not larger than his torso. No shield and no spare weapon.
+Give him a plain battered dark iron OPEN helmet that leaves his whole ivory skull face and jaw visible, no horns, plume, crown or glowing decorations. One small simple grey iron shoulder plate held by a brown leather strap, a plain brown belt, and the same ragged dusty PURPLE waistcloth as the other skeletons. Rib cage remains clearly visible. Equipment sparse and worn, modest rank-and-file fighter. Balanced squat ready pose, feet apart and both knees slightly bent; weight suggests a committed slower axe swing. Menacing but charming cartoon game style, no blood or realistic horror.
+Preserve the reference's slightly elevated three-quarter front-right game camera, ground patch and quiet mossy ruined wall and conifers; full character centered with space around helmet, feet and axe. Background secondary. Crisp enlarged pixel clusters as if composed on a roughly256x256 logical grid. Avoid fine texture, painterly rendering, smooth gradients, 3D, fancy ornament, magic, particles and cinematic effects. No extra characters, no comparison panel, no UI, no health bar, no lettering or captions. This is only a proposed character image, not an animation atlas.
