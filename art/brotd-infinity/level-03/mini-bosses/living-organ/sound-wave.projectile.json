@@ -1,0 +1,20 @@
+{
+  "image": "sound-wave-128-lite.webp",
+  "size": {
+    "width": 128,
+    "height": 128
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "forwardDirection": "right",
+  "forwardAngleRadians": 0,
+  "visibleBoundsAlpha20": {
+    "x": 30,
+    "y": 27,
+    "width": 75,
+    "height": 85
+  },
+  "note": "One directional sound wave packet with three nested arcs. Rotate toward travel direction. Scale, origin, velocity, area and damage require integration; no gameplay implementation included."
+}

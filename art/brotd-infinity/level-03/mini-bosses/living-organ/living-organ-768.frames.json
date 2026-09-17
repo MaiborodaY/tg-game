@@ -1,0 +1,187 @@
+{
+  "image": "living-organ-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 198,
+        "height": 208
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 198,
+        "y": 0,
+        "width": 184,
+        "height": 208
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 382,
+        "y": 0,
+        "width": 186,
+        "height": 208
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 568,
+        "y": 0,
+        "width": 200,
+        "height": 208
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 208,
+        "width": 196,
+        "height": 180
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 196,
+        "y": 208,
+        "width": 186,
+        "height": 180
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 382,
+        "y": 208,
+        "width": 187,
+        "height": 180
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 569,
+        "y": 208,
+        "width": 199,
+        "height": 180
+      }
+    },
+    {
+      "index": 8,
+      "action": "shoot-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 388,
+        "width": 198,
+        "height": 185
+      }
+    },
+    {
+      "index": 9,
+      "action": "shoot-right",
+      "pose": 1,
+      "rect": {
+        "x": 198,
+        "y": 388,
+        "width": 187,
+        "height": 185
+      }
+    },
+    {
+      "index": 10,
+      "action": "shoot-right",
+      "pose": 2,
+      "rect": {
+        "x": 385,
+        "y": 388,
+        "width": 186,
+        "height": 185
+      }
+    },
+    {
+      "index": 11,
+      "action": "shoot-right",
+      "pose": 3,
+      "rect": {
+        "x": 571,
+        "y": 388,
+        "width": 197,
+        "height": 185
+      }
+    },
+    {
+      "index": 12,
+      "action": "shoot-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 573,
+        "width": 197,
+        "height": 195
+      }
+    },
+    {
+      "index": 13,
+      "action": "shoot-down",
+      "pose": 1,
+      "rect": {
+        "x": 197,
+        "y": 573,
+        "width": 187,
+        "height": 195
+      }
+    },
+    {
+      "index": 14,
+      "action": "shoot-down",
+      "pose": 2,
+      "rect": {
+        "x": 384,
+        "y": 573,
+        "width": 184,
+        "height": 195
+      }
+    },
+    {
+      "index": 15,
+      "action": "shoot-down",
+      "pose": 3,
+      "rect": {
+        "x": 568,
+        "y": 573,
+        "width": 200,
+        "height": 195
+      }
+    }
+  ],
+  "releasePose": 2,
+  "note": "Explicit crop rectangles preserve all organ pipes, bellows and skeletal feet. Rows: idle right, walk right, soundwave attack right, soundwave attack down. Pose 2 is release (indices 10 and 14). The sound wave is a separate projectile asset. Playback, scale, foot anchors, emission point and combat behavior require integration. No death sequence or gameplay code is included."
+}
