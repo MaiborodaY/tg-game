@@ -1,0 +1,16 @@
+# Запрос генерации концепта
+
+Метод: встроенный `imagegen`, исходный PNG сохранён без изменений. Концепт был предложен для второго уровня, затем по решению пользователя отложен для финального босса третьего уровня. Формулировка исходного запроса ниже сохранена дословно; анимационный атлас не создавался.
+
+Референс: [концепт Короля склепа](../../../level-02/bosses/crypt-king/crypt-king-concept.png), только стиль, камера и фон.
+
+```text
+Use case: stylized-concept / character variation.
+Edit this character concept for BroTD Infinity into ONE concept of a VAMPIRE FINAL BOSS. The provided image is an edit target for its game-art style, composition, camera and cemetery background ONLY. Completely remove the giant, coffin, chains, crown, bell, bandages and all its equipment. Replace the entire character silhouette with a distinct ancient vampire count.
+Preserve the square frame and the same muted graveyard setting: dusty grey-brown earth, crooked iron fence, dead trees, small gravestones, cobwebs and restrained violet spirit flames. Background stays secondary.
+The vampire: a tall, powerful, aristocratic undead ruler with pale cold lavender-grey skin, sharply angular handsome gaunt face, pointed ears, crimson eyes, swept-back black hair with silver temples and a pronounced widow's peak. Two clear ivory upper fangs in a restrained sinister smile. Large readable head and hands and compact stylized game proportions matching the reference, not realistic adult anatomy.
+A magnificent dark navy-black and deep-plum medieval mantle with dark wine-red lining. The HIGH DRAMATIC COLLAR and outward spread scalloped cape make a broad angular BAT-WING SILHOUETTE behind his shoulders. This is a cloth cape, not separate anatomical wings. A few bold tarnished silver clasps and one ruby at the chest, dark fitted medieval tunic, broad simple belt, tall pointed dark boots. Ragged but regal cape tips. No modern suit, tie, top hat, crown, plate-armored knight or skeleton face.
+His right clawed hand reaches forward toward the viewer in a commanding spellcasting gesture, with a small concentrated crimson magical light between the fingers; the other hand opens the cape to one side. Exactly two arms and two hands with intelligible anatomy. Grounded poised stance, slightly bent knees, one foot ahead, whole figure facing three-quarter right. Both feet visible; the complete cape, collar, hands and hair comfortably inside generous image margins. Imposing final-boss presence, proud and predatory, distinct from a bulky ghoul.
+Style must match the existing game: crisp chunky pixel art, stepped dark navy outlines, broad controlled pixel clusters, restrained 2-3-tone shading, clean silhouette readable as a mobile game sprite. Keep red magic small and subdued enough that the face and costume stay clear. No realistic rendering, painterly strokes, smooth vector art, excessive tiny decoration, mist obscuring feet or large particle effects.
+Single full-body character on the graveyard path, occupying about 75 percent of image height. Soft contact shadow. No other monsters, bats flying around, UI, text, labels, captions, watermark, grid, sprite sheet, bell or coffin. This is just an illustration for design approval, not an animation asset.
+```
