@@ -23,8 +23,8 @@ try {
   await mkdir(output, { recursive: true });
   await server.listen();
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  for (const width of [320, 390]) {
-    const context = await browser.newContext({ viewport: { width, height: 700 }, isMobile: true, hasTouch: true });
+  for (const { width, height } of [{ width: 320, height: 568 }, { width: 320, height: 700 }, { width: 390, height: 700 }]) {
+    const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
     await context.route('https://telegram.org/**', route => route.abort());
     await context.addInitScript(() => {
       window.checkNow = Number(sessionStorage.getItem('checkNow')) || 1800000000000;
@@ -46,25 +46,40 @@ try {
       await page.evaluate(() => window.barracksCheck.freeze());
     };
     const state = () => page.evaluate(() => window.barracksCheck.state());
-    const close = () => page.locator('#barracks-panel [data-close-overlay]').click();
-    const upgrade = async () => { await page.locator('#open-barracks').click(); await page.locator('#barracks-upgrade-toggle').click(); };
-    const fits = async () => {
-      const rect = await page.locator('#barracks-panel .menu-card').evaluate(element => {
+    const close = () => page.locator('#market-info-panel [data-close-overlay]').click();
+    const upgrade = () => page.locator('#open-market-info').click();
+    const lancerInfo = page.locator('#market-info-panel [data-recruit-type="lancer"]');
+    const fits = async (panel = '#market-info-panel') => {
+      const rect = await page.locator(`${panel} .menu-card`).evaluate(element => {
         const bounds = element.getBoundingClientRect();
         return { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom,
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
           scrollHeight: element.scrollHeight, clientHeight: element.clientHeight };
       });
-      assert.ok(rect.left >= 0 && rect.right <= width && rect.top >= 0 && rect.bottom <= 700, 'dialog fits viewport');
-      assert.ok(rect.scrollWidth <= rect.clientWidth + 1 && rect.scrollHeight <= rect.clientHeight + 1, 'dialog needs no scrolling');
+      if (rect.scrollWidth > rect.clientWidth + 1 || rect.scrollHeight > rect.clientHeight + 1) {
+        await page.screenshot({ path: fileURLToPath(new URL(`overflow-${width}x${height}.png`, output)) });
+      }
+      assert.ok(rect.left >= 0 && rect.right <= width && rect.top >= 0 && rect.bottom <= height, `${panel} fits ${width}×${height} viewport`);
+      assert.ok(rect.scrollWidth <= rect.clientWidth + 1 && rect.scrollHeight <= rect.clientHeight + 1, `${panel} needs no scrolling at ${width}×${height}: ${JSON.stringify(rect)}`);
     };
+    const screenshot = name => page.screenshot({ path: fileURLToPath(new URL(`${name}-${width}x${height}.png`, output)) });
     await page.goto('http://127.0.0.1:5200/');
     await ready();
+    assert.equal(await page.locator('#barracks-upgrade-toggle, #barracks-upgrade-details').count(), 0, 'old Barracks upgrade entry is removed');
+    assert.equal(await page.locator('#barracks-panel #barracks-start-upgrade').count(), 0);
+    await page.locator('#open-barracks').click();
+    assert.equal(await page.locator('#barracks-list').isVisible(), true, 'Barracks still opens its reserve inventory');
+    await page.locator('#barracks-panel [data-close-overlay]').click();
     await upgrade();
+    assert.equal(await page.locator('#market-info-panel [data-recruit-type]').count(), 4, 'Info always contains all four fighter types');
+    assert.equal(await lancerInfo.isVisible(), true, 'locked Lancer is discoverable in Info');
+    assert.match(await lancerInfo.innerText(), /Locked/);
+    assert.doesNotMatch(await lancerInfo.innerText(), /20%/, 'locked Lancer must not advertise an active recruitment chance');
+    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false, 'show requirement instead of purchase before unlock');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true, 'merged personal level must not unlock');
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /now Lv\. 4/);
+    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Swordsman.*Lv\. 5.*now Lv\. 4/);
     await fits();
-    await page.screenshot({ path: fileURLToPath(new URL(`locked-${width}.png`, output)) });
+    await screenshot('locked');
     await close();
     await page.locator('#transform-slave').click();
     await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
@@ -72,16 +87,31 @@ try {
     assert.equal((await state()).units[0].level, 50, 'training does not alter an existing fighter');
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
+    assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks II.*200 gold/);
+    assert.equal(await lancerInfo.locator('#barracks-start-upgrade').count(), 1, 'upgrade action lives beside Lancer');
+    await fits();
+    await screenshot('available');
     await page.locator('#barracks-start-upgrade').click();
     assert.equal((await state()).gold, 800);
     assert.equal((await state()).barracks.level, 1);
+    const startedAt = (await state()).barracks.upgradeStartedAt;
+    await page.locator('#barracks-start-upgrade').evaluate(button => button.click());
+    assert.equal((await state()).gold, 800, 'repeat start click cannot charge twice');
+    assert.equal((await state()).barracks.upgradeStartedAt, startedAt, 'repeat start cannot reset the timer');
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /100 gold/);
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false);
-    await page.evaluate(() => window.barracksCheck.advance(30 * 60 * 1000));
+    const initialCountdown = await page.locator('#barracks-upgrade-state').innerText();
+    await page.evaluate(() => window.barracksCheck.advance(37 * 1000));
+    assert.equal(await page.locator('#market-info-panel').isVisible(), true, 'Info remains open while time passes');
+    assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false, 'foreground tick does not create an offline receipt');
+    assert.notEqual(await page.locator('#barracks-upgrade-state').innerText(), initialCountdown, 'countdown refreshes in place');
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /99 gold/);
+    assert.equal(await page.locator('#barracks-upgrade-progress').evaluate(progress => progress.value), 37000);
+    await page.evaluate(() => window.barracksCheck.advance((30 * 60 - 37) * 1000));
     await page.locator('#collect-offline-rewards').click();
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /50 gold/);
     await fits();
-    await page.screenshot({ path: fileURLToPath(new URL(`building-${width}.png`, output)) });
+    await screenshot('building');
     await page.reload(); await ready();
     await upgrade();
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /50 gold/);
@@ -90,8 +120,13 @@ try {
     assert.equal((await state()).gold, beforeFinish.gold - 50);
     assert.equal((await state()).barracks.firstLancerPending, true);
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
+    await page.locator('#barracks-finish-upgrade').evaluate(button => button.click());
+    assert.equal((await state()).gold, beforeFinish.gold - 50, 'repeat finish click cannot charge twice');
+    assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true, 'unlocked Lancer shows normal training progress');
+    assert.match(await lancerInfo.innerText(), /20%/);
+    assert.doesNotMatch(await lancerInfo.innerText(), /Locked/);
     await fits();
-    await page.screenshot({ path: fileURLToPath(new URL(`complete-${width}.png`, output)) });
+    await screenshot('complete');
     await page.locator('#barracks-go-market').click();
     assert.equal(await page.locator('#market-convert-label').innerText(), 'Lancer next');
     await page.locator('#open-market-info').click();
@@ -109,6 +144,14 @@ try {
     await page.reload(); await ready();
     assert.equal((await state()).barracks.firstLancerPending, false);
     assert.equal(await page.locator('#market-convert-label').innerText(), 'Market');
+    await upgrade();
+    assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
+    assert.equal(await page.locator('#barracks-go-market').isVisible(), false, 'consumed guarantee leaves a normal recruitment row');
+    assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
+    assert.match(await lancerInfo.innerText(), /20%/);
+    await fits();
+    await screenshot('recruited-info');
+    await close();
     await page.locator('#transform-slave').click();
     await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
     assert.equal((await state()).reserve.at(-1).type, 'swordsman', 'guarantee is not repeated');
@@ -116,13 +159,13 @@ try {
     const lancer = (await state()).reserve.find(unit => unit.type === 'lancer');
     await page.locator(`[data-barracks-unit-id="${lancer.id}"]`).click();
     assert.match(await page.locator('#barracks-detail').innerText(), /48/);
-    await fits();
+    await fits('#barracks-panel');
     assert.equal(await page.locator('#barracks-detail img').evaluate(img => img.complete && img.naturalWidth > 0), true);
-    await page.screenshot({ path: fileURLToPath(new URL(`lancer-${width}.png`, output)) });
+    await screenshot('lancer');
     await page.locator(`[data-barracks-recruit-id="${lancer.id}"]`).click();
     await page.locator('#army-map').press('Enter');
     assert.equal((await state()).units[0].type, 'lancer');
-    await page.screenshot({ path: fileURLToPath(new URL(`formation-${width}.png`, output)) });
+    await screenshot('formation');
     await context.close();
   }
 
@@ -145,12 +188,16 @@ try {
   await page.evaluate(() => window.barracksCheck.freeze());
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.level, 2);
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
+  await page.locator('#open-market-info').click();
+  assert.match(await page.locator('#market-info-panel [data-recruit-type="lancer"]').innerText(), /20%/);
+  assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
+  assert.equal(await page.locator('#recruitment-guarantee').isVisible(), true);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await context.close();
   assert.deepEqual(failures, []);
-  console.log(`Mobile Barracks checks passed at 320/390px: training gate, timer/reload/offline, proportional finish, guarantee, odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
+  console.log(`Mobile Market Info checks passed at 320×568, 320×700 and 390×700: visible locked Lancer, training gate, inline upgrade, live timer/reload/offline, proportional finish, no duplicate charges, guarantee, odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
 } finally {
   await browser?.close();
   await server.close();

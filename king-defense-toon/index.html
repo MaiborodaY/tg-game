@@ -70,10 +70,26 @@
       <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="market-info-title" hidden>
         <div class="menu-card recruitment-info-card">
           <header class="menu-heading"><h2 id="market-info-title">Recruitment</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close recruitment details"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
-          <p class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter"><span aria-hidden="true">1</span><span class="slave-icon" aria-hidden="true"></span><span aria-hidden="true">→ 1 fighter</span></p>
-          <p id="recruitment-guarantee" class="recruitment-guarantee" hidden>Next: guaranteed Lancer for 1 slave. Regular chances resume after that.</p>
-          <div id="recruitment-details"></div>
-          <p class="recruitment-info-note">Recruitment levels affect new fighters. Merge matching fighters to raise an existing fighter’s level.</p>
+          <div class="recruitment-info-wallet"><p class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter"><span aria-hidden="true">1</span><span class="slave-icon" aria-hidden="true"></span><span aria-hidden="true">→ 1 fighter</span></p><span class="barracks-upgrade-wallet"><span class="coin-icon" aria-hidden="true"></span><b id="barracks-upgrade-gold">0</b></span></div>
+          <p id="recruitment-guarantee" class="recruitment-guarantee" hidden>Next: guaranteed Lancer for 1 slave.</p>
+          <div id="recruitment-details">
+            <div id="recruitment-current-types"></div>
+            <article id="lancer-recruitment" class="recruitment-detail" data-recruit-type="lancer">
+              <img id="barracks-lancer-art" alt="" hidden />
+              <div class="recruitment-detail-copy">
+                <div class="recruitment-detail-heading"><strong>Lancer</strong><span id="lancer-recruitment-chance">Locked</span></div>
+                <div id="lancer-recruitment-training" hidden></div>
+                <p id="barracks-upgrade-state" class="barracks-upgrade-state"></p>
+                <small id="barracks-upgrade-note"></small>
+                <progress id="barracks-upgrade-progress" hidden></progress>
+                <button id="barracks-start-upgrade" class="recruitment-upgrade-button" type="button" hidden>Upgrade Barracks II · 200 gold</button>
+                <button id="barracks-finish-upgrade" class="recruitment-upgrade-button" type="button" hidden>Finish now</button>
+                <button id="barracks-go-market" class="recruitment-upgrade-button" type="button" hidden>Go to Market</button>
+                <small id="barracks-upgrade-pricing" hidden>Finish price decreases with time.</small>
+              </div>
+            </article>
+          </div>
+          <p class="recruitment-info-note">Market recruits raise recruitment levels. Merging only raises personal levels.</p>
         </div>
       </section>
       <section id="buildings-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="buildings-title" hidden>
@@ -132,7 +148,7 @@
       </section>
       <section id="barracks-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="barracks-title" hidden>
         <div class="menu-card unit-picker-card barracks-card">
-          <header class="menu-heading"><div class="barracks-heading-title"><button id="barracks-back" class="icon-button" type="button" aria-label="Back to barracks" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m11 5-5 5 5 5m-5-5h10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2 id="barracks-title">Barracks</h2></div><div class="barracks-heading-actions"><button id="barracks-upgrade-toggle" class="barracks-upgrade-toggle" type="button" aria-label="View Barracks upgrade">Lv. I ↑</button><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close barracks"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div></header>
+          <header class="menu-heading"><div class="barracks-heading-title"><button id="barracks-back" class="icon-button" type="button" aria-label="Back to barracks" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m11 5-5 5 5 5m-5-5h10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2 id="barracks-title">Barracks</h2></div><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close barracks"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
           <div id="barracks-list">
             <div class="building-wallet"><span><b id="barracks-count">0</b> in reserve</span><span><span class="coin-icon" aria-hidden="true"></span><b id="barracks-gold">0</b> gold</span></div>
             <div id="barracks-options" class="reserve-options barracks-options"></div>
@@ -140,18 +156,6 @@
             <div id="barracks-pagination" class="reserve-pagination barracks-pagination" hidden><button id="barracks-prev" class="battle-button" type="button" aria-label="Previous barracks page">‹</button><span id="barracks-page">1 / 1</span><button id="barracks-next" class="battle-button" type="button" aria-label="Next barracks page">›</button></div>
           </div>
           <div id="barracks-detail" hidden></div>
-          <div id="barracks-upgrade-details" hidden>
-            <div class="barracks-upgrade-wallet"><span class="coin-icon" aria-hidden="true"></span><b id="barracks-upgrade-gold">0</b> gold</div>
-            <div class="barracks-unlock-unit"><img id="barracks-lancer-art" alt="Lancer" hidden /><div><strong>Lancer</strong><span>48 HP · 7 attack</span><small>Strikes from behind your frontline.</small></div></div>
-            <p id="barracks-upgrade-state" class="barracks-upgrade-state"></p>
-            <p id="barracks-upgrade-note" class="barracks-upgrade-note"></p>
-            <progress id="barracks-upgrade-progress" hidden></progress>
-            <p class="barracks-upgrade-odds">After upgrade: Swordsman 40% · Archer 25%<br />Healer 15% · Lancer 20%</p>
-            <button id="barracks-start-upgrade" class="battle-button" type="button">Upgrade · 200 gold</button>
-            <button id="barracks-finish-upgrade" class="battle-button" type="button" hidden>Finish now</button>
-            <button id="barracks-go-market" class="battle-button" type="button" hidden>Go to Market</button>
-            <p id="barracks-upgrade-pricing" class="barracks-upgrade-note" hidden></p>
-          </div>
           <p id="barracks-feedback" class="building-note" role="status" aria-live="polite">Tap for details · Hold to merge</p>
         </div>
       </section>

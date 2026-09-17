@@ -422,9 +422,11 @@ svg { display: block; }
 .recruitment-info-card .menu-heading { margin-bottom: 2px; }
 .recruitment-info-card .menu-heading h2 { font-size: 23px; line-height: 28px; }
 .recruitment-info-card .close-menu { flex-basis: 44px; width: 44px; height: 44px; }
-.recruitment-info-cost { display: flex; align-items: center; gap: 4px; margin-bottom: 9px; color: #85724c; font-size: 12px; line-height: 18px; }
-#recruitment-details { display: grid; gap: 7px; }
-.recruitment-detail { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 7px; border: 1px solid #b1b28a; border-radius: 4px; background: #e4e4bd; box-shadow: inset 0 1px #f5efd1, 0 1px #c8bd92; }
+.recruitment-info-wallet { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.recruitment-info-cost { display: flex; align-items: center; gap: 4px; color: #85724c; font-size: 12px; line-height: 18px; }
+#recruitment-details { display: grid; gap: 5px; }
+#recruitment-current-types { display: contents; }
+.recruitment-detail { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 7px; border: 1px solid #b1b28a; border-radius: 4px; background: #e4e4bd; box-shadow: inset 0 1px #f5efd1, 0 1px #c8bd92; }
 .recruitment-detail > img { flex: 0 0 41px; width: 41px; height: 48px; object-fit: contain; image-rendering: pixelated; }
 .recruitment-detail-copy { flex: 1; min-width: 0; }
 .recruitment-detail-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #526146; font-size: 15px; line-height: 18px; }
@@ -435,7 +437,17 @@ svg { display: block; }
 .recruitment-detail progress::-webkit-progress-bar { background: #d9d5ad; }
 .recruitment-detail progress::-webkit-progress-value { background: #8aaa69; box-shadow: inset 0 1px #b5cc8b; }
 .recruitment-detail progress::-moz-progress-bar { background: #8aaa69; box-shadow: inset 0 1px #b5cc8b; }
-.recruitment-info-note { margin: 10px 2px 0; color: #8d7a58; font-size: 11px; line-height: 15px; text-align: center; }
+.recruitment-info-note { margin: 6px 2px 0; color: #8d7a58; font-size: 11px; line-height: 15px; text-align: center; }
+.recruitment-detail.is-locked { background: #e6dfbd; border-color: #b6ac80; }
+.recruitment-detail.is-locked > img { opacity: .7; }
+.recruitment-detail.is-locked .recruitment-detail-heading span { color: #8c7753; font-size: 11px; }
+.recruitment-detail .barracks-upgrade-state { margin: 4px 0 2px; color: #576044; font-size: 11px; line-height: 15px; font-variant-numeric: tabular-nums; }
+.recruitment-upgrade-button { display: block; width: 100%; min-height: 44px; margin: 5px 0 0; padding: 3px 5px; border: 1px solid #799160; border-radius: 4px; background: #d4e0b1; color: #47603a; box-shadow: inset 0 1px #f0f2d0, 0 1px #a5b17e; font: inherit; font-size: 12px; line-height: 16px; }
+.recruitment-upgrade-button:hover:not(:disabled) { background: #e0e9c1; }
+.recruitment-upgrade-button:active:not(:disabled) { transform: translateY(1px); }
+.recruitment-upgrade-button:disabled { opacity: .55; }
+#barracks-upgrade-pricing { margin-top: 4px; }
+.market-info-trigger.upgrade-available span { border-color: #79974f; background: #dce7b5; box-shadow: 0 0 0 2px #a8bc72; }
 @keyframes recruit-walk-in { 0% { opacity: 0; transform: translateY(15px) scale(.9); } 7% { opacity: 1; } 22% { opacity: 1; transform: translateY(0) scale(.78); } 28%, 100% { opacity: 0; transform: translateY(-5px) scale(.5); } }
 @keyframes recruit-stride { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
 @keyframes recruit-step { from { transform: translateY(0); } to { transform: translateY(-1px); } }
@@ -497,26 +509,9 @@ svg { display: block; }
 #barracks-feedback { min-height: 14px; margin-top: 5px; color: #82734f; font-size: 10px; line-height: 14px; }
 .barracks-pagination { justify-content: center; margin-top: 5px; }
 .barracks-empty { padding: 10px 2px; text-align: center; }
-.barracks-heading-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.barracks-upgrade-toggle { min-width: 54px; min-height: 44px; padding: 2px 5px; border: 1px solid #9c9e74; border-radius: 4px; background: #e1dfb5; color: #616648; font: inherit; font-size: 12px; }
-.barracks-upgrade-toggle.is-available { border-color: #7c9254; background: #d4e1aa; color: #435d38; }
 .barracks-building-level { position: absolute; top: 2px; left: 2px; min-width: 14px; padding: 0 2px; border-radius: 2px; background: #eae0b9; color: #68724d; font-size: 10px; line-height: 13px; }
-.barracks-trigger.upgrade-available { border-color: #79974f; box-shadow: inset 0 0 0 1px #a8bc72, 0 2px #b8a57e; }
 .barracks-upgrade-wallet { display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: #847453; font-size: 12px; }
 .barracks-upgrade-wallet .coin-icon { width: 12px; height: 14px; }
-.barracks-unlock-unit { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid #c7b68b; }
-.barracks-unlock-unit img { width: 44px; height: 48px; object-fit: contain; image-rendering: pixelated; }
-.barracks-unlock-unit > div { display: flex; flex-direction: column; gap: 2px; }
-.barracks-unlock-unit strong { color: #4f6044; font-size: 17px; }
-.barracks-unlock-unit span, .barracks-unlock-unit small { color: #82714f; font-size: 11px; }
-.barracks-upgrade-state { margin: 9px 0 4px; color: #50613e; font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; }
-.barracks-upgrade-note, .barracks-upgrade-odds { margin: 4px 0 8px; color: #81704e; font-size: 11px; line-height: 15px; }
-.barracks-upgrade-odds { padding: 6px 0; border-block: 1px solid #c7b68b; }
-#barracks-upgrade-progress { display: block; appearance: none; width: 100%; height: 8px; margin: 6px 0; overflow: hidden; border: 1px solid #a4aa77; border-radius: 3px; background: #d9d5ad; accent-color: #879e5a; }
-#barracks-upgrade-progress::-webkit-progress-bar { background: #d9d5ad; }
-#barracks-upgrade-progress::-webkit-progress-value { background: #8aaa69; }
-#barracks-upgrade-progress::-moz-progress-bar { background: #8aaa69; }
-#barracks-upgrade-details > .battle-button { width: 100%; min-height: 44px; font-size: 14px; }
 .recruitment-guarantee { padding: 6px 8px; margin: 0 0 7px; border: 1px solid #a5b178; border-radius: 4px; background: #dfe6ba; color: #55643e; font-size: 12px; line-height: 16px; }
 /* Keep changing map instructions available to assistive technology without a duplicate text row. */
 #army-hint { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

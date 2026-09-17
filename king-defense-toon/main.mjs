@@ -46,7 +46,7 @@ let gold = STARTING_GOLD, units = [], nextId = 1;
 let reserve = [], recruitment = createRecruitment(), reservePage = 0;
 let barracksPage = 0, starterSupplyGranted = false;
 let barracksSelectedId = null;
-let barracks = createBarracks(), barracksUpgradeOpen = false;
+let barracks = createBarracks();
 let marketHintCompleted = false;
 let pendingRecruitId = null;
 let pendingMerge = null;
@@ -282,7 +282,7 @@ function refreshRecruitment() {
   byId('market-convert-label').textContent = barracks.firstLancerPending ? 'Lancer next' : 'Market';
   const upgrade = getBarracksUpgrade(barracks, recruitment);
   byId('barracks-building-level').textContent = barracks.level === 2 ? 'II' : ['upgrading', 'ready'].includes(upgrade.status) ? '…' : 'I';
-  byId('open-barracks').classList.toggle('upgrade-available', upgrade.canStart);
+  byId('open-market-info').classList.toggle('upgrade-available', upgrade.canStart);
   byId('open-market-info').disabled = !canEditFormation();
   refreshMarketHint();
   if (overlay?.id === 'market-info-panel') refreshRecruitmentDetails();
@@ -327,23 +327,30 @@ function finishRecruitReveal() {
   byId('market-recruit-reveal').hidden = true;
 }
 
-function refreshRecruitmentDetails() {
+function recruitmentProgressMarkup(type) {
   const pluralNames = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers' };
+  const progress = getRecruitProgress(recruitment, type);
+  const capped = progress.level === RECRUIT_LEVEL_CAP;
+  const remaining = progress.needed - progress.progress;
+  const detail = capped ? 'Maximum recruitment level' : remaining + ' more ' + (remaining === 1 ? types[type].name.toLowerCase() : pluralNames[type]) + ' → Lv. ' + (progress.level + 1);
+  return '<p>Recruitment level · Lv. ' + progress.level + '</p>'
+    + '<progress max="' + progress.needed + '" value="' + (capped ? progress.needed : progress.progress) + '" aria-label="' + types[type].name + ': ' + detail + '"></progress><small>' + detail + '</small>';
+}
+
+function refreshRecruitmentDetails() {
   byId('recruitment-guarantee').hidden = !barracks.firstLancerPending;
-  byId('recruitment-details').innerHTML = getRecruitChances(barracks.level === 2).map(({ type, chance }) => {
+  // Keep the inline purchase controls mounted so timer/income updates preserve focus.
+  byId('recruitment-current-types').innerHTML = getRecruitChances(barracks.level === 2).filter(({ type }) => type !== 'lancer').map(({ type, chance }) => {
     const progress = getRecruitProgress(recruitment, type);
-    const capped = progress.level === RECRUIT_LEVEL_CAP;
-    const remaining = progress.needed - progress.progress;
     const portrait = scene?.getUnitArt(type, progress.level);
     const chanceLabel = Math.round(chance * 100) + '%';
-    const value = capped ? progress.needed : progress.progress;
-    const detail = capped ? 'Maximum recruitment level' : remaining + ' more ' + (remaining === 1 ? types[type].name.toLowerCase() : pluralNames[type]) + ' → Lv. ' + (progress.level + 1);
     return '<article class="recruitment-detail" data-recruit-type="' + type + '">'
       + (portrait ? '<img src="' + portrait + '" alt="" />' : '')
       + '<div class="recruitment-detail-copy"><div class="recruitment-detail-heading"><strong>' + types[type].name + '</strong><span>' + chanceLabel + '</span></div>'
-      + '<p>Recruitment level · Lv. ' + progress.level + '</p>'
-      + '<progress max="' + progress.needed + '" value="' + value + '" aria-label="' + types[type].name + ': ' + detail + '"></progress><small>' + detail + '</small></div></article>';
+      + recruitmentProgressMarkup(type) + '</div></article>';
   }).join('');
+  byId('lancer-recruitment-training').innerHTML = recruitmentProgressMarkup('lancer');
+  refreshBarracksUpgrade();
 }
 
 byId('transform-slave').addEventListener('click', () => {
@@ -458,7 +465,7 @@ function tickEconomy(now = performance.now()) {
   economyUnsaved += elapsed;
   if (earned || slaves || barracksFinished || economyUnsaved >= 15) { save(); economyUnsaved = 0; }
   if (earned || slaves || barracksFinished) refresh(); else refreshEconomy();
-  if (overlay?.id === 'barracks-panel') refreshBarracksUpgrade();
+  if (overlay?.id === 'market-info-panel') refreshBarracksUpgrade();
   if (slaves) showMarketArrival(slaves);
 }
 
@@ -479,7 +486,7 @@ function setOverlay(id, opener) {
 function closeOverlay(restoreFocus = true) {
   if (!overlay) return;
   const wasPicker = overlay.id === 'unit-panel';
-  if (overlay.id === 'barracks-panel') { barracksSelectedId = null; barracksUpgradeOpen = false; }
+  if (overlay.id === 'barracks-panel') barracksSelectedId = null;
   if (wasPicker && !movingId) {
     selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   }
@@ -504,7 +511,6 @@ for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-pro
       pendingRecruitId = null;
       pendingMerge = null;
       barracksSelectedId = null;
-      barracksUpgradeOpen = false;
       byId('barracks-feedback').textContent = 'Tap for details · Hold to merge';
     }
     setOverlay(panel, byId(button)); refresh();
@@ -519,7 +525,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
   byId(panel).addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      if (panel === 'barracks-panel' && (barracksSelectedId !== null || barracksUpgradeOpen)) {
+      if (panel === 'barracks-panel' && barracksSelectedId !== null) {
         showBarracksList();
         return;
       }
@@ -940,57 +946,48 @@ function refreshBarracksUpgrade() {
   const upgrading = info.status === 'upgrading' || info.status === 'ready';
   const unlocked = info.lancerUnlocked;
   const unavailable = !canEditFormation() || transforming;
-  const toggle = byId('barracks-upgrade-toggle');
-  toggle.textContent = unlocked ? 'Lv. II' : upgrading ? 'Building' : 'Lv. I ↑';
-  toggle.classList.toggle('is-available', info.canStart);
-  toggle.setAttribute('aria-label', unlocked ? 'Barracks level 2. Lancer unlocked.' : 'View Barracks upgrade');
   byId('barracks-upgrade-gold').textContent = gold;
-  const portrait = scene?.getUnitArt('lancer', 1);
+  const portrait = scene?.getUnitArt('lancer', getRecruitProgress(recruitment, 'lancer').level);
   byId('barracks-lancer-art').hidden = !portrait;
   if (portrait) byId('barracks-lancer-art').src = portrait;
-  byId('barracks-upgrade-state').textContent = unlocked ? 'Lancer unlocked'
-    : upgrading ? `Ready in ${formatUpgradeTime(info.remainingMs)}`
-    : info.canStart ? 'Upgrade available'
-    : `Requires Swordsman recruitment Lv. 5 · now Lv. ${info.recruitLevel}`;
-  byId('barracks-upgrade-note').textContent = unlocked
-    ? barracks.firstLancerPending ? 'Next Market conversion: guaranteed Lancer for 1 slave.' : 'Recruit Lancers at the Market. Merge matching fighters to level up.'
-    : upgrading ? 'Building continues offline. Finish instantly for the remaining time’s price.'
-    : info.canStart ? '200 gold · 1 hour, including offline. Then your next slave becomes a Lancer.'
-    : 'Raise the Swordsman recruitment level by receiving swordsmen at the Market. Merged fighter levels do not count.';
+  byId('lancer-recruitment').classList.toggle('is-locked', !unlocked);
+  byId('lancer-recruitment-chance').textContent = unlocked ? '20%' : 'Locked';
+  byId('lancer-recruitment-training').hidden = !unlocked;
+  byId('barracks-upgrade-state').hidden = unlocked;
+  byId('barracks-upgrade-state').textContent = upgrading ? `Barracks II · ${formatUpgradeTime(info.remainingMs)}`
+    : info.canStart ? 'Unlock with Barracks II'
+    : `Requires Swordsman Lv. ${info.requiredRecruitLevel} · now Lv. ${info.recruitLevel}`;
+  byId('barracks-upgrade-note').hidden = unlocked;
+  byId('barracks-upgrade-note').textContent = upgrading ? 'Building continues offline.'
+    : info.canStart ? '1 hour · continues offline · first Lancer guaranteed'
+    : 'Raise its recruitment level at the Market.';
   byId('barracks-upgrade-progress').hidden = !upgrading;
   byId('barracks-upgrade-progress').value = info.durationMs - info.remainingMs;
   byId('barracks-upgrade-progress').max = info.durationMs;
   byId('barracks-upgrade-progress').setAttribute('aria-label', `Barracks construction: ${formatUpgradeTime(info.remainingMs)} remaining`);
   const start = byId('barracks-start-upgrade');
-  start.hidden = upgrading || unlocked;
+  start.hidden = !info.canStart;
   start.disabled = unavailable || !info.canStart || gold < info.cost;
-  start.textContent = `Upgrade · ${info.cost} gold`;
+  start.textContent = `Upgrade Barracks II · ${info.cost} gold`;
+  start.setAttribute('aria-label', `Upgrade Barracks to level 2 for ${info.cost} gold. Takes 1 hour.`);
   const finish = byId('barracks-finish-upgrade');
   finish.hidden = !upgrading;
   finish.disabled = unavailable || info.remainingMs === 0 || gold < info.speedUpCost;
   finish.textContent = `Finish now · ${info.speedUpCost} gold`;
-  byId('barracks-go-market').hidden = !unlocked;
+  byId('barracks-go-market').hidden = !barracks.firstLancerPending;
   byId('barracks-upgrade-pricing').hidden = !upgrading;
-  byId('barracks-upgrade-pricing').textContent = '100 gold for a full hour · price decreases as time passes';
 }
 
-byId('barracks-upgrade-toggle').addEventListener('click', () => {
-  if (!canEditFormation() || overlay?.id !== 'barracks-panel' || transforming) return;
-  barracksSelectedId = null;
-  barracksUpgradeOpen = true;
-  refresh();
-  byId('barracks-back').focus({ preventScroll: true });
-});
 byId('barracks-start-upgrade').addEventListener('click', () => {
-  if (!canEditFormation() || overlay?.id !== 'barracks-panel' || !barracksUpgradeOpen || transforming) return;
+  if (!canEditFormation() || overlay?.id !== 'market-info-panel' || transforming) return;
   const result = startBarracksUpgrade(barracks, recruitment, gold);
   if (!result.ok) { refresh(); return; }
   gold = result.gold;
   save(); refresh();
-  byId('barracks-back').focus({ preventScroll: true });
+  byId('market-info-panel').querySelector('[data-close-overlay]').focus({ preventScroll: true });
 });
 byId('barracks-finish-upgrade').addEventListener('click', () => {
-  if (!canEditFormation() || overlay?.id !== 'barracks-panel' || !barracksUpgradeOpen || transforming) return;
+  if (!canEditFormation() || overlay?.id !== 'market-info-panel' || transforming) return;
   const result = speedUpBarracks(barracks, gold);
   // Save natural completion too if the last second elapsed between rendering and tapping.
   gold = result.gold;
@@ -1018,14 +1015,11 @@ function refreshBarracks() {
   }).join('');
   const selected = reserve.find(unit => unit.id === barracksSelectedId);
   if (!selected) barracksSelectedId = null;
-  byId('barracks-list').hidden = !!selected || barracksUpgradeOpen;
+  byId('barracks-list').hidden = !!selected;
   byId('barracks-detail').hidden = !selected;
-  byId('barracks-back').hidden = !selected && !barracksUpgradeOpen;
-  byId('barracks-feedback').hidden = !!selected || barracksUpgradeOpen;
-  byId('barracks-title').textContent = selected ? 'Unit details' : barracksUpgradeOpen ? 'Barracks II' : 'Barracks';
-  byId('barracks-upgrade-toggle').hidden = !!selected || barracksUpgradeOpen;
-  byId('barracks-upgrade-details').hidden = !barracksUpgradeOpen;
-  refreshBarracksUpgrade();
+  byId('barracks-back').hidden = !selected;
+  byId('barracks-feedback').hidden = !!selected;
+  byId('barracks-title').textContent = selected ? 'Unit details' : 'Barracks';
   if (selected) {
     const stats = getUnitStats(selected.type, selected.level);
     const portrait = scene?.getUnitArt(selected.type, selected.level);
@@ -1038,7 +1032,6 @@ function refreshBarracks() {
 function showBarracksList() {
   const previousId = barracksSelectedId;
   barracksSelectedId = null;
-  barracksUpgradeOpen = false;
   refresh();
   (byId('barracks-options').querySelector(`[data-barracks-unit-id="${previousId}"]`)
     ?? byId('barracks-options').querySelector('button')
@@ -1236,7 +1229,7 @@ byId('reset').addEventListener('click', () => {
     return;
   }
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
-  barracks = createBarracks(); barracksUpgradeOpen = false;
+  barracks = createBarracks();
   barracksPage = 0; barracksSelectedId = null; starterSupplyGranted = true;
   pendingRecruitId = null;
   pendingMerge = null;
