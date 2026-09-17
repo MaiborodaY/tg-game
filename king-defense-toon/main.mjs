@@ -11,8 +11,8 @@ import { createFrameRateMeter } from './fps.mjs';
 import { createEconomy, treasuryRate, treasuryUpgradeCost, accrueTreasury, checkpointTreasury, claimOfflineTreasury, TREASURY_OFFLINE_LIMIT_SECONDS, upgradeTreasury, rollSlaveDrop, progressionAfterBattle, advanceCaptureClock, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.mjs';
 import { MARKET_BUILD_COST, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS, buildMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.mjs';
 import { SAVE_KEY, STARTING_GOLD, createProgression, migrateCampaignSave, cellKey, nextCellCost, unlockCell, claimFirstClear } from './progression.mjs';
-import { RECRUIT_COST, RECRUIT_LEVEL_CAP, RECRUIT_CHANCES, createRecruitment, normalizeUnitLevel, getRecruitProgress, getUnitStats, receiveRecruit } from './recruitment.mjs';
-import { STARTING_SLAVES, SELL_PRICE } from './barracks.mjs';
+import { RECRUIT_COST, RECRUIT_LEVEL_CAP, createRecruitment, normalizeUnitLevel, getRecruitProgress, getUnitStats, getRecruitChances, receiveRecruit } from './recruitment.mjs';
+import { STARTING_SLAVES, SELL_PRICE, createBarracks, getBarracksUpgrade, completeBarracksUpgrade, startBarracksUpgrade, speedUpBarracks, consumeFirstLancerGuarantee } from './barracks.mjs';
 import { getMergeResult } from './unit-merging.mjs';
 import { setupUnitDrag } from './unit-drag.mjs';
 import './style.css';
@@ -46,6 +46,7 @@ let gold = STARTING_GOLD, units = [], nextId = 1;
 let reserve = [], recruitment = createRecruitment(), reservePage = 0;
 let barracksPage = 0, starterSupplyGranted = false;
 let barracksSelectedId = null;
+let barracks = createBarracks(), barracksUpgradeOpen = false;
 let marketHintCompleted = false;
 let pendingRecruitId = null;
 let pendingMerge = null;
@@ -144,8 +145,9 @@ try {
   if (saved && Number.isFinite(saved.gold) && saved.gold >= 0) {
     starterSupplyGranted = saved.starterSupplyGranted === true;
     recruitment = createRecruitment(saved.recruitment);
+    barracks = createBarracks(saved.barracks);
     // Existing conversions also count as having learned this action before the hint existed.
-    marketHintCompleted = saved.marketHintCompleted === true || RECRUIT_CHANCES.some(({ type }) => recruitment.received[type] > 0);
+    marketHintCompleted = saved.marketHintCompleted === true || Object.values(recruitment.received).some(count => count > 0);
     progression = createProgression(saved.progression);
     const occupied = new Set();
     units = (Array.isArray(saved.units) ? saved.units : []).filter(unit => {
@@ -180,12 +182,13 @@ if (!starterSupplyGranted) {
 }
 
 function save() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, barracks, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
     offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves } })); } catch { /* The map also works without storage. */ }
 }
 
 function collectOfflineIncome() {
   const now = Date.now();
+  completeBarracksUpgrade(barracks, now);
   const earned = claimOfflineTreasury(economy, now).gold;
   const slaves = claimOfflineMarket(economy, now).slaves;
   gold += earned;
@@ -271,7 +274,15 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock;
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || economy.slaves < RECRUIT_COST || transforming;
-  button.setAttribute('aria-label', `Transform 1 slave into a fighter. ${economy.slaves} slaves available. Swordsman 60%, Archer 25%, Healer 15%.`);
+  const chances = getRecruitChances(barracks.level === 2);
+  const odds = chances.map(({ type, chance }) => `${types[type].name} ${Math.round(chance * 100)}%`).join(', ');
+  const nextRecruit = barracks.firstLancerPending ? 'Next recruit: guaranteed Lancer.' : odds;
+  button.setAttribute('aria-label', `Transform 1 slave into a fighter. ${economy.slaves} slaves available. ${nextRecruit}`);
+  button.title = nextRecruit;
+  byId('market-convert-label').textContent = barracks.firstLancerPending ? 'Lancer next' : 'Market';
+  const upgrade = getBarracksUpgrade(barracks, recruitment);
+  byId('barracks-building-level').textContent = barracks.level === 2 ? 'II' : ['upgrading', 'ready'].includes(upgrade.status) ? '…' : 'I';
+  byId('open-barracks').classList.toggle('upgrade-available', upgrade.canStart);
   byId('open-market-info').disabled = !canEditFormation();
   refreshMarketHint();
   if (overlay?.id === 'market-info-panel') refreshRecruitmentDetails();
@@ -317,8 +328,9 @@ function finishRecruitReveal() {
 }
 
 function refreshRecruitmentDetails() {
-  const pluralNames = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers' };
-  byId('recruitment-details').innerHTML = RECRUIT_CHANCES.map(({ type, chance }) => {
+  const pluralNames = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers' };
+  byId('recruitment-guarantee').hidden = !barracks.firstLancerPending;
+  byId('recruitment-details').innerHTML = getRecruitChances(barracks.level === 2).map(({ type, chance }) => {
     const progress = getRecruitProgress(recruitment, type);
     const capped = progress.level === RECRUIT_LEVEL_CAP;
     const remaining = progress.needed - progress.progress;
@@ -336,7 +348,11 @@ function refreshRecruitmentDetails() {
 
 byId('transform-slave').addEventListener('click', () => {
   if (!canEditFormation() || overlay || transforming || economy.slaves < RECRUIT_COST) return;
-  const result = receiveRecruit(recruitment);
+  completeBarracksUpgrade(barracks);
+  const result = receiveRecruit(recruitment, Math.random, {
+    lancerUnlocked: barracks.level === 2, guaranteedLancer: barracks.firstLancerPending,
+  });
+  consumeFirstLancerGuarantee(barracks, result.type);
   marketHintCompleted = true;
   economy.slaves -= RECRUIT_COST;
   reserve.push({ id: nextId++, type: result.type, level: result.level });
@@ -422,6 +438,7 @@ function tickEconomy(now = performance.now()) {
   economyLastTick = now;
   if (destroyed || !economyActive) return;
   const wallNow = Date.now();
+  const barracksFinished = completeBarracksUpgrade(barracks, wallNow);
   const checkpoints = [economy.treasuryUpdatedAt, economy.marketBuilt ? economy.marketUpdatedAt : null];
   const wallElapsed = Math.max(0, ...checkpoints.filter(value => value !== null).map(value => (wallNow - value) / 1000));
   // OS sleep can suspend a visible page without a visibility event. Cap that gap like any absence.
@@ -439,8 +456,9 @@ function tickEconomy(now = performance.now()) {
   advanceCaptureClock(economy, elapsed);
   gold += earned;
   economyUnsaved += elapsed;
-  if (earned || slaves || economyUnsaved >= 15) { save(); economyUnsaved = 0; }
-  if (earned || slaves) refresh(); else refreshEconomy();
+  if (earned || slaves || barracksFinished || economyUnsaved >= 15) { save(); economyUnsaved = 0; }
+  if (earned || slaves || barracksFinished) refresh(); else refreshEconomy();
+  if (overlay?.id === 'barracks-panel') refreshBarracksUpgrade();
   if (slaves) showMarketArrival(slaves);
 }
 
@@ -461,7 +479,7 @@ function setOverlay(id, opener) {
 function closeOverlay(restoreFocus = true) {
   if (!overlay) return;
   const wasPicker = overlay.id === 'unit-panel';
-  if (overlay.id === 'barracks-panel') barracksSelectedId = null;
+  if (overlay.id === 'barracks-panel') { barracksSelectedId = null; barracksUpgradeOpen = false; }
   if (wasPicker && !movingId) {
     selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   }
@@ -486,6 +504,7 @@ for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-pro
       pendingRecruitId = null;
       pendingMerge = null;
       barracksSelectedId = null;
+      barracksUpgradeOpen = false;
       byId('barracks-feedback').textContent = 'Tap for details · Hold to merge';
     }
     setOverlay(panel, byId(button)); refresh();
@@ -500,7 +519,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
   byId(panel).addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      if (panel === 'barracks-panel' && barracksSelectedId !== null) {
+      if (panel === 'barracks-panel' && (barracksSelectedId !== null || barracksUpgradeOpen)) {
         showBarracksList();
         return;
       }
@@ -909,6 +928,80 @@ function refreshReserve(selected) {
   }).join('');
 }
 
+function formatUpgradeTime(milliseconds) {
+  const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return minutes >= 60 ? `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+    : `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function refreshBarracksUpgrade() {
+  const info = getBarracksUpgrade(barracks, recruitment);
+  const upgrading = info.status === 'upgrading' || info.status === 'ready';
+  const unlocked = info.lancerUnlocked;
+  const unavailable = !canEditFormation() || transforming;
+  const toggle = byId('barracks-upgrade-toggle');
+  toggle.textContent = unlocked ? 'Lv. II' : upgrading ? 'Building' : 'Lv. I ↑';
+  toggle.classList.toggle('is-available', info.canStart);
+  toggle.setAttribute('aria-label', unlocked ? 'Barracks level 2. Lancer unlocked.' : 'View Barracks upgrade');
+  byId('barracks-upgrade-gold').textContent = gold;
+  const portrait = scene?.getUnitArt('lancer', 1);
+  byId('barracks-lancer-art').hidden = !portrait;
+  if (portrait) byId('barracks-lancer-art').src = portrait;
+  byId('barracks-upgrade-state').textContent = unlocked ? 'Lancer unlocked'
+    : upgrading ? `Ready in ${formatUpgradeTime(info.remainingMs)}`
+    : info.canStart ? 'Upgrade available'
+    : `Requires Swordsman recruitment Lv. 5 · now Lv. ${info.recruitLevel}`;
+  byId('barracks-upgrade-note').textContent = unlocked
+    ? barracks.firstLancerPending ? 'Next Market conversion: guaranteed Lancer for 1 slave.' : 'Recruit Lancers at the Market. Merge matching fighters to level up.'
+    : upgrading ? 'Building continues offline. Finish instantly for the remaining time’s price.'
+    : info.canStart ? '200 gold · 1 hour, including offline. Then your next slave becomes a Lancer.'
+    : 'Raise the Swordsman recruitment level by receiving swordsmen at the Market. Merged fighter levels do not count.';
+  byId('barracks-upgrade-progress').hidden = !upgrading;
+  byId('barracks-upgrade-progress').value = info.durationMs - info.remainingMs;
+  byId('barracks-upgrade-progress').max = info.durationMs;
+  byId('barracks-upgrade-progress').setAttribute('aria-label', `Barracks construction: ${formatUpgradeTime(info.remainingMs)} remaining`);
+  const start = byId('barracks-start-upgrade');
+  start.hidden = upgrading || unlocked;
+  start.disabled = unavailable || !info.canStart || gold < info.cost;
+  start.textContent = `Upgrade · ${info.cost} gold`;
+  const finish = byId('barracks-finish-upgrade');
+  finish.hidden = !upgrading;
+  finish.disabled = unavailable || info.remainingMs === 0 || gold < info.speedUpCost;
+  finish.textContent = `Finish now · ${info.speedUpCost} gold`;
+  byId('barracks-go-market').hidden = !unlocked;
+  byId('barracks-upgrade-pricing').hidden = !upgrading;
+  byId('barracks-upgrade-pricing').textContent = '100 gold for a full hour · price decreases as time passes';
+}
+
+byId('barracks-upgrade-toggle').addEventListener('click', () => {
+  if (!canEditFormation() || overlay?.id !== 'barracks-panel' || transforming) return;
+  barracksSelectedId = null;
+  barracksUpgradeOpen = true;
+  refresh();
+  byId('barracks-back').focus({ preventScroll: true });
+});
+byId('barracks-start-upgrade').addEventListener('click', () => {
+  if (!canEditFormation() || overlay?.id !== 'barracks-panel' || !barracksUpgradeOpen || transforming) return;
+  const result = startBarracksUpgrade(barracks, recruitment, gold);
+  if (!result.ok) { refresh(); return; }
+  gold = result.gold;
+  save(); refresh();
+  byId('barracks-back').focus({ preventScroll: true });
+});
+byId('barracks-finish-upgrade').addEventListener('click', () => {
+  if (!canEditFormation() || overlay?.id !== 'barracks-panel' || !barracksUpgradeOpen || transforming) return;
+  const result = speedUpBarracks(barracks, gold);
+  // Save natural completion too if the last second elapsed between rendering and tapping.
+  gold = result.gold;
+  save(); refresh();
+  if (barracks.level === 2) byId('barracks-go-market').focus({ preventScroll: true });
+});
+byId('barracks-go-market').addEventListener('click', () => {
+  closeOverlay(false);
+  byId('transform-slave').focus({ preventScroll: true });
+});
+
 function refreshBarracks() {
   const pageCount = Math.max(1, Math.ceil(reserve.length / BARRACKS_PAGE_SIZE));
   barracksPage = Math.max(0, Math.min(barracksPage, pageCount - 1));
@@ -925,11 +1018,14 @@ function refreshBarracks() {
   }).join('');
   const selected = reserve.find(unit => unit.id === barracksSelectedId);
   if (!selected) barracksSelectedId = null;
-  byId('barracks-list').hidden = !!selected;
+  byId('barracks-list').hidden = !!selected || barracksUpgradeOpen;
   byId('barracks-detail').hidden = !selected;
-  byId('barracks-back').hidden = !selected;
-  byId('barracks-feedback').hidden = !!selected;
-  byId('barracks-title').textContent = selected ? 'Unit details' : 'Barracks';
+  byId('barracks-back').hidden = !selected && !barracksUpgradeOpen;
+  byId('barracks-feedback').hidden = !!selected || barracksUpgradeOpen;
+  byId('barracks-title').textContent = selected ? 'Unit details' : barracksUpgradeOpen ? 'Barracks II' : 'Barracks';
+  byId('barracks-upgrade-toggle').hidden = !!selected || barracksUpgradeOpen;
+  byId('barracks-upgrade-details').hidden = !barracksUpgradeOpen;
+  refreshBarracksUpgrade();
   if (selected) {
     const stats = getUnitStats(selected.type, selected.level);
     const portrait = scene?.getUnitArt(selected.type, selected.level);
@@ -942,6 +1038,7 @@ function refreshBarracks() {
 function showBarracksList() {
   const previousId = barracksSelectedId;
   barracksSelectedId = null;
+  barracksUpgradeOpen = false;
   refresh();
   (byId('barracks-options').querySelector(`[data-barracks-unit-id="${previousId}"]`)
     ?? byId('barracks-options').querySelector('button')
@@ -1139,6 +1236,7 @@ byId('reset').addEventListener('click', () => {
     return;
   }
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
+  barracks = createBarracks(); barracksUpgradeOpen = false;
   barracksPage = 0; barracksSelectedId = null; starterSupplyGranted = true;
   pendingRecruitId = null;
   pendingMerge = null;

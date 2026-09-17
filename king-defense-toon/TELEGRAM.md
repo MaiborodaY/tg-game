@@ -1,6 +1,6 @@
 # BroTD Infinity in Telegram
 
-Latest verified release, 2026-09-17: commit `48543e4` on `codex/pixel-chronicle`
+Verified release record, 2026-09-17: commit `48543e4` on `codex/pixel-chronicle`
 was pushed and deployed to https://224eac10.tg-game-23f.pages.dev/; the existing
 https://bro-infinity.tg-game-23f.pages.dev/ alias serves it. This includes the
 first-thirty-wave balance changes, the five-enemy boss encounter on wave 1-1/10,

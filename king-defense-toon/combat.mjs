@@ -7,6 +7,7 @@ export const COMBAT_PACE = 0.85;
 export const KING_MAX_HP = 100;
 const BASE_RULES = {
   swordsman: { range: 38, interval: 1.1, duration: .65, speed: 57 },
+  lancer: { range: 75, interval: 1.3, duration: .75, speed: 53 },
   archer: { range: 185, interval: 1.4, duration: .7, speed: 49 },
   healer: { range: 77.5, interval: 1.45, duration: .8, speed: 47 },
   king: { range: 42, interval: 1.2, duration: .7, speed: 0 },
@@ -421,7 +422,8 @@ function act(battle, unit, dt) {
   }
   if (unit.side === 'enemy') {
     moveToward(unit, target, dt, unit.range - 2);
-  } else if (unit.type === 'swordsman') {
+  } else if (unit.type === 'swordsman' || unit.type === 'lancer') {
+    // Spear reach lets lancers stop behind defenders, while retaining melee land-path checks.
     moveToward(unit, target, dt, unit.range - 2);
   } else unit.action = 'idle';
 }

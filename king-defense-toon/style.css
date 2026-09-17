@@ -498,6 +498,26 @@ svg { display: block; }
 .barracks-pagination { justify-content: center; margin-top: 5px; }
 .barracks-empty { padding: 10px 2px; text-align: center; }
 .barracks-heading-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.barracks-upgrade-toggle { min-width: 54px; min-height: 44px; padding: 2px 5px; border: 1px solid #9c9e74; border-radius: 4px; background: #e1dfb5; color: #616648; font: inherit; font-size: 12px; }
+.barracks-upgrade-toggle.is-available { border-color: #7c9254; background: #d4e1aa; color: #435d38; }
+.barracks-building-level { position: absolute; top: 2px; left: 2px; min-width: 14px; padding: 0 2px; border-radius: 2px; background: #eae0b9; color: #68724d; font-size: 10px; line-height: 13px; }
+.barracks-trigger.upgrade-available { border-color: #79974f; box-shadow: inset 0 0 0 1px #a8bc72, 0 2px #b8a57e; }
+.barracks-upgrade-wallet { display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: #847453; font-size: 12px; }
+.barracks-upgrade-wallet .coin-icon { width: 12px; height: 14px; }
+.barracks-unlock-unit { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid #c7b68b; }
+.barracks-unlock-unit img { width: 44px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+.barracks-unlock-unit > div { display: flex; flex-direction: column; gap: 2px; }
+.barracks-unlock-unit strong { color: #4f6044; font-size: 17px; }
+.barracks-unlock-unit span, .barracks-unlock-unit small { color: #82714f; font-size: 11px; }
+.barracks-upgrade-state { margin: 9px 0 4px; color: #50613e; font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.barracks-upgrade-note, .barracks-upgrade-odds { margin: 4px 0 8px; color: #81704e; font-size: 11px; line-height: 15px; }
+.barracks-upgrade-odds { padding: 6px 0; border-block: 1px solid #c7b68b; }
+#barracks-upgrade-progress { display: block; appearance: none; width: 100%; height: 8px; margin: 6px 0; overflow: hidden; border: 1px solid #a4aa77; border-radius: 3px; background: #d9d5ad; accent-color: #879e5a; }
+#barracks-upgrade-progress::-webkit-progress-bar { background: #d9d5ad; }
+#barracks-upgrade-progress::-webkit-progress-value { background: #8aaa69; }
+#barracks-upgrade-progress::-moz-progress-bar { background: #8aaa69; }
+#barracks-upgrade-details > .battle-button { width: 100%; min-height: 44px; font-size: 14px; }
+.recruitment-guarantee { padding: 6px 8px; margin: 0 0 7px; border: 1px solid #a5b178; border-radius: 4px; background: #dfe6ba; color: #55643e; font-size: 12px; line-height: 16px; }
 /* Keep changing map instructions available to assistive technology without a duplicate text row. */
 #army-hint { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .unit-picker-card .selected-info { height: auto; min-height: 40px; justify-content: flex-start; gap: 9px; }

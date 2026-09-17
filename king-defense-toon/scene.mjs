@@ -4,6 +4,7 @@ import { getUnitRange, KING_MAX_HP } from './combat.mjs';
 import { getUnitRank } from './unit-ranks.mjs';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.mjs';
 import { UNIT_RANK_ASSETS } from './rank-art.mjs';
+import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.mjs';
 import { GOBLIN_ROUND_ASSETS, getEnemyRoundArt } from './goblin-round-art.mjs';
 import { allyDeathOpacity } from './ally-animation.mjs';
 import { KING_IMAGE_URL, UNIT_IMAGES } from './asset-web.mjs';
@@ -14,6 +15,7 @@ import { UNDEAD_ART } from './undead-art.mjs';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.mjs';
 import { getEnemyCombatType } from './waves.mjs';
 import { TINY_WARRIOR_LAYOUT, tinyWarriorFrame } from './tiny-warrior.mjs';
+import { tinyLancerFrame } from './tiny-lancer.mjs';
 import { TINY_TORCH_LAYOUT, tinyTorchFrame } from './tiny-torch.mjs';
 import { TINY_GOBLIN_ARCHER_LAYOUT, tinyGoblinArcherFrame } from './tiny-goblin-archer.mjs';
 import { TINY_GOBLIN_CHIEF_LAYOUT, tinyGoblinChiefFrame } from './tiny-goblin-chief.mjs';
@@ -33,7 +35,10 @@ const ALLY_ANIMATION_URLS = {
   swordsman: new URL('./assets/tiny-swords-warrior-blue.png', import.meta.url).href,
   archer: new URL('./assets/tiny-swords-archer-blue.png', import.meta.url).href,
   healer: new URL('./assets/tiny-monk/Idle.png', import.meta.url).href,
+  lancer: LANCER_ASSETS[1].sheet,
 };
+const ALLY_RANK_ASSETS = { ...UNIT_RANK_ASSETS,
+  lancer: Object.fromEntries(Object.entries(LANCER_ASSETS).filter(([rank]) => rank !== '1')) };
 const ALLY_ANIMATION_METADATA = {
   king: {
     layout: TINY_KING_LAYOUT,
@@ -92,8 +97,18 @@ const ALLY_ANIMATION_METADATA = {
     frameFor: tinyMonkIdleFrame,
     horizontalFacing: true,
   },
+  lancer: {
+    ...LANCER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: true,
+    renderHeight: 46,
+    portraitFrame: 0,
+    frameFor: tinyLancerFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS = { swordsman: 50, archer: 42, healer: 39 };
+const ALLY_HEALTH_OFFSETS = { swordsman: 50, archer: 42, healer: 39, lancer: 50 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -355,7 +370,7 @@ function drawRange(context, type, x, y, ghost = false) {
   context.restore();
 }
 
-function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankLevel = 1) {
+function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankLevel = 1, compact = false) {
   const sourceAnimation = animations?.[type];
   const baseAnimation = sourceAnimation?.ranks?.[getUnitRank(actor?.level ?? rankLevel).level] ?? sourceAnimation;
   const animation = actor?.action === 'heal' && baseAnimation?.cast?.atlas ? baseAnimation.cast
@@ -368,7 +383,7 @@ function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankL
   const animationTime = !actor || actor.action === 'idle' ? time * 0.65 : time;
   const frame = meta.frameFor(actor, animationTime);
   const sourceFrame = animation.bounds[frame] ? frame : idle;
-  const source = animation.bounds[sourceFrame];
+  const source = (compact && meta.compactSourceRects?.[sourceFrame]) || animation.bounds[sourceFrame];
   const layout = meta.layout;
   const cellWidth = animation.atlas.width / layout.columns;
   const cellHeight = animation.atlas.height / layout.rows;
@@ -393,7 +408,7 @@ function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankL
   return true;
 }
 
-function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0, goblinArt = null, allyAnimations = null, rankLevel = null, renderScale = 1) {
+function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0, goblinArt = null, allyAnimations = null, rankLevel = null, renderScale = 1, compact = false) {
   // The royal sprite must stay inside its narrow peninsula, even on very tall phones.
   if (isKing) renderScale = Math.min(renderScale, 1.12);
   context.save();
@@ -424,7 +439,7 @@ function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0
     || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
-  } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1)) {
+  } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1, compact)) {
     // Ally frame sequences are inspected separately; prompt frame numbers are not assumed to match impact.
 
   } else {
@@ -620,6 +635,7 @@ function drawEffect(context, effect) {
     context.fillStyle = '#baf3a7';
     context.fillText(label, targetX, targetY - 23 - p * 14);
   } else if (effect.type === 'slash'
+    && effect.sourceType !== 'lancer'
     && !['goblin', 'boar'].includes(getEnemyCombatType(effect.sourceType))) {
     const heavy = ['goblinChief', 'ogre'].includes(getEnemyCombatType(effect.sourceType));
     const angle = Math.atan2(targetY - effect.y, targetX - effect.x);
@@ -714,7 +730,7 @@ async function loadSceneAssets() {
     frameFor: tinyMonkHealFrame,
   });
   // Use the pack's authored color sheets, cached once; no per-frame tint or pixel readback.
-  await Promise.all(Object.entries(UNIT_RANK_ASSETS).flatMap(([type, ranks]) =>
+  await Promise.all(Object.entries(ALLY_RANK_ASSETS).flatMap(([type, ranks]) =>
     Object.entries(ranks).map(async ([level, urls]) => {
       const [image, walk, cast] = await Promise.all([
         loadImage(urls.sheet), urls.walk ? loadImage(urls.walk) : null,
@@ -834,7 +850,7 @@ export async function createScene(canvas, {
           if (unit.id === state.draggedId) context.globalAlpha = 0.35;
           const centerX = FIELD.gridX + col * FIELD.cellWidth + FIELD.cellWidth / 2;
           const feet = FIELD.gridY + (row + 1) * FIELD.cellHeight - 5;
-          drawUnit(context, unit.type, centerX, feet, false, null, formationOnly ? 0 : state.time, null, allyAnimations, unit.level ?? 1, actorScale);
+          drawUnit(context, unit.type, centerX, feet, false, null, formationOnly ? 0 : state.time, null, allyAnimations, unit.level ?? 1, actorScale, formationOnly);
           const maxHp = unit.maxHp ?? getUnitStats(unit.type, unit.level).hp;
           const health = Math.max(0, Math.min(1, (unit.hp ?? maxHp) / Math.max(1, maxHp)));
           const healthY = feet - (ALLY_HEALTH_OFFSETS[unit.type] ?? 54) * actorScale;
@@ -894,7 +910,7 @@ export async function createScene(canvas, {
       if (ghost) {
         context.save();
         context.globalAlpha = 0.5;
-        drawUnit(context, state.placementType, ghost.x, ghost.y, false, null, formationOnly ? 0 : state.time, null, allyAnimations, state.placementLevel ?? 1);
+        drawUnit(context, state.placementType, ghost.x, ghost.y, false, null, formationOnly ? 0 : state.time, null, allyAnimations, state.placementLevel ?? 1, 1, formationOnly);
         context.restore();
       }
       if (!formationOnly) drawKing(context, state.selectedId === 'king', null, state.time, true, allyAnimations, actorScale);
@@ -949,9 +965,10 @@ export async function createScene(canvas, {
       return point ? cellAtPoint(point.x, point.y) : null;
     },
     getPortrait(type) {
-      return unitImages.get(type)?.portrait ?? null;
+      return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
+      if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
       return UNIT_RANK_ASSETS[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {

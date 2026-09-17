@@ -33,6 +33,17 @@ export const UNIT_TYPES = Object.freeze([
     description: 'Follows and heals your guard. Cannot heal the king.',
     spriteColumn: 2,
   }),
+  Object.freeze({
+    id: 'lancer',
+    name: 'Lancer',
+    cost: 0,
+    hp: 48,
+    damage: 7,
+    role: 'Reach',
+    color: '#5b91cf',
+    description: 'Strikes one enemy from behind your front line. Less durable than a swordsman.',
+    spriteColumn: 3,
+  }),
 ]);
 
 export const UNIT_TYPE_BY_ID = Object.freeze(

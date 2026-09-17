@@ -1,6 +1,6 @@
 # Campaign economy v3 — two levels, 20 rounds each
 
-Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels reach 100; the old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with the same three allied classes and king. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
+Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels reach 100; the old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with three starting allied classes, an unlockable Lancer and the king. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
 
 ## Starting position and spending
 
@@ -12,10 +12,10 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Additional tiles | Any locked location; successive prices 25, 50, 100, 175, 275, 400, 550, 750, 1,000, 1,300, 1,650, 2,100 gold |
 | Total expansion cost | 8,375 gold for all 12 additional tiles |
 | Gold recruitment | Removed; all newly obtained fighters come from slave conversion |
-| Slave conversion | One slave becomes one individual reserve fighter: 60% swordsman, 25% archer, 15% healer |
+| Slave conversion | One slave becomes one individual reserve fighter: 60% swordsman, 25% archer, 15% healer before Barracks II; then 40% / 25% / 15% / 20% Lancer |
 | Recruitment level | 5 x current recruitment level additional matching conversions per increase; cap 100; affects only newly converted fighters |
 | Personal level / Merge | Same-type owned fighters can merge into a deployed fighter, adding their levels and consuming the source; cap 100; no currency cost |
-| Gold upgrades | Removed; existing fighters retain their personal levels |
+| Gold personal-level upgrades | Removed; existing fighters retain their personal levels |
 | Barracks Recruit | Select a reserve fighter, then choose an army tile; free deployment or replacement; selection alone changes no ownership |
 | Individual Sell | In a reserve fighter's detail view; one gold, with the last owned fighter protected |
 | Reserve placement / replacement | Free; each fighter retains identity and level; the replaced fighter returns to reserve |
@@ -34,11 +34,21 @@ The **5 × 3 Army grid stays below the battlefield** during preparation and comb
 
 The current battle retains its own fighter snapshot. The next wave uses the latest saved formation, including changes made during combat or its automatic countdown. Automatic waves and building income continue under the unit picker and other menus. The recruitment update does not alter combat rewards, capture rules, building rates or offline caps.
 
+## Barracks II: timed Lancer unlock
+
+The upgrade requires **Swordsman recruitment level 5**: **50 received swordsmen** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy the requirement. Construction spends **200 gold** once and takes **one real hour**, including offline time. Battle speed does not affect it.
+
+Optional instant completion costs `ceil(100 × remainingMs / 3,600,000)`, capped at 100 gold: thirty minutes cost 50, the last 36 seconds cost one, and natural completion is free. The live price is recalculated at purchase; reloads and repeated clicks cannot repeat the payment.
+
+After completion, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **40% swordsman / 25% archer / 15% healer / 20% Lancer**. Before completion, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact.
+
+The Lancer has **48 HP / 7 damage / 75 range / 1.3-second base attack interval**, one target per attack and the shared five-percent personal-level growth. Placement is free, sale returns one gold, and only matching Lancers merge. Waiting avoids the optional acceleration cost. No new completion-time estimate, king upgrade or other economy change is implied.
+
 ## Individual recruits and personal levels
 
-Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Rolls are **60% swordsman / 25% archer / 15% healer**. There is no guaranteed class or automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
+Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Before Barracks II completes, rolls are **60% swordsman / 25% archer / 15% healer**. Completion grants one guaranteed Lancer conversion, then changes the odds as described below. There is no automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
 
-The small **i** at the upper right of the Army dock opens **Recruitment**, showing all three class chances (60% / 25% / 15%), each current recruitment level and how many more fighters of that type are needed for the next level. This panel is available even with zero slaves and spends nothing. It uses saved per-type counts, updates after conversions and shows the level-100 cap. The persistent last-recruit caption is removed; conversion has its transfer animation and a short result notice in the right gutter.
+The small **i** at the upper right of the Army dock opens **Recruitment**, showing the currently unlocked class chances (60% / 25% / 15% before Barracks II; 40% / 25% / 15% / 20% after completion), each current recruitment level and how many more fighters of that type are needed for the next level. This panel is available even with zero slaves and spends nothing. It uses saved per-type counts, updates after conversions and shows the level-100 cap. The persistent last-recruit caption is removed; conversion has its transfer animation and a short result notice in the right gutter.
 
 The result's level is calculated **after incrementing that type's count**. Advancing from recruitment level L to L+1 needs **5 x L** more matching fighters. Cumulative cost at level L is **5 x L x (L-1) / 2** for a fresh account.
 
@@ -57,7 +67,7 @@ The result's level is calculated **after incrementing that type's count**. Advan
 
 **Migration:** version-1 recruitment data moves to version 2 without resetting the campaign or changing received totals. A fixed per-type legacyTrainingCredit preserves the prior recruitment level and its proportional partial progress (rounded down by less than one matching recruit). At the cap, partial progress is zero. Version-2 loads reuse saved credit rather than recomputing it. For example, an old count of nine swordsmen stays nine with 21 training credit: recruitment remains level 4 and requires 20 further swordsmen for level 5. Existing personal levels remain, but all fighters use the gentler stats below. Newly started accounts have no legacy credit.
 
-The level-100 limit is a long-term technical cap, not a target for campaign completion. Without legacy credit, the expected total slave conversions for a first level-4 fighter **obtained directly from Market** are 50 swordsman / 120 archer / 200 healer, based on current probabilities; these are averages, not guarantees or elapsed-time estimates. Merging can produce a level-4 fighter earlier. Each class tracks its own recruitment count independently of merges.
+The level-100 limit is a long-term technical cap, not a target for campaign completion. Without legacy credit, the expected total slave conversions for a first level-4 fighter **obtained directly from Market** are 50 swordsman / 120 archer / 200 healer, using the Barracks I probabilities throughout; these are averages, not guarantees or elapsed-time estimates. Merging can produce a level-4 fighter earlier. Each class tracks its own recruitment count independently of merges.
 
 Barracks shows compact fighter icons with personal levels. Tapping an icon opens its detail view with HP, Attack, Healing when applicable, and **Recruit**, **Merge** and **Sell** actions. Tapping Recruit closes the menu and selects the fighter for placement without removing it from reserve or changing any balance. Choosing an empty unlocked tile deploys it for free; choosing an occupied tile swaps that guard into reserve. A locked tile offers a gold unlock first and deploys the selected fighter after purchase. Both fighters keep their identities and personal levels. Canceling placement leaves ownership and resources unchanged; reloading also leaves an unplaced selection safely in reserve. Completed placements save immediately and affect the next wave, leaving the active battle's snapshot untouched.
 
