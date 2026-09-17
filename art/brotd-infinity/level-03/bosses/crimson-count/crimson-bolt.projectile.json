@@ -1,0 +1,20 @@
+{
+  "image": "crimson-bolt-128-lite.webp",
+  "size": {
+    "width": 128,
+    "height": 128
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "forwardDirection": "right",
+  "forwardAngleRadians": 0,
+  "visibleBoundsAlpha20": {
+    "x": 17,
+    "y": 47,
+    "width": 97,
+    "height": 37
+  },
+  "note": "One compact crimson magic bolt pointing right, with attached trails to the left. Rotate toward travel direction. Scale, origin, velocity and damage require integration; no gameplay implementation included."
+}

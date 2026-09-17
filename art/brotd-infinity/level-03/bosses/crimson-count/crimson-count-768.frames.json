@@ -1,0 +1,187 @@
+{
+  "image": "crimson-count-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 200,
+        "height": 206
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 200,
+        "y": 0,
+        "width": 186,
+        "height": 206
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 386,
+        "y": 0,
+        "width": 183,
+        "height": 206
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 569,
+        "y": 0,
+        "width": 199,
+        "height": 206
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 206,
+        "width": 198,
+        "height": 183
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 198,
+        "y": 206,
+        "width": 185,
+        "height": 183
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 383,
+        "y": 206,
+        "width": 185,
+        "height": 183
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 568,
+        "y": 206,
+        "width": 200,
+        "height": 183
+      }
+    },
+    {
+      "index": 8,
+      "action": "shoot-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 389,
+        "width": 199,
+        "height": 181
+      }
+    },
+    {
+      "index": 9,
+      "action": "shoot-right",
+      "pose": 1,
+      "rect": {
+        "x": 199,
+        "y": 389,
+        "width": 183,
+        "height": 181
+      }
+    },
+    {
+      "index": 10,
+      "action": "shoot-right",
+      "pose": 2,
+      "rect": {
+        "x": 382,
+        "y": 389,
+        "width": 191,
+        "height": 181
+      }
+    },
+    {
+      "index": 11,
+      "action": "shoot-right",
+      "pose": 3,
+      "rect": {
+        "x": 573,
+        "y": 389,
+        "width": 195,
+        "height": 181
+      }
+    },
+    {
+      "index": 12,
+      "action": "shoot-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 570,
+        "width": 198,
+        "height": 198
+      }
+    },
+    {
+      "index": 13,
+      "action": "shoot-down",
+      "pose": 1,
+      "rect": {
+        "x": 198,
+        "y": 570,
+        "width": 185,
+        "height": 198
+      }
+    },
+    {
+      "index": 14,
+      "action": "shoot-down",
+      "pose": 2,
+      "rect": {
+        "x": 383,
+        "y": 570,
+        "width": 189,
+        "height": 198
+      }
+    },
+    {
+      "index": 15,
+      "action": "shoot-down",
+      "pose": 3,
+      "rect": {
+        "x": 572,
+        "y": 570,
+        "width": 196,
+        "height": 198
+      }
+    }
+  ],
+  "releasePose": 2,
+  "note": "Explicit crop rectangles preserve the complete cape, collar, hands, hair and boots. Rows: idle right, walk right, cast right, cast down. Pose 2 is release (indices 10 and 14). The crimson bolt is a separate projectile asset. Playback, scale, foot anchors, emission point and combat behavior require integration. No death sequence or gameplay code is included."
+}
