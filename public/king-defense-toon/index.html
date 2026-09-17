@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#eee2bf" />
+    <meta name="description" content="BroTD Infinity: build your guard and defend your king against goblins and undead across two levels." />
+    <title>BroTD Infinity</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+    <script type="module" crossorigin src="./assets/index-B6YXwscO.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-1IJxztxc.css">
+  </head>
+  <body>
+    <main id="app" aria-label="BroTD Infinity formation">
+      <section class="battlefield" aria-label="Formation battlefield">
+        <canvas id="battle" width="502" height="445" aria-label="Whispering Woods battlefield. Manage your next wave army on the formation below." tabindex="0"></canvas>
+      <nav class="wave-track" aria-label="Wave progress">
+        <span class="wave-label"><span class="level-label"><b id="level-number">1-1</b></span><span class="wave-caption">Wave</span><span><strong id="wave-number">1</strong><span id="wave-total" class="wave-total"></span></span></span>
+        <ol id="wave-nodes" class="wave-nodes"></ol>
+      </nav>
+        <button id="open-profile" class="profile-trigger" type="button" aria-label="Open profile and settings" title="Profile and settings" aria-haspopup="dialog" aria-controls="profile-panel"><span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21v-2a8 8 0 0 1 16 0v2Z" fill="currentColor"/></svg></span></button>
+        <div class="phase-plaque"><span aria-hidden="true"></span><b id="phase-label">Prepare your guard</b></div>
+        <div class="gold-balance battlefield-gold" aria-label="Gold"><span class="coin-icon" aria-hidden="true"></span><span id="gold-count">125</span></div>
+        <div id="battle-toolbar" hidden><button id="battle-speed" type="button" aria-pressed="false" aria-label="Battle speed: 1×. Switch to 2×" title="Battle speed: 1×. Switch to 2×">×1</button></div>
+        <button id="start-wave" class="battle-button" type="button" disabled><span class="start-arrow" aria-hidden="true"></span><span id="start-label">Start</span></button>
+        <span id="fps-counter" aria-label="Frames per second" aria-live="off">— FPS</span>
+        <section id="result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+          <div class="result-emblem" aria-hidden="true">♛</div><p id="result-eyebrow" class="result-eyebrow">WHISPERING WOODS · WAVE 1</p>
+          <h2 id="result-title">Wave cleared!</h2><p id="result-copy"></p><div id="result-stats"></div>
+          <button id="return-prep" class="battle-button" type="button">Back to formation</button>
+        </section>
+      </section>
+
+      <section class="army-dock" aria-labelledby="army-title">
+        <div class="sr-only"><h2 id="army-title">Army</h2><p id="army-status" role="status" aria-live="polite">Tap a tile to build your army.</p><span id="army-count" aria-label="Army capacity">0 / 3</span></div>
+        <div class="army-stage">
+          <canvas id="army-map" width="306" height="184" aria-label="Next wave formation. Tap an empty tile to recruit, a guard to edit, or a locked tile to unlock." aria-describedby="army-hint" tabindex="0"></canvas>
+          <div id="toast" role="status" aria-live="polite"></div>
+        </div>
+        <p id="army-hint">Changes are saved automatically and apply to the next wave.</p>
+        <div class="recruitment-dock">
+          <div class="market-tools">
+            <button id="cancel-army-move" class="battle-button" type="button" aria-label="Cancel placement" title="Cancel placement" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+            <button id="open-market-info" class="market-info-trigger" type="button" aria-label="Recruitment chances and levels" title="Recruitment chances and levels" aria-haspopup="dialog" aria-controls="market-info-panel"><span aria-hidden="true">i</span></button>
+          </div>
+          <div class="recruitment-route">
+          <button id="transform-slave" class="market-transform" type="button" aria-label="Transform 1 slave into a random recruit">
+            <span class="market-workshop" aria-hidden="true"><img class="market-transform-art" src="./assets/slave-market-v2-DDCiRn5g.webp" alt="" width="192" height="180" /></span>
+            <span class="market-spark market-transform-spark" aria-hidden="true">✦</span>
+            <span class="market-stock"><span class="slave-icon" aria-hidden="true"></span><b id="market-slaves">0</b></span>
+            <span class="market-convert-cost" aria-hidden="true">Market</span>
+            <span id="market-first-use-hint" class="market-first-use-hint" hidden><svg viewBox="0 0 16 14" aria-hidden="true"><path d="M8 1v10m-5-4 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tap</span></span>
+          </button>
+          <span id="market-arrival" class="market-arrival" role="status" aria-live="polite"></span>
+          <img id="market-recruit-reveal" class="market-recruit-reveal" alt="" hidden />
+          <button id="open-barracks" class="barracks-trigger" type="button" aria-label="Open barracks" aria-haspopup="dialog" aria-controls="barracks-panel">
+            <img class="barracks-art" src="./assets/castle-blue-DQbxjTyH.png" alt="" width="320" height="256" />
+            <span class="barracks-label">Barracks</span><b id="barracks-stock" class="barracks-stock">0</b>
+          </button>
+          <svg id="recruit-transfer" viewBox="0 0 22 30" aria-hidden="true"><ellipse cx="11" cy="28" rx="8" ry="2" fill="#64654a" opacity=".25"/><g class="transfer-body"><path class="transfer-leg transfer-leg-back" d="m10 19-3 8H4" fill="none" stroke="#514b3d" stroke-width="3" stroke-linecap="round"/><path class="transfer-leg transfer-leg-front" d="m12 19 3 8h3" fill="none" stroke="#514b3d" stroke-width="3" stroke-linecap="round"/><path d="m8 10-3 10h12l-3-10Z" fill="#a89a70" stroke="#514b3d" stroke-width="1.4" stroke-linejoin="round"/><path class="transfer-arm" d="m13 12 3 5 3-1" fill="none" stroke="#bc9470" stroke-width="2.7" stroke-linecap="round"/><circle cx="11" cy="6" r="4" fill="#d3ad82" stroke="#514b3d" stroke-width="1.4"/><path d="M7 6V4l3-2 4 1 1 3-4-1Z" fill="#665540"/></g></svg>
+          </div>
+          <div class="town-tools">
+            <button id="open-buildings" class="town-trigger" type="button" aria-label="Open buildings" title="Buildings" aria-haspopup="dialog" aria-controls="buildings-panel">
+              <svg class="town-icon" viewBox="0 0 40 40" aria-hidden="true" shape-rendering="crispEdges"><path d="M3 19h11v16H3Zm24-3h10v19H27Z" fill="#ad9470"/><path d="M5 21h7v12H5Zm24-3h6v15h-6Z" fill="#decca0"/><path d="M1 17h2v-3h3v-3h5v3h3v3h2v3H1Zm24-3h2v-3h3V8h4v3h3v3h2v3H25Z" fill="#47676a"/><path d="M3 17h11v2H3Zm24-3h10v2H27Z" fill="#80afb0"/><path d="M12 10h16v25H12V6h4v4h3V6h4v4h3V6h4v8H12Z" fill="#776c53"/><path d="M14 14h12v19H14Z" fill="#e6d4a7"/><path d="M17 17h6v5h-6ZM7 24h3v5H7Zm23-3h3v5h-3Z" fill="#55777a"/><path d="M17 27h6v8h-6Z" fill="#796042"/><path d="M2 35h36v2H2Z" fill="#807257"/></svg>
+              <span class="town-resource" aria-label="Slaves" hidden><span class="slave-icon" aria-hidden="true"></span><span id="slaves-count">0</span></span>
+              <span class="town-label" aria-hidden="true">Buildings</span>
+            </button>
+          </div>
+        </div>
+      </section>
+      <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="market-info-title" hidden>
+        <div class="menu-card recruitment-info-card">
+          <header class="menu-heading"><h2 id="market-info-title">Recruitment</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close recruitment details"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+          <p class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter"><span aria-hidden="true">1</span><span class="slave-icon" aria-hidden="true"></span><span aria-hidden="true">→ 1 fighter</span></p>
+          <div id="recruitment-details"></div>
+          <p class="recruitment-info-note">Recruitment levels affect new fighters. Merge matching fighters to raise an existing fighter’s level.</p>
+        </div>
+      </section>
+      <section id="buildings-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="buildings-title" hidden>
+        <div class="menu-card">
+          <header class="menu-heading"><h2 id="buildings-title">Buildings</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close buildings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+          <div class="building-wallet"><span><span class="coin-icon" aria-hidden="true"></span><b id="building-gold">125</b> gold</span><span><span class="slave-icon" aria-hidden="true"></span><b id="building-slaves">0</b> slaves</span></div>
+          <div id="buildings-tabs" class="building-tabs" role="tablist" aria-label="Buildings">
+            <button id="tab-treasury" class="battle-button building-tab" type="button" role="tab" data-building="treasury" aria-controls="treasury-building" aria-selected="true" tabindex="0">Treasury</button>
+            <button id="tab-market" class="battle-button building-tab" type="button" role="tab" data-building="market" aria-controls="market-building" aria-selected="false" tabindex="-1">Market</button>
+            <button id="tab-army-space" class="battle-button building-tab" type="button" role="tab" data-building="army-space" aria-controls="army-space-building" aria-selected="false" tabindex="-1">Army space</button>
+          </div>
+          <article id="treasury-building" class="building-card" role="tabpanel" aria-labelledby="tab-treasury">
+            <div class="building-overview">
+              <div class="building-art" aria-hidden="true"><svg viewBox="0 0 100 88"><ellipse cx="50" cy="78" rx="41" ry="6" fill="#8d8d65" opacity=".22"/><path d="M18 34h64v42H18Z" fill="#d9c698" stroke="#6e6247" stroke-width="2"/><path d="M14 31 50 9l36 22v7H14Z" fill="#568d99" stroke="#4e6662" stroke-width="2" stroke-linejoin="round"/><path d="m22 31 28-16 28 16" fill="none" stroke="#91b7b0" stroke-width="3"/><path d="M21 42h8v28h-8Zm50 0h8v28h-8Z" fill="#f2e1b3" stroke="#97865f" stroke-width="1.5"/><path d="M33 42h34v30H33Z" fill="#92794f" stroke="#6e6247" stroke-width="2"/><path d="M48 43h4v28h-4" fill="#bea168"/><path d="M13 71h74v7H13Z" fill="#e9d7aa" stroke="#7e6d4a" stroke-width="2"/><circle cx="50" cy="30" r="8" fill="#eac35f" stroke="#816338" stroke-width="2"/><path d="M50 25v10" stroke="#a87d33" stroke-width="2"/><ellipse cx="70" cy="78" rx="8" ry="3" fill="#eac35f" stroke="#9c783b" stroke-width="1.5"/><ellipse cx="73" cy="73" rx="7" ry="3" fill="#f3d67e" stroke="#9c783b" stroke-width="1.5"/></svg></div>
+              <div class="building-description"><span class="building-level">Level <b id="treasury-level">1</b></span><h3 id="treasury-title">Treasury</h3><p><span class="coin-pip" aria-hidden="true"></span><b id="treasury-rate">1</b> gold / min</p></div>
+            </div>
+            <div class="treasury-timer"><span>Next income</span><b id="treasury-countdown">60s</b></div>
+            <div class="treasury-meter" role="progressbar" aria-label="Next treasury income" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="treasury-progress"></span></div>
+            <button id="treasury-upgrade" class="battle-button" type="button"><span>Upgrade</span><span class="upgrade-price"><span class="coin-pip" aria-hidden="true"></span><b id="treasury-cost">75</b></span></button>
+            <p class="building-note">+1 gold / min per level. Maximum: level 5.</p>
+            <p id="treasury-offline-note" class="building-note">Offline storage: 4h · up to 240 gold</p>
+          </article>
+          <article id="market-building" class="building-card" role="tabpanel" aria-labelledby="tab-market" hidden>
+            <div class="building-overview">
+              <div class="building-art market-art" aria-hidden="true"><img src="./assets/slave-market-v2-DDCiRn5g.webp" alt="" width="192" height="180" loading="lazy" /></div>
+              <div class="building-description"><span id="market-status" class="building-level">Not built</span><h3 id="market-title">Slave Market</h3><p id="market-rate">1 slave / 30 min</p></div>
+            </div>
+            <p id="market-description">Build to start receiving slaves.</p>
+            <div id="market-production" hidden>
+              <div class="treasury-timer"><span>Next slave</span><b id="market-countdown">30:00</b></div>
+              <div class="treasury-meter" role="progressbar" aria-label="Market production" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="market-progress"></span></div>
+            </div>
+            <button id="market-build" class="battle-button" type="button"><span>Enable income</span><span class="upgrade-price"><span class="coin-pip" aria-hidden="true"></span><b id="market-cost">100</b></span></button>
+            <p id="market-offline-note" class="building-note">Offline storage: 4h · up to 8 slaves</p>
+          </article>
+          <article id="army-space-building" class="expansion-card" role="tabpanel" aria-labelledby="tab-army-space" hidden>
+            <div class="expansion-heading"><h3 id="expansion-title">Army space</h3><b id="slots-count">3 / 15</b></div>
+            <p id="slots-cost">Next tile: gold</p>
+            <button id="choose-cell" class="battle-button" type="button">Choose a tile</button>
+            <p class="building-note">Spend gold on any locked tile. Each new tile costs more.</p>
+            <div class="capture-info"><strong id="capture-status">First capture: 0 / 2 kills</strong><p id="capture-detail">Your first slave is guaranteed by the second kill.</p></div>
+          </article>
+        </div>
+      </section>
+      <section id="unit-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="unit-panel-title" hidden>
+        <div class="menu-card unit-picker-card">
+          <header class="menu-heading"><h2 id="unit-panel-title">Choose a unit</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close unit menu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+          <div class="building-wallet army-wallet"><span><span class="coin-icon" aria-hidden="true"></span><b id="army-gold">125</b> gold</span><span><span class="slave-icon" aria-hidden="true"></span><b id="army-slaves">0</b> slaves</span></div>
+          <div id="selection-panel" aria-live="polite"></div>
+          <section id="reserve-section" class="reserve-section" aria-labelledby="reserve-heading">
+            <div class="reserve-heading"><h3 id="reserve-heading">Reserve <span id="reserve-count">0</span></h3><div id="reserve-pagination" class="reserve-pagination" hidden><button id="reserve-prev" class="battle-button" type="button" aria-label="Previous reserve page">‹</button><span id="reserve-page">1 / 1</span><button id="reserve-next" class="battle-button" type="button" aria-label="Next reserve page">›</button></div></div>
+            <div id="reserve-options" class="reserve-options"></div>
+            <p id="reserve-empty" class="reserve-empty">Transform a slave at the market to find recruits.</p>
+          </section>
+        </div>
+      </section>
+      <section id="barracks-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="barracks-title" hidden>
+        <div class="menu-card unit-picker-card barracks-card">
+          <header class="menu-heading"><div class="barracks-heading-title"><button id="barracks-back" class="icon-button" type="button" aria-label="Back to barracks" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m11 5-5 5 5 5m-5-5h10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2 id="barracks-title">Barracks</h2></div><div class="barracks-heading-actions"><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close barracks"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div></header>
+          <div id="barracks-list">
+            <div class="building-wallet"><span><b id="barracks-count">0</b> in reserve</span><span><span class="coin-icon" aria-hidden="true"></span><b id="barracks-gold">0</b> gold</span></div>
+            <div id="barracks-options" class="reserve-options barracks-options"></div>
+            <p id="barracks-empty" class="reserve-empty barracks-empty">Tap the market to send a recruit here.</p>
+            <div id="barracks-pagination" class="reserve-pagination barracks-pagination" hidden><button id="barracks-prev" class="battle-button" type="button" aria-label="Previous barracks page">‹</button><span id="barracks-page">1 / 1</span><button id="barracks-next" class="battle-button" type="button" aria-label="Next barracks page">›</button></div>
+          </div>
+          <div id="barracks-detail" hidden></div>
+          <p id="barracks-feedback" class="building-note" role="status" aria-live="polite">Tap for details · Hold to merge</p>
+        </div>
+      </section>
+      <section id="profile-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-title" hidden>
+        <div class="menu-card settings-card">
+          <header class="menu-heading"><h2 id="profile-title">Profile</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close profile"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+          <div class="profile-summary"><span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21v-2a8 8 0 0 1 16 0v2Z" fill="currentColor"/></svg></span><div><strong id="profile-name">Commander</strong><small id="profile-progress">Level 1 · Wave 1 / 10</small></div></div>
+          <h3 class="profile-settings-title">Settings</h3>
+          <div class="setting-row"><div><h3>Auto waves</h3><p>Continue after wins and defeats</p></div><button id="auto-waves" class="battle-button" type="button" aria-label="Auto waves" aria-pressed="true">On</button></div>
+          <div class="setting-row music-setting"><div><h3>Music</h3><p id="sound-description">Level 1 ambience</p></div><button id="sound-toggle" class="icon-button" type="button" aria-label="Mute music" aria-pressed="false" title="Mute music"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3Z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></g></svg></button></div>
+          <div class="music-volume-row"><label for="music-volume">Volume</label><input id="music-volume" type="range" min="0" max="100" step="1" value="5" aria-label="Music volume" /><output id="music-volume-label" for="music-volume">5%</output></div>
+          <div class="setting-row reset-row"><div><h3>Start over</h3><p>Reset your army and progress</p></div><button id="reset" class="battle-button danger-button" type="button" aria-label="Reset run">Reset run</button></div>
+          <p id="reset-confirmation" class="reset-confirmation" role="status" hidden>Tap reset again to start over. Army, gold, buildings and slaves will be reset.</p>
+        </div>
+      </section>
+      <section id="offline-rewards-panel" class="offline-rewards-overlay" role="dialog" aria-modal="true" aria-labelledby="offline-rewards-title" aria-describedby="offline-rewards-description" hidden>
+        <div class="menu-card offline-rewards-card">
+          <h2 id="offline-rewards-title">Welcome back!</h2>
+          <p id="offline-rewards-description">Your buildings kept working.</p>
+          <div class="offline-rewards-list">
+            <div id="offline-gold-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="coin-icon"></span></span><span class="offline-reward-label">Gold</span><strong id="offline-gold-amount">0</strong></div>
+            <div id="offline-slaves-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="slave-icon" aria-hidden="true"></span></span><span class="offline-reward-label">Slaves</span><strong id="offline-slaves-amount">0</strong></div>
+          </div>
+          <button id="collect-offline-rewards" class="battle-button" type="button">Collect</button>
+          <p class="offline-rewards-note">Offline storage: up to 4 hours.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
