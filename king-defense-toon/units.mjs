@@ -1,0 +1,40 @@
+export const UNIT_TYPES = Object.freeze([
+  Object.freeze({
+    id: 'swordsman',
+    name: 'Swordsman',
+    cost: 25,
+    hp: 60,
+    damage: 6,
+    role: 'Defender',
+    color: '#5b91cf',
+    description: 'Advances into melee and holds the front line.',
+    spriteColumn: 0,
+  }),
+  Object.freeze({
+    id: 'archer',
+    name: 'Archer',
+    cost: 35,
+    hp: 32,
+    damage: 8,
+    role: 'Ranged',
+    color: '#68a05c',
+    description: 'Moves into bow range behind your defenders.',
+    spriteColumn: 1,
+  }),
+  Object.freeze({
+    id: 'healer',
+    name: 'Healer',
+    cost: 40,
+    hp: 36,
+    damage: 0,
+    heal: 4,
+    role: 'Support',
+    color: '#dbb44e',
+    description: 'Follows and heals your guard. Cannot heal the king.',
+    spriteColumn: 2,
+  }),
+]);
+
+export const UNIT_TYPE_BY_ID = Object.freeze(
+  Object.fromEntries(UNIT_TYPES.map((unit) => [unit.id, unit])),
+);
