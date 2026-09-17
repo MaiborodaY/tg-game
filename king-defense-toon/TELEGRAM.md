@@ -1,5 +1,20 @@
 # BroTD Infinity in Telegram
 
+Latest verified release, 2026-09-17: commit `48543e4` on `codex/pixel-chronicle`
+was pushed and deployed to https://224eac10.tg-game-23f.pages.dev/; the existing
+https://bro-infinity.tg-game-23f.pages.dev/ alias serves it. This includes the
+first-thirty-wave balance changes, the five-enemy boss encounter on wave 1-1/10,
+and the rendered-frame FPS counter. King upgrades and skills are not implemented.
+All 73 Node tests and the Vite build passed. Stable-alias HTML/JS/CSS returned HTTP
+200 and matched the local files by SHA256: `index.html`
+`c6ee779c05e6afd2852a08adcc5e7cd2a35d8a3668ca31886699f9f53aa89122`;
+`assets/index-B6YXwscO.js`
+`9a716b053fe384054d4eab97f5a61a7bb77464f60affdbbea1395fa43d22a92c`;
+`assets/index-1IJxztxc.css`
+`75607c5e10bfe34d26f38e13e3bc880b39e1ba3b48ab1b7746e10b75a620aaa3`.
+The unrelated Pages Production deployment remained
+`531304b5-a2f2-48da-bd97-72e346413873` before and after publication.
+
 Target bot: `@reallifesame_bot`, as a separate named Mini App. Display name: **BroTD Infinity**. Suggested short name: `brotdinfinity` (availability must be confirmed in BotFather). Do not replace the bot's existing main Mini App or menu button. Use the exact Direct Link returned by BotFather after registration; the source deliberately contains no guessed Telegram launch link.
 
 Verified Web App URL: **https://bro-infinity.tg-game-23f.pages.dev/**. The title correction to **BroTD Infinity** was published on 2026-09-16 at https://0a9c9e97.tg-game-23f.pages.dev/ and checked in the browser. The existing branch alias is intentionally retained for BotFather and local saves. Initial Preview deployment was `a9b8457b-aca7-4a3b-a027-baba23642262`; production deployment remained `d4c5ef20-43a9-4a2e-93fe-22bd763c3fdd` before and after that initial publication.
