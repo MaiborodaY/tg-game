@@ -7,7 +7,7 @@ Add further second-level character concepts and approved animation assets here. 
 | Unit | Status | Main file |
 | --- | --- | --- |
 | Skeleton footman | Approved design; 16-frame generated animation sheet | [768px WebP, 139900 bytes](skeleton-footman/skeleton-footman-768-lite.webp) |
-| Skeleton archer | New ranged-unit concept awaiting visual approval | [768px concept WebP, 91474 bytes](concepts/skeleton-archer-v1.webp) |
+| Skeleton archer | Approved design; 16-frame generated animation sheet | [768px WebP, 191040 bytes](skeleton-archer/skeleton-archer-768-lite.webp) |
 
 ## Footman
 
@@ -15,6 +15,6 @@ Use the compact WebP together with [frame rectangles](skeleton-footman/skeleton-
 
 ## Archer
 
-The archer shares the ivory skeleton anatomy, brown leather and purple cloth of the footman. A plain shortbow, quiver and short purple hood identify its ranged role. It is an ordinary second-level enemy concept, without defined stats or animation assets.
+The archer shares the ivory skeleton anatomy, brown leather and purple cloth of the footman. A plain shortbow, quiver and short purple hood identify its ranged role. The animation sheet contains four idle poses, four walking poses, four side shots and four downward shots. Local pose 2 releases the arrow. Use the [frame rectangles](skeleton-archer/skeleton-archer-768.frames.json) and see the [generation notes](skeleton-archer/README.md). Stats, foot anchors and playback remain unimplemented.
 
 [Original PNG](concepts/skeleton-archer-v1.png) and [built-in imagegen prompt](concepts/skeleton-archer-v1.prompt.md).
