@@ -1,0 +1,252 @@
+{
+  "image": "elf-archer-512-lite.webp",
+  "size": {
+    "width": 512,
+    "height": 512
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 136,
+        "height": 138
+      },
+      "footAnchor": {
+        "x": 70,
+        "y": 130
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 136,
+        "y": 0,
+        "width": 126,
+        "height": 138
+      },
+      "footAnchor": {
+        "x": 59,
+        "y": 130
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 262,
+        "y": 0,
+        "width": 124,
+        "height": 138
+      },
+      "footAnchor": {
+        "x": 58,
+        "y": 130
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 386,
+        "y": 0,
+        "width": 126,
+        "height": 138
+      },
+      "footAnchor": {
+        "x": 60,
+        "y": 130
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 138,
+        "width": 135,
+        "height": 119
+      },
+      "footAnchor": {
+        "x": 70,
+        "y": 110
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 135,
+        "y": 138,
+        "width": 127,
+        "height": 119
+      },
+      "footAnchor": {
+        "x": 60,
+        "y": 111
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 262,
+        "y": 138,
+        "width": 125,
+        "height": 119
+      },
+      "footAnchor": {
+        "x": 58,
+        "y": 110
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 387,
+        "y": 138,
+        "width": 125,
+        "height": 119
+      },
+      "footAnchor": {
+        "x": 59,
+        "y": 111
+      }
+    },
+    {
+      "index": 8,
+      "action": "shoot-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 257,
+        "width": 136,
+        "height": 118
+      },
+      "footAnchor": {
+        "x": 71,
+        "y": 111
+      }
+    },
+    {
+      "index": 9,
+      "action": "shoot-right",
+      "pose": 1,
+      "rect": {
+        "x": 136,
+        "y": 257,
+        "width": 126,
+        "height": 118
+      },
+      "footAnchor": {
+        "x": 58,
+        "y": 111
+      }
+    },
+    {
+      "index": 10,
+      "action": "shoot-right",
+      "pose": 2,
+      "rect": {
+        "x": 262,
+        "y": 257,
+        "width": 126,
+        "height": 118
+      },
+      "footAnchor": {
+        "x": 59,
+        "y": 113
+      }
+    },
+    {
+      "index": 11,
+      "action": "shoot-right",
+      "pose": 3,
+      "rect": {
+        "x": 388,
+        "y": 257,
+        "width": 124,
+        "height": 118
+      },
+      "footAnchor": {
+        "x": 59,
+        "y": 112
+      }
+    },
+    {
+      "index": 12,
+      "action": "shoot-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 375,
+        "width": 132,
+        "height": 137
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 105
+      }
+    },
+    {
+      "index": 13,
+      "action": "shoot-down",
+      "pose": 1,
+      "rect": {
+        "x": 132,
+        "y": 375,
+        "width": 127,
+        "height": 137
+      },
+      "footAnchor": {
+        "x": 63,
+        "y": 106
+      }
+    },
+    {
+      "index": 14,
+      "action": "shoot-down",
+      "pose": 2,
+      "rect": {
+        "x": 259,
+        "y": 375,
+        "width": 125,
+        "height": 137
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 105
+      }
+    },
+    {
+      "index": 15,
+      "action": "shoot-down",
+      "pose": 3,
+      "rect": {
+        "x": 384,
+        "y": 375,
+        "width": 128,
+        "height": 137
+      },
+      "footAnchor": {
+        "x": 63,
+        "y": 107
+      }
+    }
+  ],
+  "releasePose": 2,
+  "note": "Explicit crop rectangles preserve the whole elf, ponytail, cape, bow and nocked arrow. Rows: idle right, walk right, shoot right, shoot down. Pose 2 is arrow release (indices 10 and 14). The arrow is absent on release and recovery. Playback, scale, pivots, projectile and damage require integration. Artwork only; no gameplay code, detached projectile or death sequence is included. Per-frame footAnchor values describe the ground point between the boots and are used by the preview; review scale and pivots when integrating.",
+  "anchorSpace": "frame-pixels"
+}
