@@ -1,0 +1,35 @@
+# Skeleton footman - final asset files
+
+Generated with built-in imagegen from the approved skeleton concept. Files are standalone artwork; no game code, game assets, or deployment were changed.
+
+## Files
+
+- skeleton-footman-source.png: 1254 x 1254 transparent original, 977744 bytes.
+- skeleton-footman-768-lite.webp: 768 x 768, quality 90, 139900 bytes. Recommended small download.
+- skeleton-footman-768.webp: 768 x 768, lossless encoding after nearest-neighbor resizing, 304540 bytes.
+- skeleton-footman-768.frames.json: frame rectangles shared by both WebP files. Use these rectangles instead of a strict quarter-grid crop: the last row's raised sword extends slightly above its nominal cell.
+- *-preview.png: opaque green-background inspection previews, not transparent game assets.
+
+Four rows, four poses each: idle right, walk right, attack right, attack down. Attack pose 2 (zero-based) depicts contact. No death animation. Feet anchors and playback are not integrated or tested in a game.
+
+Validation: both WebP files retain exactly the resized alpha channel. The lossless version also retains all resized visible colors exactly. The compact version was visually inspected composited onto an opaque green background; the character edges and empty gaps are clean. Transparency-aware rendering is required; RGB stored beneath fully transparent pixels is not part of the visible image.
+
+## Initial generation prompt
+
+Use case: identity-preserve.
+Edit the supplied APPROVED skeleton foot soldier concept into ONE transparent 4 by 4 animation sprite sheet. Preserve the exact character: large angular ivory skull, dark navy eye sockets, squat simple rib cage and pelvis, bone arms and short sturdy bone legs, bare bone feet, dusty purple ragged waistcloth, diagonal brown leather strap. One short chipped rusty sword always in his anatomical RIGHT hand, one small round wooden buckler with dark metal boss always in LEFT hand. Same charming chunky low-resolution pixel art, crisp stepped dark navy outlines and restrained 2-3-tone shading. This is a basic weak enemy, keep its simple design. Remove all environment and shadows.
+Output 1024x1024 if possible, strictly FOUR equal columns by FOUR equal rows. EXACTLY sixteen full-body isolated poses. Transparent alpha background, including between bones and inside arm gaps. Absolutely no painted checkerboard or solid matte.
+Critical spacing: every character and EVERY weapon pixel fits inside its OWN cell with wide transparent gutters on all sides. At 1024 cells256: BODY skull-to-foot height about128, body center local x128, foot baseline local y208, ALL visible pixels INCLUDING RAISED SWORDS remain within local x28..228 and y28..232. Scale these coordinates proportionally if output resolution differs. Keep the body equally sized in every pose, no enlarging row4. A compact figure occupying roughly half the cell height leaves ample space for attacks. Weapons never cross cell boundaries. One consistent ground anchor; never center by overall weapon bounds.
+Row1: four IDLE frames, facing screen RIGHT in a three-quarter front-side view, subtle breathing, small shield held ahead, sword at ready, feet planted.
+Row2: four WALK RIGHT frames with VISIBLY alternating feet: frame1 left foot forward/right foot behind; frame2 feet passing under hips; frame3 right foot forward/left foot behind; frame4 opposite passing pose. Knees and feet must actually change. Carry same sword and shield in same anatomical hands, no mirroring equipment to fake steps.
+Row3: four SWORD ATTACK RIGHT poses: frame1 anticipate sword drawing back; frame2 sword raised in clear high windup; frame3 IMPACT sword swung down-forward toward screen RIGHT, blade extends toward an enemy on the right; frame4 recovery blade low ahead. Feet grounded, shield remains in left hand beside torso and does not hide the sword. No sword trails or effects.
+Row4: four SWORD ATTACK DOWN poses facing viewer toward bottom: frame1 anticipate; frame2 sword high; frame3 IMPACT sword cuts down-forward toward bottom; frame4 recovery. Same sword hand and shield hand; no gear swapping. Mild top-down game camera throughout.
+Keep all sixteen figures pixel-crisp and consistent, no fine noisy texture, no smooth painting, no 3D, no gradients, no glow, no new armor or outfit details. ONLY the sprite figures. No ground, cast shadows, text, numbers, labels, border, grid lines, UI, detached props or spare weapons. Actual transparent PNG.
+
+## Spacing prompt
+
+Use case: precise-object-edit. Fix ONLY spacing in this transparent skeleton sprite sheet. Keep ALL SIXTEEN EXACT existing skeleton poses, pixel artwork, colors, weapons, outfit, faces, pose order and actual transparency. No character redesign and no changing the walk or attack poses. EXACTLY 4 equal columns by 4 equal rows. Uniformly shrink ALL sixteen sprites to 65 percent of their CURRENT drawn size within each respective cell. Same shrink for all. Place each body centered horizontally in its cell with the soles of its feet at 78 percent of the cell height. Weapons and shields remain part of each pose and must also shrink, never crop them. This provides ample clear transparent margins especially around the side attack sword in row3 column3 and raised swords in row3 and row4 column2. Ensure NO painted pixel crosses any cell boundary; full sword tips, shield, skull and toes visible. Each complete sprite with weapon occupies at most 65 percent of its cell width and 75 percent of cell height, with at least 12 percent completely transparent space on each side whenever possible. Preserve exact physical pixel-art proportions among all frames. Clean crisp dark navy pixel silhouettes, remove stray semitransparent speckles OUTSIDE the silhouettes but preserve solid contours and interior bone gaps. Output ONE true transparent PNG, square atlas, ideally 1024x1024, four equal rows and columns. No background, no shadow, no labels, no guide lines, no UI, no text. Do not fill empty margins.
+
+## Transparency refinement prompt
+
+Use case: background-extraction. Clean the transparency of this EXISTING 4x4 skeleton animation atlas. Keep EXACTLY the current sixteen poses, anatomy, positions, scale, colors, dark outlines, sword, shield and purple cloth. Do NOT redraw or redesign the characters and do not change spacing. The input has unwanted faint grey square patches, faint noisy halos, stray red specks above skulls, and stray colored pixels outside the character silhouettes. Remove ALL such outside noise and all detached pixels. Keep only the intentional connected solid pixel-art figures and their dark navy outlines. Real transparent alpha0 everywhere outside silhouettes and in empty gaps between bones, legs, weapon and torso. Solid opaque colors inside the actual figures, crisp hard pixel edges, no soft alpha fringe or grey rectangular residue. No drop shadow, no matte, no environment, no checkerboard, no grid lines, no text. Preserve all sixteen complete figures and all weapon tips. Output a clean transparent PNG sprite atlas with the same 4x4 layout.
