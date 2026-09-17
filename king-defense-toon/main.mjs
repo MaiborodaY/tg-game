@@ -8,6 +8,8 @@ import { createBattleAudio } from './audio.mjs';
 import { createLevelMusic } from './music.mjs';
 import { battleFrameDelta, nextBattleSpeed } from './battle-speed.mjs';
 import { createFrameRateMeter } from './fps.mjs';
+import { createFramePacer } from './frame-pacer.mjs';
+import { createSaveStorage } from './save-storage.mjs';
 import { createEconomy, treasuryRate, treasuryUpgradeCost, accrueTreasury, checkpointTreasury, claimOfflineTreasury, TREASURY_OFFLINE_LIMIT_SECONDS, upgradeTreasury, rollSlaveDrop, progressionAfterBattle, advanceCaptureClock, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.mjs';
 import { MARKET_BUILD_COST, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS, buildMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.mjs';
 import { SAVE_KEY, STARTING_GOLD, createProgression, migrateCampaignSave, cellKey, nextCellCost, unlockCell, claimFirstClear } from './progression.mjs';
@@ -19,6 +21,7 @@ import './style.css';
 
 const byId = id => document.getElementById(id);
 const frameRateMeter = createFrameRateMeter();
+const framePacer = createFramePacer();
 const fpsLabel = byId('fps-counter');
 
 function fitPortraitPreview() {
@@ -69,8 +72,18 @@ let offlineRewardFocus = null;
 const offlineRewardInert = new Map();
 let progression = createProgression(), selectedLockedCell = null, selectedEmptyCell = null;
 let overlay = null, overlayOpener = null, resetArmed = false;
-let frameId = 0, lastFrame = 0, visualTime = 0, hudElapsed = 0, resultAge = 0;
+let frameId = 0, visualTime = 0, hudElapsed = 0, resultAge = 0;
 let destroyed = false;
+const assetStates = { battle: { status: 'loading' }, army: { status: 'loading' } };
+const recoveryInert = new Map();
+let recoveryFocus = null, resetSaveToken = null, recoveryResetArmed = false, recoveryUiScheduled = false;
+const saveStorage = createSaveStorage({ key: SAVE_KEY, getStorage: () => window.localStorage,
+  decode(value) {
+    const saved = migrateCampaignSave(value);
+    if (!saved || !Number.isFinite(saved.gold) || saved.gold < 0) throw new Error('Invalid saved campaign');
+    return saved;
+  },
+});
 const battleAudio = createBattleAudio();
 const levelMusic = createLevelMusic({ onStateChange: refreshSoundButton });
 const telegram = setupTelegramAdapter({ onDeactivate: pauseForInactivity, onActivate: activateGame });
@@ -134,13 +147,13 @@ function refreshSpeedButton() {
 byId('battle-speed').addEventListener('click', () => {
   if (battle?.phase !== 'running' || !telegram.isActive) return;
   battleSpeed = nextBattleSpeed(battleSpeed);
-  lastFrame = 0;
+  framePacer.reset();
   refreshSpeedButton();
 });
 
 // Balance v2 starts separately; the old v1 prototype save is deliberately never changed.
 try {
-  const saved = migrateCampaignSave(JSON.parse(localStorage.getItem(SAVE_KEY)));
+  const saved = saveStorage.load().value;
   if (saved && Number.isFinite(saved.gold) && saved.gold >= 0) {
     starterSupplyGranted = saved.starterSupplyGranted === true;
     recruitment = createRecruitment(saved.recruitment);
@@ -170,7 +183,7 @@ try {
     nextId = units.length + reserve.length + 1;
     save();
   }
-} catch { /* Storage may be unavailable in an embedded preview. */ }
+} catch (error) { console.error('Could not restore the campaign', error); }
 
 // A one-time starting supply replaces gold recruitment; spent supplies never refill on reload.
 if (!starterSupplyGranted) {
@@ -179,12 +192,87 @@ if (!starterSupplyGranted) {
   save();
 }
 
+function saveSnapshot() {
+  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
+    offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves } };
+}
+
 function save() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
-    offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves } })); } catch { /* The map also works without storage. */ }
+  const result = saveStorage.save(saveSnapshot());
+  if (!result.ok) stopFrames();
+  scheduleRecoveryUi();
+  return result.ok;
+}
+
+function isRecovering() {
+  return saveStorage.status !== 'ready' || Object.values(assetStates).some(state => state.status !== 'ready');
+}
+
+function scheduleRecoveryUi() {
+  if (recoveryUiScheduled) return;
+  recoveryUiScheduled = true;
+  // Save failures can occur inside actions that then close a menu or replace DOM.
+  // Capture focus/inert only after that action has settled, while the clock is already stopped.
+  queueMicrotask(() => { recoveryUiScheduled = false; syncRecoveryUi(); });
+}
+
+function syncRecoveryUi() {
+  if (destroyed) return;
+  const storageError = saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
+  const assetError = Object.values(assetStates).some(state => state.status === 'error');
+  const blocked = isRecovering();
+  const panel = byId('recovery-panel');
+  const entering = blocked && panel.hidden;
+  const leaving = !blocked && !panel.hidden;
+  panel.hidden = !blocked;
+  if (blocked) {
+    if (entering) {
+      recoveryFocus = document.activeElement;
+      unitDrag?.cancel();
+      for (const child of byId('app').children) {
+        if (child === panel) continue;
+        recoveryInert.set(child, child.inert);
+        child.inert = true;
+      }
+    }
+    stopFrames();
+    battleAudio.setActive(false);
+    levelMusic.setActive(false);
+    byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable' : 'Loading battlefield';
+    byId('recovery-description').textContent = storageError
+      ? saveStorage.status === 'write-error' ? 'Progress is not saved. Keep this game open and retry.'
+        : saveStorage.status === 'corrupt' ? 'Saved progress is damaged. Saving is paused to protect it.'
+          : 'Saved progress could not be loaded. Saving is paused to protect it.'
+      : assetError ? 'Some game images could not be loaded. Check your connection and retry. The battle is paused.'
+        : 'Preparing your map and fighters. The battle is paused.';
+    byId('recovery-retry').hidden = !storageError && !assetError;
+    byId('recovery-reset').hidden = !['read-error', 'corrupt'].includes(saveStorage.status);
+    if (entering) panel.focus({ preventScroll: true });
+  } else {
+    for (const [child, inert] of recoveryInert) child.inert = inert;
+    recoveryInert.clear();
+    if (recoveryFocus?.isConnected && !recoveryFocus.closest('[inert]')) recoveryFocus.focus({ preventScroll: true });
+    recoveryFocus = null;
+    recoveryResetArmed = false;
+    byId('recovery-reset-confirmation').hidden = true;
+    byId('recovery-reset').textContent = 'Reset saved game';
+    if (leaving) {
+      battleAudio.setActive(battle?.phase === 'running' && telegram.isActive && !paused);
+      levelMusic.setActive(telegram.isActive);
+      showOfflineIncome(); showMarketArrival();
+    }
+    resumeFrames();
+  }
+}
+
+function onAssetState(which, state) {
+  assetStates[which] = state;
+  if (state.status !== 'ready') stopFrames();
+  scheduleRecoveryUi();
 }
 
 function collectOfflineIncome() {
+  if (saveStorage.status !== 'ready') return 0;
   const now = Date.now();
   const earned = claimOfflineTreasury(economy, now).gold;
   const slaves = claimOfflineMarket(economy, now).slaves;
@@ -197,7 +285,7 @@ function collectOfflineIncome() {
 }
 
 function showOfflineIncome() {
-  if (!scene || !economyActive || (!pendingOfflineGold && !pendingOfflineSlaves)) return;
+  if (!scene || !economyActive || isRecovering() || !byId('recovery-panel').hidden || (!pendingOfflineGold && !pendingOfflineSlaves)) return;
   unitDrag?.cancel();
   const panel = byId('offline-rewards-panel');
   byId('offline-gold-reward').hidden = !pendingOfflineGold;
@@ -209,7 +297,7 @@ function showOfflineIncome() {
   offlineRewardFocus = document.activeElement;
   // Cover an open menu without discarding its selection or making its background interactive.
   for (const element of byId('app').children) {
-    if (element === panel) continue;
+    if (element === panel || element.id === 'recovery-panel') continue;
     offlineRewardInert.set(element, element.inert);
     element.inert = true;
   }
@@ -221,10 +309,10 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   const panel = byId('offline-rewards-panel');
   if (panel.hidden || !economyActive) return;
   tickEconomy();
+  if (isRecovering()) return;
   // Income was already saved exactly once. Collect acknowledges it, rather than paying again.
   const collectedSlaves = pendingOfflineSlaves;
   pendingOfflineGold = pendingOfflineSlaves = 0;
-  save();
   panel.hidden = true;
   for (const [element, wasInert] of offlineRewardInert) element.inert = wasInert;
   offlineRewardInert.clear();
@@ -237,6 +325,7 @@ byId('collect-offline-rewards').addEventListener('click', () => {
     ? offlineRewardFocus : overlay?.querySelector('[data-close-overlay]') ?? byId('army-map');
   target?.focus({ preventScroll: true });
   offlineRewardFocus = null;
+  save();
   refreshMarketHint();
   showMarketArrival(collectedSlaves);
 });
@@ -254,7 +343,7 @@ if (economyActive) {
 }
 
 // This is the saved formation for the next wave. Each running battle owns its own fighters.
-const canEditFormation = () => !!armyScene && telegram.isActive;
+const canEditFormation = () => !!armyScene && telegram.isActive && !isRecovering();
 function saveFormation() { save(); }
 
 function refreshArmyWallet() {
@@ -420,7 +509,7 @@ function refreshEconomy() {
 function tickEconomy(now = performance.now()) {
   const elapsed = Math.max(0, (now - economyLastTick) / 1000);
   economyLastTick = now;
-  if (destroyed || !economyActive) return;
+  if (destroyed || !economyActive || saveStorage.status !== 'ready') return;
   const wallNow = Date.now();
   const checkpoints = [economy.treasuryUpdatedAt, economy.marketBuilt ? economy.marketUpdatedAt : null];
   const wallElapsed = Math.max(0, ...checkpoints.filter(value => value !== null).map(value => (wallNow - value) / 1000));
@@ -658,7 +747,7 @@ function refresh() {
   const focusedBarracksId = document.activeElement?.closest('[data-barracks-unit-id]')?.dataset.barracksUnitId;
   telegram.setGameInProgress(hasActiveBattle());
   levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
-  levelMusic.setActive(!destroyed && telegram.isActive);
+  levelMusic.setActive(!destroyed && telegram.isActive && !isRecovering());
   refreshEconomy();
   byId('army-count').textContent = `${units.length} / ${progression.unlockedCells.length}`;
   const pendingRecruit = reserve.find(unit => unit.id === pendingRecruitId);
@@ -1133,11 +1222,16 @@ byId('reset').addEventListener('click', () => {
   if (battle) return;
   if (!resetArmed) {
     resetArmed = true;
+    resetSaveToken = saveStorage.prepareReset();
     byId('reset-confirmation').hidden = false;
     byId('reset').setAttribute('aria-label', 'Confirm reset run');
     byId('reset').title = 'Confirm reset run';
     return;
   }
+  resetRun();
+});
+
+function resetRun() {
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
   barracksPage = 0; barracksSelectedId = null; starterSupplyGranted = true;
   pendingRecruitId = null;
@@ -1155,8 +1249,55 @@ byId('reset').addEventListener('click', () => {
   progression = createProgression(); selectedLockedCell = selectedEmptyCell = null;
   battleSpeed = 1;
   selectedId = movingId = lastOutcome = null;
+  for (const [child, inert] of recoveryInert) child.inert = inert;
+  recoveryInert.clear();
   closeOverlay();
-  save(); refresh(); tell('Supplies ready.');
+  const result = saveStorage.reset(saveSnapshot(), { confirmation: resetSaveToken });
+  resetSaveToken = null;
+  // Re-entering the recovery panel must capture the new, closed-menu inert state.
+  byId('recovery-panel').hidden = true;
+  syncRecoveryUi();
+  refresh();
+  if (result.ok) tell('Supplies ready.');
+}
+
+byId('recovery-retry').addEventListener('click', async () => {
+  const button = byId('recovery-retry');
+  button.disabled = true;
+  try {
+    if (saveStorage.status !== 'ready') {
+      const result = saveStorage.retry(saveSnapshot());
+      if (result.ok && result.needsRestore) { window.location.reload(); return; }
+      economyLastTick = performance.now();
+    } else if (!scene || !armyScene) {
+      window.location.reload();
+      return;
+    } else {
+      await Promise.all([scene.retryAssets(), armyScene.retryAssets()]);
+    }
+    syncRecoveryUi();
+  } finally { button.disabled = false; }
+});
+
+byId('recovery-reset').addEventListener('click', () => {
+  if (!recoveryResetArmed) {
+    recoveryResetArmed = true;
+    resetSaveToken = saveStorage.prepareReset();
+    byId('recovery-reset').textContent = 'Confirm reset';
+    byId('recovery-reset-confirmation').hidden = false;
+    return;
+  }
+  resetRun();
+});
+
+byId('recovery-panel').addEventListener('keydown', event => {
+  if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); }
+  if (event.key !== 'Tab') return;
+  const buttons = [...byId('recovery-panel').querySelectorAll('button')].filter(button => !button.hidden && !button.disabled);
+  event.preventDefault();
+  if (!buttons.length) return;
+  const index = buttons.indexOf(document.activeElement);
+  buttons[(index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length].focus();
 });
 
 function renderScene() {
@@ -1236,7 +1377,7 @@ function presentResult() {
 }
 
 function startWave() {
-  if (battle || !scene || !units.length || !telegram.isActive) return;
+  if (battle || !scene || !units.length || !telegram.isActive || isRecovering()) return;
   // Keep the cell picker or move action open across automatic wave transitions.
   if (runComplete()) { clearedWaves = 0; lastOutcome = null; save(); }
   battle = createBattle(units, nextWaveNumber());
@@ -1280,17 +1421,16 @@ byId('auto-waves').addEventListener('click', () => {
 
 // Telegram can minimize a Mini App without hiding the document; both lifecycle signals stop play.
 function resetFrameRate() { frameRateMeter.reset(); fpsLabel.textContent = '— FPS'; }
-function stopFrames() { cancelAnimationFrame(frameId); frameId = 0; lastFrame = 0; resetFrameRate(); }
+function stopFrames() { cancelAnimationFrame(frameId); frameId = 0; framePacer.reset(); resetFrameRate(); }
 function resumeFrames() {
-  if (!destroyed && !frameId && scene && telegram.isActive && !paused) frameId = requestAnimationFrame(frame);
+  if (!destroyed && !frameId && scene && telegram.isActive && !paused && !isRecovering()) frameId = requestAnimationFrame(frame);
 }
 function frame(timestamp) {
   frameId = 0;
-  if (destroyed || !telegram.isActive || paused) { lastFrame = 0; resetFrameRate(); return; }
-  if (lastFrame && timestamp - lastFrame < 1000 / 30) { resumeFrames(); return; }
-  const realDelta = lastFrame ? Math.max(0, (timestamp - lastFrame) / 1000) : 0;
+  if (destroyed || !telegram.isActive || paused || isRecovering()) { framePacer.reset(); resetFrameRate(); return; }
+  const realDelta = framePacer.sample(timestamp);
+  if (realDelta === null) { resumeFrames(); return; }
   const dt = Math.min(realDelta, .1);
-  lastFrame = timestamp;
   const battleDt = battle?.phase === 'running' ? battleFrameDelta(dt, battleSpeed) : dt;
   visualTime += battleDt;
   if (battle) {
@@ -1344,7 +1484,7 @@ function activateGame() {
   if (!economyActive) collectOfflineIncome();
   economyLastTick = performance.now(); economyActive = true;
   paused = false;
-  battleAudio.setActive(battle?.phase === 'running');
+  battleAudio.setActive(battle?.phase === 'running' && !isRecovering());
   if (battle?.phase === 'running') void battleAudio.unlock();
   refresh();
   showOfflineIncome();
@@ -1398,8 +1538,8 @@ refresh();
 const economyTimer = setInterval(tickEconomy, 1000);
 try {
   const [loadedScene, loadedArmy] = await Promise.all([
-    createScene(byId('battle'), { placementGrid: false, onKing: () => tell('King cannot heal.') }),
-    createScene(byId('army-map'), { formationOnly: true, onCell }),
+    createScene(byId('battle'), { placementGrid: false, onKing: () => tell('King cannot heal.'), onAssetState: state => onAssetState('battle', state) }),
+    createScene(byId('army-map'), { formationOnly: true, onCell, onAssetState: state => onAssetState('army', state) }),
   ]);
   if (destroyed) { loadedScene.destroy(); loadedArmy.destroy(); }
   else {
@@ -1411,6 +1551,6 @@ try {
 } catch (error) {
   if (!destroyed) {
     console.error(error);
-    tell('Reload the map.');
+    onAssetState('battle', { status: 'error', error });
   }
 }

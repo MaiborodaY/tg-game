@@ -166,6 +166,15 @@
           <p class="offline-rewards-note">Offline storage: up to 4 hours.</p>
         </div>
       </section>
+      <section id="recovery-panel" class="recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="recovery-title" aria-describedby="recovery-description" tabindex="-1" hidden>
+        <div class="recovery-card">
+          <h2 id="recovery-title">Loading battlefield</h2>
+          <p id="recovery-description" role="status" aria-live="polite"></p>
+          <button id="recovery-retry" class="battle-button" type="button" hidden>Retry</button>
+          <button id="recovery-reset" type="button" hidden>Reset saved game</button>
+          <p id="recovery-reset-confirmation" hidden>This replaces saved progress with a new game. Press Confirm reset to continue.</p>
+        </div>
+      </section>
     </main>
     <script type="module" src="./main.mjs"></script>
   </body>

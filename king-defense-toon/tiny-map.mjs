@@ -1,4 +1,5 @@
 import { FIELD, BATTLE_VIEW, ROYAL_PENINSULA, ROYAL_NECK } from './field.mjs';
+import { loadImage } from './asset-cache.mjs';
 
 const WIDTH = FIELD.width;
 const HEIGHT = FIELD.height;
@@ -15,15 +16,6 @@ const ASSETS = {
   bush: new URL('./assets/tiny-map/bush.png', import.meta.url).href,
   mushroom: new URL('./assets/tiny-map/mushroom.png', import.meta.url).href,
 };
-
-function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Could not load Tiny Swords map asset: ${url}`));
-    image.src = url;
-  });
-}
 
 function makeLayer() {
   const canvas = document.createElement('canvas');

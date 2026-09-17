@@ -7,8 +7,8 @@
     <meta name="description" content="BroTD Infinity: build your guard and defend your king against goblins and undead across two levels." />
     <title>BroTD Infinity</title>
     <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
-    <script type="module" crossorigin src="./assets/index-BygKQfxL.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-1IJxztxc.css">
+    <script type="module" crossorigin src="./assets/index-DXIGe_sc.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D-QG_HXB.css">
   </head>
   <body>
     <main id="app" aria-label="BroTD Infinity formation">
@@ -165,6 +165,15 @@
           </div>
           <button id="collect-offline-rewards" class="battle-button" type="button">Collect</button>
           <p class="offline-rewards-note">Offline storage: up to 4 hours.</p>
+        </div>
+      </section>
+      <section id="recovery-panel" class="recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="recovery-title" aria-describedby="recovery-description" tabindex="-1" hidden>
+        <div class="recovery-card">
+          <h2 id="recovery-title">Loading battlefield</h2>
+          <p id="recovery-description" role="status" aria-live="polite"></p>
+          <button id="recovery-retry" class="battle-button" type="button" hidden>Retry</button>
+          <button id="recovery-reset" type="button" hidden>Reset saved game</button>
+          <p id="recovery-reset-confirmation" hidden>This replaces saved progress with a new game. Press Confirm reset to continue.</p>
         </div>
       </section>
     </main>

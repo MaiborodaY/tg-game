@@ -1,4 +1,5 @@
 import { FIELD, ROYAL_PENINSULA, ROYAL_NECK } from './field.mjs';
+import { loadImage } from './asset-cache.mjs';
 
 const WIDTH = 390;
 const ORIGINAL_HEIGHT = 540;
@@ -106,12 +107,7 @@ function makeRoyalGround(image) {
 }
 
 export async function createGraveyardMap() {
-  const image = await new Promise((resolve, reject) => {
-    const map = new Image();
-    map.onload = () => resolve(map);
-    map.onerror = () => reject(new Error(`Could not load Forgotten Graveyard map: ${MAP_URL}`));
-    map.src = MAP_URL;
-  });
+  const image = await loadImage(MAP_URL);
   const royalGround = makeRoyalGround(image);
   const upperApproach = makeUpperApproach(image);
   const sourceScaleX = image.naturalWidth / WIDTH;

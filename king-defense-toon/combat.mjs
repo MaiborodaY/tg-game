@@ -5,6 +5,8 @@ import { getUnitStats } from './recruitment.mjs';
 
 export const COMBAT_PACE = 0.85;
 export const KING_MAX_HP = 100;
+const FIXED_STEP = 1 / 60;
+const MAX_FRAME_DELTA = .3;
 const BASE_RULES = {
   swordsman: { range: 38, interval: 1.1, duration: .65, speed: 57 },
   archer: { range: 185, interval: 1.4, duration: .7, speed: 49 },
@@ -54,7 +56,7 @@ export function createBattle(formation = [], waveNumber = 1) {
     });
   });
   return {
-    phase: 'running', elapsed: 0, allies, enemies: [], waveNumber: wave.number, wave,
+    phase: 'running', elapsed: 0, stepRemainder: 0, allies, enemies: [], waveNumber: wave.number, wave,
     // Longer rounds must give the last reinforcement time to fight before stalemate pressure starts.
     enraged: false, enrageAt: Math.max(75, wave.spawns.at(-1).at + 45),
     king: actor({ id: 'king', side: 'ally', type: 'king', x: FIELD.kingX,
@@ -534,12 +536,13 @@ function step(battle, dt, events) {
 export function updateBattle(battle, dt) {
   const events = [];
   if (!Number.isFinite(dt) || dt <= 0) return events;
-  // The capped frame can reach .255s at ×3; keep all of it while using small stable steps.
-  let remaining = Math.min(dt, .3);
-  while (remaining > 1e-7) {
-    const slice = Math.min(remaining, 1 / 60);
-    step(battle, slice, events);
-    remaining -= slice;
+  // Carry partial ticks across frames: resolving them immediately makes targeting and
+  // separation depend on FPS and the speed control. The cap still bounds catch-up work.
+  battle.stepRemainder += Math.min(dt, MAX_FRAME_DELTA);
+  while (battle.stepRemainder + 1e-10 >= FIXED_STEP) {
+    step(battle, FIXED_STEP, events);
+    // Tolerate rounding at an exact tick boundary without carrying a negative balance.
+    battle.stepRemainder = Math.max(0, battle.stepRemainder - FIXED_STEP);
   }
   return events;
 }

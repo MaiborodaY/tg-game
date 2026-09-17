@@ -158,15 +158,17 @@ Settings saves music mute/volume independently, using the prior sound-mute prefe
 From the worktree root:
 
 ```powershell
-node ../../node_modules/vite/bin/vite.js king-defense-toon --config king-defense-toon/vite.config.mjs
-node ../../node_modules/vite/bin/vite.js build king-defense-toon --config king-defense-toon/vite.config.mjs
+npm run brotd:dev
+npm run brotd:check
 ```
 
 Local preview: http://127.0.0.1:5187/. Telegram deployment and configuration: [TELEGRAM.md](TELEGRAM.md). Legacy source and output directory names remain unchanged.
 
 ## Asset references and validation scope
 
-Drag merging has **14 deterministic gesture tests**, alongside the existing merge/rank/wave checks (**33 total**). `tests/drag-merge.browser.mjs` runs a disposable Vite server and Chromium mobile contexts with actual CDP touch input at 320 and 390 pixels, plus mouse capture. It checks taps, pickup, native pre-hold scrolling, successful and invalid drops, multiple touches, cancellation, refresh while touching, reload, the inclusive level cap and the fallback Merge button. Set `PLAYWRIGHT_MODULE` to an installed Playwright entry file if it is not available in Node's package resolution. Test hooks exist only in the disposable server; combat updates throw if invoked. Physical Telegram WebViews and iOS devices still require a hands-on check.
+The current automated suite has **108 Node tests**, including fixed-step combat, frame pacing, asset demand/cache/retry, protected saves and the existing balance/merge/gesture tests. `npm run brotd:check` runs them and builds the game. See [STABILITY.md](STABILITY.md) for the audit fixes, browser checks and remaining device validation.
+
+`tests/drag-merge.browser.mjs` runs a disposable Vite server and Chromium mobile contexts with actual CDP touch input at 320 and 390 pixels, plus mouse capture. It checks taps, pickup, native pre-hold scrolling, successful and invalid drops, multiple touches, cancellation, refresh while touching, reload, the inclusive level cap and the fallback Merge button. Set `PLAYWRIGHT_MODULE` to an installed Playwright entry file if it is not available in Node's package resolution. Test hooks exist only in the disposable server; combat updates throw if invoked in this drag-only suite. Physical Telegram WebViews and iOS devices still require a hands-on check.
 
 Current source documentation: [map](assets/tiny-map/SOURCES.md), [UI](assets/tiny-ui/SOURCES.md), [rank palettes](assets/ranks/SOURCES.md), [warrior](assets/TINY-SWORDS-WARRIOR.md), [archer and monk](assets/TINY-SWORDS-SUPPORT.md), [Torch goblin](assets/TINY-SWORDS-TORCH.md), [king](assets/TINY-SWORDS-KING.md), [goblin archer](assets/TINY-GOBLIN-ARCHER.md), [goblin chief](assets/TINY-GOBLIN-CHIEF.md), [ogre boss](assets/OGRE-BOSS.md), [boar](assets/BOAR.md), and [Level 2 undead](assets/UNDEAD-LEVEL-2.md).
 
@@ -176,4 +178,4 @@ The current vertical recruitment dock passed static browser checks at **320px, 3
 
 The previous persistent Army dock was checked at **390 × 700**, **320 × 568** and Telegram **360 × 580** with 60px top/20px bottom safe areas. Those historical checks covered the earlier upgrade/refund flow and are not validation of the new conversion/reserve interface. One-off model checks for recruitment cover weighted-roll boundaries, independent type counts, personal-level limits, invalid-roll handling and unchanged per-level stat formulas. No combat was played or simulated.
 
-Historical browser checks covered earlier formations, menus, movement and mobile layouts; their opponent counts and prices are no longer current balance evidence. **The current two-level campaign has not been played or simulated in combat**, as requested. The older Level 1 economy-only model describes gold-funded rank upgrades and slave-funded cells, so it does not apply to personal recruits, Barracks sales or the new gold-funded slots. One-off model assertions cover gold slot costs, insufficient or invalid balances, duplicate and full-grid unlocks. No replacement progression-time estimate is claimed: type rolls, reserve choices, building purchases, passive income and actual combat outcomes all affect progression.
+Historical browser checks covered earlier formations, menus, movement and mobile layouts; their opponent counts and prices are no longer current balance evidence. The stability pass now exercises selected real battles and existing simulation regressions; it does not claim a complete playthrough or calibration of all 400 waves. The older Level 1 economy-only model describes gold-funded rank upgrades and slave-funded cells, so it does not apply to personal recruits, Barracks sales or the new gold-funded slots. One-off model assertions cover gold slot costs, insufficient or invalid balances, duplicate and full-grid unlocks. No replacement progression-time estimate is claimed: type rolls, reserve choices, building purchases, passive income and actual combat outcomes all affect progression.

@@ -32,7 +32,7 @@ try {
       if (image.src) sources.push(image.src);
       return draw.call(this, image, ...args);
     };
-    window.renderGoblins = (wave, action = 'idle') => {
+    window.renderGoblins = async (wave, action = 'idle') => {
       const battle = createBattle([], wave);
       const types = wave <= 200 ? ['goblin', 'goblinArcher', 'goblinChief', 'boar', 'ogre']
         : ['skeleton', 'skeletonArcher', 'cryptSpider', 'ghoul', 'cryptKing'];
@@ -41,13 +41,14 @@ try {
         hp: 60, maxHp: 60, action, actionTime: .4, actionDuration: 1, impactFraction: .5,
         walkTime: .3, facingX: 1, facingY: 0, visualScale: 1,
       }));
+      if (!await scene.prepare({ battle, time: 0 })) throw new Error('Renderer assets did not load');
       sources = [];
       scene.render({ battle, time: 0 });
       return sources.map(url => new URL(url).pathname);
     };
     const rows = [];
     for (const wave of [1, 50, 51, 100, 101, 150, 151, 200, 201, 400]) {
-      for (const action of ['idle', 'walk', 'attack']) rows.push({ wave, action, sources: window.renderGoblins(wave, action) });
+      for (const action of ['idle', 'walk', 'attack']) rows.push({ wave, action, sources: await window.renderGoblins(wave, action) });
     }
     return rows;
   });

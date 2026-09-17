@@ -4,12 +4,11 @@ import { getUnitRange, KING_MAX_HP } from './combat.mjs';
 import { getUnitRank } from './unit-ranks.mjs';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.mjs';
 import { UNIT_RANK_ASSETS } from './rank-art.mjs';
-import { GOBLIN_ROUND_ASSETS, getEnemyRoundArt } from './goblin-round-art.mjs';
 import { allyDeathOpacity } from './ally-animation.mjs';
-import { KING_IMAGE_URL, UNIT_IMAGES } from './asset-web.mjs';
-import { GOBLIN_ARCHER_IMAGE_URL, GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.mjs';
-import { GOBLIN_CHIEF_IMAGE_URL, GOBLIN_CHIEF_GEOMETRY } from './goblin-chief-art.mjs';
-import { OGRE_IMAGE_URL, OGRE_GEOMETRY } from './ogre-art.mjs';
+import { UNIT_IMAGES } from './asset-web.mjs';
+import { GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.mjs';
+import { GOBLIN_CHIEF_GEOMETRY } from './goblin-chief-art.mjs';
+import { OGRE_GEOMETRY } from './ogre-art.mjs';
 import { UNDEAD_ART } from './undead-art.mjs';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.mjs';
 import { getEnemyCombatType } from './waves.mjs';
@@ -22,18 +21,10 @@ import { TINY_KING_LAYOUT, tinyKingFrame } from './tiny-king.mjs';
 import { TINY_ARCHER_LAYOUT, tinyArcherFrame, tinyMonkIdleFrame, tinyMonkRunFrame, tinyMonkHealFrame } from './tiny-support.mjs';
 import { createTinyMap } from './tiny-map.mjs';
 import { createGraveyardMap } from './graveyard-map.mjs';
+import { createAssetCache, loadImage } from './asset-cache.mjs';
+import { getSceneAssetPlan } from './scene-assets.mjs';
 export { FIELD } from './field.mjs';
 
-const GOBLIN_URL = GOBLIN_ROUND_ASSETS.Red;
-const BOAR_URL = new URL('./assets/web/boar.webp', import.meta.url).href;
-const MONK_RUN_URL = new URL('./assets/tiny-monk/Run.png', import.meta.url).href;
-const MONK_HEAL_URL = new URL('./assets/tiny-monk/Heal.png', import.meta.url).href;
-const ALLY_ANIMATION_URLS = {
-  king: KING_IMAGE_URL,
-  swordsman: new URL('./assets/tiny-swords-warrior-blue.png', import.meta.url).href,
-  archer: new URL('./assets/tiny-swords-archer-blue.png', import.meta.url).href,
-  healer: new URL('./assets/tiny-monk/Idle.png', import.meta.url).href,
-};
 const ALLY_ANIMATION_METADATA = {
   king: {
     layout: TINY_KING_LAYOUT,
@@ -264,15 +255,6 @@ function drawLockedCell(context, x, y, width, height, selected, price) {
     context.fillText(label, iconX + 13, labelY + 1);
   }
   context.restore();
-}
-
-function loadImage(url) {
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
-    image.src = url;
-  });
 }
 
 export function cellAtPoint(x, y) {
@@ -656,90 +638,64 @@ function drawEffect(context, effect) {
   context.restore();
 }
 
-let sceneAssetsPromise;
+const sceneAssetCache = createAssetCache();
+const ENEMY_ANIMATION_METADATA = {
+  goblin: TORCH_ANIMATION_METADATA,
+  goblinArcher: GOBLIN_ARCHER_ANIMATION_METADATA,
+  goblinChief: GOBLIN_CHIEF_ANIMATION_METADATA,
+  ogre: OGRE_ANIMATION_METADATA,
+  boar: BOAR_ANIMATION_METADATA,
+  ...Object.fromEntries(Object.entries(UNDEAD_ENEMY_ART).map(([type, art]) => [type, art.metadata])),
+};
+const MONK_RUN_METADATA = {
+  ...ALLY_ANIMATION_METADATA.healer, layout: { columns: 4, rows: 1 },
+  baselines: Array(4).fill(128 / 192), frameFor: tinyMonkRunFrame,
+};
+const MONK_HEAL_METADATA = {
+  ...ALLY_ANIMATION_METADATA.healer, layout: { columns: 11, rows: 1 },
+  baselines: Array(11).fill(128 / 192), frameFor: tinyMonkHealFrame,
+};
 
-async function loadSceneAssets() {
-  const [maps, goblinSource, allySources, monkRunSource, monkHealSource, goblinArcherSource, goblinChiefSource, boarSource, ogreSource, undeadSources] = await Promise.all([
-    Promise.all([createTinyMap(), createGraveyardMap()]), loadImage(GOBLIN_URL),
-    Promise.all(Object.entries(ALLY_ANIMATION_URLS).map(async ([type, url]) => [type, await loadImage(url)])),
-    loadImage(MONK_RUN_URL), loadImage(MONK_HEAL_URL), loadImage(GOBLIN_ARCHER_IMAGE_URL), loadImage(GOBLIN_CHIEF_IMAGE_URL),
-    loadImage(BOAR_URL), loadImage(OGRE_IMAGE_URL),
-    Promise.all(Object.entries(UNDEAD_ENEMY_ART).map(async ([type, art]) => [type, await loadImage(art.url)])),
-  ]);
-  const goblinArt = {
-    animations: {
-      goblin: prepareAnimation(goblinSource, TORCH_ANIMATION_METADATA),
-      goblinArcher: prepareAnimation(goblinArcherSource, GOBLIN_ARCHER_ANIMATION_METADATA),
-      goblinChief: prepareAnimation(goblinChiefSource, GOBLIN_CHIEF_ANIMATION_METADATA),
-      ogre: prepareAnimation(ogreSource, OGRE_ANIMATION_METADATA),
-      boar: prepareAnimation(boarSource, BOAR_ANIMATION_METADATA),
-    },
-  };
-  for (const [type, source] of undeadSources) {
-    const art = UNDEAD_ENEMY_ART[type];
-    goblinArt.animations[type] = source ? prepareAnimation(source, art.metadata)
-      : goblinArt.animations[art.fallback];
+function prepareAnimation(image, metadata) {
+  const { columns, rows } = metadata.layout;
+  const bounds = Array.from({ length: columns * rows }, (_, frame) => ({
+    x: frame % columns * (image.width / columns),
+    y: Math.floor(frame / columns) * (image.height / rows),
+    width: image.width / columns, height: image.height / rows,
+  }));
+  for (const [frame, rect] of Object.entries(metadata.sourceRects ?? {})) bounds[frame] = rect;
+  return { atlas: image, bounds, metadata };
+}
+
+async function loadSceneAssets(plan) {
+  const resources = new Map(await Promise.all([...plan.resources].map(async ([key, resource]) => {
+    const value = await sceneAssetCache.get(key, () => resource.url ? loadImage(resource.url)
+      : resource.levelNumber === 2 ? createGraveyardMap() : createTinyMap());
+    return [key, value];
+  })));
+  const allyAnimations = {};
+  for (const ally of plan.allies) {
+    const animation = prepareAnimation(resources.get(ally.sheet), ALLY_ANIMATION_METADATA[ally.type]);
+    if (ally.walk) animation.walk = prepareAnimation(resources.get(ally.walk), MONK_RUN_METADATA);
+    if (ally.cast) animation.cast = prepareAnimation(resources.get(ally.cast), MONK_HEAL_METADATA);
+    const group = allyAnimations[ally.type] ??= { ...animation, ranks: {} };
+    group.ranks[ally.rank] = animation;
   }
-  // Native clothing variants are decoded once; round changes only select a cached atlas.
-  goblinArt.roundColors = Object.fromEntries(await Promise.all(
-    Object.entries(GOBLIN_ROUND_ASSETS).map(async ([color, url]) => {
-      const image = color === 'Red' ? goblinSource : await loadImage(url);
-      return [color, { animations: { ...goblinArt.animations,
-        goblin: image ? prepareAnimation(image, TORCH_ANIMATION_METADATA) : goblinArt.animations.goblin,
-      } }];
-    })));
-  function prepareAnimation(image, metadata) {
-    const { columns, rows } = metadata.layout;
-    // Exported assets arrive ready to draw; no pixel readback or connected-component scans.
-    const animationBounds = image ? Array.from({ length: columns * rows }, (_, frame) => ({
-      x: frame % columns * (image.width / columns),
-      y: Math.floor(frame / columns) * (image.height / rows),
-      width: image.width / columns, height: image.height / rows,
-    })) : [];
-    for (const [frame, rect] of Object.entries(metadata.sourceRects ?? {})) animationBounds[frame] = rect;
-    return { atlas: image, bounds: animationBounds, metadata };
-  }
-  const allyAnimations = Object.fromEntries(allySources.map(([type, image]) =>
-    [type, prepareAnimation(image, ALLY_ANIMATION_METADATA[type])]));
-  allyAnimations.healer.walk = prepareAnimation(monkRunSource, {
-    ...ALLY_ANIMATION_METADATA.healer,
-    layout: { columns: 4, rows: 1 },
-    baselines: Array(4).fill(128 / 192),
-    frameFor: tinyMonkRunFrame,
-  });
-  allyAnimations.healer.cast = prepareAnimation(monkHealSource, {
-    ...ALLY_ANIMATION_METADATA.healer,
-    layout: { columns: 11, rows: 1 },
-    baselines: Array(11).fill(128 / 192),
-    frameFor: tinyMonkHealFrame,
-  });
-  // Use the pack's authored color sheets, cached once; no per-frame tint or pixel readback.
-  await Promise.all(Object.entries(UNIT_RANK_ASSETS).flatMap(([type, ranks]) =>
-    Object.entries(ranks).map(async ([level, urls]) => {
-      const [image, walk, cast] = await Promise.all([
-        loadImage(urls.sheet), urls.walk ? loadImage(urls.walk) : null,
-        urls.cast ? loadImage(urls.cast) : null,
-      ]);
-      if (!image) return;
-      const animation = prepareAnimation(image, ALLY_ANIMATION_METADATA[type]);
-      if (walk) animation.walk = prepareAnimation(walk, allyAnimations.healer.walk.metadata);
-      if (cast) animation.cast = prepareAnimation(cast, allyAnimations.healer.cast.metadata);
-      (allyAnimations[type].ranks ??= {})[level] = animation;
-    })));
-  return { maps, goblinArt, allyAnimations };
+  const goblinArt = { animations: Object.fromEntries(plan.enemies.map(enemy =>
+    [enemy.type, prepareAnimation(resources.get(enemy.sheet), ENEMY_ANIMATION_METADATA[enemy.type])])) };
+  return { map: resources.get(plan.mapKey), goblinArt, allyAnimations };
 }
 
 export async function createScene(canvas, {
-  onCell = () => {}, onKing = () => {}, formationOnly = false, placementGrid = true,
+  onCell = () => {}, onKing = () => {}, onAssetState = () => {}, formationOnly = false, placementGrid = true,
 } = {}) {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas 2D is unavailable');
-  // Both canvases share decoded sprites and prepared terrain layers.
-  sceneAssetsPromise ??= loadSceneAssets().catch((error) => {
-    sceneAssetsPromise = null;
-    throw error;
-  });
-  const { maps, goblinArt, allyAnimations } = await sceneAssetsPromise;
+  // Owners keep only the union of resources needed by the two live canvases.
+  const assetOwner = {};
+  let map = null;
+  let goblinArt = { animations: {} };
+  let allyAnimations = {};
   const unitImages = UNIT_IMAGES;
   // Crop tightly around the formation while keeping first-row health and level labels.
   const view = formationOnly ? FORMATION_VIEW : BATTLE_VIEW;
@@ -747,6 +703,40 @@ export async function createScene(canvas, {
   let destroyed = false;
   let state = { units: [], selectedId: null, placementType: null, battle: null, time: 0 };
   let hoverCell = null;
+  let assetState = { status: 'loading', levelNumber: 1 };
+  let assetSignature = null;
+  let assetRequest = 0;
+  let pendingAssets = Promise.resolve(false);
+
+  function updateState(nextState) {
+    state = { ...state, ...nextState, units: nextState.units ?? state.units };
+    if (formationOnly) state.battle = null;
+  }
+
+  function requestAssets(force = false) {
+    if (destroyed) return Promise.resolve(false);
+    const plan = getSceneAssetPlan(state, { formationOnly });
+    if (!force && plan.signature === assetSignature) return pendingAssets;
+    assetSignature = plan.signature;
+    const request = ++assetRequest;
+    sceneAssetCache.retain(assetOwner, plan.keys);
+    assetState = { status: 'loading', levelNumber: plan.levelNumber };
+    onAssetState({ ...assetState });
+    pendingAssets = loadSceneAssets(plan).then(assets => {
+      if (destroyed || request !== assetRequest) return false;
+      ({ map, goblinArt, allyAnimations } = assets);
+      draw();
+      assetState = { status: 'ready', levelNumber: plan.levelNumber };
+      onAssetState({ ...assetState });
+      return true;
+    }, error => {
+      if (destroyed || request !== assetRequest) return false;
+      assetState = { status: 'error', levelNumber: plan.levelNumber, error };
+      onAssetState({ ...assetState });
+      return false;
+    });
+    return pendingAssets;
+  }
 
   function viewportFor(rect) {
     const scale = Math.min(rect.width / view.width, rect.height / view.height);
@@ -784,7 +774,6 @@ export async function createScene(canvas, {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
     const levelNumber = state.levelNumber ?? state.battle?.wave?.levelNumber ?? 1;
-    const map = maps[levelNumber - 1] ?? maps[0];
     canvas.dataset.level = String(levelNumber);
     drawMap(context, map, rect.width / viewport.scale, rect.height / viewport.scale,
       viewport.x / viewport.scale, viewport.y / viewport.scale, state.time);
@@ -879,7 +868,7 @@ export async function createScene(canvas, {
     }
     context.globalAlpha = 1;
     if (state.battle) {
-      const enemyArt = getEnemyRoundArt(goblinArt, state.battle.wave);
+      const enemyArt = goblinArt;
       const actors = [...state.battle.allies, ...state.battle.enemies, state.battle.king]
         .filter(Boolean).sort((a, b) => a.y - b.y || a.x - b.x);
       for (const actor of actors) drawChiefWindup(context, actor);
@@ -941,6 +930,7 @@ export async function createScene(canvas, {
   window.addEventListener('resize', draw);
   draw();
   document.fonts?.ready.then(draw);
+  await requestAssets();
   return {
     getCellAt(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
@@ -956,12 +946,24 @@ export async function createScene(canvas, {
     },
     render(nextState) {
       if (destroyed) return;
-      state = { ...state, ...nextState, units: nextState.units ?? state.units };
-      if (formationOnly) state.battle = null;
+      updateState(nextState);
+      requestAssets();
       draw();
     },
+    prepare(nextState = {}) {
+      if (destroyed) return Promise.resolve(false);
+      updateState(nextState);
+      return requestAssets();
+    },
+    retryAssets() { return requestAssets(true); },
+    getAssetState() { return { ...assetState }; },
     destroy() {
       destroyed = true;
+      assetRequest += 1;
+      sceneAssetCache.release(assetOwner);
+      map = null;
+      goblinArt = { animations: {} };
+      allyAnimations = {};
       resizeObserver?.disconnect();
       window.removeEventListener('resize', draw);
       canvas.removeEventListener('click', onClick);
