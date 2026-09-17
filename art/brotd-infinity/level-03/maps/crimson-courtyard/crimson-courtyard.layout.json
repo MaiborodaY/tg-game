@@ -1,0 +1,54 @@
+{
+  "image": "crimson-courtyard-780x1080-lite.webp",
+  "smallImage": "crimson-courtyard-390x540-lite.webp",
+  "logicalSize": {
+    "width": 390,
+    "height": 540
+  },
+  "imageSize": {
+    "width": 780,
+    "height": 1080
+  },
+  "smallImageSize": {
+    "width": 390,
+    "height": 540
+  },
+  "sourceSize": {
+    "width": 1066,
+    "height": 1476
+  },
+  "referenceZones": {
+    "deployment": {
+      "x": 50,
+      "y": 270,
+      "width": 290,
+      "height": 165,
+      "columns": 5,
+      "rows": 3,
+      "cellWidth": 58,
+      "cellHeight": 55
+    },
+    "king": {
+      "x": 195,
+      "feetY": 493
+    },
+    "rearLane": {
+      "x": 130,
+      "y": 440,
+      "width": 130,
+      "height": 100
+    },
+    "topApproach": {
+      "x": 131,
+      "y": 0,
+      "width": 128,
+      "height": 92
+    }
+  },
+  "notes": [
+    "Approved standalone opaque static background artwork for level three; not connected to the map renderer.",
+    "Reference zones retain the existing level-two layout guide (390x540); they are not collision geometry or a runtime configuration.",
+    "Place the full image into the logical 390x540 extent without cover-cropping. Keep the top approach, deployment area and central rear lane open.",
+    "This is a static map illustration, not an animated tileset. Unit placement and interface overlap still need checking during future integration."
+  ]
+}

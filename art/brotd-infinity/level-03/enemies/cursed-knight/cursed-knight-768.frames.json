@@ -1,0 +1,187 @@
+{
+  "image": "cursed-knight-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 208,
+        "height": 213
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 208,
+        "y": 0,
+        "width": 178,
+        "height": 213
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 386,
+        "y": 0,
+        "width": 178,
+        "height": 213
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 564,
+        "y": 0,
+        "width": 204,
+        "height": 213
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 213,
+        "width": 214,
+        "height": 166
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 214,
+        "y": 213,
+        "width": 180,
+        "height": 166
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 394,
+        "y": 213,
+        "width": 181,
+        "height": 166
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 575,
+        "y": 213,
+        "width": 193,
+        "height": 166
+      }
+    },
+    {
+      "index": 8,
+      "action": "attack-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 379,
+        "width": 209,
+        "height": 176
+      }
+    },
+    {
+      "index": 9,
+      "action": "attack-right",
+      "pose": 1,
+      "rect": {
+        "x": 209,
+        "y": 379,
+        "width": 169,
+        "height": 176
+      }
+    },
+    {
+      "index": 10,
+      "action": "attack-right",
+      "pose": 2,
+      "rect": {
+        "x": 378,
+        "y": 379,
+        "width": 198,
+        "height": 176
+      }
+    },
+    {
+      "index": 11,
+      "action": "attack-right",
+      "pose": 3,
+      "rect": {
+        "x": 576,
+        "y": 379,
+        "width": 192,
+        "height": 176
+      }
+    },
+    {
+      "index": 12,
+      "action": "attack-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 555,
+        "width": 214,
+        "height": 213
+      }
+    },
+    {
+      "index": 13,
+      "action": "attack-down",
+      "pose": 1,
+      "rect": {
+        "x": 214,
+        "y": 555,
+        "width": 166,
+        "height": 213
+      }
+    },
+    {
+      "index": 14,
+      "action": "attack-down",
+      "pose": 2,
+      "rect": {
+        "x": 380,
+        "y": 555,
+        "width": 181,
+        "height": 213
+      }
+    },
+    {
+      "index": 15,
+      "action": "attack-down",
+      "pose": 3,
+      "rect": {
+        "x": 561,
+        "y": 555,
+        "width": 207,
+        "height": 213
+      }
+    }
+  ],
+  "impactPose": 2,
+  "note": "Explicit crop rectangles preserve the complete two-handed sword and armor. Rows: idle right, walk right, heavy sword strike right, heavy sword strike down. Pose 2 is impact (indices 10 and 14). Playback, body scale and foot anchors require integration. No slash effect, death animation or gameplay code is included."
+}

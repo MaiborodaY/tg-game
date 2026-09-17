@@ -1,0 +1,19 @@
+# Запрос генерации карты
+
+Метод: встроенный `imagegen`. Пользователь утвердил этот концепт. Исходный PNG сохранён без изменений; облегчённые WebP экспортированы через Sharp, nearest-neighbor, quality 85.
+
+Референсы: [карта второго уровня](../../../level-02/maps/forgotten-graveyard/forgotten-graveyard-780x1080-lite.webp) — композиция и стиль; [Багровый граф](../../bosses/crimson-count/crimson-count-concept.webp) — тема и палитра.
+
+```text
+Use case: stylized-concept.
+Asset type: ONE preview concept of a level-three battlefield MAP for the mobile fantasy game BroTD Infinity. This is a proposed design, not a sprite sheet.
+Reference image 1 is the existing level-two map: preserve its exact portrait 13:18 proportions, top-down slightly elevated camera, readable pixel art, open battlefield geometry and placement of border decoration. Reference image 2 is the approved VAMPIRE final boss: use only its navy-black, muted plum, tarnished silver and wine-red visual theme. DO NOT draw the vampire or any other characters.
+
+Design a new location: THE COURTYARD OF THE CRIMSON CASTLE, the vampire's ancestral stronghold. This continues the undead territory deeper into a gothic aristocratic fortress. Replace dusty cemetery soil with worn, cracked large blue-grey stone paving. Broad simple cool muted pavers, restrained texture, central playable area a MEDIUM-LIGHT grey-violet so dark units will be legible. Preserve large uninterrupted open center and a broad entry from the TOP CENTER. A modest broken stone gateway and opened iron gates frame that entrance, with two subdued burgundy hanging banners bearing small abstract bat emblems on the side pillars. Gates open to the sides and do not block the path. No horizon, sky, distant castle vista or perspective vanishing point: this is an actual overhead game-board composition.
+
+Design the perimeter: low crumbling gothic stone parapets along the outer sides, short iron fence sections, a few small bat gargoyles atop side pillars, restrained violet-red lanterns. At upper side edges only, a narrow dark abandoned moat suggests the fortress perimeter, following the reference's edge geometry. Muted dead burgundy rose bushes, bare thorny branches, tiny scattered ivy patches, a few cobwebs and two or three old stone coffins tucked into the margins. Stone arches and burgundy banners make this a vampire courtyard rather than another graveyard. A compact old gothic gatehouse/chapel with dull ruby stained glass occupies the same LOWER LEFT footprint as the reference's mausoleum, safely outside the central rear passage. Small dead rose garden and a ruined gargoyle in lower right margin. Keep entire LOWER CENTER open for the defending king.
+
+Gameplay composition constraints in normalized 390 x 540 logical coordinates: keep the central formation rectangle x50-340, y270-435 free of walls, props, statues, graves and obstacles; keep the central rear path and feet position around x195,y493 clear; top center entry is open and widens smoothly into arena. Do not actually draw grid cells, coordinate marks or units. All large scenic objects confined to outside edges. No central fountain, altar, throne, giant symbol, giant red carpet or raised platform. Very subtle cracked stone pattern within the field only.
+
+Style: match reference's charming crisp 2D retro fantasy pixel-art tilemap, chunky stepped outlines, clean readable pixel clusters, restrained 2-3-tone shading, desaturated colors. Midnight mood conveyed by cool edges and small warm wine-red lights, NOT by making the entire map black. Sparse low mist only at extreme outside edges, never obscuring battlefield. No realistic painting, smooth 3D, glossy rendering, bloom, fine noisy texture, blood pools or gore. No UI, text, captions, labels, border, panels, watermarks. Entire portrait map visible edge-to-edge, 13:18 aspect ratio, opaque background.
+```
