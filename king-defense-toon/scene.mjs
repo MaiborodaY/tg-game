@@ -4,6 +4,7 @@ import { getUnitRange, KING_MAX_HP } from './combat.mjs';
 import { getUnitRank } from './unit-ranks.mjs';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.mjs';
 import { UNIT_RANK_ASSETS } from './rank-art.mjs';
+import { GOBLIN_ROUND_ASSETS, getEnemyRoundArt } from './goblin-round-art.mjs';
 import { allyDeathOpacity } from './ally-animation.mjs';
 import { KING_IMAGE_URL, UNIT_IMAGES } from './asset-web.mjs';
 import { GOBLIN_ARCHER_IMAGE_URL, GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.mjs';
@@ -23,7 +24,7 @@ import { createTinyMap } from './tiny-map.mjs';
 import { createGraveyardMap } from './graveyard-map.mjs';
 export { FIELD } from './field.mjs';
 
-const GOBLIN_URL = new URL('./assets/tiny-swords-torch-red.png', import.meta.url).href;
+const GOBLIN_URL = GOBLIN_ROUND_ASSETS.Red;
 const BOAR_URL = new URL('./assets/web/boar.webp', import.meta.url).href;
 const MONK_RUN_URL = new URL('./assets/tiny-monk/Run.png', import.meta.url).href;
 const MONK_HEAL_URL = new URL('./assets/tiny-monk/Heal.png', import.meta.url).href;
@@ -679,6 +680,14 @@ async function loadSceneAssets() {
     goblinArt.animations[type] = source ? prepareAnimation(source, art.metadata)
       : goblinArt.animations[art.fallback];
   }
+  // Native clothing variants are decoded once; round changes only select a cached atlas.
+  goblinArt.roundColors = Object.fromEntries(await Promise.all(
+    Object.entries(GOBLIN_ROUND_ASSETS).map(async ([color, url]) => {
+      const image = color === 'Red' ? goblinSource : await loadImage(url);
+      return [color, { animations: { ...goblinArt.animations,
+        goblin: image ? prepareAnimation(image, TORCH_ANIMATION_METADATA) : goblinArt.animations.goblin,
+      } }];
+    })));
   function prepareAnimation(image, metadata) {
     const { columns, rows } = metadata.layout;
     // Exported assets arrive ready to draw; no pixel readback or connected-component scans.
@@ -870,12 +879,13 @@ export async function createScene(canvas, {
     }
     context.globalAlpha = 1;
     if (state.battle) {
+      const enemyArt = getEnemyRoundArt(goblinArt, state.battle.wave);
       const actors = [...state.battle.allies, ...state.battle.enemies, state.battle.king]
         .filter(Boolean).sort((a, b) => a.y - b.y || a.x - b.x);
       for (const actor of actors) drawChiefWindup(context, actor);
       for (const actor of actors) {
         drawUnit(context, actor.type, actor.x, actor.y,
-          actor.type === 'king', actor, state.time, goblinArt, allyAnimations, null, actorScale);
+          actor.type === 'king', actor, state.time, enemyArt, allyAnimations, null, actorScale);
       }
       for (const actor of actors) drawHealth(context, actor, actorScale);
       for (const effect of state.battle.effects) drawEffect(context, effect);
