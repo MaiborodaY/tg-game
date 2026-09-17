@@ -1,0 +1,54 @@
+{
+  "image": "forgotten-graveyard-780x1080-lite.webp",
+  "smallImage": "forgotten-graveyard-390x540-lite.webp",
+  "logicalSize": {
+    "width": 390,
+    "height": 540
+  },
+  "imageSize": {
+    "width": 780,
+    "height": 1080
+  },
+  "smallImageSize": {
+    "width": 390,
+    "height": 540
+  },
+  "sourceSize": {
+    "width": 1066,
+    "height": 1476
+  },
+  "referenceZones": {
+    "deployment": {
+      "x": 50,
+      "y": 270,
+      "width": 290,
+      "height": 165,
+      "columns": 5,
+      "rows": 3,
+      "cellWidth": 58,
+      "cellHeight": 55
+    },
+    "king": {
+      "x": 195,
+      "feetY": 493
+    },
+    "rearLane": {
+      "x": 130,
+      "y": 440,
+      "width": 130,
+      "height": 100
+    },
+    "topApproach": {
+      "x": 131,
+      "y": 0,
+      "width": 128,
+      "height": 92
+    }
+  },
+  "notes": [
+    "Standalone opaque static background artwork; not connected to the map renderer.",
+    "Reference zones come from the existing field.mjs and tiny-map.mjs; they are a layout guide, not collision geometry or runtime configuration.",
+    "Place the full image into the logical 390x540 map extent without cover-cropping.",
+    "The previous map is tile-built with animated trees and water glints. This image is a static alternative, not a replacement tileset."
+  ]
+}
