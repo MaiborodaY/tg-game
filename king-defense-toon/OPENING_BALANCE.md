@@ -1,6 +1,8 @@
 # First thirty waves: balance verification — 2026-09-17
 
-Local candidate, not published. The scope is waves 1–30 (rounds 1-1, 1-2 and 1-3).
+Published on 2026-09-17 from commit `48543e4` to the existing BroTD Infinity URL
+through Pages Preview deployment `224eac10`. The scope is waves 1–30
+(rounds 1-1, 1-2 and 1-3).
 Every definition from 31 through 400 remains identical to the original snapshot,
 including all of Level 2. The remaining campaign requires a later rebalance.
 
@@ -270,4 +272,7 @@ in that case never attacked before the other fighters won. This is a remaining
 crowding limitation, not a claim that all formations have been exhaustively tested.
 
 Hero stat growth remains 5% per level. Recruitment, merging, resource rates and
-the king's combat stats are unchanged. No commit, push or deployment was performed.
+the king's combat stats are unchanged. The release also includes the rendered-frame
+FPS counter. All 73 Node tests and the Vite build passed before publication;
+the stable alias's HTML, JavaScript and CSS match the local build byte for byte.
+King upgrades and skills remain design proposals and are not part of this release.
