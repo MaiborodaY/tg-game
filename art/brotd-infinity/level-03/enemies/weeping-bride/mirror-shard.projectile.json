@@ -1,0 +1,20 @@
+{
+  "image": "mirror-shard-128-lite.webp",
+  "size": {
+    "width": 128,
+    "height": 128
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "forwardDirection": "right",
+  "forwardAngleRadians": 0,
+  "visibleBoundsAlpha20": {
+    "x": 18,
+    "y": 47,
+    "width": 93,
+    "height": 35
+  },
+  "note": "Single mirror-glass shard. Rotate the image to the projectile travel direction. Multiple shots can reuse this texture. Scale, launch origin, velocity, spread and hit behavior are intentionally unspecified; no gameplay integration is included."
+}

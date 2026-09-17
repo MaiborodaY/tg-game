@@ -1,0 +1,187 @@
+{
+  "image": "weeping-bride-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 191,
+        "height": 199
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 191,
+        "y": 0,
+        "width": 189,
+        "height": 199
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 380,
+        "y": 0,
+        "width": 195,
+        "height": 199
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 575,
+        "y": 0,
+        "width": 193,
+        "height": 199
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 199,
+        "width": 188,
+        "height": 189
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 188,
+        "y": 199,
+        "width": 201,
+        "height": 189
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 389,
+        "y": 199,
+        "width": 193,
+        "height": 189
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 582,
+        "y": 199,
+        "width": 186,
+        "height": 189
+      }
+    },
+    {
+      "index": 8,
+      "action": "shoot-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 388,
+        "width": 191,
+        "height": 193
+      }
+    },
+    {
+      "index": 9,
+      "action": "shoot-right",
+      "pose": 1,
+      "rect": {
+        "x": 191,
+        "y": 388,
+        "width": 190,
+        "height": 193
+      }
+    },
+    {
+      "index": 10,
+      "action": "shoot-right",
+      "pose": 2,
+      "rect": {
+        "x": 381,
+        "y": 388,
+        "width": 201,
+        "height": 193
+      }
+    },
+    {
+      "index": 11,
+      "action": "shoot-right",
+      "pose": 3,
+      "rect": {
+        "x": 582,
+        "y": 388,
+        "width": 186,
+        "height": 193
+      }
+    },
+    {
+      "index": 12,
+      "action": "shoot-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 581,
+        "width": 191,
+        "height": 187
+      }
+    },
+    {
+      "index": 13,
+      "action": "shoot-down",
+      "pose": 1,
+      "rect": {
+        "x": 191,
+        "y": 581,
+        "width": 191,
+        "height": 187
+      }
+    },
+    {
+      "index": 14,
+      "action": "shoot-down",
+      "pose": 2,
+      "rect": {
+        "x": 382,
+        "y": 581,
+        "width": 193,
+        "height": 187
+      }
+    },
+    {
+      "index": 15,
+      "action": "shoot-down",
+      "pose": 3,
+      "rect": {
+        "x": 575,
+        "y": 581,
+        "width": 193,
+        "height": 187
+      }
+    }
+  ],
+  "releasePose": 2,
+  "note": "Explicit crop rectangles preserve the entire veil, dress, hands and mirror. Rows: idle right, glide right, cast right, cast down. Pose 2 is release (indices 10 and 14). The mirror shard is a separate projectile asset. Playback, body scale, foot anchors, projectile origin and combat logic require integration. No death sequence or gameplay code is included."
+}
