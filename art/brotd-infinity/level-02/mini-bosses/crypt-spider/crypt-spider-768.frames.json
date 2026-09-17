@@ -1,0 +1,187 @@
+{
+  "image": "crypt-spider-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 197,
+        "height": 203
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 197,
+        "y": 0,
+        "width": 190,
+        "height": 203
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 387,
+        "y": 0,
+        "width": 193,
+        "height": 203
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 580,
+        "y": 0,
+        "width": 188,
+        "height": 203
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 203,
+        "width": 197,
+        "height": 182
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 197,
+        "y": 203,
+        "width": 193,
+        "height": 182
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 390,
+        "y": 203,
+        "width": 192,
+        "height": 182
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 582,
+        "y": 203,
+        "width": 186,
+        "height": 182
+      }
+    },
+    {
+      "index": 8,
+      "action": "attack-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 385,
+        "width": 201,
+        "height": 178
+      }
+    },
+    {
+      "index": 9,
+      "action": "attack-right",
+      "pose": 1,
+      "rect": {
+        "x": 201,
+        "y": 385,
+        "width": 182,
+        "height": 178
+      }
+    },
+    {
+      "index": 10,
+      "action": "attack-right",
+      "pose": 2,
+      "rect": {
+        "x": 383,
+        "y": 385,
+        "width": 199,
+        "height": 178
+      }
+    },
+    {
+      "index": 11,
+      "action": "attack-right",
+      "pose": 3,
+      "rect": {
+        "x": 582,
+        "y": 385,
+        "width": 186,
+        "height": 178
+      }
+    },
+    {
+      "index": 12,
+      "action": "attack-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 563,
+        "width": 195,
+        "height": 205
+      }
+    },
+    {
+      "index": 13,
+      "action": "attack-down",
+      "pose": 1,
+      "rect": {
+        "x": 195,
+        "y": 563,
+        "width": 185,
+        "height": 205
+      }
+    },
+    {
+      "index": 14,
+      "action": "attack-down",
+      "pose": 2,
+      "rect": {
+        "x": 380,
+        "y": 563,
+        "width": 196,
+        "height": 205
+      }
+    },
+    {
+      "index": 15,
+      "action": "attack-down",
+      "pose": 3,
+      "rect": {
+        "x": 576,
+        "y": 563,
+        "width": 192,
+        "height": 205
+      }
+    }
+  ],
+  "impactPose": 2,
+  "note": "Explicit crop rectangles retain the entire legs and fangs. Rows: idle right, crawl right, bite right, bite down. Pose 2 is bite contact (indices 10 and 14). Playback and ground anchors require integration. No web-spit, projectile, death animation or gameplay code is included."
+}

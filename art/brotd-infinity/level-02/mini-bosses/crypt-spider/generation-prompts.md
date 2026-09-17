@@ -1,0 +1,33 @@
+# Crypt Spider — generation prompts
+
+Tool: built-in `imagegen` (no CLI/API fallback).
+
+## Approved concept
+
+Reference: the approved skeleton archer concept, used to preserve the existing game style and forest backdrop. The spider concept was approved before animation generation.
+
+Use case: stylized-concept.
+Asset type: one preview illustration of a proposed mini-boss for BroTD Infinity, no sprite sheet.
+Edit the provided approved game concept: preserve its forest ruin setting, sandy winding path, olive grass, teal pine trees, mossy broken stone wall, viewpoint and chunky pixel-art style. Completely replace the skeleton archer with a new creature called the Crypt Spider. No humanoid character remains.
+Subject: an imposing low, broad eight-legged crypt spider with an oversized deep plum abdomen, dark blue-grey segmented legs and pale old-ivory bony armor plates. Its memorable feature is a curved rib-like armored cage around its bulbous purple abdomen, with three rounded violet luminous venom nodules visible between the large plates. A broad forward head, clustered tiny amber eyes, and two oversized ivory hooked fangs. This is an original stylized fantasy arthropod, not a spider with a human skull, not a skeleton riding a spider. Eight clearly articulated legs, four on each side, spaced for a readable silhouette; the front two hook up slightly in a threatening poised stance, remaining legs firmly on the path. Limbs are substantial simple shapes suitable for a future small mobile game sprite.
+Character role visually reads as a mini-boss about twice the width of an ordinary troop: heavy armored abdomen, vicious mobile legs, dangerous fangs. No actual scale reference character. Three-quarter front view facing slightly right, camera slightly above, full creature fully visible with all legs inside generous margins. Creature occupies roughly 75 percent of canvas width. Strong readable dark navy outline, large clean pixel clusters, stepped contours and limited flat shading exactly matching the input artwork. Warm tan and olive environment, ivory armor, desaturated plum body, restrained bright violet nodules and amber eye accents.
+Make the design intriguing through the distinctive anatomy and contrast of bone plates against the purple body, with clean large shapes and no busy surface ornaments. Fantasy game menace, not horror realism. Single character on the path with a soft contact shadow.
+Square composition. No text, watermark, interface, health bars, collage, labels, weapons, shields, human face, rider, extra monsters, photorealistic textures, smooth gradients, gore or realistic hairs.
+
+## Animation atlas
+
+Reference: [approved Crypt Spider concept](crypt-spider-concept.png). Original generated atlas preserved unmodified in crypt-spider-source.png.
+
+Use case: identity-preserve.
+Transform this approved CRYPT SPIDER concept into one transparent animation sprite atlas for BroTD Infinity, a 2D mobile pixel-art game. Preserve the approved non-humanoid creature: broad low eight-legged spider, huge rounded deep-plum abdomen wrapped with thick old-ivory curved rib-like armor plates and a few large ivory spines, THREE round bright violet nodules on the flank, dark slate-blue-grey thick segmented legs with ivory armor tips at their joints, small plum face with clustered amber eyes, and two very large hooked ivory fangs. Same color palette, proportions, armor design and scale in every pose. Exactly eight legs, four rooted on each side; natural occlusion of the far legs is allowed. Two fangs; no arms, fingers, human head, skeleton rider, new ornaments or clothing.
+Remove the entire forest scene, ground and cast shadows. Actual transparent alpha background everywhere outside the creature, including between legs. No painted checkerboard or matte. Crisp chunky dark navy PIXEL outlines, simple two or three flat shade clusters per material, clean retro game sprite readable at small mobile size. No smooth vector lines, realistic textures, atmospheric glow or excessive small detail.
+LAYOUT: ONE square atlas with EXACTLY FOUR equal columns and FOUR equal rows, sixteen individual full creature poses. Leave very generous transparent gutters. Each creature including ALL legs and fangs must fit inside the central 68 percent of its cell width and 65 percent of cell height, with at least 15 percent blank margin on each side. Same physical body size in all sixteen frames, including attack poses. Body center consistently placed in each cell, supporting feet near 78 percent of cell height. All extremities remain inside their own cells; no overlap, cut-off limbs or touching figures. Uniform mildly elevated game camera.
+ROW ONE: four IDLE RIGHT poses, three-quarter side view with head/fangs toward screen RIGHT, subtle breathing and tiny leg bends, feet remain planted, stable armor and nodules.
+ROW TWO: four WALK RIGHT poses, same side view, clearly different alternating leg contacts and lifts, heavy abdomen mostly level. Pose1 one alternating group of legs steps forward, pose2 passing legs underneath, pose3 opposite alternating group steps forward, pose4 opposite passing phase. A coherent crawl cycle, not four identical poses. All eight legs maintain their same attachment sites.
+ROW THREE: four BITE RIGHT attack poses. Pose1 low crouch and fangs opening slightly; pose2 head draws back with fangs spread and front pair of legs raised as anticipation; pose3 grounded short forward lunge to screen RIGHT, head forward and fangs snapping inward at the impact; pose4 retract head and settle legs back toward idle. Same creature body size. Only front pair of legs rears; the remaining legs brace it. No detached attack effects or projectile.
+ROW FOUR: four BITE DOWN attack poses, face directed toward the VIEWER and image BOTTOM, symmetrical abdomen behind head and eight legs around sides. Pose1 lower head and open fangs; pose2 rear front pair of legs slightly with fangs spread; pose3 thrust head down-forward toward viewer and snap fangs together at the impact; pose4 recover. This must be a clearly frontal direction sequence distinct from row3. Preserve abdomen volume and bone plate count, do not replace it with a skull.
+Four poses per row only, no bonus frames. Whole atlas genuinely transparent. No captions, text, grid lines, UI, labels, ground, shadows, effects, separate props or background.
+
+## Export
+
+Nearest-neighbor resize to 768 x 768. WebP encodes retain the alpha channel; the source artwork is not repainted or cleaned by scripts. Frame rectangles follow empty gutters between the sixteen silhouettes. The green preview is flattened for inspection only.

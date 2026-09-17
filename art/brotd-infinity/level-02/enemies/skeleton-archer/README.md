@@ -1,6 +1,6 @@
 # Skeleton archer - animation artwork v1
 
-Generated with the built-in imagegen tool from the approved [archer concept](../concepts/skeleton-archer-v1.png). Artwork only; gameplay, balance and deployment are unchanged.
+Generated with the built-in imagegen tool from the approved [archer concept](../../concepts/skeleton-archer-v1.png). Artwork only; gameplay, balance and deployment are unchanged.
 
 ## Files
 
