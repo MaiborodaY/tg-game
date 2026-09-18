@@ -267,6 +267,63 @@ is part of this stage; rendering, storage/cache and main/UI remain JavaScript.
   environment still blocks the external Telegram SDK; real Telegram devices
   remain a separate verification step.
 
+## Stage 5 scope
+
+Two more runtime implementations are TypeScript, bringing the total to eighteen:
+
+- `save-storage.ts`: the lazy storage backend, read/write failures, protected
+  retries, explicit reset confirmations and the public result protocol.
+- `asset-cache.ts`: shared pending loads, scene retention/release, eviction,
+  failed-load retries and image loading with bounded attempts/timeouts.
+
+The save adapter's optional generic constrains outgoing snapshots only. Loaded
+JSON and decoder output remain untrusted fields (`Record<string, unknown>`), or
+`null` for an absent slot. Gameplay factories still validate individual fields.
+The result types require callers to distinguish failure, a completed write and
+a successful read retry that still needs restoration. A successful retry does
+not imply a ready status or permission for background saves to replace the slot.
+Thrown values remain `unknown`; confirmation tokens remain instance-local
+symbols. No save keys, formats, reward rules or reset behavior are changed.
+
+A cache's value type is fixed for its lifetime rather than re-invented on each
+lookup. Its default is `unknown`; the scene can choose its actual resource union
+when rendering migrates. `loadImage` returns `HTMLImageElement` by default and
+the supplied constructor's instance type for injected loaders. The loader keeps
+the original async timing, promise identity, cleanup and retry behavior.
+
+Both `.mjs` modules remain compatibility bridges. The scene resource planner
+and generated graphic catalogues stay with the rendering stage: their URLs are
+currently coupled to still-JavaScript animation metadata and callbacks. This
+stage adds no unchecked declarations or `any` escapes to conceal those imports.
+
+The stage starts from `116aec0`. A fresh fetch found `origin/main` at `c999295`
+and `origin/codex/pixel-chronicle` at the requested `7a9a335`; both are already
+included. No integration or publication to `main` was needed.
+
+## Stage 5 validation
+
+- `brotd:check` passed: strict type checks, all **230 Node tests** and the
+  production Vite build. Compile-only tests now include **136 negative API
+  contracts**, with 30 new checks for saved-field validation, nullable loads,
+  restoration/reset results, write contracts, cache value/key types and image
+  constructor inference.
+- Seven new runtime tests cover retry before initial restoration, reset tokens
+  across slots/reloads, absent-slot decoding, non-Error failures, malformed
+  serialized snapshots, retained-key snapshots, pending-load reuse across scene
+  replacement and cleanup of timed-out image attempts.
+- Independent old/new comparison matched 96 save scenarios (**11,808 operations**),
+  60 cache scenarios (**5,700 operations**) and 24 image-load scenarios. Results,
+  statuses, writes, thrown values, confirmation tokens, shared promises and
+  cleanup matched. This uses injected Storage/Image implementations and controlled
+  timers, not real browser quota/network behavior or exhaustive interleavings.
+- Independent review confirmed equivalent runtime changes. Write methods use
+  function-property contracts so assigning an adapter to a broader snapshot type
+  cannot bypass its required fields; a negative type test protects that boundary.
+- Per the user's updated testing sequence, browser checks are deferred until
+  `main.mjs` has migrated. Earlier browser results are historical evidence, not
+  browser validation of this stage. Physical Telegram-device checks remain a
+  separate final step.
+
 ## Completion criteria and next stages
 
 For every slice: type checking, relevant behavior tests and production build
@@ -274,8 +331,8 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: migrate storage/cache APIs using the typed gameplay contracts,
-followed by rendering, Telegram/audio, DOM adapters and finally the main module.
+Next: migrate rendering and its resource/animation catalogues, followed by
+Telegram/audio, DOM adapters and finally the main module.
 Keep major architecture changes separate from mechanical migration steps.
 
 The full migration is complete only when all active gameplay modules are

@@ -193,3 +193,60 @@ test('reset of an already loaded save needs no additional adapter confirmation',
   assert.equal(adapter.reset({ gold: 125 }).ok, true);
   assert.deepEqual(JSON.parse(state.raw), { gold: 125 });
 });
+
+test('retry before the first load neither serializes fresh progress nor opens the write gate', () => {
+  for (const initial of [null, '{"gold":17}']) {
+    const { state, adapter } = fixture(initial);
+    const fresh = { toJSON() { assert.fail('unrestored progress was serialized'); } };
+    assert.deepEqual(adapter.retry(fresh), {
+      ok: true, status: 'unread', value: initial === null ? null : { gold: 17 }, needsRestore: true,
+    });
+    assert.deepEqual(adapter.save(fresh), { ok: false, status: 'unread', blocked: true });
+    assert.equal(state.raw, initial);
+    assert.deepEqual(state.writes, []);
+    assert.equal(adapter.load().status, 'ready');
+  }
+});
+
+test('reset confirmations are local to a slot instance and are invalidated by a new load', () => {
+  const first = fixture('{broken'), second = fixture('{broken');
+  first.adapter.load();
+  second.adapter.load();
+  const firstToken = first.adapter.prepareReset();
+  const secondToken = second.adapter.prepareReset();
+  assert.equal(second.adapter.reset({ gold: 125 }, { confirmation: firstToken }).needsConfirmation, true);
+  assert.equal(first.adapter.load().status, 'corrupt');
+  assert.equal(first.adapter.reset({ gold: 125 }, { confirmation: firstToken }).needsConfirmation, true);
+  assert.deepEqual(first.state.writes, []);
+  assert.equal(second.adapter.reset({ gold: 125 }, { confirmation: secondToken }).ok, true);
+  assert.equal(first.adapter.reset({ gold: 125 }, { confirmation: first.adapter.prepareReset() }).ok, true);
+});
+
+test('missing saves bypass decoding and decoder failures preserve the exact thrown value', () => {
+  const absent = fixture(null, { decode() { assert.fail('absent slots have no JSON to decode'); } });
+  assert.deepEqual(absent.adapter.load(), { ok: true, status: 'ready', value: null });
+  for (const error of ['invalid legacy version', null, 17, { field: 'gold' }]) {
+    const { state, adapter } = fixture('{"gold":17}', { decode() { throw error; } });
+    const failed = adapter.load();
+    assert.equal(failed.status, 'corrupt');
+    assert.equal(failed.error, error);
+    assert.equal(adapter.save({ gold: 125 }).blocked, true);
+    assert.equal(state.raw, '{"gold":17}');
+    assert.deepEqual(state.writes, []);
+  }
+});
+
+test('non-record snapshots and custom JSON primitives cannot replace a readable save', () => {
+  const { state, adapter } = fixture('{"gold":17}');
+  adapter.load();
+  for (const snapshot of [null, [], 23, 'progress', () => ({}), new Date(0),
+    { toJSON: () => [] }, { toJSON: () => 1 }, { toJSON: () => undefined }]) {
+    const failed = adapter.save(snapshot);
+    assert.equal(failed.status, 'write-error');
+    assert.ok(failed.error instanceof TypeError);
+    assert.equal(state.raw, '{"gold":17}');
+    assert.deepEqual(state.writes, []);
+  }
+  assert.deepEqual(adapter.retry({ gold: 31 }), { ok: true, status: 'ready' });
+  assert.equal(state.raw, '{"gold":31}');
+});

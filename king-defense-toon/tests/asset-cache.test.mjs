@@ -40,6 +40,43 @@ test('an obsolete in-flight request is evicted when it completes without evictin
   assert.equal(cache.size, 0);
 });
 
+test('retention snapshots its keys and replacing a scene plan prunes completed resources', async () => {
+  const cache = createAssetCache(), owner = {};
+  const keys = new Set(['forest']);
+  cache.retain(owner, keys);
+  keys.clear();
+  const first = cache.get('forest', () => 'forest');
+  await first;
+  assert.equal(cache.size, 1);
+  assert.equal(cache.get('forest', () => assert.fail('retained resource was loaded twice')), first);
+  cache.retain(owner, ['graveyard']);
+  assert.equal(cache.size, 0);
+  assert.equal(await cache.get('forest', () => 'new forest'), 'new forest');
+  assert.equal(cache.size, 0, 'a completed, unretained request must not remain cached');
+});
+
+test('releasing then retaining an unfinished resource preserves its shared promise and deferred loader', async () => {
+  const cache = createAssetCache(), oldScene = {}, newScene = {};
+  let finish, calls = 0;
+  cache.retain(oldScene, ['warrior']);
+  const first = cache.get('warrior', () => {
+    calls += 1;
+    return new Promise(resolve => { finish = resolve; });
+  });
+  cache.release(oldScene);
+  assert.equal(calls, 0, 'the loader must not run synchronously during get');
+  assert.equal(cache.size, 1, 'pending loads stay available for a replacement scene');
+  cache.retain(newScene, ['warrior']);
+  assert.equal(cache.get('warrior', () => assert.fail('pending load was replaced')), first);
+  await Promise.resolve();
+  assert.equal(calls, 1);
+  finish('ready');
+  assert.equal(await first, 'ready');
+  assert.equal(cache.size, 1);
+  cache.release(newScene);
+  assert.equal(cache.size, 0);
+});
+
 test('a failed shared request can be retried successfully without replacing its scenes', async () => {
   const cache = createAssetCache(), owner = {};
   cache.retain(owner, ['map']);
@@ -82,4 +119,25 @@ test('a hanging image is bounded by the timeout and can recover on the second at
   assert.equal(requests, 2);
   class HangingImage { set src(_) {} }
   await assert.rejects(loadImage('/never.png', { ImageClass: HangingImage, timeoutMs: 5 }), /timed out/);
+});
+
+test('a timed-out attempt clears its source and handlers before a fresh image succeeds', async () => {
+  const images = [];
+  class Image {
+    constructor() { images.push(this); }
+    set src(value) {
+      this.source = value;
+      if (value && images.length === 2) queueMicrotask(() => this.onload?.());
+    }
+    get src() { return this.source; }
+  }
+  const loaded = await loadImage('/retry.png', { ImageClass: Image, timeoutMs: 5 });
+  assert.equal(images.length, 2);
+  assert.equal(loaded, images[1]);
+  assert.equal(images[0].src, '');
+  assert.equal(images[1].src, '/retry.png');
+  for (const image of images) {
+    assert.equal(image.onload, null);
+    assert.equal(image.onerror, null);
+  }
 });
