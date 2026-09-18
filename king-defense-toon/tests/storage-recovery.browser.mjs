@@ -238,6 +238,7 @@ try {
       await page.evaluate(() => window.storageCheck.stopEconomyTimer());
       const migrated = await snapshot(page);
       assert.equal(migrated.campaignVersion, 3);
+      assert.equal(migrated.saveSchemaVersion, 1);
       assert.equal(migrated.gold, expected.gold);
       assert.equal(migrated.clearedWaves, expected.clearedWaves);
       assert.deepEqual(migrated.progression, { unlockedCells: expected.unlockedCells, firstClears: expected.firstClears });
@@ -271,6 +272,7 @@ try {
         }
       }
       assert.equal(JSON.parse(await raw(page)).campaignVersion, 3, 'migration must persist its version before the next visit');
+      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 1, 'the new save schema must persist before the next visit');
       assert.equal(JSON.parse(await page.locator('#battle').getAttribute('data-campaign')).wave, expected.clearedWaves + 1);
 
       // Foreground timer fractions can advance on pagehide; all durable balances,
@@ -286,7 +288,10 @@ try {
         await ready(page);
         await page.evaluate(() => window.storageCheck.stopEconomyTimer());
         assert.equal((await status(page)).storage, 'ready');
-        assert.deepEqual(durable(await snapshot(page)), durable(reloaded), 'reloading a migrated save must not refund or return a fighter twice');
+        const roster = await snapshot(page);
+        const ids = [...roster.units, ...roster.reserve].map(unit => unit.id);
+        assert.equal(new Set(ids).size, ids.length, 'restored unit IDs remain unique');
+        assert.deepEqual(durable(roster), durable(reloaded), 'reloading a migrated save must not refund or return a fighter twice');
       }
 
       if (expected.offlineRewards.closedCells) {

@@ -10,6 +10,7 @@ import { DEFAULT_BATTLE_SPEED, MAX_REAL_FRAME_DELTA, battleFrameDelta, nextBattl
 import { createFrameRateMeter } from './fps.ts';
 import { createFramePacer } from './frame-pacer.ts';
 import { createSaveStorage } from './save-storage.ts';
+import { createSaveSession } from './save-session.ts';
 import { createEconomy, treasuryRate, treasuryUpgradeCost, accrueTreasury, checkpointTreasury, claimOfflineTreasury, TREASURY_OFFLINE_LIMIT_SECONDS, upgradeTreasury, rollSlaveDrop, progressionAfterBattle, advanceCaptureClock, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { MARKET_BUILD_COST, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS, buildMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
 import { SAVE_KEY, STARTING_GOLD, createProgression, cellKey, nextCellCost, getCellAvailability, unlockCell, claimFirstClear } from './progression.ts';
@@ -37,7 +38,7 @@ import { byId } from './main-dom.ts';
 import { restoreCampaignRoster } from './campaign-roster.ts';
 import { reconcileArmyCapacity } from './army-capacity-migration.ts';
 import { getUnitCellWidth, getUnitAtCell, canPlaceUnit, planFormationMove, reconcileUnitFootprints } from './unit-footprint.ts';
-import { decodeCampaignSave } from './campaign-save.ts';
+import { decodeCampaignSave, needsCampaignSaveMigration, SAVE_SCHEMA_VERSION } from './campaign-save.ts';
 import type { GameElementId } from './main-dom.ts';
 import type { Battle, BattlePhase } from './combat-types.ts';
 import type { HeroXpResult } from './hero.ts';
@@ -138,8 +139,21 @@ let destroyed = false;
 const assetStates: Record<'battle' | 'army', LoadState> = { battle: { status: 'loading' }, army: { status: 'loading' } };
 const recoveryInert = new Map<HTMLElement, boolean>();
 let recoveryFocus: FocusElement | null = null, resetSaveToken: symbol | null = null, recoveryResetArmed = false, recoveryUiScheduled = false;
+let sessionPageHidden = false;
+const saveSession = createSaveSession({ key: SAVE_KEY });
+// Navigation can interrupt the initial async lock request before the full game
+// lifecycle exists. Revoke that request too, so a hidden page cannot gain ownership.
+function onStartupPageHide(event: PageTransitionEvent) {
+  sessionPageHidden = true;
+  if (!event.persisted) destroyed = true;
+  saveSession.release();
+}
+window.addEventListener('pagehide', onStartupPageHide);
+await saveSession.acquire();
 const saveStorage = createSaveStorage<ReturnType<typeof saveSnapshot>>({ key: SAVE_KEY, getStorage: () => window.localStorage,
   decode: decodeCampaignSave,
+  canWrite: () => saveSession.canWrite && !sessionPageHidden && !destroyed,
+  migrationBackup: { key: `${SAVE_KEY}:backup:before-schema-${SAVE_SCHEMA_VERSION}`, needed: needsCampaignSaveMigration },
 });
 const battleAudio = createBattleAudio();
 const levelMusic = createLevelMusic({ onStateChange: refreshSoundButton });
@@ -249,7 +263,13 @@ try {
     nextId = units.length + reserve.length + 1;
     save();
   }
-} catch (error) { console.error('Could not restore the campaign', error); }
+} catch (error) {
+  // Decoding is not the end of restoration: no partially restored state may
+  // replace the original if a building/roster migration unexpectedly throws.
+  saveStorage.protectRestoreFailure(error);
+  console.error('Could not restore the campaign', error);
+  scheduleRecoveryUi();
+}
 
 function savedFields(value: unknown): Record<string, unknown> {
   return Object(value) as Record<string, unknown>;
@@ -271,7 +291,7 @@ if (!starterSupplyGranted) {
 }
 
 function saveSnapshot() {
-  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, farm, capitol, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
+  return { saveSchemaVersion: SAVE_SCHEMA_VERSION, campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, farm, capitol, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
     offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves,
       slotRefund: pendingSlotRefund, returnedFighters: pendingReturnedFighters, closedCells: pendingClosedCells,
       forgeRefund: pendingForgeRefund } };
@@ -285,7 +305,8 @@ function save() {
 }
 
 function isRecovering() {
-  return saveStorage.status !== 'ready' || Object.values(assetStates).some(state => state.status !== 'ready');
+  return !saveSession.canWrite || sessionPageHidden || saveStorage.status !== 'ready'
+    || Object.values(assetStates).some(state => state.status !== 'ready');
 }
 
 function scheduleRecoveryUi() {
@@ -298,7 +319,8 @@ function scheduleRecoveryUi() {
 
 function syncRecoveryUi() {
   if (destroyed) return;
-  const storageError = saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
+  const sessionError = !saveSession.canWrite;
+  const storageError = sessionError || saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
   const assetError = Object.values(assetStates).some(state => state.status === 'error');
   const blocked = isRecovering();
   const panel = byId('recovery-panel');
@@ -320,13 +342,24 @@ function syncRecoveryUi() {
     levelMusic.setActive(false);
     byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable' : 'Loading battlefield';
     byId('recovery-description').textContent = storageError
-      ? saveStorage.status === 'write-error' ? 'Progress is not saved. Keep this game open and retry.'
+      ? sessionError ? saveSession.status === 'unavailable'
+          ? 'Safe saving is unavailable in this browser. Update Telegram or your browser, then retry. Your progress has not been changed.'
+          : 'Another game window may be using this progress. Close it, then retry here. Your progress is protected.'
+        : saveStorage.status === 'conflict' ? 'Progress changed in another game window. Reload to continue with the latest saved progress.'
+        : saveStorage.status === 'unsupported' ? 'This progress needs a newer game version. Reload or update the game to continue. Your save is protected.'
+        : saveStorage.status === 'write-error' ? 'Progress is not saved. Keep this game open and retry.'
         : saveStorage.status === 'corrupt' ? 'Saved progress is damaged. Saving is paused to protect it.'
           : 'Saved progress could not be loaded. Saving is paused to protect it.'
       : assetError ? 'Some game images could not be loaded. Check your connection and retry. The battle is paused.'
         : 'Preparing your map and fighters. The battle is paused.';
     byId('recovery-retry').hidden = !storageError && !assetError;
-    byId('recovery-reset').hidden = !['read-error', 'corrupt'].includes(saveStorage.status);
+    byId('recovery-retry').textContent = ['conflict', 'unsupported'].includes(saveStorage.status) ? 'Reload game' : 'Retry';
+    byId('recovery-reset').hidden = sessionError || !['read-error', 'corrupt'].includes(saveStorage.status);
+    if (byId('recovery-reset').hidden) {
+      resetSaveToken = null; recoveryResetArmed = false;
+      byId('recovery-reset-confirmation').hidden = true;
+      byId('recovery-reset').textContent = 'Reset saved game';
+    }
     if (entering) panel.focus({ preventScroll: true });
   } else {
     for (const [child, inert] of recoveryInert) child.inert = inert;
@@ -352,7 +385,7 @@ function onAssetState(which: 'battle' | 'army', state: LoadState) {
 }
 
 function collectOfflineIncome() {
-  if (saveStorage.status !== 'ready') return 0;
+  if (!saveSession.canWrite || sessionPageHidden || saveStorage.status !== 'ready') return 0;
   const now = Date.now();
   completeBarracksUpgrade(barracks, now);
   const earned = claimOfflineTreasury(economy, now).gold;
@@ -683,7 +716,10 @@ function refreshEconomy() {
 function tickEconomy(now = performance.now()) {
   const elapsed = Math.max(0, (now - economyLastTick) / 1000);
   economyLastTick = now;
-  if (destroyed || !economyActive || saveStorage.status !== 'ready') return;
+  // Unexpected native lock loss also needs visible recovery when no user action
+  // is trying to save. The timer observes it without advancing the economy.
+  if (!destroyed && !sessionPageHidden && !saveSession.canWrite) scheduleRecoveryUi();
+  if (destroyed || !saveSession.canWrite || sessionPageHidden || !economyActive || saveStorage.status !== 'ready') return;
   const wallNow = Date.now();
   const barracksFinished = completeBarracksUpgrade(barracks, wallNow);
   const checkpoints = [economy.treasuryUpdatedAt, economy.marketBuilt ? economy.marketUpdatedAt : null];
@@ -1646,6 +1682,10 @@ byId('reset').addEventListener('click', () => {
 });
 
 function resetRun() {
+  if (!saveSession.canWrite || sessionPageHidden || ['conflict', 'unsupported', 'session-blocked'].includes(saveStorage.status)) return;
+  if (['corrupt', 'read-error'].includes(saveStorage.status)) {
+    if (!resetSaveToken) return;
+  } else if (!saveStorage.checkForUpdates().ok) { syncRecoveryUi(); return; }
   connectSelection = null;
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
   barracks = createBarracks();
@@ -1691,10 +1731,22 @@ byId('recovery-retry').addEventListener('click', async () => {
   const button = byId('recovery-retry');
   button.disabled = true;
   try {
+    if (!saveSession.canWrite) {
+      if (await saveSession.acquire()) { window.location.reload(); return; }
+      syncRecoveryUi();
+      return;
+    }
+    if (saveStorage.status === 'unsupported' || saveStorage.status === 'conflict') {
+      window.location.reload();
+      return;
+    }
     if (saveStorage.status !== 'ready') {
       const result = saveStorage.retry(saveSnapshot());
       if (result.ok && 'needsRestore' in result && result.needsRestore) { window.location.reload(); return; }
       economyLastTick = performance.now();
+      // A failed save may span a visibility pause. Once it is durable again,
+      // restore both clocks instead of hiding recovery over a frozen battle.
+      if (result.ok && telegram.isActive) activateGame();
     } else if (!scene || !armyScene) {
       window.location.reload();
       return;
@@ -1903,7 +1955,8 @@ function frame(timestamp: number) {
 
 function pauseForInactivity() {
   unitDrag?.cancel();
-  tickEconomy(); economyActive = false; save();
+  tickEconomy(); economyActive = false;
+  if (saveSession.canWrite && !sessionPageHidden) save();
   refreshMarketHint();
   levelMusic.setActive(false);
   battleAudio.setActive(false);
@@ -1912,6 +1965,8 @@ function pauseForInactivity() {
 }
 
 function activateGame() {
+  if (sessionPageHidden || destroyed) return;
+  if (!saveStorage.checkForUpdates().ok || saveStorage.status !== 'ready') { syncRecoveryUi(); return; }
   if (!economyActive) collectOfflineIncome();
   economyLastTick = performance.now(); economyActive = true;
   paused = false;
@@ -1929,6 +1984,10 @@ function onPageHide(event: PageTransitionEvent) {
   battleAudio.setActive(false);
   telegram.suspend();
   stopFrames();
+  // Suspend flushes the owner first. Ordinary visibility pauses keep ownership;
+  // actual navigation releases it, including pages entering the back/forward cache.
+  sessionPageHidden = true;
+  saveSession.release();
   if (!event.persisted) {
     destroyed = true;
     battleAudio.destroy();
@@ -1942,6 +2001,7 @@ function onPageHide(event: PageTransitionEvent) {
     layoutObserver?.disconnect();
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);
+    window.removeEventListener('storage', onSavedProgressChanged);
     document.removeEventListener('pointerup', unlockLevelMusic, true);
     document.removeEventListener('keydown', unlockLevelMusic, true);
     scene?.destroy();
@@ -1951,11 +2011,24 @@ function onPageHide(event: PageTransitionEvent) {
   }
 }
 
-function onPageShow(event: PageTransitionEvent) {
-  if (event.persisted && !destroyed) { telegram.resume(); fitPortraitPreview(); refresh(); resumeFrames(); }
+async function onPageShow(event: PageTransitionEvent) {
+  if (!event.persisted || destroyed) return;
+  sessionPageHidden = false;
+  const owned = await saveSession.acquire();
+  if (destroyed || sessionPageHidden) return;
+  // Never collect offline income or resume a cached battle against a save that
+  // another page changed while this page did not own the session.
+  if (!owned || !saveStorage.checkForUpdates().ok) { syncRecoveryUi(); return; }
+  telegram.resume(); fitPortraitPreview(); refresh(); resumeFrames();
 }
+function onSavedProgressChanged(event: StorageEvent) {
+  if (destroyed || sessionPageHidden || !saveSession.canWrite || event.key !== null && event.key !== SAVE_KEY) return;
+  if (!saveStorage.checkForUpdates().ok) { stopFrames(); scheduleRecoveryUi(); }
+}
+window.removeEventListener('pagehide', onStartupPageHide);
 window.addEventListener('pagehide', onPageHide);
 window.addEventListener('pageshow', onPageShow);
+window.addEventListener('storage', onSavedProgressChanged);
 
 // The result is a small modal; keyboard focus stays inside it until returning to formation.
 byId('result-panel').addEventListener('keydown', event => {
