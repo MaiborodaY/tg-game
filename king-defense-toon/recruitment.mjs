@@ -11,10 +11,10 @@ export const RECRUIT_CHANCES = Object.freeze([
   Object.freeze({ type: 'healer', chance: .15 }),
 ]);
 const UNLOCKED_RECRUIT_CHANCES = Object.freeze([
-  Object.freeze({ type: 'swordsman', chance: .4 }),
+  Object.freeze({ type: 'swordsman', chance: .25 }),
   Object.freeze({ type: 'archer', chance: .25 }),
-  Object.freeze({ type: 'healer', chance: .15 }),
-  Object.freeze({ type: 'lancer', chance: .2 }),
+  Object.freeze({ type: 'healer', chance: .25 }),
+  Object.freeze({ type: 'lancer', chance: .25 }),
 ]);
 
 export const getRecruitChances = (lancerUnlocked = false) => lancerUnlocked

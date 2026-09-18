@@ -15,16 +15,16 @@ test('locked barracks keep all existing recruitment odds and cannot roll lancer'
   assert.equal(receiveRecruit(createRecruitment(), () => 0, { guaranteedLancer: true }).type, 'swordsman');
 });
 
-test('Barracks II splits 40/25/15/20 odds at exact roll boundaries', () => {
+test('Barracks II gives all four types equal 25% odds at exact roll boundaries', () => {
   const chances = getRecruitChances(true);
   assert.deepEqual(chances, [
-    { type: 'swordsman', chance: .4 }, { type: 'archer', chance: .25 },
-    { type: 'healer', chance: .15 }, { type: 'lancer', chance: .2 },
+    { type: 'swordsman', chance: .25 }, { type: 'archer', chance: .25 },
+    { type: 'healer', chance: .25 }, { type: 'lancer', chance: .25 },
   ]);
   assert.equal(chances.reduce((sum, entry) => sum + entry.chance, 0), 1);
   assert.ok(Object.isFrozen(chances) && chances.every(Object.isFrozen));
-  for (const [roll, expected] of [[0, 'swordsman'], [.39999, 'swordsman'], [.4, 'archer'], [.64999, 'archer'],
-    [.65, 'healer'], [.79999, 'healer'], [.8, 'lancer'], [.99999, 'lancer']]) {
+  for (const [roll, expected] of [[0, 'swordsman'], [.24999, 'swordsman'], [.25, 'archer'], [.49999, 'archer'],
+    [.5, 'healer'], [.74999, 'healer'], [.75, 'lancer'], [.99999, 'lancer']]) {
     const recruitment = createRecruitment();
     assert.equal(receiveRecruit(recruitment, () => roll, { lancerUnlocked: true }).type, expected);
   }

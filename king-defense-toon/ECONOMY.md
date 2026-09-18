@@ -12,7 +12,7 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Additional tiles | Any locked location; successive prices 25, 50, 100, 175, 275, 400, 550, 750, 1,000, 1,300, 1,650, 2,100 gold |
 | Total expansion cost | 8,375 gold for all 12 additional tiles |
 | Gold recruitment | Removed; all newly obtained fighters come from slave conversion |
-| Slave conversion | One slave becomes one individual reserve fighter: 60% swordsman, 25% archer, 15% healer before Barracks II; then 40% / 25% / 15% / 20% Lancer |
+| Slave conversion | One slave becomes one individual reserve fighter: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer |
 | Recruitment level | 5 x current recruitment level additional matching conversions per increase; cap 100; affects only newly converted fighters |
 | Personal level / Connect | Same-type owned fighters can connect to a deployed fighter, adding their levels and consuming the source; cap 100; no currency cost |
 | Gold personal-level upgrades | Removed; existing fighters retain their personal levels |
@@ -42,7 +42,7 @@ Open **i / Recruitment** to see the locked Lancer alongside the three starting t
 
 Optional instant completion costs `ceil(100 × remainingMs / 3,600,000)`, capped at 100 gold: thirty minutes cost 50, the last 36 seconds cost one, and natural completion is free. The live price is recalculated at purchase; reloads and repeated clicks cannot repeat the payment.
 
-After completion, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **40% swordsman / 25% archer / 15% healer / 20% Lancer**. Before completion, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact.
+After completion, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **25% swordsman / 25% archer / 25% healer / 25% Lancer**. Before completion, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact.
 
 The Lancer has **48 HP / 7 damage / 75 range / 1.3-second base attack interval**, one target per attack and the shared five-percent personal-level growth. Placement is free, sale returns one gold, and only matching Lancers merge. Waiting avoids the optional acceleration cost. No new completion-time estimate, king upgrade or other economy change is implied.
 
@@ -50,7 +50,7 @@ The Lancer has **48 HP / 7 damage / 75 range / 1.3-second base attack interval**
 
 Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Before Barracks II completes, rolls are **60% swordsman / 25% archer / 15% healer**. Completion grants one guaranteed Lancer conversion, then changes the odds as described below. There is no automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
 
-The small **i** at the upper right of the Army dock opens **Recruitment**, showing the currently unlocked class chances (60% / 25% / 15% before Barracks II; 40% / 25% / 15% / 20% after completion), each current recruitment level and how many more fighters of that type are needed for the next level. Opening this panel is free and available even with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 cap. The persistent last-recruit caption is removed; conversion has its transfer animation and a short result notice in the right gutter.
+The small **i** at the upper right of the Army dock opens **Recruitment**, showing the currently unlocked class chances (60% / 25% / 15% before Barracks II; 25% for each of the four types after completion), each current recruitment level and how many more fighters of that type are needed for the next level. Opening this panel is free and available even with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 cap. The persistent last-recruit caption is removed; conversion has its transfer animation and a short result notice in the right gutter.
 
 The result's level is calculated **after incrementing that type's count**. Advancing from recruitment level L to L+1 needs **5 x L** more matching fighters. Cumulative cost at level L is **5 x L x (L-1) / 2** for a fresh account.
 

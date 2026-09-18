@@ -961,7 +961,8 @@ function refreshBarracksUpgrade() {
   byId('barracks-lancer-art').hidden = !portrait;
   if (portrait) byId('barracks-lancer-art').src = portrait;
   byId('lancer-recruitment').classList.toggle('is-locked', !unlocked);
-  byId('lancer-recruitment-chance').textContent = unlocked ? '20%' : 'Locked';
+  byId('lancer-recruitment-chance').textContent = unlocked
+    ? Math.round(getRecruitChances(true).find(({ type }) => type === 'lancer').chance * 100) + '%' : 'Locked';
   byId('lancer-recruitment-training').hidden = !unlocked;
   byId('barracks-upgrade-state').hidden = unlocked;
   byId('barracks-upgrade-state').textContent = upgrading ? `Barracks II · ${formatUpgradeTime(info.remainingMs)}`

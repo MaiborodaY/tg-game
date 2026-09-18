@@ -17,6 +17,12 @@ const server = await createServer({ root, configFile: false, server: { host: '12
       advance: ms => { window.checkNow += ms; sessionStorage.setItem('checkNow', window.checkNow); tickEconomy(); },
     };`;
   } }] });
+async function assertEqualUnlockedOdds(page) {
+  for (const type of ['swordsman', 'archer', 'healer', 'lancer']) {
+    const chance = page.locator(`#market-info-panel [data-recruit-type="${type}"] .recruitment-detail-heading > span`);
+    assert.equal(await chance.innerText(), '25%', `${type} has an equal 25% chance after Barracks II`);
+  }
+}
 let browser;
 const failures = [];
 try {
@@ -74,7 +80,7 @@ try {
     assert.equal(await page.locator('#market-info-panel [data-recruit-type]').count(), 4, 'Info always contains all four fighter types');
     assert.equal(await lancerInfo.isVisible(), true, 'locked Lancer is discoverable in Info');
     assert.match(await lancerInfo.innerText(), /Locked/);
-    assert.doesNotMatch(await lancerInfo.innerText(), /20%/, 'locked Lancer must not advertise an active recruitment chance');
+    assert.equal(await lancerInfo.locator('#lancer-recruitment-chance').innerText(), 'Locked', 'locked Lancer must not advertise an active recruitment chance');
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false, 'show requirement instead of purchase before unlock');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true, 'merged personal level must not unlock');
     assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Swordsman.*Lv\. 5.*now Lv\. 4/);
@@ -123,7 +129,7 @@ try {
     await page.locator('#barracks-finish-upgrade').evaluate(button => button.click());
     assert.equal((await state()).gold, beforeFinish.gold - 50, 'repeat finish click cannot charge twice');
     assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true, 'unlocked Lancer shows normal training progress');
-    assert.match(await lancerInfo.innerText(), /20%/);
+    await assertEqualUnlockedOdds(page);
     assert.doesNotMatch(await lancerInfo.innerText(), /Locked/);
     await fits();
     await screenshot('complete');
@@ -131,7 +137,7 @@ try {
     assert.equal(await page.locator('#market-convert-label').innerText(), 'Lancer next');
     await page.locator('#open-market-info').click();
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), true);
-    assert.match(await page.locator('[data-recruit-type="lancer"]').innerText(), /20%/);
+    await assertEqualUnlockedOdds(page);
     await page.locator('#market-info-panel [data-close-overlay]').click();
     const beforeRecruit = await state();
     await page.locator('#transform-slave').click();
@@ -148,7 +154,7 @@ try {
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false, 'consumed guarantee leaves a normal recruitment row');
     assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
-    assert.match(await lancerInfo.innerText(), /20%/);
+    await assertEqualUnlockedOdds(page);
     await fits();
     await screenshot('recruited-info');
     await close();
@@ -189,12 +195,14 @@ try {
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.level, 2);
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await page.locator('#open-market-info').click();
-  assert.match(await page.locator('#market-info-panel [data-recruit-type="lancer"]').innerText(), /20%/);
+  await assertEqualUnlockedOdds(page);
   assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
   assert.equal(await page.locator('#recruitment-guarantee').isVisible(), true);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
+  await page.locator('#open-market-info').click();
+  await assertEqualUnlockedOdds(page);
   await context.close();
   assert.deepEqual(failures, []);
   console.log(`Mobile Market Info checks passed at 320×568, 320×700 and 390×700: visible locked Lancer, training gate, inline upgrade, live timer/reload/offline, proportional finish, no duplicate charges, guarantee, odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
