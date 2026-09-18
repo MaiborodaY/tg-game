@@ -143,9 +143,9 @@ try {
   await closeHero();
   await page.evaluate(() => { globalThis.__heroTestFast = true; });
   await page.waitForFunction(() => globalThis.__heroTestBattle.resultRecorded, null, { timeout: 20000 });
-  assert.equal((await savedHero()).xp, 4066, 'wave one grants its first-clear XP');
+  assert.equal((await savedHero()).xp, 4063, 'wave one grants its reduced first-clear XP');
   await page.waitForTimeout(300);
-  assert.equal((await savedHero()).xp, 4066, 'later result frames do not duplicate XP');
+  assert.equal((await savedHero()).xp, 4063, 'later result frames do not duplicate XP');
 
   await page.locator('#return-prep').click();
   await page.evaluate(() => { globalThis.__heroTestFast = false; });

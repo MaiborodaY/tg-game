@@ -114,6 +114,7 @@ export interface ResetHeroTalentsResult {
 
 export const HERO_MAX_LEVEL = 20;
 export const HERO_TALENT_VERSION = 2;
+const HERO_XP_RATE = .85;
 export const HERO_NAME = 'St. Knihor';
 export const HERO_BRANCHES: readonly HeroBranchDefinition[] = Object.freeze([
   Object.freeze({ id: 'light', name: 'Light', icon: 'light' }),
@@ -346,9 +347,10 @@ export function awardHeroXp(hero: HeroState, outcome: unknown = {}): HeroXpResul
   const fraction = Math.min(total, kills) / total;
   if (!won && fraction === 0) return noReward;
   const firstClear = won && waveNumber > state.highestWave;
-  // First clears reach level 20 around wave 200. Replays and real defeat progress remain useful.
+  // Slow future gains without changing existing XP, level thresholds or learned talents.
   const base = 10 + waveNumber * .5;
-  const reward = Math.max(1, Math.round(won ? base * (1 + .5 * fraction) * (firstClear ? 1 : .25) : base * .25 * fraction));
+  const rawReward = won ? base * (1 + .5 * fraction) * (firstClear ? 1 : .25) : base * .25 * fraction;
+  const reward = Math.max(1, Math.round(rawReward * HERO_XP_RATE));
   const gained = Math.min(MAX_XP - state.xp, reward);
   state.xp += gained;
   if (won) state.highestWave = Math.max(state.highestWave, waveNumber);

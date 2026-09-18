@@ -1,6 +1,6 @@
 # Campaign economy v3 — two levels, 20 rounds each
 
-Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels can continue beyond 100; the separate recruitment level remains capped at 100. Barracks I/II/III permit up to 9/10/11 army cells. The old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with three starting allied classes, an unlockable Lancer and the paladin hero St. Knihor. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
+Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels can continue beyond 100; the separate recruitment level remains capped at 100. Barracks I/II/III permit up to 8/9/10 army cells. The old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with three starting allied classes, an unlockable Lancer and the paladin hero St. Knihor. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
 
 ## Starting position and spending
 
@@ -9,12 +9,12 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Starting gold | 125 |
 | Starting slaves | Three, granted once to fresh or legacy empty accounts with zero slaves |
 | Starting formation | Three open tiles in the central column; empty army |
-| Additional tiles | Barracks I: central three columns, up to nine total; II/III additionally permit one/two chosen outer-column cells, up to ten/eleven total. Successive prices: 25, 50, 100, 175, 275, 400, 550, 750 gold |
-| Total expansion cost | 1,025 / 1,575 / 2,325 gold for nine/ten/eleven total cells, excluding Barracks construction |
+| Additional tiles | Barracks I: up to eight cells in the central three columns; II unlocks the ninth central cell; III additionally permits one chosen outer-column cell, up to ten total. Successive prices: 25, 50, 100, 175, 275, 400, 550 gold |
+| Total expansion cost | 625 / 1,025 / 1,575 gold for eight/nine/ten total cells, excluding Barracks construction |
 | Gold recruitment | Removed; all newly obtained fighters come from slave conversion |
 | Slave conversion | One slave becomes one individual reserve fighter. Humans: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer. Elves after III: currently 100% Panther Rider |
 | Recruitment level | 5 x current recruitment level additional matching conversions per increase; cap 100; affects only newly converted fighters |
-| Personal level / Connect | Same-type owned fighters can connect to a deployed fighter, adding their levels and consuming the source; continues beyond 100; no currency cost |
+| Personal level / Connect | Open the recipient in Army or Barracks, select same-type donors from either location, then add their levels in one action; continues beyond 100; no currency cost |
 | Gold personal-level upgrades | Removed; existing fighters retain their personal levels |
 | Barracks Recruit | Select a reserve fighter, then choose an army tile; free deployment or replacement; selection alone changes no ownership |
 | Individual Sell | In a reserve fighter's detail view; one gold, with the last owned fighter protected |
@@ -28,7 +28,7 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Slave Market income | One slave per 30 real minutes after the income purchase, online or offline; no production upgrades yet |
 | Market offline storage | Four hours per absence, up to eight slaves, credited automatically on return |
 
-Cell purchases use the gold prices above; old gold recruitment and paid level-up actions are removed. Treasury and the 125-gold start are unchanged. Each Barracks upgrade permits another outer-column cell but does not purchase it automatically. The player can choose that side cell before finishing the central expansion; its price follows the total number of purchased cells. Other outer cells stay gated after the tier's one/two side-cell quota is used. Moving guards, swapping deployed positions and transferring fighters between formation and reserve are free. Older saves reconcile excess side cells with a refund and return their fighters to reserve, as described under Storage and migration.
+Cell purchases use the gold prices above; old gold recruitment and paid level-up actions are removed. Treasury and the 125-gold start are unchanged. Barracks II permits the ninth central cell and Barracks III permits one chosen outer-column cell; upgrades do not purchase cells automatically. At tier III the player can buy its side cell before finishing central expansion; its price follows the total number of purchased cells. All other outer cells remain gated. Moving guards, swapping deployed positions and transferring fighters between formation and reserve are free. Older saves reconcile excess side cells with a refund and return their fighters to reserve, as described under Storage and migration.
 
 The **5 × 3 Army grid stays below the battlefield** during preparation and combat, with Market and its slave count above Barracks in the left gutter. Recruitment info or Cancel is at the upper right and Buildings at the lower right; there is no separate bottom toolbar. An empty cell opens the compact picker for reserve placement; an occupied cell offers reserve replacement, Connect, movement and removal. A locked cell shows its gold price when permitted by the current Barracks tier, otherwise the Barracks requirement or capacity limit. Conversions, merges, Barracks sales, reserve transfers and cell unlocks **save immediately**, without draft reservations or a Save army step. Currency transactions use live balances. Closing the picker does not reverse a completed transaction. Income earned during editing remains available. An empty starting army is allowed, but the first manual Start requires at least one guard. Once a battle or its result exists, removal cannot leave the saved army empty.
 
@@ -38,8 +38,8 @@ The current battle retains its own fighter snapshot. The next wave uses the late
 
 | Upgrade | Recruitment requirement | Construction | Real duration | Full acceleration price | Result |
 | --- | --- | ---: | --- | ---: | --- |
-| I → II | Swordsman recruitment level 5 | 200 gold | One hour | 100 gold | Lancer unlock; up to ten cells including one chosen outer cell |
-| II → III | Lancer recruitment level 5 | 2,000 gold | Three hours | 300 gold | Up to eleven cells including two chosen outer cells; Elven roster selection |
+| I → II | Swordsman recruitment level 5 | 200 gold | One hour | 100 gold | Lancer unlock; ninth central cell becomes purchasable |
+| II → III | Lancer recruitment level 5 | 2,000 gold | Three hours | 300 gold | Up to ten cells including one chosen outer cell; Elven roster selection |
 
 Recruitment level 5 requires **50 received fighters of the matching type** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy either requirement. Construction spends its gold once, progresses offline, and is unaffected by battle speed. Barracks III is the maximum tier.
 
@@ -72,8 +72,8 @@ Human training credit transfers. The fighter has **90 HP / 9 damage / 38 range /
 1.05-second base attack interval / 68 movement speed**, versus the Swordsman's
 60 / 6 / 38 / 1.1 / 57 at the same level. Personal growth remains +5% of base per
 level, and matching Riders can Connect beyond level 100. Placement is free and
-selling returns one gold. The three general Forge tracks apply, ranged tracks do
-not. Existing battle snapshots remain unchanged until the next wave.
+selling returns one gold. All three Forge tracks apply equally to the Rider and
+the other regular fighters. Existing battle snapshots remain unchanged until the next wave.
 
 The existing black-panther atlas supplies all live animations. Rank clothing
 changes at levels 50 / 100 / 250 / 500: green / purple / red / gold / black, with
@@ -111,7 +111,7 @@ Barracks shows compact fighter icons with personal levels. Tapping an icon opens
 
 **Sell** in the detail view sells one reserve fighter for **one gold**, unless it is the last owned fighter. Deployed fighters are never sold from Barracks. Selling does not alter combat snapshots, received counts, unlocked cells or other fighters' levels.
 
-The green **+ Connect** action is available in a reserve or deployed fighter's detail view. Select it, then tap **another deployed fighter of the same type** on the Army grid. The target keeps its identity and cell and receives the sum of both personal levels; the source disappears only after a valid target is chosen. A deployed source leaves its original cell empty and unlocked. For example, a level-2 swordsman merged into a level-3 swordsman produces one level-5 swordsman; level 100 plus level 150 produces level 250. A different class, the source itself, or an empty/locked cell cannot receive a merge. There is no gameplay cap at 100 or 500. Levels use positive JavaScript safe integers; a sum beyond `Number.MAX_SAFE_INTEGER` is rejected without consuming either fighter or discarding levels. Cancel or Escape before completion keeps both fighters unchanged.
+The green **+ Connect** action opens selection inside a reserve or deployed fighter's detail view. The open fighter is the **recipient**. Choose one or more matching donors from the compact **Barracks / Army** tabs; switching tabs retains the selection. The preview shows the summed personal level and forged HP and attack/healing. Press **Connect** once to consume all selected donors and upgrade the recipient, keeping its identity, location and formation cells. The card stays open for another selection. Cancel, Escape, Back or closing the menu consumes nothing. Deployed donors free their purchased cells; two-cell Riders free both cells without moving other fighters. A reserve recipient cannot consume the last saved Army fighter while a battle exists. The recipient and other unit types are excluded from donor lists. Level 100 plus level 150 produces level 250: there is no gameplay cap at 100 or 500. Levels use positive JavaScript safe integers; overflow rejects the whole selection without discarding levels. Long-press drag remains a quick single-donor alternative: the dragged source is consumed into the same-type Army fighter it is dropped on.
 
 Merging costs **no gold or slaves**, awards no sale gold and does not change per-type received counts or future recruitment levels. It saves the upgraded target and removed source together immediately. The active battle keeps its existing snapshot: the next wave receives the merged formation. Completed merges survive reload; an unfinished target selection consumes nothing. Summing levels creates a faster personal-level path than recruiting alone, so all three stats now grow by **5% of level-one base per level**, down from 10%, without compounding:
 
@@ -127,11 +127,11 @@ Sprite colors change at personal levels **50, 100, 250 and 500**: **1–49 blue,
 
 ## Forge: permanent army bonuses
 
-Buildings now contains Treasury, Market and Forge. Army cells are purchased directly
+Buildings now contains Treasury, Market, Forge and Farm. Army cells are purchased directly
 on the formation map; the redundant Army space tab has been removed. Capture odds
 and the current search progress remain visible in the Market tab.
 
-The Forge is available immediately. Five independent upgrades start at rank zero,
+The Forge is available immediately. Three independent upgrades start at rank zero,
 each purchase adds one percentage point, and each track currently has 100 ranks:
 
 | Upgrade | Applies to | Next price at rank `r` |
@@ -139,13 +139,11 @@ each purchase adds one percentage point, and each track currently has 100 ranks:
 | Health | All regular fighters | `50 + 25r` gold |
 | Attack / Healing | All regular fighters, including monk healing | `50 + 25r` gold |
 | Attack speed | All regular fighters, including monk healing speed | `50 + 25r` gold |
-| Ranged attack | Archers only | `25 + 15r` gold |
-| Ranged speed | Archers only | `25 + 15r` gold |
 
 Bonuses apply to owned and future fighters, independently of personal levels and
-Connect. The hero, castle and enemies are excluded. General and archer-specific
-ranks add: one rank in both attack tracks gives an archer +2% damage, not compound
-growth. HP and damage multiply the existing personal-level stats by `1 + ranks/100`;
+Connect. The hero, castle and enemies are excluded. All regular types receive the
+same percentage bonus; there are no separate melee or ranged tracks. HP and
+damage multiply the existing personal-level stats by `1 + ranks/100`;
 combat retains the fractional result, so the first +1% is effective immediately.
 Speed divides both the action duration and the attack/heal interval by the same
 multiplier. Movement and projectile travel speed are unchanged.
@@ -155,12 +153,64 @@ a snapshot, so changes made during combat apply on the next wave. Unit details s
 the next-wave stats with up to two decimal places. Old saves start with zero Forge
 ranks, and Reset clears these upgrades along with the other buildings.
 
+Older saves with retired `rangedAttack` / `rangedAttackSpeed` ranks receive their
+full original gold cost back: `25n + 15n(n-1)/2` per track at rank `n`. Valid ranks
+are whole numbers from 0 through 100. The three shared ranks remain unchanged.
+The refund and removal of the retired fields save together, so reloading cannot
+pay again. A persistent Forge refund receipt uses the rewards window until
+acknowledged; Continue closes it without another credit. Removed ranks provide
+no hidden combat bonuses, and Reset clears any unacknowledged receipt.
+
 These initial prices make the Forge a gradual gold investment alongside army cells
 and Barracks upgrades; they are not a claim of full-campaign balance validation.
 
+## Farm: three crops and a vegetable stock
+
+The Farm is available from Buildings immediately. This first version has three
+fixed beds, one per crop. Planting is free and each harvested crop adds one item
+to its own saved vegetable stock:
+
+| Crop | Real growing time | Harvest |
+| --- | --- | --- |
+| Carrot | 5 minutes | 1 carrot |
+| Potato | 15 minutes | 1 potato |
+| Pumpkin | 30 minutes | 1 pumpkin |
+
+All beds can grow independently at the same time. Each planting stores its start
+and ready timestamps immediately. Growth continues with the app closed and is
+independent of combat speed, pause and wave results. A ready crop waits until the
+player taps Harvest: there is no auto-harvest, repeated offline production,
+spoilage or automatic replanting. Only one crop can occupy each bed.
+
+Harvest credits stock and clears its bed in the same save. Repeated clicks,
+closing a menu or reloading cannot harvest the same planting again. Once empty,
+the bed can be planted again. Old saves receive empty beds and zero stock;
+valid planted crops and harvested stock survive reload. Reset clears both.
+
+Vegetables currently have no sale, recipe, combat bonus or gold cost. Cooking and
+temporary army buffs are planned for a later stage; they are not active now.
+Farm actions never change gold, slaves, owned fighters or a running battle.
+
+## Capitol: the defended castle
+
+The existing castle is available in Buildings as Capitol. It starts at 100 HP
+and has no weapon. An Arrow tower costs **100 gold** and deals **10 damage every
+2 simulation seconds** to the nearest living enemy within 144 world units of its
+turret. It stays on the castle and uses ordinary arrows and kill rewards.
+
+Health upgrades add **20 HP** each. Tower upgrades add **2 damage** each, keeping
+the same range and cadence. Each track independently costs **50, 75, 100, ...**
+gold for successive upgrades. The tower must be built before it can be upgraded.
+There is no gameplay rank cap, and the Forge and hero talents do not improve it.
+
+Purchases and their gold costs are saved together. A battle snapshots Capitol
+stats when it starts: purchases never heal the active objective, add a weapon or
+increase its damage mid-battle. All upgrades apply from the next battle. Old
+saves get the original 100-HP unarmed castle; resetting clears Capitol upgrades.
+
 ## Kill rewards and wave progression
 
-Both levels contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20; wave 5 is ordinary. **All 400 encounters now receive +10% total HP and +5% enemy damage**, starting at the first wave, to account for the playable hero. This shared stat multiplier preserves the underlying campaign curve and per-enemy rewards; the healer addition below changes forest encounter counts. After round 1-3, round-end HP grows by **473** per round after this adjustment. Level 2 continues from the forest endpoint rather than resetting to an early forest formula. [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) records the current rules and checks.
+Both levels contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20; wave 5 is ordinary. The shared hero adjustment applies **+10% total HP and +5% enemy damage** to the underlying wave definitions. After round 1-3, round-end HP grows by **473** per round before the new Level 2 multiplier. Level 2 continues the existing curve and now adds **15% HP and 15% damage**, once, to all its enemies. Enemy counts, arrival schedules, boss HP shares and rewards remain unchanged. [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) records the current rules and checks.
 
 Wave 1 remains **two goblins, then one**; wave 2 remains **two goblins and two archers together**. The first-round counts remain **3 / 4 / 5 / 5 / 6 / 6 / 7 / 8 / 9 / 5**. Starting goblins now have **66 HP / 7.35 damage**. The shared damage adjustment preserves fractions so low-damage enemies do not gain a disproportionately large rounded bonus.
 
@@ -181,9 +231,9 @@ From **1-6 wave 1 through 1-20 wave 10** (global waves **51–200**), one additi
 
 The wave-10 roster is a chief, two goblins and two archers, arriving **4+1 at 0.8 / 14.8 simulation seconds**. Global waves **11–19 and 21–29** contain four goblins, two archers and two boars (**4+4**); waves 20 and 30 contain a chief, three goblins and two archers (**4+2**). Every simultaneous arrival stays at four or fewer enemies.
 
-The opening chiefs have **495 / 757 / 1,016 HP** and **18.9 / 25.2 / 32.55 damage** at waves 10 / 20 / 30. The earlier requested escort removal is retained; its explicit HP exception is now **wave 9→10: 869 → 825**, with no special boss compensation beyond the shared adjustment. The next round begins at **953 HP**. Waves **20→21** rise **1,375 → 1,392**, **30→31** rise **1,848 → 1,865**, and **200→201** rise **9,889 → 9,906**. Ordinary continuation counts grow from eight to sixteen and boss encounters from six to ten before adding the extra healer in forest rounds 6–20. The final Crypt King has **12,577 HP / 126 damage** within a **19,349-HP** encounter. These are configured totals, not a guaranteed difficulty order for every army.
+The opening chiefs have **495 / 757 / 1,016 HP** and **18.9 / 25.2 / 32.55 damage** at waves 10 / 20 / 30. The earlier requested escort removal is retained; its explicit HP exception is now **wave 9→10: 869 → 825**, with no special boss compensation beyond the shared adjustment. The next round begins at **953 HP**. Waves **20→21** rise **1,375 → 1,392**, **30→31** rise **1,848 → 1,865**, and **200→201** rise **9,889 → 11,392**. Ordinary continuation counts grow from eight to sixteen and boss encounters from six to ten before adding the extra healer in forest rounds 6–20. The final Crypt King has **14,464 HP / 144.9 damage** within a **22,251-HP** encounter. These are configured totals, not a guaranteed difficulty order for every army.
 
-[OPENING_BALANCE.md](OPENING_BALANCE.md) retains historical opening combat and economy reports. After the talent-tree redesign, four ×1 resource-linked runs (seeds **1, 4, 17, 42**, target wave 10, limit 40 attempts, hero talents unspent) completed in **20 / 12 / 12 / 20 attempts**, without timeouts; defeats occurred on waves 8–9. Those runs predate the restored early archers, first-group healers and Barracks capacity limits. They do not validate current difficulty or progress with nine-cell Barracks I. They are fixed management scenarios rather than a player-population forecast or full campaign validation. See [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) for current balance rules and the limits of existing checks.
+[OPENING_BALANCE.md](OPENING_BALANCE.md) retains historical opening combat and economy reports. After the talent-tree redesign, four ×1 resource-linked runs (seeds **1, 4, 17, 42**, target wave 10, limit 40 attempts, hero talents unspent) completed in **20 / 12 / 12 / 20 attempts**, without timeouts; defeats occurred on waves 8–9. Those runs predate the restored early archers, first-group healers and Barracks capacity limits. They do not validate current difficulty or progress with eight-cell Barracks I. They are fixed management scenarios rather than a player-population forecast or full campaign validation. See [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) for current balance rules and the limits of existing checks.
 
 Current per-enemy kill rewards stay fixed within each level:
 
@@ -237,7 +287,7 @@ Capture odds were raised after recruitment became slave-only: regular chance 15%
 
 Existing v2 campaigns retain their army, currencies, unlocked cells, lifetime capture count and accumulated search kills. Starter cooldowns are cleared on load when fewer than four total captures have been earned. Saved later cooldowns are clamped to 30 seconds; shorter remaining waits are preserved. Saved search progress beyond a newly lowered guarantee is retained and produces a capture on the next eligible kill. There is no save reset or retroactive capture reward; the one-time empty-account starter supply is described below.
 
-Capture cooldown uses **real foreground time**, including army editing, the unit picker, Settings and Buildings, and stops while the app is hidden or closed. Treasury and a built Slave Market produce during foreground play and also accrue capped offline income as described below. Combat speed choices are **×1.5 / ×2 / ×3**, defaulting to ×1.5; the slowest option is 50% faster than the former ×1. Speed choices affect combat and kill earnings, but do not accelerate building production, construction or the capture cooldown. Gold, search progress and captures save after each rewarded kill; fractional building progress and cooldown also checkpoint and survive reloads. Reopening a battle does not reset the search history or bypass its cooldown.
+Capture cooldown uses **real foreground time**, including army editing, the unit picker, Settings and Buildings, and stops while the app is hidden or closed. Treasury and a built Slave Market produce during foreground play and also accrue capped offline income as described below. Combat speed choices are **×1 / ×2 / ×3**, defaulting to ×1. The new ×1 retains the previous ×1.5 pace; ×2 and ×3 are exact multiples of that new base (equivalent to the original ×3 and ×4.5). Speed choices affect combat and kill earnings, but do not accelerate building production, construction or the capture cooldown. Gold, search progress and captures save after each rewarded kill; fractional building progress and cooldown also checkpoint and survive reloads. Reopening a battle does not reset the search history or bypass its cooldown.
 
 ## Offline Treasury income
 
@@ -291,13 +341,15 @@ All 200 historical samples in each listed scenario reached both old milestones w
 
 **Historical comparison:** the earlier 4-gold ordinary enemies produced an 8.15-hour estimate at the same hypothetical eight kills per minute and a 230 / 51 gold-per-kill mix. That estimate describes the superseded rewards; it is not the current campaign target or evidence of measured playtime.
 
-**Actual player sustained kills per minute have not been measured.** Enemy strength, defeats, group spacing, positioning, preparation time and ×1.5 versus ×2 or ×3 can change it. The new system also depends on gold spending between cells and buildings, conversion frequency, rolled classes, Barracks sales, reserve choices and passive income. No fixed eight-hour or other progression-time promise is made. The historical model above did not run combat. The current opening now has a separate real-combat and resource-API harness, with explicit assumptions and measured scenarios in [OPENING_BALANCE.md](OPENING_BALANCE.md).
+**Actual player sustained kills per minute have not been measured.** Enemy strength, defeats, group spacing, positioning, preparation time and ×1 versus ×2 or ×3 can change it. The new system also depends on gold spending between cells and buildings, conversion frequency, rolled classes, Barracks sales, reserve choices and passive income. No fixed eight-hour or other progression-time promise is made. The historical model above did not run combat. The current opening now has a separate real-combat and resource-API harness, with explicit assumptions and measured scenarios in [OPENING_BALANCE.md](OPENING_BALANCE.md).
 
 ## Save separation
 
 Current storage key remains `brotd-infinity:campaign:v2`, with `campaignVersion: 3` inside the saved record. Recruitment adds individual reserve fighters and per-type received counts to the existing record. **Existing fighters keep their type and personal level, including levels above 100; older saves get an empty reserve and zero received counts**, with no invented conversion history or retroactive level-up. Slaves, campaign progress, building ownership/production and capture/first-clear history remain intact. Previously spent fighter-upgrade gold is not refunded or charged again.
 
-**Army-capacity migration:** restore the roster against its previously owned cells before reconciling the current Barracks tier. Keep all purchased cells in the central three columns, and retain the earliest saved outer cells up to the tier's quota: zero at I, one at II, two at III. Close excess outer cells and move their occupants into reserve without selling them or changing their type or personal level. Refund the difference between the old and retained cumulative cell-purchase costs; no per-cell purchase ledger exists. For an old fully opened 15-cell grid, I/II/III retain 9/10/11 cells and refund **7,350 / 6,800 / 6,050 gold** respectively. Partial expansions use the same cumulative-price rule. The reduced cell list, returned fighters and refund save together; the closed-cell state makes later reloads idempotent, so the refund cannot repeat. The return summary records the refund and returned-fighter count. No campaign reset or recruitment-history change is required.
+**Mounted fighters:** a Panther Rider occupies two purchased horizontal cells, anchored at the left one. Both cells select the same fighter. Its sprite and combat starting point sit midway between them. Placement and swaps validate the entire footprint before changing ownership; an occupied neighbour is never silently displaced. During restoration, ordinary fighters keep their positions; a Rider with a locked, occupied or out-of-grid second cell returns to reserve with its level intact. This roster normalization is saved with the capacity refund and cannot return the same fighter twice.
+
+**Army-capacity migration:** restore the roster against its previously owned cells before reconciling the current Barracks tier. Keep the three starter cells and the earliest purchased central cells, up to eight central cells at I or nine at II/III. Tier III also retains the earliest saved outer cell; I/II retain none. Close excess cells and move their occupants into reserve without selling them or changing their type or personal level. Refund the difference between the old and retained cumulative cell-purchase costs; no per-cell purchase ledger exists. For an old fully opened 15-cell grid, I/II/III retain 8/9/10 cells and refund **7,750 / 7,350 / 6,800 gold** respectively. Partial expansions use the same cumulative-price rule. The reduced cell list, returned fighters and refund save together; the closed-cell state makes later reloads idempotent, so the refund cannot repeat. The return summary records the refund and returned-fighter count. No campaign reset or recruitment-history change is required.
 
 The new **`starterSupplyGranted`** marker is recorded once for both fresh and existing accounts. Before that marker exists, an account receives **three starter slaves only if it has no deployed fighters, no reserve fighters and exactly zero slaves**. This supplies an empty account after gold recruitment is removed. Accounts that already own fighters or slaves receive no grant and keep all existing balances. Recording the marker even when no grant is needed prevents later sales or spending from triggering it. Starter supply leaves capture totals, search progress, cooldown and recruitment counts unchanged; subsequent conversions advance only their normal type counts.
 

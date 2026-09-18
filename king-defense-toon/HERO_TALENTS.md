@@ -3,7 +3,8 @@
 The hero starts at level 1 with a normal melee attack, 60 HP and 4 damage. He has
 no healing, armour aura or thrown hammer until their respective root talents are
 learned. Basic HP and damage still grow by 5% of their starting value per level.
-Experience, the level-20 cap and campaign rewards are unchanged.
+Hero XP rewards are reduced by 15% before whole-point rounding; saved XP and level
+thresholds remain unchanged. The level cap is still 20, and gold rewards are unchanged.
 
 ## Points and paths
 
@@ -55,8 +56,8 @@ The menu uses three simultaneously visible columns, compact icon nodes, rank
 badges and connected paths. Gold denotes learned nodes, green availability, and
 a separate selection outline identifies the displayed detail. Locked talents
 remain inspectable. Short screens scroll the tree while keeping the detail and
-action accessible. Icons are lightweight inline vectors; battle skills reuse the
-existing hero animation atlases.
+action accessible. Talent icons use a shared illustrated atlas; battle skills
+reuse the existing hero animation atlases.
 
 ## Verification scope
 

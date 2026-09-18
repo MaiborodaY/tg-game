@@ -20,7 +20,7 @@ function legacySave() {
   };
 }
 
-test('full legacy armies migrate to 9, 10 and 11 slots without losing fighters or personal levels', () => {
+test('full legacy armies migrate to 8, 9 and 10 slots without losing fighters or personal levels', () => {
   for (const level of [1, 2, 3]) {
     const saved = legacySave();
     const original = structuredClone(saved);
@@ -36,7 +36,10 @@ test('full legacy armies migrate to 9, 10 and 11 slots without losing fighters o
     assert.equal(migration.removedCells.length, 15 - capacity);
     assert.deepEqual(progression.firstClears, [1, 10, 201, 400]);
     assert.deepEqual(progression.unlockedCells.filter(key => key[0] === '0' || key[0] === '4'),
-      ['4:2', '0:0'].slice(0, level - 1), 'retain the earliest purchased side cells');
+      level === 3 ? ['4:2'] : [], 'retain one earliest purchased side cell only at tier III');
+    assert.deepEqual(progression.unlockedCells.filter(key => key[0] !== '0' && key[0] !== '4'),
+      [...STARTING_CELLS, '1:0', '1:1', '1:2', '3:0', '3:1', '3:2'].slice(0, level === 1 ? 8 : 9),
+      'the starter cells and earliest central purchases are retained');
     assert.deepEqual(fighterInventory(migration), fighterInventory({ units: saved.units, reserve: saved.reserve }));
     assert.equal(new Set([...migration.units, ...migration.reserve].map(unit => unit.id)).size, 17);
     for (const fighter of [...roster.units, ...roster.reserve]) {
@@ -75,6 +78,42 @@ test('migration refunds exactly once through repeated calls and a persisted relo
   }
 });
 
+test('a formerly compliant tier-I army closes its latest central purchase and refunds 400 gold', () => {
+  const centralOrder = ['3:2', '1:0', '3:1', '1:1', '3:0', '1:2'];
+  const progression = createProgression({ unlockedCells: centralOrder });
+  const roster = restoreCampaignRoster([
+    { id: 10, type: 'swordsman', level: 17, col: 2, row: 0 },
+    { id: 11, type: 'archer', level: 101, col: 1, row: 2 },
+    { id: 12, type: 'healer', level: 3, col: 3, row: 2 },
+  ], [{ id: 13, type: 'lancer', level: 7 }], progression);
+  const closedFighter = roster.units.find(unit => unit.col === 1 && unit.row === 2);
+  const migration = reconcileArmyCapacity(progression, roster, 1);
+  assert.deepEqual(progression.unlockedCells, [...STARTING_CELLS, ...centralOrder.slice(0, 5)]);
+  assert.deepEqual(migration.removedCells, ['1:2']);
+  assert.equal(migration.refund, 400);
+  assert.equal(migration.movedCount, 1);
+  assert.deepEqual(migration.reserve.at(-1), {
+    id: closedFighter.id, type: 'archer', level: 101,
+  });
+  assert.deepEqual(fighterInventory(migration), fighterInventory(roster));
+  assert.equal(reconcileArmyCapacity(progression, migration, 1).refund, 0);
+  assert.deepEqual(unlockCell(progression, migration.refund, '1:2', 2), { unlocked: true, gold: 0 });
+  assert.equal(reconcileArmyCapacity(progression, migration, 2).refund, 0);
+});
+
+test('tier II refunds both former side slots while tier III retains only the earliest one', () => {
+  const central = ['1:0', '1:1', '1:2', '3:0', '3:1', '3:2'];
+  for (const [level, refund, removedCells] of [[2, 1300, ['0:1', '4:1']], [3, 750, ['4:1']]]) {
+    const progression = createProgression({ unlockedCells: ['0:1', ...central, '4:1'] });
+    const migration = reconcileArmyCapacity(progression, { units: [], reserve: [] }, level);
+    assert.deepEqual(migration.removedCells, removedCells);
+    assert.equal(migration.refund, refund);
+    assert.equal(migration.movedCount, 0, 'unoccupied purchases still receive the exact refund');
+    assert.equal(progression.unlockedCells.length, getArmyCapacity(level));
+    assert.equal(reconcileArmyCapacity(progression, migration, level).refund, 0);
+  }
+});
+
 test('migration retains purchased central cells and prices a later repurchase from the remaining count', () => {
   const progression = createProgression({ unlockedCells: ['0:0', '1:0', '4:0'], firstClears: [10] });
   const roster = restoreCampaignRoster([
@@ -88,8 +127,8 @@ test('migration retains purchased central cells and prices a later repurchase fr
   assert.equal(migration.movedCount, 1, 'empty closed cells still refund their purchase');
   assert.equal(migration.refund, 150);
   assert.equal(CELL_UNLOCK_COSTS.slice(0, 3).reduce((sum, cost) => sum + cost, 0) - migration.refund, 25);
-  assert.deepEqual(unlockCell(progression, migration.refund, '4:2', 2), { unlocked: true, gold: 100 });
-  assert.equal(reconcileArmyCapacity(progression, migration, 2).refund, 0);
+  assert.deepEqual(unlockCell(progression, migration.refund, '4:2', 3), { unlocked: true, gold: 100 });
+  assert.equal(reconcileArmyCapacity(progression, migration, 3).refund, 0);
 });
 
 test('starter cells and already compliant armies do not trigger migration or refunds', () => {

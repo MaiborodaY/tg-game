@@ -20,7 +20,7 @@ Each level adds 5% of level-one HP, basic damage, healing and hammer damage. Thi
 
 Level cap: 20. Each level from 2 gives one point: 19 points total. Total XP for level L is `50 × (L − 1)²`. XP is awarded once when a wave finishes, according to the whole army's result; hero last hits are not required.
 
-For wave W, base XP is `10 + 0.5 × W`. A first victory gives base XP multiplied by `1 + 0.5 × killed fraction`. Repeated victories give 25% of that amount. A defeat gives `base XP × 25% × killed fraction`, or zero without kills. Awards round to whole XP, with at least one for a nonzero contribution. The current sequence of unique victories reaches level 20 on wave 200. This is a deterministic pacing estimate, not a real-time playtest.
+For wave W, base XP is `10 + 0.5 × W`. A first victory gives base XP multiplied by `1 + 0.5 × killed fraction`. Repeated victories give 25% of that amount. A defeat gives `base XP × 25% × killed fraction`, or zero without kills. All nonzero rewards are then multiplied by **0.85** before rounding to whole XP, with at least one for a nonzero contribution. This reduces future XP gain by 15%; saved XP, level thresholds and learned talents stay unchanged. With every enemy killed in consecutive first victories, level 20 is now reached on global wave **219**, previously 200. This is a deterministic pacing estimate, not a real-time playtest.
 
 Three branches each contain three three-rank talents and one final talent:
 

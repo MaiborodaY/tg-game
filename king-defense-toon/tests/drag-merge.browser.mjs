@@ -73,7 +73,7 @@ try {
 
     await page.touchscreen.tap(...Object.values(await cell(2,0)));
     assert.equal(await page.locator('#unit-panel').isVisible(),true);
-    assert.equal(await page.locator('#selection-panel [data-action="merge"]').isVisible(),true);
+    assert.equal(await page.locator('#selection-panel [data-connect-action="begin"]').isVisible(),true);
     await page.locator('#unit-panel [data-close-overlay]').click();
     await hold(await cell(2,0));
     assert.equal(await ghost(),1);
@@ -101,7 +101,8 @@ try {
     let icon = '[data-barracks-unit-id="5"]';
     await page.locator(icon).tap();
     assert.equal(await page.locator('#barracks-detail').isVisible(),true);
-    for (const attr of ['merge','recruit','sell']) assert.equal(await page.locator(`[data-barracks-${attr}-id="5"]`).isVisible(),true);
+    for (const attr of ['recruit','sell']) assert.equal(await page.locator(`[data-barracks-${attr}-id="5"]`).isVisible(),true);
+    assert.equal(await page.locator('#barracks-detail [data-connect-action="begin"]').isVisible(),true);
     await page.locator('#barracks-back').click();
     before = await read();
     await hold(await center('[data-barracks-unit-id="14"]'));
@@ -170,11 +171,16 @@ try {
     // Existing button route and ordinary controls still respond after captured drags.
     await page.locator('#open-barracks').click();
     await page.locator('[data-barracks-unit-id="7"]').tap();
-    assert.match(await page.locator('[data-barracks-merge-id="7"]').innerText(), /Connect/);
+    assert.match(await page.locator('#barracks-detail [data-connect-action="begin"]').innerText(), /Connect/);
     assert.doesNotMatch(await page.locator('#barracks-panel').innerText(), /\bmerge\b/i);
-    await page.locator('[data-barracks-merge-id="7"]').tap();
+    await close();
     await page.touchscreen.tap(...Object.values(await cell(2,1)));
+    await page.locator('#selection-panel [data-connect-action="begin"]').tap();
+    await page.locator('[data-connect-donor-id="7"]:visible').tap();
+    await page.locator('[data-connect-action="apply"]:visible').tap();
     after = await read(); assert.equal(after.units.find(u=>u.col===2&&u.row===1).level,7);
+    await page.locator('[data-connect-action="cancel"]:visible').tap();
+    await page.locator('#unit-panel [data-close-overlay]').click();
     before = after;
     // Legality can change after pickup. Reject at release without consuming the source.
     await page.locator('#open-barracks').click();

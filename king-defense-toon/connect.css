@@ -1,0 +1,75 @@
+.connect-panel {
+  display: grid; gap: 6px; width: 100%; min-width: 0; margin: 0;
+  color: #536044; font-size: 12px; line-height: 16px;
+}
+.connect-recipient { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.connect-recipient-art {
+  display: grid; place-items: center; flex: 0 0 54px; width: 54px; height: 58px;
+  border: 1px solid #a8ae7d; border-radius: 3px; background: #e4e7c5;
+  box-shadow: inset 0 1px #f9f4d7;
+}
+.connect-panel img { display: block; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+.connect-recipient-art img { width: 48px; height: 51px; }
+.connect-fallback { width: 28px; height: 36px; fill: #8c9973; }
+.connect-recipient-copy { display: grid; gap: 3px; min-width: 0; }
+.connect-recipient-copy > strong { font-size: 16px; line-height: 20px; overflow-wrap: anywhere; }
+.connect-level-preview { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: 13px; line-height: 17px; font-variant-numeric: tabular-nums; }
+.connect-level-arrow { margin-inline: 3px; color: #92966b; }
+.connect-level-preview > b { overflow: hidden; text-overflow: ellipsis; color: #46713e; }
+.connect-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.connect-stats > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 6px; min-width: 0; padding: 3px 6px; border: 1px solid #c5c39a; border-radius: 3px; background: #e9e7c8; }
+.connect-stats small { color: #8a7959; font-size: 10px; line-height: 14px; }
+.connect-stats b { overflow-wrap: anywhere; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
+.connect-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+/* The selection panel otherwise applies a nine-slice blue border to every button.
+   Scope these resets to Connect so the same markup also works in Barracks details. */
+.connect-panel button, :is(#selection-panel, #barracks-detail) .connect-panel button {
+  min-width: 0; min-height: 44px; margin: 0; padding: 4px 6px;
+  border: 1px solid #a6a77c; border-image: none; border-radius: 3px;
+  background: #e0dfb9; color: #626748; text-shadow: none;
+  box-shadow: inset 0 1px #f5f2d5, 0 1px #bbb68b;
+  font-size: 12px; line-height: 16px; white-space: normal;
+}
+.connect-panel button:hover:not(:disabled), :is(#selection-panel, #barracks-detail) .connect-panel button:hover:not(:disabled) { filter: brightness(1.04); }
+.connect-panel button:active:not(:disabled), :is(#selection-panel, #barracks-detail) .connect-panel button:active:not(:disabled) { transform: translateY(1px); }
+.connect-panel button:focus-visible, .connect-donor-scroll:focus-visible { outline: 2px solid #5c8054; outline-offset: -3px; }
+.connect-panel .connect-tabs [aria-pressed="true"], :is(#selection-panel, #barracks-detail) .connect-panel .connect-tabs [aria-pressed="true"] {
+  border-color: #6d8a53; background: #cddcaf; color: #416039; box-shadow: inset 0 1px #edf4ce, 0 1px #91a16f;
+}
+.connect-donor-scroll {
+  height: auto; min-height: 74px; max-height: 154px; overflow-y: auto; overflow-x: hidden;
+  padding: 5px; border: 1px solid #c0bd90; border-radius: 3px; background: #d9d8b16b;
+  scrollbar-gutter: stable; overscroll-behavior: contain; touch-action: pan-y;
+}
+.connect-donors { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 6px; max-width: 306px; margin-inline: auto; align-content: start; }
+.connect-panel .connect-donor, :is(#selection-panel, #barracks-detail) .connect-panel .connect-donor {
+  position: relative; display: grid; grid-template-rows: 40px 15px; justify-items: center; align-content: center;
+  width: 100%; height: 62px; min-height: 62px; padding: 2px; border-width: 2px;
+  background: #e6e8c8; touch-action: pan-y;
+}
+.connect-donor img { width: 43px; height: 40px; }
+.connect-donor-level {
+  display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #fffbea; font-size: 11px; line-height: 15px; font-variant-numeric: tabular-nums;
+  text-shadow: -1px -1px #424936, 1px -1px #424936, -1px 1px #424936, 1px 1px #424936, 0 1px #424936;
+}
+.connect-panel .connect-donor[aria-pressed="true"], :is(#selection-panel, #barracks-detail) .connect-panel .connect-donor[aria-pressed="true"] {
+  border-color: #5b843e; background: #d3e0b2; box-shadow: inset 0 0 0 1px #f2f7d3, 0 1px #94a174;
+}
+.connect-check { position: absolute; top: -1px; right: -1px; display: grid; place-items: center; width: 14px; height: 14px; border-radius: 0 1px 0 3px; color: #fffbea; font-size: 12px; line-height: 14px; }
+.connect-donor[aria-pressed="true"] .connect-check { background: #628649; }
+.connect-empty { display: grid; place-items: center; height: auto; min-height: 62px; padding: 10px; color: #827655; font-size: 12px; line-height: 17px; text-align: center; }
+.connect-summary { display: grid; gap: 2px; min-width: 0; }
+.connect-summary > strong { color: #536a42; font-size: 11px; line-height: 15px; }
+.connect-message { min-height: 28px; color: #857453; font-size: 10px; line-height: 14px; overflow-wrap: anywhere; }
+.connect-actions { display: grid; grid-template-columns: minmax(60px, .65fr) minmax(0, 1.35fr); gap: 6px; }
+.connect-panel [data-connect-action="apply"], :is(#selection-panel, #barracks-detail) .connect-panel [data-connect-action="apply"] {
+  border: 2px solid #759557; background: #cdddac; color: #3f6236; box-shadow: inset 0 1px #f0f4cd, 0 1px #a1ad79;
+}
+.connect-panel button:disabled, :is(#selection-panel, #barracks-detail) .connect-panel button:disabled {
+  border-color: #b3b093; background: #dedcbe; color: #999579; box-shadow: inset 0 1px #ece8ce; opacity: .8; text-shadow: none;
+}
+@media (max-height: 620px) {
+  .connect-donor-scroll { max-height: 138px; }
+  .connect-panel { gap: 5px; }
+}

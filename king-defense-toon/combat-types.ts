@@ -1,5 +1,6 @@
 import type { Point } from './field.ts';
 import type { HeroStats } from './hero.ts';
+import type { CapitolStats } from './capitol.ts';
 import type { UnitType } from './units.ts';
 import type { EnemyType, WaveDefinition } from './waves.ts';
 
@@ -99,7 +100,9 @@ export interface HeroActor extends ActorBase<'hero'> {
 
 export type AllyActor = ActorBase<UnitType>;
 export type EnemyActor = ActorBase<EnemyType>;
-export type CastleActor = ActorBase<'castle'>;
+export interface CastleActor extends ActorBase<'castle'> {
+  stats: Readonly<CapitolStats>;
+}
 export type Actor = AllyActor | EnemyActor | HeroActor | CastleActor;
 
 export type BattleEvent =

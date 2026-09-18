@@ -1,0 +1,35 @@
+.farm-overview { margin-bottom: 5px; }
+.farm-art { flex-basis: 46px; height: 42px; background: #dce0bc; }
+.farm-row {
+  display: grid; grid-template-columns: 32px minmax(0, 1fr) 80px; align-items: center;
+  gap: 7px; min-height: 66px; padding: 6px 0; border-bottom: 1px solid #d2c79e;
+}
+.farm-row:last-child { border-bottom: 0; }
+.farm-crop-icon { width: 32px; height: 36px; overflow: visible; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.farm-copy { min-width: 0; }
+.farm-crop-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+.farm-crop-heading strong { color: #555d40; font-size: 12px; line-height: 16px; }
+.farm-stock { color: #8a7959; white-space: nowrap; font-size: 9px; line-height: 14px; }
+.farm-stock b { color: #586443; font-size: 11px; font-variant-numeric: tabular-nums; }
+.farm-meter { height: 6px; overflow: hidden; margin: 5px 0 3px; border: 1px solid #b4aa83; border-radius: 2px; background: #d8cfaa; }
+.farm-meter > span { display: block; width: 0; height: 100%; background: #91ad63; box-shadow: inset 0 1px #bdd28c; }
+.farm-timer { display: block; color: #867554; font-size: 10px; line-height: 13px; font-variant-numeric: tabular-nums; }
+.farm-action { width: 80px; min-height: 44px; padding: 2px 3px; font-size: 12px; line-height: 16px; }
+.farm-row[data-state="growing"] .farm-timer { color: #64774a; }
+/* A planted crop is working, even though its action cannot be pressed yet. */
+.farm-row[data-state="growing"] .farm-action:disabled {
+  --button-art: url('./assets/tiny-ui/button-blue.png');
+  color: #53706b; text-shadow: 0 1px #d1e2ce; cursor: default;
+}
+.farm-row[data-state="ready"] .farm-timer { color: #56713c; }
+.farm-row[data-state="ready"] .farm-meter > span { background: #b8ba59; box-shadow: inset 0 1px #e3d986; }
+.farm-row[data-state="ready"] .farm-action { color: #3a583b; }
+.farm-note, .farm-feedback { font-size: 10px; line-height: 14px; }
+.farm-note { margin-top: 7px; color: #857653; }
+.farm-feedback { margin-top: 6px; min-height: 14px; color: #65704d; text-align: center; }
+@media (max-width: 350px) {
+  .farm-row { grid-template-columns: 29px minmax(0, 1fr) 74px; gap: 5px; }
+  .farm-crop-icon { width: 29px; }
+  .farm-action { width: 74px; font-size: 11px; }
+  .farm-stock { font-size: 8px; }
+}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { COMBAT_PACE, createBattle, updateBattle } from '../combat.ts';
 import { WALKABLE_AREAS } from '../field.ts';
-import { BATTLE_SPEEDS } from '../battle-speed.ts';
+import { BATTLE_SPEEDS, battleFrameDelta } from '../battle-speed.ts';
 
 const DT = 1 / 60;
 const formation = ['swordsman', 'lancer', 'swordsman', 'healer', 'healer', 'healer', 'archer', 'archer', 'archer']
@@ -12,9 +12,10 @@ function runOpening(dt = DT) {
   const battle = createBattle(formation, 20);
   const seen = new Set(), casts = new Map(), stalled = new Map();
   let longestStall = 0;
-  for (let step = 0; step < Math.round(30 / dt); step += 1) {
+  for (let elapsed = 0; elapsed < 30 - 1e-8; elapsed += dt) {
+    const stepDt = Math.min(dt, 30 - elapsed);
     const before = battle.allies.map(unit => ({ x: unit.x, y: unit.y }));
-    updateBattle(battle, dt);
+    updateBattle(battle, stepDt);
     for (const effect of battle.effects) {
       if (effect.type !== 'heal' || effect.side !== 'ally' || seen.has(effect.id)) continue;
       seen.add(effect.id);
@@ -25,8 +26,8 @@ function runOpening(dt = DT) {
       const target = [...battle.allies, battle.hero].find(ally => ally.id === unit.focusId);
       const stationary = unit.hp > 0 && unit.action === 'walk' && unit.cooldown <= 0
         && target?.hp > 0 && target.hp < target.maxHp
-        && Math.hypot(unit.x - before[index].x, unit.y - before[index].y) < 2.4 * dt;
-      const duration = stationary ? (stalled.get(unit.id) ?? 0) + dt : 0;
+        && Math.hypot(unit.x - before[index].x, unit.y - before[index].y) < 2.4 * stepDt;
+      const duration = stationary ? (stalled.get(unit.id) ?? 0) + stepDt : 0;
       stalled.set(unit.id, duration);
       longestStall = Math.max(longestStall, duration);
     }
@@ -94,14 +95,14 @@ test('a monk outside heal range goes around blocking support without teleporting
   assert.ok(greatestSideStep > 25, 'monk goes around the allied support instead of through it');
 });
 
-test('monk healing and crowd navigation remain identical at 30/60/120 FPS and x1.5/x2/x3', () => {
+test('monk healing and crowd navigation remain identical at 20/30/60/120 FPS and x1/x2/x3', () => {
   const expected = runOpening();
   const snapshot = ({ battle, casts }) => ({
     phase: battle.phase, kills: battle.kills, castles: battle.castle.hp,
     allies: [...battle.allies, battle.hero].map(({ hp, x, y, action, cooldown }) => ({ hp, x, y, action, cooldown })),
     enemies: battle.enemies.map(({ hp, x, y }) => ({ hp, x, y })), casts,
   });
-  for (const fps of [30, 60, 120]) {
-    for (const speed of BATTLE_SPEEDS) assert.deepEqual(snapshot(runOpening(speed / fps)), snapshot(expected));
+  for (const fps of [20, 30, 60, 120]) {
+    for (const speed of BATTLE_SPEEDS) assert.deepEqual(snapshot(runOpening(battleFrameDelta(1 / fps, speed))), snapshot(expected));
   }
 });

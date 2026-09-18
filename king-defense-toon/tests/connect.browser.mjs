@@ -1,0 +1,313 @@
+// Real recipient-first Connect controls run against disposable local saves only.
+// Test-only Vite hooks stop animation, never bypass purchase/roster/save guards.
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createServer } from 'vite';
+import { FIELD, FORMATION_VIEW } from '../field.ts';
+import { getForgedUnitStats } from '../forge.ts';
+import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
+
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
+  ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
+const output = new URL('../../.tmp/', import.meta.url);
+const key = 'brotd-infinity:campaign:v2';
+const now = 1800000000000;
+const baseUrl = 'http://127.0.0.1:5209/';
+const centralCells = Array.from({ length: 9 }, (_, index) => `${index % 3 + 1}:${Math.floor(index / 3)}`);
+const server = await createServer({
+  root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/connect/', import.meta.url)),
+  server: { host: '127.0.0.1', port: 5209, strictPort: true },
+  plugins: [{ name: 'connect-browser-hooks', enforce: 'pre', transform(code, id) {
+    if (!id.endsWith('/main.ts')) return;
+    code = prependFunctionBody(code, 'resumeFrames', 'return;');
+    return code + `\nwindow.connectCheck = {
+      ready: () => !!scene && !!armyScene && !isRecovering(),
+      freeze: () => { stopFrames(); clearInterval(economyTimer); },
+      state: () => JSON.parse(JSON.stringify(saveSnapshot())),
+      battle: () => JSON.parse(JSON.stringify(battle)),
+      render: () => renderScene(),
+      refresh: () => refresh(),
+      victory: () => { battle.phase = 'victory'; showResult(); },
+    };`;
+  } }],
+});
+
+function fixture(overrides = {}) {
+  return {
+    campaignVersion: 3, gold: 500, starterSupplyGranted: true, marketHintCompleted: true,
+    autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
+    barracks: { level: 3, firstLancerPending: false },
+    forge: { health: 2, attack: 3, attackSpeed: 4 },
+    recruitment: { version: 2, received: { swordsman: 20, archer: 3, healer: 2, lancer: 0, pantherRider: 0 } },
+    units: [
+      { id: 1, type: 'swordsman', level: 3, col: 1, row: 0 },
+      { id: 2, type: 'swordsman', level: 5, col: 2, row: 0 },
+      { id: 3, type: 'archer', level: 2, col: 3, row: 0 },
+      { id: 4, type: 'swordsman', level: 7, col: 2, row: 1 },
+    ],
+    reserve: [
+      { id: 5, type: 'swordsman', level: 2 }, { id: 6, type: 'swordsman', level: 4 },
+      { id: 7, type: 'archer', level: 9 }, { id: 8, type: 'healer', level: 3 },
+      { id: 9, type: 'swordsman', level: 6 },
+    ],
+    progression: { unlockedCells: centralCells, firstClears: [] },
+    economy: { slaves: 5, treasuryUpdatedAt: now }, ...overrides,
+  };
+}
+const state = page => page.evaluate(() => window.connectCheck.state());
+const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+const battle = page => page.evaluate(() => window.connectCheck.battle());
+const action = (page, name) => page.locator(`[data-connect-action="${name}"]:visible`);
+const tab = (page, location) => page.locator(`[data-connect-location="${location}"]:visible`);
+const donor = (page, id) => page.locator(`[data-connect-donor-id="${id}"]:visible`);
+const donorIds = page => page.locator('[data-connect-donor-id]:visible').evaluateAll(nodes => nodes.map(node => Number(node.dataset.connectDonorId)));
+const close = (page, panel) => page.locator(`#${panel} [data-close-overlay]`).click();
+const inventory = save => ({ units: save.units, reserve: save.reserve });
+const durableInventory = save => ({ units: save.units.map(({ id, ...unit }) => unit), reserve: save.reserve.map(({ id, ...unit }) => unit) });
+const unchanged = save => ({ gold: save.gold, slaves: save.economy.slaves, recruitment: save.recruitment,
+  forge: save.forge, barracks: save.barracks, progression: save.progression });
+
+async function ready(page) {
+  await page.waitForFunction(() => window.connectCheck?.ready());
+  await page.evaluate(async () => { window.connectCheck.freeze(); await document.fonts.ready; });
+}
+async function cellPoint(page, col, row) {
+  return page.locator('#army-map').evaluate((canvas, { col, row, field, view }) => {
+    const rect = canvas.getBoundingClientRect(), scale = Number(canvas.dataset.worldScale);
+    return { x: rect.x + Number(canvas.dataset.worldOffsetX) + (field.gridX + (col + .5) * field.cellWidth) * scale,
+      y: rect.y + (rect.height - view.height * scale) / 2 + (field.gridY + (row + .5) * field.cellHeight - view.y) * scale };
+  }, { col, row, field: FIELD, view: FORMATION_VIEW });
+}
+async function tapCell(page, col, row) {
+  const point = await cellPoint(page, col, row); await page.touchscreen.tap(point.x, point.y);
+}
+async function openReserve(page, id) {
+  await page.locator('#open-barracks').click(); await page.locator(`[data-barracks-unit-id="${id}"]`).click();
+}
+async function fits(page, panel) {
+  const issues = await page.locator(`#${panel} .menu-card`).evaluate(card => {
+    const bounds = card.getBoundingClientRect(), bad = [];
+    if (bounds.left < -1 || bounds.right > innerWidth + 1 || bounds.top < -1 || bounds.bottom > innerHeight + 1) bad.push('card outside viewport');
+    if (card.scrollWidth > card.clientWidth + 1) bad.push('horizontal card overflow');
+    for (const element of card.querySelectorAll('[data-connect-action], [data-connect-location], [data-connect-donor-id]')) {
+      if (!element.getClientRects().length) continue;
+      if (element.scrollWidth > element.clientWidth + 1) bad.push(`${element.outerHTML.slice(0, 90)}: overflow`);
+      if (element.getBoundingClientRect().height < 44) bad.push('Connect control below 44px');
+    }
+    return bad;
+  });
+  assert.deepEqual(issues, [], 'Connect remains compact and readable on mobile');
+}
+async function selectMixed(page) {
+  await donor(page, 5).click(); await donor(page, 6).click();
+  await tab(page, 'army').click();
+  assert.deepEqual(await donorIds(page), [2, 4], 'Army filters wrong type and the recipient itself');
+  await donor(page, 2).click();
+  await tab(page, 'reserve').click();
+  for (const id of [5, 6]) assert.equal(await donor(page, id).getAttribute('aria-pressed'), 'true', 'Selection survives changing source tabs');
+}
+async function assertPreview(page, level, type, forge) {
+  assert.equal(await page.locator('[data-connect-preview-level]:visible').innerText(), String(level));
+  const text = await page.locator('.connect-preview-stats:visible').innerText();
+  const stats = getForgedUnitStats(type, level, forge);
+  for (const value of [stats.hp, type === 'healer' ? stats.heal : stats.damage]) {
+    const label = new Intl.NumberFormat('en', { maximumFractionDigits: 2 }).format(value);
+    assert.ok(text.includes(label), `${text} should show the resulting forged stat ${label}`);
+  }
+}
+
+let browser;
+const checks = [];
+async function scenario(name, width, saved, check) {
+  const context = await browser.newContext({ viewport: { width, height: width === 320 ? 640 : 700 }, isMobile: true, hasTouch: true });
+  const errors = [];
+  let page;
+  try {
+    await context.route('https://telegram.org/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
+    await context.addInitScript(({ saved, key, now }) => {
+      Date.now = () => now;
+      if (!sessionStorage.getItem('__connect-seeded')) {
+        localStorage.setItem(key, JSON.stringify(saved)); sessionStorage.setItem('__connect-seeded', '1');
+      }
+    }, { saved, key, now });
+    page = await context.newPage(); page.setDefaultTimeout(15000);
+    page.on('pageerror', error => errors.push(error.stack ?? error.message));
+    page.on('response', response => {
+      if (response.url().startsWith(baseUrl) && response.status() >= 400) errors.push(`HTTP ${response.status()}: ${response.url()}`);
+    });
+    await page.goto(baseUrl); await ready(page); await check(page);
+    assert.deepEqual(errors, [], 'No browser or local asset errors');
+    checks.push(`${name} ${width}px`); console.log(`PASS ${checks.at(-1)}`);
+  } catch (error) {
+    if (page && !page.isClosed()) await page.screenshot({ path: fileURLToPath(new URL(`connect-${name}-FAILED-${width}.png`, output)) });
+    throw error;
+  } finally { await context.close(); }
+}
+
+try {
+  await mkdir(output, { recursive: true }); await server.listen();
+  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  for (const width of [390, 320]) {
+    await scenario('army-recipient-batch-cancel-repeat-next-wave', width, fixture(), async page => {
+      await page.locator('#start-wave').click();
+      const initialBattle = await battle(page);
+      await tapCell(page, 1, 0); await action(page, 'begin').focus();
+      await page.evaluate(() => window.connectCheck.refresh());
+      assert.equal(await action(page, 'begin').evaluate(element => element === document.activeElement), true, 'Refreshing details preserves Connect button focus');
+      await action(page, 'begin').click();
+      assert.equal(await page.locator('#unit-panel').isVisible(), true);
+      assert.deepEqual(await donorIds(page), [5, 6, 9], 'Barracks is the default source and shows matching donors only');
+      assert.equal(await action(page, 'apply').isDisabled(), true);
+      const beforeCancel = await state(page);
+      await selectMixed(page); await assertPreview(page, 14, 'swordsman', beforeCancel.forge);
+      assert.deepEqual(inventory(await state(page)), inventory(beforeCancel), 'Preview consumes nothing');
+      await fits(page, 'unit-panel');
+      await page.screenshot({ path: fileURLToPath(new URL(`connect-army-${width}.png`, output)) });
+      await action(page, 'cancel').click();
+      assert.deepEqual(inventory(await state(page)), inventory(beforeCancel));
+      assert.equal(await action(page, 'begin').count(), 1, 'Cancel returns to the same recipient details');
+      await action(page, 'begin').click();
+      assert.equal(await donor(page, 5).getAttribute('aria-pressed'), 'false');
+      assert.equal(await action(page, 'apply').isDisabled(), true);
+      await selectMixed(page);
+      const beforeApply = await state(page);
+      await action(page, 'apply').click();
+      let current = await state(page);
+      assert.deepEqual(current.units.find(unit => unit.id === 1), { id: 1, type: 'swordsman', level: 14, col: 1, row: 0 });
+      assert.equal(current.units.some(unit => unit.id === 2), false);
+      assert.equal(current.reserve.some(unit => [5, 6].includes(unit.id)), false);
+      assert.deepEqual(unchanged(current), unchanged(beforeApply), 'Connect spends fighters only');
+      assert.deepEqual(inventory(await stored(page)), inventory(current));
+      assert.equal(await page.locator('#unit-panel').isVisible(), true);
+      assert.equal(await action(page, 'apply').count(), 1, 'Recipient and Connect mode remain open');
+      assert.equal(await action(page, 'apply').isDisabled(), true, 'Consumed selection is cleared');
+      await action(page, 'apply').evaluate(button => button.click());
+      assert.deepEqual(inventory(await state(page)), inventory(current), 'An unselected repeat click cannot duplicate levels');
+      await tab(page, 'reserve').click(); await donor(page, 9).click();
+      await assertPreview(page, 20, 'swordsman', current.forge); await action(page, 'apply').click();
+      current = await state(page);
+      assert.equal(current.units.find(unit => unit.id === 1).level, 20);
+      assert.deepEqual((await battle(page)).allies, initialBattle.allies, 'An ongoing battle retains its pre-Connect army');
+      await action(page, 'cancel').click(); await close(page, 'unit-panel');
+      await page.evaluate(() => window.connectCheck.victory());
+      await page.locator('#return-prep').click(); await page.locator('#start-wave').click();
+      const upgraded = (await battle(page)).allies.find(unit => unit.id === 'ally-1');
+      const expected = getForgedUnitStats('swordsman', 20, current.forge);
+      assert.equal(upgraded.level, 20); assert.equal(upgraded.maxHp, expected.hp); assert.equal(upgraded.damage, expected.damage);
+      current = await state(page); await page.reload(); await ready(page);
+      assert.deepEqual(durableInventory(await state(page)), durableInventory(current));
+    });
+
+    await scenario('barracks-recipient-mixed-sources', width, fixture(), async page => {
+      await openReserve(page, 5); await action(page, 'begin').click();
+      assert.equal(await page.locator('#barracks-panel').isVisible(), true);
+      assert.deepEqual(await donorIds(page), [6, 9], 'Reserve recipient cannot donate itself');
+      await donor(page, 6).click(); await tab(page, 'army').click();
+      assert.deepEqual(await donorIds(page), [1, 2, 4]);
+      await donor(page, 2).click();
+      const before = await state(page);
+      await assertPreview(page, 11, 'swordsman', before.forge);
+      await fits(page, 'barracks-panel');
+      await page.screenshot({ path: fileURLToPath(new URL(`connect-barracks-${width}.png`, output)) });
+      await action(page, 'apply').click();
+      const current = await state(page);
+      assert.deepEqual(current.reserve.find(unit => unit.id === 5), { id: 5, type: 'swordsman', level: 11 });
+      assert.equal(current.reserve.some(unit => unit.id === 6), false);
+      assert.equal(current.units.some(unit => unit.id === 2), false);
+      assert.deepEqual(unchanged(current), unchanged(before));
+      assert.equal(await page.locator('#barracks-panel').isVisible(), true);
+      assert.equal(await action(page, 'apply').count(), 1);
+      assert.equal(await action(page, 'apply').isDisabled(), true);
+      await page.reload(); await ready(page);
+      assert.deepEqual(durableInventory(await state(page)), durableInventory(current));
+    });
+
+    await scenario('last-army-guard-is-not-consumed', width, fixture({
+      units: [{ id: 1, type: 'swordsman', level: 2, col: 2, row: 0 }],
+      reserve: [{ id: 2, type: 'swordsman', level: 3 }, { id: 3, type: 'swordsman', level: 4 }],
+    }), async page => {
+      await page.locator('#start-wave').click();
+      await openReserve(page, 2); await action(page, 'begin').click(); await tab(page, 'army').click();
+      const before = await state(page);
+      if (await donor(page, 1).count() && await donor(page, 1).isEnabled()) await donor(page, 1).click();
+      assert.equal(await action(page, 'apply').isDisabled(), true, 'The last deployed guard cannot be donated into reserve');
+      await action(page, 'apply').evaluate(button => button.click());
+      assert.deepEqual(inventory(await state(page)), inventory(before));
+      await fits(page, 'barracks-panel');
+    });
+
+    await scenario('two-cell-rider-recipient-preserves-footprint', width, fixture({
+      units: [{ id: 1, type: 'pantherRider', level: 50, col: 1, row: 0 },
+        { id: 2, type: 'pantherRider', level: 100, col: 1, row: 2 }, { id: 3, type: 'swordsman', level: 2, col: 3, row: 1 }],
+      reserve: [{ id: 4, type: 'pantherRider', level: 2 }, { id: 5, type: 'archer', level: 1 }],
+    }), async page => {
+      await tapCell(page, 2, 0); await action(page, 'begin').click();
+      assert.deepEqual(await donorIds(page), [4]); await donor(page, 4).click();
+      await tab(page, 'army').click(); assert.deepEqual(await donorIds(page), [2]);
+      await donor(page, 2).click();
+      const before = await state(page);
+      await assertPreview(page, 152, 'pantherRider', before.forge); await action(page, 'apply').click();
+      const current = await state(page);
+      assert.deepEqual(current.units.find(unit => unit.id === 1), { id: 1, type: 'pantherRider', level: 152, col: 1, row: 0 });
+      assert.equal(current.units.some(unit => unit.id === 2), false);
+      assert.equal(current.reserve.some(unit => unit.id === 4), false);
+      assert.deepEqual(current.progression.unlockedCells, before.progression.unlockedCells);
+      await action(page, 'cancel').click(); await close(page, 'unit-panel');
+      await tapCell(page, 2, 0);
+      assert.match(await page.locator('#selection-panel').innerText(), /Panther Rider.*Lv\. 152/s);
+      await close(page, 'unit-panel'); await tapCell(page, 2, 2);
+      assert.doesNotMatch(await page.locator('#selection-panel').innerText(), /Panther Rider/);
+      await page.reload(); await ready(page);
+      assert.deepEqual(durableInventory(await state(page)), durableInventory(current));
+    });
+
+    await scenario('long-donor-list-keeps-scroll-and-focus', width, fixture({
+      reserve: Array.from({ length: 30 }, (_, index) => ({ id: index + 5, type: 'swordsman', level: index + 1 })),
+    }), async page => {
+      await tapCell(page, 1, 0); await action(page, 'begin').click();
+      const scroll = page.locator('.connect-donor-scroll:visible');
+      assert.equal(await donorIds(page).then(ids => ids.length), 30);
+      await donor(page, 34).scrollIntoViewIfNeeded();
+      const scrollBefore = await scroll.evaluate(element => element.scrollTop);
+      assert.ok(scrollBefore > 0, 'Large inventories scroll inside the donor grid');
+      await donor(page, 34).click();
+      assert.equal(await donor(page, 34).getAttribute('aria-pressed'), 'true');
+      assert.equal(await scroll.evaluate(element => element.scrollTop), scrollBefore, 'Selecting a donor does not jump back to the first row');
+      await page.evaluate(() => window.connectCheck.refresh());
+      assert.equal(await scroll.evaluate(element => element.scrollTop), scrollBefore);
+      assert.equal(await donor(page, 34).evaluate(element => element === document.activeElement), true);
+      await scroll.focus(); await page.evaluate(() => window.connectCheck.refresh());
+      assert.equal(await scroll.evaluate(element => element === document.activeElement), true, 'Keyboard focus remains on the scroll group across refresh');
+      await fits(page, 'unit-panel');
+      await page.screenshot({ path: fileURLToPath(new URL(`connect-scroll-${width}.png`, output)) });
+      await tab(page, 'army').click(); await tab(page, 'reserve').click();
+      assert.equal(await scroll.evaluate(element => element.scrollTop), 0, 'Changing source intentionally begins at its first row');
+      assert.equal(await donor(page, 34).getAttribute('aria-pressed'), 'true', 'The selected offscreen donor remains selected');
+      await action(page, 'apply').click();
+      assert.equal((await state(page)).units.find(unit => unit.id === 1).level, 33);
+    });
+
+    await scenario('touch-drag-still-donates-to-army', width, fixture(), async page => {
+      const cdp = await page.context().newCDPSession(page);
+      const send = (type, point) => cdp.send('Input.dispatchTouchEvent', { type,
+        touchPoints: point ? [{ ...point, id: 1, radiusX: 2, radiusY: 2, force: 1 }] : [] });
+      const before = await state(page);
+      await page.locator('#open-barracks').click();
+      const box = await page.locator('[data-barracks-unit-id="5"]').boundingBox();
+      await send('touchStart', { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+      await page.waitForTimeout(510);
+      assert.equal(await page.locator('.unit-drag-ghost').count(), 1);
+      await send('touchMove', await cellPoint(page, 1, 0));
+      assert.equal(await page.locator('.unit-drag-ghost.is-valid').count(), 1);
+      await send('touchEnd'); await cdp.detach();
+      const current = await state(page);
+      assert.equal(current.units.find(unit => unit.id === 1).level, 5);
+      assert.equal(current.reserve.some(unit => unit.id === 5), false);
+      assert.deepEqual(unchanged(current), unchanged(before));
+      assert.equal(await page.locator('.unit-drag-ghost').count(), 0);
+    });
+  }
+  console.log(JSON.stringify({ ok: true, checks }, null, 2));
+} finally { await browser?.close(); await server.close(); }

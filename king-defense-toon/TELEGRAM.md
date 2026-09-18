@@ -11,6 +11,17 @@ The Profile footer embeds a build version and UTC build date in the page itself.
 It identifies the loaded build, including an older cached copy, and does not fetch
 a newer version label from the network. Local development is marked `Local`.
 
+Current unit management: open an Army or Barracks fighter's details and choose
+**Connect**. That fighter receives the levels and stays in its current location.
+The compact Barracks / Army tabs show matching donors; selection persists across
+tabs and previews the final level, forged HP and attack/healing. Apply consumes
+the selected fighters together and keeps the recipient open for further use.
+Cancel, Back, Escape or closing the menu spends nothing. An active wave keeps
+its original combat actors; edits apply to the next wave. The last saved Army
+fighter cannot be consumed into a reserve recipient while a battle exists.
+Long-press drag still connects one source fighter into the Army target it is
+dropped on. Both cells of a Panther Rider identify the same fighter.
+
 St. Knihor update, 2026-09-18: the paladin replaces the king, with 20 experience
 levels, 19 talent points and automatic healing, armour aura and hammer abilities.
 The castle is the 100-HP defended objective; hero death does not end the wave.

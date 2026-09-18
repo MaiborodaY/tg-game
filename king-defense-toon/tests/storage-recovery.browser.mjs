@@ -41,8 +41,8 @@ const legacyFixtures = [
     expected: {
       clearedWaves: 0, firstClears: [1, 10, 201, 210], autoWaves: false,
       armyLevels: [10, 10, 1], reserveLevels: [3, 1],
-      received: { swordsman: 6, archer: 4, healer: 1, lancer: 0 },
-      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0 },
+      received: { swordsman: 6, archer: 4, healer: 1, lancer: 0, pantherRider: 0 },
+      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0 },
       heroXp: 300, highestWave: 20, barracksLevel: 2, firstLancerPending: true,
       marketHintCompleted: true, replayClaimedWave: true,
     },
@@ -66,8 +66,8 @@ const legacyFixtures = [
     expected: {
       clearedWaves: 200, firstClears: [1, 2, 10, 201], autoWaves: false,
       armyLevels: [8, 7, 12], reserveLevels: [2, 4],
-      received: { swordsman: 20, archer: 11, healer: 5, lancer: 2 },
-      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0 },
+      received: { swordsman: 20, archer: 11, healer: 5, lancer: 2, pantherRider: 0 },
+      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0 },
       heroXp: 800, highestWave: 11, barracksLevel: 2, firstLancerPending: false,
       marketHintCompleted: true,
     },
@@ -84,8 +84,8 @@ const legacyFixtures = [
     expected: {
       clearedWaves: 210, firstClears: [1, 10, 201, 210], autoWaves: true,
       armyLevels: [1, 4], reserveLevels: [1],
-      received: { swordsman: 0, archer: 0, healer: 0, lancer: 0 },
-      credit: { swordsman: 0, archer: 0, healer: 0, lancer: 0 },
+      received: { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 0 },
+      credit: { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 0 },
       heroXp: 0, highestWave: 0, barracksLevel: 1, firstLancerPending: false,
       marketHintCompleted: false,
     },
@@ -246,7 +246,7 @@ try {
       assert.equal(migrated.marketHintCompleted, expected.marketHintCompleted);
       assert.equal(migrated.autoWaves, expected.autoWaves);
       assert.equal(migrated.autoWavesDefaultVersion, 1);
-      assert.deepEqual(migrated.offlineRewards, { gold: 0, slaves: 0 });
+      assert.deepEqual(migrated.offlineRewards, { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 });
       assert.equal(JSON.parse(await raw(page)).campaignVersion, 3, 'migration must persist its version before the next visit');
       assert.equal(JSON.parse(await page.locator('#battle').getAttribute('data-campaign')).wave, expected.clearedWaves + 1);
 
@@ -275,7 +275,7 @@ try {
         assert.equal(result.battle.kills, 3);
         assert.equal(result.battle.reward, 3, 'previously claimed wave pays kill gold only, without its 10-gold first-clear bonus');
         assert.equal(after.gold, 330);
-        assert.equal(after.hero.xp, 304, 'a replay pays 4 XP, not the 16-XP first-clear reward');
+        assert.equal(after.hero.xp, 303, 'a replay pays 3 XP, not the 13-XP first-clear reward');
         assert.equal(after.hero.highestWave, 20);
         assert.deepEqual(after.progression.firstClears, [1, 10, 201, 210]);
         assert.equal(after.clearedWaves, 1);
@@ -442,7 +442,7 @@ try {
       await page.locator('#offline-rewards-panel').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#collect-offline-rewards').evaluate(element => !!element.closest('[inert]')), false);
       const before = await snapshot(page);
-      assert.deepEqual(before.offlineRewards, { gold: 7, slaves: 2 });
+      assert.deepEqual(before.offlineRewards, { gold: 7, slaves: 2, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 });
       await page.evaluate(() => window.storageFaults.writeError(true));
       await page.locator('#collect-offline-rewards').click();
       await page.locator('#recovery-panel').waitFor({ state: 'visible' });
@@ -453,10 +453,10 @@ try {
       await ready(page);
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
       const after = await snapshot(page);
-      assert.deepEqual(after.offlineRewards, { gold: 0, slaves: 0 });
+      assert.deepEqual(after.offlineRewards, { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 });
       assert.equal(after.gold, before.gold, 'acknowledging an already-paid receipt cannot pay it again');
       assert.equal(after.economy.slaves, before.economy.slaves);
-      assert.deepEqual(JSON.parse(await raw(page)).offlineRewards, { gold: 0, slaves: 0 });
+      assert.deepEqual(JSON.parse(await raw(page)).offlineRewards, { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 });
       assert.equal(await page.locator('#open-buildings').evaluate(element => !!element.closest('[inert]')), false);
       await page.locator('#open-buildings').click();
       await page.locator('#buildings-panel').waitFor({ state: 'visible' });

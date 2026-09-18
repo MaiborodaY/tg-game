@@ -20,7 +20,7 @@
         <button id="open-profile" class="profile-trigger" type="button" aria-label="Open profile and settings" title="Profile and settings" aria-haspopup="dialog" aria-controls="profile-panel"><span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21v-2a8 8 0 0 1 16 0v2Z" fill="currentColor"/></svg></span></button>
         <div class="phase-plaque"><span aria-hidden="true"></span><b id="phase-label">Prepare your guard</b></div>
         <div class="gold-balance battlefield-gold" aria-label="Gold"><span class="coin-icon" aria-hidden="true"></span><span id="gold-count">125</span></div>
-        <div id="battle-toolbar" hidden><button id="battle-speed" type="button" aria-pressed="false" aria-label="Battle speed: 1.5×. Switch to 2×" title="Battle speed: 1.5×. Switch to 2×">×1.5</button></div>
+        <div id="battle-toolbar" hidden><button id="battle-speed" type="button" aria-pressed="false" aria-label="Battle speed: 1×. Switch to 2×" title="Battle speed: 1×. Switch to 2×">×1</button></div>
         <button id="start-wave" class="battle-button" type="button" disabled><span class="start-arrow" aria-hidden="true"></span><span id="start-label">Start</span></button>
         <span id="fps-counter" aria-label="Frames per second" aria-live="off">— FPS</span>
         <section id="result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
@@ -107,6 +107,8 @@
             <button id="tab-treasury" class="battle-button building-tab" type="button" role="tab" data-building="treasury" aria-controls="treasury-building" aria-selected="true" tabindex="0">Treasury</button>
             <button id="tab-market" class="battle-button building-tab" type="button" role="tab" data-building="market" aria-controls="market-building" aria-selected="false" tabindex="-1">Market</button>
             <button id="tab-forge" class="battle-button building-tab" type="button" role="tab" data-building="forge" aria-controls="forge-building" aria-selected="false" tabindex="-1">Forge</button>
+            <button id="tab-farm" class="battle-button building-tab" type="button" role="tab" data-building="farm" aria-controls="farm-building" aria-selected="false" tabindex="-1">Farm</button>
+            <button id="tab-capitol" class="battle-button building-tab" type="button" role="tab" data-building="capitol" aria-controls="capitol-building" aria-selected="false" tabindex="-1">Capitol</button>
           </div>
           <article id="treasury-building" class="building-card" role="tabpanel" aria-labelledby="tab-treasury">
             <div class="building-overview">
@@ -139,9 +141,27 @@
               <div class="building-description"><h3>Forge</h3><p>Permanent army upgrades</p></div>
             </div>
             <div id="forge-upgrades"></div>
-            <p class="forge-explanation">Attack and speed also improve healing. Archer bonuses add to the shared bonuses.</p>
+            <p class="forge-explanation">All upgrades apply to every army unit. Attack and speed also improve healing.</p>
             <p class="building-note">Current and future fighters · Hero excluded<br>+1% per rank · Up to +100% per upgrade</p>
             <p id="forge-feedback" class="forge-feedback" role="status" aria-live="polite">Changes apply next wave.</p>
+          </article>
+          <article id="farm-building" class="building-card farm-card" role="tabpanel" aria-labelledby="tab-farm" hidden>
+            <div class="building-overview farm-overview">
+              <div class="building-art farm-art" aria-hidden="true"><svg viewBox="0 0 80 72"><path d="M8 48h64v18H8Z" fill="#a88552" stroke="#6b6244" stroke-width="2"/><path d="M13 56h54M13 62h54" stroke="#775b3d" stroke-width="2"/><path d="M21 25h38v24H21Z" fill="#d0ac71" stroke="#746044" stroke-width="2"/><path d="m14 27 26-19 26 19v5H14Z" fill="#8b9d6f" stroke="#526b51" stroke-width="2"/><path d="M33 34h14v15H33Z" fill="#6d6950" stroke="#e8cb90" stroke-width="2"/><path d="M17 59V46m23 13V49m23 10V46" stroke="#4f7955" stroke-width="2"/><path d="M17 50c-7 0-9-7-9-7 8-1 9 7 9 7Zm0 3c7 0 9-7 9-7-8-1-9 7-9 7ZM40 54c-7 0-8-6-8-6 8-1 8 6 8 6Zm23-4c-7 0-9-7-9-7 8-1 9 7 9 7Zm0 3c7 0 9-7 9-7-8-1-9 7-9 7Z" fill="#8daa65" stroke="#547850" stroke-width="1.3"/></svg></div>
+              <div class="building-description"><h3>Farm</h3><p>Grow your food supply</p></div>
+            </div>
+            <div id="farm-crops"></div>
+            <p class="building-note">Grows offline · Collect by hand<br>Vegetables are stored for future cooking.</p>
+            <p id="farm-feedback" class="farm-feedback" role="status" aria-live="polite">Plant for free, then collect each harvest.</p>
+          </article>
+          <article id="capitol-building" class="building-card capitol-card" role="tabpanel" aria-labelledby="tab-capitol" hidden>
+            <div class="building-overview capitol-overview">
+              <div class="building-art capitol-art" aria-hidden="true"><img src="./assets/tiny-map/castle-blue.png" alt="" width="320" height="256" loading="lazy" /></div>
+              <div class="building-description"><h3>Capitol</h3><p>Castle defenses</p></div>
+            </div>
+            <div id="capitol-upgrades"></div>
+            <p class="building-note">Fires at nearby enemies.</p>
+            <p id="capitol-feedback" class="capitol-feedback" role="status" aria-live="polite">Changes apply next battle.</p>
           </article>
         </div>
       </section>
@@ -189,6 +209,7 @@
           <p id="offline-rewards-description">Your buildings kept working.</p>
           <div class="offline-rewards-list">
             <div id="slot-refund-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="coin-icon"></span></span><span class="offline-reward-label">Tile refund</span><strong id="slot-refund-amount">0</strong></div>
+            <div id="forge-refund-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="coin-icon"></span></span><span class="offline-reward-label">Forge refund</span><strong id="forge-refund-amount">0</strong></div>
             <div id="offline-gold-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="coin-icon"></span></span><span class="offline-reward-label">Gold</span><strong id="offline-gold-amount">0</strong></div>
             <div id="offline-slaves-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="slave-icon" aria-hidden="true"></span></span><span class="offline-reward-label">Slaves</span><strong id="offline-slaves-amount">0</strong></div>
           </div>

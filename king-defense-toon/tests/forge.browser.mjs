@@ -13,7 +13,7 @@ const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
 const baseUrl = 'http://127.0.0.1:5205/';
-const ids = ['health', 'attack', 'attackSpeed', 'rangedAttack', 'rangedAttackSpeed'];
+const ids = ['health', 'attack', 'attackSpeed'];
 const zeroForge = Object.fromEntries(ids.map(id => [id, 0]));
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
@@ -45,6 +45,7 @@ function fixture(overrides = {}) {
   };
 }
 const state = page => page.evaluate(() => window.forgeCheck.state());
+const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
 const battle = page => page.evaluate(() => window.forgeCheck.battle());
 const button = (page, id) => page.locator(`[data-forge-upgrade="${id}"]`);
 const row = (page, id) => page.locator(`[data-forge-row="${id}"]`);
@@ -62,8 +63,8 @@ async function openForge(page) {
   assert.equal(await page.locator('#forge-building').isVisible(), true);
 }
 
-async function fits(page) {
-  const issues = await page.locator('#buildings-panel .menu-card').evaluate(card => {
+async function fits(page, selector = '#buildings-panel .menu-card') {
+  const issues = await page.locator(selector).evaluate(card => {
     const bad = [];
     const bounds = card.getBoundingClientRect();
     if (bounds.left < -1 || bounds.right > innerWidth + 1 || bounds.top < -1 || bounds.bottom > innerHeight + 1) bad.push('card outside viewport');
@@ -133,10 +134,11 @@ try {
       await openForge(page);
       assert.equal(await page.locator('#tab-army-space, #choose-cell').count(), 0);
       assert.deepEqual(await page.locator('[data-forge-upgrade]').evaluateAll(nodes => nodes.map(node => node.dataset.forgeUpgrade)), ids);
+      assert.equal(await page.locator('[data-forge-upgrade="rangedAttack"], [data-forge-upgrade="rangedAttackSpeed"]').count(), 0);
+      assert.doesNotMatch(await page.locator('#forge-building').innerText(), /Archers|Ranged attack|Ranged speed|extra bonus/i);
       await fits(page);
       for (const id of ids) {
-        const cost = id.startsWith('ranged') ? 25 : 50;
-        const nextCost = id.startsWith('ranged') ? 40 : 75;
+        const cost = 50, nextCost = 75;
         const before = await state(page);
         assert.equal(await row(page, id).locator('[data-forge-price]').innerText(), String(cost));
         await button(page, id).click();
@@ -148,11 +150,11 @@ try {
         assert.match(await page.locator('#forge-feedback').innerText(), /Applies next wave/);
         await fits(page);
       }
-      assert.equal((await state(page)).gold, 300);
+      assert.equal((await state(page)).gold, 350);
       assert.deepEqual((await battle(page)).allies, initialBattle.allies, 'Buying during combat never changes its existing fighters');
       assert.deepEqual((await battle(page)).hero, initialBattle.hero, 'Hero is excluded from all Forge purchases');
       await fits(page);
-      if (width === 390) await page.screenshot({ path: fileURLToPath(new URL('forge-390.png', output)) });
+      await page.screenshot({ path: fileURLToPath(new URL(`forge-${width}.png`, output)) });
       await close(page, 'buildings-panel');
       await page.evaluate(() => window.forgeCheck.victory());
       await page.locator('#return-prep').click();
@@ -163,7 +165,7 @@ try {
       const archer = nextBattle.allies.find(unit => unit.type === 'archer');
       const healer = nextBattle.allies.find(unit => unit.type === 'healer');
       approx(sword.maxHp, 60.6); approx(sword.damage, 6.06); approx(sword.attackSpeed, 1.01);
-      approx(archer.maxHp, 32.32); approx(archer.damage, 8.16); approx(archer.attackSpeed, 1.02);
+      approx(archer.maxHp, 32.32); approx(archer.damage, 8.08); approx(archer.attackSpeed, 1.01);
       approx(healer.heal, 4.04); approx(healer.attackSpeed, 1.01);
       const saved = await state(page);
       await page.reload(); await ready(page);
@@ -175,8 +177,8 @@ try {
       await page.locator('#open-barracks').click();
       const reserve = (await state(page)).reserve[0];
       await page.locator(`[data-barracks-unit-id="${reserve.id}"]`).click();
-      assert.match(await page.locator('#barracks-detail').innerText(), /8\.16/);
-      assert.match(await page.locator('#barracks-detail').innerText(), /\+2%/);
+      assert.match(await page.locator('#barracks-detail').innerText(), /8\.08/);
+      assert.match(await page.locator('#barracks-detail').innerText(), /\+1%/);
       await close(page, 'barracks-panel');
       await page.locator('#open-profile').click();
       await page.locator('#reset').click();
@@ -192,15 +194,10 @@ try {
 
     await scenario('insufficient-gold', width, fixture({ gold: 25 }), async page => {
       await openForge(page);
-      for (const id of ids.slice(0, 3)) assert.equal(await button(page, id).isDisabled(), true);
-      for (const id of ids.slice(3)) assert.equal(await button(page, id).isEnabled(), true);
-      await button(page, 'rangedAttack').click();
-      assert.equal((await state(page)).gold, 0);
-      assert.equal((await state(page)).forge.rangedAttack, 1);
       for (const id of ids) assert.equal(await button(page, id).isDisabled(), true);
       await page.locator('[data-forge-upgrade]').evaluateAll(nodes => nodes.forEach(node => node.click()));
-      assert.equal((await state(page)).gold, 0, 'Disabled controls cannot spend extra gold');
-      assert.deepEqual((await state(page)).forge, { ...zeroForge, rangedAttack: 1 });
+      assert.equal((await state(page)).gold, 25, 'Disabled controls cannot spend gold');
+      assert.deepEqual((await state(page)).forge, zeroForge);
       await fits(page);
     });
 
@@ -213,6 +210,74 @@ try {
         assert.equal(await button(page, id).innerText(), 'Max');
       }
       await fits(page);
+    });
+
+    await scenario('legacy-ranged-refund-once', width, fixture({
+      forge: { health: 4, attack: 5, attackSpeed: 6, rangedAttack: 2, rangedAttackSpeed: 3 },
+    }), async page => {
+      const common = { health: 4, attack: 5, attackSpeed: 6 };
+      // The two retired tracks cost (25 + 40) + (25 + 40 + 55), not their next purchase prices.
+      const refundedGold = 685;
+      let current = await state(page);
+      assert.equal(current.gold, refundedGold);
+      assert.deepEqual(current.forge, common, 'Common ranks survive while retired bonuses are removed');
+      assert.equal(current.offlineRewards.forgeRefund, 185);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), true);
+      assert.equal(await page.locator('#offline-rewards-title').innerText(), 'Forge updated');
+      assert.equal(await page.locator('#forge-refund-reward').isVisible(), true);
+      assert.equal(await page.locator('#forge-refund-amount').innerText(), '+185');
+      assert.equal(await page.locator('#collect-offline-rewards').innerText(), 'Continue');
+      assert.equal(await page.locator('#offline-gold-reward').isVisible(), false, 'Refund is identified separately from offline income');
+      assert.equal(await page.locator('#offline-storage-note').isVisible(), false);
+      assert.deepEqual((await stored(page)).forge, common, 'The obsolete fields are stripped in the committed save');
+      assert.equal((await stored(page)).gold, refundedGold);
+      assert.equal((await stored(page)).offlineRewards.forgeRefund, 185, 'Refund and receipt persist together');
+      await fits(page, '#offline-rewards-panel .offline-rewards-card');
+      await page.screenshot({ path: fileURLToPath(new URL(`forge-refund-${width}.png`, output)) });
+
+      await page.reload(); await ready(page);
+      assert.equal((await state(page)).gold, refundedGold, 'Reload before acknowledging cannot pay twice');
+      assert.equal((await state(page)).offlineRewards.forgeRefund, 185);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), true);
+      assert.equal(await page.locator('#forge-refund-amount').innerText(), '+185');
+      await page.locator('#collect-offline-rewards').click();
+      assert.equal((await state(page)).gold, refundedGold, 'Continue acknowledges already credited gold');
+      assert.equal((await state(page)).offlineRewards.forgeRefund, 0);
+      assert.equal((await stored(page)).offlineRewards.forgeRefund, 0);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
+      await page.reload(); await ready(page);
+      assert.equal((await state(page)).gold, refundedGold, 'Acknowledged migrations also remain one-time');
+      assert.deepEqual((await state(page)).forge, common);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
+      await openForge(page);
+      assert.deepEqual(await page.locator('[data-forge-upgrade]').evaluateAll(nodes => nodes.map(node => node.dataset.forgeUpgrade)), ids);
+      for (const id of ids) {
+        assert.equal(await row(page, id).locator('[data-forge-bonus]').innerText(), `+${common[id]}% → +${common[id] + 1}%`);
+        assert.equal(await row(page, id).locator('[data-forge-price]').innerText(), String(50 + 25 * common[id]));
+      }
+      await fits(page);
+      await close(page, 'buildings-panel');
+      await page.locator('#start-wave').click();
+      const snapshot = await battle(page);
+      const sword = snapshot.allies.find(unit => unit.type === 'swordsman');
+      const archer = snapshot.allies.find(unit => unit.type === 'archer');
+      const healer = snapshot.allies.find(unit => unit.type === 'healer');
+      approx(sword.maxHp, 62.4); approx(sword.damage, 6.3); approx(sword.attackSpeed, 1.06);
+      approx(archer.maxHp, 33.28); approx(archer.damage, 8.4); approx(archer.attackSpeed, 1.06);
+      approx(healer.heal, 4.2); approx(healer.attackSpeed, 1.06);
+      assert.equal(snapshot.hero.maxHp, 60); assert.equal(snapshot.hero.damage, 4);
+      await page.reload(); await ready(page);
+      await page.locator('#open-profile').click();
+      await page.locator('#reset').click(); await page.locator('#reset').click();
+      current = await state(page);
+      assert.deepEqual(current.forge, zeroForge);
+      assert.equal(current.offlineRewards.forgeRefund, 0);
+      const resetGold = current.gold;
+      await page.reload(); await ready(page);
+      assert.equal((await state(page)).gold, resetGold, 'Reset cannot resurrect a legacy refund');
+      assert.deepEqual((await state(page)).forge, zeroForge);
+      assert.equal((await state(page)).offlineRewards.forgeRefund, 0);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
     });
   }
   console.log(JSON.stringify({ ok: true, checks, screenshot: fileURLToPath(new URL('forge-390.png', output)) }, null, 2));

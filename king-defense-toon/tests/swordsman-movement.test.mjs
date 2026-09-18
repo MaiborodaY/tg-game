@@ -90,9 +90,9 @@ test('an overcrowded all-melee army keeps retargeting and completes the ninth wa
 });
 
 test('the same melee approach reaches skeleton archers in the second level', () => {
-  // The current second-level health curve needs an army that survives long enough to test archer pursuit.
+  // Leave enough combat strength for the 15% tougher undead so this stays a movement fixture.
   const { battle, fighters } = traceMovement(202,
-    makeFormation({ swordsman: 9, archer: 4, healer: 2, level: 75 }));
+    makeFormation({ swordsman: 9, archer: 4, healer: 2, level: 100 }));
   assert.equal(battle.phase, 'victory');
   assert.ok(fighters.every(unit => unit.firstMove < 1));
   assert.ok(fighters.reduce((sum, unit) => sum + unit.archerHits, 0) > 0);

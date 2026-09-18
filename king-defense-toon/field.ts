@@ -48,6 +48,8 @@ export const BATTLE_VIEW: Readonly<Viewport> = Object.freeze({ x: -56, y: 0, wid
 export const FORMATION_VIEW: Readonly<Viewport> = Object.freeze({ x: 42, y: 260, width: 306, height: 184 });
 // The hero enters from the mainland shore without occupying a purchasable army cell.
 export const HERO_START: Readonly<Point> = Object.freeze({ x: 40, y: 408 });
+// The tower sits on the existing castle; the defended objective keeps its route anchor.
+export const CAPITOL_TOWER_POSITION: Readonly<Point> = Object.freeze({ x: FIELD.kingX + 14, y: 332 });
 export const ROYAL_PENINSULA: Readonly<LandBounds> = Object.freeze({ left: -54, top: 300, right: -2, bottom: 442 });
 export const ROYAL_NECK: Readonly<LandBounds> = Object.freeze({ left: -4, top: 392, right: 36, bottom: 424 });
 // Foot positions stay inside the shore. The overlap at each end makes one continuous route.

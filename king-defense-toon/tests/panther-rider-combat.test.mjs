@@ -4,6 +4,7 @@ import { COMBAT_PACE, createBattle, getUnitRange, updateBattle } from '../combat
 import { BATTLE_SPEEDS, battleFrameDelta } from '../battle-speed.ts';
 import { createForge, getForgedUnitStats } from '../forge.ts';
 import { createHero, heroXpForLevel } from '../hero.ts';
+import { FIELD, positionForCell } from '../field.ts';
 
 const DT = 1 / 60;
 const fighter = (id, type, col = 2, row = 0, level = 1) => ({ id, type, col, row, level });
@@ -25,7 +26,7 @@ function advance(battle, until, seconds = 30) {
 
 test('mounted melee moves faster than swordsmen and uses its own single-target cadence', () => {
   const movement = type => {
-    const battle = encounter([fighter(1, type)], [{ y: 66 }]);
+    const battle = encounter([fighter(1, type)], [{ x: positionForCell(2, 0).x + (type === 'pantherRider' ? FIELD.cellWidth / 2 : 0), y: 66 }]);
     const unit = battle.allies[0], previousY = unit.y;
     battle.hero.hp = 0;
     updateBattle(battle, DT);
@@ -49,6 +50,19 @@ test('mounted melee moves faster than swordsmen and uses its own single-target c
   assert.ok(!battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
 });
 
+test('rider starts at the centre of its two-cell footprint without combat-stat changes', () => {
+  const units = [fighter(1, 'pantherRider', 1, 0), fighter(2, 'swordsman', 3, 0)];
+  const original = structuredClone(units), battle = createBattle(units);
+  const [rider, sword] = battle.allies, anchor = positionForCell(1, 0);
+  assert.equal(rider.x, anchor.x + FIELD.cellWidth / 2);
+  assert.equal(rider.homeX, rider.x); assert.equal(rider.targetX, rider.x);
+  assert.equal(rider.y, anchor.y); assert.equal(rider.homeY, anchor.y);
+  assert.equal(sword.x, positionForCell(3, 0).x);
+  assert.equal(rider.maxHp, 90); assert.equal(rider.damage, 9);
+  assert.equal(rider.range, 38); assert.equal(rider.visualScale, 1);
+  assert.deepEqual(units, original, 'combat never rewrites saved left anchors');
+});
+
 test('rider advances to the entrance and retargets the archer after the frontline dies', () => {
   const battle = encounter([fighter(1, 'pantherRider', 2, 2)], [
     { hp: 9, y: 185 }, { type: 'goblinArcher', hp: 18, damage: 0, y: 66 },
@@ -65,11 +79,9 @@ test('rider advances to the entrance and retargets the archer after the frontlin
   assert.equal(battle.enraged, false);
 });
 
-test('riders take general forge bonuses while ranged-only purchases cannot change them', () => {
+test('riders take all three shared forge bonuses with a fixed battle snapshot', () => {
   const formation = [fighter(1, 'pantherRider', 2, 0, 11)];
-  const ranged = createForge({ rangedAttack: 100, rangedAttackSpeed: 100 });
-  assert.deepEqual(createBattle(formation, 1, undefined, ranged), createBattle(formation, 1));
-  const forge = createForge({ health: 20, attack: 10, attackSpeed: 50, rangedAttack: 100, rangedAttackSpeed: 100 });
+  const forge = createForge({ health: 20, attack: 10, attackSpeed: 50 });
   const battle = encounter(formation, [{}], undefined, forge), unit = battle.allies[0];
   const stats = getForgedUnitStats('pantherRider', 11, forge);
   assert.equal(unit.maxHp, stats.hp);
@@ -104,8 +116,8 @@ test('a wounded rider can receive monk healing and hero armour aura', () => {
 });
 
 test('a mixed mounted army keeps real combat identical across frame rates and speed choices', () => {
-  const formation = [fighter(1, 'pantherRider', 1, 0, 10), fighter(2, 'pantherRider', 2, 0, 10),
-    fighter(3, 'swordsman', 3, 0, 10), fighter(4, 'lancer', 1, 1, 10), fighter(5, 'healer', 2, 1, 10),
+  const formation = [fighter(1, 'pantherRider', 0, 0, 10), fighter(2, 'pantherRider', 2, 0, 10),
+    fighter(3, 'swordsman', 4, 0, 10), fighter(4, 'lancer', 1, 1, 10), fighter(5, 'healer', 2, 1, 10),
     fighter(6, 'archer', 1, 2, 10), fighter(7, 'archer', 3, 2, 10)];
   const forge = createForge({ attack: 7, attackSpeed: 13, health: 11 });
   const withoutVisualTimers = ({ hitTime, deathTime, ...actor }) => actor;
@@ -118,6 +130,6 @@ test('a mixed mounted army keeps real combat identical across frame rates and sp
     return { ...state, allies: allies.map(withoutVisualTimers), enemies: enemies.map(withoutVisualTimers),
       hero: withoutVisualTimers(hero), castle: withoutVisualTimers(castle), events };
   }
-  const expected = run(60, 1.5);
-  for (const speed of BATTLE_SPEEDS) for (const fps of [30, 60, 120]) assert.deepEqual(run(fps, speed), expected, `${fps} FPS ×${speed}`);
+  const expected = run(60, 1);
+  for (const speed of BATTLE_SPEEDS) for (const fps of [20, 30, 60, 120]) assert.deepEqual(run(fps, speed), expected, `${fps} FPS ×${speed}`);
 });

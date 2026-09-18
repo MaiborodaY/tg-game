@@ -10,7 +10,7 @@ import type { Point } from '../../field.ts';
 // Compile-only API checks: expect-error also fails when a contract becomes too permissive.
 export function verifyTimingAndFieldContracts(): void {
   const speed: BattleSpeed = nextBattleSpeed(99);
-  const firstSpeed: BattleSpeed = 1.5;
+  const firstSpeed: BattleSpeed = 1;
   const delta: number = battleFrameDelta(1 / 60, speed);
   const pacer: FramePacer = createFramePacer(30);
   const meter: FrameRateMeter = createFrameRateMeter({ updateIntervalMs: 333, windowMs: 1000 });
@@ -21,10 +21,10 @@ export function verifyTimingAndFieldContracts(): void {
 
   // @ts-expect-error Speeds returned to UI must remain one of the supported choices.
   const unsupported: BattleSpeed = 4;
-  // @ts-expect-error The former x1 choice has been replaced by x1.5.
-  const obsolete: BattleSpeed = 1;
+  // @ts-expect-error The former x1.5 choice is now the base x1 speed.
+  const obsolete: BattleSpeed = 1.5;
   // @ts-expect-error Callers must supply numeric elapsed time, not saved text.
-  battleFrameDelta('0.016', 1.5);
+  battleFrameDelta('0.016', 1);
   // @ts-expect-error Clock input is a numeric RAF timestamp.
   pacer.sample('1000');
   // @ts-expect-error A skipped frame must be handled before consuming elapsed time.

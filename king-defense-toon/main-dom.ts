@@ -72,6 +72,8 @@ export interface GameElementTags {
   'tab-treasury': 'button';
   'tab-market': 'button';
   'tab-forge': 'button';
+  'tab-farm': 'button';
+  'tab-capitol': 'button';
   'treasury-building': 'article';
   'treasury-level': 'b';
   'treasury-title': 'h3';
@@ -97,6 +99,12 @@ export interface GameElementTags {
   'forge-building': 'article';
   'forge-upgrades': 'div';
   'forge-feedback': 'p';
+  'farm-building': 'article';
+  'farm-crops': 'div';
+  'farm-feedback': 'p';
+  'capitol-building': 'article';
+  'capitol-upgrades': 'div';
+  'capitol-feedback': 'p';
   'unit-panel': 'section';
   'unit-panel-title': 'h2';
   'army-gold': 'b';
@@ -144,6 +152,8 @@ export interface GameElementTags {
   'offline-gold-amount': 'strong';
   'slot-refund-reward': 'div';
   'slot-refund-amount': 'strong';
+  'forge-refund-reward': 'div';
+  'forge-refund-amount': 'strong';
   'offline-slaves-reward': 'div';
   'offline-slaves-amount': 'strong';
   'returned-fighters-note': 'p';

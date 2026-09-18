@@ -130,7 +130,7 @@ async function cli() {
     assumptions: [
       'Real createBattle/updateBattle with a fresh full-HP army, hero and castle for every case.',
       'Hero defaults to level one without talents; each case may explicitly supply heroState.',
-      'Deterministic 1/60-second battle-clock steps; UI x1.5/x2/x3 only changes wall-clock speed.',
+      'Deterministic 1/60-second battle-clock steps; UI x1/x2/x3 only changes wall-clock speed.',
       'Army sizes and personal levels are explicit scenario assumptions, not an economy or recruitment forecast.',
       'One legal formation and roster order per case; unlocked-cell purchases, random drops, offline income, and player decisions are not simulated.',
       'A timeout is unfinished combat, never a predicted victory or defeat.',

@@ -160,30 +160,30 @@ try {
   for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 700 }]) {
     await scenario('legacy-migration', viewport, legacy, async (page, screenshot) => {
       const current = await state(page);
-      assert.equal(current.gold, 1_007_350, 'all excess tile investment is refunded above the old wallet restore cap');
-      assert.equal(current.units.length, 9);
-      assert.equal(current.reserve.length, 10);
-      assert.deepEqual(current.progression.unlockedCells, central);
+      assert.equal(current.gold, 1_007_750, 'all excess tile investment is refunded above the old wallet restore cap');
+      assert.equal(current.units.length, 8);
+      assert.equal(current.reserve.length, 11);
+      assert.deepEqual(current.progression.unlockedCells, central.slice(0, 8));
       assert.deepEqual(current.progression.firstClears, legacy.progression.firstClears);
       assert.deepEqual(inventory(current), inventory(legacy));
       assert.equal(new Set([...current.units, ...current.reserve].map(unit => unit.id)).size, 19);
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), true);
-      assert.equal(await page.locator('#slot-refund-amount').innerText(), '+7350');
-      assert.match(await page.locator('#returned-fighters-note').innerText(), /6 fighters returned/);
+      assert.equal(await page.locator('#slot-refund-amount').innerText(), '+7750');
+      assert.match(await page.locator('#returned-fighters-note').innerText(), /7 fighters returned/);
       await fits(page, '#offline-rewards-panel .offline-rewards-card');
       await screenshot('receipt');
       assert.deepEqual(await stored(page), current, 'migration and receipt are saved as one snapshot');
 
       await page.reload(); await waitForApp(page);
-      assert.equal((await state(page)).gold, 1_007_350, 'reload before acknowledging preserves money without a second credit');
+      assert.equal((await state(page)).gold, 1_007_750, 'reload before acknowledging preserves money without a second credit');
       assert.deepEqual(inventory(await state(page)), inventory(legacy));
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), true);
-      assert.equal(await page.locator('#slot-refund-amount').innerText(), '+7350');
+      assert.equal(await page.locator('#slot-refund-amount').innerText(), '+7750');
       await page.locator('#collect-offline-rewards').click();
-      assert.equal((await state(page)).gold, 1_007_350, 'Continue only acknowledges the receipt');
-      assert.deepEqual((await state(page)).offlineRewards, { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0 });
+      assert.equal((await state(page)).gold, 1_007_750, 'Continue only acknowledges the receipt');
+      assert.deepEqual((await state(page)).offlineRewards, { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 });
       await page.reload(); await waitForApp(page);
-      assert.equal((await state(page)).gold, 1_007_350);
+      assert.equal((await state(page)).gold, 1_007_750);
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
       assert.deepEqual(inventory(await state(page)), inventory(legacy));
 
@@ -198,7 +198,7 @@ try {
       await fits(page, '#barracks-panel .menu-card');
       await screenshot('black-reserve');
       await closePanel(page, 'barracks-panel');
-      await screenshot('nine-cell-formation');
+      await screenshot('eight-cell-formation');
     });
 
     await scenario('barracks-side-capacity', viewport, fixture({
@@ -206,11 +206,10 @@ try {
       progression: { unlockedCells: central, firstClears: [1] },
     }), async (page, screenshot) => {
       await tapCell(page, 4, 2);
-      assert.match(await page.locator('#selection-panel').innerText(), /550 gold/);
-      await page.locator('[data-action="unlock-cell"]').click();
-      assert.equal((await state(page)).gold, 4450);
-      assert.equal((await state(page)).progression.unlockedCells.length, 10);
-      assert.equal((await state(page)).progression.unlockedCells.includes('4:2'), true);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks III/);
+      assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
+      assert.equal((await state(page)).gold, 5000);
+      assert.equal((await state(page)).progression.unlockedCells.length, 9);
       await closePanel(page, 'unit-panel');
       await tapCell(page, 0, 0);
       assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks III/);
@@ -222,17 +221,17 @@ try {
       assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks III.*2000 gold/);
       await page.locator('#barracks-start-upgrade').click();
       assert.equal((await state(page)).barracks.level, 2);
-      assert.equal((await state(page)).gold, 2450);
+      assert.equal((await state(page)).gold, 3000);
       await page.locator('#barracks-finish-upgrade').click();
       assert.equal((await state(page)).barracks.level, 3);
-      assert.equal((await state(page)).gold, 2150);
-      assert.equal((await state(page)).progression.unlockedCells.length, 10, 'upgrade gives permission; it does not give a free tile');
+      assert.equal((await state(page)).gold, 2700);
+      assert.equal((await state(page)).progression.unlockedCells.length, 9, 'upgrade gives permission; it does not give a free tile');
       await closePanel(page, 'market-info-panel');
       await tapCell(page, 0, 0);
-      assert.match(await page.locator('[data-action="unlock-cell"]').innerText(), /750 gold/);
+      assert.match(await page.locator('[data-action="unlock-cell"]').innerText(), /550 gold/);
       await page.locator('[data-action="unlock-cell"]').click();
-      assert.equal((await state(page)).gold, 1400);
-      assert.equal((await state(page)).progression.unlockedCells.length, 11);
+      assert.equal((await state(page)).gold, 2150);
+      assert.equal((await state(page)).progression.unlockedCells.length, 10);
       await closePanel(page, 'unit-panel');
       await tapCell(page, 0, 1);
       assert.match(await page.locator('#selection-panel').innerText(), /Future Barracks upgrade/);
@@ -245,9 +244,55 @@ try {
       assert.equal(await page.locator('#tab-forge').isVisible(), true);
       await closePanel(page, 'buildings-panel');
       await page.reload(); await waitForApp(page);
-      assert.equal((await state(page)).gold, 1400);
-      assert.equal((await state(page)).progression.unlockedCells.length, 11);
-      assert.equal((await state(page)).progression.unlockedCells.filter(cell => cell[0] === '0' || cell[0] === '4').length, 2);
+      assert.equal((await state(page)).gold, 2150);
+      assert.equal((await state(page)).progression.unlockedCells.length, 10);
+      assert.equal((await state(page)).progression.unlockedCells.filter(cell => cell[0] === '0' || cell[0] === '4').length, 1);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
+    });
+
+    await scenario('ninth-central-cell', viewport, fixture({
+      progression: { unlockedCells: central, firstClears: [1] },
+      units: [{ type: 'swordsman', level: 100, col: 2, row: 0 },
+        { type: 'archer', level: 53, col: 3, row: 2 }],
+    }), async (page, screenshot) => {
+      assert.equal((await state(page)).gold, 5400);
+      assert.deepEqual((await state(page)).progression.unlockedCells, central.slice(0, 8));
+      assert.equal((await state(page)).units.length, 1);
+      const returned = (await state(page)).reserve[0];
+      assert.equal(returned.type, 'archer');
+      assert.equal(returned.level, 53);
+      assert.equal(await page.locator('#slot-refund-amount').innerText(), '+400');
+      await page.reload(); await waitForApp(page);
+      assert.equal((await state(page)).gold, 5400, 'a saved ninth-cell refund cannot be credited again');
+      assert.deepEqual((await state(page)).reserve, [returned]);
+      await page.locator('#collect-offline-rewards').click();
+      await page.reload(); await waitForApp(page);
+      assert.equal((await state(page)).gold, 5400);
+      assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
+      await tapCell(page, 3, 2);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks II/);
+      assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
+      await screenshot('second-tier-gate');
+      await page.locator('[data-action="barracks-info"]').click();
+      await page.locator('#barracks-start-upgrade').click();
+      await page.locator('#barracks-finish-upgrade').click();
+      assert.equal((await state(page)).barracks.level, 2);
+      assert.equal((await state(page)).gold, 5100);
+      assert.equal((await state(page)).progression.unlockedCells.length, 8, 'upgrade only permits the ninth purchase');
+      await closePanel(page, 'market-info-panel');
+      await tapCell(page, 3, 2);
+      assert.match(await page.locator('[data-action="unlock-cell"]').innerText(), /400 gold/);
+      await page.locator('[data-action="unlock-cell"]').click();
+      assert.equal((await state(page)).gold, 4700);
+      assert.equal((await state(page)).progression.unlockedCells.length, 9);
+      assert.deepEqual((await state(page)).reserve, [returned], 'repurchasing a tile does not duplicate or redeploy its former fighter');
+      await closePanel(page, 'unit-panel');
+      await tapCell(page, 4, 2);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks III/);
+      assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
+      await page.reload(); await waitForApp(page);
+      assert.equal((await state(page)).gold, 4700);
+      assert.equal((await state(page)).progression.unlockedCells.length, 9);
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
     });
 
@@ -295,8 +340,8 @@ try {
     assert.equal(await page.locator('#recovery-panel').isVisible(), true);
     assert.match(await page.locator('#recovery-description').innerText(), /not saved/);
     assert.deepEqual(await stored(page), legacy, 'failed migration write keeps the original saved army and wallet');
-    assert.equal((await state(page)).gold, 1_007_350);
-    assert.equal((await state(page)).units.length, 9);
+    assert.equal((await state(page)).gold, 1_007_750);
+    assert.equal((await state(page)).units.length, 8);
     assert.deepEqual(inventory(await state(page)), inventory(legacy));
     assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false, 'the receipt waits until the migration is saved');
     await screenshot('blocked');
@@ -304,14 +349,14 @@ try {
     await page.locator('#recovery-retry').click();
     await waitForApp(page);
     assert.equal(await page.locator('#offline-rewards-panel').isVisible(), true);
-    assert.equal((await stored(page)).gold, 1_007_350);
-    assert.equal((await stored(page)).progression.unlockedCells.length, 9);
+    assert.equal((await stored(page)).gold, 1_007_750);
+    assert.equal((await stored(page)).progression.unlockedCells.length, 8);
     await page.reload(); await waitForApp(page);
-    assert.equal((await state(page)).gold, 1_007_350);
+    assert.equal((await state(page)).gold, 1_007_750);
     assert.deepEqual(inventory(await state(page)), inventory(legacy));
-    assert.equal(await page.locator('#slot-refund-amount').innerText(), '+7350');
+    assert.equal(await page.locator('#slot-refund-amount').innerText(), '+7750');
     await page.locator('#collect-offline-rewards').click();
-    assert.equal((await state(page)).gold, 1_007_350);
+    assert.equal((await state(page)).gold, 1_007_750);
   }, { writeError: true });
   console.log(JSON.stringify({ ok: true, checks, screenshots: fileURLToPath(output) }, null, 2));
 } finally {

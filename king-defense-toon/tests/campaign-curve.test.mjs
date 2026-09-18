@@ -8,32 +8,36 @@ const message = wave => `${wave.levelNumber}-${wave.roundNumber}, wave ${wave.wa
 const continuation = WAVE_DEFINITIONS.slice(30);
 const ordinary = WAVE_DEFINITIONS.slice(20).filter(wave => !wave.hasBoss);
 
-test('both worlds continue above every preceding encounter without another opening reset', () => {
+test('both worlds retain their health steps with one fifteen-percent increase for the second level', () => {
   let previous = WAVE_DEFINITIONS[29];
   for (const wave of continuation) {
     assert.ok(health(wave) > health(previous), message(wave));
-    // The former maximum step was 180 HP; the shared 10% buff must not add a new wall.
-    assert.ok(health(wave) - health(previous) <= 198, message(wave));
+    // Only the biome boundary adds the one-time multiplier. Later steps keep
+    // their old cadence, including the original ninth/tenth-wave peaks.
+    if (wave.number !== 201) assert.ok(health(wave) - health(previous) <= (wave.levelNumber === 2 ? 228 : 198), message(wave));
     previous = wave;
   }
   assert.equal(health(WAVE_DEFINITIONS[30]), 1865);
   assert.equal(health(WAVE_DEFINITIONS[46]), 2417);
-  assert.ok(health(WAVE_DEFINITIONS[200]) > health(WAVE_DEFINITIONS[199]));
+  assert.equal(health(WAVE_DEFINITIONS[199]), 9889);
+  assert.equal(health(WAVE_DEFINITIONS[200]), Math.round(9906 * 1.15));
+  assert.equal(health(WAVE_DEFINITIONS[399]), Math.round(19349 * 1.15));
 });
 
-test('round finales and the following first waves preserve the opening health cadence', () => {
+test('round finales and following first waves preserve their cadence within each biome', () => {
   const openingGain = health(WAVE_DEFINITIONS[29]) - health(WAVE_DEFINITIONS[19]);
   for (let round = 4; round <= 40; round += 1) {
     const ninth = WAVE_DEFINITIONS[round * 10 - 2];
     const finale = WAVE_DEFINITIONS[round * 10 - 1];
     const previousFinale = WAVE_DEFINITIONS[(round - 1) * 10 - 1];
-    assert.ok(Math.abs(health(finale) - health(previousFinale) - openingGain) <= 1,
+    if (round !== 21) assert.ok(Math.abs(health(finale) - health(previousFinale) - openingGain * (finale.levelNumber === 2 ? 1.15 : 1)) <= 1,
       `${message(finale)}: round gains keep their cadence with integer HP rounding`);
     assert.ok(health(finale) > health(ninth), message(finale));
     if (round === 40) continue;
     const next = WAVE_DEFINITIONS[round * 10];
     assert.ok(health(next) > health(finale), message(next));
-    assert.ok(health(next) < health(finale) * 1.02, message(next));
+    if (round === 20) assert.ok(health(next) >= health(finale) * 1.15, message(next));
+    else assert.ok(health(next) < health(finale) * 1.02, message(next));
   }
 });
 
@@ -109,21 +113,27 @@ test('one additional healer starts with the first forest squad at wave 51 and ne
   }
 });
 
-test('the modest stat increase preserves continuation roles, arrivals, healing and the exact shared health curve', () => {
+test('stat increases preserve roles, arrivals, healing, rewards and the underlying health curve', () => {
   for (const wave of continuation) {
     const baseline = campaignContinuationSpawns(wave.number);
-    assert.equal(health(wave), Math.round(campaignCurve(wave.number).health * 1.1), message(wave));
+    const heroHealth = Math.round(campaignCurve(wave.number).health * 1.1);
+    assert.equal(health(wave), wave.levelNumber === 2 ? Math.round(heroHealth * 1.15) : heroHealth, message(wave));
     assert.equal(wave.spawns.length, baseline.length, message(wave));
     for (const [index, spawn] of wave.spawns.entries()) {
       const before = baseline[index];
       assert.deepEqual([spawn.at, spawn.x, spawn.y], [before.at, before.x, before.y], message(wave));
       assert.equal(spawn.type, before.type, message(wave));
-      assert.equal(spawn.damage, Math.round(before.damage * 105) / 100, message(wave));
+      const heroDamage = Math.round(before.damage * 105) / 100;
+      assert.equal(spawn.damage, wave.levelNumber === 2 ? Math.round(heroDamage * 115) / 100 : heroDamage, message(wave));
       assert.equal(spawn.heal, before.heal, message(wave));
+      assert.equal(spawn.reward, ENEMY_TYPES[spawn.type].reward, message(wave));
     }
-    if (wave.hasBoss) assert.equal(wave.spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss).hp,
-      Math.round(Math.round(campaignCurve(wave.number).health * (wave.isFinalBossWave ? .65 : .55)) * 1.1),
-      `${message(wave)}: the extra healer does not take HP from the boss`);
+    if (wave.hasBoss) {
+      const heroBossHealth = Math.round(Math.round(campaignCurve(wave.number).health * (wave.isFinalBossWave ? .65 : .55)) * 1.1);
+      assert.equal(wave.spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss).hp,
+        wave.levelNumber === 2 ? Math.round(heroBossHealth * 1.15) : heroBossHealth,
+        `${message(wave)}: the boss keeps its original share before the shared stat increases`);
+    }
   }
 });
 

@@ -301,8 +301,8 @@ svg { display: block; }
 .building-wallet b { color: #5e593e; font-size: 14px; font-variant-numeric: tabular-nums; }
 .building-wallet .slave-icon { width: 18px; height: 18px; }
 .building-wallet .coin-icon { width: 14px; height: 15px; }
-.building-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-bottom: 7px; }
-.building-tab { min-width: 0; min-height: 44px; padding: 3px 0; font-size: 12px; line-height: 15px; }
+.building-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-bottom: 7px; }
+.building-tab { min-width: 0; min-height: 44px; padding: 3px 0; border-width: 4px; border-image-width: 6px; font-size: 11px; line-height: 15px; }
 .building-tab[aria-selected='true'] { --button-art: url('./assets/tiny-ui/button-blue-pressed.png'); color: #294e4d; box-shadow: inset 0 -3px #557f75; }
 .building-card { padding: 8px 9px; border: 2px solid #b4a175; border-radius: 5px; background: #f4e9c9; box-shadow: inset 0 1px #fff4d8, 0 2px #d4c193; }
 .building-overview { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
@@ -326,7 +326,6 @@ svg { display: block; }
 .town-note { max-width: 235px; margin: 8px auto 0; text-align: center; color: #938163; font-size: 10px; line-height: 14px; }
 .forge-overview { margin-bottom: 5px; }
 .forge-art { flex-basis: 46px; height: 42px; background: #ddd4ae; }
-.forge-group { margin: 6px 0 2px; color: #88734d; font-size: 10px; line-height: 14px; }
 .forge-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 82px; align-items: center; gap: 7px; padding: 1px 0; border-bottom: 1px solid #d8caa4; }
 .forge-icon { width: 24px; height: 24px; fill: #e6d497; stroke: #687252; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .forge-copy { min-width: 0; }
@@ -338,6 +337,21 @@ svg { display: block; }
 .forge-price .coin-icon { width: 11px; height: 12px; }
 .forge-explanation { margin-top: 8px; color: #847354; font-size: 10px; line-height: 14px; }
 .forge-feedback { margin-top: 7px; color: #65704d; text-align: center; font-size: 11px; line-height: 15px; }
+.capitol-overview { margin-bottom: 7px; }
+.capitol-art { flex-basis: 60px; height: 48px; background: #dce0bc; }
+.capitol-art img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.capitol-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 82px; align-items: center; gap: 7px; padding: 7px 0; border-bottom: 1px solid #d8caa4; }
+.capitol-row:last-child { border-bottom: 0; }
+.capitol-icon { width: 24px; height: 26px; fill: #d6dcb1; stroke: #687252; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.capitol-copy { min-width: 0; }
+.capitol-copy strong { display: block; color: #565940; font-size: 13px; line-height: 16px; }
+.capitol-copy small { display: block; margin-top: 2px; color: #69734e; font-size: 11px; line-height: 15px; font-variant-numeric: tabular-nums; }
+.capitol-copy .capitol-detail { color: #887856; font-size: 10px; line-height: 13px; }
+.capitol-upgrade { flex-direction: column; gap: 0; min-height: 44px; padding: 3px 4px; font-size: 12px; line-height: 15px; }
+.capitol-upgrade > span { display: block; }
+.capitol-upgrade .capitol-price { display: flex; justify-content: center; align-items: center; gap: 3px; color: #746241; font-size: 11px; }
+.capitol-price .coin-icon { width: 11px; height: 12px; }
+.capitol-feedback { margin-top: 7px; color: #65704d; text-align: center; font-size: 11px; line-height: 15px; }
 .capture-info { margin: 13px 3px 0; text-align: center; color: #69744c; }
 .capture-info strong { font-size: 13px; }
 .capture-info p { margin-top: 4px; color: #938163; font-size: 11px; line-height: 15px; }

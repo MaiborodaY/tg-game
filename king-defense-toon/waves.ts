@@ -355,7 +355,18 @@ function withHeroPressure(wave: WaveDefinition): WaveDefinition {
   return defineWave(wave.number, wave.name, wave.description, spawns, { bossOnly: wave.bossOnly });
 }
 
-export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave).map(withHeroPressure));
+function withLevelTwoPressure(wave: WaveDefinition): WaveDefinition {
+  if (wave.levelNumber !== 2) return wave;
+  // Apply one modest increase to the existing second-level encounters without
+  // changing their role shares, reinforcements or the first level's balance.
+  const spawns = wave.spawns.map(spawn => ({ ...spawn,
+    hp: Math.round(spawn.hp * 1.15), damage: Math.round(spawn.damage * 115) / 100 }));
+  const health = wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
+  spawns[0].hp += Math.round(health * 1.15) - spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
+  return defineWave(wave.number, wave.name, wave.description, spawns, { bossOnly: wave.bossOnly });
+}
+
+export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave).map(withHeroPressure).map(withLevelTwoPressure));
 
 export function getLevelWaves(levelNumber: WaveNumberInput): WaveDefinition[] {
   return WAVE_DEFINITIONS.filter(wave => wave.levelNumber === Number(levelNumber));

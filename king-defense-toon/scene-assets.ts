@@ -3,6 +3,7 @@ import type { EnemySpawn, WaveDefinition, EnemyType } from './waves.ts';
 import type { UnitType } from './units.ts';
 import type { PaletteRank } from './unit-ranks.ts';
 import type { SheetArtUrls } from './art-types.ts';
+import type { CapitolState } from './capitol.ts';
 
 export interface SceneAssetWave {
   levelNumber?: WaveDefinition['levelNumber'];
@@ -13,10 +14,12 @@ export interface SceneAssetInput {
   units?: readonly Pick<FormationUnit, 'type' | 'level'>[] | null;
   wave?: SceneAssetWave | null;
   levelNumber?: number;
+  capitolState?: Readonly<CapitolState>;
   battle?: {
     wave?: SceneAssetWave | null;
     allies?: readonly Pick<AllyActor, 'type' | 'level'>[] | null;
     enemies?: readonly Pick<EnemyActor, 'type'>[] | null;
+    castle?: { stats: { towerLevel: number } };
   } | null;
   placementType?: UnitType | null;
   placementLevel?: number | string | null;
@@ -90,6 +93,10 @@ export function getSceneAssetPlan(state: SceneAssetInput = {}, { formationOnly =
   const enemies = new Map<EnemyType, EnemyAssetPlan>();
   const addImage = (url: string): string => { resources.set(url, { url }); return url; };
   const units = [...(state.units ?? []), ...(!formationOnly ? state.battle?.allies ?? [] : [])];
+  // Reuse one archer sheet for the built turret even if the army has no archers.
+  // During a battle, only its snapshot can make the purchased tower visible.
+  const towerLevel = state.battle ? state.battle.castle?.stats.towerLevel ?? 0 : state.capitolState?.tower ?? 0;
+  if (!formationOnly && towerLevel > 0) units.push({ type: 'archer', level: 1 });
   if (state.placementType) units.push({ type: state.placementType, level: state.placementLevel ?? 1 });
   for (const unit of units) {
     if (!ALLIES[unit.type]) continue;
