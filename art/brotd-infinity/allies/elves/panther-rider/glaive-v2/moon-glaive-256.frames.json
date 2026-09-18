@@ -1,0 +1,72 @@
+{
+  "image": "moon-glaive-256-lite.webp",
+  "size": {
+    "width": 256,
+    "height": 256
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "spin",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 73,
+        "y": 72
+      }
+    },
+    {
+      "index": 1,
+      "action": "spin",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 55,
+        "y": 72
+      }
+    },
+    {
+      "index": 2,
+      "action": "spin",
+      "pose": 2,
+      "rect": {
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 72,
+        "y": 57
+      }
+    },
+    {
+      "index": 3,
+      "action": "spin",
+      "pose": 3,
+      "rect": {
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 56,
+        "y": 59
+      }
+    }
+  ],
+  "anchorSpace": "frame-pixels",
+  "loop": true,
+  "note": "Four spin poses of the separate thrown moon glaive. Align each centerAnchor to the projectile position; the generated central rings are not at identical cell coordinates. Spawn on rider releasePose 2 (frames 10 or 14). Intended attack hits the first enemy then bounces to one additional enemy. Spin artwork does not implement targeting, trajectory, collisions, return or damage."
+}
