@@ -21,20 +21,23 @@ interface CombatRule {
 type CombatRules = Record<EnemyCombatType | UnitType | 'hero' | 'castle', CombatRule>
   & { goblinHealer: CombatRule & { healRange: number } };
 
-import { FIELD, WALKABLE_AREAS, ROYAL_ROUTE, HERO_START, positionForCell } from './field.ts';
+import { FIELD, WALKABLE_AREAS, ROYAL_ROUTE, HERO_START, CAPITOL_TOWER_POSITION } from './field.ts';
+import { getUnitPosition } from './unit-footprint.ts';
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import { ENEMY_TYPES, getEnemyCombatType, getWaveDefinition } from './waves.ts';
 import { getForgedUnitStats } from './forge.ts';
 import type { ForgeState } from './forge.ts';
+import { getCapitolStats } from './capitol.ts';
+import type { CapitolState } from './capitol.ts';
 import { getHeroStats } from './hero.ts';
 import { findHeroCrowdRoute as findCrowdRoute } from './hero-navigation.ts';
+import { MAX_BATTLE_FRAME_DELTA } from './battle-speed.ts';
 
 export const COMBAT_PACE = 0.85;
 export const CASTLE_MAX_HP = 100;
-// Kept for the historical balance harness; the objective no longer fights.
+// Kept for the historical balance harness; this is the unupgraded objective's HP.
 export const KING_MAX_HP = CASTLE_MAX_HP;
 const FIXED_STEP = 1 / 60;
-const MAX_FRAME_DELTA = .3;
 const BASE_RULES = {
   swordsman: { range: 38, interval: 1.1, duration: .65, speed: 57 },
   lancer: { range: 75, interval: 1.3, duration: .75, speed: 53 },
@@ -78,14 +81,14 @@ function actor<T extends ActorType>({ id, side, type, name = type, x, y, hp, dam
 }
 
 export function createBattle(formation: readonly FormationUnit[] = [], waveNumber: WaveNumberInput = 1, heroState?: HeroState,
-  forge?: Readonly<ForgeState>): Battle {
+  forge?: Readonly<ForgeState>, capitol?: Readonly<CapitolState>): Battle {
   const wave = getWaveDefinition(waveNumber);
   // Combat owns copies: casualties and movement never overwrite the saved army.
   const allies = formation.filter(unit => UNIT_TYPE_BY_ID[unit.type]).map(unit => {
     const { level, hp, damage, heal, attackSpeed } = getForgedUnitStats(unit.type, unit.level, forge);
     return actor({
       id: `ally-${unit.id}`, side: 'ally', type: unit.type, level,
-      ...positionForCell(unit.col, unit.row),
+      ...getUnitPosition(unit),
       hp, damage, heal, attackSpeed,
     });
   });
@@ -96,8 +99,10 @@ export function createBattle(formation: readonly FormationUnit[] = [], waveNumbe
     pendingAbility: null, miracleUsed: false, bastionTime: stats.bastion ? stats.bastionDuration : 0,
     bastionCooldown: stats.bastionInterval, guardianWard: 0, guardianWardTime: 0,
     guardianWardCooldown: 0, holyStrikeTime: 0 });
-  const castle = actor({ id: 'castle', side: 'ally', type: 'castle', name: 'Castle',
-    x: FIELD.kingX, y: FIELD.kingFeet, hp: CASTLE_MAX_HP, damage: 0 });
+  const castleStats = Object.freeze({ ...getCapitolStats(capitol) });
+  const castle = Object.assign(actor({ id: 'castle', side: 'ally', type: 'castle', name: 'Castle',
+    x: FIELD.kingX, y: FIELD.kingFeet, hp: castleStats.hp, damage: castleStats.damage }),
+  { stats: castleStats, range: castleStats.towerLevel > 0 ? castleStats.range : 0 });
   return {
     phase: 'running', elapsed: 0, stepRemainder: 0, allies, enemies: [], waveNumber: wave.number, wave,
     // Every catalogued wave has at least one spawn.
@@ -661,7 +666,9 @@ function actHero(battle: Battle, hero: HeroActor, dt: number): void {
   const target = focusedEnemy(hero, enemies);
   if (!target) { hero.action = 'idle'; return; }
   const onlyRanged = enemies.every(isRangedEnemy);
-  if (onlyRanged && stats.hammerUnlocked) {
+  // A healer can sustain the backline between hammer casts. Close into melee
+  // while support survives; only an archers-only remainder permits holding range.
+  if (onlyRanged && !enemies.some(isEnemyHealer) && stats.hammerUnlocked) {
     const castingRange = stats.hammerRange - 8;
     // A ranged stance needs a reachable casting position, not a fixed point inside
     // friendly archers. Once in range, wait for the next cast instead of pacing.
@@ -826,7 +833,10 @@ function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: b
     effect.age += dt;
     if (active && effect.type === 'arrow' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
-      hurt(battle, findActor(battle, effect.targetId), effect.damage, events);
+      // A destroyed Capitol cannot finish an in-flight shot during its defeat tick.
+      if (effect.sourceType !== 'castle' || battle.castle.hp > 0) {
+        hurt(battle, findActor(battle, effect.targetId), effect.damage, events);
+      }
     } else if (active && effect.type === 'hero-hammer' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       landHeroHammer(battle, effect, events);
@@ -900,6 +910,22 @@ function separateEnemies(battle: Battle): void {
   }
 }
 
+function actCapitol(battle: Battle, events: BattleEvent[]): void {
+  const castle = battle.castle;
+  if (battle.phase !== 'running' || castle.hp <= 0 || castle.stats.towerLevel === 0 || castle.cooldown > 1e-8) return;
+  const target = living(battle.enemies).filter(enemy => distance(CAPITOL_TOWER_POSITION, enemy) <= castle.range)
+    .sort((first, second) => distance(CAPITOL_TOWER_POSITION, first) - distance(CAPITOL_TOWER_POSITION, second))[0];
+  if (!target) return;
+  castle.cooldown = castle.stats.interval;
+  // The objective's attackable feet stay at the peninsula entrance. Arrows instead
+  // leave the tower's bow, 9px above its feet; addEffect normally subtracts 27px.
+  const source = { ...castle, x: CAPITOL_TOWER_POSITION.x, y: CAPITOL_TOWER_POSITION.y + 18 };
+  addEffect(battle, 'arrow', source, target,
+    Math.max(.15, distance(CAPITOL_TOWER_POSITION, target) / 420) / COMBAT_PACE,
+    { targetId: target.id, damage: castle.damage });
+  events.push({ type: 'bow-shot', sourceId: castle.id });
+}
+
 function step(battle: Battle, dt: number, events: BattleEvent[]): void {
   const active = battle.phase === 'running';
   ageVisuals(battle, dt, events, active);
@@ -919,6 +945,7 @@ function step(battle: Battle, dt: number, events: BattleEvent[]): void {
     for (const enemy of battle.enemies) enemy.damage = enemy.baseDamage * multiplier;
   }
   for (const unit of [...battle.allies, ...battle.enemies, battle.hero]) act(battle, unit, dt);
+  actCapitol(battle, events);
   separateAllies(battle, dt);
   separateEnemies(battle);
   if (battle.castle.hp <= 0) battle.phase = 'defeat';
@@ -938,7 +965,7 @@ export function updateBattle(battle: Battle, dt: number): BattleEvent[] {
   if (!Number.isFinite(dt) || dt <= 0) return events;
   // Carry partial ticks across frames: resolving them immediately makes targeting and
   // separation depend on FPS and the speed control. The cap still bounds catch-up work.
-  battle.stepRemainder += Math.min(dt, MAX_FRAME_DELTA);
+  battle.stepRemainder += Math.min(dt, MAX_BATTLE_FRAME_DELTA);
   while (battle.stepRemainder + 1e-10 >= FIXED_STEP) {
     step(battle, FIXED_STEP, events);
     // Tolerate rounding at an exact tick boundary without carrying a negative balance.

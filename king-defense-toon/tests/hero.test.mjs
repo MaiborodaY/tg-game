@@ -281,16 +281,17 @@ test('effect previews describe current and next rank without learning or modifyi
   assert.deepEqual(hero, before);
 });
 
-test('unique victories reach level twenty near wave two hundred', () => {
+test('slower unique-victory progression reaches level twenty at wave 219', () => {
   const hero = createHero();
   let maxLevelWave = null;
-  for (let waveNumber = 1; waveNumber <= 210; waveNumber += 1) {
+  for (let waveNumber = 1; waveNumber <= 225; waveNumber += 1) {
     const result = awardHeroXp(hero, { waveNumber, kills: 20, total: 20, won: true });
     if (result.level === 20 && maxLevelWave === null) maxLevelWave = waveNumber;
-    if (waveNumber === 100) assert.ok(result.level < 20);
+    if (waveNumber === 100) assert.deepEqual([hero.xp, result.level], [4495, 10]);
+    if (waveNumber === 200) assert.deepEqual([hero.xp, result.level], [15365, 18]);
   }
-  assert.ok(maxLevelWave >= 195 && maxLevelWave <= 205, `level 20 at wave ${maxLevelWave}`);
-  assert.equal(hero.highestWave, 210);
+  assert.equal(maxLevelWave, 219);
+  assert.equal(hero.highestWave, 225);
   assert.equal(hero.xp, heroXpForLevel(20));
   assert.equal(hero.talentVersion, 2);
 });
@@ -298,8 +299,8 @@ test('unique victories reach level twenty near wave two hundred', () => {
 test('replays grant reduced XP and defeat rewards depend on actual kills', () => {
   const hero = createHero(), outcome = { waveNumber: 12, kills: 10, total: 10, won: true };
   const first = awardHeroXp(hero, outcome), repeated = awardHeroXp(hero, outcome);
-  assert.equal(first.gained, 24);
-  assert.equal(repeated.gained, 6);
+  assert.equal(first.gained, 20);
+  assert.equal(repeated.gained, 5);
   const before = hero.xp;
   assert.equal(awardHeroXp(hero, { waveNumber: 13, kills: 0, total: 10, won: false }).gained, 0);
   assert.equal(hero.xp, before);
@@ -307,6 +308,32 @@ test('replays grant reduced XP and defeat rewards depend on actual kills', () =>
   assert.ok(partial.gained > 0 && partial.gained < first.gained);
   assert.equal(hero.highestWave, 12);
   assert.ok(awardHeroXp(hero, { waveNumber: 13, kills: 10, total: 10, won: true }).gained > repeated.gained);
+});
+
+test('all result rewards use 85% XP before whole-point rounding', () => {
+  for (const [highestWave, won, kills, expected] of [
+    [0, true, 20, 51], [60, true, 20, 13], [0, true, 10, 43],
+    [0, false, 20, 9], [0, false, 10, 4], [0, false, 1, 1], [0, false, 0, 0],
+  ]) {
+    const hero = createHero({ highestWave });
+    const result = awardHeroXp(hero, { waveNumber: 60, kills, total: 20, won });
+    assert.equal(result.gained, expected, `history ${highestWave}, won ${won}, kills ${kills}`);
+    assert.equal(hero.xp, expected);
+  }
+});
+
+test('slower XP preserves saved progress and learned talents without a migration', () => {
+  const saved = atLevel(12, { heal_unlock: 1, aura_unlock: 1, hammer_unlock: 1 });
+  saved.xp += 123;
+  saved.highestWave = 150;
+  const restored = createHero(JSON.parse(JSON.stringify(saved)));
+  assert.deepEqual(restored, saved);
+  assert.deepEqual(getHeroProgress(restored), getHeroProgress(saved));
+  assert.equal(awardHeroXp(restored, { waveNumber: 151, kills: 20, total: 20, won: true }).gained, 109);
+  assert.equal(restored.xp, saved.xp + 109);
+  assert.equal(getHeroProgress(restored).level, 12);
+  assert.deepEqual(restored.talents, saved.talents);
+  assert.deepEqual(createHero(JSON.parse(JSON.stringify(restored))), restored);
 });
 
 test('XP thresholds clamp finite levels without coercing malformed inputs', () => {
@@ -340,7 +367,7 @@ test('omitted outcomes and malformed numeric fields leave the hero untouched', (
     assert.deepEqual(awardHeroXp(invalid, { waveNumber: 1, kills: 1, total: 1, won: true }),
       { gained: 0, level: 1, previousLevel: 1, leveledUp: false });
   }
-  assert.equal(awardHeroXp(hero, { waveNumber: 1, kills: 10, total: 1, won: true }).gained, 16);
+  assert.equal(awardHeroXp(hero, { waveNumber: 1, kills: 10, total: 1, won: true }).gained, 13);
 });
 
 test('mutations normalize partial saves while preserving identity, version and unrelated fields', () => {
@@ -361,7 +388,7 @@ test('mutations normalize partial saves while preserving identity, version and u
 test('rewards round before the XP cap and still advance victory history at maximum level', () => {
   const hero = createHero({ xp: heroXpForLevel(20) - 2, highestWave: 4 });
   const previousTalents = hero.talents, outcome = { waveNumber: 5, kills: 1, total: 1, won: true };
-  assert.equal(awardHeroXp(createHero(), outcome).gained, 19);
+  assert.equal(awardHeroXp(createHero(), outcome).gained, 16);
   assert.deepEqual(awardHeroXp(hero, outcome), { gained: 2, level: 20, previousLevel: 19, leveledUp: true });
   assert.notEqual(hero.talents, previousTalents);
   assert.equal(hero.highestWave, 5);

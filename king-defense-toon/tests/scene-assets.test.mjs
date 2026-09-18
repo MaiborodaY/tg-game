@@ -18,6 +18,17 @@ test('an empty initial forest scene has no dependency on another map, enemies or
   assert.equal(army.heroEffects, null);
 });
 
+test('Capitol loads the existing archer only when its tower is visible, using the battle snapshot', () => {
+  const state = { units: [], capitolState: { health: 0, tower: 1 } };
+  const preview = getSceneAssetPlan(state);
+  assert.deepEqual(preview.allies.map(unit => `${unit.type}:${unit.rank}`), ['archer:1']);
+  assert.equal(preview.resources.size, getSceneAssetPlan().resources.size + 1);
+  assert.deepEqual(getSceneAssetPlan(state, { formationOnly: true }).allies, []);
+  assert.deepEqual(getSceneAssetPlan({ ...state, battle: { castle: { stats: { towerLevel: 0 } } } }).allies, []);
+  const active = getSceneAssetPlan({ battle: { castle: { stats: { towerLevel: 2 } } } });
+  assert.deepEqual(active.allies, preview.allies);
+});
+
 test('load only present rank sheets, including placements and fighting units with a different rank', () => {
   const plan = getSceneAssetPlan({
     units: [{ type: 'swordsman', level: 50 }, { type: 'swordsman', level: 50 }],

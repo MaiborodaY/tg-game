@@ -35,13 +35,18 @@ speed for the highest durability; its future gate and special ability are not se
 - Each new recruit keeps its awarded personal level. Connect works only between
   Riders, sums their levels, and does not increase recruitment progress.
 - HP and damage use the same additive 5% of level-one base per personal level.
-  Levels do not increase movement, range or attack speed. General Forge upgrades
-  apply; ranged-only upgrades do not.
+  Levels do not increase movement, range or attack speed. All three shared Forge
+  upgrades apply equally to the Rider and the other regular fighters.
 - A fresh level-one Rider is stronger than a level-one Swordsman, not an old
   highly connected Swordsman. No free level catch-up or old-unit reset is added.
 - Human receipts and pending first-Lancer guarantees survive pool changes.
   Mixed Human/Elven formations are allowed; changing the pool does not replace
   fighters already owned or change a running battle.
+- A Rider occupies two adjacent horizontal, purchased cells. Its anchor is the
+  left cell; its model and battle starting position are centered across both.
+  Selection and Connect work from either cell. Moves and swaps require both
+  complete footprints to fit; recruiting never silently removes a second guard.
+  Old Riders that no longer fit return to reserve with their level intact.
 
 ## Art and remaining work
 
@@ -49,6 +54,8 @@ The live Rider uses the supplied 768-pixel, sixteen-pose atlas with its authored
 rectangles and foot anchors. Idle, walk, side attack and downward attack use these
 poses. West mirrors the side art; death uses the existing static fade. Clothing
 palettes switch at 50 / 100 / 250 / 500, while the mount and skin stay unchanged.
+The Rider's model is 15% larger in battle and formation (47 to 54.05 world units
+high); this visual change does not increase its HP, damage, reach or movement speed.
 
 Elven Archer and Unicorn already have source sheets and preview portraits.
 No approved Elven Healer sheet was found in the inspected assets; its preview

@@ -79,16 +79,16 @@ test('rider palettes preserve mount, skin, weapon, silhouettes and every alpha p
   }
 });
 
-test('rider body fits a compact formation cell at the intended 47px reference size', async () => {
+test('rider body fits its two-cell footprint at the enlarged 54.05px reference size', async () => {
   const { data, info } = await sharp(fileURLToPath(new URL(PANTHER_RIDER_ASSETS[1].sheet))).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const frame = pack.frames[0], scale = 47 / (PANTHER_RIDER_GEOMETRY.bodyHeight * 192);
+  const frame = pack.frames[0], scale = 54.05 / (PANTHER_RIDER_GEOMETRY.bodyHeight * 192);
   let left = 768, top = 768, right = 0, bottom = 0;
   for (let y = frame.rect.y; y < frame.rect.y + frame.rect.height; y++) for (let x = frame.rect.x; x < frame.rect.x + frame.rect.width; x++) {
     if (data[(y * info.width + x) * 4 + 3] < 20) continue;
     left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
   }
   const ground = frame.rect.y + frame.footAnchor.y;
-  assert.ok((right - left + 1) * scale < 58, 'mounted silhouette stays within one formation column');
-  assert.ok((ground - top) * scale < 51, 'HP and level stay above the head and sabre');
-  assert.ok((bottom - ground) * scale < 5, 'paws remain in the same cell');
+  assert.ok((right - left + 1) * scale < 116, 'mounted silhouette stays within its two formation columns');
+  assert.ok((ground - top) * scale < 58.05, 'HP and level stay above the head and sabre');
+  assert.ok((bottom - ground) * scale < 6, 'paws remain at the row baseline');
 });

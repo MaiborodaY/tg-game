@@ -29,7 +29,8 @@ type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
 
 import { UNIT_TYPE_BY_ID } from './units.ts';
-import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, positionForCell } from './field.ts';
+import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, CAPITOL_TOWER_POSITION } from './field.ts';
+import { canPlaceUnit, getUnitCells, getUnitPosition, planFormationMove } from './unit-footprint.ts';
 import { getUnitRange, CASTLE_MAX_HP } from './combat.ts';
 import { getUnitRank } from './unit-ranks.ts';
 import { getCellAvailability } from './progression.ts';
@@ -41,6 +42,7 @@ import { pantherRiderFrame } from './panther-rider-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
+import { getCapitolStats } from './capitol.ts';
 import { ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS } from './st-knihor-art.ts';
 import { tinyStKnihorFrame, stKnihorDirection, stKnihorEffectFrame } from './tiny-st-knihor.ts';
 import { GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.ts';
@@ -64,6 +66,8 @@ import { createAssetCache, loadImage } from './asset-cache.ts';
 import { getSceneAssetPlan } from './scene-assets.ts';
 export { FIELD } from './field.ts';
 
+const PANTHER_RIDER_SCALE = 1.15;
+const PANTHER_RIDER_RENDER_HEIGHT = 47 * PANTHER_RIDER_SCALE;
 const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
   swordsman: {
     layout: TINY_WARRIOR_LAYOUT,
@@ -117,13 +121,13 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     pixelArt: true,
     fullCells: true,
     bakedShadow: false,
-    renderHeight: 47,
+    renderHeight: PANTHER_RIDER_RENDER_HEIGHT,
     portraitFrame: 0,
     frameFor: pantherRiderFrame,
     horizontalFacing: true,
   },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, healer: 39, lancer: 38, pantherRider: 51, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, healer: 39, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -455,11 +459,12 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.beginPath();
     const combatType = getEnemyCombatType(type);
     const largeEnemy = combatType === 'goblinChief' || combatType === 'ogre';
-    context.ellipse(x, feet + 1, (combatType === 'ogre' ? 29 : largeEnemy ? 23 : 17) * (actor?.visualScale ?? 1), largeEnemy ? 5.5 : 4, 0, 0, Math.PI * 2);
+    const shadowScale = type === 'pantherRider' ? PANTHER_RIDER_SCALE : 1;
+    context.ellipse(x, feet + 1, (combatType === 'ogre' ? 29 : largeEnemy ? 23 : 17) * shadowScale * (actor?.visualScale ?? 1), (largeEnemy ? 5.5 : 4) * shadowScale, 0, 0, Math.PI * 2);
     context.fill();
     context.fillStyle = '#2636462c';
     context.beginPath();
-    context.ellipse(x, feet + 0.5, 11, 2.3, 0, 0, Math.PI * 2);
+    context.ellipse(x, feet + 0.5, 11 * shadowScale, 2.3 * shadowScale, 0, 0, Math.PI * 2);
     context.fill();
   }
   const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
@@ -486,6 +491,28 @@ function drawCastleHealth(context: CanvasRenderingContext2D, actor: Pick<Actor, 
   context.font = '9px "Lilita One", sans-serif'; context.textAlign = 'center';
   context.textBaseline = 'middle'; context.fillStyle = '#4c493d';
   context.fillText(`${hp}/${maxHp}`, x, y + 6, 43);
+  context.restore();
+}
+
+function drawCapitolTower(context: CanvasRenderingContext2D, animations: AnimationGroups | null,
+  castle?: Actor) {
+  const { x, y } = CAPITOL_TOWER_POSITION;
+  context.save();
+  context.globalAlpha = castle && castle.hp <= 0 ? .45 : 1;
+  // A small stone turret and the existing archer atlas need no extra image downloads.
+  context.fillStyle = '#414c48'; context.fillRect(x - 9, y + 1, 18, 13);
+  context.fillStyle = '#b2b394'; context.fillRect(x - 7, y + 2, 14, 11);
+  context.fillStyle = '#747e70'; context.fillRect(x - 7, y + 7, 14, 2);
+  context.fillStyle = '#344e5b'; context.fillRect(x - 2, y + 5, 4, 7);
+  if (!castle || castle.hp > 0) {
+    context.save(); context.translate(x, y + 4); context.scale(.55, .55);
+    drawAnimatedUnit(context, animations, 'archer',
+      { type: 'archer', action: 'idle', facingX: 1, facingY: 0 }, 0, 0, 0);
+    context.restore();
+  }
+  context.fillStyle = '#414c48'; context.fillRect(x - 10, y, 20, 4);
+  context.fillStyle = '#cbd0ad';
+  for (const offset of [-9, -2, 5]) context.fillRect(x + offset, y - 2, 4, 4);
   context.restore();
 }
 
@@ -889,18 +916,30 @@ export async function createScene(canvas: HTMLCanvasElement, {
     canvas.dataset.level = String(levelNumber);
     drawMap(context, map, rect.width / viewport.scale, rect.height / viewport.scale,
       viewport.x / viewport.scale, viewport.y / viewport.scale, state.time);
-    const occupied = new Map(state.units.map((unit) => [`${unit.col}:${unit.row}`, unit]));
+    const occupied = new Map(state.units.flatMap(unit => getUnitCells(unit).map(key => [key, unit] as const)));
     // Earlier art previews omit progression data and should still show an open grid.
     const unlocked = Array.isArray(state.unlockedCells) ? new Set(state.unlockedCells) : null;
     const isUnlocked = (col: number, row: number) => !unlocked || unlocked.has(`${col}:${row}`);
+    const unlockedCells = state.unlockedCells ?? Array.from({ length: FIELD.rows * FIELD.columns }, (_, index) => `${index % FIELD.columns}:${Math.floor(index / FIELD.columns)}`);
     const selectedUnit = state.units.find((unit) => unit.id === state.selectedId);
     if (showPlacementGrid && !state.battle && selectedUnit) {
-      const position = positionForCell(selectedUnit.col, selectedUnit.row);
+      const position = getUnitPosition(selectedUnit);
       drawRange(context, selectedUnit.type, position.x, position.y);
     }
-    const ghost = showPlacementGrid && !state.battle && state.placementType && hoverCell && isUnlocked(hoverCell.col, hoverCell.row)
-      && !occupied.has(`${hoverCell.col}:${hoverCell.row}`)
-      ? positionForCell(hoverCell.col, hoverCell.row) : null;
+    const movingUnit = state.units.find(unit => unit.id === state.movingId);
+    const placementAt = (col: number, row: number) => {
+      if (state.battle || !state.placementType) return null;
+      const target = occupied.get(`${col}:${row}`);
+      // A click on either half replaces/swaps the same fighter, never its neighbour.
+      const anchor = target && target.id !== movingUnit?.id ? target : { col, row };
+      const candidate = { type: state.placementType, col: anchor.col, row: anchor.row };
+      if (movingUnit) return planFormationMove(state.units, movingUnit.id, anchor.col, anchor.row, unlockedCells).ok ? candidate : null;
+      const ignoredIds = target && state.replacingFromReserve ? [target.id] : [];
+      return canPlaceUnit(candidate, state.units, unlockedCells, ignoredIds) ? candidate : null;
+    };
+    const ghostUnit = showPlacementGrid && hoverCell ? placementAt(hoverCell.col, hoverCell.row) : null;
+    const ghost = ghostUnit ? getUnitPosition(ghostUnit) : null;
+    const ghostCells = new Set(ghostUnit ? getUnitCells(ghostUnit) : []);
     if (ghost) drawRange(context, state.placementType!, ghost.x, ghost.y, true);
     context.globalAlpha = state.battle ? 0.2 : 1;
     for (let row = 0; row < FIELD.rows; row += 1) {
@@ -914,8 +953,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
         const height = FIELD.cellHeight - 4;
         const selected = !state.battle && (unit ? unit.id === state.selectedId
           : formationOnly && state.selectedEmptyCell === key);
-        const available = !state.battle && open && state.placementType
-          && (!unit || state.replacingFromReserve || (state.movingId && unit.id !== state.movingId));
+        const available = open && (ghostCells.has(key) || placementAt(col, row) !== null);
         const mergeTarget = formationOnly && open && unit && state.mergeTargets?.includes(unit.id);
         if (showPlacementGrid) {
           if (!open && !state.battle) {
@@ -936,55 +974,65 @@ export async function createScene(canvas: HTMLCanvasElement, {
             }
           }
         }
-        if (unit && !state.battle) {
+      }
+    }
+    // Paint the full grid first so a rider's right-hand cell cannot cover its sprite.
+    if (!state.battle) {
+      for (const unit of [...state.units].sort((a, b) => a.row - b.row || a.col - b.col)) {
+        const { row } = unit;
+        const y = FIELD.gridY + row * FIELD.cellHeight + 2, height = FIELD.cellHeight - 4;
+        const mergeTarget = formationOnly && state.mergeTargets?.includes(unit.id);
+        context.save();
+        if (unit.id === state.draggedId) context.globalAlpha = 0.35;
+        const { x: centerX, y: feet } = getUnitPosition(unit);
+        drawUnit(context, unit.type, centerX, feet, false, null, formationOnly ? 0 : state.time, null, allyAnimations, unit.level ?? 1, actorScale, formationOnly);
+        const maxHp = unit.maxHp ?? getUnitStats(unit.type, unit.level).hp;
+        const health = Math.max(0, Math.min(1, (unit.hp ?? maxHp) / Math.max(1, maxHp)));
+        const rawHealthY = feet - (ALLY_HEALTH_OFFSETS[unit.type] ?? 54) * actorScale;
+        const healthY = formationOnly ? Math.max(FORMATION_VIEW.y + 7, rawHealthY) : rawHealthY;
+        const healthX = centerX - (formationOnly ? 25 : 14);
+        const healthWidth = formationOnly ? 24 : 28;
+        context.fillStyle = '#203651';
+        roundedRect(context, healthX, healthY, healthWidth, 5, 2);
+        context.fill();
+        context.fillStyle = verticalPaint(context, healthY + 1, 3, '#b0ef73', '#5eba45');
+        context.fillRect(healthX + 1, healthY + 1, (healthWidth - 2) * health, 3);
+        if (formationOnly) {
+          // Keep personal levels inside the compact cell, separate from battlefield HUDs.
+          const label = String(normalizeUnitLevel(unit.level));
           context.save();
-          if (unit.id === state.draggedId) context.globalAlpha = 0.35;
-          const centerX = FIELD.gridX + col * FIELD.cellWidth + FIELD.cellWidth / 2;
-          const feet = FIELD.gridY + (row + 1) * FIELD.cellHeight - 5;
-          drawUnit(context, unit.type, centerX, feet, false, null, formationOnly ? 0 : state.time, null, allyAnimations, unit.level ?? 1, actorScale, formationOnly);
-          const maxHp = unit.maxHp ?? getUnitStats(unit.type, unit.level).hp;
-          const health = Math.max(0, Math.min(1, (unit.hp ?? maxHp) / Math.max(1, maxHp)));
-          const healthY = feet - (ALLY_HEALTH_OFFSETS[unit.type] ?? 54) * actorScale;
-          const healthX = centerX - (formationOnly ? 25 : 14);
-          const healthWidth = formationOnly ? 24 : 28;
-          context.fillStyle = '#203651';
-          roundedRect(context, healthX, healthY, healthWidth, 5, 2);
-          context.fill();
-          context.fillStyle = verticalPaint(context, healthY + 1, 3, '#b0ef73', '#5eba45');
-          context.fillRect(healthX + 1, healthY + 1, (healthWidth - 2) * health, 3);
-          if (formationOnly) {
-            // Keep personal levels inside the compact cell, separate from battlefield HUDs.
-            const label = String(normalizeUnitLevel(unit.level));
-            context.save();
-            context.font = '14px "Lilita One", "Trebuchet MS", sans-serif';
-            context.textAlign = 'left';
-            context.textBaseline = 'middle';
-            context.lineJoin = 'round';
-            context.lineWidth = 2.5;
-            context.strokeStyle = '#1b252b';
-            context.fillStyle = '#fffdf4';
-            context.strokeText(label, centerX + 2, healthY + 2.5, 23);
-            context.fillText(label, centerX + 2, healthY + 2.5, 23);
-            context.restore();
-          }
-          if (mergeTarget) {
-            // Preview the resulting level before the player consumes the source fighter.
-            context.save();
-            context.font = '12px "Lilita One", "Trebuchet MS", sans-serif';
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.fillStyle = '#355b31';
-            roundedRect(context, centerX - 21, y + height - 15, 42, 14, 3);
-            context.fill();
-            context.fillStyle = '#f4ffe6';
-            context.fillText(`+${state.mergeLevel} → ${unit.level! + state.mergeLevel!}`, centerX, y + height - 8, 39);
-            context.restore();
-          }
+          context.font = '14px "Lilita One", "Trebuchet MS", sans-serif';
+          context.textAlign = 'left';
+          context.textBaseline = 'middle';
+          context.lineJoin = 'round';
+          context.lineWidth = 2.5;
+          context.strokeStyle = '#1b252b';
+          context.fillStyle = '#fffdf4';
+          context.strokeText(label, centerX + 2, healthY + 2.5, 23);
+          context.fillText(label, centerX + 2, healthY + 2.5, 23);
           context.restore();
         }
+        if (mergeTarget) {
+          // Preview the resulting level before the player consumes the source fighter.
+          context.save();
+          context.font = '12px "Lilita One", "Trebuchet MS", sans-serif';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillStyle = '#355b31';
+          roundedRect(context, centerX - 21, y + height - 15, 42, 14, 3);
+          context.fill();
+          context.fillStyle = '#f4ffe6';
+          context.fillText(`+${state.mergeLevel} → ${unit.level! + state.mergeLevel!}`, centerX, y + height - 8, 39);
+          context.restore();
+        }
+        context.restore();
       }
     }
     context.globalAlpha = 1;
+    if (!formationOnly) {
+      const stats = state.battle?.castle.stats ?? getCapitolStats(state.capitolState);
+      if (stats.towerLevel > 0) drawCapitolTower(context, allyAnimations, state.battle?.castle);
+    }
     if (state.battle) {
       const enemyArt = goblinArt;
       const actors = [...state.battle.allies, ...state.battle.enemies, state.battle.hero]
@@ -1013,7 +1061,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
         const hero: RenderHero = { type: 'hero', action: 'idle', ...HERO_START, facingX: 0, facingY: -1, hp: stats.maxHp, maxHp: stats.maxHp, stats };
         drawHero(context, heroArt, heroEffects, hero, state.time, actorScale);
         drawHealth(context, hero, actorScale);
-        drawCastleHealth(context);
+        const capitol = getCapitolStats(state.capitolState);
+        drawCastleHealth(context, { hp: capitol.hp, maxHp: capitol.hp });
       }
     }
   }

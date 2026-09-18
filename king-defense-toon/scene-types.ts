@@ -1,5 +1,6 @@
 import type { Battle } from './combat-types.ts';
 import type { HeroState } from './hero.ts';
+import type { CapitolState } from './capitol.ts';
 import type { UnitType } from './units.ts';
 import type { SceneAssetWave } from './scene-assets.ts';
 
@@ -28,6 +29,7 @@ export interface SceneState {
   wave?: SceneAssetWave | null;
   placementLevel?: number;
   heroState?: HeroState;
+  capitolState?: Readonly<CapitolState>;
   unlockedCells?: readonly string[];
   selectedEmptyCell?: string | null;
   selectedLockedCell?: string | null;

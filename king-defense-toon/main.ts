@@ -6,7 +6,7 @@ import { WAVE_DEFINITIONS, WAVES_PER_ROUND, ROUNDS_PER_LEVEL, CAMPAIGN_VERSION, 
 import { setupTelegramAdapter } from './telegram.ts';
 import { createBattleAudio } from './audio.ts';
 import { createLevelMusic } from './music.ts';
-import { DEFAULT_BATTLE_SPEED, battleFrameDelta, nextBattleSpeed } from './battle-speed.ts';
+import { DEFAULT_BATTLE_SPEED, MAX_REAL_FRAME_DELTA, battleFrameDelta, nextBattleSpeed } from './battle-speed.ts';
 import { createFrameRateMeter } from './fps.ts';
 import { createFramePacer } from './frame-pacer.ts';
 import { createSaveStorage } from './save-storage.ts';
@@ -17,17 +17,26 @@ import { RECRUIT_COST, RECRUIT_LEVEL_CAP, createRecruitment, getRecruitProgress,
 import { normalizeRecruitmentPool, isRecruitmentPoolUnlocked, canRecruitFromPool } from './recruitment-pools.ts';
 import type { RecruitmentPool } from './recruitment-pools.ts';
 import { renderElfRecruitment } from './recruitment-pool-ui.ts';
-import { createForge, getForgedUnitStats, upgradeForge, FORGE_UPGRADES } from './forge.ts';
+import { createForge, restoreForge, getForgedUnitStats, upgradeForge, FORGE_UPGRADES } from './forge.ts';
 import { createForgeUI } from './forge-ui.ts';
 import type { ForgeUI } from './forge-ui.ts';
+import { CROPS, createFarm, plantCrop, harvestCrop } from './farm.ts';
+import type { CropId } from './farm.ts';
+import { createFarmUI } from './farm-ui.ts';
+import type { FarmUI } from './farm-ui.ts';
+import { createCapitol, upgradeCapitol, getCapitolStats } from './capitol.ts';
+import { createCapitolUI } from './capitol-ui.ts';
+import type { CapitolUI } from './capitol-ui.ts';
 import { STARTING_SLAVES, SELL_PRICE, createBarracks, getBarracksUpgrade, completeBarracksUpgrade, startBarracksUpgrade, speedUpBarracks, consumeFirstLancerGuarantee } from './barracks.ts';
-import { getMergeResult } from './unit-merging.ts';
+import { getMergeResult, getConnectResult } from './unit-merging.ts';
+import { renderConnectPanel } from './connect-ui.ts';
 import { setupUnitDrag } from './unit-drag.ts';
 import { createHero, awardHeroXp } from './hero.ts';
 import { createHeroUI } from './hero-ui.ts';
 import { byId } from './main-dom.ts';
 import { restoreCampaignRoster } from './campaign-roster.ts';
 import { reconcileArmyCapacity } from './army-capacity-migration.ts';
+import { getUnitCellWidth, getUnitAtCell, canPlaceUnit, planFormationMove, reconcileUnitFootprints } from './unit-footprint.ts';
 import { decodeCampaignSave } from './campaign-save.ts';
 import type { GameElementId } from './main-dom.ts';
 import type { Battle, BattlePhase } from './combat-types.ts';
@@ -42,6 +51,8 @@ import type { CellKey } from './progression.ts';
 import type { BattleSpeed } from './battle-speed.ts';
 import './style.css';
 import './hero.css';
+import './farm.css';
+import './connect.css';
 
 interface GameBattle extends Battle {
   resultRecorded?: boolean;
@@ -89,12 +100,16 @@ let barracksSelectedId: number | null = null;
 let barracks = createBarracks();
 let recruitmentPool: RecruitmentPool = 'humans';
 let forge = createForge(), forgeUI: ForgeUI | null = null;
+let farm = createFarm(), farmUI: FarmUI | null = null;
+let capitol = createCapitol(), capitolUI: CapitolUI | null = null;
 const unitStatFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 let hero = createHero();
 let heroUI: HeroUI | null = null;
 let marketHintCompleted = false;
 let pendingRecruitId: number | null = null;
 let pendingMerge: MergeSource | null = null;
+let connectSelection: { recipient: MergeSource; sourceTab: 'army' | 'reserve'; donorIds: Set<number>; notice: string } | null = null;
+const connectMarkupCache = new WeakMap<HTMLElement, string>();
 let unitDrag: UnitDragController | null = null, draggedMerge: DraggedMerge | null = null;
 let mergeTargetIds: number[] = [], mergeLevel = 0;
 let transforming = false, transformTimer: ReturnType<typeof setTimeout> | undefined;
@@ -113,6 +128,7 @@ let armyScene: Scene | null = null;
 let economy = createEconomy();
 let pendingOfflineGold = 0, pendingOfflineSlaves = 0;
 let pendingSlotRefund = 0, pendingReturnedFighters = 0, pendingClosedCells = 0;
+let pendingForgeRefund = 0;
 let offlineRewardFocus: FocusElement | null = null;
 const offlineRewardInert = new Map<HTMLElement, boolean>();
 let progression = createProgression(), selectedLockedCell: string | null = null, selectedEmptyCell: string | null = null;
@@ -201,26 +217,33 @@ try {
     recruitment = createRecruitment(saved.recruitment);
     barracks = createBarracks(saved.barracks);
     recruitmentPool = normalizeRecruitmentPool(saved.recruitmentPool, barracks.level);
-    forge = createForge(saved.forge);
+    const forgeMigration = restoreForge(saved.forge);
+    forge = forgeMigration.forge;
+    farm = createFarm(saved.farm);
+    capitol = createCapitol(saved.capitol);
     hero = createHero(saved.hero);
     // Existing conversions also count as having learned this action before the hint existed.
     marketHintCompleted = saved.marketHintCompleted === true || Object.values(recruitment.received).some(count => count > 0);
     progression = createProgression(saved.progression);
     const restored = restoreCampaignRoster(saved.units, saved.reserve, progression);
-    // Restore fighters before closing old side cells, then persist the refund and roster together.
+    // Reconcile owned cells before reserving both cells of each mounted fighter.
     const capacityMigration = reconcileArmyCapacity(progression, restored, barracks.level);
-    units = capacityMigration.units;
+    const footprintMigration = reconcileUnitFootprints(capacityMigration.units, capacityMigration.reserve, progression.unlockedCells);
+    units = footprintMigration.units;
     // Personal levels survive reloads; receiving another fighter never rewrites an older one.
-    reserve = capacityMigration.reserve;
-    gold = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(saved.gold) + capacityMigration.refund);
+    reserve = footprintMigration.reserve;
+    gold = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(saved.gold) + capacityMigration.refund + forgeMigration.refund);
     clearedWaves = Math.max(0, Math.min(TOTAL_WAVES, Math.floor(Number(saved.clearedWaves) || 0)));
     economy = createEconomy(saved.economy);
     const offlineRewards = savedFields(saved.offlineRewards);
     pendingOfflineGold = typeof offlineRewards.gold === 'number' && Number.isSafeInteger(offlineRewards.gold) && offlineRewards.gold > 0 ? offlineRewards.gold : 0;
     pendingOfflineSlaves = typeof offlineRewards.slaves === 'number' && Number.isSafeInteger(offlineRewards.slaves) && offlineRewards.slaves > 0 ? offlineRewards.slaves : 0;
     pendingSlotRefund = savedPositiveInteger(offlineRewards.slotRefund) + capacityMigration.refund;
-    pendingReturnedFighters = savedPositiveInteger(offlineRewards.returnedFighters) + capacityMigration.movedCount;
+    pendingReturnedFighters = savedPositiveInteger(offlineRewards.returnedFighters) + capacityMigration.movedCount + footprintMigration.movedCount;
     pendingClosedCells = savedPositiveInteger(offlineRewards.closedCells) + capacityMigration.removedCells.length;
+    // Removing the retired ranks and crediting their gold in the same save makes
+    // reloads idempotent; this receipt only acknowledges the already-paid refund.
+    pendingForgeRefund = savedPositiveInteger(offlineRewards.forgeRefund) + forgeMigration.refund;
     // Enable the new default once for older saves; later explicit Off choices still persist.
     autoWaves = saved.autoWavesDefaultVersion === AUTO_WAVES_DEFAULT_VERSION ? saved.autoWaves !== false : true;
     nextId = units.length + reserve.length + 1;
@@ -248,9 +271,10 @@ if (!starterSupplyGranted) {
 }
 
 function saveSnapshot() {
-  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
+  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, farm, capitol, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
     offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves,
-      slotRefund: pendingSlotRefund, returnedFighters: pendingReturnedFighters, closedCells: pendingClosedCells } };
+      slotRefund: pendingSlotRefund, returnedFighters: pendingReturnedFighters, closedCells: pendingClosedCells,
+      forgeRefund: pendingForgeRefund } };
 }
 
 function save() {
@@ -342,23 +366,27 @@ function collectOfflineIncome() {
 }
 
 function showOfflineIncome() {
-  if (!scene || !economyActive || isRecovering() || !byId('recovery-panel').hidden || (!pendingOfflineGold && !pendingOfflineSlaves && !pendingClosedCells)) return;
+  if (!scene || !economyActive || isRecovering() || !byId('recovery-panel').hidden || (!pendingOfflineGold && !pendingOfflineSlaves && !pendingClosedCells && !pendingReturnedFighters && !pendingForgeRefund)) return;
   unitDrag?.cancel();
   const panel = byId('offline-rewards-panel');
   byId('offline-gold-reward').hidden = !pendingOfflineGold;
   byId('offline-slaves-reward').hidden = !pendingOfflineSlaves;
   byId('offline-gold-amount').textContent = `+${pendingOfflineGold}`;
   byId('offline-slaves-amount').textContent = `+${pendingOfflineSlaves}`;
-  byId('offline-rewards-title').textContent = pendingClosedCells ? 'Army space updated' : 'Welcome back!';
+  byId('offline-rewards-title').textContent = pendingClosedCells || pendingReturnedFighters ? 'Army space updated' : pendingForgeRefund ? 'Forge updated' : 'Welcome back!';
   byId('offline-rewards-description').textContent = pendingClosedCells
-    ? `${pendingClosedCells} side ${pendingClosedCells === 1 ? 'tile now requires' : 'tiles now require'} a Barracks upgrade. Your fighters and gold are safe.`
-    : 'Your buildings kept working.';
+    ? `${pendingClosedCells} ${pendingClosedCells === 1 ? 'tile now requires' : 'tiles now require'} a Barracks upgrade. Your fighters and gold are safe.`
+    : pendingReturnedFighters ? 'Panther Riders now need two adjacent tiles. Fighters without enough room are safe in Barracks.'
+    : pendingForgeRefund ? 'Forge upgrades now apply to all fighters. Your gold for retired archer upgrades has been returned.'
+      : 'Your buildings kept working.';
   byId('slot-refund-reward').hidden = !pendingClosedCells;
   byId('slot-refund-amount').textContent = `+${pendingSlotRefund}`;
+  byId('forge-refund-reward').hidden = !pendingForgeRefund;
+  byId('forge-refund-amount').textContent = `+${pendingForgeRefund}`;
   byId('returned-fighters-note').hidden = !pendingReturnedFighters;
   byId('returned-fighters-note').textContent = `${pendingReturnedFighters} ${pendingReturnedFighters === 1 ? 'fighter returned' : 'fighters returned'} to Barracks.`;
   byId('offline-storage-note').hidden = !pendingOfflineGold && !pendingOfflineSlaves;
-  byId('collect-offline-rewards').textContent = pendingClosedCells ? 'Continue' : 'Collect';
+  byId('collect-offline-rewards').textContent = pendingClosedCells || pendingReturnedFighters || pendingForgeRefund ? 'Continue' : 'Collect';
   if (!panel.hidden) return;
   panel.hidden = false;
   offlineRewardFocus = (document.activeElement as FocusElement | null);
@@ -381,6 +409,7 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   const collectedSlaves = pendingOfflineSlaves;
   pendingOfflineGold = pendingOfflineSlaves = 0;
   pendingSlotRefund = pendingReturnedFighters = pendingClosedCells = 0;
+  pendingForgeRefund = 0;
   panel.hidden = true;
   for (const [element, wasInert] of offlineRewardInert) element.inert = wasInert;
   offlineRewardInert.clear();
@@ -388,6 +417,8 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock').forEach(element => {
     element.inert = !!overlay && !overlay.contains(element);
   });
+  farmUI?.refresh();
+  capitolUI?.refresh();
   const target = offlineRewardFocus?.isConnected && offlineRewardFocus !== document.body && !offlineRewardFocus.disabled
     && !offlineRewardFocus.closest<HTMLElement>('[inert]') && offlineRewardFocus.getClientRects().length
     ? offlineRewardFocus : overlay?.querySelector<HTMLElement>('[data-close-overlay]') ?? byId('army-map');
@@ -622,6 +653,8 @@ function refreshEconomy() {
   byId('market-offline-note').textContent = `Offline storage: ${MARKET_OFFLINE_LIMIT_SECONDS / 3600}h · up to ${Math.floor(MARKET_OFFLINE_LIMIT_SECONDS / MARKET_PRODUCTION_SECONDS)} slaves`;
   refreshRecruitment();
   forgeUI?.refresh();
+  farmUI?.refresh();
+  capitolUI?.refresh();
   const captureSeconds = Math.ceil(economy.captureCooldown);
   const captureLimit = capturePityKills(economy);
   const captureProgress = Math.min(economy.captureKills, captureLimit);
@@ -680,6 +713,7 @@ function setOverlay(id: GameElementId, opener: HTMLElement | null) {
 
 function closeOverlay(restoreFocus = true) {
   if (!overlay) return;
+  connectSelection = null;
   const wasPicker = overlay.id === 'unit-panel';
   if (overlay.id === 'barracks-panel') barracksSelectedId = null;
   if (wasPicker && !movingId) {
@@ -718,6 +752,51 @@ forgeUI = createForgeUI({ root: byId('forge-upgrades'), getForge: () => forge, g
     byId('forge-feedback').textContent = `${name} +${forge[upgrade]}% · Applies next wave.`;
   } });
 
+function canUpgradeCapitol() {
+  return economyActive && !isRecovering() && overlay?.id === 'buildings-panel'
+    && !byId('capitol-building').hidden && !!byId('offline-rewards-panel').hidden;
+}
+
+capitolUI = createCapitolUI({ root: byId('capitol-upgrades'), getCapitol: () => capitol, getGold: () => gold,
+  canUpgrade: canUpgradeCapitol, onUpgrade: upgrade => {
+    if (!canUpgradeCapitol()) return;
+    tickEconomy();
+    if (!canUpgradeCapitol()) return;
+    const result = upgradeCapitol(capitol, upgrade, gold);
+    if (!result.upgraded) return;
+    gold = result.gold;
+    // Persist the purchase and its payment together; active combat owns a separate snapshot.
+    save(); refresh();
+    const stats = getCapitolStats(capitol);
+    byId('capitol-feedback').textContent = `${upgrade === 'health' ? `${stats.hp} HP` : `Tower: ${stats.damage} damage / 2s`} · Applies next battle.`;
+  } });
+
+function canUseFarm() {
+  return economyActive && !isRecovering() && overlay?.id === 'buildings-panel'
+    && !byId('farm-building').hidden && !!byId('offline-rewards-panel').hidden;
+}
+
+function tendFarm(crop: CropId, harvest: boolean) {
+  if (!canUseFarm()) return;
+  tickEconomy();
+  // A first action after sleep may open an income or recovery window.
+  if (!canUseFarm()) return;
+  const definition = CROPS.find(entry => entry.id === crop)!;
+  if (harvest) {
+    const result = harvestCrop(farm, crop);
+    if (!result.harvested) return;
+    byId('farm-feedback').textContent = `+${result.amount} ${definition.name.toLowerCase()} added to your stock.`;
+  } else {
+    if (!plantCrop(farm, crop)) return;
+    byId('farm-feedback').textContent = `${definition.name} planted · ${definition.growSeconds / 60} min.`;
+  }
+  // Save planting timestamps or the cleared plot and harvest together.
+  save(); refresh();
+}
+
+farmUI = createFarmUI({ root: byId('farm-crops'), getFarm: () => farm,
+  canUse: canUseFarm, onPlant: crop => tendFarm(crop, false), onHarvest: crop => tendFarm(crop, true) });
+
 for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-profile', 'profile-panel'], ['open-barracks', 'barracks-panel'], ['open-market-info', 'market-info-panel'], ['open-hero', 'hero-panel']] as const) {
   byId(button).addEventListener('click', () => {
     if (panel === 'barracks-panel') {
@@ -738,6 +817,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
   byId(panel).addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
+      if (connectSelection) { cancelConnect(); return; }
       if (panel === 'barracks-panel' && barracksSelectedId !== null) {
         showBarracksList();
         return;
@@ -746,7 +826,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
       return;
     }
     if (event.key !== 'Tab') return;
-    const buttons = [...byId(panel).querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), select:not(:disabled), input:not(:disabled), canvas[tabindex="0"]')]
+    const buttons = [...byId(panel).querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), select:not(:disabled), input:not(:disabled), [tabindex="0"]')]
       .filter(element => !element.hidden && element.getClientRects().length > 0);
     const first = buttons[0], last = buttons.at(-1);
     if (event.shiftKey && (document.activeElement as FocusElement | null) === first) { event.preventDefault(); last?.focus(); }
@@ -778,6 +858,8 @@ function selectBuilding(name: string | undefined) {
     tab.tabIndex = selected ? 0 : -1;
     byId(tab.getAttribute('aria-controls') as GameElementId).hidden = !selected;
   }
+  farmUI?.refresh();
+  capitolUI?.refresh();
 }
 byId('buildings-tabs').addEventListener('click', event => {
   const tab = (event.target as Element).closest<HTMLElement>('[data-building]');
@@ -878,10 +960,16 @@ function refreshPhaseLabel() {
 }
 
 function refresh() {
+  const connectFocus = (document.activeElement as HTMLElement | null)?.closest<HTMLButtonElement>('.connect-panel button, [data-connect-action="begin"]');
+  const connectFocusSelector = connectFocus?.dataset.connectDonorId ? `[data-connect-donor-id="${connectFocus.dataset.connectDonorId}"]`
+    : connectFocus?.dataset.connectLocation ? `[data-connect-location="${connectFocus.dataset.connectLocation}"]`
+    : connectFocus?.dataset.connectAction ? `[data-connect-action="${connectFocus.dataset.connectAction}"]` : null;
+  const connectScrollElement = overlay?.querySelector<HTMLElement>('.connect-donor-scroll');
+  const connectScroll = connectScrollElement?.scrollTop ?? 0;
+  const connectScrollFocused = document.activeElement === connectScrollElement;
   const focusedAction = (document.activeElement as FocusElement | null)?.closest<HTMLButtonElement>('#selection-panel [data-action]')?.dataset.action;
   const focusedReserveId = (document.activeElement as FocusElement | null)?.closest<HTMLElement>('[data-reserve-id]')?.dataset.reserveId;
   const focusedRecruitId = (document.activeElement as FocusElement | null)?.closest<HTMLButtonElement>('[data-barracks-recruit-id]')?.dataset.barracksRecruitId;
-  const focusedMergeId = (document.activeElement as FocusElement | null)?.closest<HTMLButtonElement>('[data-barracks-merge-id]')?.dataset.barracksMergeId;
   const focusedSellId = (document.activeElement as FocusElement | null)?.closest<HTMLButtonElement>('[data-barracks-sell-id]')?.dataset.barracksSellId;
   const focusedBarracksId = (document.activeElement as FocusElement | null)?.closest<HTMLElement>('[data-barracks-unit-id]')?.dataset.barracksUnitId;
   telegram.setGameInProgress(hasActiveBattle());
@@ -889,7 +977,7 @@ function refresh() {
   levelMusic.setActive(!destroyed && telegram.isActive && !isRecovering());
   refreshEconomy();
   heroUI?.render();
-  byId('army-count').textContent = `${units.length} / ${progression.unlockedCells.length}`;
+  byId('army-count').textContent = `${units.reduce((total, unit) => total + getUnitCellWidth(unit.type), 0)} / ${progression.unlockedCells.length}`;
   const pendingRecruit = reserve.find(unit => unit.id === pendingRecruitId);
   if (!pendingRecruit) pendingRecruitId = null;
   const mergeSource = draggedMerge?.source ?? pendingMerge;
@@ -900,7 +988,7 @@ function refresh() {
   mergeLevel = merging?.level ?? 0;
   byId('army-status').textContent = draggedMerge ? 'Release on a green fighter to connect. Release elsewhere to cancel.'
     : merging ? `Connect: choose another ${types[merging.type].name}. Adds ${merging.level} levels.`
-    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}`
+    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${pendingRecruit.type === 'pantherRider' ? ' · 2 adjacent tiles' : ''}`
     : movingId ? 'Tap a destination' : 'Tap for details · Hold a fighter to connect';
   byId('cancel-army-move').hidden = !movingId && !pendingRecruitId && !pendingMerge;
   byId('open-market-info').hidden = !!movingId || !!pendingRecruitId || !!pendingMerge;
@@ -936,7 +1024,10 @@ function refresh() {
     byId('unit-panel-title').textContent = 'Unlock tile';
     panel.innerHTML = availability.allowed
       ? `<div class="placement-copy"><strong>Expand your army</strong><p>Cost: ${cost} gold · You have ${gold}</p></div><div class="selection-actions"><button data-action="unlock-cell"${gold < (cost ?? 0) ? ' disabled' : ''}>Unlock · ${cost} gold</button><button data-action="cancel">Cancel</button></div>`
-      : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Each upgrade lets you buy one more side tile.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
+      : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Barracks II allows 9 central tiles; III adds one side tile.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
+  } else if (selected && connectSelection?.recipient.location === 'army' && connectSelection.recipient.id === selected.id) {
+    byId('unit-panel-title').textContent = 'Connect';
+    refreshConnectPanel(panel);
   } else if (selected) {
     const type = types[selected.type];
     const stats = getForgedUnitStats(selected.type, selected.level, forge);
@@ -971,10 +1062,6 @@ function refresh() {
     const replacement = byId('barracks-detail').querySelector<HTMLButtonElement>(`[data-barracks-recruit-id="${focusedRecruitId}"]`);
     (replacement && !replacement.disabled ? replacement : overlay.querySelector<HTMLElement>('[data-close-overlay]'))!.focus({ preventScroll: true });
   }
-  if (focusedMergeId && overlay?.id === 'barracks-panel') {
-    const replacement = byId('barracks-detail').querySelector<HTMLButtonElement>(`[data-barracks-merge-id="${focusedMergeId}"]`);
-    (replacement && !replacement.disabled ? replacement : overlay.querySelector<HTMLElement>('[data-close-overlay]'))!.focus({ preventScroll: true });
-  }
   if (focusedSellId && overlay?.id === 'barracks-panel') {
     const replacement = byId('barracks-detail').querySelector<HTMLButtonElement>(`[data-barracks-sell-id="${focusedSellId}"]`);
     (replacement && !replacement.disabled ? replacement : overlay.querySelector<HTMLElement>('[data-close-overlay]'))!.focus({ preventScroll: true });
@@ -982,6 +1069,13 @@ function refresh() {
   if (focusedBarracksId && overlay?.id === 'barracks-panel' && barracksSelectedId === null) {
     (byId('barracks-options').querySelector<HTMLElement>(`[data-barracks-unit-id="${focusedBarracksId}"]`)
       ?? overlay.querySelector<HTMLElement>('[data-close-overlay]'))!.focus({ preventScroll: true });
+  }
+  const connectGrid = overlay?.querySelector<HTMLElement>('.connect-donor-scroll');
+  if (connectGrid) connectGrid.scrollTop = connectScroll;
+  if (connectScrollFocused) connectGrid?.focus({ preventScroll: true });
+  if (connectFocusSelector) {
+    const replacement = overlay?.querySelector<HTMLButtonElement>(connectFocusSelector);
+    (replacement && !replacement.disabled ? replacement : overlay?.querySelector<HTMLButtonElement>('[data-connect-action="cancel"], [data-close-overlay]'))?.focus({ preventScroll: true });
   }
   renderScene();
 }
@@ -997,24 +1091,100 @@ function canMerge(source: MergeSource) {
 function mergeDescription(source: MergeSource) {
   const fighter = getMergeSource(source);
   if (!fighter) return '';
-  if (canMerge(source)) return `Add ${fighter.level} levels to a matching Army fighter. This fighter is consumed.`;
-  const sameType = units.some(unit => unit.type === fighter.type && unit.id !== fighter.id);
-  return sameType ? 'Combined level is too large to save safely.'
-    : `Place another ${types[fighter.type].name} in your Army to connect.`;
+  const space = fighter.type === 'pantherRider' ? 'Uses 2 adjacent horizontal tiles. ' : '';
+  return space + (connectCandidates(source).length
+    ? 'Connect adds matching fighters to this unit. Choose from Barracks or Army.'
+    : `Get another ${types[fighter.type].name} to connect to this unit.`);
 }
 
 function mergeButtonMarkup(source: MergeSource, unavailable = false) {
-  const action = source.location === 'army' ? 'data-action="merge"' : `data-barracks-merge-id="${source.id}"`;
-  return `<button class="merge-button" ${action} type="button"${unavailable || !canMerge(source) ? ' disabled' : ''}><span class="merge-plus" aria-hidden="true">+</span>Connect</button>`;
+  return `<button class="merge-button" data-connect-action="begin" data-connect-recipient-location="${source.location}" data-connect-recipient-id="${source.id}" type="button"${unavailable || !connectCandidates(source).length ? ' disabled' : ''}><span class="merge-plus" aria-hidden="true">+</span>Connect</button>`;
 }
 
-function beginMerge(source: MergeSource) {
-  if (!canEditFormation() || transforming || !canMerge(source)) return;
-  pendingMerge = source;
-  pendingRecruitId = selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
-  closeOverlay(false); refresh();
-  byId('army-map').focus({ preventScroll: true });
-  tell('Tap a green fighter.');
+function connectCandidates(recipient: MergeSource, location?: 'army' | 'reserve') {
+  const fighter = getMergeSource(recipient);
+  const roster = location === 'army' ? units : location === 'reserve' ? reserve : [...units, ...reserve];
+  return fighter ? roster.filter(unit => unit.id !== fighter.id && unit.type === fighter.type) : [];
+}
+
+function connectPanelMarkup() {
+  if (!connectSelection) return '';
+  const { recipient, sourceTab, donorIds, notice } = connectSelection;
+  const fighter = getMergeSource(recipient);
+  if (!fighter) return '';
+  const donors: MergeSource[] = [...donorIds].map(id => ({ id, location: units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
+  const result = getConnectResult(units, reserve, recipient, donors, { minArmyUnits: battle ? 1 : 0 });
+  const level = result.ok ? result.recipient.level : fighter.level;
+  const stats = getForgedUnitStats(fighter.type, level, forge);
+  const before = getForgedUnitStats(fighter.type, fighter.level, forge);
+  const statText = (old: number, next: number) => unitStatFormat.format(old) + (next !== old ? ` → ${unitStatFormat.format(next)}` : '');
+  const message = !result.ok && result.reason === 'army-minimum' ? 'Keep one fighter in Army during a wave.'
+    : !result.ok && result.reason === 'level-overflow' ? 'Combined level is too large to save safely.'
+    : notice || (donors.length ? 'Selected fighters are consumed. This unit stays here.' : 'Select matching fighters to add their levels.');
+  return renderConnectPanel({ recipient: fighter, location: recipient.location, sourceTab,
+    donors: connectCandidates(recipient, sourceTab), selectedIds: donorIds, selectedCount: donorIds.size,
+    addedLevels: result.ok ? result.addedLevels : 0, previewLevel: level,
+    hp: statText(before.hp, stats.hp), effect: statText(fighter.type === 'healer' ? before.heal : before.damage, fighter.type === 'healer' ? stats.heal : stats.damage),
+    effectLabel: fighter.type === 'healer' ? 'Healing' : 'Attack', message,
+    canApply: result.ok && canEditFormation() && !transforming, art: unit => scene?.getUnitArt(unit.type, unit.level) ?? undefined });
+}
+
+function refreshConnectPanel(panel: HTMLElement) {
+  const markup = connectPanelMarkup();
+  // Economy and combat refreshes must not detach a donor under a finger or reset scrolling.
+  if (!panel.querySelector('.connect-panel') || connectMarkupCache.get(panel) !== markup) {
+    panel.innerHTML = markup;
+    connectMarkupCache.set(panel, markup);
+  }
+}
+
+function cancelConnect() {
+  connectSelection = null;
+  refresh();
+  overlay?.querySelector<HTMLButtonElement>('[data-connect-action="begin"]')?.focus({ preventScroll: true });
+}
+
+function handleConnectClick(event: MouseEvent, recipient: MergeSource) {
+  const button = (event.target as Element).closest<HTMLButtonElement>('[data-connect-action], [data-connect-location], [data-connect-donor-id]');
+  if (!button) return false;
+  if (button.disabled || !canEditFormation() || transforming) return true;
+  const action = button.dataset.connectAction;
+  if (action === 'begin') {
+    if (!connectCandidates(recipient).length) return true;
+    connectSelection = { recipient, sourceTab: 'reserve', donorIds: new Set(), notice: '' };
+    refresh();
+    overlay?.querySelector<HTMLButtonElement>('[data-connect-location="reserve"]')?.focus({ preventScroll: true });
+    return true;
+  }
+  if (!connectSelection || connectSelection.recipient.id !== recipient.id || connectSelection.recipient.location !== recipient.location) return true;
+  if (action === 'cancel') { cancelConnect(); return true; }
+  if (action === 'apply') {
+    const donors: MergeSource[] = [...connectSelection.donorIds].map(id => ({ id, location: units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
+    const result = getConnectResult(units, reserve, recipient, donors, { minArmyUnits: battle ? 1 : 0 });
+    if (!result.ok) { refresh(); return true; }
+    // Apply the entire selection once to the saved roster; live combat owns its own actors.
+    units = result.units; reserve = result.reserve;
+    connectSelection.donorIds.clear();
+    connectSelection.notice = `Connected · Lv. ${result.recipient.level}${battle ? ' · Applies next wave' : ''}`;
+    saveFormation(); refresh();
+    return true;
+  }
+  const location = button.dataset.connectLocation;
+  if (location === 'army' || location === 'reserve') {
+    connectSelection.sourceTab = location;
+    refresh();
+    const grid = overlay?.querySelector<HTMLElement>('.connect-donor-scroll');
+    if (grid) grid.scrollTop = 0;
+    return true;
+  }
+  const donorId = Number(button.dataset.connectDonorId);
+  if (connectCandidates(recipient, connectSelection.sourceTab).some(unit => unit.id === donorId)) {
+    if (connectSelection.donorIds.has(donorId)) connectSelection.donorIds.delete(donorId);
+    else connectSelection.donorIds.add(donorId);
+    connectSelection.notice = '';
+    refresh();
+  }
+  return true;
 }
 
 function mergeInto(targetId: number | null | undefined, source = pendingMerge) {
@@ -1043,7 +1213,7 @@ function dragSourceAt(event: DragSourceEvent): MergeSource | null {
     || !byId('offline-rewards-panel').hidden) return null;
   if (!overlay && event.target === byId('army-map')) {
     const cell = armyScene!.getCellAt(event.clientX, event.clientY);
-    const fighter = cell && units.find(unit => unit.col === cell.col && unit.row === cell.row);
+    const fighter = cell && getUnitAtCell(units, cell.col, cell.row);
     return fighter ? { location: 'army', id: fighter.id } : null;
   }
   if (overlay?.id === 'barracks-panel' && barracksSelectedId === null) {
@@ -1081,7 +1251,7 @@ function dragTargetAt(point: DragPoint) {
   if (!canEditFormation() || overlay || !byId('offline-rewards-panel').hidden
     || document.elementFromPoint(point.x, point.y) !== byId('army-map')) return null;
   const cell = armyScene!.getCellAt(point.x, point.y);
-  return cell && units.find(unit => unit.col === cell.col && unit.row === cell.row)?.id;
+  return cell && getUnitAtCell(units, cell.col, cell.row)?.id;
 }
 
 function moveDragMerge(point: DragPoint) {
@@ -1126,7 +1296,7 @@ function dropDragMerge(source: MergeSource, point: DragPoint) {
 
 function refreshReserve(selected: ArmyUnit | undefined) {
   const section = byId('reserve-section');
-  section.hidden = !!selectedLockedCell || (!selectedEmptyCell && !selected);
+  section.hidden = !!connectSelection || !!selectedLockedCell || (!selectedEmptyCell && !selected);
   const pageCount = Math.max(1, Math.ceil(reserve.length / RESERVE_PAGE_SIZE));
   reservePage = Math.max(0, Math.min(reservePage, pageCount - 1));
   byId('reserve-count').textContent = String(reserve.length);
@@ -1137,7 +1307,7 @@ function refreshReserve(selected: ArmyUnit | undefined) {
   byId('reserve-page').textContent = `${reservePage + 1} / ${pageCount}`;
   byId('reserve-options').innerHTML = reserve.slice(reservePage * RESERVE_PAGE_SIZE, (reservePage + 1) * RESERVE_PAGE_SIZE).map(unit => {
     const portrait = scene?.getUnitArt(unit.type, unit.level);
-    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}</small></button>`;
+    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${unit.type === 'pantherRider' ? ' · 2 tiles' : ''}</small></button>`;
   }).join('');
 }
 
@@ -1165,11 +1335,11 @@ function refreshBarracksUpgrade() {
   byId('lancer-recruitment-training').hidden = !unlocked;
   byId('barracks-upgrade-state').hidden = info.targetLevel === null;
   byId('barracks-upgrade-state').textContent = upgrading ? `Barracks ${targetName} · ${formatUpgradeTime(info.remainingMs)}`
-    : info.canStart ? `Barracks ${targetName} · +1 side tile`
+    : info.canStart ? `Barracks ${targetName} · +1 army tile`
     : `Requires ${types[info.requiredRecruitType].name} Lv. ${info.requiredRecruitLevel} · now Lv. ${info.recruitLevel}`;
   byId('barracks-upgrade-note').hidden = unlocked && !upgrading && !info.canStart && info.targetLevel !== null;
   byId('barracks-upgrade-note').textContent = upgrading ? 'Building continues offline.'
-    : info.targetLevel === null ? 'Barracks III · 11 army tiles · Elves unlocked'
+    : info.targetLevel === null ? 'Barracks III · 10 army tiles · Elves unlocked'
     : info.canStart ? `${hours} ${hours === 1 ? 'hour' : 'hours'} · offline building · unlocks ${info.targetLevel === 2 ? 'Lancer' : 'Elves'}`
     : 'Raise its recruitment level at the Market.';
   byId('barracks-upgrade-progress').hidden = !upgrading;
@@ -1232,7 +1402,10 @@ function refreshBarracks() {
   byId('barracks-back').hidden = !selected;
   byId('barracks-feedback').hidden = !!selected;
   byId('barracks-title').textContent = selected ? 'Unit details' : 'Barracks';
-  if (selected) {
+  if (selected && connectSelection?.recipient.location === 'reserve' && connectSelection.recipient.id === selected.id) {
+    byId('barracks-title').textContent = 'Connect';
+    refreshConnectPanel(byId('barracks-detail'));
+  } else if (selected) {
     const stats = getForgedUnitStats(selected.type, selected.level, forge);
     const portrait = scene?.getUnitArt(selected.type, selected.level);
     const lastFighter = units.length + reserve.length <= 1;
@@ -1242,6 +1415,7 @@ function refreshBarracks() {
 }
 
 function showBarracksList() {
+  connectSelection = null;
   const previousId = barracksSelectedId;
   barracksSelectedId = null;
   refresh();
@@ -1275,11 +1449,7 @@ byId('barracks-options').addEventListener('click', event => {
 });
 byId('barracks-detail').addEventListener('click', event => {
   if (!canEditFormation() || overlay?.id !== 'barracks-panel' || transforming || barracksSelectedId === null) return;
-  const mergeButton = (event.target as Element).closest<HTMLButtonElement>('[data-barracks-merge-id]');
-  if (mergeButton) {
-    if (!mergeButton.disabled) beginMerge({ location: 'reserve', id: Number(mergeButton.dataset.barracksMergeId) });
-    return;
-  }
+  if (handleConnectClick(event, { location: 'reserve', id: barracksSelectedId })) return;
   const sellButton = (event.target as Element).closest<HTMLButtonElement>('[data-barracks-sell-id]');
   if (sellButton) {
     if (!sellButton.disabled) sellReserve(new Set([Number(sellButton.dataset.barracksSellId)]));
@@ -1293,7 +1463,7 @@ byId('barracks-detail').addEventListener('click', event => {
   selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   closeOverlay(false); refresh();
   byId('army-map').focus({ preventScroll: true });
-  tell('Choose a tile.');
+  tell(fighter.type === 'pantherRider' ? 'Choose the left of 2 adjacent open tiles.' : 'Choose a tile.');
 });
 
 function changeReservePage(delta: number) {
@@ -1320,8 +1490,14 @@ function placeReserveFighter(id: number, key: string) {
   if (!canEditFormation() || !isUnlockedCell(key)) return false;
   const index = reserve.findIndex(unit => unit.id === id);
   if (index < 0) return false;
-  const [col, row] = key.split(':').map(Number);
-  const occupied = units.find(unit => unit.col === col && unit.row === row);
+  const [clickedCol, clickedRow] = key.split(':').map(Number);
+  const occupied = getUnitAtCell(units, clickedCol, clickedRow);
+  const col = occupied?.col ?? clickedCol, row = occupied?.row ?? clickedRow;
+  const candidate = { ...reserve[index], col, row };
+  if (!canPlaceUnit(candidate, units, progression.unlockedCells, occupied ? [occupied.id] : [])) {
+    tell(candidate.type === 'pantherRider' ? 'Needs 2 adjacent open tiles. Clear the tile on the right.' : 'This tile is occupied.');
+    return false;
+  }
   const [fighter] = reserve.splice(index, 1);
   if (occupied) {
     reserve.splice(index, 0, { id: occupied.id, type: occupied.type, level: occupied.level });
@@ -1345,7 +1521,7 @@ function onCell({ col, row }: GridCell) {
   if (!canEditFormation() || overlay || col < 0 || col > 4 || row < 0 || row > 2) return;
   const key = cellKey(col, row);
   if (pendingMerge) {
-    mergeInto(units.find(unit => unit.col === col && unit.row === row)?.id);
+    mergeInto(getUnitAtCell(units, col, row)?.id);
     return;
   }
   selectedEmptyCell = null;
@@ -1360,14 +1536,16 @@ function onCell({ col, row }: GridCell) {
     placeReserveFighter(pendingRecruitId, key);
     return;
   }
-  const occupied = units.find(unit => unit.col === col && unit.row === row);
+  const occupied = getUnitAtCell(units, col, row);
   if (movingId) {
-    const moving = units.find(unit => unit.id === movingId);
-    if (moving) {
-      // Save both positions together; the current battle keeps its existing fighter snapshot.
-      if (occupied && occupied !== moving) Object.assign(occupied, { col: moving.col, row: moving.row });
-      Object.assign(moving, { col, row });
+    const destination = occupied && occupied.id !== movingId ? occupied : { col, row };
+    const result = planFormationMove(units, movingId, destination.col, destination.row, progression.unlockedCells);
+    if (!result.ok) {
+      tell('Not enough room. Both fighters need free, unlocked tiles.');
+      return;
     }
+    // Swap complete footprints atomically; a running battle keeps its old actors.
+    units = result.units;
     movingId = selectedId = null;
     saveFormation(); refresh(); return;
   }
@@ -1379,6 +1557,7 @@ function onCell({ col, row }: GridCell) {
 
 byId('selection-panel').addEventListener('click', event => {
   if (!canEditFormation() || overlay?.id !== 'unit-panel') return;
+  if (selectedId !== null && handleConnectClick(event, { location: 'army', id: selectedId })) return;
   const button = (event.target as Element).closest<HTMLButtonElement>('[data-action]'), action = button?.dataset.action;
   if (!action || button.disabled) return;
   if (action === 'cancel') { closeOverlay(); return; }
@@ -1400,7 +1579,6 @@ byId('selection-panel').addEventListener('click', event => {
   }
   const selected = units.find(unit => unit.id === selectedId);
   if (!selected) return;
-  if (action === 'merge') { beginMerge({ location: 'army', id: selected.id }); return; }
   if (action === 'move') {
     movingId = selected.id;
     closeOverlay(); refresh(); resumeFrames(); return;
@@ -1450,11 +1628,16 @@ byId('reset').addEventListener('click', () => {
 });
 
 function resetRun() {
+  connectSelection = null;
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
   barracks = createBarracks();
   recruitmentPool = 'humans';
   forge = createForge();
   byId('forge-feedback').textContent = 'Changes apply next wave.';
+  farm = createFarm();
+  byId('farm-feedback').textContent = 'Plant for free, then collect each harvest.';
+  capitol = createCapitol();
+  byId('capitol-feedback').textContent = 'Changes apply next battle.';
   hero = createHero();
   barracksPage = 0; barracksSelectedId = null; starterSupplyGranted = true;
   pendingRecruitId = null;
@@ -1470,6 +1653,7 @@ function resetRun() {
   economy.slaves = STARTING_SLAVES;
   checkpointTreasury(economy); pendingOfflineGold = pendingOfflineSlaves = 0;
   pendingSlotRefund = pendingReturnedFighters = pendingClosedCells = 0;
+  pendingForgeRefund = 0;
   progression = createProgression(); selectedLockedCell = selectedEmptyCell = null;
   battleSpeed = DEFAULT_BATTLE_SPEED;
   selectedId = movingId = lastOutcome = null;
@@ -1528,7 +1712,7 @@ function renderScene() {
   // Both canvases show the same level, including preparation, defeat and campaign replay.
   const levelNumber = getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber;
   scene?.render({ units, selectedId: null, movingId: null, placementType: null, battle, time: visualTime, levelNumber,
-    unlockedCells: progression.unlockedCells, heroState: hero });
+    unlockedCells: progression.unlockedCells, heroState: hero, capitolState: capitol });
   const selected = units.find(unit => unit.id === selectedId);
   const recruit = reserve.find(unit => unit.id === pendingRecruitId);
   armyScene?.render({ units, selectedId, movingId, levelNumber,
@@ -1609,7 +1793,7 @@ function startWave() {
   if (battle || !scene || !units.length || !telegram.isActive || isRecovering()) return;
   // Keep the cell picker or move action open across automatic wave transitions.
   if (runComplete()) { clearedWaves = 0; lastOutcome = null; save(); }
-  battle = createBattle(units, nextWaveNumber(), hero, forge);
+  battle = createBattle(units, nextWaveNumber(), hero, forge, capitol);
   paused = false; resultAge = 0; autoNextRemaining = null;
   battleAudio.setActive(true);
   void battleAudio.unlock();
@@ -1659,7 +1843,7 @@ function frame(timestamp: number) {
   if (destroyed || !telegram.isActive || paused || isRecovering()) { framePacer.reset(); resetFrameRate(); return; }
   const realDelta = framePacer.sample(timestamp);
   if (realDelta === null) { resumeFrames(); return; }
-  const dt = Math.min(realDelta, .1);
+  const dt = Math.min(realDelta, MAX_REAL_FRAME_DELTA);
   const battleDt = battle?.phase === 'running' ? battleFrameDelta(dt, battleSpeed) : dt;
   visualTime += battleDt;
   if (battle) {
@@ -1682,7 +1866,7 @@ function frame(timestamp: number) {
     if (wasRunning && battle.phase !== 'running') showResult();
     if (battle.phase !== 'running') {
       resultAge += dt;
-      // Countdown follows visible real time, not ×1.5/×2/×3 or the capped combat timestep.
+      // Countdown follows visible real time, not ×1/×2/×3 or the capped combat timestep.
       if (!wasRunning && autoNextRemaining !== null) {
         autoNextRemaining = Math.max(0, autoNextRemaining - realDelta);
         if (autoNextRemaining === 0) {

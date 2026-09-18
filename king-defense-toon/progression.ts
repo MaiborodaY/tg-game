@@ -73,8 +73,8 @@ export function createProgression(saved: unknown = {}): Progression {
   };
 }
 
-export function getArmyCapacity(barracksLevel: number = 1): 9 | 10 | 11 {
-  return barracksLevel === 3 ? 11 : barracksLevel === 2 ? 10 : 9;
+export function getArmyCapacity(barracksLevel: number = 1): 8 | 9 | 10 {
+  return barracksLevel === 3 ? 10 : barracksLevel === 2 ? 9 : 8;
 }
 
 function hasValidCells(progression: CellProgression): boolean {
@@ -96,12 +96,15 @@ export function getCellAvailability(progression: CellProgression, key: string, b
   if (!isValidCell(key)) return blocked('invalid-cell');
   if (!hasValidCells(progression)) return blocked('invalid-state');
   if (progression.unlockedCells.includes(key)) return blocked('unlocked');
-  const sideQuota = getArmyCapacity(barracksLevel) - 9;
+  const capacity = getArmyCapacity(barracksLevel);
+  const sideQuota = Math.max(0, capacity - 9);
   const sideCount = progression.unlockedCells.filter(cell => cell[0] === '0' || cell[0] === '4').length;
   if ((key[0] === '0' || key[0] === '4') && sideCount >= sideQuota) {
-    return sideQuota < 2 ? blocked('barracks-required', sideQuota === 0 ? 2 : 3) : blocked('max-capacity');
+    return sideQuota === 0 ? blocked('barracks-required', 3) : blocked('max-capacity');
   }
   const cost = nextCellCost(progression, barracksLevel);
+  // Barracks I leaves any one of the nine central cells locked until tier II.
+  if (cost === null && capacity === 8) return blocked('barracks-required', 2);
   return cost === null ? blocked('max-capacity') : { allowed: true, cost, requiredBarracksLevel: null, reason: 'available' };
 }
 

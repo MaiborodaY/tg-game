@@ -107,6 +107,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
     assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks II.*200 gold/);
+    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks II.*\+1 army tile/);
     assert.equal(await lancerInfo.locator('#barracks-start-upgrade').count(), 1, 'upgrade action lives beside Lancer');
     await fits();
     await screenshot('available');
@@ -212,6 +213,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
     assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks III.*2000 gold/);
+    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks III.*\+1 army tile/);
     await fits();
     await screenshot('third-available');
     const beforeThird = await state();
@@ -244,6 +246,7 @@ try {
     assert.equal((await state()).barracks.level, 3);
     assert.equal((await state()).barracks.firstLancerPending, false, 'III never grants a second guaranteed Lancer');
     assert.equal(await page.locator('#barracks-building-level').innerText(), 'III');
+    assert.match(await page.locator('#barracks-upgrade-note').innerText(), /Barracks III.*10 army tiles.*Elves unlocked/);
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false);
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false);

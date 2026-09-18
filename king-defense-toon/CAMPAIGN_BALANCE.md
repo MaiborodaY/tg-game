@@ -45,9 +45,9 @@ linear rather than compounded each round.
 | 1-10 / 10 | 100 | 8 | 5,159 |
 | 1-11 / 1 | 101 | 11 | 5,176 |
 | 1-20 / 10 | 200 | 9 | 9,889 |
-| 2-1 / 1 | 201 | 13 | 9,906 |
-| 2-10 / 10 | 300 | 9 | 14,619 |
-| 2-20 / 10 | 400 | 10 | 19,349 |
+| 2-1 / 1 | 201 | 13 | 11,392 |
+| 2-10 / 10 | 300 | 9 | 16,812 |
+| 2-20 / 10 | 400 | 10 | 22,251 |
 
 The prior requested wave-10 escort removal remains in place. Its explicit HP
 exception is now **869 → 825** at waves 9→10, followed by **953** on wave 11.
@@ -83,9 +83,13 @@ damage, healing, reinforcements and formation can change actual difficulty even
 when total HP rises.
 
 Level 2 continues the same curve with skeletons, skeleton archers, ghouls,
-Crypt Spider and Crypt King. It receives the same modest stat adjustment and
-retains doubled per-kill payouts by role. Its final Crypt King has
-**12,577 HP / 126 damage** within the 19,349-HP encounter.
+Crypt Spider and Crypt King. After the shared hero adjustment, all Level 2 enemies receive a further
+**15% HP and 15% damage**, once. Counts, arrivals, rewards, boss HP shares and
+the original growth formulas remain unchanged. Healing is unchanged.
+Waves 1-200 are unchanged by this additional multiplier. Level 2 retains doubled
+per-kill payouts by role. Its final Crypt King has **14,464 HP / 144.9 damage**
+within the **22,251-HP** encounter. These stat increases do not promise an exact
+difficulty percentage against every possible army.
 
 ## Goblin healer
 
@@ -161,8 +165,9 @@ unchanged. Movement regressions cover the crowded eighth wave at personal levels
 resource-linked runs above also include the later talent-tree change: a level-1
 hero now has melee only. Fixed-army win/loss reference levels in the opening
 regressions were remeasured accordingly; no enemy definitions were changed.
-The wave-four check uses the first talent point earned by three actual clears
-and verifies all three possible root skills with both tested army compositions.
+After the later 15% XP reduction, the wave-four check uses the actual level-one
+hero earned from three clears; separate replay fixtures verify all three root
+skills after the fourth clear earns a talent point.
 
 The later hero crowd-route fix makes him join melee sooner without changing stats
 or enemy definitions. Remeasuring waves 19/20/21 with the same eight-unit reference

@@ -16,13 +16,36 @@ test('the opening gains modest durability without extra bodies or faster arrival
   assert.deepEqual([...new Set(engine.WAVE_DEFINITIONS[8].spawns.map(spawn => spawn.at))], [.8, 14.8, 28.8]);
 });
 
-test('four level-two fighters can pass wave four with any first skill and zero or one healer', () => {
-  for (const healer of [0, 1]) for (const skill of ['heal_unlock', 'aura_unlock', 'hammer_unlock']) {
+test('four level-two fighters can pass wave four before the first hero skill with zero or one healer', () => {
+  for (const healer of [0, 1]) {
     const heroState = createHero();
-    // The actual first three clears earn the first talent point before wave four.
     for (const wave of engine.WAVE_DEFINITIONS.slice(0, 3)) {
       awardHeroXp(heroState, { waveNumber: wave.number, kills: wave.total, total: wave.total, won: true });
     }
+    assert.equal(heroState.xp, 42);
+    assert.equal(getHeroProgress(heroState).level, 1);
+    assert.equal(getHeroProgress(heroState).availablePoints, 0);
+    for (const skill of ['heal_unlock', 'aura_unlock', 'hammer_unlock']) {
+      assert.equal(spendHeroTalent(heroState, skill).spent, false);
+    }
+    const formation = makeFormation({ swordsman: 3 - healer, archer: 1, healer, level: 2 });
+    const result = simulateCombat(engine, { wave: 4, formation, heroState });
+    assert.equal(result.outcome, 'victory', `${healer} healer, no hero skill`);
+    assert.equal(result.kingHp, engine.KING_MAX_HP, `${healer} healer: army protects the king`);
+    assert.ok(result.survivors > 0, `${healer} healer: no king-only cleanup`);
+    assert.equal(result.enraged, false);
+  }
+});
+
+test('four level-two fighters can replay wave four with any earned first skill and zero or one healer', () => {
+  for (const healer of [0, 1]) for (const skill of ['heal_unlock', 'aura_unlock', 'hammer_unlock']) {
+    const heroState = createHero();
+    // Four first clears earn a skill. Replaying wave four preserves the original
+    // combat comparison; this fixture is not a forecast of first-clear progression.
+    for (const wave of engine.WAVE_DEFINITIONS.slice(0, 4)) {
+      awardHeroXp(heroState, { waveNumber: wave.number, kills: wave.total, total: wave.total, won: true });
+    }
+    assert.equal(heroState.xp, 57);
     assert.equal(getHeroProgress(heroState).level, 2);
     assert.equal(spendHeroTalent(heroState, skill).spent, true);
     const formation = makeFormation({ swordsman: 3 - healer, archer: 1, healer, level: 2 });

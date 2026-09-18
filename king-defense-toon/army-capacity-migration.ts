@@ -44,9 +44,15 @@ function assertNormalizedState(progression: Progression, roster: CampaignRoster)
 // The returned roster and updated progression must be persisted together with the refund.
 export function reconcileArmyCapacity(progression: Progression, roster: CampaignRoster, barracksLevel: number = 1): ArmyCapacityMigration {
   assertNormalizedState(progression, roster);
-  const sideQuota = getArmyCapacity(barracksLevel) - 9;
+  const capacity = getArmyCapacity(barracksLevel);
+  const centralQuota = Math.min(9, capacity);
+  const sideQuota = capacity - centralQuota;
+  let retainedCentral = 0;
   let retainedSides = 0;
-  const removedCells = progression.unlockedCells.filter(key => (key[0] === '0' || key[0] === '4') && retainedSides++ >= sideQuota);
+  // Normalization puts the three starter cells first; retain the earliest later
+  // purchases independently in each area, including the tier-I central limit.
+  const removedCells = progression.unlockedCells.filter(key => key[0] === '0' || key[0] === '4'
+    ? retainedSides++ >= sideQuota : retainedCentral++ >= centralQuota);
   const removed = new Set<string>(removedCells);
   const retainedCells = progression.unlockedCells.filter(key => !removed.has(key));
   const moved = roster.units.filter(unit => removed.has(`${unit.col}:${unit.row}`));

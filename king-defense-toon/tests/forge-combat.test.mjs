@@ -26,9 +26,10 @@ function fixture(type, forge) {
 test('forge snapshots affect all regular units but preserve hero, castle and spawned enemies', () => {
   const formation = makeFormation({ swordsman: 1, archer: 1, healer: 1 });
   formation.push({ id: 99, type: 'lancer', level: 3, col: 3, row: 1 });
+  formation.push({ id: 100, type: 'pantherRider', level: 3, col: 3, row: 0 });
   const neutral = createBattle(formation, 1);
   assert.deepEqual(createBattle(formation, 1, undefined, createForge()), neutral);
-  const forge = createForge({ health: 10, attack: 20, attackSpeed: 30, rangedAttack: 40, rangedAttackSpeed: 50 });
+  const forge = createForge({ health: 10, attack: 20, attackSpeed: 30 });
   const improved = createBattle(formation, 1, undefined, forge);
   assert.deepEqual(improved.hero, neutral.hero);
   assert.deepEqual(improved.castle, neutral.castle);
@@ -52,14 +53,14 @@ test('forge snapshots affect all regular units but preserve hero, castle and spa
 });
 
 test('forged attack and healing rates scale both action windups and cooldowns', () => {
-  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8 };
-  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45 };
-  const forge = createForge({ attackSpeed: 50, rangedAttackSpeed: 50 });
+  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65 };
+  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05 };
+  const forge = createForge({ attackSpeed: 50 });
   for (const type of Object.keys(durations)) {
     const battle = fixture(type, forge), unit = battle.allies[0];
     updateBattle(battle, DT);
     assert.equal(unit.action, type === 'healer' ? 'heal' : type === 'archer' ? 'shoot' : 'attack');
-    const speed = type === 'archer' ? 2 : 1.5;
+    const speed = 1.5;
     close(unit.actionDuration, durations[type] / COMBAT_PACE / speed);
     close(unit.cooldown, intervals[type] / COMBAT_PACE / speed);
   }
@@ -95,9 +96,9 @@ test('attack-speed upgrades increase monk healing cadence without changing per-c
   assert.ok(faster >= base * 1.8, `${base} heals versus ${faster}`);
 });
 
-test('upgraded combat stays deterministic across every speed and 30/60/120 FPS', () => {
+test('upgraded combat stays deterministic across every speed and 20/30/60/120 FPS', () => {
   const formation = makeFormation({ swordsman: 4, archer: 1, healer: 2, level: 20 });
-  const forge = Object.freeze(createForge({ health: 17, attack: 13, attackSpeed: 21, rangedAttack: 9, rangedAttackSpeed: 19 }));
+  const forge = Object.freeze(createForge({ health: 17, attack: 13, attackSpeed: 21 }));
   const withoutVisualTimers = ({ hitTime, deathTime, ...actor }) => actor;
   function run(fps, speed) {
     const battle = createBattle(formation, 9, undefined, forge), events = [];
@@ -107,6 +108,13 @@ test('upgraded combat stays deterministic across every speed and 30/60/120 FPS',
     return { ...state, allies: allies.map(withoutVisualTimers), enemies: enemies.map(withoutVisualTimers),
       hero: withoutVisualTimers(hero), castle: withoutVisualTimers(castle), events };
   }
-  const expected = run(60, 1.5);
-  for (const speed of BATTLE_SPEEDS) for (const fps of [30, 60, 120]) assert.deepEqual(run(fps, speed), expected, `${fps} FPS ×${speed}`);
+  const expected = run(60, 1);
+  for (const speed of BATTLE_SPEEDS) for (const fps of [20, 30, 60, 120]) assert.deepEqual(run(fps, speed), expected, `${fps} FPS ×${speed}`);
+});
+
+test('old ranged-only fields cannot buff archers in a real battle snapshot', () => {
+  const formation = makeFormation({ swordsman: 1, archer: 1, healer: 1, level: 10 });
+  const shared = createForge({ health: 4, attack: 9, attackSpeed: 12 });
+  assert.deepEqual(createBattle(formation, 1, undefined, { ...shared, rangedAttack: 100, rangedAttackSpeed: 100 }),
+    createBattle(formation, 1, undefined, shared));
 });

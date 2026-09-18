@@ -3,7 +3,7 @@ import test from 'node:test';
 import { COMBAT_PACE, createBattle, updateBattle } from '../combat.ts';
 import { WALKABLE_AREAS } from '../field.ts';
 import { createHero, heroXpForLevel } from '../hero.ts';
-import { BATTLE_SPEEDS } from '../battle-speed.ts';
+import { BATTLE_SPEEDS, battleFrameDelta } from '../battle-speed.ts';
 
 const DT = 1 / 60;
 const hold = unit => Object.assign(unit, {
@@ -37,7 +37,7 @@ function traceApproach(battle, dt = DT) {
   const startX = battle.hero.x;
   for (let elapsed = 0; elapsed < 12 - 1e-8; elapsed += dt) {
     const before = { x: battle.hero.x, y: battle.hero.y, elapsed: battle.elapsed };
-    updateBattle(battle, dt);
+    updateBattle(battle, Math.min(dt, 12 - elapsed));
     const hero = battle.hero;
     maxSideways = Math.max(maxSideways, Math.abs(hero.x - startX));
     if (battle.enemies[0].hp < 1000) firstHit ??= battle.elapsed;
@@ -65,11 +65,11 @@ test('hero goes around an occupied frontline and lands melee hits, with or witho
   }
 });
 
-test('crowded hero pursuit is identical at 30/60/120 FPS and x1.5/x2/x3', () => {
+test('crowded hero pursuit is identical at 20/30/60/120 FPS and x1/x2/x3', () => {
   const expected = traceApproach(crowdedEncounter());
-  for (const fps of [30, 60, 120]) {
+  for (const fps of [20, 30, 60, 120]) {
     for (const speed of BATTLE_SPEEDS) {
-      const actual = traceApproach(crowdedEncounter(), speed / fps);
+      const actual = traceApproach(crowdedEncounter(), battleFrameDelta(1 / fps, speed));
       assert.equal(actual.hp, expected.hp);
       assert.ok(Math.abs(actual.x - expected.x) < 1e-6);
       assert.ok(Math.abs(actual.y - expected.y) < 1e-6);

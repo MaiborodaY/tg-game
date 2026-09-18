@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBattle, updateBattle } from '../combat.ts';
-import { BATTLE_SPEEDS, battleFrameDelta } from '../battle-speed.ts';
+import { BASE_BATTLE_SPEED, BATTLE_SPEEDS, MAX_BATTLE_FRAME_DELTA, battleFrameDelta } from '../battle-speed.ts';
 import { makeFormation } from '../scripts/combat-balance.mjs';
 
 const TICK = 1 / 60;
@@ -31,7 +31,7 @@ function assertFrameIndependentBattle(level, outcome) {
   const saved = structuredClone(formation);
   formation.forEach(Object.freeze);
   Object.freeze(formation);
-  const expected = runBattle(formation, [1 / 60], 1.5);
+  const expected = runBattle(formation, [1 / 60], 1);
   assert.equal(expected.phase, outcome);
   assert.equal(expected.total, 9);
   assert.equal(expected.hero.type, 'hero');
@@ -50,7 +50,7 @@ function assertFrameIndependentBattle(level, outcome) {
     assert.ok(expected.kills < expected.total);
   }
   for (const speed of BATTLE_SPEEDS) {
-    for (const durations of [[1 / 20], [1 / 30], [1 / 60], [1 / 60, .041, .024, .1, .012]]) {
+    for (const durations of [[1 / 10], [1 / 20], [1 / 30], [1 / 60], [1 / 120], [1 / 60, .041, .024, .1, .012]]) {
       assert.deepEqual(runBattle(formation, durations, speed), expected,
         `speed ${speed}, frames ${durations}`);
     }
@@ -58,7 +58,7 @@ function assertFrameIndependentBattle(level, outcome) {
   assert.deepEqual(formation, saved, 'combat must not modify the saved army');
 }
 
-test('a ninth-wave victory preserves state and events at 20/30/60 FPS, all speeds and jitter', () => {
+test('a ninth-wave victory preserves state and events at 10/20/30/60/120 FPS, all speeds and jitter', () => {
   // The hero/castle update changed this encounter. A stronger army supplies the
   // victory fixture without treating this timing regression as a balance threshold.
   assertFrameIndependentBattle(20, 'victory');
@@ -92,11 +92,29 @@ test('a long foreground frame is capped without discarding the prior fractional 
   const battle = createBattle([], 1);
   updateBattle(battle, TICK / 2);
   updateBattle(battle, 600);
-  assert.ok(Math.abs(battle.elapsed - .3) < 1e-12, 'catch-up is limited to 18 ticks');
-  assert.ok(Math.abs(battle.stepRemainder - TICK / 2) < 1e-12);
+  const budget = MAX_BATTLE_FRAME_DELTA + TICK / 2;
+  const elapsed = Math.floor(budget / TICK) * TICK;
+  assert.ok(Math.abs(battle.elapsed - elapsed) < 1e-12, 'catch-up is bounded by the fastest capped foreground frame');
+  assert.ok(Math.abs(battle.stepRemainder - (budget - elapsed)) < 1e-12);
   updateBattle(battle, TICK / 2);
-  assert.ok(Math.abs(battle.elapsed - 19 * TICK) < 1e-12);
-  assert.ok(battle.stepRemainder < 1e-12, 'discarded stall time cannot return on the next frame');
+  const total = budget + TICK / 2;
+  assert.ok(Math.abs(battle.elapsed - Math.floor(total / TICK) * TICK) < 1e-12);
+  assert.ok(Math.abs(battle.elapsed + battle.stepRemainder - total) < 1e-12,
+    'discarded stall time cannot return on the next frame');
+});
+
+test('real-frame time is fully retained through combat at every speed, including ten FPS x3', () => {
+  for (const fps of [10, 20, 30, 60, 120]) for (const speed of BATTLE_SPEEDS) {
+    const battle = createBattle([], 1);
+    // Isolate the clock from victory/defeat by leaving the first arrival in the future.
+    battle.nextSpawn = 1000000;
+    updateBattle(battle, TICK / 2);
+    for (let frame = 0; frame < fps * 10; frame++) updateBattle(battle, battleFrameDelta(1 / fps, speed));
+    assert.equal(battle.phase, 'running');
+    const expected = TICK / 2 + 10 * BASE_BATTLE_SPEED * speed;
+    assert.ok(Math.abs(battle.elapsed + battle.stepRemainder - expected) < 1e-9,
+      `${fps} FPS x${speed}: no valid frame time can be silently truncated`);
+  }
 });
 
 test('after the result, effects finish without more damage, spawns, rewards or elapsed battle time', () => {
