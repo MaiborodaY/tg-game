@@ -144,3 +144,43 @@ test('legacy and malformed barracks saves default safely without inventing a fre
   assert.equal(speedUpBarracks(createBarracks(), 100, START).reason, 'not-upgrading');
   assert.equal(consumeFirstLancerGuarantee(createBarracks(), 'lancer'), false);
 });
+
+test('all barracks actions reject inconsistent runtime state before changing it or charging gold', () => {
+  const recruitment = recruitmentAt(50);
+  const valid = createBarracks({}, START);
+  const invalidStates = [null, {}, { ...valid, level: 3 }, { ...valid, firstLancerPending: true },
+    { ...valid, firstLancerPending: 'false' }, { ...valid, upgradeStartedAt: START },
+    { ...valid, upgradeReadyAt: START + HOUR },
+    { ...valid, upgradeStartedAt: START, upgradeReadyAt: START + HOUR + 1 },
+    { ...valid, level: 2, upgradeStartedAt: START, upgradeReadyAt: START + HOUR }];
+  const actions = [state => getBarracksUpgrade(state, recruitment, START),
+    state => startBarracksUpgrade(state, recruitment, 1000, START),
+    state => completeBarracksUpgrade(state, START + HOUR),
+    state => speedUpBarracks(state, 1000, START),
+    state => consumeFirstLancerGuarantee(state, 'lancer')];
+  for (const state of invalidStates) for (const action of actions) {
+    const before = structuredClone(state);
+    assert.throws(() => action(state), { name: 'TypeError', message: 'Invalid barracks state' });
+    assert.deepEqual(state, before);
+  }
+});
+
+test('construction timestamps stay within safe integers and invalid status clocks cannot inflate prices', () => {
+  const recruitment = recruitmentAt(50);
+  const lastStart = Number.MAX_SAFE_INTEGER - HOUR;
+  const barracks = createBarracks({}, START);
+  assert.equal(startBarracksUpgrade(barracks, recruitment, 200, lastStart).ok, true);
+  assert.equal(barracks.upgradeReadyAt, Number.MAX_SAFE_INTEGER);
+  for (const now of [null, '1800000000000', NaN, Infinity, 0, -1]) {
+    const status = getBarracksUpgrade(barracks, recruitment, now);
+    assert.equal(status.remainingMs, HOUR);
+    assert.equal(status.speedUpCost, 100);
+    assert.equal(status.status, 'upgrading');
+  }
+  const roundTrip = createBarracks(JSON.parse(JSON.stringify(barracks)), lastStart);
+  assert.deepEqual(roundTrip, barracks);
+  assert.equal(completeBarracksUpgrade(roundTrip, Number.MAX_SAFE_INTEGER), true);
+  const overflow = { ...barracks, upgradeStartedAt: lastStart + 1, upgradeReadyAt: Number.MAX_SAFE_INTEGER + 1 };
+  assert.deepEqual(createBarracks(overflow, START), createBarracks({}, START));
+  assert.equal(startBarracksUpgrade(createBarracks(), recruitment, 200, lastStart + 1).reason, 'invalid-time');
+});

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { HERO_MAX_LEVEL, HERO_TALENTS, createHero, getHeroProgress, getHeroStats, getHeroTalentStatus,
+import { HERO_MAX_LEVEL, HERO_BRANCHES, HERO_TALENTS, createHero, getHeroProgress, getHeroStats, getHeroTalentStatus,
   heroXpForLevel, spendHeroTalent, resetHeroTalents, awardHeroXp } from '../hero.mjs';
 
 const atLevel = (level, talents = {}) => createHero({ xp: heroXpForLevel(level), talents });
@@ -208,4 +208,78 @@ test('JSON save reload preserves a legal mixed build and repeat-clear history', 
   assert.deepEqual(createHero(JSON.parse(JSON.stringify(hero))), hero);
   assert.equal(getHeroProgress(hero).spentPoints, 19);
   assert.equal(getHeroStats(hero).bastion, true);
+});
+
+test('XP thresholds clamp finite levels without coercing malformed level inputs', () => {
+  for (const [level, expected] of [[-2, 0], [1.99, 0], [2.99, 50], [20, 18050], [999, 18050]]) {
+    assert.equal(heroXpForLevel(level), expected);
+  }
+  for (const invalid of [undefined, null, '20', [], {}, NaN, Infinity, -Infinity, 20n, Symbol('level')]) {
+    assert.equal(heroXpForLevel(invalid), 0);
+  }
+});
+
+test('omitted outcomes and malformed numeric fields leave the hero untouched', () => {
+  const hero = atLevel(3), before = structuredClone(hero);
+  const noReward = { gained: 0, level: 3, previousLevel: 3, leveledUp: false };
+  assert.deepEqual(awardHeroXp(hero), noReward);
+  for (const field of ['waveNumber', 'kills', 'total']) {
+    for (const invalid of ['1', null, true, 1.5, NaN, Number.MAX_SAFE_INTEGER + 1, 1n, Symbol(field)]) {
+      const outcome = { waveNumber: 1, kills: 1, total: 1, won: true, [field]: invalid };
+      assert.deepEqual(awardHeroXp(hero, outcome), noReward, field);
+      assert.deepEqual(hero, before, field);
+    }
+  }
+  for (const invalid of [undefined, null, [], false, 'hero', 5]) {
+    assert.deepEqual(resetHeroTalents(invalid), { reset: false, refunded: 0 });
+    assert.equal(spendHeroTalent(invalid, 'heal_power').spent, false);
+    assert.deepEqual(awardHeroXp(invalid, { waveNumber: 1, kills: 1, total: 1, won: true }),
+      { gained: 0, level: 1, previousLevel: 1, leveledUp: false });
+  }
+});
+
+test('talent mutations normalize partial objects while preserving their identity and unrelated fields', () => {
+  const marker = { preserved: true };
+  const hero = { xp: 50, highestWave: 4, talents: { heal_power: 0 }, marker };
+  const savedTalents = hero.talents;
+  assert.deepEqual(spendHeroTalent(hero, 'heal_power'), { spent: true, reason: '', rank: 1 });
+  assert.equal(hero.marker, marker);
+  assert.notEqual(hero.talents, savedTalents);
+  assert.deepEqual(savedTalents, { heal_power: 0 });
+  assert.deepEqual(Object.keys(hero.talents), HERO_TALENTS.map(talent => talent.id));
+  const learnedTalents = hero.talents;
+  assert.deepEqual(resetHeroTalents(hero), { reset: true, refunded: 1 });
+  assert.equal(learnedTalents.heal_power, 1, 'reset replaces ranks without mutating the previous snapshot');
+  assert.equal(hero.talents.heal_power, 0);
+  assert.equal(hero.xp, 50);
+  assert.equal(hero.highestWave, 4);
+  assert.equal(hero.marker, marker);
+});
+
+test('rewards round before the XP cap and victories still advance history at the cap', () => {
+  const hero = createHero({ xp: heroXpForLevel(20) - 2, highestWave: 4 });
+  const previousTalents = hero.talents;
+  const outcome = { waveNumber: 5, kills: 1, total: 1, won: true };
+  const uncapped = createHero();
+  assert.equal(awardHeroXp(uncapped, outcome).gained, 19, '18.75 XP rounds to 19');
+  assert.deepEqual(awardHeroXp(hero, outcome), { gained: 2, level: 20, previousLevel: 19, leveledUp: true });
+  assert.equal(hero.xp, heroXpForLevel(20));
+  assert.notEqual(hero.talents, previousTalents);
+  assert.equal(hero.highestWave, 5);
+  assert.deepEqual(awardHeroXp(hero, { ...outcome, waveNumber: 6 }),
+    { gained: 0, level: 20, previousLevel: 20, leveledUp: false });
+  assert.equal(hero.highestWave, 6);
+});
+
+test('hero definitions stay frozen while constructed state and stat snapshots stay mutable', () => {
+  for (const definitions of [HERO_BRANCHES, HERO_TALENTS]) {
+    assert.equal(Object.isFrozen(definitions), true);
+    assert.equal(definitions.every(Object.isFrozen), true);
+  }
+  const hero = createHero(), stats = getHeroStats(hero);
+  assert.equal(Object.isFrozen(hero), false);
+  assert.equal(Object.isFrozen(hero.talents), false);
+  assert.equal(Object.isFrozen(stats), false);
+  stats.maxHp = 1;
+  assert.equal(getHeroStats(hero).maxHp, 60);
 });

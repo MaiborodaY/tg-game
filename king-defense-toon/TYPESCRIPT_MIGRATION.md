@@ -152,6 +152,58 @@ ancestors of this migration branch, so no additional integration was needed.
   optional favicon was absent and the test environment blocked the external
   Telegram SDK; this does not replace a physical Telegram-device check.
 
+## Stage 3 scope
+
+Four more runtime implementations are TypeScript, bringing the total to fifteen:
+
+- `economy.ts`: validated economy state, treasury income/upgrades, offline
+  receipts, capture counters/guarantees and post-battle progress.
+- `market.ts`: market state, purchase/production, offline claims and checkpoints.
+  Its minimal producer type requires a slave balance without a runtime import
+  back into the economy module.
+- `barracks.ts`: nullable construction clocks, recruitment eligibility,
+  completion/acceleration, first-Lancer guarantee and typed action results.
+- `hero.ts`: hero state, talent/branch identifiers, definitions, prerequisites,
+  point budget, combat-stat snapshots and XP outcome/reward contracts.
+
+Factories accept `unknown` saved input and retain runtime validation. Internal
+TypeScript callers use complete state and numeric/boolean inputs. The existing
+JavaScript callers remain protected by the same runtime guards. Catalogues
+remain immutable; live model state and derived combat snapshots remain mutable.
+The four `.mjs` entry points remain thin bridges to the single TS implementation.
+
+This stage starts from `d7780db`. Fetched `origin/main` remains `c999295`, and
+`origin/codex/pixel-chronicle` remains `7a9a335`; both are included already.
+No gameplay integration, balance adjustment, save-format change or new runtime
+dependency is part of this stage. Combat, rendering and main/UI callers are
+still JavaScript and are not yet covered by TypeScript checking.
+
+## Stage 3 validation
+
+- `brotd:check` passed: strict type checks, all **221 Node tests** and the
+  production Vite build. Type tests now include **87 negative API contracts**,
+  with 38 new checks for state/identifier types, nullable clocks, valid action
+  results, numeric inputs and immutable definitions.
+- Eighteen new runtime tests cover economic normalization, fractional income,
+  four-hour offline caps, consumed absence, clock rollback, capture guarantee /
+  random-call order, malformed construction state, safe-integer timer boundaries,
+  hero mutation boundaries and catalogue/reward behavior.
+- Independent review and **103,536 old/new differential comparisons** passed:
+  constants/freeze behavior, malformed saves, return values, errors and complete
+  state after economy, Barracks and hero operation sequences. Verification uses
+  a fixed clock and random seed, and was repeated after source edits finished.
+- Five storage-recovery browser scenarios passed, including offline receipts
+  and combat-reward retry/reload protection.
+- Barracks/recruitment browser checks passed at 320x568, 320x700 and 390x700,
+  including timers, offline completion, spending once and first-Lancer guarantee.
+- Hero browser checks passed at 320/390px: save/reload, battle snapshots, XP
+  once, talent reset, and actual level-1/20 healing/hammer behavior at speed x3.
+- The compiled production build passed a standalone Edge smoke at 390x844:
+  wave 9 advanced, hero and army moved, required hero/Lancer assets returned
+  HTTP 200, and no JavaScript exceptions or development hooks were present.
+  The environment still blocks Telegram's external SDK, so this is not a
+  physical Telegram-device result.
+
 ## Completion criteria and next stages
 
 For every slice: type checking, relevant behavior tests and production build
@@ -159,8 +211,8 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: migrate economy, market, Barracks and hero state, using the typed
-unit/recruitment/progression contracts. Then migrate combat/events and storage/cache APIs,
+Next: migrate combat state/events using the typed unit, wave, economy and hero
+contracts, then storage/cache APIs,
 followed by rendering, Telegram/audio, DOM adapters and finally the main module.
 Keep major architecture changes separate from mechanical migration steps.
 
