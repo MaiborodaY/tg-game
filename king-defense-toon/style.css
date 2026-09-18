@@ -482,7 +482,7 @@ svg { display: block; }
 .recruitment-detail progress::-moz-progress-bar { background: #8aaa69; box-shadow: inset 0 1px #b5cc8b; }
 .recruitment-info-note { margin: 6px 2px 0; color: #8d7a58; font-size: 11px; line-height: 15px; text-align: center; }
 @media (max-height: 600px) {
-  .human-recruitment-note { display: none; }
+  .recruitment-info-note { display: none; }
 }
 .recruitment-detail.is-locked { background: #e6dfbd; border-color: #b6ac80; }
 .recruitment-detail.is-locked > img { opacity: .7; }

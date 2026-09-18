@@ -74,6 +74,20 @@ test('rider loads only visible palettes and does not pull other recruits or menu
   assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /panther-rider/);
 });
 
+test('elf archer loads only the displayed battle/formation/placement ranks without portraits or extra effects', () => {
+  const state = { units: [{ type: 'elfArcher', level: 50 }, { type: 'elfArcher', level: 50 }],
+    battle: { allies: [{ type: 'elfArcher', level: 1 }] }, placementType: 'elfArcher', placementLevel: 500 };
+  const battle = getSceneAssetPlan(state);
+  assert.deepEqual(battle.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['elfArcher:1', 'elfArcher:2', 'elfArcher:5']);
+  const urls = battle.keys.join(' ');
+  for (const color of ['green', 'purple', 'black']) assert.match(urls, new RegExp(`elf-archer-${color}\\.webp`));
+  assert.doesNotMatch(urls, /elf-archer-(red|gold)|elf-archer-\w+-art|recruitment|panther-rider/);
+  const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
+  assert.equal(army.resources.size, 3, 'one map and two visible sheets');
+  assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /elf-archer/);
+});
+
 test('level 500 and later load one Black palette per present class without earlier palettes', () => {
   const plan = getSceneAssetPlan({ units: [
     { type: 'swordsman', level: 500 }, { type: 'swordsman', level: 999 },

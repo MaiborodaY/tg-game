@@ -40,6 +40,8 @@ import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.ts';
 import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from './panther-rider-art.ts';
 import { pantherRiderFrame } from './panther-rider-animation.ts';
+import { ELF_ARCHER_ASSETS, ELF_ARCHER_GEOMETRY, ELF_ARCHER_RENDER_HEIGHT } from './elf-archer-art.ts';
+import { elfArcherFrame } from './elf-archer-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
@@ -129,8 +131,18 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     frameFor: pantherRiderFrame,
     horizontalFacing: true,
   },
+  elfArcher: {
+    ...ELF_ARCHER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: ELF_ARCHER_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: elfArcherFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, healer: 39, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -386,7 +398,7 @@ function attackProgress(actor: AnimationActor | null | undefined) {
 
 function drawRange(context: CanvasRenderingContext2D, type: ActorType, x: number, y: number, ghost = false) {
   const radius = getUnitRange(type);
-  const color = type === 'healer' ? '#73cb97' : type === 'archer' ? '#7ac4f1' : '#f3cf76';
+  const color = type === 'healer' ? '#73cb97' : type === 'archer' || type === 'elfArcher' ? '#7ac4f1' : '#f3cf76';
   context.save();
   context.fillStyle = `${color}1a`;
   context.strokeStyle = color;
@@ -631,7 +643,7 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
-  const alliedArrow = effect.type === 'arrow' && effect.sourceType === 'archer';
+  const alliedArrow = effect.type === 'arrow' && (effect.sourceType === 'archer' || effect.sourceType === 'elfArcher');
   const alliedHeal = effect.type === 'heal' && effect.sourceType === 'healer';
   const distance = Math.max(1, Math.hypot(targetX - effect.x, targetY - effect.y));
   const directionX = (targetX - effect.x) / distance;
@@ -992,7 +1004,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
             const availability = state.barracksLevel === undefined ? null
               : getCellAvailability({ unlockedCells: state.unlockedCells ?? [] }, key, state.barracksLevel);
             const requirement = availability && !availability.allowed
-              ? availability.requiredBarracksLevel ? `Barr. ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Later'
+              ? availability.requiredBarracksLevel ? `Barr. ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Later'
               : undefined;
             drawLockedCell(context, x, y, width, height, state.selectedLockedCell === key,
               availability ? availability.cost : state.nextUnlockCost, requirement);
@@ -1152,11 +1164,13 @@ export async function createScene(canvas: HTMLCanvasElement, {
     },
     getPortrait(type) {
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[1].art;
+      if (type === 'elfArcher') return ELF_ARCHER_ASSETS[1].art;
       return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
       if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'elfArcher') return ELF_ARCHER_ASSETS[getUnitRank(level).level].art;
       return rankArt[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {

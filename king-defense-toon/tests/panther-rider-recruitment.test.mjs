@@ -8,21 +8,26 @@ import { createProgression } from '../progression.ts';
 
 const unlocked = { pool: 'elves', elvesUnlocked: true };
 
-test('the staged elf pool contains only playable riders and preserves both human chance tables', () => {
+test('the trained elf pool splits riders and archers equally and preserves both human chance tables', () => {
   const expectedHumans = getRecruitChances(true);
+  const trained = createRecruitment({ version: 2, received: { pantherRider: 15 } });
   for (const lancerUnlocked of [false, true]) {
-    assert.deepEqual(getRecruitChances(lancerUnlocked, 'elves'), [{ type: 'pantherRider', chance: 1 }]);
-    for (const roll of [0, .25, .5, .75, .999999]) {
-      const state = createRecruitment();
-      assert.equal(receiveRecruit(state, () => roll, { ...unlocked, lancerUnlocked }).type, 'pantherRider');
-      assert.deepEqual(state.received, { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 1 });
+    assert.deepEqual(getRecruitChances(lancerUnlocked, 'elves', trained), [{ type: 'pantherRider', chance: .5 }, { type: 'elfArcher', chance: .5 }]);
+    for (const roll of [0, .25, .499999, .5, .75, .999999]) {
+      const state = createRecruitment(trained);
+      const expected = roll < .5 ? 'pantherRider' : 'elfArcher';
+      assert.equal(receiveRecruit(state, () => roll, { ...unlocked, lancerUnlocked }).type, expected);
+      assert.deepEqual(state.received, { swordsman: 0, archer: 0, healer: 0, lancer: 0,
+        pantherRider: 15 + Number(expected === 'pantherRider'), elfArcher: Number(expected === 'elfArcher') });
     }
   }
   assert.equal(getRecruitChances(false).length, 3);
   assert.deepEqual(getRecruitChances(true), expectedHumans);
   assert.deepEqual(expectedHumans.map(entry => entry.chance), [.25, .25, .25, .25]);
-  assert.ok(Object.isFrozen(getRecruitChances(true, 'elves')));
-  assert.ok(getRecruitChances(true, 'elves').every(Object.isFrozen));
+  for (const state of [undefined, trained]) {
+    assert.ok(Object.isFrozen(getRecruitChances(true, 'elves', state)));
+    assert.ok(getRecruitChances(true, 'elves', state).every(Object.isFrozen));
+  }
 });
 
 test('locked or unsupported pools fail before rolling or changing recruitment', () => {

@@ -65,7 +65,7 @@ test('unlocking rejects invalid purchases without changing progression or gold',
 });
 
 test('barracks capacities include the three starter cells and preserve the existing purchase prices', () => {
-  for (const [level, capacity] of [[1, 8], [2, 9], [3, 10]]) {
+  for (const [level, capacity] of [[1, 8], [2, 9], [3, 10], [4, 11]]) {
     const progression = createProgression();
     assert.equal(getArmyCapacity(level), capacity);
     let gold = 20000;
@@ -85,8 +85,8 @@ test('barracks capacities include the three starter cells and preserve the exist
     assert.equal(gold, 20000 - CELL_UNLOCK_COSTS.slice(0, capacity - 3).reduce((sum, cost) => sum + cost, 0));
     const blocked = getCellAvailability(progression, '0:0', level);
     assert.equal(blocked.allowed, false);
-    assert.equal(blocked.requiredBarracksLevel, level < 3 ? 3 : null);
-    assert.equal(blocked.reason, level < 3 ? 'barracks-required' : 'max-capacity');
+    assert.equal(blocked.requiredBarracksLevel, level < 3 ? 3 : level === 3 ? 4 : null);
+    assert.equal(blocked.reason, level < 4 ? 'barracks-required' : 'max-capacity');
     assert.deepEqual(unlockCell(progression, gold, '0:0', level), { unlocked: false, gold });
   }
 });
@@ -103,15 +103,17 @@ test('side-cell quotas apply before the central formation is full and allow eith
     }
     assert.equal(unlockCell(progression, 100, firstSide, 3).unlocked, true);
     assert.equal(progression.unlockedCells.length, 4);
-    assert.equal(getCellAvailability(progression, otherSide, 3).reason, 'max-capacity');
+    assert.deepEqual(getCellAvailability(progression, otherSide, 3), {
+      allowed: false, cost: null, requiredBarracksLevel: 4, reason: 'barracks-required',
+    });
     assert.equal(unlockCell(progression, 100, otherSide, 3).unlocked, false);
-    assert.equal(getCellAvailability(progression, '4:2', 3).reason, 'max-capacity');
+    assert.equal(getCellAvailability(progression, '4:2', 3).requiredBarracksLevel, 4);
     assert.equal(unlockCell(progression, 100, '4:2', 3).unlocked, false);
     assert.equal(getCellAvailability(progression, '1:0', 3).allowed, true);
   }
 });
 
-test('any last central cell waits for Barracks II, and the same price ladder continues at III', () => {
+test('any last central cell waits for Barracks II, and the same price ladder continues at III and IV', () => {
   const centralPurchases = ['1:0', '3:0', '1:1', '3:1', '1:2', '3:2'];
   for (const lastCell of centralPurchases) {
     const progression = createProgression();
@@ -132,7 +134,15 @@ test('any last central cell waits for Barracks II, and the same price ladder con
     assert.equal(nextCellCost(progression, 3), 550);
     assert.deepEqual(unlockCell(progression, 550, '4:1', 3), { unlocked: true, gold: 0 });
     assert.equal(progression.unlockedCells.length, 10);
-    assert.equal(getCellAvailability(progression, '0:1', 3).reason, 'max-capacity');
+    assert.equal(getCellAvailability(progression, '0:1', 3).requiredBarracksLevel, 4);
+    assert.equal(nextCellCost(progression, 4), 750);
+    const beforeFourth = structuredClone(progression);
+    assert.deepEqual(unlockCell(progression, 749, '0:1', 4), { unlocked: false, gold: 749 });
+    assert.deepEqual(progression, beforeFourth);
+    assert.deepEqual(unlockCell(progression, 750, '0:1', 4), { unlocked: true, gold: 0 });
+    assert.equal(progression.unlockedCells.length, 11);
+    assert.equal(nextCellCost(progression, 4), null);
+    assert.equal(getCellAvailability(progression, '0:0', 4).reason, 'max-capacity');
   }
 });
 
@@ -150,7 +160,7 @@ test('tier increases grant purchase permission without granting or charging for 
 });
 
 test('invalid tiers fail closed and malformed runtime cells cannot be purchased', () => {
-  for (const level of [0, -1, 4, 1.5, '2', '3', NaN, Infinity, null]) {
+  for (const level of [0, -1, 5, 1.5, '2', '3', '4', NaN, Infinity, null]) {
     assert.equal(getArmyCapacity(level), 8);
     assert.equal(unlockCell(createProgression(), 100, '0:0', level).unlocked, false);
   }
@@ -161,6 +171,25 @@ test('invalid tiers fail closed and malformed runtime cells cannot be purchased'
     assert.deepEqual(unlockCell(progression, 100, '3:0'), { unlocked: false, gold: 100 });
     assert.equal(nextCellCost(progression), null);
     assert.deepEqual(progression, before);
+  }
+});
+
+test('Barracks IV permits exactly two chosen side cells even before buying the full central formation', () => {
+  for (const sides of [['0:0', '4:0'], ['0:0', '0:2'], ['4:1', '4:2']]) {
+    const progression = createProgression({ unlockedCells: [sides[0]] });
+    const before = structuredClone(progression);
+    assert.equal(getCellAvailability(progression, sides[1], 3).requiredBarracksLevel, 4);
+    assert.equal(getCellAvailability(progression, sides[1], 4).cost, 50);
+    assert.deepEqual(progression, before, 'tier increases do not grant the cell for free');
+    assert.deepEqual(unlockCell(progression, 50, sides[1], 4), { unlocked: true, gold: 0 });
+    assert.equal(progression.unlockedCells.length, 5);
+    for (const key of ['0:0', '0:1', '0:2', '4:0', '4:1', '4:2'].filter(key => !sides.includes(key))) {
+      assert.deepEqual(getCellAvailability(progression, key, 4), {
+        allowed: false, cost: null, requiredBarracksLevel: null, reason: 'max-capacity',
+      });
+      assert.equal(unlockCell(progression, 10000, key, 4).unlocked, false);
+    }
+    assert.equal(getCellAvailability(progression, '1:0', 4).allowed, true, 'side quota does not block central purchases');
   }
 });
 

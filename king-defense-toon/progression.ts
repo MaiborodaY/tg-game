@@ -20,7 +20,7 @@ export type CellAvailabilityReason = 'available' | 'invalid-cell' | 'unlocked' |
 export interface CellAvailability {
   allowed: boolean;
   cost: number | null;
-  requiredBarracksLevel: 2 | 3 | null;
+  requiredBarracksLevel: 2 | 3 | 4 | null;
   reason: CellAvailabilityReason;
 }
 
@@ -73,8 +73,8 @@ export function createProgression(saved: unknown = {}): Progression {
   };
 }
 
-export function getArmyCapacity(barracksLevel: number = 1): 8 | 9 | 10 {
-  return barracksLevel === 3 ? 10 : barracksLevel === 2 ? 9 : 8;
+export function getArmyCapacity(barracksLevel: number = 1): 8 | 9 | 10 | 11 {
+  return barracksLevel === 4 ? 11 : barracksLevel === 3 ? 10 : barracksLevel === 2 ? 9 : 8;
 }
 
 function hasValidCells(progression: CellProgression): boolean {
@@ -90,7 +90,7 @@ export function nextCellCost(progression: CellProgression, barracksLevel: number
 }
 
 export function getCellAvailability(progression: CellProgression, key: string, barracksLevel: number = 1): CellAvailability {
-  const blocked = (reason: CellAvailabilityReason, requiredBarracksLevel: 2 | 3 | null = null): CellAvailability => ({
+  const blocked = (reason: CellAvailabilityReason, requiredBarracksLevel: 2 | 3 | 4 | null = null): CellAvailability => ({
     allowed: false, cost: null, requiredBarracksLevel, reason,
   });
   if (!isValidCell(key)) return blocked('invalid-cell');
@@ -100,7 +100,8 @@ export function getCellAvailability(progression: CellProgression, key: string, b
   const sideQuota = Math.max(0, capacity - 9);
   const sideCount = progression.unlockedCells.filter(cell => cell[0] === '0' || cell[0] === '4').length;
   if ((key[0] === '0' || key[0] === '4') && sideCount >= sideQuota) {
-    return sideQuota === 0 ? blocked('barracks-required', 3) : blocked('max-capacity');
+    return sideQuota === 0 ? blocked('barracks-required', 3)
+      : sideQuota === 1 ? blocked('barracks-required', 4) : blocked('max-capacity');
   }
   const cost = nextCellCost(progression, barracksLevel);
   // Barracks I leaves any one of the nine central cells locked until tier II.

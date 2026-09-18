@@ -52,6 +52,7 @@ type AllyAssetUrls = Pick<SheetArtUrls, 'sheet' | 'walk' | 'cast'>;
 import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS } from './lancer-art.ts';
 import { PANTHER_RIDER_ASSETS } from './panther-rider-art.ts';
+import { ELF_ARCHER_ASSETS } from './elf-archer-art.ts';
 import { ST_KNIHOR_ASSETS, ST_KNIHOR_EFFECTS_IMAGE_URL } from './st-knihor-art.ts';
 import { getUnitRank } from './unit-ranks.ts';
 import { GOBLIN_ROUND_ASSETS, getGoblinRoundColor } from './goblin-round-art.ts';
@@ -73,9 +74,10 @@ const ALLIES: Record<UnitType, AllyAssetUrls> = {
   },
   lancer: LANCER_ASSETS[1],
   pantherRider: PANTHER_RIDER_ASSETS[1],
+  elfArcher: ELF_ARCHER_ASSETS[1],
 };
 const ALLY_RANK_ASSETS: Partial<Record<UnitType, Partial<Record<PaletteRank, AllyAssetUrls>>>> = {
-  ...UNIT_RANK_ASSETS, lancer: LANCER_ASSETS, pantherRider: PANTHER_RIDER_ASSETS,
+  ...UNIT_RANK_ASSETS, lancer: LANCER_ASSETS, pantherRider: PANTHER_RIDER_ASSETS, elfArcher: ELF_ARCHER_ASSETS,
 };
 const ENEMIES: Partial<Record<EnemyType, string>> = {
   goblinArcher: GOBLIN_ARCHER_IMAGE_URL,

@@ -1,4 +1,4 @@
-export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider';
+export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider' | 'elfArcher';
 
 export interface UnitDefinition {
   readonly id: UnitType;
@@ -69,6 +69,17 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     color: '#8766ad',
     description: 'Fast mounted defender. Stronger than a swordsman of the same level; strikes one enemy.',
     spriteColumn: 4,
+  }),
+  Object.freeze({
+    id: 'elfArcher',
+    name: 'Elven Archer',
+    cost: 0,
+    hp: 45,
+    damage: 11,
+    role: 'Ranged',
+    color: '#78a66a',
+    description: 'Fires stronger arrows from behind the front line. More durable than a human archer of the same level.',
+    spriteColumn: 5,
   }),
 ]);
 

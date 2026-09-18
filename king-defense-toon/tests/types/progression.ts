@@ -7,11 +7,11 @@ import { reconcileArmyCapacity } from '../../army-capacity-migration.ts';
 export function verifyProgressionContracts(saved: unknown): void {
   const progression: Progression = createProgression(saved);
   const cost: number | null = nextCellCost(progression);
-  const capacity: 8 | 9 | 10 = getArmyCapacity(3);
+  const capacity: 8 | 9 | 10 | 11 = getArmyCapacity(4);
   const gated = getCellAvailability(progression, '0:0', 2);
   getCellAvailability({ unlockedCells: STARTING_CELLS }, '0:0', 2);
   nextCellCost({ unlockedCells: STARTING_CELLS }, 2);
-  const requirement: 2 | 3 | null = gated.requiredBarracksLevel;
+  const requirement: 2 | 3 | 4 | null = gated.requiredBarracksLevel;
   const migratedArmy = reconcileArmyCapacity(progression, { units: [], reserve: [] }, 3);
   const removed: CellKey[] = migratedArmy.removedCells;
   const migrated = migrateCampaignSave(saved);

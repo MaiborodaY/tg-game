@@ -27,6 +27,7 @@ test('forge snapshots affect all regular units but preserve hero, castle and spa
   const formation = makeFormation({ swordsman: 1, archer: 1, healer: 1 });
   formation.push({ id: 99, type: 'lancer', level: 3, col: 3, row: 1 });
   formation.push({ id: 100, type: 'pantherRider', level: 3, col: 3, row: 0 });
+  formation.push({ id: 101, type: 'elfArcher', level: 3, col: 3, row: 2 });
   const neutral = createBattle(formation, 1);
   assert.deepEqual(createBattle(formation, 1, undefined, createForge()), neutral);
   const forge = createForge({ health: 10, attack: 20, attackSpeed: 30 });
@@ -53,13 +54,13 @@ test('forge snapshots affect all regular units but preserve hero, castle and spa
 });
 
 test('forged attack and healing rates scale both action windups and cooldowns', () => {
-  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65 };
-  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05 };
+  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65, elfArcher: .7 };
+  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05, elfArcher: 1.3 };
   const forge = createForge({ attackSpeed: 50 });
   for (const type of Object.keys(durations)) {
     const battle = fixture(type, forge), unit = battle.allies[0];
     updateBattle(battle, DT);
-    assert.equal(unit.action, type === 'healer' ? 'heal' : type === 'archer' ? 'shoot' : 'attack');
+    assert.equal(unit.action, type === 'healer' ? 'heal' : ['archer', 'elfArcher'].includes(type) ? 'shoot' : 'attack');
     const speed = 1.5;
     close(unit.actionDuration, durations[type] / COMBAT_PACE / speed);
     close(unit.cooldown, intervals[type] / COMBAT_PACE / speed);
@@ -67,13 +68,13 @@ test('forged attack and healing rates scale both action windups and cooldowns', 
 });
 
 test('a first forge rank causes fractional damage and healing in actual combat', () => {
-  for (const type of ['swordsman', 'archer', 'healer']) {
+  for (const type of ['swordsman', 'archer', 'elfArcher', 'healer']) {
     const battle = fixture(type, createForge({ attack: 1 }));
     const target = type === 'healer' ? battle.allies[1] : battle.enemies[0];
     const startHp = target.hp;
     while (target.hp === startHp && battle.elapsed < 5) updateBattle(battle, DT);
     assert.notEqual(target.hp, startHp);
-    close(Math.abs(target.hp - startHp), type === 'healer' ? 4.04 : type === 'archer' ? 8.08 : 6.06);
+    close(Math.abs(target.hp - startHp), { healer: 4.04, archer: 8.08, elfArcher: 11.11, swordsman: 6.06 }[type]);
   }
 });
 

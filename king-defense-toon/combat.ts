@@ -45,6 +45,7 @@ const BASE_RULES = {
   lancer: { range: 75, interval: 1.3, duration: .75, speed: 53 },
   pantherRider: { range: 38, interval: 1.05, duration: .65, speed: 68 },
   archer: { range: 185, interval: 1.4, duration: .7, speed: 49 },
+  elfArcher: { range: 185, interval: 1.3, duration: .7, speed: 52, impactFraction: .5 },
   healer: { range: 77.5, interval: 1.45, duration: .8, speed: 47 },
   hero: { range: 42, interval: 1.2, duration: .7, speed: 53 },
   castle: { range: 0, interval: 0, duration: 0, speed: 0 },
@@ -122,6 +123,7 @@ const living = <T extends ActorBase>(actors: readonly T[]): T[] => actors.filter
 const alliedActors = (battle: Battle): (AllyActor | HeroActor)[] => [...battle.allies, battle.hero];
 const allActors = (battle: Battle): Actor[] => [...battle.allies, ...battle.enemies, battle.hero, battle.castle];
 const isBusy = (unit: ActorBase): boolean => ['attack', 'shoot', 'heal', 'hammer'].includes(unit.action);
+const isAllyArcher = (unit: ActorBase): boolean => unit.type === 'archer' || unit.type === 'elfArcher';
 const isEnemyHealer = (unit: ActorBase): boolean => getEnemyCombatType(unit.type) === 'goblinHealer';
 const isRangedEnemy = (unit: ActorBase): boolean => ['goblinArcher', 'goblinHealer', 'plagueAlchemist'].includes(getEnemyCombatType(unit.type));
 
@@ -366,6 +368,7 @@ function resolveImpact(battle: Battle, unit: Actor, events: BattleEvent[]): void
       return;
     }
     // Damage lands with the arrow, rather than before it reaches its target.
+    if (unit.type === 'elfArcher') faceToward(unit, target);
     addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
       targetId: target.id, damage: unit.damage,
     });
@@ -689,7 +692,7 @@ function actHero(battle: Battle, hero: HeroActor, dt: number): void {
     return;
   }
   const fighters = living(battle.allies).filter(ally => ally.type !== 'healer');
-  const frontline = nearest(target, fighters.filter(ally => ally.type !== 'archer'));
+  const frontline = nearest(target, fighters.filter(ally => !isAllyArcher(ally)));
   const leader = frontline ?? nearest(target, fighters);
   const frontlineEngaged = frontline && distance(frontline, target) <= frontline.range + 27;
   if (!leader || onlyRanged || !frontline || frontlineEngaged) {
@@ -781,13 +784,13 @@ function act(battle: Battle, unit: Actor, dt: number): void {
   faceToward(unit, target);
   const apart = distance(unit, target);
   const combatType = getEnemyCombatType(unit.type);
-  const ranged = combatType === 'archer' || combatType === 'goblinArcher' || combatType === 'plagueAlchemist';
+  const ranged = isAllyArcher(unit) || combatType === 'goblinArcher' || combatType === 'plagueAlchemist';
   // Incoming archers step into the arena before firing, so the guard need not camp on the entrance.
   if ((combatType === 'goblinArcher' || combatType === 'plagueAlchemist') && unit.y < 125) {
     moveToward(unit, { x: target.x, y: Math.max(135, target.y) }, dt);
     return;
   }
-  if (unit.type === 'archer') {
+  if (isAllyArcher(unit)) {
     if (apart > unit.range) unit.closingRange = true;
     if (apart <= unit.range - 20) unit.closingRange = false;
     if (unit.closingRange) {

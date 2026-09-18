@@ -28,9 +28,15 @@ const server = await createServer({
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => JSON.parse(JSON.stringify(battle)),
-      render: () => renderScene(),
+      render: async () => { await scene.prepare({ units, battle }); renderScene(); },
+      step: seconds => { for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += 1 / 60) updateBattle(battle, 1 / 60); refreshBattleHud(); },
+      untilElfArrow: () => { for (let step = 0; step < 1800 && battle.phase === 'running'; step++) {
+        if (battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher')) break;
+        updateBattle(battle, 1 / 60);
+      } refreshBattleHud(); },
       primeIncome: () => { economy.treasuryProgress = .999; economyLastTick = performance.now() - 100; },
       tickCalls: () => window.recruitmentTickCalls ?? 0,
+      refresh: () => refresh(),
     };`;
   } }],
 });
@@ -112,6 +118,7 @@ async function assertHumanOdds(page, level) {
 let browser;
 const checks = [];
 async function scenario(name, width, saved, check, height = width === 320 ? 640 : 700) {
+  if (process.env.BROTD_BROWSER_FILTER && !new RegExp(process.env.BROTD_BROWSER_FILTER).test(name)) return;
   const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
   const errors = [], requestedPortraits = new Set();
   let page;
@@ -216,15 +223,15 @@ try {
       assert.equal(await page.locator('[data-elf-recruit="elfHealer"] svg').count(), 0);
       assert.equal(await page.locator('[data-elf-recruit="elfHealer"] img').count(), 1);
       assert.match(await page.locator('[data-elf-recruit="elfHealer"] img').getAttribute('src'), /elf-healer\.webp/);
-      assert.match(await page.locator('[data-elf-recruit="elfHealer"]').innerText(), /Coming soon.*Not in the Market yet/s);
-      assert.match(await page.locator('[data-elf-recruit="elfArcher"]').innerText(), /Coming soon.*Not in the Market yet/s);
+      assert.match(await page.locator('[data-elf-recruit="elfHealer"]').innerText(), /Locked.*Elven Archer recruitment Lv\. 3/s);
+      assert.match(await page.locator('[data-elf-recruit="elfArcher"]').innerText(), /Locked.*Panther Rider recruitment Lv\. 3/s);
       const riderCard = page.locator('[data-elf-recruit="pantherRider"]');
       assert.equal(await riderCard.locator('.recruitment-detail-heading > span').innerText(), '100%');
       assert.match(await riderCard.innerText(), /Recruitment level · Lv\. 1/);
       assert.match(await riderCard.innerText(), /5 more riders → Lv\. 2/);
       assert.match(await page.locator('[data-elf-recruit="unicorn"]').getAttribute('class'), /is-locked/);
-      assert.match(await page.locator('[data-elf-recruit="unicorn"]').innerText(), /Locked.*Special.*Unlocks later/s);
-      assert.equal(await page.locator('[data-elf-recruit] button').count(), 0, 'Recruitment remains the Market action');
+      assert.match(await page.locator('[data-elf-recruit="unicorn"]').innerText(), /Locked.*Panther Rider recruitment Lv\. 5.*Barracks IV · 2 tiles/s);
+      assert.equal(await page.locator('[data-elf-recruit] button:visible').count(), 0, 'Recruitment remains the Market action; IV construction stays locked');
       assert.equal(await page.locator('#elf-recruitment-details img').count(), 4);
       await page.locator('#elf-recruitment-details img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
       assert.equal(previewPortraits.every(file => requested.has(file)), true);
@@ -242,6 +249,7 @@ try {
       assert.equal(await opener.evaluate(node => node === document.activeElement), true);
       assert.equal(await page.locator('#market-convert-label').innerText(), 'Elves');
       const riders = [];
+      await page.evaluate(() => { Math.random = () => .1; });
       for (let index = 0; index < 3; index++) {
         const before = await state(page);
         const rider = await recruit(page);
@@ -339,7 +347,143 @@ try {
     });
   }
 
+  for (const width of [390, 320]) {
+    await scenario('elf-archer-recruit-connect-deploy-shoot-save', width, fixture({
+      recruitmentPool: 'elves',
+      recruitment: { version: 2, received: { swordsman: 53, archer: 8, healer: 6, lancer: 51, pantherRider: 15, elfArcher: 4 } },
+      reserve: [{ id: 4, type: 'elfArcher', level: 50 }, { id: 5, type: 'elfArcher', level: 2 },
+        { id: 6, type: 'archer', level: 3 }, { id: 7, type: 'pantherRider', level: 2 }],
+    }), async page => {
+      const original = await state(page);
+      await open(page);
+      const archerCard = page.locator('[data-elf-recruit="elfArcher"]');
+      assert.match(await archerCard.innerText(), /50%.*1 more elven archer → Lv\. 2/s);
+      await close(page);
+      await page.evaluate(() => { Math.random = () => .75; });
+      const recruited = await recruit(page);
+      assert.equal(recruited.type, 'elfArcher');
+      assert.equal(recruited.level, 2, 'Fifth receipt grants the new recruitment level');
+      assert.equal((await state(page)).economy.slaves, original.economy.slaves - 1);
+      assert.equal((await state(page)).gold, original.gold);
+      assert.deepEqual(humanProgress(await state(page)), humanProgress(original));
+      assert.equal((await state(page)).barracks.firstLancerPending, true);
+      assert.equal((await state(page)).reserve.find(unit => unit.id === 4).level, 50, 'Older units retain personal levels');
+      await open(page);
+      assert.match(await archerCard.innerText(), /Recruitment level · Lv\. 2.*10 more elven archers/s);
+      await fits(page); await close(page);
+      await unitDetails(page, 4);
+      assert.match(await page.locator('#barracks-detail').innerText(), /Elven Archer.*Lv\. 50/s);
+      await fits(page, '#barracks-panel');
+      await page.locator('#barracks-detail [data-connect-action="begin"]').click();
+      assert.deepEqual(await page.locator('[data-connect-donor-id]:visible').evaluateAll(nodes => nodes.map(node => Number(node.dataset.connectDonorId))),
+        [5, recruited.id], 'Only elven archers can connect; human archers and Riders are excluded');
+      for (const id of [5, recruited.id]) await page.locator(`[data-connect-donor-id="${id}"]:visible`).click();
+      await page.locator('[data-connect-action="apply"]:visible').click();
+      assert.equal((await state(page)).reserve.find(unit => unit.id === 4).level, 54);
+      assert.equal((await state(page)).recruitment.received.elfArcher, 5);
+      await page.locator('[data-connect-action="cancel"]:visible').click();
+      await page.locator('[data-barracks-recruit-id="4"]').click();
+      await tapCell(page, 2, 1);
+      const deployed = await state(page);
+      assert.equal(deployed.units.find(unit => unit.id === 4).type, 'elfArcher');
+      assert.equal(deployed.units.length, original.units.length, 'Archer needs one cell, including isolated purchased cells');
+      assert.equal(deployed.reserve.some(unit => unit.id === 2 && unit.type === 'archer'), true);
+      await tapCell(page, 2, 1);
+      assert.match(await page.locator('#selection-panel .selected-stats').innerText(), /164 HP · 40 attack/);
+      await fits(page, '#unit-panel');
+      await page.screenshot({ path: fileURLToPath(new URL(`elf-archer-details-${width}.png`, output)) });
+      await close(page, 'unit-panel');
+      const beforeReload = await state(page);
+      await page.reload(); await ready(page);
+      assert.deepEqual(restoredInventory(await state(page)), restoredInventory(beforeReload));
+      await page.locator('#start-wave').click();
+      await page.evaluate(() => window.recruitmentCheck.untilElfArrow());
+      const battle = await page.evaluate(() => window.recruitmentCheck.battle());
+      const elf = battle.allies.find(unit => unit.type === 'elfArcher');
+      assert.equal(elf.level, 54); assert.equal(elf.maxHp, 164); assert.equal(elf.damage, 40);
+      assert.equal(elf.action, 'shoot');
+      assert.equal(battle.effects.filter(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher').length, 1);
+      await page.evaluate(() => window.recruitmentCheck.render());
+      await page.screenshot({ path: fileURLToPath(new URL(`elf-archer-battle-${width}.png`, output)) });
+      const enemyHp = battle.enemies.reduce((sum, unit) => sum + unit.hp, 0);
+      await page.evaluate(() => window.recruitmentCheck.step(.5));
+      const afterHit = await page.evaluate(() => window.recruitmentCheck.battle());
+      assert.ok(afterHit.enemies.reduce((sum, unit) => sum + unit.hp, 0) < enemyHp || afterHit.kills > battle.kills);
+    });
+  }
+
+  await scenario('archer-unlocks-on-rider-training-three', 320, fixture({ recruitmentPool: 'elves',
+    recruitment: { version: 2, received: { pantherRider: 14 } },
+  }), async page => {
+    await open(page);
+    const rider = page.locator('[data-elf-recruit="pantherRider"]'), archer = page.locator('[data-elf-recruit="elfArcher"]');
+    assert.match(await rider.innerText(), /100%.*1 more panther rider → Lv\. 3/s);
+    assert.match(await archer.innerText(), /Locked.*Panther Rider recruitment Lv\. 3 · now 2/s);
+    await close(page);
+    await page.evaluate(() => { Math.random = () => .75; });
+    assert.deepEqual(await recruit(page).then(({ type, level }) => ({ type, level })), { type: 'pantherRider', level: 3 });
+    await open(page);
+    assert.match(await rider.innerText(), /50%/);
+    assert.match(await archer.innerText(), /50%.*Recruitment level · Lv\. 1/s);
+    assert.equal((await archer.getAttribute('class')).includes('is-locked'), false);
+    await close(page);
+    assert.equal((await recruit(page)).type, 'elfArcher');
+    await page.reload(); await ready(page); await open(page);
+    assert.match(await archer.innerText(), /50%.*4 more elven archers/s);
+    await fits(page);
+  });
+
   const centralCells = Array.from({ length: 9 }, (_, index) => `${index % 3 + 1}:${Math.floor(index / 3)}`);
+  await scenario('barracks-four-upgrade-unlocks-one-paid-cell', 320, fixture({
+    gold: 10000, recruitmentPool: 'elves', barracks: { level: 3, firstLancerPending: false },
+    recruitment: { version: 2, received: { pantherRider: 50 } },
+    progression: { unlockedCells: [...centralCells, '4:2'], firstClears: [] },
+  }), async page => {
+    await tapCell(page, 0, 2);
+    assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks IV/);
+    await close(page, 'unit-panel'); await open(page);
+    const unicorn = page.locator('[data-elf-recruit="unicorn"]');
+    assert.match(await unicorn.innerText(), /Barracks IV · 2 tiles/);
+    assert.equal(await unicorn.locator('#barracks-start-upgrade').isVisible(), true);
+    assert.match(await unicorn.innerText(), /5000 gold/);
+    await fits(page);
+    await page.screenshot({ path: fileURLToPath(new URL('barracks-four-ready-320.png', output)) });
+    await page.locator('#barracks-start-upgrade').click();
+    assert.equal((await state(page)).gold, 5000);
+    assert.equal((await state(page)).barracks.level, 3);
+    assert.equal((await state(page)).barracks.upgradeReadyAt - (await state(page)).barracks.upgradeStartedAt, 6 * 60 * 60 * 1000);
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /600 gold/);
+    await fits(page);
+    await page.evaluate(now => { Date.now = () => now + 3 * 60 * 60 * 1000; window.recruitmentCheck.refresh(); }, now);
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /300 gold/);
+    await page.locator('#barracks-finish-upgrade').click();
+    assert.equal((await state(page)).barracks.level, 4);
+    assert.equal((await state(page)).gold, 4700);
+    assert.equal((await state(page)).progression.unlockedCells.length, 10, 'Upgrade grants permission, not a free cell');
+    assert.match(await unicorn.innerText(), /Coming soon.*Barracks IV.*11 army tiles/s);
+    assert.equal(await page.locator('#barracks-building-level').innerText(), 'IV');
+    await fits(page); await close(page);
+    await tapCell(page, 0, 2);
+    // Advancing three real hours also earns ordinary offline income. Acknowledge
+    // that real receipt before interacting with the paid cell behind it.
+    if (await page.locator('#offline-rewards-panel').isVisible()) await page.locator('#collect-offline-rewards').click();
+    assert.equal(await page.locator('[data-action="unlock-cell"]').isEnabled(), true);
+    const before = await state(page);
+    await page.locator('[data-action="unlock-cell"]').click();
+    const after = await state(page);
+    assert.equal(after.progression.unlockedCells.length, 11);
+    assert.equal(after.gold, before.gold - 750, 'The newly available slot still costs gold');
+    await close(page, 'unit-panel');
+    await tapCell(page, 0, 1);
+    assert.match(await page.locator('#selection-panel').innerText(), /Future Barracks upgrade/);
+    await close(page, 'unit-panel');
+    await page.reload(); await ready(page);
+    assert.equal((await state(page)).barracks.level, 4);
+    assert.equal((await state(page)).recruitmentPool, 'elves');
+    assert.equal((await state(page)).progression.unlockedCells.length, 11);
+    assert.equal((await state(page)).gold, after.gold);
+  }, 568);
+
   for (const width of [390, 320]) {
     await scenario('two-cell-placement-move-swap-drag', width, fixture({
       units: [{ id: 1, type: 'swordsman', level: 2, col: 1, row: 1 }, { id: 2, type: 'archer', level: 2, col: 2, row: 1 }],
@@ -450,7 +594,7 @@ try {
     await open(page);
     assert.equal(await pool(page).inputValue(), 'elves');
     assert.equal(await page.locator('[data-elf-recruit="pantherRider"] .recruitment-detail-heading > span').innerText(), '100%');
-    assert.equal(await page.locator('#recruitment-info-note').isVisible(), true);
+    assert.equal(await page.locator('#recruitment-info-note').isVisible(), false, 'Compact phones keep requirements in the cards and omit the repeated footer');
     await fits(page);
     await page.screenshot({ path: fileURLToPath(new URL('rider-roster-320x568.png', output)) });
   }, 568);

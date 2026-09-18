@@ -11,6 +11,7 @@ test('older saves and unrecognized recruitment pools fall back to humans', () =>
     assert.equal(normalizeRecruitmentPool(saved, 3), 'humans');
   }
   assert.equal(normalizeRecruitmentPool('elves', 3), 'elves');
+  assert.equal(normalizeRecruitmentPool('elves', 4), 'elves');
   const restored = JSON.parse(JSON.stringify({ recruitmentPool: 'elves' }));
   assert.equal(normalizeRecruitmentPool(restored.recruitmentPool, 3), 'elves');
 });
@@ -23,7 +24,9 @@ test('elf selection requires a supported completed Barracks III level without co
   }
   assert.equal(isRecruitmentPoolUnlocked('humans', 3), true);
   assert.equal(isRecruitmentPoolUnlocked('elves', 3), true);
-  for (const level of [undefined, null, '3', 0, -1, 2.5, 4, Infinity, NaN]) {
+  assert.equal(isRecruitmentPoolUnlocked('humans', 4), true);
+  assert.equal(isRecruitmentPoolUnlocked('elves', 4), true);
+  for (const level of [undefined, null, '3', '4', 0, -1, 2.5, 5, Infinity, NaN]) {
     assert.equal(isRecruitmentPoolUnlocked('humans', level), false);
     assert.equal(isRecruitmentPoolUnlocked('elves', level), false);
     assert.equal(normalizeRecruitmentPool('elves', level), 'humans');
@@ -45,12 +48,12 @@ test('construction in progress cannot unlock elves before Barracks III is comple
   assert.equal(createBarracks({ level: 2, upgradeStartedAt: startedAt, upgradeReadyAt: readyAt }, readyAt).level, 3);
 });
 
-test('playable elf recruitment requires the completed third barracks level', () => {
-  for (const level of [1, 2, 3]) {
+test('playable elf recruitment requires completed Barracks III or IV', () => {
+  for (const level of [1, 2, 3, 4]) {
     assert.equal(canRecruitFromPool('humans', level), true);
-    assert.equal(canRecruitFromPool('elves', level), level === 3);
+    assert.equal(canRecruitFromPool('elves', level), level >= 3);
   }
-  for (const level of [undefined, null, '3', 0, 4, NaN]) {
+  for (const level of [undefined, null, '3', '4', 0, 5, NaN]) {
     assert.equal(canRecruitFromPool('humans', level), false);
     assert.equal(canRecruitFromPool('elves', level), false);
   }
@@ -59,10 +62,10 @@ test('playable elf recruitment requires the completed third barracks level', () 
   assert.equal(getRecruitmentPoolName('elves'), 'Elven recruits');
 });
 
-test('four immutable elf entries expose only the rider as playable and keep the unicorn locked', () => {
+test('four immutable elf entries expose rider and archer as playable and keep the unicorn locked', () => {
   assert.deepEqual(ELF_RECRUITS, [
     { id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false, playable: true },
-    { id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: false },
+    { id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: true },
     { id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: false },
     { id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false },
   ]);

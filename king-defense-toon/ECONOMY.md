@@ -1,6 +1,6 @@
 # Campaign economy v3 — two levels, 20 rounds each
 
-Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels can continue beyond 100; the separate recruitment level remains capped at 100. Barracks I/II/III permit up to 8/9/10 army cells. The old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with three starting allied classes, an unlockable Lancer and the paladin hero St. Knihor. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
+Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels can continue beyond 100; the separate recruitment level remains capped at 100. Barracks I/II/III/IV permit up to 8/9/10/11 army cells. The old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with three starting allied classes, an unlockable Lancer and the paladin hero St. Knihor. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
 
 ## Starting position and spending
 
@@ -9,10 +9,10 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Starting gold | 125 |
 | Starting slaves | Three, granted once to fresh or legacy empty accounts with zero slaves |
 | Starting formation | Three open tiles in the central column; empty army |
-| Additional tiles | Barracks I: up to eight cells in the central three columns; II unlocks the ninth central cell; III additionally permits one chosen outer-column cell, up to ten total. Successive prices: 25, 50, 100, 175, 275, 400, 550 gold |
+| Additional tiles | Barracks I: up to eight cells in the central three columns; II unlocks the ninth central cell; III additionally permits one chosen outer-column cell; IV permits a second, up to eleven total. Successive prices: 25, 50, 100, 175, 275, 400, 550, 750 gold |
 | Total expansion cost | 625 / 1,025 / 1,575 gold for eight/nine/ten total cells, excluding Barracks construction |
 | Gold recruitment | Removed; all newly obtained fighters come from slave conversion |
-| Slave conversion | One slave becomes one individual reserve fighter. Humans: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer. Elves after III: currently 100% Panther Rider |
+| Slave conversion | One slave becomes one individual reserve fighter. Humans: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer. Elves after III: 100% Panther Rider until Rider recruitment Lv. 3, then 50% Rider / 50% Elven Archer |
 | Recruitment level | 5 x current recruitment level additional matching conversions per increase; cap 100; affects only newly converted fighters |
 | Personal level / Connect | Open the recipient in Army or Barracks, select same-type donors from either location, then add their levels in one action; continues beyond 100; no currency cost |
 | Gold personal-level upgrades | Removed; existing fighters retain their personal levels |
@@ -28,26 +28,27 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Slave Market income | One slave per 30 real minutes after the income purchase, online or offline; no production upgrades yet |
 | Market offline storage | Four hours per absence, up to eight slaves, credited automatically on return |
 
-Cell purchases use the gold prices above; old gold recruitment and paid level-up actions are removed. Treasury and the 125-gold start are unchanged. Barracks II permits the ninth central cell and Barracks III permits one chosen outer-column cell; upgrades do not purchase cells automatically. At tier III the player can buy its side cell before finishing central expansion; its price follows the total number of purchased cells. All other outer cells remain gated. Moving guards, swapping deployed positions and transferring fighters between formation and reserve are free. Older saves reconcile excess side cells with a refund and return their fighters to reserve, as described under Storage and migration.
+Cell purchases use the gold prices above; old gold recruitment and paid level-up actions are removed. Treasury and the 125-gold start are unchanged. Barracks II permits the ninth central cell and Barracks III permits one chosen outer-column cell, with a second at IV; upgrades do not purchase cells automatically. At tier III the player can buy its side cell before finishing central expansion; its price follows the total number of purchased cells. All other outer cells remain gated. Moving guards, swapping deployed positions and transferring fighters between formation and reserve are free. Older saves reconcile excess side cells with a refund and return their fighters to reserve, as described under Storage and migration.
 
 The **5 × 3 Army grid stays below the battlefield** during preparation and combat, with Market and its slave count above Barracks in the left gutter. Recruitment info or Cancel is at the upper right and Buildings at the lower right; there is no separate bottom toolbar. An empty cell opens the compact picker for reserve placement; an occupied cell offers reserve replacement, Connect, movement and removal. A locked cell shows its gold price when permitted by the current Barracks tier, otherwise the Barracks requirement or capacity limit. Conversions, merges, Barracks sales, reserve transfers and cell unlocks **save immediately**, without draft reservations or a Save army step. Currency transactions use live balances. Closing the picker does not reverse a completed transaction. Income earned during editing remains available. An empty starting army is allowed, but the first manual Start requires at least one guard. Once a battle or its result exists, removal cannot leave the saved army empty.
 
 The current battle retains its own fighter snapshot. The next wave uses the latest saved formation, including changes made during combat or its automatic countdown. Automatic waves and building income continue under the unit picker and other menus. The recruitment update does not alter combat rewards, capture rules, building rates or offline caps.
 
-## Barracks II and III: timed upgrades
+## Barracks II, III and IV: timed upgrades
 
 | Upgrade | Recruitment requirement | Construction | Real duration | Full acceleration price | Result |
 | --- | --- | ---: | --- | ---: | --- |
 | I → II | Swordsman recruitment level 5 | 200 gold | One hour | 100 gold | Lancer unlock; ninth central cell becomes purchasable |
 | II → III | Lancer recruitment level 5 | 2,000 gold | Three hours | 300 gold | Up to ten cells including one chosen outer cell; Elven roster selection |
+| III → IV | Panther Rider recruitment level 5 | 5,000 gold | Six hours | 600 gold | Up to eleven cells including two chosen outer cells; Unicorn's building requirement |
 
-Recruitment level 5 requires **50 received fighters of the matching type** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy either requirement. Construction spends its gold once, progresses offline, and is unaffected by battle speed. Barracks III is the maximum tier.
+Recruitment level 5 requires **50 received fighters of the matching type** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy an upgrade requirement. Construction spends its gold once, progresses offline, and is unaffected by battle speed. Barracks IV is the maximum tier.
 
 Open **Recruits / Recruitment** (the portrait-and-plus icon) to see the locked Lancer alongside the three starting types and the next Barracks upgrade's requirement, purchase, countdown and optional acceleration. The Lancer becomes a normal chance/level/progress row after II; the III upgrade remains accessible after that unlock. No separate Barracks upgrade menu is required.
 
-Optional instant completion costs `ceil(fullAccelerationPrice × remainingMs / durationMs)`: at most 100 gold for II or 300 for III. Both rates cost 50 gold for thirty minutes remaining and one gold for the last 36 seconds; natural completion is free. The live price is recalculated at purchase; reloads and repeated clicks cannot repeat the payment.
+Optional instant completion costs `ceil(fullAccelerationPrice × remainingMs / durationMs)`: at most 100 gold for II, 300 for III or 600 for IV. All three rates cost 50 gold for thirty minutes remaining and one gold for the last 36 seconds; natural completion is free. The live price is recalculated at purchase; reloads and repeated clicks cannot repeat the payment.
 
-After II completes, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **25% swordsman / 25% archer / 25% healer / 25% Lancer**. Before II completes, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact. III preserves Lancer access and any still-pending first-Lancer guarantee, and never issues another guarantee.
+After II completes, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **25% swordsman / 25% archer / 25% healer / 25% Lancer**. Before II completes, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact. III and IV preserve Lancer access and any still-pending first-Lancer guarantee, and never issues another guarantee.
 
 The Lancer has **48 HP / 7 damage / 75 range / 1.3-second base attack interval**, one target per attack and the shared five-percent personal-level growth. Placement is free, sale returns one gold, and only matching Lancers merge. Waiting avoids the optional acceleration cost. No new completion-time estimate, king upgrade or other economy change is implied.
 
@@ -59,9 +60,9 @@ Barracks III construction finishes, including offline completion. Merely startin
 the upgrade does not unlock the selection. Invalid or no-longer-eligible saved
 selections fall back to Humans; Reset also returns to Humans.
 
-The Elven roster shows the playable **Panther Rider** (melee), upcoming Elven
-Archer and Elven Healer, and a locked Unicorn. For now Elves give **100% Panther
-Rider for one slave**; unfinished classes cannot be rolled or consume a slave.
+The Elven roster shows the playable **Panther Rider** (melee) and **Elven Archer**,
+upcoming Elven Healer, and a locked Unicorn. After Rider recruitment level 3, Elves give **50% Panther Rider /
+50% Elven Archer for one slave**; before that, 100% Rider. Unfinished classes cannot be rolled or consume a slave.
 Selecting a pool is free. The Market button is labelled Elves while that pool is
 active and converts slaves normally, with the existing reveal and immediate save.
 Human chances and any pending guaranteed Lancer are preserved; the guarantee is
@@ -78,15 +79,27 @@ the other regular fighters. Existing battle snapshots remain unchanged until the
 The existing black-panther atlas supplies all live animations. Rank clothing
 changes at levels 50 / 100 / 250 / 500: green / purple / red / gold / black, with
 no runtime recolouring. Sheets load only for ranks needed by the current scene.
-The other three elves remain previews; their proposed stats and asset status are
-in [ELVEN_RECRUITS.md](ELVEN_RECRUITS.md). Unicorn unlocking and full-roster odds
+The Elven Archer uses one purchased cell and has **45 HP / 11 damage / 185 range /
+1.30-second base attack interval / 52 movement speed**. Its separate recruitment
+progress starts at zero; it cannot Connect with Human Archers. Personal levels,
+all three Forge upgrades, one-gold selling and palette thresholds follow the same
+rules as other regular fighters. It fires one arrow and gains no area attack.
+
+Future Elven Healer requires Elven Archer recruitment level 3. Future Unicorn
+requires Rider recruitment level 5 and completed Barracks IV, and will occupy two
+cells. These requirements are visible in Recruitment; neither preview can be rolled
+until its combat implementation is added. IV construction controls appear beside
+Unicorn and unlock one extra paid cell independently of that future unit.
+
+The other two elves remain previews; their proposed stats and asset status are
+in [ELVEN_RECRUITS.md](ELVEN_RECRUITS.md). Full-roster odds
 are future design decisions, not active mechanics.
 
 ## Individual recruits and personal levels
 
 Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Before Barracks II completes, rolls are **60% swordsman / 25% archer / 15% healer**. Completion grants one guaranteed Lancer conversion, then changes the odds as described below. There is no automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
 
-The compact **Recruits** portrait icon at the upper right of the Army dock opens **Recruitment**, showing the selected pool's chances, each current recruitment level and how many more matching fighters are needed for the next level. Human chances are 60% / 25% / 15% before Barracks II and 25% each afterwards; Elves currently give 100% Panther Rider after Barracks III. Opening this panel is free and available with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 recruitment cap. Conversion has its transfer animation and a short result notice in the right gutter.
+The compact **Recruits** portrait icon at the upper right of the Army dock opens **Recruitment**, showing the selected pool's chances, each current recruitment level and how many more matching fighters are needed for the next level. Human chances are 60% / 25% / 15% before Barracks II and 25% each afterwards; Elves start with Riders after Barracks III, then give 50% Rider / 50% Elven Archer at Rider recruitment Lv. 3. Opening this panel is free and available with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 recruitment cap. Conversion has its transfer animation and a short result notice in the right gutter.
 
 The result's level is calculated **after incrementing that type's count**. Advancing from recruitment level L to L+1 needs **5 x L** more matching fighters. Cumulative cost at level L is **5 x L x (L-1) / 2** for a fresh account.
 
@@ -349,7 +362,7 @@ Current storage key remains `brotd-infinity:campaign:v2`, with `campaignVersion:
 
 **Mounted fighters:** a Panther Rider occupies two purchased horizontal cells, anchored at the left one. Both cells select the same fighter. Its sprite and combat starting point sit midway between them. Placement and swaps validate the entire footprint before changing ownership; an occupied neighbour is never silently displaced. During restoration, ordinary fighters keep their positions; a Rider with a locked, occupied or out-of-grid second cell returns to reserve with its level intact. This roster normalization is saved with the capacity refund and cannot return the same fighter twice.
 
-**Army-capacity migration:** restore the roster against its previously owned cells before reconciling the current Barracks tier. Keep the three starter cells and the earliest purchased central cells, up to eight central cells at I or nine at II/III. Tier III also retains the earliest saved outer cell; I/II retain none. Close excess cells and move their occupants into reserve without selling them or changing their type or personal level. Refund the difference between the old and retained cumulative cell-purchase costs; no per-cell purchase ledger exists. For an old fully opened 15-cell grid, I/II/III retain 8/9/10 cells and refund **7,750 / 7,350 / 6,800 gold** respectively. Partial expansions use the same cumulative-price rule. The reduced cell list, returned fighters and refund save together; the closed-cell state makes later reloads idempotent, so the refund cannot repeat. The return summary records the refund and returned-fighter count. No campaign reset or recruitment-history change is required.
+**Army-capacity migration:** restore the roster against its previously owned cells before reconciling the current Barracks tier. Keep the three starter cells and the earliest purchased central cells, up to eight central cells at I or nine at II/III/IV. III retains one saved outer cell and IV retains two, in purchase order; I/II retain none. Close excess cells and move their occupants into reserve without selling them or changing their type or personal level. Refund the difference between the old and retained cumulative cell-purchase costs; no per-cell purchase ledger exists. For an old fully opened 15-cell grid, I/II/III/IV retain 8/9/10/11 cells and refund **7,750 / 7,350 / 6,800 / 6,050 gold** respectively. Partial expansions use the same cumulative-price rule. The reduced cell list, returned fighters and refund save together; the closed-cell state makes later reloads idempotent, so the refund cannot repeat. The return summary records the refund and returned-fighter count. No campaign reset or recruitment-history change is required.
 
 The new **`starterSupplyGranted`** marker is recorded once for both fresh and existing accounts. Before that marker exists, an account receives **three starter slaves only if it has no deployed fighters, no reserve fighters and exactly zero slaves**. This supplies an empty account after gold recruitment is removed. Accounts that already own fighters or slaves receive no grant and keep all existing balances. Recording the marker even when no grant is needed prevents later sales or spending from triggering it. Starter supply leaves capture totals, search progress, cooldown and recruitment counts unchanged; subsequent conversions advance only their normal type counts.
 
