@@ -1,0 +1,378 @@
+{
+  "image": "toad-throne-512-lite.webp",
+  "size": {
+    "width": 512,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 126
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 118
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 126
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 118
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 256,
+        "y": 0,
+        "width": 128,
+        "height": 126
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 118
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 384,
+        "y": 0,
+        "width": 128,
+        "height": 126
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 118
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 126,
+        "width": 126,
+        "height": 122
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 114
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 126,
+        "y": 126,
+        "width": 131,
+        "height": 122
+      },
+      "footAnchor": {
+        "x": 66,
+        "y": 114
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 257,
+        "y": 126,
+        "width": 125,
+        "height": 122
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 114
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 382,
+        "y": 126,
+        "width": 130,
+        "height": 122
+      },
+      "footAnchor": {
+        "x": 67,
+        "y": 114
+      }
+    },
+    {
+      "index": 8,
+      "action": "bite-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 248,
+        "width": 124,
+        "height": 127
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 116
+      }
+    },
+    {
+      "index": 9,
+      "action": "bite-right",
+      "pose": 1,
+      "rect": {
+        "x": 124,
+        "y": 248,
+        "width": 132,
+        "height": 127
+      },
+      "footAnchor": {
+        "x": 68,
+        "y": 116
+      }
+    },
+    {
+      "index": 10,
+      "action": "bite-right",
+      "pose": 2,
+      "rect": {
+        "x": 256,
+        "y": 248,
+        "width": 128,
+        "height": 127
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 116
+      }
+    },
+    {
+      "index": 11,
+      "action": "bite-right",
+      "pose": 3,
+      "rect": {
+        "x": 384,
+        "y": 248,
+        "width": 128,
+        "height": 127
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 116
+      }
+    },
+    {
+      "index": 12,
+      "action": "bite-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 375,
+        "width": 128,
+        "height": 115
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 109
+      }
+    },
+    {
+      "index": 13,
+      "action": "bite-down",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 375,
+        "width": 127,
+        "height": 115
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 109
+      }
+    },
+    {
+      "index": 14,
+      "action": "bite-down",
+      "pose": 2,
+      "rect": {
+        "x": 255,
+        "y": 375,
+        "width": 129,
+        "height": 115
+      },
+      "footAnchor": {
+        "x": 66,
+        "y": 109
+      }
+    },
+    {
+      "index": 15,
+      "action": "bite-down",
+      "pose": 3,
+      "rect": {
+        "x": 384,
+        "y": 375,
+        "width": 128,
+        "height": 115
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 109
+      }
+    },
+    {
+      "index": 16,
+      "action": "leap-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 490,
+        "width": 134,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 120
+      }
+    },
+    {
+      "index": 17,
+      "action": "leap-right",
+      "pose": 1,
+      "rect": {
+        "x": 134,
+        "y": 490,
+        "width": 116,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 58,
+        "y": 120
+      }
+    },
+    {
+      "index": 18,
+      "action": "leap-right",
+      "pose": 2,
+      "rect": {
+        "x": 250,
+        "y": 490,
+        "width": 136,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 71,
+        "y": 120
+      }
+    },
+    {
+      "index": 19,
+      "action": "leap-right",
+      "pose": 3,
+      "rect": {
+        "x": 386,
+        "y": 490,
+        "width": 126,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 63,
+        "y": 120
+      }
+    },
+    {
+      "index": 20,
+      "action": "leap-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 614,
+        "width": 131,
+        "height": 154
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 124
+      }
+    },
+    {
+      "index": 21,
+      "action": "leap-down",
+      "pose": 1,
+      "rect": {
+        "x": 131,
+        "y": 614,
+        "width": 116,
+        "height": 154
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 124
+      }
+    },
+    {
+      "index": 22,
+      "action": "leap-down",
+      "pose": 2,
+      "rect": {
+        "x": 247,
+        "y": 614,
+        "width": 145,
+        "height": 154
+      },
+      "footAnchor": {
+        "x": 74,
+        "y": 124
+      }
+    },
+    {
+      "index": 23,
+      "action": "leap-down",
+      "pose": 3,
+      "rect": {
+        "x": 392,
+        "y": 614,
+        "width": 120,
+        "height": 154
+      },
+      "footAnchor": {
+        "x": 57,
+        "y": 124
+      }
+    }
+  ],
+  "impactPose": 2,
+  "impactFrames": [
+    10,
+    14,
+    18,
+    22
+  ],
+  "note": "Explicit crop rectangles preserve the complete toad, rider, throne, crown and banners. Rows: idle right, walk right, bite right, bite down, leap slam right, leap slam down. Pose 2 is bite impact or landing. Artwork only: playback, scale, targeting, movement and damage require integration. No detached effects or death sequence. Per-frame footAnchor is the ground point below the toad body, in frame-local pixels. Airborne leap frames keep their ground anchor so elevation remains visible; do not auto-trim or rebase airborne feet.",
+  "anchorSpace": "frame-pixels"
+}
