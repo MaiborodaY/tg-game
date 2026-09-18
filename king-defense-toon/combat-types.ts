@@ -37,6 +37,7 @@ export interface ActorBase<T extends ActorType = ActorType> extends Point {
   maxHp: number;
   damage: number;
   baseDamage: number;
+  attackSpeed: number;
   name: string;
   heal: number;
   level: number;

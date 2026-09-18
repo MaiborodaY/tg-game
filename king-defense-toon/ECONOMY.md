@@ -39,17 +39,37 @@ The current battle retains its own fighter snapshot. The next wave uses the late
 | Upgrade | Recruitment requirement | Construction | Real duration | Full acceleration price | Result |
 | --- | --- | ---: | --- | ---: | --- |
 | I → II | Swordsman recruitment level 5 | 200 gold | One hour | 100 gold | Lancer unlock; up to ten cells including one chosen outer cell |
-| II → III | Lancer recruitment level 5 | 2,000 gold | Three hours | 300 gold | Up to eleven cells including two chosen outer cells |
+| II → III | Lancer recruitment level 5 | 2,000 gold | Three hours | 300 gold | Up to eleven cells including two chosen outer cells; Elven roster selection |
 
 Recruitment level 5 requires **50 received fighters of the matching type** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy either requirement. Construction spends its gold once, progresses offline, and is unaffected by battle speed. Barracks III is the maximum tier.
 
-Open **i / Recruitment** to see the locked Lancer alongside the three starting types and the next Barracks upgrade's requirement, purchase, countdown and optional acceleration. The Lancer becomes a normal chance/level/progress row after II; the III upgrade remains accessible after that unlock. No separate Barracks upgrade menu is required.
+Open **Recruits / Recruitment** (the portrait-and-plus icon) to see the locked Lancer alongside the three starting types and the next Barracks upgrade's requirement, purchase, countdown and optional acceleration. The Lancer becomes a normal chance/level/progress row after II; the III upgrade remains accessible after that unlock. No separate Barracks upgrade menu is required.
 
 Optional instant completion costs `ceil(fullAccelerationPrice × remainingMs / durationMs)`: at most 100 gold for II or 300 for III. Both rates cost 50 gold for thirty minutes remaining and one gold for the last 36 seconds; natural completion is free. The live price is recalculated at purchase; reloads and repeated clicks cannot repeat the payment.
 
 After II completes, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **25% swordsman / 25% archer / 25% healer / 25% Lancer**. Before II completes, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact. III preserves Lancer access and any still-pending first-Lancer guarantee, and never issues another guarantee.
 
 The Lancer has **48 HP / 7 damage / 75 range / 1.3-second base attack interval**, one target per attack and the shared five-percent personal-level growth. Placement is free, sale returns one gold, and only matching Lancers merge. Waiting avoids the optional acceleration cost. No new completion-time estimate, king upgrade or other economy change is implied.
+
+## Recruitment army selection — elf preview stage
+
+The Recruitment menu has a saved **Human recruits / Elven recruits** dropdown.
+Humans remain the default for old saves. Elves become selectable only after
+Barracks III construction finishes, including offline completion. Merely starting
+the upgrade does not unlock the selection. Invalid or no-longer-eligible saved
+selections fall back to Humans; Reset also returns to Humans.
+
+The Elven roster shows Panther Rider (melee), Elven Archer (ranged), Elven Healer
+(healing), and a locked Unicorn. Its later unlock requirement and recruit chances
+have not yet been defined. Three compact static portraits come from the existing
+approved atlases; the missing healer artwork uses a healing-role symbol.
+
+This stage is a roster preview. Selecting Elves does not spend slaves, create
+reserve fighters, alter the formation, roll human recruits, or load battle sheets.
+The Market button is labelled Elves and opens the preview instead of converting a
+slave. Switch back to Humans to recruit; existing received counts, personal levels
+and any pending guaranteed Lancer are preserved. Human chances and the existing
+four battle unit types are unchanged. Playable elves are a separate next stage.
 
 ## Individual recruits and personal levels
 
@@ -93,6 +113,39 @@ Merging costs **no gold or slaves**, awards no sale gold and does not change per
 A swordsman has **60 HP / 6 damage at level 1**, **69 / 7 at level 4**, **72 / 7 at level 5** and **87 / 9 at level 10**. Integer rounding means some small damage or healing values remain unchanged on a single level increase: healer healing at levels 1–4 is **4 / 4 / 4 / 5**. Existing fighters retain their personal levels but use the new formula; merging does not alter attack speed, movement speed or range.
 
 Sprite colors change at personal levels **50, 100, 250 and 500**: **1–49 blue, 50–99 purple, 100–249 red, 250–499 gold, 500+ black**. The same mapping applies to battlefield animations, formation and reserve portraits without changing owned levels, stats or recruitment progress. Black Monk and Lancer use the native palette; Warrior and Archer retain their current animation sheets with only three clothing colors replaced during asset preparation. No per-frame recoloring is needed. The formulas remain unchanged at ordinary levels; numeric stats saturate at `Number.MAX_SAFE_INTEGER` only at the representation boundary. These formulas describe configuration; they are not verified victory or time-to-progress estimates.
+
+## Forge: permanent army bonuses
+
+Buildings now contains Treasury, Market and Forge. Army cells are purchased directly
+on the formation map; the redundant Army space tab has been removed. Capture odds
+and the current search progress remain visible in the Market tab.
+
+The Forge is available immediately. Five independent upgrades start at rank zero,
+each purchase adds one percentage point, and each track currently has 100 ranks:
+
+| Upgrade | Applies to | Next price at rank `r` |
+| --- | --- | --- |
+| Health | All regular fighters | `50 + 25r` gold |
+| Attack / Healing | All regular fighters, including monk healing | `50 + 25r` gold |
+| Attack speed | All regular fighters, including monk healing speed | `50 + 25r` gold |
+| Ranged attack | Archers only | `25 + 15r` gold |
+| Ranged speed | Archers only | `25 + 15r` gold |
+
+Bonuses apply to owned and future fighters, independently of personal levels and
+Connect. The hero, castle and enemies are excluded. General and archer-specific
+ranks add: one rank in both attack tracks gives an archer +2% damage, not compound
+growth. HP and damage multiply the existing personal-level stats by `1 + ranks/100`;
+combat retains the fractional result, so the first +1% is effective immediately.
+Speed divides both the action duration and the attack/heal interval by the same
+multiplier. Movement and projectile travel speed are unchanged.
+
+Purchases cost gold immediately and save together with the bonus. New battles take
+a snapshot, so changes made during combat apply on the next wave. Unit details show
+the next-wave stats with up to two decimal places. Old saves start with zero Forge
+ranks, and Reset clears these upgrades along with the other buildings.
+
+These initial prices make the Forge a gradual gold investment alongside army cells
+and Barracks upgrades; they are not a claim of full-campaign balance validation.
 
 ## Kill rewards and wave progression
 

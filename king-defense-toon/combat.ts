@@ -11,7 +11,7 @@ export type { Actor, ActorBase, ActorType, ActorSide, ActorAction, AllyActor, En
 
 interface ActorOptions<T extends ActorType> extends Point {
   id: string; side: ActorSide; type: T; hp: number; damage: number;
-  name?: string; heal?: number; level?: number; reward?: number;
+  name?: string; heal?: number; level?: number; reward?: number; attackSpeed?: number;
   isBoss?: boolean; isFinalBoss?: boolean; visualScale?: number;
 }
 interface CombatRule {
@@ -24,7 +24,8 @@ type CombatRules = Record<EnemyCombatType | UnitType | 'hero' | 'castle', Combat
 import { FIELD, WALKABLE_AREAS, ROYAL_ROUTE, HERO_START, positionForCell } from './field.ts';
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import { ENEMY_TYPES, getEnemyCombatType, getWaveDefinition } from './waves.ts';
-import { getUnitStats } from './recruitment.ts';
+import { getForgedUnitStats } from './forge.ts';
+import type { ForgeState } from './forge.ts';
 import { getHeroStats } from './hero.ts';
 import { findHeroCrowdRoute as findCrowdRoute } from './hero-navigation.ts';
 
@@ -60,10 +61,10 @@ export function getUnitRange(type: ActorType): number {
   return RULES[getEnemyCombatType(type)]?.range ?? 0;
 }
 
-function actor<T extends ActorType>({ id, side, type, name = type, x, y, hp, damage, heal = 0, level = 1, reward = 0, isBoss = false, isFinalBoss = false, visualScale = 1 }: ActorOptions<T>): ActorBase<T> {
+function actor<T extends ActorType>({ id, side, type, name = type, x, y, hp, damage, heal = 0, level = 1, reward = 0, attackSpeed = 1, isBoss = false, isFinalBoss = false, visualScale = 1 }: ActorOptions<T>): ActorBase<T> {
   return {
     id, side, type, x, y, homeX: x, homeY: y, hp, maxHp: hp, damage, baseDamage: damage,
-    name, heal, level, reward, isBoss, isFinalBoss, visualScale,
+    name, heal, level, reward, attackSpeed, isBoss, isFinalBoss, visualScale,
     range: getUnitRange(type), action: 'idle', actionTime: 0, actionDuration: 0,
     impactFraction: RULES[getEnemyCombatType(type)].impactFraction ?? .45,
     walkTime: 0, targetX: x,
@@ -75,15 +76,16 @@ function actor<T extends ActorType>({ id, side, type, name = type, x, y, hp, dam
   };
 }
 
-export function createBattle(formation: readonly FormationUnit[] = [], waveNumber: WaveNumberInput = 1, heroState?: HeroState): Battle {
+export function createBattle(formation: readonly FormationUnit[] = [], waveNumber: WaveNumberInput = 1, heroState?: HeroState,
+  forge?: Readonly<ForgeState>): Battle {
   const wave = getWaveDefinition(waveNumber);
   // Combat owns copies: casualties and movement never overwrite the saved army.
   const allies = formation.filter(unit => UNIT_TYPE_BY_ID[unit.type]).map(unit => {
-    const { level, hp, damage, heal } = getUnitStats(unit.type, unit.level);
+    const { level, hp, damage, heal, attackSpeed } = getForgedUnitStats(unit.type, unit.level, forge);
     return actor({
       id: `ally-${unit.id}`, side: 'ally', type: unit.type, level,
       ...positionForCell(unit.col, unit.row),
-      hp, damage, heal,
+      hp, damage, heal, attackSpeed,
     });
   });
   const stats = Object.freeze({ ...getHeroStats(heroState) });
@@ -314,11 +316,13 @@ function findActor(battle: Battle, id: string | null): Actor | undefined {
 
 function beginAction(unit: Actor, target: Actor, action: 'attack' | 'shoot' | 'heal'): void {
   const rule = RULES[getEnemyCombatType(unit.type)];
+  const speed = unit.side === 'ally' && unit.type !== 'hero' && unit.type !== 'castle' ? unit.attackSpeed : 1;
   if (action === 'attack') unit.attackCount = (unit.attackCount ?? -1) + 1;
   unit.action = action;
   unit.actionTime = 0;
-  unit.actionDuration = rule.duration;
-  unit.cooldown = unit.type === 'hero' ? unit.stats.attackInterval / COMBAT_PACE : rule.interval;
+  // Scale the windup with the interval so faster units never wait on an old-length animation.
+  unit.actionDuration = rule.duration / speed;
+  unit.cooldown = unit.type === 'hero' ? unit.stats.attackInterval / COMBAT_PACE : rule.interval / speed;
   unit.targetId = target.id;
   unit.targetX = target.x;
   unit.targetY = target.y;

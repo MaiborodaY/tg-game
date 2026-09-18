@@ -241,9 +241,8 @@ try {
       await screenshot('maximum-side-quota');
       await closePanel(page, 'unit-panel');
       await page.locator('#open-buildings').click();
-      await page.locator('#tab-army-space').click();
-      assert.equal(await page.locator('#slots-count').innerText(), '11 / 11');
-      assert.equal(await page.locator('#choose-cell').isDisabled(), true);
+      assert.equal(await page.locator('#tab-army-space, #choose-cell').count(), 0);
+      assert.equal(await page.locator('#tab-forge').isVisible(), true);
       await closePanel(page, 'buildings-panel');
       await page.reload(); await waitForApp(page);
       assert.equal((await state(page)).gold, 1400);

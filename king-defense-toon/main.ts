@@ -12,8 +12,14 @@ import { createFramePacer } from './frame-pacer.ts';
 import { createSaveStorage } from './save-storage.ts';
 import { createEconomy, treasuryRate, treasuryUpgradeCost, accrueTreasury, checkpointTreasury, claimOfflineTreasury, TREASURY_OFFLINE_LIMIT_SECONDS, upgradeTreasury, rollSlaveDrop, progressionAfterBattle, advanceCaptureClock, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { MARKET_BUILD_COST, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS, buildMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
-import { SAVE_KEY, STARTING_GOLD, createProgression, cellKey, nextCellCost, getCellAvailability, getArmyCapacity, unlockCell, claimFirstClear } from './progression.ts';
-import { RECRUIT_COST, RECRUIT_LEVEL_CAP, createRecruitment, getRecruitProgress, getUnitStats, getRecruitChances, receiveRecruit } from './recruitment.ts';
+import { SAVE_KEY, STARTING_GOLD, createProgression, cellKey, nextCellCost, getCellAvailability, unlockCell, claimFirstClear } from './progression.ts';
+import { RECRUIT_COST, RECRUIT_LEVEL_CAP, createRecruitment, getRecruitProgress, getRecruitChances, receiveRecruit } from './recruitment.ts';
+import { normalizeRecruitmentPool, isRecruitmentPoolUnlocked, canRecruitFromPool } from './recruitment-pools.ts';
+import type { RecruitmentPool } from './recruitment-pools.ts';
+import { renderElfRecruitment } from './recruitment-pool-ui.ts';
+import { createForge, getForgedUnitStats, upgradeForge, FORGE_UPGRADES } from './forge.ts';
+import { createForgeUI } from './forge-ui.ts';
+import type { ForgeUI } from './forge-ui.ts';
 import { STARTING_SLAVES, SELL_PRICE, createBarracks, getBarracksUpgrade, completeBarracksUpgrade, startBarracksUpgrade, speedUpBarracks, consumeFirstLancerGuarantee } from './barracks.ts';
 import { getMergeResult } from './unit-merging.ts';
 import { setupUnitDrag } from './unit-drag.ts';
@@ -81,6 +87,9 @@ let reserve: Fighter[] = [], recruitment = createRecruitment(), reservePage = 0;
 let barracksPage = 0, starterSupplyGranted = false;
 let barracksSelectedId: number | null = null;
 let barracks = createBarracks();
+let recruitmentPool: RecruitmentPool = 'humans';
+let forge = createForge(), forgeUI: ForgeUI | null = null;
+const unitStatFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 let hero = createHero();
 let heroUI: HeroUI | null = null;
 let marketHintCompleted = false;
@@ -191,6 +200,8 @@ try {
     starterSupplyGranted = saved.starterSupplyGranted === true;
     recruitment = createRecruitment(saved.recruitment);
     barracks = createBarracks(saved.barracks);
+    recruitmentPool = normalizeRecruitmentPool(saved.recruitmentPool, barracks.level);
+    forge = createForge(saved.forge);
     hero = createHero(saved.hero);
     // Existing conversions also count as having learned this action before the hint existed.
     marketHintCompleted = saved.marketHintCompleted === true || Object.values(recruitment.received).some(count => count > 0);
@@ -237,7 +248,7 @@ if (!starterSupplyGranted) {
 }
 
 function saveSnapshot() {
-  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, barracks, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
+  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
     offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves,
       slotRefund: pendingSlotRefund, returnedFighters: pendingReturnedFighters, closedCells: pendingClosedCells } };
 }
@@ -410,19 +421,21 @@ function refreshArmyWallet() {
 
 function refreshRecruitment() {
   const button = byId('transform-slave');
+  const recruitable = canRecruitFromPool(recruitmentPool, barracks.level);
   byId('market-slaves').textContent = String(economy.slaves >= 1000 ? hudGoldFormat.format(economy.slaves) : economy.slaves);
   byId('market-slaves').parentElement!.title = `${economy.slaves} slaves`;
-  button.classList.toggle('has-slaves', economy.slaves >= RECRUIT_COST);
+  button.classList.toggle('has-slaves', recruitable && economy.slaves >= RECRUIT_COST);
   const reserveStock = Math.max(0, reserve.length - (transforming ? 1 : 0));
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
-  button.disabled = !canEditFormation() || economy.slaves < RECRUIT_COST || transforming;
+  button.disabled = !canEditFormation() || (recruitable && economy.slaves < RECRUIT_COST) || transforming;
   const chances = getRecruitChances(barracks.level >= 2);
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Math.round(chance * 100)}%`).join(', ');
   const nextRecruit = barracks.firstLancerPending ? 'Next recruit: guaranteed Lancer.' : odds;
-  button.setAttribute('aria-label', `Transform 1 slave into a fighter. ${economy.slaves} slaves available. ${nextRecruit}`);
-  button.title = nextRecruit;
-  byId('market-convert-label').textContent = barracks.firstLancerPending ? 'Lancer next' : 'Market';
+  const previewLabel = 'Elven recruits: preview only. Open Recruitment to switch back to Humans.';
+  button.setAttribute('aria-label', recruitable ? `Transform 1 slave into a fighter. ${economy.slaves} slaves available. ${nextRecruit}` : previewLabel);
+  button.title = recruitable ? nextRecruit : previewLabel;
+  byId('market-convert-label').textContent = !recruitable ? 'Elves' : barracks.firstLancerPending ? 'Lancer next' : 'Market';
   const upgrade = getBarracksUpgrade(barracks, recruitment);
   byId('barracks-building-level').textContent = ['I', 'II', 'III'][barracks.level - 1] + (['upgrading', 'ready'].includes(upgrade.status) ? '…' : '');
   byId('open-market-info').classList.toggle('upgrade-available', upgrade.canStart);
@@ -432,7 +445,7 @@ function refreshRecruitment() {
 }
 
 function refreshMarketHint() {
-  const visible = !marketHintCompleted && canEditFormation() && economy.slaves >= RECRUIT_COST
+  const visible = !marketHintCompleted && canEditFormation() && canRecruitFromPool(recruitmentPool, barracks.level) && economy.slaves >= RECRUIT_COST
     && !transforming && !overlay && !pendingRecruitId && !pendingMerge && !movingId && byId('offline-rewards-panel').hidden;
   const button = byId('transform-slave');
   byId('market-first-use-hint').hidden = !visible;
@@ -481,7 +494,24 @@ function recruitmentProgressMarkup(type: UnitType) {
 }
 
 function refreshRecruitmentDetails() {
-  byId('recruitment-guarantee').hidden = !barracks.firstLancerPending;
+  const elves = recruitmentPool === 'elves';
+  const elvesUnlocked = isRecruitmentPoolUnlocked('elves', barracks.level);
+  byId('recruitment-pool').value = recruitmentPool;
+  byId('recruitment-pool').disabled = transforming || !canEditFormation();
+  byId('recruitment-pool-elves').disabled = !elvesUnlocked;
+  byId('recruitment-pool-elves').textContent = elvesUnlocked ? 'Elven recruits' : 'Elves · Barracks III';
+  byId('recruitment-pool-status').textContent = elves ? 'Roster preview · 3 base recruits + 1 future unlock.'
+    : elvesUnlocked ? 'Elven roster unlocked. Choose it above to preview.' : 'Elves unlock after Barracks III is built.';
+  byId('recruitment-details').hidden = elves;
+  byId('elf-recruitment-details').hidden = !elves;
+  byId('recruitment-info-cost').hidden = elves;
+  byId('recruitment-info-note').classList.toggle('human-recruitment-note', !elves);
+  byId('recruitment-info-note').textContent = elves
+    ? 'Elf recruitment is not available yet. Slaves are not spent. Choose Humans to recruit.'
+    : 'Market recruits raise recruitment levels. Connect adds personal levels together.';
+  byId('recruitment-guarantee').hidden = elves || !barracks.firstLancerPending;
+  refreshBarracksUpgrade();
+  if (elves) { renderElfRecruitment(byId('elf-recruitment-details')); return; }
   // Keep the inline purchase controls mounted so timer/income updates preserve focus.
   byId('recruitment-current-types').innerHTML = getRecruitChances(barracks.level >= 2).filter(({ type }) => type !== 'lancer').map(({ type, chance }) => {
     const progress = getRecruitProgress(recruitment, type);
@@ -493,12 +523,25 @@ function refreshRecruitmentDetails() {
       + recruitmentProgressMarkup(type) + '</div></article>';
   }).join('');
   byId('lancer-recruitment-training').innerHTML = recruitmentProgressMarkup('lancer');
-  refreshBarracksUpgrade();
 }
 
+byId('recruitment-pool').addEventListener('change', () => {
+  if (!canEditFormation() || transforming || overlay?.id !== 'market-info-panel') return;
+  const requestedPool = byId('recruitment-pool').value;
+  tickEconomy();
+  if (!canEditFormation() || overlay?.id !== 'market-info-panel') return;
+  recruitmentPool = normalizeRecruitmentPool(requestedPool, barracks.level);
+  save(); refresh();
+});
+
 byId('transform-slave').addEventListener('click', () => {
-  if (!canEditFormation() || overlay || transforming || economy.slaves < RECRUIT_COST) return;
+  if (!canEditFormation() || overlay || transforming) return;
   completeBarracksUpgrade(barracks);
+  if (!canRecruitFromPool(recruitmentPool, barracks.level)) {
+    setOverlay('market-info-panel', byId('transform-slave')); refresh();
+    return;
+  }
+  if (economy.slaves < RECRUIT_COST) return;
   const result = receiveRecruit(recruitment, Math.random, {
     lancerUnlocked: barracks.level >= 2, guaranteedLancer: barracks.firstLancerPending,
   });
@@ -566,10 +609,7 @@ function refreshEconomy() {
   byId('market-progress').parentElement!.setAttribute('aria-valuetext', `Next slave in ${marketSeconds} seconds`);
   byId('market-offline-note').textContent = `Offline storage: ${MARKET_OFFLINE_LIMIT_SECONDS / 3600}h · up to ${Math.floor(MARKET_OFFLINE_LIMIT_SECONDS / MARKET_PRODUCTION_SECONDS)} slaves`;
   refreshRecruitment();
-  const cellCost = nextCellCost(progression, barracks.level);
-  byId('slots-count').textContent = `${progression.unlockedCells.length} / ${getArmyCapacity(barracks.level)}`;
-  byId('slots-cost').textContent = cellCost === null ? barracks.level < 3 ? 'Upgrade Barracks for one more tile.' : 'Current Barracks capacity reached.' : `Next tile: ${cellCost} gold`;
-  byId('choose-cell').disabled = cellCost === null;
+  forgeUI?.refresh();
   const captureSeconds = Math.ceil(economy.captureCooldown);
   const captureLimit = capturePityKills(economy);
   const captureProgress = Math.min(economy.captureKills, captureLimit);
@@ -652,6 +692,20 @@ heroUI = createHeroUI({ button: byId('open-hero'), panel: byId('hero-panel'),
   getHero: () => hero, getBattle: () => battle, close: () => closeOverlay(),
   onChange: () => { save(); refresh(); } });
 
+forgeUI = createForgeUI({ root: byId('forge-upgrades'), getForge: () => forge, getGold: () => gold,
+  canUpgrade: () => economyActive && saveStorage.status === 'ready',
+  onUpgrade: upgrade => {
+    tickEconomy();
+    if (!economyActive || saveStorage.status !== 'ready') return;
+    const result = upgradeForge(forge, upgrade, gold);
+    if (!result.upgraded) return;
+    gold = result.gold;
+    // Save the shared bonus and its gold cost together. A running battle owns its old stats.
+    save(); refresh();
+    const name = FORGE_UPGRADES.find(entry => entry.id === upgrade)!.name;
+    byId('forge-feedback').textContent = `${name} +${forge[upgrade]}% · Applies next wave.`;
+  } });
+
 for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-profile', 'profile-panel'], ['open-barracks', 'barracks-panel'], ['open-market-info', 'market-info-panel'], ['open-hero', 'hero-panel']] as const) {
   byId(button).addEventListener('click', () => {
     if (panel === 'barracks-panel') {
@@ -680,7 +734,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
       return;
     }
     if (event.key !== 'Tab') return;
-    const buttons = [...byId(panel).querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), canvas[tabindex="0"]')]
+    const buttons = [...byId(panel).querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), select:not(:disabled), input:not(:disabled), canvas[tabindex="0"]')]
       .filter(element => !element.hidden && element.getClientRects().length > 0);
     const first = buttons[0], last = buttons.at(-1);
     if (event.shiftKey && (document.activeElement as FocusElement | null) === first) { event.preventDefault(); last?.focus(); }
@@ -728,16 +782,6 @@ byId('buildings-tabs').addEventListener('keydown', event => {
   selectBuilding(tabs[next].dataset.building);
   tabs[next].focus();
 });
-byId('choose-cell').addEventListener('click', () => {
-  closeOverlay();
-  pendingRecruitId = null;
-  pendingMerge = null;
-  selectedId = movingId = null;
-  selectedLockedCell = null;
-  byId('army-map').focus({ preventScroll: true });
-  refresh(); tell('Choose a lock.');
-});
-
 const nextWaveNumber = () => Math.min(clearedWaves + 1, TOTAL_WAVES);
 const runComplete = () => clearedWaves === TOTAL_WAVES;
 const automaticWaveNumber = () => runComplete() ? 1 : nextWaveNumber();
@@ -883,12 +927,12 @@ function refresh() {
       : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Each upgrade lets you buy one more side tile.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
   } else if (selected) {
     const type = types[selected.type];
-    const stats = getUnitStats(selected.type, selected.level);
-    const hp = stats.hp, effect = selected.type === 'healer' ? stats.heal : stats.damage;
+    const stats = getForgedUnitStats(selected.type, selected.level, forge);
+    const hp = unitStatFormat.format(stats.hp), effect = unitStatFormat.format(selected.type === 'healer' ? stats.heal : stats.damage);
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && units.length === 1;
     byId('unit-panel-title').textContent = type.name;
-    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${selected.type === 'healer' ? 'healing' : 'attack'}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${selected.type === 'healer' ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
   } else {
     byId('unit-panel-title').textContent = 'Deploy a fighter';
     panel.innerHTML = '<p class="building-note">Choose a fighter from your barracks for this tile.</p>';
@@ -1113,8 +1157,8 @@ function refreshBarracksUpgrade() {
     : `Requires ${types[info.requiredRecruitType].name} Lv. ${info.requiredRecruitLevel} · now Lv. ${info.recruitLevel}`;
   byId('barracks-upgrade-note').hidden = unlocked && !upgrading && !info.canStart && info.targetLevel !== null;
   byId('barracks-upgrade-note').textContent = upgrading ? 'Building continues offline.'
-    : info.targetLevel === null ? 'Barracks III · 11 army tiles · 2 side tiles'
-    : info.canStart ? `${hours} ${hours === 1 ? 'hour' : 'hours'} · offline building${info.targetLevel === 2 ? ' · unlocks Lancer' : ''}`
+    : info.targetLevel === null ? 'Barracks III · 11 army tiles · Elves unlocked'
+    : info.canStart ? `${hours} ${hours === 1 ? 'hour' : 'hours'} · offline building · unlocks ${info.targetLevel === 2 ? 'Lancer' : 'Elves'}`
     : 'Raise its recruitment level at the Market.';
   byId('barracks-upgrade-progress').hidden = !upgrading;
   byId('barracks-upgrade-progress').value = info.durationMs - info.remainingMs;
@@ -1177,11 +1221,11 @@ function refreshBarracks() {
   byId('barracks-feedback').hidden = !!selected;
   byId('barracks-title').textContent = selected ? 'Unit details' : 'Barracks';
   if (selected) {
-    const stats = getUnitStats(selected.type, selected.level);
+    const stats = getForgedUnitStats(selected.type, selected.level, forge);
     const portrait = scene?.getUnitArt(selected.type, selected.level);
     const lastFighter = units.length + reserve.length <= 1;
     const unavailable = !canEditFormation() || transforming;
-    byId('barracks-detail').innerHTML = `<div class="barracks-detail-unit">${portrait ? `<img src="${portrait}" alt="" />` : ''}<div class="barracks-detail-copy"><strong>${types[selected.type].name}</strong><small>Lv. ${selected.level}</small></div></div><div class="barracks-detail-stats"><span><b>HP</b><strong>${stats.hp}</strong></span><span><b>Attack</b><strong>${stats.damage}</strong></span>${selected.type === 'healer' ? `<span><b>Healing</b><strong>${stats.heal}</strong></span>` : ''}</div><div class="barracks-detail-actions">${mergeButtonMarkup({ location: 'reserve', id: selected.id }, unavailable)}<button class="battle-button" data-barracks-recruit-id="${selected.id}" type="button"${unavailable ? ' disabled' : ''}>Recruit</button><button class="barracks-sell" data-barracks-sell-id="${selected.id}" type="button" aria-label="Sell ${types[selected.type].name}, level ${selected.level}, for ${SELL_PRICE} gold"${unavailable || lastFighter ? ' disabled' : ''}><span>Sell</span><span class="coin-icon" aria-hidden="true"></span><span>${SELL_PRICE}</span></button></div><p class="barracks-detail-note">${mergeDescription({ location: 'reserve', id: selected.id })}</p>${lastFighter ? '<p class="barracks-detail-note">Keep at least one fighter.</p>' : ''}`;
+    byId('barracks-detail').innerHTML = `<div class="barracks-detail-unit">${portrait ? `<img src="${portrait}" alt="" />` : ''}<div class="barracks-detail-copy"><strong>${types[selected.type].name}</strong><small>Lv. ${selected.level}</small></div></div><div class="barracks-detail-stats"><span><b>HP</b><strong>${unitStatFormat.format(stats.hp)}</strong></span><span><b>${selected.type === 'healer' ? 'Healing' : 'Attack'}</b><strong>${unitStatFormat.format(selected.type === 'healer' ? stats.heal : stats.damage)}</strong></span>${stats.attackSpeed > 1 ? `<span><b>Speed</b><strong>+${Math.round((stats.attackSpeed - 1) * 100)}%</strong></span>` : ''}</div><div class="barracks-detail-actions">${mergeButtonMarkup({ location: 'reserve', id: selected.id }, unavailable)}<button class="battle-button" data-barracks-recruit-id="${selected.id}" type="button"${unavailable ? ' disabled' : ''}>Recruit</button><button class="barracks-sell" data-barracks-sell-id="${selected.id}" type="button" aria-label="Sell ${types[selected.type].name}, level ${selected.level}, for ${SELL_PRICE} gold"${unavailable || lastFighter ? ' disabled' : ''}><span>Sell</span><span class="coin-icon" aria-hidden="true"></span><span>${SELL_PRICE}</span></button></div><p class="barracks-detail-note">${mergeDescription({ location: 'reserve', id: selected.id })}</p>${lastFighter ? '<p class="barracks-detail-note">Keep at least one fighter.</p>' : ''}`;
   } else byId('barracks-detail').replaceChildren();
 }
 
@@ -1396,6 +1440,9 @@ byId('reset').addEventListener('click', () => {
 function resetRun() {
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
   barracks = createBarracks();
+  recruitmentPool = 'humans';
+  forge = createForge();
+  byId('forge-feedback').textContent = 'Changes apply next wave.';
   hero = createHero();
   barracksPage = 0; barracksSelectedId = null; starterSupplyGranted = true;
   pendingRecruitId = null;
@@ -1550,7 +1597,7 @@ function startWave() {
   if (battle || !scene || !units.length || !telegram.isActive || isRecovering()) return;
   // Keep the cell picker or move action open across automatic wave transitions.
   if (runComplete()) { clearedWaves = 0; lastOutcome = null; save(); }
-  battle = createBattle(units, nextWaveNumber(), hero);
+  battle = createBattle(units, nextWaveNumber(), hero, forge);
   paused = false; resultAge = 0; autoNextRemaining = null;
   battleAudio.setActive(true);
   void battleAudio.unlock();

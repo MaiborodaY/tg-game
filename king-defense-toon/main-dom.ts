@@ -43,6 +43,12 @@ export interface GameElementTags {
   'hero-panel': 'section';
   'market-info-panel': 'section';
   'market-info-title': 'h2';
+  'recruitment-pool': 'select';
+  'recruitment-pool-elves': 'option';
+  'recruitment-pool-status': 'p';
+  'recruitment-info-cost': 'p';
+  'elf-recruitment-details': 'div';
+  'recruitment-info-note': 'p';
   'barracks-upgrade-gold': 'b';
   'recruitment-guarantee': 'p';
   'recruitment-details': 'div';
@@ -65,7 +71,7 @@ export interface GameElementTags {
   'buildings-tabs': 'div';
   'tab-treasury': 'button';
   'tab-market': 'button';
-  'tab-army-space': 'button';
+  'tab-forge': 'button';
   'treasury-building': 'article';
   'treasury-level': 'b';
   'treasury-title': 'h3';
@@ -86,13 +92,11 @@ export interface GameElementTags {
   'market-build': 'button';
   'market-cost': 'b';
   'market-offline-note': 'p';
-  'army-space-building': 'article';
-  'expansion-title': 'h3';
-  'slots-count': 'b';
-  'slots-cost': 'p';
-  'choose-cell': 'button';
   'capture-status': 'strong';
   'capture-detail': 'p';
+  'forge-building': 'article';
+  'forge-upgrades': 'div';
+  'forge-feedback': 'p';
   'unit-panel': 'section';
   'unit-panel-title': 'h2';
   'army-gold': 'b';
