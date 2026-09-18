@@ -1,3 +1,4 @@
+import { artBridge, rankArtSource } from './art-catalog-codegen.mjs';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -43,9 +44,8 @@ for (const [offset, color] of ['Purple', 'Red', 'Yellow'].entries()) {
   }
 }
 
-const manifest = Object.entries(entries).map(([type, ranks]) => `  ${type}: {\n${Object.entries(ranks)
-  .map(([level, urls]) => `    ${level}: { ${Object.entries(urls).map(([key, url]) => `${key}: new URL('${url}', import.meta.url).href`).join(', ')} },`).join('\n')}\n  },`).join('\n');
-await writeFile(path.join(root, 'rank-art.mjs'), `// Native Tiny Swords palettes, prepared by scripts/prepare-rank-assets.mjs.\nexport const UNIT_RANK_ASSETS = {\n${manifest}\n};\n`);
+await writeFile(path.join(root, 'rank-art.ts'), rankArtSource(entries));
+await writeFile(path.join(root, 'rank-art.mjs'), artBridge('rank-art'));
 await writeFile(path.join(output, 'SOURCES.md'), `# Native unit rank colors
 
 Pixel Frog's existing Blue, Purple, Red and Yellow palettes represent levels 1–4.

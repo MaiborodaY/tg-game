@@ -84,3 +84,24 @@ test('graveyard plans are isolated and Army does not retain battle sprites', () 
   assert.deepEqual(army.allies.map(unit => unit.type), ['archer']);
   assert.equal(army.enemies.length, 0);
 });
+
+test('battle wave takes precedence and duplicate living enemies do not change the resource signature', () => {
+  const wave = getWaveDefinition(201);
+  const expected = getSceneAssetPlan({ wave });
+  const source = { wave: getWaveDefinition(1), battle: { wave, enemies: [...wave.spawns, ...wave.spawns] } };
+  const before = structuredClone(source);
+  const actual = getSceneAssetPlan(source);
+  assert.equal(actual.signature, expected.signature);
+  assert.equal(actual.levelNumber, 2);
+  assert.deepEqual(source, before, 'planning must not mutate saved or live combat state');
+  assert.equal(getSceneAssetPlan({ ...source, levelNumber: 1 }).mapKey, 'map:1', 'explicit map selection retains precedence');
+});
+
+test('unknown ordinary JS identifiers are skipped and null scene parts retain the initial plan', () => {
+  const expected = getSceneAssetPlan();
+  const actual = getSceneAssetPlan({ units: [{ type: 'removed-unit', level: 100 }],
+    placementType: 'unknown-placement', placementLevel: 50,
+    wave: { spawns: [{ type: 'removed-enemy' }] }, battle: null });
+  assert.deepEqual(actual, expected);
+  assert.deepEqual(getSceneAssetPlan({ units: null, wave: null, battle: null, placementType: null }), expected);
+});

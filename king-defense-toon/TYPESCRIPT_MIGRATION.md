@@ -324,6 +324,68 @@ included. No integration or publication to `main` was needed.
   browser validation of this stage. Physical Telegram-device checks remain a
   separate final step.
 
+## Stage 6 scope
+
+The renderer and its complete runtime dependency chain are now TypeScript:
+
+- `scene.ts` and `scene-types.ts`: Canvas rendering, scene state/updates, asset
+  notifications, hit testing, event callbacks, retry and lifecycle cleanup.
+- `scene-assets.ts`, `tiny-map.ts`, `graveyard-map.ts` and `asset-web.ts`: resource
+  planning, map composition and the generated portrait manifest.
+- Eleven animation helper implementations (`ally-animation` and the `tiny-*`
+  pose helpers), with minimal pose contracts in `animation-types.ts`.
+- Ten root art catalogues plus generated `assets/goblin-healer/geometry.ts`,
+  with shared sprite/animation contracts in `art-types.ts`.
+
+This adds 26 root runtime implementations, bringing that count to **44**,
+plus the generated healer geometry module (**45 runtime TS modules** including
+that nested module). Type-only files are not included in those counts.
+
+The four generators that write runtime catalogues now write checked `.ts`
+sources and retain the compatibility `.mjs` bridges. A small pure code-generation
+helper permits output checks without rewriting source images. Existing asset
+URLs, dimensions, crops, palette selection, freeze boundaries, animation clocks,
+Canvas transforms and gameplay formulas remain unchanged.
+
+Enemy animation metadata must cover the complete `EnemyType` catalogue. Resource
+lookup assertions are limited to the internal plan's image keys and map key;
+their producers remain separate within the same shared cache. The scene accepts
+partial state updates as before. Cross-field army/merge-preview invariants still
+belong to the UI/main boundary: the current JS caller supplies personal levels
+and merge levels together, but partial scene updates alone do not enforce that
+relationship. That caller has not yet been type-checked.
+
+The stage starts from `086aba0`. A fresh fetch found `origin/main` at `c999295`
+and the requested gameplay branch at `7a9a335`, both already included. `main.mjs`
+and UI/audio/Telegram implementations remain JavaScript for subsequent stages.
+
+## Stage 6 validation
+
+- Strict type checking passes, including **190 negative API contracts** (54 new)
+  for frame/geometry types, asset plans, nullable lookups, scene state and callbacks.
+- The Node suite now has **246 tests**, including 16 new animation, catalogue,
+  resource-plan and scene lifecycle scenarios. Canvas mocks check finite numeric
+  drawing commands and balanced save/restore, shared resource ownership, image
+  failure/retry, coordinate conversion, stale requests and late completion after
+  destruction. They do not render real pixels.
+- Independent helper comparison matched **1,048,812 calls** over 9,117 pose
+  fixtures and preserved 14 exported constant/freeze structures. Catalogue
+  comparison matched 367 objects and 1,453 scalar values across 11 modules.
+- **919 resource plans** matched the baseline, including all 400 waves in both
+  battlefield and formation modes. Both maps matched **3,822 Canvas commands**
+  over six cases, including the existing unavailable-context failure behavior.
+- An isolated old/new renderer comparison matched **37,790 Canvas commands**
+  across 39 renders, 15 actor types and eight effect types. Both renderers used
+  the current dependencies (checked separately) and injected image dimensions;
+  this is command parity, not a browser or screenshot comparison.
+- Catalogue generation round trips match their TS sources/bridges without
+  regenerating images. Independent review confirmed generator coverage and
+  equivalent runtime changes. A legacy helper can return an absent frame for
+  invalid numeric clocks; its return type is now honest, with positive/negative
+  contracts and a runtime regression test. Its old runtime behavior is retained.
+- Production Vite build passes. Browser and physical-device checks remain
+  deferred until after the main-module migration, as requested.
+
 ## Completion criteria and next stages
 
 For every slice: type checking, relevant behavior tests and production build
@@ -331,8 +393,7 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: migrate rendering and its resource/animation catalogues, followed by
-Telegram/audio, DOM adapters and finally the main module.
+Next: migrate Telegram/audio and army/UI adapters, followed by the main module.
 Keep major architecture changes separate from mechanical migration steps.
 
 The full migration is complete only when all active gameplay modules are

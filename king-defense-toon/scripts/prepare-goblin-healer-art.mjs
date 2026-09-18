@@ -1,3 +1,4 @@
+import { artBridge, goblinHealerGeometrySource } from './art-catalog-codegen.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -36,7 +37,7 @@ const geometry = {
   centers: body.frames.map(({ index, rect, footAnchor }) => (rect.x + footAnchor.x - index % 4 * 192) / 192),
   baselines: body.frames.map(({ index, rect, footAnchor }) => (rect.y + footAnchor.y - Math.floor(index / 4) * 192) / 192),
 };
-await writeFile(new URL('geometry.mjs', destination),
-  `// Derived from the approved healer frame manifests by prepare-goblin-healer-art.mjs.\nexport const GOBLIN_HEALER_GEOMETRY = Object.freeze(${JSON.stringify(geometry, null, 2)});\nexport const GOBLIN_HEAL_PULSE_FRAMES = Object.freeze(${JSON.stringify(pulse.frames.map(({ rect, groundAnchor }) => ({ rect, groundAnchor })), null, 2)});\n`);
+await writeFile(new URL('geometry.ts', destination), goblinHealerGeometrySource(geometry, pulse.frames));
+await writeFile(new URL('geometry.mjs', destination), artBridge('geometry'));
 await writeFile(new URL('provenance.json', destination), `${JSON.stringify({ source, assets }, null, 2)}\n`);
 console.log(JSON.stringify({ assets, totalBytes: assets.reduce((total, asset) => total + asset.bytes, 0) }, null, 2));
