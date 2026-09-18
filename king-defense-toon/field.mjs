@@ -15,6 +15,8 @@ export const FIELD = Object.freeze({
 // Equal framing around the mainland keeps its centre aligned with the Army columns.
 export const BATTLE_VIEW = Object.freeze({ x: -56, y: 0, width: 502, height: 445 });
 export const FORMATION_VIEW = Object.freeze({ x: 42, y: 260, width: 306, height: 184 });
+// The hero enters from the mainland shore without occupying a purchasable army cell.
+export const HERO_START = Object.freeze({ x: 40, y: 408 });
 export const ROYAL_PENINSULA = Object.freeze({ left: -54, top: 300, right: -2, bottom: 442 });
 export const ROYAL_NECK = Object.freeze({ left: -4, top: 392, right: 36, bottom: 424 });
 // Foot positions stay inside the shore. The overlap at each end makes one continuous route.

@@ -16,9 +16,9 @@ test('the first three tutorial waves retain their composition, stats, timing and
 });
 
 test('extending the campaign preserves the calibrated first thirty waves', () => {
-  // Captured from the released opening before extending rounds 4–40.
+  // Includes the paladin's narrow lead-fighter damage correction on waves 21–28.
   assert.equal(createHash('sha256').update(JSON.stringify(WAVE_DEFINITIONS.slice(0, 30))).digest('hex'),
-    '3658798c3adb80372f2d54727ce9cc95288df7626bc638c9ea07236b12867156');
+    '5b785820f6392a194b21df4ede5499b7d461605ce33aeea50a5c3cbb3132f370');
   const ordinary = WAVE_DEFINITIONS.slice(10, 30).filter(wave => !wave.hasBoss);
   assert.equal(ordinary.length, 18);
   for (const wave of ordinary) {

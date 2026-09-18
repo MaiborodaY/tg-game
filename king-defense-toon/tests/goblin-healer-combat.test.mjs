@@ -20,6 +20,8 @@ function encounter(otherEnemies = [], { heal = 12, withAlly = true } = {}) {
   ].map(spawn => ({ at: 0, ...spawn }));
   Object.assign(battle, { wave: { ...battle.wave, spawns }, total: spawns.length, nextSpawn: 0 });
   updateBattle(battle, DT);
+  // These cases isolate enemy support; an active paladin would heal, throw hammers and reduce damage.
+  Object.assign(battle.hero, { hp: 0, action: 'dead', pendingAbility: null });
   for (const unit of [...battle.allies, ...battle.enemies.slice(1), battle.king]) hold(unit);
   const caster = battle.enemies[0];
   Object.assign(caster, { x: 195, y: 160, action: 'idle', actionTime: 0, cooldown: 0 });
@@ -120,7 +122,7 @@ test('a lone enemy healer advances and performs weak melee instead of waiting in
   assert.equal(battle.enraged, false);
 });
 
-test('two wounded enemy healers cannot heal one another and both advance on the king', () => {
+test('two wounded enemy healers cannot heal one another and both advance on the castle', () => {
   const { battle, caster, patients: [other] } = encounter([
     { type: 'goblinHealer', hp: 70, heal: 12, x: 235, y: 160 },
   ], { withAlly: false });
@@ -134,13 +136,17 @@ test('two wounded enemy healers cannot heal one another and both advance on the 
   assert.ok(!battle.effects.some(effect => effect.type === 'heal'));
 });
 
-test('the king can counter a supporting enemy healer with his existing ranged attack', () => {
+test('the hero counters a supporting enemy healer while the defended castle stays inert', () => {
   const { battle, caster } = encounter([], { withAlly: false });
   Object.assign(caster, { x: 65, y: 360 });
   hold(caster);
-  Object.assign(battle.king, { action: 'idle', actionTime: 0, cooldown: 0 });
+  Object.assign(battle.hero, { hp: battle.hero.maxHp, x: 160, y: 360, action: 'idle',
+    actionTime: 0, cooldown: 0, hammerCooldown: 0 });
+  Object.assign(battle.castle, { action: 'idle', actionTime: 0, cooldown: 0 });
   const originalHp = caster.hp;
   advance(battle, 1);
   assert.equal(caster.hp, originalHp - 4);
-  assert.equal(battle.king.hp, battle.king.maxHp);
+  assert.equal(battle.castle.hp, battle.castle.maxHp);
+  assert.equal(battle.castle.action, 'idle');
+  assert.ok(!battle.effects.some(effect => effect.sourceId === battle.castle.id));
 });

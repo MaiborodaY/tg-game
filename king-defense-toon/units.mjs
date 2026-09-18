@@ -30,7 +30,7 @@ export const UNIT_TYPES = Object.freeze([
     heal: 4,
     role: 'Support',
     color: '#dbb44e',
-    description: 'Follows and heals your guard. Cannot heal the king.',
+    description: 'Follows and heals your guard and hero. Cannot heal the castle.',
     spriteColumn: 2,
   }),
   Object.freeze({

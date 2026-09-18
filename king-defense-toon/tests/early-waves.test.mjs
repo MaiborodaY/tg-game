@@ -50,7 +50,8 @@ test('one fixed eight-fighter level-three formation can clear the first chief af
   }
   const chief = simulateCombat(engine, { wave: 10, formation });
   assert.equal(chief.outcome, 'victory');
-  assert.equal(chief.survivors, 3);
+  assert.ok(chief.survivors >= formation.length / 2, 'at least half the army survives with the paladin');
+  assert.ok(chief.casualties > 0, 'the chief still inflicts real losses');
   assert.equal(chief.kingHp, engine.KING_MAX_HP);
   assert.equal(chief.enraged, false, 'the encounter must not rely on overtime damage');
 });

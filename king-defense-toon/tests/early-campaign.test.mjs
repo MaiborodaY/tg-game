@@ -25,7 +25,21 @@ test('an unresolved campaign battle neither retreats nor awards a first clear', 
   assert.equal(run.attempts[0].outcome, 'timeout');
   assert.equal(run.cleared, 0);
   assert.deepEqual(run.firstClears, []);
+  assert.equal(run.hero.xp, 0);
+  assert.equal(run.attempts[0].heroXp, null);
   assert.equal(run.conversions, apis.barracks.STARTING_SLAVES);
+});
+
+test('campaign diagnostics carry earned hero XP into the next battle without auto-spending talents', () => {
+  const run = runEarlyCampaign(apis, { seed: 4, maxAttempts: 4 });
+  let expected = 0;
+  for (const attempt of run.attempts) {
+    assert.equal(attempt.start.hero.xp, expected);
+    expected += attempt.heroXp?.gained ?? 0;
+  }
+  assert.ok(expected > 0);
+  assert.equal(run.hero.xp, expected);
+  assert.ok(Object.values(run.hero.talents).every(rank => rank === 0));
 });
 
 test('direct-clear slot affordability is based on current waves and separate single-use bonuses', () => {

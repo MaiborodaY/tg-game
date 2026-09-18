@@ -5,7 +5,7 @@ Original assets are never modified. Four palettes cover personal levels 1–25, 
 
 The runtime atlas contains 12 Idle, 6 Run, then three frames each of Right, DownRight, Down, UpRight and Up Attack. Defence frames are not shipped. Left angles mirror the matching right angle. Each native 320px frame is tightly cropped without resizing and placed into a 168×160 cell in a 6×6 atlas (1008×960px). Crops retain every visible pixel. The last three cells are empty.
 
-The build verifies matching silhouettes and ground-shadow anchors across all palettes and compares every visible RGBA pixel after lossless WebP encoding. Ground origins follow the native shadow centre/bottom, preventing the body's differing directional padding from moving its feet. The body height is 68 native pixels rendered at 46 game pixels. Battle views retain the whole spear. Menu portraits and the static formation idle crop at native y=124 so the tall upright tip does not cross another row or force the body to half size; they retain the helmet, body, lower shaft and shadow.
+The build verifies matching silhouettes and ground-shadow anchors across all palettes and compares every visible RGBA pixel after lossless WebP encoding. Ground origins follow the native shadow centre/bottom, preventing the body's differing directional padding from moving its feet. The body height is 68 native pixels rendered at 34 game pixels (the same 0.5 source-pixel scale as the other infantry). Battle views retain the whole spear. Menu portraits and the static formation idle crop at native y=124 so the tall upright tip does not cross another row or force the body to half size; they retain the helmet, body, lower shaft and shadow.
 
 Recreate: `node king-defense-toon/scripts/prepare-lancer-art.mjs`.
 

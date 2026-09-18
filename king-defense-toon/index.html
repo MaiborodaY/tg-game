@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#eee2bf" />
-    <meta name="description" content="BroTD Infinity: build your guard and defend your king against goblins and undead across two levels." />
+    <meta name="description" content="BroTD Infinity: grow your army and paladin hero, and defend your castle against goblins and undead." />
     <title>BroTD Infinity</title>
     <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
     <link rel="stylesheet" href="./style.css" />
@@ -59,6 +59,7 @@
           <svg id="recruit-transfer" viewBox="0 0 22 30" aria-hidden="true"><ellipse cx="11" cy="28" rx="8" ry="2" fill="#64654a" opacity=".25"/><g class="transfer-body"><path class="transfer-leg transfer-leg-back" d="m10 19-3 8H4" fill="none" stroke="#514b3d" stroke-width="3" stroke-linecap="round"/><path class="transfer-leg transfer-leg-front" d="m12 19 3 8h3" fill="none" stroke="#514b3d" stroke-width="3" stroke-linecap="round"/><path d="m8 10-3 10h12l-3-10Z" fill="#a89a70" stroke="#514b3d" stroke-width="1.4" stroke-linejoin="round"/><path class="transfer-arm" d="m13 12 3 5 3-1" fill="none" stroke="#bc9470" stroke-width="2.7" stroke-linecap="round"/><circle cx="11" cy="6" r="4" fill="#d3ad82" stroke="#514b3d" stroke-width="1.4"/><path d="M7 6V4l3-2 4 1 1 3-4-1Z" fill="#665540"/></g></svg>
           </div>
           <div class="town-tools">
+            <button id="open-hero" type="button" aria-label="St. Knihor talents" aria-haspopup="dialog" aria-controls="hero-panel"></button>
             <button id="open-buildings" class="town-trigger" type="button" aria-label="Open buildings" title="Buildings" aria-haspopup="dialog" aria-controls="buildings-panel">
               <svg class="town-icon" viewBox="0 0 40 40" aria-hidden="true" shape-rendering="crispEdges"><path d="M3 19h11v16H3Zm24-3h10v19H27Z" fill="#ad9470"/><path d="M5 21h7v12H5Zm24-3h6v15h-6Z" fill="#decca0"/><path d="M1 17h2v-3h3v-3h5v3h3v3h2v3H1Zm24-3h2v-3h3V8h4v3h3v3h2v3H25Z" fill="#47676a"/><path d="M3 17h11v2H3Zm24-3h10v2H27Z" fill="#80afb0"/><path d="M12 10h16v25H12V6h4v4h3V6h4v4h3V6h4v8H12Z" fill="#776c53"/><path d="M14 14h12v19H14Z" fill="#e6d4a7"/><path d="M17 17h6v5h-6ZM7 24h3v5H7Zm23-3h3v5h-3Z" fill="#55777a"/><path d="M17 27h6v8h-6Z" fill="#796042"/><path d="M2 35h36v2H2Z" fill="#807257"/></svg>
               <span class="town-resource" aria-label="Slaves" hidden><span class="slave-icon" aria-hidden="true"></span><span id="slaves-count">0</span></span>
@@ -67,6 +68,7 @@
           </div>
         </div>
       </section>
+      <section id="hero-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-label="St. Knihor talents" hidden></section>
       <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="market-info-title" hidden>
         <div class="menu-card recruitment-info-card">
           <header class="menu-heading"><h2 id="market-info-title">Recruitment</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close recruitment details"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
@@ -89,7 +91,7 @@
               </div>
             </article>
           </div>
-          <p class="recruitment-info-note">Market recruits raise recruitment levels. Merging only raises personal levels.</p>
+          <p class="recruitment-info-note">Market recruits raise recruitment levels. Connect adds personal levels together.</p>
         </div>
       </section>
       <section id="buildings-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="buildings-title" hidden>
@@ -156,7 +158,7 @@
             <div id="barracks-pagination" class="reserve-pagination barracks-pagination" hidden><button id="barracks-prev" class="battle-button" type="button" aria-label="Previous barracks page">‹</button><span id="barracks-page">1 / 1</span><button id="barracks-next" class="battle-button" type="button" aria-label="Next barracks page">›</button></div>
           </div>
           <div id="barracks-detail" hidden></div>
-          <p id="barracks-feedback" class="building-note" role="status" aria-live="polite">Tap for details · Hold to merge</p>
+          <p id="barracks-feedback" class="building-note" role="status" aria-live="polite">Tap for details · Hold to connect</p>
         </div>
       </section>
       <section id="profile-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-title" hidden>

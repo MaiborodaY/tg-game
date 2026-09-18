@@ -28,8 +28,11 @@ try {
     const battleScene = await createScene(document.querySelector('#battle'), { placementGrid: false });
     const formation = await createScene(document.querySelector('#formation'), { formationOnly: true });
     const draw = CanvasRenderingContext2D.prototype.drawImage;
-    let draws = [];
+    let draws = [], lineupScales = [];
     CanvasRenderingContext2D.prototype.drawImage = function(image, ...args) {
+      const type = image.src?.includes('/lancer/') ? 'lancer'
+        : image.src?.includes('tiny-swords-warrior-blue') ? 'swordsman' : null;
+      if (type) lineupScales.push({ canvas: this.canvas.id, type, scale: Math.abs(args[6] / args[2]) });
       if (image.src?.includes('/lancer/')) {
         const transform = this.getTransform();
         draws.push({ url: image.src, args, mirrored: transform.a < 0 });
@@ -60,6 +63,7 @@ try {
       rows.push(window.renderLancer(level, 'idle', 1, 0, true));
     }
     window.showLancerLineup = () => {
+      lineupScales = [];
       const battle = createBattle([], 1);
       battle.allies = ['swordsman', 'lancer', 'archer'].map((type, i) => ({
         id: type, type, level: 1, side: 'ally', x: 105 + i * 90, y: 260, hp: 48, maxHp: 48,
@@ -70,6 +74,7 @@ try {
       formation.render({ units: Array.from({ length: 15 }, (_, i) => ({ id: `u${i}`,
         type: i % 3 === 0 ? 'lancer' : i % 3 === 1 ? 'swordsman' : 'archer', level: 1 + Math.floor(i / 4) * 25,
         col: i % 5, row: Math.floor(i / 5) })), time: 20 });
+      return lineupScales;
     };
     return rows;
   });
@@ -84,7 +89,14 @@ try {
     assert.deepEqual(draws[0].args.slice(0, 4), [rect.x, rect.y, rect.width, rect.height]);
     assert.equal(draws[0].mirrored, !compact && actor.facingX < -.15);
   }
-  await page.evaluate(() => window.showLancerLineup());
+  const scales = await page.evaluate(() => window.showLancerLineup());
+  for (const canvas of ['battle', 'formation']) {
+    const sword = scales.find(draw => draw.canvas === canvas && draw.type === 'swordsman');
+    const lancers = scales.filter(draw => draw.canvas === canvas && draw.type === 'lancer');
+    assert.ok(sword && lancers.length);
+    assert.ok(lancers.every(draw => Math.abs(draw.scale / sword.scale - 1) < .01),
+      `${canvas}: a lancer must share the infantry's source-pixel scale, including every palette`);
+  }
   await page.screenshot({ path: fileURLToPath(new URL('lineup.png', output)) });
   assert.deepEqual(errors, []);
   console.log(`Passed ${results.length} real-canvas Lancer palette, angle, mirror and compact-crop checks. Screenshot: ${fileURLToPath(output)}`);

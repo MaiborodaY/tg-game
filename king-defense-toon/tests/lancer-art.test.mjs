@@ -36,7 +36,7 @@ test('lancer ground anchors and complete spear frames fit the shipped compact at
   }
   const compact = compactSourceRects[0];
   assert.ok(compact.height < sourceRects[0].height, 'only the formation drops the tall spear tip');
-  const scale = 46 / (bodyHeight * 160);
+  const scale = 34 / (bodyHeight * 160);
   const top = (compact.y - baselines[0] * 160) * scale;
   const bottom = top + compact.height * scale;
   assert.ok(top > -50, 'body fits below formation HP/level label');

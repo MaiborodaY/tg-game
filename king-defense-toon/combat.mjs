@@ -1,16 +1,20 @@
-import { FIELD, WALKABLE_AREAS, ROYAL_ROUTE, positionForCell } from './field.mjs';
+import { FIELD, WALKABLE_AREAS, ROYAL_ROUTE, HERO_START, positionForCell } from './field.mjs';
 import { UNIT_TYPE_BY_ID } from './units.mjs';
 import { ENEMY_TYPES, getEnemyCombatType, getWaveDefinition } from './waves.mjs';
 import { getUnitStats } from './recruitment.mjs';
+import { getHeroStats } from './hero.mjs';
 
 export const COMBAT_PACE = 0.85;
-export const KING_MAX_HP = 100;
+export const CASTLE_MAX_HP = 100;
+// Kept for the historical balance harness; the objective no longer fights.
+export const KING_MAX_HP = CASTLE_MAX_HP;
 const BASE_RULES = {
   swordsman: { range: 38, interval: 1.1, duration: .65, speed: 57 },
   lancer: { range: 75, interval: 1.3, duration: .75, speed: 53 },
   archer: { range: 185, interval: 1.4, duration: .7, speed: 49 },
   healer: { range: 77.5, interval: 1.45, duration: .8, speed: 47 },
-  king: { range: 42, interval: 1.2, duration: .7, speed: 0 },
+  hero: { range: 42, interval: 1.2, duration: .7, speed: 53 },
+  castle: { range: 0, interval: 0, duration: 0, speed: 0 },
   goblin: { range: 34, interval: 1.45, duration: .7, speed: 60 },
   goblinArcher: { range: 120, interval: 1.8, duration: .8, speed: 53 },
   goblinHealer: { range: 34, healRange: 95, interval: 2.6, duration: .8, speed: 48 },
@@ -35,16 +39,16 @@ function actor({ id, side, type, name = type, x, y, hp, damage, heal = 0, level 
     name, heal, level, reward, isBoss, isFinalBoss, visualScale,
     range: getUnitRange(type), action: 'idle', actionTime: 0, actionDuration: 0,
     impactFraction: RULES[getEnemyCombatType(type)].impactFraction ?? .45,
-    walkTime: 0, targetX: x + (type === 'king' ? 1 : 0),
-    targetY: y + (type === 'king' ? 0 : side === 'enemy' ? 1 : -1), hitTime: 0, deathTime: 0,
-    facingX: type === 'king' ? 1 : 0, facingY: type === 'king' ? 0 : side === 'enemy' ? 1 : -1,
-    animationFacing: type === 'king' || side === 'enemy' ? 'down' : 'up',
+    walkTime: 0, targetX: x,
+    targetY: y + (side === 'enemy' ? 1 : -1), hitTime: 0, deathTime: 0,
+    facingX: 0, facingY: side === 'enemy' ? 1 : -1,
+    animationFacing: side === 'enemy' ? 'down' : 'up',
     focusId: null, followId: null, closingRange: false, following: false,
-    cooldown: 0, targetId: null, didImpact: false,
+    cooldown: 0, targetId: null, didImpact: false, shield: 0, shieldTime: 0, stunTime: 0,
   };
 }
 
-export function createBattle(formation = [], waveNumber = 1) {
+export function createBattle(formation = [], waveNumber = 1, heroState) {
   const wave = getWaveDefinition(waveNumber);
   // Combat owns copies: casualties and movement never overwrite the saved army.
   const allies = formation.filter(unit => UNIT_TYPE_BY_ID[unit.type]).map(unit => {
@@ -55,12 +59,19 @@ export function createBattle(formation = [], waveNumber = 1) {
       hp, damage, heal,
     });
   });
+  const stats = Object.freeze({ ...getHeroStats(heroState) });
+  const hero = actor({ id: 'hero', side: 'ally', type: 'hero', name: 'St. Knihor',
+    ...HERO_START, hp: stats.maxHp, damage: stats.damage, level: stats.level });
+  Object.assign(hero, { stats, heal: stats.healAmount, healCooldown: 0, hammerCooldown: 0,
+    pendingAbility: null, miracleUsed: false, bastionTime: stats.bastion ? stats.bastionDuration : 0,
+    bastionCooldown: stats.bastionInterval });
+  const castle = actor({ id: 'castle', side: 'ally', type: 'castle', name: 'Castle',
+    x: FIELD.kingX, y: FIELD.kingFeet, hp: CASTLE_MAX_HP, damage: 0 });
   return {
     phase: 'running', elapsed: 0, allies, enemies: [], waveNumber: wave.number, wave,
     // Longer rounds must give the last reinforcement time to fight before stalemate pressure starts.
     enraged: false, enrageAt: Math.max(75, wave.spawns.at(-1).at + 45),
-    king: actor({ id: 'king', side: 'ally', type: 'king', x: FIELD.kingX,
-      y: FIELD.kingFeet, hp: KING_MAX_HP, damage: 4 }),
+    castle, hero, king: castle,
     total: wave.total, spawned: 0, kills: 0, reward: 0, effects: [], nextSpawn: wave.spawns[0].at,
     nextEffectId: 1,
   };
@@ -68,7 +79,9 @@ export function createBattle(formation = [], waveNumber = 1) {
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const living = actors => actors.filter(unit => unit.hp > 0);
-const isBusy = unit => ['attack', 'shoot', 'heal'].includes(unit.action);
+const alliedActors = battle => [...battle.allies, battle.hero];
+const allActors = battle => [...battle.allies, ...battle.enemies, battle.hero, battle.castle];
+const isBusy = unit => ['attack', 'shoot', 'heal', 'hammer'].includes(unit.action);
 const isEnemyHealer = unit => getEnemyCombatType(unit.type) === 'goblinHealer';
 const isRangedEnemy = unit => ['goblinArcher', 'goblinHealer'].includes(getEnemyCombatType(unit.type));
 
@@ -212,6 +225,18 @@ function addEffect(battle, type, source, target, duration, extras = {}) {
 
 function hurt(battle, target, amount, events) {
   if (!target || target.hp <= 0) return;
+  const hero = battle.hero;
+  if (target.side === 'ally' && target.type !== 'castle') {
+    if (hero.hp > 0 && distance(hero, target) <= hero.stats.auraRadius) {
+      let reduction = hero.stats.auraReduction + (hero.bastionTime > 0 ? hero.stats.bastionReduction : 0);
+      if (target === hero && target.hp / target.maxHp <= hero.stats.emergencyGuardThreshold) reduction += hero.stats.emergencyGuardReduction;
+      amount *= 1 - Math.max(0, Math.min(.4, reduction));
+    }
+    const absorbed = Math.min(target.shield, amount);
+    target.shield -= absorbed;
+    amount -= absorbed;
+  }
+  if (amount <= 0) return;
   const dealt = Math.min(target.hp, amount);
   target.hp = Math.max(0, target.hp - amount);
   target.hitTime = .18;
@@ -221,6 +246,9 @@ function hurt(battle, target, amount, events) {
   target.actionTime = 0;
   target.deathTime = 0;
   target.targetId = null;
+  target.shield = 0;
+  target.shieldTime = 0;
+  if (target === hero) cancelHeroActions(battle);
   if (target.side === 'enemy') {
     battle.kills += 1;
     battle.reward += target.reward;
@@ -230,17 +258,17 @@ function hurt(battle, target, amount, events) {
 }
 
 function findActor(battle, id) {
-  return battle.king.id === id ? battle.king
+  return battle.castle.id === id ? battle.castle : battle.hero.id === id ? battle.hero
     : battle.allies.find(unit => unit.id === id) ?? battle.enemies.find(unit => unit.id === id);
 }
 
 function beginAction(unit, target, action) {
-  const rule = unit.type === 'king' && action === 'shoot' ? RULES.goblinArcher : RULES[getEnemyCombatType(unit.type)];
+  const rule = RULES[getEnemyCombatType(unit.type)];
   if (action === 'attack') unit.attackCount = (unit.attackCount ?? -1) + 1;
   unit.action = action;
   unit.actionTime = 0;
   unit.actionDuration = rule.duration;
-  unit.cooldown = rule.interval;
+  unit.cooldown = unit.type === 'hero' ? unit.stats.attackInterval / COMBAT_PACE : rule.interval;
   unit.targetId = target.id;
   unit.targetX = target.x;
   unit.targetY = target.y;
@@ -250,12 +278,12 @@ function beginAction(unit, target, action) {
 
 function resolveImpact(battle, unit, events) {
   const target = findActor(battle, unit.targetId);
-  if (unit.hp <= 0 || !target || target.hp <= 0) return;
+  if (unit.hp <= 0 || unit.type === 'castle' || !target || target.hp <= 0) return;
   unit.targetX = target.x;
   unit.targetY = target.y;
   if (unit.action === 'heal') {
-    // The king is never healable, including an already queued cast.
-    if (target.type === 'king' || target.side !== unit.side) return;
+    // The defended objective is never healable, including an already queued cast.
+    if (target.type === 'castle' || target.side !== unit.side) return;
     // Enemy support cannot sustain itself or another healer indefinitely.
     if (isEnemyHealer(unit) && (target.id === unit.id || isEnemyHealer(target))) return;
     const healRange = RULES[getEnemyCombatType(unit.type)].healRange ?? unit.range;
@@ -265,16 +293,12 @@ function resolveImpact(battle, unit, events) {
     target.hp += amount;
     addEffect(battle, 'heal', unit, target, .7, { amount });
   } else if (unit.action === 'shoot') {
-    const royalShot = unit.type === 'king';
-    // Royal bolts only counter ranged enemies; nearby melee threats still receive sword strikes.
-    if (royalShot && (target.side !== 'enemy' || !isRangedEnemy(target)
-      || distance(unit, target) > RULES.goblinArcher.range + 8)) return;
     // Damage lands with the arrow, rather than before it reaches its target.
     addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
-      targetId: target.id, damage: royalShot ? ENEMY_TYPES.goblinArcher.damage : unit.damage,
+      targetId: target.id, damage: unit.damage,
     });
-    if (!royalShot) events.push({ type: 'bow-shot', sourceId: unit.id });
-  } else if (distance(unit, target) <= unit.range + 10 && hasLandPath(unit, target)) {
+    events.push({ type: 'bow-shot', sourceId: unit.id });
+  } else if (target.side !== unit.side && distance(unit, target) <= unit.range + 10 && hasLandPath(unit, target)) {
     addEffect(battle, 'slash', unit, target, .27);
     hurt(battle, target, unit.damage, events);
   }
@@ -330,7 +354,7 @@ function followAlly(unit, target, dt) {
 }
 
 function actHealer(battle, unit, dt) {
-  const wounded = battle.allies
+  const wounded = alliedActors(battle)
     .filter(target => target.hp > 0 && target.hp < target.maxHp)
     .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
   const current = wounded.find(target => target.id === unit.focusId);
@@ -355,7 +379,7 @@ function actHealer(battle, unit, dt) {
     unit.action = 'idle';
     return;
   }
-  const fighters = living(battle.allies).filter(ally => ally.type !== 'healer');
+  const fighters = living(alliedActors(battle)).filter(ally => ally.type !== 'healer');
   const front = [...fighters].sort((a, b) => a.y - b.y)[0];
   const followed = fighters.find(ally => ally.id === unit.followId);
   const leader = followed && front && followed.y <= front.y + 50 ? followed : front;
@@ -368,17 +392,134 @@ function actHealer(battle, unit, dt) {
   followAlly(unit, leader, dt);
 }
 
-function actKing(battle, unit) {
-  // Defend locally first. A distant melee unit must not distract the king from an archer shooting him.
-  const meleeTarget = nearest(unit, battle.enemies.filter(enemy => hasLandPath(unit, enemy)), unit.range + 6);
-  const target = meleeTarget ?? nearest(unit,
-    battle.enemies.filter(isRangedEnemy), RULES.goblinArcher.range);
-  if (!target) { unit.action = 'idle'; return; }
-  unit.targetX = target.x;
-  unit.targetY = target.y;
-  faceToward(unit, target);
-  if (unit.cooldown <= 0) beginAction(unit, target, meleeTarget ? 'attack' : 'shoot');
-  else unit.action = 'idle';
+function cancelHeroActions(battle) {
+  const hero = battle.hero;
+  hero.pendingAbility = null;
+  hero.bastionTime = 0;
+  hero.targetId = null;
+  battle.effects = battle.effects.filter(effect => effect.type !== 'hero-hammer');
+}
+
+function woundedAllies(battle, range) {
+  return alliedActors(battle).filter(target => target.side === battle.hero.side
+    && target.hp > 0 && target.hp < target.maxHp && distance(battle.hero, target) <= range)
+    .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
+}
+
+function beginHeroAbility(hero, kind, targets) {
+  // Ability queues own their target and impact flag; basic attacks keep their own state.
+  hero.pendingAbility = { kind, sourceId: hero.id, targetIds: targets.map(target => target.id),
+    time: 0, duration: .65 / COMBAT_PACE, didImpact: false };
+  hero.action = kind === 'hammer' ? 'hammer' : 'heal';
+  hero.actionTime = 0;
+  hero.actionDuration = hero.pendingAbility.duration;
+  hero.targetX = targets[0].x;
+  hero.targetY = targets[0].y;
+  faceToward(hero, targets[0]);
+  if (kind === 'heal') hero.healCooldown = hero.stats.healCooldown;
+  if (kind === 'hammer') hero.hammerCooldown = hero.stats.hammerCooldown;
+  if (kind === 'miracle') hero.miracleUsed = true;
+}
+
+function healByHero(battle, target, amount, range, shield = 0) {
+  const hero = battle.hero;
+  if (hero.hp <= 0 || !target || target.hp <= 0 || target.type === 'castle'
+    || target.side !== hero.side || distance(hero, target) > range) return;
+  const healed = Math.min(amount, target.maxHp - target.hp);
+  target.hp += Math.max(0, healed);
+  shield = Math.min(shield, Math.max(0, amount - healed));
+  if (shield > 0) {
+    // Refresh a finite barrier instead of stacking it on every eight-second cast.
+    target.shield = Math.max(target.shield, shield);
+    target.shieldTime = hero.stats.healShieldDuration;
+  }
+  if (healed > 0 || shield > 0) addEffect(battle, 'hero-heal', hero, target, .65,
+    { targetId: target.id, amount: healed, shield });
+}
+
+function resolveHeroAbility(battle, pending) {
+  const hero = battle.hero;
+  if (hero.hp <= 0 || pending.sourceId !== hero.id) return;
+  const stats = hero.stats;
+  if (pending.kind === 'miracle') {
+    for (const target of alliedActors(battle)) healByHero(battle, target,
+      target.maxHp * stats.miracleHealFraction, stats.miracleRadius);
+    return;
+  }
+  if (pending.kind === 'heal') {
+    pending.targetIds.forEach((id, index) => healByHero(battle, findActor(battle, id),
+      stats.healAmount * (index === 0 ? 1 : stats.secondaryHealFraction), stats.healRange,
+      index === 0 ? stats.healShield : 0));
+    return;
+  }
+  const target = findActor(battle, pending.targetIds[0]);
+  if (!target || target.hp <= 0 || target.side === hero.side || target.type === 'castle'
+    || distance(hero, target) > stats.hammerRange) return;
+  addEffect(battle, 'hero-hammer', hero, target, Math.max(.15, distance(hero, target) / 330),
+    { targetId: target.id, damage: stats.hammerDamage, landed: false });
+}
+
+function stunByHammer(hero, target) {
+  if (target.hp <= 0 || hero.stats.hammerStunDuration <= 0) return;
+  target.stunTime = Math.max(target.stunTime, hero.stats.hammerStunDuration);
+  target.action = 'idle';
+  target.targetId = null;
+}
+
+function landHeroHammer(battle, effect, events) {
+  const hero = battle.hero;
+  const target = findActor(battle, effect.targetId);
+  // Revalidate at arrival: a dead caster, switched side or escaped target cancels damage.
+  if (hero.hp <= 0 || effect.sourceId !== hero.id || !target || target.hp <= 0
+    || target.side === hero.side || target.type === 'castle'
+    || distance(hero, target) > hero.stats.hammerRange) return;
+  addEffect(battle, 'hero-impact', hero, target, .4, { targetId: target.id });
+  hurt(battle, target, effect.damage, events);
+  stunByHammer(hero, target);
+  if (hero.stats.hammerSplashFraction <= 0) return;
+  for (const enemy of battle.enemies) {
+    if (enemy.id !== target.id && enemy.side !== hero.side && enemy.hp > 0
+      && distance(target, enemy) <= hero.stats.hammerSplashRadius) {
+      hurt(battle, enemy, effect.damage * hero.stats.hammerSplashFraction, events);
+      stunByHammer(hero, enemy);
+    }
+  }
+}
+
+function actHero(battle, hero, dt) {
+  const stats = hero.stats;
+  const wounded = woundedAllies(battle, stats.healRange);
+  const emergency = stats.miracle && !hero.miracleUsed
+    && woundedAllies(battle, stats.miracleRadius).some(target => target.hp / target.maxHp <= stats.miracleThreshold);
+  if (emergency) { beginHeroAbility(hero, 'miracle', [hero]); return; }
+  if (hero.healCooldown <= 0 && wounded.length) {
+    beginHeroAbility(hero, 'heal', wounded.slice(0, stats.secondaryHealFraction > 0 ? 2 : 1));
+    return;
+  }
+  const enemies = living(battle.enemies);
+  if (hero.hammerCooldown <= 0) {
+    const target = nearest(hero, enemies.filter(isRangedEnemy), stats.hammerRange)
+      ?? nearest(hero, enemies, stats.hammerRange);
+    if (target) { beginHeroAbility(hero, 'hammer', [target]); return; }
+  }
+  const adjacent = nearest(hero, enemies.filter(enemy => hasLandPath(hero, enemy)), hero.range + 6);
+  if (adjacent) {
+    if (hero.cooldown <= 0) beginAction(hero, adjacent, 'attack');
+    else hero.action = 'idle';
+    return;
+  }
+  const target = focusedEnemy(hero, enemies);
+  if (!target) { hero.action = 'idle'; return; }
+  const fighters = living(battle.allies).filter(ally => ally.type !== 'healer');
+  const leader = nearest(target, fighters);
+  if (!leader) { moveToward(hero, target, dt, hero.range - 2); return; }
+  // Follow the front rather than overtaking it to tank every incoming group. When only
+  // archers remain, close to hammer reach even if our own archers stopped farther back.
+  const onlyRanged = enemies.every(isRangedEnemy);
+  const desiredRange = onlyRanged ? Math.min(stats.hammerRange - 15, 115) : hero.range - 2;
+  const goal = { x: Math.max(leader.x - 70, Math.min(leader.x + 70, target.x)),
+    y: Math.max(target.y + desiredRange, leader.y + (onlyRanged ? -45 : 12)) };
+  moveToward(hero, goal, dt, 4);
 }
 
 function actEnemyHealer(battle, unit, dt) {
@@ -407,7 +548,8 @@ function actEnemyHealer(battle, unit, dt) {
   }
 
   unit.focusId = null;
-  const opponents = living(battle.allies).length ? living(battle.allies) : living([battle.king]);
+  const defenders = living(alliedActors(battle));
+  const opponents = defenders.length ? defenders : living([battle.castle]);
   if (!opponents.length) return true;
   const front = [...fighters].sort((a, b) => distance(a, nearest(a, opponents)) - distance(b, nearest(b, opponents)))[0];
   const followed = fighters.find(target => target.id === unit.followId);
@@ -430,9 +572,9 @@ function actEnemyHealer(battle, unit, dt) {
 }
 
 function act(battle, unit, dt) {
-  if (unit.hp <= 0 || isBusy(unit)) return;
-  if (unit.type === 'king') {
-    actKing(battle, unit);
+  if (unit.hp <= 0 || unit.stunTime > 0 || isBusy(unit) || unit.type === 'castle') return;
+  if (unit.type === 'hero') {
+    actHero(battle, unit, dt);
     return;
   }
   if (unit.type === 'healer') {
@@ -441,9 +583,8 @@ function act(battle, unit, dt) {
   }
   if (isEnemyHealer(unit) && actEnemyHealer(battle, unit, dt)) return;
 
-  const opponents = unit.side === 'enemy'
-    ? (living(battle.allies).length ? battle.allies : [battle.king])
-    : battle.enemies;
+  const defenders = unit.side === 'enemy' ? living(alliedActors(battle)) : [];
+  const opponents = unit.side === 'enemy' ? (defenders.length ? defenders : [battle.castle]) : battle.enemies;
   const target = focusedEnemy(unit, opponents);
   if (!target) {
     // Hold ground between groups; home cells are only the next preparation layout.
@@ -484,7 +625,7 @@ function act(battle, unit, dt) {
 }
 
 function separateAllies(battle, dt) {
-  const allies = living(battle.allies);
+  const allies = living(alliedActors(battle));
   for (let i = 0; i < allies.length; i += 1) {
     for (let j = i + 1; j < allies.length; j += 1) {
       const first = allies[i];
@@ -512,21 +653,50 @@ function separateAllies(battle, dt) {
 }
 
 function ageVisuals(battle, dt, events, active) {
+  if (battle.hero.hp <= 0) cancelHeroActions(battle);
   // Iterate a snapshot because a landed arrow can append hit, death, and gold effects.
   for (const effect of [...battle.effects]) {
     effect.age += dt;
     if (active && effect.type === 'arrow' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       hurt(battle, findActor(battle, effect.targetId), effect.damage, events);
+    } else if (active && effect.type === 'hero-hammer' && !effect.landed && effect.age >= effect.duration) {
+      effect.landed = true;
+      landHeroHammer(battle, effect, events);
     }
   }
   battle.effects = battle.effects.filter(effect => effect.age < effect.duration);
-  for (const unit of [...battle.allies, ...battle.enemies, battle.king]) {
+  for (const unit of allActors(battle)) {
     unit.hitTime = Math.max(0, unit.hitTime - dt);
     if (unit.hp <= 0) unit.deathTime += dt;
     if (!active) continue;
+    unit.shieldTime = Math.max(0, unit.shieldTime - dt);
+    if (unit.shieldTime <= 0) unit.shield = 0;
+    unit.stunTime = Math.max(0, unit.stunTime - dt);
     unit.cooldown = Math.max(0, unit.cooldown - dt);
-    if (!isBusy(unit)) continue;
+    if (unit === battle.hero && unit.hp > 0) {
+      unit.healCooldown = Math.max(0, unit.healCooldown - dt);
+      unit.hammerCooldown = Math.max(0, unit.hammerCooldown - dt);
+      unit.bastionTime = Math.max(0, unit.bastionTime - dt);
+      unit.bastionCooldown = Math.max(0, unit.bastionCooldown - dt);
+      if (unit.stats.bastion && unit.bastionCooldown <= 0) {
+        unit.bastionTime = unit.stats.bastionDuration;
+        unit.bastionCooldown = unit.stats.bastionInterval;
+      }
+      const pending = unit.pendingAbility;
+      if (pending) {
+        if (unit.stunTime > 0) continue;
+        pending.time += dt;
+        unit.actionTime = pending.time;
+        if (!pending.didImpact && pending.time >= pending.duration * unit.impactFraction) {
+          pending.didImpact = true;
+          resolveHeroAbility(battle, pending);
+        }
+        if (pending.time >= pending.duration) { unit.pendingAbility = null; unit.action = 'idle'; }
+        continue;
+      }
+    }
+    if (unit.hp <= 0 || unit.stunTime > 0 || !isBusy(unit)) continue;
     unit.actionTime += dt;
     if (!unit.didImpact && unit.actionTime >= unit.actionDuration * unit.impactFraction) {
       unit.didImpact = true;
@@ -576,14 +746,17 @@ function step(battle, dt, events) {
     const multiplier = 2 + Math.floor((battle.elapsed - battle.enrageAt) / 10);
     for (const enemy of battle.enemies) enemy.damage = enemy.baseDamage * multiplier;
   }
-  for (const unit of [...battle.allies, ...battle.enemies, battle.king]) act(battle, unit, dt);
+  for (const unit of [...battle.allies, ...battle.enemies, battle.hero]) act(battle, unit, dt);
   separateAllies(battle, dt);
   separateEnemies(battle);
-  if (battle.king.hp <= 0) battle.phase = 'defeat';
+  if (battle.castle.hp <= 0) battle.phase = 'defeat';
   else if (battle.spawned === battle.total && battle.kills === battle.total) battle.phase = 'victory';
   if (battle.phase !== 'running') {
-    for (const unit of [...battle.allies, ...battle.enemies, battle.king]) {
+    cancelHeroActions(battle);
+    battle.effects = battle.effects.filter(effect => effect.type !== 'arrow');
+    for (const unit of allActors(battle)) {
       if (unit.hp > 0) unit.action = 'idle';
+      unit.targetId = null;
     }
   }
 }
