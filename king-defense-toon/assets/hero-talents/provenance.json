@@ -9,15 +9,15 @@
     "path": "art/hero-talents/talents-source.png",
     "width": 1774,
     "height": 887,
-    "bytes": 1644378,
-    "sha256": "bc642c71db48c5392735913b857eac1f4d1242ba9a23aa2b5c593058e82d8b21"
+    "bytes": 1553699,
+    "sha256": "682c48179ea4edafba21b93bd1ab960208abc3e04e9830b80595f854924fe5bc"
   },
   "output": {
     "path": "assets/hero-talents/talents.webp",
     "width": 768,
     "height": 384,
-    "bytes": 41904,
-    "sha256": "51ed56678dea63f217d16159c31f70daf5aabdcfcbbb31342fafbca65613fb4d",
+    "bytes": 53652,
+    "sha256": "9b2de3b16864edc0092f4882ccae6dfea7813e1e6c56855515a60633911ec145",
     "quality": 84
   }
 }

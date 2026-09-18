@@ -1,24 +1,73 @@
-# Calm hero talents
+# Simplified hero talent icons
 
-Edited with the built-in image_gen tool from the original approved 18-icon atlas.
-Generated source: `exec-56935ec5-1fcb-4aac-be97-36692abe14d7.png`.
-The original artwork is preserved in Git history. Only the WebP export is loaded by the game.
+Generated with the built-in `image_gen` tool from the user's approved six-icon
+style study, with the original Tiny Swords warrior as the supporting game-style
+reference. Source: `exec-7cddc042-04e5-48a6-9d03-03353717691a.png`.
+Approved study: `exec-f627b8d9-fb53-43ce-88c7-20af1b611355.png`.
+Original unit reference: `assets/tiny-swords-warrior-blue.png`.
 
-The six-column, three-row arrangement and all talent IDs are unchanged. Full-tile rays
-and bright bloom were removed; small lights, muted aura rings and restrained lightning
-retain the magical theme. No CSS dimming/filter pass or extra animation is required.
+The prior revision removed glow but retained too much object detail. This version
+redraws the symbols with large pixel shapes, simple silhouettes and a few broad
+shading planes. Quiet amber, teal and burgundy backgrounds distinguish the three
+branches. Avoid realistic hands, individual feather strands, metal engraving,
+scattered debris, fine rays and bright bloom. Judge every icon at 44–48 CSS pixels,
+not only in an enlarged source image.
 
-Export: `node king-defense-toon/scripts/prepare-talent-art.mjs`.
-The runtime atlas stays 768 × 384 (128px per icon) at WebP quality 84. It is 41,904 bytes,
-down from 107,796 bytes (61.1% smaller), with the same decoded dimensions and one image request.
+## Runtime contract and export
 
-## Final edit prompt
+`talent-art.ts` continues to map the same 18 talent IDs to a six-column, three-row
+atlas. No talent data, save IDs, menu dimensions or gameplay rules change.
 
-Use case: precise-object-edit.
-Edit target: the supplied original 6-column by 3-row atlas of 18 pixel-art fantasy hero talent icons. Produce ONE replacement atlas at exact 2:1 aspect ratio, ideally 2048x1024, exactly 6 equal square columns and 3 equal square rows. Every icon must remain in the exact same cell and depict the same recognizable subject, scale and orientation as in the input. No text, numbers, decorative frames, gaps, new icons or rearrangement.
-Primary change: drastically reduce visual noise and excessive magical brightness across the whole set. These icons are all visible at once at just 40-60px in a mobile talent tree. Keep the original dark navy backgrounds, gold/steel/blue materials, clean stylized pixel clusters and fantasy identity, but make them calm, readable, matte. Remove ALL full-cell radial blue rays and nearly all golden starburst spokes and scattered sparkles. Replace these busy backgrounds with flat quiet dark desaturated navy. Reduce white-hot yellow/white cores, bloom and neon outlines by roughly 80 percent. Preserve clear subject silhouettes and midtone contrast: do not merely darken the entire image. Gold should look like warm muted brass, blue shields like muted royal blue, steel like medium cool silver. Small restrained rim highlights are fine. Magical accents should be compact and localized; no cell-spanning radiance.
-Exact row-major cell subjects to preserve:
-Row 1: (1) open healing hand, a small gentle amber light near the palm and no starburst behind it; (2) a simple warm golden sun disc with only a few short soft rays, not white-hot; (3) winged pocket watch with off-white wings; (4) steel shield with gold cross; (5) two modest four-point healing stars, one larger and one smaller, no needle-like long rays or sparkles; (6) three people silhouettes under a small subdued gold sun, no white corona.
-Row 2: (1) quartered steel/brass shield with a thin quiet gold ring; (2) blue-and-gold shield; (3) one person silhouette with three thin muted ochre range rings, not glowing neon; (4) blue shield with gold heart; (5) three people under a muted blue translucent dome with a thin soft edge, no sparks, no white neon outlines; (6) a shield shaped like a castle battlement.
-Row 3: (1) steel/brass warhammer angled up-right; (2) downward hammer hitting a small cracked patch of stone, only a very small amber contact accent, no explosive rays; (3) hammer and pocket watch; (4) downward hammer with a restrained short ground shockwave ring and few stones, no huge blast; (5) upright silver sword with brass hilt and one small warm highlight, no starburst; (6) large angled dark warhammer with only two small subdued ochre lightning marks, no glowing aura.
-Consistency and constraints: preserve compact pixel-art object design and original cell arrangement. Keep all symbols legible, not muddy or faded. Uniform plain navy backgrounds across all cells. Shared palette and lighting. This is a quieter version of the same approved game artwork, not a redesign into flat vectors, photorealism or children's clipart. Biggest priority: drastically fewer luminous lines and no large white or neon glowing areas. Output only the finished atlas.
+| Row | Column 1 | Column 2 | Column 3 | Column 4 | Column 5 | Column 6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Light | Healing hand | Sun | Winged clock | Shield with drop | Two stars | Group with healing drop |
+| Protection | Cross shield | Breastplate | Guardian under arch | Heart shield | Helmet in shield | Castle turret |
+| Judgement | Thrown hammer | Heavy hammer | Clock and hammer | Hammer impact ring | Sword | Stunned helmet |
+
+Run `node king-defense-toon/scripts/prepare-talent-art.mjs` from the worktree root.
+The game loads only `assets/hero-talents/talents.webp`: 768 × 384, 128px per cell,
+WebP quality 84, **53,652 bytes (52.4 KiB)**. This is below the enforced 64 KiB
+download budget. It is 11,748 bytes larger than the previous plain-background
+revision (41,904 bytes), and 50.2% smaller than the original glowing atlas
+(107,796 bytes). The 18 icons still share one image request and the same decoded
+dimensions; no runtime filters, extra textures or animations are needed.
+The source PNG is for future edits and is not included in the game's download.
+Previous artwork is retained in Git history.
+
+## Final generation prompt
+
+Use case: stylized-concept.
+Asset type: ONE production sprite atlas of 18 illustrated fantasy talent icons for a mobile game.
+Input image 1: the user's APPROVED six-icon style study. This is the main reference: match its chunky pixel shapes, large subject scale, simple cream/blue/gold materials, coloured subdued backgrounds and sparse internal detail. Reuse its hand-with-drop, blue shield, chunky hammer, winged clock, hooded guardian and stunned helmet designs where specified below.
+Input image 2: our original Tiny Swords warrior sprite sheet. Supporting game-style reference only; keep the same compact fantasy abstraction and large solid shaded planes. Do not copy its sheet layout or make character animation frames.
+
+Output layout is CRITICAL: exactly SIX columns by THREE rows, 18 equal square edge-to-edge cells, overall 2:1 aspect ratio, preferably 1536x768. Every cell fully filled with its own coloured background. No margins, gaps, separators, borders, frames, numbers, letters, labels, headings, extra cells or text. No single symbol crosses a cell boundary. Each symbol occupies about 75% of its own cell, centred with 8% safety inset except cropped sleeves.
+
+Rendering: the same simplified native 48x48-pixel design vocabulary as the approved study. Clear stepped pixels, large coherent colour clusters, two or three solid shades per material, thin dark coloured outlines, cream edge highlights. Deliberately low detail, immediately identifiable at 44–48 screen pixels. No realistic fingers, carved metals, many feather strands, microscopic texture, elaborate gemstones, detailed anatomy or dither. Simplify the design itself. Do not return detailed paintings with a pixel filter.
+
+Each row uses a coherent quiet background: row 1 muted amber/ochre, row 2 desaturated deep teal/blue, row 3 dark muted burgundy/red-brown. As in the approved study, each cell may have ONE broad slightly lighter curved or angular background shape. Keep backgrounds present and colourful but darker and lower contrast than the symbol. No white hotspots, bloom, neon, radial starbursts, scattered sparks or luminous debris. Small localized gold accents only.
+
+EXACT subjects, left to right in each row:
+ROW 1, LIGHT:
+1 Healing Light: the approved simple open cartoon hand in a cream-and-blue sleeve with ONE small golden teardrop hovering over its palm.
+2 Radiant Light: a stout golden sun disc with a simple cream centre and four short broad rays, no face, no white glow.
+3 Quick Prayer: the approved brass pocket watch, ivory face with two thick hands and NO numerals, two wings made of only three stepped shapes each.
+4 Overflowing Light: broad cream-and-gold shield carrying ONE blue healing drop, clearly a shield, simple surface.
+5 Shared Light: TWO solid gold four-point stars side by side, one slightly smaller, short wide arms with no glow or extra specks.
+6 Miracle: THREE very simple blue hooded heads/shoulders, central figure a little taller, ONE gold healing drop above the group. No faces or robes detail.
+ROW 2, PROTECTION:
+1 Protective Aura: the approved stout blue shield with broad cream rim and ONE gold cross, one quiet blue arc behind it.
+2 Unbroken Armour: a broad blue steel breastplate with two large cream shoulder plates and simple brass collar; no person, chainmail or rivets.
+3 Wider Sanctuary: the approved hooded guardian bust under ONE broad pale-blue protective arch, no face or fine rings.
+4 Last Stand: a chunky blue shield with ONE large cream/gold heart emblem, plainly different from the cross shield.
+5 Guardian Ward: a simple closed cream knight helmet enclosed by ONE blue shield-shaped outline; plain dark visor, no crest or ornamental lines.
+6 Bastion: a stout cream castle turret with THREE broad crenellations and ONE dark-blue gate; broad silhouette, no brickwork.
+ROW 3, JUDGEMENT:
+1 Holy Hammer: the approved chunky cream-steel hammer with brass caps and brown handle, angled diagonally, one short broad ochre swing stroke.
+2 Righteous Might: a heavier hammer seen nearly upright, oversized blunt gold-capped head facing front, one tiny cream impact wedge below; no rocks.
+3 Swift Judgement: a SIMPLE large brass clock face with two dark hands, with a short simplified hammer diagonally behind it; no numerals, no wings.
+4 Holy Impact: a downward hammer meeting ONE wide flattened gold impact ring; no individual pebbles, shards, fire or dust.
+5 Holy Strike: one broad upright cream sword with stout gold crossguard, blue lower grip, and ONE short gold swoosh behind its blade. No engravings.
+6 Heavenly Hammer: the approved simple cream knight helmet with blue plume, dark visor, ONE small gold four-point stun star beside the upper corner.
+
+Consistency: all eighteen feel drawn by one artist, exactly like the approved study. Preserve chunky expressive silhouettes, modest backgrounds and few internal planes. No extra detail for final-tier talents. Readability at small size is more important than ornament. Output only the finished 6x3 atlas.
