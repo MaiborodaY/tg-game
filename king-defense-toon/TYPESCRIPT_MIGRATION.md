@@ -204,6 +204,69 @@ still JavaScript and are not yet covered by TypeScript checking.
   The environment still blocks Telegram's external SDK, so this is not a
   physical Telegram-device result.
 
+## Stage 4 scope
+
+`combat.ts` moves the full combat simulation under strict checking, bringing the
+total to sixteen runtime implementations. `combat-types.ts` adds type-only
+contracts for formation input, actors, hero ability queues, battle state, events
+and effects. The hero has its own required stats/ability fields; ordinary actors
+do not pretend to carry them. Event/effect kinds retain their own payloads rather
+than one bag of optional properties.
+
+The simulation retains the fixed 1/60-second step, frame catch-up cap, targeting,
+movement, damage/healing formulas, projectiles, enrage, rewards and mutable
+castle/king alias. Fields added only when needed (such as attack counts, detours
+and an arrow's landed flag) remain optional instead of changing runtime objects.
+The frozen hero-stat snapshot and shared wave definitions remain distinct from
+mutable combat actors and effects.
+
+Two existing API signatures are clarified without changing their runtime:
+`getHeroStats` accepts the absent hero state already used by fresh battles, and
+`getEnemyCombatType` types the identity fallback for allied/hero/castle IDs while
+mapping enemy IDs to combat roles. Raw saved heroes still enter through
+`createHero`; this is not a blanket relaxation of the internal state contracts.
+
+`combat.mjs` remains a compatibility bridge for main, rendering, Node tests and
+the dynamic balance CLI. Hero and drag/merge browser harnesses now wrap exports
+at that bridge, keeping test instrumentation independent of Vite's TypeScript
+output format. Production source receives no test hooks.
+
+The stage starts from `36f6453`, with fetched `origin/main` at `c999295` and the
+requested gameplay commit `7a9a335` already included. No gameplay/balance change
+is part of this stage; rendering, storage/cache and main/UI remain JavaScript.
+
+## Stage 4 validation
+
+- `brotd:check` passed: strict type checks, all **223 Node tests** and the
+  production Vite build. Type tests now include **106 negative API contracts**,
+  with 19 new checks covering actor kinds, hero-only state, nullable queues,
+  event/effect payloads, frozen snapshots and supported input types.
+- Two new runtime tests cover simultaneous lethal projectiles awarding one
+  reward, missing projectile targets, and hero death during effect processing:
+  a queued hammer is cancelled while an ordinary arrow outlives its archer.
+- Independent old/new comparison matched all **400 initial wave states**,
+  **40 completed battles** (23 victories / 17 defeats) and **24 edge fixtures**.
+  It compared **40,644 complete frame states** and **2,082 ordered events**,
+  including effects, visual timers, actor aliases and unchanged saved input.
+  All 17 actor kinds, 8 effects and 3 hero abilities were observed. Complete
+  battles were sampled across campaign/boss/undead encounters, FPS, jitter and
+  speeds x1/x2/x3; all 400 waves were not simulated to completion.
+- Runtime-code review found only equivalent hero-construction/local-alias
+  changes after types were removed. A review finding in the generic `EffectOf`
+  alias was fixed so unions cannot mismatch effect kind and payload; a negative
+  type contract protects it. Rule completeness and required enemy alias
+  mappings are checked at their catalogue definitions.
+- Hero browser integration passed at 320/390px, including save/reload, battle
+  snapshots, XP once, reset and actual level-1/20 healing/hammer at speed x3.
+- Drag/merge browser integration passed at 320/390px with touch, mouse, cancel,
+  native scrolling and reload checks. Five storage-recovery scenarios passed,
+  including retrying combat-reward saves without awarding twice.
+- The compiled production build passed a standalone Edge smoke at 390x844:
+  wave 9 advanced, hero and army moved, hero/Lancer assets returned HTTP 200,
+  and there were no JavaScript exceptions or development test hooks. The
+  environment still blocks the external Telegram SDK; real Telegram devices
+  remain a separate verification step.
+
 ## Completion criteria and next stages
 
 For every slice: type checking, relevant behavior tests and production build
@@ -211,8 +274,7 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: migrate combat state/events using the typed unit, wave, economy and hero
-contracts, then storage/cache APIs,
+Next: migrate storage/cache APIs using the typed gameplay contracts,
 followed by rendering, Telegram/audio, DOM adapters and finally the main module.
 Keep major architecture changes separate from mechanical migration steps.
 

@@ -10,6 +10,8 @@ export function verifyHeroContracts(saved: unknown): void {
   const talent: TalentId = HERO_TALENTS[0].id;
   const progress: HeroProgress = getHeroProgress(hero);
   const stats: HeroStats = getHeroStats(hero);
+  const freshStats: HeroStats = getHeroStats();
+  const unsavedStats: HeroStats = getHeroStats(undefined);
   const status: HeroTalentStatus = getHeroTalentStatus(hero, talent);
   const spend: SpendHeroTalentResult = spendHeroTalent(hero, talent);
   const reset: ResetHeroTalentsResult = resetHeroTalents(hero);
@@ -63,5 +65,5 @@ export function verifyHeroContracts(saved: unknown): void {
   HERO_TALENTS[0].maxRank = 1;
   // @ts-expect-error State cannot acquire unknown talent fields through typed callers.
   hero.talents.unknown = 1;
-  void [branch, progress, reset, emptyReward, xp, invalidBranch, invalidTalent, branchPoints];
+  void [branch, progress, reset, emptyReward, xp, invalidBranch, invalidTalent, branchPoints, freshStats, unsavedStats];
 }

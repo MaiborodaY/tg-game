@@ -8,8 +8,11 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const root = fileURLToPath(new URL('../', import.meta.url));
 const server = await createServer({ root, configFile: false, server: { host: '127.0.0.1', port: 5198, strictPort: true },
   plugins: [{ name: 'drag-test-hooks', transform(code, id) {
-    if (id.endsWith('/combat.mjs')) return code.replace('export function updateBattle(',
-      'export function updateBattle(...args) { throw new Error("Combat must not run in UI checks"); }\nfunction unusedUpdateBattle(');
+    if (id.endsWith('/combat.mjs')) {
+      assert.ok(code.includes("export * from './combat.ts'"), 'development combat bridge is available');
+      // An explicit export overrides the bridge's star export only on this test server.
+      return code + '\nexport function updateBattle() { throw new Error("Combat must not run in UI checks"); }';
+    }
     if (id.endsWith('/main.mjs')) return code + `\nwindow.dragCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },

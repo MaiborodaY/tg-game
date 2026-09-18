@@ -176,7 +176,7 @@ export function getHeroProgress(hero: HeroState): HeroProgress {
     earnedPoints: level - 1, spentPoints, availablePoints: level - 1 - spentPoints, maxLevel };
 }
 
-export function getHeroStats(hero: HeroState): HeroStats {
+export function getHeroStats(hero?: HeroState): HeroStats {
   const state = createHero(hero), level = levelAt(state.xp), ranks = state.talents;
   const scale = (100 + 5 * (level - 1)) / 100;
   const scaled = (base: number): number => Math.round(base * scale * 1e6) / 1e6;

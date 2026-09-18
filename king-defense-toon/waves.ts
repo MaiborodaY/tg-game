@@ -1,4 +1,5 @@
-import type { EnemyDefinition, EnemySpawn, EnemySpawnPosition, EnemyType, WaveDefinition } from './wave-types.ts';
+import type { EnemyCombatType, EnemyDefinition, EnemySpawn, EnemySpawnPosition, EnemyType, WaveDefinition } from './wave-types.ts';
+import type { UnitType } from './units.ts';
 export type { EnemyCombatType, EnemyCount, EnemyDefinition, EnemySpawn, EnemySpawnPosition, EnemyType, WaveDefinition } from './wave-types.ts';
 
 type SpawnStats = Pick<EnemySpawn, 'hp' | 'damage'> & Partial<Pick<EnemySpawn, 'heal' | 'reward' | 'name'>>;
@@ -6,6 +7,10 @@ type SpawnSeed<T extends EnemyType = EnemyType> = Omit<EnemySpawnPosition<T>, 'y
 type ResolvedSpawnSeed = SpawnSeed & Pick<EnemySpawn, 'hp' | 'damage'>;
 interface WaveOptions { stats?: Partial<Record<EnemyType, SpawnStats>>; bossOnly?: boolean }
 export type WaveNumberInput = number | string | null | undefined;
+type EnemyCatalog = {
+  readonly [T in EnemyType]: T extends EnemyCombatType ? Readonly<EnemyDefinition>
+    : Readonly<EnemyDefinition> & { readonly combatType: EnemyCombatType };
+};
 
 import { openingContinuationSpawns } from './opening-curve.ts';
 import { campaignContinuationSpawns } from './campaign-curve.ts';
@@ -22,7 +27,7 @@ export const LEVEL_COUNT = LEVEL_DEFINITIONS.length;
 const LEVEL_2_STAT_MULTIPLIER = 3;
 const LEVEL_2_GOLD_MULTIPLIER = 2;
 
-export const ENEMY_TYPES: Readonly<Record<EnemyType, Readonly<EnemyDefinition>>> = Object.freeze({
+export const ENEMY_TYPES: EnemyCatalog = Object.freeze({
   goblin: Object.freeze({ name: 'Torch goblin', hp: 60, damage: 7, reward: 1 }),
   goblinArcher: Object.freeze({ name: 'Goblin archer', hp: 32, damage: 4, reward: 1 }),
   goblinHealer: Object.freeze({ name: 'Goblin healer', hp: 70, damage: 3, heal: 12, reward: 1 }),
@@ -36,8 +41,10 @@ export const ENEMY_TYPES: Readonly<Record<EnemyType, Readonly<EnemyDefinition>>>
   cryptKing: Object.freeze({ name: 'Crypt King', combatType: 'ogre', hp: 1100 * LEVEL_2_STAT_MULTIPLIER, damage: 22 * LEVEL_2_STAT_MULTIPLIER, reward: 20 * LEVEL_2_GOLD_MULTIPLIER, isBoss: true, isFinalBoss: true }),
 });
 
-export function getEnemyCombatType(type: EnemyType): EnemyType {
-  return ENEMY_TYPES[type]?.combatType ?? type;
+export function getEnemyCombatType<T extends EnemyType | UnitType | 'hero' | 'castle'>(type: T): T extends EnemyType ? EnemyCombatType : T;
+export function getEnemyCombatType(type: EnemyType | UnitType | 'hero' | 'castle') {
+  // Allied IDs have no enemy definition and retain their existing identity fallback.
+  return (ENEMY_TYPES as Readonly<Partial<Record<EnemyType | UnitType | 'hero' | 'castle', Readonly<EnemyDefinition>>>>)[type]?.combatType ?? type;
 }
 
 // Every spawn must receive HP/damage either directly or from its role's stat override.

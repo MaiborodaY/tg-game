@@ -33,14 +33,15 @@ try {
 
   // Observe real battle snapshots only in this isolated browser. Extra update steps finish
   // real waves quickly; the application still records their outcomes through its normal frame.
-  // BASE_URL must point to a Vite development server, where combat.mjs remains a separate module.
+  // BASE_URL must point to a Vite development server. Wrap the compatibility
+  // bridge so instrumentation never depends on Vite's TypeScript output format.
   await page.route('**/combat.mjs*', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    assert.ok(source.includes('export function createBattle('), 'development combat module is available');
-    const observed = source.replace('export function createBattle(', 'function createBattleObserved(')
-      .replace('export function updateBattle(', 'function updateBattleObserved(');
-    await route.fulfill({ response, body: `${observed}
+    const bridge = source.match(/export\s+\*\s+from\s+(['"])([^'"]*\/combat\.ts(?:\?[^'"]*)?)\1/);
+    assert.ok(bridge, 'development combat bridge is available');
+    await route.fulfill({ response, body: `${source}
+      import { createBattle as createBattleObserved, updateBattle as updateBattleObserved } from ${JSON.stringify(bridge[2])};
       export function createBattle(...args) { return globalThis.__heroTestBattle = createBattleObserved(...args); }
       export function updateBattle(...args) {
         if (globalThis.__heroTestHold) return [];
