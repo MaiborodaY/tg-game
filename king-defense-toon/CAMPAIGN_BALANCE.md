@@ -6,9 +6,9 @@ damage** than the preceding campaign revision, starting at wave 1. Enemy counts,
 arrival times, movement, attack cadence and rewards are unchanged. One existing
 archer becomes a Goblin healer from forest wave 6 onward; no extra enemy is added.
 
-[opening-curve.mjs](opening-curve.mjs) and
-[campaign-curve.mjs](campaign-curve.mjs) supply the underlying budgets;
-`withHeroPressure` in [waves.mjs](waves.mjs) applies the current adjustment.
+[opening-curve.ts](opening-curve.ts) and
+[campaign-curve.ts](campaign-curve.ts) supply the underlying budgets;
+`withHeroPressure` in [waves.ts](waves.ts) applies the current adjustment.
 Each encounter resolves to `round(previousTotalHP × 1.10)`. Individual HP values
 are rounded, with the first spawn absorbing the rounding correction. Damage is
 multiplied by 1.05 and retained to two decimal places, so a 4-damage archer becomes

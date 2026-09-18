@@ -3,13 +3,15 @@
 **Status: gameplay migration complete**, including `main.ts`, direct runtime
 imports, Node/CLI validation and desktop browser checks. The stage history below
 records earlier boundaries; references to remaining JavaScript in those sections
-describe their checkpoints. No migration commit has been published to `main`.
+describe their checkpoints. Final integration is based on freshly fetched
+`origin/main`; see the completion section below.
 
 ## Working branch and concurrent game development
 
 Migration work lives in `codex/brotd-typescript`, in the separate
 `.worktrees/brotd-typescript` worktree. Gameplay development can continue in its
-own checkout. This stage does not publish or merge the migration into `main`.
+own checkout. The incremental stages remained isolated until the completion
+checks and the user's request to integrate the result with `main`.
 
 The initial base was `d8bab9c`. During this stage the requested gameplay commit
 `7a9a335` was found in `origin/codex/pixel-chronicle`, while fetched `origin/main`
@@ -494,7 +496,7 @@ gameplay commit `7a9a335` is already included. Work remains on the isolated
   described above. Main lifecycle/reward and emitted-runtime review passes.
 - All **nine browser suites** pass: asset loading, storage recovery, drag/merge,
   hero, Barracks, Lancer, goblin palettes, goblin healer and St. Knihor rendering.
-  Storage has six scenarios, including malformed current-version progress that
+  Storage has nine scenarios, including malformed current-version progress that
   preserves its original bytes with zero write attempts. Touch/mouse flows run
   at 320/390px; Barracks also covers 320x568. Art checks include 44 Lancer, 30
   palette/world, 60 healer and 24 hero action/direction combinations.
@@ -510,6 +512,31 @@ gameplay commit `7a9a335` is already included. Work remains on the isolated
 These are desktop browser and simulated-mobile checks, not physical Android/iOS
 Telegram WebView validation or a fresh balance/performance audit of all 400 waves.
 
+## Completion and integration with main
+
+The finalization pass fetched `origin/main` at `c999295` on 2026-09-18. That
+commit and the requested gameplay revision `7a9a335` are ancestors of this
+branch; there are no newer main-only commits or integration conflicts. The
+combined result can therefore advance `main` by a normal fast-forward, without
+replacing any independent gameplay history.
+
+The storage browser suite now includes literal fixtures for campaign versions
+1, 2 and an unversioned save. Each loads through `main.ts` and survives two
+reloads. Checks preserve gold, slaves, army/reserve positions and personal
+levels, unlocked cells, first-clear claims, recruitment credits, hero talents
+and buildings. Missing legacy defaults are applied once. Old completed wave 10
+maps to 200; old completed wave 20 maps to 210, retaining the expected biome.
+A real replay of an already claimed first wave grants only 3 kill gold and
+4 replay XP; reload cannot grant another reward or a first-clear bonus.
+
+All nine storage/recovery scenarios pass at 320x700. The finalization pass also
+reruns the hero, drag/merge and Barracks browser suites, plus `brotd:check`
+(295 tests, strict types and production build), successfully. Runtime code and
+the production bundle remain unchanged from `047afe7`; this final commit adds
+legacy browser regressions and completion documentation. Disposable browsers
+and servers are closed after the checks. The earlier manual in-app first-wave
+verification remains applicable to the identical production bundle.
+
 ## Maintenance and release boundary
 
 For every slice: type checking, relevant behavior tests and production build
@@ -517,8 +544,10 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-The requested migration is complete. Keep major architecture changes separate;
-merging/pushing this branch to `main` remains a separate publication action.
+The requested migration is complete. Keep major architecture changes separate.
+Final integration uses a normal fast-forward of the freshly fetched `main`,
+preserving both the gameplay and migration histories. A Git push is not proof
+that a hosting deployment or physical-device verification has finished.
 
 The full migration is complete only when all active gameplay modules are
 strictly checked, old bridges are removed, Node/CLI and browser checks still run,

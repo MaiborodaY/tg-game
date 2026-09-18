@@ -21,6 +21,77 @@ const fixture = {
   hero: { xp: 300, highestWave: 8, talents: { heal_power: 1 } },
 };
 
+// Literal saves from the supported pre-v3 schema families. Expectations below
+// deliberately do not call migration helpers: this exercises the real entry point.
+const legacyFixtures = [
+  {
+    name: 'version 1 save preserves earned progress and cannot repay a claimed first clear',
+    saved: {
+      campaignVersion: 1, gold: 327, starterSupplyGranted: true,
+      autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
+      units: [{ type: 'swordsman', level: 10, col: 2, row: 0 },
+        { type: 'archer', level: 10, col: 2, row: 1 }, { type: 'healer', col: 2, row: 2 }],
+      reserve: [{ type: 'swordsman', level: 3 }, { type: 'archer' }],
+      recruitment: { version: 1, received: { swordsman: 6, archer: 4, healer: 1 }, lastType: 'healer' },
+      progression: { unlockedCells: ['2:0', '2:1', '2:2', '4:1'], firstClears: [1, 10, 11, 20] },
+      economy: { slaves: 7, treasuryLevel: 1, treasuryProgress: .125, captures: 4, captureKills: 2, captureCooldown: 30 },
+      barracks: { level: 2, firstLancerPending: true },
+      hero: { xp: 300, highestWave: 20, talents: { heal_power: 1 } },
+    },
+    expected: {
+      clearedWaves: 0, firstClears: [1, 10, 201, 210], autoWaves: false,
+      armyLevels: [10, 10, 1], reserveLevels: [3, 1],
+      received: { swordsman: 6, archer: 4, healer: 1, lancer: 0 },
+      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0 },
+      heroXp: 300, highestWave: 20, barracksLevel: 2, firstLancerPending: true,
+      marketHintCompleted: true, replayClaimedWave: true,
+    },
+  },
+  {
+    name: 'version 2 save resumes the second biome with the same army, buildings and rewards',
+    saved: {
+      campaignVersion: 2, gold: 842, starterSupplyGranted: true,
+      autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 10,
+      units: [{ type: 'swordsman', level: 8, col: 2, row: 0 },
+        { type: 'archer', level: '7', col: 2, row: 1 }, { type: 'lancer', level: 12, col: 4, row: 1 }],
+      reserve: [{ type: 'healer', level: 2 }, { type: 'lancer', level: 4 }],
+      recruitment: { version: 2, received: { swordsman: 20, archer: 11, healer: 5, lancer: 2 },
+        legacyTrainingCredit: { swordsman: 9, archer: 4, healer: 0, lancer: 0 }, lastType: 'lancer' },
+      progression: { unlockedCells: ['2:0', '2:1', '2:2', '4:1'], firstClears: [1, 2, 10, 11] },
+      economy: { slaves: 11, treasuryLevel: 2, treasuryProgress: .25, captures: 6, captureKills: 3,
+        captureCooldown: 0, marketBuilt: true, marketProgress: .4 },
+      barracks: { level: 2, firstLancerPending: false },
+      hero: { xp: 800, highestWave: 11, talents: { heal_power: 2, hammer_power: 1 } },
+    },
+    expected: {
+      clearedWaves: 200, firstClears: [1, 2, 10, 201], autoWaves: false,
+      armyLevels: [8, 7, 12], reserveLevels: [2, 4],
+      received: { swordsman: 20, archer: 11, healer: 5, lancer: 2 },
+      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0 },
+      heroXp: 800, highestWave: 11, barracksLevel: 2, firstLancerPending: false,
+      marketHintCompleted: true,
+    },
+  },
+  {
+    name: 'unversioned save gains missing defaults once without replacing spent supplies or personal units',
+    saved: {
+      gold: 54, clearedWaves: 20, autoWaves: false,
+      units: [{ type: 'swordsman', col: 2, row: 0 }, { type: 'archer', level: 4, col: 2, row: 1 }],
+      reserve: [{ type: 'healer' }],
+      progression: { unlockedCells: ['2:0', '2:1', '2:2'], firstClears: [1, 10, 11, 20] },
+      economy: { slaves: 0, captures: 0 },
+    },
+    expected: {
+      clearedWaves: 210, firstClears: [1, 10, 201, 210], autoWaves: true,
+      armyLevels: [1, 4], reserveLevels: [1],
+      received: { swordsman: 0, archer: 0, healer: 0, lancer: 0 },
+      credit: { swordsman: 0, archer: 0, healer: 0, lancer: 0 },
+      heroXp: 0, highestWave: 0, barracksLevel: 1, firstLancerPending: false,
+      marketHintCompleted: false,
+    },
+  },
+];
+
 const server = await createServer({
   root, configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/storage-recovery-vite', import.meta.url)),
@@ -79,6 +150,8 @@ async function inPage(name, options, check) {
     let blockHero = options.blockHero === true;
     if (blockHero) await context.route('**/assets/st-knihor/st-knihor-down.webp*', route => blockHero ? route.abort() : route.continue());
     await context.addInitScript(({ key, fixture, options }) => {
+      // Legacy reload checks isolate schema migration from elapsed offline income.
+      if (options.now) Date.now = () => options.now;
       const originalGet = Storage.prototype.getItem;
       const originalSet = Storage.prototype.setItem;
       const seeded = '__storage-recovery-seeded';
@@ -142,6 +215,77 @@ try {
   await listening;
   baseUrl = `http://127.0.0.1:${server.httpServer.address().port}/`;
   browser = await chromium.launch({ channel: 'msedge', headless: true });
+
+  for (const { name, saved, expected } of legacyFixtures) {
+    await inPage(name, { raw: JSON.stringify(saved), now: 1_800_000_000_000 }, async page => {
+      await ready(page);
+      await page.evaluate(() => window.storageCheck.stopEconomyTimer());
+      const migrated = await snapshot(page);
+      assert.equal(migrated.campaignVersion, 3);
+      assert.equal(migrated.gold, saved.gold);
+      assert.equal(migrated.clearedWaves, expected.clearedWaves);
+      assert.deepEqual(migrated.progression, { unlockedCells: saved.progression.unlockedCells, firstClears: expected.firstClears });
+      assert.deepEqual(migrated.units, saved.units.map((unit, index) => ({ ...unit, id: index + 1, level: expected.armyLevels[index] })));
+      assert.deepEqual(migrated.reserve, saved.reserve.map((unit, index) => ({ ...unit,
+        id: saved.units.length + index + 1, level: expected.reserveLevels[index] })));
+      assert.deepEqual(migrated.recruitment, { version: 2, received: expected.received,
+        legacyTrainingCredit: expected.credit, lastType: saved.recruitment?.lastType ?? null });
+      assert.equal(migrated.economy.slaves, saved.economy.slaves);
+      assert.equal(migrated.economy.captures, saved.economy.captures);
+      assert.equal(migrated.economy.captureKills, saved.economy.captureKills ?? 0);
+      assert.equal(migrated.economy.treasuryLevel, saved.economy.treasuryLevel ?? 1);
+      assert.equal(migrated.economy.marketBuilt, saved.economy.marketBuilt ?? false);
+      assert.equal(migrated.hero.xp, expected.heroXp);
+      assert.equal(migrated.hero.highestWave, expected.highestWave);
+      assert.deepEqual(Object.entries(migrated.hero.talents).filter(([, rank]) => rank > 0),
+        Object.entries(saved.hero?.talents ?? {}));
+      assert.deepEqual(migrated.barracks, { level: expected.barracksLevel,
+        upgradeStartedAt: null, upgradeReadyAt: null, firstLancerPending: expected.firstLancerPending });
+      assert.equal(migrated.starterSupplyGranted, true);
+      assert.equal(migrated.marketHintCompleted, expected.marketHintCompleted);
+      assert.equal(migrated.autoWaves, expected.autoWaves);
+      assert.equal(migrated.autoWavesDefaultVersion, 1);
+      assert.deepEqual(migrated.offlineRewards, { gold: 0, slaves: 0 });
+      assert.equal(JSON.parse(await raw(page)).campaignVersion, 3, 'migration must persist its version before the next visit');
+      assert.equal(JSON.parse(await page.locator('#battle').getAttribute('data-campaign')).wave, expected.clearedWaves + 1);
+
+      // Foreground timer fractions can advance on pagehide; all durable balances,
+      // roster, progression and one-time migration credits must remain identical.
+      const durable = value => ({ ...value, economy: {
+        slaves: value.economy.slaves, captures: value.economy.captures,
+        captureKills: value.economy.captureKills, treasuryLevel: value.economy.treasuryLevel,
+        marketBuilt: value.economy.marketBuilt,
+      } });
+      for (let visit = 0; visit < 2; visit += 1) {
+        await page.reload();
+        await ready(page);
+        await page.evaluate(() => window.storageCheck.stopEconomyTimer());
+        assert.equal((await status(page)).storage, 'ready');
+        assert.deepEqual(durable(await snapshot(page)), durable(migrated), 'reloading a migrated save must be idempotent');
+      }
+
+      if (expected.replayClaimedWave) {
+        await page.locator('#start-wave').click();
+        await page.locator('#battle-speed').click();
+        await page.locator('#battle-speed').click();
+        await page.locator('#result-panel').waitFor({ state: 'visible', timeout: 30000 });
+        const result = await status(page), after = await snapshot(page);
+        assert.equal(result.battle.phase, 'victory');
+        assert.equal(result.battle.kills, 3);
+        assert.equal(result.battle.reward, 3, 'previously claimed wave pays kill gold only, without its 10-gold first-clear bonus');
+        assert.equal(after.gold, 330);
+        assert.equal(after.hero.xp, 304, 'a replay pays 4 XP, not the 16-XP first-clear reward');
+        assert.equal(after.hero.highestWave, 20);
+        assert.deepEqual(after.progression.firstClears, [1, 10, 201, 210]);
+        assert.equal(after.clearedWaves, 1);
+        assert.doesNotMatch(await page.locator('#result-copy').textContent(), /First clear:/);
+        await page.reload();
+        await ready(page);
+        await page.evaluate(() => window.storageCheck.stopEconomyTimer());
+        assert.deepEqual(durable(await snapshot(page)), durable(after), 'reloading a completed replay cannot pay its reward twice');
+      }
+    });
+  }
 
   await inPage('unread existing progress stays intact; retry restores it through reload', { readError: true }, async page => {
     await loaded(page);
