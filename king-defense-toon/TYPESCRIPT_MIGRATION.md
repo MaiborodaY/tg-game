@@ -37,7 +37,7 @@ their callers, including dynamic imports and browser harnesses, have migrated.
 
 The compiler inherits `strict: true` and checks every root `.ts` module plus
 `tests/types/**/*.ts`. The remaining JavaScript modules and their call sites
-are **not type-checked yet**. A passing stage-1 check does not mean the whole
+are **not type-checked yet**. A passing migration check does not mean the whole
 game is typed. Runtime code has no `any`, `@ts-ignore` or `@ts-nocheck` escapes.
 The intentional `@ts-expect-error` lines in compile-only tests verify that
 invalid API usage is rejected, including nullable readings and immutable data.
@@ -95,6 +95,63 @@ the previously used credential lacked permission to update workflow files.
 
 These are local desktop Node/Edge checks, not physical Telegram-device results.
 
+## Stage 2 scope
+
+Seven more runtime implementations are TypeScript, bringing the total to eleven:
+
+- `units.ts`: allied unit identifiers and immutable unit definitions.
+- `recruitment.ts`: recruitment state, weighted chances, training progress,
+  legacy training credit and derived personal-level stats.
+- `unit-ranks.ts`: personal levels mapped to the four immutable palette ranks.
+- `waves.ts`: the enemy catalogue and all 400 immutable wave definitions.
+- `opening-curve.ts` and `campaign-curve.ts`: typed spawn builders and health /
+  damage curves, with mutable builder output distinguished from frozen waves.
+- `progression.ts`: formation cells, unlock spending, first-clear claims and
+  legacy campaign-number migration.
+
+`wave-types.ts` shares type-only definitions between the catalogue and builders
+without introducing a runtime cycle. Existing `.mjs` paths remain thin bridges.
+There is no second implementation and no new runtime dependency.
+
+Save input stays `unknown` until its fields are validated. Campaign-number
+migration returns an unvalidated record, not a falsely complete player-save
+type: the existing loader still validates independent fields. Old campaign
+claims, hero/Barracks data, unknown fields, malformed JSON handling and the save
+key/version keep their previous behavior. Runtime guards continue protecting
+JavaScript callers. No balance, reward or recruitment-probability change is
+part of this stage.
+
+The stage started from `4aed796`. A final fetch found `origin/main` at `c999295`
+and `origin/codex/pixel-chronicle` at the requested `7a9a335`; both are already
+ancestors of this migration branch, so no additional integration was needed.
+
+## Stage 2 validation
+
+- `brotd:check` passed: strict type checks, all **203 Node tests** and the
+  production Vite build. Type tests now include **49 negative API contracts**,
+  including 37 new cases for unknown save fields, identifiers, optional fields,
+  nullable results and frozen data.
+- Twelve new runtime tests cover migration/idempotence, malformed saves,
+  first-clear reward protection, grid purchases, training credit, recruitment
+  guards/guarantees, integer saturation and immutable catalogues.
+- A snapshot taken before conversion matches after conversion: all 400 waves,
+  all enemy and unit definitions, representative level/rank/stat inputs,
+  recruitment/campaign-save normalization and wave freeze boundaries.
+- An independent review compared runtime code with the previous checkpoint and
+  ran 20,000 differential malformed/partial JSON cases against the old
+  progression, campaign migration and recruitment implementations. No result
+  or error mismatches were found.
+- Five storage-recovery browser scenarios passed at 320x700, including reload,
+  corruption recovery, combat rewards and offline-receipt acknowledgement.
+- Barracks/recruitment browser checks passed at 320x568, 320x700 and 390x700:
+  upgrade gating, timers/reload/offline completion, spending once, first-Lancer
+  guarantee, equal unlocked chances and placement.
+- The compiled production build passed a standalone Edge smoke at 390x844:
+  wave 9 advanced, hero and army moved, hero/Lancer assets returned HTTP 200,
+  and there were no JavaScript exceptions or development test hooks. The
+  optional favicon was absent and the test environment blocked the external
+  Telegram SDK; this does not replace a physical Telegram-device check.
+
 ## Completion criteria and next stages
 
 For every slice: type checking, relevant behavior tests and production build
@@ -102,8 +159,8 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: type shared unit/wave definitions and the interfaces used by recruitment,
-progression and economy. Then migrate combat/events and storage/cache APIs,
+Next: migrate economy, market, Barracks and hero state, using the typed
+unit/recruitment/progression contracts. Then migrate combat/events and storage/cache APIs,
 followed by rendering, Telegram/audio, DOM adapters and finally the main module.
 Keep major architecture changes separate from mechanical migration steps.
 
