@@ -64,8 +64,10 @@ test('a ninth-wave victory preserves state and events at 20/30/60 FPS, all speed
   assertFrameIndependentBattle(20, 'victory');
 });
 
-test('the original ninth-wave army now loses identically at every FPS and speed', () => {
-  assertFrameIndependentBattle(4, 'defeat');
+test('an underpowered ninth-wave army loses identically at every FPS and speed', () => {
+  // The crowd fix lets the hero fight sooner: Lv4 now wins. Keep an actual defeat
+  // fixture so deterministic castle destruction remains covered at every speed.
+  assertFrameIndependentBattle(3, 'defeat');
 });
 
 test('partial ticks survive idle updates and cannot leak into a different battle', () => {

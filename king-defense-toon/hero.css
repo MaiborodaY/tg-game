@@ -6,59 +6,75 @@
 .hero-trigger > img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; border-radius: 3px; }
 .hero-trigger-level { position: absolute; right: -2px; bottom: -4px; left: -2px; border: 1px solid #77694e; border-radius: 3px; color: #fff5d5; background: #5d654a; font-size: 10px; line-height: 13px; text-align: center; }
 .hero-trigger-points { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 3px; border: 1px solid #826128; border-radius: 9px; color: #473918; background: #f6ce6b; font-size: 10px; }
-.hero-overlay .hero-card { display: flex; flex-direction: column; max-width: 352px; max-height: 100%; overflow: hidden; padding: 0 5px 5px; }
-.hero-heading { flex: 0 0 auto; margin-bottom: 0; }
-.hero-heading h2 { font-size: 21px; }
-.hero-overview { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; }
-.hero-portrait { width: 43px; height: 43px; object-fit: cover; border: 2px solid #a4956c; border-radius: 4px; image-rendering: pixelated; }
-.hero-overview-progress { flex: 1; min-width: 0; }
-.hero-level-line { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; font-size: 13px; }
-.hero-level-line > span { color: #6a782f; font-size: 12px; }
-.hero-xp-track { height: 7px; overflow: hidden; margin-top: 4px; border: 1px solid #aa9871; border-radius: 4px; background: #cec098; }
+.hero-overlay { padding-right: 8px; padding-left: 8px; }
+.hero-overlay .hero-card { display: flex; flex-direction: column; max-width: 380px; max-height: 100%; overflow: hidden; padding: 0 4px 3px; }
+.hero-heading { flex: 0 0 auto; gap: 7px; margin-bottom: 2px; }
+.hero-heading-label { flex: 1; min-width: 0; }
+.hero-heading h2 { font-size: 20px; line-height: 22px; }
+.hero-heading-label > span { color: #82714e; font: 10px/13px 'Trebuchet MS', sans-serif; }
+.hero-portrait { width: 35px; height: 35px; object-fit: cover; border: 2px solid #a4956c; border-radius: 4px; image-rendering: pixelated; }
+.hero-overview { position: relative; flex: 0 0 auto; padding-bottom: 13px; }
+.hero-level-line { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; font-size: 12px; }
+.hero-level-line > span { padding: 0 4px; border-radius: 2px; color: #536732; background: #d4deb3; font-size: 12px; }
+.hero-xp-track { height: 5px; overflow: hidden; margin-top: 3px; border: 1px solid #aa9871; border-radius: 3px; background: #cec098; }
 .hero-xp-track > span { display: block; height: 100%; background: #8aab62; }
-.hero-xp-label { margin-top: 2px; color: #736448; font: 10px/13px 'Trebuchet MS', sans-serif; }
-.hero-base-stats { flex: 0 0 auto; margin-top: 7px; text-align: center; font-size: 12px; }
-.hero-timing { flex: 0 0 auto; margin: 4px 0 7px; color: #786849; font: 10px/13px 'Trebuchet MS', sans-serif; text-align: center; }
-.hero-tree { display: grid; flex: 0 1 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; min-height: 66px; overflow-y: auto; overscroll-behavior: contain; padding: 0 1px 3px; }
-.hero-branch { min-width: 0; --hero-branch-color: #9e833c; }
-.hero-branch-protection { --hero-branch-color: #698151; }
-.hero-branch-judgement { --hero-branch-color: #8e635b; }
-.hero-branch h3 { position: sticky; top: 0; z-index: 1; margin: 0 0 5px; padding: 3px 0; border-bottom: 2px solid var(--hero-branch-color); color: var(--hero-branch-color); background: #eee0b9; font-size: 12px; line-height: 16px; text-align: center; }
-.hero-node { position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; width: 100%; height: 49px; margin: 0 0 5px; padding: 4px 4px 13px; border: 2px solid #b8ac84; border-radius: 4px; color: #75694d; background: #e5d8b1; box-shadow: 0 1px #ad9d7159; }
-.hero-node-icon { width: 23px; height: 23px; }
-.hero-node-icon > svg { width: 100%; height: 100%; }
-.hero-node-name { min-width: 0; font-size: 10px; line-height: 12px; text-align: left; }
-.hero-node-rank { position: absolute; right: 5px; bottom: 2px; font-size: 10px; line-height: 11px; }
-.hero-node-gate { position: absolute; left: 5px; bottom: 2px; font-size: 9px; line-height: 11px; }
-.hero-node.is-locked { color: #887b5d; background: #ddd0ad; }
-.hero-node.is-learned { color: #526444; border-color: #97aa6c; background: #e1e1b1; }
-.hero-node.is-available { color: #584720; border-color: #c7a349; background: #f2e6b9; }
-.hero-node.is-selected { outline: 2px solid #6b6850; outline-offset: -4px; }
-.hero-node:focus-visible { outline-color: #986024; outline-width: 3px; }
-.hero-capstone { border-color: #a79159; border-style: double; border-width: 3px; }
-.hero-detail { flex: 0 0 auto; margin-top: 4px; padding: 8px; border: 1px solid #c4b58b; border-radius: 4px; background: #f5eacb; }
-.hero-detail-empty { padding: 13px 0; color: #81704e; font: 12px/19px 'Trebuchet MS', sans-serif; text-align: center; }
-.hero-detail-title { display: flex; justify-content: space-between; gap: 5px; color: #566346; font-size: 14px; line-height: 17px; }
-.hero-detail-content > p { margin-top: 4px; font: 11px/15px 'Trebuchet MS', sans-serif; }
-.hero-detail-action { display: flex; align-items: center; justify-content: space-between; gap: 5px; margin-top: 6px; }
-.hero-detail-action > span { max-width: 170px; color: #82704d; font: 10px/13px 'Trebuchet MS', sans-serif; }
-.hero-spend { flex: 0 0 auto; min-width: 96px; min-height: 38px; padding: 5px 7px; border: 2px solid #93a36a; border-radius: 4px; color: #405437; background: #c4d49a; font-size: 12px; }
+.hero-xp-label { position: absolute; bottom: 0; right: 0; color: #736448; font: 9px/12px 'Trebuchet MS', sans-serif; }
+.hero-base-stats { flex: 0 0 auto; margin: 2px 0 0; text-align: center; font-size: 11px; line-height: 14px; }
+.hero-timing { flex: 0 0 auto; margin: 3px 0 6px; color: #786849; font: 10px/13px 'Trebuchet MS', sans-serif; text-align: center; }
+/* Only the trees scroll on short screens: selected talent and learning stay within reach. */
+.hero-tree { display: grid; flex: 0 1 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; min-height: 104px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; padding: 0 1px 2px; }
+.hero-branch { min-width: 0; --hero-branch-color: #9e833c; --hero-icon-bg: #94774d; }
+.hero-branch-protection { --hero-branch-color: #628170; --hero-icon-bg: #4f786e; }
+.hero-branch-judgement { --hero-branch-color: #9a6457; --hero-icon-bg: #916552; }
+.hero-branch h3 { position: sticky; top: 0; z-index: 2; margin: 0; padding: 2px 0 4px; border-bottom: 1px solid #bdae86; color: var(--hero-branch-color); background: #eee0b9; font-size: 12px; line-height: 15px; text-align: center; }
+.hero-branch h3 > span { display: block; color: #8b7a57; font: 9px/12px 'Trebuchet MS', sans-serif; }
+.hero-branch-nodes { position: relative; height: 264px; margin-top: 7px; border-radius: 5px; background: linear-gradient(90deg, #b5a57b00, #cbbb9259 50%, #b5a57b00); }
+.hero-connections { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.hero-connections path { fill: none; stroke: #b4a782; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.hero-connections path.is-ready { stroke: #7d9a5c; stroke-width: 2; }
+.hero-connections path.is-learned { stroke: #b79842; stroke-width: 2.2; }
+.hero-node { position: absolute; z-index: 1; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 3px; transform: translateX(-50%); border: 0; border-radius: 4px; color: #fff0c2; background: transparent; touch-action: manipulation; }
+.hero-node-icon { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid #8c8875; border-radius: 4px; background: var(--hero-icon-bg); box-shadow: inset 0 0 0 1px #ffffff38, 0 2px #71644870; }
+.hero-node-icon > svg { width: 29px; height: 29px; filter: drop-shadow(0 1px 0 #29282088); }
+.hero-node-name { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); color: #74603e; font-size: 10px; line-height: 12px; white-space: nowrap; }
+.hero-node-rank { position: absolute; right: 1px; bottom: -1px; min-width: 23px; padding: 0 2px; border: 1px solid #8d8163; border-radius: 2px; color: #e9e4cc; background: #615e50; font: bold 9px/12px 'Trebuchet MS', sans-serif; text-align: center; }
+.hero-node-gate { position: absolute; right: 0; top: 0; display: block; width: 13px; height: 13px; filter: drop-shadow(0 1px 0 #fff3); }
+.hero-node-gate[hidden] { display: none; }
+.hero-node-gate > svg { width: 100%; height: 100%; }
+.hero-node.is-locked .hero-node-icon { filter: grayscale(.9); opacity: .55; }
+.hero-node.is-available .hero-node-icon { border-color: #7e9e51; box-shadow: 0 0 0 1px #a4b675, inset 0 0 0 1px #edf5c66b, 0 2px #56674370; }
+.hero-node.is-available .hero-node-rank { color: #effbc7; border-color: #718943; background: #52653a; }
+.hero-node.is-learned .hero-node-icon { border-color: #d1af4e; box-shadow: 0 0 0 1px #8a703b, inset 0 0 0 1px #f9df8a70, 0 2px #76603d80; }
+.hero-node.is-learned .hero-node-rank { color: #ffec9b; border-color: #b59745; background: #70603c; }
+.hero-node.is-selected { outline: 2px solid #316f84; outline-offset: -1px; }
+.hero-node:focus-visible { outline: 2px dashed #284f62; outline-offset: 2px; }
+.hero-capstone .hero-node-icon { border-style: double; border-width: 3px; }
+.hero-detail { flex: 0 0 auto; min-height: 123px; margin-top: 5px; padding: 7px; border: 1px solid #bca77e; border-radius: 4px; background: #f5eacb; box-shadow: inset 0 1px #fff7de; }
+.hero-detail-empty { padding: 27px 0 23px; color: #6d6047; font: 12px/19px 'Trebuchet MS', sans-serif; text-align: center; }
+.hero-detail-empty > span { color: #8b7955; font-size: 10px; }
+.hero-detail-title { display: flex; justify-content: space-between; gap: 5px; color: #4c634f; font-size: 14px; line-height: 17px; }
+.hero-detail-title > span { flex-shrink: 0; color: #8c784a; font: bold 11px/17px 'Trebuchet MS', sans-serif; }
+.hero-detail-content > p { margin-top: 4px; font: 10px/13px 'Trebuchet MS', sans-serif; }
+.hero-detail-content > .hero-detail-effect { color: #5f7749; font-weight: bold; }
+.hero-detail-action { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 5px; }
+.hero-detail-action > span { flex: 1; color: #82704d; font: 10px/13px 'Trebuchet MS', sans-serif; }
+.hero-spend { flex: 0 0 auto; min-width: 96px; min-height: 40px; padding: 5px 7px; border: 2px solid #93a36a; border-radius: 4px; color: #405437; background: #c4d49a; font-size: 12px; }
 .hero-spend:disabled { border-color: #bbae85; color: #82765a; background: #ddd4b6; }
-.hero-footer { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 7px; padding-top: 5px; }
-.hero-footer > span { color: #887450; font: 10px/13px 'Trebuchet MS', sans-serif; }
-.hero-reset { min-height: 35px; flex: 0 0 auto; padding: 4px 7px; border: 1px solid #b7a580; border-radius: 4px; color: #766040; background: #e5d8b1; font-size: 11px; }
+.hero-footer { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 7px; padding-top: 3px; }
+.hero-footer > span { color: #887450; font: 9px/12px 'Trebuchet MS', sans-serif; }
+.hero-reset { min-height: 35px; flex: 0 0 auto; padding: 4px 7px; border: 1px solid #b7a580; border-radius: 4px; color: #766040; background: #e5d8b1; font-size: 10px; }
 .hero-reset:disabled { color: #ac9d7d; }
 @media (max-width: 350px) {
-  .hero-overlay { padding-right: 8px; padding-left: 8px; }
-  .hero-overlay .hero-card { padding-right: 3px; padding-left: 3px; }
-  .hero-tree { gap: 5px; }
-  .hero-node { grid-template-columns: 23px minmax(0, 1fr); padding-right: 2px; padding-left: 3px; }
-  .hero-node-icon { width: 21px; height: 21px; }
-  .hero-node-name { font-size: 9px; }
+  .hero-overlay { padding-right: 4px; padding-left: 4px; }
+  .hero-overlay .hero-card { padding-right: 1px; padding-left: 1px; }
+  .hero-tree { gap: 2px; }
+  .hero-branch h3 { font-size: 11px; }
+  .hero-base-stats { font-size: 10px; }
 }
 @media (max-height: 560px) {
+  .hero-overlay { padding-top: 5px; padding-bottom: 5px; }
   .hero-timing { margin-bottom: 3px; }
-  .hero-detail-content > p { font-size: 10px; line-height: 13px; }
-  .hero-detail { padding: 5px 7px; }
-  .hero-node { height: 45px; margin-bottom: 4px; }
+  .hero-detail { min-height: 109px; padding: 5px 6px; }
+  .hero-detail-empty { padding: 22px 0 18px; }
+  .hero-footer { padding-top: 2px; }
 }

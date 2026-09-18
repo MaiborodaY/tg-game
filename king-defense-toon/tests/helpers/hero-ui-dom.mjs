@@ -5,7 +5,7 @@ export function createHeroFixture(createHeroUI, hero, initialBattle = null) {
   const changes = [];
   class Node {
     constructor(parent = null, selector = '') {
-      this.parent = parent; this.selector = selector; this.children = new Map(); this.nodes = [];
+      this.parent = parent; this.selector = selector; this.children = new Map(); this.nodes = []; this.links = []; this.branches = [];
       this.attributes = new Map(); this.listeners = new Map(); this.dataset = {}; this.style = {};
       this.hidden = false; this.disabled = false; this.title = ''; this.text = ''; this.html = '';
       this.classes = new Set();
@@ -22,7 +22,7 @@ export function createHeroFixture(createHeroUI, hero, initialBattle = null) {
         this.child('.hero-trigger-level'); this.child('.hero-trigger-points');
       } else if (value.includes('hero-card')) {
         for (const name of ['level', 'points', 'xp', 'stats', 'timing', 'detail-name', 'detail-rank', 'detail-description',
-          'detail-gate', 'spend', 'reset', 'reset-hint']) this.child(`[data-hero-${name}]`);
+          'detail-effect', 'detail-gate', 'spend', 'reset', 'reset-hint']) this.child(`[data-hero-${name}]`);
         this.child('[data-close-overlay]');
         this.child('.hero-detail-empty'); this.child('.hero-detail-content');
         this.child('.hero-xp-track').firstElementChild = new Node(this);
@@ -30,12 +30,24 @@ export function createHeroFixture(createHeroUI, hero, initialBattle = null) {
           const talent = new Node(this, '[data-hero-talent]'); talent.dataset.heroTalent = match[1];
           talent.child('.hero-node-rank'); talent.child('.hero-node-gate'); this.nodes.push(talent);
         }
+        for (const match of value.matchAll(/data-hero-link="([^"]+)" data-hero-parent="([^"]+)"/g)) {
+          const link = new Node(this, '[data-hero-link]');
+          link.dataset.heroLink = match[1]; link.dataset.heroParent = match[2]; this.links.push(link);
+        }
+        for (const match of value.matchAll(/data-hero-branch="([^"]+)"/g)) {
+          const branch = new Node(this, '[data-hero-branch]'); branch.dataset.heroBranch = match[1]; this.branches.push(branch);
+        }
       }
     }
     get innerHTML() { return this.html; }
     child(selector) { const child = new Node(this, selector); this.children.set(selector, child); return child; }
     querySelector(selector) { return this.children.get(selector) ?? null; }
-    querySelectorAll(selector) { return selector === '[data-hero-talent]' ? this.nodes : []; }
+    querySelectorAll(selector) {
+      if (selector === '[data-hero-talent]') return this.nodes;
+      if (selector === '[data-hero-link]') return this.links;
+      if (selector === '[data-hero-branch]') return this.branches;
+      return [];
+    }
     setAttribute(name, value) { this.attributes.set(name, String(value)); writes++; }
     closest(selector) { return this.selector === selector ? this : this.parent?.closest(selector) ?? null; }
     addEventListener(event, listener) { const listeners = this.listeners.get(event) ?? new Set(); listeners.add(listener); this.listeners.set(event, listeners); }

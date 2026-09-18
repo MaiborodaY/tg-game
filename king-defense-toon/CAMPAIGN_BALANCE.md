@@ -126,22 +126,34 @@ not predict completion time or player army strength. Recruitment, Connect,
 personal stat growth, hero stats, capture rules, cell prices and income rates
 are unchanged by this balance adjustment.
 
-Four local resource-linked opening runs used `scripts/early-campaign.mjs`, seeds
+After the talent-tree redesign, before the hero crowd-route fix, four local resource-linked opening runs used `scripts/early-campaign.mjs`, seeds
 **1, 4, 17 and 42**, speed **×1**, a **40-attempt** limit and target **wave 10**.
-All completed, in **14 / 14 / 12 / 14 attempts**, without a combat timeout.
+All completed, in **20 / 12 / 12 / 20 attempts**, without a combat timeout.
 Talents were left unspent, actual capture/economy APIs supplied resources, and
 all four heroes finished at level 3. Recorded defeats were on waves **8–9**.
 These are four deterministic management scenarios, not a player-population
 forecast or proof of the later campaign's difficulty.
 
-The full local Node suite passed **154 checks**, and the Vite build passed.
+At the earlier enemy-balance revision, the local Node suite passed **154 checks**, and the Vite build passed.
 Longer encounters exposed a rear melee fighter whose forward movement was being
 canceled by friendly separation. Swordsmen and lancers now take a short lateral
 detour after sustained blocking, at their existing speed and within the existing
 land constraints. Detours expire or replan; attack range and target choice are
 unchanged. Movement regressions cover the crowded eighth wave at personal levels
 3 and 4, and check that actors remain on land throughout the trace. The four
-resource-linked runs above were repeated after this correction.
+resource-linked runs above also include the later talent-tree change: a level-1
+hero now has melee only. Fixed-army win/loss reference levels in the opening
+regressions were remeasured accordingly; no enemy definitions were changed.
+The wave-four check uses the first talent point earned by three actual clears
+and verifies all three possible root skills with both tested army compositions.
+
+The later hero crowd-route fix makes him join melee sooner without changing stats
+or enemy definitions. Remeasuring waves 19/20/21 with the same eight-unit reference
+armies gives minimum winning personal levels of 11/11/13 with no healer,
+11/12/13 with one healer and 13/13/13 with two healers (levels 8–16 checked).
+The FPS defeat fixture now uses level 3: its previous level-4 army wins after the
+hero starts participating earlier. These are movement-sensitive reference cases,
+not new enemy balance values or replacements for the historical campaign runs above.
 
 These checks do not establish that every later encounter is beatable by every
 formation. Before the movement correction, two exploratory wave-400 formations

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { COMBAT_PACE, createBattle, getUnitRange, updateBattle } from '../combat.ts';
+import { createHero, heroXpForLevel } from '../hero.ts';
 
 const DT = 1 / 60;
 
@@ -12,15 +13,15 @@ function hold(unit) {
   Object.assign(unit, { action: 'attack', actionDuration: 999, actionTime: 0, didImpact: true, cooldown: 999 });
 }
 
-function encounter(otherEnemies = [], { heal = 12, withAlly = true } = {}) {
-  const battle = createBattle(withAlly ? [{ id: 1, type: 'swordsman', level: 1, col: 2, row: 0 }] : [], 1);
+function encounter(otherEnemies = [], { heal = 12, withAlly = true, heroState } = {}) {
+  const battle = createBattle(withAlly ? [{ id: 1, type: 'swordsman', level: 1, col: 2, row: 0 }] : [], 1, heroState);
   const spawns = [
     { type: 'goblinHealer', hp: 70, damage: 3, heal, x: 195, y: 160 },
     ...otherEnemies.map(enemy => ({ type: 'goblin', hp: 100, damage: 0, x: 195, y: 225, ...enemy })),
   ].map(spawn => ({ at: 0, ...spawn }));
   Object.assign(battle, { wave: { ...battle.wave, spawns }, total: spawns.length, nextSpawn: 0 });
   updateBattle(battle, DT);
-  // These cases isolate enemy support; an active paladin would heal, throw hammers and reduce damage.
+  // These cases isolate enemy support from the active paladin.
   Object.assign(battle.hero, { hp: 0, action: 'dead', pendingAbility: null });
   for (const unit of [...battle.allies, ...battle.enemies.slice(1), battle.king]) hold(unit);
   const caster = battle.enemies[0];
@@ -137,7 +138,8 @@ test('two wounded enemy healers cannot heal one another and both advance on the 
 });
 
 test('the hero counters a supporting enemy healer while the defended castle stays inert', () => {
-  const { battle, caster } = encounter([], { withAlly: false });
+  const { battle, caster } = encounter([], { withAlly: false,
+    heroState: createHero({ xp: heroXpForLevel(2), talentVersion: 2, talents: { hammer_unlock: 1 } }) });
   Object.assign(caster, { x: 65, y: 360 });
   hold(caster);
   Object.assign(battle.hero, { hp: battle.hero.maxHp, x: 160, y: 360, action: 'idle',
@@ -145,7 +147,7 @@ test('the hero counters a supporting enemy healer while the defended castle stay
   Object.assign(battle.castle, { action: 'idle', actionTime: 0, cooldown: 0 });
   const originalHp = caster.hp;
   advance(battle, 1);
-  assert.equal(caster.hp, originalHp - 4);
+  assert.equal(caster.hp, originalHp - battle.hero.stats.hammerDamage);
   assert.equal(battle.castle.hp, battle.castle.maxHp);
   assert.equal(battle.castle.action, 'idle');
   assert.ok(!battle.effects.some(effect => effect.sourceId === battle.castle.id));

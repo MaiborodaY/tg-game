@@ -20,6 +20,9 @@ export interface MeleeApproach extends Point {
   targetId: string;
   blockedTime: number;
   detour: Point | null;
+  detourRoute?: Point[];
+  detourTarget?: Point;
+  retryAt?: number;
   // Created only after a blocked approach attempts to choose a detour.
   detourUntil?: number;
 }
@@ -87,6 +90,10 @@ export interface HeroActor extends ActorBase<'hero'> {
   miracleUsed: boolean;
   bastionTime: number;
   bastionCooldown: number;
+  guardianWard: number;
+  guardianWardTime: number;
+  guardianWardCooldown: number;
+  holyStrikeTime: number;
 }
 
 export type AllyActor = ActorBase<UnitType>;

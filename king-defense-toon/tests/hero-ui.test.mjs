@@ -1,16 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHeroUI } from '../hero-ui.ts';
-import { createHero, heroXpForLevel } from '../hero.ts';
+import { createHero, heroXpForLevel, HERO_TALENTS, HERO_TALENT_VERSION } from '../hero.ts';
 import { createHeroFixture } from './helpers/hero-ui-dom.mjs';
 
-test('hero panel shows level, talent gates and maximum progress while skipping unchanged renders', () => {
+const savedHero = (level, talents = {}) => createHero({ xp: heroXpForLevel(level), talentVersion: HERO_TALENT_VERSION, talents });
+const talentNode = (f, id) => f.panel.nodes.find(node => node.dataset.heroTalent === id);
+
+test('hero panel starts with three locked skills, eighteen tree nodes and exact prerequisite links', () => {
   const f = createHeroFixture(createHeroUI, createHero());
   assert.equal(f.ref('level').textContent, 'Level 1 / 20');
   assert.equal(f.ref('points').textContent, '0 points');
+  assert.equal(f.ref('stats').textContent, '60 HP · 4 hit');
   assert.equal(f.button.querySelector('.hero-trigger-level').textContent, 'Lv.1');
   assert.equal(f.button.querySelector('.hero-trigger-points').hidden, true);
-  assert.equal(f.panel.nodes.length, 12);
+  assert.equal(f.panel.nodes.length, 18);
+  assert.equal(f.panel.branches.length, 3);
+  const expectedLinks = HERO_TALENTS.flatMap(talent => talent.prerequisites.map(parent => `${parent}:${talent.id}`));
+  assert.deepEqual(f.panel.links.map(link => `${link.dataset.heroParent}:${link.dataset.heroLink}`), expectedLinks);
+  assert.equal(f.ref('detail-name').textContent, 'Healing Light');
   assert.equal(f.ref('reset').disabled, true);
   const writes = f.writes; f.ui.render(); assert.equal(f.writes, writes);
   f.hero.xp = heroXpForLevel(20); f.ui.render();
@@ -23,38 +31,64 @@ test('hero panel shows level, talent gates and maximum progress while skipping u
   f.ui.destroy();
 });
 
-test('talent selection and spending emit only successful changes, including during a running wave', () => {
-  const f = createHeroFixture(createHeroUI, createHero({ xp: heroXpForLevel(5) }));
+test('selecting only previews a skill; confirming learns it and unlocks its linked improvements', () => {
+  const f = createHeroFixture(createHeroUI, savedHero(5));
   f.select('heal_power');
-  assert.equal(f.ref('detail-name').textContent, 'Healing Light');
+  assert.equal(f.ref('detail-name').textContent, 'Radiant Light');
+  assert.equal(f.ref('spend').disabled, true);
+  assert.match(f.ref('detail-effect').textContent, /^Not learned → /);
+  assert.equal(f.changes.length, 0);
+  f.click(f.ref('spend')); assert.equal(f.changes.length, 0);
+  f.select('heal_unlock');
+  assert.equal(f.hero.talents.heal_unlock, 0);
   assert.equal(f.ref('spend').disabled, false);
   f.click(f.ref('spend'), true);
-  assert.deepEqual(f.changes, [{ type: 'talent', id: 'heal_power', spent: true, reason: '', rank: 1 }]);
-  assert.equal(f.hero.talents.heal_power, 1);
+  assert.deepEqual(f.changes, [{ type: 'talent', id: 'heal_unlock', spent: true, reason: '', rank: 1 }]);
+  assert.equal(f.hero.talents.heal_unlock, 1);
+  assert.equal(f.ref('detail-rank').textContent, '1/1');
+  assert.match(f.ref('stats').textContent, /heal/);
+  assert.doesNotMatch(f.ref('stats').textContent, /aura|hammer/);
+  assert.equal(f.panel.branches[0].textContent, '1 pt');
+  assert.equal(talentNode(f, 'heal_unlock').classes.has('is-learned'), true);
+  assert.equal(talentNode(f, 'heal_power').classes.has('is-available'), true);
+  assert.equal(talentNode(f, 'heal_power').querySelector('.hero-node-gate').hidden, true);
+  assert.equal(f.panel.links.find(link => link.dataset.heroLink === 'heal_power').classes.has('is-ready'), true);
+  f.select('heal_power'); f.click(f.ref('spend'));
   assert.equal(f.ref('detail-rank').textContent, '1/3');
-  f.setBattle({ phase: 'running' }); f.ui.render();
-  assert.equal(f.ref('timing').textContent, 'Battle continues. Talent changes apply next wave.');
+  assert.match(f.ref('detail-effect').textContent, /HP per heal → .*HP per heal/);
+  assert.equal(f.panel.links.find(link => link.dataset.heroLink === 'heal_power').classes.has('is-learned'), true);
+  f.ui.destroy();
+});
+
+test('running-wave learning updates the next-wave plan while reset remains blocked', () => {
+  const f = createHeroFixture(createHeroUI, savedHero(5), { phase: 'running' });
+  assert.equal(f.ref('timing').textContent, 'Battle continues. Changes apply next wave.');
+  f.select('hammer_unlock'); f.click(f.ref('spend'));
+  assert.equal(f.hero.talents.hammer_unlock, 1);
+  assert.equal(f.changes.length, 1);
   assert.equal(f.ref('reset').disabled, true);
   f.click(f.ref('reset')); assert.equal(f.changes.length, 1);
-  f.click(f.ref('spend')); assert.equal(f.hero.talents.heal_power, 2);
+  f.select('hammer_power'); f.click(f.ref('spend'));
+  assert.equal(f.hero.talents.hammer_power, 1);
   assert.equal(f.changes.length, 2);
-  f.select('miracle'); f.click(f.ref('spend'));
+  f.select('heavenly_hammer'); f.click(f.ref('spend'));
   assert.equal(f.ref('spend').disabled, true);
   assert.equal(f.changes.length, 2);
   f.ui.destroy();
 });
 
-test('free reset works between waves, stays silent with no spent points and removes click listeners on destroy', () => {
-  const f = createHeroFixture(createHeroUI, createHero({ xp: heroXpForLevel(5), talents: { heal_power: 2 } }));
+test('free reset removes learned skills and remains silent with no spent points', () => {
+  const f = createHeroFixture(createHeroUI, savedHero(5, { heal_unlock: 1, heal_power: 2 }));
   f.click(f.ref('reset'), true);
-  assert.deepEqual(f.changes, [{ type: 'reset', reset: true, refunded: 2 }]);
+  assert.deepEqual(f.changes, [{ type: 'reset', reset: true, refunded: 3 }]);
   assert.equal(f.hero.talents.heal_power, 0);
+  assert.doesNotMatch(f.ref('stats').textContent, /heal|aura|hammer/);
   assert.equal(f.ref('reset').disabled, true);
   f.click(f.ref('reset')); assert.equal(f.changes.length, 1);
-  f.select('heal_power'); f.ui.destroy(); f.ui.destroy();
+  f.select('heal_unlock'); f.ui.destroy(); f.ui.destroy();
   assert.equal(f.panel.listeners.get('click').size, 0);
-  f.click(f.ref('spend')); assert.equal(f.hero.talents.heal_power, 0);
-  // Existing API permits explicit render after destruction; destruction removes event ownership only.
+  f.click(f.ref('spend')); assert.equal(f.hero.talents.heal_unlock, 0);
+  // Explicit rendering remains safe after event ownership ends.
   f.hero.xp = heroXpForLevel(6); f.ui.render();
   assert.equal(f.ref('level').textContent, 'Level 6 / 20');
 });
@@ -67,21 +101,39 @@ test('backdrop and nested close-icon clicks close once and stop bubbling', () =>
   f.ui.destroy();
 });
 
-test('talent details explain each progression block and reflect learned ranks', () => {
+test('talent details distinguish missing prerequisites, branch investment, levels and exhausted points', () => {
   const cases = [
-    [{ xp: heroXpForLevel(5), talents: { heal_power: 3 } }, 'heal_power', 'Fully learned'],
-    [{ xp: 0 }, 'miracle', 'Requires Lv. 20 + 6 Light points'],
-    [{ xp: heroXpForLevel(5) }, 'heal_shield', 'Requires Healing Light rank 1'],
-    [{ xp: heroXpForLevel(20) }, 'miracle', 'Requires 6 Light points (0/6)'],
-    [{ xp: heroXpForLevel(20), talents: { heal_power: 3, heal_shield: 3, miracle: 1 } }, 'bastion', 'Only one final talent. Reset to switch.'],
-    [{ xp: heroXpForLevel(2), talents: { heal_power: 1 } }, 'aura_power', 'Gain a level for another point'],
+    [savedHero(5, { heal_unlock: 1, heal_power: 3 }), 'heal_power', 'Fully learned'],
+    [savedHero(1), 'miracle', 'Requires Lv. 20 + 10 Light points'],
+    [savedHero(5), 'heal_power', 'Requires Healing Light'],
+    [savedHero(20, { heal_unlock: 1, heal_power: 1 }), 'heal_shield', 'Requires 5 Light points (2/5)'],
+    [savedHero(20, { heal_unlock: 1, heal_power: 3, heal_haste: 1, heal_shield: 1, second_target: 1 }), 'miracle', 'Requires 10 Light points (7/10)'],
+    [savedHero(20, { heal_unlock: 1, heal_power: 3, heal_haste: 3, heal_shield: 2 }), 'miracle', 'Requires Shared Light'],
+    [savedHero(2, { heal_unlock: 1 }), 'aura_unlock', 'Gain a level for another point'],
   ];
-  for (const [saved, talent, expected] of cases) {
-    const f = createHeroFixture(createHeroUI, createHero(saved));
+  for (const [hero, talent, expected] of cases) {
+    const f = createHeroFixture(createHeroUI, hero);
     f.select(talent);
     assert.equal(f.ref('detail-gate').textContent, expected);
     assert.equal(f.ref('spend').disabled, true);
     if (expected === 'Fully learned') assert.equal(f.ref('spend').textContent, 'Learned');
     f.ui.destroy();
   }
+});
+
+test('every talent can be inspected including both parents of final talents without spending', () => {
+  const f = createHeroFixture(createHeroUI, savedHero(20));
+  for (const talent of HERO_TALENTS) {
+    f.select(talent.id);
+    assert.equal(f.ref('detail-name').textContent, talent.name);
+    assert.equal(talentNode(f, talent.id).attributes.get('aria-pressed'), 'true');
+    assert.equal(f.panel.nodes.filter(node => node.classes.has('is-selected')).length, 1);
+    assert.match(f.ref('detail-effect').textContent, /^Not learned → .+/);
+    assert.equal(f.ref('detail-description').textContent, talent.description);
+  }
+  f.select('miracle');
+  assert.equal(f.ref('detail-gate').textContent, 'Requires Overflowing Light + Shared Light');
+  assert.equal(f.changes.length, 0);
+  assert.equal(f.ref('points').textContent, '19 points');
+  f.ui.destroy();
 });

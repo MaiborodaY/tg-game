@@ -26,6 +26,7 @@ import { UNIT_TYPE_BY_ID } from './units.ts';
 import { ENEMY_TYPES, getEnemyCombatType, getWaveDefinition } from './waves.ts';
 import { getUnitStats } from './recruitment.ts';
 import { getHeroStats } from './hero.ts';
+import { findHeroCrowdRoute } from './hero-navigation.ts';
 
 export const COMBAT_PACE = 0.85;
 export const CASTLE_MAX_HP = 100;
@@ -90,7 +91,8 @@ export function createBattle(formation: readonly FormationUnit[] = [], waveNumbe
     ...HERO_START, hp: stats.maxHp, damage: stats.damage, level: stats.level });
   const hero: HeroActor = Object.assign(heroBase, { stats, heal: stats.healAmount, healCooldown: 0, hammerCooldown: 0,
     pendingAbility: null, miracleUsed: false, bastionTime: stats.bastion ? stats.bastionDuration : 0,
-    bastionCooldown: stats.bastionInterval });
+    bastionCooldown: stats.bastionInterval, guardianWard: 0, guardianWardTime: 0,
+    guardianWardCooldown: 0, holyStrikeTime: 0 });
   const castle = actor({ id: 'castle', side: 'ally', type: 'castle', name: 'Castle',
     x: FIELD.kingX, y: FIELD.kingFeet, hp: CASTLE_MAX_HP, damage: 0 });
   return {
@@ -260,10 +262,15 @@ function hurt(battle: Battle, target: Actor | undefined, amount: number, events:
   if (!target || target.hp <= 0) return;
   const hero = battle.hero;
   if (target.side === 'ally' && target.type !== 'castle') {
-    if (hero.hp > 0 && distance(hero, target) <= hero.stats.auraRadius) {
+    if (hero.hp > 0 && hero.stats.auraUnlocked && distance(hero, target) <= hero.stats.auraRadius) {
       let reduction = hero.stats.auraReduction + (hero.bastionTime > 0 ? hero.stats.bastionReduction : 0);
       if (target === hero && target.hp / target.maxHp <= hero.stats.emergencyGuardThreshold) reduction += hero.stats.emergencyGuardReduction;
       amount *= 1 - Math.max(0, Math.min(.4, reduction));
+    }
+    if (target === hero && hero.guardianWard > 0) {
+      const absorbed = Math.min(hero.guardianWard, amount);
+      hero.guardianWard -= absorbed;
+      amount -= absorbed;
     }
     const absorbed = Math.min(target.shield, amount);
     target.shield -= absorbed;
@@ -274,7 +281,17 @@ function hurt(battle: Battle, target: Actor | undefined, amount: number, events:
   target.hp = Math.max(0, target.hp - amount);
   target.hitTime = .18;
   addEffect(battle, 'hit', target, target, .65, { amount: dealt });
-  if (target.hp > 0) return;
+  if (target.hp > 0) {
+    // Only damage that actually reached HP can trigger a ward. It protects later hits,
+    // has its own lifetime, and never extends the separate overheal barrier.
+    if (target === hero && hero.stats.auraUnlocked && hero.stats.guardianWardFraction > 0
+      && hero.guardianWardCooldown <= 0 && dealt >= hero.maxHp * hero.stats.guardianWardThreshold) {
+      hero.guardianWard = hero.maxHp * hero.stats.guardianWardFraction;
+      hero.guardianWardTime = hero.stats.guardianWardDuration;
+      hero.guardianWardCooldown = hero.stats.guardianWardCooldown;
+    }
+    return;
+  }
   target.action = 'dead';
   target.actionTime = 0;
   target.deathTime = 0;
@@ -333,7 +350,12 @@ function resolveImpact(battle: Battle, unit: Actor, events: BattleEvent[]): void
     events.push({ type: 'bow-shot', sourceId: unit.id });
   } else if (target.side !== unit.side && distance(unit, target) <= unit.range + 10 && hasLandPath(unit, target)) {
     addEffect(battle, 'slash', unit, target, .27);
-    hurt(battle, target, unit.damage, events);
+    let amount = unit.damage;
+    if (unit.type === 'hero' && unit.holyStrikeTime > 0) {
+      amount += unit.baseDamage * unit.stats.holyStrikeFraction;
+      unit.holyStrikeTime = 0;
+    }
+    hurt(battle, target, amount, events);
   }
 }
 
@@ -367,27 +389,67 @@ function moveToward(unit: ActorBase, target: Point, dt: number, stopDistance = 0
   unit.walkTime += dt * COMBAT_PACE;
 }
 
-function advanceMelee(battle: Battle, unit: AllyActor, target: Actor, dt: number): void {
+function advanceMelee(battle: Battle, unit: AllyActor | HeroActor, target: Actor, dt: number,
+  goal: Point = target, stopDistance = unit.range - 2): void {
   const approach: MeleeApproach = unit.approach?.targetId === target.id ? unit.approach
     : { targetId: target.id, x: unit.x, y: unit.y, blockedTime: 0, detour: null };
+  if (approach.detourTarget && (goal !== target || distance(target, approach.detourTarget) > 24)) {
+    approach.detour = null;
+    approach.detourRoute = undefined;
+    approach.detourTarget = undefined;
+    approach.retryAt = undefined;
+    approach.blockedTime = 0;
+  }
+  if (approach.retryAt && battle.elapsed < approach.retryAt) { unit.action = 'idle'; return; }
   // Separation can cancel a rear fighter's forward step against its own frontline.
   // Only after sustained lack of progress, walk around that frontage at normal speed.
-  const stalled = unit.action === 'walk' && distance(unit, approach) < 1.5 * dt;
-  approach.blockedTime = stalled ? approach.blockedTime + dt : 0;
+  // The hero can still creep a few pixels through separation; that is blocked progress too.
+  const minimumProgress = unit.type === 'hero' ? RULES.hero.speed * .25 : 1.5;
+  const stalled = unit.action === 'walk' && distance(unit, approach) < minimumProgress * dt;
+  approach.blockedTime = approach.retryAt ? .5 : stalled ? approach.blockedTime + dt : 0;
+  approach.retryAt = undefined;
   approach.x = unit.x;
   approach.y = unit.y;
-  if (unit.action !== 'walk') approach.detour = null;
+  // Casting pauses a hero route without discarding the chosen side of the crowd.
+  if (unit.type !== 'hero' && unit.action !== 'walk') { approach.detour = null; approach.detourRoute = undefined; }
+  if (approach.detour && distance(unit, approach.detour) < (unit.type === 'hero' ? .75 : 4)) {
+    approach.detour = approach.detourRoute?.shift() ?? null;
+  }
   // A non-null detour is assigned together with its deadline below.
-  if (approach.detour && (distance(unit, approach.detour) < 4
-    || battle.elapsed >= approach.detourUntil! || approach.blockedTime >= .5)) approach.detour = null;
+  if (approach.detour && (battle.elapsed >= approach.detourUntil! || approach.blockedTime >= .5)) {
+    approach.detour = null;
+    approach.detourRoute = undefined;
+  }
   if (!approach.detour && approach.blockedTime >= .5) {
     const friends = living(alliedActors(battle)).filter(ally => ally.id !== unit.id);
-    const apart = Math.max(1, distance(unit, target));
-    const dx = (target.x - unit.x) / apart;
-    const dy = (target.y - unit.y) / apart;
+    const apart = Math.max(1, distance(unit, goal));
+    const dx = (goal.x - unit.x) / apart;
+    const dy = (goal.y - unit.y) / apart;
     const blocked = friends.some(ally => distance(unit, ally) < 30
       && (ally.x - unit.x) * dx + (ally.y - unit.y) * dy > 0);
     if (blocked) {
+      if (unit.type === 'hero' && goal === target) {
+        const route = findHeroCrowdRoute(unit, target, living(battle.allies), stopDistance + 6,
+          hasLandPath, ALLY_ADVANCE_LIMIT);
+        approach.detour = route?.[0] ?? null;
+        approach.detourRoute = route?.slice(1);
+        approach.detourTarget = { x: target.x, y: target.y };
+        let previous: Point = unit;
+        const length = route?.reduce((total, point) => {
+          const segment = distance(previous, point); previous = point; return total + segment;
+        }, 0) ?? 0;
+        approach.detourUntil = battle.elapsed + length / RULES.hero.speed + 1;
+        approach.blockedTime = 0;
+        unit.approach = approach;
+        if (!route) {
+          // A sealed frontage is a wait, not endless running. Retry when the crowd can change.
+          approach.retryAt = battle.elapsed + .5;
+          unit.action = 'idle';
+          return;
+        }
+        moveToward(unit, approach.detour!, dt);
+        return;
+      }
       const options = [-1, 1].map(side => clampToLand(unit, {
         x: unit.x - dy * 42 * side, y: unit.y + dx * 42 * side,
       })).filter(point => distance(unit, point) >= 30 && hasLandPath(unit, point));
@@ -399,7 +461,7 @@ function advanceMelee(battle: Battle, unit: AllyActor, target: Actor, dt: number
     }
   }
   unit.approach = approach;
-  moveToward(unit, approach.detour ?? target, dt, approach.detour ? 0 : unit.range - 2);
+  moveToward(unit, approach.detour ?? goal, dt, approach.detour ? 0 : stopDistance);
 }
 
 function supportPosition(unit: ActorBase, target: ActorBase): Point {
@@ -464,6 +526,10 @@ function cancelHeroActions(battle: Battle): void {
   const hero = battle.hero;
   hero.pendingAbility = null;
   hero.bastionTime = 0;
+  hero.guardianWard = 0;
+  hero.guardianWardTime = 0;
+  hero.guardianWardCooldown = 0;
+  hero.holyStrikeTime = 0;
   hero.targetId = null;
   battle.effects = battle.effects.filter(effect => effect.type !== 'hero-hammer');
 }
@@ -510,18 +576,20 @@ function resolveHeroAbility(battle: Battle, pending: PendingHeroAbility): void {
   if (hero.hp <= 0 || pending.sourceId !== hero.id) return;
   const stats = hero.stats;
   if (pending.kind === 'miracle') {
+    if (!stats.healUnlocked || !stats.miracle) return;
     for (const target of alliedActors(battle)) healByHero(battle, target,
       target.maxHp * stats.miracleHealFraction, stats.miracleRadius);
     return;
   }
   if (pending.kind === 'heal') {
+    if (!stats.healUnlocked) return;
     pending.targetIds.forEach((id, index) => healByHero(battle, findActor(battle, id),
       stats.healAmount * (index === 0 ? 1 : stats.secondaryHealFraction), stats.healRange,
       index === 0 ? stats.healShield : 0));
     return;
   }
   const target = findActor(battle, pending.targetIds[0]);
-  if (!target || target.hp <= 0 || target.side === hero.side || target.type === 'castle'
+  if (!stats.hammerUnlocked || !target || target.hp <= 0 || target.side === hero.side || target.type === 'castle'
     || distance(hero, target) > stats.hammerRange) return;
   addEffect(battle, 'hero-hammer', hero, target, Math.max(.15, distance(hero, target) / 330),
     { targetId: target.id, damage: stats.hammerDamage, landed: false });
@@ -538,11 +606,12 @@ function landHeroHammer(battle: Battle, effect: EffectOf<'hero-hammer'>, events:
   const hero = battle.hero;
   const target = findActor(battle, effect.targetId);
   // Revalidate at arrival: a dead caster, switched side or escaped target cancels damage.
-  if (hero.hp <= 0 || effect.sourceId !== hero.id || !target || target.hp <= 0
+  if (hero.hp <= 0 || !hero.stats.hammerUnlocked || effect.sourceId !== hero.id || !target || target.hp <= 0
     || target.side === hero.side || target.type === 'castle'
     || distance(hero, target) > hero.stats.hammerRange) return;
   addEffect(battle, 'hero-impact', hero, target, .4, { targetId: target.id });
   hurt(battle, target, effect.damage, events);
+  if (hero.stats.holyStrikeFraction > 0) hero.holyStrikeTime = hero.stats.holyStrikeDuration;
   stunByHammer(hero, target);
   if (hero.stats.hammerSplashFraction <= 0) return;
   for (const enemy of battle.enemies) {
@@ -556,16 +625,16 @@ function landHeroHammer(battle: Battle, effect: EffectOf<'hero-hammer'>, events:
 
 function actHero(battle: Battle, hero: HeroActor, dt: number): void {
   const stats = hero.stats;
-  const wounded = woundedAllies(battle, stats.healRange);
-  const emergency = stats.miracle && !hero.miracleUsed
+  const wounded = stats.healUnlocked ? woundedAllies(battle, stats.healRange) : [];
+  const emergency = stats.healUnlocked && stats.miracle && !hero.miracleUsed
     && woundedAllies(battle, stats.miracleRadius).some(target => target.hp / target.maxHp <= stats.miracleThreshold);
   if (emergency) { beginHeroAbility(hero, 'miracle', [hero]); return; }
-  if (hero.healCooldown <= 0 && wounded.length) {
+  if (stats.healUnlocked && hero.healCooldown <= 0 && wounded.length) {
     beginHeroAbility(hero, 'heal', wounded.slice(0, stats.secondaryHealFraction > 0 ? 2 : 1));
     return;
   }
   const enemies = living(battle.enemies);
-  if (hero.hammerCooldown <= 0) {
+  if (stats.hammerUnlocked && hero.hammerCooldown <= 0) {
     const target = nearest(hero, enemies.filter(isRangedEnemy), stats.hammerRange)
       ?? nearest(hero, enemies, stats.hammerRange);
     if (target) { beginHeroAbility(hero, 'hammer', [target]); return; }
@@ -578,16 +647,30 @@ function actHero(battle: Battle, hero: HeroActor, dt: number): void {
   }
   const target = focusedEnemy(hero, enemies);
   if (!target) { hero.action = 'idle'; return; }
-  const fighters = living(battle.allies).filter(ally => ally.type !== 'healer');
-  const leader = nearest(target, fighters);
-  if (!leader) { moveToward(hero, target, dt, hero.range - 2); return; }
-  // Follow the front rather than overtaking it to tank every incoming group. When only
-  // archers remain, close to hammer reach even if our own archers stopped farther back.
   const onlyRanged = enemies.every(isRangedEnemy);
-  const desiredRange = onlyRanged ? Math.min(stats.hammerRange - 15, 115) : hero.range - 2;
+  if (onlyRanged && stats.hammerUnlocked) {
+    const castingRange = stats.hammerRange - 8;
+    // A ranged stance needs a reachable casting position, not a fixed point inside
+    // friendly archers. Once in range, wait for the next cast instead of pacing.
+    if (distance(hero, target) <= castingRange) { hero.action = 'idle'; hero.approach = null; return; }
+    advanceMelee(battle, hero, target, dt, target, castingRange - 6);
+    return;
+  }
+  const fighters = living(battle.allies).filter(ally => ally.type !== 'healer');
+  const frontline = nearest(target, fighters.filter(ally => ally.type !== 'archer'));
+  const leader = frontline ?? nearest(target, fighters);
+  const frontlineEngaged = frontline && distance(frontline, target) <= frontline.range + 27;
+  if (!leader || onlyRanged || !frontline || frontlineEngaged) {
+    // Once the frontline engages, join it using the same collision detours as melee allies.
+    // Following a swordsman/lancer's rear position can leave the hero permanently out of reach.
+    advanceMelee(battle, hero, target, dt);
+    return;
+  }
+  // Follow the front without overtaking it to tank every incoming group; leave
+  // enough room for friendly collision spacing until it reaches the enemy.
   const goal = { x: Math.max(leader.x - 70, Math.min(leader.x + 70, target.x)),
-    y: Math.max(target.y + desiredRange, leader.y + (onlyRanged ? -45 : 12)) };
-  moveToward(hero, goal, dt, 4);
+    y: Math.max(target.y + hero.range - 2, leader.y + 30) };
+  advanceMelee(battle, hero, target, dt, goal, 4);
 }
 
 function actEnemyHealer(battle: Battle, unit: Actor, dt: number): boolean {
@@ -749,9 +832,13 @@ function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: b
       const hero = battle.hero;
       hero.healCooldown = Math.max(0, hero.healCooldown - dt);
       hero.hammerCooldown = Math.max(0, hero.hammerCooldown - dt);
+      hero.guardianWardCooldown = Math.max(0, hero.guardianWardCooldown - dt);
+      hero.guardianWardTime = Math.max(0, hero.guardianWardTime - dt);
+      if (hero.guardianWardTime <= 0) hero.guardianWard = 0;
+      hero.holyStrikeTime = Math.max(0, hero.holyStrikeTime - dt);
       hero.bastionTime = Math.max(0, hero.bastionTime - dt);
       hero.bastionCooldown = Math.max(0, hero.bastionCooldown - dt);
-      if (hero.stats.bastion && hero.bastionCooldown <= 0) {
+      if (hero.stats.auraUnlocked && hero.stats.bastion && hero.bastionCooldown <= 0) {
         hero.bastionTime = hero.stats.bastionDuration;
         hero.bastionCooldown = hero.stats.bastionInterval;
       }

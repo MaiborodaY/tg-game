@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createScene } from '../scene.ts';
 import { createBattle, updateBattle } from '../combat.ts';
+import { createHero, heroXpForLevel, spendHeroTalent, resetHeroTalents } from '../hero.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START } from '../field.ts';
 import { createSceneEnvironment } from './helpers/scene-environment.mjs';
 
@@ -68,6 +69,27 @@ test('battle sprites and hero effects render while formation keeps personal leve
   assert.equal(armyCanvas.commands.filter(([method, text]) => method === 'fillText' && text === '3').length, 4);
   assert.ok(armyCanvas.commands.some(([method, text]) => method === 'fillText' && text === '+2 → 5'));
   assert.equal(armyCanvas.saveDepth, 0);
+});
+
+test('the armour visual follows the learned aura and the current battle snapshot', async t => {
+  const env = setup(t), canvas = env.canvas(), scene = env.keep(await createScene(canvas));
+  const heroState = createHero({ xp: heroXpForLevel(2) });
+  const rendersAura = state => {
+    canvas.clear();
+    scene.render({ time: .3, battle: null, ...state });
+    return canvas.commands.some(([method, image, , sy]) => method === 'drawImage'
+      && image.includes('st-knihor-effects') && sy === 128);
+  };
+  assert.equal(rendersAura({ heroState }), false, 'unlearned aura stays invisible in preparation');
+  assert.equal(rendersAura({ battle: createBattle([], 1, heroState) }), false);
+  assert.equal(spendHeroTalent(heroState, 'aura_unlock').spent, true);
+  assert.equal(rendersAura({ heroState }), true);
+  const battle = createBattle([], 1, heroState);
+  resetHeroTalents(heroState);
+  assert.equal(rendersAura({ battle, heroState }), true, 'ongoing battle retains its learned aura');
+  assert.equal(rendersAura({ battle: createBattle([], 1, heroState), heroState }), false);
+  battle.hero.hp = 0;
+  assert.equal(rendersAura({ battle, heroState }), false, 'dead hero has no aura visual');
 });
 
 test('cell hit testing inverts both viewports and clicks keep hero and army actions separate', async t => {

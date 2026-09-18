@@ -70,7 +70,7 @@ try {
     if (localStorage.getItem(key)) return;
     localStorage.setItem(key, JSON.stringify({ campaignVersion: 3, gold: 125, starterSupplyGranted: true,
       marketHintCompleted: true, clearedWaves: 0, autoWaves: false, autoWavesDefaultVersion: 1,
-      hero: { xp: 4050, highestWave: 0, talents: {} },
+      hero: { xp: 4050, highestWave: 0, talents: { heal_power: 3, heal_shield: 2 } },
       units: [{ id: 1, type: 'swordsman', col: 2, row: 0, level: 30 },
         { id: 2, type: 'archer', col: 2, row: 1, level: 30 },
         { id: 3, type: 'healer', col: 2, row: 2, level: 30 }],
@@ -82,13 +82,23 @@ try {
 
   await page.goto(baseUrl);
   await page.waitForFunction(() => !document.querySelector('#start-wave').disabled);
+  const migratedHero = await savedHero();
+  assert.equal(migratedHero.talentVersion, 2);
+  assert.equal(migratedHero.xp, 4050, 'talent redesign preserves hero experience');
+  assert.ok(Object.values(migratedHero.talents).every(rank => rank === 0), 'legacy allocations are refunded');
   await page.locator('#open-hero').click();
+  assert.equal(await page.locator('[data-hero-points]').textContent(), '9 points');
+  assert.equal(await page.locator('[data-hero-talent]').count(), 18);
+  await page.locator('[data-hero-talent="heal_unlock"]').click();
+  assert.equal((await savedHero()).talents.heal_unlock, 0, 'selecting an icon does not spend a point');
+  await page.locator('[data-hero-spend]').click();
   await page.locator('[data-hero-talent="heal_power"]').click();
   await page.locator('[data-hero-spend]').click();
   assert.equal((await savedHero()).talents.heal_power, 1);
   await page.reload();
   await page.waitForFunction(() => !document.querySelector('#start-wave').disabled);
   await page.locator('#open-hero').click();
+  assert.equal((await savedHero()).talents.heal_unlock, 1, 'new skill unlock survives reload');
   assert.equal(await page.locator('[data-hero-talent="heal_power"] .hero-node-rank').textContent(), '1/3');
 
   for (const [width, height] of [[390, 844], [320, 640], [320, 480]]) {
@@ -98,6 +108,11 @@ try {
     assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1 && bounds.y >= 0
       && bounds.y + bounds.height <= height + 1, `dialog fits ${width}×${height}`);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal overflow');
+    const nodes = await page.locator('[data-hero-talent]').evaluateAll(elements => elements.map(element => {
+      const bounds = element.getBoundingClientRect();
+      return { width: bounds.width, height: bounds.height };
+    }));
+    assert.ok(nodes.every(node => node.width >= 40 && node.height >= 40), 'compact talent nodes retain mobile touch targets');
     const spend = await page.locator('[data-hero-spend]').boundingBox();
     assert.ok(spend.y + spend.height <= height, 'talent action stays visible');
     if (height === 480) {
@@ -148,12 +163,12 @@ try {
   assert.equal(afterReset.xp, beforeReset.xp);
   assert.equal(afterReset.highestWave, beforeReset.highestWave);
 
-  for (const level of [1, 20]) {
+  for (const level of [4, 20]) {
     await page.evaluate(level => {
       const key = 'brotd-infinity:campaign:v2', saved = JSON.parse(localStorage.getItem(key));
-      saved.hero = { xp: level === 1 ? 0 : 18050, highestWave: 0,
-        talents: level === 1 ? {} : { heal_power: 3, heal_shield: 3, second_target: 3,
-          hammer_power: 3, hammer_haste: 3, hammer_splash: 3, heavenly_hammer: 1 } };
+      saved.hero = { talentVersion: 2, xp: 50 * (level - 1) ** 2, highestWave: 0,
+        talents: { heal_unlock: 1, aura_unlock: 1, hammer_unlock: 1,
+          ...(level === 20 ? { hammer_power: 3, hammer_haste: 3, hammer_splash: 2, holy_strike: 1, heavenly_hammer: 1 } : {}) } };
       saved.clearedWaves = 0;
       saved.units = saved.units.map(unit => ({ ...unit, level: 1 }));
       saved.economy.treasuryUpdatedAt = Date.now();
@@ -234,7 +249,7 @@ try {
   }
   assert.ok(![...requests].some(path => /\/(?:king(?:-art|-portrait)?\.(?:png|webp)|tiny-swords-king[^/]*\.png)$/.test(path)), 'old king artwork is never requested');
   assert.deepEqual(errors, []);
-  console.log(`Passed hero integration: 320/390px, save/reload, battle snapshot, XP once, reset gate, Lv.1/20 actual heal+hammer at x3, animation sizes and atlas bounds, five WebPs without old king art. Screenshots: ${fileURLToPath(output)}`);
+  console.log(`Passed hero integration: 18-node trees at 320/390px, legacy talent refund, new allocation save/reload, battle snapshot, XP once, reset gate, Lv.4/20 learned heal+hammer at x3, animation sizes and atlas bounds, five WebPs without old king art. Screenshots: ${fileURLToPath(output)}`);
 } finally {
   await browser?.close();
   await server?.close();

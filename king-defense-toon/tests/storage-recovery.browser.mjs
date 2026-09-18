@@ -237,8 +237,9 @@ try {
       assert.equal(migrated.economy.marketBuilt, saved.economy.marketBuilt ?? false);
       assert.equal(migrated.hero.xp, expected.heroXp);
       assert.equal(migrated.hero.highestWave, expected.highestWave);
-      assert.deepEqual(Object.entries(migrated.hero.talents).filter(([, rank]) => rank > 0),
-        Object.entries(saved.hero?.talents ?? {}));
+      assert.equal(migrated.hero.talentVersion, 2);
+      assert.deepEqual(Object.entries(migrated.hero.talents).filter(([, rank]) => rank > 0), [],
+        'legacy talent points are returned while experience and highest clear remain intact');
       assert.deepEqual(migrated.barracks, { level: expected.barracksLevel,
         upgradeStartedAt: null, upgradeReadyAt: null, firstLancerPending: expected.firstLancerPending });
       assert.equal(migrated.starterSupplyGranted, true);
@@ -310,7 +311,8 @@ try {
     assert.equal(restored.economy.slaves, fixture.economy.slaves);
     assert.deepEqual(restored.barracks, fixture.barracks);
     assert.equal(restored.hero.xp, fixture.hero.xp);
-    assert.equal(restored.hero.talents.heal_power, 1);
+    assert.equal(restored.hero.talents.heal_power, 0);
+    assert.equal(restored.hero.talentVersion, 2);
   });
 
   await inPage('corrupt save survives timers and retry; only the second reset click replaces it', { raw: '{damaged-json' }, async page => {
@@ -419,7 +421,8 @@ try {
     assert.equal(after.economy.slaves, before.economy.slaves);
     assert.equal(before.hero.xp, fixture.hero.xp);
     assert.equal(before.hero.highestWave, fixture.hero.highestWave);
-    assert.equal(before.hero.talents.heal_power, 1);
+    assert.equal(before.hero.talents.heal_power, 0);
+    assert.equal(before.hero.talentVersion, 2);
     assert.deepEqual(before.barracks, fixture.barracks);
     assert.deepEqual(after.hero, before.hero);
     assert.deepEqual(after.barracks, before.barracks);

@@ -10,7 +10,9 @@ import type { GridCell, Scene, SceneOptions, SceneState, SceneUpdate, SceneAsset
 
 type RenderActor = AnimationActor & { type?: ActorType; level?: number; visualScale?: number };
 type HealthActor = Pick<Actor, 'type' | 'x' | 'y' | 'hp' | 'maxHp'> & Partial<Pick<Actor, 'side' | 'visualScale'>>;
-type RenderHero = HealthActor & AnimationActor & { action: AnimationAction; bastionTime?: number };
+type RenderHero = HealthActor & AnimationActor & {
+  action: AnimationAction; stats: { auraUnlocked: boolean }; bastionTime?: number; guardianWard?: number;
+};
 type HeroArt = Partial<Record<'up' | 'down' | 'side', HTMLImageElement>>;
 // Retain the legacy royal projectile drawing without adding it to combat's actor catalogue.
 type RenderEffect = BattleEffect | (Omit<EffectOf<'arrow'>, 'sourceType'> & { sourceType: 'king' });
@@ -486,11 +488,11 @@ function drawHero(context: CanvasRenderingContext2D, art: HeroArt, effects: HTML
   const rect = sourceRects[tinyStKnihorFrame(pose, time)];
   const scale = 40 * renderScale / (bodyHeight * frameHeight);
   context.save();
-  if (actor.hp > 0) {
-    context.globalAlpha = actor.bastionTime! > 0 ? .8 : .32;
+  if (actor.hp > 0 && actor.stats.auraUnlocked) {
+    context.globalAlpha = (actor.bastionTime ?? 0) > 0 || (actor.guardianWard ?? 0) > 0 ? .8 : .32;
     drawHeroEffect(context, effects, 'armor', (time % 1.2) / 1.2, actor.x, actor.y + 1, .38 * renderScale);
-  } else context.globalAlpha = Math.max(.35, 1 - (actor.deathTime ?? 0) * .4);
-  context.globalAlpha = actor.hp > 0 ? 1 : context.globalAlpha;
+  }
+  context.globalAlpha = actor.hp > 0 ? 1 : Math.max(.35, 1 - (actor.deathTime ?? 0) * .4);
   context.translate(actor.x, actor.y);
   if (flipX) context.scale(-1, 1);
   context.imageSmoothingEnabled = false;
@@ -980,7 +982,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
       }
       if (!formationOnly) {
         const stats = getHeroStats(state.heroState);
-        const hero: RenderHero = { type: 'hero', action: 'idle', ...HERO_START, facingX: 0, facingY: -1, hp: stats.maxHp, maxHp: stats.maxHp };
+        const hero: RenderHero = { type: 'hero', action: 'idle', ...HERO_START, facingX: 0, facingY: -1, hp: stats.maxHp, maxHp: stats.maxHp, stats };
         drawHero(context, heroArt, heroEffects, hero, state.time, actorScale);
         drawHealth(context, hero, actorScale);
         drawCastleHealth(context);

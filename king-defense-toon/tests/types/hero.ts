@@ -1,4 +1,4 @@
-import { HERO_BRANCHES, HERO_TALENTS, createHero, getHeroProgress, getHeroStats, getHeroTalentStatus,
+import { HERO_TALENT_VERSION, HERO_BRANCHES, HERO_TALENTS, createHero, getHeroProgress, getHeroStats, getHeroTalentStatus, getHeroTalentEffect,
   heroXpForLevel, spendHeroTalent, resetHeroTalents, awardHeroXp } from '../../hero.ts';
 import type { BranchId, TalentId, HeroState, HeroStats, HeroProgress, HeroOutcome, HeroXpResult,
   HeroTalentStatus, SpendHeroTalentResult, ResetHeroTalentsResult } from '../../hero.ts';
@@ -19,6 +19,16 @@ export function verifyHeroContracts(saved: unknown): void {
   const reward: HeroXpResult = awardHeroXp(hero, outcome);
   const emptyReward: HeroXpResult = awardHeroXp(hero);
   const xp: number = heroXpForLevel(20);
+  const version: 2 = hero.talentVersion;
+  const schemaVersion: 2 = HERO_TALENT_VERSION;
+  const row: 0 | 1 | 2 | 3 = HERO_TALENTS[0].row;
+  const column: 0 | 1 | 2 = HERO_TALENTS[0].column;
+  const prerequisites: readonly TalentId[] = HERO_TALENTS[0].prerequisites;
+  const effect: string = getHeroTalentEffect(hero, talent);
+  const nextEffect: string = getHeroTalentEffect(hero, talent, 2);
+  const unlocked: boolean = stats.healUnlocked && stats.auraUnlocked && stats.hammerUnlocked;
+  const ward: number = stats.guardianWardFraction + stats.guardianWardThreshold + stats.guardianWardDuration + stats.guardianWardCooldown;
+  const strike: number = stats.holyStrikeFraction + stats.holyStrikeDuration;
   hero.xp += reward.gained;
   hero.talents.heal_power = 1;
   stats.maxHp += 1; // Combat receives a mutable, independent snapshot.
@@ -63,7 +73,14 @@ export function verifyHeroContracts(saved: unknown): void {
   HERO_TALENTS.pop();
   // @ts-expect-error Each talent definition is frozen.
   HERO_TALENTS[0].maxRank = 1;
+  // @ts-expect-error Prerequisite lists are deeply frozen.
+  HERO_TALENTS[0].prerequisites.push('heal_unlock');
+  // @ts-expect-error The schema marker accepts only the current layout.
+  hero.talentVersion = 1;
+  // @ts-expect-error Rank previews use numeric ranks rather than saved strings.
+  getHeroTalentEffect(hero, talent, '2');
   // @ts-expect-error State cannot acquire unknown talent fields through typed callers.
   hero.talents.unknown = 1;
-  void [branch, progress, reset, emptyReward, xp, invalidBranch, invalidTalent, branchPoints, freshStats, unsavedStats];
+  void [branch, progress, reset, emptyReward, xp, invalidBranch, invalidTalent, branchPoints, freshStats, unsavedStats,
+    version, schemaVersion, row, column, prerequisites, effect, nextEffect, unlocked, ward, strike];
 }

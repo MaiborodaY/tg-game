@@ -10,8 +10,10 @@ function result(wave, level, healer = 1) {
 
 test('the smaller first-chief escort does not introduce relief in the following wave', () => {
   // Wave 10 was deliberately reduced. Keep the same armies on either side so
-  // this check cannot hide relief behind recruitment growth. The hero stays Lv1.
-  for (const [healer, level, nextLevel] of [[0, 2, 3], [1, 3, 5], [2, 3, 5]]) {
+  // this check cannot hide relief behind recruitment growth. The hero stays Lv1,
+  // now with melee only: reference armies were remeasured after skill unlocks
+  // moved into talents, without changing any enemy or reward definition.
+  for (const [healer, level, nextLevel] of [[0, 3, 5], [1, 3, 6], [2, 3, 5]]) {
     for (const wave of [9, 10, 11]) {
       const observed = result(wave, level, healer);
       assert.equal(observed.outcome, wave === 11 ? 'defeat' : 'victory',
@@ -27,8 +29,10 @@ test('the smaller first-chief escort does not introduce relief in the following 
 test('the second chief requires growth and the following wave retains that requirement with a level-one hero', () => {
   assert.equal(result(19, 11).outcome, 'victory');
   for (const wave of [20, 21]) {
-    assert.equal(result(wave, 10).outcome, 'defeat');
-    const upgraded = result(wave, 11);
+    // Earlier hero engagement after the crowd fix makes Lv12 sufficient for the
+    // chief, while Lv11 still demonstrates the need to grow across the boundary.
+    assert.equal(result(wave, 11).outcome, 'defeat');
+    const upgraded = result(wave, 15);
     assert.equal(upgraded.outcome, 'victory');
     assert.equal(upgraded.enraged, false);
   }
@@ -37,7 +41,7 @@ test('the second chief requires growth and the following wave retains that requi
 test('different army compositions stay within a narrow upgrade band across the second chief boundary', () => {
   // A healer supports a concentrated boss differently from a spread-out squad.
   // Compare weak/strong reference armies without claiming identical win thresholds.
-  for (const [healers, weakLevel, strongLevel] of [[0, 12, 13], [2, 12, 14]]) {
+  for (const [healers, weakLevel, strongLevel] of [[0, 10, 13], [2, 12, 15]]) {
     for (const wave of [20, 21]) {
       assert.equal(result(wave, weakLevel, healers).outcome, 'defeat');
       const upgraded = result(wave, strongLevel, healers);
@@ -48,9 +52,9 @@ test('different army compositions stay within a narrow upgrade band across the s
 });
 
 test('the third chief is harder than wave twenty-nine for the unchanged no-healer army', () => {
-  assert.equal(result(29, 19, 0).outcome, 'victory');
-  assert.equal(result(30, 19, 0).outcome, 'defeat');
-  const upgraded = result(30, 20, 0);
+  assert.equal(result(29, 20, 0).outcome, 'victory');
+  assert.equal(result(30, 20, 0).outcome, 'defeat');
+  const upgraded = result(30, 23, 0);
   assert.equal(upgraded.outcome, 'victory');
   assert.equal(upgraded.enraged, false);
 });
@@ -58,7 +62,7 @@ test('the third chief is harder than wave twenty-nine for the unchanged no-heale
 test('the following ordinary waves require upgrades without a sudden wall for the two-healer army', () => {
   for (let wave = 21; wave <= 28; wave += 1) {
     assert.equal(result(wave, 12, 2).outcome, 'defeat', `wave ${wave} must not introduce another relief pocket`);
-    const upgraded = result(wave, 14, 2);
+    const upgraded = result(wave, 15, 2);
     assert.equal(upgraded.outcome, 'victory', `wave ${wave} must not introduce a new wall`);
     assert.equal(upgraded.enraged, false);
   }
