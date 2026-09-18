@@ -91,32 +91,30 @@ Native sprite colors change every 25 personal levels: **1–25 blue, 26–50 pur
 
 ## Kill rewards and wave progression
 
-Both **Level 1: Whispering Woods** and **Level 2: Forgotten Graveyard** contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20. Wave 5 is an ordinary encounter. **Waves 1–30 are preserved; waves 31–400 now continue the same HP curve**, gaining 430 total HP per round, with gradually larger squads and tapering damage growth. Level 2 continues from the forest endpoint rather than resetting to a three-times-opening formula. [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) records the implementation and its untested gameplay assumptions.
+Both levels contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20; wave 5 is ordinary. **All 400 encounters now receive +10% total HP and +5% enemy damage**, starting at the first wave, to account for the playable hero. Counts, schedules, rewards and the underlying campaign curve are retained. After round 1-3, round-end HP grows by **473** per round after this adjustment. Level 2 continues from the forest endpoint rather than resetting to an early forest formula. [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) records the current rules and checks.
 
-The first three waves retain their existing stats, composition and schedules. The first round has **3 / 4 / 5 / 5 / 6 / 6 / 7 / 8 / 9 / 5 enemies** and total HP **180 / 184 / 264 / 306 / 366 / 426 / 506 / 620 / 790 / 750**. Wave 10 has a chief, two goblins and two archers, arriving **4 + 1 at 0.8 and 14.8 simulation seconds**: the second arrival is now one archer. Global waves **11–19 and 21–29** each have **four goblins, two archers and two boars**, arriving **4 + 4** on that schedule. Waves 20 and 30 retain a chief, three goblins and two archers, arriving **4 + 2**. Every simultaneous arrival stays at four enemies or fewer.
+Wave 1 remains **two goblins, then one**; wave 2 remains **two goblins and two archers together**. The first-round counts remain **3 / 4 / 5 / 5 / 6 / 6 / 7 / 8 / 9 / 5**. Starting goblins now have **66 HP / 7.35 damage**. The shared damage adjustment preserves fractions so low-damage enemies do not gain a disproportionately large rounded bonus.
 
-| Wave in round | Round 1 total HP | Round 2 total HP | Round 3 total HP |
+| Wave in round | 1-1 enemies / total HP | 1-2 enemies / total HP | 1-3 enemies / total HP |
 | --- | --- | --- | --- |
-| 1 | 180 | 866 | 1,265 |
-| 2 | 184 | 878 | 1,277 |
-| 3 | 264 | 890 | 1,289 |
-| 4 | 306 | 902 | 1,301 |
-| 5 | 366 | 914 | 1,313 |
-| 6 | 426 | 926 | 1,325 |
-| 7 | 506 | 938 | 1,337 |
-| 8 | 620 | 950 | 1,349 |
-| 9 | 790 | 1,120 | 1,500 |
-| 10 | 750 | 1,250 | 1,680 |
+| 1 | 3 / 198 | 8 / 953 | 8 / 1,392 |
+| 2 | 4 / 202 | 8 / 966 | 8 / 1,405 |
+| 3 | 5 / 290 | 8 / 979 | 8 / 1,418 |
+| 4 | 5 / 337 | 8 / 992 | 8 / 1,431 |
+| 5 | 6 / 403 | 8 / 1,005 | 8 / 1,444 |
+| 6 | 6 / 469 | 8 / 1,019 | 8 / 1,458 |
+| 7 | 7 / 557 | 8 / 1,032 | 8 / 1,471 |
+| 8 | 8 / 682 | 8 / 1,045 | 8 / 1,484 |
+| 9 | 9 / 869 | 8 / 1,232 | 8 / 1,650 |
+| 10 | 5 / 825 | 6 / 1,375 | 6 / 1,848 |
 
-The opening chiefs have **450 / 688 / 924 HP** at global waves 10 / 20 / 30, respectively. Their encounters bypass the old 1.25× total-HP floor. The user's removal of the second-arrival goblin on wave 10 leaves its chief unchanged at **450 HP / 18 damage**, without a compensating buff, and creates the explicit total-HP exception **wave 9→10: 790 → 750**. All other steps through 30 rise, including transitions **750 → 866** and **1,250 → 1,265** between rounds; no post-boss relief was added. Larger HP and shared damage increases close rounds 2–3. Composition, damage, timing and available allied roles also affect difficulty; total HP alone does not prove a harder fight for every army. See [README.md](README.md) for opening roles and schedules and [opening-curve.mjs](opening-curve.mjs) for the round 2–3 allocation.
+From **1-1 wave 6 through 1-20 wave 10**, a **Goblin healer** replaces one archer in the second arrival of every forest wave, including boss escorts. There are no new enemies or groups. On waves 6–100 the healer retains the replaced archer's HP allocation, position, schedule and one-gold reward; existing healers remain on waves 101–200. The first healer has **46 HP / 4 healing per cast / 3.15 weak melee damage**. Healing grows to **5 / 8 / 10 HP at waves 10 / 20 / 30**, then **35 around waves 100–101**, reaching **48 by wave 200**. It heals other non-healer enemies, including bosses, up to missing HP, and cannot heal itself or another healer. Level 2 has no healer variant yet.
 
-Historical opening combat checks used the actual engine through [scripts/combat-balance.mjs](scripts/combat-balance.mjs); [OPENING_BALANCE.md](OPENING_BALANCE.md) records those scenarios, results and limitations. Explicit test armies and levels are not a natural first-clear simulation or an income/recruitment forecast. Current continuation checks cover static wave invariants and short healer-mechanic/render cases; no full battles or progression simulations were rerun. Recruitment probabilities, **5% personal-level stat growth**, merging, capture rules, prices and income rates are unchanged.
+The wave-10 roster is now a chief, two goblins, one archer and one healer, arriving **4+1 at 0.8 / 14.8 simulation seconds**. Global waves **11–19 and 21–29** contain four goblins, one archer, one healer and two boars (**4+4**); waves 20 and 30 contain a chief, three goblins, one archer and one healer (**4+2**). Every simultaneous arrival stays at four or fewer enemies.
 
-A separate resource-linked harness, [scripts/early-campaign.mjs](scripts/early-campaign.mjs), earns its cells and fighters using the actual APIs. **Historical snapshot before the wave-10 goblin removal:** six thirty-wave scenarios completed at ×1/×3 in **452 battles without timeouts**, with one requiring 102 attempts. Ninth/tenth waves accounted for **90 of 138 defeats (65.2%)**, and a majority within each round. These runs have not been repeated for the five-enemy wave 10 and do not validate the current revision. The documented management policy and fixed seeds are not a population sample or a promised completion time.
+The opening chiefs have **495 / 757 / 1,016 HP** and **18.9 / 25.2 / 32.55 damage** at waves 10 / 20 / 30. The earlier requested escort removal is retained; its explicit HP exception is now **wave 9→10: 869 → 825**, with no special boss compensation beyond the shared adjustment. The next round begins at **953 HP**. Waves **20→21** rise **1,375 → 1,392**, **30→31** rise **1,848 → 1,865**, and **200→201** rise **9,889 → 9,906**. Ordinary continuation counts still grow from eight to sixteen and boss encounters from six to ten; no additional enemies were introduced by this edit. The final Crypt King has **12,577 HP / 126 damage** within a **19,349-HP** encounter. These are configured totals, not a guaranteed difficulty order for every army.
 
-The former post-opening drop is removed: waves **30→31** rise from **1,680 to 1,695 total HP**, and **200→201** rise from **8,990 to 9,005**. Ordinary wave counts rise from eight to sixteen over the continuation; boss encounters grow from six to ten enemies, including the boss. At most four arrive at once, with 14 simulation seconds between arrivals. The final Crypt King now has **11,434 HP / 120 damage** within a **17,590-HP** encounter; the old extreme late scaling is replaced by linear HP growth and slower damage growth near the player level cap. This is a configured progression, not a verified victory curve.
-
-Forest rounds **1-11 through 1-20** replace one second-arrival archer with a **Goblin healer**. Its one-gold reward matches that archer. It heals other non-healer enemies, including bosses, for **35–48 flat HP** per cast, capped by missing HP; it cannot sustain itself or another healer. There is no Level 2 healer yet. The support role changes tactics without adding an extra squad or altering capture probabilities.
+[OPENING_BALANCE.md](OPENING_BALANCE.md) retains historical opening combat and economy reports, which predate the hero adjustment and early healer and do not validate this revision. Four current ×1 resource-linked runs (seeds **1, 4, 17, 42**, target wave 10, limit 40 attempts, hero talents unspent) completed in **14 / 14 / 12 / 14 attempts**, without timeouts; defeats occurred on waves 8–9. They are fixed management scenarios rather than a player-population forecast or full campaign validation. See [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) for remaining verification. Recruitment probabilities, **5% personal-level stat growth**, Connect, hero stats, capture rules, prices and income rates are unchanged by this balance edit.
 
 Current per-enemy kill rewards stay fixed within each level:
 

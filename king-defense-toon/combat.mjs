@@ -334,6 +334,40 @@ function moveToward(unit, target, dt, stopDistance = 0) {
   unit.walkTime += dt * COMBAT_PACE;
 }
 
+function advanceMelee(battle, unit, target, dt) {
+  const approach = unit.approach?.targetId === target.id ? unit.approach
+    : { targetId: target.id, x: unit.x, y: unit.y, blockedTime: 0, detour: null };
+  // Separation can cancel a rear fighter's forward step against its own frontline.
+  // Only after sustained lack of progress, walk around that frontage at normal speed.
+  const stalled = unit.action === 'walk' && distance(unit, approach) < 1.5 * dt;
+  approach.blockedTime = stalled ? approach.blockedTime + dt : 0;
+  approach.x = unit.x;
+  approach.y = unit.y;
+  if (unit.action !== 'walk') approach.detour = null;
+  if (approach.detour && (distance(unit, approach.detour) < 4
+    || battle.elapsed >= approach.detourUntil || approach.blockedTime >= .5)) approach.detour = null;
+  if (!approach.detour && approach.blockedTime >= .5) {
+    const friends = living(alliedActors(battle)).filter(ally => ally.id !== unit.id);
+    const apart = Math.max(1, distance(unit, target));
+    const dx = (target.x - unit.x) / apart;
+    const dy = (target.y - unit.y) / apart;
+    const blocked = friends.some(ally => distance(unit, ally) < 30
+      && (ally.x - unit.x) * dx + (ally.y - unit.y) * dy > 0);
+    if (blocked) {
+      const options = [-1, 1].map(side => clampToLand(unit, {
+        x: unit.x - dy * 42 * side, y: unit.y + dx * 42 * side,
+      })).filter(point => distance(unit, point) >= 30 && hasLandPath(unit, point));
+      const clearance = point => Math.min(80, ...friends.map(ally => distance(point, ally)));
+      options.sort((a, b) => clearance(b) - clearance(a));
+      approach.detour = options[0] ?? null;
+      approach.detourUntil = battle.elapsed + 1.5;
+      approach.blockedTime = 0;
+    }
+  }
+  unit.approach = approach;
+  moveToward(unit, approach.detour ?? target, dt, approach.detour ? 0 : unit.range - 2);
+}
+
 function supportPosition(unit, target) {
   const laneLimit = unit.range * .3;
   const laneOffset = Math.max(-laneLimit, Math.min(laneLimit, (unit.homeX - target.homeX) * .3));
@@ -588,6 +622,7 @@ function act(battle, unit, dt) {
   const target = focusedEnemy(unit, opponents);
   if (!target) {
     // Hold ground between groups; home cells are only the next preparation layout.
+    unit.approach = null;
     unit.action = 'idle';
     return;
   }
@@ -611,6 +646,7 @@ function act(battle, unit, dt) {
     }
   }
   if (apart <= unit.range + (ranged ? 0 : 6) && (ranged || hasLandPath(unit, target))) {
+    unit.approach = null;
     if (unit.cooldown <= 0) beginAction(unit, target,
       ranged ? 'shoot' : 'attack');
     else unit.action = 'idle';
@@ -620,7 +656,7 @@ function act(battle, unit, dt) {
     moveToward(unit, target, dt, unit.range - 2);
   } else if (unit.type === 'swordsman' || unit.type === 'lancer') {
     // Spear reach lets lancers stop behind defenders, while retaining melee land-path checks.
-    moveToward(unit, target, dt, unit.range - 2);
+    advanceMelee(battle, unit, target, dt);
   } else unit.action = 'idle';
 }
 

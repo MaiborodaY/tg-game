@@ -1,91 +1,156 @@
-# Campaign continuation — 2026-09-18
+# Campaign balance — 2026-09-18
 
-The curve in [campaign-curve.mjs](campaign-curve.mjs) extends the opening through
-global wave 400. Waves **1–30 remain exactly as before**. The historical opening
-battle evidence is retained in [OPENING_BALANCE.md](OPENING_BALANCE.md); it does not
-validate the later campaign. The user will playtest the new difficulty.
+The current curve covers all **400 waves** across two levels. To account for the
+playable hero, every encounter now has **10% more total HP and 5% more enemy
+damage** than the preceding campaign revision, starting at wave 1. Enemy counts,
+arrival times, movement, attack cadence and rewards are unchanged. One existing
+archer becomes a Goblin healer from forest wave 6 onward; no extra enemy is added.
+
+[opening-curve.mjs](opening-curve.mjs) and
+[campaign-curve.mjs](campaign-curve.mjs) supply the underlying budgets;
+`withHeroPressure` in [waves.mjs](waves.mjs) applies the current adjustment.
+Each encounter resolves to `round(previousTotalHP × 1.10)`. Individual HP values
+are rounded, with the first spawn absorbing the rounding correction. Damage is
+multiplied by 1.05 and retained to two decimal places, so a 4-damage archer becomes
+4.2 rather than jumping to 5. Healing follows its separate support curve below.
+
+The historical opening battle evidence in
+[OPENING_BALANCE.md](OPENING_BALANCE.md) predates both this adjustment and the
+early healer. It does not validate the current difficulty.
 
 ## Growth after 1-3
 
-The endpoint at wave 30 is **1,680 total HP**. Every later round adds **430 HP**
-to the preceding round's final budget. Within each round, the ten budgets are
-the prior final plus **15, 27, 39, 51, 63, 75, 87, 99, 250 and 430 HP**.
-This preserves small intermediate steps and larger ninth/tenth-wave steps,
-without an HP reset after bosses or at the Level 1→2 boundary. Growth is linear,
-not compounded against the player's personal-level-100 cap.
+The unadjusted wave-30 budget is 1,680 HP, and subsequent rounds add 430 HP.
+Their within-round offsets are 15, 27, 39, 51, 63, 75, 87, 99, 250 and 430 HP.
+The current 10% adjustment makes the wave-30 endpoint **1,848 HP** and the
+round-end increment **473 HP**. Intermediate offsets are rounded after applying
+the multiplier. This retains smaller intermediate steps and larger ninth/tenth
+steps, with no new HP reset after bosses or at the Level 1→2 boundary. Growth is
+linear rather than compounded each round.
 
-| Encounter | Global wave | Enemies | Total HP |
+| Encounter | Global wave | Enemies | Current total HP |
 | --- | ---: | ---: | ---: |
-| 1-3 / 10 | 30 | 6 | 1,680 |
-| 1-4 / 1 | 31 | 8 | 1,695 |
-| 1-4 / 9 | 39 | 8 | 1,930 |
-| 1-4 / 10 | 40 | 6 | 2,110 |
-| 1-5 / 7 | 47 | 8 | 2,197 |
-| 1-10 / 10 | 100 | 7 | 4,690 |
-| 1-11 / 1 | 101 | 10 | 4,705 |
-| 1-20 / 10 | 200 | 8 | 8,990 |
-| 2-1 / 1 | 201 | 13 | 9,005 |
-| 2-10 / 10 | 300 | 9 | 13,290 |
-| 2-20 / 10 | 400 | 10 | 17,590 |
+| 1-1 / 1 | 1 | 3 | 198 |
+| 1-1 / 6 | 6 | 6 | 469 |
+| 1-1 / 9 | 9 | 9 | 869 |
+| 1-1 / 10 | 10 | 5 | 825 |
+| 1-2 / 1 | 11 | 8 | 953 |
+| 1-3 / 10 | 30 | 6 | 1,848 |
+| 1-4 / 1 | 31 | 8 | 1,865 |
+| 1-4 / 9 | 39 | 8 | 2,123 |
+| 1-4 / 10 | 40 | 6 | 2,321 |
+| 1-5 / 7 | 47 | 8 | 2,417 |
+| 1-10 / 10 | 100 | 7 | 5,159 |
+| 1-11 / 1 | 101 | 10 | 5,176 |
+| 1-20 / 10 | 200 | 8 | 9,889 |
+| 2-1 / 1 | 201 | 13 | 9,906 |
+| 2-10 / 10 | 300 | 9 | 14,619 |
+| 2-20 / 10 | 400 | 10 | 19,349 |
 
-Ordinary encounters start at eight enemies. One is added at each global round
-**6, 9, 13, 17, 21, 26, 31 and 36**, reaching sixteen. Boss encounters contain
-`6 + floor((ordinaryCount - 8) / 2)` enemies, including their boss, reaching ten.
-Reinforcements contain **at most four per arrival**, at **0.8 + 14 × groupIndex**
-simulation seconds. Normal HP is allocated by role weights: melee **94**,
-archer **56**, boar/ghoul **104**, healer **70**; integer rounding is corrected to
-the exact budget. More enemies share that budget, so a count increase does not
-also multiply total health, and individual HP need not increase at that step.
+The prior requested wave-10 escort removal remains in place. Its explicit HP
+exception is now **869 → 825** at waves 9→10, followed by **953** on wave 11.
+The chief itself shares the modest global buff: **495 HP / 18.9 damage**. The
+late support slot now holds a healer instead of the remaining archer.
 
-Ordinary melee damage carries the wave-29 tier of **14** into round 1-4.
-The common damage tier advances on wave 9: **+2 per round through global round
-10**, **+1 through round 20**, then **+1 every two rounds through round 40**.
-Archers use 64% and boars/ghouls 91% of that tier, rounded. The first fighter of
-an ordinary wave retains one extra damage point, as in the opening continuation.
-Attack rates and movement speed are unchanged.
+Ordinary continuation encounters start at eight enemies. One is added at each
+global round **6, 9, 13, 17, 21, 26, 31 and 36**, reaching sixteen. Boss encounters
+contain `6 + floor((ordinaryCount - 8) / 2)` enemies including the boss, reaching
+ten. These counts predate this revision. Reinforcements contain **at most four
+per arrival**, at **0.8 + 14 × groupIndex** simulation seconds. The first round
+retains its authored group sizes; wave 1 remains two goblins followed by one at
+6.8 seconds.
 
-Mini-bosses receive **55% of encounter HP** and damage `round(meleeTier × 31/14)`;
-main bosses receive **65%** and `round(meleeTier × 2.5)`. Escorts share the remainder.
-Every tenth wave is still a boss encounter, with main bosses only in local rounds
-10 and 20. There is no subsequent HP-budget reduction. Encounter difficulty can
-still differ by composition, concentrated boss damage and formation, so these
-numeric invariants do not prove that every army finds every next wave harder.
+Underlying normal HP allocation uses role weights: melee **94**, archer **56**,
+boar/ghoul **104**, and existing late healer **70**. Early healers on waves 6–100
+inherit the replaced archer's HP allocation and position. More enemies share a
+wave's budget; count growth therefore does not multiply total HP again, and
+individual HP need not rise at those steps.
 
-Level 2 uses the same continuing curve with skeletons, skeleton archers, ghouls,
-Crypt Spider and Crypt King. It no longer restarts from three times an early
-forest template. Per-kill payouts remain doubled by corresponding role there.
+The unadjusted melee damage tier carries 14 from wave 29 into round 1-4. Its
+shared step occurs on wave 9: **+2 per round through global round 10**, **+1
+through round 20**, then **+1 every two rounds through round 40**. Archers use
+64% and boars/ghouls 91% of that tier, rounded; the first ordinary fighter retains
+its extra damage point. The final **×1.05 damage adjustment** applies after these
+existing role rules, including bosses and the healer's weak melee attack.
+
+Mini-bosses receive 55% of the underlying HP budget and base damage
+`round(meleeTier × 31/14)`; main bosses receive 65% and
+`round(meleeTier × 2.5)`. Escorts share the remainder. Every tenth wave is still a
+boss encounter, with main bosses only in local rounds 10 and 20. Concentrated
+damage, healing, reinforcements and formation can change actual difficulty even
+when total HP rises.
+
+Level 2 continues the same curve with skeletons, skeleton archers, ghouls,
+Crypt Spider and Crypt King. It receives the same modest stat adjustment and
+retains doubled per-kill payouts by role. Its final Crypt King has
+**12,577 HP / 126 damage** within the 19,349-HP encounter.
 
 ## Goblin healer
 
-**1-11 wave 1** introduces one healer per forest wave through **1-20 wave 10**.
-It replaces the archer in the second arrival, including boss escorts, rather
-than adding another enemy or group. Level 2 has no healer variant yet.
+One healer now appears in **every forest wave from 1-1 wave 6 through 1-20 wave
+10**. On waves 6–100 it replaces an archer in the second arrival, preserving
+that slot's HP, position, arrival and one-gold reward before the shared stat
+adjustment. Existing healers on waves 101–200 retain their support curve. This
+also applies to boss escorts. Level 2 has no healer variant yet.
 
-- Heals the most wounded eligible enemy, including a boss, for a **flat 35–48 HP**
-  depending on the current damage tier. It cannot exceed missing HP.
+| Global wave | Encounter | Heal per cast |
+| --- | --- | ---: |
+| 6 | 1-1 / 6 | 4 HP |
+| 10 | 1-1 / 10 | 5 HP |
+| 20 | 1-2 / 10 | 8 HP |
+| 30 | 1-3 / 10 | 10 HP |
+| 100–101 | 1-10 / 10 → 1-11 / 1 | 35 HP |
+| 200 | 1-20 / 10 | 48 HP |
+
+For waves 6–30, healing is `round(4 + (wave − 6) / 4)`; for waves 31–100,
+`round(10 + (wave − 30) × 25 / 71)`. Waves 101–200 retain their previous
+damage-tier-based **35–48 HP** healing. The first healer has **46 HP**, heals
+**4 HP** per cast and deals **3.15 melee damage**.
+
+- Heals the most wounded eligible enemy, including a boss, capped by missing HP.
 - Heal range **95px**, base interval **2.6 seconds**, cast duration **0.8 seconds**;
   the shared combat pace applies normally.
-- Cannot heal itself, another healer, an allied fighter or the king.
+- Cannot heal itself, another healer or the player's side.
 - Follows behind its healthy frontline. If only healers remain, it advances and
-  uses weak melee at **34px**, avoiding a support-only idle stalemate. The king's
-  existing ranged counter can target it.
-- Uses the supplied red sprite and native healing ring. Its one-gold kill reward
-  matches the replaced archer; capture rules are unchanged.
+  uses weak melee at **34px**, avoiding a support-only idle stalemate.
+- Reuses the supplied red sprite and native healing ring. No extra UI, effect
+  system, enemy or arrival group is introduced; capture rules are unchanged.
 
 ## Economy and verification limits
 
-All 400 resolved wave definitions contain **4,697 enemies** and **10,339 kill
-gold**: Level 1 contributes **1,907 / 2,709**, Level 2 **2,790 / 7,630**. First-clear
-gold remains **22,000** across both levels, for **32,339 total gold** if each wave
-is cleared once. These sums exclude repeats, income and sales. They do not predict
-completion time or the army a player will have. Cell prices, recruitment, merging,
-personal stat growth, buildings and king stats are unchanged.
+All 400 resolved wave definitions still contain **4,697 enemies** and **10,339
+kill gold**: Level 1 contributes **1,907 / 2,709**, Level 2 **2,790 / 7,630**.
+First-clear gold remains **22,000** across both levels, for **32,339 total gold**
+if each wave is cleared once. These sums exclude repeats, income and sales and do
+not predict completion time or player army strength. Recruitment, Connect,
+personal stat growth, hero stats, capture rules, cell prices and income rates
+are unchanged by this balance adjustment.
 
-For this revision, **25 focused Node checks**, **60 static Canvas render cases**
-and the **Vite build** passed. They cover campaign definitions and boundaries,
-opening preservation, legal squad sizes, boss/healer placement, bounded healer
-mechanics and supplied art rendering. **No complete battles, full campaign or
-resource-linked progression simulations were run.** Natural recruitment, merges,
-repeat frequency and the late-game win curve therefore require player feedback.
-Passing these checks does not establish publication; deployment verification is
-a separate release step.
+Four local resource-linked opening runs used `scripts/early-campaign.mjs`, seeds
+**1, 4, 17 and 42**, speed **×1**, a **40-attempt** limit and target **wave 10**.
+All completed, in **14 / 14 / 12 / 14 attempts**, without a combat timeout.
+Talents were left unspent, actual capture/economy APIs supplied resources, and
+all four heroes finished at level 3. Recorded defeats were on waves **8–9**.
+These are four deterministic management scenarios, not a player-population
+forecast or proof of the later campaign's difficulty.
+
+The full local Node suite passed **154 checks**, and the Vite build passed.
+Longer encounters exposed a rear melee fighter whose forward movement was being
+canceled by friendly separation. Swordsmen and lancers now take a short lateral
+detour after sustained blocking, at their existing speed and within the existing
+land constraints. Detours expire or replan; attack range and target choice are
+unchanged. Movement regressions cover the crowded eighth wave at personal levels
+3 and 4, and check that actors remain on land throughout the trace. The four
+resource-linked runs above were repeated after this correction.
+
+These checks do not establish that every later encounter is beatable by every
+formation. Before the movement correction, two exploratory wave-400 formations
+(9 swordsmen / 4 archers / 2 healers and 6 / 7 / 2, all personal level 100, with a
+level-20 hero and 19 Protection/Light talent points) lost both with the previous
+wave definitions and with this stat adjustment. This is a pre-existing late-game
+balance concern, not evidence of an impossible campaign; other formations and
+the final movement correction were not part of that comparison.
+
+Full campaign difficulty, natural recruitment and repeat frequency still require
+playtesting. This validation was local; no deployment or published-game check
+was performed as part of it.

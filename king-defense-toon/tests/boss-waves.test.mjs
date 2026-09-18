@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { ENEMY_TYPES, WAVE_DEFINITIONS, getEnemyCombatType, getRoundWaves } from '../waves.mjs';
 import { claimFirstClear, createProgression } from '../progression.mjs';
@@ -10,28 +9,50 @@ const totalHealth = wave => wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0
 const bossOf = wave => wave.spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss);
 const label = wave => `${wave.levelNumber}-${wave.roundNumber}, wave ${wave.waveInRound}`;
 
-test('the first three tutorial waves retain their composition, stats, timing and rewards', () => {
-  assert.equal(createHash('sha256').update(JSON.stringify(WAVE_DEFINITIONS.slice(0, 3))).digest('hex'),
-    '28e3aaae9436bb385d84ebfe7728e41732f18536b8637a23da20148280397403');
+test('the first three tutorial waves retain their composition, timing and rewards with a small stat increase', () => {
+  const expected = [
+    [[.8, 'goblin', 66, 7.35], [.8, 'goblin', 66, 7.35], [6.8, 'goblin', 66, 7.35]],
+    [[.8, 'goblin', 66, 7.35], [.8, 'goblin', 66, 7.35], [.8, 'goblinArcher', 35, 4.2], [.8, 'goblinArcher', 35, 4.2]],
+    [[.8, 'goblin', 70, 7.35], [.8, 'goblin', 70, 7.35], [.8, 'goblinArcher', 40, 4.2], [14.8, 'goblin', 70, 7.35], [14.8, 'goblinArcher', 40, 4.2]],
+  ];
+  for (const [index, wave] of WAVE_DEFINITIONS.slice(0, 3).entries()) {
+    assert.deepEqual(wave.spawns.map(spawn => [spawn.at, spawn.type, spawn.hp, spawn.damage]), expected[index]);
+    assert.equal(wave.reward, wave.total);
+    assert.ok(wave.spawns.every(spawn => spawn.reward === 1));
+  }
 });
 
-test('extending the campaign preserves the calibrated first thirty waves', () => {
-  // Includes the paladin's narrow lead-fighter damage correction on waves 21–28.
-  assert.equal(createHash('sha256').update(JSON.stringify(WAVE_DEFINITIONS.slice(0, 30))).digest('hex'),
-    '5b785820f6392a194b21df4ede5499b7d461605ce33aeea50a5c3cbb3132f370');
+test('the next two rounds retain two squads of four and substitute one archer for a healer', () => {
   const ordinary = WAVE_DEFINITIONS.slice(10, 30).filter(wave => !wave.hasBoss);
   assert.equal(ordinary.length, 18);
   for (const wave of ordinary) {
     assert.equal(wave.total, 8);
     assert.deepEqual(wave.enemies.map(enemy => [enemy.type, enemy.count]),
-      [['goblin', 4], ['boar', 2], ['goblinArcher', 2]]);
+      [['goblin', 4], ['boar', 2], ['goblinArcher', 1], ['goblinHealer', 1]]);
     assert.equal(wave.spawns.filter(spawn => spawn.at === .8).length, 4);
     assert.equal(wave.spawns.filter(spawn => spawn.at === 14.8).length, 4);
+  }
+  for (const wave of WAVE_DEFINITIONS.slice(10, 30)) {
+    const baseline = openingContinuationSpawns(wave.number);
+    assert.equal(totalHealth(wave), Math.round(baseline.reduce((sum, spawn) => sum + spawn.hp, 0) * 1.1), label(wave));
+    assert.equal(wave.total, baseline.length, label(wave));
+    for (const [index, spawn] of wave.spawns.entries()) {
+      const before = baseline[index];
+      assert.deepEqual([spawn.at, spawn.x, spawn.y], [before.at, before.x, before.y], label(wave));
+      if (spawn.type === 'goblinHealer') assert.equal(before.type, 'goblinArcher', label(wave));
+      else {
+        assert.equal(spawn.type, before.type, label(wave));
+        assert.equal(spawn.damage, Math.round(before.damage * 105) / 100, label(wave));
+      }
+    }
   }
   for (let index = 1; index < ordinary.length; index += 1) {
     const previous = ordinary[index - 1];
     ordinary[index].spawns.forEach((spawn, slot) => {
-      assert.ok(spawn.hp >= previous.spawns[slot].hp);
+      // The lead fighter absorbs per-body rounding to keep the exact encounter budget.
+      const roundingTolerance = slot === 0 ? 2 : 0;
+      assert.ok(spawn.hp >= previous.spawns[slot].hp - roundingTolerance,
+        `${label(ordinary[index])}: slot ${slot} health grows apart from bounded rounding`);
       assert.ok(spawn.damage >= previous.spawns[slot].damage);
     });
   }
@@ -67,7 +88,7 @@ test('every round ends with one supported boss, with main bosses only in rounds 
     const support = wave.spawns.filter(spawn => spawn.at === 14.8);
     if (wave.number <= 30) {
       assert.deepEqual(support.map(spawn => getEnemyCombatType(spawn.type)).sort(),
-        wave.number === 10 ? ['goblinArcher'] : ['goblin', 'goblinArcher'], label(wave));
+        wave.number === 10 ? ['goblinHealer'] : ['goblin', 'goblinHealer'], label(wave));
     } else {
       assert.ok(support.length >= 2 && support.length <= 4, label(wave));
       assert.ok(support.every(spawn => !ENEMY_TYPES[spawn.type].isBoss), label(wave));
@@ -76,18 +97,18 @@ test('every round ends with one supported boss, with main bosses only in rounds 
   }
 });
 
-test('first chief loses only the late melee escort without a compensating stat increase', () => {
+test('the first chief keeps the removed melee escort absent and gains a late healer instead of an archer', () => {
   const [, , , , , , , , ninth, tenth] = getRoundWaves(1, 1);
-  assert.equal(bossOf(tenth).hp, 450);
-  assert.equal(bossOf(tenth).damage, 18);
+  assert.equal(bossOf(tenth).hp, 495);
+  assert.equal(bossOf(tenth).damage, 18.9);
   assert.equal(tenth.total, 5);
   assert.deepEqual(tenth.enemies.map(enemy => [enemy.type, enemy.count]),
-    [['goblin', 2], ['goblinChief', 1], ['goblinArcher', 2]]);
-  assert.equal(totalHealth(tenth), 750);
-  assert.equal(totalHealth(ninth), 790);
+    [['goblin', 2], ['goblinChief', 1], ['goblinArcher', 1], ['goblinHealer', 1]]);
+  assert.equal(totalHealth(tenth), 825);
+  assert.equal(totalHealth(ninth), 869);
   assert.equal(tenth.reward, 24);
   assert.deepEqual(tenth.spawns.filter(spawn => spawn.at === 14.8), [
-    { y: 66, hp: 56, damage: 7, at: 14.8, type: 'goblinArcher', x: 195, reward: 1 },
+    { y: 66, hp: 62, damage: 3.15, at: 14.8, type: 'goblinHealer', x: 195, reward: 1, heal: 5 },
   ]);
 });
 
@@ -95,8 +116,8 @@ test('opening health grows except for the explicitly reduced first chief encount
   let previousHp = 0;
   let previousBoss;
   for (const wave of WAVE_DEFINITIONS.slice(0, 30)) {
-    // Removing the requested 94-HP escort makes wave 10 the sole numeric exception.
-    if (wave.number === 10) assert.equal(totalHealth(wave), 750);
+    // The requested escort removal remains the sole opening health-budget exception.
+    if (wave.number === 10) assert.equal(totalHealth(wave), 825);
     else assert.ok(totalHealth(wave) > previousHp, label(wave));
     previousHp = totalHealth(wave);
     if (!wave.hasBoss) continue;
@@ -116,7 +137,9 @@ test('all 400 waves retain at most four enemies per arrival and valid distinct s
     for (const spawn of wave.spawns) {
       assert.ok(Number.isFinite(spawn.at) && spawn.at >= 0, label(wave));
       assert.ok(Number.isInteger(spawn.hp) && spawn.hp > 0, label(wave));
-      assert.ok(Number.isInteger(spawn.damage) && spawn.damage > 0, label(wave));
+      assert.ok(Number.isFinite(spawn.damage) && spawn.damage > 0, label(wave));
+      assert.ok(Math.abs(spawn.damage * 100 - Math.round(spawn.damage * 100)) < 1e-8,
+        `${label(wave)}: damage is precise to hundredths, not rounded up by a full point`);
       assert.ok(WALKABLE_AREAS.some(area => spawn.x >= area.left && spawn.x <= area.right
         && spawn.y >= area.top && spawn.y <= area.bottom), label(wave));
       const group = arrivals.get(spawn.at) ?? [];
@@ -134,6 +157,8 @@ test('all 400 waves retain at most four enemies per arrival and valid distinct s
 
 test('stronger bosses do not inflate per-kill or repeat-clear gold', () => {
   const progression = createProgression();
+  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.total, 0), 4697);
+  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.reward, 0), 10339);
   for (const wave of WAVE_DEFINITIONS) {
     const goldMultiplier = wave.levelNumber === 2 ? 2 : 1;
     for (const spawn of wave.spawns) {

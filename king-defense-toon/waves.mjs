@@ -314,7 +314,31 @@ function openingWave(wave) {
       : wave.description, spawns);
 }
 
-export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave));
+function withHeroPressure(wave) {
+  const needsHealer = wave.levelNumber === 1 && wave.number >= 6
+    && !wave.spawns.some(spawn => spawn.type === 'goblinHealer');
+  const supportIndex = needsHealer
+    ? wave.spawns.findIndex(spawn => spawn.at === 14.8 && spawn.type === 'goblinArcher') : -1;
+  const spawns = wave.spawns.map((spawn, index) => {
+    const support = index === supportIndex ? {
+      ...spawn, type: 'goblinHealer', damage: Math.max(3, Math.round(spawn.damage * .3)),
+      // Introduce support gently; reach the established late healer at wave 101.
+      heal: Math.round(wave.number <= 30 ? 4 + (wave.number - 6) / 4
+        : 10 + (wave.number - 30) * 25 / 71),
+    } : spawn;
+    return { ...support, hp: Math.round(support.hp * 1.1),
+      // Fractional damage avoids turning a small buff into +25% on a 4-damage archer.
+      damage: Math.round(support.damage * 105) / 100 };
+  });
+  // Preserve the campaign's exact HP curve despite rounding each individual enemy.
+  const health = wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
+  spawns[0].hp += Math.round(health * 1.1) - spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
+  const description = supportIndex < 0 ? wave.description
+    : 'A goblin healer joins the second squad. Reinforcements arrive in groups of up to four.';
+  return defineWave(wave.number, wave.name, description, spawns, { bossOnly: wave.bossOnly });
+}
+
+export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave).map(withHeroPressure));
 
 export function getLevelWaves(levelNumber) {
   return WAVE_DEFINITIONS.filter(wave => wave.levelNumber === Number(levelNumber));
