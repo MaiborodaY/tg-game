@@ -20,7 +20,7 @@ test('campaign decode retains ordinary legacy coercion and unrelated saved field
 });
 
 test('current schema decode retains unknown fields without mutating its source', () => {
-  const saved = Object.freeze({ saveSchemaVersion: SAVE_SCHEMA_VERSION, campaignVersion: CAMPAIGN_VERSION,
+  const saved = Object.freeze({ saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 1, campaignVersion: CAMPAIGN_VERSION,
     gold: 125, clearedWaves: 205, progression: Object.freeze({ firstClears: Object.freeze([1, 201]) }),
     optionalFeature: Object.freeze({ retained: true }) });
   const decoded = decodeCampaignSave(saved);
@@ -30,8 +30,8 @@ test('current schema decode retains unknown fields without mutating its source',
   assert.equal(needsCampaignSaveMigration(saved), false);
 });
 
-test('unversioned and schema zero saves migrate campaign numbering exactly once', () => {
-  for (const schemaFields of [{}, { saveSchemaVersion: 0 }]) {
+test('unversioned and earlier schema saves migrate campaign numbering exactly once', () => {
+  for (const schemaFields of [{}, { saveSchemaVersion: 0 }, { saveSchemaVersion: 1 }]) {
     for (const campaignFields of [{}, { campaignVersion: 1 }, { campaignVersion: 2 }, { campaignVersion: '2' }]) {
       const saved = { ...schemaFields, ...campaignFields, gold: 125, clearedWaves: 12,
         progression: { firstClears: [1, 10, 11, 12] }, custom: { retain: true } };
@@ -51,12 +51,25 @@ test('unversioned and schema zero saves migrate campaign numbering exactly once'
 });
 
 test('new schema with old campaign numbering retains the existing numbering migration', () => {
-  const decoded = decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, campaignVersion: 2,
+  const decoded = decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 1, campaignVersion: 2,
     gold: 125, clearedWaves: 10, progression: { firstClears: [10] } });
   assert.equal(decoded.saveSchemaVersion, SAVE_SCHEMA_VERSION);
   assert.equal(decoded.campaignVersion, CAMPAIGN_VERSION);
   assert.equal(decoded.clearedWaves, 200);
   assert.deepEqual(decoded.progression.firstClears, [10]);
+});
+
+test('persistent-ID schemas require the consumed-ID cursor while legacy decode supplies one', () => {
+  for (const nextUnitId of [undefined, null, 0, -1, 1.5, '10', {}, [], NaN, Infinity]) {
+    assert.throws(() => decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, gold: 125, nextUnitId }), /fighter ID cursor/);
+  }
+  const legacy = { saveSchemaVersion: 1, campaignVersion: CAMPAIGN_VERSION, gold: 125,
+    units: [{ id: 8, type: 'archer', col: 2, row: 0 }], reserve: [] };
+  const decoded = decodeCampaignSave(legacy);
+  assert.equal(decoded.nextUnitId, 9);
+  assert.deepEqual(decodeCampaignSave(decoded), decoded);
+  assert.equal(decodeCampaignSave({ ...decoded, nextUnitId: 100 }).nextUnitId, 100);
+  assert.equal(decodeCampaignSave({ ...decoded, nextUnitId: 1 }).nextUnitId, 9);
 });
 
 test('future schema and campaign numbering are rejected before restoring any gameplay fields', () => {

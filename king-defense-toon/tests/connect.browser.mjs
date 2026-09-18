@@ -29,7 +29,16 @@ const server = await createServer({
       battle: () => JSON.parse(JSON.stringify(battle)),
       render: () => renderScene(),
       refresh: () => refresh(),
-      victory: () => { battle.phase = 'victory'; showResult(); },
+      victory: () => {
+        if (!battle || battle.phase !== 'running') throw new Error('Expected an active battle');
+        for (let step = 0; step < 18000 && battle.phase === 'running'; step++) updateBattle(battle, 1 / 60);
+        if (battle.phase !== 'victory') throw new Error('Fixture did not win the real simulated wave: ' + battle.phase);
+        const reward = applyBattleKillRewards(campaign, battle.campaignRewards,
+          { kills: battle.kills, totalGold: battle.reward }, () => 0.99);
+        if (!reward.ok) throw new Error('Battle reward rejected: ' + reward.reason);
+        showResult();
+        if (!battle.resultRecorded) throw new Error('Battle result was not recorded');
+      },
     };`;
   } }],
 });

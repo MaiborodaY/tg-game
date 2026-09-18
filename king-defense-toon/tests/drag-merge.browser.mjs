@@ -15,13 +15,14 @@ const server = await createServer({
     if (id.endsWith('/combat.ts')) {
       return prependFunctionBody(code, 'updateBattle', 'throw new Error("Combat must not run in UI checks");');
     }
-    if (id.endsWith('/main.ts')) return code + `\nwindow.dragCheck = {
+    if (id.endsWith('/main.ts')) return code + `
+window.dragCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       refresh,
-      state: () => JSON.parse(JSON.stringify({ units, reserve, gold, slaves: economy.slaves, recruitment })),
+      state: () => JSON.parse(JSON.stringify({ units: campaign.units, reserve: campaign.reserve, gold: campaign.gold, slaves: campaign.economy.slaves, recruitment: campaign.recruitment })),
       drag: () => ({ active: unitDrag.active, tracking: unitDrag.tracking, targets: mergeTargetIds, source: draggedMerge?.source }),
-      invalidateTarget: id => { units = units.map(u => u.id === id ? {...u, type: 'archer'} : u); refresh(); },
+      invalidateTarget: id => { campaign.units = campaign.units.map(u => u.id === id ? {...u, type: 'archer'} : u); refresh(); },
     };`;
   } }] });
 let browser;

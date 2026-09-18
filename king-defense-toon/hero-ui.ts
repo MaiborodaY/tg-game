@@ -1,5 +1,5 @@
 import { HERO_NAME, HERO_MAX_LEVEL, HERO_BRANCHES, HERO_TALENTS, getHeroProgress, getHeroStats,
-  getHeroTalentStatus, getHeroTalentEffect, spendHeroTalent, resetHeroTalents } from './hero.ts';
+  getHeroTalentStatus, getHeroTalentEffect } from './hero.ts';
 import { ST_KNIHOR_PORTRAIT_IMAGE_URL } from './st-knihor-art.ts';
 import { talentArtStyle } from './talent-art.ts';
 import type { BranchId, HeroState, HeroTalentDefinition, HeroTalentStatus, TalentId,
@@ -14,6 +14,8 @@ export interface HeroUIOptions {
   panel: HTMLElement;
   getHero: () => HeroState;
   getBattle?: () => Pick<Battle, 'phase'> | null;
+  onLearn: (id: TalentId) => SpendHeroTalentResult | null;
+  onReset: () => ResetHeroTalentsResult | null;
   onChange?: (change: HeroUIChange) => void;
   close?: () => void;
 }
@@ -44,7 +46,7 @@ function branchMarkup(branch: typeof HERO_BRANCHES[number]) {
     </div></section>`;
 }
 
-export function createHeroUI({ button, panel, getHero, getBattle = () => null, onChange = () => {}, close = () => {} }: HeroUIOptions): HeroUI {
+export function createHeroUI({ button, panel, getHero, getBattle = () => null, onLearn, onReset, onChange = () => {}, close = () => {} }: HeroUIOptions): HeroUI {
   let selectedId: TalentId | null = HERO_TALENTS.find(talent => talent.row === 0 && getHeroTalentStatus(getHero(), talent.id).available)?.id ?? 'heal_unlock';
   let lastSignature = '';
   button.classList.add('hero-trigger');
@@ -158,13 +160,13 @@ export function createHeroUI({ button, panel, getHero, getBattle = () => null, o
     const talent = (event.target as Element).closest<HTMLElement>('[data-hero-talent]');
     if (talent) { selectedId = talent.dataset.heroTalent as TalentId; render(); return; }
     if ((event.target as Element).closest('[data-hero-spend]') && selectedId) {
-      const result = spendHeroTalent(getHero(), selectedId);
-      if (result.spent) onChange({ type: 'talent', id: selectedId, ...result });
+      const result = onLearn(selectedId);
+      if (result?.spent) onChange({ type: 'talent', id: selectedId, ...result });
       render();
     }
     if ((event.target as Element).closest('[data-hero-reset]') && getBattle()?.phase !== 'running') {
-      const result = resetHeroTalents(getHero());
-      if (result.reset) onChange({ type: 'reset', ...result });
+      const result = onReset();
+      if (result?.reset) onChange({ type: 'reset', ...result });
       render();
     }
   }

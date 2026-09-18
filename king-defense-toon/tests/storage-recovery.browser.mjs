@@ -27,7 +27,7 @@ const legacyFixtures = [
   {
     name: 'version 1 save preserves earned progress and cannot repay a claimed first clear',
     saved: {
-      campaignVersion: 1, gold: 327, starterSupplyGranted: true,
+      saveSchemaVersion: 1, campaignVersion: 1, gold: 327, starterSupplyGranted: true,
       autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
       units: [{ type: 'swordsman', level: 10, col: 2, row: 0 },
         { type: 'archer', level: 10, col: 2, row: 1 }, { type: 'healer', col: 2, row: 2 }],
@@ -74,9 +74,6 @@ const legacyFixtures = [
         { id: 2, type: 'archer', level: 7, col: 2, row: 1 }],
       reserve: [{ id: 4, type: 'healer', level: 2 }, { id: 5, type: 'lancer', level: 4 },
         { id: 3, type: 'lancer', level: 12 }],
-      // Restore assigns fresh sequential IDs after the displaced lancer joins the reserve.
-      reloadedReserve: [{ id: 3, type: 'healer', level: 2 }, { id: 4, type: 'lancer', level: 4 },
-        { id: 5, type: 'lancer', level: 12 }],
       offlineRewards: { gold: 0, slaves: 0, slotRefund: 25, returnedFighters: 1, closedCells: 1, forgeRefund: 0 },
       received: { swordsman: 20, archer: 11, healer: 5, lancer: 2, pantherRider: 0, elfArcher: 0 },
       credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0, elfArcher: 0 },
@@ -238,7 +235,8 @@ try {
       await page.evaluate(() => window.storageCheck.stopEconomyTimer());
       const migrated = await snapshot(page);
       assert.equal(migrated.campaignVersion, 3);
-      assert.equal(migrated.saveSchemaVersion, 1);
+      assert.equal(migrated.saveSchemaVersion, 2);
+      assert.equal(migrated.nextUnitId, expected.units.length + expected.reserve.length + 1);
       assert.equal(migrated.gold, expected.gold);
       assert.equal(migrated.clearedWaves, expected.clearedWaves);
       assert.deepEqual(migrated.progression, { unlockedCells: expected.unlockedCells, firstClears: expected.firstClears });
@@ -272,7 +270,8 @@ try {
         }
       }
       assert.equal(JSON.parse(await raw(page)).campaignVersion, 3, 'migration must persist its version before the next visit');
-      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 1, 'the new save schema must persist before the next visit');
+      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 2, 'the new save schema must persist before the next visit');
+      assert.equal(JSON.parse(await raw(page)).nextUnitId, migrated.nextUnitId, 'consumed fighter IDs must persist before the next visit');
       assert.equal(JSON.parse(await page.locator('#battle').getAttribute('data-campaign')).wave, expected.clearedWaves + 1);
 
       // Foreground timer fractions can advance on pagehide; all durable balances,
@@ -282,7 +281,7 @@ try {
         captureKills: value.economy.captureKills, treasuryLevel: value.economy.treasuryLevel,
         marketBuilt: value.economy.marketBuilt,
       } });
-      const reloaded = { ...migrated, reserve: expected.reloadedReserve ?? expected.reserve };
+      const reloaded = { ...migrated, reserve: expected.reserve };
       for (let visit = 0; visit < 2; visit += 1) {
         await page.reload();
         await ready(page);

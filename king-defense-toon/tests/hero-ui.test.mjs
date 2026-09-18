@@ -8,6 +8,20 @@ import { createHeroFixture } from './helpers/hero-ui-dom.mjs';
 const savedHero = (level, talents = {}) => createHero({ xp: heroXpForLevel(level), talentVersion: HERO_TALENT_VERSION, talents });
 const talentNode = (f, id) => f.panel.nodes.find(node => node.dataset.heroTalent === id);
 
+test('a rejected application command cannot mutate talents or emit a saved change', () => {
+  const hero = savedHero(5, { heal_unlock: 1 });
+  const before = structuredClone(hero), calls = [];
+  const f = createHeroFixture(createHeroUI, hero, null, {
+    onLearn: id => { calls.push(id); return null; },
+    onReset: () => { calls.push('reset'); return null; },
+  });
+  f.select('heal_power'); f.click(f.ref('spend')); f.click(f.ref('reset'));
+  assert.deepEqual(calls, ['heal_power', 'reset']);
+  assert.deepEqual(hero, before);
+  assert.deepEqual(f.changes, []);
+  f.ui.destroy();
+});
+
 test('hero panel starts with three locked skills, eighteen tree nodes and exact prerequisite links', () => {
   const f = createHeroFixture(createHeroUI, createHero());
   assert.equal(f.ref('level').textContent, 'Level 1 / 20');

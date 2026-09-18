@@ -12,12 +12,12 @@ to D1 is not sufficient authority.
 1. **Local save protection — implemented here.** Version the save format, keep
    original migration bytes, enforce one writer, detect external changes, and
    recover safely after storage/lifecycle failures.
-2. **Campaign commands — next.** Extract typed campaign state and explicit
+2. **Campaign commands — implemented.** Extract typed campaign state and explicit
    operations from `main.ts`, preserve stable unit IDs, return domain results,
    and test invariants for spending, recruitment, movement, merging and rewards.
    Keep browser/DOM/storage dependencies outside the command layer. This creates
    a useful future API boundary without pretending local commands are trusted.
-3. **Combat and visual effects.** Separate damaging projectiles, statuses and
+3. **Combat and visual effects — next.** Separate damaging projectiles, statuses and
    combat events from decorative effects. Cosmetic limits must not drop damage,
    healing, control effects or rewards. Preserve fixed-step/cross-FPS outcomes.
 4. **Profiling and budgets.** Add an opt-in lightweight profiler for simulation,
@@ -26,6 +26,8 @@ to D1 is not sufficient authority.
    pooling/spatial indexing/workers only when measurements justify them.
 
 ## Stage 1 contract
+
+The initial stage introduced schema 1; stage 2 advances it to schema 2 below.
 
 - `saveSchemaVersion = 1` is independent of campaign wave numbering. Unversioned
   and schema-0 saves migrate through the existing gameplay restorers. A newer
@@ -63,9 +65,58 @@ no atomic compare-and-swap against those writers. This is neither anti-cheat nor
 cross-device coordination. A new repository/origin also has separate localStorage;
 the later move must explicitly handle save transfer rather than assume continuity.
 
-Existing unit IDs are reconstructed on reload. Stage 1 tests preserve unit order,
-personal levels, position, counts and unique IDs; durable IDs belong to stage 2.
-No server, D1 migration, payment handling, or publication is part of this stage.
+No server, D1 migration, payment handling, or publication is part of these stages.
+
+## Stage 2 contract
+
+- `campaign-state.ts` owns typed campaign creation, complete restoration, reset
+  and independent snapshot copies. `main.ts` keeps one `campaign` object; UI
+  selection, overlays, audio, frame scheduling and the current battle stay local.
+- `campaign-commands.ts` owns recruitment, spending, sale, placement/replacement,
+  movement, withdrawal, Merge/Connect, buildings, crops, hero talents, income,
+  receipt acknowledgement and campaign options. Rejected operations leave the
+  campaign unchanged. Commands accept time/randomness explicitly and do not
+  access DOM, browser storage or Telegram. Existing rule helpers still determine
+  prices, unlocks, footprints, odds and battle-independent bonuses.
+- Hero UI now requests a command through callbacks. It cannot spend/reset talent
+  points itself. Successful mutations and their costs are persisted together by
+  the application; a save failure retains pending state behind the recovery gate.
+- Schema 2 persists `nextUnitId` alongside stable roster IDs. Migration preserves
+  valid IDs, repairs missing/duplicate IDs deterministically, and reserves IDs
+  seen in rejected old entries. The counter survives sale, merging, reload and
+  reset; it cannot reuse consumed IDs. Old saves cannot reveal IDs that were sold
+  before any persistent counter existed. IDs are campaign-local, not global
+  account identifiers. Exhaustion blocks allocation rather than losing precision.
+- The original schema-0/1 bytes are retained under
+  `brotd-infinity:campaign:v2:backup:before-schema-2`; any schema-1 backup is kept.
+  Current schema 2 requires a valid ID counter. A schema-1 client with stage-1
+  protections refuses to overwrite a schema-2 save.
+- `campaign-rewards.ts` records cumulative paid kills/gold and one outcome per
+  running battle. Repeated updates cannot reroll captures or pay XP/first-clear
+  gold twice. First-clear markers stay durable; ordinary replay rewards remain
+  unchanged. An unexpected automatic-command rejection freezes play and requires
+  restoration of the last durable save. Battle receipts are in memory because
+  battles themselves are not resumed from disk; this is not a durable server
+  request ledger or proof that a client-reported victory is trustworthy.
+- Reset preserves Auto Waves and the learned market hint, matching the existing
+  UI behavior, while clearing the army/economy/buildings/hero and granting the
+  initial supplies. Its ID counter remains above previously allocated IDs.
+
+At the user's request, remaining browser/game acceptance is deferred until all
+four stages are implemented. Focused domain/type checks continue while editing.
+Before that request, the new command browser suite passed its two real-UI
+scenarios, storage recovery passed 9, and save protection passed 13. These are
+interim results, not final acceptance of the combined four-stage change.
+
+Stage 2 local validation: strict typecheck, 66 focused domain/UI unit tests and
+the production build passed. The complete combined test suite remains part of
+final acceptance after all four stages.
+
+Final acceptance must also rerun the updated recruitment, Barracks, formation,
+drag/Connect, farm, Forge, Capitol and hero browser suites. The recruitment suite
+attempt was blocked by an occupied development port before the deferral; no
+unrelated server was stopped. Close all test browser contexts and servers after
+the final checks.
 
 Validation commands:
 
@@ -74,6 +125,7 @@ npm.cmd run brotd:check
 # PLAYWRIGHT_MODULE may point to an installed Playwright entry file.
 node --experimental-strip-types king-defense-toon/tests/save-protection.browser.mjs
 node --experimental-strip-types king-defense-toon/tests/storage-recovery.browser.mjs
+node --experimental-strip-types king-defense-toon/tests/campaign-commands.browser.mjs
 ```
 
 The browser suites use disposable contexts and close their browser/server in
@@ -81,7 +133,7 @@ The browser suites use disposable contexts and close their browser/server in
 saves. Persisted pagehide/pageshow checks are synthetic lifecycle tests, not proof
 of native BFCache eligibility or physical Telegram/WebView acceptance.
 
-Stage validation after updating to `1312dac`: strict typecheck and production
+Stage 1 validation after updating to `1312dac`: strict typecheck and production
 build passed; 550 Node tests, 12 save-protection browser scenarios, and 9 legacy/recovery browser
 scenarios passed. The latter includes a real first-wave victory and checks that
 reloading cannot award its first-clear reward twice.

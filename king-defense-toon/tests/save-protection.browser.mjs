@@ -9,14 +9,14 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
 const key = 'brotd-infinity:campaign:v2';
-const backupKey = `${key}:backup:before-schema-1`;
+const backupKey = `${key}:backup:before-schema-2`;
 const now = 1_800_000_000_000;
 const fixture = {
-  saveSchemaVersion: 1, campaignVersion: 3, gold: 250, starterSupplyGranted: true,
+  saveSchemaVersion: 2, nextUnitId: 6, campaignVersion: 3, gold: 250, starterSupplyGranted: true,
   autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
-  units: [{ type: 'swordsman', level: 10, col: 2, row: 0 },
-    { type: 'archer', level: 10, col: 2, row: 1 }, { type: 'healer', level: 10, col: 2, row: 2 }],
-  reserve: [{ type: 'swordsman', level: 3 }, { type: 'archer', level: 7 }],
+  units: [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 },
+    { id: 2, type: 'archer', level: 10, col: 2, row: 1 }, { id: 3, type: 'healer', level: 10, col: 2, row: 2 }],
+  reserve: [{ id: 4, type: 'swordsman', level: 3 }, { id: 5, type: 'archer', level: 7 }],
   progression: { unlockedCells: ['2:0', '2:1', '2:2'], firstClears: [] },
   economy: { slaves: 7, treasuryLevel: 1, treasuryProgress: 0,
     treasuryUpdatedAt: now, captures: 4, captureCooldown: 30 },
@@ -25,6 +25,7 @@ const fixture = {
 };
 const legacy = { ...fixture };
 delete legacy.saveSchemaVersion;
+delete legacy.nextUnitId;
 const legacyRaw = `  ${JSON.stringify(legacy, null, 2)}\n`;
 
 const server = await createServer({
@@ -32,12 +33,14 @@ const server = await createServer({
   cacheDir: fileURLToPath(new URL('../../.tmp/save-protection-vite', import.meta.url)),
   server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'save-protection-checks', transform(code, id) {
+    if (id.endsWith('/campaign-state.ts')) {
+      const restoration = 'const forgeMigration = restoreForge(saved.forge);';
+      assert.equal(code.split(restoration).length, 2, 'expected one campaign-state restoration boundary');
+      return code.replace(restoration, `${restoration}
+        if (saved.triggerRestoreFailure === true) throw new Error('Injected campaign restoration failure');`);
+    }
     if (!id.endsWith('/main.ts')) return;
-    const restoration = 'const forgeMigration = restoreForge(saved.forge);';
-    assert.equal(code.split(restoration).length, 2, 'expected one main restoration boundary');
-    return code.replace(restoration, `${restoration}
-      if (saved.triggerRestoreFailure === true) throw new Error('Injected campaign restoration failure');`)
-      + `\nwindow.saveProtection = {
+    return code + `\nwindow.saveProtection = {
       loaded: () => !!scene && !!armyScene,
       ready: () => !!scene && !!armyScene && !isRecovering(),
       snapshot: () => JSON.parse(JSON.stringify(saveSnapshot())),
@@ -46,7 +49,7 @@ const server = await createServer({
         battle: battle && { phase: battle.phase, elapsed: battle.elapsed } }),
       save,
       income: seconds => { economyLastTick = performance.now() - seconds * 1000; tickEconomy(); },
-      writeGold: value => { gold = value; save(); },
+      writeGold: value => { campaign.gold = value; save(); },
       resetAttempt: () => saveStorage.reset(saveSnapshot(), { confirmation: saveStorage.prepareReset() }),
       stopEconomyTimer: () => clearInterval(economyTimer),
       pauseForInactivity,
@@ -244,7 +247,7 @@ try {
   }
 
   await inContext('future schema remains byte-exact and cannot be reset by an older client', {
-    raw: JSON.stringify({ ...fixture, saveSchemaVersion: 2, futureDungeon: { depth: 71, loot: ['unknown-item'] } }, null, 2),
+    raw: JSON.stringify({ ...fixture, saveSchemaVersion: 3, futureDungeon: { depth: 71, loot: ['unknown-item'] } }, null, 2),
   }, async ({ openGame }) => {
     const page = await openGame();
     await assertBlocked(page, { storage: 'unsupported', session: 'owned' });
@@ -260,13 +263,16 @@ try {
     assert.equal((await page.evaluate(() => window.saveFaults.counters())).campaignAttempts, 0);
   });
 
-  await inContext('legacy migration keeps a byte-exact backup once and preserves progress across repeated reloads', { raw: legacyRaw },
+  for (const [version, migrationRaw] of [
+    ['unversioned', legacyRaw], ['schema one', `  ${JSON.stringify({ ...legacy, saveSchemaVersion: 1 }, null, 2)}\n`],
+  ]) await inContext(`${version} migration keeps a byte-exact backup once and preserves progress across repeated reloads`, { raw: migrationRaw },
     async ({ openGame }) => {
       const page = await openGame();
       await ready(page);
-      assert.equal(await backup(page), legacyRaw);
+      assert.equal(await backup(page), migrationRaw);
       const migrated = await snapshot(page);
-      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 1);
+      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 2);
+      assert.equal(JSON.parse(await raw(page)).nextUnitId, fixture.nextUnitId);
       assert.equal(migrated.gold, fixture.gold);
       assert.equal(migrated.units.length, fixture.units.length);
       assert.equal(migrated.reserve.length, fixture.reserve.length);
@@ -278,7 +284,7 @@ try {
         assert.equal(restored.gold, migrated.gold);
         assert.deepEqual(restored.units, migrated.units);
         assert.deepEqual(restored.reserve, migrated.reserve);
-        assert.equal(await backup(page), legacyRaw);
+        assert.equal(await backup(page), migrationRaw);
         assert.equal((await page.evaluate(() => window.saveFaults.counters())).backupAttempts, 0);
       }
     });
@@ -312,7 +318,7 @@ try {
     await page.locator('#recovery-retry').click();
     await ready(page);
     assert.equal(await backup(page), legacyRaw);
-    assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 1);
+    assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 2);
     assert.equal((await snapshot(page)).gold, fixture.gold);
   });
 

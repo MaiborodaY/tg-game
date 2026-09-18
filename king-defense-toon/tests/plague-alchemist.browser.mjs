@@ -18,12 +18,13 @@ const server = await createServer({
   plugins: [{ name: 'alchemist-browser-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
-    return code + `\nwindow.alchemistCheck = {
+    return code + `
+window.alchemistCheck = {
       ready: () => !!scene && !!armyScene && !isRecovering(),
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => JSON.parse(JSON.stringify(battle)),
-      render: async () => { await scene.prepare({ units, battle }); window.battleDraws = []; renderScene(); },
+      render: async () => { await scene.prepare({ units: campaign.units, battle }); window.battleDraws = []; renderScene(); },
       until: type => { for (let i = 0; i < 3600 && battle.phase === 'running'; i++) {
         if (battle.effects.some(effect => effect.type === type && !effect.landed)) break;
         updateBattle(battle, 1 / 60);

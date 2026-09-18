@@ -11,21 +11,23 @@ const output = new URL('../../.tmp/barracks-upgrade/', import.meta.url);
 const server = await createServer({
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/barracks-upgrade/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 5200, strictPort: true },
   plugins: [{ name: 'barracks-check-hooks', transform(code, id) {
-    if (id.endsWith('/main.ts')) return code + `\nwindow.barracksCheck = {
+    if (!id.endsWith('/main.ts')) return;
+    return "import { createBarracks } from './barracks.ts';\nimport { createRecruitment } from './recruitment.ts';\n" + code + `
+window.barracksCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
-      state: () => JSON.parse(JSON.stringify({ gold, units, reserve, recruitment, barracks, slaves: economy.slaves,
+      state: () => JSON.parse(JSON.stringify({ gold: campaign.gold, units: campaign.units, reserve: campaign.reserve, recruitment: campaign.recruitment, barracks: campaign.barracks, slaves: campaign.economy.slaves,
         pendingRecruitId, pendingMerge, overlayId: overlay?.id ?? null, keyboardCell })),
       advance: ms => { window.checkNow += ms; sessionStorage.setItem('checkNow', window.checkNow); tickEconomy(); },
       prepareThird: () => {
-        gold = 5000;
-        barracks = createBarracks({ level: 2 });
-        recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
-        units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
-        reserve = [{ id: 2, type: 'lancer', level: 4 }];
-        nextId = 3;
-        economy.slaves = 10;
-        economy.treasuryUpdatedAt = Date.now();
+        campaign.gold = 5000;
+        campaign.barracks = createBarracks({ level: 2 });
+        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
+        campaign.units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
+        campaign.reserve = [{ id: 2, type: 'lancer', level: 4 }];
+        campaign.nextUnitId = 3;
+        campaign.economy.slaves = 10;
+        campaign.economy.treasuryUpdatedAt = Date.now();
         save(); refresh();
       },
     };`;

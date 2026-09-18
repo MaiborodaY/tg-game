@@ -23,18 +23,19 @@ const server = await createServer({
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
     code = prependFunctionBody(code, 'tickEconomy', 'window.recruitmentTickCalls = (window.recruitmentTickCalls ?? 0) + 1;');
-    return code + `\nwindow.recruitmentCheck = {
+    return code + `
+window.recruitmentCheck = {
       ready: () => !!scene && !!armyScene && !isRecovering(),
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => JSON.parse(JSON.stringify(battle)),
-      render: async () => { await scene.prepare({ units, battle }); renderScene(); },
+      render: async () => { await scene.prepare({ units: campaign.units, battle }); renderScene(); },
       step: seconds => { for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += 1 / 60) updateBattle(battle, 1 / 60); refreshBattleHud(); },
       untilElfArrow: () => { for (let step = 0; step < 1800 && battle.phase === 'running'; step++) {
         if (battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher')) break;
         updateBattle(battle, 1 / 60);
       } refreshBattleHud(); },
-      primeIncome: () => { economy.treasuryProgress = .999; economyLastTick = performance.now() - 100; },
+      primeIncome: () => { campaign.economy.treasuryProgress = .999; economyLastTick = performance.now() - 100; },
       tickCalls: () => window.recruitmentTickCalls ?? 0,
       refresh: () => refresh(),
     };`;
@@ -60,9 +61,7 @@ const pool = page => page.locator('#recruitment-pool');
 const recruitmentInventory = save => ({ units: save.units, reserve: save.reserve, recruitment: save.recruitment,
   firstLancerPending: save.barracks.firstLancerPending, slaves: save.economy.slaves });
 const humanProgress = save => humanTypes.map(type => [type, save.recruitment.received[type], save.recruitment.legacyTrainingCredit[type]]);
-const restoredInventory = save => ({ ...recruitmentInventory(save),
-  // Campaign restore assigns fresh compact IDs; personal stats and placement are durable.
-  units: save.units.map(({ id, ...unit }) => unit), reserve: save.reserve.map(({ id, ...unit }) => unit) });
+const restoredInventory = save => ({ ...recruitmentInventory(save), nextUnitId: save.nextUnitId });
 
 async function cellPoint(page, col, row) {
   return page.locator('#army-map').evaluate((canvas, { col, row, field, view }) => {

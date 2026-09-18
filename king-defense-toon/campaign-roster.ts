@@ -13,9 +13,51 @@ function isUnitType(value: unknown): value is UnitType {
   return typeof value === 'string' && Object.hasOwn(UNIT_TYPE_BY_ID, value);
 }
 
+// Every fighter ID remains a safe integer. This exactly representable cursor
+// means the final ID was consumed; it may be saved, but never allocated.
+export const EXHAUSTED_UNIT_ID = Number.MAX_SAFE_INTEGER + 1;
+
+export function isUnitIdCursor(value: unknown): value is number {
+  return typeof value === 'number' && (Number.isSafeInteger(value) && value > 0 || value === EXHAUSTED_UNIT_ID);
+}
+
+function isUnitId(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+export function restoreNextUnitId(savedNextUnitId: unknown, savedUnits: unknown, savedReserve: unknown): number {
+  let nextUnitId = isUnitIdCursor(savedNextUnitId) ? savedNextUnitId : 1;
+  // Even rejected roster entries may name IDs previously used by this campaign.
+  // Never recycle those IDs when malformed placement or unit data is removed.
+  for (const source of [savedUnits, savedReserve]) {
+    if (!Array.isArray(source)) continue;
+    for (const value of source as unknown[]) {
+      const id = savedFields(value).id;
+      if (isUnitId(id)) nextUnitId = Math.max(nextUnitId, id + 1);
+    }
+  }
+  return nextUnitId;
+}
+
+export function allocateCampaignUnitId(state: { nextUnitId: number }): number {
+  if (!isUnitId(state.nextUnitId)) throw new RangeError('Campaign fighter IDs are exhausted or invalid');
+  const id = state.nextUnitId;
+  state.nextUnitId += 1;
+  return id;
+}
+
 export function restoreCampaignRoster(savedUnits: unknown, savedReserve: unknown,
-  progression: Pick<Progression, 'unlockedCells'>): { units: ArmyUnit[]; reserve: Fighter[] } {
+  progression: Pick<Progression, 'unlockedCells'>, savedNextUnitId?: unknown): {
+    units: ArmyUnit[]; reserve: Fighter[]; nextUnitId: number;
+  } {
   const occupied = new Set<string>();
+  const assigned = new Set<number>();
+  const cursor = { nextUnitId: restoreNextUnitId(savedNextUnitId, savedUnits, savedReserve) };
+  const restoreId = (saved: unknown): number => {
+    const id = isUnitId(saved) && !assigned.has(saved) ? saved : allocateCampaignUnitId(cursor);
+    assigned.add(id);
+    return id;
+  };
   const armyEntries: unknown[] = Array.isArray(savedUnits) ? savedUnits : [];
   const units = armyEntries.map(savedFields).filter((unit): unit is Record<string, unknown> & { type: UnitType; col: number; row: number } => {
     if (!isUnitType(unit.type) || typeof unit.col !== 'number' || typeof unit.row !== 'number'
@@ -26,11 +68,11 @@ export function restoreCampaignRoster(savedUnits: unknown, savedReserve: unknown
     if (!(progression.unlockedCells as readonly string[]).includes(key)) return false;
     occupied.add(key);
     return true;
-  }).map((unit, index) => ({ id: index + 1, type: unit.type, col: unit.col, row: unit.row,
+  }).map(unit => ({ id: restoreId(unit.id), type: unit.type, col: unit.col, row: unit.row,
     level: normalizeUnitLevel(unit.level) }));
   const reserveEntries: unknown[] = Array.isArray(savedReserve) ? savedReserve : [];
   const reserve = reserveEntries.map(savedFields)
     .filter((unit): unit is Record<string, unknown> & { type: UnitType } => isUnitType(unit.type))
-    .map((unit, index) => ({ id: units.length + index + 1, type: unit.type, level: normalizeUnitLevel(unit.level) }));
-  return { units, reserve };
+    .map(unit => ({ id: restoreId(unit.id), type: unit.type, level: normalizeUnitLevel(unit.level) }));
+  return { units, reserve, nextUnitId: cursor.nextUnitId };
 }

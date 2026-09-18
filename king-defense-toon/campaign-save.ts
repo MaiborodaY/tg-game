@@ -1,12 +1,16 @@
 import { migrateCampaignSave } from './progression.ts';
 import { UnsupportedSaveVersionError } from './save-version.ts';
 import { CAMPAIGN_VERSION } from './waves.ts';
+import { isUnitIdCursor, restoreNextUnitId } from './campaign-roster.ts';
 
 // Save shape and campaign wave numbering evolve independently.
-export const SAVE_SCHEMA_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 2;
 
 export interface DecodedCampaignSave extends Record<string, unknown> {
   saveSchemaVersion: typeof SAVE_SCHEMA_VERSION;
+  nextUnitId: number;
+  gold: number;
+  clearedWaves: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -37,11 +41,18 @@ export function decodeCampaignSave(value: unknown): DecodedCampaignSave {
   if (campaignVersion > CAMPAIGN_VERSION) {
     throw new UnsupportedSaveVersionError('campaign', campaignVersion, CAMPAIGN_VERSION);
   }
+  // A version-two save knows IDs consumed by fighters no longer in the roster.
+  // Losing that cursor must not silently allow old command targets to be reused.
+  if (value.saveSchemaVersion === SAVE_SCHEMA_VERSION && !isUnitIdCursor(value.nextUnitId)) {
+    throw new Error('Invalid saved campaign fighter ID cursor');
+  }
   const saved = migrateCampaignSave(value);
   if (!saved || typeof saved.gold !== 'number' || !Number.isFinite(saved.gold) || saved.gold < 0) {
     throw new Error('Invalid saved campaign');
   }
   // Legacy numeric coercion can throw for malformed JSON objects. Validate while
   // storage still protects the original bytes, before any live state is restored.
-  return { ...saved, saveSchemaVersion: SAVE_SCHEMA_VERSION, clearedWaves: Number(saved.clearedWaves) };
+  return { ...saved, saveSchemaVersion: SAVE_SCHEMA_VERSION, gold: saved.gold,
+    nextUnitId: restoreNextUnitId(saved.nextUnitId, saved.units, saved.reserve),
+    clearedWaves: Number(saved.clearedWaves) };
 }
