@@ -1,0 +1,19 @@
+# Генерация атласа эльфийского лекаря
+
+Инструмент: встроенный imagegen. 16 кадров персонажа, без встроенного эффекта на цели. Отдельный эффект описан в [heal-pulse-prompt.md](heal-pulse-prompt.md).
+
+```text
+Use case: stylized-concept.
+Asset type: transparent animated game-unit SPRITE SHEET, exactly SIXTEEN frames in FOUR columns by FOUR rows, square canvas.
+Primary request: create combat-ready artwork of the APPROVED SIMPLIFIED ELVEN HEALER in image 1, preserving her design and native-game proportions. Image 2 is the actual original game healer, the authority for compact sprite simplification. No scenery.
+Character invariants in ALL frames: adult female elf miniature, huge round ivory hood with one plain green lower edge, small pointed elf ears, two short pale hair locks, tiny plain dark eyes without lashes or detailed irises, very short broad emerald robe body, tiny dark brown boot tips. About 1.5 heads tall total, hood/head 60-65 percent of total body height. One tiny pale chest clasp. NO belt buckle, leaf skirt panels, elaborate bracers, long legs, slim waist, new clothing layers or decorative embroidery.
+She holds ONE simple thin brown wooden staff with a small fork and single mint-green diamond/leaf crystal. Staff stays in her anatomical RIGHT hand through all poses, seen on viewer LEFT in frontal frames, like approved concept. Other hand casts. Staff must NEVER move into the other hand. Same hood proportions, crystal, ears, hair, robe, colors and character size in every frame.
+Style: actual Tiny Swords-like low-resolution game sprite: clean flat color masses, 2-3 shades per material, regular fine pixel grid, restrained dark stepped outline, no texture noise, blur, glossy gradients, anime face or detailed illustration disguised as pixels. Do not increase detail from approved concept. All frames must have the short original-game proportions.
+Layout: even 4 by 4 grid, each character entirely inside its square cell. Character INCLUDING raised staff uses at most 68% of cell height and width. At least 15% truly empty padding around every cell. Fixed character scale and ground baseline throughout each row. Raised staff must have ample top margin. No touching adjacent frames or cropping. Genuine transparent alpha background, not a checkerboard image. NO ground shadow, floor, background tint, labels, numbers, borders, grid or UI. No separate floating particles anywhere; healing VFX will be a separate asset.
+Animation rows, left to right:
+ROW 1 IDLE RIGHT: three-quarter front-right view, 4 subtle breathing/blinking poses, staff upright close to body, free hand relaxed. Robe and hood softly bob by only a pixel or two, feet planted.
+ROW 2 WALK RIGHT: same angle, 4 DISTINCT alternating tiny boot steps; robe slight sway and body slight bob. Staff moves naturally with SAME hand. No giant strides.
+ROW 3 HEAL RIGHT: same angle, 4 clear readable casting stages. Pose 1 gathers energy, free hand near chest, staff low upright; pose 2 lifts staff slightly and opens free palm forward; pose 3 release/peak, free palm extended only a short distance, eyes calm, staff crystal glows bright mint/ivory INSIDE its silhouette; pose 4 recovery lowers staff and hand, glow returns to normal. Gentle healing, not an attack. Keep short mitten arms. NO external glow bloom or detached spell glyph.
+ROW 4 HEAL DOWN: frontal view facing toward bottom of image, SAME staff hand (viewer LEFT) and same 4 gather, lift, release, recover stages. Staff stays on the same side all four frames. Free casting hand viewer RIGHT.
+Casting must visibly change posture and crystal brightness. Keep character full and centered, compact and consistent, and backgrounds truly transparent. No extra characters, costumes, accessories, large plus symbols, detached leaves, target circles, death animation, weapons or scenery.
+```

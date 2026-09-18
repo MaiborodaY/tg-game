@@ -1,0 +1,73 @@
+{
+  "image": "elf-healer-pulse-128-lite.webp",
+  "size": {
+    "width": 128,
+    "height": 128
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "heal-pulse",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 64,
+        "height": 64
+      },
+      "groundAnchor": {
+        "x": 35,
+        "y": 55
+      }
+    },
+    {
+      "index": 1,
+      "action": "heal-pulse",
+      "pose": 1,
+      "rect": {
+        "x": 64,
+        "y": 0,
+        "width": 64,
+        "height": 64
+      },
+      "groundAnchor": {
+        "x": 29,
+        "y": 55
+      }
+    },
+    {
+      "index": 2,
+      "action": "heal-pulse",
+      "pose": 2,
+      "rect": {
+        "x": 0,
+        "y": 64,
+        "width": 64,
+        "height": 64
+      },
+      "groundAnchor": {
+        "x": 36,
+        "y": 41
+      }
+    },
+    {
+      "index": 3,
+      "action": "heal-pulse",
+      "pose": 3,
+      "rect": {
+        "x": 64,
+        "y": 64,
+        "width": 64,
+        "height": 64
+      },
+      "groundAnchor": {
+        "x": 29,
+        "y": 41
+      }
+    }
+  ],
+  "anchorSpace": "frame-pixels",
+  "peakPose": 2,
+  "loop": false,
+  "note": "Separate target healing pulse: begin, expand, peak, dissipate. Start frame 0 at the healer cast release (character frames 10 or 14). Ground anchors track the centre of each generated ring. Preview timings and visual scale do not define healing amount, targeting or range. No gameplay integration."
+}
