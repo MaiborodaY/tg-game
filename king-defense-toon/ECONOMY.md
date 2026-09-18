@@ -1,6 +1,6 @@
 # Campaign economy v3 — two levels, 20 rounds each
 
-Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels reach 100; the old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with the same three allied classes and king. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
+Progression combines **individual fighters in the Barracks, per-type recruitment levels, same-type merging and gold-funded army slots**. Fighters come only from slave conversion; gold cannot buy a fighter or upgrade an existing fighter's personal level. Slaves fund recruits, while gold funds deployment cells and buildings. Merging adds one owned fighter's level to another of the same type and consumes the source. Personal levels reach 100; the old milestone of 15 maximum-rank guards plus 2,000 gold and its eight-hour target no longer describe this system. No new completion-time estimate is claimed. The campaign has two levels of 20 rounds × 10 waves each (400 waves total), with three starting allied classes, an unlockable Lancer and the paladin hero St. Knihor. Rounds run from 1-1 through 1-20, then 2-1 through 2-20.
 
 ## Starting position and spending
 
@@ -12,10 +12,10 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Additional tiles | Any locked location; successive prices 25, 50, 100, 175, 275, 400, 550, 750, 1,000, 1,300, 1,650, 2,100 gold |
 | Total expansion cost | 8,375 gold for all 12 additional tiles |
 | Gold recruitment | Removed; all newly obtained fighters come from slave conversion |
-| Slave conversion | One slave becomes one individual reserve fighter: 60% swordsman, 25% archer, 15% healer |
+| Slave conversion | One slave becomes one individual reserve fighter: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer |
 | Recruitment level | 5 x current recruitment level additional matching conversions per increase; cap 100; affects only newly converted fighters |
-| Personal level / Merge | Same-type owned fighters can merge into a deployed fighter, adding their levels and consuming the source; cap 100; no currency cost |
-| Gold upgrades | Removed; existing fighters retain their personal levels |
+| Personal level / Connect | Same-type owned fighters can connect to a deployed fighter, adding their levels and consuming the source; cap 100; no currency cost |
+| Gold personal-level upgrades | Removed; existing fighters retain their personal levels |
 | Barracks Recruit | Select a reserve fighter, then choose an army tile; free deployment or replacement; selection alone changes no ownership |
 | Individual Sell | In a reserve fighter's detail view; one gold, with the last owned fighter protected |
 | Reserve placement / replacement | Free; each fighter retains identity and level; the replaced fighter returns to reserve |
@@ -34,11 +34,23 @@ The **5 × 3 Army grid stays below the battlefield** during preparation and comb
 
 The current battle retains its own fighter snapshot. The next wave uses the latest saved formation, including changes made during combat or its automatic countdown. Automatic waves and building income continue under the unit picker and other menus. The recruitment update does not alter combat rewards, capture rules, building rates or offline caps.
 
+## Barracks II: timed Lancer unlock
+
+The upgrade requires **Swordsman recruitment level 5**: **50 received swordsmen** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy the requirement. Construction spends **200 gold** once and takes **one real hour**, including offline time. Battle speed does not affect it.
+
+Open **i / Recruitment** to see the locked Lancer alongside the three starting types. Its row shows the Swordsman level requirement, then the Barracks II purchase, construction countdown and optional acceleration. On completion it becomes a normal chance/level/progress row. No separate Barracks upgrade menu is required.
+
+Optional instant completion costs `ceil(100 × remainingMs / 3,600,000)`, capped at 100 gold: thirty minutes cost 50, the last 36 seconds cost one, and natural completion is free. The live price is recalculated at purchase; reloads and repeated clicks cannot repeat the payment.
+
+After completion, the next **one-slave** conversion guarantees the first **level-1 Lancer**. The slave debit, fighter, type receipt and consumed guarantee save together. Subsequent odds are **25% swordsman / 25% archer / 25% healer / 25% Lancer**. Before completion, the existing 60/25/15 odds remain. The new type starts with zero receipts; older receipts, training credits, personal levels and resources remain intact.
+
+The Lancer has **48 HP / 7 damage / 75 range / 1.3-second base attack interval**, one target per attack and the shared five-percent personal-level growth. Placement is free, sale returns one gold, and only matching Lancers merge. Waiting avoids the optional acceleration cost. No new completion-time estimate, king upgrade or other economy change is implied.
+
 ## Individual recruits and personal levels
 
-Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Rolls are **60% swordsman / 25% archer / 15% healer**. There is no guaranteed class or automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
+Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Before Barracks II completes, rolls are **60% swordsman / 25% archer / 15% healer**. Completion grants one guaranteed Lancer conversion, then changes the odds as described below. There is no automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
 
-The small **i** at the upper right of the Army dock opens **Recruitment**, showing all three class chances (60% / 25% / 15%), each current recruitment level and how many more fighters of that type are needed for the next level. This panel is available even with zero slaves and spends nothing. It uses saved per-type counts, updates after conversions and shows the level-100 cap. The persistent last-recruit caption is removed; conversion has its transfer animation and a short result notice in the right gutter.
+The small **i** at the upper right of the Army dock opens **Recruitment**, showing the currently unlocked class chances (60% / 25% / 15% before Barracks II; 25% for each of the four types after completion), each current recruitment level and how many more fighters of that type are needed for the next level. Opening this panel is free and available even with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 cap. The persistent last-recruit caption is removed; conversion has its transfer animation and a short result notice in the right gutter.
 
 The result's level is calculated **after incrementing that type's count**. Advancing from recruitment level L to L+1 needs **5 x L** more matching fighters. Cumulative cost at level L is **5 x L x (L-1) / 2** for a fresh account.
 
@@ -57,13 +69,13 @@ The result's level is calculated **after incrementing that type's count**. Advan
 
 **Migration:** version-1 recruitment data moves to version 2 without resetting the campaign or changing received totals. A fixed per-type legacyTrainingCredit preserves the prior recruitment level and its proportional partial progress (rounded down by less than one matching recruit). At the cap, partial progress is zero. Version-2 loads reuse saved credit rather than recomputing it. For example, an old count of nine swordsmen stays nine with 21 training credit: recruitment remains level 4 and requires 20 further swordsmen for level 5. Existing personal levels remain, but all fighters use the gentler stats below. Newly started accounts have no legacy credit.
 
-The level-100 limit is a long-term technical cap, not a target for campaign completion. Without legacy credit, the expected total slave conversions for a first level-4 fighter **obtained directly from Market** are 50 swordsman / 120 archer / 200 healer, based on current probabilities; these are averages, not guarantees or elapsed-time estimates. Merging can produce a level-4 fighter earlier. Each class tracks its own recruitment count independently of merges.
+The level-100 limit is a long-term technical cap, not a target for campaign completion. Without legacy credit, the expected total slave conversions for a first level-4 fighter **obtained directly from Market** are 50 swordsman / 120 archer / 200 healer, using the Barracks I probabilities throughout; these are averages, not guarantees or elapsed-time estimates. Merging can produce a level-4 fighter earlier. Each class tracks its own recruitment count independently of merges.
 
-Barracks shows compact fighter icons with personal levels. Tapping an icon opens its detail view with HP, Attack, Healing when applicable, and **Recruit**, **Merge** and **Sell** actions. Tapping Recruit closes the menu and selects the fighter for placement without removing it from reserve or changing any balance. Choosing an empty unlocked tile deploys it for free; choosing an occupied tile swaps that guard into reserve. A locked tile offers a gold unlock first and deploys the selected fighter after purchase. Both fighters keep their identities and personal levels. Canceling placement leaves ownership and resources unchanged; reloading also leaves an unplaced selection safely in reserve. Completed placements save immediately and affect the next wave, leaving the active battle's snapshot untouched.
+Barracks shows compact fighter icons with personal levels. Tapping an icon opens its detail view with HP, Attack, Healing when applicable, and **Recruit**, **Connect** and **Sell** actions. Tapping Recruit closes the menu and selects the fighter for placement without removing it from reserve or changing any balance. Choosing an empty unlocked tile deploys it for free; choosing an occupied tile swaps that guard into reserve. A locked tile offers a gold unlock first and deploys the selected fighter after purchase. Both fighters keep their identities and personal levels. Canceling placement leaves ownership and resources unchanged; reloading also leaves an unplaced selection safely in reserve. Completed placements save immediately and affect the next wave, leaving the active battle's snapshot untouched.
 
 **Sell** in the detail view sells one reserve fighter for **one gold**, unless it is the last owned fighter. Deployed fighters are never sold from Barracks. Selling does not alter combat snapshots, received counts, unlocked cells or other fighters' levels.
 
-The green **+ Merge** action is available in a reserve or deployed fighter's detail view. Select it, then tap **another deployed fighter of the same type** on the Army grid. The target keeps its identity and cell and receives the sum of both personal levels; the source disappears only after a valid target is chosen. A deployed source leaves its original cell empty and unlocked. For example, a level-2 swordsman merged into a level-3 swordsman produces one level-5 swordsman. A different class, the source itself, or an empty/locked cell cannot receive a merge. A total above **100 is rejected without consuming either fighter or discarding levels**; an exact total of 100 is allowed. Cancel or Escape before completion keeps both fighters unchanged.
+The green **+ Connect** action is available in a reserve or deployed fighter's detail view. Select it, then tap **another deployed fighter of the same type** on the Army grid. The target keeps its identity and cell and receives the sum of both personal levels; the source disappears only after a valid target is chosen. A deployed source leaves its original cell empty and unlocked. For example, a level-2 swordsman merged into a level-3 swordsman produces one level-5 swordsman. A different class, the source itself, or an empty/locked cell cannot receive a merge. A total above **100 is rejected without consuming either fighter or discarding levels**; an exact total of 100 is allowed. Cancel or Escape before completion keeps both fighters unchanged.
 
 Merging costs **no gold or slaves**, awards no sale gold and does not change per-type received counts or future recruitment levels. It saves the upgraded target and removed source together immediately. The active battle keeps its existing snapshot: the next wave receives the merged formation. Completed merges survive reload; an unfinished target selection consumes nothing. Summing levels creates a faster personal-level path than recruiting alone, so all three stats now grow by **5% of level-one base per level**, down from 10%, without compounding:
 
@@ -79,36 +91,37 @@ Native sprite colors change every 25 personal levels: **1–25 blue, 26–50 pur
 
 ## Kill rewards and wave progression
 
-Both **Level 1: Whispering Woods** and **Level 2: Forgotten Graveyard** contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20. Wave 5 is an ordinary encounter. This rebalance covers **global waves 1–30 only: Level 1 rounds 1–3**. **Waves 31–400 retain their previous definitions**, including all of Level 2; the distant campaign has not been calibrated as part of this opening update.
+Both levels contain **20 rounds of ten waves**. Each round ends with a mini-boss, replaced by the main boss in rounds 10 and 20; wave 5 is ordinary. **All 400 encounters now receive +10% total HP and +5% enemy damage**, starting at the first wave, to account for the playable hero. Counts, schedules, rewards and the underlying campaign curve are retained. After round 1-3, round-end HP grows by **473** per round after this adjustment. Level 2 continues from the forest endpoint rather than resetting to an early forest formula. [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) records the current rules and checks.
 
-The first three waves retain their existing stats, composition and schedules. The first round has **3 / 4 / 5 / 5 / 6 / 6 / 7 / 8 / 9 / 5 enemies** and total HP **180 / 184 / 264 / 306 / 366 / 426 / 506 / 620 / 790 / 750**. Wave 10 has a chief, two goblins and two archers, arriving **4 + 1 at 0.8 and 14.8 simulation seconds**: the second arrival is now one archer. Global waves **11–19 and 21–29** each have **four goblins, two archers and two boars**, arriving **4 + 4** on that schedule. Waves 20 and 30 retain a chief, three goblins and two archers, arriving **4 + 2**. Every simultaneous arrival stays at four enemies or fewer.
+Wave 1 remains **two goblins, then one**; wave 2 remains **two goblins and two archers together**. The first-round counts remain **3 / 4 / 5 / 5 / 6 / 6 / 7 / 8 / 9 / 5**. Starting goblins now have **66 HP / 7.35 damage**. The shared damage adjustment preserves fractions so low-damage enemies do not gain a disproportionately large rounded bonus.
 
-| Wave in round | Round 1 total HP | Round 2 total HP | Round 3 total HP |
+| Wave in round | 1-1 enemies / total HP | 1-2 enemies / total HP | 1-3 enemies / total HP |
 | --- | --- | --- | --- |
-| 1 | 180 | 866 | 1,265 |
-| 2 | 184 | 878 | 1,277 |
-| 3 | 264 | 890 | 1,289 |
-| 4 | 306 | 902 | 1,301 |
-| 5 | 366 | 914 | 1,313 |
-| 6 | 426 | 926 | 1,325 |
-| 7 | 506 | 938 | 1,337 |
-| 8 | 620 | 950 | 1,349 |
-| 9 | 790 | 1,120 | 1,500 |
-| 10 | 750 | 1,250 | 1,680 |
+| 1 | 3 / 198 | 8 / 953 | 8 / 1,392 |
+| 2 | 4 / 202 | 8 / 966 | 8 / 1,405 |
+| 3 | 5 / 290 | 8 / 979 | 8 / 1,418 |
+| 4 | 5 / 337 | 8 / 992 | 8 / 1,431 |
+| 5 | 6 / 403 | 8 / 1,005 | 8 / 1,444 |
+| 6 | 6 / 469 | 8 / 1,019 | 8 / 1,458 |
+| 7 | 7 / 557 | 8 / 1,032 | 8 / 1,471 |
+| 8 | 8 / 682 | 8 / 1,045 | 8 / 1,484 |
+| 9 | 9 / 869 | 8 / 1,232 | 8 / 1,650 |
+| 10 | 5 / 825 | 6 / 1,375 | 6 / 1,848 |
 
-The opening chiefs have **450 / 688 / 924 HP** at global waves 10 / 20 / 30, respectively. Their encounters bypass the old 1.25× total-HP floor. The user's removal of the second-arrival goblin on wave 10 leaves its chief unchanged at **450 HP / 18 damage**, without a compensating buff, and creates the explicit total-HP exception **wave 9→10: 790 → 750**. All other steps through 30 rise, including transitions **750 → 866** and **1,250 → 1,265** between rounds; no post-boss relief was added. Larger HP and shared damage increases close rounds 2–3. Composition, damage, timing and available allied roles also affect difficulty; total HP alone does not prove a harder fight for every army. See [README.md](README.md) for opening roles and schedules and [opening-curve.mjs](opening-curve.mjs) for the round 2–3 allocation.
+From **1-1 wave 6 through 1-20 wave 10**, a **Goblin healer** replaces one archer in the second arrival of every forest wave, including boss escorts. There are no new enemies or groups. On waves 6–100 the healer retains the replaced archer's HP allocation, position, schedule and one-gold reward; existing healers remain on waves 101–200. The first healer has **46 HP / 4 healing per cast / 3.15 weak melee damage**. Healing grows to **5 / 8 / 10 HP at waves 10 / 20 / 30**, then **35 around waves 100–101**, reaching **48 by wave 200**. It heals other non-healer enemies, including bosses, up to missing HP, and cannot heal itself or another healer. Level 2 has no healer variant yet.
 
-Combat checks use the actual engine through [scripts/combat-balance.mjs](scripts/combat-balance.mjs); [OPENING_BALANCE.md](OPENING_BALANCE.md) records the scenarios, results and limitations. Explicit test armies and levels are not a natural first-clear simulation or an income/recruitment forecast. Recruitment probabilities, **5% personal-level stat growth**, merging, capture rules, prices and income rates are unchanged.
+The wave-10 roster is now a chief, two goblins, one archer and one healer, arriving **4+1 at 0.8 / 14.8 simulation seconds**. Global waves **11–19 and 21–29** contain four goblins, one archer, one healer and two boars (**4+4**); waves 20 and 30 contain a chief, three goblins, one archer and one healer (**4+2**). Every simultaneous arrival stays at four or fewer enemies.
 
-A separate resource-linked harness, [scripts/early-campaign.mjs](scripts/early-campaign.mjs), earns its cells and fighters using the actual APIs. **Historical snapshot before the wave-10 goblin removal:** six thirty-wave scenarios completed at ×1/×3 in **452 battles without timeouts**, with one requiring 102 attempts. Ninth/tenth waves accounted for **90 of 138 defeats (65.2%)**, and a majority within each round. These runs have not been repeated for the five-enemy wave 10 and do not validate the current revision. The documented management policy and fixed seeds are not a population sample or a promised completion time.
+The opening chiefs have **495 / 757 / 1,016 HP** and **18.9 / 25.2 / 32.55 damage** at waves 10 / 20 / 30. The earlier requested escort removal is retained; its explicit HP exception is now **wave 9→10: 869 → 825**, with no special boss compensation beyond the shared adjustment. The next round begins at **953 HP**. Waves **20→21** rise **1,375 → 1,392**, **30→31** rise **1,848 → 1,865**, and **200→201** rise **9,889 → 9,906**. Ordinary continuation counts still grow from eight to sixteen and boss encounters from six to ten; no additional enemies were introduced by this edit. The final Crypt King has **12,577 HP / 126 damage** within a **19,349-HP** encounter. These are configured totals, not a guaranteed difficulty order for every army.
 
-**Deferred boundary:** the old wave 31 has ten enemies and **1,054 total HP**, below wave 30's **1,680**. This round transition, the remaining forest rounds and the level boundary have not been rebalanced. Level 2 still uses skeletons, skeleton archers and ghouls, with three times the **earlier forest baseline** stats and twice the per-kill reward by role. It does not inherit the new first-30-wave overlay; for example, its first chief remains **1,950 HP / 54 damage**, rather than three times the new first chief. The final Crypt King retains **13,248 HP / 156 damage**. These unchanged definitions are not presented as a verified 400-wave difficulty curve.
+[OPENING_BALANCE.md](OPENING_BALANCE.md) retains historical opening combat and economy reports, which predate the hero adjustment and early healer and do not validate this revision. Four current ×1 resource-linked runs (seeds **1, 4, 17, 42**, target wave 10, limit 40 attempts, hero talents unspent) completed in **14 / 14 / 12 / 14 attempts**, without timeouts; defeats occurred on waves 8–9. They are fixed management scenarios rather than a player-population forecast or full campaign validation. See [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) for remaining verification. Recruitment probabilities, **5% personal-level stat growth**, Connect, hero stats, capture rules, prices and income rates are unchanged by this balance edit.
 
 Current per-enemy kill rewards stay fixed within each level:
 
 | Enemy role | Level 1 gold | Level 2 gold |
 | --- | --- | --- |
 | Ordinary melee / archer | 1 | 2 |
+| Goblin healer | 1 | Not present |
 | Boar / ghoul | 2 | 4 |
 | Chief / Crypt Spider | 20 | 40 |
 | Ogre / Crypt King | 20 | 40 |
@@ -133,13 +146,13 @@ Current per-enemy kill rewards stay fixed within each level:
 | 1-2 | 78 | 115 | 550 |
 | 1-3 | 78 | 115 | 550 |
 | First 30 waves | 214 | 315 | 1,650 |
-| All Level 1 definitions | 2,734 | 3,668 | 11,000 |
-| All Level 2 definitions, unchanged | 2,761 | 7,390 | 11,000 |
-| Entire campaign definitions | 5,495 | 11,058 | 22,000 |
+| All Level 1 definitions | 1,907 | 2,709 | 11,000 |
+| All Level 2 definitions | 2,790 | 7,630 | 11,000 |
+| Entire campaign definitions | 4,697 | 10,339 | 22,000 |
 
 The first clear of each wave awards **10 × wave-in-round number**: 10, 20, …, 100, totaling **550 per round, 11,000 per level and 22,000 across the campaign**. Level 2's doubled kill rewards do not multiply first-clear bonuses. First-clear history stores global IDs **1–400** independently from current progress, so retreat and replay cannot repeat a bonus. Global waves 11 and 201 each grant 10 first-clear gold; wave 200 grants 100.
 
-Clearing the first 30 waves once awards **1,965 kill/first-clear gold** before other income. Arithmetic over all current definitions gives **33,058 gold** for the whole campaign: **14,668 in Level 1** and **18,390 in Level 2**. These sums exclude retries, Barracks sales and building income, and do not demonstrate that an account can complete the campaign or predict its completion time. Migrated accounts retain previously claimed first-clear rewards and cannot claim them again. Per-enemy payouts and first-clear bonuses are unchanged; changes to wave composition change the total kill income.
+Clearing the first 30 waves once awards **1,965 kill/first-clear gold** before other income. Arithmetic over all current definitions gives **32,339 gold** for the whole campaign: **13,709 in Level 1** and **18,630 in Level 2**. These sums exclude retries, Barracks sales and building income, and do not demonstrate that an account can complete the campaign or predict its completion time. Migrated accounts retain previously claimed first-clear rewards and cannot claim them again. Per-enemy payouts and first-clear bonuses are unchanged; changes to wave composition change the total kill income.
 
 Defeat retreats one global wave, with **1-1 Wave 1** as the minimum. Losing **1-2 Wave 1** prepares **1-1 Wave 10**; losing **2-1 Wave 1** prepares **1-20 Wave 10**. Deployed and reserve fighters, personal levels, recruitment counts, unlocked cells, resources and buildings are kept, and the army and king recover between attempts. Kills remain rewarded on failed attempts; losing without kills grants no reward. Clearing a round's tenth wave advances to the next round. Victory at **1-20 Wave 10** advances to **2-1 Wave 1**. Only victory at **2-20 Wave 10** completes the campaign and permits replay from **1-1 Wave 1**.
 

@@ -6,11 +6,16 @@ import { getWaveDefinition } from '../waves.mjs';
 test('an empty initial forest scene has no dependency on another map, enemies or army palettes', () => {
   const battle = getSceneAssetPlan({ units: [] });
   assert.equal(battle.mapKey, 'map:1');
-  assert.equal(battle.resources.size, 2);
-  assert.deepEqual(battle.allies.map(unit => unit.type), ['king']);
+  assert.equal(battle.resources.size, 5);
+  assert.deepEqual(battle.allies, []);
+  assert.deepEqual(Object.keys(battle.heroArt).sort(), ['down', 'side', 'up']);
+  for (const url of [...Object.values(battle.heroArt), battle.heroEffects]) assert.ok(battle.resources.has(url));
+  assert.doesNotMatch(battle.keys.join(' '), /king\.webp|st-knihor-portrait|lancer|goblin-healer/);
   assert.equal(battle.enemies.length, 0);
   const army = getSceneAssetPlan({ units: [] }, { formationOnly: true });
   assert.deepEqual(army.keys, ['map:1']);
+  assert.deepEqual(army.heroArt, {});
+  assert.equal(army.heroEffects, null);
 });
 
 test('load only present rank sheets, including placements and fighting units with a different rank', () => {
@@ -19,13 +24,43 @@ test('load only present rank sheets, including placements and fighting units wit
     battle: { allies: [{ type: 'swordsman', level: 1 }] },
     placementType: 'healer', placementLevel: 76,
   });
-  assert.deepEqual(plan.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['healer:4', 'king:1', 'swordsman:1', 'swordsman:2']);
+  assert.deepEqual(plan.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['healer:4', 'swordsman:1', 'swordsman:2']);
   const urls = plan.keys.join(' ');
   assert.match(urls, /swordsman-purple-sheet/);
   assert.match(urls, /tiny-swords-warrior-blue/);
   assert.match(urls, /healer-yellow-walk/);
   assert.match(urls, /healer-yellow-cast/);
   assert.doesNotMatch(urls, /swordsman-(red|yellow)|healer-(purple|red)|archer/);
+});
+
+test('lancer plans retain only displayed palettes across deployment, battle and placement', () => {
+  const state = { units: [{ type: 'lancer', level: 26 }, { type: 'lancer', level: 26 }],
+    battle: { allies: [{ type: 'lancer', level: 1 }] }, placementType: 'lancer', placementLevel: 76 };
+  const battle = getSceneAssetPlan(state);
+  assert.deepEqual(battle.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['lancer:1', 'lancer:2', 'lancer:4']);
+  assert.match(battle.keys.join(' '), /lancer-blue\.webp/);
+  assert.match(battle.keys.join(' '), /lancer-purple\.webp/);
+  assert.match(battle.keys.join(' '), /lancer-yellow\.webp/);
+  assert.doesNotMatch(battle.keys.join(' '), /lancer-red|lancer-\w+-art/);
+  const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.deepEqual(army.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['lancer:2', 'lancer:4']);
+  assert.doesNotMatch(army.keys.join(' '), /lancer-blue|st-knihor/);
+});
+
+test('enemy healer body and pulse load for forthcoming or existing healers, never for Army', () => {
+  const state = { wave: { levelNumber: 1, roundNumber: 11, spawns: [{ type: 'goblinHealer' }] } };
+  const upcoming = getSceneAssetPlan(state);
+  assert.deepEqual(upcoming.enemies.map(enemy => enemy.type), ['goblinHealer']);
+  assert.match(upcoming.goblinHealPulse, /goblin-healer\/heal-pulse\.webp$/);
+  assert.ok(upcoming.resources.has(upcoming.goblinHealPulse));
+  const existing = getSceneAssetPlan({ battle: { enemies: [{ type: 'goblinHealer' }] } });
+  assert.equal(existing.signature, upcoming.signature);
+  const ordinary = getSceneAssetPlan({ wave: { spawns: [{ type: 'goblin' }] } });
+  assert.equal(ordinary.goblinHealPulse, null);
+  assert.doesNotMatch(ordinary.keys.join(' '), /goblin-healer|heal-pulse/);
+  const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.equal(army.goblinHealPulse, null);
+  assert.deepEqual(army.keys, ['map:1']);
 });
 
 test('a wave loads forthcoming enemies once and only its goblin palette', () => {

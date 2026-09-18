@@ -17,6 +17,8 @@ const fixture = {
   reserve: [{ type: 'swordsman', level: 3 }, { type: 'archer', level: 7 }],
   progression: { unlockedCells: ['2:0', '2:1', '2:2'], firstClears: [] },
   economy: { slaves: 7, treasuryLevel: 1, treasuryProgress: 0, captures: 4, captureCooldown: 30 },
+  barracks: { level: 2, upgradeStartedAt: null, upgradeReadyAt: null, firstLancerPending: true },
+  hero: { xp: 300, highestWave: 8, talents: { heal_power: 1 } },
 };
 
 const server = await createServer({
@@ -74,8 +76,8 @@ async function inPage(name, options, check) {
   const errors = [];
   try {
     await context.route('https://telegram.org/**', route => route.abort());
-    let blockKing = options.blockKing === true;
-    if (blockKing) await context.route('**/assets/web/king.webp*', route => blockKing ? route.abort() : route.continue());
+    let blockHero = options.blockHero === true;
+    if (blockHero) await context.route('**/assets/st-knihor/st-knihor-down.webp*', route => blockHero ? route.abort() : route.continue());
     await context.addInitScript(({ key, fixture, options }) => {
       const originalGet = Storage.prototype.getItem;
       const originalSet = Storage.prototype.setItem;
@@ -122,7 +124,7 @@ async function inPage(name, options, check) {
     page.setDefaultTimeout(10000);
     page.on('pageerror', error => errors.push(error.stack ?? error.message));
     await page.goto(baseUrl);
-    await check(page, { allowKing: () => { blockKing = false; } });
+    await check(page, { allowHero: () => { blockHero = false; } });
     await fitAt320(page);
     assert.deepEqual(errors, [], `${name}: uncaught browser errors`);
     checks.push(name);
@@ -162,6 +164,9 @@ try {
     assert.deepEqual(restored.units.map(({ id, ...unit }) => unit), fixture.units);
     assert.deepEqual(restored.reserve.map(({ id, ...unit }) => unit), fixture.reserve);
     assert.equal(restored.economy.slaves, fixture.economy.slaves);
+    assert.deepEqual(restored.barracks, fixture.barracks);
+    assert.equal(restored.hero.xp, fixture.hero.xp);
+    assert.equal(restored.hero.talents.heal_power, 1);
   });
 
   await inPage('corrupt save survives timers and retry; only the second reset click replaces it', { raw: '{damaged-json' }, async page => {
@@ -187,6 +192,8 @@ try {
     assert.equal(reset.economy.slaves, 3);
     assert.deepEqual(reset.units, []);
     assert.deepEqual(reset.reserve, []);
+    assert.equal(reset.barracks.level, 1);
+    assert.equal(reset.hero.xp, 0);
     assert.equal(await page.locator('#recovery-panel').isVisible(), false);
   });
 
@@ -235,6 +242,8 @@ try {
     assert.equal(reloaded.gold, beforeReload.gold);
     assert.deepEqual(reloaded.units, beforeReload.units);
     assert.deepEqual(reloaded.reserve, beforeReload.reserve);
+    assert.deepEqual(reloaded.hero, beforeReload.hero);
+    assert.deepEqual(reloaded.barracks, beforeReload.barracks);
     assert.equal((await status(page)).battle, null, 'reload returns to preparation with earned resources intact');
   });
 
@@ -248,17 +257,23 @@ try {
     assert.deepEqual(after.reserve, before.reserve);
     assert.equal(after.gold, before.gold);
     assert.equal(after.economy.slaves, before.economy.slaves);
+    assert.equal(before.hero.xp, fixture.hero.xp);
+    assert.equal(before.hero.highestWave, fixture.hero.highestWave);
+    assert.equal(before.hero.talents.heal_power, 1);
+    assert.deepEqual(before.barracks, fixture.barracks);
+    assert.deepEqual(after.hero, before.hero);
+    assert.deepEqual(after.barracks, before.barracks);
     assert.equal((await status(page)).storage, 'ready');
   });
 
   await inPage('offline receipt waits for assets; failed acknowledgement recovers without an inert deadlock',
-    { blockKing: true, offlineRewards: { gold: 7, slaves: 2 } }, async (page, controls) => {
+    { blockHero: true, offlineRewards: { gold: 7, slaves: 2 } }, async (page, controls) => {
       await loaded(page);
       await page.waitForFunction(() => /could not be loaded/i.test(document.getElementById('recovery-description').textContent));
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
       assert.equal(await page.locator('#recovery-retry').evaluate(element => !!element.closest('[inert]')), false);
       await fitAt320(page);
-      controls.allowKing();
+      controls.allowHero();
       await page.locator('#recovery-retry').click();
       await ready(page);
       await page.locator('#offline-rewards-panel').waitFor({ state: 'visible' });

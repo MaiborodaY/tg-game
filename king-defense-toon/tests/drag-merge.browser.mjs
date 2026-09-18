@@ -166,6 +166,8 @@ try {
     // Existing button route and ordinary controls still respond after captured drags.
     await page.locator('#open-barracks').click();
     await page.locator('[data-barracks-unit-id="6"]').tap();
+    assert.match(await page.locator('[data-barracks-merge-id="6"]').innerText(), /Connect/);
+    assert.doesNotMatch(await page.locator('#barracks-panel').innerText(), /\bmerge\b/i);
     await page.locator('[data-barracks-merge-id="6"]').tap();
     await page.touchscreen.tap(...Object.values(await cell(2,1)));
     after = await read(); assert.equal(after.units.find(u=>u.col===2&&u.row===1).level,7);

@@ -30,8 +30,19 @@ export const UNIT_TYPES = Object.freeze([
     heal: 4,
     role: 'Support',
     color: '#dbb44e',
-    description: 'Follows and heals your guard. Cannot heal the king.',
+    description: 'Follows and heals your guard and hero. Cannot heal the castle.',
     spriteColumn: 2,
+  }),
+  Object.freeze({
+    id: 'lancer',
+    name: 'Lancer',
+    cost: 0,
+    hp: 48,
+    damage: 7,
+    role: 'Reach',
+    color: '#5b91cf',
+    description: 'Strikes one enemy from behind your front line. Less durable than a swordsman.',
+    spriteColumn: 3,
   }),
 ]);
 

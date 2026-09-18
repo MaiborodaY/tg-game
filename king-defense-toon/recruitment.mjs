@@ -10,21 +10,30 @@ export const RECRUIT_CHANCES = Object.freeze([
   Object.freeze({ type: 'archer', chance: .25 }),
   Object.freeze({ type: 'healer', chance: .15 }),
 ]);
+const UNLOCKED_RECRUIT_CHANCES = Object.freeze([
+  Object.freeze({ type: 'swordsman', chance: .25 }),
+  Object.freeze({ type: 'archer', chance: .25 }),
+  Object.freeze({ type: 'healer', chance: .25 }),
+  Object.freeze({ type: 'lancer', chance: .25 }),
+]);
+
+export const getRecruitChances = (lancerUnlocked = false) => lancerUnlocked
+  ? UNLOCKED_RECRUIT_CHANCES : RECRUIT_CHANCES;
 
 const isUnitType = type => typeof type === 'string'
   && Object.hasOwn(UNIT_TYPE_BY_ID, type);
 const isReceivedCount = count => Number.isSafeInteger(count) && count >= 0;
 
 export function createRecruitment(saved) {
-  const received = Object.fromEntries(RECRUIT_CHANCES.map(({ type }) => [
+  const received = Object.fromEntries(UNLOCKED_RECRUIT_CHANCES.map(({ type }) => [
     type, isReceivedCount(saved?.received?.[type]) ? saved.received[type] : 0,
   ]));
   return {
     version: 2,
     received,
     // One-time training credit preserves earned recruitment levels without inventing received fighters.
-    legacyTrainingCredit: Object.fromEntries(RECRUIT_CHANCES.map(({ type }) => [
-      type, saved?.version === 1 ? migrateLegacyTraining(received[type])
+    legacyTrainingCredit: Object.fromEntries(UNLOCKED_RECRUIT_CHANCES.map(({ type }) => [
+      type, saved?.version === 1 && type !== 'lancer' ? migrateLegacyTraining(received[type])
         : saved?.version === 2 && isReceivedCount(saved?.legacyTrainingCredit?.[type])
           ? saved.legacyTrainingCredit[type] : 0,
     ])),
@@ -50,7 +59,7 @@ export function normalizeUnitLevel(value = 1) {
 
 function assertRecruitment(recruitment) {
   if (!recruitment || recruitment.version !== 2 || !recruitment.received || !recruitment.legacyTrainingCredit
-    || !RECRUIT_CHANCES.every(({ type }) => isReceivedCount(recruitment.received[type])
+    || !UNLOCKED_RECRUIT_CHANCES.every(({ type }) => isReceivedCount(recruitment.received[type])
       && isReceivedCount(recruitment.legacyTrainingCredit[type]))
     || (recruitment.lastType !== null && !isUnitType(recruitment.lastType))) {
     throw new TypeError('Invalid recruitment state');
@@ -89,14 +98,23 @@ export function getUnitStats(type, value = 1) {
   };
 }
 
-export function receiveRecruit(recruitment, random = Math.random) {
+export function receiveRecruit(recruitment, random = Math.random, options = {}) {
   assertRecruitment(recruitment);
   if (typeof random !== 'function') throw new TypeError('Recruit random must be a function');
-  const roll = random();
-  if (typeof roll !== 'number' || !Number.isFinite(roll) || roll < 0 || roll >= 1) {
-    throw new RangeError('Recruit random must return a number from zero up to one');
+  const lancerUnlocked = options?.lancerUnlocked === true;
+  let type = lancerUnlocked && options?.guaranteedLancer === true ? 'lancer' : null;
+  if (!type) {
+    const roll = random();
+    if (typeof roll !== 'number' || !Number.isFinite(roll) || roll < 0 || roll >= 1) {
+      throw new RangeError('Recruit random must return a number from zero up to one');
+    }
+    const chances = getRecruitChances(lancerUnlocked);
+    let threshold = 0;
+    type = chances.find(entry => {
+      threshold += entry.chance;
+      return roll < threshold;
+    }).type;
   }
-  const type = roll < .6 ? 'swordsman' : roll < .85 ? 'archer' : 'healer';
   const previousLevel = getRecruitLevel(recruitment, type);
   // Keep totals usable after very long saves without exceeding integer precision.
   recruitment.received[type] = Math.min(Number.MAX_SAFE_INTEGER, recruitment.received[type] + 1);

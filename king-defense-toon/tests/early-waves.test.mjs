@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { loadCombatEngine, makeFormation, simulateCombat } from '../scripts/combat-balance.mjs';
 
 const engine = await loadCombatEngine();
-const snapshot = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-
-test('opening rebalance preserves the first three waves and the established ninth wave', () => {
-  assert.equal(snapshot(engine.WAVE_DEFINITIONS.slice(0, 3)),
-    '28e3aaae9436bb385d84ebfe7728e41732f18536b8637a23da20148280397403');
-  assert.equal(snapshot(engine.WAVE_DEFINITIONS[8]),
-    'abbcf6865e106be4f8dee2b748a2bd6a14d1479a2b4559c9f48199cc2b3ddf7c');
+test('the opening gains modest durability without extra bodies or faster arrivals', () => {
+  const expectedHealth = [198, 202, 290, 337, 403, 469, 557, 682, 869, 825];
+  const expectedCounts = [3, 4, 5, 5, 6, 6, 7, 8, 9, 5];
+  for (const [index, wave] of engine.WAVE_DEFINITIONS.slice(0, 10).entries()) {
+    assert.equal(wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0), expectedHealth[index], `wave ${wave.number}`);
+    assert.equal(wave.total, expectedCounts[index], `wave ${wave.number}`);
+  }
+  assert.deepEqual(engine.WAVE_DEFINITIONS[0].spawns.map(spawn => [spawn.at, spawn.type, spawn.hp, spawn.damage]),
+    [[.8, 'goblin', 66, 7.35], [.8, 'goblin', 66, 7.35], [6.8, 'goblin', 66, 7.35]]);
+  assert.deepEqual([...new Set(engine.WAVE_DEFINITIONS[8].spawns.map(spawn => spawn.at))], [.8, 14.8, 28.8]);
 });
 
 test('four level-two fighters can pass wave four with either zero or one healer', () => {
@@ -28,7 +30,7 @@ test('opening health grows except for the requested wave-ten escort removal, wit
   let previousHp = 0;
   for (const wave of engine.WAVE_DEFINITIONS.slice(0, 10)) {
     const hp = wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
-    if (wave.number === 10) assert.equal(hp, 750, 'one 94-HP escort was removed without buffing the chief');
+    if (wave.number === 10) assert.equal(hp, 825, 'the removed late escort stays removed after the modest stat increase');
     else assert.ok(hp > previousHp, `wave ${wave.number}: no health-budget plateau or reset`);
     assert.ok(wave.total <= 9, `wave ${wave.number}: no crowd inflation`);
     const arrivals = new Map();
@@ -50,7 +52,8 @@ test('one fixed eight-fighter level-three formation can clear the first chief af
   }
   const chief = simulateCombat(engine, { wave: 10, formation });
   assert.equal(chief.outcome, 'victory');
-  assert.equal(chief.survivors, 3);
+  assert.ok(chief.survivors >= formation.length / 2, 'at least half the army survives with the paladin');
+  assert.ok(chief.casualties > 0, 'the chief still inflicts real losses');
   assert.equal(chief.kingHp, engine.KING_MAX_HP);
   assert.equal(chief.enraged, false, 'the encounter must not rely on overtime damage');
 });

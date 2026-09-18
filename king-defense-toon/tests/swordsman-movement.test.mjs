@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBattle, updateBattle } from '../combat.mjs';
 import { makeFormation } from '../scripts/combat-balance.mjs';
+import { WALKABLE_AREAS } from '../field.mjs';
 
 const DT = 1 / 60;
 
@@ -22,6 +23,8 @@ function traceMovement(wave, formation) {
       if (!trace || unit.hp <= 0) continue;
       const before = previous.get(unit.id);
       const travelled = Math.hypot(unit.x - before.x, unit.y - before.y);
+      assert.ok(WALKABLE_AREAS.some(area => unit.x >= area.left && unit.x <= area.right
+        && unit.y >= area.top && unit.y <= area.bottom), `wave ${wave}: melee detours stay on land`);
       trace.moved += travelled;
       if (travelled > .01) trace.firstMove ??= battle.elapsed;
       if (unit.action === 'attack') trace.firstAttack ??= battle.elapsed;
@@ -64,13 +67,14 @@ test('swordsmen retarget and damage archers after the melee screen falls', () =>
 });
 
 test('several allied columns close in and resume attacks in the crowded seventh and eighth waves', () => {
-  for (const wave of [7, 8]) {
+  for (const [wave, level] of [[7, 3], [8, 3], [8, 4]]) {
     const { battle, fighters } = traceMovement(wave,
-      makeFormation({ swordsman: 5, archer: 2, healer: 1, level: 3 }));
+      makeFormation({ swordsman: 5, archer: 2, healer: 1, level }));
     assert.equal(battle.phase, 'victory');
     assert.ok(fighters.every(unit => unit.firstAttack < 10));
     assert.ok(fighters.every(unit => unit.retargets > 0 && unit.maxDeadFocus < 1));
-    assert.ok(fighters.every(unit => unit.maxFarStill < 3), 'a normal formation should not remain wedged behind its frontline');
+    assert.ok(fighters.every(unit => unit.maxFarStill < 3),
+      `wave ${wave}, Lv.${level}: a normal formation should not remain wedged behind its frontline`);
     assert.ok(fighters.reduce((sum, unit) => sum + unit.archerHits, 0) > 0);
   }
 });
@@ -86,8 +90,9 @@ test('an overcrowded all-melee army keeps retargeting and completes the ninth wa
 });
 
 test('the same melee approach reaches skeleton archers in the second level', () => {
+  // The current second-level health curve needs an army that survives long enough to test archer pursuit.
   const { battle, fighters } = traceMovement(202,
-    makeFormation({ swordsman: 9, archer: 4, healer: 2, level: 25 }));
+    makeFormation({ swordsman: 9, archer: 4, healer: 2, level: 75 }));
   assert.equal(battle.phase, 'victory');
   assert.ok(fighters.every(unit => unit.firstMove < 1));
   assert.ok(fighters.reduce((sum, unit) => sum + unit.archerHits, 0) > 0);

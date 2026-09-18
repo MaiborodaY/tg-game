@@ -1,6 +1,18 @@
 # BroTD Infinity in Telegram
 
-Latest verified release, 2026-09-17: commit `48543e4` on `codex/pixel-chronicle`
+St. Knihor update, 2026-09-18: the paladin replaces the king, with 20 experience
+levels, 19 talent points and automatic healing, armour aura and hammer abilities.
+The castle is the 100-HP defended objective; hero death does not end the wave.
+Existing saves gain a level-one hero without resetting their army or economy.
+Talent changes during combat apply next wave. See `ST_KNIHOR_HERO.md` for numbers
+and known balance limits. Visible Merge labels are now Connect; Lancer body scale
+matches the other infantry. All 153 Node tests pass, along with mobile hero and
+drag controls, hero abilities at ×3, and all 44 Lancer renderer cases. The built
+game was smoke-tested in an isolated browser. Runtime hero art totals 410.65 KiB.
+The release still uses the dedicated `bro-infinity` alias and deployment recipe
+below; a Git push alone does not verify that alias has been updated.
+
+Previous verified release record, 2026-09-17: commit `48543e4` on `codex/pixel-chronicle`
 was pushed and deployed to https://224eac10.tg-game-23f.pages.dev/; the existing
 https://bro-infinity.tg-game-23f.pages.dev/ alias serves it. This includes the
 first-thirty-wave balance changes, the five-enemy boss encounter on wave 1-1/10,

@@ -1,23 +1,29 @@
 import { UNIT_TYPE_BY_ID } from './units.mjs';
-import { FIELD, BATTLE_VIEW, FORMATION_VIEW, positionForCell } from './field.mjs';
-import { getUnitRange, KING_MAX_HP } from './combat.mjs';
+import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, positionForCell } from './field.mjs';
+import { getUnitRange, CASTLE_MAX_HP } from './combat.mjs';
 import { getUnitRank } from './unit-ranks.mjs';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.mjs';
 import { UNIT_RANK_ASSETS } from './rank-art.mjs';
+import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.mjs';
 import { allyDeathOpacity } from './ally-animation.mjs';
 import { UNIT_IMAGES } from './asset-web.mjs';
+import { getHeroStats } from './hero.mjs';
+import { ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS } from './st-knihor-art.mjs';
+import { tinyStKnihorFrame, stKnihorDirection, stKnihorEffectFrame } from './tiny-st-knihor.mjs';
 import { GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.mjs';
 import { GOBLIN_CHIEF_GEOMETRY } from './goblin-chief-art.mjs';
+import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from './goblin-healer-art.mjs';
 import { OGRE_GEOMETRY } from './ogre-art.mjs';
 import { UNDEAD_ART } from './undead-art.mjs';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.mjs';
 import { getEnemyCombatType } from './waves.mjs';
 import { TINY_WARRIOR_LAYOUT, tinyWarriorFrame } from './tiny-warrior.mjs';
+import { tinyLancerFrame } from './tiny-lancer.mjs';
 import { TINY_TORCH_LAYOUT, tinyTorchFrame } from './tiny-torch.mjs';
 import { TINY_GOBLIN_ARCHER_LAYOUT, tinyGoblinArcherFrame } from './tiny-goblin-archer.mjs';
 import { TINY_GOBLIN_CHIEF_LAYOUT, tinyGoblinChiefFrame } from './tiny-goblin-chief.mjs';
+import { tinyGoblinHealerFrame, goblinHealPulseFrame } from './tiny-goblin-healer.mjs';
 import { TINY_BOAR_LAYOUT, tinyBoarFrame } from './tiny-boar.mjs';
-import { TINY_KING_LAYOUT, tinyKingFrame } from './tiny-king.mjs';
 import { TINY_ARCHER_LAYOUT, tinyArcherFrame, tinyMonkIdleFrame, tinyMonkRunFrame, tinyMonkHealFrame } from './tiny-support.mjs';
 import { createTinyMap } from './tiny-map.mjs';
 import { createGraveyardMap } from './graveyard-map.mjs';
@@ -26,27 +32,6 @@ import { getSceneAssetPlan } from './scene-assets.mjs';
 export { FIELD } from './field.mjs';
 
 const ALLY_ANIMATION_METADATA = {
-  king: {
-    layout: TINY_KING_LAYOUT,
-    pixelArt: true,
-    fullCells: true,
-    bakedShadow: true,
-    bodyHeight: 180 / 313.5,
-    renderHeight: 46,
-    // Generated poses have different padding; anchor their painted feet, not cell bottoms.
-    baselines: [292, 292, 292, 292, 270, 270, 270, 270,
-      271, 271, 271, 271, 228, 228, 228, 228].map(value => value / 313.5),
-    centers: [169, 163, 159, 158, 160, 152, 141, 160,
-      166, 160, 155, 161, 165, 159, 161, 163].map(value => value / 313.5),
-    sourceRects: {
-      // The upward slash crosses the nominal row boundary; keep it out of the right strike.
-      6: { x: 627, y: 313.5, width: 313.5, height: 286.5 },
-      10: { x: 627, y: 610, width: 313.5, height: 330 },
-    },
-    portraitFrame: 0,
-    frameFor: tinyKingFrame,
-    horizontalFacing: true,
-  },
   swordsman: {
     layout: TINY_WARRIOR_LAYOUT,
     pixelArt: true,
@@ -83,8 +68,19 @@ const ALLY_ANIMATION_METADATA = {
     frameFor: tinyMonkIdleFrame,
     horizontalFacing: true,
   },
+  lancer: {
+    ...LANCER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: true,
+    // Match the infantry's 0.5 scale per source pixel; the spear is not body height.
+    renderHeight: 34,
+    portraitFrame: 0,
+    frameFor: tinyLancerFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS = { swordsman: 50, archer: 42, healer: 39 };
+const ALLY_HEALTH_OFFSETS = { swordsman: 50, archer: 42, healer: 39, lancer: 38, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -114,6 +110,15 @@ const GOBLIN_CHIEF_ANIMATION_METADATA = {
   bakedShadow: false,
   renderHeight: 52,
   frameFor: tinyGoblinChiefFrame,
+  horizontalFacing: true,
+};
+const GOBLIN_HEALER_ANIMATION_METADATA = {
+  ...GOBLIN_HEALER_GEOMETRY,
+  pixelArt: true,
+  fullCells: true,
+  bakedShadow: false,
+  renderHeight: 40,
+  frameFor: tinyGoblinHealerFrame,
   horizontalFacing: true,
 };
 const OGRE_ANIMATION_METADATA = {
@@ -337,7 +342,7 @@ function drawRange(context, type, x, y, ghost = false) {
   context.restore();
 }
 
-function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankLevel = 1) {
+function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankLevel = 1, compact = false) {
   const sourceAnimation = animations?.[type];
   const baseAnimation = sourceAnimation?.ranks?.[getUnitRank(actor?.level ?? rankLevel).level] ?? sourceAnimation;
   const animation = actor?.action === 'heal' && baseAnimation?.cast?.atlas ? baseAnimation.cast
@@ -350,7 +355,7 @@ function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankL
   const animationTime = !actor || actor.action === 'idle' ? time * 0.65 : time;
   const frame = meta.frameFor(actor, animationTime);
   const sourceFrame = animation.bounds[frame] ? frame : idle;
-  const source = animation.bounds[sourceFrame];
+  const source = (compact && meta.compactSourceRects?.[sourceFrame]) || animation.bounds[sourceFrame];
   const layout = meta.layout;
   const cellWidth = animation.atlas.width / layout.columns;
   const cellHeight = animation.atlas.height / layout.rows;
@@ -375,7 +380,7 @@ function drawAnimatedUnit(context, animations, type, actor, x, feet, time, rankL
   return true;
 }
 
-function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0, goblinArt = null, allyAnimations = null, rankLevel = null, renderScale = 1) {
+function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0, goblinArt = null, allyAnimations = null, rankLevel = null, renderScale = 1, compact = false) {
   // The royal sprite must stay inside its narrow peninsula, even on very tall phones.
   if (isKing) renderScale = Math.min(renderScale, 1.12);
   context.save();
@@ -402,11 +407,11 @@ function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0
     context.ellipse(x, feet + 0.5, 11, 2.3, 0, 0, Math.PI * 2);
     context.fill();
   }
-  const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'ogre', 'boar'].includes(type)
+  const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
     || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
-  } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1)) {
+  } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1, compact)) {
     // Ally frame sequences are inspected separately; prompt frame numbers are not assumed to match impact.
 
   } else {
@@ -415,49 +420,66 @@ function drawUnit(context, type, x, feet, isKing = false, actor = null, time = 0
   context.restore();
 }
 
-function drawKing(context, selected, actor = null, time = 0, drawFigure = true, allyAnimations = null, renderScale = 1) {
-  const x = actor?.x ?? FIELD.kingX;
-  const feet = actor?.y ?? FIELD.kingFeet;
-  if (selected) {
-    context.fillStyle = '#ffefad45';
-    roundedRect(context, x - 29, feet - 56, 58, 62, 10);
-    context.fill();
-    context.strokeStyle = GOLD;
-    context.lineWidth = 2;
-    context.stroke();
-  }
-  if (drawFigure) drawUnit(context, 'king', x, feet, true, actor, time, null, allyAnimations, null, renderScale);
-  pixelPanel(context, x - 25, feet + 6, 50, 20);
-  context.fillStyle = '#f8e7bb';
-  context.fill();
-  context.strokeStyle = '#8b6845';
-  context.lineWidth = 1;
-  context.stroke();
-  context.fillStyle = '#b98235';
-  context.beginPath();
-  context.moveTo(x - 20, feet + 18);
-  context.lineTo(x - 22, feet + 10);
-  context.lineTo(x - 18, feet + 14);
-  context.lineTo(x - 16, feet + 9);
-  context.lineTo(x - 14, feet + 14);
-  context.lineTo(x - 10, feet + 10);
-  context.lineTo(x - 12, feet + 18);
-  context.closePath();
-  context.fill();
-  context.fillStyle = '#74a04c';
-  const hp = Math.max(0, Math.ceil(actor?.hp ?? KING_MAX_HP));
-  const maxHp = actor?.maxHp ?? KING_MAX_HP;
-  roundedRect(context, x - 21, feet + 21, Math.max(0.1, 42 * hp / maxHp), 3, 1.5);
-  context.fill();
-  context.font = '10px "Lilita One", sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillStyle = '#4c493d';
-  context.fillText(`${hp}/${maxHp}`, x + 6, feet + 14.5, 31);
+function drawCastleHealth(context, actor = null) {
+  const hp = Math.max(0, Math.ceil(actor?.hp ?? CASTLE_MAX_HP));
+  const maxHp = actor?.maxHp ?? CASTLE_MAX_HP;
+  const x = FIELD.kingX, y = 354;
+  context.save();
+  pixelPanel(context, x - 24, y, 48, 16);
+  context.fillStyle = '#f4e8bf'; context.fill();
+  context.fillStyle = '#6b9452'; context.fillRect(x - 21, y + 12, 42 * hp / maxHp, 3);
+  context.font = '9px "Lilita One", sans-serif'; context.textAlign = 'center';
+  context.textBaseline = 'middle'; context.fillStyle = '#4c493d';
+  context.fillText(`${hp}/${maxHp}`, x, y + 6, 43);
+  context.restore();
+}
+
+function drawHeroEffect(context, image, kind, progress, x, y, scale = .42) {
+  if (!image) return;
+  const spec = ST_KNIHOR_EFFECTS[kind];
+  const frame = stKnihorEffectFrame(kind, clamp(progress) * spec.duration) % 4;
+  const { rect, groundAnchor } = spec.frames[frame];
+  context.save(); context.imageSmoothingEnabled = false;
+  context.drawImage(image, rect.x, rect.y, rect.width, rect.height,
+    x - groundAnchor.x * scale, y - groundAnchor.y * scale, rect.width * scale, rect.height * scale);
+  context.restore();
+}
+
+function drawHero(context, art, effects, actor, time, renderScale = 1) {
+  const action = actor.hp <= 0 ? ((actor.deathTime ?? 0) < .8 ? 'death' : 'dead')
+    : ['heal', 'hammer'].includes(actor.action) ? 'cast' : actor.action;
+  const pose = { ...actor, action, ...(action === 'death' ? { actionTime: actor.deathTime, actionDuration: .8 } : {}) };
+  const { direction, flipX } = stKnihorDirection(pose);
+  if (!art[direction]) return;
+  const { anchor, sourceRects, bodyHeight, frameHeight } = ST_KNIHOR_GEOMETRY;
+  const rect = sourceRects[tinyStKnihorFrame(pose, time)];
+  const scale = 40 * renderScale / (bodyHeight * frameHeight);
+  context.save();
+  if (actor.hp > 0) {
+    context.globalAlpha = actor.bastionTime > 0 ? .8 : .32;
+    drawHeroEffect(context, effects, 'armor', (time % 1.2) / 1.2, actor.x, actor.y + 1, .38 * renderScale);
+  } else context.globalAlpha = Math.max(.35, 1 - (actor.deathTime ?? 0) * .4);
+  context.globalAlpha = actor.hp > 0 ? 1 : context.globalAlpha;
+  context.translate(actor.x, actor.y);
+  if (flipX) context.scale(-1, 1);
+  context.imageSmoothingEnabled = false;
+  context.drawImage(art[direction], rect.x, rect.y, rect.width, rect.height,
+    -anchor.x * scale, -anchor.y * scale, rect.width * scale, rect.height * scale);
+  context.restore();
+}
+
+function drawHeroBattleEffect(context, image, effect, renderScale) {
+  const p = clamp(effect.age / effect.duration);
+  const tx = effect.targetX ?? effect.x, ty = effect.targetY ?? effect.y;
+  if (effect.type === 'hero-hammer') {
+    drawHeroEffect(context, image, 'hammer', p, effect.x + (tx - effect.x) * p,
+      effect.y + (ty - effect.y) * p - Math.sin(p * Math.PI) * 10, .28 * renderScale);
+  } else drawHeroEffect(context, image, effect.type === 'hero-heal' ? 'heal' : 'impact', p,
+    tx, ty, .42 * renderScale);
 }
 
 function drawHealth(context, actor, renderScale = 1) {
-  if (actor.hp <= 0 || actor.type === 'king') return;
+  if (actor.hp <= 0 || actor.type === 'castle') return;
   const enemy = actor.side === 'enemy';
   const width = enemy ? 26 : 30;
   const largeEnemyMetadata = actor.type === 'ogre' ? OGRE_ANIMATION_METADATA
@@ -495,7 +517,7 @@ function drawChiefWindup(context, actor) {
   context.restore();
 }
 
-function drawEffect(context, effect) {
+function drawEffect(context, effect, goblinHealPulse = null, renderScale = 1) {
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
@@ -563,6 +585,26 @@ function drawEffect(context, effect) {
       context.restore();
       return;
     }
+    if (effect.sourceType === 'goblinHealer' && goblinHealPulse) {
+      const { rect, groundAnchor } = GOBLIN_HEAL_PULSE_FRAMES[goblinHealPulseFrame(p)];
+      const scale = .5 * renderScale;
+      context.imageSmoothingEnabled = false;
+      // Combat effects target the torso (-27px); this authored ring is anchored to the recipient's feet.
+      context.drawImage(goblinHealPulse, rect.x, rect.y, rect.width, rect.height,
+        targetX - groundAnchor.x * scale, targetY + 27 - groundAnchor.y * scale,
+        rect.width * scale, rect.height * scale);
+      context.font = '11px "Lilita One", sans-serif';
+      context.textAlign = 'center';
+      context.lineJoin = 'round';
+      context.lineWidth = 2.5;
+      context.strokeStyle = '#244635';
+      const label = `+${Math.round(effect.amount)}`;
+      context.strokeText(label, targetX, targetY - 20 - p * 12);
+      context.fillStyle = '#baf3a7';
+      context.fillText(label, targetX, targetY - 20 - p * 12);
+      context.restore();
+      return;
+    }
     const controlX = (startX + targetX) / 2 + 12;
     const controlY = Math.min(startY, targetY) - 18;
     context.strokeStyle = '#a4eea67a';
@@ -602,6 +644,7 @@ function drawEffect(context, effect) {
     context.fillStyle = '#baf3a7';
     context.fillText(label, targetX, targetY - 23 - p * 14);
   } else if (effect.type === 'slash'
+    && effect.sourceType !== 'lancer'
     && !['goblin', 'boar'].includes(getEnemyCombatType(effect.sourceType))) {
     const heavy = ['goblinChief', 'ogre'].includes(getEnemyCombatType(effect.sourceType));
     const angle = Math.atan2(targetY - effect.y, targetX - effect.x);
@@ -643,6 +686,7 @@ const ENEMY_ANIMATION_METADATA = {
   goblin: TORCH_ANIMATION_METADATA,
   goblinArcher: GOBLIN_ARCHER_ANIMATION_METADATA,
   goblinChief: GOBLIN_CHIEF_ANIMATION_METADATA,
+  goblinHealer: GOBLIN_HEALER_ANIMATION_METADATA,
   ogre: OGRE_ANIMATION_METADATA,
   boar: BOAR_ANIMATION_METADATA,
   ...Object.fromEntries(Object.entries(UNDEAD_ENEMY_ART).map(([type, art]) => [type, art.metadata])),
@@ -683,11 +727,14 @@ async function loadSceneAssets(plan) {
   }
   const goblinArt = { animations: Object.fromEntries(plan.enemies.map(enemy =>
     [enemy.type, prepareAnimation(resources.get(enemy.sheet), ENEMY_ANIMATION_METADATA[enemy.type])])) };
-  return { map: resources.get(plan.mapKey), goblinArt, allyAnimations };
+  return { map: resources.get(plan.mapKey), goblinArt, allyAnimations,
+    goblinHealPulse: plan.goblinHealPulse ? resources.get(plan.goblinHealPulse) : null,
+    heroArt: Object.fromEntries(Object.entries(plan.heroArt).map(([direction, url]) => [direction, resources.get(url)])),
+    heroEffects: plan.heroEffects ? resources.get(plan.heroEffects) : null };
 }
 
 export async function createScene(canvas, {
-  onCell = () => {}, onKing = () => {}, onAssetState = () => {}, formationOnly = false, placementGrid = true,
+  onCell = () => {}, onHero = () => {}, onAssetState = () => {}, formationOnly = false, placementGrid = true,
 } = {}) {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas 2D is unavailable');
@@ -696,6 +743,9 @@ export async function createScene(canvas, {
   let map = null;
   let goblinArt = { animations: {} };
   let allyAnimations = {};
+  let goblinHealPulse = null;
+  let heroArt = {};
+  let heroEffects = null;
   const unitImages = UNIT_IMAGES;
   // Crop tightly around the formation while keeping first-row health and level labels.
   const view = formationOnly ? FORMATION_VIEW : BATTLE_VIEW;
@@ -724,7 +774,7 @@ export async function createScene(canvas, {
     onAssetState({ ...assetState });
     pendingAssets = loadSceneAssets(plan).then(assets => {
       if (destroyed || request !== assetRequest) return false;
-      ({ map, goblinArt, allyAnimations } = assets);
+      ({ map, goblinArt, allyAnimations, goblinHealPulse, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
@@ -823,7 +873,7 @@ export async function createScene(canvas, {
           if (unit.id === state.draggedId) context.globalAlpha = 0.35;
           const centerX = FIELD.gridX + col * FIELD.cellWidth + FIELD.cellWidth / 2;
           const feet = FIELD.gridY + (row + 1) * FIELD.cellHeight - 5;
-          drawUnit(context, unit.type, centerX, feet, false, null, formationOnly ? 0 : state.time, null, allyAnimations, unit.level ?? 1, actorScale);
+          drawUnit(context, unit.type, centerX, feet, false, null, formationOnly ? 0 : state.time, null, allyAnimations, unit.level ?? 1, actorScale, formationOnly);
           const maxHp = unit.maxHp ?? getUnitStats(unit.type, unit.level).hp;
           const health = Math.max(0, Math.min(1, (unit.hp ?? maxHp) / Math.max(1, maxHp)));
           const healthY = feet - (ALLY_HEALTH_OFFSETS[unit.type] ?? 54) * actorScale;
@@ -869,24 +919,34 @@ export async function createScene(canvas, {
     context.globalAlpha = 1;
     if (state.battle) {
       const enemyArt = goblinArt;
-      const actors = [...state.battle.allies, ...state.battle.enemies, state.battle.king]
+      const actors = [...state.battle.allies, ...state.battle.enemies, state.battle.hero]
         .filter(Boolean).sort((a, b) => a.y - b.y || a.x - b.x);
       for (const actor of actors) drawChiefWindup(context, actor);
       for (const actor of actors) {
+        if (actor.type === 'hero') { drawHero(context, heroArt, heroEffects, actor, state.time, actorScale); continue; }
         drawUnit(context, actor.type, actor.x, actor.y,
-          actor.type === 'king', actor, state.time, enemyArt, allyAnimations, null, actorScale);
+          false, actor, state.time, enemyArt, allyAnimations, null, actorScale);
       }
       for (const actor of actors) drawHealth(context, actor, actorScale);
-      for (const effect of state.battle.effects) drawEffect(context, effect);
-      drawKing(context, false, state.battle.king, state.time, false);
+      for (const effect of state.battle.effects) {
+        if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
+        else drawEffect(context, effect, goblinHealPulse, actorScale);
+      }
+      drawCastleHealth(context, state.battle.castle);
     } else {
       if (ghost) {
         context.save();
         context.globalAlpha = 0.5;
-        drawUnit(context, state.placementType, ghost.x, ghost.y, false, null, formationOnly ? 0 : state.time, null, allyAnimations, state.placementLevel ?? 1);
+        drawUnit(context, state.placementType, ghost.x, ghost.y, false, null, formationOnly ? 0 : state.time, null, allyAnimations, state.placementLevel ?? 1, 1, formationOnly);
         context.restore();
       }
-      if (!formationOnly) drawKing(context, state.selectedId === 'king', null, state.time, true, allyAnimations, actorScale);
+      if (!formationOnly) {
+        const stats = getHeroStats(state.heroState);
+        const hero = { type: 'hero', action: 'idle', ...HERO_START, facingX: 0, facingY: -1, hp: stats.maxHp, maxHp: stats.maxHp };
+        drawHero(context, heroArt, heroEffects, hero, state.time, actorScale);
+        drawHealth(context, hero, actorScale);
+        drawCastleHealth(context);
+      }
     }
   }
 
@@ -913,13 +973,15 @@ export async function createScene(canvas, {
   }
 
   function onClick(event) {
-    if (destroyed || state.battle) return;
+    if (destroyed) return;
     const point = pointFromEvent(event);
     if (!point) return;
     const { x, y } = point;
+    const hero = state.battle?.hero ?? HERO_START;
+    if (!formationOnly && Math.abs(x - hero.x) <= 24 && y >= hero.y - 47 && y <= hero.y + 7) { onHero(); return; }
+    if (state.battle) return;
     const cell = cellAtPoint(x, y);
     if (cell && showPlacementGrid) onCell(cell);
-    else if (!formationOnly && Math.abs(x - FIELD.kingX) <= 32 && y >= FIELD.kingFeet - 59 && y <= FIELD.kingFeet + 32) onKing();
   }
 
   canvas.addEventListener('click', onClick);
@@ -939,9 +1001,10 @@ export async function createScene(canvas, {
       return point ? cellAtPoint(point.x, point.y) : null;
     },
     getPortrait(type) {
-      return unitImages.get(type)?.portrait ?? null;
+      return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
+      if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
       return UNIT_RANK_ASSETS[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {
@@ -964,6 +1027,9 @@ export async function createScene(canvas, {
       map = null;
       goblinArt = { animations: {} };
       allyAnimations = {};
+      goblinHealPulse = null;
+      heroArt = {};
+      heroEffects = null;
       resizeObserver?.disconnect();
       window.removeEventListener('resize', draw);
       canvas.removeEventListener('click', onClick);

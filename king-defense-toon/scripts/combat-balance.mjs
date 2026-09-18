@@ -38,13 +38,13 @@ export function makeFormation({ swordsman = 0, archer = 0, healer = 0, level = 1
   return result.sort((a, b) => a.row - b.row || a.col - b.col);
 }
 
-export function simulateCombat(engine, { id = 'custom', wave = 1, formation = [], maxSeconds = 240, dt = 1 / 60 }) {
+export function simulateCombat(engine, { id = 'custom', wave = 1, formation = [], heroState, maxSeconds = 240, dt = 1 / 60 }) {
   if (!Number.isFinite(maxSeconds) || maxSeconds <= 0 || !Number.isFinite(dt) || dt <= 0 || dt > 1 / 60) {
     throw new RangeError('Use a positive time limit and a time step no larger than 1/60 second');
   }
   const saved = JSON.stringify(formation);
-  const battle = engine.createBattle(formation, wave);
-  const totals = { damageToEnemies: 0, damageToAllies: 0, damageToKing: 0, healing: 0 };
+  const battle = engine.createBattle(formation, wave, heroState);
+  const totals = { damageToEnemies: 0, damageToAllies: 0, damageToCastle: 0, healing: 0 };
   let lastEffectId = 0;
   let updates = 0;
   while (battle.phase === 'running' && battle.elapsed < maxSeconds - 1e-7) {
@@ -54,9 +54,9 @@ export function simulateCombat(engine, { id = 'custom', wave = 1, formation = []
     // targeting, enrage, or random state. Each effect has a monotonic battle-local ID.
     for (const effect of battle.effects) {
       if (effect.id <= lastEffectId) continue;
-      if (effect.type === 'heal') totals.healing += effect.amount;
+      if (effect.type === 'heal' || effect.type === 'hero-heal') totals.healing += effect.amount;
       if (effect.type === 'hit') {
-        const key = effect.sourceId === 'king' ? 'damageToKing'
+        const key = ['castle', 'king'].includes(effect.sourceId) ? 'damageToCastle'
           : effect.side === 'enemy' ? 'damageToEnemies' : 'damageToAllies';
         totals[key] += effect.amount;
       }
@@ -73,13 +73,16 @@ export function simulateCombat(engine, { id = 'custom', wave = 1, formation = []
     battleSeconds: Math.round(battle.elapsed * 1000) / 1000, updates,
     army: formation, survivors: alive.length, casualties: battle.allies.length - alive.length,
     survivingTypes: Object.fromEntries(['swordsman', 'archer', 'healer'].map(type => [type, alive.filter(unit => unit.type === type).length])),
-    kingHp: battle.king.hp, alliedHp: alive.reduce((sum, unit) => sum + unit.hp, 0),
+    castleHp: (battle.castle ?? battle.king).hp,
+    // Historical reports/tests retain their objective key while new reports name the castle.
+    kingHp: (battle.castle ?? battle.king).hp, alliedHp: alive.reduce((sum, unit) => sum + unit.hp, 0),
+    hero: battle.hero ? { level: battle.hero.level, hp: battle.hero.hp, maxHp: battle.hero.maxHp } : null,
     initialEnemyHp, enemyRemaining: battle.total - battle.kills,
     spawned: battle.spawned, totalEnemies: battle.total, kills: battle.kills,
     enemyHpRemaining: battle.enemies.reduce((sum, unit) => sum + unit.hp, 0),
     reward: battle.reward, enraged: battle.enraged, enrageAt: battle.enrageAt,
     enrageSeconds: Math.max(0, Math.round((battle.elapsed - battle.enrageAt) * 1000) / 1000),
-    ...totals,
+    ...totals, damageToKing: totals.damageToCastle,
   };
 }
 
@@ -124,7 +127,8 @@ async function cli() {
   const report = {
     sourceRoot: engine.sourceRoot,
     assumptions: [
-      'Real createBattle/updateBattle with fresh full-HP army and king for every case.',
+      'Real createBattle/updateBattle with a fresh full-HP army, hero and castle for every case.',
+      'Hero defaults to level one without talents; each case may explicitly supply heroState.',
       'Deterministic 1/60-second battle-clock steps; UI x1/x2/x3 only changes wall-clock speed.',
       'Army sizes and personal levels are explicit scenario assumptions, not an economy or recruitment forecast.',
       'One legal formation and roster order per case; unlocked-cell purchases, random drops, offline income, and player decisions are not simulated.',

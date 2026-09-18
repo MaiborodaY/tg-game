@@ -19,22 +19,36 @@ function runBattle(formation, frameDurations, speed, wave = 9) {
   assert.notEqual(battle.phase, 'running', 'the battle must finish within the frame budget');
   // A larger last frame may age the finished battle's cosmetics for more ticks.
   // Gameplay state and the full ordered event stream must still match exactly.
-  const { stepRemainder, effects, allies, enemies, king, ...state } = battle;
+  assert.equal(battle.king, battle.castle, 'the historical king reference remains the castle alias');
+  const { stepRemainder, effects, allies, enemies, king, hero, castle, ...state } = battle;
   return { ...state, allies: allies.map(withoutVisualTimers),
-    enemies: enemies.map(withoutVisualTimers), king: withoutVisualTimers(king), events };
+    enemies: enemies.map(withoutVisualTimers), king: withoutVisualTimers(king),
+    hero: withoutVisualTimers(hero), castle: withoutVisualTimers(castle), events };
 }
 
-test('the ninth-wave result and events are identical at 20/30/60 FPS, all speeds and jitter', () => {
-  const formation = makeFormation({ swordsman: 4, archer: 1, healer: 2, level: 4 });
+function assertFrameIndependentBattle(level, outcome) {
+  const formation = makeFormation({ swordsman: 4, archer: 1, healer: 2, level });
   const saved = structuredClone(formation);
   formation.forEach(Object.freeze);
   Object.freeze(formation);
   const expected = runBattle(formation, [1 / 60], 1);
-  assert.equal(expected.phase, 'victory');
-  assert.equal(expected.kills, 9);
-  assert.equal(expected.king.hp, 100);
+  assert.equal(expected.phase, outcome);
+  assert.equal(expected.total, 9);
+  assert.equal(expected.hero.type, 'hero');
+  assert.equal(expected.castle.type, 'castle');
   assert.ok(expected.events.some(event => event.type === 'bow-shot'));
-  assert.equal(expected.events.filter(event => event.type === 'gold').length, 9);
+  const rewards = expected.events.filter(event => event.type === 'gold');
+  assert.ok(rewards.length > 0, 'both scenarios must exercise kill rewards');
+  assert.equal(rewards.length, expected.kills);
+  assert.equal(rewards.reduce((total, event) => total + event.amount, 0), expected.reward);
+  if (outcome === 'victory') {
+    assert.equal(expected.kills, expected.total);
+    assert.equal(expected.reward, expected.wave.reward);
+    assert.ok(expected.castle.hp > 0);
+  } else {
+    assert.equal(expected.castle.hp, 0);
+    assert.ok(expected.kills < expected.total);
+  }
   for (const speed of [1, 2, 3]) {
     for (const durations of [[1 / 20], [1 / 30], [1 / 60], [1 / 60, .041, .024, .1, .012]]) {
       assert.deepEqual(runBattle(formation, durations, speed), expected,
@@ -42,14 +56,16 @@ test('the ninth-wave result and events are identical at 20/30/60 FPS, all speeds
     }
   }
   assert.deepEqual(formation, saved, 'combat must not modify the saved army');
+}
+
+test('a ninth-wave victory preserves state and events at 20/30/60 FPS, all speeds and jitter', () => {
+  // The hero/castle update changed this encounter. A stronger army supplies the
+  // victory fixture without treating this timing regression as a balance threshold.
+  assertFrameIndependentBattle(20, 'victory');
 });
 
-test('the earlier healer-heavy regression also has one result across frame schedules', () => {
-  const formation = makeFormation({ swordsman: 1, archer: 1, healer: 2, level: 1 });
-  const expected = runBattle(formation, [1 / 30], 1, 3);
-  assert.equal(expected.phase, 'victory');
-  assert.deepEqual(runBattle(formation, [1 / 20], 1, 3), expected);
-  assert.deepEqual(runBattle(formation, [1 / 30], 3, 3), expected);
+test('the original ninth-wave army now loses identically at every FPS and speed', () => {
+  assertFrameIndependentBattle(4, 'defeat');
 });
 
 test('partial ticks survive idle updates and cannot leak into a different battle', () => {

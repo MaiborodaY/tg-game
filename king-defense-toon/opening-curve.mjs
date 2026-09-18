@@ -1,5 +1,5 @@
-// Only rounds two and three are calibrated here. The rest of the campaign stays
-// separate until its armies, progression and encounters have been checked.
+// Preserve the calibrated second and third rounds. campaign-curve.mjs continues
+// their final HP/damage tier through the rest of both levels.
 const ROUND_HEALTH = [
   [866, 878, 890, 902, 914, 926, 938, 950, 1120, 1250],
   [1265, 1277, 1289, 1301, 1313, 1325, 1337, 1349, 1500, 1680],
@@ -41,9 +41,9 @@ export function openingContinuationSpawns(number) {
     ...group(14.8, ['goblin', 'boar', 'goblin', 'goblinArcher']),
   ], health).map((spawn, index) => ({ ...spawn, damage: Math.round(damage
     * (spawn.type === 'goblinArcher' ? .64 : spawn.type === 'boar' ? .91 : 1))
-    // One extra point on the lead fighter closes the tested post-chief dip without
-    // raising all eight attackers and creating a new wall for two-healer armies.
-    + (index === 0 ? 1 : 0) }));
+    // The paladin lets two-healer armies beat wave 21 one level below its chief.
+    // Add only one point to that lead fighter and carry it until the next damage tier.
+    + (index === 0 ? (number >= 21 && number <= 28 ? 2 : 1) : 0) }));
 
   const bossType = 'goblinChief';
   const bossHealth = Math.round(health * .55);
