@@ -1,5 +1,16 @@
 # BroTD Infinity in Telegram
 
+Current release instruction (2026-09-18): for this game, **"commit and push" includes
+publishing the same build to the Telegram URL below**. Push approved changes to
+`main`, then deploy the exact committed `public/king-defense-toon` artifacts to
+Pages branch `bro-infinity`. The automatic `main` deployment updates the normal
+project site, not this dedicated game alias. Keep this workflow until the game
+moves to its own repository. See `AGENTS.md` for the release checklist.
+
+The Profile footer embeds a build version and UTC build date in the page itself.
+It identifies the loaded build, including an older cached copy, and does not fetch
+a newer version label from the network. Local development is marked `Local`.
+
 St. Knihor update, 2026-09-18: the paladin replaces the king, with 20 experience
 levels, 19 talent points and automatic healing, armour aura and hammer abilities.
 The castle is the 100-HP defended objective; hero death does not end the wave.
@@ -50,10 +61,16 @@ node ../../node_modules/vite/bin/vite.js build king-defense-toon --config king-d
 From `king-defense-toon/`:
 
 ```powershell
-node ../../../node_modules/wrangler/bin/wrangler.js pages deploy ../public/king-defense-toon --project-name tg-game --branch bro-infinity --commit-dirty=true
+node ../../../node_modules/wrangler/bin/wrangler.js pages deploy ../public/king-defense-toon --project-name tg-game --branch bro-infinity
 ```
 
-The deployment must be Preview, never Production. Inspect Wrangler's returned branch alias and verify it before configuring BotFather. HTML is revalidated; hashed assets use immutable caching. Keep using that branch alias for future updates so the local save origin remains stable. The normal production website and other Mini Apps are not replaced by this preview deployment.
+Build before committing, then deploy the committed output without rebuilding so
+the visible version and uploaded files remain identical. This standalone upload
+must target Preview (`bro-infinity`), not the project's Production root. Confirm
+Wrangler's returned alias and deployment metadata; the user tests published
+gameplay. HTML is revalidated; hashed assets use immutable caching. Keep the same
+alias so local saves retain their origin. The normal production website and other
+Mini Apps are not replaced by this preview deployment.
 
 ## BotFather setup
 

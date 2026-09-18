@@ -342,6 +342,7 @@ svg { display: block; }
 #profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #526247; font-size: 16px; line-height: 20px; }
 #profile-progress { color: #897652; font-size: 11px; line-height: 15px; }
 .profile-settings-title { margin: 0; color: #8a7653; font-size: 12px; line-height: 18px; }
+.profile-version { display: flex; flex-direction: column; gap: 1px; margin: 6px 0 0; padding-top: 6px; border-top: 1px solid #ccb88b; color: #78684c; font-size: 11px; line-height: 15px; text-align: center; user-select: text; }
 #unit-panel, #barracks-panel, #market-info-panel { padding-inline: 8px; }
 .is-telegram #unit-panel, .is-telegram #barracks-panel, .is-telegram #market-info-panel {
   padding-top: max(10px, env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px));
