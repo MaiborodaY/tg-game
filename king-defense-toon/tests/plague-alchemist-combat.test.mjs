@@ -29,12 +29,13 @@ function encounter({ heroState, formation = [{ id: 1, type: 'swordsman', level: 
   const target = battle.allies[0];
   if (target) Object.assign(target, { x: 195, y: 270 });
   battle.effects = [];
+  battle.projectiles = [];
   return { battle, caster: battle.enemies[0], target };
 }
 
 function bottle(battle, source, target, damage = 40, extra = {}) {
   return {
-    id: battle.nextEffectId++, type: 'poison-bottle',
+    id: battle.nextProjectileId++, type: 'poison-bottle',
     x: source.x, y: source.y - 27, targetX: target.x, targetY: target.y - 27,
     age: 0, duration: 0, side: source.side, sourceType: source.type, sourceId: source.id,
     targetId: target.id, damage, ...extra,
@@ -42,7 +43,7 @@ function bottle(battle, source, target, damage = 40, extra = {}) {
 }
 
 function applyPoison(battle, caster, target, damage = 40) {
-  battle.effects.push(bottle(battle, caster, target, damage));
+  battle.projectiles.push(bottle(battle, caster, target, damage));
   updateBattle(battle, DT);
 }
 
@@ -58,9 +59,9 @@ test('alchemist releases one bottle at the throw impact pose, then poison starts
   const hp = target.hp;
   const releaseStep = Math.ceil(caster.actionDuration * caster.impactFraction / DT);
   advance(battle, (releaseStep - 1) * DT);
-  assert.ok(!battle.effects.some(effect => effect.type === 'poison-bottle'));
+  assert.ok(!battle.projectiles.some(effect => effect.type === 'poison-bottle'));
   const events = updateBattle(battle, DT);
-  const shot = battle.effects.find(effect => effect.type === 'poison-bottle');
+  const shot = battle.projectiles.find(effect => effect.type === 'poison-bottle');
   assert.ok(shot);
   assert.equal(shot.targetId, target.id);
   assert.equal(shot.damage, 40);
@@ -116,7 +117,7 @@ test('repeat hits keep the next tick, refresh the duration and retain only the s
   applyPoison(battle, caster, target, 80);
   assert.equal(target.poison.damagePerTick, 20);
   const secondCaster = { ...caster, id: 'other-alchemist' };
-  battle.effects.push(bottle(battle, secondCaster, target, 60), bottle(battle, caster, target, 20));
+  battle.projectiles.push(bottle(battle, secondCaster, target, 60), bottle(battle, caster, target, 20));
   updateBattle(battle, DT);
   assert.equal(target.poison.damagePerTick, 20, 'simultaneous casters do not add their budgets');
   advance(battle, 1 - 2 * DT);
@@ -192,7 +193,7 @@ test('bottle arrival rejects dead, missing, opposing and invalid targets or dama
     if (invalid === 'negative') effect.damage = -1;
     if (invalid === 'zero') effect.damage = 0;
     const hp = target.hp;
-    battle.effects.push(effect);
+    battle.projectiles.push(effect);
     updateBattle(battle, DT);
     assert.equal(target.hp, hp, invalid);
     assert.equal(target.poison, undefined, invalid);
@@ -206,12 +207,12 @@ test('a killed caster cannot release a bottle, but a released bottle and poison 
   updateBattle(first.battle, DT);
   first.caster.hp = 0;
   advance(first.battle, 1);
-  assert.ok(!first.battle.effects.some(effect => effect.type === 'poison-bottle'));
+  assert.ok(!first.battle.projectiles.some(effect => effect.type === 'poison-bottle'));
   assert.equal(first.target.poison, undefined);
 
   const { battle, caster, target } = encounter();
   const hp = target.hp;
-  battle.effects.push(bottle(battle, caster, target, 40, { duration: .25 }));
+  battle.projectiles.push(bottle(battle, caster, target, 40, { duration: .25 }));
   caster.hp = 0;
   advance(battle, .25 + DT);
   assert.ok(target.poison);
@@ -233,7 +234,7 @@ test('death and both battle outcomes discard poison and unresolved bottles witho
     const { battle, caster, target } = encounter();
     applyPoison(battle, caster, target);
     const hp = target.hp;
-    battle.effects.push(bottle(battle, caster, target, 40, { duration: 10 }));
+    battle.projectiles.push(bottle(battle, caster, target, 40, { duration: 10 }));
     if (outcome === 'victory') {
       for (const enemy of battle.enemies) enemy.hp = 0;
       battle.kills = battle.total;
@@ -241,7 +242,7 @@ test('death and both battle outcomes discard poison and unresolved bottles witho
     updateBattle(battle, DT);
     assert.equal(battle.phase, outcome);
     assert.equal(target.poison, undefined);
-    assert.ok(!battle.effects.some(effect => effect.type === 'poison-bottle'));
+    assert.ok(!battle.projectiles.some(effect => effect.type === 'poison-bottle'));
     advance(battle, 5);
     assert.equal(target.hp, hp);
   }
@@ -278,7 +279,7 @@ test('incoming alchemists enter the arena before throwing and revalidate the tar
     if (invalid === 'opposing') target.side = 'enemy';
     if (invalid === 'distant') target.y = 400;
     advance(battle, .5);
-    assert.ok(!battle.effects.some(effect => effect.type === 'poison-bottle'), invalid);
+    assert.ok(!battle.projectiles.some(effect => effect.type === 'poison-bottle'), invalid);
   }
 });
 
@@ -294,7 +295,8 @@ test('alchemist throws and poison ticks stay identical across supported frame ra
     }
     const snapshot = { hp: target.hp, poison: target.poison, phase: battle.phase,
       elapsed: battle.elapsed, caster: { action: caster.action, time: caster.actionTime, cooldown: caster.cooldown },
-      effects: battle.effects, effectId: battle.nextEffectId };
+      effects: battle.effects, effectId: battle.nextEffectId,
+      projectiles: battle.projectiles, projectileId: battle.nextProjectileId };
     if (!baseline) baseline = snapshot;
     else assert.deepEqual(snapshot, baseline, `${fps} FPS / x${speed}`);
   }

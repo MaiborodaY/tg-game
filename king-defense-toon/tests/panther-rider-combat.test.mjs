@@ -47,7 +47,7 @@ test('mounted melee moves faster than swordsmen and uses its own single-target c
   assert.equal(battle.enemies.filter(enemy => enemy.hp < 1000).length, 1);
   assert.equal(battle.enemies.reduce((sum, enemy) => sum + 1000 - enemy.hp, 0), 9);
   assert.ok(battle.effects.some(effect => effect.type === 'slash' && effect.sourceType === 'pantherRider'));
-  assert.ok(!battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
+  assert.ok(!battle.projectiles.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
 });
 
 test('rider starts at the centre of its two-cell footprint without combat-stat changes', () => {
@@ -105,7 +105,7 @@ test('a wounded rider can receive monk healing and hero armour aura', () => {
   Object.assign(rider, { x: 195, y: 240, hp: 50 });
   Object.assign(monk, { x: 195, y: 290, action: 'idle', cooldown: 0 });
   Object.assign(battle.hero, { x: 225, y: 240 });
-  battle.effects.push({ id: battle.nextEffectId++, type: 'arrow', targetId: rider.id, sourceId: battle.enemies[0].id,
+  battle.projectiles.push({ id: battle.nextProjectileId++, type: 'arrow', targetId: rider.id, sourceId: battle.enemies[0].id,
     side: 'enemy', sourceType: 'goblinArcher', x: 195, y: 180, targetX: rider.x, targetY: rider.y,
     damage: 10, age: 0, duration: 0 });
   updateBattle(battle, DT);

@@ -37,7 +37,7 @@ test('spear attacks hit a single enemy without launching an arrow', () => {
   const events = [];
   while (!battle.enemies.some(enemy => enemy.hp < 500) && battle.elapsed < 10) {
     events.push(...updateBattle(battle, DT));
-    assert.ok(!battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'lancer'));
+    assert.ok(!battle.projectiles.some(effect => effect.type === 'arrow' && effect.sourceType === 'lancer'));
   }
   assert.equal(battle.enemies.filter(enemy => enemy.hp < 500).length, 1);
   assert.equal(battle.enemies.reduce((damage, enemy) => damage + 500 - enemy.hp, 0), 7);

@@ -4,10 +4,11 @@ import type { EnemyCombatType, WaveNumberInput } from './waves.ts';
 import type { UnitType } from './units.ts';
 import type { Actor, ActorBase, ActorType, ActorSide, ActorAction, AllyActor, EnemyActor, HeroActor,
   FormationUnit, MeleeApproach, HeroAbilityKind, PendingHeroAbility, Battle, BattleEvent,
-  BattleEffect, BattleEffectType, BattleEffectPayloads, EffectOf } from './combat-types.ts';
+  BattleProjectile, BattleProjectileType, BattleProjectilePayloads, ProjectileOf } from './combat-types.ts';
 export type { Actor, ActorBase, ActorType, ActorSide, ActorAction, AllyActor, EnemyActor, HeroActor, CastleActor,
   FormationUnit, MeleeApproach, PoisonStatus, HeroAbilityKind, PendingHeroAbility, Battle, BattlePhase, BattleEvent,
-  BattleEffect, BattleEffectType, BattleEffectPayloads, EffectOf } from './combat-types.ts';
+  BattleEffect, BattleEffectType, BattleEffectPayloads, EffectOf,
+  BattleProjectile, BattleProjectileType, BattleProjectilePayloads, ProjectileOf } from './combat-types.ts';
 
 interface ActorOptions<T extends ActorType> extends Point {
   id: string; side: ActorSide; type: T; hp: number; damage: number;
@@ -32,6 +33,7 @@ import type { CapitolState } from './capitol.ts';
 import { getHeroStats } from './hero.ts';
 import { findHeroCrowdRoute as findCrowdRoute } from './hero-navigation.ts';
 import { MAX_BATTLE_FRAME_DELTA } from './battle-speed.ts';
+import { addVisualEffect, ageVisualEffects, DEFAULT_VISUAL_EFFECT_LIMIT } from './combat-visuals.ts';
 
 export const COMBAT_PACE = 0.85;
 export const CASTLE_MAX_HP = 100;
@@ -113,8 +115,8 @@ export function createBattle(formation: readonly FormationUnit[] = [], waveNumbe
     // Longer rounds must give the last reinforcement time to fight before stalemate pressure starts.
     enraged: false, enrageAt: Math.max(75, wave.spawns.at(-1)!.at + 45),
     castle, hero, king: castle,
-    total: wave.total, spawned: 0, kills: 0, reward: 0, effects: [], nextSpawn: wave.spawns[0].at,
-    nextEffectId: 1,
+    total: wave.total, spawned: 0, kills: 0, reward: 0, effects: [], projectiles: [], nextSpawn: wave.spawns[0].at,
+    nextEffectId: 1, nextProjectileId: 1, visualEffectLimit: DEFAULT_VISUAL_EFFECT_LIMIT,
   };
 }
 
@@ -257,18 +259,14 @@ function focusedEnemy<T extends Actor>(unit: ActorBase, candidates: readonly T[]
   return current;
 }
 
-function addEffect<T extends Exclude<BattleEffectType, 'slash'>>(battle: Battle, type: T,
-  source: Actor, target: Actor, duration: number, extras: BattleEffectPayloads[T]): void;
-function addEffect(battle: Battle, type: 'slash', source: Actor, target: Actor,
-  duration: number, extras?: BattleEffectPayloads['slash']): void;
-function addEffect(battle: Battle, type: BattleEffectType, source: Actor, target: Actor,
-  duration: number, extras: BattleEffectPayloads[BattleEffectType] = {}): void {
-  battle.effects.push({
-    id: battle.nextEffectId++, type, x: source.x, y: source.y - 27,
+function launchProjectile<T extends BattleProjectileType>(battle: Battle, type: T,
+  source: Actor, target: Actor, duration: number, extras: BattleProjectilePayloads[T]): void {
+  battle.projectiles.push({
+    id: battle.nextProjectileId++, type, x: source.x, y: source.y - 27,
     targetX: target.x, targetY: target.y - 27, age: 0, duration,
-    // Overloads require the matching payload for each literal effect type at all call sites.
+    // Flight order and damage are independent of cosmetic admission and rendering.
     side: source.side, sourceType: source.type, sourceId: source.id, ...extras,
-  } as BattleEffect);
+  } as BattleProjectile);
 }
 
 function hurt(battle: Battle, target: Actor | undefined, amount: number, events: BattleEvent[]): void {
@@ -293,7 +291,8 @@ function hurt(battle: Battle, target: Actor | undefined, amount: number, events:
   const dealt = Math.min(target.hp, amount);
   target.hp = Math.max(0, target.hp - amount);
   target.hitTime = .18;
-  addEffect(battle, 'hit', target, target, .65, { amount: dealt });
+  events.push({ type: 'damage', targetId: target.id, targetType: target.type, side: target.side, amount: dealt });
+  addVisualEffect(battle, 'hit', target, target, .65, { amount: dealt });
   if (target.hp > 0) {
     // Only damage that actually reached HP can trigger a ward. It protects later hits,
     // has its own lifetime, and never extends the separate overheal barrier.
@@ -316,7 +315,7 @@ function hurt(battle: Battle, target: Actor | undefined, amount: number, events:
   if (target.side === 'enemy') {
     battle.kills += 1;
     battle.reward += target.reward;
-    addEffect(battle, 'gold', target, target, .95, { amount: target.reward });
+    addVisualEffect(battle, 'gold', target, target, .95, { amount: target.reward });
     events.push({ type: 'gold', amount: target.reward, x: target.x, y: target.y });
   }
 }
@@ -357,24 +356,26 @@ function resolveImpact(battle: Battle, unit: Actor, events: BattleEvent[]): void
     const amount = Math.min(unit.heal, target.maxHp - target.hp);
     if (!amount) return;
     target.hp += amount;
-    addEffect(battle, 'heal', unit, target, .7, { amount });
+    events.push({ type: 'heal', sourceId: unit.id, sourceType: unit.type, targetId: target.id,
+      side: unit.side, amount, shield: 0 });
+    addVisualEffect(battle, 'heal', unit, target, .7, { amount });
   } else if (unit.action === 'shoot') {
     if (unit.type === 'plagueAlchemist') {
       if (unit.side !== 'enemy' || target.side !== 'ally' || distance(unit, target) > unit.range + 8) return;
       faceToward(unit, target);
-      addEffect(battle, 'poison-bottle', unit, target, Math.max(.25, distance(unit, target) / 240) / COMBAT_PACE, {
+      launchProjectile(battle, 'poison-bottle', unit, target, Math.max(.25, distance(unit, target) / 240) / COMBAT_PACE, {
         targetId: target.id, damage: unit.damage,
       });
       return;
     }
     // Damage lands with the arrow, rather than before it reaches its target.
     if (unit.type === 'elfArcher') faceToward(unit, target);
-    addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
+    launchProjectile(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
       targetId: target.id, damage: unit.damage,
     });
     events.push({ type: 'bow-shot', sourceId: unit.id });
   } else if (target.side !== unit.side && distance(unit, target) <= unit.range + 10 && hasLandPath(unit, target)) {
-    addEffect(battle, 'slash', unit, target, .27);
+    addVisualEffect(battle, 'slash', unit, target, .27);
     let amount = unit.damage;
     if (unit.type === 'hero' && unit.holyStrikeTime > 0) {
       amount += unit.baseDamage * unit.stats.holyStrikeFraction;
@@ -564,7 +565,7 @@ function cancelHeroActions(battle: Battle): void {
   hero.guardianWardCooldown = 0;
   hero.holyStrikeTime = 0;
   hero.targetId = null;
-  battle.effects = battle.effects.filter(effect => effect.type !== 'hero-hammer');
+  battle.projectiles = battle.projectiles.filter(projectile => projectile.type !== 'hero-hammer');
 }
 
 function woundedAllies(battle: Battle, range: number): (AllyActor | HeroActor)[] {
@@ -588,7 +589,8 @@ function beginHeroAbility(hero: HeroActor, kind: HeroAbilityKind, targets: reado
   if (kind === 'miracle') hero.miracleUsed = true;
 }
 
-function healByHero(battle: Battle, target: Actor | undefined, amount: number, range: number, shield = 0): void {
+function healByHero(battle: Battle, target: Actor | undefined, amount: number, range: number,
+  events: BattleEvent[], shield = 0): void {
   const hero = battle.hero;
   if (hero.hp <= 0 || !target || target.hp <= 0 || target.type === 'castle'
     || target.side !== hero.side || distance(hero, target) > range) return;
@@ -600,31 +602,34 @@ function healByHero(battle: Battle, target: Actor | undefined, amount: number, r
     target.shield = Math.max(target.shield, shield);
     target.shieldTime = hero.stats.healShieldDuration;
   }
-  if (healed > 0 || shield > 0) addEffect(battle, 'hero-heal', hero, target, .65,
-    { targetId: target.id, amount: healed, shield });
+  if (healed > 0 || shield > 0) {
+    events.push({ type: 'heal', sourceId: hero.id, sourceType: hero.type, targetId: target.id,
+      side: hero.side, amount: healed, shield });
+    addVisualEffect(battle, 'hero-heal', hero, target, .65, { targetId: target.id, amount: healed, shield });
+  }
 }
 
-function resolveHeroAbility(battle: Battle, pending: PendingHeroAbility): void {
+function resolveHeroAbility(battle: Battle, pending: PendingHeroAbility, events: BattleEvent[]): void {
   const hero = battle.hero;
   if (hero.hp <= 0 || pending.sourceId !== hero.id) return;
   const stats = hero.stats;
   if (pending.kind === 'miracle') {
     if (!stats.healUnlocked || !stats.miracle) return;
     for (const target of alliedActors(battle)) healByHero(battle, target,
-      target.maxHp * stats.miracleHealFraction, stats.miracleRadius);
+      target.maxHp * stats.miracleHealFraction, stats.miracleRadius, events);
     return;
   }
   if (pending.kind === 'heal') {
     if (!stats.healUnlocked) return;
     pending.targetIds.forEach((id, index) => healByHero(battle, findActor(battle, id),
       stats.healAmount * (index === 0 ? 1 : stats.secondaryHealFraction), stats.healRange,
-      index === 0 ? stats.healShield : 0));
+      events, index === 0 ? stats.healShield : 0));
     return;
   }
   const target = findActor(battle, pending.targetIds[0]);
   if (!stats.hammerUnlocked || !target || target.hp <= 0 || target.side === hero.side || target.type === 'castle'
     || distance(hero, target) > stats.hammerRange) return;
-  addEffect(battle, 'hero-hammer', hero, target, Math.max(.15, distance(hero, target) / 330),
+  launchProjectile(battle, 'hero-hammer', hero, target, Math.max(.15, distance(hero, target) / 330),
     { targetId: target.id, damage: stats.hammerDamage, landed: false });
 }
 
@@ -635,14 +640,14 @@ function stunByHammer(hero: HeroActor, target: Actor): void {
   target.targetId = null;
 }
 
-function landHeroHammer(battle: Battle, effect: EffectOf<'hero-hammer'>, events: BattleEvent[]): void {
+function landHeroHammer(battle: Battle, effect: ProjectileOf<'hero-hammer'>, events: BattleEvent[]): void {
   const hero = battle.hero;
   const target = findActor(battle, effect.targetId);
   // Revalidate at arrival: a dead caster, switched side or escaped target cancels damage.
   if (hero.hp <= 0 || !hero.stats.hammerUnlocked || effect.sourceId !== hero.id || !target || target.hp <= 0
     || target.side === hero.side || target.type === 'castle'
     || distance(hero, target) > hero.stats.hammerRange) return;
-  addEffect(battle, 'hero-impact', hero, target, .4, { targetId: target.id });
+  addVisualEffect(battle, 'hero-impact', hero, target, .4, { targetId: target.id });
   hurt(battle, target, effect.damage, events);
   if (hero.stats.holyStrikeFraction > 0) hero.holyStrikeTime = hero.stats.holyStrikeDuration;
   stunByHammer(hero, target);
@@ -841,17 +846,13 @@ function separateAllies(battle: Battle, dt: number): void {
   }
 }
 
-function landPoisonBottle(battle: Battle, effect: EffectOf<'poison-bottle'>, events: BattleEvent[]): void {
+function landPoisonBottle(battle: Battle, effect: ProjectileOf<'poison-bottle'>, events: BattleEvent[]): void {
   const target = findActor(battle, effect.targetId);
   if (!target || target.hp <= 0 || target.side !== 'ally' || effect.side !== 'enemy'
     || effect.sourceType !== 'plagueAlchemist' || !Number.isFinite(effect.damage) || effect.damage <= 0) return;
   // A released bottle survives its caster, like an ordinary arrow.
-  battle.effects.push({
-    id: battle.nextEffectId++, type: 'poison-impact',
-    x: target.x, y: target.y - 27, targetX: target.x, targetY: target.y - 27,
-    age: 0, duration: .45, side: effect.side, sourceType: effect.sourceType,
-    sourceId: effect.sourceId, targetId: target.id,
-  });
+  addVisualEffect(battle, 'poison-impact', { id: effect.sourceId, type: effect.sourceType,
+    side: effect.side, x: target.x, y: target.y }, target, .45, { targetId: target.id });
   if (target.type === 'castle') {
     hurt(battle, target, effect.damage, events);
     return;
@@ -883,28 +884,36 @@ function agePoison(battle: Battle, dt: number, events: BattleEvent[], active: bo
   }
 }
 
-function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: boolean): void {
-  // Tick existing statuses first: a bottle arriving this step starts a full one-second delay.
-  agePoison(battle, dt, events, active);
-  if (battle.hero.hp <= 0) cancelHeroActions(battle);
-  // Iterate a snapshot because a landed arrow can append hit, death, and gold effects.
-  for (const effect of [...battle.effects]) {
+function advanceProjectiles(battle: Battle, dt: number, events: BattleEvent[], active: boolean): void {
+  if (!active) { battle.projectiles.length = 0; return; }
+  // A lethal arrow can cancel a later hammer. Arrival checks must still validate
+  // projectiles already captured in this ordered snapshot.
+  for (const effect of [...battle.projectiles]) {
     effect.age += dt;
-    if (active && effect.type === 'arrow' && !effect.landed && effect.age >= effect.duration) {
+    if (effect.type === 'arrow' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       // A destroyed Capitol cannot finish an in-flight shot during its defeat tick.
       if (effect.sourceType !== 'castle' || battle.castle.hp > 0) {
         hurt(battle, findActor(battle, effect.targetId), effect.damage, events);
       }
-    } else if (active && effect.type === 'poison-bottle' && !effect.landed && effect.age >= effect.duration) {
+    } else if (effect.type === 'poison-bottle' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       landPoisonBottle(battle, effect, events);
-    } else if (active && effect.type === 'hero-hammer' && !effect.landed && effect.age >= effect.duration) {
+    } else if (effect.type === 'hero-hammer' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       landHeroHammer(battle, effect, events);
     }
   }
-  battle.effects = battle.effects.filter(effect => effect.age < effect.duration);
+  battle.projectiles = battle.projectiles.filter(projectile => projectile.age < projectile.duration);
+}
+
+function advanceBattleTimers(battle: Battle, dt: number, events: BattleEvent[], active: boolean): void {
+  // Preserve fixed-step ordering: old poison ticks before arriving bottles, then
+  // projectiles land before actor windups. Visuals never resolve gameplay work.
+  agePoison(battle, dt, events, active);
+  if (battle.hero.hp <= 0) cancelHeroActions(battle);
+  ageVisualEffects(battle, dt);
+  advanceProjectiles(battle, dt, events, active);
   for (const unit of allActors(battle)) {
     unit.hitTime = Math.max(0, unit.hitTime - dt);
     if (unit.hp <= 0) unit.deathTime += dt;
@@ -934,7 +943,7 @@ function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: b
         hero.actionTime = pending.time;
         if (!pending.didImpact && pending.time >= pending.duration * hero.impactFraction) {
           pending.didImpact = true;
-          resolveHeroAbility(battle, pending);
+          resolveHeroAbility(battle, pending, events);
         }
         if (pending.time >= pending.duration) { hero.pendingAbility = null; hero.action = 'idle'; }
         continue;
@@ -980,9 +989,9 @@ function actCapitol(battle: Battle, events: BattleEvent[]): void {
   if (!target) return;
   castle.cooldown = castle.stats.interval;
   // The objective's attackable feet stay at the peninsula entrance. Arrows instead
-  // leave the tower's bow, 9px above its feet; addEffect normally subtracts 27px.
+  // leave the tower's bow, 9px above its feet; launchProjectile subtracts 27px.
   const source = { ...castle, x: CAPITOL_TOWER_POSITION.x, y: CAPITOL_TOWER_POSITION.y + 18 };
-  addEffect(battle, 'arrow', source, target,
+  launchProjectile(battle, 'arrow', source, target,
     Math.max(.15, distance(CAPITOL_TOWER_POSITION, target) / 420) / COMBAT_PACE,
     { targetId: target.id, damage: castle.damage });
   events.push({ type: 'bow-shot', sourceId: castle.id });
@@ -990,7 +999,7 @@ function actCapitol(battle: Battle, events: BattleEvent[]): void {
 
 function step(battle: Battle, dt: number, events: BattleEvent[]): void {
   const active = battle.phase === 'running';
-  ageVisuals(battle, dt, events, active);
+  advanceBattleTimers(battle, dt, events, active);
   if (!active) return;
   battle.elapsed += dt;
   while (battle.spawned < battle.total && battle.elapsed >= battle.nextSpawn) {
@@ -1014,7 +1023,7 @@ function step(battle: Battle, dt: number, events: BattleEvent[]): void {
   else if (battle.spawned === battle.total && battle.kills === battle.total) battle.phase = 'victory';
   if (battle.phase !== 'running') {
     cancelHeroActions(battle);
-    battle.effects = battle.effects.filter(effect => effect.type !== 'arrow' && effect.type !== 'poison-bottle');
+    battle.projectiles.length = 0;
     for (const unit of allActors(battle)) {
       delete unit.poison;
       if (unit.hp > 0) unit.action = 'idle';

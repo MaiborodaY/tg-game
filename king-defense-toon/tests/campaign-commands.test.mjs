@@ -23,6 +23,16 @@ function roster() {
   return state;
 }
 
+test('timed building and farm commands reject absent or invalid clocks without implicit wall time', () => {
+  for (const now of [undefined, null, NaN, Infinity, -1, 0.5, '100000']) {
+    const state = fresh();
+    unchanged(state, () => commands.startCampaignBarracksUpgrade(state, now), 'invalid-time');
+    unchanged(state, () => commands.finishCampaignBarracksUpgrade(state, now), 'invalid-time');
+    unchanged(state, () => commands.plantCampaignCrop(state, 'carrot', now), 'invalid-time');
+    unchanged(state, () => commands.harvestCampaignCrop(state, 'carrot', now), 'invalid-time');
+  }
+});
+
 test('recruit commits training, cost, personal level and monotonic identity together', () => {
   const state = fresh();
   state.nextUnitId = 50;

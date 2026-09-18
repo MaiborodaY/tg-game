@@ -1,4 +1,4 @@
-import type { Actor, ActorType, BattleEffect, EffectOf } from './combat-types.ts';
+import type { Actor, ActorType, BattleEffect, BattleProjectile, EffectOf, ProjectileOf } from './combat-types.ts';
 import type { UnitType } from './units.ts';
 import type { EnemyType } from './waves.ts';
 import type { AnimationActor, AnimationAction } from './animation-types.ts';
@@ -16,7 +16,7 @@ type RenderHero = HealthActor & AnimationActor & {
 };
 type HeroArt = Partial<Record<'up' | 'down' | 'side', HTMLImageElement>>;
 // Retain the legacy royal projectile drawing without adding it to combat's actor catalogue.
-type RenderEffect = BattleEffect | (Omit<EffectOf<'arrow'>, 'sourceType'> & { sourceType: 'king' });
+type RenderEffect = BattleEffect | BattleProjectile | (Omit<ProjectileOf<'arrow'>, 'sourceType'> & { sourceType: 'king' });
 interface PreparedAnimation {
   atlas: HTMLImageElement;
   bounds: SpriteRect[];
@@ -565,7 +565,8 @@ function drawHero(context: CanvasRenderingContext2D, art: HeroArt, effects: HTML
   context.restore();
 }
 
-function drawHeroBattleEffect(context: CanvasRenderingContext2D, image: HTMLImageElement | null, effect: BattleEffect, renderScale: number) {
+function drawHeroBattleEffect(context: CanvasRenderingContext2D, image: HTMLImageElement | null,
+  effect: EffectOf<'hero-heal' | 'hero-impact'> | ProjectileOf<'hero-hammer'>, renderScale: number) {
   const p = clamp(effect.age / effect.duration);
   const tx = effect.targetX ?? effect.x, ty = effect.targetY ?? effect.y;
   if (effect.type === 'hero-hammer') {
@@ -598,7 +599,7 @@ function drawHealth(context: CanvasRenderingContext2D, actor: HealthActor, rende
 }
 
 function drawPoisonEffect(context: CanvasRenderingContext2D, art: PoisonArt,
-  effect: EffectOf<'poison-bottle'> | EffectOf<'poison-impact'>, renderScale: number) {
+  effect: ProjectileOf<'poison-bottle'> | EffectOf<'poison-impact'>, renderScale: number) {
   const progress = clamp(effect.age / effect.duration), bottle = effect.type === 'poison-bottle';
   const image = bottle ? art.bottle : art.impact;
   if (!image || progress >= 1 || (bottle && effect.landed)) return;
@@ -1088,9 +1089,16 @@ export async function createScene(canvas: HTMLCanvasElement, {
           false, actor, state.time, enemyArt, allyAnimations, null, actorScale);
       }
       for (const actor of actors) drawHealth(context, actor, actorScale);
+      // Projectile visibility is independent of cosmetic retention. Drawing only
+      // reads the simulation; hit resolution and projectile retirement stay there.
+      for (const projectile of state.battle.projectiles) {
+        if (projectile.type === 'poison-bottle') drawPoisonEffect(context, poisonArt, projectile, actorScale);
+        else if (projectile.type === 'hero-hammer') drawHeroBattleEffect(context, heroEffects, projectile, actorScale);
+        else drawEffect(context, projectile, goblinHealPulse, actorScale);
+      }
       for (const effect of state.battle.effects) {
-        if (effect.type === 'poison-bottle' || effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
-        else if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
+        if (effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
+        else if (effect.type === 'hero-heal' || effect.type === 'hero-impact') drawHeroBattleEffect(context, heroEffects, effect, actorScale);
         else drawEffect(context, effect, goblinHealPulse, actorScale);
       }
       drawCastleHealth(context, state.battle.castle);

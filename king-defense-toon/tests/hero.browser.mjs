@@ -213,7 +213,7 @@ try {
       return target.hp;
     });
     await page.waitForFunction(() => globalThis.__heroTestHold, null, { timeout: 5000 });
-    assert.ok(await page.evaluate(() => globalThis.__heroTestBattle.effects.some(effect => effect.type === 'hero-hammer')));
+    assert.ok(await page.evaluate(() => globalThis.__heroTestBattle.projectiles.some(effect => effect.type === 'hero-hammer')));
     await page.screenshot({ path: fileURLToPath(new URL(`hero-level-${level}-hammer-x3.png`, output)) });
     await page.evaluate(() => { globalThis.__heroTestHoldRow = 3; globalThis.__heroTestHold = false; });
     await page.waitForFunction(() => globalThis.__heroTestHold, null, { timeout: 5000 });

@@ -81,13 +81,11 @@ test('a first forge rank causes fractional damage and healing in actual combat',
 test('attack-speed upgrades increase monk healing cadence without changing per-cast healing', () => {
   function healing(speed) {
     const battle = fixture('healer', createForge({ attackSpeed: speed }));
-    const amounts = [], seen = new Set();
+    const amounts = [];
     while (battle.elapsed < 10) {
-      updateBattle(battle, DT);
-      for (const effect of battle.effects) if (effect.type === 'heal' && !seen.has(effect.id)) {
-        seen.add(effect.id);
-        amounts.push(effect.amount);
-      }
+      const events = updateBattle(battle, DT);
+      // Cadence is gameplay evidence even when a visual effect limit hides particles.
+      for (const event of events) if (event.type === 'heal' && event.sourceType === 'healer') amounts.push(event.amount);
     }
     assert.ok(amounts.every(amount => amount === 4));
     return amounts.length;

@@ -32,7 +32,7 @@ window.recruitmentCheck = {
       render: async () => { await scene.prepare({ units: campaign.units, battle }); renderScene(); },
       step: seconds => { for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += 1 / 60) updateBattle(battle, 1 / 60); refreshBattleHud(); },
       untilElfArrow: () => { for (let step = 0; step < 1800 && battle.phase === 'running'; step++) {
-        if (battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher')) break;
+        if (battle.projectiles.some(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher')) break;
         updateBattle(battle, 1 / 60);
       } refreshBattleHud(); },
       primeIncome: () => { campaign.economy.treasuryProgress = .999; economyLastTick = performance.now() - 100; },
@@ -401,7 +401,7 @@ try {
       const elf = battle.allies.find(unit => unit.type === 'elfArcher');
       assert.equal(elf.level, 54); assert.equal(elf.maxHp, 164); assert.equal(elf.damage, 40);
       assert.equal(elf.action, 'shoot');
-      assert.equal(battle.effects.filter(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher').length, 1);
+      assert.equal(battle.projectiles.filter(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher').length, 1);
       await page.evaluate(() => window.recruitmentCheck.render());
       await page.screenshot({ path: fileURLToPath(new URL(`elf-archer-battle-${width}.png`, output)) });
       const enemyHp = battle.enemies.reduce((sum, unit) => sum + unit.hp, 0);

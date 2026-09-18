@@ -1,11 +1,12 @@
 import { createBattle, getUnitRange, updateBattle } from '../../combat.ts';
-import type { Actor, Battle, BattleEffect, BattleEffectBase, BattleEvent, EffectOf, FormationUnit, HeroActor } from '../../combat-types.ts';
+import type { Actor, Battle, BattleEffect, BattleEffectBase, BattleEvent, BattleProjectile,
+  EffectOf, ProjectileOf, FormationUnit, HeroActor } from '../../combat-types.ts';
 import { createHero } from '../../hero.ts';
 import { getEnemyCombatType } from '../../waves.ts';
 import type { EnemyCombatType } from '../../waves.ts';
 
 // Compile-only consumers must distinguish events, effects and the hero's extra state.
-export function verifyCombatContracts(saved: unknown, actor: Actor, effect: BattleEffect): void {
+export function verifyCombatContracts(saved: unknown, actor: Actor, effect: BattleEffect, projectile: BattleProjectile): void {
   const formation: readonly FormationUnit[] = [{ id: 1, type: 'lancer', col: 2, row: 0, level: 10 }];
   const battle: Battle = createBattle(formation, '201', createHero(saved));
   const fresh: Battle = createBattle();
@@ -20,11 +21,23 @@ export function verifyCombatContracts(saved: unknown, actor: Actor, effect: Batt
       const amount: number = event.amount;
       const position: [number, number] = [event.x, event.y];
       void [amount, position];
-    } else {
+    } else if (event.type === 'bow-shot') {
       const source: string = event.sourceId;
       // @ts-expect-error Bow-shot events carry no currency amount.
       const amount: number = event.amount;
       void [source, amount];
+    } else if (event.type === 'damage') {
+      const target: string = event.targetId;
+      const amount: number = event.amount;
+      // @ts-expect-error Damage observations identify the target, not a reward position.
+      event.x;
+      void [target, amount];
+    } else {
+      const source: string = event.sourceId;
+      const target: string = event.targetId;
+      const healed: number = event.amount;
+      const shield: number = event.shield;
+      void [source, target, healed, shield];
     }
   }
   if (actor.type === 'hero') {
@@ -40,18 +53,25 @@ export function verifyCombatContracts(saved: unknown, actor: Actor, effect: Batt
     // @ts-expect-error Ordinary actors do not have hero ability queues.
     actor.pendingAbility;
   }
-  if (effect.type === 'arrow' || effect.type === 'hero-hammer') {
-    const damage: number = effect.damage;
-    const target: string = effect.targetId;
+  if (projectile.type === 'arrow' || projectile.type === 'hero-hammer') {
+    const damage: number = projectile.damage;
+    const target: string = projectile.targetId;
     void [damage, target];
-  } else if (effect.type === 'hero-heal') {
+  }
+  if (effect.type === 'hero-heal') {
     const shield: number = effect.shield;
     void shield;
   }
   const base: BattleEffectBase = { id: 1, x: 0, y: 0, targetX: 1, targetY: 1,
     age: 0, duration: .5, side: 'ally', sourceType: 'archer', sourceId: 'ally-1' };
-  const arrow: EffectOf<'arrow'> = { ...base, type: 'arrow', targetId: 'goblin-1', damage: 8 };
+  const arrow: ProjectileOf<'arrow'> = { ...base, type: 'arrow', targetId: 'goblin-1', damage: 8 };
+  const impact: EffectOf<'hero-impact'> = { ...base, type: 'hero-impact', targetId: 'goblin-1' };
+  battle.projectiles.push(arrow);
+  battle.effects.push(impact);
+  // @ts-expect-error Flight and damage are gameplay, never cosmetic effects.
   battle.effects.push(arrow);
+  // @ts-expect-error Cosmetic impact animation cannot enter the projectile queue.
+  battle.projectiles.push(impact);
   battle.hero.hp -= 1; // Live combat state remains mutable.
 
   // @ts-expect-error Formation units must be allied recruit types.
@@ -77,15 +97,21 @@ export function verifyCombatContracts(saved: unknown, actor: Actor, effect: Batt
   // @ts-expect-error Bow-shot events identify the source.
   const incompleteShot: BattleEvent = { type: 'bow-shot' };
   // @ts-expect-error An in-flight arrow requires damage, not just a target.
-  const incompleteArrow: BattleEffect = { ...base, type: 'arrow', targetId: 'goblin-1' };
+  const incompleteArrow: BattleProjectile = { ...base, type: 'arrow', targetId: 'goblin-1' };
   // @ts-expect-error Hero-hammer explicitly starts with a landed flag.
-  const incompleteHammer: EffectOf<'hero-hammer'> = { ...base, type: 'hero-hammer', targetId: 'goblin-1', damage: 4 };
+  const incompleteHammer: ProjectileOf<'hero-hammer'> = { ...base, type: 'hero-hammer', targetId: 'goblin-1', damage: 4 };
   // @ts-expect-error Healing is not a damage payload.
   const invalidHeal: BattleEffect = { ...base, type: 'heal', damage: 4 };
   // @ts-expect-error Selecting several effect kinds must keep each payload tied to its own kind.
-  const mixedPayload: EffectOf<'gold' | 'arrow'> = { ...base, type: 'arrow', amount: 7 };
+  const mixedPayload: EffectOf<'gold' | 'hero-impact'> = { ...base, type: 'hero-impact', amount: 7 };
+  // @ts-expect-error Each projectile keeps its payload even when kinds form a union.
+  const mixedProjectile: ProjectileOf<'arrow' | 'hero-hammer'> = { ...base, type: 'hero-hammer', targetId: 'goblin-1', damage: 4 };
+  // @ts-expect-error Gameplay damage records always identify the target type.
+  const incompleteDamage: BattleEvent = { type: 'damage', targetId: 'goblin-1', side: 'enemy', amount: 4 };
+  // @ts-expect-error Healing observations include shield credit separately from HP.
+  const incompleteHealing: BattleEvent = { type: 'heal', sourceId: 'hero', sourceType: 'hero', targetId: 'ally-1', side: 'ally', amount: 4 };
   // @ts-expect-error Shared wave data is immutable even while a battle progresses.
   battle.wave.spawns[0].hp = 1;
   void [fresh, enemyRole, allyRole, castleRole, heroRole, range, incompleteHero, incompleteGold,
-    incompleteShot, incompleteArrow, incompleteHammer, invalidHeal, mixedPayload];
+    incompleteShot, incompleteArrow, incompleteHammer, invalidHeal, mixedPayload, mixedProjectile, incompleteDamage, incompleteHealing];
 }

@@ -17,10 +17,10 @@ to D1 is not sufficient authority.
    and test invariants for spending, recruitment, movement, merging and rewards.
    Keep browser/DOM/storage dependencies outside the command layer. This creates
    a useful future API boundary without pretending local commands are trusted.
-3. **Combat and visual effects — next.** Separate damaging projectiles, statuses and
+3. **Combat and visual effects — implemented.** Separate damaging projectiles, statuses and
    combat events from decorative effects. Cosmetic limits must not drop damage,
    healing, control effects or rewards. Preserve fixed-step/cross-FPS outcomes.
-4. **Profiling and budgets.** Add an opt-in lightweight profiler for simulation,
+4. **Profiling and budgets — next.** Add an opt-in lightweight profiler for simulation,
    rendering and UI, plus entity/effect counters and repeatable stress scenarios.
    Set device budgets from actual Telegram Android/iOS measurements. Introduce
    pooling/spatial indexing/workers only when measurements justify them.
@@ -103,7 +103,8 @@ No server, D1 migration, payment handling, or publication is part of these stage
   initial supplies. Its ID counter remains above previously allocated IDs.
 
 At the user's request, remaining browser/game acceptance is deferred until all
-four stages are implemented. Focused domain/type checks continue while editing.
+four stages are implemented. Stage 2 had already run focused domain/type checks;
+stage 3 adds regression coverage without running gameplay tests or browser suites.
 Before that request, the new command browser suite passed its two real-UI
 scenarios, storage recovery passed 9, and save protection passed 13. These are
 interim results, not final acceptance of the combined four-stage change.
@@ -118,7 +119,44 @@ attempt was blocked by an occupied development port before the deferral; no
 unrelated server was stopped. Close all test browser contexts and servers after
 the final checks.
 
-Validation commands:
+## Stage 3 contract
+
+- `Battle.projectiles` exclusively owns arrows, poison bottles and hero hammers,
+  with independent `nextProjectileId`. Damage, flight times, target validation,
+  poison, healing, shields and stuns remain in the fixed-step simulation. Actor
+  action timers still determine windup impacts; they are not decorative clocks.
+- `Battle.effects` contains only disposable hit/gold/heal indicators, slashes
+  and impact art. `combat-visuals.ts` can access only this visual state; neither
+  dropping entries nor setting its limit to zero can cancel gameplay work.
+  The default 256-entry limit bounds cosmetic bursts, not projectiles/events.
+  It is a memory guard, not a claim of adequate FPS on any measured device.
+- Preserve simulation ordering: existing poison ticks, projectile arrivals,
+  actor statuses/windups, then movement/target selection. Hero death cancels
+  its hammer even in an already captured projectile snapshot. Ordinary arrows
+  and bottles survive their caster; a destroyed Capitol cannot finish its shot.
+  A battle result retires all projectiles and poison before later visual aging.
+- `BattleEvent` now carries actual HP damage and healing/shield observations in
+  addition to gold and bow shots. These events have no cosmetic cap. The balance
+  harness reads this event stream; historical source-root comparisons retain
+  their legacy visual-counter fallback. Rewards still use battle totals and the
+  campaign receipt, never visual objects.
+- Scene drawing reads projectiles first, then cosmetic overlays. This makes the
+  overlay order explicit; final browser acceptance must inspect arrows, bottles,
+  hammer flight, impact art and health/poison indicators on the combined build.
+- New regression cases cover normal/zero/saturated/cleared visual retention,
+  authoritative state and event equality, mixed poison/heal/hammer encounters,
+  independent IDs, battle result cleanup, timing, and read-only scene drawing.
+  Existing combat, render and browser fixtures use the separated collections.
+  These runtime tests are added but intentionally unexecuted until final checks.
+- A small stage-2 follow-up closes four omitted-clock paths in Barracks/farm
+  commands: missing or invalid time rejects before lower-level helpers could
+  fall back to the wall clock. Normal typed callers already pass explicit time.
+
+Stage 3 compilation: strict TypeScript and the production build passed. No Node
+runtime tests, gameplay simulations or browser suites were run during this stage;
+all new and migrated test cases await the combined final validation.
+
+## Final validation commands
 
 ```powershell
 npm.cmd run brotd:check

@@ -178,6 +178,7 @@ export function purchaseMarket(state: CampaignState, now: number) {
 }
 
 export function startCampaignBarracksUpgrade(state: CampaignState, now: number) {
+  if (!validTime(now)) return fail('invalid-time');
   const barracks = { ...state.barracks }, result = startBarracksUpgrade(barracks, state.recruitment, state.gold, now);
   if (!result.ok) return fail(result.reason);
   state.gold = result.gold; state.barracks = barracks;
@@ -185,6 +186,7 @@ export function startCampaignBarracksUpgrade(state: CampaignState, now: number) 
 }
 
 export function finishCampaignBarracksUpgrade(state: CampaignState, now: number) {
+  if (!validTime(now)) return fail('invalid-time');
   const barracks = { ...state.barracks }, result = speedUpBarracks(barracks, state.gold, now);
   if (!result.ok) return fail(result.reason);
   state.gold = result.gold; state.barracks = barracks;
@@ -197,6 +199,7 @@ export function completeCampaignBarracksUpgrade(state: CampaignState, now: numbe
 }
 
 export function plantCampaignCrop(state: CampaignState, crop: CropId, now: number) {
+  if (!validTime(now)) return fail('invalid-time');
   const farm = { plots: { ...state.farm.plots }, stock: { ...state.farm.stock } };
   if (!plantCrop(farm, crop, now)) return fail('unavailable');
   state.farm = farm;
@@ -204,6 +207,7 @@ export function plantCampaignCrop(state: CampaignState, crop: CropId, now: numbe
 }
 
 export function harvestCampaignCrop(state: CampaignState, crop: CropId, now: number) {
+  if (!validTime(now)) return fail('invalid-time');
   const farm = { plots: { ...state.farm.plots }, stock: { ...state.farm.stock } }, result = harvestCrop(farm, crop, now);
   if (!result.harvested) return fail('unavailable');
   state.farm = farm;

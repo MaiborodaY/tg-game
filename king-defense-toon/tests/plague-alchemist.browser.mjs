@@ -26,7 +26,7 @@ window.alchemistCheck = {
       battle: () => JSON.parse(JSON.stringify(battle)),
       render: async () => { await scene.prepare({ units: campaign.units, battle }); window.battleDraws = []; renderScene(); },
       until: type => { for (let i = 0; i < 3600 && battle.phase === 'running'; i++) {
-        if (battle.effects.some(effect => effect.type === type && !effect.landed)) break;
+        if ([...battle.projectiles, ...battle.effects].some(effect => effect.type === type && !effect.landed)) break;
         updateBattle(battle, 1 / 60);
       } refreshBattleHud(); },
       step: seconds => { for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += 1 / 60) updateBattle(battle, 1 / 60); refreshBattleHud(); },
@@ -93,7 +93,7 @@ try {
         assert.equal(new Set(requests.filter(url => url.includes('/assets/plague-alchemist/'))).size, 3);
         await page.evaluate(() => window.alchemistCheck.until('poison-bottle')); await render(page);
         let battle = await snapshot(page);
-        const bottle = battle.effects.find(effect => effect.type === 'poison-bottle');
+        const bottle = battle.projectiles.find(effect => effect.type === 'poison-bottle');
         assert.ok(bottle, 'The real 2-1 wave releases a poison bottle');
         const caster = battle.enemies.find(actor => actor.id === bottle.sourceId);
         assert.equal(caster.action, 'shoot'); assert.ok(caster.actionTime >= caster.actionDuration * caster.impactFraction);
