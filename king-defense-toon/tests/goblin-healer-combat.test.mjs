@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { COMBAT_PACE, createBattle, getUnitRange, updateBattle } from '../combat.ts';
 import { createHero, heroXpForLevel } from '../hero.ts';
+import { makeFormation } from '../scripts/combat-balance.mjs';
 
 const DT = 1 / 60;
 
@@ -108,6 +109,36 @@ test('enemy healer closes to a distant patient instead of casting outside heal r
   assert.equal(patient.hp, 62);
   assert.ok(Math.hypot(caster.x - patient.x, caster.y - patient.y) <= 95);
 });
+
+for (const [waveNumber, level] of [[60, 20], [100, 40], [200, 70]]) {
+  test(`wave ${waveNumber} opening healer heals the living boss before reinforcements arrive`, () => {
+    const battle = createBattle(makeFormation({ swordsman: 7, archer: 4, healer: 2, level }), waveNumber);
+    const firstArrival = battle.wave.spawns[0].at;
+    const secondArrival = battle.wave.spawns.find(spawn => spawn.at > firstArrival).at;
+    let lastEffectId = 0;
+    let bossHeal = null;
+
+    // Keep the real wave, full starting HP, hero and AI active: a scheduled healer
+    // must reach a naturally wounded boss, not merely pass an isolated cast test.
+    while (battle.phase === 'running' && battle.elapsed + DT < secondArrival && !bossHeal) {
+      updateBattle(battle, DT);
+      const boss = battle.enemies.find(enemy => enemy.isBoss);
+      const caster = battle.enemies.find(enemy => enemy.type === 'goblinHealer');
+      for (const effect of battle.effects) {
+        if (effect.id > lastEffectId && effect.type === 'heal' && effect.sourceId === caster?.id
+          && caster.targetId === boss?.id) {
+          bossHeal = { at: battle.elapsed, amount: effect.amount, bossHp: boss.hp, casterHp: caster.hp };
+        }
+      }
+      lastEffectId = battle.nextEffectId - 1;
+    }
+
+    assert.ok(bossHeal, 'the first squad must land a heal on its boss during the real opening fight');
+    assert.ok(bossHeal.at < secondArrival);
+    assert.ok(bossHeal.amount > 0 && bossHeal.bossHp > 0 && bossHeal.casterHp > 0);
+    assert.equal(battle.spawned, battle.wave.spawns.filter(spawn => spawn.at === firstArrival).length);
+  });
+}
 
 test('a lone enemy healer advances and performs weak melee instead of waiting indefinitely', () => {
   const { battle, caster } = encounter();

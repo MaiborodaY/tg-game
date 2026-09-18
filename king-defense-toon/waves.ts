@@ -304,8 +304,10 @@ function openingWave(wave: WaveDefinition): WaveDefinition {
     const spawns = campaignContinuationSpawns(number).map(spawn => ({ ...spawn, reward: ENEMY_TYPES[spawn.type].reward }));
     const boss = spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss);
     const name = boss ? ENEMY_TYPES[boss.type].name : `${wave.levelNumber === 1 ? 'Forest' : 'Graveyard'} assault ${wave.waveInRound}`;
-    return defineWave(number, name, boss ? 'The commander and its guard advance in groups of up to four.'
-      : spawns.some(spawn => spawn.type === 'goblinHealer') ? 'A goblin healer supports the advancing squads.'
+    return defineWave(number, name, spawns.some(spawn => spawn.type === 'goblinHealer')
+      ? boss ? 'The commander enters with a healer and two fighters. Archers and reinforcements follow.'
+        : 'A goblin healer joins the opening squad. Reinforcements arrive in groups of up to four.'
+      : boss ? 'The commander and its guard advance in groups of up to four.'
         : 'Stronger squads advance. Their strength carries forward from the previous round.', spawns);
   }
   if (number > 10) {
@@ -342,27 +344,15 @@ function openingWave(wave: WaveDefinition): WaveDefinition {
 }
 
 function withHeroPressure(wave: WaveDefinition): WaveDefinition {
-  const needsHealer = wave.levelNumber === 1 && wave.number >= 6
-    && !wave.spawns.some(spawn => spawn.type === 'goblinHealer');
-  const supportIndex = needsHealer
-    ? wave.spawns.findIndex(spawn => spawn.at === 14.8 && spawn.type === 'goblinArcher') : -1;
-  const spawns = wave.spawns.map((spawn, index) => {
-    const support: Readonly<EnemySpawn> = index === supportIndex ? {
-      ...spawn, type: 'goblinHealer', damage: Math.max(3, Math.round(spawn.damage * .3)),
-      // Introduce support gently; reach the established late healer at wave 101.
-      heal: Math.round(wave.number <= 30 ? 4 + (wave.number - 6) / 4
-        : 10 + (wave.number - 30) * 25 / 71),
-    } : spawn;
-    return { ...support, hp: Math.round(support.hp * 1.1),
+  const spawns = wave.spawns.map(spawn => {
+    return { ...spawn, hp: Math.round(spawn.hp * 1.1),
       // Fractional damage avoids turning a small buff into +25% on a 4-damage archer.
-      damage: Math.round(support.damage * 105) / 100 };
+      damage: Math.round(spawn.damage * 105) / 100 };
   });
   // Preserve the campaign's exact HP curve despite rounding each individual enemy.
   const health = wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
   spawns[0].hp += Math.round(health * 1.1) - spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
-  const description = supportIndex < 0 ? wave.description
-    : 'A goblin healer joins the second squad. Reinforcements arrive in groups of up to four.';
-  return defineWave(wave.number, wave.name, description, spawns, { bossOnly: wave.bossOnly });
+  return defineWave(wave.number, wave.name, wave.description, spawns, { bossOnly: wave.bossOnly });
 }
 
 export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave).map(withHeroPressure));

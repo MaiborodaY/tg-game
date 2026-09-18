@@ -28,7 +28,7 @@ export function campaignCurve(number: number): CampaignCurve {
   return {
     level, round, wave, globalRound, meleeDamage, enemyCount,
     health: OPENING_FINAL_HP + (globalRound - 4) * ROUND_HP_GAIN + WAVE_HP_STEPS[wave - 1],
-    hasHealer: level === 1 && round >= 11,
+    hasHealer: level === 1 && round >= 6,
     mainBoss: wave === 10 && (round === 10 || round === 20),
   };
 }
@@ -57,8 +57,9 @@ export function campaignContinuationSpawns(number: number): EnemySpawn[] {
   const count = curve.wave === 10 ? 6 + Math.floor((curve.enemyCount - 8) / 2) : curve.enemyCount;
   let extraIndex = 0;
   while (types.length < count) types.push(EXTRA_ROLES[extraIndex++ % EXTRA_ROLES.length]);
-  // Introduce one support enemy, not an extra squad or a chain of mutually healing units.
-  if (curve.hasHealer) types[curve.wave === 10 ? 5 : 7] = 'goblinHealer';
+  // Add support to the opening group without removing an archer. Grouping afterwards
+  // keeps every arrival at four or fewer and brings the healer alongside each boss.
+  if (curve.hasHealer) types.splice(3, 0, 'goblinHealer');
   const spawns: EnemySpawnPosition<EnemyCombatType>[] = [];
   for (let index = 0; index < types.length; index += 4) {
     spawns.push(...group(.8 + 14 * (index / 4), types.slice(index, index + 4)));
@@ -82,7 +83,8 @@ export function campaignContinuationSpawns(number: number): EnemySpawn[] {
       type: curve.level === 2 ? UNDEAD_ROLES[spawn.type as Exclude<EnemyCombatType, 'goblinHealer'>] : spawn.type,
       damage: isBoss ? Math.round(curve.meleeDamage * (curve.mainBoss ? 2.5 : 31 / 14))
         : Math.max(healer ? 3 : 1, Math.round(curve.meleeDamage * ratio)) + (curve.wave !== 10 && index === 0 ? 1 : 0),
-      ...(healer ? { heal: Math.round(curve.meleeDamage * 1.25) } : {}),
+      ...(healer ? { heal: Math.round(number <= 100
+        ? 10 + (number - 30) * 25 / 71 : curve.meleeDamage * 1.25) } : {}),
     };
   });
 }

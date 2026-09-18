@@ -1,6 +1,7 @@
 import { HERO_NAME, HERO_MAX_LEVEL, HERO_BRANCHES, HERO_TALENTS, getHeroProgress, getHeroStats,
   getHeroTalentStatus, getHeroTalentEffect, spendHeroTalent, resetHeroTalents } from './hero.ts';
 import { ST_KNIHOR_PORTRAIT_IMAGE_URL } from './st-knihor-art.ts';
+import { talentArtStyle } from './talent-art.ts';
 import type { BranchId, HeroState, HeroTalentDefinition, HeroTalentStatus, TalentId,
   SpendHeroTalentResult, ResetHeroTalentsResult } from './hero.ts';
 import type { Battle } from './combat-types.ts';
@@ -21,26 +22,9 @@ export interface HeroUI {
   destroy(): void;
 }
 
-// Tiny inline illustrations keep all eighteen talents crisp without another downloaded atlas.
-const ICON_ART: Readonly<Partial<Record<string, string>>> = {
-  light: '<path fill="#fff0ad" d="m12 2 2.5 6.5L21 11l-6.5 2.5L12 20l-2.5-6.5L3 11l6.5-2.5Z"/><path d="M18 3v4m-2-2h4M5 18v3m-1.5-1.5h3"/>',
-  ward: '<path fill="#a9d6ce" d="m12 3 8 3v6c0 4-5 8-8 9-3-1-8-5-8-9V6Z"/><path stroke="#fff2b5" stroke-width="3" d="M12 7v9M8 11.5h8"/>',
-  shared: '<path fill="#fff1ae" d="M5 3h4v5h5v4H9v5H5v-5H1V8h4Z"/><path fill="#abc989" d="M16 9h3v4h4v3h-4v5h-3v-5h-4v-3h4Z"/>',
-  miracle: '<path fill="#fff2b2" d="m12 1 3 7 7 4-7 3-3 8-3-8-7-3 7-4Z"/><path fill="#e3a55d" d="m12 7 4 5-4 5-4-5Z"/>',
-  shield: '<path fill="#a6c8a1" d="m12 2 8 4v6c0 4-5 8-8 10-3-2-8-6-8-10V6Z"/><path fill="#edd393" d="m12 5 5 2v5c0 2-3 5-5 7-2-2-5-5-5-7V7Z"/><path d="M12 6v12M8 10h8"/>',
-  radius: '<circle fill="#638e7c" cx="12" cy="12" r="9"/><circle stroke="#e9de9b" stroke-dasharray="2 3" cx="12" cy="12" r="7"/><path fill="#f5dea0" d="m12 7 4 2v3c0 2-3 5-4 5s-4-3-4-5V9Z"/>',
-  guard: '<path fill="#9dc2b4" d="m12 2 8 4v6c0 4-5 8-8 10-3-2-8-6-8-10V6Z"/><path stroke="#fff2af" stroke-width="2.3" d="M5 12h4l2-4 3 9 2-5h3"/>',
-  bastion: '<path fill="#a8bdb1" d="M3 21V4h4v4h3V3h4v5h3V4h4v17Z"/><path fill="#5c8277" d="M9 21v-6a3 3 0 0 1 6 0v6"/><path stroke="#f3dfa0" d="M4 11h16"/>',
-  hammer: '<path fill="#b69565" d="m11 10 3 3-9 10-3-3Z"/><path fill="#cfdddf" d="m6 4 4-3 11 10-5 5L4 6Z"/><path stroke="#ffe4a4" d="m9 4 9 9"/>',
-  haste: '<path fill="#efcb76" d="m14 1-10 13h7l-1 9 10-14h-7Z"/><path stroke="#fcf0c1" d="m13 5-5 6"/>',
-  splash: '<path fill="#b69565" d="m11 10 3 3-7 7-3-3Z"/><path fill="#d5dfe0" d="m7 3 3-2 11 9-5 5L4 6Z"/><path stroke="#f5cf70" stroke-width="2.5" d="m1 19 4 3 4-2 3 2 3-4 3 2 5-3"/>',
-  heaven: '<path fill="#be9b64" d="m11 10 3 3-8 9-3-3Z"/><path fill="#e9deb3" d="m7 3 3-2 11 10-5 5L4 6Z"/><path stroke="#f9db74" stroke-width="2" d="M3 3v4M1 5h4m14 12v5m-2-2.5h4"/>',
-  strike: '<path fill="#dddfd0" d="m18 2 4 1-2 5-10 10-4-4Z"/><path fill="#d5ac65" d="m4 11 9 9-2 2-3-3-4 4-3-3 4-4-3-3Z"/><path stroke="#f5e098" d="M3 3v4M1 5h4"/>',
-};
-const icon = (name: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#514c3e" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${ICON_ART[name] ?? ICON_ART.light}</svg>`;
 const lock = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 5V3.5a2.5 2.5 0 0 1 5 0V5M2.5 5h7v6h-7Z" fill="#ddd2b0" stroke="#686651" stroke-width="1.5"/><path d="M6 7v2" stroke="#686651"/></svg>';
 const number = (value: number) => Number(value.toFixed(1));
-const ROW_Y = [22, 104, 172, 240] as const;
+const ROW_Y = [24, 96, 154, 212] as const;
 const columnX = (column: HeroTalentDefinition['column']) => 25 + column * 25;
 const rootLabel = (branch: BranchId) => ({ light: 'Heal', protection: 'Aura', judgement: 'Hammer' })[branch];
 
@@ -51,12 +35,12 @@ function branchMarkup(branch: typeof HERO_BRANCHES[number]) {
     const parent = HERO_TALENTS.find(node => node.id === id)!;
     const startX = columnX(parent.column), endX = columnX(talent.column);
     const startY = ROW_Y[parent.row] + (parent.row === 0 ? 36 : 24), endY = ROW_Y[talent.row] - 25;
-    return `<path data-hero-link="${talent.id}" data-hero-parent="${id}" d="M${startX} ${startY} L${endX} ${endY} m-3 -4 3 4 3-4"/>`;
+    return `<path data-hero-link="${talent.id}" data-hero-parent="${id}" d="M${startX} ${startY} L${endX} ${endY} m-4 -5 4 5 4-5"/>`;
   })).join('');
   return `<section class="hero-branch hero-branch-${branch.id}" aria-labelledby="hero-branch-${branch.id}">
     <h3 id="hero-branch-${branch.id}">${branch.name}<span data-hero-branch="${branch.id}"></span></h3>
-    <div class="hero-branch-nodes"><svg class="hero-connections" viewBox="0 0 100 264" preserveAspectRatio="none" aria-hidden="true">${links}</svg>
-      ${talents.map(talent => `<button type="button" class="hero-node${talent.capstone ? ' hero-capstone' : ''}${talent.row === 0 ? ' hero-root' : ''}" data-hero-talent="${talent.id}" style="left:${columnX(talent.column)}%;top:${ROW_Y[talent.row] - 22}px" aria-pressed="false" aria-controls="hero-talent-detail"><span class="hero-node-icon">${icon(talent.icon)}</span><span class="hero-node-rank"></span><span class="hero-node-gate" aria-hidden="true">${lock}</span>${talent.row === 0 ? `<span class="hero-node-name">${rootLabel(branch.id)}</span>` : ''}</button>`).join('')}
+    <div class="hero-branch-nodes"><svg class="hero-connections" viewBox="0 0 100 240" preserveAspectRatio="none" aria-hidden="true">${links}</svg>
+      ${talents.map(talent => `<button type="button" class="hero-node${talent.capstone ? ' hero-capstone' : ''}${talent.row === 0 ? ' hero-root' : ''}" data-hero-talent="${talent.id}" style="left:${columnX(talent.column)}%;top:${ROW_Y[talent.row]}px" aria-pressed="false" aria-controls="hero-talent-detail"><span class="hero-node-icon"><span class="hero-talent-art" style="${talentArtStyle(talent.id)}" aria-hidden="true"></span></span><span class="hero-node-rank"></span><span class="hero-node-gate" aria-hidden="true">${lock}</span>${talent.row === 0 ? `<span class="hero-node-name">${rootLabel(branch.id)}</span>` : ''}</button>`).join('')}
     </div></section>`;
 }
 
@@ -70,18 +54,18 @@ export function createHeroUI({ button, panel, getHero, getBattle = () => null, o
   panel.setAttribute('aria-modal', 'true');
   panel.setAttribute('aria-labelledby', 'hero-title');
   panel.innerHTML = `<div class="menu-card hero-card">
-    <header class="menu-heading hero-heading"><img class="hero-portrait" src="${ST_KNIHOR_PORTRAIT_IMAGE_URL}" alt="" draggable="false"><div class="hero-heading-label"><h2 id="hero-title">${HERO_NAME}</h2><span>Talent trees</span></div><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close hero talents"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
-    <div class="hero-overview"><div class="hero-level-line"><b data-hero-level></b><span data-hero-points></span></div><div class="hero-xp-track" role="progressbar" aria-label="Hero experience"><span></span></div><span class="hero-xp-label" data-hero-xp></span></div>
+    <header class="menu-heading hero-heading"><img class="hero-portrait" src="${ST_KNIHOR_PORTRAIT_IMAGE_URL}" alt="" draggable="false"><div class="hero-heading-label"><h2 id="hero-title">${HERO_NAME}</h2><div class="hero-level-line"><b data-hero-level></b><span data-hero-points></span></div></div><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close hero talents"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+    <div class="hero-overview"><div class="hero-xp-track" role="progressbar" aria-label="Hero experience"><span></span></div><span class="hero-xp-label" data-hero-xp></span></div>
     <p class="hero-base-stats" data-hero-stats></p><p class="hero-timing" data-hero-timing></p>
     <div class="hero-tree" aria-label="Hero talent branches">${HERO_BRANCHES.map(branchMarkup).join('')}</div>
-    <section id="hero-talent-detail" class="hero-detail" aria-label="Selected talent" aria-live="polite"><p class="hero-detail-empty">Choose a talent to see its effect.<br><span>Start with Heal, Aura or Hammer.</span></p><div class="hero-detail-content" hidden><div class="hero-detail-title"><b data-hero-detail-name></b><span data-hero-detail-rank></span></div><p data-hero-detail-description></p><p class="hero-detail-effect" data-hero-detail-effect></p><div class="hero-detail-action"><span data-hero-detail-gate></span><button type="button" class="hero-spend" data-hero-spend>Learn · 1 pt</button></div></div></section>
+    <section id="hero-talent-detail" class="hero-detail" aria-label="Selected talent" aria-live="polite"><p class="hero-detail-empty">Choose a talent to see its effect.<br><span>Start with Heal, Aura or Hammer.</span></p><div class="hero-detail-content" hidden><div class="hero-detail-title"><span class="hero-detail-picture"><span class="hero-talent-art" data-hero-detail-art aria-hidden="true"></span></span><div class="hero-detail-title-copy"><b data-hero-detail-name></b><span data-hero-detail-rank></span></div></div><p data-hero-detail-description></p><p class="hero-detail-effect" data-hero-detail-effect></p><div class="hero-detail-action"><span data-hero-detail-gate></span><button type="button" class="hero-spend" data-hero-spend>Learn · 1 pt</button></div></div></section>
     <footer class="hero-footer"><span data-hero-reset-hint>1 point per level, from Lv. 2</span><button type="button" class="hero-reset" data-hero-reset>Reset free</button></footer>
   </div>`;
 
   type TextRef = 'level' | 'points' | 'xp' | 'stats' | 'timing' | 'detail-name' | 'detail-rank'
     | 'detail-description' | 'detail-effect' | 'detail-gate' | 'reset-hint';
-  const refs = Object.fromEntries(['level', 'points', 'xp', 'stats', 'timing', 'detail-name', 'detail-rank', 'detail-description', 'detail-effect', 'detail-gate', 'spend', 'reset', 'reset-hint']
-    .map(name => [name, panel.querySelector(`[data-hero-${name}]`)])) as Record<TextRef, HTMLElement> & Record<'spend' | 'reset', HTMLButtonElement>;
+  const refs = Object.fromEntries(['level', 'points', 'xp', 'stats', 'timing', 'detail-name', 'detail-rank', 'detail-art', 'detail-description', 'detail-effect', 'detail-gate', 'spend', 'reset', 'reset-hint']
+    .map(name => [name, panel.querySelector(`[data-hero-${name}]`)])) as Record<TextRef | 'detail-art', HTMLElement> & Record<'spend' | 'reset', HTMLButtonElement>;
   const nodes = [...panel.querySelectorAll<HTMLElement>('[data-hero-talent]')];
   const links = [...panel.querySelectorAll<SVGPathElement>('[data-hero-link]')];
   const branchLabels = [...panel.querySelectorAll<HTMLElement>('[data-hero-branch]')];
@@ -153,6 +137,7 @@ export function createHeroUI({ button, panel, getHero, getBattle = () => null, o
       const talent = HERO_TALENTS.find(item => item.id === selectedId)!, status = getHeroTalentStatus(hero, selectedId);
       refs['detail-name'].textContent = talent.name;
       refs['detail-rank'].textContent = `${status.rank}/${talent.maxRank}`;
+      refs['detail-art'].setAttribute('style', talentArtStyle(selectedId));
       refs['detail-description'].textContent = talent.description;
       const current = getHeroTalentEffect(hero, selectedId, status.rank);
       refs['detail-effect'].textContent = status.rank < talent.maxRank ? `${current} → ${getHeroTalentEffect(hero, selectedId, status.rank + 1)}` : current;

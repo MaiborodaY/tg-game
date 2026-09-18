@@ -60,7 +60,9 @@ test('one fixed eight-fighter level-three formation can clear the first chief af
   }
   const chief = simulateCombat(engine, { wave: 10, formation });
   assert.equal(chief.outcome, 'victory');
-  assert.ok(chief.survivors >= formation.length / 2, 'at least half the army survives with the paladin');
+  // The restored second archer raises casualties; this reference army must still
+  // win without relying on the castle or an overtime damage boost.
+  assert.ok(chief.survivors > 0, 'the army can finish the chief with his restored archer');
   assert.ok(chief.casualties > 0, 'the chief still inflicts real losses');
   assert.equal(chief.kingHp, engine.KING_MAX_HP);
   assert.equal(chief.enraged, false, 'the encounter must not rely on overtime damage');

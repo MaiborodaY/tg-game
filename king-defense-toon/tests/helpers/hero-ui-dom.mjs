@@ -21,7 +21,7 @@ export function createHeroFixture(createHeroUI, hero, initialBattle = null) {
       if (value.includes('hero-trigger-level')) {
         this.child('.hero-trigger-level'); this.child('.hero-trigger-points');
       } else if (value.includes('hero-card')) {
-        for (const name of ['level', 'points', 'xp', 'stats', 'timing', 'detail-name', 'detail-rank', 'detail-description',
+        for (const name of ['level', 'points', 'xp', 'stats', 'timing', 'detail-art', 'detail-name', 'detail-rank', 'detail-description',
           'detail-effect', 'detail-gate', 'spend', 'reset', 'reset-hint']) this.child(`[data-hero-${name}]`);
         this.child('[data-close-overlay]');
         this.child('.hero-detail-empty'); this.child('.hero-detail-content');

@@ -132,6 +132,7 @@ export interface GameElementTags {
   'music-volume-label': 'output';
   'reset': 'button';
   'reset-confirmation': 'p';
+  'profile-version': 'p';
   'offline-rewards-panel': 'section';
   'offline-rewards-title': 'h2';
   'offline-rewards-description': 'p';

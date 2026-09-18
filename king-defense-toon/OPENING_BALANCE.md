@@ -1,6 +1,6 @@
 # First thirty waves: balance verification — 2026-09-17
 
-**Historical opening report.** All tables and combat metrics below describe earlier snapshots, not current wave definitions. The later continuation first replaced waves 31–400; the subsequent hero balance adjustment now changes all 400 waves (+10% encounter HP / +5% enemy damage) and introduces the Goblin healer from forest wave 6. The historical numbers below are deliberately retained. Current rules and local verification are in [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md). These old reports do not validate the hero adjustment, early healer or later campaign.
+**Historical opening report.** All tables and combat metrics below describe earlier snapshots, not current wave definitions. The later continuation first replaced waves 31–400; the hero balance adjustment changes all 400 waves (+10% encounter HP / +5% enemy damage). The latest roster revision restores all archers and adds a first-group Goblin healer from round 1-6 (global wave 51). The historical numbers below are deliberately retained. Current rules and local verification are in [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md). These old reports do not validate the current hero, healer or later campaign.
 
 The opening release was published on 2026-09-17 from commit `48543e4` to the
 existing BroTD Infinity URL through Pages Preview deployment `224eac10`.

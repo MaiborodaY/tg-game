@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHeroUI } from '../hero-ui.ts';
 import { createHero, heroXpForLevel, HERO_TALENTS, HERO_TALENT_VERSION } from '../hero.ts';
+import { HERO_TALENT_ART_CELLS, talentArtStyle } from '../talent-art.ts';
 import { createHeroFixture } from './helpers/hero-ui-dom.mjs';
 
 const savedHero = (level, talents = {}) => createHero({ xp: heroXpForLevel(level), talentVersion: HERO_TALENT_VERSION, talents });
@@ -135,5 +136,33 @@ test('every talent can be inspected including both parents of final talents with
   assert.equal(f.ref('detail-gate').textContent, 'Requires Overflowing Light + Shared Light');
   assert.equal(f.changes.length, 0);
   assert.equal(f.ref('points').textContent, '19 points');
+  f.ui.destroy();
+});
+
+test('all eighteen illustrations follow selection without changing allocations or rewriting an unchanged panel', () => {
+  const f = createHeroFixture(createHeroUI, savedHero(8, { heal_unlock: 1, heal_power: 2, aura_unlock: 1 }));
+  const beforeHero = structuredClone(f.hero);
+  const seenArt = new Set();
+  assert.deepEqual(Object.keys(HERO_TALENT_ART_CELLS).sort(), HERO_TALENTS.map(talent => talent.id).sort(),
+    'every talent has an illustration');
+  for (const talent of HERO_TALENTS) {
+    f.select(talent.id);
+    const style = f.ref('detail-art').attributes.get('style');
+    assert.equal(style, talentArtStyle(talent.id), `detail shows the selected ${talent.id} crop`);
+    assert.ok(f.panel.innerHTML.includes(`style="${style}"`), 'selected illustration also exists in the static tree');
+    seenArt.add(style);
+    assert.deepEqual(f.hero, beforeHero, 'previewing artwork preserves XP and allocations');
+    assert.deepEqual(f.changes, [], 'selection does not request a save or spend');
+    const writes = f.writes, snapshot = f.snapshot();
+    f.ui.render(); f.ui.render();
+    assert.equal(f.writes, writes, 'unchanged render does not write to the DOM');
+    assert.deepEqual(f.snapshot(), snapshot);
+  }
+  assert.equal(seenArt.size, 18, 'each talent has its own atlas crop');
+  f.select('hammer_unlock');
+  f.click(f.ref('spend'));
+  assert.equal(f.hero.talents.hammer_unlock, 1, 'the explicit Learn action still allocates one point');
+  assert.equal(f.ref('detail-art').attributes.get('style'), talentArtStyle('hammer_unlock'));
+  assert.deepEqual(f.changes, [{ type: 'talent', id: 'hammer_unlock', spent: true, reason: '', rank: 1 }]);
   f.ui.destroy();
 });

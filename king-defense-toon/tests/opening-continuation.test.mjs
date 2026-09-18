@@ -11,9 +11,8 @@ function result(wave, level, healer = 1) {
 test('the smaller first-chief escort does not introduce relief in the following wave', () => {
   // Wave 10 was deliberately reduced. Keep the same armies on either side so
   // this check cannot hide relief behind recruitment growth. The hero stays Lv1,
-  // now with melee only: reference armies were remeasured after skill unlocks
-  // moved into talents, without changing any enemy or reward definition.
-  for (const [healer, level, nextLevel] of [[0, 3, 5], [1, 3, 6], [2, 3, 5]]) {
+  // with melee only. Reference outcomes include the restored second archer.
+  for (const [healer, level, nextLevel] of [[0, 3, 5], [1, 3, 6]]) {
     for (const wave of [9, 10, 11]) {
       const observed = result(wave, level, healer);
       assert.equal(observed.outcome, wave === 11 ? 'defeat' : 'victory',
@@ -22,6 +21,15 @@ test('the smaller first-chief escort does not introduce relief in the following 
     }
     const upgraded = result(11, nextLevel, healer);
     assert.equal(upgraded.outcome, 'victory', `wave 11, level ${nextLevel}, ${healer} healers`);
+    assert.equal(upgraded.enraged, false);
+  }
+  // With two healers, the restored archer raises the first-chief requirement to
+  // Lv4; the next wave retains that threshold rather than allowing a weaker army.
+  assert.equal(result(9, 3, 2).outcome, 'victory');
+  for (const wave of [10, 11]) {
+    assert.equal(result(wave, 3, 2).outcome, 'defeat', `wave ${wave}, two healers at Lv3`);
+    const upgraded = result(wave, 4, 2);
+    assert.equal(upgraded.outcome, 'victory', `wave ${wave}, two healers at Lv4`);
     assert.equal(upgraded.enraged, false);
   }
 });
