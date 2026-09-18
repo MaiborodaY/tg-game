@@ -24,6 +24,7 @@
         <button id="auto-waves" class="battle-button" type="button" aria-label="Auto waves on. Disable automatic waves" aria-pressed="true"><span>Auto</span><span id="auto-waves-state">On</span></button>
         <button id="start-wave" class="battle-button" type="button" disabled><span class="start-arrow" aria-hidden="true"></span><span id="start-label">Start</span></button>
         <span id="fps-counter" aria-label="Frames per second" aria-live="off">— FPS</span>
+        <div id="toast" role="status" aria-live="polite"></div>
         <section id="result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
           <div class="result-emblem" aria-hidden="true">♛</div><p id="result-eyebrow" class="result-eyebrow">WHISPERING WOODS · WAVE 1</p>
           <h2 id="result-title">Wave cleared!</h2><p id="result-copy"></p><div id="result-stats"></div>
@@ -35,7 +36,6 @@
         <div class="sr-only"><h2 id="army-title">Army</h2><p id="army-status" role="status" aria-live="polite">Tap a tile to build your army.</p><span id="army-count" aria-label="Army capacity">0 / 3</span></div>
         <div class="army-stage">
           <canvas id="army-map" width="306" height="184" aria-label="Next wave formation. Tap an empty tile to recruit, a guard to edit, or a locked tile to unlock." aria-describedby="army-hint" tabindex="0"></canvas>
-          <div id="toast" role="status" aria-live="polite"></div>
         </div>
         <p id="army-hint">Changes are saved automatically and apply to the next wave.</p>
         <div class="recruitment-dock">
@@ -51,7 +51,7 @@
             <span id="market-convert-label" class="market-convert-cost" aria-hidden="true">Market</span>
           </button>
           <span id="market-arrival" class="market-arrival" role="status" aria-live="polite"></span>
-          <img id="market-recruit-reveal" class="market-recruit-reveal" alt="" hidden />
+          <span id="market-recruit-reveal" class="market-recruit-reveal" role="status" aria-live="polite" hidden><img id="market-recruit-art" alt="" /><b id="market-recruit-level" aria-hidden="true"></b></span>
           <button id="open-barracks" class="barracks-trigger" type="button" aria-label="Open barracks" aria-haspopup="dialog" aria-controls="barracks-panel">
             <img class="barracks-art" src="./assets/tiny-map/castle-blue.png" alt="" width="320" height="256" />
             <span class="barracks-label">Barracks</span><span id="barracks-building-level" class="barracks-building-level" aria-hidden="true">I</span><b id="barracks-stock" class="barracks-stock">0</b>
@@ -126,15 +126,15 @@
           <article id="market-building" class="building-card" role="tabpanel" aria-labelledby="tab-market" hidden>
             <div class="building-overview">
               <div class="building-art market-art" aria-hidden="true"><img src="./assets/web/slave-market-v2.webp" alt="" width="192" height="180" loading="lazy" /></div>
-              <div class="building-description"><span id="market-status" class="building-level">Not built</span><h3 id="market-title">Slave Market</h3><p id="market-rate">1 slave / 30 min</p></div>
+              <div class="building-description"><span id="market-status" class="building-level">Level 1 · Income active</span><h3 id="market-title">Slave Market</h3><p id="market-rate">1 slave / hour</p></div>
             </div>
-            <p id="market-description">Build to start receiving slaves.</p>
-            <div id="market-production" hidden>
-              <div class="treasury-timer"><span>Next slave</span><b id="market-countdown">30:00</b></div>
+            <p id="market-description">Income is collected automatically. Each upgrade adds 1 slave per hour.</p>
+            <div id="market-production">
+              <div class="treasury-timer"><span>Next slave</span><b id="market-countdown">60:00</b></div>
               <div class="treasury-meter" role="progressbar" aria-label="Market production" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="market-progress"></span></div>
             </div>
-            <button id="market-build" class="battle-button" type="button"><span>Enable income</span><span class="upgrade-price"><span class="coin-pip" aria-hidden="true"></span><b id="market-cost">100</b></span></button>
-            <p id="market-offline-note" class="building-note">Offline storage: 4h · up to 8 slaves</p>
+            <button id="market-build" class="battle-button" type="button"><span id="market-build-label">Upgrade · 2 / hour</span><span class="upgrade-price"><span class="coin-pip" aria-hidden="true"></span><b id="market-cost">100</b></span></button>
+            <p id="market-offline-note" class="building-note">Offline storage: 4h · up to 4 slaves</p>
             <div class="capture-info"><strong id="capture-status">First capture: 0 / 2 kills</strong><p id="capture-detail">Your first slave is guaranteed by the second kill.</p></div>
           </article>
           <article id="forge-building" class="building-card forge-card" role="tabpanel" aria-labelledby="tab-forge" hidden>

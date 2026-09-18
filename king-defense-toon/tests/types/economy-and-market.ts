@@ -1,15 +1,15 @@
 import { accrueTreasury, advanceCaptureClock, claimOfflineTreasury, createEconomy, progressionAfterBattle,
   rollSlaveDrop, TREASURY_UPGRADE_COSTS, upgradeTreasury } from '../../economy.ts';
 import type { EconomyState, OfflineTreasuryClaim, TreasuryUpgradeResult } from '../../economy.ts';
-import { accrueMarket, buildMarket, checkpointMarket, claimOfflineMarket, createMarketState } from '../../market.ts';
-import type { MarketState, MarketEconomy, MarketBuildResult, OfflineMarketClaim } from '../../market.ts';
+import { accrueMarket, upgradeMarket, checkpointMarket, claimOfflineMarket, createMarketState } from '../../market.ts';
+import type { MarketState, MarketEconomy, MarketUpgradeResult, OfflineMarketClaim } from '../../market.ts';
 
 // Compile-only contracts supplement the runtime guards for saves and JavaScript callers.
 export function verifyEconomyAndMarketContracts(saved: unknown): void {
   const economy: EconomyState = createEconomy(saved);
   const market: MarketState = createMarketState(saved);
   const minimalProducer: MarketEconomy = { ...market, slaves: 0 };
-  const built: MarketBuildResult = buildMarket(market, 100, 1000);
+  const upgraded: MarketUpgradeResult = upgradeMarket(minimalProducer, 100, 1000);
   checkpointMarket(market, 2000);
   const slaves: number = accrueMarket(minimalProducer, 1800);
   const marketClaim: OfflineMarketClaim = claimOfflineMarket(economy, 10000);
@@ -17,7 +17,7 @@ export function verifyEconomyAndMarketContracts(saved: unknown): void {
   const upgrade: TreasuryUpgradeResult = upgradeTreasury(economy, 75);
   const capture: 0 | 1 = rollSlaveDrop(economy, () => .25);
   const timestamp: number | null = economy.treasuryUpdatedAt;
-  void [built, slaves, marketClaim, treasuryClaim, upgrade, capture, timestamp];
+  void [upgraded, slaves, marketClaim, treasuryClaim, upgrade, capture, timestamp];
 
   // @ts-expect-error Production needs a slave balance in addition to market state.
   accrueMarket(market, 1800);
@@ -34,7 +34,9 @@ export function verifyEconomyAndMarketContracts(saved: unknown): void {
   // @ts-expect-error Offline claims require a numeric wall-clock timestamp.
   claimOfflineMarket(minimalProducer, '10000');
   // @ts-expect-error Market purchases require a numeric balance.
-  buildMarket(market, '100');
+  upgradeMarket(minimalProducer, '100');
+  // @ts-expect-error Market upgrades settle the old production rate into a slave balance.
+  upgradeMarket(market, 100);
   // @ts-expect-error Capture rolls return numbers.
   rollSlaveDrop(economy, () => '0.25');
   // @ts-expect-error Capture cooldown advances by a numeric duration.

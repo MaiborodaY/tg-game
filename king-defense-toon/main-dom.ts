@@ -32,7 +32,9 @@ export interface GameElementTags {
   'market-slaves': 'b';
   'market-convert-label': 'span';
   'market-arrival': 'span';
-  'market-recruit-reveal': 'img';
+  'market-recruit-reveal': 'span';
+  'market-recruit-art': 'img';
+  'market-recruit-level': 'b';
   'open-barracks': 'button';
   'barracks-building-level': 'span';
   'barracks-stock': 'b';
@@ -92,6 +94,7 @@ export interface GameElementTags {
   'market-countdown': 'b';
   'market-progress': 'span';
   'market-build': 'button';
+  'market-build-label': 'span';
   'market-cost': 'b';
   'market-offline-note': 'p';
   'capture-status': 'strong';

@@ -46,6 +46,14 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Army details show matching Connect donors directly, with selection and Select
   all per source tab. Confirming consumes the whole validated selection once.
   The small Barracks Connect button instead selects a donor for an Army target.
+- Recruit feedback stays in the existing Market-to-Barracks animation with a
+  compact level label; do not repeat it in a toast. Other short notices use the
+  battlefield's right water gutter below FPS, clear of Start and the Army controls.
+- Human recruitment follows the Elven unlock pattern: Swordsman initially, Archer
+  at Swordsman recruitment level 3, Healer at Archer recruitment level 3, and
+  Lancer with completed Barracks II. Available types split the random pool equally;
+  the existing first-Lancer guarantee still applies. Personal Connect levels do
+  not unlock recruitment roles. Legacy training credit and existing fighters stay.
 
 ## Saves and lifecycle
 
@@ -69,6 +77,14 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Crops and passive production use timestamps, not animation frames. Preserve
   offline caps, consumed checkpoints and already-paid receipt acknowledgement.
   A changed browser origin requires an explicit save-transfer plan.
+- Market income is active from campaign creation: level 1 earns 1 slave/hour.
+  Each upgrade adds 1/hour and costs current level × 100 gold. Its additive
+  `marketLevel` save field is normalized by `createMarketState`: legacy paid
+  markets become level 2, retaining their 2/hour rate, fraction and checkpoint;
+  legacy unbuilt markets become level 1 starting at restoration, with no backpay.
+  Keep `marketBuilt: true` in snapshots for the old field's compatibility. New
+  readers prefer a valid explicit level. Upgrades settle elapsed production at
+  the old rate and preserve the fractional output; offline storage stays 4 hours.
 
 ## Combat, effects and drawing
 

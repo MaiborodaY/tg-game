@@ -316,7 +316,8 @@ function openingWave(wave: WaveDefinition): WaveDefinition {
     const spawns = openingContinuationSpawns(number).map(spawn => ({ ...spawn, reward: ENEMY_TYPES[spawn.type].reward }));
     return defineWave(number, number % 10 === 0 ? 'The war chief' : `Forest assault ${wave.waveInRound}`,
       number % 10 === 0 ? 'A stronger chief enters with a guard of fighters and archers.'
-        : 'Two squads of four advance. Their strength carries on from the previous encounter.', spawns);
+        : number === 19 ? 'Four enemies advance, followed by three reinforcements.'
+          : 'Two squads of four advance. Their strength carries on from the previous encounter.', spawns);
   }
   const changesByWave: Partial<Record<number, Partial<Record<EnemyType, readonly [number, number]>>>> = {
     4: { goblin: [66, 7], goblinArcher: [38, 4], boar: [70, 7] },

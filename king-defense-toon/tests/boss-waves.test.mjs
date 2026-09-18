@@ -22,15 +22,15 @@ test('the first three tutorial waves retain their composition, timing and reward
   }
 });
 
-test('the next two rounds retain two squads of four and both original archers', () => {
+test('the next two rounds retain both archers with only the requested 1-2/9 melee escort removed', () => {
   const ordinary = WAVE_DEFINITIONS.slice(10, 30).filter(wave => !wave.hasBoss);
   assert.equal(ordinary.length, 18);
   for (const wave of ordinary) {
-    assert.equal(wave.total, 8);
+    assert.equal(wave.total, wave.number === 19 ? 7 : 8);
     assert.deepEqual(wave.enemies.map(enemy => [enemy.type, enemy.count]),
-      [['goblin', 4], ['boar', 2], ['goblinArcher', 2]]);
+      [['goblin', wave.number === 19 ? 3 : 4], ['boar', 2], ['goblinArcher', 2]]);
     assert.equal(wave.spawns.filter(spawn => spawn.at === .8).length, 4);
-    assert.equal(wave.spawns.filter(spawn => spawn.at === 14.8).length, 4);
+    assert.equal(wave.spawns.filter(spawn => spawn.at === 14.8).length, wave.number === 19 ? 3 : 4);
   }
   for (const wave of WAVE_DEFINITIONS.slice(10, 30)) {
     const baseline = openingContinuationSpawns(wave.number);
@@ -46,11 +46,14 @@ test('the next two rounds retain two squads of four and both original archers', 
   for (let index = 1; index < ordinary.length; index += 1) {
     const previous = ordinary[index - 1];
     ordinary[index].spawns.forEach((spawn, slot) => {
+      const previousSpawn = previous.spawns.find(before => before.type === spawn.type
+        && before.at === spawn.at && before.x === spawn.x && before.y === spawn.y);
+      if (!previousSpawn) return; // The removed escort must not shift comparisons onto the archer.
       // The lead fighter absorbs per-body rounding to keep the exact encounter budget.
       const roundingTolerance = slot === 0 ? 2 : 0;
-      assert.ok(spawn.hp >= previous.spawns[slot].hp - roundingTolerance,
+      assert.ok(spawn.hp >= previousSpawn.hp - roundingTolerance,
         `${label(ordinary[index])}: slot ${slot} health grows apart from bounded rounding`);
-      assert.ok(spawn.damage >= previous.spawns[slot].damage);
+      assert.ok(spawn.damage >= previousSpawn.damage);
     });
   }
   for (const number of [0, 10, 31, 400, NaN, 11.5]) {
@@ -166,8 +169,9 @@ test('all 400 waves retain at most four enemies per arrival and valid distinct s
 
 test('150 forest healers and 200 alchemists add their own kill rewards without changing bosses or first clears', () => {
   const progression = createProgression();
-  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.total, 0), 4847 + 200);
-  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.reward, 0), 10489 + 400);
+  // The 1-2/9 nerf removes one melee goblin and its one-gold kill reward.
+  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.total, 0), 4847 + 200 - 1);
+  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.reward, 0), 10489 + 400 - 1);
   for (const wave of WAVE_DEFINITIONS) {
     const goldMultiplier = wave.levelNumber === 2 ? 2 : 1;
     for (const spawn of wave.spawns) {

@@ -13,7 +13,7 @@ import type { ForgeUpgradeId } from './forge.ts';
 import { upgradeCapitol } from './capitol.ts';
 import type { CapitolUpgradeId } from './capitol.ts';
 import { upgradeTreasury, accrueTreasury, checkpointTreasury, claimOfflineTreasury, advanceCaptureClock } from './economy.ts';
-import { buildMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
+import { upgradeMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
 import { plantCrop, harvestCrop } from './farm.ts';
 import type { CropId } from './farm.ts';
 import { spendHeroTalent, resetHeroTalents } from './hero.ts';
@@ -171,8 +171,8 @@ export function purchaseTreasuryUpgrade(state: CampaignState) {
 export function purchaseMarket(state: CampaignState, now: number) {
   if (!validTime(now)) return fail('invalid-time');
   if (!validAmount(state.gold)) return fail('invalid-gold');
-  const economy = { ...state.economy }, result = buildMarket(economy, state.gold, now);
-  if (!result.built) return fail('unavailable');
+  const economy = { ...state.economy }, result = upgradeMarket(economy, state.gold, now);
+  if (!result.upgraded) return fail('unavailable');
   const cost = state.gold - result.gold;
   state.gold = result.gold; state.economy = economy;
   return { ok: true as const, cost };

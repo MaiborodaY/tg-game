@@ -81,6 +81,7 @@ export function createCampaignState(now: number): CampaignState {
   const economy = createEconomy();
   economy.slaves = STARTING_SLAVES;
   checkpointTreasury(economy, now);
+  checkpointMarket(economy, now);
   return {
     gold: STARTING_GOLD, nextUnitId: 1, units: [], reserve: [],
     recruitment: createRecruitment(), recruitmentPool: 'humans', barracks: createBarracks(undefined, now),

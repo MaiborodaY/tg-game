@@ -21,9 +21,9 @@ test('the trained elf pool splits riders and archers equally and preserves both 
         pantherRider: 15 + Number(expected === 'pantherRider'), elfArcher: Number(expected === 'elfArcher'), elfHealer: 0, unicorn: 0 });
     }
   }
-  assert.equal(getRecruitChances(false).length, 3);
+  assert.equal(getRecruitChances(false).length, 1);
   assert.deepEqual(getRecruitChances(true), expectedHumans);
-  assert.deepEqual(expectedHumans.map(entry => entry.chance), [.25, .25, .25, .25]);
+  assert.deepEqual(expectedHumans.map(entry => entry.chance), [.5, .5]);
   for (const state of [undefined, trained]) {
     assert.ok(Object.isFrozen(getRecruitChances(true, 'elves', state)));
     assert.ok(getRecruitChances(true, 'elves', state).every(Object.isFrozen));

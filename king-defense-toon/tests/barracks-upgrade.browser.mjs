@@ -35,9 +35,13 @@ window.barracksCheck = {
     };`;
   } }] });
 async function assertEqualUnlockedOdds(page) {
-  for (const type of ['swordsman', 'archer', 'healer', 'lancer']) {
+  const saved = await page.evaluate(() => window.barracksCheck.state());
+  const training = type => saved.recruitment.received[type] + saved.recruitment.legacyTrainingCredit[type];
+  const openTypes = [true, training('swordsman') >= 15, training('archer') >= 15, saved.barracks.level >= 2];
+  const equalChance = Number((100 / openTypes.filter(Boolean).length).toFixed(1)) + '%';
+  for (const [index, type] of ['swordsman', 'archer', 'healer', 'lancer'].entries()) {
     const chance = page.locator(`#market-info-panel [data-recruit-type="${type}"] .recruitment-detail-heading > span`);
-    assert.equal(await chance.innerText(), '25%', `${type} has an equal 25% chance from Barracks II onward`);
+    assert.equal(await chance.innerText(), openTypes[index] ? equalChance : 'Locked', `${type} follows its recruitment gate`);
   }
 }
 let browser;
@@ -194,7 +198,7 @@ try {
     // Prepare receipts one short of the III gate, then exercise Connect and recruitment through the UI.
     await page.evaluate(() => window.barracksCheck.prepareThird());
     await page.locator('#army-map').press('Enter');
-    await page.locator('[data-connect-action="begin"]:visible').click();
+    assert.equal(await page.locator('#selection-panel .connect-inline').isVisible(), true);
     await page.locator('[data-connect-donor-id="2"]:visible').click();
     await page.locator('[data-connect-action="apply"]:visible').click();
     await page.locator('#unit-panel [data-close-overlay]').click();
@@ -311,7 +315,7 @@ try {
   await context.close();
   }
   assert.deepEqual(failures, []);
-  console.log(`Mobile Market Info checks passed at 320×568, 320×700 and 390×700: Barracks II/III recruitment gates, personal Connect exclusion, costs/timers/reload/offline, proportional finish, no duplicate charges, one-time guarantee, 25% odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
+  console.log(`Mobile Market Info checks passed at 320×568, 320×700 and 390×700: Barracks II/III recruitment gates, personal Connect exclusion, costs/timers/reload/offline, proportional finish, no duplicate charges, one-time guarantee, equal unlocked odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
 } finally {
   await browser?.close();
   await server.close();

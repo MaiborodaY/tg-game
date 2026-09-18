@@ -227,9 +227,10 @@ svg { display: block; }
 #selection-panel small { font-size: 11px; }
 
 #toast {
-  position: absolute; z-index: 3; top: 48px; right: 0; width: calc((100% - var(--formation-width)) / 2 - 6px); max-height: calc(100% - 103px); padding: 3px 2px; overflow: hidden; overflow-wrap: anywhere;
-  color: #5b5d3c; background: #e4dcb2; border-left: 2px solid #a0a36e; border-radius: 2px;
-  font-size: 9px; line-height: 11px; text-align: center; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity 120ms;
+  /* The right water gutter has its own message slot below FPS and above Start. */
+  position: absolute; z-index: 3; top: 190px; right: 6px; width: max(44px, calc((100% - var(--formation-width) * 358 / 306) / 2 - 7px)); max-height: calc(100% - 248px); padding: 5px 3px; overflow: hidden; overflow-wrap: anywhere;
+  color: #fff2cf; background: #315e60ee; border: 1px solid #8cad99; border-radius: 4px;
+  font-size: 11px; line-height: 13px; text-align: center; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity 120ms;
 }
 #toast.visible { visibility: visible; opacity: 1; }
 #toast .slave-icon { width: 14px; height: 14px; vertical-align: -3px; margin-inline: 2px; }
@@ -421,7 +422,9 @@ svg { display: block; }
 .market-transform.is-arriving .market-stock { animation: market-stock-arrival 750ms ease-out; }
 .market-transform.is-working .market-workshop { animation: market-working 650ms ease-out; }
 .market-transform.is-working .market-spark { animation: market-forge-spark 850ms ease-out; }
-.market-recruit-reveal { position: absolute; z-index: 4; top: 36px; left: 50%; width: 34px; height: 42px; object-fit: contain; image-rendering: pixelated; opacity: 0; pointer-events: none; transform: translateX(-50%); }
+.market-recruit-reveal { position: absolute; z-index: 4; top: 36px; left: 50%; width: 34px; height: 42px; opacity: 0; pointer-events: none; transform: translateX(-50%); }
+.market-recruit-reveal > img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.market-recruit-reveal > b { position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); padding: 0 3px; border: 1px solid #a4a56d; border-radius: 3px; background: #354c3b; color: #fff6d9; font-size: 10px; line-height: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .is-transferring .market-recruit-reveal { animation: market-recruit-journey 1.2s ease-in-out both; }
 .barracks-trigger { grid-column: 1; grid-row: 3; height: 52px; }
 .barracks-trigger:hover { background: #f7edcf; border-color: #92815e; }

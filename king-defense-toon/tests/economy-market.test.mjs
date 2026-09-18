@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { accrueTreasury, advanceCaptureClock, checkpointTreasury, claimOfflineTreasury, createEconomy,
   rollSlaveDrop, treasuryUpgradeCost, upgradeTreasury } from '../economy.ts';
-import { accrueMarket, buildMarket, checkpointMarket, claimOfflineMarket, createMarketState } from '../market.ts';
+import { accrueMarket, upgradeMarket, checkpointMarket, claimOfflineMarket, createMarketState, marketRate, marketUpgradeCost } from '../market.ts';
 
 const NOW = 1_800_000_000_000;
 const HALF_HOUR = 1800;
@@ -15,31 +15,75 @@ test('save normalization rejects numeric text and malformed balances while prese
   for (const value of ['2', -1, 1.5, NaN, Infinity, null, false, {}, []]) {
     assert.deepEqual(createEconomy({ treasuryLevel: value, treasuryProgress: value, treasuryUpdatedAt: value,
       slaves: value, captures: value, captureKills: value, captureCooldown: value,
-      marketBuilt: 'true', marketProgress: value, marketUpdatedAt: value }), empty);
+      marketLevel: value, marketBuilt: 'true', marketProgress: value, marketUpdatedAt: value }), empty);
   }
   const source = Object.freeze({ treasuryLevel: 99, treasuryProgress: .25, treasuryUpdatedAt: NOW,
     slaves: 12, captures: 4, captureKills: 3, captureCooldown: 100,
     marketBuilt: true, marketProgress: .75, marketUpdatedAt: NOW });
-  assert.deepEqual(createEconomy(source), { ...source, treasuryLevel: 5, captureCooldown: 30 });
+  assert.deepEqual(createEconomy(source), { ...source, marketLevel: 2, treasuryLevel: 5, captureCooldown: 30 });
   assert.deepEqual(createMarketState({ marketBuilt: 1, marketProgress: .75, marketUpdatedAt: NOW }),
-    { marketBuilt: false, marketProgress: 0, marketUpdatedAt: null });
+    { marketLevel: 1, marketBuilt: true, marketProgress: 0, marketUpdatedAt: null });
   const starter = createEconomy({ captures: 3, captureKills: 2, captureCooldown: 30, slaves: 9 });
   assert.equal(starter.captureCooldown, 0);
   assert.equal(starter.captureKills, 2);
   assert.equal(starter.slaves, 9);
 });
 
-test('market purchase charges once and begins production at purchase without touching captures', () => {
+test('market starts free and upgrades add one per hour without touching captures', () => {
   const economy = createEconomy({ slaves: 7, captures: 4, captureKills: 2, captureCooldown: 12 });
+  assert.equal(marketRate(economy), 1);
+  assert.equal(marketUpgradeCost(economy), 100);
+  checkpointMarket(economy, NOW);
+  assert.equal(accrueMarket(economy, 3600), 1);
+  checkpointMarket(economy, NOW + 3_600_000);
   const before = structuredClone(economy);
-  for (const gold of [99, -1, NaN, Infinity, '100']) {
-    assert.deepEqual(buildMarket(economy, gold, NOW), { built: false, gold });
+  for (const gold of [99, -1, NaN, Infinity, '100', 125.5]) {
+    assert.deepEqual(upgradeMarket(economy, gold, NOW + 3_600_000), { upgraded: false, gold });
     assert.deepEqual(economy, before);
   }
-  assert.deepEqual(buildMarket(economy, 125, NOW), { built: true, gold: 25 });
-  assert.deepEqual(economy, { ...before, marketBuilt: true, marketProgress: 0, marketUpdatedAt: NOW });
-  assert.deepEqual(buildMarket(economy, 125, NOW + 1000), { built: false, gold: 125 });
-  assert.equal(economy.marketUpdatedAt, NOW);
+  assert.deepEqual(upgradeMarket(economy, 125, NOW + 3_600_000), { upgraded: true, gold: 25 });
+  assert.deepEqual(economy, { ...before, marketLevel: 2 });
+  assert.equal(marketRate(economy), 2);
+  assert.equal(marketUpgradeCost(economy), 200);
+  assert.deepEqual(upgradeMarket(economy, 200, NOW + 3_600_000), { upgraded: true, gold: 0 });
+  assert.equal(marketRate(economy), 3);
+  assert.equal(marketUpgradeCost(economy), 300);
+  assert.equal(accrueMarket(economy, 3600), 3);
+  assert.deepEqual([economy.captures, economy.captureKills, economy.captureCooldown], [4, 2, 12]);
+});
+
+test('market upgrades settle old-rate income and preserve fractional progress through reload', () => {
+  const economy = createEconomy({ marketLevel: 1, marketProgress: .25, marketUpdatedAt: NOW, slaves: 2 });
+  assert.deepEqual(upgradeMarket(economy, 100, NOW + 4_500_000), { upgraded: true, gold: 0 });
+  assert.equal(economy.slaves, 3);
+  assert.equal(economy.marketProgress, .5);
+  assert.equal(economy.marketUpdatedAt, NOW + 4_500_000);
+  const restored = createEconomy(JSON.parse(JSON.stringify(economy)));
+  assert.deepEqual(restored, economy);
+  assert.equal(claimOfflineMarket(restored, NOW + 4_500_000).slaves, 0);
+  assert.equal(claimOfflineMarket(restored, NOW + 5_400_000).slaves, 1);
+  assert.equal(restored.marketProgress, 0);
+});
+
+test('free and upgraded market offline storage stays four hours at the current rate', () => {
+  for (const level of [1, 2, 3, 10]) {
+    const economy = createEconomy({ marketLevel: level, marketUpdatedAt: NOW, marketProgress: .5 });
+    assert.equal(claimOfflineMarket(economy, NOW + 8 * 3_600_000).slaves, 4 * level);
+    assert.equal(economy.marketProgress, .5);
+    assert.equal(claimOfflineMarket(economy, NOW + 8 * 3_600_000).slaves, 0);
+  }
+});
+
+test('market upgrade rejects invalid time, cost overflow and balance overflow without consuming progress', () => {
+  const economy = createEconomy({ marketLevel: 1, marketUpdatedAt: NOW, slaves: Number.MAX_SAFE_INTEGER });
+  const before = structuredClone(economy);
+  for (const time of [0, -1, 1.5, NaN, Infinity, '1800000000000', NOW + 3_600_000]) {
+    assert.deepEqual(upgradeMarket(economy, 100, time), { upgraded: false, gold: 100 });
+    assert.deepEqual(economy, before);
+  }
+  const maximum = createEconomy({ marketLevel: Number.MAX_SAFE_INTEGER });
+  assert.equal(marketUpgradeCost(maximum), null);
+  assert.deepEqual(upgradeMarket(maximum, Number.MAX_SAFE_INTEGER, NOW), { upgraded: false, gold: Number.MAX_SAFE_INTEGER });
 });
 
 test('fractional market production survives saves and never changes capture guarantees', () => {
@@ -76,9 +120,12 @@ test('old saves establish departure baselines without inventing offline income',
   assert.deepEqual(claimOfflineTreasury(economy, NOW), emptyTreasury);
   assert.deepEqual([economy.marketUpdatedAt, economy.treasuryUpdatedAt], [NOW, NOW]);
   assert.deepEqual([economy.marketProgress, economy.treasuryProgress, economy.slaves], [.5, .5, 7]);
-  const unbuilt = createEconomy();
+  const unbuilt = createEconomy({ marketBuilt: false, marketProgress: .9, marketUpdatedAt: NOW - 3_600_000 });
+  assert.equal(unbuilt.marketLevel, 1);
   assert.deepEqual(claimOfflineMarket(unbuilt, NOW), emptyMarket);
-  assert.equal(unbuilt.marketUpdatedAt, null);
+  assert.equal(unbuilt.marketUpdatedAt, NOW);
+  assert.equal(unbuilt.marketProgress, 0);
+  assert.equal(claimOfflineMarket(unbuilt, NOW + 3_600_000).slaves, 1);
 });
 
 test('offline rewards cap each resource at four hours and consume the complete absence once', () => {

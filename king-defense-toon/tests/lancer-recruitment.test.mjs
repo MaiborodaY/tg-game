@@ -3,20 +3,19 @@ import test from 'node:test';
 import { createRecruitment, getRecruitChances, getRecruitLevel, getRecruitProgress, receiveRecruit } from '../recruitment.ts';
 import { createBarracks, getBarracksUpgrade, startBarracksUpgrade, completeBarracksUpgrade, consumeFirstLancerGuarantee } from '../barracks.ts';
 
-test('locked barracks keep all existing recruitment odds and cannot roll lancer', () => {
-  assert.deepEqual(getRecruitChances(), [
-    { type: 'swordsman', chance: .6 }, { type: 'archer', chance: .25 }, { type: 'healer', chance: .15 },
-  ]);
-  for (const [roll, expected] of [[0, 'swordsman'], [.59999, 'swordsman'], [.6, 'archer'], [.84999, 'archer'], [.85, 'healer'], [.99999, 'healer']]) {
+test('fresh recruitment starts with swordsmen only and cannot roll locked roles', () => {
+  assert.deepEqual(getRecruitChances(), [{ type: 'swordsman', chance: 1 }]);
+  for (const roll of [0, .25, .5, .75, .99999]) {
     const recruitment = createRecruitment();
-    assert.equal(receiveRecruit(recruitment, () => roll).type, expected);
+    assert.equal(receiveRecruit(recruitment, () => roll).type, 'swordsman');
     assert.equal(recruitment.received.lancer, 0);
   }
   assert.equal(receiveRecruit(createRecruitment(), () => 0, { guaranteedLancer: true }).type, 'swordsman');
 });
 
 test('Barracks II gives all four types equal 25% odds at exact roll boundaries', () => {
-  const chances = getRecruitChances(true);
+  const trained = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15 } });
+  const chances = getRecruitChances(true, 'humans', trained);
   assert.deepEqual(chances, [
     { type: 'swordsman', chance: .25 }, { type: 'archer', chance: .25 },
     { type: 'healer', chance: .25 }, { type: 'lancer', chance: .25 },
@@ -25,7 +24,7 @@ test('Barracks II gives all four types equal 25% odds at exact roll boundaries',
   assert.ok(Object.isFrozen(chances) && chances.every(Object.isFrozen));
   for (const [roll, expected] of [[0, 'swordsman'], [.24999, 'swordsman'], [.25, 'archer'], [.49999, 'archer'],
     [.5, 'healer'], [.74999, 'healer'], [.75, 'lancer'], [.99999, 'lancer']]) {
-    const recruitment = createRecruitment();
+    const recruitment = createRecruitment(trained);
     assert.equal(receiveRecruit(recruitment, () => roll, { lancerUnlocked: true }).type, expected);
   }
 });
@@ -64,10 +63,10 @@ test('Barracks III retains four equal recruitment chances and a pending first La
   const now = 1_800_000_000_000;
   for (const firstLancerPending of [false, true]) {
     const barracks = createBarracks({ level: 3, firstLancerPending }, now);
-    const recruitment = createRecruitment();
+    const recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15 } });
     const info = getBarracksUpgrade(barracks, recruitment, now);
     assert.equal(info.lancerUnlocked, true);
-    assert.deepEqual(getRecruitChances(info.lancerUnlocked).map(({ chance }) => chance), [.25, .25, .25, .25]);
+    assert.deepEqual(getRecruitChances(info.lancerUnlocked, 'humans', recruitment).map(({ chance }) => chance), [.25, .25, .25, .25]);
     const first = receiveRecruit(recruitment, () => 0, {
       lancerUnlocked: info.lancerUnlocked, guaranteedLancer: barracks.firstLancerPending,
     });

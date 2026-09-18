@@ -117,7 +117,11 @@ async function fits(page, panel = '#market-info-panel') {
 }
 
 async function assertHumanOdds(page, level) {
-  const expected = level >= 2 ? ['25%', '25%', '25%', '25%'] : ['60%', '25%', '15%', 'Locked'];
+  const saved = await state(page);
+  const training = type => saved.recruitment.received[type] + saved.recruitment.legacyTrainingCredit[type];
+  const openTypes = [true, training('swordsman') >= 15, training('archer') >= 15, level >= 2];
+  const equalChance = Number((100 / openTypes.filter(Boolean).length).toFixed(1)) + '%';
+  const expected = openTypes.map(open => open ? equalChance : 'Locked');
   for (const [index, type] of ['swordsman', 'archer', 'healer', 'lancer'].entries()) {
     assert.equal(await page.locator(`[data-recruit-type="${type}"] .recruitment-detail-heading > span`).innerText(), expected[index]);
   }

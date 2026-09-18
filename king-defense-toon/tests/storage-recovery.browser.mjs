@@ -248,7 +248,8 @@ try {
       assert.equal(migrated.economy.captures, saved.economy.captures);
       assert.equal(migrated.economy.captureKills, saved.economy.captureKills ?? 0);
       assert.equal(migrated.economy.treasuryLevel, saved.economy.treasuryLevel ?? 1);
-      assert.equal(migrated.economy.marketBuilt, saved.economy.marketBuilt ?? false);
+      assert.equal(migrated.economy.marketBuilt, true);
+      assert.equal(migrated.economy.marketLevel, saved.economy.marketLevel ?? (saved.economy.marketBuilt ? 2 : 1));
       assert.equal(migrated.hero.xp, expected.heroXp);
       assert.equal(migrated.hero.highestWave, expected.highestWave);
       assert.equal(migrated.hero.talentVersion, 2);

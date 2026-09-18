@@ -36,7 +36,8 @@ test('fresh campaign owns starter supply and injected economic checkpoint withou
     assert.equal(state.economy.slaves, STARTING_SLAVES);
     assert.equal(state.starterSupplyGranted, true);
     assert.equal(state.economy.treasuryUpdatedAt, now);
-    assert.equal(state.economy.marketUpdatedAt, null);
+    assert.equal(state.economy.marketUpdatedAt, now);
+    assert.equal(state.economy.marketLevel, 1);
     assert.equal(state.nextUnitId, 1);
     assert.deepEqual(state.units, []);
     assert.deepEqual(state.reserve, []);

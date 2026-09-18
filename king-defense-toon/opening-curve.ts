@@ -42,14 +42,25 @@ export function openingContinuationSpawns(number: number): EnemySpawn<OpeningEne
   const waveInRound = (number - 1) % 10 + 1;
   const health = encounterHealth(number);
   const damage = meleeDamage(number);
-  if (waveInRound !== 10) return allocateHealth([
-    ...group(.8, ['goblin', 'boar', 'goblin', 'goblinArcher']),
-    ...group(14.8, ['goblin', 'boar', 'goblin', 'goblinArcher']),
-  ], health).map((spawn, index) => ({ ...spawn, damage: Math.round(damage
-    * (spawn.type === 'goblinArcher' ? .64 : spawn.type === 'boar' ? .91 : 1))
-    // The paladin lets two-healer armies beat wave 21 one level below its chief.
-    // Add only one point to that lead fighter and carry it until the next damage tier.
-    + (index === 0 ? (number >= 21 && number <= 28 ? 2 : 1) : 0) }));
+  if (waveInRound !== 10) {
+    const spawns = allocateHealth([
+      ...group(.8, ['goblin', 'boar', 'goblin', 'goblinArcher']),
+      ...group(14.8, ['goblin', 'boar', 'goblin', 'goblinArcher']),
+    ], health).map((spawn, index) => ({ ...spawn, damage: Math.round(damage
+      * (spawn.type === 'goblinArcher' ? .64 : spawn.type === 'boar' ? .91 : 1))
+      // The paladin lets two-healer armies beat wave 21 one level below its chief.
+      // Add only one point to that lead fighter and carry it until the next damage tier.
+      + (index === 0 ? (number >= 21 && number <= 28 ? 2 : 1) : 0) }));
+    // Remove the last melee escort only in 1-2/9, after allocating HP so the
+    // remaining fighters keep their stats. This trims about 13.5% of wave HP.
+    let removedIndex = -1;
+    if (number === 19) {
+      for (let index = spawns.length - 1; index >= 0; index--) {
+        if (spawns[index].type === 'goblin') { removedIndex = index; break; }
+      }
+    }
+    return spawns.filter((_, index) => index !== removedIndex);
+  }
 
   const bossType = 'goblinChief';
   const bossHealth = Math.round(health * .55);

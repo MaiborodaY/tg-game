@@ -5,7 +5,7 @@ import { createProgression } from '../../progression.ts';
 export function verifyMainBoundaries(raw: unknown): void {
   const canvas: HTMLCanvasElement = byId('battle');
   const volume: HTMLInputElement = byId('music-volume');
-  const portrait: HTMLImageElement = byId('market-recruit-reveal');
+  const portrait: HTMLImageElement = byId('market-recruit-art');
   const button: HTMLButtonElement = byId('start-wave');
   // @ts-expect-error Static IDs must exist in the game template.
   byId('battle-canvas-typo');

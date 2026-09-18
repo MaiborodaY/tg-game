@@ -63,17 +63,14 @@ export const RECRUIT_LEVEL_CAP = 100;
 export const RECRUIT_LEVEL_STEP = 5;
 export const UNIT_LEVEL_STAT_BONUS = .05;
 const LEGACY_RECRUITS_PER_LEVEL = 3;
-export const RECRUIT_CHANCES: readonly RecruitChance[] = Object.freeze([
-  Object.freeze({ type: 'swordsman', chance: .6 }),
-  Object.freeze({ type: 'archer', chance: .25 }),
-  Object.freeze({ type: 'healer', chance: .15 }),
-]);
-const UNLOCKED_RECRUIT_CHANCES: readonly RecruitChance[] = Object.freeze([
-  Object.freeze({ type: 'swordsman', chance: .25 }),
-  Object.freeze({ type: 'archer', chance: .25 }),
-  Object.freeze({ type: 'healer', chance: .25 }),
-  Object.freeze({ type: 'lancer', chance: .25 }),
-]);
+export const HUMAN_RECRUITS = Object.freeze(['swordsman', 'archer', 'healer', 'lancer'] as const);
+export type HumanRecruitId = typeof HUMAN_RECRUITS[number];
+const HUMAN_UNLOCK_REQUIREMENTS = {
+  swordsman: { requiredRecruitType: null, requiredRecruitLevel: null },
+  archer: { requiredRecruitType: 'swordsman', requiredRecruitLevel: 3 },
+  healer: { requiredRecruitType: 'archer', requiredRecruitLevel: 3 },
+  lancer: { requiredRecruitType: null, requiredRecruitLevel: null },
+} as const;
 const STARTER_ELF_RECRUIT_CHANCES: readonly RecruitChance[] = Object.freeze([
   Object.freeze({ type: 'pantherRider', chance: 1 }),
 ]);
@@ -99,7 +96,9 @@ export function getRecruitChances(lancerUnlocked: boolean = false, pool: Recruit
     return Object.freeze(unlocked.map(type => Object.freeze({ type, chance: 1 / unlocked.length })));
   }
   if (pool !== 'humans') throw new RangeError('Unknown recruitment pool');
-  return lancerUnlocked ? UNLOCKED_RECRUIT_CHANCES : RECRUIT_CHANCES;
+  const state = recruitment ?? createRecruitment();
+  const unlocked = HUMAN_RECRUITS.filter(type => getHumanRecruitUnlock(state, type, lancerUnlocked).available);
+  return Object.freeze(unlocked.map(type => Object.freeze({ type, chance: 1 / unlocked.length })));
 }
 
 const isUnitType = (type: unknown): type is UnitType => typeof type === 'string'
@@ -118,7 +117,7 @@ export function createRecruitment(saved?: unknown): RecruitmentState {
     received,
     // One-time training credit preserves earned recruitment levels without inventing received fighters.
     legacyTrainingCredit: Object.fromEntries(UNIT_TYPES.map(({ id: type }) => [
-      type, source?.version === 1 && RECRUIT_CHANCES.some(entry => entry.type === type) ? migrateLegacyTraining(received[type])
+      type, source?.version === 1 && (type === 'swordsman' || type === 'archer' || type === 'healer') ? migrateLegacyTraining(received[type])
         : source?.version === 2 && isReceivedCount(source?.legacyTrainingCredit?.[type])
           ? source.legacyTrainingCredit[type] : 0,
     ])) as Record<UnitType, number>,
@@ -179,6 +178,16 @@ export function getElfRecruitUnlock(recruitment: RecruitmentState, id: ElfRecrui
     && (requiredRecruitType === null || getRecruitLevel(recruitment, requiredRecruitType) >= requiredRecruitLevel!);
   return { requirementsMet, available: requirementsMet && implemented,
     requiredRecruitType, requiredRecruitLevel, requiredBarracksLevel };
+}
+
+export function getHumanRecruitUnlock(recruitment: RecruitmentState, id: HumanRecruitId, lancerUnlocked = false) {
+  assertRecruitment(recruitment);
+  if (!Object.hasOwn(HUMAN_UNLOCK_REQUIREMENTS, id)) throw new RangeError('Unknown human recruit');
+  const { requiredRecruitType, requiredRecruitLevel } = HUMAN_UNLOCK_REQUIREMENTS[id];
+  // Match Elven progression: Market training unlocks roles; personal Connect levels do not.
+  const available = id === 'lancer' ? lancerUnlocked
+    : requiredRecruitType === null || getRecruitLevel(recruitment, requiredRecruitType) >= requiredRecruitLevel;
+  return { available, requiredRecruitType, requiredRecruitLevel };
 }
 
 export function getUnitStats(type: UnitType, value: unknown = 1): UnitStats {
