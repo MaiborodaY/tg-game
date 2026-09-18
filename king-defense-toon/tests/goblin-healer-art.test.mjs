@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { tinyGoblinHealerFrame, goblinHealPulseFrame } from '../tiny-goblin-healer.mjs';
+import { tinyGoblinHealerFrame, goblinHealPulseFrame } from '../tiny-goblin-healer.ts';
 import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES,
-  GOBLIN_HEALER_IMAGE_URL, GOBLIN_HEAL_PULSE_IMAGE_URL } from '../goblin-healer-art.mjs';
+  GOBLIN_HEALER_IMAGE_URL, GOBLIN_HEAL_PULSE_IMAGE_URL } from '../goblin-healer-art.ts';
 
 test('goblin healer loops separate idle/walk rows and reaches the potion pose at healing impact', () => {
   for (let pose = 0; pose < 4; pose++) {

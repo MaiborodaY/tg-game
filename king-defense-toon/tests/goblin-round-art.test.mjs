@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { access } from 'node:fs/promises';
-import { GOBLIN_ROUND_ASSETS, GOBLIN_ROUND_COLORS, getGoblinRoundColor, getEnemyRoundArt } from '../goblin-round-art.mjs';
-import { WAVE_DEFINITIONS as WAVES } from '../waves.mjs';
+import { GOBLIN_ROUND_ASSETS, GOBLIN_ROUND_COLORS, getGoblinRoundColor, getEnemyRoundArt } from '../goblin-round-art.ts';
+import { WAVE_DEFINITIONS as WAVES } from '../waves.ts';
 
 test('goblin clothing changes every five rounds in the same color order as allied ranks', () => {
   for (const [round, expected] of [[1, 'Blue'], [5, 'Blue'], [6, 'Purple'], [10, 'Purple'],

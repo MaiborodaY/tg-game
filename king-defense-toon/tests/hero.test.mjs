@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { HERO_MAX_LEVEL, HERO_BRANCHES, HERO_TALENTS, createHero, getHeroProgress, getHeroStats, getHeroTalentStatus,
-  heroXpForLevel, spendHeroTalent, resetHeroTalents, awardHeroXp } from '../hero.mjs';
+  heroXpForLevel, spendHeroTalent, resetHeroTalents, awardHeroXp } from '../hero.ts';
 
 const atLevel = (level, talents = {}) => createHero({ xp: heroXpForLevel(level), talents });
 const learn = (hero, id, ranks = 1) => {

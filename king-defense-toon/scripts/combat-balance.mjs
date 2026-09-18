@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { loadRuntimeModule } from './runtime-module.mjs';
 
 const GAME_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CELL_ORDER = [[2, 0], [2, 1], [2, 2], [1, 0], [3, 0], [1, 1], [3, 1],
@@ -9,8 +10,8 @@ const CELL_ORDER = [[2, 0], [2, 1], [2, 2], [1, 0], [3, 0], [1, 1], [3, 1],
 export async function loadCombatEngine(sourceRoot = GAME_ROOT) {
   const root = path.resolve(sourceRoot);
   const [combat, waves] = await Promise.all([
-    import(pathToFileURL(path.join(root, 'combat.mjs')).href),
-    import(pathToFileURL(path.join(root, 'waves.mjs')).href),
+    loadRuntimeModule(root, 'combat'),
+    loadRuntimeModule(root, 'waves'),
   ]);
   return { ...combat, ...waves, sourceRoot: root };
 }

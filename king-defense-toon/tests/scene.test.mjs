@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createScene } from '../scene.mjs';
-import { createBattle, updateBattle } from '../combat.mjs';
-import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START } from '../field.mjs';
+import { createScene } from '../scene.ts';
+import { createBattle, updateBattle } from '../combat.ts';
+import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START } from '../field.ts';
 import { createSceneEnvironment } from './helpers/scene-environment.mjs';
 
 function setup(t) {

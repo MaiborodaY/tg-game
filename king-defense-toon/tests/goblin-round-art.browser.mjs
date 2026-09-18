@@ -7,8 +7,9 @@ import { createServer } from 'vite';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
-const output = new URL('../../../.tmp/goblin-colors/', import.meta.url);
-const server = await createServer({ root, configFile: false,
+const output = new URL('../../.tmp/goblin-colors/', import.meta.url);
+const server = await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/goblin-round-art/', import.meta.url)), root, configFile: false,
   server: { host: '127.0.0.1', port: 5199, strictPort: true } });
 let browser;
 try {
@@ -22,8 +23,8 @@ try {
     body: '<style>body{margin:0}canvas{display:block;width:390px;height:445px}</style><canvas></canvas>' }));
   await page.goto('http://127.0.0.1:5199/__goblin-check');
   const results = await page.evaluate(async () => {
-    const { createScene } = await import('/scene.mjs');
-    const { createBattle } = await import('/combat.mjs');
+    const { createScene } = await import('/scene.ts');
+    const { createBattle } = await import('/combat.ts');
     const canvas = document.querySelector('canvas');
     const scene = await createScene(canvas, { placementGrid: false });
     const draw = CanvasRenderingContext2D.prototype.drawImage;

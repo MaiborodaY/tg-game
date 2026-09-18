@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
-import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from '../goblin-healer-art.mjs';
-import { tinyGoblinHealerFrame, goblinHealPulseFrame } from '../tiny-goblin-healer.mjs';
+import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from '../goblin-healer-art.ts';
+import { tinyGoblinHealerFrame, goblinHealPulseFrame } from '../tiny-goblin-healer.ts';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
-const output = new URL('../../../.tmp/goblin-healer-art/', import.meta.url);
-const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
+const output = new URL('../../.tmp/goblin-healer-art/', import.meta.url);
+const server = await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/goblin-healer-art/', import.meta.url)), root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   server: { host: '127.0.0.1', port: 5210, strictPort: true } });
 let browser;
 try {
@@ -23,8 +24,8 @@ try {
     body: '<style>body{margin:0}canvas{display:block;width:390px;height:445px}</style><canvas></canvas>' }));
   await page.goto('http://127.0.0.1:5210/__healer-check');
   const results = await page.evaluate(async () => {
-    const { createScene } = await import('/scene.mjs');
-    const { createBattle } = await import('/combat.mjs');
+    const { createScene } = await import('/scene.ts');
+    const { createBattle } = await import('/combat.ts');
     const scene = await createScene(document.querySelector('canvas'), { placementGrid: false });
     const draw = CanvasRenderingContext2D.prototype.drawImage;
     let draws = [];

@@ -1,7 +1,7 @@
 import { ST_KNIHOR_ASSETS, ST_KNIHOR_PORTRAIT_IMAGE_URL, ST_KNIHOR_EFFECTS_IMAGE_URL,
-  ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS } from '../st-knihor-art.mjs';
+  ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS } from '../st-knihor-art.ts';
 import { tinyStKnihorFrame, stKnihorDirection, stKnihorEffectFrame,
-  stKnihorEffectActive, stKnihorImpactTime, ST_KNIHOR_ANIMATIONS } from '../tiny-st-knihor.mjs';
+  stKnihorEffectActive, stKnihorImpactTime, ST_KNIHOR_ANIMATIONS } from '../tiny-st-knihor.ts';
 
 const $ = selector => document.querySelector(selector);
 const actionNames = { idle: 'Покой', walk: 'Ходьба', attack: 'Атака', cast: 'Каст', hit: 'Урон', death: 'Гибель' };

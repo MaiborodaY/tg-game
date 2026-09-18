@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAssetCache, loadImage } from '../asset-cache.mjs';
+import { createAssetCache, loadImage } from '../asset-cache.ts';
 
 test('two scenes share one pending load and resources live until both release them', async () => {
   const cache = createAssetCache();

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createFrameRateMeter } from '../fps.mjs';
+import { createFrameRateMeter } from '../fps.ts';
 
 test('measures rendered frames from real timestamps at 30 and 20 FPS', () => {
   for (const fps of [20, 30]) {

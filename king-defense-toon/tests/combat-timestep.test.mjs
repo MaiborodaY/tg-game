@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattle, updateBattle } from '../combat.mjs';
-import { battleFrameDelta } from '../battle-speed.mjs';
+import { createBattle, updateBattle } from '../combat.ts';
+import { battleFrameDelta } from '../battle-speed.ts';
 import { makeFormation } from '../scripts/combat-balance.mjs';
 
 const TICK = 1 / 60;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattleAudio } from '../audio.mjs';
+import { createBattleAudio } from '../audio.ts';
 
 const MUTED_KEY = 'brotd-infinity:sound-muted:v1';
 

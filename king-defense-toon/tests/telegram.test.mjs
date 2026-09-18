@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { setupTelegramAdapter } from '../telegram.mjs';
+import { setupTelegramAdapter } from '../telegram.ts';
 
 function fixture({ version = '8.0', sdk = true, hidden = false, appFields = {}, failures = [] } = {}) {
   const trace = [], styles = new Map(), classes = new Set(), rejected = new Set(failures);

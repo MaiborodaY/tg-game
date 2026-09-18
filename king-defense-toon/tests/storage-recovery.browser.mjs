@@ -26,7 +26,7 @@ const server = await createServer({
   cacheDir: fileURLToPath(new URL('../../.tmp/storage-recovery-vite', import.meta.url)),
   server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'storage-recovery-checks', transform(code, id) {
-    if (!id.endsWith('/main.mjs')) return;
+    if (!id.endsWith('/main.ts')) return;
     return code + `\nwindow.storageCheck = {
       ready: () => !!scene && !!armyScene && !isRecovering(),
       loaded: () => !!scene && !!armyScene,
@@ -196,6 +196,22 @@ try {
     assert.equal(reset.hero.xp, 0);
     assert.equal(await page.locator('#recovery-panel').isVisible(), false);
   });
+
+  const malformedProgress = JSON.stringify({ ...fixture, clearedWaves: { toString: null } });
+  await inPage('malformed current-version progress stays behind the recovery gate without overwriting bytes',
+    { raw: malformedProgress }, async page => {
+      await loaded(page);
+      assert.equal((await status(page)).storage, 'corrupt');
+      assert.equal(await page.locator('#recovery-panel').isVisible(), true);
+      assert.match(await page.locator('#recovery-description').textContent(), /damaged/i);
+      assert.equal(await page.locator('#start-wave').evaluate(element => !!element.closest('[inert]')), true);
+      await page.evaluate(() => { window.storageCheck.income(59); window.storageCheck.save(); });
+      await page.waitForTimeout(1100);
+      await page.locator('#recovery-retry').click();
+      assert.equal(await raw(page), malformedProgress);
+      assert.equal((await status(page)).storage, 'corrupt');
+      assert.deepEqual(await page.evaluate(() => window.storageFaults.counters()), { writes: 0, writeAttempts: 0 });
+    });
 
   await inPage('failed combat reward save pauses, retries once without loss, then resumes', {}, async page => {
     await ready(page);

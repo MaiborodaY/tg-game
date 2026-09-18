@@ -6,8 +6,9 @@ import { createServer } from 'vite';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
-const output = new URL('../../../.tmp/st-knihor-art/', import.meta.url);
-const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
+const output = new URL('../../.tmp/st-knihor-art/', import.meta.url);
+const server = await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/st-knihor-art/', import.meta.url)), root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   server: { host: '127.0.0.1', port: 5211, strictPort: true } });
 let browser;
 try {
@@ -116,7 +117,7 @@ try {
   assert.equal(await page.locator('body').getAttribute('data-theme'), 'light');
   await page.screenshot({ path: fileURLToPath(new URL('mobile-light.png', output)), fullPage: true });
   assert.equal(await page.evaluate(() => JSON.stringify({ ...localStorage })), initialStorage);
-  assert.ok(!requests.some(path => /\/(?:scene|combat|save|main)\.mjs$/.test(path) && !path.includes('hero-preview/')),
+  assert.ok(!requests.some(path => /\/(?:scene|combat|save|main)\.(?:mjs|ts)$/.test(path) && !path.includes('hero-preview/')),
     'asset preview does not import the game');
   assert.deepEqual(errors, []);
   console.log(`Passed St. Knihor preview: 24 action/direction combinations, playback, all effects, 320/390/900px layouts, themes, save isolation. Screenshots: ${fileURLToPath(output)}`);

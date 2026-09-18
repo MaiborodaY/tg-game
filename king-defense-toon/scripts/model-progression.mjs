@@ -1,7 +1,7 @@
 // Economy-only estimate. This does not run combat or assert that a formation wins a wave.
-import { createEconomy, advanceCaptureClock, rollSlaveDrop, accrueTreasury, upgradeTreasury, treasuryUpgradeCost, SLAVE_DROP_CHANCE, CAPTURE_PITY_KILLS, CAPTURE_COOLDOWN } from '../economy.mjs';
-import { createProgression, unlockCell, nextCellCost, STARTING_GOLD, UNIT_UPGRADE_COSTS, unitUpgradeCost, CELL_UNLOCK_COSTS } from '../progression.mjs';
-import { ENEMY_TYPES, getLevelWaves } from '../waves.mjs';
+import { createEconomy, advanceCaptureClock, rollSlaveDrop, accrueTreasury, upgradeTreasury, treasuryUpgradeCost, SLAVE_DROP_CHANCE, CAPTURE_PITY_KILLS, CAPTURE_COOLDOWN } from '../economy.ts';
+import { createProgression, unlockCell, nextCellCost, STARTING_GOLD, UNIT_UPGRADE_COSTS, unitUpgradeCost, CELL_UNLOCK_COSTS } from '../progression.ts';
+import { ENEMY_TYPES, getLevelWaves } from '../waves.ts';
 
 const MODEL_LEVEL = 1;
 const HORIZON_HOURS = 72;

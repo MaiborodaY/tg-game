@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createFramePacer } from '../frame-pacer.mjs';
+import { createFramePacer } from '../frame-pacer.ts';
 
 test('keeps the 30 FPS budget across common display rates without losing elapsed time', () => {
   for (const hz of [30, 59.94, 60, 90, 120, 144]) {

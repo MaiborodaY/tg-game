@@ -1,5 +1,10 @@
 # BroTD Infinity: staged TypeScript migration
 
+**Status: gameplay migration complete**, including `main.ts`, direct runtime
+imports, Node/CLI validation and desktop browser checks. The stage history below
+records earlier boundaries; references to remaining JavaScript in those sections
+describe their checkpoints. No migration commit has been published to `main`.
+
 ## Working branch and concurrent game development
 
 Migration work lives in `codex/brotd-typescript`, in the separate
@@ -440,15 +445,80 @@ Army/UI adapters and `main.mjs` remain JavaScript and are not yet type-checked.
   They do not verify real sound output, device autoplay policies or live Telegram.
   Browser checks remain deferred until after migrating `main.mjs`, as requested.
 
-## Completion criteria and next stages
+## Stage 8: completion
+
+The final six original gameplay implementations (`army-plan`, `unit-merging`,
+`unit-drag-gesture`, `unit-drag`, `hero-ui` and `main`) are TypeScript. Three small
+boundaries now have their own modules: `main-dom.ts` maps static template IDs to
+their actual HTML element types; `campaign-roster.ts` validates saved fighter
+fields; `campaign-save.ts` validates campaign decoding before writes are allowed.
+This brings the total to **57 runtime TS modules**, including generated healer
+geometry. CSS declarations and type-only modules are excluded from that count.
+
+All runtime `.mjs` bridges are removed. HTML, tests, balance tools, asset generators
+and the separate hero asset viewer use the direct `.ts` modules. Generators no
+longer recreate bridges. Historical balance comparisons may explicitly select
+an old checkout through a TS-first/JS-fallback tool loader. Tooling, tests, Vite
+configuration, the asset viewer's own entry and archived designs may remain JS;
+they are not unchecked production gameplay modules.
+
+`main.ts` now checks its save snapshot, deployed versus reserve units, nullable
+selections, drag ownership, DOM controls, scene callbacks and battle-result fields.
+Personal levels are required on saved fighters. Controller state and combat state
+stay separate; rewards/XP retain their once-per-result guard. Runtime code has no
+`any`, `@ts-ignore` or `@ts-nocheck` escape. The HTML/type contract test detects
+missing IDs and changed element tags.
+
+Independent review found two existing malformed-save problems at the newly typed
+boundary. Invalid unit identifiers (including inherited names and coerced arrays)
+are rejected, and nonnumeric coordinate objects are skipped before interpolation.
+An uncoercible `clearedWaves` value is now rejected by the protected decoder,
+before storage enables writes; the original bytes cannot be replaced by a
+partially restored campaign. These are deliberate invalid-input fixes, covered
+by Node and browser regressions. Valid saves, save keys, personal levels, balance,
+rewards, input gestures and the original loading/audio lifecycle are preserved.
+
+The stage starts from `d9aae20`. Fetched `origin/main` is still `c999295`; requested
+gameplay commit `7a9a335` is already included. Work remains on the isolated
+`codex/brotd-typescript` branch.
+
+## Final validation
+
+- `brotd:check` passes: **295 Node tests**, **254 negative type contracts**, strict
+  compilation of the complete gameplay entry graph and the production build.
+  Direct early-campaign CLI execution also completes its first-wave fixture.
+- Independent comparisons match 346 merge cases, 483 army commits and 276 hero
+  UI scenarios / 3,312 DOM snapshots. All 18 gesture/drag tests pass against both
+  the old and new implementations. Roster restoration matches 1,976 ordinary /
+  legacy fixtures; malformed identifier/coordinate cases are the explicit fixes
+  described above. Main lifecycle/reward and emitted-runtime review passes.
+- All **nine browser suites** pass: asset loading, storage recovery, drag/merge,
+  hero, Barracks, Lancer, goblin palettes, goblin healer and St. Knihor rendering.
+  Storage has six scenarios, including malformed current-version progress that
+  preserves its original bytes with zero write attempts. Touch/mouse flows run
+  at 320/390px; Barracks also covers 320x568. Art checks include 44 Lancer, 30
+  palette/world, 60 healer and 24 hero action/direction combinations.
+- The final production build runs in the Codex in-app browser on a fresh local
+  origin. Using only the visible controls, three recruits were obtained and
+  deployed (two swordsmen and one healer). Wave 1 was won at x3: **3/3 enemies,
+  castle 100 HP, +13 gold, +16 hero XP**. Reload restores three deployed fighters,
+  cleared wave 1 and preparation for wave 2. Console warnings/errors are absent.
+- The production bundle contains no browser-test hooks. All disposable test
+  browsers/servers are closed; the manually opened game tab is explicitly closed
+  and its preview server stopped after verification.
+
+These are desktop browser and simulated-mobile checks, not physical Android/iOS
+Telegram WebView validation or a fresh balance/performance audit of all 400 waves.
+
+## Maintenance and release boundary
 
 For every slice: type checking, relevant behavior tests and production build
 must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: migrate army/UI adapters, followed by the main module.
-Keep major architecture changes separate from mechanical migration steps.
+The requested migration is complete. Keep major architecture changes separate;
+merging/pushing this branch to `main` remains a separate publication action.
 
 The full migration is complete only when all active gameplay modules are
 strictly checked, old bridges are removed, Node/CLI and browser checks still run,

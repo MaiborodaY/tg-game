@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattle, updateBattle } from '../combat.mjs';
+import { createBattle, updateBattle } from '../combat.ts';
 
 const DT = 1 / 60;
 const hold = actor => Object.assign(actor, {

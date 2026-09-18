@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile, stat } from 'node:fs/promises';
-import { tinyLancerFrame, TINY_LANCER_LAYOUT } from '../tiny-lancer.mjs';
-import { LANCER_ASSETS, LANCER_GEOMETRY } from '../lancer-art.mjs';
+import { tinyLancerFrame, TINY_LANCER_LAYOUT } from '../tiny-lancer.ts';
+import { LANCER_ASSETS, LANCER_GEOMETRY } from '../lancer-art.ts';
 
 test('lancer uses idle, run and five authored thrust angles with damage-synchronous impact', () => {
   assert.deepEqual(TINY_LANCER_LAYOUT, LANCER_GEOMETRY.layout);

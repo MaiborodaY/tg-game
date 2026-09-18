@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSaveStorage } from '../save-storage.mjs';
+import { createSaveStorage } from '../save-storage.ts';
 
 const KEY = 'campaign';
 

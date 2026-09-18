@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { accrueTreasury, advanceCaptureClock, checkpointTreasury, claimOfflineTreasury, createEconomy,
-  rollSlaveDrop, treasuryUpgradeCost, upgradeTreasury } from '../economy.mjs';
-import { accrueMarket, buildMarket, checkpointMarket, claimOfflineMarket, createMarketState } from '../market.mjs';
+  rollSlaveDrop, treasuryUpgradeCost, upgradeTreasury } from '../economy.ts';
+import { accrueMarket, buildMarket, checkpointMarket, claimOfflineMarket, createMarketState } from '../market.ts';
 
 const NOW = 1_800_000_000_000;
 const HALF_HOUR = 1800;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { COMBAT_PACE, createBattle, getUnitRange, updateBattle } from '../combat.mjs';
+import { COMBAT_PACE, createBattle, getUnitRange, updateBattle } from '../combat.ts';
 
 const DT = 1 / 60;
 

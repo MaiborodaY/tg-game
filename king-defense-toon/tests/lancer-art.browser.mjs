@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
-import { LANCER_GEOMETRY } from '../lancer-art.mjs';
-import { tinyLancerFrame } from '../tiny-lancer.mjs';
+import { LANCER_GEOMETRY } from '../lancer-art.ts';
+import { tinyLancerFrame } from '../tiny-lancer.ts';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
-const output = new URL('../../../.tmp/lancer-art/', import.meta.url);
-const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
+const output = new URL('../../.tmp/lancer-art/', import.meta.url);
+const server = await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/lancer-art/', import.meta.url)), root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   server: { host: '127.0.0.1', port: 5200, strictPort: true } });
 let browser;
 try {
@@ -23,8 +24,8 @@ try {
     body: '<style>body{margin:0;background:#e9e0bd}canvas{display:block;width:390px;height:445px}#formation{height:234px}</style><canvas id="battle"></canvas><canvas id="formation"></canvas>' }));
   await page.goto('http://127.0.0.1:5200/__lancer-check');
   const results = await page.evaluate(async () => {
-    const { createScene } = await import('/scene.mjs');
-    const { createBattle } = await import('/combat.mjs');
+    const { createScene } = await import('/scene.ts');
+    const { createBattle } = await import('/combat.ts');
     const battleScene = await createScene(document.querySelector('#battle'), { placementGrid: false });
     const formation = await createScene(document.querySelector('#formation'), { formationOnly: true });
     const draw = CanvasRenderingContext2D.prototype.drawImage;

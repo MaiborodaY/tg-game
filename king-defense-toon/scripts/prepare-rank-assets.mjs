@@ -1,4 +1,4 @@
-import { artBridge, rankArtSource } from './art-catalog-codegen.mjs';
+import { rankArtSource } from './art-catalog-codegen.mjs';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -45,7 +45,6 @@ for (const [offset, color] of ['Purple', 'Red', 'Yellow'].entries()) {
 }
 
 await writeFile(path.join(root, 'rank-art.ts'), rankArtSource(entries));
-await writeFile(path.join(root, 'rank-art.mjs'), artBridge('rank-art'));
 await writeFile(path.join(output, 'SOURCES.md'), `# Native unit rank colors
 
 Pixel Frog's existing Blue, Purple, Red and Yellow palettes represent levels 1–4.

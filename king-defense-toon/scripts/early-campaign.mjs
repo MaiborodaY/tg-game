@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { loadCombatEngine, makeFormation } from './combat-balance.mjs';
+import { loadRuntimeModule } from './runtime-module.mjs';
 
 const GAME_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CELLS = ['2:0', '2:1', '2:2', '1:0', '3:0', '1:1', '3:1', '1:2', '3:2',
@@ -21,7 +22,7 @@ export const EARLY_CAMPAIGN_ASSUMPTIONS = Object.freeze([
 
 export async function loadCampaignApis(sourceRoot = GAME_ROOT) {
   const root = path.resolve(sourceRoot);
-  const load = name => import(pathToFileURL(path.join(root, `${name}.mjs`)).href);
+  const load = name => loadRuntimeModule(root, name);
   const [engine, economy, progression, recruitment, merging, barracks, speed, hero] = await Promise.all([
     loadCombatEngine(root), ...['economy', 'progression', 'recruitment', 'unit-merging', 'barracks', 'battle-speed', 'hero'].map(load),
   ]);
@@ -50,7 +51,7 @@ export function runEarlyCampaign(apis, { seed = 1, speed: battleSpeed = 1, maxAt
   const mass = () => [...units, ...reserve].reduce((sum, unit) => sum + unit.level, 0);
   const tick = seconds => {
     elapsed += seconds;
-    // main.mjs accrues foreground resources on a one-second timer independently of
+    // main.ts accrues foreground resources on a one-second timer independently of
     // combat speed. This scenario does not simulate hidden time.
     while (elapsed + 1e-8 >= nextEconomyTick) {
       gold += econ.accrueTreasury(economy, 1);

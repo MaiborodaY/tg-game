@@ -5,11 +5,11 @@ import { createHash } from 'node:crypto';
 import {
   TINY_ST_KNIHOR_LAYOUT, ST_KNIHOR_ANIMATIONS, ST_KNIHOR_EFFECT_TIMINGS,
   tinyStKnihorFrame, stKnihorDirection, stKnihorImpactTime, stKnihorEffectFrame, stKnihorEffectActive,
-} from '../tiny-st-knihor.mjs';
+} from '../tiny-st-knihor.ts';
 import {
   ST_KNIHOR_ASSETS, ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS, ST_KNIHOR_EFFECTS_GEOMETRY,
   ST_KNIHOR_EFFECTS_IMAGE_URL, ST_KNIHOR_PORTRAIT_IMAGE_URL,
-} from '../st-knihor-art.mjs';
+} from '../st-knihor-art.ts';
 
 test('St. Knihor uses slow idle and separate walking loops', () => {
   assert.deepEqual(TINY_ST_KNIHOR_LAYOUT, { columns: 4, rows: 6 });

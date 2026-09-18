@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createLevelMusic } from '../music.mjs';
+import { createLevelMusic } from '../music.ts';
 
 const MUTE = 'brotd-infinity:music-muted:v1';
 const VOLUME = 'brotd-infinity:music-volume:v1';

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattle, getUnitRange, updateBattle } from '../combat.mjs';
-import { getUnitStats } from '../recruitment.mjs';
+import { createBattle, getUnitRange, updateBattle } from '../combat.ts';
+import { getUnitStats } from '../recruitment.ts';
 import { makeFormation } from '../scripts/combat-balance.mjs';
 
 const DT = 1 / 60;

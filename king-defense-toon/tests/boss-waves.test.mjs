@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ENEMY_TYPES, WAVE_DEFINITIONS, getEnemyCombatType, getRoundWaves } from '../waves.mjs';
-import { claimFirstClear, createProgression } from '../progression.mjs';
-import { WALKABLE_AREAS } from '../field.mjs';
-import { openingContinuationSpawns } from '../opening-curve.mjs';
+import { ENEMY_TYPES, WAVE_DEFINITIONS, getEnemyCombatType, getRoundWaves } from '../waves.ts';
+import { claimFirstClear, createProgression } from '../progression.ts';
+import { WALKABLE_AREAS } from '../field.ts';
+import { openingContinuationSpawns } from '../opening-curve.ts';
 
 const totalHealth = wave => wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
 const bossOf = wave => wave.spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss);

@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { UNIT_RANK_ASSETS } from '../rank-art.mjs';
-import { LANCER_ASSETS, LANCER_GEOMETRY } from '../lancer-art.mjs';
-import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from '../goblin-healer-art.mjs';
-import { UNDEAD_ART } from '../undead-art.mjs';
-import { GRAVEYARD_BOSS_ART } from '../graveyard-boss-art.mjs';
-import { ST_KNIHOR_EFFECTS, ST_KNIHOR_GEOMETRY } from '../st-knihor-art.mjs';
-import { getEnemyRoundArt } from '../goblin-round-art.mjs';
-import { artBridge, rankArtSource, lancerArtSource, goblinHealerGeometrySource } from '../scripts/art-catalog-codegen.mjs';
+import { UNIT_RANK_ASSETS } from '../rank-art.ts';
+import { LANCER_ASSETS, LANCER_GEOMETRY } from '../lancer-art.ts';
+import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from '../goblin-healer-art.ts';
+import { UNDEAD_ART } from '../undead-art.ts';
+import { GRAVEYARD_BOSS_ART } from '../graveyard-boss-art.ts';
+import { ST_KNIHOR_EFFECTS, ST_KNIHOR_GEOMETRY } from '../st-knihor-art.ts';
+import { getEnemyRoundArt } from '../goblin-round-art.ts';
+import { rankArtSource, lancerArtSource, goblinHealerGeometrySource } from '../scripts/art-catalog-codegen.mjs';
 
-test('catalogue generators recreate checked TypeScript and compatibility bridges without image writes', async () => {
+test('catalogue generators recreate checked TypeScript catalogues without image writes', async () => {
   const root = new URL('../', import.meta.url).href;
   const relative = url => `./${url.slice(root.length)}`;
   const ranks = Object.fromEntries(Object.entries(UNIT_RANK_ASSETS).map(([type, palettes]) =>
@@ -22,7 +22,6 @@ test('catalogue generators recreate checked TypeScript and compatibility bridges
     ['assets/goblin-healer/geometry', goblinHealerGeometrySource(GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES)],
   ]) {
     assert.equal(source, (await readFile(new URL(`../${name}.ts`, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'));
-    assert.equal(artBridge(name.split('/').at(-1)), (await readFile(new URL(`../${name}.mjs`, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'));
   }
 });
 

@@ -28,7 +28,7 @@ try {
       if (value) window.imageLoads.push(new URL(value, location.href).pathname);
       descriptor.set.call(this, value);
     } });
-    const { createScene } = await import('/scene.mjs');
+    const { createScene } = await import('/scene.ts');
     window.states = { battle: [], army: [] };
     [window.battleScene, window.armyScene] = await Promise.all([
       createScene(document.querySelector('#battle'), { onAssetState: state => states.battle.push(state.status) }),
@@ -82,7 +82,7 @@ try {
   assert.equal(switched, 2, 'the previous map was released after both scenes left its level');
   const destroyed = await page.evaluate(async () => {
     battleScene.destroy(); armyScene.destroy();
-    const { createScene } = await import('/scene.mjs');
+    const { createScene } = await import('/scene.ts');
     window.replacement = await createScene(document.querySelector('#battle'));
     return imageLoads.filter(url => url.endsWith('/ground.png')).length;
   });
@@ -93,7 +93,7 @@ try {
   // A fresh document also clears the browser's own decoded-image reuse for this failure case.
   await page.reload();
   const startupFailure = await page.evaluate(async () => {
-    const { createScene } = await import('/scene.mjs');
+    const { createScene } = await import('/scene.ts');
     window.retryable = await createScene(document.querySelector('#battle'));
     return retryable.getAssetState().status;
   });

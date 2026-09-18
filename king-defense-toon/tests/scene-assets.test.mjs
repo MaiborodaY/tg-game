@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getSceneAssetPlan } from '../scene-assets.mjs';
-import { getWaveDefinition } from '../waves.mjs';
+import { getSceneAssetPlan } from '../scene-assets.ts';
+import { getWaveDefinition } from '../waves.ts';
 
 test('an empty initial forest scene has no dependency on another map, enemies or army palettes', () => {
   const battle = getSceneAssetPlan({ units: [] });

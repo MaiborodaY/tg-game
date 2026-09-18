@@ -3,8 +3,8 @@ import test from 'node:test';
 import {
   STARTING_SLAVES, SELL_PRICE, BARRACKS_UPGRADE_DURATION_MS, createBarracks, getBarracksUpgrade,
   startBarracksUpgrade, completeBarracksUpgrade, speedUpBarracks, consumeFirstLancerGuarantee,
-} from '../barracks.mjs';
-import { createRecruitment, getRecruitLevel, receiveRecruit } from '../recruitment.mjs';
+} from '../barracks.ts';
+import { createRecruitment, getRecruitLevel, receiveRecruit } from '../recruitment.ts';
 
 const START = 1_800_000_000_000;
 const HOUR = BARRACKS_UPGRADE_DURATION_MS;

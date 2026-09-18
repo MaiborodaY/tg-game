@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { UNIT_TYPES, UNIT_TYPE_BY_ID } from '../units.mjs';
-import { createRecruitment, getRecruitProgress, getUnitStats, receiveRecruit } from '../recruitment.mjs';
+import { UNIT_TYPES, UNIT_TYPE_BY_ID } from '../units.ts';
+import { createRecruitment, getRecruitProgress, getUnitStats, receiveRecruit } from '../recruitment.ts';
 
 test('malformed save fields never become recruit counts, credits or inherited unit names', () => {
   const empty = createRecruitment();

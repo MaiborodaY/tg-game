@@ -1,19 +1,21 @@
 // Run with node; PLAYWRIGHT_MODULE may point to an installed Playwright entry file.
 // The server instruments the app only in memory; combat updates are forbidden.
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
 import { createServer } from 'vite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
-const server = await createServer({ root, configFile: false, server: { host: '127.0.0.1', port: 5198, strictPort: true },
-  plugins: [{ name: 'drag-test-hooks', transform(code, id) {
-    if (id.endsWith('/combat.mjs')) {
-      assert.ok(code.includes("export * from './combat.ts'"), 'development combat bridge is available');
-      // An explicit export overrides the bridge's star export only on this test server.
-      return code + '\nexport function updateBattle() { throw new Error("Combat must not run in UI checks"); }';
+const output = new URL('../../.tmp/drag-merge/', import.meta.url);
+const server = await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/drag-merge/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 5198, strictPort: true },
+  plugins: [{ name: 'drag-test-hooks', enforce: 'pre', transform(code, id) {
+    if (id.endsWith('/combat.ts')) {
+      return prependFunctionBody(code, 'updateBattle', 'throw new Error("Combat must not run in UI checks");');
     }
-    if (id.endsWith('/main.mjs')) return code + `\nwindow.dragCheck = {
+    if (id.endsWith('/main.ts')) return code + `\nwindow.dragCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       refresh,
@@ -25,6 +27,7 @@ const server = await createServer({ root, configFile: false, server: { host: '12
 let browser;
 const checks = [];
 try {
+  await mkdir(output, { recursive: true });
   await server.listen();
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [320, 390]) {
@@ -87,7 +90,7 @@ try {
     assert.deepEqual(await read(),before); // 3+98 exceeds the cap.
     await hold(await cell(2,0)); await move(await cell(2,1));
     assert.equal(await page.locator('.unit-drag-ghost.is-valid').count(),1);
-    await page.screenshot({path:`${process.env.TEMP}/brotd-drag-merge-${width}.png`});
+    await page.screenshot({ path: fileURLToPath(new URL(`brotd-drag-merge-${width}.png`, output)) });
     await up();
     let after = await read();
     assert.equal(after.units.length,3); assert.equal(after.units.find(u=>u.id===2).level,5);

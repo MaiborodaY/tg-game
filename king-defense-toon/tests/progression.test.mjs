@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CELL_UNLOCK_COSTS, STARTING_CELLS, claimFirstClear, createProgression, migrateCampaignSave, nextCellCost, unlockCell } from '../progression.mjs';
+import { CELL_UNLOCK_COSTS, STARTING_CELLS, claimFirstClear, createProgression, migrateCampaignSave, nextCellCost, unlockCell } from '../progression.ts';
 
 test('legacy campaign migration retains the next biome and one-time reward claims', () => {
   for (const [before, after] of [[0, 0], [9, 9], [10, 200], [11, 201], [20, 210], ['13.9', 203], [100, 210], [-3, 0], ['bad', 0]]) {

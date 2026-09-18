@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getMergeResult } from '../unit-merging.mjs';
-import { RECRUIT_LEVEL_CAP, UNIT_LEVEL_STAT_BONUS, getUnitStats } from '../recruitment.mjs';
-import { UNIT_TYPES } from '../units.mjs';
+import { getMergeResult } from '../unit-merging.ts';
+import { RECRUIT_LEVEL_CAP, UNIT_LEVEL_STAT_BONUS, getUnitStats } from '../recruitment.ts';
+import { UNIT_TYPES } from '../units.ts';
 
 const fighter = (id, level = 1, type = 'swordsman') => ({ id, type, level });
 const deployed = (id, level = 1, type = 'swordsman', col = 2, row = 0) => ({ ...fighter(id, level, type), col, row });

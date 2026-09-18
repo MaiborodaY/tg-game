@@ -1,5 +1,4 @@
 // Pure source generation keeps catalogue checks independent of local art packs and image writes.
-export const artBridge = moduleName => `export * from './${moduleName}.ts';\n`;
 
 export function rankArtSource(entries) {
   const manifest = Object.entries(entries).map(([type, ranks]) => `  ${type}: {\n${Object.entries(ranks)

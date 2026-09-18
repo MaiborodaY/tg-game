@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CASTLE_MAX_HP, COMBAT_PACE, createBattle, updateBattle } from '../combat.mjs';
-import { heroXpForLevel } from '../hero.mjs';
-import { FIELD, HERO_START, WALKABLE_AREAS, positionForCell } from '../field.mjs';
+import { CASTLE_MAX_HP, COMBAT_PACE, createBattle, updateBattle } from '../combat.ts';
+import { heroXpForLevel } from '../hero.ts';
+import { FIELD, HERO_START, WALKABLE_AREAS, positionForCell } from '../field.ts';
 
 const DT = 1 / 60;
 const sword = (id = 1, col = 2) => ({ id, type: 'swordsman', level: 1, col, row: 0 });

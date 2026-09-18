@@ -7,10 +7,11 @@ import { createServer } from 'vite';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
-const output = new URL('../../../.tmp/barracks-upgrade/', import.meta.url);
-const server = await createServer({ root, configFile: false, server: { host: '127.0.0.1', port: 5200, strictPort: true },
+const output = new URL('../../.tmp/barracks-upgrade/', import.meta.url);
+const server = await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/barracks-upgrade/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 5200, strictPort: true },
   plugins: [{ name: 'barracks-check-hooks', transform(code, id) {
-    if (id.endsWith('/main.mjs')) return code + `\nwindow.barracksCheck = {
+    if (id.endsWith('/main.ts')) return code + `\nwindow.barracksCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify({ gold, units, reserve, recruitment, barracks, slaves: economy.slaves })),

@@ -1,4 +1,4 @@
-import { artBridge, goblinHealerGeometrySource } from './art-catalog-codegen.mjs';
+import { goblinHealerGeometrySource } from './art-catalog-codegen.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -38,6 +38,5 @@ const geometry = {
   baselines: body.frames.map(({ index, rect, footAnchor }) => (rect.y + footAnchor.y - Math.floor(index / 4) * 192) / 192),
 };
 await writeFile(new URL('geometry.ts', destination), goblinHealerGeometrySource(geometry, pulse.frames));
-await writeFile(new URL('geometry.mjs', destination), artBridge('geometry'));
 await writeFile(new URL('provenance.json', destination), `${JSON.stringify({ source, assets }, null, 2)}\n`);
 console.log(JSON.stringify({ assets, totalBytes: assets.reduce((total, asset) => total + asset.bytes, 0) }, null, 2));

@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { allyAnimationFrame, allyDeathOpacity } from '../ally-animation.mjs';
-import { tinyWarriorFrame } from '../tiny-warrior.mjs';
-import { tinyLancerFrame } from '../tiny-lancer.mjs';
-import { tinyTorchFrame } from '../tiny-torch.mjs';
-import { tinyGoblinArcherFrame } from '../tiny-goblin-archer.mjs';
-import { tinyGoblinChiefFrame } from '../tiny-goblin-chief.mjs';
-import { tinyGoblinHealerFrame } from '../tiny-goblin-healer.mjs';
-import { tinyBoarFrame } from '../tiny-boar.mjs';
-import { tinyArcherFrame, tinyMonkIdleFrame, tinyMonkRunFrame, tinyMonkHealFrame } from '../tiny-support.mjs';
-import { tinyKingFrame } from '../tiny-king.mjs';
-import { tinyStKnihorFrame } from '../tiny-st-knihor.mjs';
+import { allyAnimationFrame, allyDeathOpacity } from '../ally-animation.ts';
+import { tinyWarriorFrame } from '../tiny-warrior.ts';
+import { tinyLancerFrame } from '../tiny-lancer.ts';
+import { tinyTorchFrame } from '../tiny-torch.ts';
+import { tinyGoblinArcherFrame } from '../tiny-goblin-archer.ts';
+import { tinyGoblinChiefFrame } from '../tiny-goblin-chief.ts';
+import { tinyGoblinHealerFrame } from '../tiny-goblin-healer.ts';
+import { tinyBoarFrame } from '../tiny-boar.ts';
+import { tinyArcherFrame, tinyMonkIdleFrame, tinyMonkRunFrame, tinyMonkHealFrame } from '../tiny-support.ts';
+import { tinyKingFrame } from '../tiny-king.ts';
+import { tinyStKnihorFrame } from '../tiny-st-knihor.ts';
 
 test('every strike, shot and blessing reaches its authored contact pose on the combat impact tick', () => {
   const cases = [

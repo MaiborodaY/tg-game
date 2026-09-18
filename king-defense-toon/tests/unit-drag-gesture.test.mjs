@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createUnitDragGesture } from '../unit-drag-gesture.mjs';
+import { createUnitDragGesture } from '../unit-drag-gesture.ts';
 
 function setup(options = {}) {
   let time = 0;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getUnitRank } from '../unit-ranks.mjs';
-import { normalizeUnitLevel } from '../recruitment.mjs';
+import { getUnitRank } from '../unit-ranks.ts';
+import { normalizeUnitLevel } from '../recruitment.ts';
 
 test('native clothing colors advance at levels 26, 51 and 76', () => {
   for (const [level, palette, color] of [

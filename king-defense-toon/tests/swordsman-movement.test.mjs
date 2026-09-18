@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattle, updateBattle } from '../combat.mjs';
+import { createBattle, updateBattle } from '../combat.ts';
 import { makeFormation } from '../scripts/combat-balance.mjs';
-import { WALKABLE_AREAS } from '../field.mjs';
+import { WALKABLE_AREAS } from '../field.ts';
 
 const DT = 1 / 60;
 

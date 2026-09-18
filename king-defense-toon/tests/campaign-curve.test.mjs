@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { campaignCurve, campaignContinuationSpawns } from '../campaign-curve.mjs';
-import { ENEMY_TYPES, WAVE_DEFINITIONS, getEnemyCombatType } from '../waves.mjs';
+import { campaignCurve, campaignContinuationSpawns } from '../campaign-curve.ts';
+import { ENEMY_TYPES, WAVE_DEFINITIONS, getEnemyCombatType } from '../waves.ts';
 
 const health = wave => wave.spawns.reduce((total, spawn) => total + spawn.hp, 0);
 const message = wave => `${wave.levelNumber}-${wave.roundNumber}, wave ${wave.waveInRound}`;

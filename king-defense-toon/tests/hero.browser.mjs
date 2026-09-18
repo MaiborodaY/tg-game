@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { observedCombatModule } from './helpers/browser-instrumentation.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
-const output = new URL('../../../.tmp/st-knihor-hero/', import.meta.url);
+const output = new URL('../../.tmp/st-knihor-hero/', import.meta.url);
 const baseUrl = process.env.BASE_URL ?? 'http://127.0.0.1:5213/';
 const server = process.env.BASE_URL ? null : await createServer({
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/hero/', import.meta.url)),
   configFile: false, root: fileURLToPath(new URL('../', import.meta.url)),
   server: { host: '127.0.0.1', port: 5213, strictPort: true },
 });
@@ -33,23 +35,13 @@ try {
 
   // Observe real battle snapshots only in this isolated browser. Extra update steps finish
   // real waves quickly; the application still records their outcomes through its normal frame.
-  // BASE_URL must point to a Vite development server. Wrap the compatibility
-  // bridge so instrumentation never depends on Vite's TypeScript output format.
-  await page.route('**/combat.mjs*', async route => {
-    const response = await route.fetch();
-    const source = await response.text();
-    const bridge = source.match(/export\s+\*\s+from\s+(['"])([^'"]*\/combat\.ts(?:\?[^'"]*)?)\1/);
-    assert.ok(bridge, 'development combat bridge is available');
-    await route.fulfill({ response, body: `${source}
-      import { createBattle as createBattleObserved, updateBattle as updateBattleObserved } from ${JSON.stringify(bridge[2])};
-      export function createBattle(...args) { return globalThis.__heroTestBattle = createBattleObserved(...args); }
-      export function updateBattle(...args) {
-        if (globalThis.__heroTestHold) return [];
-        const events = [];
-        for (let index = 0; index < (globalThis.__heroTestFast ? 40 : 1); index++) events.push(...updateBattleObserved(...args));
-        return events;
-      }
-    ` });
+  // BASE_URL must point to a Vite development server. Import the untouched module
+  // through a separate URL so instrumentation does not depend on transpiler output.
+  await page.route('**/combat.ts*', async route => {
+    const original = new URL(route.request().url());
+    if (original.searchParams.has('__heroTestOriginal')) { await route.continue(); return; }
+    original.searchParams.set('__heroTestOriginal', '1');
+    await route.fulfill({ status: 200, contentType: 'text/javascript', body: observedCombatModule(original.href) });
   });
   await page.addInitScript(() => {
     globalThis.__heroDraws = [];

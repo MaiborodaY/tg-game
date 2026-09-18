@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BASE_BATTLE_SPEED, BATTLE_SPEEDS, battleFrameDelta, nextBattleSpeed } from '../battle-speed.mjs';
+import { BASE_BATTLE_SPEED, BATTLE_SPEEDS, battleFrameDelta, nextBattleSpeed } from '../battle-speed.ts';
 
 test('speed selection cycles through all choices and recovers an unknown selection', () => {
   assert.deepEqual(BATTLE_SPEEDS, [1, 2, 3]);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createRecruitment, getRecruitChances, getRecruitLevel, getRecruitProgress, receiveRecruit } from '../recruitment.mjs';
-import { createBarracks, startBarracksUpgrade, completeBarracksUpgrade, consumeFirstLancerGuarantee } from '../barracks.mjs';
+import { createRecruitment, getRecruitChances, getRecruitLevel, getRecruitProgress, receiveRecruit } from '../recruitment.ts';
+import { createBarracks, startBarracksUpgrade, completeBarracksUpgrade, consumeFirstLancerGuarantee } from '../barracks.ts';
 
 test('locked barracks keep all existing recruitment odds and cannot roll lancer', () => {
   assert.deepEqual(getRecruitChances(), [

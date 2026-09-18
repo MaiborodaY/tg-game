@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattle, updateBattle } from '../combat.mjs';
-import { WALKABLE_AREAS } from '../field.mjs';
+import { createBattle, updateBattle } from '../combat.ts';
+import { WALKABLE_AREAS } from '../field.ts';
 import { loadCombatEngine, makeFormation, simulateCombat } from '../scripts/combat-balance.mjs';
 
 const engine = await loadCombatEngine();
