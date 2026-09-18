@@ -1,9 +1,12 @@
+import { prepareAnimation, drawPreparedAnimation } from './sprite-animation.ts';
+import type { PreparedAnimation } from './sprite-animation.ts';
 import type { Actor, ActorType, BattleEffect, BattleProjectile, EffectOf, ProjectileOf } from './combat-types.ts';
 import type { UnitType } from './units.ts';
+import { isHealingUnit } from './units.ts';
 import type { EnemyType } from './waves.ts';
 import type { AnimationActor, AnimationAction } from './animation-types.ts';
 import type { HeroEffectKind } from './tiny-st-knihor.ts';
-import type { AnimationMetadata, SpriteRect, RankArtAssets } from './art-types.ts';
+import type { AnimationMetadata, RankArtAssets } from './art-types.ts';
 import type { BattlefieldMap } from './tiny-map.ts';
 import type { SceneAssetPlan } from './scene-assets.ts';
 import type { PaletteRank } from './unit-ranks.ts';
@@ -17,17 +20,10 @@ type RenderHero = HealthActor & AnimationActor & {
 type HeroArt = Partial<Record<'up' | 'down' | 'side', HTMLImageElement>>;
 // Retain the legacy royal projectile drawing without adding it to combat's actor catalogue.
 type RenderEffect = BattleEffect | BattleProjectile | (Omit<ProjectileOf<'arrow'>, 'sourceType'> & { sourceType: 'king' });
-interface PreparedAnimation {
-  atlas: HTMLImageElement;
-  bounds: SpriteRect[];
-  metadata: AnimationMetadata;
-  walk?: PreparedAnimation;
-  cast?: PreparedAnimation;
-  ranks?: Partial<Record<PaletteRank, PreparedAnimation>>;
-}
 type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
 interface PoisonArt { bottle: HTMLImageElement | null; impact: HTMLImageElement | null }
+interface CannonArt { bomb: HTMLImageElement | null; explosion: HTMLImageElement | null }
 
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, CAPITOL_TOWER_POSITION } from './field.ts';
@@ -38,10 +34,15 @@ import { getCellAvailability } from './progression.ts';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.ts';
 import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.ts';
-import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from './panther-rider-art.ts';
+import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY, PANTHER_RIDER_RENDER_HEIGHT,
+  PANTHER_RIDER_RELEASE_OFFSETS, MOON_GLAIVE_FRAMES } from './panther-rider-art.ts';
 import { pantherRiderFrame } from './panther-rider-animation.ts';
 import { ELF_ARCHER_ASSETS, ELF_ARCHER_GEOMETRY, ELF_ARCHER_RENDER_HEIGHT } from './elf-archer-art.ts';
 import { elfArcherFrame } from './elf-archer-animation.ts';
+import { ELF_HEALER_ASSETS, ELF_HEALER_GEOMETRY, ELF_HEALER_RENDER_HEIGHT, ELF_HEAL_PULSE_FRAMES } from './elf-healer-art.ts';
+import { elfHealerFrame } from './elf-healer-animation.ts';
+import { UNICORN_ASSETS, UNICORN_GEOMETRY, UNICORN_RENDER_HEIGHT } from './unicorn-art.ts';
+import { unicornFrame } from './unicorn-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
@@ -50,6 +51,8 @@ import { ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS } from './st-knihor-art.ts';
 import { tinyStKnihorFrame, stKnihorDirection, stKnihorEffectFrame } from './tiny-st-knihor.ts';
 import { GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.ts';
 import { GOBLIN_CHIEF_GEOMETRY } from './goblin-chief-art.ts';
+import { GOBLIN_BOMBARDIER_METADATA } from './goblin-bombardier-art.ts';
+import { goblinBombardierMuzzle, drawCannonBomb, drawCannonExplosion } from './goblin-bombardier-visual.ts';
 import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from './goblin-healer-art.ts';
 import { OGRE_GEOMETRY } from './ogre-art.ts';
 import { UNDEAD_ART } from './undead-art.ts';
@@ -72,7 +75,6 @@ import { getSceneAssetPlan } from './scene-assets.ts';
 export { FIELD } from './field.ts';
 
 const PANTHER_RIDER_SCALE = 1.15;
-const PANTHER_RIDER_RENDER_HEIGHT = 47 * PANTHER_RIDER_SCALE;
 const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
   swordsman: {
     layout: TINY_WARRIOR_LAYOUT,
@@ -141,8 +143,28 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     frameFor: elfArcherFrame,
     horizontalFacing: true,
   },
+  elfHealer: {
+    ...ELF_HEALER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: ELF_HEALER_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: elfHealerFrame,
+    horizontalFacing: true,
+  },
+  unicorn: {
+    ...UNICORN_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: UNICORN_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: unicornFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, elfHealer: ELF_HEALER_RENDER_HEIGHT + 4, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, unicorn: UNICORN_RENDER_HEIGHT + 4, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -398,7 +420,7 @@ function attackProgress(actor: AnimationActor | null | undefined) {
 
 function drawRange(context: CanvasRenderingContext2D, type: ActorType, x: number, y: number, ghost = false) {
   const radius = getUnitRange(type);
-  const color = type === 'healer' ? '#73cb97' : type === 'archer' || type === 'elfArcher' ? '#7ac4f1' : '#f3cf76';
+  const color = isHealingUnit(type) ? '#73cb97' : type === 'archer' || type === 'elfArcher' ? '#7ac4f1' : '#f3cf76';
   context.save();
   context.fillStyle = `${color}1a`;
   context.strokeStyle = color;
@@ -421,37 +443,7 @@ function drawAnimatedUnit(context: CanvasRenderingContext2D, animations: Animati
   const baseAnimation = sourceAnimation?.ranks?.[getUnitRank(actor?.level ?? rankLevel).level] ?? sourceAnimation;
   const animation = actor?.action === 'heal' && baseAnimation?.cast?.atlas ? baseAnimation.cast
     : actor?.action === 'walk' && baseAnimation?.walk?.atlas ? baseAnimation.walk : baseAnimation;
-  if (!animation?.atlas) return false;
-  const meta = animation.metadata;
-  const idle = 0;
-  if (!animation.bounds[idle]) return false;
-  // Idle has its own visual pace; walking and strikes retain their combat clocks.
-  const animationTime = !actor || actor.action === 'idle' ? time * 0.65 : time;
-  const frame = meta.frameFor(actor, animationTime);
-  const sourceFrame = animation.bounds[frame] ? frame : idle;
-  const source = (compact && meta.compactSourceRects?.[sourceFrame]) || animation.bounds[sourceFrame];
-  const layout = meta.layout;
-  const cellWidth = animation.atlas.width / layout.columns;
-  const cellHeight = animation.atlas.height / layout.rows;
-  const col = sourceFrame % layout.columns;
-  const row = Math.floor(sourceFrame / layout.columns);
-  const baseline = meta.baselines[sourceFrame] * cellHeight;
-  const originX = (meta.centers?.[sourceFrame] ?? 0.5) * cellWidth;
-  const scale = (meta.renderHeight ?? 49) * (actor?.visualScale ?? 1) / (meta.bodyHeight * cellHeight);
-  // Fixed body scale and per-pose ground anchors keep feet planted even when the sword is overhead.
-  const spriteX = x + (source.x - col * cellWidth - originX) * scale;
-  const spriteY = feet + (source.y - row * cellHeight - baseline) * scale;
-  const breathing = !meta.pixelArt && (!actor || actor.action === 'idle') ? Math.sin(animationTime * 2.1 + x) * 0.2 : 0;
-  context.save();
-  context.translate(x, feet);
-  if (meta.pixelArt) context.imageSmoothingEnabled = false;
-  const turnLeft = (type === 'archer' || meta.horizontalFacing) && (actor?.facingX ?? 0) < -0.15;
-  const sourceMirrored = meta.mirrorFrames?.includes(sourceFrame) ?? false;
-  if (sourceMirrored !== turnLeft) context.scale(-1, 1);
-  context.drawImage(animation.atlas, source.x, source.y, source.width, source.height,
-    spriteX - x, spriteY - feet + breathing, source.width * scale, source.height * scale);
-  context.restore();
-  return true;
+  return drawPreparedAnimation(context, animation, actor, x, feet, time, compact, type === 'archer');
 }
 
 function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number, feet: number, isKing = false, actor: Actor | null = null, time = 0, goblinArt: EnemyArt | null = null, allyAnimations: AnimationGroups | null = null, rankLevel: number | null = null, renderScale = 1, compact = false) {
@@ -473,7 +465,7 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.fillStyle = '#293b4e17';
     context.beginPath();
     const combatType = getEnemyCombatType(type);
-    const largeEnemy = combatType === 'goblinChief' || combatType === 'ogre';
+    const largeEnemy = combatType === 'goblinChief' || combatType === 'ogre' || combatType === 'goblinBombardier';
     const shadowScale = type === 'pantherRider' ? PANTHER_RIDER_SCALE : 1;
     context.ellipse(x, feet + 1, (combatType === 'ogre' ? 29 : largeEnemy ? 23 : 17) * shadowScale * (actor?.visualScale ?? 1), (largeEnemy ? 5.5 : 4) * shadowScale, 0, 0, Math.PI * 2);
     context.fill();
@@ -483,7 +475,7 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.fill();
   }
   const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
-    || type === 'plagueAlchemist' || Object.hasOwn(UNDEAD_ENEMY_ART, type);
+    || type === 'plagueAlchemist' || type === 'goblinBombardier' || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
   } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1, compact)) {
@@ -581,6 +573,7 @@ function drawHealth(context: CanvasRenderingContext2D, actor: HealthActor, rende
   const enemy = actor.side === 'enemy';
   const width = enemy ? 26 : 30;
   const largeEnemyMetadata = actor.type === 'ogre' ? OGRE_ANIMATION_METADATA
+    : actor.type === 'goblinBombardier' ? GOBLIN_BOMBARDIER_METADATA
     : actor.type === 'goblinChief' ? GOBLIN_CHIEF_ANIMATION_METADATA
       : bossArt[actor.type]?.metadata;
   const enemyOffset = largeEnemyMetadata
@@ -619,6 +612,24 @@ function drawPoisonEffect(context: CanvasRenderingContext2D, art: PoisonArt,
   context.restore();
 }
 
+function drawCannonEffect(context: CanvasRenderingContext2D, art: CannonArt,
+  effect: ProjectileOf<'arrow'> | EffectOf<'cannon-impact'>, renderScale: number) {
+  if (effect.age >= effect.duration) return;
+  if (effect.type === 'cannon-impact') {
+    if (art.explosion) drawCannonExplosion(context, { explosion: art.explosion }, effect.age,
+      effect.targetX, effect.targetY, .7 * renderScale);
+    return;
+  }
+  if (!art.bomb || effect.landed) return;
+  const facing = effect.launchFacing ?? { x: 0, y: 1 };
+  const origin = goblinBombardierMuzzle({ facingX: facing.x, facingY: facing.y, visualScale: renderScale }, effect.x, effect.y + 27);
+  const progress = clamp(effect.age / effect.duration);
+  drawCannonBomb(context, { bomb: art.bomb }, effect.age,
+    origin.x + (effect.targetX - origin.x) * progress,
+    origin.y + (effect.targetY - origin.y) * progress - Math.sin(progress * Math.PI) * 12 * renderScale,
+    .45 * renderScale);
+}
+
 function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
   if (!['goblinChief', 'ogre'].includes(getEnemyCombatType(actor.type)) || actor.hp <= 0 || actor.action !== 'attack') return;
   const impact = actor.impactFraction ?? 0.7;
@@ -640,12 +651,12 @@ function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
   context.restore();
 }
 
-function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1) {
+function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1, elfHealPulse: HTMLImageElement | null = null, moonGlaive: HTMLImageElement | null = null) {
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
   const alliedArrow = effect.type === 'arrow' && (effect.sourceType === 'archer' || effect.sourceType === 'elfArcher');
-  const alliedHeal = effect.type === 'heal' && effect.sourceType === 'healer';
+  const alliedHeal = effect.type === 'heal' && isHealingUnit(effect.sourceType);
   const distance = Math.max(1, Math.hypot(targetX - effect.x, targetY - effect.y));
   const directionX = (targetX - effect.x) / distance;
   const directionY = (targetY - effect.y) / distance;
@@ -655,6 +666,22 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
   context.save();
   context.globalAlpha = p > 0.7 ? (1 - p) / 0.3 : 1;
   if (effect.type === 'arrow') {
+    if (effect.sourceType === 'pantherRider' && moonGlaive) {
+      // Freeze the authored hand origin at release, including west-facing mirroring.
+      const facing = effect.launchFacing ?? { x: 1, y: 0 };
+      const releaseFrame = facing.y > 0 && facing.y >= Math.abs(facing.x) ? 14 : 10;
+      const offset = PANTHER_RIDER_RELEASE_OFFSETS[releaseFrame];
+      const fromX = effect.x + offset.x * (facing.x < 0 ? -1 : 1) * renderScale;
+      const fromY = effect.y + 27 + offset.y * renderScale;
+      const { rect, centerAnchor } = MOON_GLAIVE_FRAMES[Math.floor(effect.age * 12) % 4];
+      const scale = .32 * renderScale;
+      context.translate(fromX + (targetX - fromX) * p, fromY + (targetY - fromY) * p);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(moonGlaive, rect.x, rect.y, rect.width, rect.height,
+        -centerAnchor.x * scale, -centerAnchor.y * scale, rect.width * scale, rect.height * scale);
+      context.restore();
+      return;
+    }
     const x = startX + (targetX - startX) * p;
     const y = startY + (targetY - startY) * p - Math.sin(p * Math.PI) * 8;
     context.translate(x, y);
@@ -708,12 +735,14 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
       context.restore();
       return;
     }
-    if (effect.sourceType === 'goblinHealer' && goblinHealPulse) {
-      const { rect, groundAnchor } = GOBLIN_HEAL_PULSE_FRAMES[goblinHealPulseFrame(p)];
-      const scale = .5 * renderScale;
+    const elven = effect.sourceType === 'elfHealer';
+    const healPulse = elven ? elfHealPulse : effect.sourceType === 'goblinHealer' ? goblinHealPulse : null;
+    if (healPulse) {
+      const { rect, groundAnchor } = (elven ? ELF_HEAL_PULSE_FRAMES : GOBLIN_HEAL_PULSE_FRAMES)[goblinHealPulseFrame(p)];
+      const scale = (elven ? .6 : .5) * renderScale;
       context.imageSmoothingEnabled = false;
       // Combat effects target the torso (-27px); this authored ring is anchored to the recipient's feet.
-      context.drawImage(goblinHealPulse, rect.x, rect.y, rect.width, rect.height,
+      context.drawImage(healPulse, rect.x, rect.y, rect.width, rect.height,
         targetX - groundAnchor.x * scale, targetY + 27 - groundAnchor.y * scale,
         rect.width * scale, rect.height * scale);
       context.font = '11px "Lilita One", sans-serif';
@@ -811,6 +840,7 @@ const ENEMY_ANIMATION_METADATA: Record<EnemyType, AnimationMetadata> = {
   goblin: TORCH_ANIMATION_METADATA,
   goblinArcher: GOBLIN_ARCHER_ANIMATION_METADATA,
   goblinChief: GOBLIN_CHIEF_ANIMATION_METADATA,
+  goblinBombardier: GOBLIN_BOMBARDIER_METADATA,
   goblinHealer: GOBLIN_HEALER_ANIMATION_METADATA,
   ogre: OGRE_ANIMATION_METADATA,
   boar: BOAR_ANIMATION_METADATA,
@@ -826,17 +856,6 @@ const MONK_HEAL_METADATA = {
   // Cast metadata is selected only after drawAnimatedUnit observes actor.action === 'heal'.
   baselines: Array<number>(11).fill(128 / 192), frameFor: (actor: AnimationActor | null | undefined) => tinyMonkHealFrame(actor!),
 };
-
-function prepareAnimation(image: HTMLImageElement, metadata: AnimationMetadata): PreparedAnimation {
-  const { columns, rows } = metadata.layout;
-  const bounds = Array.from({ length: columns * rows }, (_, frame) => ({
-    x: frame % columns * (image.width / columns),
-    y: Math.floor(frame / columns) * (image.height / rows),
-    width: image.width / columns, height: image.height / rows,
-  }));
-  for (const [frame, rect] of Object.entries(metadata.sourceRects ?? {})) bounds[frame as `${number}`] = rect!;
-  return { atlas: image, bounds, metadata };
-}
 
 async function loadSceneAssets(plan: SceneAssetPlan) {
   const resources = new Map(await Promise.all([...plan.resources].map(async ([key, resource]) => {
@@ -859,6 +878,10 @@ async function loadSceneAssets(plan: SceneAssetPlan) {
     [enemy.type, prepareAnimation(imageResource(enemy.sheet), ENEMY_ANIMATION_METADATA[enemy.type])])) };
   return { map: resources.get(plan.mapKey) as BattlefieldMap, goblinArt, allyAnimations,
     goblinHealPulse: plan.goblinHealPulse ? imageResource(plan.goblinHealPulse) : null,
+    elfHealPulse: plan.elfHealPulse ? imageResource(plan.elfHealPulse) : null,
+    moonGlaive: plan.moonGlaive ? imageResource(plan.moonGlaive) : null,
+    cannonArt: { bomb: plan.cannonBomb ? imageResource(plan.cannonBomb) : null,
+      explosion: plan.cannonExplosion ? imageResource(plan.cannonExplosion) : null },
     poisonArt: { bottle: plan.poisonBottle ? imageResource(plan.poisonBottle) : null,
       impact: plan.poisonImpact ? imageResource(plan.poisonImpact) : null },
     heroArt: Object.fromEntries(Object.entries(plan.heroArt).map(([direction, url]) => [direction, imageResource(url)])),
@@ -877,6 +900,9 @@ export async function createScene(canvas: HTMLCanvasElement, {
   let goblinArt: EnemyArt = { animations: {} };
   let allyAnimations: AnimationGroups = {};
   let goblinHealPulse: HTMLImageElement | null = null;
+  let elfHealPulse: HTMLImageElement | null = null;
+  let moonGlaive: HTMLImageElement | null = null;
+  let cannonArt: CannonArt = { bomb: null, explosion: null };
   let poisonArt: PoisonArt = { bottle: null, impact: null };
   let heroArt: HeroArt = {};
   let heroEffects: HTMLImageElement | null = null;
@@ -908,7 +934,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
     onAssetState({ ...assetState });
     pendingAssets = loadSceneAssets(plan).then(assets => {
       if (destroyed || request !== assetRequest) return false;
-      ({ map, goblinArt, allyAnimations, goblinHealPulse, poisonArt, heroArt, heroEffects } = assets);
+      ({ map, goblinArt, allyAnimations, goblinHealPulse, elfHealPulse, moonGlaive, cannonArt, poisonArt, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
@@ -1094,12 +1120,14 @@ export async function createScene(canvas: HTMLCanvasElement, {
       for (const projectile of state.battle.projectiles) {
         if (projectile.type === 'poison-bottle') drawPoisonEffect(context, poisonArt, projectile, actorScale);
         else if (projectile.type === 'hero-hammer') drawHeroBattleEffect(context, heroEffects, projectile, actorScale);
-        else drawEffect(context, projectile, goblinHealPulse, actorScale);
+        else if (projectile.sourceType === 'goblinBombardier') drawCannonEffect(context, cannonArt, projectile, actorScale);
+        else drawEffect(context, projectile, goblinHealPulse, actorScale, elfHealPulse, moonGlaive);
       }
       for (const effect of state.battle.effects) {
         if (effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
+        else if (effect.type === 'cannon-impact') drawCannonEffect(context, cannonArt, effect, actorScale);
         else if (effect.type === 'hero-heal' || effect.type === 'hero-impact') drawHeroBattleEffect(context, heroEffects, effect, actorScale);
-        else drawEffect(context, effect, goblinHealPulse, actorScale);
+        else drawEffect(context, effect, goblinHealPulse, actorScale, elfHealPulse, moonGlaive);
       }
       drawCastleHealth(context, state.battle.castle);
     } else {
@@ -1173,12 +1201,16 @@ export async function createScene(canvas: HTMLCanvasElement, {
     getPortrait(type) {
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[1].art;
       if (type === 'elfArcher') return ELF_ARCHER_ASSETS[1].art;
+      if (type === 'elfHealer') return ELF_HEALER_ASSETS[1].art;
+      if (type === 'unicorn') return UNICORN_ASSETS[1].art;
       return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
       if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[getUnitRank(level).level].art;
       if (type === 'elfArcher') return ELF_ARCHER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'elfHealer') return ELF_HEALER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'unicorn') return UNICORN_ASSETS[getUnitRank(level).level].art;
       return rankArt[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {
@@ -1202,6 +1234,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
       goblinArt = { animations: {} };
       allyAnimations = {};
       goblinHealPulse = null;
+      elfHealPulse = null;
+      moonGlaive = null;
       heroArt = {};
       heroEffects = null;
       resizeObserver?.disconnect();

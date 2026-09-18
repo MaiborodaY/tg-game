@@ -141,7 +141,7 @@ test('existing fighter stats remain intact when the second level gains its alche
 });
 
 test('biomes keep their own roster and main bosses remain at the four campaign milestones', () => {
-  const forest = new Set(['goblin', 'goblinArcher', 'goblinHealer', 'boar', 'goblinChief', 'ogre']);
+  const forest = new Set(['goblin', 'goblinArcher', 'goblinHealer', 'boar', 'goblinChief', 'ogre', 'goblinBombardier']);
   const undead = new Set(['skeleton', 'skeletonArcher', 'ghoul', 'cryptSpider', 'cryptKing', 'plagueAlchemist']);
   for (const wave of continuation) {
     assert.ok(wave.spawns.every(spawn => (wave.levelNumber === 1 ? forest : undead).has(spawn.type)), message(wave));

@@ -4,6 +4,7 @@ import { createCampaignState, campaignSnapshot, restoreCampaignState } from '../
 import * as commands from '../campaign-commands.ts';
 import { createBattle } from '../combat.ts';
 import { WAVE_DEFINITIONS } from '../waves.ts';
+import { BARRACKS_UPGRADES } from '../barracks.ts';
 
 const NOW = 100_000;
 const fresh = () => createCampaignState(NOW);
@@ -80,6 +81,59 @@ test('pool command rejects unavailable factions and commits an unlocked selectio
   state.barracks.level = 3;
   assert.equal(commands.selectRecruitmentPool(state, 'elves').ok, true);
   assert.equal(commands.recruitFighter(state, { now: NOW, random: () => 0.8 }).type, 'pantherRider');
+});
+
+test('campaign recruitment passes the actual Barracks tier through new elven unlocks', () => {
+  for (const [tier, expected] of [[3, 'elfHealer'], [4, 'unicorn']]) {
+    const state = fresh();
+    state.barracks.level = tier;
+    state.recruitmentPool = 'elves';
+    state.recruitment.received.pantherRider = 50;
+    state.recruitment.received.elfArcher = 15;
+    const result = commands.recruitFighter(state, { now: NOW, random: () => .99 });
+    assert.equal(result.ok, true);
+    assert.equal(result.type, expected);
+    assert.equal(state.economy.slaves, 2);
+    assert.equal(state.recruitment.received[expected], 1);
+    const restored = restoreCampaignState(campaignSnapshot(state), NOW);
+    assert.deepEqual(restored.reserve, state.reserve);
+    assert.equal(restored.recruitment.received[expected], 1);
+    assert.equal(restored.nextUnitId, state.nextUnitId);
+  }
+});
+
+test('recruitment uses the completed Barracks IV tier when an upgrade finishes at the command boundary', () => {
+  const state = fresh();
+  const readyAt = NOW + BARRACKS_UPGRADES[4].durationMs;
+  state.barracks.level = 3;
+  state.barracks.upgradeStartedAt = NOW;
+  state.barracks.upgradeReadyAt = readyAt;
+  state.recruitmentPool = 'elves';
+  state.recruitment.received.pantherRider = 50;
+  state.recruitment.received.elfArcher = 15;
+  const result = commands.recruitFighter(state, { now: readyAt, random: () => .99 });
+  assert.equal(result.ok, true);
+  assert.equal(result.type, 'unicorn');
+  assert.equal(state.barracks.level, 4);
+});
+
+test('unicorn deployment keeps its two-cell footprint and stable identity across save restoration', () => {
+  const state = roster();
+  state.reserve[0].type = 'unicorn';
+  unchanged(state, () => commands.deployReserveFighter(state, 12, '2:0'), 'no-room');
+  state.progression.unlockedCells.push('3:0');
+  const deployed = commands.deployReserveFighter(state, 12, '2:0');
+  assert.equal(deployed.ok, true);
+  assert.equal(deployed.replaced.id, 7);
+  const restored = restoreCampaignState(campaignSnapshot(state), NOW);
+  assert.deepEqual(restored.units, state.units);
+  assert.deepEqual(restored.reserve, state.reserve);
+  assert.equal(restored.nextUnitId, 31);
+  // Choosing the right half identifies the same two-cell occupant for replacement.
+  const replacement = commands.deployReserveFighter(restored, 20, '3:0');
+  assert.equal(replacement.ok, true);
+  assert.equal(replacement.replaced.id, 12);
+  assert.equal(restored.reserve.find(unit => unit.id === 12).type, 'unicorn');
 });
 
 test('selling validates the whole batch and retains the last owned fighter', () => {

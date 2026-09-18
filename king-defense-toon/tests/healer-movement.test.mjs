@@ -22,7 +22,7 @@ function runOpening(dt = DT) {
       casts.set(effect.sourceId, (casts.get(effect.sourceId) ?? 0) + 1);
     }
     for (const [index, unit] of battle.allies.entries()) {
-      if (unit.type !== 'healer') continue;
+      if (!['healer', 'elfHealer'].includes(unit.type)) continue;
       const target = [...battle.allies, battle.hero].find(ally => ally.id === unit.focusId);
       const stationary = unit.hp > 0 && unit.action === 'walk' && unit.cooldown <= 0
         && target?.hp > 0 && target.hp < target.maxHp
@@ -105,4 +105,15 @@ test('monk healing and crowd navigation remain identical at 20/30/60/120 FPS and
   for (const fps of [20, 30, 60, 120]) {
     for (const speed of BATTLE_SPEEDS) assert.deepEqual(snapshot(runOpening(battleFrameDelta(1 / fps, speed))), snapshot(expected));
   }
+});
+
+
+test('mixed elven and human healers all contribute behind a crowded army, consistently across frame rates', () => {
+  const snapshot = ({battle, casts}) => ({casts, phase: battle.phase, hp: battle.castle.hp,
+    allies: battle.allies.map(({hp,x,y,action}) => ({hp,x,y,action})), kills: battle.kills});
+  const expected = runOpening(DT, true);
+  assert.ok(expected.longestStall < 1);
+  for (const id of ['ally-4','ally-5','ally-6']) assert.ok(expected.casts.some(([source,count]) => source===id && count>1), id);
+  for (const fps of [20,30,60,120]) for (const speed of BATTLE_SPEEDS)
+    assert.deepEqual(snapshot(runOpening(battleFrameDelta(1/fps,speed),true)), snapshot(expected));
 });

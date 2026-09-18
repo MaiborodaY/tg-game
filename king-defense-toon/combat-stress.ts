@@ -2,10 +2,11 @@ import { createBattle } from './combat.ts';
 import type { Actor, Battle, FormationUnit } from './combat-types.ts';
 import { createHero, heroXpForLevel } from './hero.ts';
 import type { UnitType } from './units.ts';
+import { getUnitCellWidth } from './unit-footprint.ts';
 import { ENEMY_TYPES } from './waves.ts';
 import type { EnemySpawn, EnemyType, WaveDefinition } from './waves.ts';
 
-export type CombatStressScenarioId = 'opening' | 'late-roster' | 'mixed-skills';
+export type CombatStressScenarioId = 'opening' | 'late-roster' | 'mixed-skills' | 'forest-reinforcements';
 export interface CombatStressScenario {
   readonly id: CombatStressScenarioId;
   readonly label: string;
@@ -20,9 +21,14 @@ export const COMBAT_STRESS_DEFAULT_SECONDS = 30;
 export const COMBAT_STRESS_MAX_SECONDS = 60;
 
 function roster(rows: readonly (readonly UnitType[])[], level: number): readonly Readonly<FormationUnit>[] {
-  return Object.freeze(rows.flatMap((row, rowIndex) => row.map((type, col) => Object.freeze({
-    id: rowIndex * 5 + col + 1, type, level, row: rowIndex, col,
-  }))));
+  return Object.freeze(rows.flatMap((row, rowIndex) => {
+    let col = 0;
+    return row.map((type, index) => {
+      const fighter = Object.freeze({ id: rowIndex * 5 + index + 1, type, level, row: rowIndex, col });
+      col += getUnitCellWidth(type);
+      return fighter;
+    });
+  }));
 }
 
 const denseRows: readonly (readonly UnitType[])[] = [
@@ -48,6 +54,14 @@ export const COMBAT_STRESS_SCENARIOS: readonly CombatStressScenario[] = Object.f
   Object.freeze({ id: 'mixed-skills', label: 'Synthetic mixed skills', kind: 'synthetic-stress', waveNumber: 39,
     description: 'Synthetic 36-enemy workload with poison, ranged attacks and healers against fifteen level-4 fighters. Not a normal campaign wave or balance claim.',
     formation: roster(denseRows, 4),
+  } as const),
+  Object.freeze({ id: 'forest-reinforcements', label: 'Forest reinforcements', kind: 'campaign-fixture', waveNumber: 110,
+    description: 'Catalogue wave 110 with the Bombardier, thirteen level-20 fighters including a Unicorn, Glaive Rider and Elven Healers. Diagnostic army, not a balance recommendation.',
+    formation: roster([
+      ['unicorn', 'lancer', 'swordsman', 'swordsman'],
+      ['pantherRider', 'elfHealer', 'archer', 'healer'],
+      ['elfArcher', 'elfHealer', 'archer', 'archer', 'lancer'],
+    ], 20),
   } as const),
 ]);
 

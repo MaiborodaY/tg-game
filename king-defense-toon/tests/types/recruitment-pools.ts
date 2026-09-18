@@ -8,7 +8,7 @@ export function verifyRecruitmentPoolContracts(saved: unknown): void {
   const recruitable: boolean = canRecruitFromPool(pool, 3);
   // @ts-expect-error A pool selection is not a deployable battle unit type.
   const fighter: UnitType = pool;
-  // @ts-expect-error The full elf preview catalogue also contains unimplemented types.
+  // Every elf class now has a battle implementation, with separate recruitment gates.
   const elf: UnitType = ELF_RECRUITS[0]!.id;
   const rider: UnitType = 'pantherRider';
   const archer: UnitType = 'elfArcher';

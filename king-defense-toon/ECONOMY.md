@@ -12,7 +12,7 @@ Progression combines **individual fighters in the Barracks, per-type recruitment
 | Additional tiles | Barracks I: up to eight cells in the central three columns; II unlocks the ninth central cell; III additionally permits one chosen outer-column cell; IV permits a second, up to eleven total. Successive prices: 25, 50, 100, 175, 275, 400, 550, 750 gold |
 | Total expansion cost | 625 / 1,025 / 1,575 gold for eight/nine/ten total cells, excluding Barracks construction |
 | Gold recruitment | Removed; all newly obtained fighters come from slave conversion |
-| Slave conversion | One slave becomes one individual reserve fighter. Humans: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer. Elves after III: 100% Panther Rider until Rider recruitment Lv. 3, then 50% Rider / 50% Elven Archer |
+| Slave conversion | One slave becomes one individual reserve fighter. Humans: 60% swordsman, 25% archer, 15% healer before Barracks II; then 25% each for swordsman, archer, healer and Lancer. Elves after III: 100% Panther Rider until Rider recruitment Lv. 3, then 50% Rider / 50% Elven Archer; at Archer recruitment Lv. 3, exact thirds for Rider / Archer / Healer |
 | Recruitment level | 5 x current recruitment level additional matching conversions per increase; cap 100; affects only newly converted fighters |
 | Personal level / Connect | Open the recipient in Army or Barracks, select same-type donors from either location, then add their levels in one action; continues beyond 100; no currency cost |
 | Gold personal-level upgrades | Removed; existing fighters retain their personal levels |
@@ -60,23 +60,27 @@ Barracks III construction finishes, including offline completion. Merely startin
 the upgrade does not unlock the selection. Invalid or no-longer-eligible saved
 selections fall back to Humans; Reset also returns to Humans.
 
-The Elven roster shows the playable **Panther Rider** (melee) and **Elven Archer**,
-upcoming Elven Healer, and a locked Unicorn. After Rider recruitment level 3, Elves give **50% Panther Rider /
-50% Elven Archer for one slave**; before that, 100% Rider. Unfinished classes cannot be rolled or consume a slave.
+The Elven roster shows playable **Panther Rider**, **Elven Archer** and **Elven Healer**,
+and a locked Unicorn. After Rider recruitment level 3, Elves give **50% Panther Rider /
+50% Elven Archer for one slave**; before that, 100% Rider. At Archer recruitment level 3
+(15 Archer receipts), Healer unlocks and all three receive exactly 1/3 chance each
+(shown as 33.3%). Threshold receipts retain the old odds; subsequent rolls use the new pool. Unfinished classes cannot be rolled or consume a slave.
 Selecting a pool is free. The Market button is labelled Elves while that pool is
 active and converts slaves normally, with the existing reveal and immediate save.
 Human chances and any pending guaranteed Lancer are preserved; the guarantee is
 consumed only by a Human conversion.
 
 The Rider starts its own received count and recruitment level at zero / one; no
-Human training credit transfers. The fighter has **90 HP / 9 damage / 38 range /
+Human training credit transfers. The fighter has **90 HP / 9 damage / 75 range /
 1.05-second base attack interval / 68 movement speed**, versus the Swordsman's
 60 / 6 / 38 / 1.1 / 57 at the same level. Personal growth remains +5% of base per
 level, and matching Riders can Connect beyond level 100. Placement is free and
 selling returns one gold. All three Forge tracks apply equally to the Rider and
 the other regular fighters. Existing battle snapshots remain unchanged until the next wave.
 
-The existing black-panther atlas supplies all live animations. Rank clothing
+The approved glaive-v2 atlas now supplies both the live Rider and menu portraits.
+Its short throw releases one spinning glaive and damages one enemy on arrival;
+no ricochet or extra damage is added. Rank clothing
 changes at levels 50 / 100 / 250 / 500: green / purple / red / gold / black, with
 no runtime recolouring. Sheets load only for ranks needed by the current scene.
 The Elven Archer uses one purchased cell and has **45 HP / 11 damage / 185 range /
@@ -85,21 +89,25 @@ progress starts at zero; it cannot Connect with Human Archers. Personal levels,
 all three Forge upgrades, one-gold selling and palette thresholds follow the same
 rules as other regular fighters. It fires one arrow and gains no area attack.
 
-Future Elven Healer requires Elven Archer recruitment level 3. Future Unicorn
-requires Rider recruitment level 5 and completed Barracks IV, and will occupy two
-cells. These requirements are visible in Recruitment; neither preview can be rolled
-until its combat implementation is added. IV construction controls appear beside
-Unicorn and unlock one extra paid cell independently of that future unit.
+Elven Healer requires Elven Archer recruitment level 3 and occupies one cell.
+It has **50 HP / 6 healing / 77.5 range / 1.45-second base interval / 50 movement**.
+It heals one living wounded ally or hero (including itself), without attacks,
+resurrection, castle healing or poison removal. Personal growth, all three Forge
+tracks, same-type Connect, one-gold selling and palette bands apply normally.
+Old saves initialize its missing recruitment counter at zero; existing training
+and fighters are preserved. Healing and Forge stats are fixed for the current wave.
 
-The other two elves remain previews; their proposed stats and asset status are
-in [ELVEN_RECRUITS.md](ELVEN_RECRUITS.md). Full-roster odds
-are future design decisions, not active mechanics.
+Future Unicorn requires Rider recruitment level 5 and completed Barracks IV,
+and will occupy two cells. It remains a preview, never entering recruitment rolls.
+IV construction controls beside Unicorn unlock one extra paid cell independently
+of that future unit. Its proposed stats and the current elf roster are documented
+in [ELVEN_RECRUITS.md](ELVEN_RECRUITS.md).
 
 ## Individual recruits and personal levels
 
 Tap the always-visible market to spend **one slave** and receive one reserve fighter. The spend and result save immediately before the **1,200 ms** visual sequence: a captive enters the workshop, the workshop lights up, and the new fighter travels down to Barracks. Reloading during the animation retains the completed transaction without repeating it. Before Barracks II completes, rolls are **60% swordsman / 25% archer / 15% healer**. Completion grants one guaranteed Lancer conversion, then changes the odds as described below. There is no automatic merge; each result is a separate owned fighter. Counts accumulate by the rolled type, regardless of where earlier fighters are deployed or stored. Gold cannot buy an alternative recruit.
 
-The compact **Recruits** portrait icon at the upper right of the Army dock opens **Recruitment**, showing the selected pool's chances, each current recruitment level and how many more matching fighters are needed for the next level. Human chances are 60% / 25% / 15% before Barracks II and 25% each afterwards; Elves start with Riders after Barracks III, then give 50% Rider / 50% Elven Archer at Rider recruitment Lv. 3. Opening this panel is free and available with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 recruitment cap. Conversion has its transfer animation and a short result notice in the right gutter.
+The compact **Recruits** portrait icon at the upper right of the Army dock opens **Recruitment**, showing the selected pool's chances, each current recruitment level and how many more matching fighters are needed for the next level. Human chances are 60% / 25% / 15% before Barracks II and 25% each afterwards; Elves start with Riders after Barracks III, then give 50% Rider / 50% Elven Archer at Rider recruitment Lv. 3, then equal thirds including Healer at Archer recruitment Lv. 3. Opening this panel is free and available with zero slaves. The locked Lancer is visible from the start; its Barracks upgrade and acceleration buttons spend the displayed gold only when tapped. It uses saved per-type counts, updates after conversions and shows the level-100 recruitment cap. Conversion has its transfer animation and a short result notice in the right gutter.
 
 The result's level is calculated **after incrementing that type's count**. Advancing from recruitment level L to L+1 needs **5 x L** more matching fighters. Cumulative cost at level L is **5 x L x (L-1) / 2** for a fresh account.
 

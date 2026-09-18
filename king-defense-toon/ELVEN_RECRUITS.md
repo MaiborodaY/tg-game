@@ -1,8 +1,7 @@
-# Elven recruits — playable fighters and proposed roster
+# Elven recruits — playable roster
 
-Barracks III unlocks the Elves selector in Recruitment. Panther Rider and Elven
-Archer are playable. The remaining rows below are balance proposals, not hidden
-live units. Existing source artwork names the mount a panther, so the game uses
+Barracks III unlocks the Elves selector in Recruitment. Panther Rider, Elven
+Archer, Elven Healer and Unicorn are playable. Existing source artwork names the mount a panther, so the game uses
 Panther Rider rather than mislabelling it a tiger.
 
 ## Level-one baseline
@@ -13,35 +12,45 @@ before the shared combat-pace and selected battle-speed multipliers.
 | Fighter | HP | Damage / healing | Base interval | Movement | Range | Status |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Human Swordsman | 60 | 6 damage | 1.10 s | 57 | 38 | Existing comparison |
-| Panther Rider | 90 | 9 damage | 1.05 s | 68 | 38 | Implemented |
+| Panther Rider | 90 | 9 damage | 1.05 s | 68 | 75 | Implemented |
 | Elven Archer | 45 | 11 damage | 1.30 s | 52 | 185 | Implemented |
-| Elven Healer | 50 | 6 healing | 1.45 s | 50 | 77.5 | Proposed |
-| Unicorn | 120 | 10 damage | 1.30 s | 60 | 42 | Proposed; later unlock |
+| Elven Healer | 50 | 6 healing | 1.45 s | 50 | 90 | Implemented |
+| Unicorn | 120 | 10 damage | 1.30 s | 60 | 42 | Implemented |
 
 The Rider has 50% more HP and about 57% more sustained nominal single-target DPS
-than a Swordsman of the same level. It is a mounted front-line fighter, without
-charge damage, splash, stun or another visual effect in this MVP. Its faster
-movement gets it into melee but does not let it pass through enemy bodies.
+than a Swordsman of the same level. It is a mounted short-range thrower with 75 reach, compared with a sword's 38
+and a bow's 185. Each glaive damages one target once when it arrives; no ricochet,
+splash, stun or charge damage is added. HP, damage, attack cadence and movement
+remain unchanged by the weapon update.
 The Elven Archer has about 41% more HP and 48% more nominal single-target DPS than
 the Human Archer (32 HP, 8 damage, 1.4 s base interval). It uses one cell, keeps
 the same 185 range and fires one ordinary arrow. It has no splash, poison or
-multi-shot. The support proposals improve their corresponding Human role rather
-than all becoming equally durable melee fighters. Unicorn trades some attack
-speed for the highest durability; its future gate and special ability are not set.
+multi-shot. The Elven Healer uses one cell and improves the Human Healer's 36 HP
+and 4 healing to 50 HP and 6 healing. It treats one living wounded ally or hero,
+including itself, without attacks, area healing, resurrection, castle repair or
+poison removal. It shares the existing healer crowd navigation, with 90 healing
+range versus the Human Healer's 77.5 (about 16% farther).
+Unicorn trades attack speed for the highest durability: a single-target horn strike,
+with 42 reach and no charge, splash, stun or passive magic.
 
 ## Live recruitment and progression
 
 - Elves initially award Riders only. Rider recruitment level 3 (15 receipts)
   automatically unlocks Elven Archer; subsequent conversions award a Rider or
   Archer with 50% chance each, for one slave. The receipt that reaches the
-  threshold is still a Rider. Unimplemented classes never enter the roll.
+  threshold is still a Rider. Archer recruitment level 3 (15 Archer receipts)
+  then unlocks the Healer: all three available types have an exact 1/3 chance
+  (displayed as 33.3%). The threshold receipt is still an Archer; new odds apply
+  to subsequent conversions. Rider recruitment level 5 plus completed Barracks IV
+  unlocks Unicorn. Chances are equal among the eligible classes: 25% each when all
+  four are open; a locked Healer stays excluded even if Unicorn is available.
   Humans retain their current odds.
 - Each elven type's receipts start at zero and follow the existing increasing thresholds:
   five matching receipts to level 2, then ten more to level 3, and so on.
 - Each new recruit keeps its awarded personal level. Connect works only between
   identical types, sums their levels, and does not increase recruitment progress.
-  Human and Elven Archers are distinct types and cannot Connect to each other.
-- HP and damage use the same additive 5% of level-one base per personal level.
+  Human and Elven Archers/Healers are distinct types and cannot Connect across factions.
+- HP, damage and healing use the same additive 5% of level-one base per personal level.
   Levels do not increase movement, range or attack speed. All three shared Forge
   upgrades apply equally to the Rider and the other regular fighters.
 - A fresh level-one Rider is stronger than a level-one Swordsman, not an old
@@ -49,12 +58,12 @@ speed for the highest durability; its future gate and special ability are not se
 - Human receipts and pending first-Lancer guarantees survive pool changes.
   Mixed Human/Elven formations are allowed; changing the pool does not replace
   fighters already owned or change a running battle.
-- A Rider occupies two adjacent horizontal, purchased cells. Its anchor is the
+- A Rider or Unicorn occupies two adjacent horizontal, purchased cells. Its anchor is the
   left cell; its model and battle starting position are centered across both.
   Selection and Connect work from either cell. Moves and swaps require both
   complete footprints to fit; recruiting never silently removes a second guard.
   Old Riders that no longer fit return to reserve with their level intact.
-- Existing saves gain Elven Archer recruitment counters at zero; existing
+- Existing saves gain missing Elven Archer/Healer/Unicorn recruitment counters at zero; existing
   fighters, Human progress and Rider progress are preserved.
 
 ## Recruitment unlock chain
@@ -63,8 +72,8 @@ speed for the highest durability; its future gate and special ability are not se
 | --- | --- | --- |
 | Panther Rider | Barracks III completed | Playable |
 | Elven Archer | Panther Rider recruitment level 3 | Playable |
-| Elven Healer | Elven Archer recruitment level 3 | Preview; combat implementation follows later |
-| Unicorn | Panther Rider recruitment level 5 and Barracks IV completed | Preview; two cells when implemented |
+| Elven Healer | Elven Archer recruitment level 3 | Playable |
+| Unicorn | Panther Rider recruitment level 5 and Barracks IV completed | Playable; two cells |
 
 Connect raises personal levels only and never satisfies these requirements.
 Barracks IV becomes purchasable at Rider recruitment level 5 (50 receipts),
@@ -77,18 +86,14 @@ upgrade controls remain available when the Human pool is selected.
 
 ## Art and remaining work
 
-The live Rider uses the supplied 768-pixel, sixteen-pose atlas with its authored
-rectangles and foot anchors. Idle, walk, side attack and downward attack use these
-poses. West mirrors the side art; death uses the existing static fade. Clothing
-palettes switch at 50 / 100 / 250 / 500, while the mount and skin stay unchanged.
-The Rider's model is 15% larger in battle and formation (47 to 54.05 world units
-high); this visual change does not increase its HP, damage, reach or movement speed.
-
-Barracks, unit details, Connect, Market reveals and Recruitment use the newer
-glaive-v2 Rider portrait, with the same five level-color bands. The 96-pixel
-portrait changes only menu artwork: the live combat atlas and melee rules above
-remain unchanged. Its thrown-glaive animation/projectile source is not wired into
-combat by this update.
+The live Rider and all menu portraits now use the approved glaive-v2 model.
+Its 512px, sixteen-pose atlas retains authored crops and foot anchors. Side/down
+throws release a separate 128px spinning glaive on pose 2, from the authored hand
+anchor (mirrored for west). The shared projectile lifecycle applies damage on
+arrival. The source ricochet showcase is artwork, not an enabled combat ability.
+Idle/walk, static formation and death fade use the normal rules. Body height stays
+54.05 world units (the existing 15% increase); the two-cell footprint is unchanged.
+Clothing palettes switch at 50 / 100 / 250 / 500; mount, skin and weapon are intact.
 
 The Elven Archer uses its supplied sixteen-pose atlas with authored rectangles
 and foot anchors: idle, walk, side shot and downward shot. The arrow is released
@@ -97,11 +102,17 @@ the Human Archer. Five clothing palettes follow the same 50 / 100 / 250 / 500
 level thresholds; the currently needed atlas loads on demand. Formation previews
 stay still, and combat uses the shared single-arrow effect.
 
-The Healer portrait shows its approved hooded model with a crystal staff,
-replacing the role-symbol placeholder. Healer and Unicorn show their requirements;
-neither enters recruitment rolls or combat yet. Once
-their requirements are met, these two preview rows say Coming soon.
+The Healer uses its approved hooded model and crystal staff, with the exact
+sixteen-pose 512px atlas and foot anchors. Its 35-unit body height matches the
+Human Healer. Idle/walk and side/down healing are animated; formation stays still.
+Healing lands on pose 2 and creates a short, four-frame 128px ring on the patient.
+The effect is loaded only when needed and reused for each cast. Clothing follows
+the five existing palette bands; hood, skin and staff retain their original colors.
 
-For a later full roster, consider equal thirds for the first three classes, then
-25% each once Unicorn unlocks. These future odds are not implemented here.
-Unicorn's recruitment/Barracks requirements are fixed above.
+Unicorn uses the approved 512px sixteen-pose sheet and existing menu portrait.
+Exact foot anchors keep it grounded at a 47-unit body height; horn impact lands
+once on pose 2. Formation stays still, death uses the shared fade. Saddle cloth
+changes at the five rank bands; coat, mane, armor and horn keep their colors.
+Only the visible palette loads; there is no additional spell or projectile asset.
+
+New regular units follow [UNIT_INTEGRATION.md](UNIT_INTEGRATION.md).

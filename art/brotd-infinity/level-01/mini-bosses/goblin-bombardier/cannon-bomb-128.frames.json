@@ -1,0 +1,72 @@
+{
+  "image": "cannon-bomb-128-lite.webp",
+  "size": {
+    "width": 128,
+    "height": 128
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "tumble",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 64,
+        "height": 64
+      },
+      "centerAnchor": {
+        "x": 36,
+        "y": 41
+      }
+    },
+    {
+      "index": 1,
+      "action": "tumble",
+      "pose": 1,
+      "rect": {
+        "x": 64,
+        "y": 0,
+        "width": 64,
+        "height": 64
+      },
+      "centerAnchor": {
+        "x": 27,
+        "y": 41
+      }
+    },
+    {
+      "index": 2,
+      "action": "tumble",
+      "pose": 2,
+      "rect": {
+        "x": 0,
+        "y": 64,
+        "width": 64,
+        "height": 64
+      },
+      "centerAnchor": {
+        "x": 36,
+        "y": 25
+      }
+    },
+    {
+      "index": 3,
+      "action": "tumble",
+      "pose": 3,
+      "rect": {
+        "x": 64,
+        "y": 64,
+        "width": 64,
+        "height": 64
+      },
+      "centerAnchor": {
+        "x": 33,
+        "y": 26
+      }
+    }
+  ],
+  "anchorSpace": "frame-pixels",
+  "loop": true,
+  "note": "Separate tumbling bomb. Align centerAnchor to the sphere center. Spawn at cannon muzzle on releasePose 2 (frames 10 or 14); hide projectile on contact and play cannon-explosion. Trajectory and gameplay require integration."
+}

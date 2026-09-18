@@ -1,4 +1,8 @@
-export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider' | 'elfArcher';
+export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider' | 'elfArcher' | 'elfHealer' | 'unicorn';
+
+export function isHealingUnit(type: unknown): type is 'healer' | 'elfHealer' {
+  return type === 'healer' || type === 'elfHealer';
+}
 
 export interface UnitDefinition {
   readonly id: UnitType;
@@ -11,6 +15,7 @@ export interface UnitDefinition {
   readonly color: string;
   readonly description: string;
   readonly spriteColumn: number;
+  readonly cellWidth?: 1 | 2;
 }
 
 export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
@@ -65,10 +70,11 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     cost: 0,
     hp: 90,
     damage: 9,
-    role: 'Mounted melee',
+    role: 'Glaive rider',
     color: '#8766ad',
-    description: 'Fast mounted defender. Stronger than a swordsman of the same level; strikes one enemy.',
+    description: 'Fast mounted defender. Throws a moon glaive at one nearby enemy, beyond sword reach.',
     spriteColumn: 4,
+    cellWidth: 2,
   }),
   Object.freeze({
     id: 'elfArcher',
@@ -80,6 +86,30 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     color: '#78a66a',
     description: 'Fires stronger arrows from behind the front line. More durable than a human archer of the same level.',
     spriteColumn: 5,
+  }),
+  Object.freeze({
+    id: 'elfHealer',
+    name: 'Elven Healer',
+    cost: 0,
+    hp: 50,
+    damage: 0,
+    heal: 6,
+    role: 'Support',
+    color: '#72b696',
+    description: 'Follows and heals wounded allies and your hero. Stronger healing and slightly longer reach than a human healer; cannot heal the castle.',
+    spriteColumn: 6,
+  }),
+  Object.freeze({
+    id: 'unicorn',
+    name: 'Unicorn',
+    cost: 0,
+    hp: 120,
+    damage: 10,
+    role: 'Defender',
+    color: '#78a66a',
+    description: 'Armoured frontline defender. Strikes one nearby enemy with its horn and occupies two horizontal tiles.',
+    spriteColumn: 7,
+    cellWidth: 2,
   }),
 ]);
 

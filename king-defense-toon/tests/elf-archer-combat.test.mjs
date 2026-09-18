@@ -168,9 +168,9 @@ test('a wounded elf archer receives ordinary monk healing and the hero armour au
 });
 
 test('a mixed elf and human army preserves real battle state and events at all speeds and 20/30/60/120 FPS', () => {
-  const formation = [fighter(1, 'pantherRider', 0, 0, 10), fighter(2, 'pantherRider', 2, 0, 10),
+  const formation = [fighter(1, 'pantherRider', 0, 0, 10), fighter(2, 'unicorn', 2, 0, 10),
     fighter(3, 'swordsman', 4, 0, 10), fighter(4, 'lancer', 1, 1, 10), fighter(5, 'healer', 2, 1, 10),
-    fighter(6, 'archer', 1, 2, 10), fighter(7, 'elfArcher', 3, 2, 10)];
+    fighter(6, 'archer', 1, 2, 10), fighter(7, 'elfArcher', 3, 2, 10), fighter(8, 'elfHealer', 3, 1, 10)];
   const forge = createForge({ attack: 7, attackSpeed: 13, health: 11 });
   const withoutVisualTimers = ({ hitTime, deathTime, ...actor }) => actor;
   function run(fps, speed) {

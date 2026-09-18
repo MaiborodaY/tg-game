@@ -1,5 +1,12 @@
 # BroTD Infinity release workflow
 
+- Before changing this game, read `AI_DEVELOPMENT.md` and follow its architecture,
+  persistence, combat, testing and integration rules. Keep it current when those
+  contracts change; distinguish implemented behavior from planned work.
+
+- Regular-unit additions follow `UNIT_INTEGRATION.md`: shared gameplay and
+  animation rules, with final verification batched across the requested units.
+
 - For this game, the user's request "commit and push" also authorizes publishing
   the same changes to the Telegram game's existing URL. Do not stop after Git push.
 - Until the game moves to its own repository, push approved changes to `main` and

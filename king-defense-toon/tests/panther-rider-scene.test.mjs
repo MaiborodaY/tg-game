@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createScene } from '../scene.ts';
 import { createBattle } from '../combat.ts';
-import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from '../panther-rider-art.ts';
+import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY, PANTHER_RIDER_RELEASE_OFFSETS, MOON_GLAIVE_FRAMES } from '../panther-rider-art.ts';
 import { FIELD, FORMATION_VIEW } from '../field.ts';
 import { createSceneEnvironment } from './helpers/scene-environment.mjs';
 
-test('rider scene uses authored strike crops, west flip and dead fade without new texture work', async t => {
+test('rider scene uses authored throw crops, west flip and dead fade without new texture work', async t => {
   const env = createSceneEnvironment();
   t.after(() => env.restore());
   const canvas = env.canvas(), scene = env.keep(await createScene(canvas));
@@ -16,7 +16,7 @@ test('rider scene uses authored strike crops, west flip and dead fade without ne
   assert.equal(await scene.prepare({ battle, units }), true);
   const requests = env.requests.length;
   for (const [facingX, facingY, frame] of [[1, 0, 10], [-1, 0, 10], [0, 1, 14], [0, -1, 10]]) {
-    Object.assign(rider, { action: 'attack', facingX, facingY, actionTime: .5, actionDuration: 1, impactFraction: .42 });
+    Object.assign(rider, { action: 'shoot', facingX, facingY, actionTime: .5, actionDuration: 1, impactFraction: .42 });
     canvas.clear();
     scene.render({ battle, units, time: 7 });
     const index = canvas.commands.findIndex(([method, image]) => method === 'drawImage' && image.includes('panther-rider-purple.webp'));
@@ -67,7 +67,7 @@ test('two-cell rider draws once over both cells, with centred labels and all pal
     canvas.clear(); scene.render({ units: [unit], selectedId: 1 });
     const draws = canvas.commands.filter(([method, image]) => method === 'drawImage' && image.includes(`panther-rider-${color}.webp`));
     assert.equal(draws.length, 1, 'the right-hand occupied cell does not duplicate its sprite');
-    const source = PANTHER_RIDER_GEOMETRY.sourceRects[0], scale = 54.05 / (PANTHER_RIDER_GEOMETRY.bodyHeight * 192);
+    const source = PANTHER_RIDER_GEOMETRY.sourceRects[0], scale = 54.05 / (PANTHER_RIDER_GEOMETRY.bodyHeight * 128);
     assert.ok(Math.abs(draws[0][8] - source.width * scale) < 1e-9);
     assert.ok(Math.abs(draws[0][9] - source.height * scale) < 1e-9);
     const center = FIELD.gridX + 2 * FIELD.cellWidth;
@@ -118,4 +118,33 @@ test('rider placement ghost requires both owned cells and validates the same sin
   await scene.prepare({ units: [rider, swordsman, { ...swordsman, id: 3, col: 2 }], unlockedCells });
   canvas.clear(); move(1, 0);
   assert.equal(ghostDraws(), 1, 'a second occupant blocks the swap preview');
+});
+
+
+test('glaive launches from the mirrored authored hand, spins around its anchors and reuses one loaded atlas',async t=>{
+ const env=createSceneEnvironment();t.after(()=>env.restore());
+ const canvas=env.canvas(),scene=env.keep(await createScene(canvas));
+ const units=[{id:1,type:'pantherRider',level:1,col:1,row:1}],battle=createBattle(units,1);
+ await scene.prepare({units,battle});const requests=env.requests.length;
+ for(const [x,y,release] of [[1,0,10],[-1,0,10],[0,1,14],[0,-1,10]]) {
+  for(const age of [0,1/12,2/12,3/12]) {
+   battle.projectiles=[{id:1,type:'arrow',sourceType:'pantherRider',sourceId:'ally-1',side:'ally',targetId:'goblin-1',damage:9,
+    x:195,y:283,targetX:245,targetY:230,age,duration:.5,launchFacing:{x,y}}];
+   const before=structuredClone(battle.projectiles);
+   canvas.clear();scene.render({units,battle});
+   assert.deepEqual(battle.effects,[], 'glaive flight stays visible without any cosmetic effects');
+   assert.deepEqual(battle.projectiles,before, 'drawing does not advance or resolve glaive hits');
+   const index=canvas.commands.findIndex(([method,image])=>method==='drawImage'&&image.includes('moon-glaive.webp'));
+   assert.ok(index>=0);const {rect,centerAnchor}=MOON_GLAIVE_FRAMES[Math.floor(age*12)%4];
+   assert.deepEqual(canvas.commands[index].slice(2,6),Object.values(rect));
+   const actorScale=Number(canvas.dataset.actorScale),scale=.32*actorScale;
+   assert.deepEqual(canvas.commands[index].slice(6),[-centerAnchor.x*scale,-centerAnchor.y*scale,rect.width*scale,rect.height*scale]);
+   const offset=PANTHER_RIDER_RELEASE_OFFSETS[release],p=age/.5;
+   const origin={x:195+offset.x*(x<0?-1:1)*actorScale,y:310+offset.y*actorScale};
+   const translation=canvas.commands.slice(0,index).findLast(([method])=>method==='translate');
+   assert.ok(Math.abs(translation[1]-(origin.x+(245-origin.x)*p))<1e-8);
+   assert.ok(Math.abs(translation[2]-(origin.y+(230-origin.y)*p))<1e-8);
+   assert.equal(canvas.saveDepth,0);assert.equal(env.requests.length,requests);
+  }
+ }
 });

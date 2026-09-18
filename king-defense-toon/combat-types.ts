@@ -136,6 +136,7 @@ export interface BattleEffectPayloads {
   heal: { amount: number };
   slash: Record<never, never>;
   'poison-impact': { targetId: string };
+  'cannon-impact': { targetId: string };
   'hero-heal': { targetId: string; amount: number; shield: number };
   'hero-impact': { targetId: string };
 }
@@ -143,7 +144,7 @@ export interface BattleEffectPayloads {
 // Flight state belongs to simulation even when no cosmetic effects are retained.
 export interface BattleProjectilePayloads {
   // An arrow gains landed only on arrival; hero-hammer starts with landed: false.
-  arrow: { targetId: string; damage: number; landed?: boolean };
+  arrow: { targetId: string; damage: number; landed?: boolean; launchFacing?: Point };
   // Damage is the complete four-second poison budget, not damage per tick.
   'poison-bottle': { targetId: string; damage: number; landed?: boolean };
   'hero-hammer': { targetId: string; damage: number; landed: boolean };

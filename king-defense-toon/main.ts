@@ -3,7 +3,7 @@ import * as commands from './campaign-commands.ts';
 import { createBattleRewardReceipt, applyBattleKillRewards, applyCampaignBattleResult } from './campaign-rewards.ts';
 import type { BattleRewardReceipt } from './campaign-rewards.ts';
 import { createScene } from './scene.ts';
-import { UNIT_TYPES } from './units.ts';
+import { UNIT_TYPES, isHealingUnit } from './units.ts';
 import { BATTLE_VIEW, FORMATION_VIEW } from './field.ts';
 import { createBattle, updateBattle } from './combat.ts';
 import { WAVE_DEFINITIONS, WAVES_PER_ROUND, ROUNDS_PER_LEVEL, LEVEL_COUNT, getRoundWaves, getWaveDefinition } from './waves.ts';
@@ -444,8 +444,8 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || (recruitable && campaign.economy.slaves < RECRUIT_COST) || transforming;
-  const chances = getRecruitChances(campaign.barracks.level >= 2, campaign.recruitmentPool, campaign.recruitment);
-  const odds = chances.map(({ type, chance }) => `${types[type].name} ${Math.round(chance * 100)}%`).join(', ');
+  const chances = getRecruitChances(campaign.barracks.level >= 2, campaign.recruitmentPool, campaign.recruitment, campaign.barracks.level);
+  const odds = chances.map(({ type, chance }) => `${types[type].name} ${Number((chance * 100).toFixed(1))}%`).join(', ');
   const guaranteedLancer = campaign.recruitmentPool === 'humans' && campaign.barracks.firstLancerPending;
   const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
   const previewLabel = 'Elven recruits require Barracks III. Open Recruitment for details.';
@@ -500,7 +500,7 @@ function finishRecruitReveal() {
 }
 
 function recruitmentProgressMarkup(type: UnitType) {
-  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers' };
+  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers', elfHealer: 'elven healers', unicorn: 'unicorns' };
   const progress = getRecruitProgress(campaign.recruitment, type);
   const capped = progress.level === RECRUIT_LEVEL_CAP;
   const remaining = progress.needed - progress.progress;
@@ -527,7 +527,7 @@ function refreshRecruitmentDetails() {
     : 'Market recruits raise recruitment levels. Connect adds personal levels together.';
   byId('recruitment-guarantee').hidden = elves || !campaign.barracks.firstLancerPending;
   if (elves) {
-    const chances = getRecruitChances(campaign.barracks.level >= 2, 'elves', campaign.recruitment);
+    const chances = getRecruitChances(campaign.barracks.level >= 2, 'elves', campaign.recruitment, campaign.barracks.level);
     renderElfRecruitment(byId('elf-recruitment-details'), ELF_RECRUITS.map(({ id }) => {
       const unlock = getElfRecruitUnlock(campaign.recruitment, id, campaign.barracks.level);
       const chance = chances.find(entry => entry.type === id);
@@ -542,7 +542,7 @@ function refreshRecruitmentDetails() {
         id, locked: !unlock.available,
         portrait: chance ? scene?.getUnitArt(chance.type, getRecruitProgress(campaign.recruitment, chance.type).level) ?? undefined : undefined,
         progressMarkup: details,
-        chanceLabel: chance ? Math.round(chance.chance * 100) + '%' : unlock.requirementsMet ? 'Coming soon' : 'Locked',
+        chanceLabel: chance ? Number((chance.chance * 100).toFixed(1)) + '%' : unlock.requirementsMet ? 'Coming soon' : 'Locked',
       };
     }));
     refreshBarracksUpgrade();
@@ -993,7 +993,7 @@ function refreshContent() {
   mergeLevel = merging?.level ?? 0;
   byId('army-status').textContent = draggedMerge ? 'Release on a green fighter to connect. Release elsewhere to cancel.'
     : merging ? `Connect: choose another ${types[merging.type].name}. Adds ${merging.level} levels.`
-    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${pendingRecruit.type === 'pantherRider' ? ' · 2 adjacent tiles' : ''}`
+    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${getUnitCellWidth(pendingRecruit.type) === 2 ? ' · 2 adjacent tiles' : ''}`
     : movingId ? 'Tap a destination' : 'Tap for details · Hold a fighter to connect';
   byId('cancel-army-move').hidden = !movingId && !pendingRecruitId && !pendingMerge;
   byId('open-market-info').hidden = !!movingId || !!pendingRecruitId || !!pendingMerge;
@@ -1036,11 +1036,11 @@ function refreshContent() {
   } else if (selected) {
     const type = types[selected.type];
     const stats = getForgedUnitStats(selected.type, selected.level, campaign.forge);
-    const hp = unitStatFormat.format(stats.hp), effect = unitStatFormat.format(selected.type === 'healer' ? stats.heal : stats.damage);
+    const hp = unitStatFormat.format(stats.hp), effect = unitStatFormat.format(isHealingUnit(selected.type) ? stats.heal : stats.damage);
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && campaign.units.length === 1;
     byId('unit-panel-title').textContent = type.name;
-    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${selected.type === 'healer' ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
   } else {
     byId('unit-panel-title').textContent = 'Deploy a fighter';
     panel.innerHTML = '<p class="building-note">Choose a fighter from your barracks for this tile.</p>';
@@ -1095,7 +1095,7 @@ function canMerge(source: MergeSource) {
 function mergeDescription(source: MergeSource) {
   const fighter = getMergeSource(source);
   if (!fighter) return '';
-  const space = fighter.type === 'pantherRider' ? 'Uses 2 adjacent horizontal tiles. ' : '';
+  const space = getUnitCellWidth(fighter.type) === 2 ? 'Uses 2 adjacent horizontal tiles. ' : '';
   return space + (connectCandidates(source).length
     ? 'Connect adds matching fighters to this unit. Choose from Barracks or Army.'
     : `Get another ${types[fighter.type].name} to connect to this unit.`);
@@ -1128,8 +1128,8 @@ function connectPanelMarkup() {
   return renderConnectPanel({ recipient: fighter, location: recipient.location, sourceTab,
     donors: connectCandidates(recipient, sourceTab), selectedIds: donorIds, selectedCount: donorIds.size,
     addedLevels: result.ok ? result.addedLevels : 0, previewLevel: level,
-    hp: statText(before.hp, stats.hp), effect: statText(fighter.type === 'healer' ? before.heal : before.damage, fighter.type === 'healer' ? stats.heal : stats.damage),
-    effectLabel: fighter.type === 'healer' ? 'Healing' : 'Attack', message,
+    hp: statText(before.hp, stats.hp), effect: statText(isHealingUnit(fighter.type) ? before.heal : before.damage, isHealingUnit(fighter.type) ? stats.heal : stats.damage),
+    effectLabel: isHealingUnit(fighter.type) ? 'Healing' : 'Attack', message,
     canApply: result.ok && canEditFormation() && !transforming, art: unit => scene?.getUnitArt(unit.type, unit.level) ?? undefined });
 }
 
@@ -1308,7 +1308,7 @@ function refreshReserve(selected: ArmyUnit | undefined) {
   byId('reserve-page').textContent = `${reservePage + 1} / ${pageCount}`;
   byId('reserve-options').innerHTML = campaign.reserve.slice(reservePage * RESERVE_PAGE_SIZE, (reservePage + 1) * RESERVE_PAGE_SIZE).map(unit => {
     const portrait = scene?.getUnitArt(unit.type, unit.level);
-    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${unit.type === 'pantherRider' ? ' · 2 tiles' : ''}</small></button>`;
+    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${getUnitCellWidth(unit.type) === 2 ? ' · 2 tiles' : ''}</small></button>`;
   }).join('');
 }
 
@@ -1419,7 +1419,7 @@ function refreshBarracks() {
     const portrait = scene?.getUnitArt(selected.type, selected.level);
     const lastFighter = campaign.units.length + campaign.reserve.length <= 1;
     const unavailable = !canEditFormation() || transforming;
-    byId('barracks-detail').innerHTML = `<div class="barracks-detail-unit">${portrait ? `<img src="${portrait}" alt="" />` : ''}<div class="barracks-detail-copy"><strong>${types[selected.type].name}</strong><small>Lv. ${selected.level}</small></div></div><div class="barracks-detail-stats"><span><b>HP</b><strong>${unitStatFormat.format(stats.hp)}</strong></span><span><b>${selected.type === 'healer' ? 'Healing' : 'Attack'}</b><strong>${unitStatFormat.format(selected.type === 'healer' ? stats.heal : stats.damage)}</strong></span>${stats.attackSpeed > 1 ? `<span><b>Speed</b><strong>+${Math.round((stats.attackSpeed - 1) * 100)}%</strong></span>` : ''}</div><div class="barracks-detail-actions">${mergeButtonMarkup({ location: 'reserve', id: selected.id }, unavailable)}<button class="battle-button" data-barracks-recruit-id="${selected.id}" type="button"${unavailable ? ' disabled' : ''}>Recruit</button><button class="barracks-sell" data-barracks-sell-id="${selected.id}" type="button" aria-label="Sell ${types[selected.type].name}, level ${selected.level}, for ${SELL_PRICE} gold"${unavailable || lastFighter ? ' disabled' : ''}><span>Sell</span><span class="coin-icon" aria-hidden="true"></span><span>${SELL_PRICE}</span></button></div><p class="barracks-detail-note">${mergeDescription({ location: 'reserve', id: selected.id })}</p>${lastFighter ? '<p class="barracks-detail-note">Keep at least one fighter.</p>' : ''}`;
+    byId('barracks-detail').innerHTML = `<div class="barracks-detail-unit">${portrait ? `<img src="${portrait}" alt="" />` : ''}<div class="barracks-detail-copy"><strong>${types[selected.type].name}</strong><small>Lv. ${selected.level}</small></div></div><div class="barracks-detail-stats"><span><b>HP</b><strong>${unitStatFormat.format(stats.hp)}</strong></span><span><b>${isHealingUnit(selected.type) ? 'Healing' : 'Attack'}</b><strong>${unitStatFormat.format(isHealingUnit(selected.type) ? stats.heal : stats.damage)}</strong></span>${stats.attackSpeed > 1 ? `<span><b>Speed</b><strong>+${Math.round((stats.attackSpeed - 1) * 100)}%</strong></span>` : ''}</div><div class="barracks-detail-actions">${mergeButtonMarkup({ location: 'reserve', id: selected.id }, unavailable)}<button class="battle-button" data-barracks-recruit-id="${selected.id}" type="button"${unavailable ? ' disabled' : ''}>Recruit</button><button class="barracks-sell" data-barracks-sell-id="${selected.id}" type="button" aria-label="Sell ${types[selected.type].name}, level ${selected.level}, for ${SELL_PRICE} gold"${unavailable || lastFighter ? ' disabled' : ''}><span>Sell</span><span class="coin-icon" aria-hidden="true"></span><span>${SELL_PRICE}</span></button></div><p class="barracks-detail-note">${mergeDescription({ location: 'reserve', id: selected.id })}</p>${lastFighter ? '<p class="barracks-detail-note">Keep at least one fighter.</p>' : ''}`;
   } else byId('barracks-detail').replaceChildren();
 }
 
@@ -1471,7 +1471,7 @@ byId('barracks-detail').addEventListener('click', event => {
   selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   closeOverlay(false); refresh();
   byId('army-map').focus({ preventScroll: true });
-  tell(fighter.type === 'pantherRider' ? 'Choose the left of 2 adjacent open tiles.' : 'Choose a tile.');
+  tell(getUnitCellWidth(fighter.type) === 2 ? 'Choose the left of 2 adjacent open tiles.' : 'Choose a tile.');
 });
 
 function changeReservePage(delta: number) {
@@ -1498,7 +1498,8 @@ function placeReserveFighter(id: number, key: string) {
   if (!canEditFormation() || !isUnlockedCell(key)) return false;
   const result = commands.deployReserveFighter(campaign, id, key);
   if (!result.ok) {
-    tell(campaign.reserve.find(unit => unit.id === id)?.type === 'pantherRider'
+    const fighter = campaign.reserve.find(unit => unit.id === id);
+    tell(fighter && getUnitCellWidth(fighter.type) === 2
       ? 'Needs 2 adjacent open tiles. Clear the tile on the right.' : 'This tile is occupied.');
     return false;
   }

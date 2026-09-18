@@ -11,7 +11,7 @@ const hold = unit => Object.assign(unit, { action: 'attack', actionDuration: 999
 
 function fixture(type, forge) {
   const formation = [{ id: 1, type, level: 1, col: 2, row: 1 }];
-  if (type === 'healer') formation.push({ id: 2, type: 'swordsman', level: 1, col: 2, row: 0 });
+  if (type === 'healer' || type === 'elfHealer') formation.push({ id: 2, type: 'swordsman', level: 1, col: 2, row: 0 });
   const battle = createBattle(formation, 1, undefined, forge);
   const spawns = [{ at: 0, type: 'goblin', hp: 10000, damage: 0, x: 195, y: 180 }];
   Object.assign(battle, { wave: { ...battle.wave, spawns }, total: 1, nextSpawn: 0 });
@@ -19,7 +19,7 @@ function fixture(type, forge) {
   for (const unit of [...battle.allies, ...battle.enemies, battle.hero]) hold(unit);
   const actor = battle.allies[0];
   Object.assign(actor, { x: 195, y: 210, action: 'idle', actionTime: 0, cooldown: 0, targetId: null });
-  if (type === 'healer') Object.assign(battle.allies[1], { x: 235, y: 210, hp: 1, maxHp: 10000 });
+  if (type === 'healer' || type === 'elfHealer') Object.assign(battle.allies[1], { x: 235, y: 210, hp: 1, maxHp: 10000 });
   return battle;
 }
 
@@ -28,6 +28,7 @@ test('forge snapshots affect all regular units but preserve hero, castle and spa
   formation.push({ id: 99, type: 'lancer', level: 3, col: 3, row: 1 });
   formation.push({ id: 100, type: 'pantherRider', level: 3, col: 3, row: 0 });
   formation.push({ id: 101, type: 'elfArcher', level: 3, col: 3, row: 2 });
+  formation.push({ id: 102, type: 'elfHealer', level: 3, col: 1, row: 1 });
   const neutral = createBattle(formation, 1);
   assert.deepEqual(createBattle(formation, 1, undefined, createForge()), neutral);
   const forge = createForge({ health: 10, attack: 20, attackSpeed: 30 });
@@ -54,13 +55,13 @@ test('forge snapshots affect all regular units but preserve hero, castle and spa
 });
 
 test('forged attack and healing rates scale both action windups and cooldowns', () => {
-  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65, elfArcher: .7 };
-  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05, elfArcher: 1.3 };
+  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65, elfArcher: .7, elfHealer: .8, unicorn: .8 };
+  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05, elfArcher: 1.3, elfHealer: 1.45, unicorn: 1.3 };
   const forge = createForge({ attackSpeed: 50 });
   for (const type of Object.keys(durations)) {
     const battle = fixture(type, forge), unit = battle.allies[0];
     updateBattle(battle, DT);
-    assert.equal(unit.action, type === 'healer' ? 'heal' : ['archer', 'elfArcher'].includes(type) ? 'shoot' : 'attack');
+    assert.equal(unit.action, ['healer', 'elfHealer'].includes(type) ? 'heal' : ['archer', 'elfArcher', 'pantherRider'].includes(type) ? 'shoot' : 'attack');
     const speed = 1.5;
     close(unit.actionDuration, durations[type] / COMBAT_PACE / speed);
     close(unit.cooldown, intervals[type] / COMBAT_PACE / speed);
@@ -68,13 +69,13 @@ test('forged attack and healing rates scale both action windups and cooldowns', 
 });
 
 test('a first forge rank causes fractional damage and healing in actual combat', () => {
-  for (const type of ['swordsman', 'archer', 'elfArcher', 'healer']) {
+  for (const type of ['swordsman', 'archer', 'elfArcher', 'healer', 'elfHealer', 'pantherRider', 'unicorn']) {
     const battle = fixture(type, createForge({ attack: 1 }));
-    const target = type === 'healer' ? battle.allies[1] : battle.enemies[0];
+    const target = ['healer', 'elfHealer'].includes(type) ? battle.allies[1] : battle.enemies[0];
     const startHp = target.hp;
     while (target.hp === startHp && battle.elapsed < 5) updateBattle(battle, DT);
     assert.notEqual(target.hp, startHp);
-    close(Math.abs(target.hp - startHp), { healer: 4.04, archer: 8.08, elfArcher: 11.11, swordsman: 6.06 }[type]);
+    close(Math.abs(target.hp - startHp), { unicorn: 10.1, elfHealer: 6.06, pantherRider: 9.09, healer: 4.04, archer: 8.08, elfArcher: 11.11, swordsman: 6.06 }[type]);
   }
 });
 

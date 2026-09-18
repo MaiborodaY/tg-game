@@ -68,10 +68,14 @@ test('rider loads only visible palettes and does not pull other recruits or menu
   assert.match(urls, /panther-rider-purple\.webp/);
   assert.match(urls, /panther-rider-black\.webp/);
   assert.doesNotMatch(urls, /panther-rider-(red|gold)|panther-rider-\w+-art|elf-archer|unicorn/);
+  assert.match(battle.moonGlaive, /moon-glaive\.webp\?no-inline$/);
+  assert.ok(battle.resources.has(battle.moonGlaive));
   const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.equal(army.moonGlaive, null);
   assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
   assert.equal(army.resources.size, 3, 'one map and two visible sheets');
   assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /panther-rider/);
+  assert.equal(getSceneAssetPlan().moonGlaive, null);
 });
 
 test('elf archer loads only the displayed battle/formation/placement ranks without portraits or extra effects', () => {
@@ -86,6 +90,20 @@ test('elf archer loads only the displayed battle/formation/placement ranks witho
   assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
   assert.equal(army.resources.size, 3, 'one map and two visible sheets');
   assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /elf-archer/);
+});
+
+test('elven healer loads just the visible palettes and one optional pulse outside formation', () => {
+  const state = { units: [{ type: 'elfHealer', level: 50 }],
+    battle: { allies: [{ type: 'elfHealer', level: 1 }] }, placementType: 'elfHealer', placementLevel: 500 };
+  const battle = getSceneAssetPlan(state), army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.deepEqual(battle.allies.map(unit => unit.rank).sort(), [1, 2, 5]);
+  assert.ok(battle.resources.has(battle.elfHealPulse));
+  assert.match(battle.elfHealPulse, /elf-healer-pulse\.webp\?no-inline$/);
+  assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
+  assert.equal(army.resources.size, 3);
+  assert.equal(army.elfHealPulse, null);
+  assert.equal(getSceneAssetPlan({ units: [{ type: 'healer', level: 1 }] }).elfHealPulse, null);
+  assert.doesNotMatch(battle.keys.join(' '), /elf-healer-(red|gold)|elf-healer-\w+-art|recruitment|unicorn/);
 });
 
 test('level 500 and later load one Black palette per present class without earlier palettes', () => {

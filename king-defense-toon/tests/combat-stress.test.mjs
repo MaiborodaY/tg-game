@@ -54,6 +54,27 @@ test('synthetic workload is explicitly labelled and does not modify campaign cat
   assert.throws(() => createCombatStressBattle('missing'), RangeError);
 });
 
+test('forest fixture includes current units, legal wide footprints and the catalogue Bombardier encounter', () => {
+  const scenario = getCombatStressScenario('forest-reinforcements');
+  const occupied = new Set();
+  for (const unit of scenario.formation) {
+    const width = ['unicorn', 'pantherRider'].includes(unit.type) ? 2 : 1;
+    for (let col = unit.col; col < unit.col + width; col++) {
+      assert.ok(col >= 0 && col < 5);
+      const key = `${col}:${unit.row}`;
+      assert.equal(occupied.has(key), false, 'wide units must not overlap neighbours');
+      occupied.add(key);
+    }
+  }
+  const battle = createCombatStressBattle(scenario.id);
+  for (const type of ['unicorn', 'pantherRider', 'elfHealer']) {
+    assert.ok(battle.allies.some(actor => actor.type === type));
+  }
+  assert.equal(battle.waveNumber, 110);
+  assert.ok(battle.wave.spawns.some(spawn => spawn.type === 'goblinBombardier'));
+  assert.deepEqual(battle.wave, getWaveDefinition(110));
+});
+
 test('fresh scenario runs and zero-cosmetic runs converge on exact gameplay state and ordered events', () => {
   for (const scenario of COMBAT_STRESS_SCENARIOS) {
     const first = simulate(scenario.id, true), repeat = simulate(scenario.id, true), disabled = simulate(scenario.id, false);

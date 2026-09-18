@@ -9,11 +9,11 @@ export interface IdentifiedUnitFootprint extends UnitFootprint { id: number | st
 type Occupant = UnitFootprint & { id?: number | string };
 
 export function getUnitCellWidth(type: UnitType): 1 | 2 {
-  return type === 'pantherRider' ? 2 : 1;
+  return UNIT_TYPE_BY_ID[type]?.cellWidth ?? 1;
 }
 
 export function getUnitCells(unit: Readonly<UnitFootprint>): string[] {
-  // Keep out-of-bounds cells: clipping an edge rider would incorrectly make it fit.
+  // Keep out-of-bounds cells: clipping a wide fighter at the edge would incorrectly make it fit.
   return Array.from({ length: getUnitCellWidth(unit.type) }, (_, offset) => `${unit.col + offset}:${unit.row}`);
 }
 

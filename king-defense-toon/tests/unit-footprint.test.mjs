@@ -11,9 +11,9 @@ const fighter = (id, type, col, row = 0, level = 1) => ({ id, type, col, row, le
 const rider = (id, col, row = 0, level = 1) => fighter(id, 'pantherRider', col, row, level);
 const footman = (id, col, row = 0, level = 1) => fighter(id, 'swordsman', col, row, level);
 
-test('only the rider takes two horizontal cells and edge footprints are never clipped', () => {
+test('mounted fighters take two horizontal cells and edge footprints are never clipped', () => {
   for (const { id: type } of UNIT_TYPES) {
-    const width = type === 'pantherRider' ? 2 : 1;
+    const width = ['pantherRider', 'unicorn'].includes(type) ? 2 : 1;
     assert.equal(getUnitCellWidth(type), width);
     assert.deepEqual(getUnitCells({ type, col: 2, row: 1 }), width === 2 ? ['2:1', '3:1'] : ['2:1']);
   }

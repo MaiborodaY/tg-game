@@ -215,7 +215,8 @@ reloading cannot award its first-clear reward twice.
   An asset-loading run can also be stopped safely. Reload/restart always uses a
   fresh scenario; no diagnostic control is placed in the normal player menus.
 - The fixed scenarios are an opening wave, catalogue wave 39 with an expanded
-  army, and an explicitly synthetic mixed-skills encounter. The CLI compares the
+  army, an explicitly synthetic mixed-skills encounter, and wave 110 with the
+  current Elven Healers, Glaive Rider, Unicorn and Bombardier. The CLI compares the
   complete ordered events and authoritative outcome with/without cosmetics and
   reports updateBattle CPU timing and peak counters. It excludes Canvas, DOM,
   assets and GPU work; sequential JIT/GC noise prevents treating its timing
@@ -289,4 +290,46 @@ Local logs/reports are under ignored `.tmp/stage4-*`; the commands and scenarios
 above reproduce the checks. Physical Telegram Android/iOS validation, including
 Web Locks support and representative-device performance, remains a release
 acceptance step. This branch does not implement server authority, D1, purchases
-or competitive verification, and has not been merged, pushed or deployed.
+or competitive verification. At that validation point it had not been merged,
+pushed or deployed; the subsequent release integration is recorded below.
+
+## Release integration — 2026-09-19
+
+Integrated remote `main` at `65e6d52` into the four-stage branch. Preserved the
+Elven Healer, ranged Glaive Rider, Unicorn, Bombardier, shared sprite animation,
+their balance/unlock rules and all incoming art. Recruitment commands and UI now
+pass the actual Barracks tier, including a just-completed tier IV upgrade.
+The new units keep stable IDs and shared two-cell placement after restoration.
+
+Glaives and bombs use gameplay projectiles; healing rings and cannon impact art
+remain disposable visuals. New regression cases compare normal, disabled,
+saturated and repeatedly cleared cosmetics. The lab has a fourth repeatable
+scenario, `forest-reinforcements`, using catalogue wave 110 and current units.
+
+Final combined checks passed:
+
+- `npm.cmd run brotd:check`: strict TypeScript, **681/681 Node tests**, production
+  build **260918-221215**. The sole initial failure was a new test fixture with a
+  one-hour timer instead of the existing six-hour tier IV duration; the fixture
+  was corrected, and the complete check then passed.
+- **14/14 browser suites**, including 26 recruitment scenarios for current elves
+  and the Bombardier, legacy saves, schema-2 identities, first-wave/reward replay,
+  campaign commands, buildings/farm, Connect/drag, hero, poison and the two built
+  version/profiler suites. Temporary browsers and servers closed successfully.
+- All four CLI scenarios preserved exact gameplay state and ordered events with
+  and without cosmetics for up to 30 simulated seconds. This was a correctness
+  run alongside browser checks, not a new isolated device performance baseline.
+- An independent comparison used original combat code from `65e6d52` and the
+  merged code with cosmetics disabled. Six completed encounters (waves 1, 20,
+  110, 190, 400, plus a weak army on 110) matched 224 sampled gameplay states,
+  normalized active flights and original gold/bow events, covering both outcomes.
+
+`AI_DEVELOPMENT.md`, required by `AGENTS.md`, records the architecture, save,
+combat/visual, testing, integration and publication contracts for future AI tasks.
+It explicitly identifies covering-screen render throttling and server authority
+as future work. Desktop/headless results do not certify physical Telegram clients.
+
+The release uses the source and built artifacts in this integration commit.
+Publish it to remote `main`, then deploy those unchanged artifacts to the existing
+`bro-infinity` Pages alias under `AGENTS.md`/`TELEGRAM.md`; do not rebuild between
+the commit and deployment. Local evidence is under ignored `.tmp/merge-*`.

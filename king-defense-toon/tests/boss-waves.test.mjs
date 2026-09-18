@@ -78,7 +78,7 @@ test('every round ends with one supported boss, with main bosses only in rounds 
     }
     const mainBoss = wave.roundNumber === 10 || wave.roundNumber === 20;
     const expectedType = wave.levelNumber === 1
-      ? (mainBoss ? 'ogre' : 'goblinChief')
+      ? (mainBoss ? 'ogre' : wave.roundNumber > 10 ? 'goblinBombardier' : 'goblinChief')
       : (mainBoss ? 'cryptKing' : 'cryptSpider');
     assert.equal(bosses.length, 1, label(wave));
     assert.equal(bosses[0].type, expectedType, label(wave));
@@ -91,7 +91,7 @@ test('every round ends with one supported boss, with main bosses only in rounds 
     assert.equal(opening.length, 4, label(wave));
     const hasHealer = wave.number >= 51 && wave.number <= 200;
     assert.deepEqual(opening.map(spawn => getEnemyCombatType(spawn.type)).sort(),
-      ['goblin', 'goblin', wave.levelNumber === 2 ? 'plagueAlchemist' : hasHealer ? 'goblinHealer' : 'goblinArcher', mainBoss ? 'ogre' : 'goblinChief'].sort(), label(wave));
+      ['goblin', 'goblin', wave.levelNumber === 2 ? 'plagueAlchemist' : hasHealer ? 'goblinHealer' : 'goblinArcher', getEnemyCombatType(expectedType)].sort(), label(wave));
     assert.equal(bosses[0].at, .8, `${label(wave)}: the boss remains in the opening squad`);
     const support = wave.spawns.filter(spawn => spawn.at === 14.8);
     if (wave.number <= 30) {

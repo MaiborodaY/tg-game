@@ -84,8 +84,8 @@ test('existing version-two saves preserve every receipt and training credit whil
   const saved = { version: 2, received: { swordsman: 27, archer: 12, healer: 8 },
     legacyTrainingCredit: { swordsman: 23, archer: 14, healer: 0 }, lastType: 'archer' };
   const migrated = createRecruitment(saved);
-  assert.deepEqual(migrated.received, { ...saved.received, lancer: 0, pantherRider: 0, elfArcher: 0 });
-  assert.deepEqual(migrated.legacyTrainingCredit, { ...saved.legacyTrainingCredit, lancer: 0, pantherRider: 0, elfArcher: 0 });
+  assert.deepEqual(migrated.received, { ...saved.received, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0, unicorn: 0 });
+  assert.deepEqual(migrated.legacyTrainingCredit, { ...saved.legacyTrainingCredit, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0, unicorn: 0 });
   assert.equal(migrated.lastType, 'archer');
   assert.equal(getRecruitLevel(migrated, 'swordsman'), 5);
   assert.equal(getRecruitLevel(migrated, 'lancer'), 1);

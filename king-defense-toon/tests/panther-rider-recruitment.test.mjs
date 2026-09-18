@@ -18,7 +18,7 @@ test('the trained elf pool splits riders and archers equally and preserves both 
       const expected = roll < .5 ? 'pantherRider' : 'elfArcher';
       assert.equal(receiveRecruit(state, () => roll, { ...unlocked, lancerUnlocked }).type, expected);
       assert.deepEqual(state.received, { swordsman: 0, archer: 0, healer: 0, lancer: 0,
-        pantherRider: 15 + Number(expected === 'pantherRider'), elfArcher: Number(expected === 'elfArcher') });
+        pantherRider: 15 + Number(expected === 'pantherRider'), elfArcher: Number(expected === 'elfArcher'), elfHealer: 0, unicorn: 0 });
     }
   }
   assert.equal(getRecruitChances(false).length, 3);

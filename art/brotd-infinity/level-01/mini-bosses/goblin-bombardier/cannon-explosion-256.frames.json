@@ -1,0 +1,73 @@
+{
+  "image": "cannon-explosion-256-lite.webp",
+  "size": {
+    "width": 256,
+    "height": 256
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "impact",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 67,
+        "y": 75
+      }
+    },
+    {
+      "index": 1,
+      "action": "impact",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 66,
+        "y": 75
+      }
+    },
+    {
+      "index": 2,
+      "action": "impact",
+      "pose": 2,
+      "rect": {
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 69,
+        "y": 63
+      }
+    },
+    {
+      "index": 3,
+      "action": "impact",
+      "pose": 3,
+      "rect": {
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 66,
+        "y": 64
+      }
+    }
+  ],
+  "anchorSpace": "frame-pixels",
+  "loop": false,
+  "peakPose": 1,
+  "note": "One-shot blast: initial pop, peak, smoke, fade. Align centerAnchor to contact. No persistent fire, damage radius, stun or damage value is defined by this artwork."
+}

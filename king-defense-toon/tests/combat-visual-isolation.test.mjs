@@ -115,6 +115,93 @@ test('cosmetic drops cannot suppress arrows, poison ticks, damage events or kill
   });
 });
 
+test('a naturally released mounted glaive keeps one hit after caster death in every visual mode', () => {
+  compareModes(() => encounter({ formation: [{ id: 1, type: 'pantherRider', level: 1, col: 1, row: 0 }] }),
+    (battle, mode, events) => {
+      const rider = battle.allies[0], target = battle.enemies[0];
+      Object.assign(rider, { x: 195, y: 270, action: 'idle', cooldown: 0 });
+      Object.assign(target, { x: 195, y: 220 });
+      Object.assign(battle.enemies[1], { x: 280, y: 220 });
+      ticks(battle, mode, events, 25);
+      const glaive = battle.projectiles.find(projectile => projectile.sourceType === 'pantherRider');
+      assert.ok(glaive, 'the normal windup must release a gameplay projectile');
+      assert.equal(glaive.type, 'arrow');
+      assert.ok(glaive.launchFacing.y < 0);
+      assert.equal(target.hp, 1000, 'release does not apply instant damage');
+      rider.hp = 0;
+      ticks(battle, mode, events, 60);
+      assert.equal(target.hp, 991);
+      assert.equal(battle.enemies[1].hp, 1000, 'the glaive does not bounce or splash');
+      assert.equal(battle.projectiles.length, 0);
+      assert.equal(events.filter(event => event.type === 'damage').length, 1);
+      assert.equal(events.some(event => event.type === 'bow-shot'), false);
+    });
+});
+
+test('elf healer windup and capped healing remain authoritative with zero or saturated cosmetics', () => {
+  compareModes(() => encounter({ formation: [
+    { id: 1, type: 'elfHealer', level: 1, col: 2, row: 1 }, sword(2, 2),
+  ] }), (battle, mode, events) => {
+    const [healer, patient] = battle.allies;
+    Object.assign(healer, { x: 195, y: 310, action: 'idle', cooldown: 0 });
+    Object.assign(patient, { x: 195, y: 260, hp: patient.maxHp - 2 });
+    ticks(battle, mode, events, 60);
+    assert.equal(patient.hp, patient.maxHp);
+    assert.deepEqual(events.filter(event => event.type === 'heal'), [{
+      type: 'heal', sourceId: healer.id, sourceType: 'elfHealer', targetId: patient.id,
+      side: 'ally', amount: 2, shield: 0,
+    }]);
+    assert.equal(events.some(event => event.type === 'damage'), false);
+    assert.equal(battle.projectiles.length, 0);
+  });
+});
+
+test('unicorn melee impact keeps its damage and single-target rules when slash visuals are dropped', () => {
+  compareModes(() => encounter({ formation: [{ id: 1, type: 'unicorn', level: 1, col: 1, row: 0 }] }),
+    (battle, mode, events) => {
+      const unicorn = battle.allies[0], target = battle.enemies[0];
+      Object.assign(unicorn, { x: 195, y: 275, action: 'idle', cooldown: 0 });
+      Object.assign(target, { x: 195, y: 240 });
+      Object.assign(battle.enemies[1], { x: 280, y: 240 });
+      ticks(battle, mode, events, 60);
+      assert.equal(target.hp, 990);
+      assert.equal(battle.enemies[1].hp, 1000);
+      assert.deepEqual(events.filter(event => event.type === 'damage'), [{
+        type: 'damage', targetId: target.id, targetType: target.type, side: target.side, amount: 10,
+      }]);
+      assert.equal(battle.projectiles.length, 0);
+    });
+});
+
+test('bombardier flight tracking and impact survive blocked cosmetics without splash or duplicate damage', () => {
+  compareModes(() => encounter({ enemies: [{ type: 'goblinBombardier', damage: 18 }] }),
+    (battle, mode, events) => {
+      const bombardier = battle.enemies[0], target = battle.allies[0];
+      Object.assign(bombardier, { x: 195, y: 200, action: 'idle', cooldown: 0 });
+      Object.assign(target, { x: 195, y: 300 });
+      Object.assign(battle.allies[1], { x: 280, y: 340 });
+      Object.assign(battle.hero, { x: 320, y: 340 });
+      ticks(battle, mode, events, 60);
+      const bomb = battle.projectiles.find(projectile => projectile.sourceType === 'goblinBombardier');
+      assert.ok(bomb, 'the real cannon windup must release a gameplay projectile');
+      assert.equal(target.hp, target.maxHp);
+      assert.ok(bomb.launchFacing.y > 0);
+      target.x += 10;
+      bombardier.hp = 0;
+      advance(battle, mode, events);
+      assert.equal(bomb.targetX, target.x);
+      ticks(battle, mode, events, 50);
+      assert.equal(target.hp, target.maxHp - 18);
+      assert.equal(battle.allies[1].hp, battle.allies[1].maxHp);
+      assert.equal(battle.hero.hp, battle.hero.maxHp);
+      assert.equal(battle.projectiles.length, 0);
+      assert.deepEqual(events.filter(event => event.type === 'damage'), [{
+        type: 'damage', targetId: target.id, targetType: target.type, side: target.side, amount: 18,
+      }]);
+      assert.equal(events.some(event => event.type === 'bow-shot'), false);
+    });
+});
+
 test('hero healing, overheal shields and shield expiry survive disabled or saturated cosmetics', () => {
   compareModes(() => encounter({ heroState: branchHero('light') }), (battle, mode, events) => {
     const hero = battle.hero, patient = battle.allies[0];

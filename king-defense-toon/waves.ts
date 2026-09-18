@@ -33,6 +33,7 @@ export const ENEMY_TYPES: EnemyCatalog = Object.freeze({
   goblinHealer: Object.freeze({ name: 'Goblin healer', hp: 70, damage: 3, heal: 12, reward: 1 }),
   plagueAlchemist: Object.freeze({ name: 'Plague Alchemist', hp: 210, damage: 12, reward: 2 }),
   goblinChief: Object.freeze({ name: 'Goblin chief', hp: 650, damage: 18, reward: 20, isBoss: true }),
+  goblinBombardier: Object.freeze({ name: 'Goblin Bombardier', hp: 650, damage: 18, reward: 20, isBoss: true }),
   ogre: Object.freeze({ name: 'Ogre brute', hp: 1100, damage: 22, reward: 20, isBoss: true, isFinalBoss: true }),
   boar: Object.freeze({ name: 'Boar', hp: 80, damage: 8, reward: 2 }),
   skeleton: Object.freeze({ name: 'Skeleton', combatType: 'goblin', hp: 60 * LEVEL_2_STAT_MULTIPLIER, damage: 7 * LEVEL_2_STAT_MULTIPLIER, reward: LEVEL_2_GOLD_MULTIPLIER }),
