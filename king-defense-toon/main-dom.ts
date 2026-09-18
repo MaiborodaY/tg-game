@@ -31,7 +31,6 @@ export interface GameElementTags {
   'transform-slave': 'button';
   'market-slaves': 'b';
   'market-convert-label': 'span';
-  'market-first-use-hint': 'span';
   'market-arrival': 'span';
   'market-recruit-reveal': 'img';
   'open-barracks': 'button';
@@ -139,6 +138,7 @@ export interface GameElementTags {
   'profile-name': 'strong';
   'profile-progress': 'small';
   'auto-waves': 'button';
+  'auto-waves-state': 'span';
   'sound-description': 'p';
   'sound-toggle': 'button';
   'music-volume': 'input';

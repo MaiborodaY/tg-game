@@ -296,7 +296,6 @@ try {
       await close(page, 'unit-panel');
 
       await tapCell(page, 3, 2);
-      await page.locator('#selection-panel [data-connect-action="begin"]').click();
       const beforeConnect = await state(page);
       assert.deepEqual(await page.locator('[data-connect-donor-id]:visible').evaluateAll(nodes => nodes.map(node => Number(node.dataset.connectDonorId))), [riders[1].id, riders[2].id], 'Other types are excluded from donors');
       await page.locator(`[data-connect-donor-id="${riders[1].id}"]:visible`).click();
@@ -306,7 +305,6 @@ try {
       assert.equal(current.reserve.some(unit => unit.id === riders[1].id), false);
       assert.equal(current.recruitment.received.pantherRider, 3, 'Connect changes personal level only');
       assert.equal(current.gold, beforeConnect.gold);
-      await page.locator('[data-connect-action="cancel"]:visible').click();
       await close(page, 'unit-panel');
       await unitDetails(page, riders[2].id);
       const goldBeforeSell = (await state(page)).gold;
@@ -698,7 +696,6 @@ try {
       assert.equal(current.units.find(unit => unit.id === 3).level, 150);
       assert.equal(current.units.some(unit => unit.id === 4), false);
       await tapCell(page, 3, 1);
-      await page.locator('#selection-panel [data-connect-action="begin"]').click();
       await page.locator('[data-connect-donor-id="5"]:visible').click();
       await page.locator('[data-connect-action="apply"]:visible').click();
       current = await state(page);
@@ -706,7 +703,6 @@ try {
       assert.equal(current.reserve.length, 0);
       assert.equal(current.gold, 5000);
       assert.equal(current.economy.slaves, 5);
-      await page.locator('[data-connect-action="cancel"]:visible').click();
       await close(page, 'unit-panel');
       await page.reload(); await ready(page);
       assert.deepEqual(restoredInventory(await state(page)), restoredInventory(current));

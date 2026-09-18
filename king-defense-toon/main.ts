@@ -1,4 +1,7 @@
 import { createScene } from './scene.ts';
+import { getOnboardingStep, restoreOnboardingCompleted } from './onboarding.ts';
+import { createOnboardingGuide } from './onboarding-ui.ts';
+import './onboarding.css';
 import { UNIT_TYPES, isHealingUnit } from './units.ts';
 import { BATTLE_VIEW, FORMATION_VIEW } from './field.ts';
 import { createBattle, updateBattle } from './combat.ts';
@@ -32,6 +35,7 @@ import { getMergeResult, getConnectResult } from './unit-merging.ts';
 import { renderConnectPanel } from './connect-ui.ts';
 import { setupUnitDrag } from './unit-drag.ts';
 import { createHero, awardHeroXp } from './hero.ts';
+import { addHeroXpEffect } from './hero-xp-effect.ts';
 import { createHeroUI } from './hero-ui.ts';
 import { byId } from './main-dom.ts';
 import { restoreCampaignRoster } from './campaign-roster.ts';
@@ -106,6 +110,8 @@ const unitStatFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2
 let hero = createHero();
 let heroUI: HeroUI | null = null;
 let marketHintCompleted = false;
+let onboardingCompleted = false;
+const onboardingGuide = createOnboardingGuide(byId('app'), byId('army-map'));
 let pendingRecruitId: number | null = null;
 let pendingMerge: MergeSource | null = null;
 let connectSelection: { recipient: MergeSource; sourceTab: 'army' | 'reserve'; donorIds: Set<number>; notice: string } | null = null;
@@ -213,6 +219,7 @@ try {
   const loaded = saveStorage.load();
   const saved = loaded.ok ? loaded.value : null;
   if (saved && typeof saved.gold === 'number' && Number.isFinite(saved.gold) && saved.gold >= 0) {
+    onboardingCompleted = restoreOnboardingCompleted(saved);
     starterSupplyGranted = saved.starterSupplyGranted === true;
     recruitment = createRecruitment(saved.recruitment);
     barracks = createBarracks(saved.barracks);
@@ -271,7 +278,7 @@ if (!starterSupplyGranted) {
 }
 
 function saveSnapshot() {
-  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, farm, capitol, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
+  return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, recruitmentPool, barracks, forge, farm, capitol, hero, starterSupplyGranted, marketHintCompleted, onboardingCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
     offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves,
       slotRefund: pendingSlotRefund, returnedFighters: pendingReturnedFighters, closedCells: pendingClosedCells,
       forgeRefund: pendingForgeRefund } };
@@ -301,6 +308,7 @@ function syncRecoveryUi() {
   const storageError = saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
   const assetError = Object.values(assetStates).some(state => state.status === 'error');
   const blocked = isRecovering();
+  if (blocked) onboardingGuide.hide();
   const panel = byId('recovery-panel');
   const entering = blocked && panel.hidden;
   const leaving = !blocked && !panel.hidden;
@@ -340,6 +348,7 @@ function syncRecoveryUi() {
       battleAudio.setActive(battle?.phase === 'running' && telegram.isActive && !paused);
       levelMusic.setActive(telegram.isActive);
       showOfflineIncome(); showMarketArrival();
+      refreshOnboarding();
     }
     resumeFrames();
   }
@@ -397,7 +406,7 @@ function showOfflineIncome() {
     element.inert = true;
   }
   byId('collect-offline-rewards').focus({ preventScroll: true });
-  refreshMarketHint();
+  refreshOnboarding();
 }
 
 byId('collect-offline-rewards').addEventListener('click', () => {
@@ -425,7 +434,7 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   target?.focus({ preventScroll: true });
   offlineRewardFocus = null;
   save();
-  refreshMarketHint();
+  refreshOnboarding();
   showMarketArrival(collectedSlaves);
 });
 byId('offline-rewards-panel').addEventListener('keydown', event => {
@@ -472,18 +481,48 @@ function refreshRecruitment() {
   byId('barracks-building-level').textContent = ['I', 'II', 'III', 'IV'][barracks.level - 1] + (['upgrading', 'ready'].includes(upgrade.status) ? '…' : '');
   byId('open-market-info').classList.toggle('upgrade-available', upgrade.canStart);
   byId('open-market-info').disabled = !canEditFormation();
-  refreshMarketHint();
+  refreshOnboarding();
   if (overlay?.id === 'market-info-panel') refreshRecruitmentDetails();
 }
 
-function refreshMarketHint() {
-  const visible = !marketHintCompleted && canEditFormation() && canRecruitFromPool(recruitmentPool, barracks.level) && economy.slaves >= RECRUIT_COST
-    && !transforming && !overlay && !pendingRecruitId && !pendingMerge && !movingId && byId('offline-rewards-panel').hidden;
-  const button = byId('transform-slave');
-  byId('market-first-use-hint').hidden = !visible;
-  button.classList.toggle('needs-market-hint', !!visible);
-  if (visible) button.setAttribute('aria-describedby', 'market-first-use-hint');
-  else button.removeAttribute('aria-describedby');
+function refreshOnboarding() {
+  if (onboardingCompleted || destroyed || !canEditFormation() || transforming || draggedMerge
+    || !byId('offline-rewards-panel').hidden) { onboardingGuide.hide(); return; }
+  const emptyKey = progression.unlockedCells.find(key => {
+    const [col, row] = key.split(':').map(Number);
+    return !getUnitAtCell(units, col, row);
+  });
+  const received = Object.values(recruitment.received).reduce((sum, count) => sum + count, 0);
+  const step = getOnboardingStep({ completed: onboardingCompleted, inBattle: !!battle,
+    received, slaves: economy.slaves, army: units.length, reserve: reserve.length, hasEmptyCell: !!emptyKey });
+  if (!step) { onboardingGuide.hide(); return; }
+  const show = (element: HTMLElement | null, label: string, currentStep: string = step) => {
+    if (element) onboardingGuide.show({ element, step: currentStep, label });
+    else onboardingGuide.hide();
+  };
+  if (overlay) {
+    if (step === 'place' && overlay.id === 'unit-panel' && selectedEmptyCell && !connectSelection) {
+      show(byId('reserve-options').querySelector('[data-reserve-id]'), 'Choose a fighter for this tile', 'choose');
+    } else if (step === 'place' && overlay.id === 'barracks-panel' && !connectSelection) {
+      show(barracksSelectedId === null
+        ? byId('barracks-options').querySelector('[data-barracks-unit-id]')
+        : byId('barracks-detail').querySelector('[data-barracks-recruit-id]'),
+      barracksSelectedId === null ? 'Choose a fighter' : 'Recruit, then tap a free tile', 'choose');
+    } else {
+      show(overlay.querySelector('[data-close-overlay]'), 'Close to continue', 'close');
+    }
+  } else if (movingId || pendingMerge) {
+    show(byId('cancel-army-move'), 'Cancel to continue', 'cancel');
+  } else if (step === 'market' && !pendingRecruitId) {
+    const left = Math.min(economy.slaves, Math.max(1, STARTING_SLAVES - received));
+    show(byId('transform-slave'), `Tap Market · ${left} left`);
+  } else if ((step === 'place' || pendingRecruitId) && emptyKey) {
+    const [col, row] = emptyKey.split(':').map(Number);
+    onboardingGuide.show({ element: byId('army-map'), cell: { col, row }, step: 'place',
+      label: pendingRecruitId ? 'Tap here to place your fighter' : 'Tap + to place a fighter' });
+  } else if (step === 'start') {
+    show(byId('start-wave'), 'Army ready · Start the wave');
+  } else onboardingGuide.hide();
 }
 
 function showMarketArrival(amount = 0) {
@@ -721,7 +760,7 @@ function setOverlay(id: GameElementId, opener: HTMLElement | null) {
   document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock').forEach(element => { element.inert = !overlay!.contains(element); });
   // Prefer the close control; a menu may begin with a hidden Back button.
   overlay.querySelector<HTMLElement>('[data-close-overlay]')?.focus({ preventScroll: true });
-  refreshMarketHint();
+  refreshOnboarding();
 }
 
 function closeOverlay(restoreFocus = true) {
@@ -742,7 +781,7 @@ function closeOverlay(restoreFocus = true) {
   byId('reset-confirmation').hidden = true;
   if (restoreFocus) overlayOpener?.focus({ preventScroll: true });
   overlayOpener = null;
-  refreshMarketHint();
+  refreshOnboarding();
   if (wasPicker) refresh();
   showMarketArrival();
 }
@@ -816,7 +855,7 @@ for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-pro
       pendingRecruitId = null;
       pendingMerge = null;
       barracksSelectedId = null;
-      byId('barracks-feedback').textContent = 'Tap for details · Hold to connect';
+      byId('barracks-feedback').textContent = 'Connect → same type in Army · Tap icon for details';
     }
     setOverlay(panel, byId(button)); refresh();
   });
@@ -830,7 +869,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
   byId(panel).addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      if (connectSelection) { cancelConnect(); return; }
+      if (connectSelection && (panel !== 'unit-panel' || connectSelection.donorIds.size)) { cancelConnect(); return; }
       if (panel === 'barracks-panel' && barracksSelectedId !== null) {
         showBarracksList();
         return;
@@ -985,6 +1024,7 @@ function refresh() {
   const focusedRecruitId = (document.activeElement as FocusElement | null)?.closest<HTMLButtonElement>('[data-barracks-recruit-id]')?.dataset.barracksRecruitId;
   const focusedSellId = (document.activeElement as FocusElement | null)?.closest<HTMLButtonElement>('[data-barracks-sell-id]')?.dataset.barracksSellId;
   const focusedBarracksId = (document.activeElement as FocusElement | null)?.closest<HTMLElement>('[data-barracks-unit-id]')?.dataset.barracksUnitId;
+  const focusedBarracksConnectId = (document.activeElement as FocusElement | null)?.closest<HTMLElement>('[data-barracks-connect-id]')?.dataset.barracksConnectId;
   telegram.setGameInProgress(hasActiveBattle());
   levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
   levelMusic.setActive(!destroyed && telegram.isActive && !isRecovering());
@@ -1021,7 +1061,7 @@ function refresh() {
   byId('battle-toolbar').hidden = !battle;
   byId('battle-speed').disabled = battle?.phase !== 'running';
   refreshPhaseLabel();
-  byId('auto-waves').textContent = autoWaves ? 'On' : 'Off';
+  byId('auto-waves-state').textContent = autoWaves ? 'On' : 'Off';
   byId('auto-waves').setAttribute('aria-pressed', String(autoWaves));
   byId('auto-waves').setAttribute('aria-label', `Auto waves ${autoWaves ? 'on' : 'off'}. ${autoWaves ? 'Disable' : 'Enable'} automatic waves`);
   refreshSpeedButton(); refreshWaveTrack();
@@ -1038,9 +1078,6 @@ function refresh() {
     panel.innerHTML = availability.allowed
       ? `<div class="placement-copy"><strong>Expand your army</strong><p>Cost: ${cost} gold · You have ${gold}</p></div><div class="selection-actions"><button data-action="unlock-cell"${gold < (cost ?? 0) ? ' disabled' : ''}>Unlock · ${cost} gold</button><button data-action="cancel">Cancel</button></div>`
       : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Barracks II allows 9 central tiles; III and IV each allow one more side tile to buy.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
-  } else if (selected && connectSelection?.recipient.location === 'army' && connectSelection.recipient.id === selected.id) {
-    byId('unit-panel-title').textContent = 'Connect';
-    refreshConnectPanel(panel);
   } else if (selected) {
     const type = types[selected.type];
     const stats = getForgedUnitStats(selected.type, selected.level, forge);
@@ -1048,7 +1085,8 @@ function refresh() {
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && units.length === 1;
     byId('unit-panel-title').textContent = type.name;
-    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    const markup = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}${getUnitCellWidth(selected.type) === 2 ? ' · 2 tiles' : ''}</p></div></div><div class="selection-actions"><button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div>${connectPanelMarkup(true)}${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    refreshConnectPanel(panel, markup);
   } else {
     byId('unit-panel-title').textContent = 'Deploy a fighter';
     panel.innerHTML = '<p class="building-note">Choose a fighter from your barracks for this tile.</p>';
@@ -1083,6 +1121,10 @@ function refresh() {
     (byId('barracks-options').querySelector<HTMLElement>(`[data-barracks-unit-id="${focusedBarracksId}"]`)
       ?? overlay.querySelector<HTMLElement>('[data-close-overlay]'))!.focus({ preventScroll: true });
   }
+  if (focusedBarracksConnectId && overlay?.id === 'barracks-panel' && barracksSelectedId === null) {
+    const replacement = byId('barracks-options').querySelector<HTMLButtonElement>(`[data-barracks-connect-id="${focusedBarracksConnectId}"]`);
+    (replacement && !replacement.disabled ? replacement : overlay.querySelector<HTMLElement>('[data-close-overlay]'))!.focus({ preventScroll: true });
+  }
   const connectGrid = overlay?.querySelector<HTMLElement>('.connect-donor-scroll');
   if (connectGrid) connectGrid.scrollTop = connectScroll;
   if (connectScrollFocused) connectGrid?.focus({ preventScroll: true });
@@ -1091,6 +1133,7 @@ function refresh() {
     (replacement && !replacement.disabled ? replacement : overlay?.querySelector<HTMLButtonElement>('[data-connect-action="cancel"], [data-close-overlay]'))?.focus({ preventScroll: true });
   }
   renderScene();
+  refreshOnboarding();
 }
 
 function getMergeSource(source = pendingMerge) {
@@ -1120,7 +1163,7 @@ function connectCandidates(recipient: MergeSource, location?: 'army' | 'reserve'
   return fighter ? roster.filter(unit => unit.id !== fighter.id && unit.type === fighter.type) : [];
 }
 
-function connectPanelMarkup() {
+function connectPanelMarkup(inline = false) {
   if (!connectSelection) return '';
   const { recipient, sourceTab, donorIds, notice } = connectSelection;
   const fighter = getMergeSource(recipient);
@@ -1134,7 +1177,7 @@ function connectPanelMarkup() {
   const message = !result.ok && result.reason === 'army-minimum' ? 'Keep one fighter in Army during a wave.'
     : !result.ok && result.reason === 'level-overflow' ? 'Combined level is too large to save safely.'
     : notice || (donors.length ? 'Selected fighters are consumed. This unit stays here.' : 'Select matching fighters to add their levels.');
-  return renderConnectPanel({ recipient: fighter, location: recipient.location, sourceTab,
+  return renderConnectPanel({ inline, recipient: fighter, location: recipient.location, sourceTab,
     donors: connectCandidates(recipient, sourceTab), selectedIds: donorIds, selectedCount: donorIds.size,
     addedLevels: result.ok ? result.addedLevels : 0, previewLevel: level,
     hp: statText(before.hp, stats.hp), effect: statText(isHealingUnit(fighter.type) ? before.heal : before.damage, isHealingUnit(fighter.type) ? stats.heal : stats.damage),
@@ -1142,8 +1185,7 @@ function connectPanelMarkup() {
     canApply: result.ok && canEditFormation() && !transforming, art: unit => scene?.getUnitArt(unit.type, unit.level) ?? undefined });
 }
 
-function refreshConnectPanel(panel: HTMLElement) {
-  const markup = connectPanelMarkup();
+function refreshConnectPanel(panel: HTMLElement, markup = connectPanelMarkup()) {
   // Economy and combat refreshes must not detach a donor under a finger or reset scrolling.
   if (!panel.querySelector('.connect-panel') || connectMarkupCache.get(panel) !== markup) {
     panel.innerHTML = markup;
@@ -1152,6 +1194,13 @@ function refreshConnectPanel(panel: HTMLElement) {
 }
 
 function cancelConnect() {
+  if (overlay?.id === 'unit-panel' && connectSelection?.recipient.location === 'army') {
+    connectSelection.donorIds.clear();
+    connectSelection.notice = '';
+    refresh();
+    overlay.querySelector<HTMLButtonElement>('[data-connect-action="select-all"]')?.focus({ preventScroll: true });
+    return;
+  }
   connectSelection = null;
   refresh();
   overlay?.querySelector<HTMLButtonElement>('[data-connect-action="begin"]')?.focus({ preventScroll: true });
@@ -1171,6 +1220,13 @@ function handleConnectClick(event: MouseEvent, recipient: MergeSource) {
   }
   if (!connectSelection || connectSelection.recipient.id !== recipient.id || connectSelection.recipient.location !== recipient.location) return true;
   if (action === 'cancel') { cancelConnect(); return true; }
+  if (action === 'select-all') {
+    // Select the full current source list, including scrolled-off icons, without spending fighters.
+    for (const fighter of connectCandidates(recipient, connectSelection.sourceTab)) connectSelection.donorIds.add(fighter.id);
+    connectSelection.notice = '';
+    refresh();
+    return true;
+  }
   if (action === 'apply') {
     const donors: MergeSource[] = [...connectSelection.donorIds].map(id => ({ id, location: units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
     const result = getConnectResult(units, reserve, recipient, donors, { minArmyUnits: battle ? 1 : 0 });
@@ -1412,7 +1468,9 @@ function refreshBarracks() {
   byId('barracks-page').textContent = `${barracksPage + 1} / ${pageCount}`;
   byId('barracks-options').innerHTML = reserve.slice(barracksPage * BARRACKS_PAGE_SIZE, (barracksPage + 1) * BARRACKS_PAGE_SIZE).map(unit => {
     const portrait = scene?.getUnitArt(unit.type, unit.level);
-    return `<button class="barracks-unit" data-barracks-unit-id="${unit.id}" type="button" aria-label="${types[unit.type].name}, level ${unit.level}. View details." aria-controls="barracks-detail">${portrait ? `<img src="${portrait}" alt="" />` : ''}<span class="barracks-unit-level">Lv. ${unit.level}</span></button>`;
+    const available = canEditFormation() && !transforming && canMerge({ location: 'reserve', id: unit.id });
+    const connectLabel = available ? `Connect ${types[unit.type].name}, level ${unit.level}, to a matching fighter in Army` : `Connect ${types[unit.type].name}: no eligible fighter in Army`;
+    return `<div class="barracks-entry"><button class="barracks-unit" data-barracks-unit-id="${unit.id}" type="button" aria-label="${types[unit.type].name}, level ${unit.level}. View details." aria-controls="barracks-detail">${portrait ? `<img src="${portrait}" alt="" />` : ''}<span class="barracks-unit-level">Lv. ${unit.level}</span></button><button class="barracks-connect" data-barracks-connect-id="${unit.id}" type="button" aria-label="${connectLabel}" title="${connectLabel}"${available ? '' : ' disabled'}>Connect</button></div>`;
   }).join('');
   const selected = reserve.find(unit => unit.id === barracksSelectedId);
   if (!selected) barracksSelectedId = null;
@@ -1459,6 +1517,18 @@ byId('barracks-next').addEventListener('click', () => { barracksPage += 1; refre
 byId('barracks-back').addEventListener('click', showBarracksList);
 byId('barracks-options').addEventListener('click', event => {
   if (!canEditFormation() || overlay?.id !== 'barracks-panel' || transforming) return;
+  const connectButton = (event.target as Element).closest<HTMLButtonElement>('[data-barracks-connect-id]');
+  if (connectButton) {
+    const source: MergeSource = { location: 'reserve', id: Number(connectButton.dataset.barracksConnectId) };
+    if (connectButton.disabled || !canMerge(source)) return;
+    // Selection spends nothing. The existing merge transaction consumes this fighter only after a valid Army tap.
+    pendingMerge = source;
+    pendingRecruitId = selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
+    closeOverlay(false); refresh();
+    byId('army-map').focus({ preventScroll: true });
+    tell(`Choose a green ${types[getMergeSource(source)!.type].name}.`);
+    return;
+  }
   const button = (event.target as Element).closest<HTMLElement>('[data-barracks-unit-id]');
   const fighter = button && reserve.find(unit => unit.id === Number(button.dataset.barracksUnitId));
   if (!fighter) return;
@@ -1533,6 +1603,9 @@ function placeReserveFighter(id: number, key: string) {
 
 function openCellPicker() {
   setOverlay('unit-panel', byId('army-map'));
+  if (selectedId !== null) {
+    connectSelection = { recipient: { location: 'army', id: selectedId }, sourceTab: 'reserve', donorIds: new Set(), notice: '' };
+  }
   refresh();
 }
 
@@ -1609,6 +1682,7 @@ byId('selection-panel').addEventListener('click', event => {
     units = units.filter(unit => unit.id !== selected.id);
     selectedEmptyCell = cellKey(selected.col, selected.row);
     selectedId = movingId = null;
+    connectSelection = null;
     tell('In Barracks.');
   }
   saveFormation(); refresh();
@@ -1648,6 +1722,7 @@ byId('reset').addEventListener('click', () => {
 
 function resetRun() {
   connectSelection = null;
+  onboardingCompleted = false; marketHintCompleted = false;
   units = []; reserve = []; recruitment = createRecruitment(); reservePage = 0;
   barracks = createBarracks();
   recruitmentPool = 'humans';
@@ -1768,6 +1843,7 @@ function showResult() {
   const won = battle.phase === 'victory';
   // Record hero XP with the battle outcome once; talent changes apply to a fresh battle snapshot.
   battle.heroXp = awardHeroXp(hero, { waveNumber: battle.waveNumber, kills: battle.kills, total: battle.total, won });
+  addHeroXpEffect(battle, battle.heroXp.gained);
   const firstClearBonus = won ? claimFirstClear(progression, battle.waveNumber) : 0;
   battle.firstClearBonus = firstClearBonus;
   gold += firstClearBonus;
@@ -1813,6 +1889,7 @@ function startWave() {
   // Keep the cell picker or move action open across automatic wave transitions.
   if (runComplete()) { clearedWaves = 0; lastOutcome = null; save(); }
   battle = createBattle(units, nextWaveNumber(), hero, forge, capitol);
+  if (!onboardingCompleted) { onboardingCompleted = true; save(); }
   paused = false; resultAge = 0; autoNextRemaining = null;
   battleAudio.setActive(true);
   void battleAudio.unlock();
@@ -1905,7 +1982,7 @@ function frame(timestamp: number) {
 function pauseForInactivity() {
   unitDrag?.cancel();
   tickEconomy(); economyActive = false; save();
-  refreshMarketHint();
+  refreshOnboarding();
   levelMusic.setActive(false);
   battleAudio.setActive(false);
   stopFrames();
@@ -1949,6 +2026,7 @@ function onPageHide(event: PageTransitionEvent) {
     heroUI?.destroy();
     armyScene?.destroy();
     unitDrag?.destroy();
+    onboardingGuide.destroy();
   }
 }
 

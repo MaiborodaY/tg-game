@@ -236,15 +236,15 @@ svg { display: block; }
 #toast:empty { display: none; }
 
 .battle-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 1px 6px 3px; font-size: 14px; line-height: 18px; }
-#start-wave { position: absolute; isolation: isolate; top: 69px; right: 6px; width: 44px; height: 44px; min-height: 44px; flex-direction: column; gap: 2px; padding: 4px 0; border: 0; font-size: 10px; line-height: 12px; }
+#start-wave { position: absolute; isolation: isolate; bottom: 7px; right: 6px; width: 76px; height: 44px; min-height: 44px; gap: 5px; padding: 4px 0; border: 0; font-size: 12px; line-height: 14px; }
 #start-wave::before { content: ''; position: absolute; z-index: -1; inset: 3px 0; border: 7px solid transparent; border-image: var(--button-art) 24 fill / 7px / 0 stretch; }
 .start-arrow { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid #385f60; }
 /* Only the corner buttons capture taps; the rest of the battlefield stays interactive. */
 #battle-toolbar { position: absolute; inset: 0; pointer-events: none; }
-#battle-speed { position: absolute; isolation: isolate; top: 69px; right: 6px; pointer-events: auto; width: 44px; min-width: 44px; height: 44px; padding: 0; border: 0; font-size: 12px; line-height: 14px; }
+#battle-speed { position: absolute; isolation: isolate; top: 115px; right: 6px; pointer-events: auto; width: 44px; min-width: 44px; height: 44px; padding: 0; border: 0; font-size: 12px; line-height: 14px; }
 #battle-speed::before { content: ''; position: absolute; z-index: -1; inset: 6px; border: 7px solid transparent; border-image: var(--button-art) 24 fill / 7px / 0 stretch; }
 #battle-speed[aria-pressed="true"], #auto-waves[aria-pressed="true"] { --button-art: url('./assets/tiny-ui/button-blue-pressed.png'); }
-#fps-counter { position: absolute; top: 118px; right: 6px; width: 44px; padding: 2px 0; border-radius: 3px; background: #294b4bc9; color: #fff9dc; font-size: 11px; line-height: 14px; font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; pointer-events: none; }
+#fps-counter { position: absolute; top: 162px; right: 6px; width: 44px; padding: 2px 0; border-radius: 3px; background: #294b4bc9; color: #fff9dc; font-size: 11px; line-height: 14px; font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; pointer-events: none; }
 .is-paused .phase-plaque { border-color: #9f7840; }
 
 #result-panel {
@@ -410,12 +410,6 @@ svg { display: block; }
 .market-transform:disabled { cursor: default; }
 .market-transform:disabled .market-transform-art { filter: saturate(.75); }
 .market-transform.has-slaves { border-color: #7c8d48; box-shadow: inset 0 1px #fff5d7, 0 2px #8b925a, 0 0 0 1px #bfca87; }
-.market-transform.needs-market-hint { animation: market-first-use-glow 2.2s ease-in-out infinite; }
-.market-first-use-hint { position: absolute; z-index: 3; left: 0; right: 0; bottom: 1px; display: flex; align-items: center; justify-content: center; gap: 2px; height: 14px; border-radius: 0 0 4px 4px; color: #4f5932; background: #ecdfa3; pointer-events: none; }
-.market-first-use-hint > span { font-size: 10px; line-height: 12px; white-space: nowrap; }
-.market-first-use-hint > svg { width: 8px; height: 10px; color: #6f7d40; transform: rotate(180deg); animation: market-first-use-point 1.4s ease-in-out infinite; }
-@keyframes market-first-use-glow { 0%, 100% { box-shadow: inset 0 1px #fff5d7, 0 2px #8b925a, 0 0 0 1px #bfca87; } 50% { box-shadow: inset 0 1px #fff5d7, 0 2px #8b925a, 0 0 0 3px #bdc978; } }
-@keyframes market-first-use-point { 0%, 100% { transform: translateY(0) rotate(180deg); } 50% { transform: translateY(-2px) rotate(180deg); } }
 .market-stock { position: absolute; z-index: 2; left: 50%; top: 3px; display: flex; align-items: center; justify-content: center; gap: 2px; min-width: 31px; max-width: calc(100% - 4px); height: 18px; padding: 0 4px 0 3px; border: 1px solid #75815b; border-radius: 4px; color: #fff4d4; background: #647b51; box-shadow: inset 0 1px #93a170; font-size: 13px; line-height: 16px; font-variant-numeric: tabular-nums; transform: translateX(-50%); }
 .market-stock .slave-icon { width: 13px; height: 13px; }
 .market-convert-cost { position: absolute; left: 0; right: 0; bottom: 2px; color: #675329; font-size: 11px; line-height: 12px; text-align: center; }
@@ -513,6 +507,14 @@ svg { display: block; }
 .barracks-card .building-wallet { padding: 5px 1px 6px; font-size: 11px; line-height: 17px; }
 .barracks-card .building-wallet b { font-size: 13px; }
 .barracks-options { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; margin-top: 2px; }
+.barracks-entry { display: flex; flex-direction: column; min-width: 0; }
+/* Keep the visible action small while retaining a separate 44px touch target below the portrait. */
+.barracks-connect { position: relative; isolation: isolate; width: 100%; min-height: 44px; padding: 7px 1px; border: 0; background: none; color: #36532c; font-size: 10px; line-height: 14px; text-shadow: 0 1px #eff4ce; touch-action: pan-y; }
+.barracks-connect::before { content: ''; position: absolute; z-index: -1; inset: 7px 0; border: 1px solid #78955b; border-radius: 3px; background: #cfdda6; box-shadow: inset 0 1px #eff4ce, 0 1px #8a9b68; }
+.barracks-connect:hover:not(:disabled)::before { background: #dce9b9; }
+.barracks-connect:active:not(:disabled)::before { background: #b9cc91; box-shadow: inset 0 1px #8a9b68; }
+.barracks-connect:disabled { color: #878267; cursor: default; }
+.barracks-connect:disabled::before { border-color: #c1bc98; background: #dedbb8; box-shadow: none; }
 .barracks-unit { position: relative; display: grid; justify-items: center; align-items: start; min-width: 0; min-height: 56px; height: 56px; padding: 2px 1px 12px; border: 1px solid #9da776; border-radius: 4px; background: #e3e6c0; box-shadow: inset 0 1px #f8f5d9, 0 1px #bdba8c; }
 .barracks-unit:hover { background: #eff0cf; border-color: #64876b; }
 .barracks-unit:active { background: #d5dcb2; transform: translateY(1px); }
@@ -569,7 +571,9 @@ svg { display: block; }
 .unit-picker-card .selected-stats { line-height: 16px; }
 .unit-picker-card .placement-copy strong { font-size: 13px; line-height: 17px; }
 .unit-picker-card .placement-copy p { font-size: 11px; line-height: 15px; }
-#auto-waves { flex-shrink: 0; min-width: 68px; }
+#auto-waves { position: absolute; isolation: isolate; top: 69px; right: 6px; width: 44px; height: 44px; padding: 0; border: 0; flex-direction: column; gap: 1px; font-size: 10px; line-height: 12px; }
+#auto-waves::before { content: ''; position: absolute; z-index: -1; inset: 3px 0; border: 7px solid transparent; border-image: var(--button-art) 24 fill / 7px / 0 stretch; }
+#auto-waves-state { font-size: 11px; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-top: 1px solid #ccb88b; }
 .setting-row h3 { color: #63573d; font-size: 15px; line-height: 18px; }
 .setting-row p { max-width: 148px; margin-top: 2px; color: #96805b; font-size: 11px; line-height: 14px; }

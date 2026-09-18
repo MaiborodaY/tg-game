@@ -73,7 +73,7 @@ try {
 
     await page.touchscreen.tap(...Object.values(await cell(2,0)));
     assert.equal(await page.locator('#unit-panel').isVisible(),true);
-    assert.equal(await page.locator('#selection-panel [data-connect-action="begin"]').isVisible(),true);
+    assert.equal(await page.locator('#selection-panel .connect-inline').isVisible(),true);
     await page.locator('#unit-panel [data-close-overlay]').click();
     await hold(await cell(2,0));
     assert.equal(await ghost(),1);
@@ -175,11 +175,9 @@ try {
     assert.doesNotMatch(await page.locator('#barracks-panel').innerText(), /\bmerge\b/i);
     await close();
     await page.touchscreen.tap(...Object.values(await cell(2,1)));
-    await page.locator('#selection-panel [data-connect-action="begin"]').tap();
     await page.locator('[data-connect-donor-id="7"]:visible').tap();
     await page.locator('[data-connect-action="apply"]:visible').tap();
     after = await read(); assert.equal(after.units.find(u=>u.col===2&&u.row===1).level,7);
-    await page.locator('[data-connect-action="cancel"]:visible').tap();
     await page.locator('#unit-panel [data-close-overlay]').click();
     before = after;
     // Legality can change after pickup. Reject at release without consuming the source.

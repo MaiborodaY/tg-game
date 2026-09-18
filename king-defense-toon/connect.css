@@ -2,6 +2,12 @@
   display: grid; gap: 6px; width: 100%; min-width: 0; margin: 0;
   color: #536044; font-size: 12px; line-height: 16px;
 }
+.connect-inline { margin-top: 10px; padding-top: 4px; border-top: 1px solid #ccb88b; }
+.connect-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.connect-heading h3 { color: #726348; font-size: 13px; line-height: 17px; }
+.connect-panel .connect-heading [data-connect-action="select-all"], #selection-panel .connect-panel .connect-heading [data-connect-action="select-all"] { flex-shrink: 0; padding-inline: 7px; font-size: 11px; }
+.connect-inline-preview { display: grid; gap: 4px; }
+.connect-inline .connect-message { min-height: 0; }
 .connect-recipient { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .connect-recipient-art {
   display: grid; place-items: center; flex: 0 0 54px; width: 54px; height: 58px;

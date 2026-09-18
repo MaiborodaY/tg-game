@@ -27,6 +27,7 @@ const server = await createServer({
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => JSON.parse(JSON.stringify(battle)),
+      placementConnection: () => ({ source: pendingMerge, targets: mergeTargetIds }),
       render: () => renderScene(),
       refresh: () => refresh(),
       victory: () => { battle.phase = 'victory'; showResult(); },
@@ -150,27 +151,75 @@ try {
   await mkdir(output, { recursive: true }); await server.listen();
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320]) {
+    await scenario('barracks-connect-button-to-deployment', width, fixture(), async page => {
+      const connectButton = id => page.locator(`[data-barracks-connect-id="${id}"]`);
+      const connection = () => page.evaluate(() => window.connectCheck.placementConnection());
+      const before = await state(page);
+      await page.locator('#start-wave').click();
+      const liveBefore = await battle(page);
+      await page.locator('#open-barracks').click();
+      assert.equal(await page.locator('[data-barracks-connect-id]').count(), before.reserve.length);
+      assert.equal(await connectButton(8).isDisabled(), true, 'No matching healer in Army');
+      await connectButton(5).focus(); await page.evaluate(() => window.connectCheck.refresh());
+      assert.equal(await connectButton(5).evaluate(element => element === document.activeElement), true);
+      const buttonsFit = await page.locator('[data-barracks-connect-id]').evaluateAll(buttons => buttons.every(button => {
+        const box = button.getBoundingClientRect();
+        return box.width >= 44 && box.height >= 44 && button.scrollWidth <= button.clientWidth
+          && box.x >= 0 && box.right <= innerWidth;
+      }));
+      assert.equal(buttonsFit, true, 'Compact actions keep usable touch targets without overflow');
+      await page.screenshot({ path: fileURLToPath(new URL(`connect-barracks-buttons-${width}.png`, output)) });
+      await connectButton(5).tap();
+      assert.equal(await page.locator('#barracks-panel').isVisible(), false);
+      assert.deepEqual(await connection(), { source: { location: 'reserve', id: 5 }, targets: [1, 2, 4] });
+      assert.deepEqual(inventory(await state(page)), inventory(before), 'Selecting a donor consumes nothing');
+      await tapCell(page, 3, 0); // Archer: wrong type.
+      await tapCell(page, 1, 1); // Empty tile.
+      assert.deepEqual(inventory(await state(page)), inventory(before), 'Wrong or empty targets cannot consume the donor');
+      assert.deepEqual((await connection()).targets, [1, 2, 4]);
+      await page.locator('#cancel-army-move').click();
+      assert.equal((await connection()).source, null);
+      assert.deepEqual(inventory(await stored(page)), inventory(before), 'Cancel preserves the durable roster');
+      await page.locator('#open-barracks').click(); await connectButton(5).tap();
+      await tapCell(page, 2, 0);
+      const current = await state(page);
+      assert.equal(current.units.find(unit => unit.id === 2).level, 7, 'The chosen Army fighter receives the donor levels');
+      assert.equal(current.units.find(unit => unit.id === 1).level, 3, 'Other compatible targets stay unchanged');
+      assert.equal(current.reserve.some(unit => unit.id === 5), false);
+      assert.deepEqual(unchanged(current), unchanged(before));
+      assert.deepEqual(await battle(page), liveBefore, 'The ongoing battle keeps its original actors');
+      assert.deepEqual(inventory(await stored(page)), inventory(current));
+      assert.deepEqual(await connection(), { source: null, targets: [] });
+      await tapCell(page, 2, 0);
+      assert.deepEqual(inventory(await state(page)), inventory(current), 'Repeating the target tap cannot consume twice');
+      await page.reload(); await ready(page);
+      assert.deepEqual(durableInventory(await state(page)), durableInventory(current));
+    });
+
     await scenario('army-recipient-batch-cancel-repeat-next-wave', width, fixture(), async page => {
       await page.locator('#start-wave').click();
       const initialBattle = await battle(page);
-      await tapCell(page, 1, 0); await action(page, 'begin').focus();
+      await tapCell(page, 1, 0); await action(page, 'select-all').focus();
       await page.evaluate(() => window.connectCheck.refresh());
-      assert.equal(await action(page, 'begin').evaluate(element => element === document.activeElement), true, 'Refreshing details preserves Connect button focus');
-      await action(page, 'begin').click();
+      assert.equal(await action(page, 'select-all').evaluate(element => element === document.activeElement), true, 'Refreshing details preserves Select all focus');
+      assert.equal(await action(page, 'begin').count(), 0, 'No intermediate Connect screen');
+      assert.equal(await page.locator('#unit-panel-title').innerText(), 'Swordsman');
+      assert.equal(await page.locator('#reserve-section').isVisible(), false, 'Replacement reserve list is replaced with inline connections');
+      assert.match(await page.locator('#selection-panel').innerText(), /Available connections/);
       assert.equal(await page.locator('#unit-panel').isVisible(), true);
       assert.deepEqual(await donorIds(page), [5, 6, 9], 'Barracks is the default source and shows matching donors only');
-      assert.equal(await action(page, 'apply').isDisabled(), true);
+      assert.equal(await action(page, 'apply').count(), 0, 'Apply appears only with selected donors');
       const beforeCancel = await state(page);
+      await page.screenshot({ path: fileURLToPath(new URL(`connect-inline-details-${width}.png`, output)) });
       await selectMixed(page); await assertPreview(page, 14, 'swordsman', beforeCancel.forge);
       assert.deepEqual(inventory(await state(page)), inventory(beforeCancel), 'Preview consumes nothing');
       await fits(page, 'unit-panel');
       await page.screenshot({ path: fileURLToPath(new URL(`connect-army-${width}.png`, output)) });
       await action(page, 'cancel').click();
       assert.deepEqual(inventory(await state(page)), inventory(beforeCancel));
-      assert.equal(await action(page, 'begin').count(), 1, 'Cancel returns to the same recipient details');
-      await action(page, 'begin').click();
+      assert.equal(await page.locator('#unit-panel-title').innerText(), 'Swordsman', 'Clear stays in the recipient card');
       assert.equal(await donor(page, 5).getAttribute('aria-pressed'), 'false');
-      assert.equal(await action(page, 'apply').isDisabled(), true);
+      assert.equal(await action(page, 'apply').count(), 0);
       await selectMixed(page);
       const beforeApply = await state(page);
       await action(page, 'apply').click();
@@ -181,16 +230,18 @@ try {
       assert.deepEqual(unchanged(current), unchanged(beforeApply), 'Connect spends fighters only');
       assert.deepEqual(inventory(await stored(page)), inventory(current));
       assert.equal(await page.locator('#unit-panel').isVisible(), true);
-      assert.equal(await action(page, 'apply').count(), 1, 'Recipient and Connect mode remain open');
-      assert.equal(await action(page, 'apply').isDisabled(), true, 'Consumed selection is cleared');
-      await action(page, 'apply').evaluate(button => button.click());
+      assert.equal(await action(page, 'apply').count(), 0, 'Consumed selection is cleared and Apply disappears');
+      await page.locator('#selection-panel').evaluate(panel => {
+        const staleButton = document.createElement('button'); staleButton.dataset.connectAction = 'apply';
+        panel.append(staleButton); staleButton.click(); staleButton.remove();
+      });
       assert.deepEqual(inventory(await state(page)), inventory(current), 'An unselected repeat click cannot duplicate levels');
       await tab(page, 'reserve').click(); await donor(page, 9).click();
       await assertPreview(page, 20, 'swordsman', current.forge); await action(page, 'apply').click();
       current = await state(page);
       assert.equal(current.units.find(unit => unit.id === 1).level, 20);
       assert.deepEqual((await battle(page)).allies, initialBattle.allies, 'An ongoing battle retains its pre-Connect army');
-      await action(page, 'cancel').click(); await close(page, 'unit-panel');
+      await close(page, 'unit-panel');
       await page.evaluate(() => window.connectCheck.victory());
       await page.locator('#return-prep').click(); await page.locator('#start-wave').click();
       const upgraded = (await battle(page)).allies.find(unit => unit.id === 'ally-1');
@@ -224,6 +275,52 @@ try {
       assert.deepEqual(durableInventory(await state(page)), durableInventory(current));
     });
 
+    await scenario('inline-select-all-clear-and-close', width, fixture({
+      reserve: [...Array.from({ length: 30 }, (_, index) => ({ id: index + 5, type: 'swordsman', level: index + 1 })),
+        { id: 35, type: 'archer', level: 10 }],
+    }), async page => {
+      const before = await state(page);
+      await tapCell(page, 1, 0);
+      await action(page, 'select-all').tap();
+      assert.equal(await page.locator('[data-connect-donor-id][aria-pressed="true"]:visible').count(), 30, 'Select all includes matching offscreen donors');
+      await assertPreview(page, 468, 'swordsman', before.forge);
+      assert.deepEqual(inventory(await state(page)), inventory(before));
+      await donor(page, 5).tap();
+      await assertPreview(page, 467, 'swordsman', before.forge);
+      await tab(page, 'army').tap();
+      assert.equal(await donor(page, 2).getAttribute('aria-pressed'), 'false', 'Selecting reserve never silently selects the Army');
+      await action(page, 'select-all').tap();
+      await assertPreview(page, 479, 'swordsman', before.forge);
+      await page.locator('#unit-panel').press('Escape');
+      assert.equal(await page.locator('#unit-panel').isVisible(), true, 'First Escape clears the selection');
+      assert.equal(await action(page, 'apply').count(), 0);
+      await tab(page, 'reserve').tap();
+      assert.equal(await page.locator('[data-connect-donor-id][aria-pressed="true"]:visible').count(), 0, 'Clear removes selection across tabs');
+      await action(page, 'select-all').tap();
+      await close(page, 'unit-panel');
+      assert.deepEqual(inventory(await stored(page)), inventory(before), 'Closing the card cancels unconfirmed donors');
+      await tapCell(page, 1, 0);
+      assert.equal(await action(page, 'apply').count(), 0, 'Reopening starts without stale selection');
+      await action(page, 'select-all').tap();
+      await fits(page, 'unit-panel');
+      await page.screenshot({ path: fileURLToPath(new URL(`connect-inline-select-all-${width}.png`, output)) });
+      await action(page, 'apply').tap();
+      const current = await state(page);
+      assert.equal(current.units.find(unit => unit.id === 1).level, 468);
+      assert.equal(current.units.length, before.units.length, 'Only the chosen reserve list was consumed');
+      assert.deepEqual(current.reserve, [{ id: 35, type: 'archer', level: 10 }]);
+      assert.deepEqual(unchanged(current), unchanged(before));
+      assert.equal(await action(page, 'select-all').isDisabled(), true);
+      assert.equal(await action(page, 'apply').count(), 0);
+      await page.locator('#unit-panel').press('Escape');
+      assert.equal(await page.locator('#unit-panel').isVisible(), false, 'Escape closes the card when nothing is selected');
+      await tapCell(page, 3, 0);
+      await donor(page, 35).tap();
+      await page.locator('[data-action="remove"]').tap();
+      assert.equal(await page.locator('#reserve-section').isVisible(), true, 'Sending a recipient to Barracks returns to normal deployment');
+      assert.equal((await state(page)).reserve.find(unit => unit.id === 35).level, 10, 'Moving a recipient cancels its unconfirmed selection');
+    });
+
     await scenario('last-army-guard-is-not-consumed', width, fixture({
       units: [{ id: 1, type: 'swordsman', level: 2, col: 2, row: 0 }],
       reserve: [{ id: 2, type: 'swordsman', level: 3 }, { id: 3, type: 'swordsman', level: 4 }],
@@ -243,7 +340,7 @@ try {
         { id: 2, type: 'pantherRider', level: 100, col: 1, row: 2 }, { id: 3, type: 'swordsman', level: 2, col: 3, row: 1 }],
       reserve: [{ id: 4, type: 'pantherRider', level: 2 }, { id: 5, type: 'archer', level: 1 }],
     }), async page => {
-      await tapCell(page, 2, 0); await action(page, 'begin').click();
+      await tapCell(page, 2, 0);
       assert.deepEqual(await donorIds(page), [4]); await donor(page, 4).click();
       await tab(page, 'army').click(); assert.deepEqual(await donorIds(page), [2]);
       await donor(page, 2).click();
@@ -254,7 +351,7 @@ try {
       assert.equal(current.units.some(unit => unit.id === 2), false);
       assert.equal(current.reserve.some(unit => unit.id === 4), false);
       assert.deepEqual(current.progression.unlockedCells, before.progression.unlockedCells);
-      await action(page, 'cancel').click(); await close(page, 'unit-panel');
+      await close(page, 'unit-panel');
       await tapCell(page, 2, 0);
       assert.match(await page.locator('#selection-panel').innerText(), /Panther Rider.*Lv\. 152/s);
       await close(page, 'unit-panel'); await tapCell(page, 2, 2);
@@ -266,7 +363,7 @@ try {
     await scenario('long-donor-list-keeps-scroll-and-focus', width, fixture({
       reserve: Array.from({ length: 30 }, (_, index) => ({ id: index + 5, type: 'swordsman', level: index + 1 })),
     }), async page => {
-      await tapCell(page, 1, 0); await action(page, 'begin').click();
+      await tapCell(page, 1, 0);
       const scroll = page.locator('.connect-donor-scroll:visible');
       assert.equal(await donorIds(page).then(ids => ids.length), 30);
       await donor(page, 34).scrollIntoViewIfNeeded();

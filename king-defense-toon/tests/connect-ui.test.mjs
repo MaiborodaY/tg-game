@@ -59,3 +59,26 @@ test('huge levels keep exact accessible values and supplied strings cannot becom
   assert.match(html, /src="\/portrait.png\?name=&quot; onerror=&quot;alert\(1\)"/);
   assert.doesNotMatch(html, /<script>| onerror="/);
 });
+
+test('inline connections omit the duplicate recipient and hide Apply until selection', () => {
+  const html = renderConnectPanel(view({ inline: true, donors: [
+    { id: 2, type: 'swordsman', level: 3 }, { id: 3, type: 'archer', level: 7 },
+  ] }));
+  assert.match(html, /Available connections/);
+  assert.match(html, /data-connect-action="select-all" aria-label="Select all matching fighters in Barracks"/);
+  assert.match(html, /data-connect-donor-id="2"/);
+  assert.doesNotMatch(html, /data-connect-donor-id="3"|class="connect-recipient"|data-connect-action="apply"|data-connect-preview-level/);
+  const empty = renderConnectPanel(view({ inline: true }));
+  assert.match(empty, /data-connect-action="select-all" disabled/);
+});
+
+test('inline selection shows the preview, Clear and one atomic Connect action', () => {
+  const html = renderConnectPanel(view({ inline: true, selectedCount: 2, selectedIds: new Set([2, 3]),
+    addedLevels: 5, previewLevel: 9, hp: '69 → 84', effect: '6.9 → 8.4', canApply: true,
+    donors: [{ id: 2, type: 'swordsman', level: 2 }, { id: 3, type: 'swordsman', level: 3 }] }));
+  assert.match(html, /data-connect-preview-level="9"/);
+  assert.match(html, /HP.*69 → 84/);
+  assert.match(html, /data-connect-action="cancel">Clear/);
+  assert.match(html, /Connect · \+5 Lv/);
+  assert.doesNotMatch(html, /data-connect-action="apply" disabled/);
+});

@@ -651,7 +651,7 @@ function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
   context.restore();
 }
 
-function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1, elfHealPulse: HTMLImageElement | null = null, moonGlaive: HTMLImageElement | null = null) {
+function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1, elfHealPulse: HTMLImageElement | null = null, moonGlaive: HTMLImageElement | null = null, viewportScale = 1) {
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
@@ -665,7 +665,19 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
   const startY = effect.y + (alliedArrow ? 13 + directionY * 14 : alliedHeal ? 9 : 0);
   context.save();
   context.globalAlpha = p > 0.7 ? (1 - p) / 0.3 : 1;
-  if (effect.type === 'arrow') {
+  if (effect.type === 'xp') {
+    // Readable at phone scale, left-aligned inside the peninsula so the text cannot clip offscreen.
+    context.font = `${12 / viewportScale}px "Lilita One", sans-serif`;
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+    context.lineJoin = 'round';
+    context.lineWidth = 2 / viewportScale;
+    context.strokeStyle = '#24334c';
+    context.fillStyle = '#c0eaff';
+    const y = effect.y - p * 18;
+    context.strokeText(effect.label, effect.x, y);
+    context.fillText(effect.label, effect.x, y);
+  } else if (effect.type === 'arrow') {
     if (effect.sourceType === 'pantherRider' && moonGlaive) {
       // Freeze the authored hand origin at release, including west-facing mirroring.
       const facing = effect.launchFacing ?? { x: 1, y: 0 };
@@ -1119,7 +1131,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
         if (effect.type === 'poison-bottle' || effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
         else if (effect.type === 'cannon-impact' || (effect.type === 'arrow' && effect.sourceType === 'goblinBombardier')) drawCannonEffect(context, cannonArt, effect, actorScale);
         else if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
-        else drawEffect(context, effect, goblinHealPulse, actorScale, elfHealPulse, moonGlaive);
+        else drawEffect(context, effect, goblinHealPulse, actorScale, elfHealPulse, moonGlaive, viewport.scale);
       }
       drawCastleHealth(context, state.battle.castle);
     } else {

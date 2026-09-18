@@ -21,6 +21,7 @@
         <div class="phase-plaque"><span aria-hidden="true"></span><b id="phase-label">Prepare your guard</b></div>
         <div class="gold-balance battlefield-gold" aria-label="Gold"><span class="coin-icon" aria-hidden="true"></span><span id="gold-count">125</span></div>
         <div id="battle-toolbar" hidden><button id="battle-speed" type="button" aria-pressed="false" aria-label="Battle speed: 1×. Switch to 2×" title="Battle speed: 1×. Switch to 2×">×1</button></div>
+        <button id="auto-waves" class="battle-button" type="button" aria-label="Auto waves on. Disable automatic waves" aria-pressed="true"><span>Auto</span><span id="auto-waves-state">On</span></button>
         <button id="start-wave" class="battle-button" type="button" disabled><span class="start-arrow" aria-hidden="true"></span><span id="start-label">Start</span></button>
         <span id="fps-counter" aria-label="Frames per second" aria-live="off">— FPS</span>
         <section id="result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
@@ -48,7 +49,6 @@
             <span class="market-spark market-transform-spark" aria-hidden="true">✦</span>
             <span class="market-stock"><span class="slave-icon" aria-hidden="true"></span><b id="market-slaves">0</b></span>
             <span id="market-convert-label" class="market-convert-cost" aria-hidden="true">Market</span>
-            <span id="market-first-use-hint" class="market-first-use-hint" hidden><svg viewBox="0 0 16 14" aria-hidden="true"><path d="M8 1v10m-5-4 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tap</span></span>
           </button>
           <span id="market-arrival" class="market-arrival" role="status" aria-live="polite"></span>
           <img id="market-recruit-reveal" class="market-recruit-reveal" alt="" hidden />
@@ -189,7 +189,7 @@
             <div id="barracks-pagination" class="reserve-pagination barracks-pagination" hidden><button id="barracks-prev" class="battle-button" type="button" aria-label="Previous barracks page">‹</button><span id="barracks-page">1 / 1</span><button id="barracks-next" class="battle-button" type="button" aria-label="Next barracks page">›</button></div>
           </div>
           <div id="barracks-detail" hidden></div>
-          <p id="barracks-feedback" class="building-note" role="status" aria-live="polite">Tap for details · Hold to connect</p>
+          <p id="barracks-feedback" class="building-note" role="status" aria-live="polite">Connect → same type in Army · Tap icon for details</p>
         </div>
       </section>
       <section id="profile-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-title" hidden>
@@ -197,7 +197,6 @@
           <header class="menu-heading"><h2 id="profile-title">Profile</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close profile"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
           <div class="profile-summary"><span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21v-2a8 8 0 0 1 16 0v2Z" fill="currentColor"/></svg></span><div><strong id="profile-name">Commander</strong><small id="profile-progress">Level 1 · Wave 1 / 10</small></div></div>
           <h3 class="profile-settings-title">Settings</h3>
-          <div class="setting-row"><div><h3>Auto waves</h3><p>Continue after wins and defeats</p></div><button id="auto-waves" class="battle-button" type="button" aria-label="Auto waves" aria-pressed="true">On</button></div>
           <div class="setting-row music-setting"><div><h3>Music</h3><p id="sound-description">Level 1 ambience</p></div><button id="sound-toggle" class="icon-button" type="button" aria-label="Mute music" aria-pressed="false" title="Mute music"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3Z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></g></svg></button></div>
           <div class="music-volume-row"><label for="music-volume">Volume</label><input id="music-volume" type="range" min="0" max="100" step="1" value="5" aria-label="Music volume" /><output id="music-volume-label" for="music-volume">5%</output></div>
           <div class="setting-row reset-row"><div><h3>Start over</h3><p>Reset your army and progress</p></div><button id="reset" class="battle-button danger-button" type="button" aria-label="Reset run">Reset run</button></div>

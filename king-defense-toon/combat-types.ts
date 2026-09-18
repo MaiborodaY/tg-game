@@ -130,6 +130,7 @@ export interface BattleEffectBase extends Point {
 export interface BattleEffectPayloads {
   hit: { amount: number };
   gold: { amount: number };
+  xp: { amount: number; label: string };
   heal: { amount: number };
   slash: Record<never, never>;
   // An arrow gains landed only on arrival; hero-hammer starts with landed: false.

@@ -2,6 +2,7 @@ import { UNIT_TYPE_BY_ID } from './units.ts';
 import type { Fighter } from './unit-merging.ts';
 
 export interface ConnectView {
+  inline?: boolean;
   recipient: Fighter;
   location: 'army' | 'reserve';
   sourceTab: 'army' | 'reserve';
@@ -43,14 +44,17 @@ export function renderConnectPanel(view: ConnectView): string {
       + `<span class="connect-donor-level" aria-hidden="true">Lv. ${levelText(fighter.level)}</span>`
       + `<span class="connect-check" aria-hidden="true">${pressed ? '✓' : ''}</span></button>`;
   }).join('');
-  return `<section class="connect-panel" data-connect-recipient-id="${recipient.id}" data-connect-recipient-location="${location}" aria-label="Connect ${escape(name)}">`
-    + `<div class="connect-recipient"><div class="connect-recipient-art">${portrait(recipient, view.art)}</div>`
-    + `<div class="connect-recipient-copy"><strong>${escape(name)}</strong>`
-    + `<span class="connect-level-preview" aria-label="Level ${recipient.level} to level ${view.previewLevel}" title="Lv. ${recipient.level} → Lv. ${view.previewLevel}">`
+  const levelPreview = `<span class="connect-level-preview" aria-label="Level ${recipient.level} to level ${view.previewLevel}" title="Lv. ${recipient.level} → Lv. ${view.previewLevel}">`
     + `<span aria-hidden="true">Lv. ${levelText(recipient.level)} <span class="connect-level-arrow">→</span> </span>`
-    + `<b data-connect-preview-level="${view.previewLevel}" aria-hidden="true">${levelText(view.previewLevel)}</b></span></div></div>`
-    + `<div class="connect-stats connect-preview-stats"><span><small>HP</small><b>${escape(view.hp)}</b></span>`
-    + `<span><small>${escape(view.effectLabel)}</small><b>${escape(view.effect)}</b></span></div>`
+    + `<b data-connect-preview-level="${view.previewLevel}" aria-hidden="true">${levelText(view.previewLevel)}</b></span>`;
+  const stats = `<div class="connect-stats connect-preview-stats"><span><small>HP</small><b>${escape(view.hp)}</b></span>`
+    + `<span><small>${escape(view.effectLabel)}</small><b>${escape(view.effect)}</b></span></div>`;
+  const selectAll = `<button type="button" data-connect-action="select-all"${donors.length ? '' : ' disabled'} aria-label="Select all matching fighters in ${sourceTab === 'army' ? 'Army' : 'Barracks'}">Select all</button>`;
+  return `<section class="connect-panel${view.inline ? ' connect-inline' : ''}" data-connect-recipient-id="${recipient.id}" data-connect-recipient-location="${location}" aria-label="Connect ${escape(name)}">`
+    + (view.inline ? `<div class="connect-heading"><h3>Available connections</h3>${selectAll}</div>`
+    : `<div class="connect-recipient"><div class="connect-recipient-art">${portrait(recipient, view.art)}</div>`
+    + `<div class="connect-recipient-copy"><strong>${escape(name)}</strong>`
+    + levelPreview + '</div></div>' + stats)
     + '<div class="connect-tabs" role="group" aria-label="Choose fighters from">'
     + `<button type="button" data-connect-location="reserve" aria-pressed="${sourceTab === 'reserve'}">Barracks</button>`
     + `<button type="button" data-connect-location="army" aria-pressed="${sourceTab === 'army'}">Army</button></div>`
@@ -58,10 +62,11 @@ export function renderConnectPanel(view: ConnectView): string {
     + (donors.length ? `<div class="connect-donors">${donorMarkup}</div>`
       : `<p class="connect-empty">No other ${escape(name)} in ${sourceTab === 'army' ? 'your Army' : 'Barracks'}.</p>`)
     + '</div>'
-    + `<div class="connect-summary" role="status" aria-live="polite"><strong>${escape(selected)}</strong>`
+    + (view.inline && view.selectedCount ? `<div class="connect-inline-preview">${levelPreview}${stats}</div>` : '')
+    + `<div class="connect-summary" role="status" aria-live="polite">${!view.inline || view.selectedCount ? `<strong>${escape(selected)}</strong>` : ''}`
     + `<p class="connect-message">${escape(view.message)}</p></div>`
-    + '<div class="connect-actions"><button type="button" data-connect-action="cancel">Cancel</button>'
+    + (view.inline && !view.selectedCount ? '' : '<div class="connect-actions"><button type="button" data-connect-action="cancel">' + (view.inline ? 'Clear' : 'Cancel') + '</button>'
     + `<button type="button" data-connect-action="apply"${view.canApply ? '' : ' disabled'}`
     + ` aria-label="Connect ${view.selectedCount} selected fighters. Add ${view.addedLevels} levels." title="Connect · +${view.addedLevels} Lv">`
-    + `Connect · +${levelText(view.addedLevels)} Lv</button></div></section>`;
+    + `Connect · +${levelText(view.addedLevels)} Lv</button></div>`) + '</section>';
 }
