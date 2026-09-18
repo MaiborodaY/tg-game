@@ -163,7 +163,7 @@ Lancer / копейщик — боец второго ряда. Достаёт �
 Из корня рабочего дерева, последовательно:
 
 ```powershell
-node --test king-defense-toon/tests/*.test.mjs
+node --experimental-strip-types --test king-defense-toon/tests/*.test.mjs
 node king-defense-toon/tests/barracks-upgrade.browser.mjs
 node king-defense-toon/tests/lancer-art.browser.mjs
 ```

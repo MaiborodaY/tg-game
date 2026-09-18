@@ -1,5 +1,9 @@
 # BroTD Infinity stability pass
 
+This records the original stability pass before the hero/Lancer/healer integration.
+Its image-budget and test-count figures are historical. See
+[TYPESCRIPT_MIGRATION.md](TYPESCRIPT_MIGRATION.md) for the current branch and checks.
+
 Work branch: `codex/brotd-stability`, created from `origin/main` at
 `073fdb48794febab49058664e36472b18eb8951a`. Main did not yet contain Infinity.
 The three game commits `48543e4`, `6384fc7`, `749537b` were cherry-picked as
@@ -61,7 +65,8 @@ From the worktree root:
 npm run brotd:check
 ```
 
-This runs 108 Node tests and the production Vite build. The additional Infinity
+The original pass ran 108 Node tests and the production Vite build. The current
+command also checks migrated TypeScript modules and includes newer game tests. The additional Infinity
 workflow is not published; run this command locally to reproduce the gate.
 Existing unrelated deployment workflows also watch root `package.json` on main;
 publishing changes to main remains a separate operation.

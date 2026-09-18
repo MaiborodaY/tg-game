@@ -248,12 +248,12 @@ Harness commands from the worktree root (running them now would evaluate current
 code, not recreate the historical wave-10 roster):
 
 ```powershell
-node king-defense-toon/scripts/early-campaign.mjs --speed 1 --max-attempts 30 --output "$env:TEMP/brotd-opening-x1.json"
-node king-defense-toon/scripts/early-campaign.mjs --speed 3 --max-attempts 50 --output "$env:TEMP/brotd-opening-x3.json"
-node king-defense-toon/scripts/early-campaign.mjs --seeds 1,3,4 --last-wave 30 --max-attempts 100 --speed 1 --output "$env:TEMP/brotd-opening-30-x1-gates-final.json"
-node king-defense-toon/scripts/early-campaign.mjs --seeds 1,3,4 --last-wave 30 --max-attempts 120 --speed 3 --output "$env:TEMP/brotd-opening-30-x3-gates-final.json"
-node king-defense-toon/scripts/campaign-stalls.mjs "$env:TEMP/brotd-opening-30-x1-gates-final.json" "$env:TEMP/brotd-opening-30-x3-gates-final.json"
-node --test king-defense-toon/tests/*.test.mjs
+node --experimental-strip-types king-defense-toon/scripts/early-campaign.mjs --speed 1 --max-attempts 30 --output "$env:TEMP/brotd-opening-x1.json"
+node --experimental-strip-types king-defense-toon/scripts/early-campaign.mjs --speed 3 --max-attempts 50 --output "$env:TEMP/brotd-opening-x3.json"
+node --experimental-strip-types king-defense-toon/scripts/early-campaign.mjs --seeds 1,3,4 --last-wave 30 --max-attempts 100 --speed 1 --output "$env:TEMP/brotd-opening-30-x1-gates-final.json"
+node --experimental-strip-types king-defense-toon/scripts/early-campaign.mjs --seeds 1,3,4 --last-wave 30 --max-attempts 120 --speed 3 --output "$env:TEMP/brotd-opening-30-x3-gates-final.json"
+node --experimental-strip-types king-defense-toon/scripts/campaign-stalls.mjs "$env:TEMP/brotd-opening-30-x1-gates-final.json" "$env:TEMP/brotd-opening-30-x3-gates-final.json"
+node --experimental-strip-types --test king-defense-toon/tests/*.test.mjs
 ```
 
 ## Movement

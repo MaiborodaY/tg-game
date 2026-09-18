@@ -38,7 +38,11 @@ try {
   });
   assert.deepEqual(initial.states, { battle: ['loading', 'ready'], army: ['loading', 'ready'] });
   assert.equal(initial.loads.filter(url => url.endsWith('/ground.png')).length, 1, 'shared map constructed once');
-  assert.equal(initial.loads.filter(url => url.endsWith('/king.webp')).length, 1);
+  for (const name of ['down', 'side', 'up', 'effects']) {
+    assert.equal(initial.loads.filter(url => url.endsWith(`/st-knihor-${name}.webp`)).length, 1,
+      `required hero ${name} atlas is loaded once`);
+  }
+  assert.ok(!initial.loads.some(url => url.endsWith('/king.webp')), 'the retired king atlas is not required');
   assert.ok(!initial.loads.some(url => /graveyard|skeleton|torch-|ranks/.test(url)), 'forest startup is independent of later assets');
 
   const armyLoad = await page.evaluate(async () => {

@@ -45,7 +45,7 @@ Open `http://127.0.0.1:5187/hero-preview/` using the existing Vite dev server. I
 Tests:
 
 ```powershell
-node --test king-defense-toon/tests/st-knihor-art.test.mjs
+node --experimental-strip-types --test king-defense-toon/tests/st-knihor-art.test.mjs
 $env:PLAYWRIGHT_MODULE = 'C:\Users\mrmay\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\node_modules\playwright\index.mjs'
 node king-defense-toon/tests/st-knihor-art.browser.mjs
 ```

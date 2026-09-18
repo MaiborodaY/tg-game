@@ -41,7 +41,7 @@ The existing campaign save gains a sanitized `hero` field containing XP, highest
 The runtime art adds 410.65 KiB across five WebP files. There are no new particle systems or additional permanent skill buttons. The previous king atlas is no longer loaded by the scene.
 
 ```powershell
-node --test king-defense-toon/tests/hero.test.mjs king-defense-toon/tests/hero-combat.test.mjs
+node --experimental-strip-types --test king-defense-toon/tests/hero.test.mjs king-defense-toon/tests/hero-combat.test.mjs
 $env:PLAYWRIGHT_MODULE = 'C:\Users\mrmay\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\node_modules\playwright\index.mjs'
 node king-defense-toon/tests/hero.browser.mjs
 ```
