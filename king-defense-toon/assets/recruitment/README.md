@@ -22,8 +22,9 @@ Output is near-lossless WebP at quality 85 with full-quality alpha. Source artwo
 The Rider's menu model uses the new silver-haired glaive design. Green cloth
 changes to purple / red / gold / black at levels 50 / 100 / 250 / 500. The tint
 mask excludes the face, glaive, panther and its eyes; palette generation preserves
-source alpha and all non-clothing pixels. Battle atlases still use the existing
-sword poses and are not replaced by this menu export.
+source alpha and all non-clothing pixels. The live battle now uses this same
+glaive model; its atlas, hand anchors and separate projectile are prepared by
+`prepare-panther-rider-art.mjs`. This menu-only exporter does not alter combat.
 
 Regenerate from the repository root:
 

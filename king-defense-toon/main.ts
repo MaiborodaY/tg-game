@@ -1,5 +1,5 @@
 import { createScene } from './scene.ts';
-import { UNIT_TYPES } from './units.ts';
+import { UNIT_TYPES, isHealingUnit } from './units.ts';
 import { BATTLE_VIEW, FORMATION_VIEW } from './field.ts';
 import { createBattle, updateBattle } from './combat.ts';
 import { WAVE_DEFINITIONS, WAVES_PER_ROUND, ROUNDS_PER_LEVEL, CAMPAIGN_VERSION, LEVEL_COUNT, getRoundWaves, getWaveDefinition } from './waves.ts';
@@ -461,7 +461,7 @@ function refreshRecruitment() {
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || (recruitable && economy.slaves < RECRUIT_COST) || transforming;
   const chances = getRecruitChances(barracks.level >= 2, recruitmentPool, recruitment);
-  const odds = chances.map(({ type, chance }) => `${types[type].name} ${Math.round(chance * 100)}%`).join(', ');
+  const odds = chances.map(({ type, chance }) => `${types[type].name} ${Number((chance * 100).toFixed(1))}%`).join(', ');
   const guaranteedLancer = recruitmentPool === 'humans' && barracks.firstLancerPending;
   const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
   const previewLabel = 'Elven recruits require Barracks III. Open Recruitment for details.';
@@ -516,7 +516,7 @@ function finishRecruitReveal() {
 }
 
 function recruitmentProgressMarkup(type: UnitType) {
-  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers' };
+  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers', elfHealer: 'elven healers' };
   const progress = getRecruitProgress(recruitment, type);
   const capped = progress.level === RECRUIT_LEVEL_CAP;
   const remaining = progress.needed - progress.progress;
@@ -558,7 +558,7 @@ function refreshRecruitmentDetails() {
         id, locked: !unlock.available,
         portrait: chance ? scene?.getUnitArt(chance.type, getRecruitProgress(recruitment, chance.type).level) ?? undefined : undefined,
         progressMarkup: details,
-        chanceLabel: chance ? Math.round(chance.chance * 100) + '%' : unlock.requirementsMet ? 'Coming soon' : 'Locked',
+        chanceLabel: chance ? Number((chance.chance * 100).toFixed(1)) + '%' : unlock.requirementsMet ? 'Coming soon' : 'Locked',
       };
     }));
     refreshBarracksUpgrade();
@@ -1043,11 +1043,11 @@ function refresh() {
   } else if (selected) {
     const type = types[selected.type];
     const stats = getForgedUnitStats(selected.type, selected.level, forge);
-    const hp = unitStatFormat.format(stats.hp), effect = unitStatFormat.format(selected.type === 'healer' ? stats.heal : stats.damage);
+    const hp = unitStatFormat.format(stats.hp), effect = unitStatFormat.format(isHealingUnit(selected.type) ? stats.heal : stats.damage);
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && units.length === 1;
     byId('unit-panel-title').textContent = type.name;
-    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${selected.type === 'healer' ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    panel.innerHTML = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}</p></div></div><div class="selection-actions">${mergeButtonMarkup({ location: 'army', id: selected.id })}<button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div><p class="building-note">${mergeDescription({ location: 'army', id: selected.id })}</p>${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
   } else {
     byId('unit-panel-title').textContent = 'Deploy a fighter';
     panel.innerHTML = '<p class="building-note">Choose a fighter from your barracks for this tile.</p>';
@@ -1136,8 +1136,8 @@ function connectPanelMarkup() {
   return renderConnectPanel({ recipient: fighter, location: recipient.location, sourceTab,
     donors: connectCandidates(recipient, sourceTab), selectedIds: donorIds, selectedCount: donorIds.size,
     addedLevels: result.ok ? result.addedLevels : 0, previewLevel: level,
-    hp: statText(before.hp, stats.hp), effect: statText(fighter.type === 'healer' ? before.heal : before.damage, fighter.type === 'healer' ? stats.heal : stats.damage),
-    effectLabel: fighter.type === 'healer' ? 'Healing' : 'Attack', message,
+    hp: statText(before.hp, stats.hp), effect: statText(isHealingUnit(fighter.type) ? before.heal : before.damage, isHealingUnit(fighter.type) ? stats.heal : stats.damage),
+    effectLabel: isHealingUnit(fighter.type) ? 'Healing' : 'Attack', message,
     canApply: result.ok && canEditFormation() && !transforming, art: unit => scene?.getUnitArt(unit.type, unit.level) ?? undefined });
 }
 
@@ -1428,7 +1428,7 @@ function refreshBarracks() {
     const portrait = scene?.getUnitArt(selected.type, selected.level);
     const lastFighter = units.length + reserve.length <= 1;
     const unavailable = !canEditFormation() || transforming;
-    byId('barracks-detail').innerHTML = `<div class="barracks-detail-unit">${portrait ? `<img src="${portrait}" alt="" />` : ''}<div class="barracks-detail-copy"><strong>${types[selected.type].name}</strong><small>Lv. ${selected.level}</small></div></div><div class="barracks-detail-stats"><span><b>HP</b><strong>${unitStatFormat.format(stats.hp)}</strong></span><span><b>${selected.type === 'healer' ? 'Healing' : 'Attack'}</b><strong>${unitStatFormat.format(selected.type === 'healer' ? stats.heal : stats.damage)}</strong></span>${stats.attackSpeed > 1 ? `<span><b>Speed</b><strong>+${Math.round((stats.attackSpeed - 1) * 100)}%</strong></span>` : ''}</div><div class="barracks-detail-actions">${mergeButtonMarkup({ location: 'reserve', id: selected.id }, unavailable)}<button class="battle-button" data-barracks-recruit-id="${selected.id}" type="button"${unavailable ? ' disabled' : ''}>Recruit</button><button class="barracks-sell" data-barracks-sell-id="${selected.id}" type="button" aria-label="Sell ${types[selected.type].name}, level ${selected.level}, for ${SELL_PRICE} gold"${unavailable || lastFighter ? ' disabled' : ''}><span>Sell</span><span class="coin-icon" aria-hidden="true"></span><span>${SELL_PRICE}</span></button></div><p class="barracks-detail-note">${mergeDescription({ location: 'reserve', id: selected.id })}</p>${lastFighter ? '<p class="barracks-detail-note">Keep at least one fighter.</p>' : ''}`;
+    byId('barracks-detail').innerHTML = `<div class="barracks-detail-unit">${portrait ? `<img src="${portrait}" alt="" />` : ''}<div class="barracks-detail-copy"><strong>${types[selected.type].name}</strong><small>Lv. ${selected.level}</small></div></div><div class="barracks-detail-stats"><span><b>HP</b><strong>${unitStatFormat.format(stats.hp)}</strong></span><span><b>${isHealingUnit(selected.type) ? 'Healing' : 'Attack'}</b><strong>${unitStatFormat.format(isHealingUnit(selected.type) ? stats.heal : stats.damage)}</strong></span>${stats.attackSpeed > 1 ? `<span><b>Speed</b><strong>+${Math.round((stats.attackSpeed - 1) * 100)}%</strong></span>` : ''}</div><div class="barracks-detail-actions">${mergeButtonMarkup({ location: 'reserve', id: selected.id }, unavailable)}<button class="battle-button" data-barracks-recruit-id="${selected.id}" type="button"${unavailable ? ' disabled' : ''}>Recruit</button><button class="barracks-sell" data-barracks-sell-id="${selected.id}" type="button" aria-label="Sell ${types[selected.type].name}, level ${selected.level}, for ${SELL_PRICE} gold"${unavailable || lastFighter ? ' disabled' : ''}><span>Sell</span><span class="coin-icon" aria-hidden="true"></span><span>${SELL_PRICE}</span></button></div><p class="barracks-detail-note">${mergeDescription({ location: 'reserve', id: selected.id })}</p>${lastFighter ? '<p class="barracks-detail-note">Keep at least one fighter.</p>' : ''}`;
   } else byId('barracks-detail').replaceChildren();
 }
 

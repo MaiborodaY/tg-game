@@ -1,5 +1,8 @@
 # BroTD Infinity release workflow
 
+- Regular-unit additions follow `UNIT_INTEGRATION.md`: shared gameplay and
+  animation rules, with final verification batched across the requested units.
+
 - For this game, the user's request "commit and push" also authorizes publishing
   the same changes to the Telegram game's existing URL. Do not stop after Git push.
 - Until the game moves to its own repository, push approved changes to `main` and

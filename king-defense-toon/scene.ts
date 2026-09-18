@@ -1,5 +1,6 @@
 import type { Actor, ActorType, BattleEffect, EffectOf } from './combat-types.ts';
 import type { UnitType } from './units.ts';
+import { isHealingUnit } from './units.ts';
 import type { EnemyType } from './waves.ts';
 import type { AnimationActor, AnimationAction } from './animation-types.ts';
 import type { HeroEffectKind } from './tiny-st-knihor.ts';
@@ -38,10 +39,13 @@ import { getCellAvailability } from './progression.ts';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.ts';
 import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.ts';
-import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from './panther-rider-art.ts';
+import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY, PANTHER_RIDER_RENDER_HEIGHT,
+  PANTHER_RIDER_RELEASE_OFFSETS, MOON_GLAIVE_FRAMES } from './panther-rider-art.ts';
 import { pantherRiderFrame } from './panther-rider-animation.ts';
 import { ELF_ARCHER_ASSETS, ELF_ARCHER_GEOMETRY, ELF_ARCHER_RENDER_HEIGHT } from './elf-archer-art.ts';
 import { elfArcherFrame } from './elf-archer-animation.ts';
+import { ELF_HEALER_ASSETS, ELF_HEALER_GEOMETRY, ELF_HEALER_RENDER_HEIGHT, ELF_HEAL_PULSE_FRAMES } from './elf-healer-art.ts';
+import { elfHealerFrame } from './elf-healer-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
@@ -72,7 +76,6 @@ import { getSceneAssetPlan } from './scene-assets.ts';
 export { FIELD } from './field.ts';
 
 const PANTHER_RIDER_SCALE = 1.15;
-const PANTHER_RIDER_RENDER_HEIGHT = 47 * PANTHER_RIDER_SCALE;
 const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
   swordsman: {
     layout: TINY_WARRIOR_LAYOUT,
@@ -141,8 +144,18 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     frameFor: elfArcherFrame,
     horizontalFacing: true,
   },
+  elfHealer: {
+    ...ELF_HEALER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: ELF_HEALER_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: elfHealerFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, elfHealer: ELF_HEALER_RENDER_HEIGHT + 4, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -398,7 +411,7 @@ function attackProgress(actor: AnimationActor | null | undefined) {
 
 function drawRange(context: CanvasRenderingContext2D, type: ActorType, x: number, y: number, ghost = false) {
   const radius = getUnitRange(type);
-  const color = type === 'healer' ? '#73cb97' : type === 'archer' || type === 'elfArcher' ? '#7ac4f1' : '#f3cf76';
+  const color = isHealingUnit(type) ? '#73cb97' : type === 'archer' || type === 'elfArcher' ? '#7ac4f1' : '#f3cf76';
   context.save();
   context.fillStyle = `${color}1a`;
   context.strokeStyle = color;
@@ -639,12 +652,12 @@ function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
   context.restore();
 }
 
-function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1) {
+function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1, elfHealPulse: HTMLImageElement | null = null, moonGlaive: HTMLImageElement | null = null) {
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
   const alliedArrow = effect.type === 'arrow' && (effect.sourceType === 'archer' || effect.sourceType === 'elfArcher');
-  const alliedHeal = effect.type === 'heal' && effect.sourceType === 'healer';
+  const alliedHeal = effect.type === 'heal' && isHealingUnit(effect.sourceType);
   const distance = Math.max(1, Math.hypot(targetX - effect.x, targetY - effect.y));
   const directionX = (targetX - effect.x) / distance;
   const directionY = (targetY - effect.y) / distance;
@@ -654,6 +667,22 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
   context.save();
   context.globalAlpha = p > 0.7 ? (1 - p) / 0.3 : 1;
   if (effect.type === 'arrow') {
+    if (effect.sourceType === 'pantherRider' && moonGlaive) {
+      // Freeze the authored hand origin at release, including west-facing mirroring.
+      const facing = effect.launchFacing ?? { x: 1, y: 0 };
+      const releaseFrame = facing.y > 0 && facing.y >= Math.abs(facing.x) ? 14 : 10;
+      const offset = PANTHER_RIDER_RELEASE_OFFSETS[releaseFrame];
+      const fromX = effect.x + offset.x * (facing.x < 0 ? -1 : 1) * renderScale;
+      const fromY = effect.y + 27 + offset.y * renderScale;
+      const { rect, centerAnchor } = MOON_GLAIVE_FRAMES[Math.floor(effect.age * 12) % 4];
+      const scale = .32 * renderScale;
+      context.translate(fromX + (targetX - fromX) * p, fromY + (targetY - fromY) * p);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(moonGlaive, rect.x, rect.y, rect.width, rect.height,
+        -centerAnchor.x * scale, -centerAnchor.y * scale, rect.width * scale, rect.height * scale);
+      context.restore();
+      return;
+    }
     const x = startX + (targetX - startX) * p;
     const y = startY + (targetY - startY) * p - Math.sin(p * Math.PI) * 8;
     context.translate(x, y);
@@ -707,12 +736,14 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
       context.restore();
       return;
     }
-    if (effect.sourceType === 'goblinHealer' && goblinHealPulse) {
-      const { rect, groundAnchor } = GOBLIN_HEAL_PULSE_FRAMES[goblinHealPulseFrame(p)];
-      const scale = .5 * renderScale;
+    const elven = effect.sourceType === 'elfHealer';
+    const healPulse = elven ? elfHealPulse : effect.sourceType === 'goblinHealer' ? goblinHealPulse : null;
+    if (healPulse) {
+      const { rect, groundAnchor } = (elven ? ELF_HEAL_PULSE_FRAMES : GOBLIN_HEAL_PULSE_FRAMES)[goblinHealPulseFrame(p)];
+      const scale = (elven ? .6 : .5) * renderScale;
       context.imageSmoothingEnabled = false;
       // Combat effects target the torso (-27px); this authored ring is anchored to the recipient's feet.
-      context.drawImage(goblinHealPulse, rect.x, rect.y, rect.width, rect.height,
+      context.drawImage(healPulse, rect.x, rect.y, rect.width, rect.height,
         targetX - groundAnchor.x * scale, targetY + 27 - groundAnchor.y * scale,
         rect.width * scale, rect.height * scale);
       context.font = '11px "Lilita One", sans-serif';
@@ -858,6 +889,8 @@ async function loadSceneAssets(plan: SceneAssetPlan) {
     [enemy.type, prepareAnimation(imageResource(enemy.sheet), ENEMY_ANIMATION_METADATA[enemy.type])])) };
   return { map: resources.get(plan.mapKey) as BattlefieldMap, goblinArt, allyAnimations,
     goblinHealPulse: plan.goblinHealPulse ? imageResource(plan.goblinHealPulse) : null,
+    elfHealPulse: plan.elfHealPulse ? imageResource(plan.elfHealPulse) : null,
+    moonGlaive: plan.moonGlaive ? imageResource(plan.moonGlaive) : null,
     poisonArt: { bottle: plan.poisonBottle ? imageResource(plan.poisonBottle) : null,
       impact: plan.poisonImpact ? imageResource(plan.poisonImpact) : null },
     heroArt: Object.fromEntries(Object.entries(plan.heroArt).map(([direction, url]) => [direction, imageResource(url)])),
@@ -876,6 +909,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
   let goblinArt: EnemyArt = { animations: {} };
   let allyAnimations: AnimationGroups = {};
   let goblinHealPulse: HTMLImageElement | null = null;
+  let elfHealPulse: HTMLImageElement | null = null;
+  let moonGlaive: HTMLImageElement | null = null;
   let poisonArt: PoisonArt = { bottle: null, impact: null };
   let heroArt: HeroArt = {};
   let heroEffects: HTMLImageElement | null = null;
@@ -907,7 +942,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
     onAssetState({ ...assetState });
     pendingAssets = loadSceneAssets(plan).then(assets => {
       if (destroyed || request !== assetRequest) return false;
-      ({ map, goblinArt, allyAnimations, goblinHealPulse, poisonArt, heroArt, heroEffects } = assets);
+      ({ map, goblinArt, allyAnimations, goblinHealPulse, elfHealPulse, moonGlaive, poisonArt, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
@@ -1091,7 +1126,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
       for (const effect of state.battle.effects) {
         if (effect.type === 'poison-bottle' || effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
         else if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
-        else drawEffect(context, effect, goblinHealPulse, actorScale);
+        else drawEffect(context, effect, goblinHealPulse, actorScale, elfHealPulse, moonGlaive);
       }
       drawCastleHealth(context, state.battle.castle);
     } else {
@@ -1165,12 +1200,14 @@ export async function createScene(canvas: HTMLCanvasElement, {
     getPortrait(type) {
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[1].art;
       if (type === 'elfArcher') return ELF_ARCHER_ASSETS[1].art;
+      if (type === 'elfHealer') return ELF_HEALER_ASSETS[1].art;
       return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
       if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[getUnitRank(level).level].art;
       if (type === 'elfArcher') return ELF_ARCHER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'elfHealer') return ELF_HEALER_ASSETS[getUnitRank(level).level].art;
       return rankArt[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {
@@ -1194,6 +1231,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
       goblinArt = { animations: {} };
       allyAnimations = {};
       goblinHealPulse = null;
+      elfHealPulse = null;
+      moonGlaive = null;
       heroArt = {};
       heroEffects = null;
       resizeObserver?.disconnect();

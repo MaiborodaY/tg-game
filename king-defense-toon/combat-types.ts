@@ -133,7 +133,7 @@ export interface BattleEffectPayloads {
   heal: { amount: number };
   slash: Record<never, never>;
   // An arrow gains landed only on arrival; hero-hammer starts with landed: false.
-  arrow: { targetId: string; damage: number; landed?: boolean };
+  arrow: { targetId: string; damage: number; landed?: boolean; launchFacing?: Point };
   // Damage is the complete four-second poison budget, not damage per tick.
   'poison-bottle': { targetId: string; damage: number; landed?: boolean };
   'poison-impact': { targetId: string };

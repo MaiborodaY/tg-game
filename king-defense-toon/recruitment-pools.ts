@@ -11,9 +11,9 @@ export interface ElfRecruitPreview {
 
 // Planned elves remain visible without entering the live recruitment odds or battle catalogue.
 export const ELF_RECRUITS: readonly ElfRecruitPreview[] = Object.freeze([
-  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false, playable: true }),
+  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Short range', locked: false, playable: true }),
   Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: true }),
-  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: false }),
+  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: true }),
   Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false }),
 ]);
 
