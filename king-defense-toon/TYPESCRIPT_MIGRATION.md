@@ -386,6 +386,60 @@ and UI/audio/Telegram implementations remain JavaScript for subsequent stages.
 - Production Vite build passes. Browser and physical-device checks remain
   deferred until after the main-module migration, as requested.
 
+## Stage 7 scope
+
+Three more runtime implementations move to TypeScript: `audio.ts`, `music.ts`
+and `telegram.ts`. There are now **47 root runtime TS modules**, plus the nested
+healer geometry module (**48 total**). Existing `.mjs` imports remain thin bridges
+until their callers migrate.
+
+Audio controllers expose read-only state, boolean activity/mute inputs, numeric
+music volume/level inputs and asynchronous unlock results. Their Web Audio graph
+references are nullable until construction succeeds. The optional WebKit
+constructor is described locally without adding ambient globals or dependencies.
+Existing gesture authorization, pending-playback generation guards, preference
+keys, track URLs, gain values and cleanup behavior remain unchanged. Bow effects
+remain deliberately disabled; moving their implementation does not enable them.
+
+The Telegram adapter describes only the host, document, root and SDK operations
+it uses. Optional methods keep version gates and error handling; external inset
+and viewport values still pass runtime validation. Its returned controller stays
+frozen. Telegram presence is UI detection, not authentication.
+
+The stage starts from `f19acd5`. A fresh fetch found `origin/main` at `c999295`
+and the requested gameplay branch at `7a9a335`, both already included. There is
+no gameplay integration, balance change, main-branch publication or SDK upgrade.
+Army/UI adapters and `main.mjs` remain JavaScript and are not yet type-checked.
+
+## Stage 7 validation
+
+- `brotd:check` passes: strict type checking, all **270 Node tests** and the
+  production Vite build. There are **222 negative API contracts**, including
+  32 new checks for audio state/setters, asynchronous unlock, SDK arguments,
+  event names, host/root shapes and the frozen Telegram controller.
+- Twenty-four new Node tests cover disabled bow effects, saved music preference
+  precedence/normalization, lazy graph creation, native/WebKit capability checks,
+  blocked storage, unavailable devices, autoplay retry, late playback completion,
+  destruction, Telegram UI detection, version gates, visibility, closing
+  confirmation, viewport/inset fallbacks, partial clients and listener cleanup.
+- All eight music tests also pass against the original `f19acd5` implementation.
+  A separate comparison of temporarily enabled bow-audio copies matches
+  **16 lifecycle/error scenarios and 243 trace operations**, including stale
+  resume/fetch/decode, voice limits, throttling and cleanup. Only ignored test
+  copies enable that flag; the shipped feature remains disabled.
+- Telegram matches the old implementation across **162 scenarios and 8,262
+  snapshots** of state and ordered calls, including nine client versions,
+  detection/visibility combinations, partial or failing SDK methods, invalid
+  viewport/inset values and repeated suspend/resume/destroy operations.
+- Independent code review found no migration regressions. Comparing JavaScript
+  emitted after removing types preserves Telegram's complete runtime and the
+  music/audio logic, apart from equivalent local aliases and split declarations.
+  SDK method calls retain their receiver; nullable graph assertions are limited
+  to references initialized by successful construction.
+- These checks use injected SDK, storage, media and Web Audio implementations.
+  They do not verify real sound output, device autoplay policies or live Telegram.
+  Browser checks remain deferred until after migrating `main.mjs`, as requested.
+
 ## Completion criteria and next stages
 
 For every slice: type checking, relevant behavior tests and production build
@@ -393,7 +447,7 @@ must pass. Retain invalid-input handling at runtime. Preserve saved formats,
 asset URLs, rewards and gameplay behavior; fix integration problems explicitly
 rather than bypassing them with type assertions.
 
-Next: migrate Telegram/audio and army/UI adapters, followed by the main module.
+Next: migrate army/UI adapters, followed by the main module.
 Keep major architecture changes separate from mechanical migration steps.
 
 The full migration is complete only when all active gameplay modules are
