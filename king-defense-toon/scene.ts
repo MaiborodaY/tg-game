@@ -1,9 +1,11 @@
+import { prepareAnimation, drawPreparedAnimation } from './sprite-animation.ts';
+import type { PreparedAnimation } from './sprite-animation.ts';
 import type { Actor, ActorType, BattleEffect, EffectOf } from './combat-types.ts';
 import type { UnitType } from './units.ts';
 import type { EnemyType } from './waves.ts';
 import type { AnimationActor, AnimationAction } from './animation-types.ts';
 import type { HeroEffectKind } from './tiny-st-knihor.ts';
-import type { AnimationMetadata, SpriteRect, RankArtAssets } from './art-types.ts';
+import type { AnimationMetadata, RankArtAssets } from './art-types.ts';
 import type { BattlefieldMap } from './tiny-map.ts';
 import type { SceneAssetPlan } from './scene-assets.ts';
 import type { PaletteRank } from './unit-ranks.ts';
@@ -17,14 +19,7 @@ type RenderHero = HealthActor & AnimationActor & {
 type HeroArt = Partial<Record<'up' | 'down' | 'side', HTMLImageElement>>;
 // Retain the legacy royal projectile drawing without adding it to combat's actor catalogue.
 type RenderEffect = BattleEffect | (Omit<EffectOf<'arrow'>, 'sourceType'> & { sourceType: 'king' });
-interface PreparedAnimation {
-  atlas: HTMLImageElement;
-  bounds: SpriteRect[];
-  metadata: AnimationMetadata;
-  walk?: PreparedAnimation;
-  cast?: PreparedAnimation;
-  ranks?: Partial<Record<PaletteRank, PreparedAnimation>>;
-}
+
 type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
 
@@ -406,37 +401,7 @@ function drawAnimatedUnit(context: CanvasRenderingContext2D, animations: Animati
   const baseAnimation = sourceAnimation?.ranks?.[getUnitRank(actor?.level ?? rankLevel).level] ?? sourceAnimation;
   const animation = actor?.action === 'heal' && baseAnimation?.cast?.atlas ? baseAnimation.cast
     : actor?.action === 'walk' && baseAnimation?.walk?.atlas ? baseAnimation.walk : baseAnimation;
-  if (!animation?.atlas) return false;
-  const meta = animation.metadata;
-  const idle = 0;
-  if (!animation.bounds[idle]) return false;
-  // Idle has its own visual pace; walking and strikes retain their combat clocks.
-  const animationTime = !actor || actor.action === 'idle' ? time * 0.65 : time;
-  const frame = meta.frameFor(actor, animationTime);
-  const sourceFrame = animation.bounds[frame] ? frame : idle;
-  const source = (compact && meta.compactSourceRects?.[sourceFrame]) || animation.bounds[sourceFrame];
-  const layout = meta.layout;
-  const cellWidth = animation.atlas.width / layout.columns;
-  const cellHeight = animation.atlas.height / layout.rows;
-  const col = sourceFrame % layout.columns;
-  const row = Math.floor(sourceFrame / layout.columns);
-  const baseline = meta.baselines[sourceFrame] * cellHeight;
-  const originX = (meta.centers?.[sourceFrame] ?? 0.5) * cellWidth;
-  const scale = (meta.renderHeight ?? 49) * (actor?.visualScale ?? 1) / (meta.bodyHeight * cellHeight);
-  // Fixed body scale and per-pose ground anchors keep feet planted even when the sword is overhead.
-  const spriteX = x + (source.x - col * cellWidth - originX) * scale;
-  const spriteY = feet + (source.y - row * cellHeight - baseline) * scale;
-  const breathing = !meta.pixelArt && (!actor || actor.action === 'idle') ? Math.sin(animationTime * 2.1 + x) * 0.2 : 0;
-  context.save();
-  context.translate(x, feet);
-  if (meta.pixelArt) context.imageSmoothingEnabled = false;
-  const turnLeft = (type === 'archer' || meta.horizontalFacing) && (actor?.facingX ?? 0) < -0.15;
-  const sourceMirrored = meta.mirrorFrames?.includes(sourceFrame) ?? false;
-  if (sourceMirrored !== turnLeft) context.scale(-1, 1);
-  context.drawImage(animation.atlas, source.x, source.y, source.width, source.height,
-    spriteX - x, spriteY - feet + breathing, source.width * scale, source.height * scale);
-  context.restore();
-  return true;
+  return drawPreparedAnimation(context, animation, actor, x, feet, time, compact, type === 'archer');
 }
 
 function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number, feet: number, isKing = false, actor: Actor | null = null, time = 0, goblinArt: EnemyArt | null = null, allyAnimations: AnimationGroups | null = null, rankLevel: number | null = null, renderScale = 1, compact = false) {
@@ -784,17 +749,6 @@ const MONK_HEAL_METADATA = {
   // Cast metadata is selected only after drawAnimatedUnit observes actor.action === 'heal'.
   baselines: Array<number>(11).fill(128 / 192), frameFor: (actor: AnimationActor | null | undefined) => tinyMonkHealFrame(actor!),
 };
-
-function prepareAnimation(image: HTMLImageElement, metadata: AnimationMetadata): PreparedAnimation {
-  const { columns, rows } = metadata.layout;
-  const bounds = Array.from({ length: columns * rows }, (_, frame) => ({
-    x: frame % columns * (image.width / columns),
-    y: Math.floor(frame / columns) * (image.height / rows),
-    width: image.width / columns, height: image.height / rows,
-  }));
-  for (const [frame, rect] of Object.entries(metadata.sourceRects ?? {})) bounds[frame as `${number}`] = rect!;
-  return { atlas: image, bounds, metadata };
-}
 
 async function loadSceneAssets(plan: SceneAssetPlan) {
   const resources = new Map(await Promise.all([...plan.resources].map(async ([key, resource]) => {

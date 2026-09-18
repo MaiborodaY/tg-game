@@ -76,3 +76,7 @@
 Подключение к игре и проверка в Telegram WebView выполняются отдельно.
 
 [Мини-боссы первого уровня](../README.md) · [Первый уровень](../../README.md)
+
+## Runtime animation adapter
+
+The prepared Canvas 2D kit is documented in [the runtime README](../../../../../king-defense-toon/assets/goblin-bombardier/README.md). It includes the three compact WebPs, exact crop/anchor metadata, idle/rolling/shooting animation, release timing, mirrored muzzle, bomb, blast and a death fade. Inspect it locally at `/bombardier-preview.html`. Enemy balance and wave registration remain separate.

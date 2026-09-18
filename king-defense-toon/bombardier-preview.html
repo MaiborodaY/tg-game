@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бомбардир — проверка анимаций</title>
+  <style>
+    * { box-sizing: border-box; } body { margin: 0; padding: 20px; background: #233c42; color: #fff7e0; font: 16px system-ui, sans-serif; }
+    main { max-width: 850px; margin: auto; } h1 { font-size: 25px; margin: 0 0 10px; }
+    p { line-height: 1.5; } .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 18px 0; }
+    button, select { font: inherit; padding: 9px; border-radius: 7px; border: 1px solid #b4d6c1; }
+    input { flex: 1; min-width: 150px; } .stage { display: flex; gap: 20px; flex-wrap: wrap; align-items: start; }
+    canvas { display: block; max-width: 100%; height: auto; border-radius: 12px; image-rendering: pixelated; background: #759858; }
+    aside { flex: 1; min-width: 240px; } #status { min-height: 24px; font-weight: bold; }
+    .note { color: #c7d7ca; font-size: 14px; } a { color: #c5e5ff; }
+  </style>
+</head>
+<body><main>
+  <h1>Гоблин-бомбардир</h1>
+  <p>Проверка игрового спрайта: движение → ожидание → выстрел → полёт бомбы → взрыв → исчезновение.</p>
+  <div class="controls">
+    <label>Направление <select id="direction"><option value="right">Вправо</option><option value="left">Влево</option><option value="down">Вниз</option><option value="up">Вверх (вид сбоку)</option></select></label>
+    <button id="pause" type="button">Пауза</button>
+    <label for="timeline">Время</label><input id="timeline" type="range" min="0" max="6000" step="1" value="0">
+  </div>
+  <div class="stage">
+    <canvas id="battle" width="390" height="445" aria-label="Бомбардир и мечник в игровом масштабе"></canvas>
+    <aside>
+      <div id="status" role="status">Загружаю 3 WebP…</div>
+      <p>Увеличенный вид той же анимации:</p>
+      <canvas id="detail" width="320" height="240" aria-label="Бомбардир крупным планом"></canvas>
+      <p class="note">Слева — обычный игровой масштаб и исходный мечник для сравнения. Дуга и длительность полёта здесь демонстрационные. Это проверка графики, без урона и волн.</p>
+    </aside>
+  </div>
+  <script type="module" src="./bombardier-preview.ts"></script>
+</main></body></html>
