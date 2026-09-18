@@ -2,6 +2,7 @@ import { prepareAnimation, drawPreparedAnimation } from './sprite-animation.ts';
 import type { PreparedAnimation } from './sprite-animation.ts';
 import type { Actor, ActorType, BattleEffect, EffectOf } from './combat-types.ts';
 import type { UnitType } from './units.ts';
+import { isHealingUnit } from './units.ts';
 import type { EnemyType } from './waves.ts';
 import type { AnimationActor, AnimationAction } from './animation-types.ts';
 import type { HeroEffectKind } from './tiny-st-knihor.ts';
@@ -12,7 +13,7 @@ import type { PaletteRank } from './unit-ranks.ts';
 import type { GridCell, Scene, SceneOptions, SceneState, SceneUpdate, SceneAssetState } from './scene-types.ts';
 
 type RenderActor = AnimationActor & { type?: ActorType; level?: number; visualScale?: number };
-type HealthActor = Pick<Actor, 'type' | 'x' | 'y' | 'hp' | 'maxHp'> & Partial<Pick<Actor, 'side' | 'visualScale'>>;
+type HealthActor = Pick<Actor, 'type' | 'x' | 'y' | 'hp' | 'maxHp'> & Partial<Pick<Actor, 'side' | 'visualScale' | 'poison'>>;
 type RenderHero = HealthActor & AnimationActor & {
   action: AnimationAction; stats: { auraUnlocked: boolean }; bastionTime?: number; guardianWard?: number;
 };
@@ -22,6 +23,7 @@ type RenderEffect = BattleEffect | (Omit<EffectOf<'arrow'>, 'sourceType'> & { so
 
 type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
+interface PoisonArt { bottle: HTMLImageElement | null; impact: HTMLImageElement | null }
 
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, CAPITOL_TOWER_POSITION } from './field.ts';
@@ -32,8 +34,13 @@ import { getCellAvailability } from './progression.ts';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.ts';
 import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.ts';
-import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from './panther-rider-art.ts';
+import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY, PANTHER_RIDER_RENDER_HEIGHT,
+  PANTHER_RIDER_RELEASE_OFFSETS, MOON_GLAIVE_FRAMES } from './panther-rider-art.ts';
 import { pantherRiderFrame } from './panther-rider-animation.ts';
+import { ELF_ARCHER_ASSETS, ELF_ARCHER_GEOMETRY, ELF_ARCHER_RENDER_HEIGHT } from './elf-archer-art.ts';
+import { elfArcherFrame } from './elf-archer-animation.ts';
+import { ELF_HEALER_ASSETS, ELF_HEALER_GEOMETRY, ELF_HEALER_RENDER_HEIGHT, ELF_HEAL_PULSE_FRAMES } from './elf-healer-art.ts';
+import { elfHealerFrame } from './elf-healer-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
@@ -46,6 +53,8 @@ import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from './goblin-heale
 import { OGRE_GEOMETRY } from './ogre-art.ts';
 import { UNDEAD_ART } from './undead-art.ts';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.ts';
+import { PLAGUE_ALCHEMIST_METADATA, POISON_BOTTLE_FRAMES, POISON_IMPACT_FRAMES, plagueAlchemistReleasePoint } from './plague-alchemist-art.ts';
+import { poisonBottleFrame, poisonImpactFrame } from './plague-alchemist-animation.ts';
 import { getEnemyCombatType } from './waves.ts';
 import { TINY_WARRIOR_LAYOUT, tinyWarriorFrame } from './tiny-warrior.ts';
 import { tinyLancerFrame } from './tiny-lancer.ts';
@@ -62,7 +71,6 @@ import { getSceneAssetPlan } from './scene-assets.ts';
 export { FIELD } from './field.ts';
 
 const PANTHER_RIDER_SCALE = 1.15;
-const PANTHER_RIDER_RENDER_HEIGHT = 47 * PANTHER_RIDER_SCALE;
 const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
   swordsman: {
     layout: TINY_WARRIOR_LAYOUT,
@@ -121,8 +129,28 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     frameFor: pantherRiderFrame,
     horizontalFacing: true,
   },
+  elfArcher: {
+    ...ELF_ARCHER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: ELF_ARCHER_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: elfArcherFrame,
+    horizontalFacing: true,
+  },
+  elfHealer: {
+    ...ELF_HEALER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: ELF_HEALER_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: elfHealerFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, healer: 39, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, elfHealer: ELF_HEALER_RENDER_HEIGHT + 4, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -378,7 +406,7 @@ function attackProgress(actor: AnimationActor | null | undefined) {
 
 function drawRange(context: CanvasRenderingContext2D, type: ActorType, x: number, y: number, ghost = false) {
   const radius = getUnitRange(type);
-  const color = type === 'healer' ? '#73cb97' : type === 'archer' ? '#7ac4f1' : '#f3cf76';
+  const color = isHealingUnit(type) ? '#73cb97' : type === 'archer' || type === 'elfArcher' ? '#7ac4f1' : '#f3cf76';
   context.save();
   context.fillStyle = `${color}1a`;
   context.strokeStyle = color;
@@ -433,7 +461,7 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.fill();
   }
   const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
-    || Object.hasOwn(UNDEAD_ENEMY_ART, type);
+    || type === 'plagueAlchemist' || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
   } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1, compact)) {
@@ -541,6 +569,31 @@ function drawHealth(context: CanvasRenderingContext2D, actor: HealthActor, rende
   context.fillStyle = verticalPaint(context, y + 1, 3,
     enemy ? '#ffb077' : '#b0ef73', enemy ? '#da664d' : '#5eba45');
   context.fillRect(actor.x - width / 2 + 1, y + 1, (width - 2) * clamp(actor.hp / actor.maxHp), 3);
+  if (actor.poison && actor.poison.remaining > 0) {
+    context.fillStyle = '#a4c85b';
+    context.fillRect(actor.x + width / 2 - 3, y + 6, 2, 2);
+  }
+}
+
+function drawPoisonEffect(context: CanvasRenderingContext2D, art: PoisonArt,
+  effect: EffectOf<'poison-bottle'> | EffectOf<'poison-impact'>, renderScale: number) {
+  const progress = clamp(effect.age / effect.duration), bottle = effect.type === 'poison-bottle';
+  const image = bottle ? art.bottle : art.impact;
+  if (!image || progress >= 1 || (bottle && effect.landed)) return;
+  const frame = bottle ? POISON_BOTTLE_FRAMES[poisonBottleFrame(effect.age)]
+    : POISON_IMPACT_FRAMES[poisonImpactFrame(progress)];
+  const scale = (bottle ? .28 : .6) * renderScale;
+  const origin = bottle ? plagueAlchemistReleasePoint({ x: effect.x, y: effect.y + 27 },
+    { x: effect.targetX, y: effect.targetY + 27 }, renderScale) : { x: effect.x, y: effect.y };
+  const x = bottle ? origin.x + (effect.targetX - origin.x) * progress : effect.targetX;
+  const y = bottle ? origin.y + (effect.targetY - origin.y) * progress - Math.sin(progress * Math.PI) * 18 * renderScale : effect.targetY;
+  context.save();
+  context.imageSmoothingEnabled = false;
+  context.globalAlpha = bottle || progress < .65 ? 1 : (1 - progress) / .35;
+  const { rect, centerAnchor } = frame;
+  context.drawImage(image, rect.x, rect.y, rect.width, rect.height,
+    x - centerAnchor.x * scale, y - centerAnchor.y * scale, rect.width * scale, rect.height * scale);
+  context.restore();
 }
 
 function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
@@ -564,12 +617,12 @@ function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
   context.restore();
 }
 
-function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1) {
+function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, goblinHealPulse: HTMLImageElement | null = null, renderScale = 1, elfHealPulse: HTMLImageElement | null = null, moonGlaive: HTMLImageElement | null = null) {
   const p = clamp(effect.age / effect.duration);
   const targetX = effect.targetX ?? effect.x;
   const targetY = effect.targetY ?? effect.y;
-  const alliedArrow = effect.type === 'arrow' && effect.sourceType === 'archer';
-  const alliedHeal = effect.type === 'heal' && effect.sourceType === 'healer';
+  const alliedArrow = effect.type === 'arrow' && (effect.sourceType === 'archer' || effect.sourceType === 'elfArcher');
+  const alliedHeal = effect.type === 'heal' && isHealingUnit(effect.sourceType);
   const distance = Math.max(1, Math.hypot(targetX - effect.x, targetY - effect.y));
   const directionX = (targetX - effect.x) / distance;
   const directionY = (targetY - effect.y) / distance;
@@ -579,6 +632,22 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
   context.save();
   context.globalAlpha = p > 0.7 ? (1 - p) / 0.3 : 1;
   if (effect.type === 'arrow') {
+    if (effect.sourceType === 'pantherRider' && moonGlaive) {
+      // Freeze the authored hand origin at release, including west-facing mirroring.
+      const facing = effect.launchFacing ?? { x: 1, y: 0 };
+      const releaseFrame = facing.y > 0 && facing.y >= Math.abs(facing.x) ? 14 : 10;
+      const offset = PANTHER_RIDER_RELEASE_OFFSETS[releaseFrame];
+      const fromX = effect.x + offset.x * (facing.x < 0 ? -1 : 1) * renderScale;
+      const fromY = effect.y + 27 + offset.y * renderScale;
+      const { rect, centerAnchor } = MOON_GLAIVE_FRAMES[Math.floor(effect.age * 12) % 4];
+      const scale = .32 * renderScale;
+      context.translate(fromX + (targetX - fromX) * p, fromY + (targetY - fromY) * p);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(moonGlaive, rect.x, rect.y, rect.width, rect.height,
+        -centerAnchor.x * scale, -centerAnchor.y * scale, rect.width * scale, rect.height * scale);
+      context.restore();
+      return;
+    }
     const x = startX + (targetX - startX) * p;
     const y = startY + (targetY - startY) * p - Math.sin(p * Math.PI) * 8;
     context.translate(x, y);
@@ -632,12 +701,14 @@ function drawEffect(context: CanvasRenderingContext2D, effect: RenderEffect, gob
       context.restore();
       return;
     }
-    if (effect.sourceType === 'goblinHealer' && goblinHealPulse) {
-      const { rect, groundAnchor } = GOBLIN_HEAL_PULSE_FRAMES[goblinHealPulseFrame(p)];
-      const scale = .5 * renderScale;
+    const elven = effect.sourceType === 'elfHealer';
+    const healPulse = elven ? elfHealPulse : effect.sourceType === 'goblinHealer' ? goblinHealPulse : null;
+    if (healPulse) {
+      const { rect, groundAnchor } = (elven ? ELF_HEAL_PULSE_FRAMES : GOBLIN_HEAL_PULSE_FRAMES)[goblinHealPulseFrame(p)];
+      const scale = (elven ? .6 : .5) * renderScale;
       context.imageSmoothingEnabled = false;
       // Combat effects target the torso (-27px); this authored ring is anchored to the recipient's feet.
-      context.drawImage(goblinHealPulse, rect.x, rect.y, rect.width, rect.height,
+      context.drawImage(healPulse, rect.x, rect.y, rect.width, rect.height,
         targetX - groundAnchor.x * scale, targetY + 27 - groundAnchor.y * scale,
         rect.width * scale, rect.height * scale);
       context.font = '11px "Lilita One", sans-serif';
@@ -738,6 +809,7 @@ const ENEMY_ANIMATION_METADATA: Record<EnemyType, AnimationMetadata> = {
   goblinHealer: GOBLIN_HEALER_ANIMATION_METADATA,
   ogre: OGRE_ANIMATION_METADATA,
   boar: BOAR_ANIMATION_METADATA,
+  plagueAlchemist: PLAGUE_ALCHEMIST_METADATA,
   ...undeadMetadata,
 };
 const MONK_RUN_METADATA = {
@@ -771,6 +843,10 @@ async function loadSceneAssets(plan: SceneAssetPlan) {
     [enemy.type, prepareAnimation(imageResource(enemy.sheet), ENEMY_ANIMATION_METADATA[enemy.type])])) };
   return { map: resources.get(plan.mapKey) as BattlefieldMap, goblinArt, allyAnimations,
     goblinHealPulse: plan.goblinHealPulse ? imageResource(plan.goblinHealPulse) : null,
+    elfHealPulse: plan.elfHealPulse ? imageResource(plan.elfHealPulse) : null,
+    moonGlaive: plan.moonGlaive ? imageResource(plan.moonGlaive) : null,
+    poisonArt: { bottle: plan.poisonBottle ? imageResource(plan.poisonBottle) : null,
+      impact: plan.poisonImpact ? imageResource(plan.poisonImpact) : null },
     heroArt: Object.fromEntries(Object.entries(plan.heroArt).map(([direction, url]) => [direction, imageResource(url)])),
     heroEffects: plan.heroEffects ? imageResource(plan.heroEffects) : null };
 }
@@ -787,6 +863,9 @@ export async function createScene(canvas: HTMLCanvasElement, {
   let goblinArt: EnemyArt = { animations: {} };
   let allyAnimations: AnimationGroups = {};
   let goblinHealPulse: HTMLImageElement | null = null;
+  let elfHealPulse: HTMLImageElement | null = null;
+  let moonGlaive: HTMLImageElement | null = null;
+  let poisonArt: PoisonArt = { bottle: null, impact: null };
   let heroArt: HeroArt = {};
   let heroEffects: HTMLImageElement | null = null;
   const unitImages = UNIT_IMAGES;
@@ -817,7 +896,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
     onAssetState({ ...assetState });
     pendingAssets = loadSceneAssets(plan).then(assets => {
       if (destroyed || request !== assetRequest) return false;
-      ({ map, goblinArt, allyAnimations, goblinHealPulse, heroArt, heroEffects } = assets);
+      ({ map, goblinArt, allyAnimations, goblinHealPulse, elfHealPulse, moonGlaive, poisonArt, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
@@ -914,7 +993,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
             const availability = state.barracksLevel === undefined ? null
               : getCellAvailability({ unlockedCells: state.unlockedCells ?? [] }, key, state.barracksLevel);
             const requirement = availability && !availability.allowed
-              ? availability.requiredBarracksLevel ? `Barr. ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Later'
+              ? availability.requiredBarracksLevel ? `Barr. ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Later'
               : undefined;
             drawLockedCell(context, x, y, width, height, state.selectedLockedCell === key,
               availability ? availability.cost : state.nextUnlockCost, requirement);
@@ -999,8 +1078,9 @@ export async function createScene(canvas: HTMLCanvasElement, {
       }
       for (const actor of actors) drawHealth(context, actor, actorScale);
       for (const effect of state.battle.effects) {
-        if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
-        else drawEffect(context, effect, goblinHealPulse, actorScale);
+        if (effect.type === 'poison-bottle' || effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
+        else if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
+        else drawEffect(context, effect, goblinHealPulse, actorScale, elfHealPulse, moonGlaive);
       }
       drawCastleHealth(context, state.battle.castle);
     } else {
@@ -1073,11 +1153,15 @@ export async function createScene(canvas: HTMLCanvasElement, {
     },
     getPortrait(type) {
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[1].art;
+      if (type === 'elfArcher') return ELF_ARCHER_ASSETS[1].art;
+      if (type === 'elfHealer') return ELF_HEALER_ASSETS[1].art;
       return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
       if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'elfArcher') return ELF_ARCHER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'elfHealer') return ELF_HEALER_ASSETS[getUnitRank(level).level].art;
       return rankArt[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {
@@ -1101,6 +1185,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
       goblinArt = { animations: {} };
       allyAnimations = {};
       goblinHealPulse = null;
+      elfHealPulse = null;
+      moonGlaive = null;
       heroArt = {};
       heroEffects = null;
       resizeObserver?.disconnect();

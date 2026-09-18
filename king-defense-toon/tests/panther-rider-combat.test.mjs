@@ -24,7 +24,7 @@ function advance(battle, until, seconds = 30) {
   assert.ok(until(), `${battle.phase} at ${battle.elapsed.toFixed(2)}s`);
 }
 
-test('mounted melee moves faster than swordsmen and uses its own single-target cadence', () => {
+test('mounted glaive rider moves faster than swordsmen and uses its own single-target cadence', () => {
   const movement = type => {
     const battle = encounter([fighter(1, type)], [{ x: positionForCell(2, 0).x + (type === 'pantherRider' ? FIELD.cellWidth / 2 : 0), y: 66 }]);
     const unit = battle.allies[0], previousY = unit.y;
@@ -39,15 +39,19 @@ test('mounted melee moves faster than swordsmen and uses its own single-target c
   Object.assign(battle.allies[0], { x: 175, y: 210, action: 'idle', cooldown: 0, focusId: null });
   updateBattle(battle, DT);
   const rider = battle.allies[0];
-  assert.equal(rider.action, 'attack');
+  assert.equal(rider.action, 'shoot');
   close(rider.actionDuration, .65 / COMBAT_PACE);
   close(rider.cooldown, 1.05 / COMBAT_PACE);
-  assert.equal(getUnitRange('pantherRider'), getUnitRange('swordsman'));
+  assert.equal(getUnitRange('pantherRider'), 75);
+  assert.ok(getUnitRange('pantherRider') > getUnitRange('swordsman'));
+  assert.ok(getUnitRange('pantherRider') < getUnitRange('archer'));
+  advance(battle, () => battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
+  assert.ok(battle.enemies.every(enemy => enemy.hp === 1000), 'Releasing the glaive does not apply instant damage');
   advance(battle, () => battle.enemies.some(enemy => enemy.hp < 1000));
   assert.equal(battle.enemies.filter(enemy => enemy.hp < 1000).length, 1);
   assert.equal(battle.enemies.reduce((sum, enemy) => sum + 1000 - enemy.hp, 0), 9);
-  assert.ok(battle.effects.some(effect => effect.type === 'slash' && effect.sourceType === 'pantherRider'));
-  assert.ok(!battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
+  assert.ok(!battle.effects.some(effect => effect.type === 'slash' && effect.sourceType === 'pantherRider'));
+
 });
 
 test('rider starts at the centre of its two-cell footprint without combat-stat changes', () => {
@@ -59,8 +63,28 @@ test('rider starts at the centre of its two-cell footprint without combat-stat c
   assert.equal(rider.y, anchor.y); assert.equal(rider.homeY, anchor.y);
   assert.equal(sword.x, positionForCell(3, 0).x);
   assert.equal(rider.maxHp, 90); assert.equal(rider.damage, 9);
-  assert.equal(rider.range, 38); assert.equal(rider.visualScale, 1);
+  assert.equal(rider.range, 75); assert.equal(rider.visualScale, 1);
   assert.deepEqual(units, original, 'combat never rewrites saved left anchors');
+});
+
+test('glaive rider stops beyond sword reach; a released projectile survives its caster and lands only once', () => {
+  const battle = encounter([fighter(1, 'pantherRider')], [{ x: 195, y: 180 }]);
+  battle.hero.hp = 0;
+  const rider = battle.allies[0], target = battle.enemies[0]; hold(target);
+  Object.assign(target, { x: 195, y: 180 });
+  Object.assign(rider, { x: 195, y: 310, action: 'idle', cooldown: 0 });
+  advance(battle, () => rider.action === 'shoot');
+  const distance = Math.hypot(rider.x-target.x, rider.y-target.y);
+  assert.ok(distance > 44 && distance <= 55, `short throw starts at ${distance}px`);
+  advance(battle, () => battle.effects.some(effect => effect.type === 'arrow'));
+  assert.equal(target.hp, 1000);
+  const projectile = battle.effects.find(effect => effect.type === 'arrow');
+  assert.ok(projectile.launchFacing.y < 0);
+  rider.hp = 0;
+  advance(battle, () => target.hp < 1000);
+  for (let i=0;i<60;i++) updateBattle(battle, DT);
+  assert.equal(target.hp, 991);
+  assert.ok(!battle.effects.some(effect => effect.type === 'slash'));
 });
 
 test('rider advances to the entrance and retargets the archer after the frontline dies', () => {
@@ -125,7 +149,8 @@ test('a mixed mounted army keeps real combat identical across frame rates and sp
     const battle = createBattle(formation, 20, undefined, forge), events = [];
     for (let frame = 0; battle.phase === 'running' && frame < 30000; frame++) events.push(...updateBattle(battle, battleFrameDelta(1 / fps, speed)));
     assert.equal(battle.phase, 'victory');
-    assert.ok(battle.allies.filter(unit => unit.type === 'pantherRider').every(unit => unit.attackCount >= 1));
+    assert.ok(battle.kills > 0);
+    assert.equal(events.some(event => event.type === 'bow-shot' && ['ally-1','ally-2'].includes(event.sourceId)), false, 'Glaives do not play bow sounds');
     const { stepRemainder, effects, allies, enemies, hero, castle, king, ...state } = battle;
     return { ...state, allies: allies.map(withoutVisualTimers), enemies: enemies.map(withoutVisualTimers),
       hero: withoutVisualTimers(hero), castle: withoutVisualTimers(castle), events };

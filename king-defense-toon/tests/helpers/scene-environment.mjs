@@ -70,6 +70,9 @@ export function createSceneEnvironment() {
     set src(value) {
       this.url = value;
       if (!value) return;
+      if (/\/(panther-rider|elf-archer|elf-healer)\//.test(value)) {
+        this.width = this.height = this.naturalWidth = this.naturalHeight = /moon-glaive|elf-healer-pulse/.test(value) ? 128 : 512;
+      }
       requests.push(value);
       const mode = imageMode(value);
       if (mode === 'hold') pending.add(this);

@@ -68,10 +68,42 @@ test('rider loads only visible palettes and does not pull other recruits or menu
   assert.match(urls, /panther-rider-purple\.webp/);
   assert.match(urls, /panther-rider-black\.webp/);
   assert.doesNotMatch(urls, /panther-rider-(red|gold)|panther-rider-\w+-art|elf-archer|unicorn/);
+  assert.match(battle.moonGlaive, /moon-glaive\.webp\?no-inline$/);
+  assert.ok(battle.resources.has(battle.moonGlaive));
   const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.equal(army.moonGlaive, null);
   assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
   assert.equal(army.resources.size, 3, 'one map and two visible sheets');
   assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /panther-rider/);
+  assert.equal(getSceneAssetPlan().moonGlaive, null);
+});
+
+test('elf archer loads only the displayed battle/formation/placement ranks without portraits or extra effects', () => {
+  const state = { units: [{ type: 'elfArcher', level: 50 }, { type: 'elfArcher', level: 50 }],
+    battle: { allies: [{ type: 'elfArcher', level: 1 }] }, placementType: 'elfArcher', placementLevel: 500 };
+  const battle = getSceneAssetPlan(state);
+  assert.deepEqual(battle.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['elfArcher:1', 'elfArcher:2', 'elfArcher:5']);
+  const urls = battle.keys.join(' ');
+  for (const color of ['green', 'purple', 'black']) assert.match(urls, new RegExp(`elf-archer-${color}\\.webp`));
+  assert.doesNotMatch(urls, /elf-archer-(red|gold)|elf-archer-\w+-art|recruitment|panther-rider/);
+  const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
+  assert.equal(army.resources.size, 3, 'one map and two visible sheets');
+  assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /elf-archer/);
+});
+
+test('elven healer loads just the visible palettes and one optional pulse outside formation', () => {
+  const state = { units: [{ type: 'elfHealer', level: 50 }],
+    battle: { allies: [{ type: 'elfHealer', level: 1 }] }, placementType: 'elfHealer', placementLevel: 500 };
+  const battle = getSceneAssetPlan(state), army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.deepEqual(battle.allies.map(unit => unit.rank).sort(), [1, 2, 5]);
+  assert.ok(battle.resources.has(battle.elfHealPulse));
+  assert.match(battle.elfHealPulse, /elf-healer-pulse\.webp\?no-inline$/);
+  assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
+  assert.equal(army.resources.size, 3);
+  assert.equal(army.elfHealPulse, null);
+  assert.equal(getSceneAssetPlan({ units: [{ type: 'healer', level: 1 }] }).elfHealPulse, null);
+  assert.doesNotMatch(battle.keys.join(' '), /elf-healer-(red|gold)|elf-healer-\w+-art|recruitment|unicorn/);
 });
 
 test('level 500 and later load one Black palette per present class without earlier palettes', () => {
@@ -100,6 +132,22 @@ test('enemy healer body and pulse load for forthcoming or existing healers, neve
   const army = getSceneAssetPlan(state, { formationOnly: true });
   assert.equal(army.goblinHealPulse, null);
   assert.deepEqual(army.keys, ['map:1']);
+});
+
+test('alchemist body, bottle and impact load only for its wave and share one cached resource each', () => {
+  const state = { levelNumber: 2, wave: { levelNumber: 2, spawns: [{ type: 'plagueAlchemist' }, { type: 'plagueAlchemist' }] } };
+  const plan = getSceneAssetPlan(state);
+  assert.deepEqual(plan.enemies.map(enemy => enemy.type), ['plagueAlchemist']);
+  assert.match(new URL(plan.poisonBottle).pathname, /poison-bottle-128-lite\.webp$/);
+  assert.match(plan.poisonImpact, /poison-impact-128-lite\.webp$/);
+  assert.equal(plan.keys.filter(key => key.includes('/plague-alchemist/')).length, 3);
+  const existing = getSceneAssetPlan({ ...state, battle: { wave: state.wave, enemies: [{ type: 'plagueAlchemist' }] } });
+  assert.equal(existing.signature, plan.signature);
+  for (const unused of [getSceneAssetPlan(), getSceneAssetPlan({ wave: getWaveDefinition(1) }),
+    getSceneAssetPlan({ levelNumber: 2, wave: { spawns: [{ type: 'skeleton' }] } }), getSceneAssetPlan(state, { formationOnly: true })]) {
+    assert.equal(unused.poisonBottle, null); assert.equal(unused.poisonImpact, null);
+    assert.doesNotMatch(unused.keys.join(' '), /plague-alchemist|poison-bottle|poison-impact/);
+  }
 });
 
 test('a wave loads forthcoming enemies once and only its goblin palette', () => {

@@ -58,6 +58,7 @@ export interface GameElementTags {
   'lancer-recruitment-chance': 'span';
   'lancer-recruitment-training': 'div';
   'barracks-upgrade-state': 'p';
+  'barracks-upgrade-controls': 'div';
   'barracks-upgrade-note': 'small';
   'barracks-upgrade-progress': 'progress';
   'barracks-start-upgrade': 'button';

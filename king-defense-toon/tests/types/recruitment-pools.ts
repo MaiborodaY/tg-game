@@ -11,10 +11,11 @@ export function verifyRecruitmentPoolContracts(saved: unknown): void {
   // @ts-expect-error The full elf preview catalogue also contains unimplemented types.
   const elf: UnitType = ELF_RECRUITS[0]!.id;
   const rider: UnitType = 'pantherRider';
+  const archer: UnitType = 'elfArcher';
   const playable: boolean = ELF_RECRUITS[0]!.playable;
   // @ts-expect-error Only supported recruitment pools can be selected.
   isRecruitmentPoolUnlocked('undead', 3);
   // @ts-expect-error The preview catalogue is immutable.
   ELF_RECRUITS[0]!.locked = true;
-  void [selectable, recruitable, fighter, elf, rider, playable];
+  void [selectable, recruitable, fighter, elf, rider, archer, playable];
 }

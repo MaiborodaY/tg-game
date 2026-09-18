@@ -22,9 +22,9 @@ export function verifyBarracksContracts(saved: unknown): void {
     const cost: 0 = result.cost;
     void [reason, cost];
   }
-  barracks.level = 3;
-  // @ts-expect-error Barracks have exactly three supported levels.
   barracks.level = 4;
+  // @ts-expect-error Barracks have exactly four supported levels.
+  barracks.level = 5;
   // @ts-expect-error Shared transition settings must not be mutated.
   BARRACKS_UPGRADES[3].cost = 1;
   // @ts-expect-error Maximum level has no next upgrade.

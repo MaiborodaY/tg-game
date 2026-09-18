@@ -3,8 +3,8 @@ import { getRecruitLevel } from './recruitment.ts';
 import type { RecruitmentState } from './recruitment.ts';
 import type { UnitType } from './units.ts';
 
-export type BarracksLevel = 1 | 2 | 3;
-export type BarracksUpgradeTarget = 2 | 3;
+export type BarracksLevel = 1 | 2 | 3 | 4;
+export type BarracksUpgradeTarget = 2 | 3 | 4;
 export interface BarracksState {
   level: BarracksLevel;
   upgradeStartedAt: number | null;
@@ -54,7 +54,7 @@ interface BarracksTimer {
 
 export const STARTING_SLAVES = 3;
 export const SELL_PRICE = 1;
-export const BARRACKS_MAX_LEVEL = 3;
+export const BARRACKS_MAX_LEVEL = 4;
 export const BARRACKS_REQUIRED_SWORDSMAN_LEVEL = 5;
 export const BARRACKS_UPGRADE_COST = 200;
 export const BARRACKS_UPGRADE_DURATION_MS = 60 * 60 * 1000;
@@ -64,16 +64,19 @@ export const BARRACKS_UPGRADES: Readonly<Record<BarracksUpgradeTarget, BarracksU
     cost: BARRACKS_UPGRADE_COST, durationMs: BARRACKS_UPGRADE_DURATION_MS, speedUpMaxCost: BARRACKS_SPEED_UP_MAX_COST }),
   3: Object.freeze({ targetLevel: 3, requiredRecruitType: 'lancer', requiredRecruitLevel: 5,
     cost: 2000, durationMs: 3 * 60 * 60 * 1000, speedUpMaxCost: 300 }),
+  4: Object.freeze({ targetLevel: 4, requiredRecruitType: 'pantherRider', requiredRecruitLevel: 5,
+    cost: 5000, durationMs: 6 * 60 * 60 * 1000, speedUpMaxCost: 600 }),
 });
 
 export function getBarracksUpgradeDefinition(level: BarracksLevel): BarracksUpgradeDefinition | null {
-  return level === 1 ? BARRACKS_UPGRADES[2] : level === 2 ? BARRACKS_UPGRADES[3] : null;
+  return level === 1 ? BARRACKS_UPGRADES[2] : level === 2 ? BARRACKS_UPGRADES[3]
+    : level === 3 ? BARRACKS_UPGRADES[4] : null;
 }
 
 const validTime = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 const validStart = (value: unknown, durationMs: number): value is number => validTime(value) && value <= Number.MAX_SAFE_INTEGER - durationMs;
 function validTimer(barracks: BarracksSaveFields): barracks is BarracksSaveFields & BarracksTimer {
-  const definition = barracks.level === 1 || barracks.level === 2 ? getBarracksUpgradeDefinition(barracks.level) : null;
+  const definition = barracks.level === 1 || barracks.level === 2 || barracks.level === 3 ? getBarracksUpgradeDefinition(barracks.level) : null;
   return definition !== null && validStart(barracks.upgradeStartedAt, definition.durationMs)
     && barracks.upgradeReadyAt === barracks.upgradeStartedAt + definition.durationMs;
 }
@@ -81,7 +84,7 @@ const validGold = (value: unknown): value is number => typeof value === 'number'
 
 export function createBarracks(saved: unknown = {}, now: number = Date.now()): BarracksState {
   const source = saved as BarracksSaveFields | null | undefined;
-  const level = source?.level === 2 || source?.level === 3 ? source.level : 1;
+  const level = source?.level === 2 || source?.level === 3 || source?.level === 4 ? source.level : 1;
   const upgrading = source != null && validTimer(source);
   const barracks: BarracksState = {
     level,
@@ -96,7 +99,7 @@ export function createBarracks(saved: unknown = {}, now: number = Date.now()): B
 
 function assertBarracks(value: unknown): asserts value is BarracksState {
   const barracks = value as BarracksSaveFields | null | undefined;
-  if (!barracks || (barracks.level !== 1 && barracks.level !== 2 && barracks.level !== 3)
+  if (!barracks || (barracks.level !== 1 && barracks.level !== 2 && barracks.level !== 3 && barracks.level !== 4)
     || typeof barracks.firstLancerPending !== 'boolean'
     || !(barracks.upgradeStartedAt === null && barracks.upgradeReadyAt === null || validTimer(barracks))
     || barracks.level === 1 && barracks.firstLancerPending) {
@@ -125,7 +128,7 @@ export function completeBarracksUpgrade(barracks: BarracksState, now: number = D
 export function getBarracksUpgrade(barracks: BarracksState, recruitment: RecruitmentState, now: number = Date.now()): BarracksUpgrade {
   assertBarracks(barracks);
   const definition = getBarracksUpgradeDefinition(barracks.level);
-  const requiredRecruitType = definition?.requiredRecruitType ?? 'lancer';
+  const requiredRecruitType = definition?.requiredRecruitType ?? BARRACKS_UPGRADES[BARRACKS_MAX_LEVEL].requiredRecruitType;
   const recruitLevel = getRecruitLevel(recruitment, requiredRecruitType);
   const upgrading = barracks.upgradeReadyAt !== null;
   // The assertion guarantees a complete timer pair whenever the ready timestamp exists.

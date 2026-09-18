@@ -1,4 +1,8 @@
-export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider';
+export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider' | 'elfArcher' | 'elfHealer';
+
+export function isHealingUnit(type: unknown): type is 'healer' | 'elfHealer' {
+  return type === 'healer' || type === 'elfHealer';
+}
 
 export interface UnitDefinition {
   readonly id: UnitType;
@@ -65,10 +69,33 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     cost: 0,
     hp: 90,
     damage: 9,
-    role: 'Mounted melee',
+    role: 'Glaive rider',
     color: '#8766ad',
-    description: 'Fast mounted defender. Stronger than a swordsman of the same level; strikes one enemy.',
+    description: 'Fast mounted defender. Throws a moon glaive at one nearby enemy, beyond sword reach.',
     spriteColumn: 4,
+  }),
+  Object.freeze({
+    id: 'elfArcher',
+    name: 'Elven Archer',
+    cost: 0,
+    hp: 45,
+    damage: 11,
+    role: 'Ranged',
+    color: '#78a66a',
+    description: 'Fires stronger arrows from behind the front line. More durable than a human archer of the same level.',
+    spriteColumn: 5,
+  }),
+  Object.freeze({
+    id: 'elfHealer',
+    name: 'Elven Healer',
+    cost: 0,
+    hp: 50,
+    damage: 0,
+    heal: 6,
+    role: 'Support',
+    color: '#72b696',
+    description: 'Follows and heals wounded allies and your hero. Stronger healing than a human healer; cannot heal the castle.',
+    spriteColumn: 6,
   }),
 ]);
 

@@ -40,9 +40,13 @@ const legacyFixtures = [
     },
     expected: {
       clearedWaves: 0, firstClears: [1, 10, 201, 210], autoWaves: false,
-      armyLevels: [10, 10, 1], reserveLevels: [3, 1],
-      received: { swordsman: 6, archer: 4, healer: 1, lancer: 0, pantherRider: 0 },
-      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0 },
+      gold: 352, unlockedCells: ['2:0', '2:1', '2:2'],
+      units: [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 },
+        { id: 2, type: 'archer', level: 10, col: 2, row: 1 }, { id: 3, type: 'healer', level: 1, col: 2, row: 2 }],
+      reserve: [{ id: 4, type: 'swordsman', level: 3 }, { id: 5, type: 'archer', level: 1 }],
+      offlineRewards: { gold: 0, slaves: 0, slotRefund: 25, returnedFighters: 0, closedCells: 1, forgeRefund: 0 },
+      received: { swordsman: 6, archer: 4, healer: 1, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0 },
+      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0 },
       heroXp: 300, highestWave: 20, barracksLevel: 2, firstLancerPending: true,
       marketHintCompleted: true, replayClaimedWave: true,
     },
@@ -65,9 +69,17 @@ const legacyFixtures = [
     },
     expected: {
       clearedWaves: 200, firstClears: [1, 2, 10, 201], autoWaves: false,
-      armyLevels: [8, 7, 12], reserveLevels: [2, 4],
-      received: { swordsman: 20, archer: 11, healer: 5, lancer: 2, pantherRider: 0 },
-      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0 },
+      gold: 867, unlockedCells: ['2:0', '2:1', '2:2'],
+      units: [{ id: 1, type: 'swordsman', level: 8, col: 2, row: 0 },
+        { id: 2, type: 'archer', level: 7, col: 2, row: 1 }],
+      reserve: [{ id: 4, type: 'healer', level: 2 }, { id: 5, type: 'lancer', level: 4 },
+        { id: 3, type: 'lancer', level: 12 }],
+      // Restore assigns fresh sequential IDs after the displaced lancer joins the reserve.
+      reloadedReserve: [{ id: 3, type: 'healer', level: 2 }, { id: 4, type: 'lancer', level: 4 },
+        { id: 5, type: 'lancer', level: 12 }],
+      offlineRewards: { gold: 0, slaves: 0, slotRefund: 25, returnedFighters: 1, closedCells: 1, forgeRefund: 0 },
+      received: { swordsman: 20, archer: 11, healer: 5, lancer: 2, pantherRider: 0, elfArcher: 0, elfHealer: 0 },
+      credit: { swordsman: 9, archer: 4, healer: 0, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0 },
       heroXp: 800, highestWave: 11, barracksLevel: 2, firstLancerPending: false,
       marketHintCompleted: true,
     },
@@ -83,9 +95,13 @@ const legacyFixtures = [
     },
     expected: {
       clearedWaves: 210, firstClears: [1, 10, 201, 210], autoWaves: true,
-      armyLevels: [1, 4], reserveLevels: [1],
-      received: { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 0 },
-      credit: { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 0 },
+      gold: 54, unlockedCells: ['2:0', '2:1', '2:2'],
+      units: [{ id: 1, type: 'swordsman', level: 1, col: 2, row: 0 },
+        { id: 2, type: 'archer', level: 4, col: 2, row: 1 }],
+      reserve: [{ id: 3, type: 'healer', level: 1 }],
+      offlineRewards: { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 },
+      received: { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0 },
+      credit: { swordsman: 0, archer: 0, healer: 0, lancer: 0, pantherRider: 0, elfArcher: 0, elfHealer: 0 },
       heroXp: 0, highestWave: 0, barracksLevel: 1, firstLancerPending: false,
       marketHintCompleted: false,
     },
@@ -222,12 +238,11 @@ try {
       await page.evaluate(() => window.storageCheck.stopEconomyTimer());
       const migrated = await snapshot(page);
       assert.equal(migrated.campaignVersion, 3);
-      assert.equal(migrated.gold, saved.gold);
+      assert.equal(migrated.gold, expected.gold);
       assert.equal(migrated.clearedWaves, expected.clearedWaves);
-      assert.deepEqual(migrated.progression, { unlockedCells: saved.progression.unlockedCells, firstClears: expected.firstClears });
-      assert.deepEqual(migrated.units, saved.units.map((unit, index) => ({ ...unit, id: index + 1, level: expected.armyLevels[index] })));
-      assert.deepEqual(migrated.reserve, saved.reserve.map((unit, index) => ({ ...unit,
-        id: saved.units.length + index + 1, level: expected.reserveLevels[index] })));
+      assert.deepEqual(migrated.progression, { unlockedCells: expected.unlockedCells, firstClears: expected.firstClears });
+      assert.deepEqual(migrated.units, expected.units);
+      assert.deepEqual(migrated.reserve, expected.reserve);
       assert.deepEqual(migrated.recruitment, { version: 2, received: expected.received,
         legacyTrainingCredit: expected.credit, lastType: saved.recruitment?.lastType ?? null });
       assert.equal(migrated.economy.slaves, saved.economy.slaves);
@@ -246,23 +261,43 @@ try {
       assert.equal(migrated.marketHintCompleted, expected.marketHintCompleted);
       assert.equal(migrated.autoWaves, expected.autoWaves);
       assert.equal(migrated.autoWavesDefaultVersion, 1);
-      assert.deepEqual(migrated.offlineRewards, { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 });
+      assert.deepEqual(migrated.offlineRewards, expected.offlineRewards);
+      if (expected.offlineRewards.closedCells) {
+        assert.equal(await page.locator('#offline-rewards-panel').isVisible(), true);
+        assert.equal(await page.locator('#slot-refund-amount').textContent(), '+25');
+        assert.equal(await page.locator('#returned-fighters-note').isVisible(), expected.offlineRewards.returnedFighters > 0);
+        if (expected.offlineRewards.returnedFighters) {
+          assert.equal(await page.locator('#returned-fighters-note').textContent(), '1 fighter returned to Barracks.');
+        }
+      }
       assert.equal(JSON.parse(await raw(page)).campaignVersion, 3, 'migration must persist its version before the next visit');
       assert.equal(JSON.parse(await page.locator('#battle').getAttribute('data-campaign')).wave, expected.clearedWaves + 1);
 
       // Foreground timer fractions can advance on pagehide; all durable balances,
-      // roster, progression and one-time migration credits must remain identical.
+      // roster, progression and one-time migration credits must remain intact.
       const durable = value => ({ ...value, economy: {
         slaves: value.economy.slaves, captures: value.economy.captures,
         captureKills: value.economy.captureKills, treasuryLevel: value.economy.treasuryLevel,
         marketBuilt: value.economy.marketBuilt,
       } });
+      const reloaded = { ...migrated, reserve: expected.reloadedReserve ?? expected.reserve };
       for (let visit = 0; visit < 2; visit += 1) {
         await page.reload();
         await ready(page);
         await page.evaluate(() => window.storageCheck.stopEconomyTimer());
         assert.equal((await status(page)).storage, 'ready');
-        assert.deepEqual(durable(await snapshot(page)), durable(migrated), 'reloading a migrated save must be idempotent');
+        assert.deepEqual(durable(await snapshot(page)), durable(reloaded), 'reloading a migrated save must not refund or return a fighter twice');
+      }
+
+      if (expected.offlineRewards.closedCells) {
+        // The migration already paid the refund. Acknowledge its persisted receipt
+        // through the real UI before replaying; this must never pay another 25 gold.
+        await page.locator('#collect-offline-rewards').click();
+        assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
+        const acknowledged = await snapshot(page);
+        const emptyReceipt = { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 };
+        assert.deepEqual(durable(acknowledged), durable({ ...reloaded, offlineRewards: emptyReceipt }));
+        assert.deepEqual(JSON.parse(await raw(page)).offlineRewards, emptyReceipt);
       }
 
       if (expected.replayClaimedWave) {
@@ -274,7 +309,7 @@ try {
         assert.equal(result.battle.phase, 'victory');
         assert.equal(result.battle.kills, 3);
         assert.equal(result.battle.reward, 3, 'previously claimed wave pays kill gold only, without its 10-gold first-clear bonus');
-        assert.equal(after.gold, 330);
+        assert.equal(after.gold, 355, '327 saved gold + 25 tile refund + 3 kill gold');
         assert.equal(after.hero.xp, 303, 'a replay pays 3 XP, not the 13-XP first-clear reward');
         assert.equal(after.hero.highestWave, 20);
         assert.deepEqual(after.progression.firstClears, [1, 10, 201, 210]);

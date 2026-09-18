@@ -1,7 +1,8 @@
-import type { SheetArtUrls, SpriteGeometry } from './art-types.ts';
+import type { SheetArtUrls, SpriteGeometry, SpriteRect } from './art-types.ts';
 import type { PaletteRank } from './unit-ranks.ts';
+import type { Point } from './field.ts';
 
-// Generated from the supplied frame rectangles/foot anchors; original artwork is untouched.
+// Generated from approved glaive-v2 rectangles and anchors. Body height excludes the raised weapon.
 export const PANTHER_RIDER_ASSETS: Readonly<Record<PaletteRank, SheetArtUrls>> = Object.freeze({
   1: { sheet: new URL('./assets/panther-rider/panther-rider-green.webp', import.meta.url).href, art: new URL('./assets/recruitment/panther-rider.webp', import.meta.url).href },
   2: { sheet: new URL('./assets/panther-rider/panther-rider-purple.webp', import.meta.url).href, art: new URL('./assets/panther-rider/panther-rider-purple-art.webp', import.meta.url).href },
@@ -15,139 +16,202 @@ export const PANTHER_RIDER_GEOMETRY = {
     "columns": 4,
     "rows": 4
   },
-  "bodyHeight": 0.5625,
+  "bodyHeight": 0.859375,
   "baselines": [
-    0.8541666666666666,
-    0.8541666666666666,
-    0.8541666666666666,
-    0.8541666666666666,
-    0.828125,
-    0.828125,
-    0.8385416666666666,
-    0.828125,
-    0.8229166666666666,
-    0.8229166666666666,
-    0.828125,
-    0.8229166666666666,
-    0.7760416666666666,
-    0.7760416666666666,
-    0.7760416666666666,
-    0.7760416666666666
+    0.9765625,
+    0.9765625,
+    0.9765625,
+    0.9765625,
+    0.953125,
+    0.953125,
+    0.953125,
+    0.953125,
+    0.9453125,
+    0.9453125,
+    0.9453125,
+    0.9453125,
+    0.8828125,
+    0.8828125,
+    0.8828125,
+    0.8828125
   ],
   "centers": [
-    0.5,
-    0.5,
-    0.5,
-    0.5,
-    0.5,
-    0.5052083333333334,
-    0.5104166666666666,
-    0.5052083333333334,
-    0.5,
-    0.5104166666666666,
     0.515625,
-    0.5104166666666666,
-    0.4895833333333333,
-    0.5104166666666666,
-    0.4947916666666667,
-    0.5104166666666666
+    0.5078125,
+    0.515625,
+    0.515625,
+    0.515625,
+    0.515625,
+    0.5,
+    0.515625,
+    0.515625,
+    0.515625,
+    0.515625,
+    0.53125,
+    0.5859375,
+    0.5703125,
+    0.546875,
+    0.53125
   ],
   "sourceRects": {
     "0": {
       "x": 0,
       "y": 0,
-      "width": 194,
-      "height": 201
+      "width": 129,
+      "height": 130
     },
     "1": {
-      "x": 194,
+      "x": 129,
       "y": 0,
-      "width": 191,
-      "height": 201
+      "width": 126,
+      "height": 130
     },
     "2": {
-      "x": 385,
+      "x": 255,
       "y": 0,
-      "width": 191,
-      "height": 201
+      "width": 127,
+      "height": 130
     },
     "3": {
-      "x": 576,
+      "x": 382,
       "y": 0,
-      "width": 192,
-      "height": 201
+      "width": 130,
+      "height": 130
     },
     "4": {
       "x": 0,
-      "y": 201,
-      "width": 193,
-      "height": 187
+      "y": 130,
+      "width": 126,
+      "height": 126
     },
     "5": {
-      "x": 193,
-      "y": 201,
-      "width": 194,
-      "height": 187
+      "x": 126,
+      "y": 130,
+      "width": 128,
+      "height": 126
     },
     "6": {
-      "x": 387,
-      "y": 201,
-      "width": 194,
-      "height": 187
+      "x": 254,
+      "y": 130,
+      "width": 130,
+      "height": 126
     },
     "7": {
-      "x": 581,
-      "y": 201,
-      "width": 187,
-      "height": 187
+      "x": 384,
+      "y": 130,
+      "width": 128,
+      "height": 126
     },
     "8": {
       "x": 0,
-      "y": 388,
-      "width": 192,
-      "height": 185
+      "y": 256,
+      "width": 131,
+      "height": 126
     },
     "9": {
-      "x": 192,
-      "y": 388,
-      "width": 193,
-      "height": 185
+      "x": 131,
+      "y": 256,
+      "width": 127,
+      "height": 126
     },
     "10": {
-      "x": 385,
-      "y": 388,
-      "width": 200,
-      "height": 185
+      "x": 258,
+      "y": 256,
+      "width": 126,
+      "height": 126
     },
     "11": {
-      "x": 585,
-      "y": 388,
-      "width": 183,
-      "height": 185
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 126
     },
     "12": {
       "x": 0,
-      "y": 573,
-      "width": 192,
-      "height": 195
+      "y": 382,
+      "width": 128,
+      "height": 130
     },
     "13": {
-      "x": 192,
-      "y": 573,
-      "width": 190,
-      "height": 195
+      "x": 128,
+      "y": 382,
+      "width": 124,
+      "height": 130
     },
     "14": {
-      "x": 382,
-      "y": 573,
-      "width": 199,
-      "height": 195
+      "x": 252,
+      "y": 382,
+      "width": 126,
+      "height": 130
     },
     "15": {
-      "x": 581,
-      "y": 573,
-      "width": 187,
-      "height": 195
+      "x": 378,
+      "y": 382,
+      "width": 134,
+      "height": 130
     }
   }
 } satisfies SpriteGeometry;
+
+export const PANTHER_RIDER_RENDER_HEIGHT = 47 * 1.15;
+export const PANTHER_RIDER_RELEASE_OFFSETS = {
+  "10": {
+    "x": 15.723636363636363,
+    "y": -33.904090909090904
+  },
+  "14": {
+    "x": -14.74090909090909,
+    "y": -36.85227272727273
+  }
+} satisfies Record<number, Point>;
+export const MOON_GLAIVE_IMAGE_URL = new URL('./assets/panther-rider/moon-glaive.webp?no-inline', import.meta.url).href;
+export const MOON_GLAIVE_FRAMES = [
+  {
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 64,
+      "height": 64
+    },
+    "centerAnchor": {
+      "x": 37,
+      "y": 36
+    }
+  },
+  {
+    "rect": {
+      "x": 64,
+      "y": 0,
+      "width": 64,
+      "height": 64
+    },
+    "centerAnchor": {
+      "x": 28,
+      "y": 36
+    }
+  },
+  {
+    "rect": {
+      "x": 0,
+      "y": 64,
+      "width": 64,
+      "height": 64
+    },
+    "centerAnchor": {
+      "x": 36,
+      "y": 29
+    }
+  },
+  {
+    "rect": {
+      "x": 64,
+      "y": 64,
+      "width": 64,
+      "height": 64
+    },
+    "centerAnchor": {
+      "x": 28,
+      "y": 30
+    }
+  }
+] satisfies readonly { rect: SpriteRect; centerAnchor: Point }[];

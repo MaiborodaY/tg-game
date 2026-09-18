@@ -1,17 +1,19 @@
 # Panther rider runtime art
 
-Source: `art/brotd-infinity/allies/elves/panther-rider/panther-rider-768-lite.webp` and its `panther-rider-768.frames.json`. The original files are untouched.
+Source: approved glaive-v2 512px character and 128px projectile under art/brotd-infinity/allies/elves/panther-rider/glaive-v2. Original artwork is unchanged.
 
-Four rows: idle right, walk right, side attack, down attack. Each has four poses; pose 2 is the impact. Upward attacks use the side row, west mirrors horizontally, and death uses the normal fade. Explicit crop rectangles and foot anchors retain the entire rider, sword, mount and tail.
+Four character rows: idle, walk, side throw, down throw. Each has four poses; the empty hand at pose 2 releases the separate spinning glaive. West mirrors the side row and launch anchor. Death uses the shared static fade. Individual source rectangles, foot anchors and hand anchors come directly from the manifests.
 
-Body reference: 108 source pixels rendered at 47 game pixels. Formation is static and uses the same scale. The original green palette covers levels 1–49, purple 50–99, red 100–249, gold 250–499 and black 500+. Palette generation changes only green cloth inside the rider bounds; the panther, skin, hair and weapon pixels and all alpha values are preserved. Palette sheets are lossless WebP. Base menu art reuses the existing recruitment portrait.
+Body reference: 110 source pixels at 54.05 world units, preserving the two-cell footprint and previously approved 15% enlargement. Formation stays still. Cloth palettes follow levels 50 / 100 / 250 / 500; skin, mount, eyes, weapon and alpha are preserved. Existing 96px portraits already use this same model.
 
-Recreate: `node king-defense-toon/scripts/prepare-panther-rider-art.mjs`.
+The projectile loads only for a Rider in battle and reuses the ordinary single-target projectile lifecycle. The current attack has no ricochet; the source showcase does not define game balance.
 
-| Palette | Atlas bytes | Extra portrait bytes | Cloth pixels changed |
+Regenerate: node king-defense-toon/scripts/prepare-panther-rider-art.mjs
+
+| Palette | Atlas bytes | Portrait bytes | Changed cloth pixels |
 | --- | ---: | ---: | ---: |
-| green | 104334 | 0 | 0 |
-| purple | 293156 | 18538 | 9616 |
-| red | 290262 | 18358 | 9616 |
-| gold | 292484 | 18560 | 9616 |
-| black | 286702 | 18146 | 9616 |
+| green | 91760 | 8388 | 0 |
+| purple | 239480 | 8604 | 6000 |
+| red | 237536 | 8374 | 6000 |
+| gold | 239504 | 8504 | 6000 |
+| black | 235430 | 8270 | 6000 |

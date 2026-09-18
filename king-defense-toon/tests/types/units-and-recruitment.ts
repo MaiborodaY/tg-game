@@ -1,7 +1,7 @@
 import { UNIT_TYPES, UNIT_TYPE_BY_ID } from '../../units.ts';
 import type { UnitDefinition, UnitType } from '../../units.ts';
-import { createRecruitment, getRecruitChances, getRecruitProgress, getUnitStats, normalizeUnitLevel, receiveRecruit } from '../../recruitment.ts';
-import type { RecruitmentState, RecruitProgress, RecruitResult, UnitStats } from '../../recruitment.ts';
+import { createRecruitment, getElfRecruitUnlock, getRecruitChances, getRecruitProgress, getUnitStats, normalizeUnitLevel, receiveRecruit } from '../../recruitment.ts';
+import type { ElfRecruitUnlock, RecruitmentState, RecruitProgress, RecruitResult, UnitStats } from '../../recruitment.ts';
 import { getUnitRank } from '../../unit-ranks.ts';
 import type { PaletteRank, UnitRank } from '../../unit-ranks.ts';
 
@@ -12,6 +12,11 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   const result: RecruitResult = receiveRecruit(recruitment, () => .9, { lancerUnlocked: true });
   const rider: RecruitResult = receiveRecruit(recruitment, () => .9, { pool: 'elves', elvesUnlocked: true });
   const riderProgress: RecruitProgress = getRecruitProgress(recruitment, 'pantherRider');
+  const elfProgress: RecruitProgress = getRecruitProgress(recruitment, 'elfArcher');
+  const elfStats: UnitStats = getUnitStats('elfArcher', 50);
+  const unlock: ElfRecruitUnlock = getElfRecruitUnlock(recruitment, 'elfArcher', 3);
+  const requirement: UnitType | null = getElfRecruitUnlock(recruitment, 'unicorn', 4).requiredRecruitType;
+  getRecruitChances(true, 'elves', recruitment);
   const type: UnitType = result.type;
   const stats: UnitStats = getUnitStats(type, saved);
   const definition: UnitDefinition = UNIT_TYPE_BY_ID[type];
@@ -19,7 +24,7 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   const rank: UnitRank = getUnitRank(saved);
   const palette: PaletteRank = rank.level;
   const normalized: number = normalizeUnitLevel(saved);
-  void [progress, stats, healing, palette, normalized, rider, riderProgress];
+  void [progress, stats, healing, palette, normalized, rider, riderProgress, elfProgress, elfStats, unlock, requirement];
 
   // @ts-expect-error Only playable allied recruit types belong to the catalogue.
   const unknownType: UnitType = 'goblin';
@@ -29,7 +34,7 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   definition.hp = 999;
   // @ts-expect-error The catalogue array cannot be extended at runtime.
   UNIT_TYPES.push(definition);
-  // @ts-expect-error A recruit record contains every playable class, including lancer and rider.
+  // @ts-expect-error A recruit record contains every playable class, including both elves.
   const missingClass: RecruitmentState['received'] = { swordsman: 0, archer: 0, healer: 0 };
   // @ts-expect-error Runtime state counts are numbers even though save input is unknown.
   recruitment.received.lancer = '5';
@@ -47,6 +52,10 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   receiveRecruit(recruitment, Math.random, { pool: 'elves', elvesUnlocked: 3 });
   // @ts-expect-error Only supported recruitment pools have chance tables.
   getRecruitChances(true, 'dwarves');
+  // @ts-expect-error Unlock requirements use elf recruit identifiers, not arbitrary allies.
+  getElfRecruitUnlock(recruitment, 'archer', 3);
+  // @ts-expect-error Chance calculation takes normalized training, not an unlock boolean.
+  getRecruitChances(true, 'elves', true);
   // @ts-expect-error Chance tables are shared immutable definitions.
   getRecruitChances()[0]!.chance = 1;
   // @ts-expect-error Healing is optional on catalogue definitions.

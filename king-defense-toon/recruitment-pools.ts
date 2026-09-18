@@ -11,15 +11,15 @@ export interface ElfRecruitPreview {
 
 // Planned elves remain visible without entering the live recruitment odds or battle catalogue.
 export const ELF_RECRUITS: readonly ElfRecruitPreview[] = Object.freeze([
-  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false, playable: true }),
-  Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: false }),
-  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: false }),
+  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Short range', locked: false, playable: true }),
+  Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: true }),
+  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: true }),
   Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false }),
 ]);
 
 export function isRecruitmentPoolUnlocked(pool: RecruitmentPool, barracksLevel: number): boolean {
-  if (pool === 'humans') return barracksLevel === 1 || barracksLevel === 2 || barracksLevel === 3;
-  return pool === 'elves' && barracksLevel === 3;
+  if (pool === 'humans') return barracksLevel === 1 || barracksLevel === 2 || barracksLevel === 3 || barracksLevel === 4;
+  return pool === 'elves' && (barracksLevel === 3 || barracksLevel === 4);
 }
 
 export function normalizeRecruitmentPool(saved: unknown, barracksLevel: number): RecruitmentPool {

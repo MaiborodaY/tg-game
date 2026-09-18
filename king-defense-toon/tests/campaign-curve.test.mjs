@@ -3,7 +3,9 @@ import test from 'node:test';
 import { campaignCurve, campaignContinuationSpawns } from '../campaign-curve.ts';
 import { ENEMY_TYPES, WAVE_DEFINITIONS, getEnemyCombatType } from '../waves.ts';
 
-const health = wave => wave.spawns.reduce((total, spawn) => total + spawn.hp, 0);
+// Keep checking the pre-existing curve separately from the newly added support.
+const originalSpawns = wave => wave.spawns.filter(spawn => spawn.type !== 'plagueAlchemist');
+const health = wave => originalSpawns(wave).reduce((total, spawn) => total + spawn.hp, 0);
 const message = wave => `${wave.levelNumber}-${wave.roundNumber}, wave ${wave.waveInRound}`;
 const continuation = WAVE_DEFINITIONS.slice(30);
 const ordinary = WAVE_DEFINITIONS.slice(20).filter(wave => !wave.hasBoss);
@@ -44,24 +46,24 @@ test('round finales and following first waves preserve their cadence within each
 test('enemy counts grow gradually within the mobile encounter limits', () => {
   let previous = ordinary[0];
   for (const wave of ordinary) {
-    assert.ok(wave.total >= 8 && wave.total <= 16, message(wave));
+    assert.ok(wave.total >= 8 && wave.total <= 17, message(wave));
     // Round six unlocks its regular extra fighter and the first additional healer together.
     const maximumAdded = wave.number === 51 ? 2 : 1;
     assert.ok(wave.total >= previous.total && wave.total <= previous.total + maximumAdded, message(wave));
     previous = wave;
   }
   for (const wave of continuation.filter(wave => wave.hasBoss)) {
-    assert.ok(wave.total >= 6 && wave.total <= 10, message(wave));
+    assert.ok(wave.total >= 6 && wave.total <= 11, message(wave));
   }
-  assert.equal(ordinary.at(-1).total, 16);
-  assert.equal(WAVE_DEFINITIONS.at(-1).total, 10);
+  assert.equal(ordinary.at(-1).total, 17);
+  assert.equal(WAVE_DEFINITIONS.at(-1).total, 11);
 });
 
 test('ordinary attacker counts only change by one body at a time and healers never replace archers', () => {
   const counts = wave => {
     const result = { goblin: 0, goblinArcher: 0, boar: 0 };
     for (const spawn of wave.spawns) {
-      if (spawn.type === 'goblinHealer') continue;
+      if (spawn.type === 'goblinHealer' || spawn.type === 'plagueAlchemist') continue;
       const role = getEnemyCombatType(spawn.type);
       assert.ok(Object.hasOwn(result, role), message(wave));
       result[role] += 1;
@@ -103,7 +105,7 @@ test('one additional healer starts with the first forest squad at wave 51 and ne
   assert.deepEqual([51, 60, 99, 100, 101, 200].map(number => healerAt(number).heal), [17, 21, 34, 35, 35, 48]);
   for (const [number, total, archers, hasHealer] of [
     [50, 6, 2, false], [51, 10, 2, true], [100, 8, 2, true],
-    [101, 11, 3, true], [200, 9, 3, true], [201, 13, 3, false],
+    [101, 11, 3, true], [200, 9, 3, true], [201, 14, 3, false],
   ]) {
     const wave = WAVE_DEFINITIONS[number - 1];
     assert.equal(wave.total, total, `${number}: additive healer preserves the existing attacker count`);
@@ -113,15 +115,16 @@ test('one additional healer starts with the first forest squad at wave 51 and ne
   }
 });
 
-test('stat increases preserve roles, arrivals, healing, rewards and the underlying health curve', () => {
+test('existing fighter stats remain intact when the second level gains its alchemist', () => {
   for (const wave of continuation) {
     const baseline = campaignContinuationSpawns(wave.number);
     const heroHealth = Math.round(campaignCurve(wave.number).health * 1.1);
     assert.equal(health(wave), wave.levelNumber === 2 ? Math.round(heroHealth * 1.15) : heroHealth, message(wave));
-    assert.equal(wave.spawns.length, baseline.length, message(wave));
-    for (const [index, spawn] of wave.spawns.entries()) {
+    assert.equal(originalSpawns(wave).length, baseline.length, message(wave));
+    for (const [index, spawn] of originalSpawns(wave).entries()) {
       const before = baseline[index];
-      assert.deepEqual([spawn.at, spawn.x, spawn.y], [before.at, before.x, before.y], message(wave));
+      const at = wave.levelNumber === 2 && before.at === .8 && before.type === 'skeletonArcher' ? 1.6 : before.at;
+      assert.deepEqual([spawn.at, spawn.x, spawn.y], [at, before.x, before.y], message(wave));
       assert.equal(spawn.type, before.type, message(wave));
       const heroDamage = Math.round(before.damage * 105) / 100;
       assert.equal(spawn.damage, wave.levelNumber === 2 ? Math.round(heroDamage * 115) / 100 : heroDamage, message(wave));
@@ -139,7 +142,7 @@ test('stat increases preserve roles, arrivals, healing, rewards and the underlyi
 
 test('biomes keep their own roster and main bosses remain at the four campaign milestones', () => {
   const forest = new Set(['goblin', 'goblinArcher', 'goblinHealer', 'boar', 'goblinChief', 'ogre']);
-  const undead = new Set(['skeleton', 'skeletonArcher', 'ghoul', 'cryptSpider', 'cryptKing']);
+  const undead = new Set(['skeleton', 'skeletonArcher', 'ghoul', 'cryptSpider', 'cryptKing', 'plagueAlchemist']);
   for (const wave of continuation) {
     assert.ok(wave.spawns.every(spawn => (wave.levelNumber === 1 ? forest : undead).has(spawn.type)), message(wave));
     assert.equal(wave.spawns.filter(spawn => ENEMY_TYPES[spawn.type].isBoss).length,
