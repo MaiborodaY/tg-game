@@ -1,4 +1,4 @@
-export type EnemyCombatType = 'goblin' | 'goblinArcher' | 'goblinHealer' | 'goblinChief' | 'ogre' | 'boar' | 'plagueAlchemist';
+export type EnemyCombatType = 'goblin' | 'goblinArcher' | 'goblinHealer' | 'goblinChief' | 'ogre' | 'boar' | 'plagueAlchemist' | 'goblinBombardier';
 export type EnemyType = EnemyCombatType | 'skeleton' | 'skeletonArcher' | 'ghoul' | 'cryptSpider' | 'cryptKing';
 
 export interface EnemyDefinition {

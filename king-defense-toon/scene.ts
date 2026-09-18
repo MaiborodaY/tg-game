@@ -24,6 +24,7 @@ type RenderEffect = BattleEffect | (Omit<EffectOf<'arrow'>, 'sourceType'> & { so
 type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
 interface PoisonArt { bottle: HTMLImageElement | null; impact: HTMLImageElement | null }
+interface CannonArt { bomb: HTMLImageElement | null; explosion: HTMLImageElement | null }
 
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, CAPITOL_TOWER_POSITION } from './field.ts';
@@ -41,6 +42,8 @@ import { ELF_ARCHER_ASSETS, ELF_ARCHER_GEOMETRY, ELF_ARCHER_RENDER_HEIGHT } from
 import { elfArcherFrame } from './elf-archer-animation.ts';
 import { ELF_HEALER_ASSETS, ELF_HEALER_GEOMETRY, ELF_HEALER_RENDER_HEIGHT, ELF_HEAL_PULSE_FRAMES } from './elf-healer-art.ts';
 import { elfHealerFrame } from './elf-healer-animation.ts';
+import { UNICORN_ASSETS, UNICORN_GEOMETRY, UNICORN_RENDER_HEIGHT } from './unicorn-art.ts';
+import { unicornFrame } from './unicorn-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
@@ -49,6 +52,8 @@ import { ST_KNIHOR_GEOMETRY, ST_KNIHOR_EFFECTS } from './st-knihor-art.ts';
 import { tinyStKnihorFrame, stKnihorDirection, stKnihorEffectFrame } from './tiny-st-knihor.ts';
 import { GOBLIN_ARCHER_GEOMETRY } from './goblin-archer-art.ts';
 import { GOBLIN_CHIEF_GEOMETRY } from './goblin-chief-art.ts';
+import { GOBLIN_BOMBARDIER_METADATA } from './goblin-bombardier-art.ts';
+import { goblinBombardierMuzzle, drawCannonBomb, drawCannonExplosion } from './goblin-bombardier-visual.ts';
 import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from './goblin-healer-art.ts';
 import { OGRE_GEOMETRY } from './ogre-art.ts';
 import { UNDEAD_ART } from './undead-art.ts';
@@ -149,8 +154,18 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     frameFor: elfHealerFrame,
     horizontalFacing: true,
   },
+  unicorn: {
+    ...UNICORN_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: UNICORN_RENDER_HEIGHT,
+    portraitFrame: 0,
+    frameFor: unicornFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, elfHealer: ELF_HEALER_RENDER_HEIGHT + 4, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, elfArcher: ELF_ARCHER_RENDER_HEIGHT + 4, healer: 39, elfHealer: ELF_HEALER_RENDER_HEIGHT + 4, lancer: 38, pantherRider: PANTHER_RIDER_RENDER_HEIGHT + 4, unicorn: UNICORN_RENDER_HEIGHT + 4, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -451,7 +466,7 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.fillStyle = '#293b4e17';
     context.beginPath();
     const combatType = getEnemyCombatType(type);
-    const largeEnemy = combatType === 'goblinChief' || combatType === 'ogre';
+    const largeEnemy = combatType === 'goblinChief' || combatType === 'ogre' || combatType === 'goblinBombardier';
     const shadowScale = type === 'pantherRider' ? PANTHER_RIDER_SCALE : 1;
     context.ellipse(x, feet + 1, (combatType === 'ogre' ? 29 : largeEnemy ? 23 : 17) * shadowScale * (actor?.visualScale ?? 1), (largeEnemy ? 5.5 : 4) * shadowScale, 0, 0, Math.PI * 2);
     context.fill();
@@ -461,7 +476,7 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.fill();
   }
   const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
-    || type === 'plagueAlchemist' || Object.hasOwn(UNDEAD_ENEMY_ART, type);
+    || type === 'plagueAlchemist' || type === 'goblinBombardier' || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
   } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1, compact)) {
@@ -558,6 +573,7 @@ function drawHealth(context: CanvasRenderingContext2D, actor: HealthActor, rende
   const enemy = actor.side === 'enemy';
   const width = enemy ? 26 : 30;
   const largeEnemyMetadata = actor.type === 'ogre' ? OGRE_ANIMATION_METADATA
+    : actor.type === 'goblinBombardier' ? GOBLIN_BOMBARDIER_METADATA
     : actor.type === 'goblinChief' ? GOBLIN_CHIEF_ANIMATION_METADATA
       : bossArt[actor.type]?.metadata;
   const enemyOffset = largeEnemyMetadata
@@ -594,6 +610,24 @@ function drawPoisonEffect(context: CanvasRenderingContext2D, art: PoisonArt,
   context.drawImage(image, rect.x, rect.y, rect.width, rect.height,
     x - centerAnchor.x * scale, y - centerAnchor.y * scale, rect.width * scale, rect.height * scale);
   context.restore();
+}
+
+function drawCannonEffect(context: CanvasRenderingContext2D, art: CannonArt,
+  effect: EffectOf<'arrow' | 'cannon-impact'>, renderScale: number) {
+  if (effect.age >= effect.duration) return;
+  if (effect.type === 'cannon-impact') {
+    if (art.explosion) drawCannonExplosion(context, { explosion: art.explosion }, effect.age,
+      effect.targetX, effect.targetY, .7 * renderScale);
+    return;
+  }
+  if (!art.bomb || effect.landed) return;
+  const facing = effect.launchFacing ?? { x: 0, y: 1 };
+  const origin = goblinBombardierMuzzle({ facingX: facing.x, facingY: facing.y, visualScale: renderScale }, effect.x, effect.y + 27);
+  const progress = clamp(effect.age / effect.duration);
+  drawCannonBomb(context, { bomb: art.bomb }, effect.age,
+    origin.x + (effect.targetX - origin.x) * progress,
+    origin.y + (effect.targetY - origin.y) * progress - Math.sin(progress * Math.PI) * 12 * renderScale,
+    .45 * renderScale);
 }
 
 function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
@@ -806,6 +840,7 @@ const ENEMY_ANIMATION_METADATA: Record<EnemyType, AnimationMetadata> = {
   goblin: TORCH_ANIMATION_METADATA,
   goblinArcher: GOBLIN_ARCHER_ANIMATION_METADATA,
   goblinChief: GOBLIN_CHIEF_ANIMATION_METADATA,
+  goblinBombardier: GOBLIN_BOMBARDIER_METADATA,
   goblinHealer: GOBLIN_HEALER_ANIMATION_METADATA,
   ogre: OGRE_ANIMATION_METADATA,
   boar: BOAR_ANIMATION_METADATA,
@@ -845,6 +880,8 @@ async function loadSceneAssets(plan: SceneAssetPlan) {
     goblinHealPulse: plan.goblinHealPulse ? imageResource(plan.goblinHealPulse) : null,
     elfHealPulse: plan.elfHealPulse ? imageResource(plan.elfHealPulse) : null,
     moonGlaive: plan.moonGlaive ? imageResource(plan.moonGlaive) : null,
+    cannonArt: { bomb: plan.cannonBomb ? imageResource(plan.cannonBomb) : null,
+      explosion: plan.cannonExplosion ? imageResource(plan.cannonExplosion) : null },
     poisonArt: { bottle: plan.poisonBottle ? imageResource(plan.poisonBottle) : null,
       impact: plan.poisonImpact ? imageResource(plan.poisonImpact) : null },
     heroArt: Object.fromEntries(Object.entries(plan.heroArt).map(([direction, url]) => [direction, imageResource(url)])),
@@ -865,6 +902,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
   let goblinHealPulse: HTMLImageElement | null = null;
   let elfHealPulse: HTMLImageElement | null = null;
   let moonGlaive: HTMLImageElement | null = null;
+  let cannonArt: CannonArt = { bomb: null, explosion: null };
   let poisonArt: PoisonArt = { bottle: null, impact: null };
   let heroArt: HeroArt = {};
   let heroEffects: HTMLImageElement | null = null;
@@ -896,7 +934,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
     onAssetState({ ...assetState });
     pendingAssets = loadSceneAssets(plan).then(assets => {
       if (destroyed || request !== assetRequest) return false;
-      ({ map, goblinArt, allyAnimations, goblinHealPulse, elfHealPulse, moonGlaive, poisonArt, heroArt, heroEffects } = assets);
+      ({ map, goblinArt, allyAnimations, goblinHealPulse, elfHealPulse, moonGlaive, cannonArt, poisonArt, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
@@ -1079,6 +1117,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
       for (const actor of actors) drawHealth(context, actor, actorScale);
       for (const effect of state.battle.effects) {
         if (effect.type === 'poison-bottle' || effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
+        else if (effect.type === 'cannon-impact' || (effect.type === 'arrow' && effect.sourceType === 'goblinBombardier')) drawCannonEffect(context, cannonArt, effect, actorScale);
         else if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
         else drawEffect(context, effect, goblinHealPulse, actorScale, elfHealPulse, moonGlaive);
       }
@@ -1155,6 +1194,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[1].art;
       if (type === 'elfArcher') return ELF_ARCHER_ASSETS[1].art;
       if (type === 'elfHealer') return ELF_HEALER_ASSETS[1].art;
+      if (type === 'unicorn') return UNICORN_ASSETS[1].art;
       return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
@@ -1162,6 +1202,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
       if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[getUnitRank(level).level].art;
       if (type === 'elfArcher') return ELF_ARCHER_ASSETS[getUnitRank(level).level].art;
       if (type === 'elfHealer') return ELF_HEALER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'unicorn') return UNICORN_ASSETS[getUnitRank(level).level].art;
       return rankArt[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {

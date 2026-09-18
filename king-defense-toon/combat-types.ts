@@ -137,6 +137,7 @@ export interface BattleEffectPayloads {
   // Damage is the complete four-second poison budget, not damage per tick.
   'poison-bottle': { targetId: string; damage: number; landed?: boolean };
   'poison-impact': { targetId: string };
+  'cannon-impact': { targetId: string };
   'hero-heal': { targetId: string; amount: number; shield: number };
   'hero-hammer': { targetId: string; damage: number; landed: boolean };
   'hero-impact': { targetId: string };

@@ -62,12 +62,12 @@ test('playable elf recruitment requires completed Barracks III or IV', () => {
   assert.equal(getRecruitmentPoolName('elves'), 'Elven recruits');
 });
 
-test('four immutable elf entries expose rider, archer and healer as playable and keep the unicorn locked', () => {
+test('four immutable elf entries expose every implemented class with separate unlock gates', () => {
   assert.deepEqual(ELF_RECRUITS, [
     { id: 'pantherRider', name: 'Panther Rider', role: 'Short range', locked: false, playable: true },
     { id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: true },
     { id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: true },
-    { id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false },
+    { id: 'unicorn', name: 'Unicorn', role: 'Defender · 2 tiles', locked: false, playable: true },
   ]);
   assert.ok(Object.isFrozen(ELF_RECRUITS));
   assert.ok(ELF_RECRUITS.every(Object.isFrozen));

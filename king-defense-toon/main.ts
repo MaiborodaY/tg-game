@@ -460,7 +460,7 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || (recruitable && economy.slaves < RECRUIT_COST) || transforming;
-  const chances = getRecruitChances(barracks.level >= 2, recruitmentPool, recruitment);
+  const chances = getRecruitChances(barracks.level >= 2, recruitmentPool, recruitment, barracks.level);
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Number((chance * 100).toFixed(1))}%`).join(', ');
   const guaranteedLancer = recruitmentPool === 'humans' && barracks.firstLancerPending;
   const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
@@ -516,7 +516,7 @@ function finishRecruitReveal() {
 }
 
 function recruitmentProgressMarkup(type: UnitType) {
-  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers', elfHealer: 'elven healers' };
+  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers', elfHealer: 'elven healers', unicorn: 'unicorns' };
   const progress = getRecruitProgress(recruitment, type);
   const capped = progress.level === RECRUIT_LEVEL_CAP;
   const remaining = progress.needed - progress.progress;
@@ -543,7 +543,7 @@ function refreshRecruitmentDetails() {
     : 'Market recruits raise recruitment levels. Connect adds personal levels together.';
   byId('recruitment-guarantee').hidden = elves || !barracks.firstLancerPending;
   if (elves) {
-    const chances = getRecruitChances(barracks.level >= 2, 'elves', recruitment);
+    const chances = getRecruitChances(barracks.level >= 2, 'elves', recruitment, barracks.level);
     renderElfRecruitment(byId('elf-recruitment-details'), ELF_RECRUITS.map(({ id }) => {
       const unlock = getElfRecruitUnlock(recruitment, id, barracks.level);
       const chance = chances.find(entry => entry.type === id);
@@ -597,6 +597,7 @@ byId('transform-slave').addEventListener('click', () => {
   if (economy.slaves < RECRUIT_COST) return;
   const result = receiveRecruit(recruitment, Math.random, {
     pool: recruitmentPool, elvesUnlocked: isRecruitmentPoolUnlocked('elves', barracks.level),
+    barracksLevel: barracks.level,
     lancerUnlocked: barracks.level >= 2,
     guaranteedLancer: recruitmentPool === 'humans' && barracks.firstLancerPending,
   });
@@ -1000,7 +1001,7 @@ function refresh() {
   mergeLevel = merging?.level ?? 0;
   byId('army-status').textContent = draggedMerge ? 'Release on a green fighter to connect. Release elsewhere to cancel.'
     : merging ? `Connect: choose another ${types[merging.type].name}. Adds ${merging.level} levels.`
-    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${pendingRecruit.type === 'pantherRider' ? ' · 2 adjacent tiles' : ''}`
+    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${getUnitCellWidth(pendingRecruit.type) === 2 ? ' · 2 adjacent tiles' : ''}`
     : movingId ? 'Tap a destination' : 'Tap for details · Hold a fighter to connect';
   byId('cancel-army-move').hidden = !movingId && !pendingRecruitId && !pendingMerge;
   byId('open-market-info').hidden = !!movingId || !!pendingRecruitId || !!pendingMerge;
@@ -1103,7 +1104,7 @@ function canMerge(source: MergeSource) {
 function mergeDescription(source: MergeSource) {
   const fighter = getMergeSource(source);
   if (!fighter) return '';
-  const space = fighter.type === 'pantherRider' ? 'Uses 2 adjacent horizontal tiles. ' : '';
+  const space = getUnitCellWidth(fighter.type) === 2 ? 'Uses 2 adjacent horizontal tiles. ' : '';
   return space + (connectCandidates(source).length
     ? 'Connect adds matching fighters to this unit. Choose from Barracks or Army.'
     : `Get another ${types[fighter.type].name} to connect to this unit.`);
@@ -1319,7 +1320,7 @@ function refreshReserve(selected: ArmyUnit | undefined) {
   byId('reserve-page').textContent = `${reservePage + 1} / ${pageCount}`;
   byId('reserve-options').innerHTML = reserve.slice(reservePage * RESERVE_PAGE_SIZE, (reservePage + 1) * RESERVE_PAGE_SIZE).map(unit => {
     const portrait = scene?.getUnitArt(unit.type, unit.level);
-    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${unit.type === 'pantherRider' ? ' · 2 tiles' : ''}</small></button>`;
+    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${getUnitCellWidth(unit.type) === 2 ? ' · 2 tiles' : ''}</small></button>`;
   }).join('');
 }
 
@@ -1481,7 +1482,7 @@ byId('barracks-detail').addEventListener('click', event => {
   selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   closeOverlay(false); refresh();
   byId('army-map').focus({ preventScroll: true });
-  tell(fighter.type === 'pantherRider' ? 'Choose the left of 2 adjacent open tiles.' : 'Choose a tile.');
+  tell(getUnitCellWidth(fighter.type) === 2 ? 'Choose the left of 2 adjacent open tiles.' : 'Choose a tile.');
 });
 
 function changeReservePage(delta: number) {
@@ -1513,7 +1514,7 @@ function placeReserveFighter(id: number, key: string) {
   const col = occupied?.col ?? clickedCol, row = occupied?.row ?? clickedRow;
   const candidate = { ...reserve[index], col, row };
   if (!canPlaceUnit(candidate, units, progression.unlockedCells, occupied ? [occupied.id] : [])) {
-    tell(candidate.type === 'pantherRider' ? 'Needs 2 adjacent open tiles. Clear the tile on the right.' : 'This tile is occupied.');
+    tell(getUnitCellWidth(candidate.type) === 2 ? 'Needs 2 adjacent open tiles. Clear the tile on the right.' : 'This tile is occupied.');
     return false;
   }
   const [fighter] = reserve.splice(index, 1);

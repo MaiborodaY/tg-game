@@ -1,4 +1,4 @@
-export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider' | 'elfArcher' | 'elfHealer';
+export type UnitType = 'swordsman' | 'archer' | 'healer' | 'lancer' | 'pantherRider' | 'elfArcher' | 'elfHealer' | 'unicorn';
 
 export function isHealingUnit(type: unknown): type is 'healer' | 'elfHealer' {
   return type === 'healer' || type === 'elfHealer';
@@ -15,6 +15,7 @@ export interface UnitDefinition {
   readonly color: string;
   readonly description: string;
   readonly spriteColumn: number;
+  readonly cellWidth?: 1 | 2;
 }
 
 export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
@@ -73,6 +74,7 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     color: '#8766ad',
     description: 'Fast mounted defender. Throws a moon glaive at one nearby enemy, beyond sword reach.',
     spriteColumn: 4,
+    cellWidth: 2,
   }),
   Object.freeze({
     id: 'elfArcher',
@@ -94,8 +96,20 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     heal: 6,
     role: 'Support',
     color: '#72b696',
-    description: 'Follows and heals wounded allies and your hero. Stronger healing than a human healer; cannot heal the castle.',
+    description: 'Follows and heals wounded allies and your hero. Stronger healing and slightly longer reach than a human healer; cannot heal the castle.',
     spriteColumn: 6,
+  }),
+  Object.freeze({
+    id: 'unicorn',
+    name: 'Unicorn',
+    cost: 0,
+    hp: 120,
+    damage: 10,
+    role: 'Defender',
+    color: '#78a66a',
+    description: 'Armoured frontline defender. Strikes one nearby enemy with its horn and occupies two horizontal tiles.',
+    spriteColumn: 7,
+    cellWidth: 2,
   }),
 ]);
 

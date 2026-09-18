@@ -1,7 +1,7 @@
 import type { AnimationActor } from './animation-types.ts';
 
 interface FourPoseOptions {
-  action: 'shoot' | 'heal';
+  action: 'shoot' | 'heal' | 'attack';
   duration: number;
   walkFps?: number;
 }

@@ -485,6 +485,82 @@ try {
     });
   }
 
+  for (const width of [390, 320]) await scenario('unicorn-recruit-connect-two-cells-fight', width, fixture({
+    recruitmentPool: 'elves', barracks: {level:4, firstLancerPending:false},
+    recruitment: {version:2,received:{pantherRider:50,elfArcher:15,unicorn:4}},
+    progression: {unlockedCells:['1:0','2:0','3:0','1:1','2:1','3:1','1:2','2:2','3:2','0:2','4:2'],firstClears:[]},
+    units: [{id:1,type:'swordsman',level:2,col:3,row:0},{id:2,type:'archer',level:2,col:2,row:1},{id:3,type:'healer',level:2,col:2,row:2}],
+    reserve: [{id:4,type:'unicorn',level:99},{id:5,type:'unicorn',level:3},{id:6,type:'pantherRider',level:2}],
+  }), async page => {
+    await open(page);
+    for(const type of ['pantherRider','elfArcher','elfHealer','unicorn'])
+      assert.equal(await page.locator(`[data-elf-recruit="${type}"] .recruitment-detail-heading > span`).innerText(),'25%');
+    await fits(page); await page.screenshot({path:fileURLToPath(new URL(`unicorn-recruitment-${width}.png`,output))});
+    await close(page); await page.evaluate(()=>{Math.random=()=>.99;});
+    const before=await state(page), recruited=await recruit(page);
+    assert.equal(recruited.type,'unicorn'); assert.equal(recruited.level,2);
+    assert.equal((await state(page)).economy.slaves,before.economy.slaves-1);
+    assert.equal((await state(page)).gold,before.gold);
+    await unitDetails(page,4);
+    assert.match(await page.locator('#barracks-detail').innerText(),/Unicorn.*Lv\. 99/s);
+    await page.locator('#barracks-detail [data-connect-action="begin"]').click();
+    assert.deepEqual(await page.locator('[data-connect-donor-id]:visible').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.connectDonorId))),[5,recruited.id]);
+    for(const id of [5,recruited.id]) await page.locator(`[data-connect-donor-id="${id}"]:visible`).click();
+    await page.locator('[data-connect-action="apply"]:visible').click();
+    assert.equal((await state(page)).reserve.find(u=>u.id===4).level,104);
+    assert.equal((await state(page)).recruitment.received.unicorn,5);
+    await page.locator('[data-connect-action="cancel"]:visible').click();
+    await page.locator('[data-barracks-recruit-id="4"]').click();
+    await tapCell(page,1,0);
+    assert.deepEqual((await state(page)).units.find(u=>u.id===4),{id:4,type:'unicorn',level:104,col:1,row:0});
+    assert.equal((await state(page)).units.some(u=>u.id===1),true,'Nearby infantry remains in its own cell');
+    await tapCell(page,2,0);
+    assert.match(await page.locator('#selection-panel .selected-stats').innerText(),/738 HP · 62 attack/);
+    await fits(page,'#unit-panel'); await close(page,'unit-panel');
+    const deployed=await state(page); await page.reload(); await ready(page);
+    assert.deepEqual(restoredInventory(await state(page)),restoredInventory(deployed));
+    await page.locator('#start-wave').click();
+    const hit=await page.evaluate(()=>{
+      for(let i=0;i<1800;i++) {
+        window.recruitmentCheck.step(1/60);
+        const b=window.recruitmentCheck.battle();
+        if(b.effects.some(e=>e.type==='slash'&&e.sourceType==='unicorn')) return b;
+      }
+      return null;
+    });
+    assert.ok(hit,'Real horn impact occurs');
+    assert.equal(hit.allies.find(u=>u.type==='unicorn').maxHp,738);
+    await page.evaluate(()=>window.recruitmentCheck.render());
+    await page.screenshot({path:fileURLToPath(new URL(`unicorn-battle-${width}.png`,output))});
+  },568);
+
+  await scenario('bombardier-wave-eleven-shot-impact',390,fixture({clearedWaves:109,
+    barracks:{level:4,firstLancerPending:false},
+    progression:{unlockedCells:['1:0','2:0','3:0','1:1','2:1','3:1','1:2','2:2','3:2'],firstClears:[]},
+    units:[{id:1,type:'unicorn',level:60,col:1,row:0},{id:2,type:'swordsman',level:60,col:3,row:0},
+      {id:3,type:'elfArcher',level:60,col:1,row:2},{id:4,type:'elfHealer',level:60,col:2,row:2}],
+  }),async page=>{
+    await page.locator('#start-wave').click();
+    await page.evaluate(()=>window.recruitmentCheck.untilProjectile('goblinBombardier'));
+    let battle=await page.evaluate(()=>window.recruitmentCheck.battle());
+    assert.equal(battle.waveNumber,110);
+    assert.ok(battle.enemies.some(e=>e.type==='goblinBombardier'));
+    assert.ok(battle.effects.some(e=>e.type==='arrow'&&e.sourceType==='goblinBombardier'));
+    await page.evaluate(async()=>{window.recruitmentCheck.step(.1);await window.recruitmentCheck.render();});
+    await page.screenshot({path:fileURLToPath(new URL('bombardier-shot-390.png',output))});
+    const impact=await page.evaluate(()=>{
+      for(let i=0;i<180;i++) {
+        const b=window.recruitmentCheck.battle();
+        if(b.effects.some(e=>e.type==='cannon-impact'))return b;
+        window.recruitmentCheck.step(1/60);
+      }
+      return null;
+    });
+    assert.ok(impact);assert.ok(impact.allies.some(u=>u.hp<u.maxHp));
+    await page.evaluate(()=>window.recruitmentCheck.render());
+    await page.screenshot({path:fileURLToPath(new URL('bombardier-impact-390.png',output))});
+  });
+
   await scenario('archer-unlocks-on-rider-training-three', 320, fixture({ recruitmentPool: 'elves',
     recruitment: { version: 2, received: { pantherRider: 14 } },
   }), async page => {
@@ -550,7 +626,7 @@ try {
     assert.equal((await state(page)).barracks.level, 4);
     assert.equal((await state(page)).gold, 4700);
     assert.equal((await state(page)).progression.unlockedCells.length, 10, 'Upgrade grants permission, not a free cell');
-    assert.match(await unicorn.innerText(), /Coming soon.*Barracks IV.*11 army tiles/s);
+    assert.match(await unicorn.innerText(), /33\.3%.*Recruitment level.*Barracks IV.*11 army tiles/s);
     assert.equal(await page.locator('#barracks-building-level').innerText(), 'IV');
     await fits(page); await close(page);
     await tapCell(page, 0, 2);

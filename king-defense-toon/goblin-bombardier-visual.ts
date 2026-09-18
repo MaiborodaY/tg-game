@@ -56,14 +56,14 @@ function drawEffect(context: CanvasRenderingContext2D, image: HTMLImageElement, 
 }
 
 /** The caller supplies the live projectile position; stop drawing this on contact. */
-export function drawCannonBomb(context: CanvasRenderingContext2D, art: GoblinBombardierVisual,
+export function drawCannonBomb(context: CanvasRenderingContext2D, art: Pick<GoblinBombardierVisual, 'bomb'>,
   elapsed: number, x: number, y: number, scale = .45): void {
   if (!Number.isFinite(elapsed) || elapsed < 0) return;
   drawEffect(context, art.bomb, CANNON_BOMB_FRAMES[cannonBombFrame(elapsed)], x, y, scale);
 }
 
 /** Returns false when the one-shot effect has ended and can be removed by its owner. */
-export function drawCannonExplosion(context: CanvasRenderingContext2D, art: GoblinBombardierVisual,
+export function drawCannonExplosion(context: CanvasRenderingContext2D, art: Pick<GoblinBombardierVisual, 'explosion'>,
   elapsed: number, x: number, y: number, scale = 1): boolean {
   const frame = cannonExplosionFrame(elapsed);
   if (frame < 0) return false;

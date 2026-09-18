@@ -1,7 +1,7 @@
 import type { CampaignCurve, EnemyCombatType, EnemySpawn, EnemySpawnPosition, EnemyType } from './wave-types.ts';
 export type { CampaignCurve } from './wave-types.ts';
 
-type CampaignEnemy = Exclude<EnemyCombatType, 'plagueAlchemist'>;
+type CampaignEnemy = Exclude<EnemyCombatType, 'plagueAlchemist' | 'goblinBombardier'>;
 type CampaignRole = Exclude<CampaignEnemy, 'goblinChief' | 'ogre'>;
 type HealthySpawn = EnemySpawnPosition<CampaignEnemy> & { hp: number };
 
@@ -81,7 +81,9 @@ export function campaignContinuationSpawns(number: number): EnemySpawn[] {
     return {
       ...spawn,
       // hasHealer is false in level 2, so every undead spawn has a mapped counterpart.
-      type: curve.level === 2 ? UNDEAD_ROLES[spawn.type as Exclude<CampaignEnemy, 'goblinHealer'>] : spawn.type,
+      type: curve.level === 2 ? UNDEAD_ROLES[spawn.type as Exclude<CampaignEnemy, 'goblinHealer'>]
+        // Replace only the late forest mini-boss; keep its curve, escort and arrival intact.
+        : curve.round > 10 && curve.round < 20 && spawn.type === 'goblinChief' ? 'goblinBombardier' : spawn.type,
       damage: isBoss ? Math.round(curve.meleeDamage * (curve.mainBoss ? 2.5 : 31 / 14))
         : Math.max(healer ? 3 : 1, Math.round(curve.meleeDamage * ratio)) + (curve.wave !== 10 && index === 0 ? 1 : 0),
       ...(healer ? { heal: Math.round(number <= 100

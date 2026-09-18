@@ -56,8 +56,8 @@ test('healer keeps one-cell placement, personal levels and strict same-type Conn
   }
 });
 
-function encounter(forge) {
-  const battle=createBattle([{id:1,type:'elfHealer',level:1,col:2,row:1},{id:2,type:'swordsman',level:1,col:2,row:0}],1,undefined,forge);
+function encounter(forge, type = 'elfHealer') {
+  const battle=createBattle([{id:1,type,level:1,col:2,row:1},{id:2,type:'swordsman',level:1,col:2,row:0}],1,undefined,forge);
   Object.assign(battle,{wave:{...battle.wave,spawns:[{at:0,type:'goblin',hp:1000,damage:0,x:300,y:180}]},total:1,nextSpawn:0});
   updateBattle(battle,dt);
   for(const unit of [...battle.allies,...battle.enemies,battle.hero]) hold(unit);
@@ -69,6 +69,25 @@ function encounter(forge) {
 function impact(battle) {
   for(let i=0;i<60 && !battle.allies[0].didImpact;i++) updateBattle(battle,dt);
 }
+
+test('elven healer can cast from 65 range while a human monk must move closer', () => {
+  for (const type of ['elfHealer', 'healer']) {
+    const {battle,healer,patient}=encounter(undefined,type);
+    // Both retain the existing 20-unit approach margin: 70 for elves vs 57.5 for humans.
+    patient.y=healer.y-65;
+    const before={x:healer.x,y:healer.y};
+    updateBattle(battle,dt);
+    if(type==='elfHealer') {
+      assert.equal(healer.range,90); assert.equal(healer.action,'heal');
+      assert.deepEqual({x:healer.x,y:healer.y},before);
+      impact(battle); assert.equal(patient.hp,26);
+      assert.deepEqual({x:healer.x,y:healer.y},before,'Heal lands without advancing');
+    } else {
+      assert.equal(healer.range,77.5); assert.equal(healer.action,'walk');
+      assert.ok(healer.y<before.y); assert.equal(patient.hp,20);
+    }
+  }
+});
 
 test('elven healing lands once on pose 2, caps overhealing and never creates attack effects', () => {
   const {battle,healer,patient}=encounter();

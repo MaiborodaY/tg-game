@@ -3,6 +3,10 @@
 Ready for the game's Canvas 2D renderer. This pack does not register an enemy,
 change waves, choose combat statistics or implement bomb damage.
 
+The game now connects this visual kit through its enemy catalogue and shared scene
+cache. See [BOMBARDIER_INTEGRATION.md](../../BOMBARDIER_INTEGRATION.md) for the live
+1-11 to 1-19 mini-boss rules; the adapter examples below remain useful for previews.
+
 | File | Dimensions | Bytes |
 | --- | --- | --- |
 | `body.webp` | 512 × 512 | 76,538 |

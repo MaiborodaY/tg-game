@@ -1,8 +1,7 @@
-# Elven recruits — playable fighters and proposed roster
+# Elven recruits — playable roster
 
 Barracks III unlocks the Elves selector in Recruitment. Panther Rider, Elven
-Archer and Elven Healer are playable. Unicorn remains a balance proposal, not a hidden
-live units. Existing source artwork names the mount a panther, so the game uses
+Archer, Elven Healer and Unicorn are playable. Existing source artwork names the mount a panther, so the game uses
 Panther Rider rather than mislabelling it a tiger.
 
 ## Level-one baseline
@@ -15,8 +14,8 @@ before the shared combat-pace and selected battle-speed multipliers.
 | Human Swordsman | 60 | 6 damage | 1.10 s | 57 | 38 | Existing comparison |
 | Panther Rider | 90 | 9 damage | 1.05 s | 68 | 75 | Implemented |
 | Elven Archer | 45 | 11 damage | 1.30 s | 52 | 185 | Implemented |
-| Elven Healer | 50 | 6 healing | 1.45 s | 50 | 77.5 | Implemented |
-| Unicorn | 120 | 10 damage | 1.30 s | 60 | 42 | Proposed; later unlock |
+| Elven Healer | 50 | 6 healing | 1.45 s | 50 | 90 | Implemented |
+| Unicorn | 120 | 10 damage | 1.30 s | 60 | 42 | Implemented |
 
 The Rider has 50% more HP and about 57% more sustained nominal single-target DPS
 than a Swordsman of the same level. It is a mounted short-range thrower with 75 reach, compared with a sword's 38
@@ -29,9 +28,10 @@ the same 185 range and fires one ordinary arrow. It has no splash, poison or
 multi-shot. The Elven Healer uses one cell and improves the Human Healer's 36 HP
 and 4 healing to 50 HP and 6 healing. It treats one living wounded ally or hero,
 including itself, without attacks, area healing, resurrection, castle repair or
-poison removal. It shares the existing healer crowd navigation and cast range.
-Unicorn trades some attack speed for the highest durability; its special ability
-is not set, and its future recruitment gate is specified below.
+poison removal. It shares the existing healer crowd navigation, with 90 healing
+range versus the Human Healer's 77.5 (about 16% farther).
+Unicorn trades attack speed for the highest durability: a single-target horn strike,
+with 42 reach and no charge, splash, stun or passive magic.
 
 ## Live recruitment and progression
 
@@ -41,7 +41,9 @@ is not set, and its future recruitment gate is specified below.
   threshold is still a Rider. Archer recruitment level 3 (15 Archer receipts)
   then unlocks the Healer: all three available types have an exact 1/3 chance
   (displayed as 33.3%). The threshold receipt is still an Archer; new odds apply
-  to subsequent conversions. Unimplemented classes never enter the roll.
+  to subsequent conversions. Rider recruitment level 5 plus completed Barracks IV
+  unlocks Unicorn. Chances are equal among the eligible classes: 25% each when all
+  four are open; a locked Healer stays excluded even if Unicorn is available.
   Humans retain their current odds.
 - Each elven type's receipts start at zero and follow the existing increasing thresholds:
   five matching receipts to level 2, then ten more to level 3, and so on.
@@ -56,12 +58,12 @@ is not set, and its future recruitment gate is specified below.
 - Human receipts and pending first-Lancer guarantees survive pool changes.
   Mixed Human/Elven formations are allowed; changing the pool does not replace
   fighters already owned or change a running battle.
-- A Rider occupies two adjacent horizontal, purchased cells. Its anchor is the
+- A Rider or Unicorn occupies two adjacent horizontal, purchased cells. Its anchor is the
   left cell; its model and battle starting position are centered across both.
   Selection and Connect work from either cell. Moves and swaps require both
   complete footprints to fit; recruiting never silently removes a second guard.
   Old Riders that no longer fit return to reserve with their level intact.
-- Existing saves gain missing Elven Archer/Healer recruitment counters at zero; existing
+- Existing saves gain missing Elven Archer/Healer/Unicorn recruitment counters at zero; existing
   fighters, Human progress and Rider progress are preserved.
 
 ## Recruitment unlock chain
@@ -71,7 +73,7 @@ is not set, and its future recruitment gate is specified below.
 | Panther Rider | Barracks III completed | Playable |
 | Elven Archer | Panther Rider recruitment level 3 | Playable |
 | Elven Healer | Elven Archer recruitment level 3 | Playable |
-| Unicorn | Panther Rider recruitment level 5 and Barracks IV completed | Preview; two cells when implemented |
+| Unicorn | Panther Rider recruitment level 5 and Barracks IV completed | Playable; two cells |
 
 Connect raises personal levels only and never satisfies these requirements.
 Barracks IV becomes purchasable at Rider recruitment level 5 (50 receipts),
@@ -107,8 +109,10 @@ Healing lands on pose 2 and creates a short, four-frame 128px ring on the patien
 The effect is loaded only when needed and reused for each cast. Clothing follows
 the five existing palette bands; hood, skin and staff retain their original colors.
 
-Unicorn remains a preview, showing Coming soon when its requirements are met.
-Its recruitment/Barracks requirements are fixed above; four-class odds and combat
-implementation belong to its later release.
+Unicorn uses the approved 512px sixteen-pose sheet and existing menu portrait.
+Exact foot anchors keep it grounded at a 47-unit body height; horn impact lands
+once on pose 2. Formation stays still, death uses the shared fade. Saddle cloth
+changes at the five rank bands; coat, mane, armor and horn keep their colors.
+Only the visible palette loads; there is no additional spell or projectile asset.
 
 New regular units follow [UNIT_INTEGRATION.md](UNIT_INTEGRATION.md).

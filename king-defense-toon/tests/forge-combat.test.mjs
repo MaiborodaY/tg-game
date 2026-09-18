@@ -55,8 +55,8 @@ test('forge snapshots affect all regular units but preserve hero, castle and spa
 });
 
 test('forged attack and healing rates scale both action windups and cooldowns', () => {
-  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65, elfArcher: .7, elfHealer: .8 };
-  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05, elfArcher: 1.3, elfHealer: 1.45 };
+  const durations = { swordsman: .65, lancer: .75, archer: .7, healer: .8, pantherRider: .65, elfArcher: .7, elfHealer: .8, unicorn: .8 };
+  const intervals = { swordsman: 1.1, lancer: 1.3, archer: 1.4, healer: 1.45, pantherRider: 1.05, elfArcher: 1.3, elfHealer: 1.45, unicorn: 1.3 };
   const forge = createForge({ attackSpeed: 50 });
   for (const type of Object.keys(durations)) {
     const battle = fixture(type, forge), unit = battle.allies[0];
@@ -69,13 +69,13 @@ test('forged attack and healing rates scale both action windups and cooldowns', 
 });
 
 test('a first forge rank causes fractional damage and healing in actual combat', () => {
-  for (const type of ['swordsman', 'archer', 'elfArcher', 'healer', 'elfHealer', 'pantherRider']) {
+  for (const type of ['swordsman', 'archer', 'elfArcher', 'healer', 'elfHealer', 'pantherRider', 'unicorn']) {
     const battle = fixture(type, createForge({ attack: 1 }));
     const target = ['healer', 'elfHealer'].includes(type) ? battle.allies[1] : battle.enemies[0];
     const startHp = target.hp;
     while (target.hp === startHp && battle.elapsed < 5) updateBattle(battle, DT);
     assert.notEqual(target.hp, startHp);
-    close(Math.abs(target.hp - startHp), { elfHealer: 6.06, pantherRider: 9.09, healer: 4.04, archer: 8.08, elfArcher: 11.11, swordsman: 6.06 }[type]);
+    close(Math.abs(target.hp - startHp), { unicorn: 10.1, elfHealer: 6.06, pantherRider: 9.09, healer: 4.04, archer: 8.08, elfArcher: 11.11, swordsman: 6.06 }[type]);
   }
 });
 

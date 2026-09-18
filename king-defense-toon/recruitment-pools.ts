@@ -9,12 +9,12 @@ export interface ElfRecruitPreview {
   readonly playable: boolean;
 }
 
-// Planned elves remain visible without entering the live recruitment odds or battle catalogue.
+// Visibility is separate from receipt and Barracks requirements, checked by recruitment.ts.
 export const ELF_RECRUITS: readonly ElfRecruitPreview[] = Object.freeze([
   Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Short range', locked: false, playable: true }),
   Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: true }),
   Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: true }),
-  Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false }),
+  Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Defender · 2 tiles', locked: false, playable: true }),
 ]);
 
 export function isRecruitmentPoolUnlocked(pool: RecruitmentPool, barracksLevel: number): boolean {

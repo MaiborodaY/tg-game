@@ -48,7 +48,8 @@ const BASE_RULES = {
   archer: { range: 185, interval: 1.4, duration: .7, speed: 49 },
   elfArcher: { range: 185, interval: 1.3, duration: .7, speed: 52, impactFraction: .5 },
   healer: { range: 77.5, interval: 1.45, duration: .8, speed: 47 },
-  elfHealer: { range: 77.5, interval: 1.45, duration: .8, speed: 50, impactFraction: .5 },
+  elfHealer: { range: 90, interval: 1.45, duration: .8, speed: 50, impactFraction: .5 },
+  unicorn: { range: 42, interval: 1.3, duration: .8, speed: 60, impactFraction: .5 },
   hero: { range: 42, interval: 1.2, duration: .7, speed: 53 },
   castle: { range: 0, interval: 0, duration: 0, speed: 0 },
   goblin: { range: 34, interval: 1.45, duration: .7, speed: 60 },
@@ -56,6 +57,7 @@ const BASE_RULES = {
   goblinHealer: { range: 34, healRange: 95, interval: 2.6, duration: .8, speed: 48 },
   plagueAlchemist: { range: 120, interval: 2.6, duration: .8, speed: 48, impactFraction: .5 },
   goblinChief: { range: 43, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .7 },
+  goblinBombardier: { range: 135, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .55 },
   ogre: { range: 43, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .7 },
   boar: { range: 34, interval: 1.65, duration: .8, speed: 56, impactFraction: .5 },
 } satisfies CombatRules;
@@ -127,8 +129,10 @@ const allActors = (battle: Battle): Actor[] => [...battle.allies, ...battle.enem
 const isBusy = (unit: ActorBase): boolean => ['attack', 'shoot', 'heal', 'hammer'].includes(unit.action);
 const isAllyArcher = (unit: ActorBase): boolean => unit.type === 'archer' || unit.type === 'elfArcher';
 const isAllyRanged = (unit: ActorBase): boolean => isAllyArcher(unit) || unit.type === 'pantherRider';
+const isAllyMelee = (unit: ActorBase): unit is AllyActor => unit.side === 'ally'
+  && Object.hasOwn(UNIT_TYPE_BY_ID, unit.type) && !isAllyRanged(unit) && !isHealingUnit(unit.type);
 const isEnemyHealer = (unit: ActorBase): boolean => getEnemyCombatType(unit.type) === 'goblinHealer';
-const isRangedEnemy = (unit: ActorBase): boolean => ['goblinArcher', 'goblinHealer', 'plagueAlchemist'].includes(getEnemyCombatType(unit.type));
+const isRangedEnemy = (unit: ActorBase): boolean => ['goblinArcher', 'goblinHealer', 'plagueAlchemist', 'goblinBombardier'].includes(getEnemyCombatType(unit.type));
 
 // Merge exact segment intervals inside the land rectangles: melee cannot cut across water.
 function hasLandPath(from: Point, to: Point): boolean {
@@ -371,12 +375,14 @@ function resolveImpact(battle: Battle, unit: Actor, events: BattleEvent[]): void
       return;
     }
     // Damage lands with the arrow, rather than before it reaches its target.
-    if (unit.type === 'elfArcher' || unit.type === 'pantherRider') faceToward(unit, target);
-    addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
+    const cannon = unit.type === 'goblinBombardier';
+    if (cannon && (target.side === unit.side || distance(unit, target) > unit.range + 8)) return;
+    if (unit.type === 'elfArcher' || unit.type === 'pantherRider' || cannon) faceToward(unit, target);
+    addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / (cannon ? 260 : 420)) / COMBAT_PACE, {
       targetId: target.id, damage: unit.damage,
-      ...(unit.type === 'pantherRider' ? { launchFacing: { x: unit.facingX, y: unit.facingY } } : {}),
+      ...(unit.type === 'pantherRider' || cannon ? { launchFacing: { x: unit.facingX, y: unit.facingY } } : {}),
     });
-    if (unit.type !== 'pantherRider') events.push({ type: 'bow-shot', sourceId: unit.id });
+    if (unit.type !== 'pantherRider' && !cannon) events.push({ type: 'bow-shot', sourceId: unit.id });
   } else if (target.side !== unit.side && distance(unit, target) <= unit.range + 10 && hasLandPath(unit, target)) {
     addEffect(battle, 'slash', unit, target, .27);
     let amount = unit.damage;
@@ -788,9 +794,9 @@ function act(battle: Battle, unit: Actor, dt: number): void {
   faceToward(unit, target);
   const apart = distance(unit, target);
   const combatType = getEnemyCombatType(unit.type);
-  const ranged = isAllyRanged(unit) || combatType === 'goblinArcher' || combatType === 'plagueAlchemist';
+  const ranged = isAllyRanged(unit) || combatType === 'goblinArcher' || combatType === 'plagueAlchemist' || combatType === 'goblinBombardier';
   // Incoming archers step into the arena before firing, so the guard need not camp on the entrance.
-  if ((combatType === 'goblinArcher' || combatType === 'plagueAlchemist') && unit.y < 125) {
+  if (unit.side === 'enemy' && ranged && unit.y < 125) {
     moveToward(unit, { x: target.x, y: Math.max(135, target.y) }, dt);
     return;
   }
@@ -811,7 +817,7 @@ function act(battle: Battle, unit: Actor, dt: number): void {
   }
   if (unit.side === 'enemy') {
     moveToward(unit, target, dt, unit.range - 2);
-  } else if (unit.type === 'swordsman' || unit.type === 'lancer' || unit.type === 'pantherRider') {
+  } else if (isAllyMelee(unit)) {
     // Spear reach lets lancers stop behind defenders, while retaining melee land-path checks.
     advanceAlly(battle, unit, target, dt);
   } else unit.action = 'idle';
@@ -894,11 +900,19 @@ function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: b
   // Iterate a snapshot because a landed arrow can append hit, death, and gold effects.
   for (const effect of [...battle.effects]) {
     effect.age += dt;
+    if (active && effect.type === 'arrow' && effect.sourceType === 'goblinBombardier') {
+      const target = findActor(battle, effect.targetId);
+      if (target && target.hp > 0) { effect.targetX = target.x; effect.targetY = target.y - 27; }
+    }
     if (active && effect.type === 'arrow' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       // A destroyed Capitol cannot finish an in-flight shot during its defeat tick.
       if (effect.sourceType !== 'castle' || battle.castle.hp > 0) {
         hurt(battle, findActor(battle, effect.targetId), effect.damage, events);
+      }
+      if (effect.sourceType === 'goblinBombardier') {
+        // One visual blast per landing; the shared projectile applies damage only once.
+        battle.effects.push({ ...effect, id: battle.nextEffectId++, type: 'cannon-impact', age: 0, duration: .4 });
       }
     } else if (active && effect.type === 'poison-bottle' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;

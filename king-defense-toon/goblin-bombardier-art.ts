@@ -3,8 +3,9 @@ import { TINY_GOBLIN_BOMBARDIER_LAYOUT, tinyGoblinBombardierFrame } from './tiny
 
 export const GOBLIN_BOMBARDIER_ASSETS = Object.freeze({
   body: new URL('./assets/goblin-bombardier/body.webp', import.meta.url).href,
-  bomb: new URL('./assets/goblin-bombardier/bomb.webp', import.meta.url).href,
-  explosion: new URL('./assets/goblin-bombardier/explosion.webp', import.meta.url).href,
+  // Keep small effects out of the initial JS bundle; the scene loads them with this boss.
+  bomb: new URL('./assets/goblin-bombardier/bomb.webp?no-inline', import.meta.url).href,
+  explosion: new URL('./assets/goblin-bombardier/explosion.webp?no-inline', import.meta.url).href,
 });
 
 function frames(rows: readonly (readonly [number, number, number, number, number, number])[]) {
