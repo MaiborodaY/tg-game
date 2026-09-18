@@ -102,6 +102,22 @@ test('enemy healer body and pulse load for forthcoming or existing healers, neve
   assert.deepEqual(army.keys, ['map:1']);
 });
 
+test('alchemist body, bottle and impact load only for its wave and share one cached resource each', () => {
+  const state = { levelNumber: 2, wave: { levelNumber: 2, spawns: [{ type: 'plagueAlchemist' }, { type: 'plagueAlchemist' }] } };
+  const plan = getSceneAssetPlan(state);
+  assert.deepEqual(plan.enemies.map(enemy => enemy.type), ['plagueAlchemist']);
+  assert.match(new URL(plan.poisonBottle).pathname, /poison-bottle-128-lite\.webp$/);
+  assert.match(plan.poisonImpact, /poison-impact-128-lite\.webp$/);
+  assert.equal(plan.keys.filter(key => key.includes('/plague-alchemist/')).length, 3);
+  const existing = getSceneAssetPlan({ ...state, battle: { wave: state.wave, enemies: [{ type: 'plagueAlchemist' }] } });
+  assert.equal(existing.signature, plan.signature);
+  for (const unused of [getSceneAssetPlan(), getSceneAssetPlan({ wave: getWaveDefinition(1) }),
+    getSceneAssetPlan({ levelNumber: 2, wave: { spawns: [{ type: 'skeleton' }] } }), getSceneAssetPlan(state, { formationOnly: true })]) {
+    assert.equal(unused.poisonBottle, null); assert.equal(unused.poisonImpact, null);
+    assert.doesNotMatch(unused.keys.join(' '), /plague-alchemist|poison-bottle|poison-impact/);
+  }
+});
+
 test('a wave loads forthcoming enemies once and only its goblin palette', () => {
   const wave = getWaveDefinition(51);
   const plan = getSceneAssetPlan({ battle: { wave, enemies: [] } });

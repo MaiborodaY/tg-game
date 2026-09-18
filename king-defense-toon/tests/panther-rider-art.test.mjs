@@ -65,17 +65,6 @@ test('rider palettes preserve mount, skin, weapon, silhouettes and every alpha p
       changed++;
     }
     assert.ok(changed > 100, `rank ${rank}: visibly distinct clothing`);
-    const { x: left, y: top, width, height } = pack.frames[0].rect;
-    const firstFrame = await sharp(fileURLToPath(new URL(PANTHER_RIDER_ASSETS[rank].sheet)))
-      .extract({ left, top, width, height }).png().toBuffer();
-    const expected = await sharp(firstFrame).trim({ threshold: 0 }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const portrait = await decode(PANTHER_RIDER_ASSETS[rank].art);
-    assert.deepEqual([portrait.info.width, portrait.info.height, portrait.info.channels],
-      [expected.info.width, expected.info.height, expected.info.channels], 'portrait crop matches the idle frame');
-    for (let i = 0; i < expected.data.length; i += 4) {
-      assert.equal(portrait.data[i + 3], expected.data[i + 3]);
-      if (expected.data[i + 3]) assert.deepEqual(portrait.data.subarray(i, i + 3), expected.data.subarray(i, i + 3));
-    }
   }
 });
 

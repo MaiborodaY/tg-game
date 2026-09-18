@@ -45,9 +45,9 @@ linear rather than compounded each round.
 | 1-10 / 10 | 100 | 8 | 5,159 |
 | 1-11 / 1 | 101 | 11 | 5,176 |
 | 1-20 / 10 | 200 | 9 | 9,889 |
-| 2-1 / 1 | 201 | 13 | 11,392 |
-| 2-10 / 10 | 300 | 9 | 16,812 |
-| 2-20 / 10 | 400 | 10 | 22,251 |
+| 2-1 / 1 | 201 | 14 | 12,076 |
+| 2-10 / 10 | 300 | 10 | 17,821 |
+| 2-20 / 10 | 400 | 11 | 23,586 |
 
 The prior requested wave-10 escort removal remains in place. Its explicit HP
 exception is now **869 → 825** at waves 9→10, followed by **953** on wave 11.
@@ -57,7 +57,7 @@ late support slot again contains the remaining archer, with no early healer.
 Ordinary continuation encounters start at eight enemies. One is added at each
 global round **6, 9, 13, 17, 21, 26, 31 and 36**, reaching sixteen. Boss encounters
 contain `6 + floor((ordinaryCount - 8) / 2)` enemies including the boss, reaching
-ten, before the extra healer in forest rounds 6–20. Reinforcements contain **at most four
+ten, before the extra healer in forest rounds 6–20 or alchemist throughout Level 2. Reinforcements contain **at most four
 per arrival**, at **0.8 + 14 × groupIndex** simulation seconds. The first round
 retains its authored group sizes; wave 1 remains two goblins followed by one at
 6.8 seconds.
@@ -88,8 +88,36 @@ Crypt Spider and Crypt King. After the shared hero adjustment, all Level 2 enemi
 the original growth formulas remain unchanged. Healing is unchanged.
 Waves 1-200 are unchanged by this additional multiplier. Level 2 retains doubled
 per-kill payouts by role. Its final Crypt King has **14,464 HP / 144.9 damage**
-within the **22,251-HP** encounter. These stat increases do not promise an exact
+within the **23,586-HP** encounter including the alchemist. These stat increases do not promise an exact
 difficulty percentage against every possible army.
+
+## Plague alchemist
+
+Level 2 has **one additional alchemist per wave**, starting at **2-1 / 1** and
+continuing through **2-20 / 10**, including every mini-boss and main boss. There
+are no healers in this biome. All existing enemy HP, damage, rewards and counts
+by type remain unchanged. The alchemist joins the first three fighters at 0.8s;
+the original opening archer follows at 1.6s, retaining a maximum of four enemies
+per arrival without removing or postponing it to the next reinforcement group.
+
+Its HP is 6% of the previous encounter HP (rounded), added on top: **684 HP** at
+2-1 / 1 and **1,335 HP** at 2-20 / 10. This follows the existing wave curve and
+does not reset at bosses. Kill reward is **2 gold**. Its damage value follows the
+same wave's skeleton archer, **28.98 → 37.43** across Level 2, but represents the
+**total poison budget** rather than an immediate hit plus additional poison.
+
+The alchemist throws at one nearby fighter or the hero, at 120 range, with a
+base interval of 2.6s (about 3.06 simulation seconds after the shared combat pace).
+The bottle applies four equal poison ticks, one per simulation second. Repeated
+hits refresh the four-second duration and retain the stronger tick value without
+stacking poisons or delaying the next tick. Armour and shields mitigate ticks;
+healing restores HP normally but does not cleanse poison. A released bottle or
+applied poison survives the thrower's death; dead targets and completed battles
+stop poison. Against the castle, the bottle deals one direct hit instead.
+
+The added role uses its supplied 512px character atlas and 128px bottle/impact
+atlases, loaded only for relevant waves. There is no persistent area cloud or
+extra control in the combat HUD.
 
 ## Goblin healer
 
@@ -124,9 +152,9 @@ damage-tier-based **35–48 HP** healing. The first healer has **229 HP**, heals
 
 ## Economy and verification limits
 
-All 400 resolved wave definitions contain **4,847 enemies** and **10,489
-kill gold**: Level 1 contributes **2,057 / 2,859**, Level 2 **2,790 / 7,630**.
-First-clear gold remains **22,000** across both levels, for **32,489 total gold**
+All 400 resolved wave definitions contain **5,047 enemies** and **10,889
+kill gold**: Level 1 contributes **2,057 / 2,859**, Level 2 **2,990 / 8,030**.
+First-clear gold remains **22,000** across both levels, for **32,889 total gold**
 if each wave is cleared once. These sums exclude repeats, income and sales and do
 not predict completion time or player army strength. Recruitment, Connect,
 personal stat growth, hero stats, capture rules, cell prices and income rates

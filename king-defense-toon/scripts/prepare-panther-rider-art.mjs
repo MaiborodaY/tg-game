@@ -2,16 +2,11 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
+import { PANTHER_RIDER_PALETTES, exportRecruitmentPortraits } from './export-recruitment-portraits.mjs';
+export { PANTHER_RIDER_PALETTES } from './export-recruitment-portraits.mjs';
 
 const sourceRoot = new URL('../../art/brotd-infinity/allies/elves/panther-rider/', import.meta.url);
 const output = new URL('../assets/panther-rider/', import.meta.url);
-export const PANTHER_RIDER_PALETTES = Object.freeze([
-  { name: 'green', rgb: null },
-  { name: 'purple', rgb: [157, 102, 206] },
-  { name: 'red', rgb: [204, 79, 73] },
-  { name: 'gold', rgb: [216, 181, 66] },
-  { name: 'black', rgb: [92, 99, 113] },
-]);
 
 /** Limit the hue replacement to the rider's green cloth, away from the mount's eyes. */
 export function isPantherRiderClothing(rgba, x, y, frame) {
@@ -62,21 +57,30 @@ async function prepare() {
     }
     const atlas = rgb ? await sharp(pixels, { raw: decoded.info }).webp({ lossless: true, effort: 6 }).toBuffer() : source;
     await writeFile(new URL(`panther-rider-${name}.webp`, output), atlas);
-    let portraitBytes = 0;
-    if (rgb) {
-      assert.ok(changed > 100, 'Clothing palette must be visible');
-      const { x: left, y: top, width, height } = pack.frames[0].rect;
-      // Separate passes keep trim from moving the atlas origin before the authored crop.
-      const firstFrame = await sharp(atlas).extract({ left, top, width, height }).png().toBuffer();
-      const portrait = await sharp(firstFrame).trim({ threshold: 0 })
-        .webp({ lossless: true, effort: 6 }).toBuffer();
-      portraitBytes = portrait.length;
-      await writeFile(new URL(`panther-rider-${name}-art.webp`, output), portrait);
-    }
-    totals.push({ name, atlas: atlas.length, portrait: portraitBytes, changed });
+    if (rgb) assert.ok(changed > 100, 'Clothing palette must be visible');
+    totals.push({ name, atlas: atlas.length, changed });
   }
+  // Menu portraits use the newer glaive model; do not replace them with the combat sword pose.
+  const portraits = await exportRecruitmentPortraits();
+  for (const row of totals) row.portrait = portraits.portraits.find(portrait => portrait.name === 'panther-rider' && portrait.palette === row.name).bytes;
   await writeFile(new URL('../panther-rider-art.ts', import.meta.url), pantherRiderArtSource(pack));
-  await writeFile(new URL('README.md', output), `# Panther rider runtime art\n\nSource: \`art/brotd-infinity/allies/elves/panther-rider/panther-rider-768-lite.webp\` and its \`panther-rider-768.frames.json\`. The original files are untouched.\n\nFour rows: idle right, walk right, side attack, down attack. Each has four poses; pose 2 is the impact. Upward attacks use the side row, west mirrors horizontally, and death uses the normal fade. Explicit crop rectangles and foot anchors retain the entire rider, sword, mount and tail.\n\nBody reference: 108 source pixels rendered at 47 game pixels. Formation is static and uses the same scale. The original green palette covers levels 1–49, purple 50–99, red 100–249, gold 250–499 and black 500+. Palette generation changes only green cloth inside the rider bounds; the panther, skin, hair and weapon pixels and all alpha values are preserved. Palette sheets are lossless WebP. Base menu art reuses the existing recruitment portrait.\n\nRecreate: \`node king-defense-toon/scripts/prepare-panther-rider-art.mjs\`.\n\n| Palette | Atlas bytes | Extra portrait bytes | Cloth pixels changed |\n| --- | ---: | ---: | ---: |\n${totals.map(row => `| ${row.name} | ${row.atlas} | ${row.portrait} | ${row.changed} |`).join('\n')}\n`);
+  await writeFile(new URL('README.md', output), `# Panther rider runtime art
+
+Source: \`art/brotd-infinity/allies/elves/panther-rider/panther-rider-768-lite.webp\` and its \`panther-rider-768.frames.json\`. The original files are untouched.
+
+Four rows: idle right, walk right, side attack, down attack. Each has four poses; pose 2 is the impact. Upward attacks use the side row, west mirrors horizontally, and death uses the normal fade. Explicit crop rectangles and foot anchors retain the entire rider, sword, mount and tail.
+
+Body reference: 108 source pixels rendered at 54.05 game pixels (47 × 1.15). Formation is static and uses the same scale. The original green palette covers levels 1–49, purple 50–99, red 100–249, gold 250–499 and black 500+. Palette generation changes only green cloth inside the rider bounds; the panther, skin, hair and weapon pixels and all alpha values are preserved. Palette sheets are lossless WebP.
+
+All five menu portraits use the newer \`glaive-v2/panther-glaive-rider-512-lite.webp\` idle pose at 96 × 96 pixels. The base portrait is in \`../recruitment/panther-rider.webp\`; the four recolored portraits are beside these atlases. Menu palettes preserve the same level bands, but do not change the battle atlas or introduce thrown-glaive combat. See \`../recruitment/README.md\` for the portrait export contract.
+
+Recreate atlases and portraits: \`node king-defense-toon/scripts/prepare-panther-rider-art.mjs\`.
+Recreate portraits only: \`node king-defense-toon/scripts/export-recruitment-portraits.mjs\`.
+
+| Palette | Atlas bytes | Portrait bytes | Atlas cloth pixels changed |
+| --- | ---: | ---: | ---: |
+${totals.map(row => `| ${row.name} | ${row.atlas} | ${row.portrait} | ${row.changed} |`).join('\n')}
+`);
   console.log(JSON.stringify(totals));
 }
 

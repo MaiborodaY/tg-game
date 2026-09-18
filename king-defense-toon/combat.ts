@@ -6,7 +6,7 @@ import type { Actor, ActorBase, ActorType, ActorSide, ActorAction, AllyActor, En
   FormationUnit, MeleeApproach, HeroAbilityKind, PendingHeroAbility, Battle, BattleEvent,
   BattleEffect, BattleEffectType, BattleEffectPayloads, EffectOf } from './combat-types.ts';
 export type { Actor, ActorBase, ActorType, ActorSide, ActorAction, AllyActor, EnemyActor, HeroActor, CastleActor,
-  FormationUnit, MeleeApproach, HeroAbilityKind, PendingHeroAbility, Battle, BattlePhase, BattleEvent,
+  FormationUnit, MeleeApproach, PoisonStatus, HeroAbilityKind, PendingHeroAbility, Battle, BattlePhase, BattleEvent,
   BattleEffect, BattleEffectType, BattleEffectPayloads, EffectOf } from './combat-types.ts';
 
 interface ActorOptions<T extends ActorType> extends Point {
@@ -38,6 +38,8 @@ export const CASTLE_MAX_HP = 100;
 // Kept for the historical balance harness; this is the unupgraded objective's HP.
 export const KING_MAX_HP = CASTLE_MAX_HP;
 const FIXED_STEP = 1 / 60;
+const POISON_DURATION = 4;
+const POISON_TICK_INTERVAL = 1;
 const BASE_RULES = {
   swordsman: { range: 38, interval: 1.1, duration: .65, speed: 57 },
   lancer: { range: 75, interval: 1.3, duration: .75, speed: 53 },
@@ -49,6 +51,7 @@ const BASE_RULES = {
   goblin: { range: 34, interval: 1.45, duration: .7, speed: 60 },
   goblinArcher: { range: 120, interval: 1.8, duration: .8, speed: 53 },
   goblinHealer: { range: 34, healRange: 95, interval: 2.6, duration: .8, speed: 48 },
+  plagueAlchemist: { range: 120, interval: 2.6, duration: .8, speed: 48, impactFraction: .5 },
   goblinChief: { range: 43, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .7 },
   ogre: { range: 43, interval: 2.15, duration: 1.4, speed: 40, impactFraction: .7 },
   boar: { range: 34, interval: 1.65, duration: .8, speed: 56, impactFraction: .5 },
@@ -120,7 +123,7 @@ const alliedActors = (battle: Battle): (AllyActor | HeroActor)[] => [...battle.a
 const allActors = (battle: Battle): Actor[] => [...battle.allies, ...battle.enemies, battle.hero, battle.castle];
 const isBusy = (unit: ActorBase): boolean => ['attack', 'shoot', 'heal', 'hammer'].includes(unit.action);
 const isEnemyHealer = (unit: ActorBase): boolean => getEnemyCombatType(unit.type) === 'goblinHealer';
-const isRangedEnemy = (unit: ActorBase): boolean => ['goblinArcher', 'goblinHealer'].includes(getEnemyCombatType(unit.type));
+const isRangedEnemy = (unit: ActorBase): boolean => ['goblinArcher', 'goblinHealer', 'plagueAlchemist'].includes(getEnemyCombatType(unit.type));
 
 // Merge exact segment intervals inside the land rectangles: melee cannot cut across water.
 function hasLandPath(from: Point, to: Point): boolean {
@@ -306,6 +309,7 @@ function hurt(battle: Battle, target: Actor | undefined, amount: number, events:
   target.targetId = null;
   target.shield = 0;
   target.shieldTime = 0;
+  delete target.poison;
   if (target === hero) cancelHeroActions(battle);
   if (target.side === 'enemy') {
     battle.kills += 1;
@@ -353,6 +357,14 @@ function resolveImpact(battle: Battle, unit: Actor, events: BattleEvent[]): void
     target.hp += amount;
     addEffect(battle, 'heal', unit, target, .7, { amount });
   } else if (unit.action === 'shoot') {
+    if (unit.type === 'plagueAlchemist') {
+      if (unit.side !== 'enemy' || target.side !== 'ally' || distance(unit, target) > unit.range + 8) return;
+      faceToward(unit, target);
+      addEffect(battle, 'poison-bottle', unit, target, Math.max(.25, distance(unit, target) / 240) / COMBAT_PACE, {
+        targetId: target.id, damage: unit.damage,
+      });
+      return;
+    }
     // Damage lands with the arrow, rather than before it reaches its target.
     addEffect(battle, 'arrow', unit, target, Math.max(.15, distance(unit, target) / 420) / COMBAT_PACE, {
       targetId: target.id, damage: unit.damage,
@@ -666,9 +678,9 @@ function actHero(battle: Battle, hero: HeroActor, dt: number): void {
   const target = focusedEnemy(hero, enemies);
   if (!target) { hero.action = 'idle'; return; }
   const onlyRanged = enemies.every(isRangedEnemy);
-  // A healer can sustain the backline between hammer casts. Close into melee
-  // while support survives; only an archers-only remainder permits holding range.
-  if (onlyRanged && !enemies.some(isEnemyHealer) && stats.hammerUnlocked) {
+  // Keep closing on support casters between hammer casts. Only ordinary archers
+  // permit the holding stance, including their skeleton counterparts.
+  if (enemies.every(enemy => getEnemyCombatType(enemy.type) === 'goblinArcher') && stats.hammerUnlocked) {
     const castingRange = stats.hammerRange - 8;
     // A ranged stance needs a reachable casting position, not a fixed point inside
     // friendly archers. Once in range, wait for the next cast instead of pacing.
@@ -769,9 +781,9 @@ function act(battle: Battle, unit: Actor, dt: number): void {
   faceToward(unit, target);
   const apart = distance(unit, target);
   const combatType = getEnemyCombatType(unit.type);
-  const ranged = combatType === 'archer' || combatType === 'goblinArcher';
+  const ranged = combatType === 'archer' || combatType === 'goblinArcher' || combatType === 'plagueAlchemist';
   // Incoming archers step into the arena before firing, so the guard need not camp on the entrance.
-  if (combatType === 'goblinArcher' && unit.y < 125) {
+  if ((combatType === 'goblinArcher' || combatType === 'plagueAlchemist') && unit.y < 125) {
     moveToward(unit, { x: target.x, y: Math.max(135, target.y) }, dt);
     return;
   }
@@ -826,7 +838,51 @@ function separateAllies(battle: Battle, dt: number): void {
   }
 }
 
+function landPoisonBottle(battle: Battle, effect: EffectOf<'poison-bottle'>, events: BattleEvent[]): void {
+  const target = findActor(battle, effect.targetId);
+  if (!target || target.hp <= 0 || target.side !== 'ally' || effect.side !== 'enemy'
+    || effect.sourceType !== 'plagueAlchemist' || !Number.isFinite(effect.damage) || effect.damage <= 0) return;
+  // A released bottle survives its caster, like an ordinary arrow.
+  battle.effects.push({
+    id: battle.nextEffectId++, type: 'poison-impact',
+    x: target.x, y: target.y - 27, targetX: target.x, targetY: target.y - 27,
+    age: 0, duration: .45, side: effect.side, sourceType: effect.sourceType,
+    sourceId: effect.sourceId, targetId: target.id,
+  });
+  if (target.type === 'castle') {
+    hurt(battle, target, effect.damage, events);
+    return;
+  }
+  const damagePerTick = effect.damage / (POISON_DURATION / POISON_TICK_INTERVAL);
+  if (target.poison) {
+    // Refresh without stacking or delaying the next tick; weaker hits cannot erase stronger poison.
+    target.poison.remaining = POISON_DURATION;
+    target.poison.damagePerTick = Math.max(target.poison.damagePerTick, damagePerTick);
+  } else target.poison = { remaining: POISON_DURATION, nextTick: POISON_TICK_INTERVAL, damagePerTick };
+}
+
+function agePoison(battle: Battle, dt: number, events: BattleEvent[], active: boolean): void {
+  for (const unit of allActors(battle)) {
+    const poison = unit.poison;
+    if (!poison) continue;
+    if (!active || unit.hp <= 0 || unit.side !== 'ally' || unit.type === 'castle') {
+      delete unit.poison;
+      continue;
+    }
+    const elapsed = Math.min(dt, poison.remaining);
+    poison.remaining = Math.max(0, poison.remaining - elapsed);
+    poison.nextTick -= elapsed;
+    while (poison.nextTick <= 1e-8 && unit.hp > 0) {
+      poison.nextTick += POISON_TICK_INTERVAL;
+      hurt(battle, unit, poison.damagePerTick, events);
+    }
+    if (poison.remaining <= 1e-8) delete unit.poison;
+  }
+}
+
 function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: boolean): void {
+  // Tick existing statuses first: a bottle arriving this step starts a full one-second delay.
+  agePoison(battle, dt, events, active);
   if (battle.hero.hp <= 0) cancelHeroActions(battle);
   // Iterate a snapshot because a landed arrow can append hit, death, and gold effects.
   for (const effect of [...battle.effects]) {
@@ -837,6 +893,9 @@ function ageVisuals(battle: Battle, dt: number, events: BattleEvent[], active: b
       if (effect.sourceType !== 'castle' || battle.castle.hp > 0) {
         hurt(battle, findActor(battle, effect.targetId), effect.damage, events);
       }
+    } else if (active && effect.type === 'poison-bottle' && !effect.landed && effect.age >= effect.duration) {
+      effect.landed = true;
+      landPoisonBottle(battle, effect, events);
     } else if (active && effect.type === 'hero-hammer' && !effect.landed && effect.age >= effect.duration) {
       effect.landed = true;
       landHeroHammer(battle, effect, events);
@@ -952,8 +1011,9 @@ function step(battle: Battle, dt: number, events: BattleEvent[]): void {
   else if (battle.spawned === battle.total && battle.kills === battle.total) battle.phase = 'victory';
   if (battle.phase !== 'running') {
     cancelHeroActions(battle);
-    battle.effects = battle.effects.filter(effect => effect.type !== 'arrow');
+    battle.effects = battle.effects.filter(effect => effect.type !== 'arrow' && effect.type !== 'poison-bottle');
     for (const unit of allActors(battle)) {
+      delete unit.poison;
       if (unit.hp > 0) unit.action = 'idle';
       unit.targetId = null;
     }

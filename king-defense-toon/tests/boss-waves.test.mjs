@@ -86,12 +86,12 @@ test('every round ends with one supported boss, with main bosses only in rounds 
     assert.equal(wave.isFinalBossWave, mainBoss, label(wave));
     assert.equal(wave.bossOnly, false, label(wave));
     if (wave.number === 10) assert.equal(wave.total, 5, label(wave));
-    else assert.ok(wave.total >= 6 && wave.total <= 10, label(wave));
+    else assert.ok(wave.total >= 6 && wave.total <= 11, label(wave));
     const opening = wave.spawns.filter(spawn => spawn.at === .8);
     assert.equal(opening.length, 4, label(wave));
     const hasHealer = wave.number >= 51 && wave.number <= 200;
     assert.deepEqual(opening.map(spawn => getEnemyCombatType(spawn.type)).sort(),
-      ['goblin', 'goblin', hasHealer ? 'goblinHealer' : 'goblinArcher', mainBoss ? 'ogre' : 'goblinChief'].sort(), label(wave));
+      ['goblin', 'goblin', wave.levelNumber === 2 ? 'plagueAlchemist' : hasHealer ? 'goblinHealer' : 'goblinArcher', mainBoss ? 'ogre' : 'goblinChief'].sort(), label(wave));
     assert.equal(bosses[0].at, .8, `${label(wave)}: the boss remains in the opening squad`);
     const support = wave.spawns.filter(spawn => spawn.at === 14.8);
     if (wave.number <= 30) {
@@ -101,7 +101,8 @@ test('every round ends with one supported boss, with main bosses only in rounds 
       assert.ok(support.length >= 2 && support.length <= 4, label(wave));
       assert.ok(support.every(spawn => !ENEMY_TYPES[spawn.type].isBoss), label(wave));
     }
-    assert.ok(wave.spawns.every(spawn => [.8, 14.8, 28.8].includes(spawn.at)), label(wave));
+    assert.ok(wave.spawns.every(spawn => [.8, 14.8, 28.8].includes(spawn.at)
+      || (wave.levelNumber === 2 && spawn.type === 'skeletonArcher' && spawn.at === 1.6)), label(wave));
   }
 });
 
@@ -163,10 +164,10 @@ test('all 400 waves retain at most four enemies per arrival and valid distinct s
   }
 });
 
-test('150 additional forest healers each add one kill and gold without changing boss or repeat-clear rewards', () => {
+test('150 forest healers and 200 alchemists add their own kill rewards without changing bosses or first clears', () => {
   const progression = createProgression();
-  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.total, 0), 4847);
-  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.reward, 0), 10489);
+  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.total, 0), 4847 + 200);
+  assert.equal(WAVE_DEFINITIONS.reduce((sum, wave) => sum + wave.reward, 0), 10489 + 400);
   for (const wave of WAVE_DEFINITIONS) {
     const goldMultiplier = wave.levelNumber === 2 ? 2 : 1;
     for (const spawn of wave.spawns) {

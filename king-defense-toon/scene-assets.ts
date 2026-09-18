@@ -41,6 +41,8 @@ export interface SceneAssetPlan {
   heroArt: Partial<Record<keyof typeof ST_KNIHOR_ASSETS, string>>;
   heroEffects: string | null;
   goblinHealPulse: string | null;
+  poisonBottle: string | null;
+  poisonImpact: string | null;
   keys: string[];
   signature: string;
 }
@@ -59,6 +61,7 @@ import { GOBLIN_HEALER_IMAGE_URL, GOBLIN_HEAL_PULSE_IMAGE_URL } from './goblin-h
 import { OGRE_IMAGE_URL } from './ogre-art.ts';
 import { UNDEAD_ART } from './undead-art.ts';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.ts';
+import { PLAGUE_ALCHEMIST_IMAGE_URL, POISON_BOTTLE_IMAGE_URL, POISON_IMPACT_IMAGE_URL } from './plague-alchemist-art.ts';
 
 const ALLIES: Record<UnitType, AllyAssetUrls> = {
   swordsman: { sheet: new URL('./assets/tiny-swords-warrior-blue.png', import.meta.url).href },
@@ -80,6 +83,7 @@ const ENEMIES: Partial<Record<EnemyType, string>> = {
   goblinHealer: GOBLIN_HEALER_IMAGE_URL,
   ogre: OGRE_IMAGE_URL,
   boar: new URL('./assets/web/boar.webp', import.meta.url).href,
+  plagueAlchemist: PLAGUE_ALCHEMIST_IMAGE_URL,
   ...Object.fromEntries(Object.entries({ ...UNDEAD_ART, ...GRAVEYARD_BOSS_ART }).map(([type, art]) => [type, art.url])),
 };
 
@@ -119,7 +123,9 @@ export function getSceneAssetPlan(state: SceneAssetInput = {}, { formationOnly =
     Object.entries(ST_KNIHOR_ASSETS).map(([direction, url]) => [direction, addImage(url)]));
   const heroEffects = formationOnly ? null : addImage(ST_KNIHOR_EFFECTS_IMAGE_URL);
   const goblinHealPulse = enemies.has('goblinHealer') ? addImage(GOBLIN_HEAL_PULSE_IMAGE_URL) : null;
+  const poisonBottle = enemies.has('plagueAlchemist') ? addImage(POISON_BOTTLE_IMAGE_URL) : null;
+  const poisonImpact = enemies.has('plagueAlchemist') ? addImage(POISON_IMPACT_IMAGE_URL) : null;
   const keys = [...resources.keys()].sort();
   return { levelNumber, mapKey, resources, allies: [...allies.values()], enemies: [...enemies.values()],
-    heroArt, heroEffects, goblinHealPulse, keys, signature: JSON.stringify(keys) };
+    heroArt, heroEffects, goblinHealPulse, poisonBottle, poisonImpact, keys, signature: JSON.stringify(keys) };
 }

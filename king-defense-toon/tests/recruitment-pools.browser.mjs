@@ -13,7 +13,7 @@ const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
 const baseUrl = 'http://127.0.0.1:5206/';
-const previewPortraits = ['elf-archer.webp', 'unicorn.webp'];
+const previewPortraits = ['elf-archer.webp', 'elf-healer.webp', 'unicorn.webp'];
 const humanTypes = ['swordsman', 'archer', 'healer', 'lancer'];
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
@@ -213,8 +213,9 @@ try {
       assert.equal(await page.locator('#recruitment-details').isVisible(), false);
       assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
       assert.deepEqual(await page.locator('[data-elf-recruit]').evaluateAll(cards => cards.map(card => card.dataset.elfRecruit)), ['pantherRider', 'elfArcher', 'elfHealer', 'unicorn']);
-      assert.equal(await page.locator('[data-elf-recruit="elfHealer"] svg').count(), 1);
-      assert.equal(await page.locator('[data-elf-recruit="elfHealer"] img').count(), 0);
+      assert.equal(await page.locator('[data-elf-recruit="elfHealer"] svg').count(), 0);
+      assert.equal(await page.locator('[data-elf-recruit="elfHealer"] img').count(), 1);
+      assert.match(await page.locator('[data-elf-recruit="elfHealer"] img').getAttribute('src'), /elf-healer\.webp/);
       assert.match(await page.locator('[data-elf-recruit="elfHealer"]').innerText(), /Coming soon.*Not in the Market yet/s);
       assert.match(await page.locator('[data-elf-recruit="elfArcher"]').innerText(), /Coming soon.*Not in the Market yet/s);
       const riderCard = page.locator('[data-elf-recruit="pantherRider"]');
@@ -224,7 +225,7 @@ try {
       assert.match(await page.locator('[data-elf-recruit="unicorn"]').getAttribute('class'), /is-locked/);
       assert.match(await page.locator('[data-elf-recruit="unicorn"]').innerText(), /Locked.*Special.*Unlocks later/s);
       assert.equal(await page.locator('[data-elf-recruit] button').count(), 0, 'Recruitment remains the Market action');
-      assert.equal(await page.locator('#elf-recruitment-details img').count(), 3);
+      assert.equal(await page.locator('#elf-recruitment-details img').count(), 4);
       await page.locator('#elf-recruitment-details img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
       assert.equal(previewPortraits.every(file => requested.has(file)), true);
       assert.equal(await page.locator('#elf-recruitment-details img').evaluateAll(images => images.every(image => image.loading === 'lazy' && image.naturalWidth > 0)), true);

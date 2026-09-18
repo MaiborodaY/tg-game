@@ -231,7 +231,7 @@ From **1-6 wave 1 through 1-20 wave 10** (global waves **51–200**), one additi
 
 The wave-10 roster is a chief, two goblins and two archers, arriving **4+1 at 0.8 / 14.8 simulation seconds**. Global waves **11–19 and 21–29** contain four goblins, two archers and two boars (**4+4**); waves 20 and 30 contain a chief, three goblins and two archers (**4+2**). Every simultaneous arrival stays at four or fewer enemies.
 
-The opening chiefs have **495 / 757 / 1,016 HP** and **18.9 / 25.2 / 32.55 damage** at waves 10 / 20 / 30. The earlier requested escort removal is retained; its explicit HP exception is now **wave 9→10: 869 → 825**, with no special boss compensation beyond the shared adjustment. The next round begins at **953 HP**. Waves **20→21** rise **1,375 → 1,392**, **30→31** rise **1,848 → 1,865**, and **200→201** rise **9,889 → 11,392**. Ordinary continuation counts grow from eight to sixteen and boss encounters from six to ten before adding the extra healer in forest rounds 6–20. The final Crypt King has **14,464 HP / 144.9 damage** within a **22,251-HP** encounter. These are configured totals, not a guaranteed difficulty order for every army.
+The opening chiefs have **495 / 757 / 1,016 HP** and **18.9 / 25.2 / 32.55 damage** at waves 10 / 20 / 30. The earlier requested escort removal is retained; its explicit HP exception is now **wave 9→10: 869 → 825**, with no special boss compensation beyond the shared adjustment. The next round begins at **953 HP**. Waves **20→21** rise **1,375 → 1,392**, **30→31** rise **1,848 → 1,865**, and **200→201** rise **9,889 → 12,076**. Ordinary continuation counts grow from eight to sixteen and boss encounters from six to ten before adding the extra healer in forest rounds 6–20 or one alchemist in every Level 2 wave. The alchemist joins the opening squad, adds 6% of the existing encounter HP, and awards two gold; old fighter stats and archers remain intact. The final Crypt King has **14,464 HP / 144.9 damage** within a **23,586-HP** encounter. These are configured totals, not a guaranteed difficulty order for every army.
 
 [OPENING_BALANCE.md](OPENING_BALANCE.md) retains historical opening combat and economy reports. After the talent-tree redesign, four ×1 resource-linked runs (seeds **1, 4, 17, 42**, target wave 10, limit 40 attempts, hero talents unspent) completed in **20 / 12 / 12 / 20 attempts**, without timeouts; defeats occurred on waves 8–9. Those runs predate the restored early archers, first-group healers and Barracks capacity limits. They do not validate current difficulty or progress with eight-cell Barracks I. They are fixed management scenarios rather than a player-population forecast or full campaign validation. See [CAMPAIGN_BALANCE.md](CAMPAIGN_BALANCE.md) for current balance rules and the limits of existing checks.
 
@@ -266,8 +266,8 @@ Current per-enemy kill rewards stay fixed within each level:
 | 1-3 | 78 | 115 | 550 |
 | First 30 waves | 214 | 315 | 1,650 |
 | All Level 1 definitions | 2,057 | 2,859 | 11,000 |
-| All Level 2 definitions | 2,790 | 7,630 | 11,000 |
-| Entire campaign definitions | 4,847 | 10,489 | 22,000 |
+| All Level 2 definitions | 2,990 | 8,030 | 11,000 |
+| Entire campaign definitions | 5,047 | 10,889 | 22,000 |
 
 The first clear of each wave awards **10 × wave-in-round number**: 10, 20, …, 100, totaling **550 per round, 11,000 per level and 22,000 across the campaign**. Level 2's doubled kill rewards do not multiply first-clear bonuses. First-clear history stores global IDs **1–400** independently from current progress, so retreat and replay cannot repeat a bonus. Global waves 11 and 201 each grant 10 first-clear gold; wave 200 grants 100.
 

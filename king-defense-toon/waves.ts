@@ -31,6 +31,7 @@ export const ENEMY_TYPES: EnemyCatalog = Object.freeze({
   goblin: Object.freeze({ name: 'Torch goblin', hp: 60, damage: 7, reward: 1 }),
   goblinArcher: Object.freeze({ name: 'Goblin archer', hp: 32, damage: 4, reward: 1 }),
   goblinHealer: Object.freeze({ name: 'Goblin healer', hp: 70, damage: 3, heal: 12, reward: 1 }),
+  plagueAlchemist: Object.freeze({ name: 'Plague Alchemist', hp: 210, damage: 12, reward: 2 }),
   goblinChief: Object.freeze({ name: 'Goblin chief', hp: 650, damage: 18, reward: 20, isBoss: true }),
   ogre: Object.freeze({ name: 'Ogre brute', hp: 1100, damage: 22, reward: 20, isBoss: true, isFinalBoss: true }),
   boar: Object.freeze({ name: 'Boar', hp: 80, damage: 8, reward: 2 }),
@@ -366,7 +367,28 @@ function withLevelTwoPressure(wave: WaveDefinition): WaveDefinition {
   return defineWave(wave.number, wave.name, wave.description, spawns, { bossOnly: wave.bossOnly });
 }
 
-export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave).map(withHeroPressure).map(withLevelTwoPressure));
+function withPlagueAlchemist(wave: WaveDefinition): WaveDefinition {
+  if (wave.levelNumber !== 2) return wave;
+  const archer = wave.spawns.find(spawn => spawn.type === 'skeletonArcher')!;
+  const firstArrival = wave.spawns[0].at;
+  const opening = wave.spawns.filter(spawn => spawn.at === firstArrival);
+  const displaced = opening.length >= 4 ? opening.find(spawn => spawn.type === 'skeletonArcher')! : null;
+  // Add one specialist without removing archers or redistributing anybody's stats.
+  // Its HP follows the existing encounter curve, including boss waves, so this
+  // extra role cannot introduce a new health reset at a round boundary.
+  const health = wave.spawns.reduce((sum, spawn) => sum + spawn.hp, 0);
+  const alchemist: EnemySpawn = { type: 'plagueAlchemist', at: firstArrival, x: 195, y: 66,
+    hp: Math.round(health * .06), damage: archer.damage, reward: ENEMY_TYPES.plagueAlchemist.reward };
+  const spawns = wave.spawns.map(spawn => spawn === displaced ? { ...spawn, at: firstArrival + .8 } : spawn);
+  spawns.push(alchemist);
+  spawns.sort((a, b) => a.at - b.at);
+  return defineWave(wave.number, wave.name, wave.hasBoss
+    ? 'The commander enters with a plague alchemist. Archers and reinforcements follow.'
+    : 'A plague alchemist poisons defenders from the opening squad. Reinforcements follow.', spawns,
+  { bossOnly: wave.bossOnly });
+}
+
+export const WAVE_DEFINITIONS = Object.freeze(UNCALIBRATED_WAVES.map(openingWave).map(withHeroPressure).map(withLevelTwoPressure).map(withPlagueAlchemist));
 
 export function getLevelWaves(levelNumber: WaveNumberInput): WaveDefinition[] {
   return WAVE_DEFINITIONS.filter(wave => wave.levelNumber === Number(levelNumber));

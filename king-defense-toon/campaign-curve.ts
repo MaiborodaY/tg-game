@@ -1,8 +1,9 @@
 import type { CampaignCurve, EnemyCombatType, EnemySpawn, EnemySpawnPosition, EnemyType } from './wave-types.ts';
 export type { CampaignCurve } from './wave-types.ts';
 
-type CampaignRole = Exclude<EnemyCombatType, 'goblinChief' | 'ogre'>;
-type HealthySpawn = EnemySpawnPosition<EnemyCombatType> & { hp: number };
+type CampaignEnemy = Exclude<EnemyCombatType, 'plagueAlchemist'>;
+type CampaignRole = Exclude<CampaignEnemy, 'goblinChief' | 'ogre'>;
+type HealthySpawn = EnemySpawnPosition<CampaignEnemy> & { hp: number };
 
 // Continue the 1-3 endpoint without compounding growth against the personal-level cap.
 // The last opening round gained 430 HP: +15, seven +12 steps, +151, then +180.
@@ -11,7 +12,7 @@ const OPENING_FINAL_HP = 1680;
 const WAVE_HP_STEPS = Object.freeze([15, 27, 39, 51, 63, 75, 87, 99, 250, 430]);
 const ROLE_HEALTH = Object.freeze({ goblin: 94, goblinArcher: 56, boar: 104, goblinHealer: 70 });
 const EXTRA_ROLES = Object.freeze(['goblin', 'goblinArcher', 'boar', 'goblin'] as const);
-const UNDEAD_ROLES: Readonly<Record<Exclude<EnemyCombatType, 'goblinHealer'>, EnemyType>> = Object.freeze({ goblin: 'skeleton', goblinArcher: 'skeletonArcher', boar: 'ghoul', goblinChief: 'cryptSpider', ogre: 'cryptKing' });
+const UNDEAD_ROLES: Readonly<Record<Exclude<CampaignEnemy, 'goblinHealer'>, EnemyType>> = Object.freeze({ goblin: 'skeleton', goblinArcher: 'skeletonArcher', boar: 'ghoul', goblinChief: 'cryptSpider', ogre: 'cryptKing' });
 
 export function campaignCurve(number: number): CampaignCurve {
   if (!Number.isInteger(number) || number < 31 || number > 400) throw new RangeError('Expected campaign wave 31–400');
@@ -33,8 +34,8 @@ export function campaignCurve(number: number): CampaignCurve {
   };
 }
 
-function group(at: number, types: readonly EnemyCombatType[]): EnemySpawnPosition<EnemyCombatType>[] {
-  const ranged = (type: EnemyCombatType) => type === 'goblinArcher' || type === 'goblinHealer';
+function group(at: number, types: readonly CampaignEnemy[]): EnemySpawnPosition<CampaignEnemy>[] {
+  const ranged = (type: CampaignEnemy) => type === 'goblinArcher' || type === 'goblinHealer';
   const ranks = [types.filter(type => !ranged(type)), types.filter(ranged)];
   return ranks.flatMap((rank, row) => rank.map((type, index) => ({
     at, type, x: 195 + (index - (rank.length - 1) / 2) * 52, y: row ? 66 : 92,
@@ -51,7 +52,7 @@ function allocateHealth(spawns: readonly EnemySpawnPosition<CampaignRole>[], bud
 export function campaignContinuationSpawns(number: number): EnemySpawn[] {
   const curve = campaignCurve(number);
   const bossType = curve.mainBoss ? 'ogre' : 'goblinChief';
-  const types: EnemyCombatType[] = curve.wave === 10
+  const types: CampaignEnemy[] = curve.wave === 10
     ? ['goblin', bossType, 'goblin', 'goblinArcher', 'goblin', 'goblinArcher']
     : ['goblin', 'boar', 'goblin', 'goblinArcher', 'goblin', 'boar', 'goblin', 'goblinArcher'];
   const count = curve.wave === 10 ? 6 + Math.floor((curve.enemyCount - 8) / 2) : curve.enemyCount;
@@ -60,7 +61,7 @@ export function campaignContinuationSpawns(number: number): EnemySpawn[] {
   // Add support to the opening group without removing an archer. Grouping afterwards
   // keeps every arrival at four or fewer and brings the healer alongside each boss.
   if (curve.hasHealer) types.splice(3, 0, 'goblinHealer');
-  const spawns: EnemySpawnPosition<EnemyCombatType>[] = [];
+  const spawns: EnemySpawnPosition<CampaignEnemy>[] = [];
   for (let index = 0; index < types.length; index += 4) {
     spawns.push(...group(.8 + 14 * (index / 4), types.slice(index, index + 4)));
   }
@@ -80,7 +81,7 @@ export function campaignContinuationSpawns(number: number): EnemySpawn[] {
     return {
       ...spawn,
       // hasHealer is false in level 2, so every undead spawn has a mapped counterpart.
-      type: curve.level === 2 ? UNDEAD_ROLES[spawn.type as Exclude<EnemyCombatType, 'goblinHealer'>] : spawn.type,
+      type: curve.level === 2 ? UNDEAD_ROLES[spawn.type as Exclude<CampaignEnemy, 'goblinHealer'>] : spawn.type,
       damage: isBoss ? Math.round(curve.meleeDamage * (curve.mainBoss ? 2.5 : 31 / 14))
         : Math.max(healer ? 3 : 1, Math.round(curve.meleeDamage * ratio)) + (curve.wave !== 10 && index === 0 ? 1 : 0),
       ...(healer ? { heal: Math.round(number <= 100

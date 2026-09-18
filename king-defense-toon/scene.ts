@@ -10,7 +10,7 @@ import type { PaletteRank } from './unit-ranks.ts';
 import type { GridCell, Scene, SceneOptions, SceneState, SceneUpdate, SceneAssetState } from './scene-types.ts';
 
 type RenderActor = AnimationActor & { type?: ActorType; level?: number; visualScale?: number };
-type HealthActor = Pick<Actor, 'type' | 'x' | 'y' | 'hp' | 'maxHp'> & Partial<Pick<Actor, 'side' | 'visualScale'>>;
+type HealthActor = Pick<Actor, 'type' | 'x' | 'y' | 'hp' | 'maxHp'> & Partial<Pick<Actor, 'side' | 'visualScale' | 'poison'>>;
 type RenderHero = HealthActor & AnimationActor & {
   action: AnimationAction; stats: { auraUnlocked: boolean }; bastionTime?: number; guardianWard?: number;
 };
@@ -27,6 +27,7 @@ interface PreparedAnimation {
 }
 type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
+interface PoisonArt { bottle: HTMLImageElement | null; impact: HTMLImageElement | null }
 
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, CAPITOL_TOWER_POSITION } from './field.ts';
@@ -51,6 +52,8 @@ import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from './goblin-heale
 import { OGRE_GEOMETRY } from './ogre-art.ts';
 import { UNDEAD_ART } from './undead-art.ts';
 import { GRAVEYARD_BOSS_ART } from './graveyard-boss-art.ts';
+import { PLAGUE_ALCHEMIST_METADATA, POISON_BOTTLE_FRAMES, POISON_IMPACT_FRAMES, plagueAlchemistReleasePoint } from './plague-alchemist-art.ts';
+import { poisonBottleFrame, poisonImpactFrame } from './plague-alchemist-animation.ts';
 import { getEnemyCombatType } from './waves.ts';
 import { TINY_WARRIOR_LAYOUT, tinyWarriorFrame } from './tiny-warrior.ts';
 import { tinyLancerFrame } from './tiny-lancer.ts';
@@ -468,7 +471,7 @@ function drawUnit(context: CanvasRenderingContext2D, type: ActorType, x: number,
     context.fill();
   }
   const isEnemy = ['goblin', 'goblinArcher', 'goblinChief', 'goblinHealer', 'ogre', 'boar'].includes(type)
-    || Object.hasOwn(UNDEAD_ENEMY_ART, type);
+    || type === 'plagueAlchemist' || Object.hasOwn(UNDEAD_ENEMY_ART, type);
   if (isEnemy && drawAnimatedUnit(context, goblinArt?.animations, type, actor ?? { type, action: 'idle' }, x, feet, time)) {
     // Enemy classes use their own equipment atlas rather than recoloring the allied portraits.
   } else if (!isEnemy && drawAnimatedUnit(context, allyAnimations, type, actor, x, feet, time, rankLevel ?? 1, compact)) {
@@ -576,6 +579,31 @@ function drawHealth(context: CanvasRenderingContext2D, actor: HealthActor, rende
   context.fillStyle = verticalPaint(context, y + 1, 3,
     enemy ? '#ffb077' : '#b0ef73', enemy ? '#da664d' : '#5eba45');
   context.fillRect(actor.x - width / 2 + 1, y + 1, (width - 2) * clamp(actor.hp / actor.maxHp), 3);
+  if (actor.poison && actor.poison.remaining > 0) {
+    context.fillStyle = '#a4c85b';
+    context.fillRect(actor.x + width / 2 - 3, y + 6, 2, 2);
+  }
+}
+
+function drawPoisonEffect(context: CanvasRenderingContext2D, art: PoisonArt,
+  effect: EffectOf<'poison-bottle'> | EffectOf<'poison-impact'>, renderScale: number) {
+  const progress = clamp(effect.age / effect.duration), bottle = effect.type === 'poison-bottle';
+  const image = bottle ? art.bottle : art.impact;
+  if (!image || progress >= 1 || (bottle && effect.landed)) return;
+  const frame = bottle ? POISON_BOTTLE_FRAMES[poisonBottleFrame(effect.age)]
+    : POISON_IMPACT_FRAMES[poisonImpactFrame(progress)];
+  const scale = (bottle ? .28 : .6) * renderScale;
+  const origin = bottle ? plagueAlchemistReleasePoint({ x: effect.x, y: effect.y + 27 },
+    { x: effect.targetX, y: effect.targetY + 27 }, renderScale) : { x: effect.x, y: effect.y };
+  const x = bottle ? origin.x + (effect.targetX - origin.x) * progress : effect.targetX;
+  const y = bottle ? origin.y + (effect.targetY - origin.y) * progress - Math.sin(progress * Math.PI) * 18 * renderScale : effect.targetY;
+  context.save();
+  context.imageSmoothingEnabled = false;
+  context.globalAlpha = bottle || progress < .65 ? 1 : (1 - progress) / .35;
+  const { rect, centerAnchor } = frame;
+  context.drawImage(image, rect.x, rect.y, rect.width, rect.height,
+    x - centerAnchor.x * scale, y - centerAnchor.y * scale, rect.width * scale, rect.height * scale);
+  context.restore();
 }
 
 function drawChiefWindup(context: CanvasRenderingContext2D, actor: Actor) {
@@ -773,6 +801,7 @@ const ENEMY_ANIMATION_METADATA: Record<EnemyType, AnimationMetadata> = {
   goblinHealer: GOBLIN_HEALER_ANIMATION_METADATA,
   ogre: OGRE_ANIMATION_METADATA,
   boar: BOAR_ANIMATION_METADATA,
+  plagueAlchemist: PLAGUE_ALCHEMIST_METADATA,
   ...undeadMetadata,
 };
 const MONK_RUN_METADATA = {
@@ -817,6 +846,8 @@ async function loadSceneAssets(plan: SceneAssetPlan) {
     [enemy.type, prepareAnimation(imageResource(enemy.sheet), ENEMY_ANIMATION_METADATA[enemy.type])])) };
   return { map: resources.get(plan.mapKey) as BattlefieldMap, goblinArt, allyAnimations,
     goblinHealPulse: plan.goblinHealPulse ? imageResource(plan.goblinHealPulse) : null,
+    poisonArt: { bottle: plan.poisonBottle ? imageResource(plan.poisonBottle) : null,
+      impact: plan.poisonImpact ? imageResource(plan.poisonImpact) : null },
     heroArt: Object.fromEntries(Object.entries(plan.heroArt).map(([direction, url]) => [direction, imageResource(url)])),
     heroEffects: plan.heroEffects ? imageResource(plan.heroEffects) : null };
 }
@@ -833,6 +864,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
   let goblinArt: EnemyArt = { animations: {} };
   let allyAnimations: AnimationGroups = {};
   let goblinHealPulse: HTMLImageElement | null = null;
+  let poisonArt: PoisonArt = { bottle: null, impact: null };
   let heroArt: HeroArt = {};
   let heroEffects: HTMLImageElement | null = null;
   const unitImages = UNIT_IMAGES;
@@ -863,7 +895,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
     onAssetState({ ...assetState });
     pendingAssets = loadSceneAssets(plan).then(assets => {
       if (destroyed || request !== assetRequest) return false;
-      ({ map, goblinArt, allyAnimations, goblinHealPulse, heroArt, heroEffects } = assets);
+      ({ map, goblinArt, allyAnimations, goblinHealPulse, poisonArt, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
@@ -1045,7 +1077,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
       }
       for (const actor of actors) drawHealth(context, actor, actorScale);
       for (const effect of state.battle.effects) {
-        if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
+        if (effect.type === 'poison-bottle' || effect.type === 'poison-impact') drawPoisonEffect(context, poisonArt, effect, actorScale);
+        else if (effect.type.startsWith('hero-')) drawHeroBattleEffect(context, heroEffects, effect, actorScale);
         else drawEffect(context, effect, goblinHealPulse, actorScale);
       }
       drawCastleHealth(context, state.battle.castle);

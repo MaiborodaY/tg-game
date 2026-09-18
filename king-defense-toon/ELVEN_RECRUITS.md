@@ -57,9 +57,16 @@ palettes switch at 50 / 100 / 250 / 500, while the mount and skin stay unchanged
 The Rider's model is 15% larger in battle and formation (47 to 54.05 world units
 high); this visual change does not increase its HP, damage, reach or movement speed.
 
-Elven Archer and Unicorn already have source sheets and preview portraits.
-No approved Elven Healer sheet was found in the inspected assets; its preview
-uses a healing-role symbol. Before implementing it, confirm or supply that art.
+Barracks, unit details, Connect, Market reveals and Recruitment use the newer
+glaive-v2 Rider portrait, with the same five level-color bands. The 96-pixel
+portrait changes only menu artwork: the live combat atlas and melee rules above
+remain unchanged. Its thrown-glaive animation/projectile source is not wired into
+combat by this update.
+
+Elven Archer, Elven Healer and Unicorn have source sheets and 96-pixel Recruitment
+portraits. The Healer now shows its approved hooded model with a crystal staff,
+replacing the role-symbol placeholder. Healer and Archer remain Coming soon,
+Unicorn remains Locked, and only the Rider can be received or placed in battle.
 
 For a later full roster, consider equal thirds for the first three classes, then
 25% each once Unicorn unlocks. This is a proposal only; neither these future odds

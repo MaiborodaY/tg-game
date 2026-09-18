@@ -28,6 +28,12 @@ export interface MeleeApproach extends Point {
   detourUntil?: number;
 }
 
+export interface PoisonStatus {
+  remaining: number;
+  nextTick: number;
+  damagePerTick: number;
+}
+
 export interface ActorBase<T extends ActorType = ActorType> extends Point {
   id: string;
   side: ActorSide;
@@ -72,6 +78,7 @@ export interface ActorBase<T extends ActorType = ActorType> extends Point {
   // These fields are absent until their corresponding action first occurs.
   attackCount?: number;
   approach?: MeleeApproach | null;
+  poison?: PoisonStatus;
 }
 
 export type HeroAbilityKind = 'heal' | 'hammer' | 'miracle';
@@ -127,6 +134,9 @@ export interface BattleEffectPayloads {
   slash: Record<never, never>;
   // An arrow gains landed only on arrival; hero-hammer starts with landed: false.
   arrow: { targetId: string; damage: number; landed?: boolean };
+  // Damage is the complete four-second poison budget, not damage per tick.
+  'poison-bottle': { targetId: string; damage: number; landed?: boolean };
+  'poison-impact': { targetId: string };
   'hero-heal': { targetId: string; amount: number; shield: number };
   'hero-hammer': { targetId: string; damage: number; landed: boolean };
   'hero-impact': { targetId: string };
