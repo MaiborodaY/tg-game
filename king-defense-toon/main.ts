@@ -12,7 +12,7 @@ import { createFramePacer } from './frame-pacer.ts';
 import { createSaveStorage } from './save-storage.ts';
 import { createEconomy, treasuryRate, treasuryUpgradeCost, accrueTreasury, checkpointTreasury, claimOfflineTreasury, TREASURY_OFFLINE_LIMIT_SECONDS, upgradeTreasury, rollSlaveDrop, progressionAfterBattle, advanceCaptureClock, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { MARKET_BUILD_COST, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS, buildMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
-import { SAVE_KEY, STARTING_GOLD, createProgression, cellKey, nextCellCost, unlockCell, claimFirstClear } from './progression.ts';
+import { SAVE_KEY, STARTING_GOLD, createProgression, cellKey, nextCellCost, getCellAvailability, getArmyCapacity, unlockCell, claimFirstClear } from './progression.ts';
 import { RECRUIT_COST, RECRUIT_LEVEL_CAP, createRecruitment, getRecruitProgress, getUnitStats, getRecruitChances, receiveRecruit } from './recruitment.ts';
 import { STARTING_SLAVES, SELL_PRICE, createBarracks, getBarracksUpgrade, completeBarracksUpgrade, startBarracksUpgrade, speedUpBarracks, consumeFirstLancerGuarantee } from './barracks.ts';
 import { getMergeResult } from './unit-merging.ts';
@@ -21,6 +21,7 @@ import { createHero, awardHeroXp } from './hero.ts';
 import { createHeroUI } from './hero-ui.ts';
 import { byId } from './main-dom.ts';
 import { restoreCampaignRoster } from './campaign-roster.ts';
+import { reconcileArmyCapacity } from './army-capacity-migration.ts';
 import { decodeCampaignSave } from './campaign-save.ts';
 import type { GameElementId } from './main-dom.ts';
 import type { Battle, BattlePhase } from './combat-types.ts';
@@ -102,6 +103,7 @@ let autoWaves = true, autoNextRemaining: number | null = null;
 let armyScene: Scene | null = null;
 let economy = createEconomy();
 let pendingOfflineGold = 0, pendingOfflineSlaves = 0;
+let pendingSlotRefund = 0, pendingReturnedFighters = 0, pendingClosedCells = 0;
 let offlineRewardFocus: FocusElement | null = null;
 const offlineRewardInert = new Map<HTMLElement, boolean>();
 let progression = createProgression(), selectedLockedCell: string | null = null, selectedEmptyCell: string | null = null;
@@ -194,15 +196,20 @@ try {
     marketHintCompleted = saved.marketHintCompleted === true || Object.values(recruitment.received).some(count => count > 0);
     progression = createProgression(saved.progression);
     const restored = restoreCampaignRoster(saved.units, saved.reserve, progression);
-    units = restored.units;
+    // Restore fighters before closing old side cells, then persist the refund and roster together.
+    const capacityMigration = reconcileArmyCapacity(progression, restored, barracks.level);
+    units = capacityMigration.units;
     // Personal levels survive reloads; receiving another fighter never rewrites an older one.
-    reserve = restored.reserve;
-    gold = Math.min(1_000_000, Math.floor(saved.gold));
+    reserve = capacityMigration.reserve;
+    gold = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(saved.gold) + capacityMigration.refund);
     clearedWaves = Math.max(0, Math.min(TOTAL_WAVES, Math.floor(Number(saved.clearedWaves) || 0)));
     economy = createEconomy(saved.economy);
     const offlineRewards = savedFields(saved.offlineRewards);
     pendingOfflineGold = typeof offlineRewards.gold === 'number' && Number.isSafeInteger(offlineRewards.gold) && offlineRewards.gold > 0 ? offlineRewards.gold : 0;
     pendingOfflineSlaves = typeof offlineRewards.slaves === 'number' && Number.isSafeInteger(offlineRewards.slaves) && offlineRewards.slaves > 0 ? offlineRewards.slaves : 0;
+    pendingSlotRefund = savedPositiveInteger(offlineRewards.slotRefund) + capacityMigration.refund;
+    pendingReturnedFighters = savedPositiveInteger(offlineRewards.returnedFighters) + capacityMigration.movedCount;
+    pendingClosedCells = savedPositiveInteger(offlineRewards.closedCells) + capacityMigration.removedCells.length;
     // Enable the new default once for older saves; later explicit Off choices still persist.
     autoWaves = saved.autoWavesDefaultVersion === AUTO_WAVES_DEFAULT_VERSION ? saved.autoWaves !== false : true;
     nextId = units.length + reserve.length + 1;
@@ -212,6 +219,10 @@ try {
 
 function savedFields(value: unknown): Record<string, unknown> {
   return Object(value) as Record<string, unknown>;
+}
+
+function savedPositiveInteger(value: unknown): number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : 0;
 }
 
 function isUnlockedCell(key: string): key is CellKey {
@@ -227,7 +238,8 @@ if (!starterSupplyGranted) {
 
 function saveSnapshot() {
   return { campaignVersion: CAMPAIGN_VERSION, gold, units, reserve, recruitment, barracks, hero, starterSupplyGranted, marketHintCompleted, clearedWaves, economy, progression, autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
-    offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves } };
+    offlineRewards: { gold: pendingOfflineGold, slaves: pendingOfflineSlaves,
+      slotRefund: pendingSlotRefund, returnedFighters: pendingReturnedFighters, closedCells: pendingClosedCells } };
 }
 
 function save() {
@@ -319,13 +331,23 @@ function collectOfflineIncome() {
 }
 
 function showOfflineIncome() {
-  if (!scene || !economyActive || isRecovering() || !byId('recovery-panel').hidden || (!pendingOfflineGold && !pendingOfflineSlaves)) return;
+  if (!scene || !economyActive || isRecovering() || !byId('recovery-panel').hidden || (!pendingOfflineGold && !pendingOfflineSlaves && !pendingClosedCells)) return;
   unitDrag?.cancel();
   const panel = byId('offline-rewards-panel');
   byId('offline-gold-reward').hidden = !pendingOfflineGold;
   byId('offline-slaves-reward').hidden = !pendingOfflineSlaves;
   byId('offline-gold-amount').textContent = `+${pendingOfflineGold}`;
   byId('offline-slaves-amount').textContent = `+${pendingOfflineSlaves}`;
+  byId('offline-rewards-title').textContent = pendingClosedCells ? 'Army space updated' : 'Welcome back!';
+  byId('offline-rewards-description').textContent = pendingClosedCells
+    ? `${pendingClosedCells} side ${pendingClosedCells === 1 ? 'tile now requires' : 'tiles now require'} a Barracks upgrade. Your fighters and gold are safe.`
+    : 'Your buildings kept working.';
+  byId('slot-refund-reward').hidden = !pendingClosedCells;
+  byId('slot-refund-amount').textContent = `+${pendingSlotRefund}`;
+  byId('returned-fighters-note').hidden = !pendingReturnedFighters;
+  byId('returned-fighters-note').textContent = `${pendingReturnedFighters} ${pendingReturnedFighters === 1 ? 'fighter returned' : 'fighters returned'} to Barracks.`;
+  byId('offline-storage-note').hidden = !pendingOfflineGold && !pendingOfflineSlaves;
+  byId('collect-offline-rewards').textContent = pendingClosedCells ? 'Continue' : 'Collect';
   if (!panel.hidden) return;
   panel.hidden = false;
   offlineRewardFocus = (document.activeElement as FocusElement | null);
@@ -347,6 +369,7 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   // Income was already saved exactly once. Collect acknowledges it, rather than paying again.
   const collectedSlaves = pendingOfflineSlaves;
   pendingOfflineGold = pendingOfflineSlaves = 0;
+  pendingSlotRefund = pendingReturnedFighters = pendingClosedCells = 0;
   panel.hidden = true;
   for (const [element, wasInert] of offlineRewardInert) element.inert = wasInert;
   offlineRewardInert.clear();
@@ -394,14 +417,14 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || economy.slaves < RECRUIT_COST || transforming;
-  const chances = getRecruitChances(barracks.level === 2);
+  const chances = getRecruitChances(barracks.level >= 2);
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Math.round(chance * 100)}%`).join(', ');
   const nextRecruit = barracks.firstLancerPending ? 'Next recruit: guaranteed Lancer.' : odds;
   button.setAttribute('aria-label', `Transform 1 slave into a fighter. ${economy.slaves} slaves available. ${nextRecruit}`);
   button.title = nextRecruit;
   byId('market-convert-label').textContent = barracks.firstLancerPending ? 'Lancer next' : 'Market';
   const upgrade = getBarracksUpgrade(barracks, recruitment);
-  byId('barracks-building-level').textContent = barracks.level === 2 ? 'II' : ['upgrading', 'ready'].includes(upgrade.status) ? '…' : 'I';
+  byId('barracks-building-level').textContent = ['I', 'II', 'III'][barracks.level - 1] + (['upgrading', 'ready'].includes(upgrade.status) ? '…' : '');
   byId('open-market-info').classList.toggle('upgrade-available', upgrade.canStart);
   byId('open-market-info').disabled = !canEditFormation();
   refreshMarketHint();
@@ -460,7 +483,7 @@ function recruitmentProgressMarkup(type: UnitType) {
 function refreshRecruitmentDetails() {
   byId('recruitment-guarantee').hidden = !barracks.firstLancerPending;
   // Keep the inline purchase controls mounted so timer/income updates preserve focus.
-  byId('recruitment-current-types').innerHTML = getRecruitChances(barracks.level === 2).filter(({ type }) => type !== 'lancer').map(({ type, chance }) => {
+  byId('recruitment-current-types').innerHTML = getRecruitChances(barracks.level >= 2).filter(({ type }) => type !== 'lancer').map(({ type, chance }) => {
     const progress = getRecruitProgress(recruitment, type);
     const portrait = scene?.getUnitArt(type, progress.level);
     const chanceLabel = Math.round(chance * 100) + '%';
@@ -477,7 +500,7 @@ byId('transform-slave').addEventListener('click', () => {
   if (!canEditFormation() || overlay || transforming || economy.slaves < RECRUIT_COST) return;
   completeBarracksUpgrade(barracks);
   const result = receiveRecruit(recruitment, Math.random, {
-    lancerUnlocked: barracks.level === 2, guaranteedLancer: barracks.firstLancerPending,
+    lancerUnlocked: barracks.level >= 2, guaranteedLancer: barracks.firstLancerPending,
   });
   consumeFirstLancerGuarantee(barracks, result.type);
   marketHintCompleted = true;
@@ -543,9 +566,9 @@ function refreshEconomy() {
   byId('market-progress').parentElement!.setAttribute('aria-valuetext', `Next slave in ${marketSeconds} seconds`);
   byId('market-offline-note').textContent = `Offline storage: ${MARKET_OFFLINE_LIMIT_SECONDS / 3600}h · up to ${Math.floor(MARKET_OFFLINE_LIMIT_SECONDS / MARKET_PRODUCTION_SECONDS)} slaves`;
   refreshRecruitment();
-  const cellCost = nextCellCost(progression);
-  byId('slots-count').textContent = `${progression.unlockedCells.length} / 15`;
-  byId('slots-cost').textContent = cellCost === null ? 'All tiles unlocked' : `Next tile: ${cellCost} gold`;
+  const cellCost = nextCellCost(progression, barracks.level);
+  byId('slots-count').textContent = `${progression.unlockedCells.length} / ${getArmyCapacity(barracks.level)}`;
+  byId('slots-cost').textContent = cellCost === null ? barracks.level < 3 ? 'Upgrade Barracks for one more tile.' : 'Current Barracks capacity reached.' : `Next tile: ${cellCost} gold`;
   byId('choose-cell').disabled = cellCost === null;
   const captureSeconds = Math.ceil(economy.captureCooldown);
   const captureLimit = capturePityKills(economy);
@@ -852,9 +875,12 @@ function refresh() {
   // when income refreshes the UI or pickup hides the Barracks dialog.
   if (!unitDrag?.tracking && !draggedMerge) refreshBarracks();
   if (selectedLockedCell) {
-    const cost = nextCellCost(progression);
+    const availability = getCellAvailability(progression, selectedLockedCell, barracks.level);
+    const cost = availability.cost;
     byId('unit-panel-title').textContent = 'Unlock tile';
-    panel.innerHTML = `<div class="placement-copy"><strong>Expand your army</strong><p>Cost: ${cost} gold · You have ${gold}</p></div><div class="selection-actions"><button data-action="unlock-cell"${gold < (cost ?? 0) ? ' disabled' : ''}>Unlock · ${cost} gold</button><button data-action="cancel">Cancel</button></div>`;
+    panel.innerHTML = availability.allowed
+      ? `<div class="placement-copy"><strong>Expand your army</strong><p>Cost: ${cost} gold · You have ${gold}</p></div><div class="selection-actions"><button data-action="unlock-cell"${gold < (cost ?? 0) ? ' disabled' : ''}>Unlock · ${cost} gold</button><button data-action="cancel">Cancel</button></div>`
+      : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Each upgrade lets you buy one more side tile.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
   } else if (selected) {
     const type = types[selected.type];
     const stats = getUnitStats(selected.type, selected.level);
@@ -917,7 +943,7 @@ function mergeDescription(source: MergeSource) {
   if (!fighter) return '';
   if (canMerge(source)) return `Add ${fighter.level} levels to a matching Army fighter. This fighter is consumed.`;
   const sameType = units.some(unit => unit.type === fighter.type && unit.id !== fighter.id);
-  return sameType ? `Combined level cannot exceed ${RECRUIT_LEVEL_CAP}.`
+  return sameType ? 'Combined level is too large to save safely.'
     : `Place another ${types[fighter.type].name} in your Army to connect.`;
 }
 
@@ -941,7 +967,7 @@ function mergeInto(targetId: number | null | undefined, source = pendingMerge) {
   if (!result.ok) {
     const messages: Partial<Record<import('./unit-merging.ts').MergeFailureReason, string>> = {
       'different-type': 'Choose the same type.', 'same-unit': 'Choose another fighter.',
-      'level-cap': `Max level: ${RECRUIT_LEVEL_CAP}.`, 'target-missing': 'Tap a green fighter.',
+      'level-overflow': 'Combined level is too large to save safely.', 'target-missing': 'Tap a green fighter.',
     };
     tell(messages[result.reason] ?? 'Fighter unavailable.');
     return false;
@@ -1070,6 +1096,8 @@ function refreshBarracksUpgrade() {
   const info = getBarracksUpgrade(barracks, recruitment);
   const upgrading = info.status === 'upgrading' || info.status === 'ready';
   const unlocked = info.lancerUnlocked;
+  const targetName = info.targetLevel === 3 ? 'III' : 'II';
+  const hours = info.durationMs / 3_600_000;
   const unavailable = !canEditFormation() || transforming;
   byId('barracks-upgrade-gold').textContent = String(gold);
   const portrait = scene?.getUnitArt('lancer', getRecruitProgress(recruitment, 'lancer').level);
@@ -1079,23 +1107,24 @@ function refreshBarracksUpgrade() {
   byId('lancer-recruitment-chance').textContent = unlocked
     ? Math.round(getRecruitChances(true).find(({ type }) => type === 'lancer')!.chance * 100) + '%' : 'Locked';
   byId('lancer-recruitment-training').hidden = !unlocked;
-  byId('barracks-upgrade-state').hidden = unlocked;
-  byId('barracks-upgrade-state').textContent = upgrading ? `Barracks II · ${formatUpgradeTime(info.remainingMs)}`
-    : info.canStart ? 'Unlock with Barracks II'
-    : `Requires Swordsman Lv. ${info.requiredRecruitLevel} · now Lv. ${info.recruitLevel}`;
-  byId('barracks-upgrade-note').hidden = unlocked;
+  byId('barracks-upgrade-state').hidden = info.targetLevel === null;
+  byId('barracks-upgrade-state').textContent = upgrading ? `Barracks ${targetName} · ${formatUpgradeTime(info.remainingMs)}`
+    : info.canStart ? `Barracks ${targetName} · +1 side tile`
+    : `Requires ${types[info.requiredRecruitType].name} Lv. ${info.requiredRecruitLevel} · now Lv. ${info.recruitLevel}`;
+  byId('barracks-upgrade-note').hidden = unlocked && !upgrading && !info.canStart && info.targetLevel !== null;
   byId('barracks-upgrade-note').textContent = upgrading ? 'Building continues offline.'
-    : info.canStart ? '1 hour · continues offline · first Lancer guaranteed'
+    : info.targetLevel === null ? 'Barracks III · 11 army tiles · 2 side tiles'
+    : info.canStart ? `${hours} ${hours === 1 ? 'hour' : 'hours'} · offline building${info.targetLevel === 2 ? ' · unlocks Lancer' : ''}`
     : 'Raise its recruitment level at the Market.';
   byId('barracks-upgrade-progress').hidden = !upgrading;
   byId('barracks-upgrade-progress').value = info.durationMs - info.remainingMs;
-  byId('barracks-upgrade-progress').max = info.durationMs;
+  byId('barracks-upgrade-progress').max = Math.max(1, info.durationMs);
   byId('barracks-upgrade-progress').setAttribute('aria-label', `Barracks construction: ${formatUpgradeTime(info.remainingMs)} remaining`);
   const start = byId('barracks-start-upgrade');
   start.hidden = !info.canStart;
   start.disabled = unavailable || !info.canStart || gold < info.cost;
-  start.textContent = `Upgrade Barracks II · ${info.cost} gold`;
-  start.setAttribute('aria-label', `Upgrade Barracks to level 2 for ${info.cost} gold. Takes 1 hour.`);
+  start.textContent = `Upgrade Barracks ${targetName} · ${info.cost} gold`;
+  start.setAttribute('aria-label', `Upgrade Barracks to level ${info.targetLevel} for ${info.cost} gold. Takes ${hours} ${hours === 1 ? 'hour' : 'hours'}.`);
   const finish = byId('barracks-finish-upgrade');
   finish.hidden = !upgrading;
   finish.disabled = unavailable || info.remainingMs === 0 || gold < info.speedUpCost;
@@ -1118,7 +1147,8 @@ byId('barracks-finish-upgrade').addEventListener('click', () => {
   // Save natural completion too if the last second elapsed between rendering and tapping.
   gold = result.gold;
   save(); refresh();
-  if (barracks.level === 2) byId('barracks-go-market').focus({ preventScroll: true });
+  if (barracks.firstLancerPending) byId('barracks-go-market').focus({ preventScroll: true });
+  else byId('market-info-panel').querySelector<HTMLElement>('[data-close-overlay]')!.focus({ preventScroll: true });
 });
 byId('barracks-go-market').addEventListener('click', () => {
   closeOverlay(false);
@@ -1296,8 +1326,13 @@ byId('selection-panel').addEventListener('click', event => {
   const button = (event.target as Element).closest<HTMLButtonElement>('[data-action]'), action = button?.dataset.action;
   if (!action || button.disabled) return;
   if (action === 'cancel') { closeOverlay(); return; }
+  if (action === 'barracks-info') {
+    setOverlay('market-info-panel', byId('army-map'));
+    refreshRecruitmentDetails();
+    return;
+  }
   if (action === 'unlock-cell') {
-    const result = unlockCell(progression, gold, selectedLockedCell!);
+    const result = unlockCell(progression, gold, selectedLockedCell!, barracks.level);
     if (result.unlocked) {
       gold = result.gold;
       selectedEmptyCell = selectedLockedCell;
@@ -1375,6 +1410,7 @@ function resetRun() {
   economy = createEconomy(); economyLastTick = performance.now(); economyUnsaved = 0;
   economy.slaves = STARTING_SLAVES;
   checkpointTreasury(economy); pendingOfflineGold = pendingOfflineSlaves = 0;
+  pendingSlotRefund = pendingReturnedFighters = pendingClosedCells = 0;
   progression = createProgression(); selectedLockedCell = selectedEmptyCell = null;
   battleSpeed = 1;
   selectedId = movingId = lastOutcome = null;
@@ -1442,7 +1478,8 @@ function renderScene() {
     dragTargetId: draggedMerge?.targetId ?? null,
     placementType: recruit?.type ?? (movingId ? selected?.type : null), replacingFromReserve: !!recruit,
     placementLevel: recruit?.level ?? selected?.level ?? 1, battle: null, time: visualTime,
-    unlockedCells: progression.unlockedCells, nextUnlockCost: nextCellCost(progression), selectedLockedCell, selectedEmptyCell });
+    unlockedCells: progression.unlockedCells, barracksLevel: barracks.level,
+    nextUnlockCost: nextCellCost(progression, barracks.level), selectedLockedCell, selectedEmptyCell });
 }
 
 function refreshBattleHud() {

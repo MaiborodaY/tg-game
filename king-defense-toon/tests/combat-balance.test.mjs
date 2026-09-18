@@ -13,6 +13,16 @@ test('combat harness uses the three starting cells and legal distinct expanded p
   assert.throws(() => makeFormation({ swordsman: 16 }), RangeError);
 });
 
+test('combat harness retains high personal levels and rejects invalid numeric representations', () => {
+  for (const level of [101, 500, Number.MAX_SAFE_INTEGER]) {
+    const formation = makeFormation({ swordsman: 1, archer: 1, healer: 1, level });
+    assert.deepEqual(formation.map(unit => unit.level), [level, level, level]);
+  }
+  for (const level of [0, -1, 1.5, '500', NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => makeFormation({ swordsman: 1, level }), RangeError);
+  }
+});
+
 test('a real complete combat is deterministic and reports actual damage without mutating saved fighters', () => {
   const formation = makeFormation({ swordsman: 9, archer: 4, healer: 2, level: 100 });
   for (const unit of formation) Object.freeze(unit);

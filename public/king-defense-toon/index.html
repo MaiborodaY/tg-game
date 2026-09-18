@@ -7,8 +7,8 @@
     <meta name="description" content="BroTD Infinity: grow your army and paladin hero, and defend your castle against goblins and undead." />
     <title>BroTD Infinity</title>
     <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
-    <script type="module" crossorigin src="./assets/index-Dyzkq1gB.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-t4Qdo0Am.css">
+    <script type="module" crossorigin src="./assets/index-BuyDeq8T.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-qHVl4O5z.css">
   </head>
   <body>
     <main id="app" aria-label="BroTD Infinity formation">
@@ -129,10 +129,10 @@
             <p id="market-offline-note" class="building-note">Offline storage: 4h · up to 8 slaves</p>
           </article>
           <article id="army-space-building" class="expansion-card" role="tabpanel" aria-labelledby="tab-army-space" hidden>
-            <div class="expansion-heading"><h3 id="expansion-title">Army space</h3><b id="slots-count">3 / 15</b></div>
+            <div class="expansion-heading"><h3 id="expansion-title">Army space</h3><b id="slots-count">3 / 9</b></div>
             <p id="slots-cost">Next tile: gold</p>
             <button id="choose-cell" class="battle-button" type="button">Choose a tile</button>
-            <p class="building-note">Spend gold on any locked tile. Each new tile costs more.</p>
+            <p class="building-note">Barracks I: 9 central tiles. Barracks II and III each allow one more side tile. Tiles cost gold.</p>
             <div class="capture-info"><strong id="capture-status">First capture: 0 / 2 kills</strong><p id="capture-detail">Your first slave is guaranteed by the second kill.</p></div>
           </article>
         </div>
@@ -172,7 +172,7 @@
           <div class="music-volume-row"><label for="music-volume">Volume</label><input id="music-volume" type="range" min="0" max="100" step="1" value="5" aria-label="Music volume" /><output id="music-volume-label" for="music-volume">5%</output></div>
           <div class="setting-row reset-row"><div><h3>Start over</h3><p>Reset your army and progress</p></div><button id="reset" class="battle-button danger-button" type="button" aria-label="Reset run">Reset run</button></div>
           <p id="reset-confirmation" class="reset-confirmation" role="status" hidden>Tap reset again to start over. Army, gold, buildings and slaves will be reset.</p>
-          <p id="profile-version" class="profile-version" aria-label="Game version"><span>Version 260918-140347</span><time datetime="2026-09-18T14:03:47.573Z">18.09.2026 · 14:03:47 UTC</time></p>
+          <p id="profile-version" class="profile-version" aria-label="Game version"><span>Version 260918-143624</span><time datetime="2026-09-18T14:36:24.355Z">18.09.2026 · 14:36:24 UTC</time></p>
         </div>
       </section>
       <section id="offline-rewards-panel" class="offline-rewards-overlay" role="dialog" aria-modal="true" aria-labelledby="offline-rewards-title" aria-describedby="offline-rewards-description" hidden>
@@ -180,11 +180,13 @@
           <h2 id="offline-rewards-title">Welcome back!</h2>
           <p id="offline-rewards-description">Your buildings kept working.</p>
           <div class="offline-rewards-list">
+            <div id="slot-refund-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="coin-icon"></span></span><span class="offline-reward-label">Tile refund</span><strong id="slot-refund-amount">0</strong></div>
             <div id="offline-gold-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="coin-icon"></span></span><span class="offline-reward-label">Gold</span><strong id="offline-gold-amount">0</strong></div>
             <div id="offline-slaves-reward" class="offline-reward-row" hidden><span class="offline-reward-icon" aria-hidden="true"><span class="slave-icon" aria-hidden="true"></span></span><span class="offline-reward-label">Slaves</span><strong id="offline-slaves-amount">0</strong></div>
           </div>
+          <p id="returned-fighters-note" class="offline-rewards-note" hidden></p>
           <button id="collect-offline-rewards" class="battle-button" type="button">Collect</button>
-          <p class="offline-rewards-note">Offline storage: up to 4 hours.</p>
+          <p id="offline-storage-note" class="offline-rewards-note">Offline storage: up to 4 hours.</p>
         </div>
       </section>
       <section id="recovery-panel" class="recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="recovery-title" aria-describedby="recovery-description" tabindex="-1" hidden>

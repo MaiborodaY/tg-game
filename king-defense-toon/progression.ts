@@ -7,9 +7,21 @@ export interface Progression {
   firstClears: number[];
 }
 
+export interface CellProgression {
+  readonly unlockedCells: readonly string[];
+}
+
 export interface CellUnlockResult {
   unlocked: boolean;
   gold: number;
+}
+
+export type CellAvailabilityReason = 'available' | 'invalid-cell' | 'unlocked' | 'barracks-required' | 'max-capacity' | 'invalid-state';
+export interface CellAvailability {
+  allowed: boolean;
+  cost: number | null;
+  requiredBarracksLevel: 2 | 3 | null;
+  reason: CellAvailabilityReason;
 }
 
 export const SAVE_KEY = 'brotd-infinity:campaign:v2';
@@ -61,13 +73,41 @@ export function createProgression(saved: unknown = {}): Progression {
   };
 }
 
-export function nextCellCost(progression: Progression): number | null {
+export function getArmyCapacity(barracksLevel: number = 1): 9 | 10 | 11 {
+  return barracksLevel === 3 ? 11 : barracksLevel === 2 ? 10 : 9;
+}
+
+function hasValidCells(progression: CellProgression): boolean {
+  return progression != null && Array.isArray(progression.unlockedCells)
+    && progression.unlockedCells.every(isValidCell)
+    && new Set(progression.unlockedCells).size === progression.unlockedCells.length
+    && STARTING_CELLS.every(key => progression.unlockedCells.includes(key));
+}
+
+export function nextCellCost(progression: CellProgression, barracksLevel: number = 1): number | null {
+  if (!hasValidCells(progression) || progression.unlockedCells.length >= getArmyCapacity(barracksLevel)) return null;
   return CELL_UNLOCK_COSTS[progression.unlockedCells.length - STARTING_CELLS.length] ?? null;
 }
 
-export function unlockCell(progression: Progression, gold: number, key: string): CellUnlockResult {
-  const cost = nextCellCost(progression);
-  if (cost === null || !isValidCell(key) || progression.unlockedCells.includes(key)
+export function getCellAvailability(progression: CellProgression, key: string, barracksLevel: number = 1): CellAvailability {
+  const blocked = (reason: CellAvailabilityReason, requiredBarracksLevel: 2 | 3 | null = null): CellAvailability => ({
+    allowed: false, cost: null, requiredBarracksLevel, reason,
+  });
+  if (!isValidCell(key)) return blocked('invalid-cell');
+  if (!hasValidCells(progression)) return blocked('invalid-state');
+  if (progression.unlockedCells.includes(key)) return blocked('unlocked');
+  const sideQuota = getArmyCapacity(barracksLevel) - 9;
+  const sideCount = progression.unlockedCells.filter(cell => cell[0] === '0' || cell[0] === '4').length;
+  if ((key[0] === '0' || key[0] === '4') && sideCount >= sideQuota) {
+    return sideQuota < 2 ? blocked('barracks-required', sideQuota === 0 ? 2 : 3) : blocked('max-capacity');
+  }
+  const cost = nextCellCost(progression, barracksLevel);
+  return cost === null ? blocked('max-capacity') : { allowed: true, cost, requiredBarracksLevel: null, reason: 'available' };
+}
+
+export function unlockCell(progression: Progression, gold: number, key: string, barracksLevel: number = 1): CellUnlockResult {
+  const { allowed, cost } = getCellAvailability(progression, key, barracksLevel);
+  if (!allowed || cost === null || !isValidCell(key)
     || !Number.isFinite(gold) || gold < 0 || gold < cost) return { unlocked: false, gold };
   progression.unlockedCells.push(key);
   return { unlocked: true, gold: gold - cost };

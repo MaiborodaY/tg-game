@@ -46,6 +46,7 @@ interface RecruitmentSaveFields {
 }
 
 export const RECRUIT_COST = 1;
+// Training governs newly received fighters; Connect can raise personal levels beyond it.
 export const RECRUIT_LEVEL_CAP = 100;
 export const RECRUIT_LEVEL_STEP = 5;
 export const UNIT_LEVEL_STAT_BONUS = .05;
@@ -101,7 +102,7 @@ function migrateLegacyTraining(received: number): number {
 
 export function normalizeUnitLevel(value: unknown = 1): number {
   const level = typeof value === 'number' || typeof value === 'string' ? Number(value) : 1;
-  return Number.isFinite(level) ? Math.max(1, Math.min(RECRUIT_LEVEL_CAP, Math.floor(level))) : 1;
+  return Number.isFinite(level) ? Math.max(1, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(level))) : 1;
 }
 
 function assertRecruitment(recruitment: unknown): asserts recruitment is RecruitmentState {
@@ -138,11 +139,13 @@ export function getUnitStats(type: UnitType, value: unknown = 1): UnitStats {
   const level = normalizeUnitLevel(value);
   // Add a share of level-one stats, never compound the previous level's rounded value.
   const multiplier = 1 + (level - 1) * UNIT_LEVEL_STAT_BONUS;
+  // Only the numeric representation saturates; ordinary levels retain the same growth curve.
+  const scaled = (base: number): number => Math.min(Number.MAX_SAFE_INTEGER, Math.round(base * multiplier));
   return {
     level,
-    hp: Math.round(definition.hp * multiplier),
-    damage: Math.round(definition.damage * multiplier),
-    heal: Math.round((definition.heal ?? 0) * multiplier),
+    hp: scaled(definition.hp),
+    damage: scaled(definition.damage),
+    heal: scaled(definition.heal ?? 0),
   };
 }
 

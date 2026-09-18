@@ -30,8 +30,8 @@ export function artContracts(rank: PaletteRank): void {
 
   // @ts-expect-error Base palettes do not live in the extra rank catalogue.
   UNIT_RANK_ASSETS.swordsman[1];
-  // @ts-expect-error Only four personal-level palette ranks exist.
-  LANCER_ASSETS[5];
+  // @ts-expect-error Only five personal-level palette ranks exist.
+  LANCER_ASSETS[6];
   // @ts-expect-error URL catalogues contain strings, not decoded images.
   const decoded: HTMLImageElement = ST_KNIHOR_ASSETS.down;
   // @ts-expect-error The three authored hero directions have no left atlas.

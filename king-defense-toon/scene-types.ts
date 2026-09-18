@@ -32,6 +32,7 @@ export interface SceneState {
   selectedEmptyCell?: string | null;
   selectedLockedCell?: string | null;
   nextUnlockCost?: number | null;
+  barracksLevel?: number;
   movingId?: SceneUnitId | null;
   replacingFromReserve?: boolean;
   mergeTargets?: readonly SceneUnitId[];

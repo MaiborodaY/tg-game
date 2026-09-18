@@ -14,14 +14,26 @@ const server = await createServer({
     if (id.endsWith('/main.ts')) return code + `\nwindow.barracksCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
-      state: () => JSON.parse(JSON.stringify({ gold, units, reserve, recruitment, barracks, slaves: economy.slaves })),
+      state: () => JSON.parse(JSON.stringify({ gold, units, reserve, recruitment, barracks, slaves: economy.slaves,
+        pendingRecruitId, pendingMerge, overlayId: overlay?.id ?? null, keyboardCell })),
       advance: ms => { window.checkNow += ms; sessionStorage.setItem('checkNow', window.checkNow); tickEconomy(); },
+      prepareThird: () => {
+        gold = 5000;
+        barracks = createBarracks({ level: 2 });
+        recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
+        units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
+        reserve = [{ id: 2, type: 'lancer', level: 4 }];
+        nextId = 3;
+        economy.slaves = 10;
+        economy.treasuryUpdatedAt = Date.now();
+        save(); refresh();
+      },
     };`;
   } }] });
 async function assertEqualUnlockedOdds(page) {
   for (const type of ['swordsman', 'archer', 'healer', 'lancer']) {
     const chance = page.locator(`#market-info-panel [data-recruit-type="${type}"] .recruitment-detail-heading > span`);
-    assert.equal(await chance.innerText(), '25%', `${type} has an equal 25% chance after Barracks II`);
+    assert.equal(await chance.innerText(), '25%', `${type} has an equal 25% chance from Barracks II onward`);
   }
 }
 let browser;
@@ -30,7 +42,7 @@ try {
   await mkdir(output, { recursive: true });
   await server.listen();
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  for (const { width, height } of [{ width: 320, height: 568 }, { width: 320, height: 700 }, { width: 390, height: 700 }]) {
+  for (const { width, height } of [{ width: 390, height: 700 }, { width: 320, height: 568 }, { width: 320, height: 700 }]) {
     const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
     await context.route('https://telegram.org/**', route => route.abort());
     await context.addInitScript(() => {
@@ -171,42 +183,126 @@ try {
     await screenshot('lancer');
     await page.locator(`[data-barracks-recruit-id="${lancer.id}"]`).click();
     await page.locator('#army-map').press('Enter');
-    assert.equal((await state()).units[0].type, 'lancer');
+    assert.equal((await state()).units[0].type, 'lancer', `Lancer placement at ${width}×${height}: ${JSON.stringify(await state())}`);
     await screenshot('formation');
+
+    // Prepare receipts one short of the III gate, then exercise Connect and recruitment through the UI.
+    await page.evaluate(() => window.barracksCheck.prepareThird());
+    await page.locator('#open-barracks').click();
+    await page.locator('[data-barracks-unit-id="2"]').click();
+    await page.locator('[data-barracks-merge-id="2"]').click();
+    await page.locator('#army-map').press('Enter');
+    assert.equal((await state()).units[0].level, 5, 'personal Lancer reaches level 5 through Connect');
+    assert.equal((await state()).recruitment.received.lancer, 49, 'Connect cannot grant recruitment experience');
+    await upgrade();
+    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Lancer.*Lv\. 5.*now Lv\. 4/);
+    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false, 'personal Lancer level cannot unlock III');
+    assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true);
+    assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
+    await assertEqualUnlockedOdds(page);
+    await fits();
+    await screenshot('third-locked');
+    await close();
+    await page.evaluate(() => { Math.random = () => .9; });
+    await page.locator('#transform-slave').click();
+    await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
+    assert.equal((await state()).recruitment.received.lancer, 50);
+    assert.equal((await state()).reserve.at(-1).type, 'lancer');
+    assert.equal((await state()).reserve.at(-1).level, 5);
+    await upgrade();
+    assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
+    assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks III.*2000 gold/);
+    await fits();
+    await screenshot('third-available');
+    const beforeThird = await state();
+    await page.locator('#barracks-start-upgrade').click();
+    let third = await state();
+    assert.equal(third.gold, beforeThird.gold - 2000);
+    assert.equal(third.barracks.level, 2);
+    assert.equal(third.barracks.upgradeReadyAt - third.barracks.upgradeStartedAt, 3 * 60 * 60 * 1000);
+    assert.equal(third.barracks.firstLancerPending, false);
+    await page.locator('#barracks-start-upgrade').evaluate(button => button.click());
+    assert.equal((await state()).gold, third.gold, 'III duplicate start cannot charge twice');
+    assert.equal((await state()).barracks.upgradeStartedAt, third.barracks.upgradeStartedAt);
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /300 gold/);
+    await page.evaluate(() => window.barracksCheck.advance(37 * 1000));
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /299 gold/);
+    assert.equal(await page.locator('#barracks-upgrade-progress').evaluate(progress => progress.value), 37000);
+    await page.evaluate(() => window.barracksCheck.advance((90 * 60 - 37) * 1000));
+    if (await page.locator('#collect-offline-rewards').isVisible()) await page.locator('#collect-offline-rewards').click();
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /150 gold/);
+    await fits();
+    await screenshot('third-building');
+    await page.reload(); await ready();
+    await upgrade();
+    assert.equal((await state()).barracks.level, 2);
+    assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /150 gold/);
+    assert.equal(await page.locator('#barracks-upgrade-progress').evaluate(progress => progress.value), 90 * 60 * 1000);
+    third = await state();
+    await page.locator('#barracks-finish-upgrade').click();
+    assert.equal((await state()).gold, third.gold - 150);
+    assert.equal((await state()).barracks.level, 3);
+    assert.equal((await state()).barracks.firstLancerPending, false, 'III never grants a second guaranteed Lancer');
+    assert.equal(await page.locator('#barracks-building-level').innerText(), 'III');
+    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false);
+    assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
+    assert.equal(await page.locator('#barracks-go-market').isVisible(), false);
+    assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
+    await page.locator('#barracks-finish-upgrade').evaluate(button => button.click());
+    assert.equal((await state()).gold, third.gold - 150, 'III duplicate finish cannot charge twice');
+    await assertEqualUnlockedOdds(page);
+    await fits();
+    await screenshot('third-complete');
+    await close();
+    await page.evaluate(() => { Math.random = () => 0; });
+    await page.locator('#transform-slave').click();
+    await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
+    assert.equal((await state()).reserve.at(-1).type, 'swordsman', 'III conversion follows ordinary odds');
+    await page.reload(); await ready();
+    assert.equal((await state()).barracks.level, 3);
+    assert.equal((await state()).barracks.firstLancerPending, false);
+    await upgrade();
+    await assertEqualUnlockedOdds(page);
     await context.close();
   }
 
   // Expiry while closed unlocks without any further purchase, and only once.
+  for (const level of [1, 2]) {
   const context = await browser.newContext({ viewport: { width: 390, height: 700 } });
   await context.route('https://telegram.org/**', route => route.abort());
-  await context.addInitScript(() => {
+  await context.addInitScript(level => {
     const now = Date.now();
     if (localStorage.getItem('brotd-infinity:campaign:v2')) return;
     localStorage.setItem('brotd-infinity:campaign:v2', JSON.stringify({ campaignVersion: 3, gold: 17,
       starterSupplyGranted: true, autoWaves: false, autoWavesDefaultVersion: 1,
       economy: { slaves: 1, treasuryUpdatedAt: now },
-      barracks: { level: 1, upgradeStartedAt: now - 3601000, upgradeReadyAt: now - 1000, firstLancerPending: false },
+      recruitment: { version: 2, received: { swordsman: 50, lancer: level === 2 ? 50 : 0 } },
+      barracks: { level, upgradeStartedAt: now - (level === 1 ? 3600000 : 10800000) - 1000,
+        upgradeReadyAt: now - 1000, firstLancerPending: false },
     }));
-  });
+  }, level);
   const page = await context.newPage();
   page.on('pageerror', error => failures.push(error.message));
   await page.goto('http://127.0.0.1:5200/');
   await page.waitForFunction(() => window.barracksCheck?.ready());
   await page.evaluate(() => window.barracksCheck.freeze());
-  assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.level, 2);
+  assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.level, level + 1);
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await page.locator('#open-market-info').click();
   await assertEqualUnlockedOdds(page);
   assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
-  assert.equal(await page.locator('#recruitment-guarantee').isVisible(), true);
+  assert.equal(await page.locator('#recruitment-guarantee').isVisible(), level === 1);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
+  assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.level, level + 1);
+  assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.firstLancerPending, level === 1);
   await page.locator('#open-market-info').click();
   await assertEqualUnlockedOdds(page);
   await context.close();
+  }
   assert.deepEqual(failures, []);
-  console.log(`Mobile Market Info checks passed at 320×568, 320×700 and 390×700: visible locked Lancer, training gate, inline upgrade, live timer/reload/offline, proportional finish, no duplicate charges, guarantee, odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
+  console.log(`Mobile Market Info checks passed at 320×568, 320×700 and 390×700: Barracks II/III recruitment gates, personal Connect exclusion, costs/timers/reload/offline, proportional finish, no duplicate charges, one-time guarantee, 25% odds and Lancer placement. Screenshots: ${fileURLToPath(output)}`);
 } finally {
   await browser?.close();
   await server.close();

@@ -44,8 +44,8 @@ test('lancer ground anchors and complete spear frames fit the shipped compact at
   assert.ok(compact.width * scale <= 58, 'body stays inside a formation column');
 });
 
-test('all four lancer colors and menu crops are shipped lossless WebP under 85 KB combined', async () => {
-  assert.equal(Object.keys(LANCER_ASSETS).length, 4);
+test('all five lancer colors and menu crops are shipped lossless WebP under 100 KB combined', async () => {
+  assert.equal(Object.keys(LANCER_ASSETS).length, 5);
   let total = 0;
   for (const asset of Object.values(LANCER_ASSETS)) for (const url of Object.values(asset)) {
     const bytes = await readFile(new URL(url));
@@ -54,5 +54,5 @@ test('all four lancer colors and menu crops are shipped lossless WebP under 85 K
     assert.ok(bytes.includes(Buffer.from('VP8L')), 'lossless WebP stream');
     total += (await stat(new URL(url))).size;
   }
-  assert.ok(total < 85 * 1024, `runtime art total ${total}`);
+  assert.ok(total < 100 * 1024, `runtime art total ${total}`);
 });

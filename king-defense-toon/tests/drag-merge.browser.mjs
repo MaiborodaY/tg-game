@@ -21,7 +21,7 @@ const server = await createServer({
       refresh,
       state: () => JSON.parse(JSON.stringify({ units, reserve, gold, slaves: economy.slaves, recruitment })),
       drag: () => ({ active: unitDrag.active, tracking: unitDrag.tracking, targets: mergeTargetIds, source: draggedMerge?.source }),
-      invalidateTarget: id => { units = units.map(u => u.id === id ? {...u, level: 100} : u); refresh(); },
+      invalidateTarget: id => { units = units.map(u => u.id === id ? {...u, type: 'archer'} : u); refresh(); },
     };`;
   } }] });
 let browser;
@@ -86,8 +86,6 @@ try {
       await hold(await cell(2,0)); await move(destination); await up();
       assert.deepEqual(await read(),before); assert.equal(await ghost(),0);
     }
-    await hold(await cell(2,1)); await move(await cell(3,0)); await up();
-    assert.deepEqual(await read(),before); // 3+98 exceeds the cap.
     await hold(await cell(2,0)); await move(await cell(2,1));
     assert.equal(await page.locator('.unit-drag-ghost.is-valid').count(),1);
     await page.screenshot({ path: fileURLToPath(new URL(`brotd-drag-merge-${width}.png`, output)) });
@@ -155,8 +153,8 @@ try {
     assert.equal(after.reserve.length,10);
     assert.equal(after.gold,before.gold); assert.equal(after.slaves,before.slaves);
 
-    // Mouse capture survives closing Barracks, and exact level 100 is allowed.
-    for (const reserveId of [4,5]) {
+    // Mouse capture survives closing Barracks and Connect continues past level 100.
+    for (const reserveId of [4,5,6]) {
       await page.locator('#open-barracks').click();
       const source = await center(`[data-barracks-unit-id="${reserveId}"]`);
       await page.mouse.move(source.x,source.y); await page.mouse.down(); await page.waitForTimeout(510);
@@ -165,22 +163,22 @@ try {
       await page.mouse.move(target.x,target.y,{steps:5}); await page.mouse.up();
       assert.equal(await ghost(),0);
     }
-    after = await read(); assert.equal(after.units.find(u=>u.col===3&&u.row===0).level,100);
-    assert.equal(after.reserve.length,8);
+    after = await read(); assert.equal(after.units.find(u=>u.col===3&&u.row===0).level,101);
+    assert.equal(after.reserve.length,7);
     assert.equal(after.gold,before.gold); assert.equal(after.slaves,before.slaves);
 
     // Existing button route and ordinary controls still respond after captured drags.
     await page.locator('#open-barracks').click();
-    await page.locator('[data-barracks-unit-id="6"]').tap();
-    assert.match(await page.locator('[data-barracks-merge-id="6"]').innerText(), /Connect/);
+    await page.locator('[data-barracks-unit-id="7"]').tap();
+    assert.match(await page.locator('[data-barracks-merge-id="7"]').innerText(), /Connect/);
     assert.doesNotMatch(await page.locator('#barracks-panel').innerText(), /\bmerge\b/i);
-    await page.locator('[data-barracks-merge-id="6"]').tap();
+    await page.locator('[data-barracks-merge-id="7"]').tap();
     await page.touchscreen.tap(...Object.values(await cell(2,1)));
     after = await read(); assert.equal(after.units.find(u=>u.col===2&&u.row===1).level,7);
     before = after;
     // Legality can change after pickup. Reject at release without consuming the source.
     await page.locator('#open-barracks').click();
-    await hold(await center('[data-barracks-unit-id="7"]'));
+    await hold(await center('[data-barracks-unit-id="8"]'));
     const changedTarget = before.units.find(u=>u.col===2&&u.row===1).id;
     await page.evaluate(id=>window.dragCheck.invalidateTarget(id),changedTarget);
     const staleState = await read();
@@ -189,7 +187,7 @@ try {
     assert.equal(await page.locator('#barracks-panel').isVisible(),true);
     assert.deepEqual(errors,[]);
     checks.push({width,touch:true,mouse:true,tap:true,armyMerge:true,reserveMerge:true,cancellation:true,
-      nativeScroll:true,reload:true,exactCap:true,staleTarget:true,mergeButton:true,combatUpdates:0});
+      nativeScroll:true,reload:true,aboveLevel100:true,staleTarget:true,mergeButton:true,combatUpdates:0});
     await context.close();
   }
   console.log(JSON.stringify({ok:true,checks}));

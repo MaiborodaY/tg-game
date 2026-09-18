@@ -7,6 +7,7 @@ export const LANCER_ASSETS: Readonly<Record<PaletteRank, SheetArtUrls>> = Object
   2: { sheet: new URL('./assets/lancer/lancer-purple.webp', import.meta.url).href, art: new URL('./assets/lancer/lancer-purple-art.webp', import.meta.url).href },
   3: { sheet: new URL('./assets/lancer/lancer-red.webp', import.meta.url).href, art: new URL('./assets/lancer/lancer-red-art.webp', import.meta.url).href },
   4: { sheet: new URL('./assets/lancer/lancer-yellow.webp', import.meta.url).href, art: new URL('./assets/lancer/lancer-yellow-art.webp', import.meta.url).href },
+  5: { sheet: new URL('./assets/lancer/lancer-black.webp', import.meta.url).href, art: new URL('./assets/lancer/lancer-black-art.webp', import.meta.url).href },
 });
 export const LANCER_GEOMETRY = {
   "layout": {

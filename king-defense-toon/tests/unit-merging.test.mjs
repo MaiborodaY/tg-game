@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getMergeResult } from '../unit-merging.ts';
-import { RECRUIT_LEVEL_CAP, UNIT_LEVEL_STAT_BONUS, getUnitStats } from '../recruitment.ts';
+import { RECRUIT_LEVEL_CAP, UNIT_LEVEL_STAT_BONUS, getUnitStats, normalizeUnitLevel } from '../recruitment.ts';
+import { restoreCampaignRoster } from '../campaign-roster.ts';
+import { createProgression } from '../progression.ts';
 import { UNIT_TYPES } from '../units.ts';
 
 const fighter = (id, level = 1, type = 'swordsman') => ({ id, type, level });
@@ -75,19 +77,33 @@ test('same unit, different type, stale source and absent targets never consume f
   }
 });
 
-test('cap is inclusive and overflow preserves every level and both fighters', () => {
+test('personal merges pass training level 100 and all later color thresholds', () => {
   assert.equal(RECRUIT_LEVEL_CAP, 100);
-  const exact = getMergeResult([deployed(1, 70)], [fighter(2, 30)], { location: 'reserve', id: 2 }, 1);
+  for (const [before, added] of [[70, 31], [100, 150], [250, 250], [500, 501]]) {
+    const result = getMergeResult([deployed(1, before)], [fighter(2, added)], { location: 'reserve', id: 2 }, 1);
+    assert.equal(result.ok, true);
+    assert.equal(result.target.level, before + added);
+    assert.equal(result.reserve.length, 0);
+    const reloaded = restoreCampaignRoster(JSON.parse(JSON.stringify(result.units)),
+      [{ type: 'healer', level: 1234 }], createProgression());
+    assert.equal(reloaded.units[0].level, before + added);
+    assert.equal(reloaded.reserve[0].level, 1234);
+  }
+});
+
+test('safe integer boundary is inclusive and overflow preserves every level and both fighters', () => {
+  const maximum = Number.MAX_SAFE_INTEGER;
+  const exact = getMergeResult([deployed(1, maximum - 30)], [fighter(2, 30)], { location: 'reserve', id: 2 }, 1);
   assert.equal(exact.ok, true);
-  assert.equal(exact.target.level, 100);
-  const units = freezeRoster([deployed(1, 70)]);
+  assert.equal(exact.target.level, maximum);
+  const units = freezeRoster([deployed(1, maximum - 30)]);
   const reserve = freezeRoster([fighter(2, 31)]);
   const over = getMergeResult(units, reserve, { location: 'reserve', id: 2 }, 1);
   assert.equal(over.ok, false);
-  assert.equal(over.reason, 'level-cap');
+  assert.equal(over.reason, 'level-overflow');
   assert.equal(over.units, units);
   assert.equal(over.reserve, reserve);
-  assert.equal(units[0].level, 70);
+  assert.equal(units[0].level, maximum - 30);
   assert.equal(reserve[0].level, 31);
 });
 
@@ -115,7 +131,8 @@ test('malformed roster data fails safely without guessing levels or choosing dup
     [null, reserve], [units, {}], [[null], reserve],
     [[deployed('1')], reserve], [[deployed(-1)], reserve],
     [units, [fighter(1)]], [units, [fighter(2), fighter(2)]],
-    [units, [fighter(2, 0)]], [units, [fighter(2, 101)]],
+    [units, [fighter(2, 0)]], [units, [fighter(2, Number.MAX_SAFE_INTEGER + 1)]],
+    [units, [fighter(2, Infinity)]], [units, [fighter(2, Number.MAX_VALUE)]],
     [units, [fighter(2, NaN)]], [units, [fighter(2, '2')]],
     [units, [fighter(2, 1.5)]], [units, [fighter(2, 2, 'unknown')]],
     [units, [{ id: 2, type: 'swordsman' }]],
@@ -131,7 +148,7 @@ test('malformed roster data fails safely without guessing levels or choosing dup
 test('personal stats grow by five percent of level-one base per level with integer rounding', () => {
   assert.equal(UNIT_LEVEL_STAT_BONUS, .05);
   for (const unit of UNIT_TYPES) {
-    for (let level = 1; level <= RECRUIT_LEVEL_CAP; level += 1) {
+    for (const level of [1, 4, 50, 99, 100, 101, 249, 250, 499, 500, 1000, 1000000]) {
       const result = getUnitStats(unit.id, level);
       assert.deepEqual(result, {
         level,
@@ -143,4 +160,16 @@ test('personal stats grow by five percent of level-one base per level with integ
   }
   assert.deepEqual(getUnitStats('swordsman', 1), { level: 1, hp: 60, damage: 6, heal: 0 });
   assert.deepEqual(getUnitStats('swordsman', 4), { level: 4, hp: 69, damage: 7, heal: 0 });
+});
+
+test('saved levels normalize to positive safe integers and extreme stats stay finite', () => {
+  for (const [value, expected] of [[101, 101], ['500.9', 500], [Number.MAX_VALUE, Number.MAX_SAFE_INTEGER],
+    [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER], [0, 1], [-5, 1], [Infinity, 1], [NaN, 1]]) {
+    assert.equal(normalizeUnitLevel(value), expected);
+  }
+  for (const { id } of UNIT_TYPES) {
+    const stats = getUnitStats(id, Number.MAX_SAFE_INTEGER);
+    assert.equal(stats.level, Number.MAX_SAFE_INTEGER);
+    for (const stat of [stats.hp, stats.damage, stats.heal]) assert.ok(Number.isSafeInteger(stat) && stat >= 0);
+  }
 });

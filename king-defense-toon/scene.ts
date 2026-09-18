@@ -6,6 +6,7 @@ import type { HeroEffectKind } from './tiny-st-knihor.ts';
 import type { AnimationMetadata, SpriteRect, RankArtAssets } from './art-types.ts';
 import type { BattlefieldMap } from './tiny-map.ts';
 import type { SceneAssetPlan } from './scene-assets.ts';
+import type { PaletteRank } from './unit-ranks.ts';
 import type { GridCell, Scene, SceneOptions, SceneState, SceneUpdate, SceneAssetState } from './scene-types.ts';
 
 type RenderActor = AnimationActor & { type?: ActorType; level?: number; visualScale?: number };
@@ -22,7 +23,7 @@ interface PreparedAnimation {
   metadata: AnimationMetadata;
   walk?: PreparedAnimation;
   cast?: PreparedAnimation;
-  ranks?: Partial<Record<1 | 2 | 3 | 4, PreparedAnimation>>;
+  ranks?: Partial<Record<PaletteRank, PreparedAnimation>>;
 }
 type AnimationGroups = Partial<Record<ActorType, PreparedAnimation>>;
 interface EnemyArt { animations: AnimationGroups }
@@ -31,6 +32,7 @@ import { UNIT_TYPE_BY_ID } from './units.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START, positionForCell } from './field.ts';
 import { getUnitRange, CASTLE_MAX_HP } from './combat.ts';
 import { getUnitRank } from './unit-ranks.ts';
+import { getCellAvailability } from './progression.ts';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.ts';
 import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.ts';
@@ -127,7 +129,8 @@ const GOBLIN_ARCHER_ANIMATION_METADATA = {
   pixelArt: true,
   fullCells: true,
   bakedShadow: false,
-  renderHeight: 40,
+  // The torch goblin's body is about 32px; its 40px reference includes the flame.
+  renderHeight: 32,
   frameFor: tinyGoblinArcherFrame,
   horizontalFacing: true,
 };
@@ -146,7 +149,8 @@ const GOBLIN_HEALER_ANIMATION_METADATA = {
   pixelArt: true,
   fullCells: true,
   bakedShadow: false,
-  renderHeight: 40,
+  // Match the melee goblin's body, excluding its raised torch.
+  renderHeight: 32,
   frameFor: tinyGoblinHealerFrame,
   horizontalFacing: true,
 };
@@ -244,13 +248,13 @@ function drawFormationCell(context: CanvasRenderingContext2D, x: number, y: numb
   }
 }
 
-function drawLockedCell(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, selected: boolean, price: number | null | undefined) {
+function drawLockedCell(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, selected: boolean, price: number | null | undefined, requirement?: string) {
   context.save();
   pixelPanel(context, x, y + 2, width, height);
   context.fillStyle = '#53614720';
   context.fill();
   pixelPanel(context, x, y, width, height);
-  context.fillStyle = selected ? '#e5ca7b88' : '#89947569';
+  context.fillStyle = selected ? '#e5ca7b88' : requirement ? '#70756680' : '#89947569';
   context.fill();
   context.strokeStyle = selected ? '#95743e' : '#66735670';
   context.lineWidth = selected ? 2 : 1;
@@ -291,6 +295,12 @@ function drawLockedCell(context: CanvasRenderingContext2D, x: number, y: number,
     context.stroke();
     context.fillStyle = '#536049';
     context.fillText(label, iconX + 13, labelY + 1);
+  } else if (requirement) {
+    context.font = '11px "Lilita One", "Trebuchet MS", sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = '#3e4b38';
+    context.fillText(requirement, center, y + height - 10);
   }
   context.restore();
 }
@@ -756,7 +766,7 @@ async function loadSceneAssets(plan: SceneAssetPlan) {
   // The plan supplies image keys separately from its map key; the shared cache
   // erases that relationship, but every producer above follows the resource kind.
   const imageResource = (key: string) => resources.get(key) as HTMLImageElement;
-  const allyAnimations: Partial<Record<UnitType, PreparedAnimation & { ranks: Partial<Record<1 | 2 | 3 | 4, PreparedAnimation>> }>> = {};
+  const allyAnimations: Partial<Record<UnitType, PreparedAnimation & { ranks: Partial<Record<PaletteRank, PreparedAnimation>> }>> = {};
   for (const ally of plan.allies) {
     const animation = prepareAnimation(imageResource(ally.sheet), ALLY_ANIMATION_METADATA[ally.type]);
     if (ally.walk) animation.walk = prepareAnimation(imageResource(ally.walk), MONK_RUN_METADATA);
@@ -897,7 +907,13 @@ export async function createScene(canvas: HTMLCanvasElement, {
         const mergeTarget = formationOnly && open && unit && state.mergeTargets?.includes(unit.id);
         if (showPlacementGrid) {
           if (!open && !state.battle) {
-            drawLockedCell(context, x, y, width, height, state.selectedLockedCell === key, state.nextUnlockCost);
+            const availability = state.barracksLevel === undefined ? null
+              : getCellAvailability({ unlockedCells: state.unlockedCells ?? [] }, key, state.barracksLevel);
+            const requirement = availability && !availability.allowed
+              ? availability.requiredBarracksLevel ? `Barr. ${availability.requiredBarracksLevel === 2 ? 'II' : 'III'}` : 'Later'
+              : undefined;
+            drawLockedCell(context, x, y, width, height, state.selectedLockedCell === key,
+              availability ? availability.cost : state.nextUnlockCost, requirement);
           } else {
             drawFormationCell(context, x, y, width, height, selected, available || mergeTarget, !unit,
               formationOnly && open && !unit);

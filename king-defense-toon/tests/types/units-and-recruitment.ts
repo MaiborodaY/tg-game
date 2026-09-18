@@ -45,8 +45,8 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   getRecruitChances()[0]!.chance = 1;
   // @ts-expect-error Healing is optional on catalogue definitions.
   const requiredHealing: number = definition.heal;
-  // @ts-expect-error There are exactly four palette keys.
-  const unknownPalette: PaletteRank = 5;
+  // @ts-expect-error There are exactly five palette keys.
+  const unknownPalette: PaletteRank = 6;
   // @ts-expect-error Rank records are immutable shared values.
   rank.level = 2;
   void [unknownType, missingClass, requiredHealing, unknownPalette];

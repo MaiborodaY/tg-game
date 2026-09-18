@@ -1,4 +1,3 @@
-import { RECRUIT_LEVEL_CAP } from './recruitment.ts';
 import { UNIT_TYPE_BY_ID } from './units.ts';
 import type { UnitType } from './units.ts';
 
@@ -16,7 +15,7 @@ export interface MergeSource {
   id: number;
 }
 export type MergeFailureReason = 'invalid-state' | 'invalid-source' | 'source-missing' | 'target-missing'
-  | 'same-unit' | 'different-type' | 'level-cap';
+  | 'same-unit' | 'different-type' | 'level-overflow';
 // A merge preserves custom roster fields, but its new level cannot retain a literal input type.
 export type MergedFighter<Unit extends Fighter> = Omit<Unit, 'level'> & { level: number };
 export type MergeResult<Army extends Fighter = ArmyUnit, Reserve extends Fighter = Fighter> =
@@ -27,7 +26,7 @@ const isId = (value: unknown): value is number => Number.isSafeInteger(value) &&
 const isFighter = (fighter: Fighter) => fighter && typeof fighter === 'object'
   && isId(fighter.id) && typeof fighter.type === 'string'
   && Object.hasOwn(UNIT_TYPE_BY_ID, fighter.type)
-  && Number.isInteger(fighter.level) && fighter.level >= 1 && fighter.level <= RECRUIT_LEVEL_CAP;
+  && Number.isSafeInteger(fighter.level) && fighter.level >= 1;
 
 export function getMergeResult<Army extends Fighter, Reserve extends Fighter>(
   units: readonly Army[], reserve: readonly Reserve[], source: MergeSource | null | undefined, targetId: number | null | undefined,
@@ -48,9 +47,9 @@ export function getMergeResult<Army extends Fighter, Reserve extends Fighter>(
   if (!target) return fail('target-missing');
   if (sourceFighter.id === target.id) return fail('same-unit');
   if (sourceFighter.type !== target.type) return fail('different-type');
-  const level = sourceFighter.level + target.level;
   // Reject overflow instead of consuming a fighter while silently discarding earned levels.
-  if (level > RECRUIT_LEVEL_CAP) return fail('level-cap');
+  if (sourceFighter.level > Number.MAX_SAFE_INTEGER - target.level) return fail('level-overflow');
+  const level = sourceFighter.level + target.level;
 
   const mergedTarget = { ...target, level };
   return {

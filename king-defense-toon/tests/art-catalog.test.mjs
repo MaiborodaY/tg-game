@@ -18,7 +18,7 @@ test('catalogue generators recreate checked TypeScript catalogues without image 
       [rank, Object.fromEntries(Object.entries(urls).map(([kind, url]) => [kind, relative(url)]))]))]));
   for (const [name, source] of [
     ['rank-art', rankArtSource(ranks)],
-    ['lancer-art', lancerArtSource(['Blue', 'Purple', 'Red', 'Yellow'], LANCER_GEOMETRY)],
+    ['lancer-art', lancerArtSource(['Blue', 'Purple', 'Red', 'Yellow', 'Black'], LANCER_GEOMETRY)],
     ['assets/goblin-healer/geometry', goblinHealerGeometrySource(GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES)],
   ]) {
     assert.equal(source, (await readFile(new URL(`../${name}.ts`, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'));

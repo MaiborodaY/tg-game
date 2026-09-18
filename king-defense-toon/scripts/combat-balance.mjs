@@ -19,7 +19,7 @@ export async function loadCombatEngine(sourceRoot = GAME_ROOT) {
 export function makeFormation({ swordsman = 0, archer = 0, healer = 0, level = 1 } = {}) {
   const counts = { swordsman, archer, healer };
   if (Object.values(counts).some(count => !Number.isSafeInteger(count) || count < 0)
-    || swordsman + archer + healer > 15 || !Number.isInteger(level) || level < 1 || level > 100) {
+    || swordsman + archer + healer > 15 || !Number.isSafeInteger(level) || level < 1) {
     throw new RangeError('Formation requires 0–15 fighters at a valid personal level');
   }
   const cells = CELL_ORDER.slice(0, swordsman + archer + healer).map(([col, row]) => ({ col, row }));

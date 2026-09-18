@@ -1,7 +1,7 @@
 # Native Tiny Swords Lancer
 
 Source pack: Pixel Frog, `C:/Unity/Unity Projects/Bro TD/Assets/Sprites/Tiny Swords/Units/<Color> Units/Lancer/`.
-Original assets are never modified. Four palettes cover personal levels 1–25, 26–50, 51–75, 76–100.
+Original assets are never modified. Five palettes cover personal levels 1–49, 50–99, 100–249, 250–499, 500+.
 
 The runtime atlas contains 12 Idle, 6 Run, then three frames each of Right, DownRight, Down, UpRight and Up Attack. Defence frames are not shipped. Left angles mirror the matching right angle. Each native 320px frame is tightly cropped without resizing and placed into a 168×160 cell in a 6×6 atlas (1008×960px). Crops retain every visible pixel. The last three cells are empty.
 
@@ -15,8 +15,9 @@ Recreate: `node king-defense-toon/scripts/prepare-lancer-art.mjs`.
 | Purple | 19002 | 684 | 213d1cfea62e845063352683fa4f937626b9d7d0b3331b0b4d1e4a50509d4a85 | efffcd052b2052fa8472974224a4373425acca1000932db201c75b9b30554ca3 |
 | Red | 19002 | 678 | 67f74a067d676194497f35ec32efb201636ba3c4cd92db751b1cdfe248c42b49 | 0fa748b084a143fedca475a9db30d5b073ae2719d341a388fdb0dd8ff7e09ba2 |
 | Yellow | 19000 | 682 | f296b00025446ca02391f5213eda016565a82070d55a531e9bd13a9fe6cc0dbf | 005cbc3e6d20db866e257786429462adb0e3f7992e15732c7fadf55ee23d80d1 |
+| Black | 19000 | 680 | 5f36958bde3d37a10600b774ed182a003633f24c85d345f98c38182cae12bedd | 76c591dfe770721e0eeac980165665f889ced8c0bfaa1d3bfdb422062bbe42fa |
 
-Total runtime art: **78732 bytes**.
+Total runtime art: **98412 bytes**.
 
 | Source | PNG bytes | SHA-256 |
 | --- | ---: | --- |
@@ -48,3 +49,10 @@ Total runtime art: **78732 bytes**.
 | Yellow/Lancer_Down_Attack.png | 6116 | c11ad4325c3ec3e1bc96c7b1fe8af070c1fb4939e5c796798fdccff231b31e8a |
 | Yellow/Lancer_UpRight_Attack.png | 5906 | 95b1259e47cccd388f79bf34b176366a27e851af5e4cfc95c18fa5b0d2620bb4 |
 | Yellow/Lancer_Up_Attack.png | 5173 | ad73e4a9563c409db72d4a022ec8f3040fc0e3097befd073b62616ca5873cbc6 |
+| Black/Lancer_Idle.png | 13249 | ae5a7ae8bc31b72691b58dbe8c2f18da6968007e5c3d4dab72d0f590e72187e0 |
+| Black/Lancer_Run.png | 11092 | b1160695dc8f9e0c9e1db5ccca7fa011121c09aa5037d500b302aabfc2d67fdd |
+| Black/Lancer_Right_Attack.png | 4757 | 0dfdf61a2cb55a17a7ac6d5e8404da718c11a367c5bfe1cd92eb37978cb678c4 |
+| Black/Lancer_DownRight_Attack.png | 6669 | d6c801cbecf827fd6a3035733b5866bb0219789796128278a02573f459dce691 |
+| Black/Lancer_Down_Attack.png | 6037 | 9d0bc04689d148e04378159e3a3a40c247d14b2ed274784d169501fdb4915d7f |
+| Black/Lancer_UpRight_Attack.png | 5863 | b643a1a3a28d3e578efabb86b1da6c963a8a9ebdb284d817ee19399e9f443c0e |
+| Black/Lancer_Up_Attack.png | 5139 | 583b97f871e959012fc7c7ed138a414d757958f57fa549902ea4028339be97fd |

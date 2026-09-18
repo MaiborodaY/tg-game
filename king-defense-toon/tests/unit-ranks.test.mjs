@@ -3,12 +3,13 @@ import test from 'node:test';
 import { getUnitRank } from '../unit-ranks.ts';
 import { normalizeUnitLevel } from '../recruitment.ts';
 
-test('native clothing colors advance at levels 26, 51 and 76', () => {
+test('clothing colors advance exactly at personal levels 50, 100, 250 and 500', () => {
   for (const [level, palette, color] of [
-    [1, 1, 'Blue'], [25, 1, 'Blue'],
-    [26, 2, 'Purple'], [50, 2, 'Purple'],
-    [51, 3, 'Red'], [75, 3, 'Red'],
-    [76, 4, 'Yellow'], [100, 4, 'Yellow'],
+    [1, 1, 'Blue'], [49, 1, 'Blue'],
+    [50, 2, 'Purple'], [99, 2, 'Purple'],
+    [100, 3, 'Red'], [249, 3, 'Red'],
+    [250, 4, 'Yellow'], [499, 4, 'Yellow'],
+    [500, 5, 'Black'], [1000, 5, 'Black'], [Number.MAX_SAFE_INTEGER, 5, 'Black'],
   ]) {
     const rank = getUnitRank(level);
     assert.equal(rank.level, palette, `palette at level ${level}`);
@@ -16,18 +17,18 @@ test('native clothing colors advance at levels 26, 51 and 76', () => {
   }
 });
 
-test('all 100 personal levels use the existing four palette keys in equal bands', () => {
-  const counts = [0, 0, 0, 0];
-  const colors = ['Blue', 'Purple', 'Red', 'Yellow'];
-  for (let level = 1; level <= 100; level += 1) {
-    const index = Math.floor((level - 1) / 25);
+test('every level uses one frozen rank with Black continuing beyond level 500', () => {
+  const counts = [0, 0, 0, 0, 0];
+  const colors = ['Blue', 'Purple', 'Red', 'Yellow', 'Black'];
+  for (let level = 1; level <= 1000; level += 1) {
+    const index = [50, 100, 250, 500].filter(threshold => level >= threshold).length;
     const rank = getUnitRank(level);
     assert.equal(rank.level, index + 1);
     assert.equal(rank.color, colors[index]);
     assert.equal(Object.isFrozen(rank), true);
     counts[rank.level - 1] += 1;
   }
-  assert.deepEqual(counts, [25, 25, 25, 25]);
+  assert.deepEqual(counts, [49, 50, 150, 250, 501]);
 });
 
 test('palette selection normalizes saved levels exactly like combat stats', () => {
@@ -40,6 +41,7 @@ test('palette selection normalizes saved levels exactly like combat stats', () =
     assert.equal(getUnitRank(value), getUnitRank(normalized), String(value));
   }
   assert.equal(getUnitRank().level, 1);
-  assert.equal(getUnitRank(101).level, 4);
+  assert.equal(getUnitRank(101).level, 3);
+  assert.equal(getUnitRank(500).level, 5);
   assert.equal(getUnitRank(Infinity).level, 1);
 });

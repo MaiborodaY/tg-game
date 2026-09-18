@@ -138,9 +138,13 @@ export interface GameElementTags {
   'offline-rewards-description': 'p';
   'offline-gold-reward': 'div';
   'offline-gold-amount': 'strong';
+  'slot-refund-reward': 'div';
+  'slot-refund-amount': 'strong';
   'offline-slaves-reward': 'div';
   'offline-slaves-amount': 'strong';
+  'returned-fighters-note': 'p';
   'collect-offline-rewards': 'button';
+  'offline-storage-note': 'p';
   'recovery-panel': 'section';
   'recovery-title': 'h2';
   'recovery-description': 'p';

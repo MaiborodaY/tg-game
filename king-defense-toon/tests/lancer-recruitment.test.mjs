@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRecruitment, getRecruitChances, getRecruitLevel, getRecruitProgress, receiveRecruit } from '../recruitment.ts';
-import { createBarracks, startBarracksUpgrade, completeBarracksUpgrade, consumeFirstLancerGuarantee } from '../barracks.ts';
+import { createBarracks, getBarracksUpgrade, startBarracksUpgrade, completeBarracksUpgrade, consumeFirstLancerGuarantee } from '../barracks.ts';
 
 test('locked barracks keep all existing recruitment odds and cannot roll lancer', () => {
   assert.deepEqual(getRecruitChances(), [
@@ -53,11 +53,31 @@ test('first paid conversion after completion guarantees one level-one lancer and
   const nextBarracks = createBarracks(saved.barracks, started + 5_000_000);
   const nextRecruitment = createRecruitment(saved.recruitment);
   const next = receiveRecruit(nextRecruitment, () => 0, {
-    lancerUnlocked: nextBarracks.level === 2, guaranteedLancer: nextBarracks.firstLancerPending,
+    lancerUnlocked: nextBarracks.level >= 2, guaranteedLancer: nextBarracks.firstLancerPending,
   });
   assert.equal(next.type, 'swordsman');
   assert.equal(nextRecruitment.received.lancer, 1);
   assert.equal(nextBarracks.firstLancerPending, false);
+});
+
+test('Barracks III retains four equal recruitment chances and a pending first Lancer only once', () => {
+  const now = 1_800_000_000_000;
+  for (const firstLancerPending of [false, true]) {
+    const barracks = createBarracks({ level: 3, firstLancerPending }, now);
+    const recruitment = createRecruitment();
+    const info = getBarracksUpgrade(barracks, recruitment, now);
+    assert.equal(info.lancerUnlocked, true);
+    assert.deepEqual(getRecruitChances(info.lancerUnlocked).map(({ chance }) => chance), [.25, .25, .25, .25]);
+    const first = receiveRecruit(recruitment, () => 0, {
+      lancerUnlocked: info.lancerUnlocked, guaranteedLancer: barracks.firstLancerPending,
+    });
+    assert.equal(first.type, firstLancerPending ? 'lancer' : 'swordsman');
+    assert.equal(consumeFirstLancerGuarantee(barracks, first.type), firstLancerPending);
+    const restored = createBarracks(JSON.parse(JSON.stringify(barracks)), now + 1000);
+    assert.equal(restored.firstLancerPending, false);
+    assert.equal(receiveRecruit(recruitment, () => .9, { lancerUnlocked: restored.level >= 2 }).type, 'lancer');
+    assert.equal(consumeFirstLancerGuarantee(restored, 'lancer'), false);
+  }
 });
 
 test('existing version-two saves preserve every receipt and training credit while adding lancer at level one', () => {

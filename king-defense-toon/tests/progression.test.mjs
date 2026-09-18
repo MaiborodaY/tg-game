@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CELL_UNLOCK_COSTS, STARTING_CELLS, claimFirstClear, createProgression, migrateCampaignSave, nextCellCost, unlockCell } from '../progression.ts';
+import { CELL_UNLOCK_COSTS, STARTING_CELLS, claimFirstClear, createProgression, getArmyCapacity, getCellAvailability,
+  migrateCampaignSave, nextCellCost, unlockCell } from '../progression.ts';
 
 test('legacy campaign migration retains the next biome and one-time reward claims', () => {
   for (const [before, after] of [[0, 0], [9, 9], [10, 200], [11, 201], [20, 210], ['13.9', 203], [100, 210], [-3, 0], ['bad', 0]]) {
@@ -55,25 +56,84 @@ test('loading progression filters invalid entries, deduplicates them and creates
   }
 });
 
-test('unlocking rejects invalid purchases and spends each price exactly once until the grid is full', () => {
+test('unlocking rejects invalid purchases without changing progression or gold', () => {
   const progression = createProgression();
-  for (const [gold, key] of [[24, '0:0'], [-1, '0:0'], [Infinity, '0:0'], [NaN, '0:0'], ['100', '0:0'], [100, '2:0'], [100, '5:0']]) {
+  for (const [gold, key] of [[24, '1:0'], [-1, '1:0'], [Infinity, '1:0'], [NaN, '1:0'], ['100', '1:0'], [100, '2:0'], [100, '5:0'], [100, '0:0']]) {
     assert.deepEqual(unlockCell(progression, gold, key), { unlocked: false, gold });
     assert.deepEqual(progression.unlockedCells, [...STARTING_CELLS]);
   }
-  let gold = 20000, purchase = 0;
-  for (let col = 0; col < 5; col++) for (let row = 0; row < 3; row++) {
-    const key = `${col}:${row}`;
-    if (progression.unlockedCells.includes(key)) continue;
-    assert.equal(nextCellCost(progression), CELL_UNLOCK_COSTS[purchase]);
-    const result = unlockCell(progression, gold, key);
-    assert.deepEqual(result, { unlocked: true, gold: gold - CELL_UNLOCK_COSTS[purchase++] });
-    gold = result.gold;
-    assert.deepEqual(unlockCell(progression, gold, key), { unlocked: false, gold });
+});
+
+test('barracks capacities include the three starter cells and preserve the existing purchase prices', () => {
+  for (const [level, capacity] of [[1, 9], [2, 10], [3, 11]]) {
+    const progression = createProgression();
+    assert.equal(getArmyCapacity(level), capacity);
+    let gold = 20000;
+    const purchases = ['1:0', '3:0', '1:1', '3:1', '1:2', '3:2', '0:2', '4:0'].slice(0, capacity - 3);
+    for (const [index, key] of purchases.entries()) {
+      const cost = CELL_UNLOCK_COSTS[index];
+      assert.equal(nextCellCost(progression, level), cost);
+      assert.deepEqual(getCellAvailability(progression, key, level), {
+        allowed: true, cost, requiredBarracksLevel: null, reason: 'available',
+      });
+      assert.deepEqual(unlockCell(progression, gold, key, level), { unlocked: true, gold: gold - cost });
+      gold -= cost;
+      assert.deepEqual(unlockCell(progression, gold, key, level), { unlocked: false, gold });
+    }
+    assert.equal(progression.unlockedCells.length, capacity);
+    assert.equal(nextCellCost(progression, level), null);
+    assert.equal(gold, 20000 - CELL_UNLOCK_COSTS.slice(0, capacity - 3).reduce((sum, cost) => sum + cost, 0));
+    const blocked = getCellAvailability(progression, '0:0', level);
+    assert.equal(blocked.allowed, false);
+    assert.equal(blocked.requiredBarracksLevel, level < 3 ? level + 1 : null);
+    assert.equal(blocked.reason, level < 3 ? 'barracks-required' : 'max-capacity');
+    assert.deepEqual(unlockCell(progression, gold, '0:0', level), { unlocked: false, gold });
   }
-  assert.equal(progression.unlockedCells.length, 15);
-  assert.equal(nextCellCost(progression), null);
-  assert.equal(gold, 20000 - CELL_UNLOCK_COSTS.reduce((sum, cost) => sum + cost, 0));
+});
+
+test('side-cell quotas apply before the central formation is full and allow either side', () => {
+  for (const firstSide of ['0:0', '4:0']) {
+    const progression = createProgression();
+    const otherSide = firstSide === '0:0' ? '4:0' : '0:0';
+    assert.deepEqual(getCellAvailability(progression, firstSide), {
+      allowed: false, cost: null, requiredBarracksLevel: 2, reason: 'barracks-required',
+    });
+    assert.equal(unlockCell(progression, 100, firstSide, 2).unlocked, true);
+    assert.equal(progression.unlockedCells.length, 4);
+    assert.equal(getCellAvailability(progression, otherSide, 2).requiredBarracksLevel, 3);
+    assert.equal(unlockCell(progression, 100, otherSide, 2).unlocked, false);
+    assert.equal(unlockCell(progression, 100, otherSide, 3).unlocked, true);
+    assert.equal(getCellAvailability(progression, '4:2', 3).reason, 'max-capacity');
+    assert.equal(unlockCell(progression, 100, '4:2', 3).unlocked, false);
+    assert.equal(getCellAvailability(progression, '1:0', 3).allowed, true);
+  }
+});
+
+test('tier increases grant purchase permission without granting or charging for cells', () => {
+  const progression = createProgression();
+  const before = structuredClone(progression);
+  assert.equal(getCellAvailability(progression, '4:2', 2).cost, 25);
+  assert.equal(getCellAvailability(progression, '0:2', 3).cost, 25);
+  assert.deepEqual(progression, before);
+  assert.equal(unlockCell(progression, 24, '4:2', 2).unlocked, false);
+  assert.deepEqual(progression, before);
+  assert.equal(getCellAvailability(progression, '2:0').reason, 'unlocked');
+  assert.equal(getCellAvailability(progression, '5:0').reason, 'invalid-cell');
+});
+
+test('invalid tiers fail closed and malformed runtime cells cannot be purchased', () => {
+  for (const level of [0, -1, 4, 1.5, '2', '3', NaN, Infinity, null]) {
+    assert.equal(getArmyCapacity(level), 9);
+    assert.equal(unlockCell(createProgression(), 100, '0:0', level).unlocked, false);
+  }
+  for (const progression of [null, {}, { unlockedCells: [] }, { unlockedCells: [...STARTING_CELLS, '5:0'] },
+    { unlockedCells: [...STARTING_CELLS, '1:0', '1:0'] }]) {
+    const before = structuredClone(progression);
+    assert.equal(getCellAvailability(progression, '3:0').reason, 'invalid-state');
+    assert.deepEqual(unlockCell(progression, 100, '3:0'), { unlocked: false, gold: 100 });
+    assert.equal(nextCellCost(progression), null);
+    assert.deepEqual(progression, before);
+  }
 });
 
 test('first-clear rewards reject invalid waves and cannot be repeated after saving and loading', () => {

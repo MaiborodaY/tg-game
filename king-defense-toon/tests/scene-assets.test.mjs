@@ -20,9 +20,9 @@ test('an empty initial forest scene has no dependency on another map, enemies or
 
 test('load only present rank sheets, including placements and fighting units with a different rank', () => {
   const plan = getSceneAssetPlan({
-    units: [{ type: 'swordsman', level: 26 }, { type: 'swordsman', level: 26 }],
+    units: [{ type: 'swordsman', level: 50 }, { type: 'swordsman', level: 50 }],
     battle: { allies: [{ type: 'swordsman', level: 1 }] },
-    placementType: 'healer', placementLevel: 76,
+    placementType: 'healer', placementLevel: 250,
   });
   assert.deepEqual(plan.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['healer:4', 'swordsman:1', 'swordsman:2']);
   const urls = plan.keys.join(' ');
@@ -34,8 +34,8 @@ test('load only present rank sheets, including placements and fighting units wit
 });
 
 test('lancer plans retain only displayed palettes across deployment, battle and placement', () => {
-  const state = { units: [{ type: 'lancer', level: 26 }, { type: 'lancer', level: 26 }],
-    battle: { allies: [{ type: 'lancer', level: 1 }] }, placementType: 'lancer', placementLevel: 76 };
+  const state = { units: [{ type: 'lancer', level: 50 }, { type: 'lancer', level: 50 }],
+    battle: { allies: [{ type: 'lancer', level: 1 }] }, placementType: 'lancer', placementLevel: 250 };
   const battle = getSceneAssetPlan(state);
   assert.deepEqual(battle.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['lancer:1', 'lancer:2', 'lancer:4']);
   assert.match(battle.keys.join(' '), /lancer-blue\.webp/);
@@ -45,6 +45,18 @@ test('lancer plans retain only displayed palettes across deployment, battle and 
   const army = getSceneAssetPlan(state, { formationOnly: true });
   assert.deepEqual(army.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['lancer:2', 'lancer:4']);
   assert.doesNotMatch(army.keys.join(' '), /lancer-blue|st-knihor/);
+});
+
+test('level 500 and later load one Black palette per present class without earlier palettes', () => {
+  const plan = getSceneAssetPlan({ units: [
+    { type: 'swordsman', level: 500 }, { type: 'swordsman', level: 999 },
+    { type: 'archer', level: 1000 }, { type: 'healer', level: 501 },
+  ], placementType: 'lancer', placementLevel: Number.MAX_SAFE_INTEGER }, { formationOnly: true });
+  assert.deepEqual(plan.allies.map(unit => `${unit.type}:${unit.rank}`).sort(),
+    ['archer:5', 'healer:5', 'lancer:5', 'swordsman:5']);
+  assert.equal(plan.resources.size, 7, 'one map, three single sheets, and three Monk strips');
+  for (const url of plan.keys.filter(key => key !== 'map:1')) assert.match(url, /black/);
+  assert.doesNotMatch(plan.keys.join(' '), /purple|red-|yellow|blue|-art\./);
 });
 
 test('enemy healer body and pulse load for forthcoming or existing healers, never for Army', () => {

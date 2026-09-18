@@ -13,6 +13,7 @@ export const EARLY_CAMPAIGN_ASSUMPTIONS = Object.freeze([
   'Uses actual combat, capture, recruitment, slot purchase, merge, and first-clear APIs.',
   'Fresh profile; selected speed through the actual battleFrameDelta helper (including base slowdown); one-second foreground economy ticks; two seconds between completed attempts.',
   'No offline income, idle farming, optional building purchases, treasury upgrades, unit sales, or starter rerolls; the starting level-one treasury accrues normally.',
+  'Barracks stays at level I, so purchases stop at nine central cells and surplus recruits connect to the existing army.',
   'Converts available slaves between attempts, buys needed affordable cells, fills slots before merging surplus into the weakest deployed fighter of the same type.',
   'Conversion input and reveal time are omitted; this is an explicit automated management policy, not a prediction of player decisions or typical progress.',
   'Places melee in front, archers behind, healers centrally within owned cells; every new battle restores saved fighters, the hero and castle through createBattle.',
@@ -141,6 +142,7 @@ export function directClearGoldBounds(apis, lastWave = 10) {
   if (!Number.isInteger(lastWave) || lastWave < 1 || lastWave > 30) throw new RangeError('Expected one to thirty opening waves');
   let kills = 0, killGold = 0, bonuses = 0;
   const progression = apis.progression.createProgression();
+  const capacity = apis.progression.getArmyCapacity(1);
   return Array.from({ length: lastWave }, (_, index) => {
     const wave = apis.engine.getWaveDefinition(index + 1);
     kills += wave.total;
@@ -149,7 +151,7 @@ export function directClearGoldBounds(apis, lastWave = 10) {
     const totalGoldBeforeExpenses = apis.progression.STARTING_GOLD + killGold + bonuses;
     let remaining = totalGoldBeforeExpenses, slots = apis.progression.STARTING_CELLS.length;
     for (const cost of apis.progression.CELL_UNLOCK_COSTS) {
-      if (cost > remaining) break;
+      if (slots >= capacity || cost > remaining) break;
       remaining -= cost;
       slots += 1;
     }

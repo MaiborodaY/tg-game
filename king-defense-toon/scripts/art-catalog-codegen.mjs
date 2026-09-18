@@ -4,7 +4,7 @@ export function rankArtSource(entries) {
   const manifest = Object.entries(entries).map(([type, ranks]) => `  ${type}: {\n${Object.entries(ranks)
     .map(([level, urls]) => `    ${level}: { ${Object.entries(urls).map(([key, url]) => `${key}: new URL('${url}', import.meta.url).href`).join(', ')} },`).join('\n')}\n  },`).join('\n');
   return `import type { RankArtAssets } from './art-types.ts';\n\n`
-    + `// Native Tiny Swords palettes, prepared by scripts/prepare-rank-assets.mjs.\n`
+    + `// Tiny Swords rank palettes, prepared by scripts/prepare-rank-assets.mjs.\n`
     + `export const UNIT_RANK_ASSETS = {\n${manifest}\n} satisfies RankArtAssets;\n`;
 }
 

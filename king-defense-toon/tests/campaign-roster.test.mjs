@@ -39,9 +39,9 @@ test('unlocked expansion cells and legacy level normalization survive reload', (
   const restored = restoreCampaignRoster([{ type: 'lancer', col: 4, row: 2, level: 500 },
     { type: 'archer', col: 2, row: 0, level: -5 }], [{ type: 'healer', level: null }],
   createProgression({ unlockedCells: ['4:2'] }));
-  assert.deepEqual(restored.units.map(unit => unit.level), [100, 1]);
+  assert.deepEqual(restored.units.map(unit => unit.level), [500, 1]);
   assert.equal(restored.reserve[0].level, 1);
-  assert.deepEqual(restored.units[0], { id: 1, type: 'lancer', col: 4, row: 2, level: 100 });
+  assert.deepEqual(restored.units[0], { id: 1, type: 'lancer', col: 4, row: 2, level: 500 });
 });
 
 test('a malformed coordinate cannot interrupt restoration of the remaining valid fighters', () => {

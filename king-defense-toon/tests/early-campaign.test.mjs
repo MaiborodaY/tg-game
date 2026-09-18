@@ -48,13 +48,14 @@ test('direct-clear slot affordability is based on current waves and separate sin
   assert.equal(rows[0].totalGoldBeforeExpenses, apis.progression.STARTING_GOLD + apis.engine.getWaveDefinition(1).reward + 10);
   assert.equal(rows[9].bonuses, 550);
   assert.equal(rows[9].killGold, Array.from({ length: 10 }, (_, i) => apis.engine.getWaveDefinition(i + 1).reward).reduce((sum, reward) => sum + reward, 0));
-  assert.ok(rows.every(row => row.maxSlotsWithoutTreasuryOrSales >= 3 && row.maxSlotsWithoutTreasuryOrSales <= 15));
+  assert.ok(rows.every(row => row.maxSlotsWithoutTreasuryOrSales >= 3 && row.maxSlotsWithoutTreasuryOrSales <= 9));
 });
 
 test('three-round diagnostics retain per-round first-clear bonuses and the ten-wave default', () => {
   const rows = directClearGoldBounds(apis, 30);
   assert.equal(rows.length, 30);
   assert.deepEqual([rows[9].bonuses, rows[19].bonuses, rows[29].bonuses], [550, 1100, 1650]);
+  assert.equal(rows[29].maxSlotsWithoutTreasuryOrSales, 9, 'surplus gold cannot bypass Barracks I capacity');
   assert.equal(directClearGoldBounds(apis).length, 10);
   assert.equal(runEarlyCampaign(apis, { lastWave: 30, maxBattleSeconds: .1 }).termination, 'timeout');
   assert.throws(() => runEarlyCampaign(apis, { lastWave: 31 }), RangeError);
