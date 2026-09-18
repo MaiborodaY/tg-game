@@ -13,6 +13,8 @@ import { createLevelMusic } from './music.ts';
 import { DEFAULT_BATTLE_SPEED, MAX_REAL_FRAME_DELTA, battleFrameDelta, nextBattleSpeed } from './battle-speed.ts';
 import { createFrameRateMeter } from './fps.ts';
 import { createFramePacer } from './frame-pacer.ts';
+import { createCombatProfiler, collectProfilerCounters } from './combat-profiler.ts';
+import { createProfilerPanel } from './profiler-panel.ts';
 import { createSaveStorage } from './save-storage.ts';
 import { createSaveSession } from './save-session.ts';
 import { treasuryRate, treasuryUpgradeCost, TREASURY_OFFLINE_LIMIT_SECONDS, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
@@ -75,6 +77,9 @@ type FocusElement = HTMLElement & { disabled?: boolean };
 const frameRateMeter = createFrameRateMeter();
 const framePacer = createFramePacer();
 const fpsLabel = byId('fps-counter');
+const combatProfiler = new URLSearchParams(window.location.search).get('profile') === '1'
+  ? createCombatProfiler({ enabled: true, targetFps: 30 }) : null;
+const profilerPanel = combatProfiler ? createProfilerPanel(combatProfiler) : null;
 
 function fitPortraitPreview() {
   // Desktop panels show the entire phone at one scale instead of flattening only the battlefield.
@@ -599,6 +604,11 @@ byId('transform-slave').addEventListener('click', () => {
 });
 
 function refreshEconomy() {
+  if (combatProfiler) combatProfiler.measure('ui', refreshEconomyContent);
+  else refreshEconomyContent();
+}
+
+function refreshEconomyContent() {
   // Only the small HUD abbreviates large balances; menus retain the exact amount.
   byId('gold-count').textContent = String(campaign.gold < 10000 ? campaign.gold : hudGoldFormat.format(campaign.gold));
   const goldLabel = `${campaign.gold} gold`;
@@ -949,6 +959,12 @@ function refreshPhaseLabel() {
 }
 
 function refresh() {
+  if (combatProfiler) combatProfiler.measure('ui', refreshContent);
+  else refreshContent();
+  renderScene();
+}
+
+function refreshContent() {
   const connectFocus = (document.activeElement as HTMLElement | null)?.closest<HTMLButtonElement>('.connect-panel button, [data-connect-action="begin"]');
   const connectFocusSelector = connectFocus?.dataset.connectDonorId ? `[data-connect-donor-id="${connectFocus.dataset.connectDonorId}"]`
     : connectFocus?.dataset.connectLocation ? `[data-connect-location="${connectFocus.dataset.connectLocation}"]`
@@ -1066,7 +1082,6 @@ function refresh() {
     const replacement = overlay?.querySelector<HTMLButtonElement>(connectFocusSelector);
     (replacement && !replacement.disabled ? replacement : overlay?.querySelector<HTMLButtonElement>('[data-connect-action="cancel"], [data-close-overlay]'))?.focus({ preventScroll: true });
   }
-  renderScene();
 }
 
 function getMergeSource(source = pendingMerge) {
@@ -1691,6 +1706,11 @@ byId('recovery-panel').addEventListener('keydown', event => {
 });
 
 function renderScene() {
+  if (combatProfiler) combatProfiler.measure('render', drawScenes);
+  else drawScenes();
+}
+
+function drawScenes() {
   // Both canvases show the same level, including preparation, defeat and campaign replay.
   const levelNumber = getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber;
   scene?.render({ units: campaign.units, selectedId: null, movingId: null, placementType: null, battle, time: visualTime, levelNumber,
@@ -1708,6 +1728,11 @@ function renderScene() {
 }
 
 function refreshBattleHud() {
+  if (combatProfiler) combatProfiler.measure('ui', refreshBattleHudContent);
+  else refreshBattleHudContent();
+}
+
+function refreshBattleHudContent() {
   if (!battle) return;
   refreshPhaseLabel();
   const alive = battle.allies.filter(unit => unit.hp > 0).length;
@@ -1817,52 +1842,68 @@ byId('auto-waves').addEventListener('click', () => {
 
 // Telegram can minimize a Mini App without hiding the document; both lifecycle signals stop play.
 function resetFrameRate() { frameRateMeter.reset(); fpsLabel.textContent = '— FPS'; }
-function stopFrames() { cancelAnimationFrame(frameId); frameId = 0; framePacer.reset(); resetFrameRate(); }
+function stopFrames() {
+  cancelAnimationFrame(frameId); frameId = 0; framePacer.reset(); resetFrameRate();
+  combatProfiler?.suspend();
+}
 function resumeFrames() {
   if (!destroyed && !frameId && scene && telegram.isActive && !paused && !isRecovering()) frameId = requestAnimationFrame(frame);
 }
 function frame(timestamp: number) {
   frameId = 0;
-  if (destroyed || !telegram.isActive || paused || isRecovering()) { framePacer.reset(); resetFrameRate(); return; }
+  if (destroyed || !telegram.isActive || paused || isRecovering()) {
+    framePacer.reset(); resetFrameRate(); combatProfiler?.suspend(); return;
+  }
   const realDelta = framePacer.sample(timestamp);
   if (realDelta === null) { resumeFrames(); return; }
-  const dt = Math.min(realDelta, MAX_REAL_FRAME_DELTA);
-  const battleDt = battle?.phase === 'running' ? battleFrameDelta(dt, battleSpeed) : dt;
-  visualTime += battleDt;
-  if (battle) {
-    const wasRunning = battle.phase === 'running';
-    // Movement, casts, projectiles, spawns and enrage share the same scaled clock.
-    const events = updateBattle(battle, battleDt);
-    for (const event of events) if (event.type === 'bow-shot') battleAudio.playBowShot();
-    if (!battle.campaignRewards.result) {
-      const reward = applyBattleKillRewards(campaign, battle.campaignRewards,
-        { kills: battle.kills, totalGold: battle.reward }, Math.random);
-      if (!reward.ok) { stopForCampaignError(reward.reason); return; }
-      if (reward.gold || reward.slaves) {
-        save(); refresh();
-        if (reward.slaves) showMarketArrival(reward.slaves);
+  combatProfiler?.beginFrame(timestamp);
+  try {
+    const dt = Math.min(realDelta, MAX_REAL_FRAME_DELTA);
+    const battleDt = battle?.phase === 'running' ? battleFrameDelta(dt, battleSpeed) : dt;
+    visualTime += battleDt;
+    if (battle) {
+      const wasRunning = battle.phase === 'running';
+      // Movement, casts, projectiles, spawns and enrage share the same scaled clock.
+      const activeBattle = battle;
+      const events = combatProfiler
+        ? combatProfiler.measure('simulation', () => updateBattle(activeBattle, battleDt))
+        : updateBattle(activeBattle, battleDt);
+      for (const event of events) if (event.type === 'bow-shot') battleAudio.playBowShot();
+      if (!battle.campaignRewards.result) {
+        const reward = applyBattleKillRewards(campaign, battle.campaignRewards,
+          { kills: battle.kills, totalGold: battle.reward }, Math.random);
+        if (!reward.ok) { stopForCampaignError(reward.reason); return; }
+        if (reward.gold || reward.slaves) {
+          save(); refresh();
+          if (reward.slaves) showMarketArrival(reward.slaves);
+        }
       }
-    }
-    hudElapsed += dt;
-    if (hudElapsed >= .15) { refreshBattleHud(); hudElapsed = 0; }
-    if (wasRunning && battle.phase !== 'running') showResult();
-    if (battle.phase !== 'running') {
-      resultAge += dt;
-      // Countdown follows visible real time, not ×1/×2/×3 or the capped combat timestep.
-      if (!wasRunning && autoNextRemaining !== null) {
-        autoNextRemaining = Math.max(0, autoNextRemaining - realDelta);
-        if (autoNextRemaining === 0) {
-          clearBattleState();
-          startWave();
+      hudElapsed += dt;
+      if (hudElapsed >= .15) { refreshBattleHud(); hudElapsed = 0; }
+      if (wasRunning && battle.phase !== 'running') showResult();
+      if (battle.phase !== 'running') {
+        resultAge += dt;
+        // Countdown follows visible real time, not ×1/×2/×3 or the capped combat timestep.
+        if (!wasRunning && autoNextRemaining !== null) {
+          autoNextRemaining = Math.max(0, autoNextRemaining - realDelta);
+          if (autoNextRemaining === 0) {
+            clearBattleState();
+            startWave();
+          }
         }
       }
     }
+    renderScene();
+    // Count rendered frames after the existing 30-FPS gate, using wall time rather than battle speed.
+    const fps = frameRateMeter.record(timestamp);
+    if (fps !== null) fpsLabel.textContent = `${fps} FPS`;
+    if (!battle || battle.phase === 'running' || autoNextRemaining !== null || resultAge < 1.3 || armyScene) resumeFrames();
+  } finally {
+    if (combatProfiler) {
+      combatProfiler.endFrame(collectProfilerCounters(battle, battleSpeed, campaign.units.length));
+      profilerPanel?.update(timestamp);
+    }
   }
-  renderScene();
-  // Count rendered frames after the existing 30-FPS gate, using wall time rather than battle speed.
-  const fps = frameRateMeter.record(timestamp);
-  if (fps !== null) fpsLabel.textContent = `${fps} FPS`;
-  if (!battle || battle.phase === 'running' || autoNextRemaining !== null || resultAge < 1.3 || armyScene) resumeFrames();
 }
 
 function pauseForInactivity() {
@@ -1902,6 +1943,7 @@ function onPageHide(event: PageTransitionEvent) {
   saveSession.release();
   if (!event.persisted) {
     destroyed = true;
+    profilerPanel?.destroy();
     battleAudio.destroy();
     levelMusic.destroy();
     telegram.destroy();

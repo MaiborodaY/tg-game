@@ -20,7 +20,7 @@ to D1 is not sufficient authority.
 3. **Combat and visual effects — implemented.** Separate damaging projectiles, statuses and
    combat events from decorative effects. Cosmetic limits must not drop damage,
    healing, control effects or rewards. Preserve fixed-step/cross-FPS outcomes.
-4. **Profiling and budgets — next.** Add an opt-in lightweight profiler for simulation,
+4. **Profiling and budgets — implemented.** Add an opt-in lightweight profiler for simulation,
    rendering and UI, plus entity/effect counters and repeatable stress scenarios.
    Set device budgets from actual Telegram Android/iOS measurements. Introduce
    pooling/spatial indexing/workers only when measurements justify them.
@@ -102,9 +102,9 @@ No server, D1 migration, payment handling, or publication is part of these stage
   UI behavior, while clearing the army/economy/buildings/hero and granting the
   initial supplies. Its ID counter remains above previously allocated IDs.
 
-At the user's request, remaining browser/game acceptance is deferred until all
-four stages are implemented. Stage 2 had already run focused domain/type checks;
-stage 3 adds regression coverage without running gameplay tests or browser suites.
+At the user's request, browser/game acceptance was deferred until all four
+stages were implemented. Stage 2 had already run focused domain/type checks;
+stage 3 added regression coverage without running gameplay tests or browser suites.
 Before that request, the new command browser suite passed its two real-UI
 scenarios, storage recovery passed 9, and save protection passed 13. These are
 interim results, not final acceptance of the combined four-stage change.
@@ -147,14 +147,15 @@ the final checks.
   authoritative state and event equality, mixed poison/heal/hammer encounters,
   independent IDs, battle result cleanup, timing, and read-only scene drawing.
   Existing combat, render and browser fixtures use the separated collections.
-  These runtime tests are added but intentionally unexecuted until final checks.
+  These runtime tests were intentionally deferred until the combined final checks
+  recorded below.
 - A small stage-2 follow-up closes four omitted-clock paths in Barracks/farm
   commands: missing or invalid time rejects before lower-level helpers could
   fall back to the wall clock. Normal typed callers already pass explicit time.
 
 Stage 3 compilation: strict TypeScript and the production build passed. No Node
 runtime tests, gameplay simulations or browser suites were run during this stage;
-all new and migrated test cases await the combined final validation.
+the new and migrated test cases were deferred to the combined final validation.
 
 ## Final validation commands
 
@@ -164,6 +165,8 @@ npm.cmd run brotd:check
 node --experimental-strip-types king-defense-toon/tests/save-protection.browser.mjs
 node --experimental-strip-types king-defense-toon/tests/storage-recovery.browser.mjs
 node --experimental-strip-types king-defense-toon/tests/campaign-commands.browser.mjs
+node --experimental-strip-types king-defense-toon/tests/combat-profiler.browser.mjs
+node --experimental-strip-types king-defense-toon/scripts/profile-combat.mjs --scenario all --seconds 30
 ```
 
 The browser suites use disposable contexts and close their browser/server in
@@ -175,3 +178,115 @@ Stage 1 validation after updating to `1312dac`: strict typecheck and production
 build passed; 550 Node tests, 12 save-protection browser scenarios, and 9 legacy/recovery browser
 scenarios passed. The latter includes a real first-wave victory and checks that
 reloading cannot award its first-clear reward twice.
+
+## Stage 4 contract and measurement guide
+
+- `combat-profiler.ts` is a bounded, DOM-free sampler. The ordinary game creates
+  no sampler or diagnostic panel unless the URL contains `?profile=1`. The core
+  also supports a disabled path that reads no clock and retains no history.
+  Profiling does not change frame pacing, battle delta, random draws or saves.
+- Five independent rolling windows retain at most 300 samples each by default:
+  accepted frame intervals, frame JavaScript work, simulation calls, Canvas
+  submission calls, and instrumented UI refresh calls. Mean/p95/max describe
+  these windows, not the whole session; p95 uses nearest rank. UI includes the
+  main refresh, economy and battle HUD, not every event handler or browser layout.
+  Nested calls in the same section are recorded once. Canvas is outside the
+  main UI refresh measurement, so that refresh does not double-count drawing.
+- The current game deliberately targets 30 rendered FPS. Frame work above
+  33.33 ms is counted as an overrun; frame intervals beyond 1.5 budgets + 1 ms
+  are counted separately to tolerate RAF scheduling quantization. The latter
+  cannot identify whether a delay came from CPU, GPU, browser or another task.
+  Pausing resets timing baselines, so time spent in a hidden tab is not a slow
+  frame. Reset clears samples; no unbounded event or actor history is retained.
+- Counters are detached numbers: wave, speed, retained allied/enemy actors,
+  projectiles, cosmetic effects and actors with active poison. Dead retained
+  actors count because rendering still visits them; the hero counts as an ally,
+  and the castle is excluded from that actor count. Snapshot consumers cannot
+  mutate gameplay or the sampler's internal storage.
+- The small panel refreshes at most twice a second. Export JSON includes build
+  ID, viewport/DPR, user agent, scenario context and samples; it contains no
+  campaign snapshot and sends nothing to a server. Panel refresh/export overhead
+  is outside measured frame work. Measurements include instrumentation overhead
+  inside the measured sections and are CPU timings, not GPU completion timings.
+- `profile.html` is a separate, explicitly started performance lab using the real
+  simulation and Canvas renderer. It never imports campaign commands/storage or
+  modifies the saved game. Choose a scenario, speed, cosmetic retention and
+  5–60 simulated seconds; Stop, pagehide and visibility changes cancel its loop.
+  An asset-loading run can also be stopped safely. Reload/restart always uses a
+  fresh scenario; no diagnostic control is placed in the normal player menus.
+- The fixed scenarios are an opening wave, catalogue wave 39 with an expanded
+  army, and an explicitly synthetic mixed-skills encounter. The CLI compares the
+  complete ordered events and authoritative outcome with/without cosmetics and
+  reports updateBattle CPU timing and peak counters. It excludes Canvas, DOM,
+  assets and GPU work; sequential JIT/GC noise prevents treating its timing
+  differences as proof of an optimization. Its checksum is a diagnostic label,
+  never anti-cheat or server verification.
+
+For a device baseline, open the same build's `profile.html` in the target Telegram
+Android/iOS WebView, choose the same scenario/speed/duration, and run once to warm
+assets/JIT before recording another run. Export the report, note device model,
+OS/WebView, power mode and thermal state, then compare the repeated p95/max and
+frame-work overruns. Also profile the ordinary game with `?profile=1` to include
+its two canvases, saves, economy and menus. The lab does not reproduce that whole
+UI workload. New skills should add to the deterministic mixed scenario first.
+
+No phone budget is certified by desktop results. The 30-FPS deadline is the
+existing rendering target, not evidence that every supported device meets it.
+Before release, select representative Android/iOS devices and record these
+baselines. Optimize measured CPU/Canvas/UI hot spots; introduce spatial indexes,
+pools or workers only if those measurements justify their complexity.
+
+## Combined final validation — 2026-09-18
+
+Completed on `codex/brotd-server-prep`. Initial production acceptance used build
+`260918-213012`; final lab-only corrections were rebuilt as `260918-213928` and
+the profiler browser suite was rerun against that build. The main game and shared
+runtime JavaScript hashes are unchanged between those two builds.
+
+- Strict TypeScript, all **625 Node tests**, and the production multi-page build
+  passed. This includes the previously deferred campaign, save, fixed-step and
+  visual-isolation regression cases, plus the sampler and stress fixtures.
+- All **14 browser suites** passed: save protection (13 cases), storage recovery
+  (9), campaign commands (2), recruitment pools (20), Barracks (5 contexts),
+  Connect (12), drag/merge (2 viewport flows), Forge (8), Capitol (9), Farm (9),
+  hero integration, plague alchemist (4), profile version (2 viewport flows), and
+  the new profiler (2 checks). Granularity differs, so these are not summed as
+  equivalent test cases. The hero suite covers mobile talent trees, legacy
+  refund, reload, battle snapshots, one-time XP, healing and hammer at speed 3.
+- The profiler browser suite completed the real first wave with diagnostics on
+  and off and compared durable rewards/progression. It verified no profiler in
+  the ordinary game, populated/reset metrics, mobile panel bounds, and a stopped
+  lab run that left literal campaign-save bytes untouched. The final rerun also
+  checked exact five-second lab duration at speeds 1 and 3 and a downloaded JSON
+  report whose scenario metadata remains tied to its samples after controls change.
+- Existing browser harnesses now use dynamically assigned loopback ports to
+  avoid collisions. Stale expectations were updated for the current Connect UI,
+  offline gold settlement and stable unit IDs across reload; the latter now has
+  an explicit whole-roster ID equality assertion.
+- Manual in-app-browser play recruited and placed three level-1 swordsmen. The
+  automatic sequence cleared waves 1–3, then displayed the expected defeat flow
+  at wave 4. The profiler displayed live simulation/Canvas/UI measurements and
+  the browser reported no console errors. The game tab and preview server were
+  closed after inspection. Automated browser contexts/servers also exited.
+
+The CLI ran each of the three fixtures for up to 30 simulated seconds, both with
+cosmetics and with zero cosmetic retention. Complete authoritative state and
+ordered events matched in every pair. The mixed fixture exercised arrows,
+hammer, poison bottles, poison, stuns, allied/enemy healing and hero healing; it
+peaked at 53 retained actors (including castle), 11 projectiles and 35 cosmetics.
+
+One local Node 22.13.0 sample, with cosmetics enabled, recorded these CPU times
+per `updateBattle(1/60)` call. These numbers exclude rendering and are not frame
+budgets or device acceptance:
+
+| Fixture | Mean ms | p95 ms | Max ms |
+| --- | ---: | ---: | ---: |
+| Opening | 0.034 | 0.096 | 1.954 |
+| Expanded army | 0.119 | 0.322 | 9.000 |
+| Synthetic mixed skills | 0.210 | 0.484 | 3.311 |
+
+Local logs/reports are under ignored `.tmp/stage4-*`; the commands and scenarios
+above reproduce the checks. Physical Telegram Android/iOS validation, including
+Web Locks support and representative-device performance, remains a release
+acceptance step. This branch does not implement server authority, D1, purchases
+or competitive verification, and has not been merged, pushed or deployed.

@@ -3,14 +3,16 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = new URL('../../.tmp/drag-merge/', import.meta.url);
+let baseUrl;
 const server = await createServer({
-  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/drag-merge/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 5198, strictPort: true },
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/drag-merge/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'drag-test-hooks', enforce: 'pre', transform(code, id) {
     if (id.endsWith('/combat.ts')) {
       return prependFunctionBody(code, 'updateBattle', 'throw new Error("Combat must not run in UI checks");');
@@ -29,7 +31,7 @@ let browser;
 const checks = [];
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [320, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 700 }, isMobile: true, hasTouch: true });
@@ -53,7 +55,7 @@ try {
       await page.waitForFunction(() => window.dragCheck?.ready());
       await page.evaluate(async () => { window.dragCheck.freeze(); await document.fonts.ready; });
     };
-    await page.goto('http://127.0.0.1:5198/'); await ready();
+    await page.goto(baseUrl); await ready();
     const read = () => page.evaluate(() => window.dragCheck.state());
     const cell = (col, row) => page.evaluate(({col,row}) => {
       const canvas = document.querySelector('#army-map'), r = canvas.getBoundingClientRect();
@@ -154,9 +156,11 @@ try {
     assert.equal(after.units.find(u=>u.col===2&&u.row===1).level,6);
     assert.equal(after.reserve.length,10);
     assert.equal(after.gold,before.gold); assert.equal(after.slaves,before.slaves);
+    assert.deepEqual({ units: after.units, reserve: after.reserve }, { units: before.units, reserve: before.reserve },
+      'reload keeps fighter IDs stable after earlier fighters were consumed');
 
     // Mouse capture survives closing Barracks and Connect continues past level 100.
-    for (const reserveId of [4,5,6]) {
+    for (const reserveId of [6,7,8]) {
       await page.locator('#open-barracks').click();
       const source = await center(`[data-barracks-unit-id="${reserveId}"]`);
       await page.mouse.move(source.x,source.y); await page.mouse.down(); await page.waitForTimeout(510);
@@ -171,13 +175,13 @@ try {
 
     // Existing button route and ordinary controls still respond after captured drags.
     await page.locator('#open-barracks').click();
-    await page.locator('[data-barracks-unit-id="7"]').tap();
+    await page.locator('[data-barracks-unit-id="9"]').tap();
     assert.match(await page.locator('#barracks-detail [data-connect-action="begin"]').innerText(), /Connect/);
     assert.doesNotMatch(await page.locator('#barracks-panel').innerText(), /\bmerge\b/i);
     await close();
     await page.touchscreen.tap(...Object.values(await cell(2,1)));
     await page.locator('#selection-panel [data-connect-action="begin"]').tap();
-    await page.locator('[data-connect-donor-id="7"]:visible').tap();
+    await page.locator('[data-connect-donor-id="9"]:visible').tap();
     await page.locator('[data-connect-action="apply"]:visible').tap();
     after = await read(); assert.equal(after.units.find(u=>u.col===2&&u.row===1).level,7);
     await page.locator('[data-connect-action="cancel"]:visible').tap();
@@ -185,7 +189,7 @@ try {
     before = after;
     // Legality can change after pickup. Reject at release without consuming the source.
     await page.locator('#open-barracks').click();
-    await hold(await center('[data-barracks-unit-id="8"]'));
+    await hold(await center('[data-barracks-unit-id="10"]'));
     const changedTarget = before.units.find(u=>u.col===2&&u.row===1).id;
     await page.evaluate(id=>window.dragCheck.invalidateTarget(id),changedTarget);
     const staleState = await read();

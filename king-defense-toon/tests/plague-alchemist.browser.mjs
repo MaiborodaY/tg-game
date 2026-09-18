@@ -4,17 +4,18 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const output = new URL('../../.tmp/', import.meta.url);
-const baseUrl = 'http://127.0.0.1:5210/';
+let baseUrl;
 const key = 'brotd-infinity:campaign:v2', now = 1800000000000;
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/plague-alchemist/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5210, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'alchemist-browser-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -62,7 +63,7 @@ async function fits(page, panel) {
 let browser;
 let count = 0;
 try {
-  await mkdir(output, { recursive: true }); await server.listen();
+  await mkdir(output, { recursive: true }); baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320]) for (const clearedWaves of [0, 200]) {
     const context = await browser.newContext({ viewport: { width, height: width === 390 ? 700 : 640 }, isMobile: true, hasTouch: true });

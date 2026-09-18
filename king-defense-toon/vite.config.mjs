@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig(({ command }) => {
   // Embed the identity in this HTML build. A cached page must keep its old label,
@@ -10,11 +11,17 @@ export default defineConfig(({ command }) => {
   return {
     base: './',
     server: { host: '127.0.0.1', port: 5187, strictPort: true },
-    build: { outDir: '../public/king-defense-toon', emptyOutDir: true },
+    build: { outDir: '../public/king-defense-toon', emptyOutDir: true,
+      rolldownOptions: { input: {
+        game: fileURLToPath(new URL('./index.html', import.meta.url)),
+        profile: fileURLToPath(new URL('./profile.html', import.meta.url)),
+      } },
+    },
     plugins: [{
       name: 'brotd-build-version',
       transformIndexHtml(html) {
-        return html.replace(/(<p id="profile-version"[^>]*>)[\s\S]*?(<\/p>)/, `$1${version}$2`);
+        return html.replace(/(<p id="profile-version"[^>]*>)[\s\S]*?(<\/p>)/, `$1${version}$2`)
+          .replace('</head>', `<meta name="brotd-build" content="${buildId}">\n</head>`);
       },
     }],
   };

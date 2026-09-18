@@ -1,0 +1,12 @@
+.combat-profiler { position: fixed; z-index: 10000; top: max(8px, env(safe-area-inset-top)); right: 8px; width: min(304px, calc(100vw - 16px)); border: 1px solid #71889e; border-radius: 7px; background: #11202df2; color: #edf3f8; font: 11px/1.35 system-ui, sans-serif; text-align: left; box-shadow: 0 3px 14px #0005; }
+.combat-profiler:not([open]) { width: auto; }
+.combat-profiler summary { cursor: pointer; padding: 7px 10px; font-weight: 700; }
+.combat-profiler summary span { margin-left: 10px; font-variant-numeric: tabular-nums; }
+.profiler-body { padding: 0 10px 8px; max-height: min(70vh, 430px); overflow-y: auto; }
+.profiler-body p { margin: 6px 0; color: #c8d6e3; }
+.profiler-body table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.profiler-body th { text-align: left; font-weight: 500; }
+.profiler-body td { text-align: right; }
+.profiler-body th, .profiler-body td { padding: 3px; border-bottom: 1px solid #ffffff18; }
+.profiler-actions { display: flex; gap: 8px; }
+.profiler-actions button { padding: 7px 10px; border: 1px solid #71889e; border-radius: 4px; color: #fff; background: #243c50; font: inherit; cursor: pointer; }

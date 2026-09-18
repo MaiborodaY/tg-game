@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { FIELD, FORMATION_VIEW } from '../field.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
@@ -12,13 +13,13 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
-const baseUrl = 'http://127.0.0.1:5205/';
+let baseUrl;
 const ids = ['health', 'attack', 'attackSpeed'];
 const zeroForge = Object.fromEntries(ids.map(id => [id, 0]));
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/forge/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5205, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'forge-check-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -133,7 +134,7 @@ async function scenario(name, width, saved, check) {
 
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320]) {
     await scenario('purchases-next-wave-reload-reset', width, fixture(), async page => {

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { FIELD, FORMATION_VIEW } from '../field.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
@@ -12,13 +13,13 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
-const baseUrl = 'http://127.0.0.1:5206/';
+let baseUrl;
 const previewPortraits = ['elf-archer.webp', 'elf-healer.webp', 'unicorn.webp'];
 const humanTypes = ['swordsman', 'archer', 'healer', 'lancer'];
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/recruitment-pools/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5206, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'recruitment-pool-check-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -153,7 +154,7 @@ async function scenario(name, width, saved, check, height = width === 320 ? 640 
 
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320]) {
     for (const level of [1, 2]) {
@@ -455,9 +456,15 @@ try {
     await fits(page);
     await page.evaluate(now => { Date.now = () => now + 3 * 60 * 60 * 1000; window.recruitmentCheck.refresh(); }, now);
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /300 gold/);
+    // Opening a menu after three hours settles ordinary offline income first;
+    // verify the upgrade's payment separately from that earned gold.
+    await close(page); await open(page);
+    await page.locator('#collect-offline-rewards').click();
+    const beforeFinish = await state(page);
+    assert.equal(beforeFinish.gold, 5180);
     await page.locator('#barracks-finish-upgrade').click();
     assert.equal((await state(page)).barracks.level, 4);
-    assert.equal((await state(page)).gold, 4700);
+    assert.equal((await state(page)).gold, beforeFinish.gold - 300);
     assert.equal((await state(page)).progression.unlockedCells.length, 10, 'Upgrade grants permission, not a free cell');
     assert.match(await unicorn.innerText(), /Coming soon.*Barracks IV.*11 army tiles/s);
     assert.equal(await page.locator('#barracks-building-level').innerText(), 'IV');
