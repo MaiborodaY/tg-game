@@ -6,7 +6,7 @@ import { WAVE_DEFINITIONS, WAVES_PER_ROUND, ROUNDS_PER_LEVEL, CAMPAIGN_VERSION, 
 import { setupTelegramAdapter } from './telegram.ts';
 import { createBattleAudio } from './audio.ts';
 import { createLevelMusic } from './music.ts';
-import { battleFrameDelta, nextBattleSpeed } from './battle-speed.ts';
+import { DEFAULT_BATTLE_SPEED, battleFrameDelta, nextBattleSpeed } from './battle-speed.ts';
 import { createFrameRateMeter } from './fps.ts';
 import { createFramePacer } from './frame-pacer.ts';
 import { createSaveStorage } from './save-storage.ts';
@@ -96,7 +96,7 @@ let clearedWaves = 0;
 let selectedId: number | null = null, movingId: number | null = null;
 let scene: Scene | undefined, toastTimer: ReturnType<typeof setTimeout> | undefined;
 let battle: GameBattle | null = null, paused = false, lastOutcome: BattlePhase | null = null;
-let battleSpeed: BattleSpeed = 1;
+let battleSpeed: BattleSpeed = DEFAULT_BATTLE_SPEED;
 const AUTO_WAVE_DELAY = 2;
 const AUTO_WAVES_DEFAULT_VERSION = 1;
 let autoWaves = true, autoNextRemaining: number | null = null;
@@ -169,7 +169,7 @@ refreshSoundButton();
 function refreshSpeedButton() {
   const button = byId('battle-speed');
   button.textContent = `×${battleSpeed}`;
-  button.setAttribute('aria-pressed', String(battleSpeed > 1));
+  button.setAttribute('aria-pressed', String(battleSpeed !== DEFAULT_BATTLE_SPEED));
   const label = `Battle speed: ${battleSpeed}×. Switch to ${nextBattleSpeed(battleSpeed)}×`;
   button.setAttribute('aria-label', label);
   button.title = label;
@@ -1412,7 +1412,7 @@ function resetRun() {
   checkpointTreasury(economy); pendingOfflineGold = pendingOfflineSlaves = 0;
   pendingSlotRefund = pendingReturnedFighters = pendingClosedCells = 0;
   progression = createProgression(); selectedLockedCell = selectedEmptyCell = null;
-  battleSpeed = 1;
+  battleSpeed = DEFAULT_BATTLE_SPEED;
   selectedId = movingId = lastOutcome = null;
   for (const [child, inert] of recoveryInert) child.inert = inert;
   recoveryInert.clear();
@@ -1623,7 +1623,7 @@ function frame(timestamp: number) {
     if (wasRunning && battle.phase !== 'running') showResult();
     if (battle.phase !== 'running') {
       resultAge += dt;
-      // Countdown follows visible real time, not ×1/×2/×3 or the capped combat timestep.
+      // Countdown follows visible real time, not ×1.5/×2/×3 or the capped combat timestep.
       if (!wasRunning && autoNextRemaining !== null) {
         autoNextRemaining = Math.max(0, autoNextRemaining - realDelta);
         if (autoNextRemaining === 0) {

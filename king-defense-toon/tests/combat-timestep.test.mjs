@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBattle, updateBattle } from '../combat.ts';
-import { battleFrameDelta } from '../battle-speed.ts';
+import { BATTLE_SPEEDS, battleFrameDelta } from '../battle-speed.ts';
 import { makeFormation } from '../scripts/combat-balance.mjs';
 
 const TICK = 1 / 60;
@@ -31,7 +31,7 @@ function assertFrameIndependentBattle(level, outcome) {
   const saved = structuredClone(formation);
   formation.forEach(Object.freeze);
   Object.freeze(formation);
-  const expected = runBattle(formation, [1 / 60], 1);
+  const expected = runBattle(formation, [1 / 60], 1.5);
   assert.equal(expected.phase, outcome);
   assert.equal(expected.total, 9);
   assert.equal(expected.hero.type, 'hero');
@@ -49,7 +49,7 @@ function assertFrameIndependentBattle(level, outcome) {
     assert.equal(expected.castle.hp, 0);
     assert.ok(expected.kills < expected.total);
   }
-  for (const speed of [1, 2, 3]) {
+  for (const speed of BATTLE_SPEEDS) {
     for (const durations of [[1 / 20], [1 / 30], [1 / 60], [1 / 60, .041, .024, .1, .012]]) {
       assert.deepEqual(runBattle(formation, durations, speed), expected,
         `speed ${speed}, frames ${durations}`);

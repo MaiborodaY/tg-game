@@ -35,7 +35,7 @@ function randomSequence(seed) {
   return () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; };
 }
 
-export function runEarlyCampaign(apis, { seed = 1, speed: battleSpeed = 1, maxAttempts = 20, lastWave = 10, maxBattleSeconds = 240 } = {}) {
+export function runEarlyCampaign(apis, { seed = 1, speed: battleSpeed = apis.speed.BATTLE_SPEEDS[0], maxAttempts = 20, lastWave = 10, maxBattleSeconds = 240 } = {}) {
   if (!Number.isSafeInteger(seed) || !Number.isInteger(maxAttempts) || maxAttempts <= 0
     || !Number.isInteger(lastWave) || lastWave < 1 || lastWave > 30
     || !apis.speed.BATTLE_SPEEDS.includes(battleSpeed)
@@ -167,7 +167,7 @@ async function cli() {
   const seeds = option('--seeds') ? option('--seeds').split(',').map(Number) : DEFAULT_SEEDS;
   const lastWave = Number(option('--last-wave') ?? 10);
   const reports = seeds.map(seed => runEarlyCampaign(apis, { seed,
-    speed: Number(option('--speed') ?? 1),
+    speed: Number(option('--speed') ?? apis.speed.BATTLE_SPEEDS[0]),
     maxAttempts: Number(option('--max-attempts') ?? 20), lastWave }));
   const report = { sourceRoot: apis.engine.sourceRoot, lastWave, assumptions: EARLY_CAMPAIGN_ASSUMPTIONS,
     waves: Array.from({ length: lastWave }, (_, index) => apis.engine.getWaveDefinition(index + 1)),

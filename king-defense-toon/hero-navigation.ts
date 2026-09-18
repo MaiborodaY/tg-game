@@ -6,7 +6,7 @@ const BODY_CLEARANCE = 29;
 const distance = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
 
 // Called only after a blocked approach, not per animation frame. Fewer than 1,500 nodes
-// cover the island; ordinary allies retain their existing lightweight movement.
+// cover the island; heroes and monks reuse this when their lightweight movement stalls.
 export function findHeroCrowdRoute(start: Point, target: Point, friends: readonly Point[], range: number,
   canWalk: (from: Point, to: Point) => boolean, advanceLimit: number): Point[] | null {
   const left = Math.min(...WALKABLE_AREAS.map(area => area.left));

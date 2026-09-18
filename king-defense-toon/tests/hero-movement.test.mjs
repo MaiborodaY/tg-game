@@ -3,6 +3,7 @@ import test from 'node:test';
 import { COMBAT_PACE, createBattle, updateBattle } from '../combat.ts';
 import { WALKABLE_AREAS } from '../field.ts';
 import { createHero, heroXpForLevel } from '../hero.ts';
+import { BATTLE_SPEEDS } from '../battle-speed.ts';
 
 const DT = 1 / 60;
 const hold = unit => Object.assign(unit, {
@@ -64,10 +65,10 @@ test('hero goes around an occupied frontline and lands melee hits, with or witho
   }
 });
 
-test('crowded hero pursuit is identical at 30/60/120 FPS and x1/x2/x3', () => {
+test('crowded hero pursuit is identical at 30/60/120 FPS and x1.5/x2/x3', () => {
   const expected = traceApproach(crowdedEncounter());
   for (const fps of [30, 60, 120]) {
-    for (const speed of [1, 2, 3]) {
+    for (const speed of BATTLE_SPEEDS) {
       const actual = traceApproach(crowdedEncounter(), speed / fps);
       assert.equal(actual.hp, expected.hp);
       assert.ok(Math.abs(actual.x - expected.x) < 1e-6);

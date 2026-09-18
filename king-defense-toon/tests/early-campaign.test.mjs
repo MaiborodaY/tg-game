@@ -6,6 +6,7 @@ const apis = await loadCampaignApis();
 
 test('campaign scenario starts from actual supplies and spends only real earned resources', () => {
   const run = runEarlyCampaign(apis, { seed: 4, maxAttempts: 3 });
+  assert.equal(run.speed, 1.5, 'diagnostics use the same initial speed as the game');
   assert.deepEqual(run, runEarlyCampaign(apis, { seed: 4, maxAttempts: 3 }));
   assert.equal(run.attempts[0].start.conversions, apis.barracks.STARTING_SLAVES);
   assert.equal(run.attempts[0].start.ownedLevelMass, 3);
@@ -62,8 +63,8 @@ test('three-round diagnostics retain per-round first-clear bonuses and the ten-w
   assert.throws(() => directClearGoldBounds(apis, 31), RangeError);
 });
 
-test('capture cooldown expires after thirty foreground seconds at both x1 and x3', () => {
-  for (const speed of [1, 3]) {
+test('capture cooldown and treasury retain foreground time at every supported battle speed', () => {
+  for (const speed of apis.speed.BATTLE_SPEEDS) {
     let observedEconomy;
     const clockApis = { ...apis,
       economy: { ...apis.economy, createEconomy(saved) {
@@ -84,4 +85,5 @@ test('capture cooldown expires after thirty foreground seconds at both x1 and x3
     assert.ok(Math.abs(observedEconomy.treasuryProgress - .5) < 1e-9);
   }
   assert.throws(() => runEarlyCampaign(apis, { speed: 4 }), RangeError);
+  assert.throws(() => runEarlyCampaign(apis, { speed: 1 }), RangeError);
 });

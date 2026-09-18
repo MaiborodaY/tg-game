@@ -26,7 +26,7 @@ import { UNIT_TYPE_BY_ID } from './units.ts';
 import { ENEMY_TYPES, getEnemyCombatType, getWaveDefinition } from './waves.ts';
 import { getUnitStats } from './recruitment.ts';
 import { getHeroStats } from './hero.ts';
-import { findHeroCrowdRoute } from './hero-navigation.ts';
+import { findHeroCrowdRoute as findCrowdRoute } from './hero-navigation.ts';
 
 export const COMBAT_PACE = 0.85;
 export const CASTLE_MAX_HP = 100;
@@ -389,11 +389,12 @@ function moveToward(unit: ActorBase, target: Point, dt: number, stopDistance = 0
   unit.walkTime += dt * COMBAT_PACE;
 }
 
-function advanceMelee(battle: Battle, unit: AllyActor | HeroActor, target: Actor, dt: number,
+function advanceAlly(battle: Battle, unit: AllyActor | HeroActor, target: Actor, dt: number,
   goal: Point = target, stopDistance = unit.range - 2): void {
+  const usesCrowdRoute = unit.type === 'hero' || unit.type === 'healer';
   const approach: MeleeApproach = unit.approach?.targetId === target.id ? unit.approach
     : { targetId: target.id, x: unit.x, y: unit.y, blockedTime: 0, detour: null };
-  if (approach.detourTarget && (goal !== target || distance(target, approach.detourTarget) > 24)) {
+  if (approach.detourTarget && ((unit.type !== 'healer' && goal !== target) || distance(target, approach.detourTarget) > 24)) {
     approach.detour = null;
     approach.detourRoute = undefined;
     approach.detourTarget = undefined;
@@ -403,16 +404,16 @@ function advanceMelee(battle: Battle, unit: AllyActor | HeroActor, target: Actor
   if (approach.retryAt && battle.elapsed < approach.retryAt) { unit.action = 'idle'; return; }
   // Separation can cancel a rear fighter's forward step against its own frontline.
   // Only after sustained lack of progress, walk around that frontage at normal speed.
-  // The hero can still creep a few pixels through separation; that is blocked progress too.
-  const minimumProgress = unit.type === 'hero' ? RULES.hero.speed * .25 : 1.5;
+  // A hero or monk can creep through separation while still being effectively blocked.
+  const minimumProgress = usesCrowdRoute ? RULES[unit.type].speed * .25 : 1.5;
   const stalled = unit.action === 'walk' && distance(unit, approach) < minimumProgress * dt;
   approach.blockedTime = approach.retryAt ? .5 : stalled ? approach.blockedTime + dt : 0;
   approach.retryAt = undefined;
   approach.x = unit.x;
   approach.y = unit.y;
   // Casting pauses a hero route without discarding the chosen side of the crowd.
-  if (unit.type !== 'hero' && unit.action !== 'walk') { approach.detour = null; approach.detourRoute = undefined; }
-  if (approach.detour && distance(unit, approach.detour) < (unit.type === 'hero' ? .75 : 4)) {
+  if (!usesCrowdRoute && unit.action !== 'walk') { approach.detour = null; approach.detourRoute = undefined; }
+  if (approach.detour && distance(unit, approach.detour) < (usesCrowdRoute ? .75 : 4)) {
     approach.detour = approach.detourRoute?.shift() ?? null;
   }
   // A non-null detour is assigned together with its deadline below.
@@ -428,8 +429,11 @@ function advanceMelee(battle: Battle, unit: AllyActor | HeroActor, target: Actor
     const blocked = friends.some(ally => distance(unit, ally) < 30
       && (ally.x - unit.x) * dx + (ally.y - unit.y) * dy > 0);
     if (blocked) {
-      if (unit.type === 'hero' && goal === target) {
-        const route = findHeroCrowdRoute(unit, target, living(battle.allies), stopDistance + 6,
+      if (usesCrowdRoute && (goal === target || unit.type === 'healer')) {
+        // Keep the patient as an obstacle, but exclude the moving monk itself. A monk's
+        // route ends inside its existing cast threshold, without increasing heal range.
+        const arrivalRange = unit.type === 'healer' ? unit.range - 22 : stopDistance + 6;
+        const route = findCrowdRoute(unit, target, friends, arrivalRange,
           hasLandPath, ALLY_ADVANCE_LIMIT);
         approach.detour = route?.[0] ?? null;
         approach.detourRoute = route?.slice(1);
@@ -438,7 +442,7 @@ function advanceMelee(battle: Battle, unit: AllyActor | HeroActor, target: Actor
         const length = route?.reduce((total, point) => {
           const segment = distance(previous, point); previous = point; return total + segment;
         }, 0) ?? 0;
-        approach.detourUntil = battle.elapsed + length / RULES.hero.speed + 1;
+        approach.detourUntil = battle.elapsed + length / RULES[unit.type].speed + 1;
         approach.blockedTime = 0;
         unit.approach = approach;
         if (!route) {
@@ -474,13 +478,13 @@ function supportPosition(unit: ActorBase, target: ActorBase): Point {
   };
 }
 
-function followAlly(unit: ActorBase, target: ActorBase, dt: number): void {
+function followAlly(battle: Battle, unit: AllyActor, target: AllyActor | HeroActor, dt: number): void {
   const goal = supportPosition(unit, target);
   const apart = distance(unit, goal);
   if (apart > 24) unit.following = true;
   if (apart < 10) unit.following = false;
-  if (unit.following) moveToward(unit, goal, dt, 8);
-  else unit.action = 'idle';
+  if (unit.following) advanceAlly(battle, unit, target, dt, goal, 8);
+  else { unit.action = 'idle'; unit.approach = null; }
 }
 
 function actHealer(battle: Battle, unit: AllyActor, dt: number): void {
@@ -494,18 +498,21 @@ function actHealer(battle: Battle, unit: AllyActor, dt: number): void {
   if (target) {
     unit.focusId = target.id;
     if (distance(unit, target) <= unit.range - 20) {
+      unit.following = false;
+      unit.approach = null;
       if (unit.cooldown <= 0) beginAction(unit, target, 'heal');
       else unit.action = 'idle';
     } else {
       // Reach the actual patient: a fixed rear position may lie outside the heal radius.
       unit.following = false;
-      moveToward(unit, target, dt, unit.range - 22);
+      advanceAlly(battle, unit, target, dt, target, unit.range - 22);
     }
     return;
   }
   unit.focusId = null;
   if (!living(battle.enemies).length) {
     unit.following = false;
+    unit.approach = null;
     unit.action = 'idle';
     return;
   }
@@ -515,11 +522,12 @@ function actHealer(battle: Battle, unit: AllyActor, dt: number): void {
   const leader = followed && front && followed.y <= front.y + 50 ? followed : front;
   if (!leader || distance(unit, leader) <= unit.range || leader.y >= unit.y) {
     unit.following = false;
+    unit.approach = null;
     unit.action = 'idle';
     return;
   }
   unit.followId = leader.id;
-  followAlly(unit, leader, dt);
+  followAlly(battle, unit, leader, dt);
 }
 
 function cancelHeroActions(battle: Battle): void {
@@ -653,7 +661,7 @@ function actHero(battle: Battle, hero: HeroActor, dt: number): void {
     // A ranged stance needs a reachable casting position, not a fixed point inside
     // friendly archers. Once in range, wait for the next cast instead of pacing.
     if (distance(hero, target) <= castingRange) { hero.action = 'idle'; hero.approach = null; return; }
-    advanceMelee(battle, hero, target, dt, target, castingRange - 6);
+    advanceAlly(battle, hero, target, dt, target, castingRange - 6);
     return;
   }
   const fighters = living(battle.allies).filter(ally => ally.type !== 'healer');
@@ -663,14 +671,14 @@ function actHero(battle: Battle, hero: HeroActor, dt: number): void {
   if (!leader || onlyRanged || !frontline || frontlineEngaged) {
     // Once the frontline engages, join it using the same collision detours as melee allies.
     // Following a swordsman/lancer's rear position can leave the hero permanently out of reach.
-    advanceMelee(battle, hero, target, dt);
+    advanceAlly(battle, hero, target, dt);
     return;
   }
   // Follow the front without overtaking it to tank every incoming group; leave
   // enough room for friendly collision spacing until it reaches the enemy.
   const goal = { x: Math.max(leader.x - 70, Math.min(leader.x + 70, target.x)),
     y: Math.max(target.y + hero.range - 2, leader.y + 30) };
-  advanceMelee(battle, hero, target, dt, goal, 4);
+  advanceAlly(battle, hero, target, dt, goal, 4);
 }
 
 function actEnemyHealer(battle: Battle, unit: Actor, dt: number): boolean {
@@ -774,7 +782,7 @@ function act(battle: Battle, unit: Actor, dt: number): void {
     moveToward(unit, target, dt, unit.range - 2);
   } else if (unit.type === 'swordsman' || unit.type === 'lancer') {
     // Spear reach lets lancers stop behind defenders, while retaining melee land-path checks.
-    advanceMelee(battle, unit, target, dt);
+    advanceAlly(battle, unit, target, dt);
   } else unit.action = 'idle';
 }
 
