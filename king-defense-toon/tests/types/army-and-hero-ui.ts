@@ -53,6 +53,7 @@ export function verifyArmyContracts(panel: HTMLElement, button: HTMLButtonElemen
   // @ts-expect-error Army plans require grid positions, not reserve-only fighters.
   createArmyPlan(reserve, 3, progression);
   const ui: HeroUI = createHeroUI({ panel, button, getHero: () => createHero(), getBattle: () => ({ phase: 'running' }),
+    onLearn: () => null, onReset: () => null,
     onChange(change) {
       if (change.type === 'talent') {
         const spent: true = change.spent;
@@ -68,9 +69,11 @@ export function verifyArmyContracts(panel: HTMLElement, button: HTMLButtonElemen
     } });
   ui.render(); ui.destroy();
   // @ts-expect-error Hero UI requires normalized hero state.
-  createHeroUI({ panel, button, getHero: () => ({ xp: 0 }) });
+  createHeroUI({ panel, button, getHero: () => ({ xp: 0 }), onLearn: () => null, onReset: () => null });
   // @ts-expect-error Battle phase is closed to running/victory/defeat.
-  createHeroUI({ panel, button, getHero: () => createHero(), getBattle: () => ({ phase: 'paused' }) });
+  createHeroUI({ panel, button, getHero: () => createHero(), getBattle: () => ({ phase: 'paused' }), onLearn: () => null, onReset: () => null });
+  // @ts-expect-error The view cannot own mutations; application handlers are required.
+  createHeroUI({ panel, button, getHero: () => createHero() });
   // @ts-expect-error A talent notification is emitted only after successful spending.
   const rejected: HeroUIChange = { type: 'talent', id: 'heal_power', spent: false, reason: 'points', rank: 0 };
   void rejected;

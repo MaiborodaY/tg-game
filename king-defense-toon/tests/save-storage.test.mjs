@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createSaveStorage } from '../save-storage.ts';
+import { UnsupportedSaveVersionError } from '../save-version.ts';
 
 const KEY = 'campaign';
 
@@ -249,4 +250,305 @@ test('non-record snapshots and custom JSON primitives cannot replace a readable 
   }
   assert.deepEqual(adapter.retry({ gold: 31 }), { ok: true, status: 'ready' });
   assert.equal(state.raw, '{"gold":31}');
+});
+
+test('future formats are protected separately from corruption and cannot authorize a reset', () => {
+  for (const versionKind of ['schema', 'campaign']) {
+    const error = new UnsupportedSaveVersionError(versionKind, 99, 1);
+    const { state, adapter } = fixture('{"version":99,"gold":17}', { decode() { throw error; } });
+    assert.deepEqual(adapter.load(), { ok: false, status: 'unsupported', error });
+    assert.equal(adapter.prepareReset(), null);
+    for (const result of [adapter.save({ gold: 125 }), adapter.reset({ gold: 125 }),
+      adapter.reset({ gold: 125 }, { confirmation: Symbol('confirmed elsewhere') })]) {
+      assert.deepEqual(result, { ok: false, status: 'unsupported', blocked: true });
+    }
+    assert.deepEqual(adapter.retry({ gold: 125 }), { ok: false, status: 'unsupported', error });
+    assert.equal(state.raw, '{"version":99,"gold":17}');
+    assert.deepEqual(state.writes, []);
+  }
+});
+
+function migrationFixture(initial, existingBackup = null) {
+  const backupKey = `${KEY}:schema-1-backup`;
+  const state = { values: new Map([[KEY, initial], [backupKey, existingBackup]]), writes: [],
+    backupError: null, duringBackup: null, ownsSession: true };
+  const adapter = createSaveStorage({
+    key: KEY,
+    canWrite: () => state.ownsSession,
+    migrationBackup: { key: backupKey, needed: value => value.version !== 1 },
+    decode: value => ({ ...value, version: 1 }),
+    getStorage: () => ({
+      getItem: key => state.values.get(key) ?? null,
+      setItem(key, value) {
+        if (key === backupKey && state.backupError) throw state.backupError;
+        state.values.set(key, value);
+        state.writes.push({ key, value });
+        if (key === backupKey) state.duringBackup?.();
+      },
+    }),
+  });
+  return { state, adapter, backupKey };
+}
+
+test('migration backs up exact original bytes once before writing normalized progress', () => {
+  const original = ' { "gold" : 17, "unknown" : { "keep": true } }\n';
+  const { state, adapter, backupKey } = migrationFixture(original);
+  assert.deepEqual(adapter.load().value, { gold: 17, unknown: { keep: true }, version: 1 });
+  assert.deepEqual(state.writes, [], 'reading and decoding must not change storage');
+  assert.equal(adapter.save({ gold: 23, version: 1 }).ok, true);
+  assert.deepEqual(state.writes, [
+    { key: backupKey, value: original }, { key: KEY, value: '{"gold":23,"version":1}' },
+  ]);
+  assert.equal(adapter.save({ gold: 31, version: 1 }).ok, true);
+  assert.equal(state.values.get(backupKey), original);
+  assert.equal(state.writes.filter(write => write.key === backupKey).length, 1);
+  assert.equal(adapter.load().ok, true);
+  assert.equal(adapter.save({ gold: 37, version: 1 }).ok, true);
+  assert.equal(state.values.get(backupKey), original);
+  assert.equal(state.writes.filter(write => write.key === backupKey).length, 1);
+});
+
+test('existing migration backup is never overwritten by a different legacy session', () => {
+  const older = '{"gold":11,"oldest":true}';
+  const { state, adapter, backupKey } = migrationFixture('{"gold":17}', older);
+  adapter.load();
+  assert.equal(adapter.save({ gold: 23, version: 1 }).ok, true);
+  assert.equal(state.values.get(backupKey), older);
+  assert.deepEqual(state.writes, [{ key: KEY, value: '{"gold":23,"version":1}' }]);
+});
+
+test('backup failure leaves original campaign bytes intact and retry backs up before the latest snapshot', () => {
+  const original = '{ "gold": 17 }\n';
+  const { state, adapter, backupKey } = migrationFixture(original);
+  adapter.load();
+  state.backupError = new Error('Backup quota exceeded');
+  assert.deepEqual(adapter.save({ gold: 23, version: 1 }), {
+    ok: false, status: 'write-error', error: state.backupError,
+  });
+  assert.equal(state.values.get(KEY), original);
+  assert.equal(state.values.get(backupKey), null);
+  assert.deepEqual(state.writes, []);
+  state.backupError = null;
+  assert.equal(adapter.retry({ gold: 31, version: 1 }).ok, true);
+  assert.deepEqual(state.writes, [
+    { key: backupKey, value: original }, { key: KEY, value: '{"gold":31,"version":1}' },
+  ]);
+});
+
+test('current schema and empty slots never request a legacy backup', () => {
+  for (const initial of [null, '{"gold":17,"version":1}']) {
+    const { state, adapter, backupKey } = migrationFixture(initial);
+    assert.equal(adapter.load().ok, true);
+    assert.equal(adapter.save({ gold: 23, version: 1 }).ok, true);
+    assert.equal(state.values.get(backupKey), null);
+    assert.equal(state.writes.filter(write => write.key === backupKey).length, 0);
+  }
+  for (const key of [KEY, '']) {
+    assert.throws(() => createSaveStorage({ key: KEY, migrationBackup: { key, needed: () => true } }),
+      /separate storage key/);
+  }
+});
+
+test('missing session ownership blocks reading, writing and reset before accessing storage', () => {
+  for (const canWrite of [() => false, () => { throw new Error('Lock unavailable'); }]) {
+    const { state, adapter } = fixture('{"gold":17}', { canWrite });
+    assert.equal(adapter.load().status, 'session-blocked');
+    assert.equal(adapter.save({ gold: 125 }).status, 'session-blocked');
+    assert.equal(adapter.retry({ gold: 125 }).status, 'session-blocked');
+    assert.equal(adapter.prepareReset(), null);
+    assert.equal(adapter.reset({ gold: 125 }, { confirmation: Symbol('reset') }).status, 'session-blocked');
+    assert.equal(adapter.checkForUpdates().status, 'session-blocked');
+    assert.equal(state.accesses, 0);
+    assert.equal(state.raw, '{"gold":17}');
+    assert.deepEqual(state.writes, []);
+  }
+});
+
+test('losing ownership after load protects stale state even if ownership later returns', () => {
+  let ownsSession = true;
+  const { state, adapter } = fixture('{"gold":17}', { canWrite: () => ownsSession });
+  adapter.load();
+  ownsSession = false;
+  assert.equal(adapter.save({ gold: 23 }).status, 'session-blocked');
+  assert.equal(adapter.load().status, 'session-blocked');
+  assert.equal(adapter.reset({ gold: 125 }).status, 'session-blocked');
+  ownsSession = true;
+  assert.equal(adapter.save({ gold: 31 }).blocked, true);
+  assert.deepEqual(adapter.retry({ gold: 31 }), {
+    ok: true, status: 'session-blocked', value: { gold: 17 }, needsRestore: true,
+  });
+  assert.equal(adapter.reset({ gold: 125 }).blocked, true);
+  assert.equal(state.raw, '{"gold":17}');
+  assert.deepEqual(state.writes, []);
+  assert.equal(adapter.load().ok, true);
+  assert.equal(adapter.save({ gold: 18 }).ok, true);
+});
+
+test('external changes and removals block stale writes, reset and update checks', () => {
+  for (const operation of ['save', 'reset', 'checkForUpdates']) {
+    for (const external of ['{"gold":99}', null]) {
+      const { state, adapter } = fixture('{"gold":17}');
+      adapter.load();
+      state.raw = external;
+      assert.equal(adapter[operation]({ gold: 23 }).status, 'conflict');
+      assert.equal(adapter.prepareReset(), null);
+      assert.equal(adapter.reset({ gold: 125 }).blocked, true);
+      assert.equal(adapter.save({ gold: 31 }).blocked, true);
+      assert.equal(state.raw, external);
+      assert.deepEqual(state.writes, []);
+      assert.deepEqual(adapter.retry({ gold: 31 }), {
+        ok: true, status: 'conflict', value: external === null ? null : { gold: 99 }, needsRestore: true,
+      });
+      assert.equal(adapter.save({ gold: 31 }).blocked, true);
+    }
+  }
+});
+
+test('a newly created external slot also conflicts with a loaded empty baseline', () => {
+  const { state, adapter } = fixture();
+  adapter.load();
+  state.raw = '{"gold":99}';
+  assert.equal(adapter.save({ gold: 125 }).status, 'conflict');
+  assert.equal(state.raw, '{"gold":99}');
+  assert.deepEqual(state.writes, []);
+});
+
+test('restoration failures close the write gate and retry requires restoration before saving', () => {
+  const { state, adapter } = fixture('{"gold":17}');
+  assert.equal(adapter.load().ok, true);
+  const error = new Error('Failed to restore roster');
+  assert.deepEqual(adapter.protectRestoreFailure(error), { ok: false, status: 'corrupt', error });
+  assert.equal(adapter.save({ gold: 125 }).blocked, true);
+  assert.deepEqual(adapter.retry({ gold: 125 }), {
+    ok: true, status: 'corrupt', value: { gold: 17 }, needsRestore: true,
+  });
+  assert.equal(adapter.save({ gold: 126 }).blocked, true);
+  assert.equal(state.raw, '{"gold":17}');
+  assert.deepEqual(state.writes, []);
+  assert.equal(adapter.load().ok, true);
+  assert.equal(adapter.save({ gold: 18 }).ok, true);
+});
+
+test('a save changed during serialization is detected again before committing the snapshot', () => {
+  const { state, adapter } = fixture('{"gold":17}');
+  adapter.load();
+  const result = adapter.save({ toJSON() { state.raw = '{"gold":99}'; return { gold: 23 }; } });
+  assert.equal(result.status, 'conflict');
+  assert.equal(state.raw, '{"gold":99}');
+  assert.deepEqual(state.writes, []);
+});
+
+test('a session lost during serialization cannot write or reset the save', () => {
+  let ownsSession = true;
+  const { state, adapter } = fixture('{"gold":17}', { canWrite: () => ownsSession });
+  adapter.load();
+  const result = adapter.save({ toJSON() { ownsSession = false; return { gold: 23 }; } });
+  assert.equal(result.status, 'session-blocked');
+  assert.equal(state.raw, '{"gold":17}');
+  assert.deepEqual(state.writes, []);
+  assert.equal(adapter.reset({ gold: 125 }).status, 'session-blocked');
+});
+
+test('a save changed while the backup is written cannot be overwritten by migrated progress', () => {
+  const original = '{ "gold": 17 }';
+  const { state, adapter, backupKey } = migrationFixture(original);
+  adapter.load();
+  state.duringBackup = () => state.values.set(KEY, '{"gold":99}');
+  assert.equal(adapter.save({ gold: 23, version: 1 }).status, 'conflict');
+  assert.equal(state.values.get(KEY), '{"gold":99}');
+  assert.equal(state.values.get(backupKey), original);
+  assert.deepEqual(state.writes, [{ key: backupKey, value: original }]);
+  assert.equal(adapter.reset({ gold: 125, version: 1 }).blocked, true);
+});
+
+test('confirmation of an older damaged save cannot reset a slot that changed afterward', () => {
+  for (const external of ['{"gold":99}', '{different-damage', null]) {
+    const { state, adapter } = fixture('{broken');
+    adapter.load();
+    const confirmation = adapter.prepareReset();
+    assert.equal(typeof confirmation, 'symbol');
+    state.raw = external;
+    assert.equal(adapter.reset({ gold: 125 }, { confirmation }).status, 'conflict');
+    assert.equal(adapter.reset({ gold: 125 }, { confirmation }).blocked, true);
+    assert.equal(adapter.prepareReset(), null);
+    assert.equal(state.raw, external);
+    assert.deepEqual(state.writes, []);
+  }
+});
+
+test('update-read failure protects progress until a successful restore rather than allowing blind writes', () => {
+  const { state, adapter } = fixture('{"gold":17}');
+  adapter.load();
+  state.readError = new Error('Storage permission changed');
+  assert.equal(adapter.checkForUpdates().status, 'read-error');
+  state.readError = null;
+  assert.equal(adapter.save({ gold: 23 }).blocked, true);
+  assert.equal(adapter.retry({ gold: 23 }).needsRestore, true);
+  assert.equal(adapter.save({ gold: 23 }).blocked, true);
+  assert.equal(state.raw, '{"gold":17}');
+  assert.deepEqual(state.writes, []);
+});
+
+test('reset approved during a read failure cannot overwrite newly accessible valid or future progress', () => {
+  for (const [raw, expectedStatus] of [['{"gold":99}', 'conflict'], ['{"gold":99,"version":99}', 'unsupported']]) {
+    const decode = value => {
+      if (value.version === 99) throw new UnsupportedSaveVersionError('schema', 99, 1);
+      return value;
+    };
+    const { state, adapter } = fixture(raw, { decode });
+    state.readError = new Error('Temporarily unreadable');
+    assert.equal(adapter.load().status, 'read-error');
+    const confirmation = adapter.prepareReset();
+    state.readError = null;
+    assert.equal(adapter.reset({ gold: 125 }, { confirmation }).status, expectedStatus);
+    assert.equal(state.raw, raw);
+    assert.deepEqual(state.writes, []);
+    assert.equal(adapter.save({ gold: 126 }).blocked, true);
+    assert.equal(adapter.reset({ gold: 125 }, { confirmation }).blocked, true);
+    assert.equal(adapter.prepareReset(), null);
+    if (expectedStatus === 'conflict') {
+      assert.deepEqual(adapter.retry({ gold: 125 }), {
+        ok: true, status: 'conflict', value: { gold: 99 }, needsRestore: true,
+      });
+      assert.equal(adapter.save({ gold: 126 }).blocked, true);
+    }
+  }
+});
+
+test('losing session ownership during serialization also prevents the legacy backup write', () => {
+  const original = '{ "gold": 17 }';
+  const { state, adapter, backupKey } = migrationFixture(original);
+  adapter.load();
+  const result = adapter.save({ toJSON() { state.ownsSession = false; return { gold: 23, version: 1 }; } });
+  assert.equal(result.status, 'session-blocked');
+  assert.equal(state.values.get(KEY), original);
+  assert.equal(state.values.get(backupKey), null);
+  assert.deepEqual(state.writes, []);
+});
+
+test('a confirmed reset cannot blindly overwrite a save that remains unreadable', () => {
+  const { state, adapter } = fixture('{"gold":99}');
+  state.readError = new Error('Still unreadable');
+  assert.equal(adapter.load().status, 'read-error');
+  const confirmation = adapter.prepareReset();
+  assert.equal(adapter.reset({ gold: 125 }, { confirmation }).status, 'read-error');
+  assert.equal(adapter.save({ gold: 126 }).blocked, true);
+  assert.equal(state.raw, '{"gold":99}');
+  assert.deepEqual(state.writes, []);
+});
+
+test('damage discovered after a read failure requires fresh confirmation tied to those bytes', () => {
+  const { state, adapter } = fixture('{newly-readable-damage');
+  state.readError = new Error('Temporarily unreadable');
+  assert.equal(adapter.load().status, 'read-error');
+  const unknownSaveToken = adapter.prepareReset();
+  state.readError = null;
+  assert.equal(adapter.reset({ gold: 125 }, { confirmation: unknownSaveToken }).status, 'corrupt');
+  assert.equal(state.raw, '{newly-readable-damage');
+  assert.deepEqual(state.writes, []);
+  assert.equal(adapter.reset({ gold: 125 }, { confirmation: unknownSaveToken }).needsConfirmation, true);
+  const currentToken = adapter.prepareReset();
+  assert.notEqual(currentToken, unknownSaveToken);
+  assert.equal(adapter.reset({ gold: 125 }, { confirmation: currentToken }).ok, true);
+  assert.deepEqual(state.writes, ['{"gold":125}']);
 });

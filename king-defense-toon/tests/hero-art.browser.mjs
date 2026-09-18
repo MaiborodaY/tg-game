@@ -101,7 +101,7 @@ try {
       })));
     assert.deepEqual(animations, [], 'talent artwork does not introduce continuous CSS animation');
 
-    for (const [width, height] of [[390, 844], [320, 640], [320, 480]]) {
+    for (const [width, height] of [[390, 844], [390, 600], [360, 600], [320, 640], [320, 480]]) {
       await page.setViewportSize({ width, height });
       // A long final-talent description exercises the most constrained detail panel.
       await page.locator('[data-hero-talent="miracle"]').click();
@@ -114,7 +114,7 @@ try {
         return { card: bounds(), tree: bounds('.hero-tree'), detail: bounds('.hero-detail'), footer: bounds('.hero-footer'),
           art: bounds('[data-hero-detail-art]'), title: bounds('[data-hero-detail-name]'),
           description: bounds('[data-hero-detail-description]'), effect: bounds('[data-hero-detail-effect]'),
-          action: bounds('.hero-detail-action'), spend: bounds('[data-hero-spend]'),
+          gate: bounds('[data-hero-detail-gate]'), spend: bounds('[data-hero-spend]'),
           cardScroll: card.scrollHeight - card.clientHeight, treeScroll: tree.scrollHeight - tree.clientHeight,
           overflow: document.documentElement.scrollWidth - innerWidth,
           nodes: [...card.querySelectorAll('[data-hero-talent]')].map(element => {
@@ -131,8 +131,11 @@ try {
         `tree, details and footer do not overlap at ${label}`);
       assert.ok(layout.art.right <= layout.title.left + 1 || layout.art.bottom <= layout.title.top + 1,
         `selected artwork leaves the title readable at ${label}`);
-      assert.ok(layout.description.bottom <= layout.effect.top + 1 && layout.effect.bottom <= layout.action.top + 1,
-        `effect and learning action stay clear of description at ${label}`);
+      assert.ok(layout.description.bottom <= layout.effect.top + 1 && layout.effect.bottom <= layout.gate.top + 1,
+        `description, effect and requirement do not overlap at ${label}`);
+      assert.ok(layout.title.right <= layout.spend.left && layout.spend.bottom <= layout.description.top + 1,
+        `Learn shares the title row without covering text at ${label}`);
+      assert.ok(layout.spend.height >= 44, `Learn keeps a touch-sized target at ${label}`);
       assert.ok(layout.spend.bottom <= height && layout.spend.top >= 0, `Learn remains visible at ${label}`);
       assert.ok(layout.nodes.every(node => node.width >= 44 && node.height >= 44), `44px talent targets at ${label}`);
       for (let i = 0; i < layout.nodes.length; i++) for (let j = i + 1; j < layout.nodes.length; j++) {

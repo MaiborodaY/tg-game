@@ -40,7 +40,7 @@ function encounter({ formation = [sword(), sword(2, 3)], heroState, enemies = [{
 }
 
 function incoming(battle, target, damage = 10) {
-  battle.effects.push({ id: battle.nextEffectId++, type: 'arrow', targetId: target.id,
+  battle.projectiles.push({ id: battle.nextProjectileId++, type: 'arrow', targetId: target.id,
     sourceId: battle.enemies[0].id, damage, age: 0, duration: 0 });
   updateBattle(battle, DT);
 }
@@ -83,6 +83,7 @@ test('unlearned branches never heal, mitigate damage, throw a hammer or create s
   assert.equal(enemy.hp, 1000);
   assert.equal(hero.pendingAbility, null);
   assert.ok(!battle.effects.some(effect => effect.type.startsWith('hero-')));
+  assert.ok(!battle.projectiles.some(projectile => projectile.type === 'hero-hammer'));
   assert.equal(hero.healCooldown, 0);
   assert.equal(hero.hammerCooldown, 0);
 });
@@ -134,7 +135,7 @@ test('a hero without hammer closes into melee when friendly archers remain farth
     for (let elapsed = 0; elapsed < 8 && battle.phase === 'running'; elapsed += DT) {
       updateBattle(battle, DT);
       attacked ||= battle.hero.action === 'attack';
-      assert.ok(!battle.effects.some(effect => effect.type === 'hero-hammer'));
+      assert.ok(!battle.projectiles.some(effect => effect.type === 'hero-hammer'));
     }
     assert.equal(battle.phase, 'victory');
     assert.equal(attacked, true);
@@ -237,7 +238,7 @@ test('hammer prefers ranged enemies, lands exactly once on arrival and has no in
   assert.equal(hero.pendingAbility.targetIds[0], ranged.id);
   advance(battle, .36);
   assert.equal(ranged.hp, 1000, 'cast releases the projectile without immediate damage');
-  assert.ok(battle.effects.some(effect => effect.type === 'hero-hammer'));
+  assert.ok(battle.projectiles.some(effect => effect.type === 'hero-hammer'));
   advance(battle, .5);
   close(ranged.hp, 1000 - hero.stats.hammerDamage);
   assert.equal(ranged.stunTime, 0);
@@ -275,7 +276,7 @@ test('hammer projectile arrival rejects dead targets, dead casters, allies and e
     const hero = battle.hero, target = battle.enemies[0];
     releaseHero(hero); hero.hammerCooldown = 0;
     advance(battle, .4);
-    assert.ok(battle.effects.some(effect => effect.type === 'hero-hammer'), invalid);
+    assert.ok(battle.projectiles.some(effect => effect.type === 'hero-hammer'), invalid);
     if (invalid === 'dead-target') target.hp = 0;
     if (invalid === 'dead-caster') hero.hp = 0;
     if (invalid === 'opposing') target.side = 'ally';
@@ -283,7 +284,7 @@ test('hammer projectile arrival rejects dead targets, dead casters, allies and e
     const before = target.hp;
     advance(battle, .5);
     assert.equal(target.hp, before, invalid);
-    assert.ok(!battle.effects.some(effect => effect.type === 'hero-hammer'), invalid);
+    assert.ok(!battle.projectiles.some(effect => effect.type === 'hero-hammer'), invalid);
   }
 });
 
@@ -445,7 +446,7 @@ test('missed or canceled hammers never grant holy strike', () => {
     const hero = battle.hero, target = battle.enemies[0];
     releaseHero(hero); hero.hammerCooldown = 0;
     advance(battle, .4);
-    assert.ok(battle.effects.some(effect => effect.type === 'hero-hammer'));
+    assert.ok(battle.projectiles.some(effect => effect.type === 'hero-hammer'));
     if (invalid === 'dead') target.hp = 0;
     if (invalid === 'ally') target.side = 'ally';
     if (invalid === 'distant') target.y = 40;
@@ -475,6 +476,7 @@ test('learned skills and their timers give the same combat result at low, high a
       position: [hero.x, hero.y], healCooldown: hero.healCooldown, hammerCooldown: hero.hammerCooldown,
       ward: hero.guardianWard, wardTime: hero.guardianWardTime, wardCooldown: hero.guardianWardCooldown,
       strikeTime: hero.holyStrikeTime, effects: battle.effects,
+      projectiles: battle.projectiles, nextProjectileId: battle.nextProjectileId,
     };
   }
   const at60 = simulate(1 / 60);
@@ -495,7 +497,7 @@ test('hero fall continues the wave, castle destruction defeats, and a new wave r
   updateBattle(battle, DT);
   assert.equal(battle.phase, 'defeat');
   assert.equal(battle.hero.bastionTime, 0);
-  assert.ok(!battle.effects.some(effect => ['arrow', 'hero-hammer'].includes(effect.type)));
+  assert.deepEqual(battle.projectiles, []);
   const next = createBattle([sword()], 2, state);
   assert.equal(next.hero.hp, next.hero.maxHp);
   assert.equal(next.castle.hp, 100);
@@ -509,6 +511,8 @@ test('hero fall continues the wave, castle destruction defeats, and a new wave r
   assert.equal(next.hero.guardianWardCooldown, 0);
   assert.equal(next.hero.holyStrikeTime, 0);
   assert.deepEqual(next.effects, []);
+  assert.deepEqual(next.projectiles, []);
+  assert.equal(next.nextProjectileId, 1);
 });
 
 test('hero follows the army, reaches last ranged enemies and remains finite on land at triple-speed frames', () => {
@@ -530,6 +534,7 @@ test('hero follows the army, reaches last ranged enemies and remains finite on l
   assert.ok(maxEffects < 100);
   advance(battle, 2);
   assert.deepEqual(battle.effects, []);
+  assert.deepEqual(battle.projectiles, []);
 
   const cleanup = encounter({ formation: [], enemies: [{ type: 'goblinArcher', hp: 4, x: 195, y: 135 }] });
   releaseHero(cleanup.hero); cleanup.hero.cooldown = 0;

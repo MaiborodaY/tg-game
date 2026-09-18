@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { loadCombatEngine, makeFormation, simulateCombat } from '../scripts/combat-balance.mjs';
+import { setBattleVisualEffectLimit } from '../combat-visuals.ts';
 
 const engine = await loadCombatEngine();
 
@@ -50,4 +51,22 @@ test('the harness does not feed oversized or invalid time steps to the real comb
     assert.throws(() => simulateCombat(engine, { dt }), RangeError);
   }
   assert.throws(() => simulateCombat(engine, { maxSeconds: 0 }), RangeError);
+});
+
+test('balance reports retain exact damage and nonzero healing when cosmetics are disabled', () => {
+  const formation = makeFormation({ swordsman: 1, archer: 1, healer: 1, level: 20 });
+  const configured = limit => ({ ...engine,
+    createBattle(...args) {
+      const battle = engine.createBattle(...args);
+      // A nearby wounded swordsman makes the healing metric part of this comparison.
+      const patient = battle.allies.find(unit => unit.type === 'swordsman');
+      patient.hp /= 2;
+      setBattleVisualEffectLimit(battle, limit);
+      return battle;
+    },
+  });
+  const expected = simulateCombat(configured(256), { wave: 1, formation });
+  assert.ok(expected.damageToEnemies > 0);
+  assert.ok(expected.healing > 0);
+  assert.deepEqual(simulateCombat(configured(0), { wave: 1, formation }), expected);
 });

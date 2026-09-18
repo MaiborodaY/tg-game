@@ -46,13 +46,26 @@ export function simulateCombat(engine, { id = 'custom', wave = 1, formation = []
   const saved = JSON.stringify(formation);
   const battle = engine.createBattle(formation, wave, heroState);
   const totals = { damageToEnemies: 0, damageToAllies: 0, damageToCastle: 0, healing: 0 };
+  // Historical source-root comparisons predate separated projectile/event state.
+  const hasCombatEvents = Array.isArray(battle.projectiles);
   let lastEffectId = 0;
   let updates = 0;
   while (battle.phase === 'running' && battle.elapsed < maxSeconds - 1e-7) {
-    engine.updateBattle(battle, Math.min(dt, maxSeconds - battle.elapsed));
+    const events = engine.updateBattle(battle, Math.min(dt, maxSeconds - battle.elapsed));
     updates += 1;
-    // Read the engine's emitted hit/heal effects without modifying damage, timing,
-    // targeting, enrage, or random state. Each effect has a monotonic battle-local ID.
+    if (hasCombatEvents) {
+      // Gameplay telemetry is complete even when every cosmetic effect is dropped.
+      for (const event of events) {
+        if (event.type === 'heal') totals.healing += event.amount;
+        if (event.type === 'damage') {
+          const key = event.targetType === 'castle' ? 'damageToCastle'
+            : event.side === 'enemy' ? 'damageToEnemies' : 'damageToAllies';
+          totals[key] += event.amount;
+        }
+      }
+      continue;
+    }
+    // Older checkouts only expose these counters through visual effects.
     for (const effect of battle.effects) {
       if (effect.id <= lastEffectId) continue;
       if (effect.type === 'heal' || effect.type === 'hero-heal') totals.healing += effect.amount;

@@ -63,10 +63,10 @@ test('release pose creates one arrow, with single-target damage only when it lan
   updateBattle(battle, DT);
   assert.equal(archer.action, 'shoot');
   while (archer.actionTime + DT < archer.actionDuration * .5 - 1e-9) updateBattle(battle, DT);
-  assert.equal(battle.effects.some(effect => effect.type === 'arrow'), false, 'No projectile before the authored release pose');
-  const events = advance(battle, () => battle.effects.some(effect => effect.type === 'arrow'));
+  assert.equal(battle.projectiles.some(effect => effect.type === 'arrow'), false, 'No projectile before the authored release pose');
+  const events = advance(battle, () => battle.projectiles.some(effect => effect.type === 'arrow'));
   assert.equal(events.filter(event => event.type === 'bow-shot' && event.sourceId === archer.id).length, 1);
-  const arrow = battle.effects.find(effect => effect.type === 'arrow');
+  const arrow = battle.projectiles.find(effect => effect.type === 'arrow');
   assert.equal(arrow.sourceType, 'elfArcher');
   assert.equal(arrow.targetId, battle.enemies[0].id);
   assert.equal(arrow.damage, 11);
@@ -74,7 +74,8 @@ test('release pose creates one arrow, with single-target damage only when it lan
   assert.ok(battle.enemies.every(enemy => enemy.hp === 1000), 'Releasing the bow does not apply instant damage');
   advance(battle, () => battle.enemies.some(enemy => enemy.hp < 1000));
   assert.deepEqual(battle.enemies.map(enemy => enemy.hp), [989, 1000]);
-  assert.equal(battle.effects.some(effect => ['slash', 'hero-impact', 'poison-bottle', 'poison-impact'].includes(effect.type)), false);
+  assert.equal(battle.effects.some(effect => ['slash', 'hero-impact', 'poison-impact'].includes(effect.type)), false);
+  assert.equal(battle.projectiles.some(projectile => projectile.type === 'poison-bottle'), false);
 });
 
 test('an elf turns toward the current target at release and cancels a dead target before firing', () => {
@@ -83,9 +84,9 @@ test('an elf turns toward the current target at release and cancels a dead targe
   updateBattle(battle, DT);
   assert.equal(archer.facingY, -1);
   Object.assign(target, { x: 220, y: 350 });
-  advance(battle, () => battle.effects.some(effect => effect.type === 'arrow'));
+  advance(battle, () => battle.projectiles.some(effect => effect.type === 'arrow'));
   assert.ok(archer.facingY > 0);
-  const arrow = battle.effects.find(effect => effect.type === 'arrow');
+  const arrow = battle.projectiles.find(effect => effect.type === 'arrow');
   assert.equal(arrow.targetX, target.x);
   assert.equal(arrow.targetY, target.y - 27);
 
@@ -95,7 +96,7 @@ test('an elf turns toward the current target at release and cancels a dead targe
   const deadId = canceled.allies[0].targetId;
   canceled.enemies.find(enemy => enemy.id === deadId).hp = 0;
   for (let tick = 0; tick < 50; tick++) updateBattle(canceled, DT);
-  assert.equal(canceled.effects.some(effect => effect.type === 'arrow' && effect.targetId === deadId), false);
+  assert.equal(canceled.projectiles.some(effect => effect.type === 'arrow' && effect.targetId === deadId), false);
 });
 
 test('an elf retargets surviving healers and alchemists after the front dies and awards each kill once', () => {
@@ -142,8 +143,8 @@ test('elf archers keep personal-level and Forge snapshots for health, arrow dama
   close(unit.actionDuration, .7 / COMBAT_PACE / 1.5);
   close(unit.cooldown, 1.3 / COMBAT_PACE / 1.5);
   forge.attack = 100;
-  advance(battle, () => battle.effects.some(effect => effect.type === 'arrow'));
-  assert.equal(battle.effects.find(effect => effect.type === 'arrow').damage, expected.damage);
+  advance(battle, () => battle.projectiles.some(effect => effect.type === 'arrow'));
+  assert.equal(battle.projectiles.find(effect => effect.type === 'arrow').damage, expected.damage);
   assert.equal(unit.damage, expected.damage, 'New Forge purchases cannot modify an active encounter');
   assert.ok(createBattle([fighter(1, 'elfArcher', 2, 2, 11)], 1, undefined, forge).allies[0].damage > expected.damage);
 });
@@ -156,7 +157,7 @@ test('a wounded elf archer receives ordinary monk healing and the hero armour au
   Object.assign(elf, { x: 195, y: 240, hp: 30 });
   Object.assign(monk, { x: 195, y: 290, action: 'idle', cooldown: 0 });
   Object.assign(battle.hero, { hp: battle.hero.maxHp, x: 225, y: 240 });
-  battle.effects.push({ id: battle.nextEffectId++, type: 'arrow', targetId: elf.id, sourceId: battle.enemies[0].id,
+  battle.projectiles.push({ id: battle.nextProjectileId++, type: 'arrow', targetId: elf.id, sourceId: battle.enemies[0].id,
     side: 'enemy', sourceType: 'goblinArcher', x: 195, y: 180, targetX: elf.x, targetY: elf.y,
     damage: 10, age: 0, duration: 0 });
   updateBattle(battle, DT);

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { FIELD, FORMATION_VIEW } from '../field.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
@@ -12,26 +13,27 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
-const baseUrl = 'http://127.0.0.1:5206/';
+let baseUrl;
 const previewPortraits = ['elf-archer.webp', 'elf-healer.webp', 'unicorn.webp'];
 const humanTypes = ['swordsman', 'archer', 'healer', 'lancer'];
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/recruitment-pools/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5206, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'recruitment-pool-check-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
     code = prependFunctionBody(code, 'tickEconomy', 'window.recruitmentTickCalls = (window.recruitmentTickCalls ?? 0) + 1;');
-    return code + `\nwindow.recruitmentCheck = {
+    return code + `
+window.recruitmentCheck = {
       ready: () => !!scene && !!armyScene && !isRecovering(),
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => JSON.parse(JSON.stringify(battle)),
-      render: async () => { await scene.prepare({ units, battle }); renderScene(); },
+      render: async () => { await scene.prepare({ units: campaign.units, battle }); renderScene(); },
       step: seconds => { for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += 1 / 60) updateBattle(battle, 1 / 60); refreshBattleHud(); },
       untilProjectile: type => { for (let step = 0; step < 1800 && battle.phase === 'running'; step++) {
-        if (battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === type)) break;
+        if (battle.projectiles.some(projectile => projectile.type === 'arrow' && projectile.sourceType === type)) break;
         updateBattle(battle, 1 / 60);
       } refreshBattleHud(); },
       untilElfHeal: () => {
@@ -42,7 +44,7 @@ const server = await createServer({
           updateBattle(battle, 1 / 60);
         } refreshBattleHud();
       },
-      primeIncome: () => { economy.treasuryProgress = .999; economyLastTick = performance.now() - 100; },
+      primeIncome: () => { campaign.economy.treasuryProgress = .999; economyLastTick = performance.now() - 100; },
       tickCalls: () => window.recruitmentTickCalls ?? 0,
       refresh: () => refresh(),
     };`;
@@ -68,9 +70,7 @@ const pool = page => page.locator('#recruitment-pool');
 const recruitmentInventory = save => ({ units: save.units, reserve: save.reserve, recruitment: save.recruitment,
   firstLancerPending: save.barracks.firstLancerPending, slaves: save.economy.slaves });
 const humanProgress = save => humanTypes.map(type => [type, save.recruitment.received[type], save.recruitment.legacyTrainingCredit[type]]);
-const restoredInventory = save => ({ ...recruitmentInventory(save),
-  // Campaign restore assigns fresh compact IDs; personal stats and placement are durable.
-  units: save.units.map(({ id, ...unit }) => unit), reserve: save.reserve.map(({ id, ...unit }) => unit) });
+const restoredInventory = save => ({ ...recruitmentInventory(save), nextUnitId: save.nextUnitId });
 
 async function cellPoint(page, col, row) {
   return page.locator('#army-map').evaluate((canvas, { col, row, field, view }) => {
@@ -162,7 +162,7 @@ async function scenario(name, width, saved, check, height = width === 320 ? 640 
 
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320]) {
     for (const level of [1, 2]) {
@@ -325,7 +325,7 @@ try {
       assert.equal(mounted.range,75);
       await page.evaluate(() => window.recruitmentCheck.untilProjectile('pantherRider'));
       const fighting=await page.evaluate(() => window.recruitmentCheck.battle());
-      assert.ok(fighting.effects.some(effect=>effect.type==='arrow'&&effect.sourceType==='pantherRider'));
+      assert.ok(fighting.projectiles.some(projectile=>projectile.type==='arrow'&&projectile.sourceType==='pantherRider'));
       assert.equal(fighting.allies.find(unit=>unit.type==='pantherRider').action,'shoot');
       await page.evaluate(() => window.recruitmentCheck.render());
       await page.screenshot({ path: fileURLToPath(new URL(`rider-battle-${width}.png`, output)) });
@@ -413,7 +413,7 @@ try {
       const elf = battle.allies.find(unit => unit.type === 'elfArcher');
       assert.equal(elf.level, 54); assert.equal(elf.maxHp, 164); assert.equal(elf.damage, 40);
       assert.equal(elf.action, 'shoot');
-      assert.equal(battle.effects.filter(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher').length, 1);
+      assert.equal(battle.projectiles.filter(effect => effect.type === 'arrow' && effect.sourceType === 'elfArcher').length, 1);
       await page.evaluate(() => window.recruitmentCheck.render());
       await page.screenshot({ path: fileURLToPath(new URL(`elf-archer-battle-${width}.png`, output)) });
       const enemyHp = battle.enemies.reduce((sum, unit) => sum + unit.hp, 0);
@@ -543,7 +543,7 @@ try {
     let battle=await page.evaluate(()=>window.recruitmentCheck.battle());
     assert.equal(battle.waveNumber,110);
     assert.ok(battle.enemies.some(e=>e.type==='goblinBombardier'));
-    assert.ok(battle.effects.some(e=>e.type==='arrow'&&e.sourceType==='goblinBombardier'));
+    assert.ok(battle.projectiles.some(projectile=>projectile.type==='arrow'&&projectile.sourceType==='goblinBombardier'));
     await page.evaluate(async()=>{window.recruitmentCheck.step(.1);await window.recruitmentCheck.render();});
     await page.screenshot({path:fileURLToPath(new URL('bombardier-shot-390.png',output))});
     const impact=await page.evaluate(()=>{
@@ -620,9 +620,15 @@ try {
     await fits(page);
     await page.evaluate(now => { Date.now = () => now + 3 * 60 * 60 * 1000; window.recruitmentCheck.refresh(); }, now);
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /300 gold/);
+    // Opening a menu after three hours settles ordinary offline income first;
+    // verify the upgrade's payment separately from that earned gold.
+    await close(page); await open(page);
+    await page.locator('#collect-offline-rewards').click();
+    const beforeFinish = await state(page);
+    assert.equal(beforeFinish.gold, 5180);
     await page.locator('#barracks-finish-upgrade').click();
     assert.equal((await state(page)).barracks.level, 4);
-    assert.equal((await state(page)).gold, 4700);
+    assert.equal((await state(page)).gold, beforeFinish.gold - 300);
     assert.equal((await state(page)).progression.unlockedCells.length, 10, 'Upgrade grants permission, not a free cell');
     assert.match(await unicorn.innerText(), /33\.3%.*Recruitment level.*Barracks IV.*11 army tiles/s);
     assert.equal(await page.locator('#barracks-building-level').innerText(), 'IV');

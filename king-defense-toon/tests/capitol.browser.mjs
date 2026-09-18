@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
@@ -11,12 +12,12 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
-const baseUrl = 'http://127.0.0.1:5208/';
+let baseUrl;
 const emptyCapitol = { health: 0, tower: 0 };
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/capitol/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5208, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'capitol-browser-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -26,7 +27,16 @@ const server = await createServer({
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => JSON.parse(JSON.stringify(battle)),
       render: () => renderScene(),
-      victory: () => { battle.phase = 'victory'; showResult(); },
+      victory: () => {
+        if (!battle || battle.phase !== 'running') throw new Error('Expected an active battle');
+        for (let step = 0; step < 18000 && battle.phase === 'running'; step++) updateBattle(battle, 1 / 60);
+        if (battle.phase !== 'victory') throw new Error('Fixture did not win the real simulated wave: ' + battle.phase);
+        const reward = applyBattleKillRewards(campaign, battle.campaignRewards,
+          { kills: battle.kills, totalGold: battle.reward }, () => 0.99);
+        if (!reward.ok) throw new Error('Battle reward rejected: ' + reward.reason);
+        showResult();
+        if (!battle.resultRecorded) throw new Error('Battle result was not recorded');
+      },
       setTime: timestamp => { window.capitolNow = timestamp; sessionStorage.setItem('__capitol-now', String(timestamp)); },
     };`;
   } }],
@@ -128,7 +138,7 @@ async function scenario(name, viewport, saved, check) {
 
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const viewport of [{ width: 390, height: 700 }, { width: 320, height: 568 }]) {
     await scenario('fresh-game-five-tabs', viewport, null, async page => {

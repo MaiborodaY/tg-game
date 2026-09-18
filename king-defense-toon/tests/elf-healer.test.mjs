@@ -67,7 +67,9 @@ function encounter(forge, type = 'elfHealer') {
   return {battle,healer,patient};
 }
 function impact(battle) {
-  for(let i=0;i<60 && !battle.allies[0].didImpact;i++) updateBattle(battle,dt);
+  const events=[];
+  for(let i=0;i<60 && !battle.allies[0].didImpact;i++) events.push(...updateBattle(battle,dt));
+  return events;
 }
 
 test('elven healer can cast from 65 range while a human monk must move closer', () => {
@@ -94,16 +96,20 @@ test('elven healing lands once on pose 2, caps overhealing and never creates att
   updateBattle(battle,dt); assert.equal(healer.action,'heal'); assert.equal(patient.hp,20);
   assert.equal(healer.actionDuration,.8/COMBAT_PACE); assert.equal(healer.cooldown,1.45/COMBAT_PACE);
   while(healer.actionTime+dt < healer.actionDuration*.5-1e-9) updateBattle(battle,dt);
-  assert.equal(patient.hp,20); impact(battle); assert.equal(patient.hp,26);
+  assert.equal(patient.hp,20); const events=impact(battle); assert.equal(patient.hp,26);
+  assert.deepEqual(events.filter(event=>event.type==='heal'),[
+    {type:'heal',sourceId:healer.id,sourceType:'elfHealer',targetId:patient.id,side:'ally',amount:6,shield:0},
+  ]);
   assert.equal(battle.effects.filter(e=>e.type==='heal'&&e.sourceType==='elfHealer').length,1);
   assert.equal(battle.effects.find(e=>e.type==='heal').duration,.7);
   for(let i=0;i<10;i++) updateBattle(battle,dt);
   assert.equal(patient.hp,26,'Recovery frames cannot duplicate the heal');
-  assert.ok(!battle.effects.some(e=>['arrow','slash','hero-impact'].includes(e.type)));
+  assert.equal(battle.projectiles.length,0);
+  assert.ok(!battle.effects.some(e=>['slash','hero-impact'].includes(e.type)));
   const capped=encounter(); capped.patient.hp=capped.patient.maxHp-2;
-  updateBattle(capped.battle,dt); impact(capped.battle);
+  updateBattle(capped.battle,dt); const cappedEvents=impact(capped.battle);
   assert.equal(capped.patient.hp,capped.patient.maxHp);
-  assert.equal(capped.battle.effects.find(e=>e.type==='heal').amount,2);
+  assert.equal(cappedEvents.find(e=>e.type==='heal').amount,2);
 });
 
 test('a queued heal cannot resurrect, heal enemies or the castle, exceed range, or survive caster death', () => {

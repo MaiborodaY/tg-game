@@ -49,8 +49,8 @@ test('battle sprites and hero effects render while formation keeps personal leve
   battle.allies[2].action = 'heal';
   battle.allies[2].actionTime = .45;
   const base = { id: 1, x: 100, y: 250, targetX: 130, targetY: 230, age: .2, duration: .6, side: 'ally', sourceType: 'hero', sourceId: battle.hero.id, targetId: battle.allies[0].id };
+  battle.projectiles.push({ ...base, id: 2, type: 'hero-hammer', damage: 10, landed: false });
   battle.effects.push({ ...base, type: 'hero-heal', amount: 10, shield: 5 },
-    { ...base, id: 2, type: 'hero-hammer', damage: 10, landed: false },
     { ...base, id: 3, type: 'hero-impact' }, { ...base, id: 4, type: 'gold', amount: 7 });
   assert.equal(await scene.prepare({ battle, units }), true);
   canvas.clear();
@@ -59,6 +59,10 @@ test('battle sprites and hero effects render while formation keeps personal leve
   assert.ok(images.some(image => image.includes('st-knihor-effects')));
   assert.ok(images.some(image => /st-knihor-(up|down|side)\.webp/.test(image)));
   assert.ok(canvas.commands.some(([method, text]) => method === 'fillText' && text === '+7'));
+  const hammerDraw = canvas.commands.findIndex(([method, image, , sy]) => method === 'drawImage'
+    && image.includes('st-knihor-effects') && sy === 256);
+  const goldDraw = canvas.commands.findIndex(([method, text]) => method === 'fillText' && text === '+7');
+  assert.ok(hammerDraw >= 0 && hammerDraw < goldDraw, 'cosmetic labels overlay projectile sprites');
   assert.equal(canvas.saveDepth, 0);
 
   const armyCanvas = env.canvas(306, 184), army = env.keep(await createScene(armyCanvas, { formationOnly: true }));
@@ -69,6 +73,31 @@ test('battle sprites and hero effects render while formation keeps personal leve
   assert.equal(armyCanvas.commands.filter(([method, text]) => method === 'fillText' && text === '3').length, 4);
   assert.ok(armyCanvas.commands.some(([method, text]) => method === 'fillText' && text === '+2 → 5'));
   assert.equal(armyCanvas.saveDepth, 0);
+});
+
+test('scene draws projectile sprites with no cosmetics and never advances or mutates frozen combat state', async t => {
+  const env = setup(t), canvas = env.canvas(), scene = env.keep(await createScene(canvas));
+  const battle = structuredClone(createBattle([{ id: 1, type: 'swordsman', level: 3, col: 2, row: 0 }], 1));
+  battle.projectiles.push({ id: 1, type: 'hero-hammer', sourceType: 'hero', sourceId: battle.hero.id,
+    targetId: 'enemy-1', side: 'ally', x: 100, y: 250, targetX: 130, targetY: 230,
+    age: .2, duration: .6, damage: 10, landed: false });
+  assert.deepEqual(battle.effects, []);
+  const before = structuredClone(battle);
+  const freeze = value => {
+    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+      Object.freeze(value);
+      for (const child of Object.values(value)) freeze(child);
+    }
+  };
+  freeze(battle);
+  assert.equal(await scene.prepare({ battle }), true);
+  for (const time of [.3, 10]) {
+    canvas.clear(); scene.render({ battle, time });
+    assert.ok(canvas.commands.some(([method, image, , sy]) => method === 'drawImage'
+      && image.includes('st-knihor-effects') && sy === 256), 'hammer flight renders without a retained visual effect');
+    assert.deepEqual(battle, before, 'render time cannot advance projectiles, resolve damage or mutate actors');
+    assert.equal(canvas.saveDepth, 0);
+  }
 });
 
 test('the armour visual follows the learned aura and the current battle snapshot', async t => {

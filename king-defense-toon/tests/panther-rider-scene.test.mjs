@@ -128,9 +128,12 @@ test('glaive launches from the mirrored authored hand, spins around its anchors 
  await scene.prepare({units,battle});const requests=env.requests.length;
  for(const [x,y,release] of [[1,0,10],[-1,0,10],[0,1,14],[0,-1,10]]) {
   for(const age of [0,1/12,2/12,3/12]) {
-   battle.effects=[{id:1,type:'arrow',sourceType:'pantherRider',sourceId:'ally-1',side:'ally',targetId:'goblin-1',damage:9,
+   battle.projectiles=[{id:1,type:'arrow',sourceType:'pantherRider',sourceId:'ally-1',side:'ally',targetId:'goblin-1',damage:9,
     x:195,y:283,targetX:245,targetY:230,age,duration:.5,launchFacing:{x,y}}];
+   const before=structuredClone(battle.projectiles);
    canvas.clear();scene.render({units,battle});
+   assert.deepEqual(battle.effects,[], 'glaive flight stays visible without any cosmetic effects');
+   assert.deepEqual(battle.projectiles,before, 'drawing does not advance or resolve glaive hits');
    const index=canvas.commands.findIndex(([method,image])=>method==='drawImage'&&image.includes('moon-glaive.webp'));
    assert.ok(index>=0);const {rect,centerAnchor}=MOON_GLAIVE_FRAMES[Math.floor(age*12)%4];
    assert.deepEqual(canvas.commands[index].slice(2,6),Object.values(rect));

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BroTD performance lab</title>
+<style>
+  * { box-sizing: border-box; } body { margin: 0; padding: 64px 12px 20px; background: #17232f; color: #eef4fa; font: 14px/1.4 system-ui, sans-serif; }
+  main { max-width: 620px; margin: auto; } h1 { font-size: 21px; margin: 0 0 8px; } p { margin: 8px 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; align-items: end; }
+  label { display: flex; flex-direction: column; gap: 3px; } select, input, button { max-width: 100%; padding: 8px; border: 1px solid #71889e; border-radius: 4px; background: #243c50; color: #fff; font: inherit; }
+  input { width: 78px; } button { cursor: pointer; } button:disabled { opacity: .5; cursor: default; }
+  canvas { display: block; width: 100%; aspect-ratio: 502 / 445; background: #314331; border-radius: 8px; }
+  #profile-status { min-height: 2.8em; } a { color: #a3d7ff; } .note { color: #c8d6e3; font-size: 12px; }
+</style></head><body><main>
+<h1>BroTD performance lab</h1>
+<p>Repeatable battles on this device. This page never loads or changes your campaign.</p>
+<div class="controls">
+  <label>Scenario<select id="profile-scenario"></select></label>
+  <label>Speed<select id="profile-speed"><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option></select></label>
+  <label>Cosmetics<select id="profile-visuals"><option value="256">Normal</option><option value="0">Off</option></select></label>
+  <label>Battle seconds<input id="profile-seconds" type="number" min="5" max="60" step="1" value="30"></label>
+  <button id="profile-start" type="button" disabled>Run</button><button id="profile-stop" type="button" disabled>Stop</button>
+</div>
+<p id="profile-description"></p><p id="profile-status" role="status">Loading assets…</p>
+<canvas id="profile-battle" width="502" height="445" aria-label="Performance scenario battlefield"></canvas>
+<p class="note">30 FPS render target. Timings measure CPU work and Canvas submission, not GPU completion. Synthetic scenarios are load probes, not campaign balance. Hidden tabs stop the run; press Run to start again.</p>
+<p class="note">Use the Profiler panel to inspect p95/max or export JSON. Compare the same scenario, speed and duration on Telegram Android and iOS before choosing device budgets.</p>
+<p><a href="./">Back to game</a></p>
+</main><script type="module" src="./profile-main.ts"></script></body></html>

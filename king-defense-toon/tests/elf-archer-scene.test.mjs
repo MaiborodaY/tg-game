@@ -59,9 +59,14 @@ test('elf shots reuse the ordinary allied arrow drawing without an extra effect 
   const units = [{ id: 1, type: 'elfArcher', level: 1, col: 2, row: 1 }], battle = createBattle(units, 1);
   await scene.prepare({ units, battle }); const requests = env.requests.length, commands = [];
   for (const sourceType of ['archer', 'elfArcher']) {
-    battle.effects = [{ id: 1, type: 'arrow', sourceType, sourceId: 'ally-1', targetId: 'enemy-1', side: 'ally',
+    battle.projectiles = [{ id: 1, type: 'arrow', sourceType, sourceId: 'ally-1', targetId: 'enemy-1', side: 'ally',
       x: 200, y: 273, targetX: 240, targetY: 130, age: .1, duration: .5, damage: 11 }];
+    const before = structuredClone(battle.projectiles);
     canvas.clear(); scene.render({ units, battle }); commands.push([...canvas.commands]);
+    assert.deepEqual(battle.effects, [], 'arrow visibility never depends on cosmetic effects');
+    assert.ok(canvas.commands.some(([method, key, value]) => method === 'set' && key === 'strokeStyle' && value === '#b8def3'),
+      'the projectile draws its allied arrow feathers');
+    assert.deepEqual(battle.projectiles, before, 'drawing does not advance or retire arrows');
   }
   assert.deepEqual(commands[0], commands[1]); assert.equal(env.requests.length, requests);
 });

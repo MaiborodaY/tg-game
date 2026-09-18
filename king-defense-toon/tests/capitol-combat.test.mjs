@@ -79,7 +79,7 @@ test('the tower selects the nearest living enemy and arrows leave the drawn towe
   ] });
   const start = { x: battle.castle.x, y: battle.castle.y };
   assert.equal(shots(updateBattle(battle, DT)).length, 1);
-  const arrow = battle.effects.find(effect => effect.type === 'arrow');
+  const arrow = battle.projectiles.find(effect => effect.type === 'arrow');
   assert.equal(arrow.targetId, battle.enemies[1].id);
   assert.equal(arrow.sourceType, 'castle');
   assert.equal(arrow.x, CAPITOL_TOWER_POSITION.x);
@@ -123,9 +123,9 @@ test('tower cadence is two simulation seconds and does not inherit Forge or hero
 test('tower arrows use the normal death/reward path without awarding a simultaneous kill twice', () => {
   const battle = encounter({ targets: [{ hp: 5, reward: 7 }] });
   updateBattle(battle, DT);
-  const arrow = battle.effects.find(effect => effect.type === 'arrow');
+  const arrow = battle.projectiles.find(effect => effect.type === 'arrow');
   // A second projectile can arrive during the same tick after the tower's lethal hit.
-  battle.effects.push({ ...arrow, id: battle.nextEffectId++, sourceId: 'ally-other', sourceType: 'archer' });
+  battle.projectiles.push({ ...arrow, id: battle.nextProjectileId++, sourceId: 'ally-other', sourceType: 'archer' });
   const events = advance(battle, .5);
   assert.equal(battle.enemies[0].hp, 0);
   assert.equal(battle.enemies[0].action, 'dead');
@@ -179,7 +179,8 @@ test('tower damage and cadence are deterministic at low/high FPS and all speed s
     const battle = encounter();
     const events = advance(battle, 8, battleFrameDelta(1 / fps, speed));
     const snapshot = { hp: battle.enemies[0].hp, cooldown: battle.castle.cooldown,
-      elapsed: battle.elapsed, shots: shots(events).length, kills: battle.kills, reward: battle.reward };
+      elapsed: battle.elapsed, shots: shots(events).length, kills: battle.kills, reward: battle.reward,
+      projectiles: battle.projectiles, nextProjectileId: battle.nextProjectileId, events };
     expected ??= snapshot;
     assert.deepEqual(snapshot, expected, `${fps} FPS, x${speed}`);
   }

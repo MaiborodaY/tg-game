@@ -50,17 +50,21 @@ test('bottle starts at the release anchor and becomes one compact impact without
   const { units, battle, caster } = encounter(); await scene.prepare({ units, battle });
   const base = { id: 1, sourceId: caster.id, sourceType: 'plagueAlchemist', targetId: 'ally-1', side: 'enemy',
     x: caster.x, y: caster.y - 27, targetX: 260, targetY: 230, age: 0, duration: .5 };
-  battle.effects = [{ ...base, type: 'poison-bottle', damage: 8 }];
+  battle.projectiles = [{ ...base, type: 'poison-bottle', damage: 8 }];
+  const initialProjectile = structuredClone(battle.projectiles);
   canvas.clear(); scene.render({ units, battle });
   const bottle = draws(canvas, 'poison-bottle-128-lite.webp'); assert.equal(bottle.length, 1);
+  assert.deepEqual(battle.effects, [], 'bottle flight does not require a cosmetic entry');
+  assert.deepEqual(battle.projectiles, initialProjectile, 'drawing cannot land the bottle or apply its poison');
   const renderScale = Number(canvas.dataset.actorScale), spriteScale = .28 * renderScale;
   const origin = plagueAlchemistReleasePoint({ x: base.x, y: base.y + 27 }, { x: base.targetX, y: base.targetY + 27 }, renderScale);
   assert.deepEqual(bottle[0].slice(2, 6), Object.values(POISON_BOTTLE_FRAMES[0].rect));
   assert.equal(bottle[0][6], origin.x - POISON_BOTTLE_FRAMES[0].centerAnchor.x * spriteScale);
   assert.equal(bottle[0][7], origin.y - POISON_BOTTLE_FRAMES[0].centerAnchor.y * spriteScale);
   assert.ok(bottle[0][8] < 26, 'the projectile remains a small bottle');
-  battle.effects[0].landed = true;
+  battle.projectiles[0].landed = true;
   canvas.clear(); scene.render({ battle }); assert.equal(draws(canvas, 'poison-bottle-128-lite.webp').length, 0);
+  battle.projectiles = [];
   battle.effects = [{ ...base, type: 'poison-impact', x: base.targetX, y: base.targetY, age: .45 / 4, duration: .45 }];
   battle.allies[0].poison = { remaining: 4, nextTick: 1, damagePerTick: 2 };
   canvas.clear(); scene.render({ battle });

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { addHeroXpEffect, HERO_XP_EFFECT_SECONDS } from '../hero-xp-effect.ts';
 import { createBattle, updateBattle } from '../combat.ts';
+import { setBattleVisualEffectLimit } from '../combat-visuals.ts';
 import { createHero, awardHeroXp, heroXpForLevel } from '../hero.ts';
 import { BATTLE_VIEW, ROYAL_PENINSULA } from '../field.ts';
 import { createScene } from '../scene.ts';
@@ -28,6 +29,18 @@ test('no XP popup for zero, invalid amounts or a capped hero', () => {
   const reward = awardHeroXp(hero, { waveNumber: 1, kills: 3, total: 3, won: true });
   for (const value of [reward.gained, 0, -1, NaN, Infinity, 1.5, '5']) addHeroXpEffect(battle, value);
   assert.deepEqual(battle.effects, []);
+});
+
+test('XP feedback respects disabled and saturated cosmetic budgets without affecting rewards', () => {
+  for (const limit of [0, 1]) {
+    const battle = createBattle([], 1), hero = createHero();
+    setBattleVisualEffectLimit(battle, limit);
+    addHeroXpEffect(battle, 1);
+    const reward = awardHeroXp(hero, { waveNumber: 1, kills: 3, total: 3, won: true });
+    addHeroXpEffect(battle, reward.gained);
+    assert.equal(battle.effects.length, limit);
+    assert.equal(hero.xp, reward.gained);
+  }
 });
 
 test('XP effects expire through the existing battle loop after either outcome at different FPS', () => {

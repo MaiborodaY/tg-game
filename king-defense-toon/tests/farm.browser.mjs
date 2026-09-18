@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { BATTLE_SPEEDS } from '../battle-speed.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
@@ -15,11 +16,11 @@ const initialTime = 1800000000000;
 const crops = ['carrot', 'potato', 'pumpkin'];
 const minutes = { carrot: 5, potato: 15, pumpkin: 30 };
 const emptyFarm = { plots: { carrot: null, potato: null, pumpkin: null }, stock: { carrot: 0, potato: 0, pumpkin: 0 } };
-const baseUrl = 'http://127.0.0.1:5207/';
+let baseUrl;
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/farm/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5207, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'farm-browser-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -154,7 +155,7 @@ async function scenario(name, viewport, saved, check) {
 
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const viewport of [{ width: 390, height: 700 }, { width: 320, height: 568 }]) {
     await scenario('fresh-game-five-tabs', viewport, null, async page => {

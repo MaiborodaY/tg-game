@@ -100,6 +100,7 @@ test('hammer hero routes around friendly archers and monks to reach an enemy hea
 test('healer pursuit and both kinds of hero attack remain identical across FPS and speed choices', () => {
   const snapshot = ({ battle, healerMelee, hammerLandings, meleeTargets }) => ({
     elapsed: battle.elapsed, kills: battle.kills, reward: battle.reward,
+    projectiles: battle.projectiles, nextProjectileId: battle.nextProjectileId,
     hero: { x: battle.hero.x, y: battle.hero.y, hp: battle.hero.hp, action: battle.hero.action,
       cooldown: battle.hero.cooldown, hammerCooldown: battle.hero.hammerCooldown, attackCount: battle.hero.attackCount },
     enemies: battle.enemies.map(({ type, hp, x, y }) => ({ type, hp, x, y })), healerMelee, hammerLandings, meleeTargets,

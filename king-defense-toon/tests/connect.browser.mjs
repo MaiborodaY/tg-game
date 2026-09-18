@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { FIELD, FORMATION_VIEW } from '../field.ts';
 import { getForgedUnitStats } from '../forge.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
@@ -13,12 +14,12 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
-const baseUrl = 'http://127.0.0.1:5209/';
+let baseUrl;
 const centralCells = Array.from({ length: 9 }, (_, index) => `${index % 3 + 1}:${Math.floor(index / 3)}`);
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/connect/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5209, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'connect-browser-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -30,7 +31,16 @@ const server = await createServer({
       placementConnection: () => ({ source: pendingMerge, targets: mergeTargetIds }),
       render: () => renderScene(),
       refresh: () => refresh(),
-      victory: () => { battle.phase = 'victory'; showResult(); },
+      victory: () => {
+        if (!battle || battle.phase !== 'running') throw new Error('Expected an active battle');
+        for (let step = 0; step < 18000 && battle.phase === 'running'; step++) updateBattle(battle, 1 / 60);
+        if (battle.phase !== 'victory') throw new Error('Fixture did not win the real simulated wave: ' + battle.phase);
+        const reward = applyBattleKillRewards(campaign, battle.campaignRewards,
+          { kills: battle.kills, totalGold: battle.reward }, () => 0.99);
+        if (!reward.ok) throw new Error('Battle reward rejected: ' + reward.reason);
+        showResult();
+        if (!battle.resultRecorded) throw new Error('Battle result was not recorded');
+      },
     };`;
   } }],
 });
@@ -148,7 +158,7 @@ async function scenario(name, width, saved, check) {
 }
 
 try {
-  await mkdir(output, { recursive: true }); await server.listen();
+  await mkdir(output, { recursive: true }); baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320]) {
     await scenario('barracks-connect-button-to-deployment', width, fixture(), async page => {

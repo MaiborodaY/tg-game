@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { FIELD, FORMATION_VIEW } from '../field.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
@@ -11,10 +12,10 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const key = 'brotd-infinity:campaign:v2';
 const now = 1800000000000;
 const output = new URL('../../.tmp/', import.meta.url);
-const baseUrl = 'http://127.0.0.1:5216/';
+let baseUrl;
 const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/onboarding/', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5216, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'onboarding-browser-hooks', enforce: 'pre', transform(code, id) {
     if (!id.endsWith('/main.ts')) return;
     code = prependFunctionBody(code, 'resumeFrames', 'return;');
@@ -23,7 +24,13 @@ const server = await createServer({ root: fileURLToPath(new URL('../', import.me
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       redraw: () => { fitPortraitPreview(); renderScene(); refreshOnboarding(); },
-      victory: () => { battle.phase = 'victory'; showResult(); },
+      victory: () => {
+        battle.phase = 'victory'; battle.kills = battle.total;
+        const rewards = applyBattleKillRewards(campaign, battle.campaignRewards,
+          { kills: battle.kills, totalGold: battle.wave.reward }, () => .99);
+        if (!rewards.ok) throw new Error(rewards.reason);
+        showResult();
+      },
     };`;
   } }],
 });
@@ -97,7 +104,7 @@ async function scenario(name, width, saved, fn) {
 }
 
 try {
-  await mkdir(output, { recursive: true }); await server.listen();
+  await mkdir(output, { recursive: true }); baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 320, 900]) {
     await scenario('first-army', width, null, async page => {

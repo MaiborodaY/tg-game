@@ -2,22 +2,23 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { observedCombatModule } from './helpers/browser-instrumentation.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const output = new URL('../../.tmp/st-knihor-hero/', import.meta.url);
-const baseUrl = process.env.BASE_URL ?? 'http://127.0.0.1:5213/';
+let baseUrl = process.env.BASE_URL;
 const server = process.env.BASE_URL ? null : await createServer({
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/hero/', import.meta.url)),
   configFile: false, root: fileURLToPath(new URL('../', import.meta.url)),
-  server: { host: '127.0.0.1', port: 5213, strictPort: true },
+  server: { host: '127.0.0.1', port: 0 },
 });
 let browser;
 
 try {
   await mkdir(output, { recursive: true });
-  await server?.listen();
+  if (server) baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
   const page = await context.newPage();
@@ -213,7 +214,7 @@ try {
       return target.hp;
     });
     await page.waitForFunction(() => globalThis.__heroTestHold, null, { timeout: 5000 });
-    assert.ok(await page.evaluate(() => globalThis.__heroTestBattle.effects.some(effect => effect.type === 'hero-hammer')));
+    assert.ok(await page.evaluate(() => globalThis.__heroTestBattle.projectiles.some(effect => effect.type === 'hero-hammer')));
     await page.screenshot({ path: fileURLToPath(new URL(`hero-level-${level}-hammer-x3.png`, output)) });
     await page.evaluate(() => { globalThis.__heroTestHoldRow = 3; globalThis.__heroTestHold = false; });
     await page.waitForFunction(() => globalThis.__heroTestHold, null, { timeout: 5000 });

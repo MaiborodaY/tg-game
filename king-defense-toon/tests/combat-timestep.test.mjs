@@ -18,7 +18,8 @@ function runBattle(formation, frameDurations, speed, wave = 9) {
   }
   assert.notEqual(battle.phase, 'running', 'the battle must finish within the frame budget');
   // A larger last frame may age the finished battle's cosmetics for more ticks.
-  // Gameplay state and the full ordered event stream must still match exactly.
+  // Gameplay state, projectile counter and the full ordered event stream must still
+  // match exactly. Projectiles remain in `state`; only cosmetic effects are omitted.
   assert.equal(battle.king, battle.castle, 'the historical king reference remains the castle alias');
   const { stepRemainder, effects, allies, enemies, king, hero, castle, ...state } = battle;
   return { ...state, allies: allies.map(withoutVisualTimers),
@@ -117,15 +118,17 @@ test('real-frame time is fully retained through combat at every speed, including
   }
 });
 
-test('after the result, effects finish without more damage, spawns, rewards or elapsed battle time', () => {
+test('after the result, cosmetics finish and projectiles are discarded without more gameplay', () => {
   const battle = createBattle(makeFormation({ swordsman: 1 }), 1);
   battle.phase = 'defeat';
   battle.elapsed = .75;
   battle.king.hp = 0;
   battle.king.action = 'dead';
   battle.king.hitTime = .1;
-  battle.effects.push({ id: 1, type: 'arrow', age: 0, duration: .1,
+  battle.projectiles.push({ id: 1, type: 'arrow', age: 0, duration: .1,
     targetId: battle.allies[0].id, damage: 100 });
+  battle.effects.push({ id: 1, type: 'hit', amount: 1, age: 0, duration: .1,
+    x: 0, y: 0, targetX: 0, targetY: 0, side: 'ally', sourceId: 'castle', sourceType: 'castle' });
   const elapsed = battle.elapsed;
   assert.deepEqual(updateBattle(battle, .3), []);
   assert.equal(battle.king.hp, 0);
@@ -133,6 +136,7 @@ test('after the result, effects finish without more damage, spawns, rewards or e
   assert.equal(battle.king.hitTime, 0);
   assert.ok(Math.abs(battle.king.deathTime - .3) < 1e-12);
   assert.deepEqual(battle.effects, []);
+  assert.deepEqual(battle.projectiles, []);
   assert.equal(battle.elapsed, elapsed);
   assert.equal(battle.spawned, 0);
   assert.equal(battle.kills, 0);

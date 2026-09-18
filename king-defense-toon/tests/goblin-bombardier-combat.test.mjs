@@ -41,15 +41,19 @@ test('cannon release follows pose two; bomb applies single-target damage on arri
   assert.equal(enemy.action,'shoot'); assert.equal(enemy.actionDuration,1.4/COMBAT_PACE);
   assert.equal(enemy.cooldown,2.15/COMBAT_PACE);
   while(enemy.actionTime+dt < enemy.actionDuration*.55-1e-9) updateBattle(battle,dt);
-  assert.equal(battle.effects.some(e=>e.type==='arrow'),false); assert.equal(target.hp,1000);
-  const events=until(battle,()=>battle.effects.some(e=>e.type==='arrow'));
+  assert.equal(battle.projectiles.some(e=>e.type==='arrow'),false); assert.equal(target.hp,1000);
+  const events=until(battle,()=>battle.projectiles.some(e=>e.type==='arrow'));
   assert.equal(tinyGoblinBombardierFrame(enemy),14); assert.equal(target.hp,1000);
   assert.equal(events.some(e=>e.type==='bow-shot'),false);
-  const bomb=battle.effects.find(e=>e.type==='arrow');
+  const bomb=battle.projectiles.find(e=>e.type==='arrow');
   assert.deepEqual(bomb.launchFacing,{x:enemy.facingX,y:enemy.facingY});
-  until(battle,()=>battle.effects.some(e=>e.type==='cannon-impact'));
+  const impactEvents=until(battle,()=>target.hp<1000);
+  assert.deepEqual(impactEvents.filter(event=>event.type==='damage'),[
+    {type:'damage',targetId:target.id,targetType:target.type,side:target.side,amount:18},
+  ]);
+  assert.ok(battle.effects.some(e=>e.type==='cannon-impact'));
   assert.equal(target.hp,982); assert.equal(battle.hero.hp,battle.hero.maxHp,'Blast does not add unrequested splash');
-  assert.equal(battle.effects.some(e=>e.id===bomb.id),false);
+  assert.equal(battle.projectiles.some(e=>e.id===bomb.id),false);
   for(let i=0;i<15;i++) updateBattle(battle,dt);
   assert.equal(target.hp,982);
   hold(enemy); for(let i=0;i<30;i++) updateBattle(battle,dt);
@@ -58,7 +62,7 @@ test('cannon release follows pose two; bomb applies single-target damage on arri
 
 test('released bombs survive source death, follow a moving target, never retarget a casualty, and stop with battle',()=>{
   for(const mode of ['source-dead','target-dead','moving','finished']) {
-    const {battle,enemy,target}=encounter(); until(battle,()=>battle.effects.some(e=>e.type==='arrow'));
+    const {battle,enemy,target}=encounter(); until(battle,()=>battle.projectiles.some(e=>e.type==='arrow'));
     if(mode==='source-dead') enemy.hp=0;
     if(mode==='target-dead') target.hp=0;
     if(mode==='moving') target.x+=20;
@@ -99,7 +103,8 @@ test('cannon shots and impact damage agree at every speed and 20/30/60/120 FPS',
       const delta=Math.min(battleFrameDelta(1/fps,speed),8-time); events.push(...updateBattle(battle,delta)); time+=delta;
     }
     const clean=({hitTime,deathTime,...actor})=>actor;
-    return {allies:battle.allies.map(clean),enemies:battle.enemies.map(clean),hero:clean(battle.hero),effects:battle.effects,events};
+    return {allies:battle.allies.map(clean),enemies:battle.enemies.map(clean),hero:clean(battle.hero),
+      effects:battle.effects,projectiles:battle.projectiles,events};
   }
   const expected=run(60,1);assert.ok(expected.allies[0].hp<1000);
   for(const speed of BATTLE_SPEEDS)for(const fps of [20,30,60,120])assert.deepEqual(run(fps,speed),expected,`${fps} FPS ×${speed}`);

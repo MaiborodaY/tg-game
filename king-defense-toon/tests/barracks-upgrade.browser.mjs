@@ -3,29 +3,33 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { listenBrowserServer } from './helpers/browser-server.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = new URL('../../.tmp/barracks-upgrade/', import.meta.url);
+let baseUrl;
 const server = await createServer({
-  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/barracks-upgrade/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 5200, strictPort: true },
+  cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/barracks-upgrade/', import.meta.url)), root, configFile: false, server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'barracks-check-hooks', transform(code, id) {
-    if (id.endsWith('/main.ts')) return code + `\nwindow.barracksCheck = {
+    if (!id.endsWith('/main.ts')) return;
+    return "import { createBarracks } from './barracks.ts';\nimport { createRecruitment } from './recruitment.ts';\n" + code + `
+window.barracksCheck = {
       ready: () => !!scene && !!armyScene,
       freeze: () => { stopFrames(); clearInterval(economyTimer); },
-      state: () => JSON.parse(JSON.stringify({ gold, units, reserve, recruitment, barracks, slaves: economy.slaves,
+      state: () => JSON.parse(JSON.stringify({ gold: campaign.gold, units: campaign.units, reserve: campaign.reserve, recruitment: campaign.recruitment, barracks: campaign.barracks, slaves: campaign.economy.slaves,
         pendingRecruitId, pendingMerge, overlayId: overlay?.id ?? null, keyboardCell })),
       advance: ms => { window.checkNow += ms; sessionStorage.setItem('checkNow', window.checkNow); tickEconomy(); },
       prepareThird: () => {
-        gold = 5000;
-        barracks = createBarracks({ level: 2 });
-        recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
-        units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
-        reserve = [{ id: 2, type: 'lancer', level: 4 }];
-        nextId = 3;
-        economy.slaves = 10;
-        economy.treasuryUpdatedAt = Date.now();
+        campaign.gold = 5000;
+        campaign.barracks = createBarracks({ level: 2 });
+        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
+        campaign.units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
+        campaign.reserve = [{ id: 2, type: 'lancer', level: 4 }];
+        campaign.nextUnitId = 3;
+        campaign.economy.slaves = 10;
+        campaign.economy.treasuryUpdatedAt = Date.now();
         save(); refresh();
       },
     };`;
@@ -40,7 +44,7 @@ let browser;
 const failures = [];
 try {
   await mkdir(output, { recursive: true });
-  await server.listen();
+  baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const { width, height } of [{ width: 390, height: 700 }, { width: 320, height: 568 }, { width: 320, height: 700 }]) {
     const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
@@ -82,7 +86,7 @@ try {
       assert.ok(rect.scrollWidth <= rect.clientWidth + 1 && rect.scrollHeight <= rect.clientHeight + 1, `${panel} needs no scrolling at ${width}×${height}: ${JSON.stringify(rect)}`);
     };
     const screenshot = name => page.screenshot({ path: fileURLToPath(new URL(`${name}-${width}x${height}.png`, output)) });
-    await page.goto('http://127.0.0.1:5200/');
+    await page.goto(baseUrl);
     await ready();
     assert.equal(await page.locator('#barracks-upgrade-toggle, #barracks-upgrade-details').count(), 0, 'old Barracks upgrade entry is removed');
     assert.equal(await page.locator('#barracks-panel #barracks-start-upgrade').count(), 0);
@@ -107,7 +111,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
     assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks II.*200 gold/);
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks II.*\+1 army tile/);
+    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks II.*\+1 tile to buy/);
     assert.equal(await lancerInfo.locator('#barracks-start-upgrade').count(), 1, 'upgrade action lives beside Lancer');
     await fits();
     await screenshot('available');
@@ -189,10 +193,11 @@ try {
 
     // Prepare receipts one short of the III gate, then exercise Connect and recruitment through the UI.
     await page.evaluate(() => window.barracksCheck.prepareThird());
-    await page.locator('#open-barracks').click();
-    await page.locator('[data-barracks-unit-id="2"]').click();
-    await page.locator('[data-barracks-merge-id="2"]').click();
     await page.locator('#army-map').press('Enter');
+    await page.locator('[data-connect-action="begin"]:visible').click();
+    await page.locator('[data-connect-donor-id="2"]:visible').click();
+    await page.locator('[data-connect-action="apply"]:visible').click();
+    await page.locator('#unit-panel [data-close-overlay]').click();
     assert.equal((await state()).units[0].level, 5, 'personal Lancer reaches level 5 through Connect');
     assert.equal((await state()).recruitment.received.lancer, 49, 'Connect cannot grant recruitment experience');
     await upgrade();
@@ -213,7 +218,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
     assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks III.*2000 gold/);
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks III.*\+1 army tile/);
+    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks III.*\+1 tile to buy/);
     await fits();
     await screenshot('third-available');
     const beforeThird = await state();
@@ -246,7 +251,8 @@ try {
     assert.equal((await state()).barracks.level, 3);
     assert.equal((await state()).barracks.firstLancerPending, false, 'III never grants a second guaranteed Lancer');
     assert.equal(await page.locator('#barracks-building-level').innerText(), 'III');
-    assert.match(await page.locator('#barracks-upgrade-note').innerText(), /Barracks III.*10 army tiles.*Elves unlocked/);
+    assert.equal(await page.locator('#recruitment-pool-elves').isEnabled(), true, 'Barracks III unlocks the Elven pool');
+    assert.equal(await page.locator('#barracks-upgrade-note').isVisible(), false, 'locked tier IV is not advertised as the former maximum tier');
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false);
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false);
@@ -286,7 +292,7 @@ try {
   }, level);
   const page = await context.newPage();
   page.on('pageerror', error => failures.push(error.message));
-  await page.goto('http://127.0.0.1:5200/');
+  await page.goto(baseUrl);
   await page.waitForFunction(() => window.barracksCheck?.ready());
   await page.evaluate(() => window.barracksCheck.freeze());
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).barracks.level, level + 1);

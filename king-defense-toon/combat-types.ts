@@ -114,7 +114,10 @@ export type Actor = AllyActor | EnemyActor | HeroActor | CastleActor;
 
 export type BattleEvent =
   | { type: 'gold'; amount: number; x: number; y: number }
-  | { type: 'bow-shot'; sourceId: string };
+  | { type: 'bow-shot'; sourceId: string }
+  | { type: 'damage'; targetId: string; targetType: ActorType; side: ActorSide; amount: number }
+  | { type: 'heal'; sourceId: string; sourceType: ActorType; targetId: string;
+      side: ActorSide; amount: number; shield: number };
 
 export interface BattleEffectBase extends Point {
   id: number;
@@ -133,21 +136,30 @@ export interface BattleEffectPayloads {
   xp: { amount: number; label: string };
   heal: { amount: number };
   slash: Record<never, never>;
+  'poison-impact': { targetId: string };
+  'cannon-impact': { targetId: string };
+  'hero-heal': { targetId: string; amount: number; shield: number };
+  'hero-impact': { targetId: string };
+}
+
+// Flight state belongs to simulation even when no cosmetic effects are retained.
+export interface BattleProjectilePayloads {
   // An arrow gains landed only on arrival; hero-hammer starts with landed: false.
   arrow: { targetId: string; damage: number; landed?: boolean; launchFacing?: Point };
   // Damage is the complete four-second poison budget, not damage per tick.
   'poison-bottle': { targetId: string; damage: number; landed?: boolean };
-  'poison-impact': { targetId: string };
-  'cannon-impact': { targetId: string };
-  'hero-heal': { targetId: string; amount: number; shield: number };
   'hero-hammer': { targetId: string; damage: number; landed: boolean };
-  'hero-impact': { targetId: string };
 }
 
 export type BattleEffectType = keyof BattleEffectPayloads;
 export type EffectOf<T extends BattleEffectType> = T extends BattleEffectType
   ? BattleEffectBase & { type: T } & BattleEffectPayloads[T] : never;
 export type BattleEffect = { [T in BattleEffectType]: EffectOf<T> }[BattleEffectType];
+
+export type BattleProjectileType = keyof BattleProjectilePayloads;
+export type ProjectileOf<T extends BattleProjectileType> = T extends BattleProjectileType
+  ? BattleEffectBase & { type: T } & BattleProjectilePayloads[T] : never;
+export type BattleProjectile = { [T in BattleProjectileType]: ProjectileOf<T> }[BattleProjectileType];
 
 export interface Battle {
   phase: BattlePhase;
@@ -168,6 +180,9 @@ export interface Battle {
   kills: number;
   reward: number;
   effects: BattleEffect[];
+  projectiles: BattleProjectile[];
   nextSpawn: number;
   nextEffectId: number;
+  nextProjectileId: number;
+  visualEffectLimit: number;
 }

@@ -41,10 +41,14 @@ test('live scene renders the new boss and its side/down shots, bomb and single b
   }
   const base={id:999,x:195,y:150-27,targetX:195,targetY:260-27,age:.1,duration:.5,side:'enemy',sourceType:'goblinBombardier',sourceId:boss.id,targetId:'hero'};
   for(const kind of ['arrow','cannon-impact']) {
-    battle.effects=[{...base,type:kind,...(kind==='arrow'?{damage:18,launchFacing:{x:0,y:1}}:{duration:.4})}];
+    battle.projectiles=kind==='arrow'?[{...base,type:kind,damage:18,launchFacing:{x:0,y:1}}]:[];
+    battle.effects=kind==='cannon-impact'?[{...base,type:kind,duration:.4}]:[];
+    const before=structuredClone({projectiles:battle.projectiles,effects:battle.effects});
     canvas.clear();scene.render({battle});
     const expected=kind==='arrow'?'bomb.webp':'explosion.webp';
     assert.equal(canvas.commands.filter(([method,image])=>method==='drawImage'&&image.includes('/'+expected)).length,1);
+    assert.deepEqual({projectiles:battle.projectiles,effects:battle.effects},before,'drawing cannot advance the bomb or resolve damage');
+    if(kind==='arrow') assert.deepEqual(battle.effects,[],'bomb flight is independent of cosmetic retention');
     assert.equal(env.requests.length,loaded);assert.equal(canvas.saveDepth,0);
   }
   battle.effects[0].age=.4;canvas.clear();scene.render({battle});

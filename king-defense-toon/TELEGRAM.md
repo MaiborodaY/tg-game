@@ -11,11 +11,13 @@ The Profile footer embeds a build version and UTC build date in the page itself.
 It identifies the loaded build, including an older cached copy, and does not fetch
 a newer version label from the network. Local development is marked `Local`.
 
-Current unit management: open an Army or Barracks fighter's details and choose
-**Connect**. That fighter receives the levels and stays in its current location.
+Current unit management: Army details show **Available connections** directly;
+Barracks details retain **Connect**. That fighter receives the levels and stays in its current location.
 The compact Barracks / Army tabs show matching donors; selection persists across
 tabs and previews the final level, forged HP and attack/healing. Apply consumes
 the selected fighters together and keeps the recipient open for further use.
+Army details also offer **Select all** for the active donor tab. The small Connect
+button under a Barracks icon selects that reserve fighter for an Army target.
 Cancel, Back, Escape or closing the menu spends nothing. An active wave keeps
 its original combat actors; edits apply to the next wave. The last saved Army
 fighter cannot be consumed into a reserve recipient while a battle exists.

@@ -45,13 +45,12 @@ test('mounted glaive rider moves faster than swordsmen and uses its own single-t
   assert.equal(getUnitRange('pantherRider'), 75);
   assert.ok(getUnitRange('pantherRider') > getUnitRange('swordsman'));
   assert.ok(getUnitRange('pantherRider') < getUnitRange('archer'));
-  advance(battle, () => battle.effects.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
+  advance(battle, () => battle.projectiles.some(effect => effect.type === 'arrow' && effect.sourceType === 'pantherRider'));
   assert.ok(battle.enemies.every(enemy => enemy.hp === 1000), 'Releasing the glaive does not apply instant damage');
   advance(battle, () => battle.enemies.some(enemy => enemy.hp < 1000));
   assert.equal(battle.enemies.filter(enemy => enemy.hp < 1000).length, 1);
   assert.equal(battle.enemies.reduce((sum, enemy) => sum + 1000 - enemy.hp, 0), 9);
   assert.ok(!battle.effects.some(effect => effect.type === 'slash' && effect.sourceType === 'pantherRider'));
-
 });
 
 test('rider starts at the centre of its two-cell footprint without combat-stat changes', () => {
@@ -76,9 +75,9 @@ test('glaive rider stops beyond sword reach; a released projectile survives its 
   advance(battle, () => rider.action === 'shoot');
   const distance = Math.hypot(rider.x-target.x, rider.y-target.y);
   assert.ok(distance > 44 && distance <= 55, `short throw starts at ${distance}px`);
-  advance(battle, () => battle.effects.some(effect => effect.type === 'arrow'));
+  advance(battle, () => battle.projectiles.some(effect => effect.type === 'arrow'));
   assert.equal(target.hp, 1000);
-  const projectile = battle.effects.find(effect => effect.type === 'arrow');
+  const projectile = battle.projectiles.find(effect => effect.type === 'arrow');
   assert.ok(projectile.launchFacing.y < 0);
   rider.hp = 0;
   advance(battle, () => target.hp < 1000);
@@ -129,7 +128,7 @@ test('a wounded rider can receive monk healing and hero armour aura', () => {
   Object.assign(rider, { x: 195, y: 240, hp: 50 });
   Object.assign(monk, { x: 195, y: 290, action: 'idle', cooldown: 0 });
   Object.assign(battle.hero, { x: 225, y: 240 });
-  battle.effects.push({ id: battle.nextEffectId++, type: 'arrow', targetId: rider.id, sourceId: battle.enemies[0].id,
+  battle.projectiles.push({ id: battle.nextProjectileId++, type: 'arrow', targetId: rider.id, sourceId: battle.enemies[0].id,
     side: 'enemy', sourceType: 'goblinArcher', x: 195, y: 180, targetX: rider.x, targetY: rider.y,
     damage: 10, age: 0, duration: 0 });
   updateBattle(battle, DT);

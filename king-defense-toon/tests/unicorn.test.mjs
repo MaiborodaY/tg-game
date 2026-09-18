@@ -87,10 +87,14 @@ test('horn hits one target exactly on pose two, never before impact or again dur
   assert.equal(unit.cooldown,1.3/COMBAT_PACE); assert.equal(unit.range,42);
   while(unit.actionTime+dt < unit.actionDuration*.5-1e-9) updateBattle(battle,dt);
   assert.equal(target.hp,1000);
-  while(!unit.didImpact) updateBattle(battle,dt);
+  const events=[];
+  while(!unit.didImpact) events.push(...updateBattle(battle,dt));
   assert.equal(target.hp,990);
+  assert.deepEqual(events.filter(event=>event.type==='damage'),[
+    {type:'damage',targetId:target.id,targetType:target.type,side:target.side,amount:10},
+  ]);
   for(let i=0;i<8;i++) updateBattle(battle,dt);
-  assert.equal(target.hp,990); assert.equal(battle.effects.some(e=>e.type==='arrow'),false);
+  assert.equal(target.hp,990); assert.equal(battle.projectiles.some(e=>e.type==='arrow'),false);
   const distant=encounter(); Object.assign(distant.unit,{y:340});
   for(let i=0;i<300&&!distant.unit.didImpact;i++) updateBattle(distant.battle,dt);
   assert.ok(distant.unit.y<290,'Melee mount advances instead of idling out of range');
