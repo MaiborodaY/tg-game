@@ -3,6 +3,7 @@ import type { AnimationActor, FrameFunction, AllyAnimationFrames } from '../../a
 import { allyAnimationFrame, allyDeathOpacity, ALLY_ATLAS_LAYOUT } from '../../ally-animation.ts';
 import { tinyWarriorFrame } from '../../tiny-warrior.ts';
 import { tinyLancerFrame } from '../../tiny-lancer.ts';
+import { pantherRiderFrame } from '../../panther-rider-animation.ts';
 import { tinyTorchFrame } from '../../tiny-torch.ts';
 import { tinyGoblinArcherFrame } from '../../tiny-goblin-archer.ts';
 import { tinyGoblinChiefFrame } from '../../tiny-goblin-chief.ts';
@@ -16,7 +17,7 @@ import type { HeroDirection, HeroEffectKind } from '../../tiny-st-knihor.ts';
 
 export function verifyAnimationContracts(actor: Actor): void {
   const pose: AnimationActor = actor;
-  const helpers: FrameFunction[] = [tinyWarriorFrame, tinyLancerFrame, tinyTorchFrame, tinyGoblinArcherFrame,
+  const helpers: FrameFunction[] = [tinyWarriorFrame, tinyLancerFrame, pantherRiderFrame, tinyTorchFrame, tinyGoblinArcherFrame,
     tinyGoblinChiefFrame, tinyGoblinHealerFrame, tinyBoarFrame, tinyArcherFrame, tinyMonkIdleFrame,
     tinyMonkRunFrame, tinyKingFrame, tinyStKnihorFrame];
   for (const helper of helpers) {

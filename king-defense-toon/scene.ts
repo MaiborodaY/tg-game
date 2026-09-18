@@ -36,6 +36,8 @@ import { getCellAvailability } from './progression.ts';
 import { getUnitStats, normalizeUnitLevel } from './recruitment.ts';
 import { UNIT_RANK_ASSETS } from './rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from './lancer-art.ts';
+import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from './panther-rider-art.ts';
+import { pantherRiderFrame } from './panther-rider-animation.ts';
 import { allyDeathOpacity } from './ally-animation.ts';
 import { UNIT_IMAGES } from './asset-web.ts';
 import { getHeroStats } from './hero.ts';
@@ -110,8 +112,18 @@ const ALLY_ANIMATION_METADATA: Record<UnitType, AnimationMetadata> = {
     frameFor: tinyLancerFrame,
     horizontalFacing: true,
   },
+  pantherRider: {
+    ...PANTHER_RIDER_GEOMETRY,
+    pixelArt: true,
+    fullCells: true,
+    bakedShadow: false,
+    renderHeight: 47,
+    portraitFrame: 0,
+    frameFor: pantherRiderFrame,
+    horizontalFacing: true,
+  },
 };
-const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, healer: 39, lancer: 38, hero: 44 };
+const ALLY_HEALTH_OFFSETS: Partial<Record<ActorType, number>> = { swordsman: 50, archer: 42, healer: 39, lancer: 38, pantherRider: 51, hero: 44 };
 const TORCH_ANIMATION_METADATA = {
   layout: TINY_TORCH_LAYOUT,
   pixelArt: true,
@@ -1057,10 +1069,12 @@ export async function createScene(canvas: HTMLCanvasElement, {
       return point ? cellAtPoint(point.x, point.y) : null;
     },
     getPortrait(type) {
+      if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[1].art;
       return type === 'lancer' ? LANCER_ASSETS[1].art : unitImages.get(type)?.portrait ?? null;
     },
     getUnitArt(type, level = 1) {
       if (type === 'lancer') return LANCER_ASSETS[getUnitRank(level).level].art;
+      if (type === 'pantherRider') return PANTHER_RIDER_ASSETS[getUnitRank(level).level].art;
       return rankArt[type]?.[getUnitRank(level).level]?.art ?? unitImages.get(type)?.art ?? null;
     },
     render(nextState) {

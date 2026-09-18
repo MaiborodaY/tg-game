@@ -38,6 +38,7 @@ const MAX_FRAME_DELTA = .3;
 const BASE_RULES = {
   swordsman: { range: 38, interval: 1.1, duration: .65, speed: 57 },
   lancer: { range: 75, interval: 1.3, duration: .75, speed: 53 },
+  pantherRider: { range: 38, interval: 1.05, duration: .65, speed: 68 },
   archer: { range: 185, interval: 1.4, duration: .7, speed: 49 },
   healer: { range: 77.5, interval: 1.45, duration: .8, speed: 47 },
   hero: { range: 42, interval: 1.2, duration: .7, speed: 53 },
@@ -784,7 +785,7 @@ function act(battle: Battle, unit: Actor, dt: number): void {
   }
   if (unit.side === 'enemy') {
     moveToward(unit, target, dt, unit.range - 2);
-  } else if (unit.type === 'swordsman' || unit.type === 'lancer') {
+  } else if (unit.type === 'swordsman' || unit.type === 'lancer' || unit.type === 'pantherRider') {
     // Spear reach lets lancers stop behind defenders, while retaining melee land-path checks.
     advanceAlly(battle, unit, target, dt);
   } else unit.action = 'idle';

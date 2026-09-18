@@ -23,8 +23,8 @@ test('legacy training migration preserves receipts without granting lancer histo
   const saved = Object.freeze({ version: 1, received: Object.freeze({ swordsman: 12, archer: 3, healer: 0, lancer: 12 }),
     legacyTrainingCredit: Object.freeze({ lancer: 500 }), lastType: 'lancer' });
   const migrated = createRecruitment(saved);
-  assert.deepEqual(migrated.received, { swordsman: 12, archer: 3, healer: 0, lancer: 12 });
-  assert.deepEqual(migrated.legacyTrainingCredit, { swordsman: 38, archer: 2, healer: 0, lancer: 0 });
+  assert.deepEqual(migrated.received, { swordsman: 12, archer: 3, healer: 0, lancer: 12, pantherRider: 0 });
+  assert.deepEqual(migrated.legacyTrainingCredit, { swordsman: 38, archer: 2, healer: 0, lancer: 0, pantherRider: 0 });
   assert.equal(migrated.lastType, 'lancer');
   assert.deepEqual(createRecruitment(JSON.parse(JSON.stringify(migrated))), migrated);
 });
@@ -75,7 +75,7 @@ test('saturated receipts and training remain safe and capped after a guaranteed 
 });
 
 test('unit catalogue keeps shared frozen definitions and optional healing fields', () => {
-  assert.deepEqual(UNIT_TYPES.map(unit => unit.id), ['swordsman', 'archer', 'healer', 'lancer']);
+  assert.deepEqual(UNIT_TYPES.map(unit => unit.id), ['swordsman', 'archer', 'healer', 'lancer', 'pantherRider']);
   assert.ok(Object.isFrozen(UNIT_TYPES) && Object.isFrozen(UNIT_TYPE_BY_ID));
   for (const unit of UNIT_TYPES) {
     assert.equal(UNIT_TYPE_BY_ID[unit.id], unit);

@@ -2,6 +2,7 @@ import type { AnimationMetadata, RankArtAssets, SpriteGeometry, SpriteRect } fro
 import type { PaletteRank } from '../../unit-ranks.ts';
 import { UNIT_RANK_ASSETS } from '../../rank-art.ts';
 import { LANCER_ASSETS, LANCER_GEOMETRY } from '../../lancer-art.ts';
+import { PANTHER_RIDER_ASSETS, PANTHER_RIDER_GEOMETRY } from '../../panther-rider-art.ts';
 import { GOBLIN_ARCHER_GEOMETRY } from '../../goblin-archer-art.ts';
 import { GOBLIN_CHIEF_GEOMETRY } from '../../goblin-chief-art.ts';
 import { GOBLIN_HEALER_GEOMETRY, GOBLIN_HEAL_PULSE_FRAMES } from '../../goblin-healer-art.ts';
@@ -12,11 +13,12 @@ import { GRAVEYARD_BOSS_ART } from '../../graveyard-boss-art.ts';
 import { ST_KNIHOR_ASSETS, ST_KNIHOR_EFFECTS, ST_KNIHOR_GEOMETRY } from '../../st-knihor-art.ts';
 
 export function artContracts(rank: PaletteRank): void {
-  const geometry: readonly SpriteGeometry[] = [LANCER_GEOMETRY, GOBLIN_ARCHER_GEOMETRY,
+  const geometry: readonly SpriteGeometry[] = [LANCER_GEOMETRY, PANTHER_RIDER_GEOMETRY, GOBLIN_ARCHER_GEOMETRY,
     GOBLIN_CHIEF_GEOMETRY, GOBLIN_HEALER_GEOMETRY, OGRE_GEOMETRY, ST_KNIHOR_GEOMETRY];
   const ranks: RankArtAssets = UNIT_RANK_ASSETS;
   const optionalSheet: string | undefined = ranks.swordsman?.[rank]?.sheet;
   const lancerSheet: string = LANCER_ASSETS[rank].sheet;
+  const riderSheet: string = PANTHER_RIDER_ASSETS[rank].sheet;
   const healerCast: string = UNIT_RANK_ASSETS.healer[2].cast;
   const metadata: AnimationMetadata = UNDEAD_ART.ghoul.metadata;
   const bossMetadata: AnimationMetadata = GRAVEYARD_BOSS_ART.cryptKing.metadata;
@@ -32,6 +34,8 @@ export function artContracts(rank: PaletteRank): void {
   UNIT_RANK_ASSETS.swordsman[1];
   // @ts-expect-error Only five personal-level palette ranks exist.
   LANCER_ASSETS[6];
+  // @ts-expect-error Rider palettes use the same five rank keys as other fighters.
+  PANTHER_RIDER_ASSETS[6];
   // @ts-expect-error URL catalogues contain strings, not decoded images.
   const decoded: HTMLImageElement = ST_KNIHOR_ASSETS.down;
   // @ts-expect-error The three authored hero directions have no left atlas.
@@ -52,6 +56,6 @@ export function artContracts(rank: PaletteRank): void {
   const invented: { extra: number } = getEnemyRoundArt(plain, { levelNumber: 2 });
   // @ts-expect-error Wave level is an internal numeric field.
   getEnemyRoundArt(plain, { levelNumber: '1' });
-  void [geometry, optionalSheet, lancerSheet, healerCast, bossMetadata, rect, colorUrl, frame,
+  void [geometry, optionalSheet, lancerSheet, riderSheet, healerCast, bossMetadata, rect, colorUrl, frame,
     base, selected, decoded, malformedGeometry, missingFrame, invented];
 }

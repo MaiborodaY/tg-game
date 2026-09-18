@@ -1,5 +1,6 @@
-import { UNIT_TYPE_BY_ID } from './units.ts';
+import { UNIT_TYPES, UNIT_TYPE_BY_ID } from './units.ts';
 import type { UnitType } from './units.ts';
+import type { RecruitmentPool } from './recruitment-pools.ts';
 
 export interface RecruitmentState {
   version: 2;
@@ -28,6 +29,8 @@ export interface RecruitResult extends RecruitProgress {
 export interface RecruitOptions {
   lancerUnlocked?: boolean;
   guaranteedLancer?: boolean;
+  pool?: RecruitmentPool;
+  elvesUnlocked?: boolean;
 }
 
 export interface UnitStats {
@@ -62,9 +65,15 @@ const UNLOCKED_RECRUIT_CHANCES: readonly RecruitChance[] = Object.freeze([
   Object.freeze({ type: 'healer', chance: .25 }),
   Object.freeze({ type: 'lancer', chance: .25 }),
 ]);
+const ELF_RECRUIT_CHANCES: readonly RecruitChance[] = Object.freeze([
+  Object.freeze({ type: 'pantherRider', chance: 1 }),
+]);
 
-export const getRecruitChances = (lancerUnlocked: boolean = false): readonly RecruitChance[] => lancerUnlocked
-  ? UNLOCKED_RECRUIT_CHANCES : RECRUIT_CHANCES;
+export function getRecruitChances(lancerUnlocked: boolean = false, pool: RecruitmentPool = 'humans'): readonly RecruitChance[] {
+  if (pool === 'elves') return ELF_RECRUIT_CHANCES;
+  if (pool !== 'humans') throw new RangeError('Unknown recruitment pool');
+  return lancerUnlocked ? UNLOCKED_RECRUIT_CHANCES : RECRUIT_CHANCES;
+}
 
 const isUnitType = (type: unknown): type is UnitType => typeof type === 'string'
   && Object.hasOwn(UNIT_TYPE_BY_ID, type);
@@ -73,15 +82,16 @@ const isReceivedCount = (count: unknown): count is number => typeof count === 'n
 
 export function createRecruitment(saved?: unknown): RecruitmentState {
   const source = saved as RecruitmentSaveFields | null | undefined;
-  const received = Object.fromEntries(UNLOCKED_RECRUIT_CHANCES.map(({ type }) => [
+  // Progress records cover all playable units; pool odds must not determine saved fields.
+  const received = Object.fromEntries(UNIT_TYPES.map(({ id: type }) => [
     type, isReceivedCount(source?.received?.[type]) ? source.received[type] : 0,
   ])) as Record<UnitType, number>;
   return {
     version: 2,
     received,
     // One-time training credit preserves earned recruitment levels without inventing received fighters.
-    legacyTrainingCredit: Object.fromEntries(UNLOCKED_RECRUIT_CHANCES.map(({ type }) => [
-      type, source?.version === 1 && type !== 'lancer' ? migrateLegacyTraining(received[type])
+    legacyTrainingCredit: Object.fromEntries(UNIT_TYPES.map(({ id: type }) => [
+      type, source?.version === 1 && RECRUIT_CHANCES.some(entry => entry.type === type) ? migrateLegacyTraining(received[type])
         : source?.version === 2 && isReceivedCount(source?.legacyTrainingCredit?.[type])
           ? source.legacyTrainingCredit[type] : 0,
     ])) as Record<UnitType, number>,
@@ -108,7 +118,7 @@ export function normalizeUnitLevel(value: unknown = 1): number {
 function assertRecruitment(recruitment: unknown): asserts recruitment is RecruitmentState {
   const state = recruitment as RecruitmentSaveFields | null | undefined;
   if (!state || state.version !== 2 || !state.received || !state.legacyTrainingCredit
-    || !UNLOCKED_RECRUIT_CHANCES.every(({ type }) => isReceivedCount(state.received![type])
+    || !UNIT_TYPES.every(({ id: type }) => isReceivedCount(state.received![type])
       && isReceivedCount(state.legacyTrainingCredit![type]))
     || (state.lastType !== null && !isUnitType(state.lastType))) {
     throw new TypeError('Invalid recruitment state');
@@ -153,16 +163,19 @@ export function receiveRecruit(recruitment: RecruitmentState, random: () => numb
   options: RecruitOptions | null = {}): RecruitResult {
   assertRecruitment(recruitment);
   if (typeof random !== 'function') throw new TypeError('Recruit random must be a function');
+  const pool = options?.pool ?? 'humans';
+  if (pool !== 'humans' && pool !== 'elves') throw new RangeError('Unknown recruitment pool');
+  if (pool === 'elves' && options?.elvesUnlocked !== true) throw new RangeError('Elven recruitment requires Barracks III');
   const lancerUnlocked = options?.lancerUnlocked === true;
-  let type: UnitType | null = lancerUnlocked && options?.guaranteedLancer === true ? 'lancer' : null;
+  let type: UnitType | null = pool === 'humans' && lancerUnlocked && options?.guaranteedLancer === true ? 'lancer' : null;
   if (!type) {
     const roll = random();
     if (typeof roll !== 'number' || !Number.isFinite(roll) || roll < 0 || roll >= 1) {
       throw new RangeError('Recruit random must return a number from zero up to one');
     }
-    const chances = getRecruitChances(lancerUnlocked);
+    const chances = getRecruitChances(lancerUnlocked, pool);
     let threshold = 0;
-    // Both tables total one, so every validated roll selects an entry.
+    // Each pool totals one, so every validated roll selects an entry.
     type = chances.find(entry => {
       threshold += entry.chance;
       return roll < threshold;

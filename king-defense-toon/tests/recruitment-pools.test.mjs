@@ -45,10 +45,10 @@ test('construction in progress cannot unlock elves before Barracks III is comple
   assert.equal(createBarracks({ level: 2, upgradeStartedAt: startedAt, upgradeReadyAt: readyAt }, readyAt).level, 3);
 });
 
-test('elf previews cannot spend slaves or roll recruits even when their pool is unlocked', () => {
+test('playable elf recruitment requires the completed third barracks level', () => {
   for (const level of [1, 2, 3]) {
     assert.equal(canRecruitFromPool('humans', level), true);
-    assert.equal(canRecruitFromPool('elves', level), false);
+    assert.equal(canRecruitFromPool('elves', level), level === 3);
   }
   for (const level of [undefined, null, '3', 0, 4, NaN]) {
     assert.equal(canRecruitFromPool('humans', level), false);
@@ -59,12 +59,12 @@ test('elf previews cannot spend slaves or roll recruits even when their pool is 
   assert.equal(getRecruitmentPoolName('elves'), 'Elven recruits');
 });
 
-test('four immutable elf previews show three initial roles and a locked unicorn', () => {
+test('four immutable elf entries expose only the rider as playable and keep the unicorn locked', () => {
   assert.deepEqual(ELF_RECRUITS, [
-    { id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false },
-    { id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false },
-    { id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false },
-    { id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true },
+    { id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false, playable: true },
+    { id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: false },
+    { id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: false },
+    { id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false },
   ]);
   assert.ok(Object.isFrozen(ELF_RECRUITS));
   assert.ok(ELF_RECRUITS.every(Object.isFrozen));

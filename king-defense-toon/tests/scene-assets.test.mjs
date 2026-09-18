@@ -47,6 +47,22 @@ test('lancer plans retain only displayed palettes across deployment, battle and 
   assert.doesNotMatch(army.keys.join(' '), /lancer-blue|st-knihor/);
 });
 
+test('rider loads only visible palettes and does not pull other recruits or menu portraits', () => {
+  const state = { units: [{ type: 'pantherRider', level: 50 }, { type: 'pantherRider', level: 50 }],
+    battle: { allies: [{ type: 'pantherRider', level: 1 }] }, placementType: 'pantherRider', placementLevel: 500 };
+  const battle = getSceneAssetPlan(state);
+  assert.deepEqual(battle.allies.map(unit => `${unit.type}:${unit.rank}`).sort(), ['pantherRider:1', 'pantherRider:2', 'pantherRider:5']);
+  const urls = battle.keys.join(' ');
+  assert.match(urls, /panther-rider-green\.webp/);
+  assert.match(urls, /panther-rider-purple\.webp/);
+  assert.match(urls, /panther-rider-black\.webp/);
+  assert.doesNotMatch(urls, /panther-rider-(red|gold)|panther-rider-\w+-art|elf-archer|unicorn/);
+  const army = getSceneAssetPlan(state, { formationOnly: true });
+  assert.deepEqual(army.allies.map(unit => unit.rank), [2, 5]);
+  assert.equal(army.resources.size, 3, 'one map and two visible sheets');
+  assert.doesNotMatch(getSceneAssetPlan().keys.join(' '), /panther-rider/);
+});
+
 test('level 500 and later load one Black palette per present class without earlier palettes', () => {
   const plan = getSceneAssetPlan({ units: [
     { type: 'swordsman', level: 500 }, { type: 'swordsman', level: 999 },

@@ -429,13 +429,14 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || (recruitable && economy.slaves < RECRUIT_COST) || transforming;
-  const chances = getRecruitChances(barracks.level >= 2);
+  const chances = getRecruitChances(barracks.level >= 2, recruitmentPool);
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Math.round(chance * 100)}%`).join(', ');
-  const nextRecruit = barracks.firstLancerPending ? 'Next recruit: guaranteed Lancer.' : odds;
-  const previewLabel = 'Elven recruits: preview only. Open Recruitment to switch back to Humans.';
+  const guaranteedLancer = recruitmentPool === 'humans' && barracks.firstLancerPending;
+  const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
+  const previewLabel = 'Elven recruits require Barracks III. Open Recruitment for details.';
   button.setAttribute('aria-label', recruitable ? `Transform 1 slave into a fighter. ${economy.slaves} slaves available. ${nextRecruit}` : previewLabel);
   button.title = recruitable ? nextRecruit : previewLabel;
-  byId('market-convert-label').textContent = !recruitable ? 'Elves' : barracks.firstLancerPending ? 'Lancer next' : 'Market';
+  byId('market-convert-label').textContent = recruitmentPool === 'elves' ? 'Elves' : guaranteedLancer ? 'Lancer next' : 'Market';
   const upgrade = getBarracksUpgrade(barracks, recruitment);
   byId('barracks-building-level').textContent = ['I', 'II', 'III'][barracks.level - 1] + (['upgrading', 'ready'].includes(upgrade.status) ? '…' : '');
   byId('open-market-info').classList.toggle('upgrade-available', upgrade.canStart);
@@ -484,7 +485,7 @@ function finishRecruitReveal() {
 }
 
 function recruitmentProgressMarkup(type: UnitType) {
-  const pluralNames = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers' };
+  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders' };
   const progress = getRecruitProgress(recruitment, type);
   const capped = progress.level === RECRUIT_LEVEL_CAP;
   const remaining = progress.needed - progress.progress;
@@ -500,18 +501,27 @@ function refreshRecruitmentDetails() {
   byId('recruitment-pool').disabled = transforming || !canEditFormation();
   byId('recruitment-pool-elves').disabled = !elvesUnlocked;
   byId('recruitment-pool-elves').textContent = elvesUnlocked ? 'Elven recruits' : 'Elves · Barracks III';
-  byId('recruitment-pool-status').textContent = elves ? 'Roster preview · 3 base recruits + 1 future unlock.'
-    : elvesUnlocked ? 'Elven roster unlocked. Choose it above to preview.' : 'Elves unlock after Barracks III is built.';
+  byId('recruitment-pool-status').textContent = elves ? 'Panther Rider available · more elves coming later.'
+    : elvesUnlocked ? 'Elven recruits unlocked. Choose your army above.' : 'Elves unlock after Barracks III is built.';
   byId('recruitment-details').hidden = elves;
   byId('elf-recruitment-details').hidden = !elves;
-  byId('recruitment-info-cost').hidden = elves;
+  byId('recruitment-info-cost').hidden = false;
   byId('recruitment-info-note').classList.toggle('human-recruitment-note', !elves);
   byId('recruitment-info-note').textContent = elves
-    ? 'Elf recruitment is not available yet. Slaves are not spent. Choose Humans to recruit.'
+    ? 'Elves currently give Panther Riders only. Each army keeps its own recruitment progress.'
     : 'Market recruits raise recruitment levels. Connect adds personal levels together.';
   byId('recruitment-guarantee').hidden = elves || !barracks.firstLancerPending;
   refreshBarracksUpgrade();
-  if (elves) { renderElfRecruitment(byId('elf-recruitment-details')); return; }
+  if (elves) {
+    const progress = getRecruitProgress(recruitment, 'pantherRider');
+    const chance = getRecruitChances(barracks.level >= 2, 'elves').find(entry => entry.type === 'pantherRider')!.chance;
+    renderElfRecruitment(byId('elf-recruitment-details'), {
+      portrait: scene?.getUnitArt('pantherRider', progress.level) ?? undefined,
+      progressMarkup: recruitmentProgressMarkup('pantherRider'),
+      chanceLabel: Math.round(chance * 100) + '%',
+    });
+    return;
+  }
   // Keep the inline purchase controls mounted so timer/income updates preserve focus.
   byId('recruitment-current-types').innerHTML = getRecruitChances(barracks.level >= 2).filter(({ type }) => type !== 'lancer').map(({ type, chance }) => {
     const progress = getRecruitProgress(recruitment, type);
@@ -543,7 +553,9 @@ byId('transform-slave').addEventListener('click', () => {
   }
   if (economy.slaves < RECRUIT_COST) return;
   const result = receiveRecruit(recruitment, Math.random, {
-    lancerUnlocked: barracks.level >= 2, guaranteedLancer: barracks.firstLancerPending,
+    pool: recruitmentPool, elvesUnlocked: isRecruitmentPoolUnlocked('elves', barracks.level),
+    lancerUnlocked: barracks.level >= 2,
+    guaranteedLancer: recruitmentPool === 'humans' && barracks.firstLancerPending,
   });
   consumeFirstLancerGuarantee(barracks, result.type);
   marketHintCompleted = true;

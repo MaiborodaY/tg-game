@@ -8,11 +8,13 @@ export function verifyRecruitmentPoolContracts(saved: unknown): void {
   const recruitable: boolean = canRecruitFromPool(pool, 3);
   // @ts-expect-error A pool selection is not a deployable battle unit type.
   const fighter: UnitType = pool;
-  // @ts-expect-error Preview elf IDs do not extend the current battle catalogue.
+  // @ts-expect-error The full elf preview catalogue also contains unimplemented types.
   const elf: UnitType = ELF_RECRUITS[0]!.id;
+  const rider: UnitType = 'pantherRider';
+  const playable: boolean = ELF_RECRUITS[0]!.playable;
   // @ts-expect-error Only supported recruitment pools can be selected.
   isRecruitmentPoolUnlocked('undead', 3);
   // @ts-expect-error The preview catalogue is immutable.
   ELF_RECRUITS[0]!.locked = true;
-  void [selectable, recruitable, fighter, elf];
+  void [selectable, recruitable, fighter, elf, rider, playable];
 }

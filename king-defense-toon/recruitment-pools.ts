@@ -6,14 +6,15 @@ export interface ElfRecruitPreview {
   readonly name: string;
   readonly role: string;
   readonly locked: boolean;
+  readonly playable: boolean;
 }
 
-// Preview entries deliberately remain separate from deployable UnitType and recruitment odds.
+// Planned elves remain visible without entering the live recruitment odds or battle catalogue.
 export const ELF_RECRUITS: readonly ElfRecruitPreview[] = Object.freeze([
-  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false }),
-  Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false }),
-  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false }),
-  Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true }),
+  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Melee', locked: false, playable: true }),
+  Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: false }),
+  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: false }),
+  Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Special', locked: true, playable: false }),
 ]);
 
 export function isRecruitmentPoolUnlocked(pool: RecruitmentPool, barracksLevel: number): boolean {
@@ -26,8 +27,7 @@ export function normalizeRecruitmentPool(saved: unknown, barracksLevel: number):
 }
 
 export function canRecruitFromPool(pool: RecruitmentPool, barracksLevel: number): boolean {
-  // Elves can be inspected after Barracks III, but cannot consume slaves until their playable units exist.
-  return pool === 'humans' && isRecruitmentPoolUnlocked(pool, barracksLevel);
+  return isRecruitmentPoolUnlocked(pool, barracksLevel);
 }
 
 export function getRecruitmentPoolName(pool: RecruitmentPool): string {

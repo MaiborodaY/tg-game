@@ -10,6 +10,8 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   const recruitment: RecruitmentState = createRecruitment(saved);
   const progress: RecruitProgress = getRecruitProgress(recruitment, 'lancer');
   const result: RecruitResult = receiveRecruit(recruitment, () => .9, { lancerUnlocked: true });
+  const rider: RecruitResult = receiveRecruit(recruitment, () => .9, { pool: 'elves', elvesUnlocked: true });
+  const riderProgress: RecruitProgress = getRecruitProgress(recruitment, 'pantherRider');
   const type: UnitType = result.type;
   const stats: UnitStats = getUnitStats(type, saved);
   const definition: UnitDefinition = UNIT_TYPE_BY_ID[type];
@@ -17,9 +19,9 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   const rank: UnitRank = getUnitRank(saved);
   const palette: PaletteRank = rank.level;
   const normalized: number = normalizeUnitLevel(saved);
-  void [progress, stats, healing, palette, normalized];
+  void [progress, stats, healing, palette, normalized, rider, riderProgress];
 
-  // @ts-expect-error Only the four allied recruit types belong to the catalogue.
+  // @ts-expect-error Only playable allied recruit types belong to the catalogue.
   const unknownType: UnitType = 'goblin';
   // @ts-expect-error The keyed catalogue has no unknown unit definition.
   UNIT_TYPE_BY_ID.king;
@@ -27,7 +29,7 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   definition.hp = 999;
   // @ts-expect-error The catalogue array cannot be extended at runtime.
   UNIT_TYPES.push(definition);
-  // @ts-expect-error A recruit record contains all four classes, including lancer.
+  // @ts-expect-error A recruit record contains every playable class, including lancer and rider.
   const missingClass: RecruitmentState['received'] = { swordsman: 0, archer: 0, healer: 0 };
   // @ts-expect-error Runtime state counts are numbers even though save input is unknown.
   recruitment.received.lancer = '5';
@@ -41,6 +43,10 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   receiveRecruit(recruitment, () => '0.5');
   // @ts-expect-error Unlock settings are boolean, not saved text.
   receiveRecruit(recruitment, Math.random, { lancerUnlocked: 'true' });
+  // @ts-expect-error Elven unlock is an exact boolean, not a saved building level.
+  receiveRecruit(recruitment, Math.random, { pool: 'elves', elvesUnlocked: 3 });
+  // @ts-expect-error Only supported recruitment pools have chance tables.
+  getRecruitChances(true, 'dwarves');
   // @ts-expect-error Chance tables are shared immutable definitions.
   getRecruitChances()[0]!.chance = 1;
   // @ts-expect-error Healing is optional on catalogue definitions.
