@@ -1,11 +1,12 @@
-import { CROPS, getCropProgress } from './farm.ts';
+import { CROPS, FARM_LEVELS, getCropProgress, getFarmUpgrade } from './farm.ts';
 import type { CropId, FarmState } from './farm.ts';
 
 interface FarmUIOptions {
   root: HTMLElement;
   getFarm: () => FarmState;
+  getGold: () => number;
   canUse: () => boolean;
-  onPlant: (crop: CropId) => void;
+  onUpgrade: () => void;
   onHarvest: (crop: CropId) => void;
   getNow?: () => number;
 }
@@ -26,16 +27,32 @@ function countdown(seconds: number): string {
 export function createFarmUI(options: FarmUIOptions): FarmUI {
   const now = options.getNow ?? (() => Date.now());
   const stockNumber = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
-  // Timer refreshes change existing nodes, so a focused Plant/Harvest control stays put.
-  options.root.innerHTML = CROPS.map(crop =>
-    `<div class="farm-row" data-farm-row="${crop.id}" data-state="empty">`
+  // Refresh existing nodes so focus stays on Collect/Upgrade as the clock advances.
+  options.root.innerHTML = '<div class="farm-level"><strong data-farm-level></strong><span data-farm-capacity></span></div>' + CROPS.map(crop =>
+    `<div class="farm-row" data-farm-row="${crop.id}">`
     + `<svg class="farm-crop-icon" viewBox="0 0 36 36" aria-hidden="true">${CROP_ICONS[crop.id]}</svg>`
     + `<div class="farm-copy"><div class="farm-crop-heading"><strong>${crop.name}</strong>`
     + '<span class="farm-stock">Owned <b data-farm-stock>0</b></span></div>'
-    + `<div class="farm-meter" data-farm-progress role="progressbar" aria-label="${crop.name} growth" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span data-farm-fill></span></div>`
+    + '<div class="farm-harvest-count" data-farm-available></div>'
+    + `<div class="farm-meter" data-farm-progress role="progressbar" aria-label="${crop.name} bed capacity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span data-farm-fill></span></div>`
     + '<small class="farm-timer" data-farm-timer></small></div>'
-    + `<button class="battle-button farm-action" data-farm-action="${crop.id}" type="button">Plant</button></div>`
-  ).join('');
+    + `<button class="battle-button farm-action" data-farm-action="${crop.id}" type="button">Collect</button></div>`
+  ).join('') + '<div class="farm-upgrade" data-farm-upgrade-panel><div class="farm-upgrade-copy">'
+    + '<strong data-farm-upgrade-title></strong><span data-farm-upgrade-detail></span></div>'
+    + '<button class="battle-button farm-upgrade-action" data-farm-upgrade type="button">Upgrade<span data-farm-upgrade-cost></span></button></div>';
+
+  const level = options.root.querySelector<HTMLElement>('[data-farm-level]')!;
+  const capacityLabel = options.root.querySelector<HTMLElement>('[data-farm-capacity]')!;
+  const upgradePanel = options.root.querySelector<HTMLElement>('[data-farm-upgrade-panel]')!;
+  const upgradeTitle = options.root.querySelector<HTMLElement>('[data-farm-upgrade-title]')!;
+  const upgradeDetail = options.root.querySelector<HTMLElement>('[data-farm-upgrade-detail]')!;
+  const upgradeButton = options.root.querySelector<HTMLButtonElement>('[data-farm-upgrade]')!;
+  const upgradeCost = options.root.querySelector<HTMLElement>('[data-farm-upgrade-cost]')!;
+  upgradeButton.addEventListener('click', () => {
+    if (upgradeButton.disabled || !options.canUse()) return;
+    const upgrade = getFarmUpgrade(options.getFarm());
+    if (upgrade && options.getGold() >= upgrade.cost) options.onUpgrade();
+  });
 
   const rows = CROPS.map(crop => {
     const row = options.root.querySelector<HTMLElement>(`[data-farm-row="${crop.id}"]`)!;
@@ -43,12 +60,11 @@ export function createFarmUI(options: FarmUIOptions): FarmUI {
     button.addEventListener('click', () => {
       if (button.disabled || !options.canUse()) return;
       // Consult the clock again: a timer tick or another action may have changed this plot.
-      const { status } = getCropProgress(options.getFarm(), crop.id, now());
-      if (status === 'empty') options.onPlant(crop.id);
-      else if (status === 'ready') options.onHarvest(crop.id);
+      if (getCropProgress(options.getFarm(), crop.id, now()).available > 0) options.onHarvest(crop.id);
     });
     return { crop, row, button,
       stock: row.querySelector<HTMLElement>('[data-farm-stock]')!,
+      availableLabel: row.querySelector<HTMLElement>('[data-farm-available]')!,
       timer: row.querySelector<HTMLElement>('[data-farm-timer]')!,
       meter: row.querySelector<HTMLElement>('[data-farm-progress]')!,
       fill: row.querySelector<HTMLElement>('[data-farm-fill]')! };
@@ -56,24 +72,36 @@ export function createFarmUI(options: FarmUIOptions): FarmUI {
 
   const refresh = () => {
     const farm = options.getFarm(), timestamp = now(), usable = options.canUse();
-    for (const { crop, row, button, stock, timer, meter, fill } of rows) {
-      const { status, remainingSeconds, progress } = getCropProgress(farm, crop.id, timestamp);
+    level.textContent = `Level ${farm.level} / 3`;
+    capacityLabel.textContent = `Limit ${FARM_LEVELS[farm.level].capacity} per crop`;
+    const upgrade = getFarmUpgrade(farm);
+    upgradePanel.hidden = !upgrade;
+    upgradeButton.hidden = !upgrade;
+    upgradeButton.disabled = !usable || !upgrade || options.getGold() < upgrade.cost;
+    upgradeTitle.textContent = upgrade ? `Level ${upgrade.nextLevel} · ${upgrade.crop.name}` : 'Maximum level';
+    upgradeDetail.textContent = upgrade ? `Limit ${upgrade.capacity} → ${upgrade.nextCapacity} per crop`
+      : 'All 3 crops grow automatically.';
+    if (upgrade) {
+      upgradeCost.textContent = `${upgrade.cost} gold`;
+      upgradeButton.setAttribute('aria-label', `Upgrade farm to level ${upgrade.nextLevel} for ${upgrade.cost} gold. Unlock ${upgrade.crop.name}, limit ${upgrade.nextCapacity} per crop.`);
+    }
+    for (const { crop, row, button, stock, availableLabel, timer, meter, fill } of rows) {
+      const { status, available, capacity, remainingSeconds, progress } = getCropProgress(farm, crop.id, timestamp);
       const percentage = Math.max(0, Math.min(100, progress * 100));
       const owned = farm.stock[crop.id];
       row.dataset.state = status;
+      row.hidden = status === 'locked';
       stock.textContent = owned < 10000 ? String(owned) : stockNumber.format(owned);
       stock.parentElement!.setAttribute('aria-label', `${owned} ${crop.name} stored`);
       stock.parentElement!.title = `${owned} stored`;
-      button.disabled = !usable || status === 'growing';
-      button.textContent = status === 'empty' ? 'Plant' : status === 'ready' ? 'Harvest' : 'Growing';
-      const duration = `${crop.growSeconds / 60} min`;
-      timer.textContent = status === 'empty' ? `${duration} · +${crop.yield}`
-        : status === 'ready' ? `Ready · +${crop.yield}` : `${countdown(remainingSeconds)} left`;
-      button.setAttribute('aria-label', status === 'empty' ? `Plant ${crop.name} for free. Ready in ${duration}.`
-        : status === 'ready' ? `Harvest ${crop.yield} ${crop.name}` : `${crop.name} growing: ${countdown(remainingSeconds)} remaining`);
+      availableLabel.textContent = `${available} / ${capacity} ready`;
+      button.disabled = !usable || available === 0;
+      button.textContent = available ? `Collect ${available}` : 'Collect';
+      timer.textContent = status === 'full' ? 'Full · collect to grow more' : `Next +1 in ${countdown(remainingSeconds)}`;
+      button.setAttribute('aria-label', available ? `Collect ${available} ${crop.name}`
+        : `${crop.name} growing: ${countdown(remainingSeconds)} remaining`);
       meter.setAttribute('aria-valuenow', String(Math.round(percentage)));
-      meter.setAttribute('aria-valuetext', status === 'empty' ? 'Empty plot'
-        : status === 'ready' ? 'Ready to harvest' : `${countdown(remainingSeconds)} remaining`);
+      meter.setAttribute('aria-valuetext', `${available} of ${capacity} ready${status === 'full' ? ', full' : `, next in ${countdown(remainingSeconds)}`}`);
       fill.style.width = `${percentage}%`;
     }
   };

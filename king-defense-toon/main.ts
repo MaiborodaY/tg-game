@@ -883,26 +883,30 @@ function canUseFarm() {
     && !byId('farm-building').hidden && !!byId('offline-rewards-panel').hidden;
 }
 
-function tendFarm(crop: CropId, harvest: boolean) {
+function collectFarm(crop: CropId) {
   if (!canUseFarm()) return;
   tickEconomy();
   // A first action after sleep may open an income or recovery window.
   if (!canUseFarm()) return;
   const definition = CROPS.find(entry => entry.id === crop)!;
-  if (harvest) {
-    const result = commands.harvestCampaignCrop(campaign, crop, Date.now());
-    if (!result.ok) return;
-    byId('farm-feedback').textContent = `+${result.amount} ${definition.name.toLowerCase()} added to your stock.`;
-  } else {
-    if (!commands.plantCampaignCrop(campaign, crop, Date.now()).ok) return;
-    byId('farm-feedback').textContent = `${definition.name} planted · ${definition.growSeconds / 60} min.`;
-  }
-  // Save planting timestamps or the cleared plot and harvest together.
+  const result = commands.harvestCampaignCrop(campaign, crop, Date.now());
+  if (!result.ok) return;
+  byId('farm-feedback').textContent = `+${result.amount} ${definition.name.toLowerCase()} stored. Growing continues.`;
+  // Save the collection and its consumed production checkpoint together.
   save(); refresh();
 }
 
 farmUI = createFarmUI({ root: byId('farm-crops'), getFarm: () => campaign.farm,
-  canUse: canUseFarm, onPlant: crop => tendFarm(crop, false), onHarvest: crop => tendFarm(crop, true) });
+  getGold: () => campaign.gold, canUse: canUseFarm, onHarvest: collectFarm, onUpgrade: () => {
+    if (!canUseFarm()) return;
+    tickEconomy();
+    if (!canUseFarm()) return;
+    const result = commands.upgradeCampaignFarm(campaign, Date.now());
+    if (!result.ok) return;
+    const unlocked = CROPS.find(crop => crop.unlockLevel === result.level)!;
+    byId('farm-feedback').textContent = `Farm level ${result.level} · ${unlocked.name} now grows automatically.`;
+    save(); refresh();
+  } });
 
 for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-profile', 'profile-panel'], ['open-barracks', 'barracks-panel'], ['open-market-info', 'market-info-panel'], ['open-hero', 'hero-panel']] as const) {
   byId(button).addEventListener('click', () => {
@@ -1722,7 +1726,7 @@ function resetRun() {
   campaign = resetCampaignState(campaign, Date.now());
   reservePage = 0;
   byId('forge-feedback').textContent = 'Changes apply next wave.';
-  byId('farm-feedback').textContent = 'Plant for free, then collect each harvest.';
+  byId('farm-feedback').textContent = 'No planting needed. Collect whenever you like.';
   byId('capitol-feedback').textContent = 'Changes apply next battle.';
   barracksPage = 0; barracksSelectedId = null;
   pendingRecruitId = null;

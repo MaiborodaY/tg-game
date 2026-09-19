@@ -1,6 +1,7 @@
 // Real shared-origin Web Locks and storage events; hooks exist only in this Vite server.
 // Lifecycle events are dispatched synthetically, not proof of native BFCache eligibility.
 import assert from 'node:assert/strict';
+import { SAVE_SCHEMA_VERSION } from '../campaign-save.ts';
 import { once } from 'node:events';
 import { createServer } from 'vite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -9,10 +10,10 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const root = fileURLToPath(new URL('../', import.meta.url));
 const key = 'brotd-infinity:campaign:v2';
-const backupKey = `${key}:backup:before-schema-2`;
+const backupKey = `${key}:backup:before-schema-${SAVE_SCHEMA_VERSION}`;
 const now = 1_800_000_000_000;
 const fixture = {
-  saveSchemaVersion: 2, nextUnitId: 6, campaignVersion: 3, gold: 250, starterSupplyGranted: true,
+  saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 6, campaignVersion: 3, gold: 250, starterSupplyGranted: true,
   autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
   units: [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 },
     { id: 2, type: 'archer', level: 10, col: 2, row: 1 }, { id: 3, type: 'healer', level: 10, col: 2, row: 2 }],
@@ -247,7 +248,7 @@ try {
   }
 
   await inContext('future schema remains byte-exact and cannot be reset by an older client', {
-    raw: JSON.stringify({ ...fixture, saveSchemaVersion: 3, futureDungeon: { depth: 71, loot: ['unknown-item'] } }, null, 2),
+    raw: JSON.stringify({ ...fixture, saveSchemaVersion: SAVE_SCHEMA_VERSION + 1, futureDungeon: { depth: 71, loot: ['unknown-item'] } }, null, 2),
   }, async ({ openGame }) => {
     const page = await openGame();
     await assertBlocked(page, { storage: 'unsupported', session: 'owned' });
@@ -271,7 +272,7 @@ try {
       await ready(page);
       assert.equal(await backup(page), migrationRaw);
       const migrated = await snapshot(page);
-      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 2);
+      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, SAVE_SCHEMA_VERSION);
       assert.equal(JSON.parse(await raw(page)).nextUnitId, fixture.nextUnitId);
       assert.equal(migrated.gold, fixture.gold);
       assert.equal(migrated.units.length, fixture.units.length);
@@ -318,7 +319,7 @@ try {
     await page.locator('#recovery-retry').click();
     await ready(page);
     assert.equal(await backup(page), legacyRaw);
-    assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 2);
+    assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, SAVE_SCHEMA_VERSION);
     assert.equal((await snapshot(page)).gold, fixture.gold);
   });
 

@@ -85,7 +85,7 @@ export function createCampaignState(now: number): CampaignState {
   return {
     gold: STARTING_GOLD, nextUnitId: 1, units: [], reserve: [],
     recruitment: createRecruitment(), recruitmentPool: 'humans', barracks: createBarracks(undefined, now),
-    forge: createForge(), farm: createFarm(), capitol: createCapitol(), hero: createHero(),
+    forge: createForge(), farm: createFarm(undefined, now), capitol: createCapitol(), hero: createHero(),
     starterSupplyGranted: true, marketHintCompleted: false, onboardingCompleted: false, clearedWaves: 0,
     economy, progression: createProgression(), autoWaves: true,
     offlineRewards: { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 },
@@ -126,7 +126,7 @@ export function restoreCampaignState(value: unknown, now: number): CampaignState
     gold: Math.min(Number.MAX_SAFE_INTEGER, Math.floor(saved.gold) + capacityMigration.refund + forgeMigration.refund),
     nextUnitId: restored.nextUnitId, units: footprintMigration.units, reserve: footprintMigration.reserve,
     recruitment, recruitmentPool: normalizeRecruitmentPool(saved.recruitmentPool, barracks.level), barracks,
-    forge: forgeMigration.forge, farm: createFarm(saved.farm), capitol: createCapitol(saved.capitol), hero: createHero(saved.hero),
+    forge: forgeMigration.forge, farm: createFarm(saved.farm, now), capitol: createCapitol(saved.capitol), hero: createHero(saved.hero),
     starterSupplyGranted: true,
     marketHintCompleted: saved.marketHintCompleted === true || Object.values(recruitment.received).some(count => count > 0),
     onboardingCompleted: restoreOnboardingCompleted(saved),

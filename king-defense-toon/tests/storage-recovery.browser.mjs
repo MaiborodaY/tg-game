@@ -1,6 +1,7 @@
 // Disposable browser integration checks. Only this Vite server exposes test hooks.
 // PLAYWRIGHT_MODULE may point to an installed Playwright entry file.
 import assert from 'node:assert/strict';
+import { SAVE_SCHEMA_VERSION } from '../campaign-save.ts';
 import { once } from 'node:events';
 import { createServer } from 'vite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -235,7 +236,7 @@ try {
       await page.evaluate(() => window.storageCheck.stopEconomyTimer());
       const migrated = await snapshot(page);
       assert.equal(migrated.campaignVersion, 3);
-      assert.equal(migrated.saveSchemaVersion, 2);
+      assert.equal(migrated.saveSchemaVersion, SAVE_SCHEMA_VERSION);
       assert.equal(migrated.nextUnitId, expected.units.length + expected.reserve.length + 1);
       assert.equal(migrated.gold, expected.gold);
       assert.equal(migrated.clearedWaves, expected.clearedWaves);
@@ -271,7 +272,7 @@ try {
         }
       }
       assert.equal(JSON.parse(await raw(page)).campaignVersion, 3, 'migration must persist its version before the next visit');
-      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, 2, 'the new save schema must persist before the next visit');
+      assert.equal(JSON.parse(await raw(page)).saveSchemaVersion, SAVE_SCHEMA_VERSION, 'the new save schema must persist before the next visit');
       assert.equal(JSON.parse(await raw(page)).nextUnitId, migrated.nextUnitId, 'consumed fighter IDs must persist before the next visit');
       assert.equal(JSON.parse(await page.locator('#battle').getAttribute('data-campaign')).wave, expected.clearedWaves + 1);
 

@@ -29,7 +29,7 @@ test('timed building and farm commands reject absent or invalid clocks without i
     const state = fresh();
     unchanged(state, () => commands.startCampaignBarracksUpgrade(state, now), 'invalid-time');
     unchanged(state, () => commands.finishCampaignBarracksUpgrade(state, now), 'invalid-time');
-    unchanged(state, () => commands.plantCampaignCrop(state, 'carrot', now), 'invalid-time');
+    unchanged(state, () => commands.upgradeCampaignFarm(state, now), 'invalid-time');
     unchanged(state, () => commands.harvestCampaignCrop(state, 'carrot', now), 'invalid-time');
   }
 });
@@ -245,15 +245,15 @@ test('barracks purchase, natural completion and paid finish are separate atomic 
   unchanged(paid, () => commands.finishCampaignBarracksUpgrade(paid, NOW + 1_800_000), 'not-upgrading');
 });
 
-test('farm planting and harvesting preserve plots on early harvest or numeric overflow', () => {
+test('farm harvesting preserves automatic growth on early collection or numeric overflow', () => {
   const state = fresh();
-  assert.equal(commands.plantCampaignCrop(state, 'carrot', NOW).ok, true);
-  unchanged(state, () => commands.plantCampaignCrop(state, 'carrot', NOW));
+  assert.equal(state.farm.level, 1);
+  unchanged(state, () => commands.harvestCampaignCrop(state, 'potato', NOW + 900_000));
   unchanged(state, () => commands.harvestCampaignCrop(state, 'carrot', NOW + 299_999));
   const harvested = commands.harvestCampaignCrop(state, 'carrot', NOW + 300_000);
   assert.equal(harvested.amount, 1); assert.equal(state.farm.stock.carrot, 1);
   unchanged(state, () => commands.harvestCampaignCrop(state, 'carrot', NOW + 300_000));
-  commands.plantCampaignCrop(state, 'carrot', NOW + 300_000);
+  assert.equal(state.farm.plots.carrot.readyAt, NOW + 600_000);
   state.farm.stock.carrot = Number.MAX_SAFE_INTEGER;
   unchanged(state, () => commands.harvestCampaignCrop(state, 'carrot', NOW + 600_000));
 });
@@ -326,4 +326,21 @@ test('missing command context cannot bypass formation limits or partially change
     [{ location: 'army', id: 7 }], {}), 'invalid-options');
   unchanged(state, () => commands.resetCampaignHeroTalents(state, null), 'invalid-options');
   unchanged(state, () => commands.accrueCampaignEconomy(state, null), 'invalid-options');
+});
+
+test('farm upgrades atomically debit gold and persist crop unlocks through a JSON reload', () => {
+  const state = fresh();
+  state.gold = 499;
+  unchanged(state, () => commands.upgradeCampaignFarm(state, NOW), 'insufficient-gold');
+  state.gold = 2000;
+  const before = clone(state);
+  assert.deepEqual(commands.upgradeCampaignFarm(state, NOW), { ok: true, cost: 500, level: 2 });
+  assert.equal(state.gold, 1500);
+  assert.deepEqual(state.units, before.units);
+  assert.deepEqual(state.economy, before.economy);
+  const restored = restoreCampaignState(JSON.parse(JSON.stringify(campaignSnapshot(state))), NOW);
+  assert.deepEqual(restored.farm, state.farm);
+  assert.deepEqual(commands.upgradeCampaignFarm(restored, NOW), { ok: true, cost: 1500, level: 3 });
+  assert.equal(restored.gold, 0);
+  unchanged(restored, () => commands.upgradeCampaignFarm(restored, NOW), 'max-level');
 });

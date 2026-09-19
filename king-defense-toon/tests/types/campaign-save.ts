@@ -4,14 +4,14 @@ import type { SaveVersionKind } from '../../save-version.ts';
 
 export function verifyCampaignSaveBoundary(raw: unknown): void {
   const saved = decodeCampaignSave(raw);
-  const version: 2 = saved.saveSchemaVersion;
+  const version: 3 = saved.saveSchemaVersion;
   const migrationRequired: boolean = needsCampaignSaveMigration(raw);
   const error = new UnsupportedSaveVersionError('schema', 2, SAVE_SCHEMA_VERSION);
   const kind: SaveVersionKind = error.versionKind;
   // @ts-expect-error Version validation does not validate every gameplay field.
   const hero: { xp: number } = saved.hero;
   // @ts-expect-error The decoded version is the supported literal, not a future schema.
-  const futureVersion: 3 = saved.saveSchemaVersion;
+  const futureVersion: 4 = saved.saveSchemaVersion;
   // @ts-expect-error Errors distinguish save schema from campaign numbering only.
   new UnsupportedSaveVersionError('client', 2, 1);
   // @ts-expect-error Checked version metadata stays numeric after legacy coercion.

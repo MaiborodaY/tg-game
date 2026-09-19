@@ -1,163 +1,214 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CROPS, createFarm, getCropProgress, harvestCrop, plantCrop } from '../farm.ts';
+import { CROPS, FARM_LEVELS, createFarm, getCropProgress, getFarmUpgrade, harvestCrop, upgradeFarm } from '../farm.ts';
 
 const START = 1_800_000_000_000;
-const snapshot = value => JSON.parse(JSON.stringify(value));
+const fresh = () => createFarm(undefined, START);
 const fail = { harvested: false, amount: 0 };
-
-test('a farm starts with three independent fixed beds and an empty vegetable inventory', () => {
-  assert.deepEqual(CROPS, [
-    { id: 'carrot', name: 'Carrot', growSeconds: 300, yield: 1 },
-    { id: 'potato', name: 'Potato', growSeconds: 900, yield: 1 },
-    { id: 'pumpkin', name: 'Pumpkin', growSeconds: 1800, yield: 1 },
-  ]);
-  assert.ok(Object.isFrozen(CROPS) && CROPS.every(Object.isFrozen));
-  assert.deepEqual(createFarm(), { plots: { carrot: null, potato: null, pumpkin: null }, stock: { carrot: 0, potato: 0, pumpkin: 0 } });
-  const first = createFarm(), second = createFarm();
-  plantCrop(first, 'carrot', START);
-  assert.equal(second.plots.carrot, null);
-});
-
-test('all crops grow on their exact wall-clock schedule and can only be manually harvested once', () => {
-  for (const { id, growSeconds } of CROPS) {
-    const farm = createFarm();
-    assert.deepEqual(getCropProgress(farm, id, START), { status: 'empty', remainingSeconds: 0, progress: 0 });
-    assert.equal(plantCrop(farm, id, START), true);
-    assert.deepEqual(farm.plots[id], { plantedAt: START, readyAt: START + growSeconds * 1000 });
-    assert.equal(farm.stock[id], 0, 'planting grants no inventory');
-    assert.deepEqual(getCropProgress(farm, id, START), { status: 'growing', remainingSeconds: growSeconds, progress: 0 });
-    assert.deepEqual(getCropProgress(farm, id, START + growSeconds * 500),
-      { status: 'growing', remainingSeconds: growSeconds / 2, progress: .5 });
-    const before = snapshot(farm), readyAt = farm.plots[id].readyAt;
-    assert.deepEqual(harvestCrop(farm, id, readyAt - 1), fail);
-    assert.deepEqual(farm, before);
-    assert.equal(getCropProgress(farm, id, readyAt - 1).remainingSeconds, 1);
-    assert.deepEqual(getCropProgress(farm, id, readyAt), { status: 'ready', remainingSeconds: 0, progress: 1 });
-    assert.deepEqual(farm, before, 'displaying readiness does not collect or mutate the crop');
-    assert.deepEqual(harvestCrop(farm, id, readyAt), { harvested: true, amount: 1 });
-    assert.equal(farm.plots[id], null);
-    assert.equal(farm.stock[id], 1);
-    assert.deepEqual(harvestCrop(farm, id, readyAt), fail);
-    assert.equal(farm.stock[id], 1);
-    assert.equal(plantCrop(farm, id, readyAt), true, 'manual collection frees the bed for planting again');
-    assert.equal(getCropProgress(farm, id, readyAt).status, 'growing');
-    assert.deepEqual(harvestCrop(farm, id, readyAt), fail);
-  }
-});
-
-test('growing and ripe plants cannot be overwritten, while other crops can be planted independently', () => {
-  const farm = createFarm();
-  for (const crop of CROPS) assert.equal(plantCrop(farm, crop.id, START), true);
-  const before = snapshot(farm);
-  for (const crop of CROPS) for (const now of [START, START + 1000, START + 10_000_000]) {
-    assert.equal(plantCrop(farm, crop.id, now), false);
-    assert.deepEqual(farm, before);
-  }
-  assert.deepEqual(harvestCrop(farm, 'carrot', START + 300_000), { harvested: true, amount: 1 });
-  assert.equal(getCropProgress(farm, 'potato', START + 300_000).status, 'growing');
-  assert.equal(getCropProgress(farm, 'pumpkin', START + 300_000).status, 'growing');
-});
-
-test('saved timestamps finish offline without automatic collecting, replanting or spoiling', () => {
-  const original = createFarm();
-  for (const crop of CROPS) plantCrop(original, crop.id, START);
-  const saved = snapshot(original), restored = createFarm(saved);
-  assert.deepEqual(restored, original);
-  assert.notEqual(restored.plots.carrot, saved.plots.carrot);
-  const later = START + 30 * 24 * 60 * 60 * 1000;
-  for (const crop of CROPS) {
-    assert.equal(getCropProgress(restored, crop.id, later).status, 'ready');
-    assert.equal(restored.stock[crop.id], 0);
-    assert.deepEqual(harvestCrop(restored, crop.id, later), { harvested: true, amount: 1 });
-  }
-  assert.deepEqual(saved, original, 'restoration owns its timers and inventory');
-  const reloaded = createFarm(snapshot(restored));
-  for (const crop of CROPS) {
-    assert.deepEqual(harvestCrop(reloaded, crop.id, later + 1000), fail);
-    assert.equal(reloaded.stock[crop.id], 1);
-    assert.equal(getCropProgress(reloaded, crop.id, later + 1000).status, 'empty');
-  }
-});
-
-test('reading crop progress is independent of read frequency and does not reward clock rollback', () => {
-  const farm = createFarm();
-  plantCrop(farm, 'carrot', START);
-  const before = snapshot(farm);
-  for (const reads of [1, 2, 3, 30, 120]) for (let index = 0; index < reads; index++) {
-    assert.deepEqual(getCropProgress(farm, 'carrot', START + 150000), { status: 'growing', remainingSeconds: 150, progress: .5 });
-  }
-  assert.deepEqual(getCropProgress(farm, 'carrot', START - 100000), { status: 'growing', remainingSeconds: 300, progress: 0 });
-  assert.deepEqual(harvestCrop(farm, 'carrot', START - 100000), fail);
+const progress = (farm, crop, elapsed) => getCropProgress(farm, crop, START + elapsed);
+function levelThree() {
+  const farm = fresh();
+  assert.equal(upgradeFarm(farm, 2000, START).gold, 1500);
+  assert.equal(upgradeFarm(farm, 1500, START).gold, 0);
+  return farm;
+}
+function unchanged(farm, action) {
+  const before = structuredClone(farm);
+  action();
   assert.deepEqual(farm, before);
+}
+
+test('a new farm grows only carrots automatically, with independent inventory and no planting action', () => {
+  const farm = fresh();
+  assert.equal(farm.level, 1);
+  assert.equal(progress(farm, 'carrot', 0).status, 'growing');
+  for (const id of ['potato', 'pumpkin']) {
+    assert.equal(progress(farm, id, 1e9).status, 'locked');
+    assert.deepEqual(harvestCrop(farm, id, START + 1e9), fail);
+  }
+  assert.deepEqual(farm.stock, { carrot: 0, potato: 0, pumpkin: 0 });
+  harvestCrop(farm, 'carrot', START + 300_000);
+  assert.equal(fresh().stock.carrot, 0);
+  assert.ok(Object.isFrozen(CROPS) && CROPS.every(Object.isFrozen));
+  assert.ok(Object.isFrozen(FARM_LEVELS) && Object.values(FARM_LEVELS).every(Object.isFrozen));
 });
 
-test('save restoration rejects malformed timestamps, duration changes, ids and inventory counts without coercion', () => {
-  const empty = createFarm();
+test('all crops follow their exact real-time schedule and collection restarts without planting', () => {
+  assert.deepEqual(CROPS.map(crop => crop.growSeconds), [300, 900, 1800]);
+  for (const { id, growSeconds } of CROPS) {
+    const farm = levelThree(), duration = growSeconds * 1000;
+    unchanged(farm, () => {
+      assert.equal(progress(farm, id, duration - 1).available, 0);
+      assert.equal(progress(farm, id, duration - 1).remainingSeconds, 1);
+      assert.deepEqual(harvestCrop(farm, id, START + duration - 1), fail);
+      assert.equal(progress(farm, id, duration).available, 1);
+      assert.equal(progress(farm, id, duration).remainingSeconds, growSeconds);
+    });
+    assert.deepEqual(harvestCrop(farm, id, START + duration), { harvested: true, amount: 1 });
+    assert.equal(farm.stock[id], 1);
+    assert.equal(progress(farm, id, duration).status, 'growing');
+    unchanged(farm, () => assert.deepEqual(harvestCrop(farm, id, START + duration), fail));
+    assert.deepEqual(harvestCrop(farm, id, START + duration * 2), { harvested: true, amount: 1 });
+    assert.equal(farm.stock[id], 2);
+  }
+});
+
+test('collection takes all ripe crops and preserves fractional progress until the cap', () => {
+  const farm = fresh();
+  const time = START + 3 * 300_000 + 120_000;
+  assert.deepEqual(harvestCrop(farm, 'carrot', time), { harvested: true, amount: 3 });
+  assert.equal(getCropProgress(farm, 'carrot', time).remainingSeconds, 180);
+  assert.equal(farm.stock.carrot, 3);
+  assert.deepEqual(harvestCrop(farm, 'carrot', START + 4 * 300_000), { harvested: true, amount: 1 });
+  assert.equal(farm.stock.carrot, 4);
+});
+
+test('offline growth stops at each level cap; collecting a full bed discards overflow time', () => {
+  for (const level of [1, 2, 3]) {
+    const farm = fresh();
+    while (farm.level < level) upgradeFarm(farm, 2000, START);
+    const capacity = level * 10, later = START + 30 * 24 * 3600_000;
+    const saved = structuredClone(farm), restored = createFarm(saved, later);
+    assert.deepEqual(restored, farm);
+    assert.notEqual(restored.plots.carrot, farm.plots.carrot);
+    for (const crop of CROPS.filter(crop => crop.unlockLevel <= level)) {
+      assert.equal(getCropProgress(restored, crop.id, later).status, 'full');
+      assert.equal(getCropProgress(restored, crop.id, later).available, capacity);
+      assert.equal(restored.stock[crop.id], 0);
+      assert.deepEqual(harvestCrop(restored, crop.id, later), { harvested: true, amount: capacity });
+      assert.equal(getCropProgress(restored, crop.id, later).remainingSeconds, crop.growSeconds);
+      assert.equal(getCropProgress(restored, crop.id, later + crop.growSeconds * 1000 - 1).available, 0);
+      assert.equal(getCropProgress(restored, crop.id, later + crop.growSeconds * 1000).available, 1);
+    }
+    assert.deepEqual(saved, farm, 'restoration owns its records');
+    const reloaded = createFarm(structuredClone(restored), later);
+    assert.deepEqual(reloaded, restored);
+    unchanged(reloaded, () => assert.deepEqual(harvestCrop(reloaded, 'carrot', later), fail));
+  }
+});
+
+test('upgrades cost 500 and 1500 gold, unlock only the next crop and grow every bed capacity', () => {
+  const farm = fresh();
+  farm.stock.carrot = 42;
+  assert.deepEqual(getFarmUpgrade(farm), { nextLevel: 2, cost: 500, capacity: 10, nextCapacity: 20, crop: CROPS[1] });
+  assert.deepEqual(upgradeFarm(farm, 499, START), { ok: false, reason: 'insufficient-gold' });
+  assert.deepEqual(upgradeFarm(farm, 2000, START), { ok: true, gold: 1500, cost: 500, level: 2 });
+  assert.equal(progress(farm, 'potato', 0).status, 'growing');
+  assert.equal(progress(farm, 'pumpkin', 0).status, 'locked');
+  assert.deepEqual(upgradeFarm(farm, 1500, START), { ok: true, gold: 0, cost: 1500, level: 3 });
+  assert.equal(progress(farm, 'pumpkin', 0).status, 'growing');
+  assert.equal(farm.stock.carrot, 42, 'inventory is not limited by bed capacity');
+  assert.equal(getFarmUpgrade(farm), null);
+  unchanged(farm, () => assert.deepEqual(upgradeFarm(farm, 10000, START), { ok: false, reason: 'max-level' }));
+});
+
+test('upgrading full beds keeps crops but does not retroactively fill new capacity', () => {
+  const farm = fresh(), later = START + 10 * 24 * 3600_000;
+  upgradeFarm(farm, 500, later);
+  assert.equal(getCropProgress(farm, 'carrot', later).available, 10);
+  assert.equal(getCropProgress(farm, 'carrot', later).remainingSeconds, 300);
+  assert.equal(getCropProgress(farm, 'potato', later).available, 0);
+  assert.equal(getCropProgress(farm, 'carrot', later + 300_000).available, 11);
+  const muchLater = later + 10 * 24 * 3600_000;
+  upgradeFarm(farm, 1500, muchLater);
+  for (const id of ['carrot', 'potato']) assert.equal(getCropProgress(farm, id, muchLater).available, 20);
+  assert.equal(getCropProgress(farm, 'pumpkin', muchLater).available, 0);
+});
+
+test('upgrading a growing bed preserves its fractional progress and starts the new crop now', () => {
+  const farm = fresh();
+  upgradeFarm(farm, 500, START + 450_000);
+  assert.equal(progress(farm, 'carrot', 450_000).available, 1);
+  assert.equal(progress(farm, 'carrot', 450_000).remainingSeconds, 150);
+  assert.equal(progress(farm, 'potato', 450_000).remainingSeconds, 900);
+  const other = structuredClone(farm.plots.potato);
+  harvestCrop(farm, 'carrot', START + 450_000);
+  assert.deepEqual(farm.plots.potato, other);
+});
+
+test('legacy migration retains stocks and one ripe carrot, compensates other planted beds once', () => {
+  const old = { plots: {
+    carrot: { plantedAt: START - 1e9, readyAt: START - 1e9 + 300_000 },
+    potato: { plantedAt: START - 10_000, readyAt: START - 10_000 + 900_000 },
+    pumpkin: { plantedAt: START - 1e9, readyAt: START - 1e9 + 1800_000 },
+  }, stock: { carrot: 12, potato: 6, pumpkin: 4 } };
+  const original = structuredClone(old), farm = createFarm(old, START);
+  assert.equal(farm.level, 1);
+  assert.equal(progress(farm, 'carrot', 0).available, 1);
+  assert.deepEqual(farm.stock, { carrot: 12, potato: 7, pumpkin: 5 });
+  assert.equal(farm.plots.potato, null);
+  assert.equal(farm.plots.pumpkin, null);
+  assert.deepEqual(createFarm(farm, START), farm, 'migration compensation is idempotent');
+  assert.deepEqual(old, original);
+  old.plots.carrot = { plantedAt: START - 60_000, readyAt: START + 240_000 };
+  assert.equal(progress(createFarm(old, START), 'carrot', 0).remainingSeconds, 240);
+});
+
+test('display frequency and clock rollback cannot add stock or repeat a collection', () => {
+  const farm = fresh();
+  unchanged(farm, () => {
+    for (let reads = 0; reads < 120; reads++) assert.equal(progress(farm, 'carrot', 150_000).remainingSeconds, 150);
+    assert.equal(progress(farm, 'carrot', -100_000).available, 0);
+    assert.equal(progress(farm, 'carrot', -100_000).remainingSeconds, 300);
+    assert.deepEqual(harvestCrop(farm, 'carrot', START - 100_000), fail);
+  });
+  harvestCrop(farm, 'carrot', START + 300_000);
+  unchanged(farm, () => assert.deepEqual(harvestCrop(farm, 'carrot', START), fail));
+  assert.equal(progress(farm, 'carrot', 600_000).available, 1);
+});
+
+test('normalization rejects invalid levels, clocks, inherited fields and inventory without coercion', () => {
   for (const source of [undefined, null, false, true, 0, 'farm', [], { plots: [], stock: '3' }]) {
-    assert.deepEqual(createFarm(source), empty);
-  }
-  for (const value of [-1, 0, .5, '1800000000000', null, false, {}, [], NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
-    assert.equal(createFarm({ plots: { carrot: { plantedAt: value, readyAt: START + 300000 } } }).plots.carrot, null);
-  }
-  for (const plot of [{ plantedAt: START }, { readyAt: START + 300000 },
-    { plantedAt: START, readyAt: START + 299999 }, { plantedAt: START, readyAt: String(START + 300000) },
-    { plantedAt: Number.MAX_SAFE_INTEGER, readyAt: Number.MAX_SAFE_INTEGER },
-    { plantedAt: START, readyAt: START + 900000 }]) {
-    assert.equal(createFarm({ plots: { carrot: plot } }).plots.carrot, null);
+    assert.deepEqual(createFarm(source, START), fresh());
   }
   for (const value of [-1, .5, '3', null, false, {}, [], NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
-    assert.equal(createFarm({ stock: { carrot: value } }).stock.carrot, 0);
+    assert.equal(createFarm({ stock: { carrot: value } }, START).stock.carrot, 0);
+    assert.equal(createFarm({ version: 2, level: value }, START).level, 1);
   }
-  const saved = Object.freeze({ plots: Object.freeze({ carrot: Object.freeze({ plantedAt: START, readyAt: START + 300000 }),
-    potato: { plantedAt: 0, readyAt: 900000 }, bean: { plantedAt: START, readyAt: START + 300000 } }),
-  stock: Object.freeze({ carrot: 2, potato: 3, pumpkin: '4', bean: 100 }) });
-  assert.deepEqual(createFarm(saved), { plots: { carrot: { plantedAt: START, readyAt: START + 300000 }, potato: null, pumpkin: null },
-    stock: { carrot: 2, potato: 3, pumpkin: 0 } });
-  assert.deepEqual(createFarm(Object.create({ plots: saved.plots, stock: saved.stock })), empty);
+  for (const plot of [{ plantedAt: START }, { readyAt: START + 300_000 },
+    { plantedAt: 0, readyAt: 300_000 }, { plantedAt: '1800000000000', readyAt: START + 300_000 },
+    { plantedAt: START, readyAt: START + 299_999 }, { plantedAt: START, readyAt: String(START + 300_000) },
+    { plantedAt: Number.MAX_SAFE_INTEGER, readyAt: Number.MAX_SAFE_INTEGER }]) {
+    assert.deepEqual(createFarm({ plots: { carrot: plot } }, START).plots.carrot, fresh().plots.carrot);
+  }
+  assert.deepEqual(createFarm(Object.create(fresh()), START), fresh());
 });
 
-test('failed actions reject invalid clocks, crop identifiers and state without mutating valid data', () => {
-  const farm = createFarm(), before = snapshot(farm);
-  for (const now of [0, -1, .5, '1800000000000', NaN, Infinity, undefined, null, Number.MAX_SAFE_INTEGER + 1]) {
-    // Undefined requests the documented Date.now default, so exercise it separately below.
-    if (now === undefined) continue;
-    assert.equal(plantCrop(farm, 'carrot', now), false);
-    assert.deepEqual(harvestCrop(farm, 'carrot', now), fail);
-    assert.throws(() => getCropProgress(farm, 'carrot', now), RangeError);
-    assert.deepEqual(farm, before);
+test('invalid action inputs, locked crops and insufficient funds leave all farm data unchanged', () => {
+  const farm = fresh();
+  for (const now of [0, -1, .5, '1800000000000', NaN, Infinity, null, Number.MAX_SAFE_INTEGER]) {
+    unchanged(farm, () => {
+      assert.deepEqual(harvestCrop(farm, 'carrot', now), fail);
+      assert.equal(upgradeFarm(farm, 2000, now).ok, false);
+      assert.throws(() => getCropProgress(farm, 'carrot', now), RangeError);
+      assert.throws(() => createFarm(undefined, now), RangeError);
+    });
   }
-  for (const crop of ['bean', 'constructor', '__proto__', null, undefined, 0]) {
-    assert.equal(plantCrop(farm, crop, START), false);
-    assert.deepEqual(harvestCrop(farm, crop, START), fail);
-    assert.throws(() => getCropProgress(farm, crop, START), RangeError);
-    assert.deepEqual(farm, before);
+  for (const id of ['bean', 'constructor', '__proto__', null, undefined, 0]) {
+    unchanged(farm, () => {
+      assert.deepEqual(harvestCrop(farm, id, START), fail);
+      assert.throws(() => getCropProgress(farm, id, START), RangeError);
+    });
+  }
+  for (const gold of [0, 499, -1, .5, '2000', NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    unchanged(farm, () => assert.equal(upgradeFarm(farm, gold, START).ok, false));
   }
   for (const invalid of [null, {}, { plots: {}, stock: {} }, { ...farm, stock: { ...farm.stock, carrot: -1 } }]) {
-    const saved = structuredClone(invalid);
-    assert.equal(plantCrop(invalid, 'carrot', START), false);
-    assert.deepEqual(harvestCrop(invalid, 'carrot', START), fail);
-    assert.throws(() => getCropProgress(invalid, 'carrot', START), TypeError);
-    assert.deepEqual(invalid, saved);
+    unchanged(invalid, () => {
+      assert.deepEqual(harvestCrop(invalid, 'carrot', START), fail);
+      assert.equal(upgradeFarm(invalid, 2000, START).ok, false);
+      assert.throws(() => getCropProgress(invalid, 'carrot', START), TypeError);
+    });
   }
-  const earliest = Date.now();
-  assert.equal(plantCrop(farm, 'carrot'), true);
-  assert.ok(farm.plots.carrot.plantedAt >= earliest && farm.plots.carrot.plantedAt <= Date.now());
 });
 
-test('safe-integer boundaries preserve ripe crops when inventory cannot accept the harvest', () => {
+test('integer overflow refuses collection without consuming produce or partially adding inventory', () => {
   for (const crop of CROPS) {
-    const farm = createFarm({ stock: { [crop.id]: Number.MAX_SAFE_INTEGER - 1 } });
-    const latestStart = Number.MAX_SAFE_INTEGER - crop.growSeconds * 1000;
-    assert.equal(plantCrop(farm, crop.id, latestStart + 1), false);
-    assert.equal(plantCrop(farm, crop.id, latestStart), true);
-    assert.equal(farm.plots[crop.id].readyAt, Number.MAX_SAFE_INTEGER);
-    assert.deepEqual(harvestCrop(farm, crop.id, Number.MAX_SAFE_INTEGER), { harvested: true, amount: 1 });
+    const farm = levelThree(), time = START + 2 * crop.growSeconds * 1000;
+    farm.stock[crop.id] = Number.MAX_SAFE_INTEGER - 1;
+    unchanged(farm, () => assert.deepEqual(harvestCrop(farm, crop.id, time), fail));
+    farm.stock[crop.id] -= 1;
+    assert.deepEqual(harvestCrop(farm, crop.id, time), { harvested: true, amount: 2 });
     assert.equal(farm.stock[crop.id], Number.MAX_SAFE_INTEGER);
-    assert.equal(plantCrop(farm, crop.id, START), true);
-    const before = snapshot(farm);
-    assert.deepEqual(harvestCrop(farm, crop.id, START + crop.growSeconds * 1000), fail);
-    assert.deepEqual(farm, before, 'a full inventory must not consume the ripe plant');
-    assert.equal(getCropProgress(farm, crop.id, START + crop.growSeconds * 1000).status, 'ready');
   }
 });

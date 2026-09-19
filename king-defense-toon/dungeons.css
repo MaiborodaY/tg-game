@@ -105,3 +105,5 @@
 .dungeon-run-controls { position: absolute; top: 58px; left: 60px; right: 54px; }
 .dungeon-run-controls p { padding: 4px 7px; border-radius: 3px; background: #122536d9; color: #eee2bf; font-size: 12px; line-height: 1.25; white-space: pre-line; }
 .dungeon-run-start { position: absolute; top: 50%; left: 7px; transform: translateY(-50%); width: calc((100% - var(--formation-width)) / 2 - 14px); min-width: 44px; min-height: 48px; padding: 5px 2px; font-size: 13px; line-height: 1.1; }
+/* Preserve centering: the shared pressed style otherwise moves Start off the pointer. */
+.dungeon-run-start.battle-button:active:not(:disabled) { transform: translateY(calc(-50% + 1px)); }

@@ -1,5 +1,5 @@
 import { createCampaignState } from '../../campaign-state.ts';
-import { recruitFighter, deployReserveFighter, purchaseForgeUpgrade, plantCampaignCrop,
+import { recruitFighter, deployReserveFighter, purchaseForgeUpgrade, harvestCampaignCrop,
   learnCampaignHeroTalent, resetCampaignHeroTalents, selectRecruitmentPool, connectCampaignFighters } from '../../campaign-commands.ts';
 import { createBattleRewardReceipt, applyCampaignBattleResult, applyBattleKillRewards } from '../../campaign-rewards.ts';
 
@@ -21,7 +21,7 @@ deployReserveFighter(state, '1', '2:0');
 // @ts-expect-error Removed forge track cannot be bought.
 purchaseForgeUpgrade(state, 'rangedAttack');
 // @ts-expect-error Crop IDs are not arbitrary strings.
-plantCampaignCrop(state, 'cabbage', 1);
+harvestCampaignCrop(state, 'cabbage', 1);
 // @ts-expect-error Talent IDs are not arbitrary strings.
 learnCampaignHeroTalent(state, 'unlimited_damage');
 // @ts-expect-error Reset must supply live battle context.

@@ -51,7 +51,7 @@ test('fresh campaign owns starter supply and injected economic checkpoint withou
 });
 
 test('legacy zero, one and current schemas retain IDs and migrate once across JSON reloads', () => {
-  for (const schema of [undefined, 0, 1, SAVE_SCHEMA_VERSION]) {
+  for (const schema of [undefined, 0, 1, 2, SAVE_SCHEMA_VERSION]) {
     const raw = legacy({ gold: 250.8, nextUnitId: 80,
       units: [{ id: 8, type: 'archer', level: 11, col: 2, row: 0 }],
       reserve: [{ id: 2, type: 'healer', level: 13 }],
@@ -197,7 +197,7 @@ test('reset clears progress but retains consumed IDs, preferences and acknowledg
 });
 
 test('legacy schema-one storage migration backs up original bytes before saving persistent IDs', () => {
-  const key = 'campaign', backupKey = 'before-schema-2';
+  const key = 'campaign', backupKey = 'before-schema-3';
   const raw = JSON.stringify(legacy({ saveSchemaVersion: 1, reserve: [{ id: 99, type: 'archer' }] }));
   const disk = new Map([[key, raw]]);
   const storage = createSaveStorage({ key, getStorage: () => ({ getItem: key => disk.get(key) ?? null,

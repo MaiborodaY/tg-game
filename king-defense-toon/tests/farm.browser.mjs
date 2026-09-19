@@ -1,10 +1,11 @@
-// Isolated mobile saves and a controllable wall clock exercise manual farming.
+// Isolated mobile saves and a controllable wall clock exercise automatic farming.
 // The frame loop and interval are frozen; actual economy, persistence and UI actions remain intact.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { listenBrowserServer } from './helpers/browser-server.mjs';
+import { SAVE_SCHEMA_VERSION } from '../campaign-save.ts';
 import { BATTLE_SPEEDS } from '../battle-speed.ts';
 import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 
@@ -13,9 +14,8 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
 const output = new URL('../../.tmp/', import.meta.url);
 const key = 'brotd-infinity:campaign:v2';
 const initialTime = 1800000000000;
-const crops = ['carrot', 'potato', 'pumpkin'];
-const minutes = { carrot: 5, potato: 15, pumpkin: 30 };
-const emptyFarm = { plots: { carrot: null, potato: null, pumpkin: null }, stock: { carrot: 0, potato: 0, pumpkin: 0 } };
+const emptyStock = { carrot: 0, potato: 0, pumpkin: 0 };
+const freshFarm = time => ({ version: 2, level: 1, plots: { carrot: { plantedAt: time, readyAt: time + 300_000 }, potato: null, pumpkin: null }, stock: { ...emptyStock } });
 let baseUrl;
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)), configFile: false,
@@ -36,7 +36,7 @@ const server = await createServer({
 
 function fixture(overrides = {}) {
   return {
-    campaignVersion: 3, gold: 500, starterSupplyGranted: true, marketHintCompleted: true,
+    campaignVersion: 3, gold: 2000, starterSupplyGranted: true, marketHintCompleted: true,
     autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
     units: ['swordsman', 'archer', 'healer'].map((type, row) => ({ id: row + 1, type, level: 1, col: 2, row })),
     reserve: [{ id: 4, type: 'archer', level: 1 }],
@@ -75,42 +75,32 @@ async function fits(page) {
     const bad = [], bounds = card.getBoundingClientRect();
     if (bounds.left < -1 || bounds.right > innerWidth + 1 || bounds.top < -1 || bounds.bottom > innerHeight + 1) bad.push('card outside viewport');
     if (card.scrollWidth > card.clientWidth + 1 || card.scrollHeight > card.clientHeight + 1) bad.push(`card overflow: ${card.scrollWidth}x${card.scrollHeight} inside ${card.clientWidth}x${card.clientHeight}`);
-    for (const element of card.querySelectorAll('.farm-row, .farm-copy, .farm-crop-heading, .farm-action, .building-tab')) {
-      if (element.getClientRects().length && element.scrollWidth > element.clientWidth + 1) bad.push(`${element.className}: horizontal overflow`);
-      if (element.classList.contains('farm-action') && element.getBoundingClientRect().height < 44) bad.push('farm action touch target below 44px');
+    for (const element of card.querySelectorAll('.farm-row, .farm-copy, .farm-crop-heading, .farm-action, .farm-upgrade-copy, .farm-upgrade-action, .building-tab')) {
+      if (!element.getClientRects().length) continue;
+      if (element.scrollWidth > element.clientWidth + 1) bad.push(`${element.className}: horizontal overflow`);
+      if (element.matches('.farm-action, .farm-upgrade-action') && element.getBoundingClientRect().height < 44) bad.push('farm action touch target below 44px');
     }
     return bad;
   });
   assert.deepEqual(issues, [], 'Farm and all five building tabs fit the small screen');
 }
 
-async function emptyPlots(page) {
-  assert.deepEqual(await page.locator('[data-farm-row]').evaluateAll(nodes => nodes.map(node => node.dataset.farmRow)), crops);
-  assert.deepEqual((await state(page)).farm, emptyFarm);
-  for (const crop of crops) {
-    assert.equal(await row(page, crop).getAttribute('data-state'), 'empty');
-    assert.equal(await stock(page, crop).innerText(), '0');
-    assert.equal(await timer(page, crop).innerText(), `${minutes[crop]} min · +1`);
-    assert.equal(await action(page, crop).innerText(), 'Plant');
-    assert.equal(await action(page, crop).isEnabled(), true);
-  }
+async function freshPlots(page, time = initialTime) {
+  assert.deepEqual((await state(page)).farm, freshFarm(time));
+  assert.equal(await row(page, 'carrot').isVisible(), true);
+  for (const crop of ['potato', 'pumpkin']) assert.equal(await row(page, crop).isVisible(), false);
+  assert.equal(await action(page, 'carrot').innerText(), 'Collect');
+  assert.equal(await action(page, 'carrot').isDisabled(), true);
+  assert.equal(await timer(page, 'carrot').innerText(), 'Next +1 in 5:00');
 }
-
-async function plantAll(page) {
-  const before = unrelated(await state(page));
-  for (const crop of crops) {
-    await action(page, crop).click();
-    assert.equal(await row(page, crop).getAttribute('data-state'), 'growing');
-    assert.equal(await action(page, crop).isDisabled(), true);
-    assert.equal(await timer(page, crop).innerText(), `${minutes[crop]}:00 left`);
-    assert.equal(await stock(page, crop).innerText(), '0');
-    const planted = (await state(page)).farm;
-    assert.deepEqual(planted.plots[crop], { plantedAt: initialTime, readyAt: initialTime + minutes[crop] * 60_000 });
-    await action(page, crop).evaluate(button => button.click());
-    assert.deepEqual((await state(page)).farm, planted, 'A second planting cannot replace the existing crop');
+async function farmClick(page, locator) {
+  const before = (await state(page)).farm;
+  await locator.click();
+  if (await page.locator('#offline-rewards-panel').isVisible()) {
+    assert.deepEqual((await state(page)).farm, before, 'The income receipt blocks the same click from changing the farm');
+    await dismissIncome(page);
+    await locator.click();
   }
-  assert.deepEqual(unrelated(await state(page)), before, 'Planting is free and never consumes fighters or combat progress');
-  assert.deepEqual((await stored(page)).farm, (await state(page)).farm);
 }
 
 let browser;
@@ -159,137 +149,149 @@ try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const viewport of [{ width: 390, height: 700 }, { width: 320, height: 568 }]) {
     await scenario('fresh-game-five-tabs', viewport, null, async page => {
-      await openFarm(page); await emptyPlots(page);
+      await openFarm(page); await freshPlots(page);
+      assert.equal(await page.locator('[data-farm-upgrade]').isDisabled(), true);
       const tabs = page.locator('#buildings-tabs [role="tab"]');
       assert.deepEqual(await tabs.evaluateAll(nodes => nodes.map(node => node.id)), ['tab-treasury', 'tab-market', 'tab-forge', 'tab-farm', 'tab-capitol']);
       await page.locator('#tab-farm').focus();
       for (const [key, id] of [['ArrowRight', 'tab-capitol'], ['ArrowRight', 'tab-treasury'], ['End', 'tab-capitol'], ['Home', 'tab-treasury'], ['ArrowRight', 'tab-market'], ['ArrowRight', 'tab-forge'], ['ArrowRight', 'tab-farm']]) {
         await page.keyboard.press(key);
-        assert.equal(await page.locator(`#${id}`).getAttribute('aria-selected'), 'true');
-        assert.equal(await page.locator(`#${id}`).evaluate(node => node === document.activeElement), true);
+        assert.equal(await page.locator('#' + id).getAttribute('aria-selected'), 'true');
+        assert.equal(await page.locator('#' + id).evaluate(node => node === document.activeElement), true);
         assert.equal(await page.locator('#buildings-tabs [tabindex="0"]').count(), 1);
       }
       await fits(page);
-      await page.screenshot({ path: fileURLToPath(new URL(`farm-empty-${viewport.width}.png`, output)) });
+      await page.screenshot({ path: fileURLToPath(new URL('farm-level1-' + viewport.width + '.png', output)) });
     });
-
-    await scenario('plant-boundaries-harvest-replant-reset', viewport, fixture(), async page => {
-      await openFarm(page); await emptyPlots(page); await plantAll(page); await fits(page);
-      for (const crop of crops) {
-        const deadline = initialTime + minutes[crop] * 60_000;
-        await setTime(page, deadline - 1);
-        assert.equal(await row(page, crop).getAttribute('data-state'), 'growing');
-        assert.equal(await timer(page, crop).innerText(), '0:01 left');
-        assert.equal(await action(page, crop).isDisabled(), true);
-        const beforeEarlyClick = (await state(page)).farm;
-        await action(page, crop).evaluate(button => button.click());
-        assert.deepEqual((await state(page)).farm, beforeEarlyClick, 'Early harvesting is impossible even at one millisecond remaining');
-        await setTime(page, deadline);
-        assert.equal(await row(page, crop).getAttribute('data-state'), 'ready');
-        assert.equal(await action(page, crop).innerText(), 'Harvest');
-        assert.equal(await action(page, crop).isEnabled(), true);
-        assert.equal(await timer(page, crop).innerText(), 'Ready · +1');
-        assert.equal(await stock(page, crop).innerText(), '0', 'Readiness never automatically credits inventory');
-        await fits(page);
-        if (crop === 'carrot') await page.screenshot({ path: fileURLToPath(new URL(`farm-ready-${viewport.width}.png`, output)) });
-        const beforeReceipt = (await state(page)).farm;
-        await action(page, crop).click();
-        if (await page.locator('#offline-rewards-panel').isVisible()) {
-          assert.deepEqual((await state(page)).farm, beforeReceipt, 'An income receipt opened by the same click blocks the farm mutation');
-          await dismissIncome(page);
-          assert.equal(await action(page, crop).isEnabled(), true, 'Closing the income receipt immediately re-enables Harvest');
-          await action(page, crop).click();
-        }
-        assert.equal((await state(page)).farm.stock[crop], 1);
-        assert.equal((await state(page)).farm.plots[crop], null);
-        assert.equal(await row(page, crop).getAttribute('data-state'), 'empty');
-        assert.equal(await stock(page, crop).innerText(), '1');
-        assert.deepEqual((await stored(page)).farm, (await state(page)).farm, 'Manual harvest credits inventory and clears the plot in one saved state');
-        // The next click can replant for free, but a rapid third click cannot collect a second crop.
-        await action(page, crop).evaluate(button => { button.click(); button.click(); });
-        assert.equal((await state(page)).farm.stock[crop], 1);
-        assert.deepEqual((await state(page)).farm.plots[crop], { plantedAt: deadline, readyAt: deadline + minutes[crop] * 60_000 });
-      }
+    await scenario('collect-upgrade-reload-reset', viewport, fixture(), async page => {
+      await openFarm(page); await freshPlots(page);
+      const before = unrelated(await state(page));
+      await setTime(page, initialTime + 299_999);
+      assert.equal(await action(page, 'carrot').isDisabled(), true);
+      assert.equal(await timer(page, 'carrot').innerText(), 'Next +1 in 0:01');
+      await action(page, 'carrot').evaluate(button => button.click());
+      assert.deepEqual((await state(page)).farm.stock, emptyStock);
+      await setTime(page, initialTime + 300_000);
+      assert.equal(await action(page, 'carrot').innerText(), 'Collect 1');
+      await farmClick(page, action(page, 'carrot'));
+      assert.equal(await stock(page, 'carrot').innerText(), '1');
+      assert.equal(await action(page, 'carrot').isDisabled(), true);
+      assert.equal(await timer(page, 'carrot').innerText(), 'Next +1 in 5:00');
+      await action(page, 'carrot').evaluate(button => { button.click(); button.click(); });
+      assert.equal((await state(page)).farm.stock.carrot, 1);
+      assert.deepEqual((await stored(page)).farm, (await state(page)).farm);
+      assert.deepEqual((await state(page)).units, before.units);
+      assert.deepEqual((await state(page)).reserve, before.reserve);
+      const upgrade = page.locator('[data-farm-upgrade]'), gold = (await state(page)).gold;
+      await upgrade.click();
+      assert.equal((await state(page)).gold, gold - 500);
+      assert.equal((await state(page)).farm.level, 2);
+      assert.equal(await row(page, 'potato').isVisible(), true);
+      assert.equal(await row(page, 'pumpkin').isVisible(), false);
+      assert.equal(await row(page, 'carrot').locator('[data-farm-available]').innerText(), '0 / 20 ready');
+      await fits(page);
+      await page.screenshot({ path: fileURLToPath(new URL('farm-level2-' + viewport.width + '.png', output)) });
+      await upgrade.click();
+      assert.equal((await state(page)).gold, gold - 2000);
+      assert.equal((await state(page)).farm.level, 3);
+      assert.equal(await row(page, 'pumpkin').isVisible(), true);
+      assert.equal(await upgrade.isVisible(), false);
+      await fits(page);
       const saved = (await state(page)).farm;
       await page.reload(); await ready(page); await dismissIncome(page);
-      assert.deepEqual((await state(page)).farm, saved, 'Stocks and replanted timestamps survive reload without another harvest');
+      assert.deepEqual((await state(page)).farm, saved);
       await openFarm(page); await fits(page);
+      await page.screenshot({ path: fileURLToPath(new URL('farm-level3-' + viewport.width + '.png', output)) });
       await close(page); await page.locator('#open-profile').click();
       await page.locator('#reset').click();
-      assert.deepEqual((await state(page)).farm, saved, 'The first reset click only asks for confirmation');
+      assert.deepEqual((await state(page)).farm, saved, 'First reset click only asks for confirmation');
       await page.locator('#reset').click();
-      assert.deepEqual((await state(page)).farm, emptyFarm);
+      assert.deepEqual((await state(page)).farm, freshFarm(initialTime + 300_000));
       await page.reload(); await ready(page);
-      assert.deepEqual((await state(page)).farm, emptyFarm);
+      assert.deepEqual((await state(page)).farm, freshFarm(initialTime + 300_000));
     });
-
-    await scenario('offline-ready-and-growing', viewport, fixture(), async page => {
-      await openFarm(page); await plantAll(page);
-      const planted = (await state(page)).farm;
-      await setTime(page, initialTime + 12 * 60_000);
-      await page.reload(); await ready(page);
-      assert.deepEqual((await state(page)).farm, planted, 'Loading after absence updates no crop inventory or planting timestamps');
-      await dismissIncome(page); await openFarm(page);
-      assert.equal(await row(page, 'carrot').getAttribute('data-state'), 'ready');
-      assert.equal(await timer(page, 'potato').innerText(), '3:00 left');
-      assert.equal(await timer(page, 'pumpkin').innerText(), '18:00 left');
-      assert.deepEqual((await state(page)).farm.stock, emptyFarm.stock);
-      await setTime(page, initialTime + 45 * 60_000);
-      await page.reload(); await ready(page);
-      assert.deepEqual((await state(page)).farm.stock, emptyFarm.stock, 'Even a long offline absence never auto-harvests');
-      await dismissIncome(page); await openFarm(page);
-      for (const crop of crops) {
-        assert.equal(await row(page, crop).getAttribute('data-state'), 'ready');
-        await action(page, crop).click();
+    await scenario('offline-caps-and-upgrade-no-backpay', viewport, fixture(), async page => {
+      await openFarm(page);
+      const later = initialTime + 24 * 3600_000;
+      await setTime(page, later);
+      await page.reload(); await ready(page); await dismissIncome(page); await openFarm(page);
+      assert.equal(await row(page, 'carrot').getAttribute('data-state'), 'full');
+      assert.equal(await action(page, 'carrot').innerText(), 'Collect 10');
+      assert.deepEqual((await state(page)).farm.stock, emptyStock);
+      await page.locator('[data-farm-upgrade]').click();
+      assert.equal(await action(page, 'carrot').innerText(), 'Collect 10');
+      assert.equal(await row(page, 'carrot').locator('[data-farm-available]').innerText(), '10 / 20 ready');
+      assert.equal(await action(page, 'potato').isDisabled(), true);
+      assert.equal(await timer(page, 'carrot').innerText(), 'Next +1 in 5:00');
+      await setTime(page, later + 24 * 3600_000);
+      await page.reload(); await ready(page); await dismissIncome(page); await openFarm(page);
+      for (const crop of ['carrot', 'potato']) {
+        assert.equal(await action(page, crop).innerText(), 'Collect 20');
+        await farmClick(page, action(page, crop));
+        assert.equal((await state(page)).farm.stock[crop], 20);
+        assert.equal(await action(page, crop).isDisabled(), true);
       }
-      assert.deepEqual((await state(page)).farm.stock, { carrot: 1, potato: 1, pumpkin: 1 });
-      assert.deepEqual((await state(page)).farm.plots, emptyFarm.plots);
-      await page.reload(); await ready(page);
-      assert.deepEqual((await state(page)).farm.stock, { carrot: 1, potato: 1, pumpkin: 1 });
+      await page.reload(); await ready(page); await dismissIncome(page);
+      assert.deepEqual((await state(page)).farm.stock, { carrot: 20, potato: 20, pumpkin: 0 });
     });
-
     await scenario('battle-speed-independent', viewport, fixture(), async page => {
-      await page.locator('#start-wave').click(); await openFarm(page);
-      await action(page, 'carrot').click();
-      const planted = (await state(page)).farm.plots.carrot;
-      await close(page);
+      const plot = (await state(page)).farm.plots.carrot;
+      await page.locator('#start-wave').click();
       for (let index = 0; index < BATTLE_SPEEDS.length; index++) {
-        await page.locator('#battle-speed').click();
-        await openFarm(page);
-        assert.equal(await timer(page, 'carrot').innerText(), '5:00 left');
-        assert.deepEqual((await state(page)).farm.plots.carrot, planted, 'Battle speed cannot rewrite a wall-clock growth deadline');
+        await page.locator('#battle-speed').click(); await openFarm(page);
+        assert.equal(await timer(page, 'carrot').innerText(), 'Next +1 in 5:00');
+        assert.deepEqual((await state(page)).farm.plots.carrot, plot);
         await close(page);
       }
       await setTime(page, initialTime + 60_000); await openFarm(page);
-      assert.equal(await timer(page, 'carrot').innerText(), '4:00 left');
-      assert.deepEqual((await state(page)).farm.stock, emptyFarm.stock);
+      assert.equal(await timer(page, 'carrot').innerText(), 'Next +1 in 4:00');
+      assert.deepEqual((await state(page)).farm.stock, emptyStock);
     });
   }
-
-  await scenario('save-recovery-does-not-duplicate-harvest', { width: 320, height: 568 }, fixture({ farm: {
-    plots: { carrot: { plantedAt: initialTime - 300_000, readyAt: initialTime }, potato: null, pumpkin: null },
-    stock: { carrot: 0, potato: 0, pumpkin: 0 },
-  } }), async page => {
+  const legacy = fixture({ saveSchemaVersion: 2, nextUnitId: 5, farm: {
+    plots: { carrot: { plantedAt: initialTime - 1e9, readyAt: initialTime - 1e9 + 300_000 },
+      potato: { plantedAt: initialTime - 1e9, readyAt: initialTime - 1e9 + 900_000 },
+      pumpkin: { plantedAt: initialTime, readyAt: initialTime + 1800_000 } },
+    stock: { carrot: 7, potato: 8, pumpkin: 9 },
+  } });
+  await scenario('legacy-farm-migrates-once-with-backup', { width: 320, height: 568 }, legacy, async page => {
+    const farm = (await state(page)).farm;
+    assert.equal(farm.level, 1);
+    assert.deepEqual(farm.stock, { carrot: 7, potato: 9, pumpkin: 10 });
+    const backup = await page.evaluate(({ key, schema }) => localStorage.getItem(key + ':backup:before-schema-' + schema), { key, schema: SAVE_SCHEMA_VERSION });
+    assert.equal(backup, JSON.stringify(legacy));
+    assert.equal((await stored(page)).saveSchemaVersion, SAVE_SCHEMA_VERSION);
     await openFarm(page);
-    const savedBefore = await stored(page);
-    await page.evaluate(() => window.farmStorage.failWrites(true));
-    await action(page, 'carrot').click();
-    await page.locator('#recovery-panel').waitFor({ state: 'visible' });
-    assert.equal((await state(page)).farm.stock.carrot, 1);
-    assert.deepEqual((await stored(page)).farm, savedBefore.farm, 'Failed writing preserves the durable original crop');
-    const inMemory = (await state(page)).farm;
-    await page.locator('[data-farm-action]').evaluateAll(buttons => buttons.forEach(button => button.click()));
-    assert.deepEqual((await state(page)).farm, inMemory, 'Recovery blocks both planting and harvesting behind its overlay');
-    await page.evaluate(() => window.farmStorage.failWrites(false));
-    await page.locator('#recovery-retry').click(); await ready(page);
-    assert.equal((await state(page)).farm.stock.carrot, 1);
-    assert.equal((await stored(page)).farm.stock.carrot, 1);
-    assert.equal((await stored(page)).farm.plots.carrot, null);
+    assert.equal(await action(page, 'carrot').innerText(), 'Collect 1');
     await page.reload(); await ready(page);
-    assert.equal((await state(page)).farm.stock.carrot, 1);
-    assert.equal((await state(page)).farm.plots.carrot, null);
+    assert.deepEqual((await state(page)).farm, farm, 'Compensation cannot repeat on reload');
   });
-  console.log(JSON.stringify({ ok: true, checks, screenshots: ['farm-empty-390.png', 'farm-empty-320.png', 'farm-ready-390.png', 'farm-ready-320.png'].map(file => fileURLToPath(new URL(file, output))) }, null, 2));
+  for (const operation of ['harvest', 'upgrade']) {
+    await scenario('save-recovery-' + operation, { width: 320, height: 568 }, fixture({ farm: freshFarm(initialTime - 300_000) }), async page => {
+      await openFarm(page);
+      const savedBefore = await stored(page);
+      await page.evaluate(() => window.farmStorage.failWrites(true));
+      await (operation === 'harvest' ? action(page, 'carrot') : page.locator('[data-farm-upgrade]')).click();
+      await page.locator('#recovery-panel').waitFor({ state: 'visible' });
+      const inMemory = await state(page);
+      if (operation === 'harvest') assert.equal(inMemory.farm.stock.carrot, 1);
+      else {
+        assert.equal(inMemory.farm.level, 2);
+        assert.equal(inMemory.gold, savedBefore.gold - 500);
+      }
+      assert.deepEqual((await stored(page)).farm, savedBefore.farm);
+      await page.locator('[data-farm-action], [data-farm-upgrade]').evaluateAll(buttons => buttons.forEach(button => button.click()));
+      assert.deepEqual((await state(page)).farm, inMemory.farm);
+      await page.evaluate(() => window.farmStorage.failWrites(false));
+      await page.locator('#recovery-retry').click(); await ready(page);
+      assert.deepEqual((await stored(page)).farm, inMemory.farm, 'Retry persists the result without rerunning the command');
+      assert.equal((await stored(page)).gold, inMemory.gold);
+      await page.reload(); await ready(page);
+      assert.deepEqual((await state(page)).farm, inMemory.farm);
+      assert.equal((await state(page)).gold, inMemory.gold);
+    });
+  }
+  console.log(JSON.stringify({ ok: true, checks }, null, 2));
 } finally {
   await browser?.close();
   await server.close();
