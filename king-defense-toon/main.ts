@@ -1,6 +1,6 @@
 import { createCampaignState, restoreCampaignState, resetCampaignState, campaignSnapshot } from './campaign-state.ts';
 import * as commands from './campaign-commands.ts';
-import { createBattleRewardReceipt, applyBattleKillRewards, applyCampaignBattleResult } from './campaign-rewards.ts';
+import { createBattleRewardReceipt, applyBattleKillRewards, applyCampaignBattleResult, applyDungeonRunReward } from './campaign-rewards.ts';
 import type { BattleRewardReceipt } from './campaign-rewards.ts';
 import { createScene } from './scene.ts';
 import { getOnboardingStep } from './onboarding.ts';
@@ -48,7 +48,7 @@ import { byId } from './main-dom.ts';
 import { createScreenController } from './screen-controller.ts';
 import { createDungeonsUI } from './dungeons-ui.ts';
 import type { DungeonsUI } from './dungeons-ui.ts';
-import { createDungeonRun, selectDungeonCell, startDungeonBattle } from './dungeon-run.ts';
+import { createDungeonRun, selectDungeonCell, startDungeonBattle, prepareNextDungeonWave, finishDungeonWave } from './dungeon-run.ts';
 import type { DungeonRun } from './dungeon-run.ts';
 import { createDungeonRunUI } from './dungeon-run-ui.ts';
 import './dungeons.css';
@@ -798,11 +798,36 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
     void battleAudio.unlock();
     framePacer.reset(); refresh(); resumeFrames();
   },
+  onPrepare: () => {
+    if (!dungeonRun || !isDungeonBattleScreen() || overlay || isRecovering() || !telegram.isActive || !byId('offline-rewards-panel').hidden) return;
+    if (!prepareNextDungeonWave(dungeonRun)) return;
+    framePacer.reset(); refresh(); resumeFrames();
+  },
+  onRetry: () => {
+    if (!dungeonRun || !isDungeonBattleScreen() || overlay || isRecovering() || !telegram.isActive || !byId('offline-rewards-panel').hidden
+      || !['complete', 'defeat'].includes(dungeonRun.stage)) return;
+    const run = createDungeonRun(dungeonRun.level, { clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears },
+      campaign.units, campaign.progression.unlockedCells);
+    if (!run) return;
+    dungeonRun = run;
+    framePacer.reset(); refresh(); resumeFrames(); dungeonRunUI.focus();
+  },
   onSpeed: () => {
     if (!isDungeonBattleScreen() || dungeonRun?.battle?.phase !== 'running' || !telegram.isActive || isRecovering()) return;
     battleSpeed = nextBattleSpeed(battleSpeed); framePacer.reset(); refresh();
   },
 });
+
+function finishDungeonBattle() {
+  if (!dungeonRun || !finishDungeonWave(dungeonRun)) return;
+  battleAudio.setActive(false);
+  if (dungeonRun.stage === 'complete' && dungeonRun.level.tier === 1) {
+    const result = applyDungeonRunReward(campaign, dungeonRun);
+    if (!result.ok) { stopForCampaignError(`Dungeon reward: ${result.reason}`); return; }
+    save();
+  }
+  refresh();
+}
 
 function refreshDungeonRun() {
   dungeonRunUI.refresh(dungeonRun, campaign.forge, !isRecovering(), paused, battleSpeed);
@@ -1996,7 +2021,7 @@ function frame(timestamp: number) {
         const wasRunning = active.phase === 'running';
         const events = updateBattle(active, delta);
         for (const event of events) if (event.type === 'bow-shot') battleAudio.playBowShot();
-        if (wasRunning && active.phase !== 'running') { battleAudio.setActive(false); refresh(); }
+        if (wasRunning && active.phase !== 'running') finishDungeonBattle();
       }
       hudElapsed += dt;
       if (hudElapsed >= .15) { refreshDungeonRun(); hudElapsed = 0; }

@@ -4,9 +4,17 @@ import { GOBLIN_CAVE_LEVELS, getDungeonLevel, isDungeonLevelUnlocked } from '../
 import { createCampaignState, campaignSnapshot, restoreCampaignState } from '../campaign-state.ts';
 import { createScreenController } from '../screen-controller.ts';
 import { createDungeonRun, getDungeonOpeningWave, getDungeonWaves, getNextDungeonWave, getDungeonExitState,
-  startDungeonBattle, selectDungeonCell } from '../dungeon-run.ts';
-import { updateBattle } from '../combat.ts';
+  startDungeonBattle, selectDungeonCell, prepareNextDungeonWave, finishDungeonWave } from '../dungeon-run.ts';
+import { createBattleForWave, updateBattle } from '../combat.ts';
 import { getSceneAssetPlan } from '../scene-assets.ts';
+import { applyDungeonRunReward } from '../campaign-rewards.ts';
+import { getWaveDefinition } from '../waves.ts';
+
+function clearWave(run) {
+  run.battle.phase = 'victory'; run.battle.kills = run.battle.total;
+  assert.equal(finishDungeonWave(run), true);
+  assert.equal(finishDungeonWave(run), false, 'same result cannot advance twice');
+}
 
 for (const [index, milestone] of [50, 100, 150].entries()) {
   test(`Goblin Cave ${index + 1} opens only after the whole round (${milestone} waves)`, () => {
@@ -26,7 +34,7 @@ test('the catalogue is read-only and uses durable progress after restoring a sav
   const progress = Object.freeze({ clearedWaves: restored.clearedWaves, firstClears: Object.freeze(restored.progression.firstClears) });
   assert.deepEqual(GOBLIN_CAVE_LEVELS.map(level => isDungeonLevelUnlocked(level, progress)), [true, true, false]);
   assert.deepEqual(campaignSnapshot(campaign), before, 'viewing does not consume gold, army or slaves');
-  assert.deepEqual(GOBLIN_CAVE_LEVELS.map(level => level.firstClearReward), [
+  assert.deepEqual(GOBLIN_CAVE_LEVELS.map(level => level.completionReward), [
     { gold: 150, slaves: 3 }, { gold: 300, slaves: 5 }, { gold: 500, slaves: 8 },
   ]);
   assert.equal(getDungeonLevel('unknown'), undefined);
@@ -101,17 +109,19 @@ test('switching catalogue to cave and back restores input ownership', () => {
   assert.equal(battlefield.inert, false);
 });
 
-test('Cave I has identical reinforcements then the club chief; later tiers retain their previews', () => {
+test('Cave I has two guard groups, then three, then the solo club chief; later tiers retain previews', () => {
   const waves = getDungeonWaves(GOBLIN_CAVE_LEVELS[0]);
-  assert.deepEqual(waves.map(wave => wave.total), [4, 4, 1]);
-  assert.deepEqual(waves[1].spawns, waves[0].spawns, 'wave 2 does not silently increase the requested guard stats');
+  assert.deepEqual(waves.map(wave => wave.total), [8, 12, 1]);
+  assert.deepEqual(waves[1].spawns.slice(0, 8), waves[0].spawns, 'reinforcements use the same stats');
+  assert.deepEqual(waves[0].spawns.map(spawn => spawn.at), [0.8, 0.8, 0.8, 0.8, 12.8, 12.8, 12.8, 12.8]);
+  assert.deepEqual(waves[1].spawns.slice(8).map(spawn => spawn.at), [24.8, 24.8, 24.8, 24.8]);
   assert.deepEqual(waves[2].spawns.map(spawn => spawn.type), ['goblinChief']);
   assert.equal(waves[2].hasBoss, true);
   assert.ok(waves.every(wave => wave.reward === 0 && wave.spawns.every(spawn => spawn.reward === 0)));
   for (const level of GOBLIN_CAVE_LEVELS.slice(1)) assert.equal(getDungeonWaves(level).length, 1);
 });
 
-test('one start action advances each wave without healing, resurrecting or rebuilding campaign stats', () => {
+test('preparation returns survivors home and requires a separate Start without healing or resurrecting', () => {
   const campaign = createCampaignState(1800000000000);
   campaign.units = [
     { id: 1, type: 'swordsman', level: 4, col: 2, row: 0 },
@@ -130,9 +140,20 @@ test('one start action advances each wave without healing, resurrecting or rebui
   castle.hp = 57;
   const originalStats = survivor.damage;
   for (const wave of [2, 3]) {
-    battle.phase = 'victory';
+    clearWave(run);
     assert.equal(getDungeonExitState(run), 'confirm');
     assert.equal(getNextDungeonWave(run).number, wave);
+    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false, 'a result cannot jump straight into combat');
+    survivor.x += 35; survivor.y -= 80;
+    assert.equal(prepareNextDungeonWave(run), true);
+    assert.equal(prepareNextDungeonWave(run), false, 'double prepare cannot skip a wave');
+    assert.equal(run.stage, 'preparation');
+    assert.equal(getDungeonExitState(run), 'confirm', 'leaving during preparation still loses this run');
+    assert.equal(survivor.x, survivor.homeX);
+    assert.equal(survivor.y, survivor.homeY);
+    for (let i = 0; i < 120; i++) updateBattle(battle, 1 / 30);
+    assert.equal(battle.elapsed, 0);
+    assert.equal(battle.spawned, 0);
     assert.equal(startDungeonBattle(run, { ...campaign.hero, level: 20 }, campaign.forge), true);
     assert.equal(run.battle, battle, 'a single combat snapshot is retained');
     assert.equal(battle.waveNumber, wave);
@@ -150,7 +171,7 @@ test('one start action advances each wave without healing, resurrecting or rebui
     assert.equal(battle.spawned, wave === 2 ? 4 : 1);
     assert.equal(battle.enemies.some(enemy => enemy.type === 'goblinChief'), wave === 3);
   }
-  battle.phase = 'victory';
+  clearWave(run);
   assert.equal(getNextDungeonWave(run), null);
   assert.equal(getDungeonExitState(run), 'leave', 'completed run has no unfinished progress warning');
   assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false, 'cannot replay a finished wave in-place');
@@ -163,6 +184,7 @@ test('defeat cannot advance a wave or refill the run', () => {
   const run = createDungeonRun(GOBLIN_CAVE_LEVELS[0], { clearedWaves: 50, firstClears: [] }, units, ['2:0']);
   startDungeonBattle(run, campaign.hero, campaign.forge);
   run.battle.phase = 'defeat'; run.battle.castle.hp = 0;
+  finishDungeonWave(run);
   assert.equal(getDungeonExitState(run), 'leave');
   assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false);
   assert.equal(run.battle.castle.hp, 0);
@@ -177,12 +199,14 @@ test('waiting between waves does not heal survivors or refresh hero skills', () 
   const run = createDungeonRun(GOBLIN_CAVE_LEVELS[0], { clearedWaves: 50, firstClears: [] }, units, ['2:0']);
   startDungeonBattle(run, campaign.hero, campaign.forge);
   const battle = run.battle;
-  battle.phase = 'victory';
+  clearWave(run);
   battle.allies[0].hp = 10;
   battle.hero.hp = 21;
   battle.hero.healCooldown = 6;
   battle.hero.hammerCooldown = 7;
   battle.hero.miracleUsed = true;
+  for (let i = 0; i < 600; i++) updateBattle(battle, 1 / 30);
+  prepareNextDungeonWave(run);
   for (let i = 0; i < 600; i++) updateBattle(battle, 1 / 30);
   startDungeonBattle(run, campaign.hero, campaign.forge);
   assert.equal(battle.allies[0].hp, 10);
@@ -190,4 +214,96 @@ test('waiting between waves does not heal survivors or refresh hero skills', () 
   assert.equal(battle.hero.healCooldown, 6);
   assert.equal(battle.hero.hammerCooldown, 7);
   assert.equal(battle.hero.miracleUsed, true);
+});
+
+test('Cave I buffs only its copies: guards +15% and chief +30%', () => {
+  const reference = structuredClone(getWaveDefinition(51));
+  const chief = structuredClone(getWaveDefinition(50));
+  const waves = getDungeonWaves(GOBLIN_CAVE_LEVELS[0]);
+  for (const spawn of waves[0].spawns.slice(0, 4)) {
+    const original = reference.spawns.find(enemy => enemy.type === spawn.type);
+    if (!original) continue; // Boar uses the same existing melee-based fallback.
+    assert.equal(spawn.hp, Math.round(original.hp * 1.15));
+    assert.equal(spawn.damage, original.damage * 1.15);
+    if (original.heal) assert.equal(spawn.heal, original.heal * 1.15);
+  }
+  const boss = chief.spawns.find(enemy => enemy.type === 'goblinChief');
+  assert.equal(waves[2].spawns[0].hp, Math.round(boss.hp * 1.3));
+  assert.equal(waves[2].spawns[0].damage, boss.damage * 1.3);
+  assert.deepEqual(getWaveDefinition(51), reference);
+  assert.deepEqual(getWaveDefinition(50), chief);
+});
+
+test('reinforcements actually spawn on the fixed clock and clearing a group does not end the wave', () => {
+  const campaign = createCampaignState(1800000000000);
+  const units = [{ id: 1, type: 'swordsman', level: 10000, col: 2, row: 0 }];
+  for (const fps of [30, 60, 120]) for (const speed of [1, 2, 3]) {
+    for (const wave of getDungeonWaves(GOBLIN_CAVE_LEVELS[0]).slice(0, 2)) {
+      const battle = createBattleForWave(units, wave, campaign.hero, campaign.forge);
+      for (let frame = 0; frame < Math.ceil(11 * fps / speed); frame++) updateBattle(battle, speed / fps);
+      assert.equal(battle.spawned, 4);
+      assert.equal(battle.phase, 'running', 'future reinforcements keep the wave open');
+      while (battle.elapsed < 13 && battle.phase === 'running') updateBattle(battle, speed / fps);
+      assert.equal(battle.spawned, 8);
+      if (wave.number === 2) {
+        assert.equal(battle.phase, 'running');
+        while (battle.elapsed < 25 && battle.phase === 'running') updateBattle(battle, speed / fps);
+        assert.equal(battle.spawned, 12);
+      }
+    }
+  }
+});
+
+function completeRun(campaign, level = GOBLIN_CAVE_LEVELS[0]) {
+  const run = createDungeonRun(level, { clearedWaves: 200, firstClears: [] },
+    [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 }], ['2:0']);
+  for (const wave of run.waves) {
+    if (wave.number > 1) assert.equal(prepareNextDungeonWave(run), true);
+    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), true);
+    clearWave(run);
+  }
+  return run;
+}
+
+test('completed runs grant once each, survive save restoration and allow unlimited repeat rewards', () => {
+  let campaign = createCampaignState(1800000000000);
+  const before = campaignSnapshot(campaign);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const run = completeRun(campaign);
+    assert.deepEqual(applyDungeonRunReward(campaign, run), { ok: true, gold: 150, slaves: 3 });
+    const paid = campaignSnapshot(campaign);
+    assert.equal(applyDungeonRunReward(campaign, run).reason, 'already-recorded');
+    assert.deepEqual(campaignSnapshot(campaign), paid);
+    campaign = restoreCampaignState(paid, 1800000000000);
+    assert.equal(campaign.gold, before.gold + attempt * 150);
+    assert.equal(campaign.economy.slaves, before.economy.slaves + attempt * 3);
+    assert.deepEqual(campaign.hero, before.hero);
+    assert.deepEqual(campaign.units, before.units);
+    assert.deepEqual(campaign.progression, before.progression);
+    assert.equal(campaign.clearedWaves, before.clearedWaves);
+  }
+});
+
+test('no rewards for unfinished, failed or preview runs; overflow never partially grants', () => {
+  const campaign = createCampaignState(1800000000000);
+  const before = campaignSnapshot(campaign);
+  const run = createDungeonRun(GOBLIN_CAVE_LEVELS[0], { clearedWaves: 50, firstClears: [] },
+    [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 }], ['2:0']);
+  for (const stage of ['preparation', 'combat', 'wave-cleared', 'defeat']) {
+    run.stage = stage;
+    assert.equal(applyDungeonRunReward(campaign, run).reason, 'unfinished-run');
+    assert.equal(run.reward, null);
+  }
+  assert.equal(applyDungeonRunReward(campaign, completeRun(campaign, GOBLIN_CAVE_LEVELS[1])).reason, 'preview-only');
+  assert.deepEqual(campaignSnapshot(campaign), before);
+  const completed = completeRun(campaign);
+  for (const resource of ['gold', 'slaves']) {
+    const state = structuredClone(campaign);
+    if (resource === 'gold') state.gold = Number.MAX_SAFE_INTEGER;
+    else state.economy.slaves = Number.MAX_SAFE_INTEGER;
+    const snapshot = structuredClone(state);
+    assert.equal(applyDungeonRunReward(state, completed).reason, 'resource-overflow');
+    assert.equal(completed.reward, null);
+    assert.deepEqual(state, snapshot);
+  }
 });

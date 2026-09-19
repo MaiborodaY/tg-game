@@ -40,9 +40,9 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit,
     return `<article class="dungeon-level-card ${unlocked ? 'is-unlocked' : 'is-locked'}" aria-label="Goblin Cave ${level.numeral}: ${level.boss}">
       ${art(level)}<span class="dungeon-card-copy"><span class="dungeon-tier">Level ${level.numeral}</span>
       <strong>${level.boss}</strong><span class="dungeon-requirement">${requirement(level, unlocked)}</span>
-      <span class="dungeon-card-reward-label">Full-run rewards · coming later</span>
-      <span class="dungeon-card-rewards"><span><span class="coin-icon" aria-hidden="true"></span>${level.firstClearReward.gold} gold</span>
-      <span><span class="slave-icon" aria-hidden="true"></span>${level.firstClearReward.slaves} slaves</span></span>
+      <span class="dungeon-card-reward-label">${level.tier === 1 ? 'Rewards on every clear' : 'Full-run rewards · coming later'}</span>
+      <span class="dungeon-card-rewards"><span><span class="coin-icon" aria-hidden="true"></span>${level.completionReward.gold} gold</span>
+      <span><span class="slave-icon" aria-hidden="true"></span>${level.completionReward.slaves} slaves</span></span>
       <button type="button" data-dungeon-level="${level.id}" class="dungeon-card-action" ${unlocked ? '' : 'disabled'}
       aria-label="${unlocked ? 'Enter' : 'Locked'} Goblin Cave ${level.numeral}">${unlocked ? 'Enter' : `${lockIcon} Locked`}</button></span></article>`;
   }
@@ -64,14 +64,14 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit,
         <button type="button" class="dungeon-icon-button dungeon-info-button" data-dungeon-action="rules" aria-label="Dungeon rules" aria-haspopup="dialog" aria-controls="dungeon-rules">i</button></header>
         <div class="dungeon-scroll"><div class="dungeon-intro">${caveIcon()}<div><h3>Goblin Cave</h3><p>Choose a level</p></div></div>
         <div class="dungeon-level-list">${GOBLIN_CAVE_LEVELS.map(level => card(level, progress)).join('')}</div>
-        <p class="dungeon-catalogue-note">Cave I: 3 waves, ending with the Goblin Chief.<br><span>Caves II–III: opening wave preview. Reward collection is coming later.</span></p></div>
+        <p class="dungeon-catalogue-note">Cave I: 3 waves · Rewards on every clear · No daily limit<br><span>Caves II–III: opening wave previews. Full runs and rewards are coming later.</span></p></div>
         <footer class="dungeon-footer"><span aria-hidden="true"></span><p data-dungeon-campaign-status></p></footer></div>
         <section id="dungeon-rules" class="dungeon-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="dungeon-rules-title" hidden>
         <div class="dungeon-rules-card"><header><h3 id="dungeon-rules-title">Dungeon rules</h3><button type="button" class="dungeon-icon-button" data-dungeon-action="close-rules" aria-label="Close dungeon rules">×</button></header>
         ${caveIcon('dungeon-rules-art')}${route()}<ul class="dungeon-rules-list"><li><b aria-hidden="true">⚔</b>3 waves per run</li>
         <li><b aria-hidden="true">♛</b>Final boss on wave 3</li><li><b aria-hidden="true">♡</b>No recovery between waves</li>
         <li><b aria-hidden="true">†</b>Fallen units stay out for the run</li></ul>
-        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Cave I has two waves of four guards, then the Goblin Chief. Army, hero and castle keep their remaining HP between waves. Caves II–III currently offer their opening wave only. Reward collection comes later.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading loses this run's progress. You can leave between waves, but not during combat.</p>
+        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Cave I: wave 1 has two groups of four guards; wave 2 has three groups; wave 3 is the Goblin Chief alone. Groups arrive 12 battle seconds apart.<br><br>After each wave, tap Prepare to return survivors to formation, then Start when ready. Army, hero and castle keep their remaining HP. Fallen fighters stay out.<br><br>Defeat the chief to receive 150 gold and 3 slaves automatically. Every completed run earns rewards, with no daily limit. Caves II–III currently offer their opening wave only, without rewards.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading loses unfinished run progress. You can leave between waves, but not during combat.</p>
         <button type="button" class="dungeon-acknowledge" data-dungeon-action="close-rules">Got it</button></div></section></div>`;
       root.querySelector<HTMLElement>('.dungeon-scroll')!.scrollTop = force ? 0 : oldScroll;
       syncRules();

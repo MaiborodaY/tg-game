@@ -115,3 +115,24 @@
 .dungeon-exit-dialog p { margin-bottom: 18px; font-size: 15px; line-height: 1.4; }
 .dungeon-exit-dialog > div { display: flex; gap: 10px; }
 .dungeon-exit-dialog button { flex: 1; }
+
+/* Static result card uses the shared cover atlas and existing UI/icon assets. */
+.dungeon-result { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(350px, calc(100% - 24px)); max-height: calc(100% - 116px); overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; padding: 12px; border: 9px solid transparent; border-image: url('./assets/tiny-ui/carved-panel.png') 18 / 9px / 0 stretch; background: #eee2bf; box-shadow: 0 7px 25px #101c268c; color: #46523c; text-align: center; }
+.dungeon-result-eyebrow { display: block; color: #83734e; font-size: 12px; margin-bottom: 10px; }
+.dungeon-result-art { width: 86px; margin: 0 auto 10px; border: 2px solid #a28b50; box-shadow: 0 2px #baa777; }
+.dungeon-result h3 { font-size: 27px; line-height: 1.1; margin-bottom: 7px; }
+.dungeon-result p { font-size: 14px; line-height: 1.3; }
+.dungeon-result-rewards { display: flex; justify-content: center; gap: 12px; margin: 15px 0 10px; }
+.dungeon-result-rewards > span { display: grid; grid-template-columns: auto auto; align-items: center; justify-content: center; gap: 3px 7px; min-width: 98px; padding: 8px 10px; border: 1px solid #b4a16f; border-radius: 3px; background: #f7edcf; }
+.dungeon-result-rewards b { font-size: 25px; line-height: 1.1; color: #63723d; }
+.dungeon-result-rewards small { grid-column: 1 / -1; font-size: 12px; color: #82734f; }
+.dungeon-result-rewards .coin-icon { width: 18px; height: 21px; }
+.dungeon-result-rewards .slave-icon { width: 22px; height: 24px; }
+.dungeon-result p.dungeon-result-note { font-size: 12px; color: #687345; }
+.dungeon-result-actions { display: flex; gap: 8px; margin-top: 15px; }
+.dungeon-result-actions button { flex: 1; min-width: 0; min-height: 44px; padding: 7px 4px; font-size: 15px; }
+@media (max-height: 650px) {
+  .dungeon-result-art { width: 56px; margin-bottom: 6px; }
+  .dungeon-result { padding: 8px; }
+  .dungeon-result-rewards { margin-top: 8px; }
+}
