@@ -1,4 +1,4 @@
-export type GameScreen = 'campaign' | 'dungeons' | 'dungeon-battle';
+export type GameScreen = 'campaign' | 'dungeons' | 'dungeon-intro' | 'dungeon-battle';
 
 export interface ScreenController {
   readonly active: GameScreen;
@@ -6,9 +6,10 @@ export interface ScreenController {
 }
 
 /** Owns covering-screen visibility only; simulation, saving and modals have separate lifecycles. */
-export function createScreenController({ app, dungeons, background, onChange }: {
+export function createScreenController({ app, dungeons, intro, background, onChange }: {
   app: HTMLElement;
   dungeons: HTMLElement;
+  intro?: HTMLElement;
   background: readonly HTMLElement[];
   onChange: (screen: GameScreen) => void;
 }): ScreenController {
@@ -22,9 +23,10 @@ export function createScreenController({ app, dungeons, background, onChange }: 
       active = screen;
       app.dataset.screen = screen;
       dungeons.hidden = screen !== 'dungeons';
-      if (screen === 'dungeons') {
+      if (intro) intro.hidden = screen !== 'dungeon-intro';
+      if (screen === 'dungeons' || screen === 'dungeon-intro') {
         for (const element of background) {
-          previousInert.set(element, element.inert);
+          if (!previousInert.has(element)) previousInert.set(element, element.inert);
           element.inert = true;
         }
       } else {

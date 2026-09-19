@@ -19,6 +19,7 @@ const server = await createServer({
       ready: () => !!scene && !!armyScene && !isRecovering(),
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => battle && ({ wave: battle.waveNumber, elapsed: battle.elapsed, phase: battle.phase }),
+      countdown: () => autoNextRemaining,
       run: () => dungeonRun && ({ level: dungeonRun.level.id, stage: dungeonRun.stage, reward: dungeonRun.reward, battle: dungeonRun.battle && {
         elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
       finishDungeonWave: () => {
@@ -63,9 +64,9 @@ function fixture(cleared = 50, autoWaves = false) {
 
 let browser, baseUrl;
 const checks = [];
-async function scenario(name, width, height, saved, check, telegram = false) {
+async function scenario(name, width, height, saved, check, telegram = false, reducedMotion = 'reduce') {
   if (process.env.DUNGEON_SCENARIO && !name.includes(process.env.DUNGEON_SCENARIO)) return;
-  const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
+  const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true, reducedMotion });
   const errors = [];
   try {
     await context.route('https://telegram.org/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
@@ -85,6 +86,12 @@ async function scenario(name, width, height, saved, check, telegram = false) {
         localStorage.setItem(key, JSON.stringify(saved)); sessionStorage.setItem('dungeon-fixture', '1');
       }
       window.dungeonDraws = { battle: 0, 'army-map': 0 };
+      window.dungeonAudioSources = [];
+      const mediaSource = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+      Object.defineProperty(HTMLMediaElement.prototype, 'src', { ...mediaSource, set(value) {
+        if (this.tagName === 'AUDIO') window.dungeonAudioSources.push(value);
+        mediaSource.set.call(this, value);
+      } });
       const clear = CanvasRenderingContext2D.prototype.clearRect;
       CanvasRenderingContext2D.prototype.clearRect = function(...args) {
         if (this.canvas.id in window.dungeonDraws) window.dungeonDraws[this.canvas.id]++;
@@ -130,6 +137,7 @@ try {
     assert.equal(caveImages().length, 0, 'browsing covers does not fetch the battle map');
     await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
     await page.waitForFunction(() => window.dungeonCheck.ready());
+    assert.equal(requests.some(url => url.includes('goblin-cave-intro.mp4')), false, 'reduced motion does not download the optional video');
     assert.equal(caveImages().length, 1, 'both canvases share one on-demand image request');
     const start = page.locator('[data-run-start]');
     await page.waitForFunction(() => !document.querySelector('[data-run-start]').disabled);
@@ -380,5 +388,112 @@ try {
     assert.equal(await page.locator('.dungeon-level-card').count(), 3);
     await back(page);
   }, true);
+  await scenario('intro video: shared pause gates, retained battle, silent canvases and continuous cave music', 390, 760, fixture(), async (page, requests) => {
+    assert.equal(requests.some(url => url.includes('goblin-cave-intro.mp4')), false, 'game startup leaves video unloaded');
+    await page.locator('#start-wave').click(); await open(page);
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
+    assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true, 'catalogue warmup cannot start hidden playback');
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-intro'
+      && document.querySelector('#dungeon-intro-screen video').currentTime > .25);
+    const initial = await page.evaluate(() => ({ battle: window.dungeonCheck.battle(), draws: { ...window.dungeonDraws },
+      audioSources: window.dungeonAudioSources.filter(source => source.includes('goblin-cave-action')).length }));
+    assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.muted && video.playsInline), true);
+    assert.equal(await page.locator('.battlefield').evaluate(element => element.inert), true);
+    assert.equal(await page.locator('#dungeon-intro-screen').innerText(), 'Skip', 'the film carries no title or captions');
+    await page.evaluate(() => { window.dispatchEvent(new Event('resize')); window.Telegram.WebApp.isActive = false; window.telegramEvents.deactivated(); });
+    const frozenVideoTime = await page.locator('#dungeon-intro-screen video').evaluate(video => video.currentTime);
+    await page.waitForTimeout(450);
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-intro');
+    assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true);
+    assert.ok(Math.abs(await page.locator('#dungeon-intro-screen video').evaluate(video => video.currentTime) - frozenVideoTime) < .08);
+    assert.deepEqual(await page.evaluate(() => window.dungeonCheck.battle()), initial.battle);
+    assert.deepEqual(await page.evaluate(() => window.dungeonDraws), initial.draws, 'resize and lifecycle callbacks cannot draw the covered scenes');
+    await page.evaluate(() => { window.Telegram.WebApp.isActive = true; window.telegramEvents.activated(); });
+    await page.evaluate(() => window.dungeonCheck.absence());
+    await page.locator('#offline-rewards-panel').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true, 'offline receipt suspends the video');
+    await page.waitForTimeout(150);
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-intro');
+    await page.locator('#collect-offline-rewards').click();
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    assert.deepEqual(await page.evaluate(() => window.dungeonCheck.battle()), initial.battle, 'campaign combat stayed frozen throughout entry');
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle, null, 'intro never starts dungeon combat');
+    assert.equal(await page.evaluate(() => window.dungeonAudioSources.filter(source => source.includes('goblin-cave-action')).length), initial.audioSources);
+    assert.equal(initial.audioSources, 1, 'cave music begins at entry and its source is not replaced when the film ends');
+    assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true);
+    assert.equal(await page.locator('.battlefield').evaluate(element => element.inert), false);
+  }, true, 'no-preference');
+  await scenario('intro video: Skip preserves the pending auto-wave and reuses its media element', 320, 740, fixture(50, true), async page => {
+    await page.locator('#start-wave').click(); await open(page);
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
+    await page.evaluate(() => window.dungeonCheck.finishWave());
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    const countdown = await page.evaluate(() => window.dungeonCheck.countdown());
+    assert.ok(countdown > 0);
+    await page.waitForTimeout(200);
+    await page.locator('.dungeon-intro-skip').click();
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    assert.equal(await page.evaluate(() => window.dungeonCheck.countdown()), countdown);
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    await page.locator('[data-run-exit]').click();
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.locator('.dungeon-intro-skip').click();
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    assert.equal(await page.locator('#dungeon-intro-screen video').count(), 1);
+  }, false, 'no-preference');
+  await scenario('intro video: optional media failure still enters a playable cave', 390, 844, fixture(), async page => {
+    await page.route('**/goblin-cave-intro.mp4*', route => route.abort('failed'));
+    await open(page);
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    await page.locator('[data-run-start]').click();
+    await page.waitForFunction(() => window.dungeonCheck.run().battle?.phase === 'running');
+    assert.equal(await page.locator('#recovery-panel').isVisible(), false);
+  }, false, 'no-preference');
+  await scenario('intro video: a hanging request cannot turn the clip into a loading gate', 390, 844, fixture(), async page => {
+    let pendingVideo;
+    await page.route('**/goblin-cave-intro.mp4*', route => { pendingVideo = route; });
+    try {
+      await open(page);
+      await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+      const enteredAt = await page.evaluate(() => performance.now());
+      assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-intro');
+      assert.equal(await page.locator('#recovery-panel').isVisible(), false);
+      await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+      assert.ok(await page.evaluate(() => performance.now()) - enteredAt < 1800, 'failed startup leaves entry after its one-second deadline');
+      assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true);
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      await page.locator('[data-run-start]').click();
+      await page.waitForFunction(() => window.dungeonCheck.run().battle?.phase === 'running');
+    } finally { await pendingVideo?.abort('failed'); }
+  }, false, 'no-preference');
+  await scenario('intro video: save recovery suspends the movie and restores its input ownership', 390, 844, fixture(), async page => {
+    await open(page);
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').currentTime > .2);
+    await page.evaluate(() => {
+      window.originalSetItem = localStorage.setItem;
+      localStorage.setItem = () => { throw new DOMException('Fixture quota', 'QuotaExceededError'); };
+      window.dungeonCheck.save();
+    });
+    await page.locator('#recovery-panel').waitFor({ state: 'visible' });
+    const frozenTime = await page.locator('#dungeon-intro-screen video').evaluate(video => video.currentTime);
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true);
+    assert.ok(Math.abs(await page.locator('#dungeon-intro-screen video').evaluate(video => video.currentTime) - frozenTime) < .08);
+    assert.equal(await page.locator('#dungeon-intro-screen').evaluate(element => element.inert), true);
+    await page.evaluate(() => window.dungeonCheck.restoreStorage());
+    await page.locator('#recovery-retry').click();
+    await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('#dungeon-intro-screen').evaluate(element => element.inert), false);
+    await page.locator('.dungeon-intro-skip').click();
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    assert.equal(await page.locator('.battlefield').evaluate(element => element.inert), false);
+  }, false, 'no-preference');
   console.log(JSON.stringify({ checks, screenshots: fileURLToPath(output) }));
 } finally { await browser?.close(); await server.close(); }

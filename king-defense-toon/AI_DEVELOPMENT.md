@@ -284,8 +284,22 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Static WebP cover art uses one three-column atlas, loaded on first browsing;
   the small cave icon is shared with navigation. No animated menu backgrounds,
   separate canvas loop, external image requests or per-refresh image creation.
+- Entry uses a separate `dungeon-intro` screen with one retained muted inline
+  video, not another scene/engine. Its three-second MP4 is composed offline;
+  sources/export details live in `art/dungeons/intro/README.md`. The approved
+  moonlit cinematic environment is an intro-only art exception. No source PNGs,
+  runtime crowd simulation or particle loops ship with the clip.
+  The native video receives its URL only on first catalogue browsing or entry;
+  Vite hashes it for the existing immutable `/assets/*` cache. Reduced motion
+  skips entry, Skip is always available, and failed or stalled playback opens
+  the dungeon instead of blocking it (one-second startup/stall watchdog).
+  The shared frame loop owns completion and pauses both retained combats and
+  auto-wave countdowns; both canvases stay drawing-disabled. Telegram inactivity,
+  recovery and offline receipts pause the movie too. Re-entry reuses the same
+  element; no persistent intro flag or save-schema change is needed.
 - The cave soundtrack (`Action 2`, compressed MP3) is selected only inside
-  `dungeon-battle`, not in the catalogue. `music.ts` switches the existing single
+  `dungeon-intro` and `dungeon-battle`, not in the catalogue. Intro completion
+  retains that music scene without restarting playback. `music.ts` switches the existing single
   streaming player, preserving campaign/cave playback positions and shared mute,
   gain and activity gates. Do not preload the cave track or decode a full WAV.
   Export settings and source provenance are in `assets/audio/AMBIENT.md`.
