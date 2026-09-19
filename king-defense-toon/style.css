@@ -434,7 +434,7 @@ svg { display: block; }
 .barracks-stock { position: absolute; right: 1px; top: 1px; min-width: 16px; height: 14px; padding: 0 3px; border: 1px solid #66847a; border-radius: 3px; background: #5c7e75; color: #faf0d3; font-size: 10px; line-height: 12px; text-align: center; font-variant-numeric: tabular-nums; }
 .market-tools { position: absolute; right: 0; top: 0; display: grid; place-items: center; width: calc((100% - var(--formation-width)) / 2 - 6px); min-width: 44px; height: 44px; pointer-events: auto; }
 .town-tools { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: calc((100% - var(--formation-width)) / 2 - 6px); min-width: 44px; height: 52px; }
-.market-info-trigger { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 5px; color: #53694f; background: transparent; }
+.market-info-trigger { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex: 0 0 52px; width: 52px; height: 44px; padding: 0; border: 0; border-radius: 5px; color: #53694f; background: transparent; }
 .market-info-trigger > svg { width: 34px; height: 30px; filter: drop-shadow(0 1px #b7a678); }
 .market-info-trigger > span { color: #5e6648; font-size: 9px; line-height: 11px; }
 .market-info-trigger:hover { background: #f5edcb80; }
@@ -447,52 +447,6 @@ svg { display: block; }
 .is-transferring .transfer-leg-front { animation: recruit-stride .18s ease-in-out infinite alternate-reverse; }
 .is-transferring .transfer-body { transform-origin: center bottom; animation: recruit-step .18s ease-in-out infinite alternate; }
 .is-transferring .barracks-art { animation: barracks-arrival 1.2s ease-out; }
-.recruitment-info-card { max-width: 336px; padding: 5px 8px 10px; }
-.recruitment-info-card .menu-heading { margin-bottom: 2px; }
-.recruitment-info-card .menu-heading h2 { font-size: 23px; line-height: 28px; }
-.recruitment-info-card .close-menu { flex-basis: 44px; width: 44px; height: 44px; }
-.recruitment-pool-field { display: flex; align-items: center; gap: 8px; margin: 3px 0 2px; }
-.recruitment-pool-field label { flex: 0 0 auto; color: #786849; font-size: 11px; }
-#recruitment-pool { min-width: 0; flex: 1; min-height: 44px; padding: 5px 21px 5px 7px; border: 1px solid #9f9c74; border-radius: 4px; background: #f2e8c6; color: #536346; font: inherit; font-size: 12px; line-height: 16px; }
-.recruitment-pool-status { margin-bottom: 4px; color: #81734f; font-size: 10px; line-height: 14px; }
-#elf-recruitment-details { display: grid; gap: 5px; }
-.elf-recruitment-detail { min-height: 64px; }
-.elf-recruitment-detail > img, .elf-healer-placeholder { flex: 0 0 54px; width: 54px; height: 54px; }
-.elf-healer-placeholder { padding: 5px; }
-.elf-recruitment-detail .recruitment-detail-heading { align-items: center; font-size: 14px; }
-.elf-recruitment-detail .recruitment-detail-heading span { font-size: 10px; }
-.elf-recruitment-detail.is-locked > img { filter: saturate(.4); }
-.recruitment-info-wallet { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
-.recruitment-info-cost { display: flex; align-items: center; gap: 4px; color: #85724c; font-size: 12px; line-height: 18px; }
-#recruitment-details { display: grid; gap: 5px; }
-#recruitment-current-types { display: contents; }
-.recruitment-detail { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 1px 7px; border: 1px solid #b1b28a; border-radius: 4px; background: #e4e4bd; box-shadow: inset 0 1px #f5efd1, 0 1px #c8bd92; }
-.recruitment-detail > img { flex: 0 0 41px; width: 41px; height: 48px; object-fit: contain; image-rendering: pixelated; }
-.recruitment-detail-copy { flex: 1; min-width: 0; }
-.recruitment-detail-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #526146; font-size: 15px; line-height: 18px; }
-.recruitment-detail-heading span { color: #69825a; font-size: 14px; font-variant-numeric: tabular-nums; }
-.recruitment-detail p { margin-top: 2px; color: #82704f; font-size: 11px; line-height: 14px; }
-.recruitment-detail small { display: block; color: #786b4c; font-size: 10px; line-height: 14px; }
-.recruitment-detail progress { display: block; appearance: none; width: 100%; height: 6px; margin: 2px 0 1px; overflow: hidden; border: 1px solid #a4aa77; border-radius: 3px; background: #d9d5ad; accent-color: #7f9f61; }
-.recruitment-detail progress::-webkit-progress-bar { background: #d9d5ad; }
-.recruitment-detail progress::-webkit-progress-value { background: #8aaa69; box-shadow: inset 0 1px #b5cc8b; }
-.recruitment-detail progress::-moz-progress-bar { background: #8aaa69; box-shadow: inset 0 1px #b5cc8b; }
-.recruitment-info-note { margin: 6px 2px 0; color: #8d7a58; font-size: 11px; line-height: 15px; text-align: center; }
-@media (max-height: 600px) {
-  .recruitment-info-note { display: none; }
-}
-.recruitment-detail.is-locked { background: #e6dfbd; border-color: #b6ac80; }
-.recruitment-detail.is-locked > img { opacity: .7; }
-.recruitment-detail.is-locked .recruitment-detail-heading span { color: #8c7753; font-size: 11px; }
-.recruitment-detail .barracks-upgrade-state { margin: 4px 0 2px; color: #576044; font-size: 11px; line-height: 15px; font-variant-numeric: tabular-nums; }
-.recruitment-upgrade-button { display: block; width: 100%; min-height: 44px; margin: 5px 0 0; padding: 3px 5px; border: 1px solid #799160; border-radius: 4px; background: #d4e0b1; color: #47603a; box-shadow: inset 0 1px #f0f2d0, 0 1px #a5b17e; font: inherit; font-size: 12px; line-height: 16px; }
-.recruitment-upgrade-button:hover:not(:disabled) { background: #e0e9c1; }
-.recruitment-upgrade-button:active:not(:disabled) { transform: translateY(1px); }
-.recruitment-upgrade-button:disabled { opacity: .55; }
-.recruitment-upgrade-actions { display: flex; gap: 4px; }
-.recruitment-upgrade-actions .recruitment-upgrade-button { flex: 1; min-width: 0; width: auto; }
-#barracks-start-upgrade, #barracks-finish-upgrade { flex-grow: 2; }
-#barracks-upgrade-pricing { margin-top: 4px; }
 @keyframes recruit-walk-in { 0% { opacity: 0; transform: translateY(15px) scale(.9); } 7% { opacity: 1; } 22% { opacity: 1; transform: translateY(0) scale(.78); } 28%, 100% { opacity: 0; transform: translateY(-5px) scale(.5); } }
 @keyframes recruit-stride { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
 @keyframes recruit-step { from { transform: translateY(0); } to { transform: translateY(-1px); } }

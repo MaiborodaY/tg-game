@@ -63,6 +63,33 @@ test('food expiry never rewrites enemies or already launched gameplay projectile
   assert.deepEqual(battle.projectiles, projectiles); assert.deepEqual(battle.enemies, enemies);
 });
 
+test('three-wave cave retains food bases, injuries and casualties across wave transitions', () => {
+  const forge = createForge();
+  const run = createDungeonRun(GOBLIN_CAVE_LEVELS[0], { clearedWaves: 50, firstClears: [] }, formation, ['2:0', '2:1', '2:2']);
+  startDungeonBattle(run, createHero(), forge);
+  const battle = run.battle, baseHp = battle.allies[0].maxHp;
+  applyBattleFood(battle, bonuses);
+  battle.allies[0].hp *= .4;
+  const injuredHp = battle.allies[0].hp, deadId = battle.allies[1].id;
+  battle.allies[1].hp = 0; battle.phase = 'victory';
+  const foodBases = battle.food.bases;
+  assert.equal(startDungeonBattle(run, createHero(), forge), true);
+  assert.equal(run.battle, battle); assert.equal(battle.food.bases, foodBases);
+  assert.equal(battle.waveNumber, 2);
+  assert.equal(applyBattleFood(battle, bonuses), false);
+  assert.equal(battle.allies[0].hp, injuredHp);
+  assert.equal(battle.allies.some(unit => unit.id === deadId), false);
+  applyBattleFood(battle, NO_FOOD);
+  near(battle.allies[0].maxHp, baseHp); near(battle.allies[0].hp, baseHp * .4);
+  battle.phase = 'victory';
+  assert.equal(startDungeonBattle(run, createHero(), forge), true);
+  assert.equal(battle.waveNumber, 3); assert.equal(battle.wave.bossType, 'goblinChief');
+  assert.equal(battle.food.bases, foodBases);
+  applyBattleFood(battle, bonuses);
+  near(battle.allies[0].hp, injuredHp);
+  assert.equal(battle.allies.some(unit => unit.id === deadId), false);
+});
+
 test('food retains Forge stat safety bounds at extreme personal levels', () => {
   const forge = createForge({ health: 100, attack: 100, attackSpeed: 100 });
   const stats = getArmyUnitStats('swordsman', Number.MAX_SAFE_INTEGER, forge, bonuses);

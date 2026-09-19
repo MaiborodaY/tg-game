@@ -206,19 +206,21 @@ try {
       progression: { unlockedCells: central, firstClears: [1] },
     }), async (page, screenshot) => {
       await tapCell(page, 4, 2);
-      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks III/);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Mercenaries III/);
       assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
       assert.equal((await state(page)).gold, 5000);
       assert.equal((await state(page)).progression.unlockedCells.length, 9);
       await closePanel(page, 'unit-panel');
       await tapCell(page, 0, 0);
-      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks III/);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Mercenaries III/);
       assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
       await fits(page, '#unit-panel .menu-card');
       await screenshot('third-tier-gate');
       await page.locator('[data-action="barracks-info"]').click();
-      assert.equal(await page.locator('#market-info-panel').isVisible(), true, 'tile gate links to the actual Barracks III purchase');
-      assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks III.*2000 gold/);
+      assert.equal(await page.locator('#market-info-panel').isVisible(), true, 'tile gate links directly to the Mercenaries III upgrade');
+      assert.equal(await page.locator('#mercenaries-upgrade-detail').isVisible(), true);
+      assert.equal(await page.locator('#mercenaries-upgrade-tier').innerText(), 'Mercenaries II → III');
+      assert.equal(await page.locator('#mercenaries-required-gold').innerText(), '5,000 / 2,000');
       await page.locator('#barracks-start-upgrade').click();
       assert.equal((await state(page)).barracks.level, 2);
       assert.equal((await state(page)).gold, 3000);
@@ -234,9 +236,9 @@ try {
       assert.equal((await state(page)).progression.unlockedCells.length, 10);
       await closePanel(page, 'unit-panel');
       await tapCell(page, 0, 1);
-      assert.match(await page.locator('#selection-panel').innerText(), /Future Barracks upgrade/);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Mercenaries IV/);
       assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
-      assert.equal(await page.locator('[data-action="barracks-info"]').count(), 0);
+      assert.equal(await page.locator('[data-action="barracks-info"]').count(), 1);
       await screenshot('maximum-side-quota');
       await closePanel(page, 'unit-panel');
       await page.locator('#open-buildings').click();
@@ -270,7 +272,7 @@ try {
       assert.equal((await state(page)).gold, 5400);
       assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false);
       await tapCell(page, 3, 2);
-      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks II/);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Mercenaries II/);
       assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
       await screenshot('second-tier-gate');
       await page.locator('[data-action="barracks-info"]').click();
@@ -288,7 +290,7 @@ try {
       assert.deepEqual((await state(page)).reserve, [returned], 'repurchasing a tile does not duplicate or redeploy its former fighter');
       await closePanel(page, 'unit-panel');
       await tapCell(page, 4, 2);
-      assert.match(await page.locator('#selection-panel').innerText(), /Requires Barracks III/);
+      assert.match(await page.locator('#selection-panel').innerText(), /Requires Mercenaries III/);
       assert.equal(await page.locator('[data-action="unlock-cell"]').count(), 0);
       await page.reload(); await waitForApp(page);
       assert.equal((await state(page)).gold, 4700);
@@ -302,8 +304,7 @@ try {
       const before = await state(page);
       for (const [sourceId, expectedLevel, palette] of [[2, 250, 'yellow'], [3, 500, 'black']]) {
         await page.locator('#open-barracks').click();
-        await page.locator(`[data-barracks-unit-id="${sourceId}"]`).click();
-        const connect = page.locator(`[data-barracks-merge-id="${sourceId}"]`);
+        const connect = page.locator(`[data-barracks-connect-id="${sourceId}"]`);
         assert.match(await connect.innerText(), /Connect/);
         assert.equal(await connect.isEnabled(), true);
         await connect.click();

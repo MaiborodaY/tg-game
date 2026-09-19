@@ -169,6 +169,13 @@ export function getRecruitLevel(recruitment: RecruitmentState, type: UnitType): 
   return getRecruitProgress(recruitment, type).level;
 }
 
+/** Market receipts, including migrated training, needed to reach an unlock. */
+export function recruitsNeededForLevel(recruitment: RecruitmentState, type: UnitType, targetLevel: number): number {
+  const progress = getRecruitProgress(recruitment, type);
+  if (!Number.isInteger(targetLevel) || targetLevel < 1 || targetLevel > RECRUIT_LEVEL_CAP) throw new RangeError('Invalid recruitment target level');
+  return Math.max(0, recruitsAtLevel(targetLevel) - recruitsAtLevel(progress.level) - progress.progress);
+}
+
 export function getElfRecruitUnlock(recruitment: RecruitmentState, id: ElfRecruitId, barracksLevel: number): ElfRecruitUnlock {
   assertRecruitment(recruitment);
   if (!Object.hasOwn(ELF_UNLOCK_REQUIREMENTS, id)) throw new RangeError('Unknown elf recruit');

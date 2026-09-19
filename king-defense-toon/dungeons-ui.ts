@@ -64,14 +64,14 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit,
         <button type="button" class="dungeon-icon-button dungeon-info-button" data-dungeon-action="rules" aria-label="Dungeon rules" aria-haspopup="dialog" aria-controls="dungeon-rules">i</button></header>
         <div class="dungeon-scroll"><div class="dungeon-intro">${caveIcon()}<div><h3>Goblin Cave</h3><p>Choose a level</p></div></div>
         <div class="dungeon-level-list">${GOBLIN_CAVE_LEVELS.map(level => card(level, progress)).join('')}</div>
-        <p class="dungeon-catalogue-note">Wave 1 is playable now.<br><span>Full runs, bosses and rewards are coming later.</span></p></div>
+        <p class="dungeon-catalogue-note">Cave I: 3 waves, ending with the Goblin Chief.<br><span>Caves II–III: opening wave preview. Reward collection is coming later.</span></p></div>
         <footer class="dungeon-footer"><span aria-hidden="true"></span><p data-dungeon-campaign-status></p></footer></div>
         <section id="dungeon-rules" class="dungeon-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="dungeon-rules-title" hidden>
         <div class="dungeon-rules-card"><header><h3 id="dungeon-rules-title">Dungeon rules</h3><button type="button" class="dungeon-icon-button" data-dungeon-action="close-rules" aria-label="Close dungeon rules">×</button></header>
         ${caveIcon('dungeon-rules-art')}${route()}<ul class="dungeon-rules-list"><li><b aria-hidden="true">⚔</b>3 waves per run</li>
         <li><b aria-hidden="true">♛</b>Final boss on wave 3</li><li><b aria-hidden="true">♡</b>No recovery between waves</li>
         <li><b aria-hidden="true">†</b>Fallen units stay out for the run</li></ul>
-        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Full runs will follow these rules. For now, play the first wave with four guards. Bosses and reward collection come later.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading ends this run.</p>
+        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Cave I has two waves of four guards, then the Goblin Chief. Army, hero and castle keep their remaining HP between waves. Caves II–III currently offer their opening wave only. Reward collection comes later.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading loses this run's progress. You can leave between waves, but not during combat.</p>
         <button type="button" class="dungeon-acknowledge" data-dungeon-action="close-rules">Got it</button></div></section></div>`;
       root.querySelector<HTMLElement>('.dungeon-scroll')!.scrollTop = force ? 0 : oldScroll;
       syncRules();

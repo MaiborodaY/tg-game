@@ -1,4 +1,4 @@
-# Level 1 ambient music
+# Campaign and dungeon music
 
 The first-level playlist alternates `ambient-level-1.mp3` and `ambient-level-1-menu.mp3`, then repeats. Both are full user-provided tracks compressed for the browser game. No cuts, rearrangement or generated audio were added. The original WAVs remain unchanged outside the repository and are not shipped. Only the second export has a constant gain adjustment, described below.
 
@@ -51,3 +51,21 @@ Verification used FFmpeg `volumedetect`, float PCM decoding, exact sample counts
 ```
 
 The playlist totals **3,208,760 bytes** and about **4 min 27 sec**. One media element streams the current track through the existing gain node. The second track is not requested until the first ends. No extra audio context, decoded full-track buffer, preload of both tracks, timer or per-frame audio work is added. Normal loading may introduce a short gap between tracks; this is not a crossfade system. MP3 is lossy, so objective decoding/loudness checks do not establish perceptual identity with the WAV. Encoding options: [FFmpeg libmp3lame documentation](https://www.ffmpeg.org/ffmpeg-codecs.html#libmp3lame-1).
+
+## Goblin Cave: Action 2
+
+- Source supplied by the project owner: `C:\Unity\Unity Projects\Bro TD\Assets\Sounds\Music\Action 2.wav`.
+- Source size: **20,563,930 bytes**; stereo, 44,100 Hz, signed 16-bit PCM.
+- Full duration: **116.571406 seconds**, **5,140,799 samples per channel**.
+- Source SHA-256: `b2c0b9491cee4381dd7f3455857006d0d9eb420c9e6b16271a3ab078c9a93e8a`.
+- Browser asset: `goblin-cave-action.mp3`, **1,399,684 bytes** (1.40 MB), **93.19% smaller**.
+- Export matches the other music: libmp3lame / FFmpeg 7.1, **96 kbps CBR**, stereo, 44,100 Hz, Xing/LAME padding metadata.
+- Export SHA-256: `b8e5296b8ed49c651da3c9934831ef3b0c6e124c2bd955f90b208c713df98db5`.
+- Source loudness **-15.2 LUFS**, true peak **-1.0 dBFS**. A constant **-12.1 dB** export gain gives **-27.7 LUFS**, true peak **-13.4 dBFS**, close to the existing **-27.3 / -27.4 LUFS** playlist. Loudness range remains **3.8 LU**. No limiter, dynamic compression, cuts or fades.
+- Full-file decode succeeds and returns exactly **5,140,799 samples per channel**; no clipping, NaNs or infinities. MP3 container duration includes encoder padding (116.61 s). These are technical checks, not a listening comparison or a lossless-quality claim.
+
+```powershell
+& ffmpeg -hide_banner -y -i 'C:\Unity\Unity Projects\Bro TD\Assets\Sounds\Music\Action 2.wav' -map 0:a:0 -map_metadata -1 -vn -af volume=-12.1dB -c:a libmp3lame -b:a 96k -ar 44100 -ac 2 -write_xing 1 -id3v2_version 3 'assets/audio/goblin-cave-action.mp3'
+```
+
+The cave track is selected only on the `dungeon-battle` screen, including preparation and the result. Browsing the catalogue retains campaign music. The same streaming media element and gain node switch soundtracks, preserving a playback bookmark for each location and looping the cave track natively. Muting, volume and inactivity use the existing shared controls. Entering while muted/inactive does not request the cave MP3. The WAV is unchanged and is not shipped.

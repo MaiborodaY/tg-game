@@ -11,6 +11,8 @@ export function musicContracts(): void {
   music.setMuted(true);
   music.setActive(false);
   music.setLevel(2);
+  music.setScene('goblin-cave');
+  music.setScene('campaign');
   music.setVolume(.25);
   music.destroy();
 
@@ -24,6 +26,8 @@ export function musicContracts(): void {
   music.setLevel('1');
   // @ts-expect-error Volume changes must be numeric before reaching the controller.
   music.setVolume('0.25');
+  // @ts-expect-error Only configured soundtracks can be selected.
+  music.setScene('unknown');
   // @ts-expect-error The lifecycle owns mute state; callers use the setter.
   music.muted = false;
   // @ts-expect-error The lifecycle owns the normalized volume.
