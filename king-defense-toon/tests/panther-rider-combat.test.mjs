@@ -26,7 +26,7 @@ function advance(battle, until, seconds = 30) {
 
 test('mounted glaive rider moves faster than swordsmen and uses its own single-target cadence', () => {
   const movement = type => {
-    const battle = encounter([fighter(1, type)], [{ x: positionForCell(2, 0).x + (type === 'pantherRider' ? FIELD.cellWidth / 2 : 0), y: 66 }]);
+    const battle = encounter([fighter(1, type)], [{ x: positionForCell(2, 0).x, y: 66 }]);
     const unit = battle.allies[0], previousY = unit.y;
     battle.hero.hp = 0;
     updateBattle(battle, DT);
@@ -57,13 +57,13 @@ test('rider starts at the centre of its two-cell footprint without combat-stat c
   const units = [fighter(1, 'pantherRider', 1, 0), fighter(2, 'swordsman', 3, 0)];
   const original = structuredClone(units), battle = createBattle(units);
   const [rider, sword] = battle.allies, anchor = positionForCell(1, 0);
-  assert.equal(rider.x, anchor.x + FIELD.cellWidth / 2);
+  assert.equal(rider.x, anchor.x);
   assert.equal(rider.homeX, rider.x); assert.equal(rider.targetX, rider.x);
-  assert.equal(rider.y, anchor.y); assert.equal(rider.homeY, anchor.y);
+  assert.equal(rider.y, anchor.y + FIELD.cellHeight / 2); assert.equal(rider.homeY, rider.y);
   assert.equal(sword.x, positionForCell(3, 0).x);
   assert.equal(rider.maxHp, 90); assert.equal(rider.damage, 9);
   assert.equal(rider.range, 75); assert.equal(rider.visualScale, 1);
-  assert.deepEqual(units, original, 'combat never rewrites saved left anchors');
+  assert.deepEqual(units, original, 'combat never rewrites saved upper anchors');
 });
 
 test('glaive rider stops beyond sword reach; a released projectile survives its caster and lands only once', () => {
@@ -87,7 +87,7 @@ test('glaive rider stops beyond sword reach; a released projectile survives its 
 });
 
 test('rider advances to the entrance and retargets the archer after the frontline dies', () => {
-  const battle = encounter([fighter(1, 'pantherRider', 2, 2)], [
+  const battle = encounter([fighter(1, 'pantherRider', 2, 1)], [
     { hp: 9, y: 185 }, { type: 'goblinArcher', hp: 18, damage: 0, y: 66 },
   ]);
   battle.hero.hp = 0;

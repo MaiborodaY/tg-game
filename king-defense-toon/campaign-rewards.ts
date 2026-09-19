@@ -4,7 +4,7 @@ import { awardHeroXp } from './hero.ts';
 import type { HeroOutcome, HeroXpResult } from './hero.ts';
 import { claimFirstClear } from './progression.ts';
 import { WAVE_DEFINITIONS } from './waves.ts';
-import { getDungeonLevel } from './dungeons.ts';
+import { getDungeonLevel, getDungeonReward } from './dungeons.ts';
 import type { DungeonRun } from './dungeon-run.ts';
 
 export interface CampaignBattleResult {
@@ -35,13 +35,14 @@ export function applyDungeonRunReward(state: CampaignState, run: DungeonRun) {
   if (run.stage !== 'complete' || run.waveIndex !== 2 || run.waves.length !== 3
     || run.battle?.phase !== 'victory' || run.battle.waveNumber !== 3
     || run.battle.kills !== run.battle.total) return fail('unfinished-run');
-  const { gold, slaves } = level.completionReward;
+  const { gold, slaves } = getDungeonReward(level, state.dungeonClears);
   if (!count(state.gold) || state.gold > Number.MAX_SAFE_INTEGER - gold
     || !count(state.economy.slaves) || state.economy.slaves > Number.MAX_SAFE_INTEGER - slaves) return fail('resource-overflow');
   // Validate the whole grant first. Persist the resulting campaign snapshot before
   // enabling result actions; save retries write this balance, never grant again.
   state.gold += gold;
   state.economy.slaves += slaves;
+  if (!state.dungeonClears.includes(level.id)) state.dungeonClears.push(level.id);
   run.reward = Object.freeze({ gold, slaves });
   return { ok: true as const, gold, slaves };
 }

@@ -182,14 +182,15 @@ test('replacing a deployed fighter preserves both identities and ownership', () 
   unchanged(state, () => commands.deployReserveFighter(state, 20, '4:2'), 'locked-cell');
 });
 
-test('mounted deployment requires both cells and replacement anchors at occupied left cell', () => {
+test('mounted deployment requires both cells and replacement anchors at occupied upper cell', () => {
   const state = roster();
   state.reserve.push({ id: 22, type: 'pantherRider', level: 1 });
   state.progression.unlockedCells.push('1:0');
   unchanged(state, () => commands.deployReserveFighter(state, 22, '1:0'), 'no-room');
+  state.progression.unlockedCells.push('1:1');
   state.units[0].col = 1;
   assert.equal(commands.deployReserveFighter(state, 22, '1:0').ok, true);
-  assert.equal(commands.deployReserveFighter(state, 20, '2:0').ok, true);
+  assert.equal(commands.deployReserveFighter(state, 20, '1:1').ok, true);
   assert.equal(state.units[0].col, 1);
   assert.equal(state.reserve.some(unit => unit.id === 22), true);
 });

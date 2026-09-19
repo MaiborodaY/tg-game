@@ -60,7 +60,7 @@ import { createDungeonIntro } from './dungeon-intro.ts';
 import './dungeons.css';
 import './dungeon-intro.css';
 
-import { getUnitCellWidth, getUnitAtCell } from './unit-footprint.ts';
+import { getUnitCellWidth, getUnitCellHeight, getUnitCellCount, getUnitAtCell } from './unit-footprint.ts';
 import { decodeCampaignSave, needsCampaignSaveMigration, SAVE_SCHEMA_VERSION } from './campaign-save.ts';
 import type { GameElementId } from './main-dom.ts';
 import type { Battle, BattlePhase } from './combat-types.ts';
@@ -891,7 +891,7 @@ function finishDungeonIntro() {
 }
 
 dungeonsUI = createDungeonsUI({ root: byId('dungeons-screen'),
-  getProgress: () => ({ clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears }),
+  getProgress: () => ({ clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears, dungeonClears: campaign.dungeonClears }),
   getCampaignStatus: () => battle?.phase === 'running' ? 'Main battle continues'
     : autoNextRemaining !== null ? 'Next wave starts automatically'
     : battle ? 'Main battle finished' : 'Your army is waiting',
@@ -1217,7 +1217,7 @@ function refreshContent() {
   syncMusicActivity();
   refreshEconomy();
   heroUI?.render();
-  byId('army-count').textContent = `${campaign.units.reduce((total, unit) => total + getUnitCellWidth(unit.type), 0)} / ${campaign.progression.unlockedCells.length}`;
+  byId('army-count').textContent = `${campaign.units.reduce((total, unit) => total + getUnitCellCount(unit.type), 0)} / ${campaign.progression.unlockedCells.length}`;
   const pendingRecruit = campaign.reserve.find(unit => unit.id === pendingRecruitId);
   if (!pendingRecruit) pendingRecruitId = null;
   const mergeSource = draggedMerge?.source ?? pendingMerge;
@@ -1228,7 +1228,7 @@ function refreshContent() {
   mergeLevel = merging?.level ?? 0;
   byId('army-status').textContent = draggedMerge ? 'Release on a green fighter to connect. Release elsewhere to cancel.'
     : merging ? `Connect: choose another ${types[merging.type].name}. Adds ${merging.level} levels.`
-    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${getUnitCellWidth(pendingRecruit.type) === 2 ? ' · 2 adjacent tiles' : ''}`
+    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${getUnitCellHeight(pendingRecruit.type) === 2 ? ' · 2 vertical tiles' : getUnitCellWidth(pendingRecruit.type) === 2 ? ' · 2 horizontal tiles' : ''}`
     : movingId ? 'Tap a destination' : 'Tap for details · Hold a fighter to connect';
   byId('cancel-army-move').hidden = !movingId && !pendingRecruitId && !pendingMerge;
   byId('open-market-info').hidden = !!movingId || !!pendingRecruitId || !!pendingMerge;
@@ -1272,7 +1272,7 @@ function refreshContent() {
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && campaign.units.length === 1;
     byId('unit-panel-title').textContent = type.name;
-    const markup = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}${getUnitCellWidth(selected.type) === 2 ? ' · 2 tiles' : ''}</p></div></div><div class="selection-actions"><button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div>${connectPanelMarkup(true)}${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    const markup = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}${getUnitCellCount(selected.type) === 2 ? ' · 2 tiles' : ''}</p></div></div><div class="selection-actions"><button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div>${connectPanelMarkup(true)}${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
     refreshConnectPanel(panel, markup);
   } else {
     byId('unit-panel-title').textContent = 'Deploy a fighter';
@@ -1332,7 +1332,7 @@ function canMerge(source: MergeSource) {
 function mergeDescription(source: MergeSource) {
   const fighter = getMergeSource(source);
   if (!fighter) return '';
-  const space = getUnitCellWidth(fighter.type) === 2 ? 'Uses 2 adjacent horizontal tiles. ' : '';
+  const space = getUnitCellHeight(fighter.type) === 2 ? 'Uses 2 vertical tiles. ' : getUnitCellWidth(fighter.type) === 2 ? 'Uses 2 horizontal tiles. ' : '';
   return space + (connectCandidates(source).length
     ? 'Connect adds matching fighters to this unit. Choose from Barracks or Army.'
     : `Get another ${types[fighter.type].name} to connect to this unit.`);
@@ -1563,7 +1563,7 @@ function refreshReserve(selected: ArmyUnit | undefined) {
   byId('reserve-page').textContent = `${reservePage + 1} / ${pageCount}`;
   byId('reserve-options').innerHTML = campaign.reserve.slice(reservePage * RESERVE_PAGE_SIZE, (reservePage + 1) * RESERVE_PAGE_SIZE).map(unit => {
     const portrait = scene?.getUnitArt(unit.type, unit.level);
-    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${getUnitCellWidth(unit.type) === 2 ? ' · 2 tiles' : ''}</small></button>`;
+    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${getUnitCellCount(unit.type) === 2 ? ' · 2 tiles' : ''}</small></button>`;
   }).join('');
 }
 
@@ -1664,7 +1664,7 @@ byId('barracks-detail').addEventListener('click', event => {
   selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   closeOverlay(false); refresh();
   byId('army-map').focus({ preventScroll: true });
-  tell(getUnitCellWidth(fighter.type) === 2 ? 'Pick 2 tiles side by side.' : 'Choose a tile.');
+  tell(getUnitCellHeight(fighter.type) === 2 ? 'Pick the upper of 2 vertical tiles.' : getUnitCellWidth(fighter.type) === 2 ? 'Pick 2 tiles side by side.' : 'Choose a tile.');
 });
 
 function changeReservePage(delta: number) {
@@ -1692,7 +1692,7 @@ function placeReserveFighter(id: number, key: string) {
   const result = commands.deployReserveFighter(campaign, id, key);
   if (!result.ok) {
     const fighter = campaign.reserve.find(unit => unit.id === id);
-    tell(fighter && getUnitCellWidth(fighter.type) === 2
+    tell(fighter && getUnitCellHeight(fighter.type) === 2 ? 'Needs a free tile below.' : fighter && getUnitCellWidth(fighter.type) === 2
       ? 'Free the tile on the right.' : 'Tile occupied.');
     return false;
   }

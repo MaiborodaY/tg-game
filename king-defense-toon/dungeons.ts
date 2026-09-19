@@ -38,3 +38,19 @@ export function isDungeonLevelUnlocked(level: DungeonLevel, progress: DungeonPro
 export function getDungeonLevel(id: string): DungeonLevel | undefined {
   return GOBLIN_CAVE_LEVELS.find(level => level.id === id);
 }
+
+export type DungeonClearId = DungeonLevel['id'];
+
+/** Reject damaged receipts instead of silently restoring eligibility for a full reward. */
+export function restoreDungeonClears(value: unknown): DungeonClearId[] {
+  if (!Array.isArray(value) || value.some(id => typeof id !== 'string' || !getDungeonLevel(id)?.runBoss)
+    || new Set(value).size !== value.length) throw new Error('Invalid saved dungeon clears');
+  return [...value] as DungeonClearId[];
+}
+
+export function getDungeonReward(level: DungeonLevel, clears: readonly DungeonClearId[]): DungeonReward {
+  const divisor = clears.includes(level.id) ? 3 : 1;
+  // Both resources are indivisible; repeat prizes round down to whole units.
+  return { gold: Math.floor(level.completionReward.gold / divisor),
+    slaves: Math.floor(level.completionReward.slaves / divisor) };
+}

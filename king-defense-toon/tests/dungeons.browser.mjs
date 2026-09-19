@@ -251,7 +251,7 @@ try {
     await scenario(`Cave ${level.numeral} run rewards, repeat entry and defeat ${width}x${height}`, width, height, fixture(level.unlockRound * 10), async (page, requests) => {
       await open(page);
       const card = page.locator('.dungeon-level-card').nth(level.tier - 1);
-      assert.equal(await card.locator('.dungeon-card-reward-label').textContent(), 'Rewards on every clear');
+      assert.equal(await card.locator('.dungeon-card-reward-label').textContent(), 'First-clear reward');
       await page.locator(`[data-dungeon-level="${level.id}"]`).click();
       await page.waitForFunction(() => window.dungeonCheck.ready());
       const before = await page.evaluate(() => window.dungeonCheck.state());
@@ -274,8 +274,8 @@ try {
         await page.locator('[data-run-result]').waitFor({ state: 'visible' });
         assert.equal(await page.locator('[data-result-title]').textContent(), 'Cave conquered!');
         assert.ok((await page.locator('[data-result-description]').textContent()).includes(level.boss));
-        assert.equal(await page.locator('[data-result-gold]').textContent(), `+${gold}`);
-        assert.equal(await page.locator('[data-result-slaves]').textContent(), `+${slaves}`);
+        assert.equal(await page.locator('[data-result-gold]').textContent(), `+${run === 1 ? gold : Math.floor(gold / 3)}`);
+        assert.equal(await page.locator('[data-result-slaves]').textContent(), `+${run === 1 ? slaves : Math.floor(slaves / 3)}`);
         assert.equal(await page.locator(`.dungeon-result-art.dungeon-art-${level.tier}`).count(), 1);
         if (level.tier === 2) for (const asset of ['body', 'bomb', 'explosion']) {
           assert.equal(requests.filter(url => url.includes(`/goblin-bombardier/${asset}.webp`)).length, 1,
@@ -284,8 +284,8 @@ try {
         assert.equal(await start.isVisible(), false);
         await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
         const after = await page.evaluate(() => window.dungeonCheck.state());
-        assert.equal(after.gold, before.gold + gold * run);
-        assert.equal(after.economy.slaves, before.economy.slaves + slaves * run);
+        assert.equal(after.gold, before.gold + gold + (run - 1) * Math.floor(gold / 3));
+        assert.equal(after.economy.slaves, before.economy.slaves + slaves + (run - 1) * Math.floor(slaves / 3));
         assert.deepEqual(after.units, before.units);
         assert.deepEqual(after.hero, before.hero);
         assert.deepEqual(after.progression, before.progression);
@@ -307,9 +307,15 @@ try {
       await page.reload();
       await page.waitForFunction(() => window.dungeonCheck?.ready());
       const restored = await page.evaluate(() => window.dungeonCheck.state());
-      assert.equal(restored.gold, before.gold + 2 * gold);
-      assert.equal(restored.economy.slaves, before.economy.slaves + 2 * slaves);
+      assert.equal(restored.gold, before.gold + gold + Math.floor(gold / 3));
+      assert.equal(restored.economy.slaves, before.economy.slaves + slaves + Math.floor(slaves / 3));
       assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
+      assert.deepEqual(restored.dungeonClears, [level.id]);
+      await open(page);
+      const repeatCard = page.locator('.dungeon-level-card').nth(level.tier - 1);
+      assert.match(await repeatCard.locator('.dungeon-card-reward-label').innerText(), /Repeat clear/);
+      assert.ok((await repeatCard.innerText()).includes(`${Math.floor(gold / 3)} gold`));
+      assert.ok((await repeatCard.innerText()).includes(`${Math.floor(slaves / 3)} slaves`));
     });
   }
   await scenario(`Cave ${level.numeral} boss rewards survive failed storage writes without duplicate grants`, 390, 844, fixture(level.unlockRound * 10), async page => {
@@ -342,6 +348,7 @@ try {
     assert.equal(paid.economy.slaves, before.economy.slaves + slaves);
     await page.reload(); await page.waitForFunction(() => window.dungeonCheck?.ready());
     const restored = await page.evaluate(() => window.dungeonCheck.state());
+    assert.deepEqual(restored.dungeonClears, [level.id]);
     assert.equal(restored.gold, paid.gold);
     assert.equal(restored.economy.slaves, paid.economy.slaves);
   });

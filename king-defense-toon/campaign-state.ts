@@ -26,6 +26,7 @@ import { reconcileUnitFootprints } from './unit-footprint.ts';
 import { decodeCampaignSave, SAVE_SCHEMA_VERSION } from './campaign-save.ts';
 import { CAMPAIGN_VERSION, WAVE_DEFINITIONS } from './waves.ts';
 import { restoreOnboardingCompleted } from './onboarding.ts';
+import type { DungeonClearId } from './dungeons.ts';
 
 export const AUTO_WAVES_DEFAULT_VERSION = 1;
 
@@ -55,6 +56,7 @@ export interface CampaignState {
   marketHintCompleted: boolean;
   onboardingCompleted: boolean;
   clearedWaves: number;
+  dungeonClears: DungeonClearId[];
   economy: EconomyState;
   progression: Progression;
   autoWaves: boolean;
@@ -90,7 +92,7 @@ export function createCampaignState(now: number): CampaignState {
     recruitment: createRecruitment(), recruitmentPool: 'humans', barracks: createBarracks(undefined, now),
     forge: createForge(), farm: createFarm(undefined, now), kitchen: createKitchen(), capitol: createCapitol(), hero: createHero(),
     starterSupplyGranted: true, marketHintCompleted: false, onboardingCompleted: false, clearedWaves: 0,
-    economy, progression: createProgression(), autoWaves: true,
+    economy, progression: createProgression(), dungeonClears: [], autoWaves: true,
     offlineRewards: { gold: 0, slaves: 0, slotRefund: 0, returnedFighters: 0, closedCells: 0, forgeRefund: 0 },
   };
 }
@@ -134,7 +136,7 @@ export function restoreCampaignState(value: unknown, now: number): CampaignState
     marketHintCompleted: saved.marketHintCompleted === true || Object.values(recruitment.received).some(count => count > 0),
     onboardingCompleted: restoreOnboardingCompleted(saved),
     clearedWaves: Math.max(0, Math.min(WAVE_DEFINITIONS.length, Math.floor(Number(saved.clearedWaves) || 0))),
-    economy, progression,
+    economy, progression, dungeonClears: saved.dungeonClears,
     autoWaves: saved.autoWavesDefaultVersion === AUTO_WAVES_DEFAULT_VERSION ? saved.autoWaves !== false : true,
     offlineRewards: {
       gold: savedPositiveInteger(rewards.gold), slaves: savedPositiveInteger(rewards.slaves),
@@ -157,6 +159,7 @@ export function campaignSnapshot(state: Readonly<CampaignState>): CampaignSnapsh
     starterSupplyGranted: state.starterSupplyGranted, marketHintCompleted: state.marketHintCompleted,
     onboardingCompleted: state.onboardingCompleted,
     clearedWaves: state.clearedWaves, economy: state.economy, progression: state.progression,
+    dungeonClears: state.dungeonClears,
     autoWaves: state.autoWaves, autoWavesDefaultVersion: AUTO_WAVES_DEFAULT_VERSION,
     offlineRewards: state.offlineRewards,
   });

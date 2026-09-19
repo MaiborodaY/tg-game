@@ -124,6 +124,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Never derive identity from array position or renumber on reload, sale or Connect.
   IDs are campaign-local. Respect shared footprint helpers for every two-cell unit;
   use capabilities such as `isHealingUnit`, not special cases for one old unit.
+  Panther Rider occupies 1 column × 2 rows from its upper anchor; Unicorn stays
+  2 columns × 1 row from its left anchor. Count occupied cells by footprint area,
+  never width alone. Selection, movement, Connect, previews and combat positions
+  share the same helpers. On restore, blocked Riders move intact to reserve;
+  never shift ordinary fighters or discard IDs/levels to accommodate a rotation.
 - A running battle owns its initial army/building/hero snapshots. Campaign edits
   apply to the next battle. Temporary Kitchen food is the explicit exception:
   `army-food.ts` applies/withdraws food against the battle's original forged stats,
@@ -181,7 +186,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - `save-storage.ts` and `save-session.ts` own browser storage access, schema checks,
   conflict detection and the exclusive writer lock. Do not bypass their recovery
   gate with direct localStorage writes in gameplay/UI code.
-- Current saves use schema 4 and persist `nextUnitId` and `kitchen`. When changing the format,
+- Current saves use schema 5 and persist `nextUnitId`, `kitchen` and `dungeonClears`. When changing the format,
   define an explicit migration and its compatibility behavior. Keep the original
   bytes before replacement, preserve prior migration backups, reject unsupported
   newer versions, and never overwrite malformed data with a fresh empty campaign.
@@ -315,9 +320,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   progress so retreat and campaign replay do not relock levels. No new save field
   is needed for browsing. Rewards and Enter are on each card, without a separate
   details page. Closed levels show their unlock requirement and disabled Enter.
-- `dungeons-ui.ts` owns catalogue/rules. Caves I and II award 150 gold + 3 slaves
-  and 300 gold + 5 slaves respectively on every completed run, with unlimited
-  daily entries. Cave III's 500 + 8 remains a future reward for its unfinished run.
+- `dungeons-ui.ts` owns catalogue/rules. Caves I and II first clears award 150 gold
+  + 3 slaves and 300 gold + 5 slaves. Repeats award one third of each resource,
+  rounded down: 50 + 1 and 100 + 1 respectively. Daily entries are unlimited.
+  Cards show the next prize via `getDungeonReward`, shared with settlement.
+  Cave III's 500 + 8 remains a future reward for its unfinished run.
   `DungeonLevel.runBoss` selects a full run's boss; null retains opening-preview mode.
 - `dungeon-run.ts` owns a separate formation and combat snapshot. Each guard
   group has one goblin, archer, healer and boar, all arriving together. Stats reference
@@ -356,11 +363,16 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Caves I and II carry HP and casualties between all three waves; healing during combat
   works normally. Run progress and its reward receipt are session-only, like battle
   receipts. `applyDungeonRunReward` in `campaign-rewards.ts` grants canonical full-run
-  rewards once, validates both balances before mutation, and leaves other campaign
-  state untouched. Main saves immediately after settlement; storage recovery blocks
+  rewards once and validates both balances before mutation. A successful full clear
+  records the level ID in campaign `dungeonClears` together with both balances.
+  Main saves immediately after settlement; storage recovery blocks
   result actions until the save succeeds. Retrying a write never re-grants rewards.
   The finished view shows spoils or defeat, plus Dungeons / Run again. Re-entry is
-  a fresh run with a new receipt. No daily cap or persistent dungeon progress is added.
+  a fresh run with a new receipt; persisted clear IDs determine its smaller prize.
+  Schema 0–4 did not record victories, so the next completed run of each level is
+  its first tracked clear. Schema 5 requires valid, unique clear IDs; malformed or
+  missing receipts trigger recovery instead of restoring the full reward. Older
+  clients reject schema 5, preserving receipts and vertical Rider placements.
 - Only a visible cave asset plan requests `map:goblin-cave`; URL imports do not
   eagerly fetch its image. Enemy sheets follow the current wave and shared cache.
 - Static WebP cover art uses one three-column atlas, loaded on first browsing;

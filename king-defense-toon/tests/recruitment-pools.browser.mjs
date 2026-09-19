@@ -208,7 +208,8 @@ try {
     });
 
     await scenario('rider-recruit-deploy-connect-sell-and-humans', width, fixture({
-      progression: { unlockedCells: ['2:0', '2:1', '2:2', '3:2'], firstClears: [] },
+      units: [{id:1,type:'swordsman',level:2,col:2,row:0},{id:2,type:'archer',level:2,col:2,row:1},{id:3,type:'healer',level:2,col:3,row:1}],
+      progression: { unlockedCells: ['2:0', '2:1', '2:2', '3:1', '3:2'], firstClears: [] },
     }), async (page, requested) => {
       const opener = page.locator('#open-market-info');
       assert.equal(await opener.locator('svg').count(), 1);
@@ -294,7 +295,7 @@ try {
       await fits(page, '#barracks-panel');
       if (width === 390) await page.screenshot({ path: fileURLToPath(new URL('rider-details-390.png', output)) });
       await page.locator(`[data-barracks-recruit-id="${riders[0].id}"]`).click();
-      await tapCell(page, 2, 2);
+      await tapCell(page, 3, 1);
       current = await state(page);
       assert.equal(current.units.find(unit => unit.id === riders[0].id)?.type, 'pantherRider');
       assert.equal(current.reserve.some(unit => unit.id === riders[0].id), false);
@@ -677,52 +678,52 @@ try {
 
   for (const width of [390, 320]) {
     await scenario('two-cell-placement-move-swap-drag', width, fixture({
-      units: [{ id: 1, type: 'swordsman', level: 2, col: 1, row: 1 }, { id: 2, type: 'archer', level: 2, col: 2, row: 1 }],
+      units: [{ id: 1, type: 'swordsman', level: 2, col: 2, row: 0 }, { id: 2, type: 'archer', level: 2, col: 2, row: 1 }],
       reserve: [50, 100, 1].map((level, index) => ({ id: index + 3, type: 'pantherRider', level })),
       progression: { unlockedCells: [...centralCells, '4:2'], firstClears: [] },
     }), async page => {
       await unitDetails(page, 3); await page.locator('[data-barracks-recruit-id="3"]').click();
       const before = recruitmentInventory(await state(page));
-      for (const [col, row] of [[3, 1], [4, 2], [1, 1]]) {
+      for (const [col, row] of [[4, 1], [4, 2], [2, 0]]) {
         await tapCell(page, col, row);
-        assert.deepEqual(recruitmentInventory(await state(page)), before, 'Locked right neighbour, edge and two occupied cells reject without consuming a fighter');
+        assert.deepEqual(recruitmentInventory(await state(page)), before, 'Locked upper cell, bottom edge and two occupied cells reject without consuming a fighter');
       }
       await tapCell(page, 1, 0);
       assert.equal((await state(page)).units.find(unit => unit.id === 3).col, 1);
-      await tapCell(page, 2, 0);
+      await tapCell(page, 1, 1);
       assert.match(await page.locator('#selection-panel').innerText(), /Panther Rider.*Lv\. 50/s);
       assert.match(await page.locator('#selection-panel').innerText(), /2.*tiles/i);
       await close(page, 'unit-panel');
       await unitDetails(page, 4); await page.locator('[data-barracks-recruit-id="4"]').click();
-      await tapCell(page, 1, 2);
+      await tapCell(page, 3, 0);
       await ready(page); await page.evaluate(() => window.recruitmentCheck.render());
       await page.screenshot({ path: fileURLToPath(new URL(`rider-two-cells-${width}.png`, output)) });
 
-      await tapCell(page, 2, 0); await page.locator('[data-action="move"]').click();
+      await tapCell(page, 1, 1); await page.locator('[data-action="move"]').click();
       const beforeMove = recruitmentInventory(await state(page));
-      await tapCell(page, 1, 1);
-      assert.deepEqual(recruitmentInventory(await state(page)), beforeMove, 'Moving cannot push two existing fighters into reserve');
       await tapCell(page, 2, 0);
-      assert.equal((await state(page)).units.find(unit => unit.id === 3).col, 2, 'A move can overlap its own old footprint');
-      await tapCell(page, 3, 0); await page.locator('[data-action="move"]').click();
+      assert.deepEqual(recruitmentInventory(await state(page)), beforeMove, 'Moving cannot push two existing fighters into reserve');
+      await tapCell(page, 1, 1);
+      assert.equal((await state(page)).units.find(unit => unit.id === 3).row, 1, 'A move can overlap its own old footprint');
+      await tapCell(page, 1, 2); await page.locator('[data-action="move"]').click();
       await tapCell(page, 2, 1);
       let current = await state(page);
       assert.deepEqual([current.units.find(unit => unit.id === 3).col, current.units.find(unit => unit.id === 3).row], [2, 1]);
-      assert.deepEqual([current.units.find(unit => unit.id === 2).col, current.units.find(unit => unit.id === 2).row], [2, 0]);
+      assert.deepEqual([current.units.find(unit => unit.id === 2).col, current.units.find(unit => unit.id === 2).row], [1, 1]);
 
       const cdp = await page.context().newCDPSession(page);
       const sendTouch = (type, point) => cdp.send('Input.dispatchTouchEvent', { type,
         touchPoints: point ? [{ ...point, id: 1, radiusX: 2, radiusY: 2, force: 1 }] : [] });
-      await sendTouch('touchStart', await cellPoint(page, 2, 2));
+      await sendTouch('touchStart', await cellPoint(page, 3, 1));
       await page.waitForTimeout(510);
       assert.equal(await page.locator('.unit-drag-ghost').count(), 1, 'The occupied second cell starts the correct fighter drag');
-      await sendTouch('touchMove', await cellPoint(page, 3, 1));
+      await sendTouch('touchMove', await cellPoint(page, 2, 2));
       assert.equal(await page.locator('.unit-drag-ghost.is-valid').count(), 1, 'The target second cell is a valid Connect destination');
       await sendTouch('touchEnd'); await cdp.detach();
       current = await state(page);
       assert.equal(current.units.find(unit => unit.id === 3).level, 150);
       assert.equal(current.units.some(unit => unit.id === 4), false);
-      await tapCell(page, 3, 1);
+      await tapCell(page, 2, 2);
       await page.locator('[data-connect-donor-id="5"]:visible').click();
       await page.locator('[data-connect-action="apply"]:visible').click();
       current = await state(page);
@@ -733,28 +734,28 @@ try {
       await close(page, 'unit-panel');
       await page.reload(); await ready(page);
       assert.deepEqual(restoredInventory(await state(page)), restoredInventory(current));
-      await tapCell(page, 3, 1);
+      await tapCell(page, 2, 2);
       assert.match(await page.locator('#selection-panel').innerText(), /Panther Rider.*Lv\. 151/s);
       await close(page, 'unit-panel'); await page.locator('#start-wave').click();
       const mounted = (await page.evaluate(() => window.recruitmentCheck.battle())).allies.find(unit => unit.type === 'pantherRider');
-      assert.equal(mounted.x, FIELD.gridX + 3 * FIELD.cellWidth);
+      assert.equal(mounted.x, FIELD.gridX + 2.5 * FIELD.cellWidth);
       assert.equal(mounted.homeX, mounted.x);
     });
 
     await scenario('two-cell-legacy-migration-once', width, fixture({
       units: [
-        { id: 1, type: 'swordsman', level: 2, col: 2, row: 0 },
+        { id: 1, type: 'swordsman', level: 2, col: 1, row: 1 },
         { id: 2, type: 'pantherRider', level: 50, col: 1, row: 0 },
         { id: 3, type: 'pantherRider', level: 100, col: 3, row: 0 },
-        { id: 4, type: 'pantherRider', level: 250, col: 1, row: 1 },
+        { id: 4, type: 'pantherRider', level: 250, col: 2, row: 1 },
         { id: 5, type: 'pantherRider', level: 500, col: 4, row: 2 },
       ],
       reserve: [{ id: 6, type: 'archer', level: 3 }],
-      progression: { unlockedCells: [...centralCells, '4:2'], firstClears: [] },
+      progression: { unlockedCells: [...centralCells.filter(cell => cell !== '3:1'), '4:2'], firstClears: [] },
     }), async page => {
       let current = await state(page);
       assert.deepEqual(current.units.map(unit => [unit.type, unit.level, unit.col, unit.row]),
-        [['swordsman', 2, 2, 0], ['pantherRider', 250, 1, 1]]);
+        [['swordsman', 2, 1, 1], ['pantherRider', 250, 2, 1]]);
       assert.deepEqual(current.reserve.map(unit => [unit.type, unit.level]),
         [['archer', 3], ['pantherRider', 50], ['pantherRider', 100], ['pantherRider', 500]]);
       assert.equal(current.gold, 5000);
