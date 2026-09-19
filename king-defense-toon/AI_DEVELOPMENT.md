@@ -163,20 +163,34 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Ordinary translucent menus retain their existing drawing behavior. Recovery
   and offline receipts remain above Dungeons, preserving focus and inert state.
 
-## Dungeons catalogue (implemented menu; runs are future work)
+## Dungeons catalogue and opening encounter
 
 - `dungeons.ts` owns three Goblin Cave levels, unlocked after all ten waves of
   rounds 1-5 / 1-10 / 1-15. Use historical first clears as well as current cleared
   progress so retreat and campaign replay do not relock levels. No new save field
-  is needed for browsing. Closed levels still expose their details.
-- `dungeons-ui.ts` owns catalogue/details/rules and local navigation. The menu is
-  read-only: it does not create battles, consume the army, grant rewards or write
-  campaign state. Previewed first-clear rewards are 150 gold + 3 slaves,
-  300 + 5, and 500 + 8; repeat rewards/entry cadence remain undefined.
+  is needed for browsing. Rewards and Enter are on each card, without a separate
+  details page. Closed levels show their unlock requirement and disabled Enter.
+- `dungeons-ui.ts` owns catalogue/rules. Previewed full-run first-clear rewards
+  are 150 gold + 3 slaves, 300 + 5, and 500 + 8; these remain labelled future rewards.
+- `dungeon-run.ts` owns a separate formation and combat snapshot. The first wave
+  has one goblin, archer, healer and boar, all arriving together. Stats reference
+  the campaign just after the level's unlock milestone; campaign balance is unchanged.
+  No campaign wave progress, kills, captures, XP or full-clear rewards are settled.
+  Leaving/reloading discards this one-wave encounter, not the saved army.
+- `dungeon-battle` is a screen state, not a second application/RAF. The same two
+  scene instances render the cave, local Army formation and Hero menu. City menus,
+  recruitment, Connect and cell buying are unavailable here. Moves use the shared
+  footprint/swap validator and do not change the main formation. Hero talents still
+  use campaign commands; already-running battles keep their original snapshots.
+- Main combat and auto-wave countdown pause during the cave screen and resume
+  when it closes; catalogue browsing continues them as before. Economy retains its
+  existing timestamp lifecycle. Recovery, offline receipts and Telegram suspension
+  cover both modes. The cave map has its own cache key shared by both canvases;
+  use authored bounds (-56, -445, 502, 890), never stretch it into the lower field.
 - Planned runs have three waves, a boss on wave three, HP carried between waves,
   no return of fallen units within the run, and healing during combat. These are
-  explanatory menu text, not implemented dungeon combat. Do not imply a playable
-  dungeon until its battle/reward/save flow is separately authorized and built.
+  future full-run rules explained in the info dialog. Only wave 1 is playable now;
+  wave transitions, bosses, persistent run state and reward collection are not built.
 - Static WebP cover art uses one three-column atlas, loaded on first browsing;
   the small cave icon is shared with navigation. No animated menu backgrounds,
   separate canvas loop, external image requests or per-refresh image creation.

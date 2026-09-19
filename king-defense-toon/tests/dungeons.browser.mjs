@@ -19,6 +19,8 @@ const server = await createServer({
       ready: () => !!scene && !!armyScene && !isRecovering(),
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => battle && ({ wave: battle.waveNumber, elapsed: battle.elapsed, phase: battle.phase }),
+      run: () => dungeonRun && ({ level: dungeonRun.level.id, battle: dungeonRun.battle && {
+        elapsed: dungeonRun.battle.elapsed, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
       finishWave: () => {
         if (!battle || battle.phase !== 'running') throw new Error('No running battle');
         for (let i = 0; i < 30000 && battle.phase === 'running'; i++) updateBattle(battle, 1/60);
@@ -113,7 +115,7 @@ try {
   baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
   for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
-    await scenario(`catalogue/details/rules ${width}x${height}`, width, height, fixture(), async page => {
+    await scenario(`catalogue/rewards/rules ${width}x${height}`, width, height, fixture(), async page => {
       const before = await page.evaluate(() => window.dungeonCheck.state());
       await open(page); await fits(page);
       assert.equal(await page.locator('.dungeon-level-card').count(), 3);
@@ -121,23 +123,21 @@ try {
       assert.equal(await page.locator('.dungeon-level-card.is-locked').count(), 2);
       await page.screenshot({ path: fileURLToPath(new URL(`catalogue-${width}.png`, output)) });
       for (const [tier, gold, slaves] of [[1, 150, 3], [2, 300, 5], [3, 500, 8]]) {
-        await page.locator(`[data-dungeon-level="goblin-cave-${tier}"]`).click(); await fits(page);
-        const text = await page.locator('.dungeon-rewards').innerText();
+        const card = page.locator('.dungeon-level-card').nth(tier - 1);
+        const text = await card.locator('.dungeon-card-rewards').innerText();
         assert.ok(text.includes(`${gold} gold`) && text.includes(`${slaves} slaves`));
-        assert.equal(await page.locator('#dungeons-screen button:has-text("Enter")').count(), 0, 'menu cannot start an unimplemented run');
-        if (tier === 1) await page.screenshot({ path: fileURLToPath(new URL(`details-${width}.png`, output)) });
-        await page.locator('[data-dungeon-action="rules"]').click(); await fits(page);
-        const rules = await page.locator('#dungeon-rules').innerText();
-        for (const phrase of ['3 waves per run', 'Final boss on wave 3', 'No recovery between waves', 'Fallen units stay out for the run', 'Healing during combat still works']) assert.ok(rules.includes(phrase));
-        assert.equal(await page.locator('.dungeon-page').evaluate(el => el.inert), true);
-        await page.keyboard.press('Shift+Tab');
-        assert.equal(await page.evaluate(() => document.activeElement.textContent), 'Got it');
-        if (tier === 1) await page.screenshot({ path: fileURLToPath(new URL(`rules-${width}.png`, output)) });
-        await page.keyboard.press('Escape');
-        assert.equal(await page.evaluate(() => document.activeElement.dataset.dungeonAction), 'rules');
-        await back(page);
-        assert.equal(await page.evaluate(() => document.activeElement.dataset.dungeonLevel), `goblin-cave-${tier}`);
+        assert.equal(await card.locator('button').isDisabled(), tier !== 1);
       }
+      assert.equal(await page.locator('.dungeon-details').count(), 0);
+      await page.locator('[data-dungeon-action="rules"]').click(); await fits(page);
+      const rules = await page.locator('#dungeon-rules').innerText();
+      for (const phrase of ['3 waves per run', 'Final boss on wave 3', 'No recovery between waves', 'Fallen units stay out for the run', 'Healing during combat still works']) assert.ok(rules.includes(phrase));
+      assert.equal(await page.locator('.dungeon-page').evaluate(el => el.inert), true);
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.evaluate(() => document.activeElement.textContent), 'Got it');
+      await page.screenshot({ path: fileURLToPath(new URL(`rules-${width}.png`, output)) });
+      await page.keyboard.press('Escape');
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.dungeonAction), 'rules');
       await back(page);
       assert.equal(await page.locator('#dungeons-screen').isHidden(), true);
       assert.equal(await page.locator('.battlefield').evaluate(el => el.inert), false);
@@ -145,6 +145,34 @@ try {
       assert.deepEqual(inventory(await page.evaluate(() => window.dungeonCheck.state())), inventory(before));
     });
   }
+  await scenario('cave screen shares the renderer but isolates the campaign battle and formation', 390, 844, fixture(), async page => {
+    await page.locator('#start-wave').click(); await open(page);
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-battle');
+    for (const id of ['open-barracks', 'transform-slave', 'open-buildings', 'open-market-info', 'auto-waves', 'start-wave']) {
+      assert.equal(await page.locator(`#${id}`).isVisible(), false);
+    }
+    assert.equal(await page.locator('#open-hero').isVisible(), true);
+    const pausedAt = await page.evaluate(() => window.dungeonCheck.battle().elapsed);
+    const before = await page.evaluate(() => window.dungeonCheck.state());
+    await page.locator('#army-map').focus(); await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape');
+    await page.locator('#open-hero').click();
+    await page.locator('#hero-panel').waitFor({ state: 'visible' });
+    await page.keyboard.press('Escape');
+    await page.locator('[data-run-start]').click();
+    await page.waitForFunction(() => window.dungeonCheck.run().battle?.elapsed > .4);
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle.total, 4);
+    assert.equal(await page.evaluate(() => window.dungeonCheck.battle().elapsed), pausedAt);
+    assert.deepEqual(inventory(await page.evaluate(() => window.dungeonCheck.state())), inventory(before));
+    await page.screenshot({ path: fileURLToPath(new URL('cave-battle.png', output)) });
+    await page.locator('[data-run-exit]').click();
+    assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
+    await page.waitForFunction(elapsed => window.dungeonCheck.battle().elapsed > elapsed, pausedAt);
+    await back(page);
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'campaign');
+  });
   await scenario('hidden combat, automatic next wave, live unlocks and zero canvas draws', 390, 844, fixture(49, true), async page => {
     await page.locator('#start-wave').click(); await open(page);
     const before = await page.evaluate(() => { window.dungeonDraws = { battle: 0, 'army-map': 0 }; return window.dungeonCheck.battle(); });
@@ -195,7 +223,6 @@ try {
     const footer = await page.locator('.dungeon-footer').boundingBox();
     assert.ok(heading.y >= 68, 'navigation stays below Telegram native controls');
     assert.ok(footer.y + footer.height <= 760 - 34, 'footer respects bottom safe area');
-    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
     await page.locator('[data-dungeon-action="rules"]').click();
     const pausedAt = await page.evaluate(() => {
       window.Telegram.WebApp.isActive = false; window.telegramEvents.deactivated();
@@ -207,8 +234,8 @@ try {
     await page.waitForFunction(elapsed => window.dungeonCheck.battle().elapsed > elapsed + .2, pausedAt);
     assert.equal(await page.locator('#dungeon-rules').isVisible(), true);
     await page.keyboard.press('Escape');
-    assert.equal(await page.locator('#dungeon-boss-name').innerText(), 'Goblin Chief');
-    await back(page); await back(page);
+    assert.equal(await page.locator('.dungeon-level-card').count(), 3);
+    await back(page);
   }, true);
   console.log(JSON.stringify({ checks, screenshots: fileURLToPath(output) }));
 } finally { await browser?.close(); await server.close(); }

@@ -1,4 +1,4 @@
-export type GameScreen = 'campaign' | 'dungeons';
+export type GameScreen = 'campaign' | 'dungeons' | 'dungeon-battle';
 
 export interface ScreenController {
   readonly active: GameScreen;

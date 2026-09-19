@@ -11,6 +11,7 @@ export interface SceneAssetWave {
   spawns?: readonly Pick<EnemySpawn, 'type'>[] | null;
 }
 export interface SceneAssetInput {
+  mapVariant?: 'campaign' | 'goblin-cave';
   units?: readonly Pick<FormationUnit, 'type' | 'level'>[] | null;
   wave?: SceneAssetWave | null;
   levelNumber?: number;
@@ -24,7 +25,7 @@ export interface SceneAssetInput {
   placementType?: UnitType | null;
   placementLevel?: number | string | null;
 }
-export type SceneMapKey = 'map:1' | 'map:2';
+export type SceneMapKey = 'map:1' | 'map:2' | 'map:goblin-cave';
 export type SceneAssetResource =
   | { url: string; levelNumber?: never }
   | { levelNumber: 1 | 2; url?: never };
@@ -103,7 +104,7 @@ const ENEMIES: Partial<Record<EnemyType, string>> = {
 export function getSceneAssetPlan(state: SceneAssetInput = {}, { formationOnly = false }: SceneAssetOptions = {}): SceneAssetPlan {
   const wave = state.battle?.wave ?? state.wave;
   const levelNumber = (state.levelNumber ?? wave?.levelNumber) === 2 ? 2 : 1;
-  const mapKey: SceneMapKey = `map:${levelNumber}`;
+  const mapKey: SceneMapKey = state.mapVariant === 'goblin-cave' ? 'map:goblin-cave' : `map:${levelNumber}`;
   const resources = new Map<string, SceneAssetResource>([[mapKey, { levelNumber }]]);
   const allies = new Map<string, AllyAssetPlan>();
   const enemies = new Map<EnemyType, EnemyAssetPlan>();

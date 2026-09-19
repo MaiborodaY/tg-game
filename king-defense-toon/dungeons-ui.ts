@@ -19,17 +19,16 @@ export interface DungeonsUI {
   destroy(): void;
 }
 
-export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit }: {
+export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit, onEnter }: {
   root: HTMLElement;
   getProgress: () => DungeonProgress;
   getCampaignStatus: () => string;
   onExit: () => void;
+  onEnter: (level: DungeonLevel) => void;
 }): DungeonsUI {
   let opened = false;
-  let selected: DungeonLevel | null = null;
   let rulesOpen = false;
   let signature = '';
-  let catalogueScroll = 0;
   let rulesOpener: HTMLElement | null = null;
 
   function focus() {
@@ -38,31 +37,20 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit 
 
   function card(level: DungeonLevel, progress: DungeonProgress): string {
     const unlocked = isDungeonLevelUnlocked(level, progress);
-    return `<button type="button" class="dungeon-level-card ${unlocked ? 'is-unlocked' : 'is-locked'}"
-      data-dungeon-level="${level.id}" aria-label="Goblin Cave ${level.numeral}: ${level.boss}. ${requirement(level, unlocked)}. View details">
+    return `<article class="dungeon-level-card ${unlocked ? 'is-unlocked' : 'is-locked'}" aria-label="Goblin Cave ${level.numeral}: ${level.boss}">
       ${art(level)}<span class="dungeon-card-copy"><span class="dungeon-tier">Level ${level.numeral}</span>
       <strong>${level.boss}</strong><span class="dungeon-requirement">${requirement(level, unlocked)}</span>
-      <span class="dungeon-card-action">${unlocked ? 'Details' : `${lockIcon} Locked`}<span aria-hidden="true">›</span></span></span></button>`;
-  }
-
-  function details(level: DungeonLevel, progress: DungeonProgress): string {
-    const unlocked = isDungeonLevelUnlocked(level, progress);
-    return `<article class="dungeon-details" aria-labelledby="dungeon-boss-name">
-      ${art(level, 'dungeon-detail-art')}<h3 id="dungeon-boss-name">${level.boss}</h3>
-      <p class="dungeon-detail-unlock ${unlocked ? 'is-unlocked' : ''}">${requirement(level, unlocked)}</p>
-      ${route()}<section class="dungeon-rewards" aria-labelledby="dungeon-rewards-title">
-      <h4 id="dungeon-rewards-title">First-clear rewards</h4><div class="dungeon-reward-list">
-      <span><span class="coin-icon" aria-hidden="true"></span><b>${level.firstClearReward.gold} gold</b></span>
-      <span><span class="slave-icon" aria-hidden="true"></span><b>${level.firstClearReward.slaves} slaves</b></span></div>
-      <p>Planned rewards · Balance may change</p></section>
-      <div class="dungeon-survival"><strong>Keep your army alive</strong><p>HP carries over between waves.<br>Fallen units stay out for the run.</p></div>
-      <p class="dungeon-coming-soon">Dungeon battles are coming soon.<br>For now, explore the levels and rewards.</p></article>`;
+      <span class="dungeon-card-reward-label">Full-run rewards · coming later</span>
+      <span class="dungeon-card-rewards"><span><span class="coin-icon" aria-hidden="true"></span>${level.firstClearReward.gold} gold</span>
+      <span><span class="slave-icon" aria-hidden="true"></span>${level.firstClearReward.slaves} slaves</span></span>
+      <button type="button" data-dungeon-level="${level.id}" class="dungeon-card-action" ${unlocked ? '' : 'disabled'}
+      aria-label="${unlocked ? 'Enter' : 'Locked'} Goblin Cave ${level.numeral}">${unlocked ? 'Enter' : `${lockIcon} Locked`}</button></span></article>`;
   }
 
   function render(force = false) {
     if (!opened) return;
     const progress = getProgress();
-    const nextSignature = `${selected?.id ?? 'catalogue'}:${GOBLIN_CAVE_LEVELS.map(level => Number(isDungeonLevelUnlocked(level, progress))).join('')}`;
+    const nextSignature = GOBLIN_CAVE_LEVELS.map(level => Number(isDungeonLevelUnlocked(level, progress))).join('');
     // Income and combat refresh often. Rebuild only when the view/unlocks change,
     // retaining scroll, focus and the rules dialog while the main battle advances.
     if (force || signature !== nextSignature) {
@@ -71,19 +59,19 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit 
       const hadFocus = root.contains(document.activeElement);
       signature = nextSignature;
       root.innerHTML = `<div class="dungeon-shell"><div class="dungeon-page">
-        <header class="dungeon-heading"><button type="button" class="dungeon-icon-button" data-dungeon-action="back" aria-label="${selected ? 'Back to dungeon levels' : 'Back to main game'}">${backIcon}</button>
-        <h2 id="dungeons-title">${selected ? `Goblin Cave ${selected.numeral}` : 'Dungeons'}</h2>
+        <header class="dungeon-heading"><button type="button" class="dungeon-icon-button" data-dungeon-action="back" aria-label="Back to main game">${backIcon}</button>
+        <h2 id="dungeons-title">Dungeons</h2>
         <button type="button" class="dungeon-icon-button dungeon-info-button" data-dungeon-action="rules" aria-label="Dungeon rules" aria-haspopup="dialog" aria-controls="dungeon-rules">i</button></header>
-        <div class="dungeon-scroll">${selected ? details(selected, progress) : `<div class="dungeon-intro">${caveIcon()}<div><h3>Goblin Cave</h3><p>Choose a level</p></div></div>
+        <div class="dungeon-scroll"><div class="dungeon-intro">${caveIcon()}<div><h3>Goblin Cave</h3><p>Choose a level</p></div></div>
         <div class="dungeon-level-list">${GOBLIN_CAVE_LEVELS.map(level => card(level, progress)).join('')}</div>
-        <p class="dungeon-catalogue-note">Tap any level to see rewards<br><span>Dungeon battles coming soon</span></p>`}</div>
+        <p class="dungeon-catalogue-note">Wave 1 is playable now.<br><span>Full runs, bosses and rewards are coming later.</span></p></div>
         <footer class="dungeon-footer"><span aria-hidden="true"></span><p data-dungeon-campaign-status></p></footer></div>
         <section id="dungeon-rules" class="dungeon-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="dungeon-rules-title" hidden>
         <div class="dungeon-rules-card"><header><h3 id="dungeon-rules-title">Dungeon rules</h3><button type="button" class="dungeon-icon-button" data-dungeon-action="close-rules" aria-label="Close dungeon rules">×</button></header>
         ${caveIcon('dungeon-rules-art')}${route()}<ul class="dungeon-rules-list"><li><b aria-hidden="true">⚔</b>3 waves per run</li>
         <li><b aria-hidden="true">♛</b>Final boss on wave 3</li><li><b aria-hidden="true">♡</b>No recovery between waves</li>
         <li><b aria-hidden="true">†</b>Fallen units stay out for the run</li></ul>
-        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Keep survivors alive until the boss.</p>
+        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Full runs will follow these rules. For now, play the first wave with four guards. Bosses and reward collection come later.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading ends this run.</p>
         <button type="button" class="dungeon-acknowledge" data-dungeon-action="close-rules">Got it</button></div></section></div>`;
       root.querySelector<HTMLElement>('.dungeon-scroll')!.scrollTop = force ? 0 : oldScroll;
       syncRules();
@@ -111,12 +99,7 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit 
 
   function back() {
     if (rulesOpen) { closeRules(); return; }
-    if (selected) {
-      const id = selected.id;
-      selected = null; render(true);
-      root.querySelector<HTMLElement>('.dungeon-scroll')!.scrollTop = catalogueScroll;
-      root.querySelector<HTMLElement>(`[data-dungeon-level="${id}"]`)?.focus({ preventScroll: true });
-    } else onExit();
+    onExit();
   }
 
   function onClick(event: MouseEvent) {
@@ -130,10 +113,7 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit 
       rulesOpener = button; rulesOpen = true; syncRules(); focus(); return;
     }
     const level = getDungeonLevel(button.dataset.dungeonLevel ?? '');
-    if (level) {
-      catalogueScroll = root.querySelector<HTMLElement>('.dungeon-scroll')!.scrollTop;
-      selected = level; render(true); focus();
-    }
+    if (level && !button.disabled && isDungeonLevelUnlocked(level, getProgress())) onEnter(level);
   }
 
   function onKeyDown(event: KeyboardEvent) {
@@ -151,7 +131,7 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit 
   root.addEventListener('click', onClick);
   root.addEventListener('keydown', onKeyDown);
   return {
-    open() { opened = true; selected = null; rulesOpen = false; catalogueScroll = 0; render(true); focus(); },
+    open() { opened = true; rulesOpen = false; render(true); focus(); },
     close() { opened = false; rulesOpen = false; rulesOpener = null; },
     refresh: () => render(), focus,
     destroy() { opened = false; root.removeEventListener('click', onClick); root.removeEventListener('keydown', onKeyDown); root.replaceChildren(); },
