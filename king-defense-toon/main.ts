@@ -388,6 +388,7 @@ function syncRecoveryUi() {
     }
     resumeFrames();
   }
+  if (isDungeonBattleScreen()) refreshDungeonRun();
 }
 
 function onAssetState(which: 'battle' | 'army', state: LoadState) {
@@ -428,6 +429,8 @@ function showOfflineIncome() {
   byId('offline-storage-note').hidden = !campaign.offlineRewards.gold && !campaign.offlineRewards.slaves;
   byId('collect-offline-rewards').textContent = campaign.offlineRewards.closedCells || campaign.offlineRewards.returnedFighters || campaign.offlineRewards.forgeRefund ? 'Continue' : 'Collect';
   if (!panel.hidden) return;
+  // A native top-layer confirmation must yield to the game's recovery/receipt UI.
+  if (isDungeonBattleScreen()) dungeonRunUI.dismissConfirmation();
   panel.hidden = false;
   offlineRewardFocus = (document.activeElement as FocusElement | null);
   // Cover an open menu without discarding its selection or making its background interactive.
@@ -831,7 +834,7 @@ heroUI = createHeroUI({ button: byId('open-hero'), panel: byId('hero-panel'),
 
 const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElement!, armyDock: byId('army-map').closest<HTMLElement>('.army-dock')!,
   onExit: () => {
-    if (!isDungeonBattleScreen() || isRecovering() || !byId('offline-rewards-panel').hidden) return;
+    if (!isDungeonBattleScreen() || dungeonRun?.battle?.phase === 'running' || isRecovering() || !byId('offline-rewards-panel').hidden) return;
     closeOverlay(false);
     dungeonRun = null;
     dungeonRunUI.refresh(null, campaign.forge, true, false, battleSpeed);
@@ -840,11 +843,8 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
     dungeonsUI?.open(); refresh(); resumeFrames();
   },
   onStart: () => {
-    if (!dungeonRun || !isDungeonBattleScreen() || overlay || isRecovering() || !telegram.isActive) return;
-    if (dungeonRun.battle) {
-      if (dungeonRun.battle.phase === 'running') return;
-      dungeonRun.battle = null;
-    } else if (!startDungeonBattle(dungeonRun, campaign.hero, campaign.forge)) return;
+    if (!dungeonRun || !isDungeonBattleScreen() || overlay || isRecovering() || !telegram.isActive || !byId('offline-rewards-panel').hidden) return;
+    if (!startDungeonBattle(dungeonRun, campaign.hero, campaign.forge)) return;
     battleAudio.setActive(visibleBattle()?.phase === 'running');
     void battleAudio.unlock();
     framePacer.reset(); refresh(); resumeFrames();
@@ -859,8 +859,10 @@ function refreshDungeonRun() {
   dungeonRunUI.refresh(dungeonRun, campaign.forge, !isRecovering(), paused, battleSpeed);
   const active = dungeonRun?.battle;
   byId('battle').dataset.phase = active?.phase ?? 'formation';
-  byId('battle').setAttribute('aria-label', `Goblin Cave. Wave 1. ${active ? `${active.kills} of ${active.total} guards defeated.` : 'Prepare your army.'}`);
-  byId('army-map').setAttribute('aria-label', 'Dungeon army. Tap a fighter, then a purchased tile to move or swap.');
+  byId('battle').setAttribute('aria-label', `Goblin Cave. Wave ${dungeonRun?.wave.number ?? 1}. ${active ? `${active.kills} of ${active.total} enemies defeated.` : 'Prepare your army.'}`);
+  byId('army-map').setAttribute('aria-label', active
+    ? 'Dungeon army. Formation is fixed for this run. Fallen fighters remain out.'
+    : 'Dungeon army. Tap a fighter, then a purchased tile to move or swap.');
   byId('army-status').textContent = 'Your dungeon formation. Main army remains unchanged.';
 }
 
@@ -1127,9 +1129,10 @@ function refresh() {
 }
 
 function refreshContent() {
+  levelMusic.setScene(isDungeonBattleScreen() ? 'goblin-cave' : 'campaign');
   if (!isCampaignScreen()) {
     telegram.setGameInProgress(hasActiveBattle());
-    levelMusic.setLevel(isDungeonBattleScreen() ? 1 : getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
+    levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
     syncMusicActivity();
     dungeonsUI?.refresh();
     if (isDungeonBattleScreen()) { heroUI?.render(); refreshDungeonRun(); }
@@ -2173,6 +2176,7 @@ function frame(timestamp: number) {
 
 function pauseForInactivity() {
   unitDrag?.cancel();
+  if (isDungeonBattleScreen()) dungeonRunUI.dismissConfirmation();
   tickEconomy(); economyActive = false;
   if (saveSession.canWrite && !sessionPageHidden) save();
   refreshOnboarding();

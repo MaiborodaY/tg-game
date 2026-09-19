@@ -182,6 +182,76 @@ test('level-one playlist streams the two full tracks in order through one player
   music.destroy();
 });
 
+test('cave music is lazy, loops through the same player and restores both location bookmarks', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setActive(true);
+  await music.unlock();
+  const element = env.media[0];
+  element.finish(); await settle();
+  const campaignTrack = element.src;
+  element.currentTime = 31;
+  music.setScene('goblin-cave'); await settle();
+  assert.ok(element.src.endsWith('/assets/audio/goblin-cave-action.mp3'));
+  assert.equal(element.loop, true, 'one cave track uses the native media loop');
+  assert.equal(element.currentTime, 0);
+  element.currentTime = 18;
+  const playingCalls = [...env.calls];
+  music.setScene('goblin-cave'); await music.unlock();
+  assert.deepEqual(env.calls, playingCalls, 'ordinary game refresh does not restart the cave track');
+  music.setScene('campaign'); await settle();
+  assert.equal(element.src, campaignTrack);
+  assert.equal(element.currentTime, 31);
+  assert.equal(element.loop, false);
+  music.setScene('goblin-cave'); await settle();
+  assert.equal(element.currentTime, 18);
+  assert.equal(env.contexts.length, 1);
+  assert.equal(env.media.length, 1);
+  assert.equal(env.sources.length, 1);
+  music.destroy();
+});
+
+test('dungeon selection obeys mute and visibility, independently of the campaign level', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setLevel(2);
+  music.setScene('goblin-cave');
+  music.setMuted(true); music.setActive(true);
+  await music.unlock();
+  const element = env.media[0];
+  assert.equal(element.src, '', 'muted entry does not download dungeon music');
+  music.setActive(false); music.setMuted(false); await settle();
+  assert.equal(element.src, '');
+  music.setActive(true); await settle();
+  assert.ok(element.src.endsWith('/goblin-cave-action.mp3'));
+  assert.equal(element.paused, false);
+  element.currentTime = 24;
+  music.setActive(false); music.setActive(true); await settle();
+  assert.equal(element.currentTime, 24);
+  music.setScene('campaign'); await settle();
+  assert.equal(element.paused, true, 'leaving the cave restores level-two silence');
+  music.setLevel(1); await settle();
+  assert.ok(element.src.endsWith('/ambient-level-1.mp3'));
+  music.destroy();
+});
+
+test('leaving during an unfinished cave play request cannot restore the cave source', async t => {
+  const play = deferred();
+  const env = environment(t, { plays: [() => {}, () => play.promise] });
+  const music = createLevelMusic();
+  music.setActive(true); await music.unlock();
+  const element = env.media[0], campaignTrack = element.src;
+  element.currentTime = 9;
+  music.setScene('goblin-cave');
+  music.setScene('campaign'); await settle();
+  play.resolve(); await settle();
+  assert.equal(element.src, campaignTrack);
+  assert.equal(element.currentTime, 9);
+  assert.equal(element.paused, false);
+  assert.equal(env.media.length, 1);
+  music.destroy();
+});
+
 test('an ending while hidden, muted or outside level one waits before requesting the next track', async t => {
   const env = environment(t);
   const music = createLevelMusic();

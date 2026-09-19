@@ -174,7 +174,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Ordinary translucent menus retain their existing drawing behavior. Recovery
   and offline receipts remain above Dungeons, preserving focus and inert state.
 
-## Dungeons catalogue and opening encounter
+## Dungeons catalogue and runs
 
 - `dungeons.ts` owns three Goblin Cave levels, unlocked after all ten waves of
   rounds 1-5 / 1-10 / 1-15. Use historical first clears as well as current cleared
@@ -187,7 +187,18 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   has one goblin, archer, healer and boar, all arriving together. Stats reference
   the campaign just after the level's unlock milestone; campaign balance is unchanged.
   No campaign wave progress, kills, captures, XP or full-clear rewards are settled.
-  Leaving/reloading discards this one-wave encounter, not the saved army.
+  Leaving/reloading discards the run, not the saved army.
+  Cave I has three waves: four guards, identical four guards, then `goblinChief`
+  using the unlock milestone's existing boss stats. Other tiers retain their
+  opening-wave previews; their full runs and reward collection remain future work.
+  `startDungeonBattle` starts/advances in one action, rejects running/finished/failed
+  runs, and retains living actor instances, HP, hero/castle snapshots and spent
+  one-use abilities. Fallen allies are removed from combat, not from the campaign.
+  A dead hero stays dead. Reposition survivors and discard old paths/targets and
+  enemy/projectile/effect state between waves; never recreate a healed army.
+  Exit is hidden and rejected during combat. Between cleared waves a native modal
+  confirms loss of progress; before first Start or after run completion/defeat,
+  exit is direct. Keep the Start hit target stationary in the pressed CSS state.
 - `dungeon-battle` is a screen state, not a second application/RAF. The same two
   scene instances render the cave, local Army formation and Hero menu. City menus,
   recruitment, Connect and cell buying are unavailable here. Moves use the shared
@@ -198,13 +209,19 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   existing timestamp lifecycle. Recovery, offline receipts and Telegram suspension
   cover both modes. The cave map has its own cache key shared by both canvases;
   use authored bounds (-56, -445, 502, 890), never stretch it into the lower field.
-- Planned runs have three waves, a boss on wave three, HP carried between waves,
-  no return of fallen units within the run, and healing during combat. These are
-  future full-run rules explained in the info dialog. Only wave 1 is playable now;
-  wave transitions, bosses, persistent run state and reward collection are not built.
+- Cave I carries HP and casualties between all three waves; healing during combat
+  works normally. Run progress is session-only: no persistence or reward receipt
+  yet. The catalogue/info dialog distinguish this from future Cave II/III runs.
+- Only a visible cave asset plan requests `map:goblin-cave`; URL imports do not
+  eagerly fetch its image. Enemy sheets follow the current wave and shared cache.
 - Static WebP cover art uses one three-column atlas, loaded on first browsing;
   the small cave icon is shared with navigation. No animated menu backgrounds,
   separate canvas loop, external image requests or per-refresh image creation.
+- The cave soundtrack (`Action 2`, compressed MP3) is selected only inside
+  `dungeon-battle`, not in the catalogue. `music.ts` switches the existing single
+  streaming player, preserving campaign/cave playback positions and shared mute,
+  gain and activity gates. Do not preload the cave track or decode a full WAV.
+  Export settings and source provenance are in `assets/audio/AMBIENT.md`.
 
 ## Verification and performance
 

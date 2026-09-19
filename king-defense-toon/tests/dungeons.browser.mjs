@@ -20,7 +20,12 @@ const server = await createServer({
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => battle && ({ wave: battle.waveNumber, elapsed: battle.elapsed, phase: battle.phase }),
       run: () => dungeonRun && ({ level: dungeonRun.level.id, battle: dungeonRun.battle && {
-        elapsed: dungeonRun.battle.elapsed, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
+        elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
+      finishDungeonWave: () => {
+        dungeonRun.battle.phase = 'victory';
+        dungeonRun.battle.kills = dungeonRun.battle.total;
+        refresh();
+      },
       finishWave: () => {
         if (!battle || battle.phase !== 'running') throw new Error('No running battle');
         for (let i = 0; i < 30000 && battle.phase === 'running'; i++) updateBattle(battle, 1/60);
@@ -58,6 +63,7 @@ function fixture(cleared = 50, autoWaves = false) {
 let browser, baseUrl;
 const checks = [];
 async function scenario(name, width, height, saved, check, telegram = false) {
+  if (process.env.DUNGEON_SCENARIO && !name.includes(process.env.DUNGEON_SCENARIO)) return;
   const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
   const errors = [];
   try {
@@ -85,12 +91,14 @@ async function scenario(name, width, height, saved, check, telegram = false) {
       };
     }, { key, saved, now, telegram, height });
     const page = await context.newPage(); page.setDefaultTimeout(15000);
+    const requests = [];
+    page.on('request', request => requests.push(request.url()));
     page.on('pageerror', error => errors.push(error.stack ?? error.message));
     page.on('response', response => { if (response.status() >= 400 && response.url().startsWith(baseUrl)) errors.push(`${response.status()} ${response.url()}`); });
     await page.goto(baseUrl);
     await page.waitForFunction(() => window.dungeonCheck?.ready());
     await page.evaluate(() => document.fonts.ready);
-    await check(page);
+    await check(page, requests);
     assert.deepEqual(errors, []);
     checks.push(name); console.log('PASS', name);
   } finally { await context.close(); }
@@ -114,6 +122,47 @@ try {
   await mkdir(output, { recursive: true });
   baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
+  await scenario('cave controls: stable single-tap Start, guarded exit and next wave', 390, 844, fixture(), async (page, requests) => {
+    const caveImages = () => requests.filter(url => /\/goblin-cave-map\.webp(?:\?|$)/.test(url));
+    assert.equal(caveImages().length, 0, 'entering the game does not fetch the cave map');
+    await open(page);
+    assert.equal(caveImages().length, 0, 'browsing covers does not fetch the battle map');
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    assert.equal(caveImages().length, 1, 'both canvases share one on-demand image request');
+    const start = page.locator('[data-run-start]');
+    await page.waitForFunction(() => !document.querySelector('[data-run-start]').disabled);
+    const bounds = await start.boundingBox();
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 12);
+    await page.mouse.down();
+    const pressed = await start.boundingBox();
+    assert.ok(Math.abs(pressed.y - bounds.y) <= 2, `Start moved ${pressed.y - bounds.y}px while pressed`);
+    await page.mouse.up();
+    await page.waitForFunction(() => window.dungeonCheck.run().battle?.phase === 'running');
+    assert.equal(await page.locator('[data-run-exit]').isVisible(), false);
+    await page.locator('[data-run-exit]').evaluate(button => button.click());
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-battle');
+    await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+    await page.locator('[data-run-exit]').click();
+    assert.equal(await page.locator('[data-run-confirm]').isVisible(), true);
+    await page.locator('[data-run-stay]').click();
+    assert.equal(await page.locator('[data-run-confirm]').isVisible(), false);
+    await page.locator('[data-run-exit]').click();
+    await page.evaluate(() => window.dungeonCheck.absence());
+    assert.equal(await page.locator('[data-run-confirm]').isVisible(), false, 'confirmation yields to offline rewards');
+    await page.locator('#collect-offline-rewards').click();
+    await start.tap();
+    await page.waitForFunction(() => window.dungeonCheck.run().battle?.wave === 2);
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle.phase, 'running');
+    await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+    await page.locator('[data-run-exit]').click();
+    await page.locator('[data-run-leave]').click();
+    assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    await page.locator('[data-run-exit]').click();
+    assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null, 'unstarted run exits without warning');
+  });
   for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
     await scenario(`catalogue/rewards/rules ${width}x${height}`, width, height, fixture(), async page => {
       const before = await page.evaluate(() => window.dungeonCheck.state());
@@ -167,7 +216,10 @@ try {
     assert.equal(await page.evaluate(() => window.dungeonCheck.battle().elapsed), pausedAt);
     assert.deepEqual(inventory(await page.evaluate(() => window.dungeonCheck.state())), inventory(before));
     await page.screenshot({ path: fileURLToPath(new URL('cave-battle.png', output)) });
+    assert.equal(await page.locator('[data-run-exit]').isVisible(), false);
+    await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
     await page.locator('[data-run-exit]').click();
+    await page.locator('[data-run-leave]').click();
     assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
     await page.waitForFunction(elapsed => window.dungeonCheck.battle().elapsed > elapsed, pausedAt);
     await back(page);

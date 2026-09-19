@@ -2,6 +2,8 @@ export interface LevelMusicOptions {
   onStateChange?: () => void;
 }
 
+export type MusicScene = 'campaign' | 'goblin-cave';
+
 export interface LevelMusic {
   readonly muted: boolean;
   readonly volume: number;
@@ -9,6 +11,7 @@ export interface LevelMusic {
   setMuted: (value: boolean) => void;
   setVolume: (value: number) => void;
   setLevel: (value: number) => void;
+  setScene: (value: MusicScene) => void;
   setActive: (value: boolean) => void;
   unlock: () => Promise<boolean>;
   destroy: () => void;
@@ -22,6 +25,10 @@ const LEVEL_ONE_PLAYLIST = [
   new URL('./assets/audio/ambient-level-1.mp3', import.meta.url).href,
   new URL('./assets/audio/ambient-level-1-menu.mp3', import.meta.url).href,
 ] as const;
+const PLAYLISTS: Record<MusicScene, readonly string[]> = {
+  campaign: LEVEL_ONE_PLAYLIST,
+  'goblin-cave': [new URL('./assets/audio/goblin-cave-action.mp3', import.meta.url).href],
+};
 const MUTED_STORAGE_KEY = 'brotd-infinity:music-muted:v1';
 const VOLUME_STORAGE_KEY = 'brotd-infinity:music-volume:v1';
 const LEGACY_MUTED_STORAGE_KEY = 'brotd-infinity:sound-muted:v1';
@@ -52,7 +59,11 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
   let media: InlineAudioElement | null = null;
   let source: MediaElementAudioSourceNode | null = null;
   let gain: GainNode | null = null;
-  let trackIndex = 0;
+  let scene: MusicScene = 'campaign';
+  const cursors: Record<MusicScene, { index: number; position: number }> = {
+    campaign: { index: 0, position: 0 }, 'goblin-cave': { index: 0, position: 0 },
+  };
+  let pendingSeek: { url: string; position: number } | null = null;
   let generation = 0;
   let pendingPlayback: Promise<boolean> | null = null;
 
@@ -66,7 +77,7 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
   }
 
   function mayPlay(): boolean {
-    return !destroyed && !unavailable && authorized && active && level === 1 && !muted && volume > 0;
+    return !destroyed && !unavailable && authorized && active && (scene === 'goblin-cave' || level === 1) && !muted && volume > 0;
   }
 
   function contextCall(method: 'resume' | 'suspend' | 'close'): Promise<void | boolean> {
@@ -104,6 +115,14 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     if (media?.ended && mayPlay()) void start();
   }
 
+  function restorePosition(): void {
+    if (!media || !pendingSeek || media.getAttribute('src') !== pendingSeek.url) return;
+    try {
+      media.currentTime = pendingSeek.position;
+      if (media.readyState > 0) pendingSeek = null;
+    } catch { /* Some WebViews require metadata before seeking; retry on loadedmetadata. */ }
+  }
+
   function ensureGraph(): boolean {
     if (context && media && source && gain) return context.state !== 'closed';
     if (!supported() || destroyed) return false;
@@ -123,6 +142,7 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
       media.addEventListener('play', stopIfUnwanted);
       media.addEventListener('playing', stopIfUnwanted);
       media.addEventListener('ended', onTrackEnded);
+      media.addEventListener('loadedmetadata', restorePosition);
       return true;
     } catch {
       unavailable = true;
@@ -145,9 +165,18 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     // A successful graph creation initializes these references; cleanup never replaces them.
     try {
       // Keep one streaming player. Request the next track only when the previous one ends.
-      if (media!.ended) trackIndex = (trackIndex + 1) % LEVEL_ONE_PLAYLIST.length;
-      const trackUrl = LEVEL_ONE_PLAYLIST[trackIndex];
-      if (media!.getAttribute('src') !== trackUrl) media!.src = trackUrl;
+      const playlist = PLAYLISTS[scene], cursor = cursors[scene];
+      if (media!.ended && media!.getAttribute('src') === playlist[cursor.index]) {
+        cursor.index = (cursor.index + 1) % playlist.length;
+        cursor.position = 0;
+      }
+      const trackUrl = playlist[cursor.index];
+      if (media!.getAttribute('src') !== trackUrl) {
+        media!.loop = playlist.length === 1;
+        media!.src = trackUrl;
+        pendingSeek = cursor.position > 0 ? { url: trackUrl, position: cursor.position } : null;
+        restorePosition();
+      }
     } catch { return Promise.resolve(false); }
     if (!media!.paused && context!.state === 'running') return Promise.resolve(true);
     if (pendingPlayback && !fromGesture) return pendingPlayback;
@@ -199,6 +228,20 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     reconcile();
   }
 
+  function setScene(value: MusicScene): void {
+    if (destroyed || value === scene || !Object.hasOwn(PLAYLISTS, value)) return;
+    const cursor = cursors[scene], playlist = PLAYLISTS[scene];
+    if (media?.getAttribute('src') === playlist[cursor.index]) {
+      cursor.position = media.ended || !Number.isFinite(media.currentTime) ? 0 : media.currentTime;
+      if (media.ended) cursor.index = (cursor.index + 1) % playlist.length;
+    }
+    // One streaming element/gain serves both locations. Keep only bookmarks,
+    // never a second playing element or a decoded full-track buffer.
+    pause();
+    scene = value;
+    reconcile();
+  }
+
   function setActive(value: boolean): void {
     if (destroyed || Boolean(value) === active) return;
     active = Boolean(value);
@@ -223,6 +266,8 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
       media.removeEventListener('play', stopIfUnwanted);
       media.removeEventListener('playing', stopIfUnwanted);
       media.removeEventListener('ended', onTrackEnded);
+      media.removeEventListener('loadedmetadata', restorePosition);
+      pendingSeek = null;
       media.removeAttribute('src');
       try { media.load(); } catch { /* Cancels any in-flight media request. */ }
     }
@@ -234,6 +279,6 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     get muted() { return muted; },
     get volume() { return volume; },
     get supported() { return supported(); },
-    setMuted, setVolume, setLevel, setActive, unlock, destroy,
+    setMuted, setVolume, setLevel, setScene, setActive, unlock, destroy,
   };
 }
