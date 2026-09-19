@@ -1072,7 +1072,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
             const availability = state.barracksLevel === undefined ? null
               : getCellAvailability({ unlockedCells: state.unlockedCells ?? [] }, key, state.barracksLevel);
             const requirement = availability && !availability.allowed
-              ? availability.requiredBarracksLevel ? `Barr. ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Later'
+              ? availability.requiredBarracksLevel ? `Merc. ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Later'
               : undefined;
             drawLockedCell(context, x, y, width, height, state.selectedLockedCell === key,
               availability ? availability.cost : state.nextUnlockCost, requirement);

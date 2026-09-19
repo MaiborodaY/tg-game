@@ -89,8 +89,13 @@ No server, D1 migration, payment handling, or publication is part of these stage
   account identifiers. Exhaustion blocks allocation rather than losing precision.
 - The original schema-0/1 bytes are retained under
   `brotd-infinity:campaign:v2:backup:before-schema-2`; any schema-1 backup is kept.
-  Current schema 2 requires a valid ID counter. A schema-1 client with stage-1
+  Schema 2 and later require a valid ID counter. A schema-1 client with stage-1
   protections refuses to overwrite a schema-2 save.
+- The later automatic-farm update advances saves to schema 3 and retains original
+  schema-0/1/2 bytes under `brotd-infinity:campaign:v2:backup:before-schema-3`,
+  preserving earlier backups. Schema-2 clients reject it instead of rewriting
+  automatic production as manual planting. See `AI_DEVELOPMENT.md` for farm
+  progression, caps and the one-time legacy planting migration.
 - `campaign-rewards.ts` records cumulative paid kills/gold and one outcome per
   running battle. Repeated updates cannot reroll captures or pay XP/first-clear
   gold twice. First-clear markers stay durable; ordinary replay rewards remain

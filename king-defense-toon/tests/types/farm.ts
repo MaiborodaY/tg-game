@@ -1,4 +1,4 @@
-import { CROPS, createFarm, getCropProgress, harvestCrop, plantCrop } from '../../farm.ts';
+import { CROPS, createFarm, getCropProgress, harvestCrop, upgradeFarm } from '../../farm.ts';
 import type { CropDefinition, CropId, CropProgress, FarmPlot, FarmState, HarvestResult } from '../../farm.ts';
 
 export function verifyFarmContracts(saved: unknown): void {
@@ -6,16 +6,16 @@ export function verifyFarmContracts(saved: unknown): void {
   const crop: CropId = 'carrot';
   const definition: CropDefinition = CROPS[0]!;
   const progress: CropProgress = getCropProgress(farm, crop);
-  const planted: boolean = plantCrop(farm, crop, Date.now());
+  const upgraded: boolean = upgradeFarm(farm, 500, Date.now()).ok;
   const result: HarvestResult = harvestCrop(farm, crop);
   const plot: FarmPlot | null = farm.plots.pumpkin;
   const count: number = farm.stock.potato;
   // @ts-expect-error There are only three fixed crop identifiers.
-  plantCrop(farm, 'bean');
+  harvestCrop(farm, 'bean');
   // @ts-expect-error Saved input must be normalized before use.
   harvestCrop(saved, crop);
   // @ts-expect-error Real-time timestamps are numeric milliseconds.
-  plantCrop(farm, crop, '1800000000000');
+  upgradeFarm(farm, 500, '1800000000000');
   // @ts-expect-error The shared crop catalogue is immutable.
   CROPS.push(definition);
   // @ts-expect-error Crop durations cannot be changed through a shared definition.
@@ -26,5 +26,5 @@ export function verifyFarmContracts(saved: unknown): void {
   farm.stock.potato = '3';
   // @ts-expect-error Normalized saves contain all three crop inventories.
   const incomplete: FarmState['stock'] = { carrot: 0, potato: 0 };
-  void [progress, planted, result, plot, count, readyAt, incomplete];
+  void [progress, upgraded, result, plot, count, readyAt, incomplete];
 }
