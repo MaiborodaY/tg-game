@@ -240,18 +240,24 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   progress so retreat and campaign replay do not relock levels. No new save field
   is needed for browsing. Rewards and Enter are on each card, without a separate
   details page. Closed levels show their unlock requirement and disabled Enter.
-- `dungeons-ui.ts` owns catalogue/rules. Previewed full-run first-clear rewards
-  are 150 gold + 3 slaves, 300 + 5, and 500 + 8; these remain labelled future rewards.
-- `dungeon-run.ts` owns a separate formation and combat snapshot. The first wave
-  has one goblin, archer, healer and boar, all arriving together. Stats reference
+- `dungeons-ui.ts` owns catalogue/rules. Cave I awards 150 gold + 3 slaves on
+  every completed run, with unlimited daily entries. Cave II/III rewards (300 + 5
+  and 500 + 8) remain labelled future rewards for their unimplemented full runs.
+- `dungeon-run.ts` owns a separate formation and combat snapshot. Each guard
+  group has one goblin, archer, healer and boar, all arriving together. Stats reference
   the campaign just after the level's unlock milestone; campaign balance is unchanged.
-  No campaign wave progress, kills, captures, XP or full-clear rewards are settled.
+  Dungeon combat does not settle campaign wave progress, kill rewards, captures or XP.
   Leaving/reloading discards the run, not the saved army.
-  Cave I has three waves: four guards, identical four guards, then `goblinChief`
-  using the unlock milestone's existing boss stats. Other tiers retain their
+  Cave I has three waves: two groups of four guards, three groups, then a solo
+  `goblinChief`. Groups arrive at 0.8, 12.8 and (wave 2 only) 24.8 combat seconds.
+  Guard HP, damage and healing are 15% above the previous dungeon baseline;
+  the chief has 30% more HP/damage than the unlock milestone's boss. Other tiers retain their
   opening-wave previews; their full runs and reward collection remain future work.
-  `startDungeonBattle` starts/advances in one action, rejects running/finished/failed
-  runs, and retains living actor instances, HP, hero/castle snapshots and spent
+  The run owns an explicit preparation/combat/wave-cleared/complete/defeat stage
+  and wave index. `finishDungeonWave` records a result once. `prepareNextDungeonWave`
+  returns survivors home without starting combat; a separate `startDungeonBattle`
+  begins that prepared wave. Reject invalid/double transitions; retain living actor
+  instances, HP, hero/castle snapshots and spent
   one-use abilities. Fallen allies are removed from combat, not from the campaign.
   A dead hero stays dead. Reposition survivors and discard old paths/targets and
   enemy/projectile/effect state between waves; never recreate a healed army.
@@ -269,8 +275,13 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   cover both modes. The cave map has its own cache key shared by both canvases;
   use authored bounds (-56, -445, 502, 890), never stretch it into the lower field.
 - Cave I carries HP and casualties between all three waves; healing during combat
-  works normally. Run progress is session-only: no persistence or reward receipt
-  yet. The catalogue/info dialog distinguish this from future Cave II/III runs.
+  works normally. Run progress and its reward receipt are session-only, like battle
+  receipts. `applyDungeonRunReward` in `campaign-rewards.ts` grants canonical full-run
+  rewards once, validates both balances before mutation, and leaves other campaign
+  state untouched. Main saves immediately after settlement; storage recovery blocks
+  result actions until the save succeeds. Retrying a write never re-grants rewards.
+  The finished view shows spoils or defeat, plus Dungeons / Run again. Re-entry is
+  a fresh run with a new receipt. No daily cap or persistent dungeon progress is added.
 - Only a visible cave asset plan requests `map:goblin-cave`; URL imports do not
   eagerly fetch its image. Enemy sheets follow the current wave and shared cache.
 - Static WebP cover art uses one three-column atlas, loaded on first browsing;

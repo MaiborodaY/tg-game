@@ -1,22 +1,24 @@
 import { WAVES_PER_ROUND } from './waves.ts';
 
+export interface DungeonReward { readonly gold: number; readonly slaves: number }
+
 export interface DungeonLevel {
   readonly id: 'goblin-cave-1' | 'goblin-cave-2' | 'goblin-cave-3';
   readonly tier: 1 | 2 | 3;
   readonly numeral: 'I' | 'II' | 'III';
   readonly boss: string;
   readonly unlockRound: number;
-  readonly firstClearReward: { readonly gold: number; readonly slaves: number };
+  readonly completionReward: DungeonReward;
 }
 
-// Catalogue only. These are planned first-clear rewards, never paid by this menu.
+// Cave I pays per completed run; later tiers still display planned rewards.
 export const GOBLIN_CAVE_LEVELS: readonly DungeonLevel[] = Object.freeze([
   { id: 'goblin-cave-1', tier: 1, numeral: 'I', boss: 'Goblin Chief', unlockRound: 5,
-    firstClearReward: { gold: 150, slaves: 3 } },
+    completionReward: { gold: 150, slaves: 3 } },
   { id: 'goblin-cave-2', tier: 2, numeral: 'II', boss: 'Bombardier', unlockRound: 10,
-    firstClearReward: { gold: 300, slaves: 5 } },
+    completionReward: { gold: 300, slaves: 5 } },
   { id: 'goblin-cave-3', tier: 3, numeral: 'III', boss: 'Goblin King', unlockRound: 15,
-    firstClearReward: { gold: 500, slaves: 8 } },
+    completionReward: { gold: 500, slaves: 8 } },
 ]);
 
 export interface DungeonProgress {

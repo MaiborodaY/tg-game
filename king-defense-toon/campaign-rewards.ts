@@ -4,6 +4,8 @@ import { awardHeroXp } from './hero.ts';
 import type { HeroOutcome, HeroXpResult } from './hero.ts';
 import { claimFirstClear } from './progression.ts';
 import { WAVE_DEFINITIONS } from './waves.ts';
+import { getDungeonLevel } from './dungeons.ts';
+import type { DungeonRun } from './dungeon-run.ts';
 
 export interface CampaignBattleResult {
   heroXp: HeroXpResult;
@@ -24,6 +26,25 @@ const count = (value: unknown): value is number => typeof value === 'number' && 
 const validWave = (wave: number): boolean => Number.isSafeInteger(wave) && wave >= 1 && wave <= WAVE_DEFINITIONS.length;
 const validReceipt = (receipt: BattleRewardReceipt): boolean => receipt !== null && typeof receipt === 'object'
   && validWave(receipt.waveNumber) && count(receipt.kills) && count(receipt.gold);
+
+/** One session-only run is one receipt; re-entry creates a new eligible run. */
+export function applyDungeonRunReward(state: CampaignState, run: DungeonRun) {
+  if (run.reward !== null) return fail('already-recorded');
+  const level = getDungeonLevel(run.level.id);
+  if (level?.tier !== 1) return fail('preview-only');
+  if (run.stage !== 'complete' || run.waveIndex !== 2 || run.waves.length !== 3
+    || run.battle?.phase !== 'victory' || run.battle.waveNumber !== 3
+    || run.battle.kills !== run.battle.total) return fail('unfinished-run');
+  const { gold, slaves } = level.completionReward;
+  if (!count(state.gold) || state.gold > Number.MAX_SAFE_INTEGER - gold
+    || !count(state.economy.slaves) || state.economy.slaves > Number.MAX_SAFE_INTEGER - slaves) return fail('resource-overflow');
+  // Validate the whole grant first. Persist the resulting campaign snapshot before
+  // enabling result actions; save retries write this balance, never grant again.
+  state.gold += gold;
+  state.economy.slaves += slaves;
+  run.reward = Object.freeze({ gold, slaves });
+  return { ok: true as const, gold, slaves };
+}
 
 export function createBattleRewardReceipt(waveNumber: number): BattleRewardReceipt {
   if (!validWave(waveNumber)) throw new RangeError('Invalid battle reward wave');

@@ -4,7 +4,7 @@ import { createBattle, updateBattle } from '../combat.ts';
 import { applyBattleFood, getArmyUnitStats, NO_FOOD } from '../army-food.ts';
 import { createForge, getForgedUnitStats } from '../forge.ts';
 import { createHero } from '../hero.ts';
-import { createDungeonRun, startDungeonBattle } from '../dungeon-run.ts';
+import { createDungeonRun, startDungeonBattle, finishDungeonWave, prepareNextDungeonWave } from '../dungeon-run.ts';
 import { GOBLIN_CAVE_LEVELS } from '../dungeons.ts';
 
 const formation = ['swordsman', 'healer', 'archer'].map((type, row) => ({ id: row + 1, type, level: 8, col: 2, row }));
@@ -72,7 +72,10 @@ test('three-wave cave retains food bases, injuries and casualties across wave tr
   battle.allies[0].hp *= .4;
   const injuredHp = battle.allies[0].hp, deadId = battle.allies[1].id;
   battle.allies[1].hp = 0; battle.phase = 'victory';
+  battle.kills = battle.total;
+  assert.equal(finishDungeonWave(run), true);
   const foodBases = battle.food.bases;
+  assert.equal(prepareNextDungeonWave(run), true);
   assert.equal(startDungeonBattle(run, createHero(), forge), true);
   assert.equal(run.battle, battle); assert.equal(battle.food.bases, foodBases);
   assert.equal(battle.waveNumber, 2);
@@ -82,6 +85,9 @@ test('three-wave cave retains food bases, injuries and casualties across wave tr
   applyBattleFood(battle, NO_FOOD);
   near(battle.allies[0].maxHp, baseHp); near(battle.allies[0].hp, baseHp * .4);
   battle.phase = 'victory';
+  battle.kills = battle.total;
+  assert.equal(finishDungeonWave(run), true);
+  assert.equal(prepareNextDungeonWave(run), true);
   assert.equal(startDungeonBattle(run, createHero(), forge), true);
   assert.equal(battle.waveNumber, 3); assert.equal(battle.wave.bossType, 'goblinChief');
   assert.equal(battle.food.bases, foodBases);

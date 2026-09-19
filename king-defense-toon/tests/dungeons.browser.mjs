@@ -19,13 +19,14 @@ const server = await createServer({
       ready: () => !!scene && !!armyScene && !isRecovering(),
       state: () => JSON.parse(JSON.stringify(saveSnapshot())),
       battle: () => battle && ({ wave: battle.waveNumber, elapsed: battle.elapsed, phase: battle.phase }),
-      run: () => dungeonRun && ({ level: dungeonRun.level.id, battle: dungeonRun.battle && {
+      run: () => dungeonRun && ({ level: dungeonRun.level.id, stage: dungeonRun.stage, reward: dungeonRun.reward, battle: dungeonRun.battle && {
         elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
       finishDungeonWave: () => {
         dungeonRun.battle.phase = 'victory';
         dungeonRun.battle.kills = dungeonRun.battle.total;
-        refresh();
+        finishDungeonBattle();
       },
+      loseDungeonWave: () => { dungeonRun.battle.phase = 'defeat'; finishDungeonBattle(); },
       finishWave: () => {
         if (!battle || battle.phase !== 'running') throw new Error('No running battle');
         for (let i = 0; i < 30000 && battle.phase === 'running'; i++) updateBattle(battle, 1/60);
@@ -153,6 +154,11 @@ try {
     await page.locator('#collect-offline-rewards').click();
     await start.tap();
     await page.waitForFunction(() => window.dungeonCheck.run().battle?.wave === 2);
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).stage, 'preparation');
+    await page.waitForTimeout(350);
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle.elapsed, 0, 'preparation never starts combat');
+    assert.equal(await start.textContent(), 'Start wave 2');
+    await start.tap();
     assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle.phase, 'running');
     await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
     await page.locator('[data-run-exit]').click();
@@ -212,7 +218,7 @@ try {
     await page.keyboard.press('Escape');
     await page.locator('[data-run-start]').click();
     await page.waitForFunction(() => window.dungeonCheck.run().battle?.elapsed > .4);
-    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle.total, 4);
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle.total, 8);
     assert.equal(await page.evaluate(() => window.dungeonCheck.battle().elapsed), pausedAt);
     assert.deepEqual(inventory(await page.evaluate(() => window.dungeonCheck.state())), inventory(before));
     await page.screenshot({ path: fileURLToPath(new URL('cave-battle.png', output)) });
@@ -224,6 +230,91 @@ try {
     await page.waitForFunction(elapsed => window.dungeonCheck.battle().elapsed > elapsed, pausedAt);
     await back(page);
     assert.equal(await page.locator('#app').getAttribute('data-screen'), 'campaign');
+  });
+  for (const [width, height] of [[320, 568], [390, 844]]) {
+    await scenario(`run rewards, repeat entry and defeat ${width}x${height}`, width, height, fixture(), async page => {
+      await open(page);
+      await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      const before = await page.evaluate(() => window.dungeonCheck.state());
+      const start = page.locator('[data-run-start]');
+      for (let run = 1; run <= 2; run++) {
+        for (let wave = 1; wave <= 3; wave++) {
+          if (wave > 1) {
+            assert.equal(await start.textContent(), 'Prepare');
+            await start.tap();
+            await page.waitForFunction(() => window.dungeonCheck.ready());
+            assert.equal((await page.evaluate(() => window.dungeonCheck.run())).stage, 'preparation');
+          }
+          await start.tap();
+          await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+        }
+        await page.locator('[data-run-result]').waitFor({ state: 'visible' });
+        assert.equal(await page.locator('[data-result-gold]').textContent(), '+150');
+        assert.equal(await page.locator('[data-result-slaves]').textContent(), '+3');
+        assert.equal(await start.isVisible(), false);
+        await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+        const after = await page.evaluate(() => window.dungeonCheck.state());
+        assert.equal(after.gold, before.gold + 150 * run);
+        assert.equal(after.economy.slaves, before.economy.slaves + 3 * run);
+        assert.deepEqual(after.units, before.units);
+        assert.deepEqual(after.hero, before.hero);
+        assert.deepEqual(after.progression, before.progression);
+        assert.equal(after.clearedWaves, before.clearedWaves);
+        const panel = await page.locator('[data-run-result]').boundingBox();
+        const buttons = await page.locator('.dungeon-result-actions').boundingBox();
+        assert.ok(panel.x >= 0 && panel.x + panel.width <= width);
+        assert.ok(buttons.y >= panel.y && buttons.y + buttons.height <= panel.y + panel.height, 'actions fit without scrolling');
+        if (run === 1) await page.screenshot({ path: fileURLToPath(new URL(`victory-${width}.png`, output)) });
+        await page.locator('[data-run-retry]').tap();
+        assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle, null);
+      }
+      await start.tap();
+      await page.evaluate(() => window.dungeonCheck.loseDungeonWave());
+      assert.equal(await page.locator('[data-result-title]').textContent(), 'Run ended');
+      assert.equal(await page.locator('[data-result-rewards]').isVisible(), false);
+      await page.locator('[data-result-exit]').click();
+      assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeons');
+      await page.reload();
+      await page.waitForFunction(() => window.dungeonCheck?.ready());
+      const restored = await page.evaluate(() => window.dungeonCheck.state());
+      assert.equal(restored.gold, before.gold + 300);
+      assert.equal(restored.economy.slaves, before.economy.slaves + 6);
+      assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
+    });
+  }
+  await scenario('boss rewards survive failed storage writes without duplicate grants', 390, 844, fixture(), async page => {
+    await open(page);
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    const before = await page.evaluate(() => window.dungeonCheck.state());
+    for (let wave = 1; wave <= 3; wave++) {
+      if (wave > 1) await page.locator('[data-run-start]').tap();
+      await page.locator('[data-run-start]').tap();
+      if (wave === 3) await page.evaluate(() => {
+        window.originalSetItem = localStorage.setItem;
+        localStorage.setItem = () => { throw new DOMException('Fixture quota', 'QuotaExceededError'); };
+      });
+      await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+    }
+    await page.locator('#recovery-panel').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('[data-run-retry]').isDisabled(), true);
+    assert.equal(await page.locator('[data-result-exit]').isDisabled(), true);
+    await page.locator('[data-run-retry]').evaluate(button => button.click());
+    assert.equal((await page.evaluate(() => window.dungeonCheck.run())).stage, 'complete');
+    const storedBeforeRetry = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+    assert.equal(storedBeforeRetry.gold, before.gold);
+    await page.evaluate(() => window.dungeonCheck.restoreStorage());
+    await page.locator('#recovery-retry').click();
+    await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('[data-run-retry]').isDisabled(), false);
+    const paid = await page.evaluate(() => window.dungeonCheck.state());
+    assert.equal(paid.gold, before.gold + 150);
+    assert.equal(paid.economy.slaves, before.economy.slaves + 3);
+    await page.reload(); await page.waitForFunction(() => window.dungeonCheck?.ready());
+    const restored = await page.evaluate(() => window.dungeonCheck.state());
+    assert.equal(restored.gold, paid.gold);
+    assert.equal(restored.economy.slaves, paid.economy.slaves);
   });
   await scenario('hidden combat, automatic next wave, live unlocks and zero canvas draws', 390, 844, fixture(49, true), async page => {
     await page.locator('#start-wave').click(); await open(page);
