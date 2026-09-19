@@ -42,11 +42,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   sparse detail, legible at 44–48 CSS pixels. For dungeon covers, retain more
   composition than an icon but use the same simplified shapes and quiet scenery;
   the character should read first at the actual mobile thumbnail size.
-- Approved dungeon-cover exception: the user selected the first Goblin Cave
-  menu concept with more detailed illustrated boss portraits, rather than the
-  later simplified pixel-art version. Preserve that cover treatment and layout
-  when adding level details, rewards and rules. This exception applies to dungeon
-  menu illustrations, not to runtime unit sprites or the rest of the game's art.
+- Dungeon covers use the simpler pixel-art variant of the Goblin Cave menu,
+  restored at the user's request on 2026-09-19. The earlier detailed-illustration
+  exception is superseded. Use `art/dungeons/game-style-menu-reference.png` and
+  `assets/dungeons/goblin-cave-covers.webp` for the Chief, Bombardier and mounted
+  King; preserve their identities and the existing menu layout and controls.
 - Preserve established character identity, clothing, weapons, mount and palette.
   Use `assets/web/goblin-chief.webp` and `assets/goblin-bombardier/body.webp` for
   those live bosses. A style correction is not permission to redesign a boss or
