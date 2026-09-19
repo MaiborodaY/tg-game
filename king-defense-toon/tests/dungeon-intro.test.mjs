@@ -19,7 +19,7 @@ function fixture({ reduced = false } = {}) {
   return { video, intro, finishes: () => finishes };
 }
 
-test('entry video is lazy, preparation is shared and completion fires once at three seconds', async () => {
+test('entry video is lazy, preparation is shared and completion fires once at five seconds', async () => {
   const { video, intro, finishes } = fixture();
   assert.equal(video.src, ''); assert.equal(video.loads, 0);
   const first = intro.prepare(), second = intro.prepare();
@@ -28,9 +28,11 @@ test('entry video is lazy, preparation is shared and completion fires once at th
   assert.equal(await first, true);
   intro.start(); intro.start(); assert.equal(video.plays, 1);
   video.emit('playing');
-  for (let i = 1; i <= 29; i++) { video.currentTime = i / 10; intro.frame(.1); }
-  assert.equal(finishes(), 0);
-  video.currentTime = 3; intro.frame(.1);
+  for (let i = 1; i <= 49; i++) {
+    video.currentTime = i / 10; intro.frame(.1);
+    assert.equal(finishes(), 0, `the five-second film must not end at ${video.currentTime}s`);
+  }
+  video.currentTime = 5; intro.frame(.1);
   video.emit('ended'); intro.frame(1); intro.skip();
   assert.equal(finishes(), 1); assert.equal(intro.active, false); assert.equal(video.paused, true);
   intro.start(); assert.equal(video.currentTime, 0); assert.equal(video.loads, 1, 're-entry retains the same media resource');

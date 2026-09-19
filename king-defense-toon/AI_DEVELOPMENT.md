@@ -343,12 +343,16 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   the small cave icon is shared with navigation. No animated menu backgrounds,
   separate canvas loop, external image requests or per-refresh image creation.
 - Entry uses a separate `dungeon-intro` screen with one retained muted inline
-  video, not another scene/engine. Its three-second MP4 is composed offline;
+  video, not another scene/engine. Its five-second MP4 is composed offline;
   sources/export details live in `art/dungeons/intro/README.md`. The approved
   moonlit cinematic environment is an intro-only art exception. No source PNGs,
   runtime crowd simulation or particle loops ship with the clip.
   The native video receives its URL only on first catalogue browsing or entry;
-  Vite hashes it for the existing immutable `/assets/*` cache. Reduced motion
+  Vite hashes it for the existing immutable `/assets/*` cache. The small supplied
+  WoC logo is a separate lazy WebP overlay at bottom left, opposite Skip at bottom
+  right; both respect device/Telegram safe areas. Keep branding noninteractive,
+  uncropped and subordinate to the movie. A missing logo never blocks entry.
+  Reduced motion
   skips entry, Skip is always available, and failed or stalled playback opens
   the dungeon instead of blocking it (one-second startup/stall watchdog).
   The shared frame loop owns completion and pauses both retained combats and

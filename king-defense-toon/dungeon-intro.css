@@ -3,12 +3,22 @@
 #app[data-screen='dungeon-intro'] > .wave-track { visibility: hidden; pointer-events: none; }
 #app[data-screen='dungeon-intro'] > .battlefield *,
 #app[data-screen='dungeon-intro'] > .army-dock * { animation-play-state: paused !important; }
-.dungeon-intro-screen { position: absolute; inset: 0; z-index: 20; overflow: hidden; background: #0d1725; }
+.dungeon-intro-screen {
+  --intro-bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px)));
+  position: absolute; inset: 0; z-index: 20; overflow: hidden; background: #0d1725;
+}
 .dungeon-intro-screen > video { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; }
+.dungeon-intro-brand {
+  position: absolute;
+  left: calc(16px + max(env(safe-area-inset-left, 0px), var(--tg-safe-area-inset-left, 0px), var(--tg-content-safe-area-inset-left, 0px)));
+  bottom: var(--intro-bottom); width: clamp(64px, 18vw, 72px); height: auto;
+  pointer-events: none; user-select: none;
+}
+.dungeon-intro-brand[hidden] { display: none; }
 .dungeon-intro-skip {
   position: absolute;
-  right: max(12px, env(safe-area-inset-right, 0px), var(--tg-safe-area-inset-right, 0px), var(--tg-content-safe-area-inset-right, 0px));
-  bottom: max(12px, env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px));
+  right: calc(16px + max(env(safe-area-inset-right, 0px), var(--tg-safe-area-inset-right, 0px), var(--tg-content-safe-area-inset-right, 0px)));
+  bottom: var(--intro-bottom);
   min-width: 56px; min-height: 44px; padding: 8px 14px; border: 1px solid #c1c6ab;
   border-radius: 2px; color: #f4edcc; background: #213a43c9; font-size: 15px;
 }

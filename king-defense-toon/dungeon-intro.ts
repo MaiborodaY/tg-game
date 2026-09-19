@@ -1,7 +1,8 @@
-export const DUNGEON_INTRO_SECONDS = 3;
+export const DUNGEON_INTRO_SECONDS = 5;
 const START_TIMEOUT_SECONDS = 1;
 const STALL_TIMEOUT_SECONDS = 1;
 const INTRO_URL = new URL('./assets/dungeons/goblin-cave-intro.mp4', import.meta.url).href;
+const BRAND_URL = new URL('./assets/branding/woc-handshake.webp', import.meta.url).href;
 
 type IntroVideo = Pick<HTMLVideoElement, 'src' | 'currentTime' | 'readyState' | 'ended' | 'paused'
   | 'play' | 'pause' | 'load' | 'addEventListener' | 'removeEventListener' | 'removeAttribute'>;
@@ -127,12 +128,25 @@ export function createDungeonIntro({ parent, onFinish }: { parent: HTMLElement; 
   const video = document.createElement('video');
   video.muted = true; video.defaultMuted = true; video.playsInline = true; video.preload = 'auto';
   video.disablePictureInPicture = true; video.setAttribute('aria-hidden', 'true');
+  const brand = document.createElement('img');
+  brand.className = 'dungeon-intro-brand'; brand.alt = 'World of Connections';
+  brand.hidden = true; brand.decoding = 'async'; brand.draggable = false;
   const skip = document.createElement('button');
   skip.type = 'button'; skip.className = 'dungeon-intro-skip'; skip.textContent = 'Skip';
   skip.setAttribute('aria-label', 'Skip cave introduction');
-  root.append(video, skip); parent.append(root);
+  root.append(video, brand, skip); parent.append(root);
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const playback = createDungeonIntroPlayback({ video, onFinish,
-    reducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+    reducedMotion });
+  let brandRequested = false;
+  function prepareBrand() {
+    if (brandRequested || reducedMotion()) return;
+    // Branding is optional: its loading or failure must never delay the movie or cave.
+    brandRequested = true; brand.src = BRAND_URL;
+  }
+  function onBrandLoad() { brand.hidden = brand.naturalWidth === 0; }
+  function onBrandError() { brand.hidden = true; }
+  brand.addEventListener('load', onBrandLoad); brand.addEventListener('error', onBrandError);
   function onSkip() { playback.skip(); }
   function onKey(event: KeyboardEvent) {
     if (event.key === 'Escape') { event.preventDefault(); playback.skip(); }
@@ -142,14 +156,17 @@ export function createDungeonIntro({ parent, onFinish }: { parent: HTMLElement; 
   return {
     root,
     get active() { return playback.active; },
-    prepare: () => playback.prepare(),
-    start() { playback.start(); if (playback.active) skip.focus({ preventScroll: true }); },
+    prepare() { prepareBrand(); return playback.prepare(); },
+    start() { prepareBrand(); playback.start(); if (playback.active) skip.focus({ preventScroll: true }); },
     frame: dt => playback.frame(dt),
     setPaused: value => playback.setPaused(value),
     skip: () => playback.skip(),
     stop: () => playback.stop(),
     destroy() {
-      playback.destroy(); skip.removeEventListener('click', onSkip); root.removeEventListener('keydown', onKey); root.remove();
+      playback.destroy();
+      brandRequested = true;
+      brand.removeEventListener('load', onBrandLoad); brand.removeEventListener('error', onBrandError); brand.removeAttribute('src');
+      skip.removeEventListener('click', onSkip); root.removeEventListener('keydown', onKey); root.remove();
     },
   };
 }

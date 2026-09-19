@@ -14,8 +14,12 @@ window.createCaveIntroRenderer = async function (canvas, urls) {
   const path = [[.34, 1.055], [.48, .92], [.50, .83], [.52, .74], [.65, .635], [.665, .575], [.63, .505], [.635, .46]];
   function position(p, lane) {
     const segment = clamp(p) * (path.length - 1), i = Math.min(path.length - 2, Math.floor(segment)), f = segment - i;
-    return { x: (mix(path[i][0], path[i + 1][0], f) + lane * mix(.19, .046, clamp(p))) * W,
-      y: mix(path[i][1], path[i + 1][1], f) * H };
+    const curve = axis => {
+      const a = path[Math.max(0, i - 1)][axis], b = path[i][axis];
+      const c = path[i + 1][axis], d = path[Math.min(path.length - 1, i + 2)][axis];
+      return .5 * (2 * b + (c - a) * f + (2 * a - 5 * b + 4 * c - d) * f * f + (3 * b - a - 3 * c + d) * f * f * f);
+    };
+    return { x: (curve(0) + lane * mix(.19, .046, clamp(p))) * W, y: curve(1) * H };
   }
   // Alpha-bound extraction only: keep the generated artwork and normalize feet.
   function frames(sheet, row) {
@@ -33,22 +37,25 @@ window.createCaveIntroRenderer = async function (canvas, urls) {
     });
   }
   const sprites = [frames(runners, 0), frames(runners, 1), frames(leaders, 0), frames(leaders, 1)];
-  const actors = Array.from({ length: 32 }, (_, i) => ({ kind: 0, p: -.19 + i * .035,
-    lane: (random() - .5) * 1.7, phase: random() * 4, size: 112 + random() * 22, speed: .265 + random() * .014 }));
-  actors.push({ kind: 1, p: .22, lane: -.22, phase: .2, size: 198, speed: .276 },
-    { kind: 2, p: .38, lane: -.55, phase: 1.1, size: 229, speed: .27 },
-    { kind: 3, p: .56, lane: .22, phase: .1, size: 282, speed: .265 });
+  // Flanking ranks leave the centre clear for the three distinct boss silhouettes.
+  const actors = Array.from({ length: 28 }, (_, i) => ({ kind: 0, p: -.18 + i * .04,
+    lane: (i % 2 ? 1 : -1) * (.8 + random() * .45), phase: random() * 4, size: 94 + random() * 18, speed: .076 + random() * .006 }));
+  actors.push({ kind: 1, p: .20, lane: -.22, phase: .2, size: 225, speed: .068 },
+    { kind: 2, p: .31, lane: .45, phase: 1.1, size: 255, speed: .065 },
+    { kind: 3, p: .43, lane: -.10, phase: .1, size: 335, speed: .06 });
   const rain = Array.from({ length: 210 }, () => ({ x: random(), y: random(), depth: .25 + random() * .75, phase: random() }));
   const torches = [[83, 1250], [206, 992], [437, 957], [715, 1146], [401, 721], [480, 798], [703, 813], [764, 720], [737, 745]];
   function actor(a, t) {
     const p = a.p + t * a.speed;
     if (p < -.04 || p > 1.08) return;
-    const pos = position(p, a.lane), perspective = mix(1, .33, clamp(p));
+    const pos = position(p, a.lane);
+    const perspective = mix(1, .33, clamp(p));
     const cycle = t * (a.kind === 3 ? 3.7 : a.kind === 2 ? 7 : 9) + a.phase;
     const frame = sprites[a.kind][Math.floor(cycle) % 4];
     const height = a.size * perspective, width = height * frame.w / frame.h;
     const bounce = a.kind === 3 ? Math.max(0, Math.sin(cycle * Math.PI / 2)) * 17 * perspective : Math.sin(cycle * Math.PI) * 3 * perspective;
-    ctx.save(); ctx.globalAlpha = clamp((p + .04) * 20) * (1 - ease((p - .91) / .17));
+    // Bosses remain opaque until the continuous camera move overtakes them.
+    ctx.save(); ctx.globalAlpha = clamp((p + .04) * 20) * (a.kind ? 1 : 1 - ease((p - .96) / .12));
     ctx.fillStyle = 'rgba(2,8,15,.4)'; ctx.beginPath(); ctx.ellipse(pos.x, pos.y - 1, width * .31, height * .052, 0, 0, Math.PI * 2); ctx.fill();
     // Wet, broken reflections remain subordinate to the moving silhouettes.
     ctx.save(); ctx.globalAlpha *= .10; ctx.translate(pos.x, pos.y + 3); ctx.scale(1, -.16);
@@ -58,9 +65,28 @@ window.createCaveIntroRenderer = async function (canvas, urls) {
   }
   return function draw(t) {
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#03060b'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const approach = ease(t / 3), zoom = 1 + 3.25 * Math.pow(approach, 2.2);
-    const cameraX = mix(W / 2, W * .634, approach), cameraY = mix(H / 2, H * .478, approach);
+    // One continuous shot: follow the bosses first, then pass them into this
+    // same arch. No background cut or crowd repositioning can break continuity.
+    const approach = ease(t / 1.4), march = ease((t - 1.4) / 1.8), entry = ease((t - 3.3) / 1.6);
+    const chief = actors[actors.length - 3], king = actors[actors.length - 1];
+    const chiefPos = position(chief.p + t * chief.speed, chief.lane);
+    const kingPos = position(king.p + t * king.speed, king.lane);
+    const kingHead = kingPos.y - king.size * mix(1, .33, king.p + t * king.speed);
+    const bossBounds = actors.slice(-3).map(a => {
+      const p = a.p + t * a.speed, pos = position(p, a.lane);
+      const halfWidth = a.size * mix(1, .33, p) * Math.max(...sprites[a.kind].map(frame => frame.w / frame.h)) / 2;
+      return { left: pos.x - halfWidth, right: pos.x + halfWidth };
+    });
+    const left = Math.min(...bossBounds.map(b => b.left)), right = Math.max(...bossBounds.map(b => b.right));
+    const followX = (left + right) / 2;
+    const followY = (chiefPos.y + kingHead) / 2;
+    // Leave framing margin around the Chief's club and the King's banners.
+    const trackingZoom = Math.min(1 + 1.5 * approach + .15 * march, W * .88 / (right - left));
+    const zoom = trackingZoom * Math.pow(14 / trackingZoom, entry);
     const scale = canvas.width / W * zoom;
+    const halfW = canvas.width / (2 * scale), halfH = canvas.height / (2 * scale);
+    const cameraX = clamp(mix(mix(W / 2, followX, approach), W * .633, entry), halfW, W - halfW);
+    const cameraY = clamp(mix(mix(H / 2, followY, approach), H * .421, entry), halfH, H - halfH);
     ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2); ctx.scale(scale, scale); ctx.translate(-cameraX, -cameraY);
     ctx.imageSmoothingEnabled = false; ctx.drawImage(background, 0, 0, W, H);
     for (const [i, [x, y]] of torches.entries()) {
@@ -77,11 +103,11 @@ window.createCaveIntroRenderer = async function (canvas, urls) {
     for (const drop of rain) {
       const x = ((drop.x - t * .12 * drop.depth + 2) % 1) * canvas.width;
       const y = ((drop.y + t * .9 * drop.depth) % 1) * canvas.height;
-      ctx.strokeStyle = `rgba(174,207,234,${.1 + drop.depth * .22})`; ctx.lineWidth = drop.depth > .8 ? 1.3 : .7;
+      ctx.strokeStyle = `rgba(174,207,234,${(.1 + drop.depth * .22) * (1 - entry)})`; ctx.lineWidth = drop.depth > .8 ? 1.3 : .7;
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - (3 + drop.depth * 5), y + (8 + drop.depth * 17)); ctx.stroke();
     }
     const vignette = ctx.createRadialGradient(canvas.width * .55, canvas.height * .48, canvas.width * .18, canvas.width * .5, canvas.height * .5, canvas.height * .66);
     vignette.addColorStop(0, 'rgba(0,4,14,0)'); vignette.addColorStop(1, 'rgba(0,4,14,.46)'); ctx.fillStyle = vignette; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = `rgba(2,5,10,${Math.max(1 - ease(t / .12), ease((t - 2.60) / .35))})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = `rgba(2,5,10,${Math.max(1 - ease(t / .12), ease((t - 4.76) / .20))})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 };

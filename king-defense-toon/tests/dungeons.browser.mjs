@@ -144,6 +144,7 @@ try {
     await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
     await page.waitForFunction(() => window.dungeonCheck.ready());
     assert.equal(requests.some(url => url.includes('goblin-cave-intro.mp4')), false, 'reduced motion does not download the optional video');
+    assert.equal(requests.some(url => url.includes('woc-handshake.webp')), false, 'reduced motion also skips the optional intro branding');
     assert.equal(caveImages().length, 1, 'both canvases share one on-demand image request');
     const start = page.locator('[data-run-start]');
     await page.waitForFunction(() => !document.querySelector('[data-run-start]').disabled);
@@ -412,6 +413,7 @@ try {
   }, true);
   await scenario('intro video: shared pause gates, retained battle, silent canvases and continuous cave music', 390, 760, fixture(), async (page, requests) => {
     assert.equal(requests.some(url => url.includes('goblin-cave-intro.mp4')), false, 'game startup leaves video unloaded');
+    assert.equal(requests.some(url => url.includes('woc-handshake.webp')), false, 'game startup leaves intro branding unloaded');
     await page.locator('#start-wave').click(); await open(page);
     await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
     assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true, 'catalogue warmup cannot start hidden playback');
@@ -421,6 +423,8 @@ try {
     const initial = await page.evaluate(() => ({ battle: window.dungeonCheck.battle(), draws: { ...window.dungeonDraws },
       audioSources: window.dungeonAudioSources.filter(source => source.includes('goblin-cave-action')).length }));
     assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.muted && video.playsInline), true);
+    const duration = await page.locator('#dungeon-intro-screen video').evaluate(video => video.duration);
+    assert.ok(duration >= 4.95 && duration <= 5.05, `the exported film must last five seconds, got ${duration}`);
     assert.equal(await page.locator('.battlefield').evaluate(element => element.inert), true);
     assert.equal(await page.locator('#dungeon-intro-screen').innerText(), 'Skip', 'the film carries no title or captions');
     await page.evaluate(() => { window.dispatchEvent(new Event('resize')); window.Telegram.WebApp.isActive = false; window.telegramEvents.deactivated(); });
@@ -438,6 +442,8 @@ try {
     await page.waitForTimeout(150);
     assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-intro');
     await page.locator('#collect-offline-rewards').click();
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').currentTime >= 3.3);
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-intro', 'the former three-second deadline cannot cut off the new ending');
     await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
     await page.waitForFunction(() => window.dungeonCheck.ready());
     assert.deepEqual(await page.evaluate(() => window.dungeonCheck.battle()), initial.battle, 'campaign combat stayed frozen throughout entry');
@@ -447,6 +453,64 @@ try {
     assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true);
     assert.equal(await page.locator('.battlefield').evaluate(element => element.inert), false);
   }, true, 'no-preference');
+  for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
+    await scenario(`intro video: branding and Skip fit safe areas ${width}x${height}`, width, height, fixture(), async (page, requests) => {
+      assert.equal(requests.some(url => url.includes('woc-handshake.webp')), false);
+      await page.locator('#dungeon-intro-screen').evaluate(screen => {
+        screen.style.setProperty('--tg-safe-area-inset-left', '11px');
+        screen.style.setProperty('--tg-safe-area-inset-right', '7px');
+      });
+      await open(page);
+      await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2
+        && document.querySelector('.dungeon-intro-brand').naturalWidth > 0);
+      await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+      await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').currentTime > .15);
+      await page.evaluate(() => { window.Telegram.WebApp.isActive = false; window.telegramEvents.deactivated(); });
+      const placement = await page.locator('#dungeon-intro-screen').evaluate(screen => {
+        const brand = screen.querySelector('.dungeon-intro-brand'), skip = screen.querySelector('.dungeon-intro-skip');
+        const bounds = element => { const { left, right, bottom, width, height } = element.getBoundingClientRect(); return { left, right, bottom, width, height }; };
+        const rect = brand.getBoundingClientRect();
+        return { screen: bounds(screen), brand: bounds(brand), skip: bounds(skip), hidden: brand.hidden,
+          imageRatio: brand.naturalWidth / brand.naturalHeight, tabIndex: brand.tabIndex,
+          pointerEvents: getComputedStyle(brand).pointerEvents,
+          interceptsPointer: document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) === brand };
+      });
+      assert.equal(placement.hidden, false);
+      assert.ok(placement.brand.width >= 64 && placement.brand.width <= 72);
+      assert.ok(Math.abs(placement.brand.width / placement.brand.height - placement.imageRatio) < .01, 'logo preserves the supplied artwork proportions');
+      assert.ok(placement.brand.left - placement.screen.left >= 27 - .1, 'branding has 16px padding beyond the left safe inset');
+      assert.ok(placement.screen.right - placement.skip.right >= 23 - .1, 'Skip has 16px padding beyond the right safe inset');
+      assert.ok(placement.screen.bottom - placement.brand.bottom >= 50 - .1, 'branding clears the bottom safe inset by 16px');
+      assert.ok(placement.screen.bottom - placement.skip.bottom >= 50 - .1, 'Skip clears the bottom safe inset by 16px');
+      assert.ok(placement.brand.right + 16 <= placement.skip.left, 'branding and Skip never compete for the same corner');
+      assert.ok(placement.skip.height >= 44);
+      assert.equal(placement.tabIndex, -1); assert.equal(placement.pointerEvents, 'none'); assert.equal(placement.interceptsPointer, false);
+      await page.screenshot({ path: fileURLToPath(new URL(`intro-brand-${width}.png`, output)) });
+      await page.evaluate(() => { window.Telegram.WebApp.isActive = true; window.telegramEvents.activated(); });
+      await page.locator('.dungeon-intro-skip').click();
+      await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      await page.locator('[data-run-exit]').click();
+      await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+      assert.equal(requests.filter(url => url.includes('woc-handshake.webp')).length, 1, 're-entry retains the branding resource');
+      assert.equal(await page.locator('.dungeon-intro-brand').count(), 1);
+      await page.locator('.dungeon-intro-skip').click();
+      await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    }, true, 'no-preference');
+  }
+  await scenario('intro video: missing branding cannot gate playback or cave entry', 390, 844, fixture(), async page => {
+    await page.route('**/woc-handshake.webp*', route => route.abort('failed'));
+    await open(page);
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
+    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').currentTime >= 3.3);
+    assert.equal(await page.locator('#app').getAttribute('data-screen'), 'dungeon-intro');
+    assert.equal(await page.locator('.dungeon-intro-brand').isVisible(), false, 'a failed optional image leaves no broken-image placeholder');
+    await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
+    await page.waitForFunction(() => window.dungeonCheck.ready());
+    await page.locator('[data-run-start]').click();
+    await page.waitForFunction(() => window.dungeonCheck.run().battle?.phase === 'running');
+  }, false, 'no-preference');
   await scenario('intro video: Skip preserves the pending auto-wave and reuses its media element', 320, 740, fixture(50, true), async page => {
     await page.locator('#start-wave').click(); await open(page);
     await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
