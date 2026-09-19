@@ -2,6 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAssetCache, loadImage } from '../asset-cache.ts';
 
+test('peek distinguishes ready values from pending, failed and released resources', async () => {
+  const cache = createAssetCache(), owner = {};
+  cache.retain(owner, ['image', 'empty', 'broken']);
+  let finish;
+  const loading = cache.get('image', () => new Promise(resolve => { finish = resolve; }));
+  assert.equal(cache.peek('image'), undefined);
+  await Promise.resolve();
+  finish('decoded');
+  await loading;
+  assert.deepEqual(cache.peek('image'), { value: 'decoded' });
+  await cache.get('empty', () => undefined);
+  assert.deepEqual(cache.peek('empty'), { value: undefined });
+  await assert.rejects(cache.get('broken', () => { throw new Error('offline'); }));
+  assert.equal(cache.peek('broken'), undefined);
+  cache.release(owner);
+  assert.equal(cache.peek('image'), undefined);
+});
+
 test('two scenes share one pending load and resources live until both release them', async () => {
   const cache = createAssetCache();
   const battle = {}, army = {};

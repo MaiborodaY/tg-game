@@ -870,12 +870,29 @@ const MONK_HEAL_METADATA = {
   baselines: Array<number>(11).fill(128 / 192), frameFor: (actor: AnimationActor | null | undefined) => tinyMonkHealFrame(actor!),
 };
 
-async function loadSceneAssets(plan: SceneAssetPlan) {
-  const resources = new Map(await Promise.all([...plan.resources].map(async ([key, resource]) => {
+async function loadSceneResources(plan: SceneAssetPlan) {
+  return new Map(await Promise.all([...plan.resources].map(async ([key, resource]) => {
     const value = await sceneAssetCache.get(key, () => key === 'map:goblin-cave' ? createCaveMap() : resource.url ? loadImage(resource.url)
       : resource.levelNumber === 2 ? createGraveyardMap() : createTinyMap());
     return [key, value] as const;
   })));
+}
+
+async function loadSceneAssets(plan: SceneAssetPlan) {
+  return prepareSceneAssets(plan, await loadSceneResources(plan));
+}
+
+function cachedSceneAssets(plan: SceneAssetPlan) {
+  const resources = new Map<string, HTMLImageElement | BattlefieldMap>();
+  for (const key of plan.keys) {
+    const ready = sceneAssetCache.peek(key);
+    if (!ready) return null;
+    resources.set(key, ready.value);
+  }
+  return prepareSceneAssets(plan, resources);
+}
+
+function prepareSceneAssets(plan: SceneAssetPlan, resources: Map<string, HTMLImageElement | BattlefieldMap>) {
   // The plan supplies image keys separately from its map key; the shared cache
   // erases that relationship, but every producer above follows the resource kind.
   const imageResource = (key: string) => resources.get(key) as HTMLImageElement;
@@ -909,6 +926,10 @@ export async function createScene(canvas: HTMLCanvasElement, {
   const context = availableContext;
   // Owners keep only the union of resources needed by the two live canvases.
   const assetOwner = {};
+  const preloadOwner = {};
+  let preloadSignature: string | null = null;
+  let preloadRequest = 0;
+  let pendingPreload = Promise.resolve(false);
   let map: BattlefieldMap | null = null;
   let goblinArt: EnemyArt = { animations: {} };
   let allyAnimations: AnimationGroups = {};
@@ -944,16 +965,21 @@ export async function createScene(canvas: HTMLCanvasElement, {
     assetSignature = plan.signature;
     const request = ++assetRequest;
     sceneAssetCache.retain(assetOwner, plan.keys);
-    assetState = { status: 'loading', levelNumber: plan.levelNumber };
-    onAssetState({ ...assetState });
-    pendingAssets = loadSceneAssets(plan).then(assets => {
+    const apply = (assets: Awaited<ReturnType<typeof loadSceneAssets>>) => {
       if (destroyed || request !== assetRequest) return false;
       ({ map, goblinArt, allyAnimations, goblinHealPulse, elfHealPulse, moonGlaive, cannonArt, poisonArt, heroArt, heroEffects } = assets);
       draw();
       assetState = { status: 'ready', levelNumber: plan.levelNumber };
       onAssetState({ ...assetState });
       return true;
-    }, error => {
+    };
+    // A different resource list is not necessarily a load: reductions and warm
+    // plans can be installed immediately, without blocking the game for a microtask.
+    const cached = cachedSceneAssets(plan);
+    if (cached) return pendingAssets = Promise.resolve(apply(cached));
+    assetState = { status: 'loading', levelNumber: plan.levelNumber };
+    onAssetState({ ...assetState });
+    pendingAssets = loadSceneAssets(plan).then(apply, error => {
       if (destroyed || request !== assetRequest) return false;
       assetState = { status: 'error', levelNumber: plan.levelNumber, error };
       onAssetState({ ...assetState });
@@ -1245,12 +1271,28 @@ export async function createScene(canvas: HTMLCanvasElement, {
       updateState(nextState);
       return requestAssets();
     },
+    preload(nextState) {
+      if (destroyed) return Promise.resolve(false);
+      const plan = getSceneAssetPlan(nextState, { formationOnly });
+      if (plan.signature === preloadSignature) return pendingPreload;
+      preloadSignature = plan.signature;
+      const request = ++preloadRequest;
+      // Retain exactly one upcoming plan. It shares in-flight loads with both
+      // scenes, but cannot change their state or interrupt the visible battle.
+      sceneAssetCache.retain(preloadOwner, plan.keys);
+      pendingPreload = loadSceneResources(plan).then(
+        () => !destroyed && request === preloadRequest,
+        () => false, // A foreground request still reports/retries a real failure.
+      );
+      return pendingPreload;
+    },
     retryAssets() { return requestAssets(true); },
     getAssetState() { return { ...assetState }; },
     destroy() {
       destroyed = true;
       assetRequest += 1;
       sceneAssetCache.release(assetOwner);
+      sceneAssetCache.release(preloadOwner);
       map = null;
       goblinArt = { animations: {} };
       allyAnimations = {};

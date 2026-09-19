@@ -151,6 +151,17 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - `scene.ts` reads gameplay state and renders it; it must not mutate combat.
   Keep shared asset caching, rank-aware loading, authored frame/anchor data and
   disposal. Do not create/load images on each cast or start a loop per actor.
+- Preparation includes the upcoming wave's resources. Keep ready resource-plan
+  changes synchronous; changing/removing keys alone must not report `loading`.
+  `scene.preload` retains one upcoming plan alongside the visible scene, shares
+  pending requests, and never changes scene state or reports speculative errors
+  as foreground failures. Replace/release that owner instead of retaining the
+  whole campaign. Required loads still block combat and expose retryable errors.
+- Image loading must not suspend level music. Its gates are application activity,
+  save/session safety, level and the player's audio settings. Recovery blocks
+  input/combat immediately; only its loading presentation waits 180 ms. Errors
+  appear immediately. Keep focus/inert restoration independent of dialog visibility
+  and cancel the presentation timer during navigation/destruction.
 - Hidden application handling stops the shared frame loop. The opaque Dungeons
   screen is separate from ordinary overlays: `screen-controller.ts` owns screen
   visibility/inert state, and both scenes use `setDrawingEnabled(false)`. The
