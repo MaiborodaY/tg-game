@@ -24,6 +24,46 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   renderer, assets and tests. Do not replace a whole file with one merge side
   merely to make conflicts disappear. Never force-push over concurrent work.
 
+## Visual style and mobile UI
+
+- BroTD Infinity uses the compact 2D pixel-art vocabulary of the current Tiny
+  Swords units. Inspect actual runtime artwork before drawing a new unit, boss,
+  portrait, icon or menu; an attractive fantasy illustration alone is not a match.
+  Primary references: `assets/tiny-swords-warrior-blue.png`,
+  `assets/web/swordsman-art.png` and `assets/tiny-swords-torch-red.png`.
+- Use short, stylized proportions, readable silhouettes, large coherent pixel
+  clusters, dark blue/coloured contours and two or three broad flat shades per
+  material. Keep cream highlights, muted blue/teal, olive green, burgundy cloth
+  and restrained gold consistent with the relevant existing faction/character.
+  Avoid realistic anatomy, glossy 3D, soft painted shading, bloom, fine engraving,
+  dense stone/skin texture, noise and detailed paintings with a pixel filter.
+- For icons, also inspect `assets/hero-talents/talents.webp` and its approved
+  direction in `art/hero-talents/PROMPT.md`: simple symbols, subdued backgrounds,
+  sparse detail, legible at 44–48 CSS pixels. For dungeon covers, retain more
+  composition than an icon but use the same simplified shapes and quiet scenery;
+  the character should read first at the actual mobile thumbnail size.
+- Approved dungeon-cover exception: the user selected the first Goblin Cave
+  menu concept with more detailed illustrated boss portraits, rather than the
+  later simplified pixel-art version. Preserve that cover treatment and layout
+  when adding level details, rewards and rules. This exception applies to dungeon
+  menu illustrations, not to runtime unit sprites or the rest of the game's art.
+- Preserve established character identity, clothing, weapons, mount and palette.
+  Use `assets/web/goblin-chief.webp` and `assets/goblin-bombardier/body.webp` for
+  those live bosses. A style correction is not permission to redesign a boss or
+  alter an approved menu's layout. Keep approved framing/text and adjust only the
+  requested visual treatment. Older asset prompts (including 3D/toy experiments)
+  and design archives do not override the current runtime references.
+- Match the existing parchment/olive interface, carved pixel borders and muted
+  teal controls (`assets/tiny-ui/`, `style.css` and a current game screenshot).
+  Use compact controls and readable text with usable touch areas. Unit management
+  starts with small unit icons and reveals details on tap; keep the battlefield
+  prominent. A deliberately full-screen section may cover it, but its buttons
+  and typography should still suit a phone rather than a desktop poster.
+- Judge art beside current units and menus at intended display size, not only
+  enlarged. Use shared compressed assets/cache for implementation; new source
+  art and mockups are not automatically runtime assets. Mark unapproved concepts
+  as drafts and keep existing production art until replacement is authorized.
+
 ## Campaign commands and identities
 
 - `campaign-state.ts` owns campaign creation, restoration, reset and snapshots.
@@ -108,15 +148,35 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - `scene.ts` reads gameplay state and renders it; it must not mutate combat.
   Keep shared asset caching, rank-aware loading, authored frame/anchor data and
   disposal. Do not create/load images on each cast or start a loop per actor.
-- Hidden application handling already stops the shared frame loop. Internal
-  menus currently leave battle and both canvases running. Covering-screen render
-  throttling is **not implemented**. Do not claim that `hidden`, `inert`, or a
-  menu overlay automatically stops our JavaScript work.
-- If screen throttling is authorized later, separate drawing visibility from
-  battle simulation and passive production. Stopping the shared RAF currently
-  also stops combat/auto-wave progression. Fully covered scenes can skip drawing;
-  translucent menus require an explicit visual policy. Preserve the intended
-  game behavior when adding independent farm/mine/dungeon screens.
+- Hidden application handling stops the shared frame loop. The opaque Dungeons
+  screen is separate from ordinary overlays: `screen-controller.ts` owns screen
+  visibility/inert state, and both scenes use `setDrawingEnabled(false)`. The
+  internal draw guard covers RAF, resize, font and asset callbacks. Retain scene
+  caches, skip hidden HUD/formation rendering, and refresh state before drawing
+  on return. `hidden`/`inert` alone do not stop JavaScript work.
+- Dungeons browsing keeps the existing battle, rewards, auto-waves and passive
+  production running at the existing cadence; battle SFX stay silent behind it.
+  Do not stop the shared RAF or create a second campaign to open this screen.
+  Ordinary translucent menus retain their existing drawing behavior. Recovery
+  and offline receipts remain above Dungeons, preserving focus and inert state.
+
+## Dungeons catalogue (implemented menu; runs are future work)
+
+- `dungeons.ts` owns three Goblin Cave levels, unlocked after all ten waves of
+  rounds 1-5 / 1-10 / 1-15. Use historical first clears as well as current cleared
+  progress so retreat and campaign replay do not relock levels. No new save field
+  is needed for browsing. Closed levels still expose their details.
+- `dungeons-ui.ts` owns catalogue/details/rules and local navigation. The menu is
+  read-only: it does not create battles, consume the army, grant rewards or write
+  campaign state. Previewed first-clear rewards are 150 gold + 3 slaves,
+  300 + 5, and 500 + 8; repeat rewards/entry cadence remain undefined.
+- Planned runs have three waves, a boss on wave three, HP carried between waves,
+  no return of fallen units within the run, and healing during combat. These are
+  explanatory menu text, not implemented dungeon combat. Do not imply a playable
+  dungeon until its battle/reward/save flow is separately authorized and built.
+- Static WebP cover art uses one three-column atlas, loaded on first browsing;
+  the small cave icon is shared with navigation. No animated menu backgrounds,
+  separate canvas loop, external image requests or per-refresh image creation.
 
 ## Verification and performance
 

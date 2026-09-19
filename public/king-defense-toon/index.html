@@ -7,11 +7,11 @@
     <meta name="description" content="BroTD Infinity: grow your army and paladin hero, and defend your castle against goblins and undead." />
     <title>BroTD Infinity</title>
     <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
-    <script type="module" crossorigin src="./assets/game-Cn-0pJvL.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/profiler-panel-DSv6A8lk.js">
+    <script type="module" crossorigin src="./assets/game-CDy3pOdI.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/profiler-panel-CGiy-KGS.js">
     <link rel="stylesheet" crossorigin href="./assets/profiler-panel-3VGtY1fx.css">
-    <link rel="stylesheet" crossorigin href="./assets/game-DL7pdOWw.css">
-  <meta name="brotd-build" content="260918-234324">
+    <link rel="stylesheet" crossorigin href="./assets/game-DaJGBZCQ.css">
+  <meta name="brotd-build" content="260919-004006">
 </head>
   <body>
     <main id="app" aria-label="BroTD Infinity formation">
@@ -20,6 +20,7 @@
       <nav class="wave-track" aria-label="Wave progress">
         <span class="wave-label"><span class="level-label"><b id="level-number">1-1</b></span><span class="wave-caption">Wave</span><span><strong id="wave-number">1</strong><span id="wave-total" class="wave-total"></span></span></span>
         <ol id="wave-nodes" class="wave-nodes"></ol>
+        <button id="open-dungeons" type="button" aria-label="Explore dungeons" aria-controls="dungeons-screen" aria-expanded="false"><img src="./assets/cave-icon-Ds0vll2C.webp" width="33" height="31" alt="" /><span>Dungeons</span></button>
       </nav>
         <button id="open-profile" class="profile-trigger" type="button" aria-label="Open profile and settings" title="Profile and settings" aria-haspopup="dialog" aria-controls="profile-panel"><span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21v-2a8 8 0 0 1 16 0v2Z" fill="currentColor"/></svg></span></button>
         <div class="phase-plaque"><span aria-hidden="true"></span><b id="phase-label">Prepare your guard</b></div>
@@ -205,9 +206,10 @@
           <div class="music-volume-row"><label for="music-volume">Volume</label><input id="music-volume" type="range" min="0" max="100" step="1" value="5" aria-label="Music volume" /><output id="music-volume-label" for="music-volume">5%</output></div>
           <div class="setting-row reset-row"><div><h3>Start over</h3><p>Reset your army and progress</p></div><button id="reset" class="battle-button danger-button" type="button" aria-label="Reset run">Reset run</button></div>
           <p id="reset-confirmation" class="reset-confirmation" role="status" hidden>Tap reset again to start over. Army, gold, buildings and slaves will be reset.</p>
-          <p id="profile-version" class="profile-version" aria-label="Game version"><span>Version 260918-234324</span><time datetime="2026-09-18T23:43:24.699Z">18.09.2026 · 23:43:24 UTC</time></p>
+          <p id="profile-version" class="profile-version" aria-label="Game version"><span>Version 260919-004006</span><time datetime="2026-09-19T00:40:06.685Z">19.09.2026 · 00:40:06 UTC</time></p>
         </div>
       </section>
+      <section id="dungeons-screen" class="dungeons-screen" aria-labelledby="dungeons-title" tabindex="-1" hidden></section>
       <section id="offline-rewards-panel" class="offline-rewards-overlay" role="dialog" aria-modal="true" aria-labelledby="offline-rewards-title" aria-describedby="offline-rewards-description" hidden>
         <div class="menu-card offline-rewards-card">
           <h2 id="offline-rewards-title">Welcome back!</h2>

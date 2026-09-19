@@ -923,6 +923,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
   const view = formationOnly ? FORMATION_VIEW : BATTLE_VIEW;
   const showPlacementGrid = formationOnly || placementGrid;
   let destroyed = false;
+  let drawingEnabled = true;
   let state: SceneState = { units: [], selectedId: null, placementType: null, battle: null, time: 0 };
   let hoverCell: GridCell | null = null;
   let assetState: SceneAssetState = { status: 'loading', levelNumber: 1 };
@@ -970,7 +971,8 @@ export async function createScene(canvas: HTMLCanvasElement, {
   }
 
   function draw() {
-    if (destroyed) return;
+    // Resize, font readiness and asset completion also call draw outside the RAF.
+    if (destroyed || !drawingEnabled) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const width = Math.max(1, Math.round((rect.width || FIELD.width) * dpr));
@@ -1171,7 +1173,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
   }
 
   function onPointerMove(event: PointerEvent) {
-    if (destroyed || !showPlacementGrid || state.battle || !state.placementType) return;
+    if (destroyed || !drawingEnabled || !showPlacementGrid || state.battle || !state.placementType) return;
     const point = pointFromEvent(event);
     hoverCell = point ? cellAtPoint(point.x, point.y) : null;
     draw();
@@ -1183,7 +1185,7 @@ export async function createScene(canvas: HTMLCanvasElement, {
   }
 
   function onClick(event: MouseEvent) {
-    if (destroyed) return;
+    if (destroyed || !drawingEnabled) return;
     const point = pointFromEvent(event);
     if (!point) return;
     const { x, y } = point;
@@ -1230,6 +1232,12 @@ export async function createScene(canvas: HTMLCanvasElement, {
       updateState(nextState);
       requestAssets();
       draw();
+    },
+    setDrawingEnabled(enabled) {
+      if (destroyed || drawingEnabled === enabled) return;
+      drawingEnabled = enabled;
+      hoverCell = null;
+      if (enabled) draw();
     },
     prepare(nextState = {}) {
       if (destroyed) return Promise.resolve(false);

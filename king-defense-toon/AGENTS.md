@@ -3,6 +3,8 @@
 - Before changing this game, read `AI_DEVELOPMENT.md` and follow its architecture,
   persistence, combat, testing and integration rules. Keep it current when those
   contracts change; distinguish implemented behavior from planned work.
+- For artwork, icons and menu mockups, follow its **Visual style and mobile UI**
+  section and inspect the current in-game reference assets before generating art.
 
 - Regular-unit additions follow `UNIT_INTEGRATION.md`: shared gameplay and
   animation rules, with final verification batched across the requested units.

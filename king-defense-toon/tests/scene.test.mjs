@@ -12,6 +12,27 @@ function setup(t) {
   return env;
 }
 
+test('covered scenes skip every draw path and resume with current state and cached assets', async t => {
+  const env = setup(t);
+  let finishFonts;
+  document.fonts.ready = new Promise(resolve => { finishFonts = resolve; });
+  const canvas = env.canvas(), scene = env.keep(await createScene(canvas));
+  scene.setDrawingEnabled(false);
+  canvas.clear();
+  scene.render({ time: 99, units: [{ id: 1, type: 'archer', level: 7, col: 2, row: 0 }] });
+  env.window.dispatch('resize');
+  for (const observer of env.observers) observer.callback();
+  finishFonts(); await env.flush();
+  assert.deepEqual(canvas.commands, [], 'render, resize, fonts and asset completion cannot draw behind a covering screen');
+  await scene.prepare();
+  const requests = env.requests.length;
+  scene.setDrawingEnabled(true);
+  assert.ok(canvas.commands.some(([method]) => method === 'drawImage'));
+  assert.equal(env.requests.length, requests, 'return does not reload retained images');
+  scene.destroy(); canvas.clear(); scene.setDrawingEnabled(true);
+  assert.deepEqual(canvas.commands, []);
+});
+
 test('scene reports loading then ready, shares retained resources and releases them on final destroy', async t => {
   const env = setup(t), states = [], canvas = env.canvas();
   env.setImageMode(() => 'hold');

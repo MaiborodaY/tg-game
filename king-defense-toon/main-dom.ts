@@ -1,5 +1,7 @@
 // Static IDs and tags from index.html. The DOM contract test detects template drift.
 export interface GameElementTags {
+  'open-dungeons': 'button';
+  'dungeons-screen': 'section';
   'app': 'main';
   'battle': 'canvas';
   'level-number': 'b';

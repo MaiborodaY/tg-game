@@ -61,6 +61,7 @@ export interface Scene {
   getPortrait(type: UnitType): string | null;
   getUnitArt(type: UnitType, level?: number | string): string | null;
   render(nextState: SceneUpdate): void;
+  setDrawingEnabled(enabled: boolean): void;
   prepare(nextState?: SceneUpdate): Promise<boolean>;
   retryAssets(): Promise<boolean>;
   getAssetState(): SceneAssetState;

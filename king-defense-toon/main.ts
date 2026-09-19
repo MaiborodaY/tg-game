@@ -44,6 +44,10 @@ import { setupUnitDrag } from './unit-drag.ts';
 import { addHeroXpEffect } from './hero-xp-effect.ts';
 import { createHeroUI } from './hero-ui.ts';
 import { byId } from './main-dom.ts';
+import { createScreenController } from './screen-controller.ts';
+import { createDungeonsUI } from './dungeons-ui.ts';
+import type { DungeonsUI } from './dungeons-ui.ts';
+import './dungeons.css';
 
 import { getUnitCellWidth, getUnitAtCell } from './unit-footprint.ts';
 import { decodeCampaignSave, needsCampaignSaveMigration, SAVE_SCHEMA_VERSION } from './campaign-save.ts';
@@ -144,6 +148,22 @@ let selectedLockedCell: string | null = null, selectedEmptyCell: string | null =
 let overlay: HTMLElement | null = null, overlayOpener: HTMLElement | null = null, resetArmed = false;
 let frameId = 0, visualTime = 0, hudElapsed = 0, resultAge = 0;
 let destroyed = false;
+let dungeonsUI: DungeonsUI | null = null;
+const screens = createScreenController({ app: byId('app'), dungeons: byId('dungeons-screen'),
+  background: [...document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock')],
+  onChange: screen => {
+    const visible = screen === 'campaign';
+    // Refresh retained state before re-enabling drawing, so return never flashes
+    // an obsolete battle. Keep the shared simulation/economy clocks running.
+    if (visible) renderScene();
+    scene?.setDrawingEnabled(visible);
+    armyScene?.setDrawingEnabled(visible);
+    battleAudio.setActive(visible && battle?.phase === 'running' && telegram.isActive && !paused && !isRecovering());
+    resetFrameRate();
+    refreshOnboarding();
+  },
+});
+function isCampaignScreen() { return screens.active === 'campaign'; }
 const assetStates: Record<'battle' | 'army', LoadState> = { battle: { status: 'loading' }, army: { status: 'loading' } };
 const recoveryInert = new Map<HTMLElement, boolean>();
 let recoveryFocus: FocusElement | null = null, resetSaveToken: symbol | null = null, recoveryResetArmed = false, recoveryUiScheduled = false;
@@ -333,7 +353,7 @@ function syncRecoveryUi() {
     byId('recovery-reset-confirmation').hidden = true;
     byId('recovery-reset').textContent = 'Reset saved game';
     if (leaving) {
-      battleAudio.setActive(battle?.phase === 'running' && telegram.isActive && !paused);
+      battleAudio.setActive(isCampaignScreen() && battle?.phase === 'running' && telegram.isActive && !paused);
       levelMusic.setActive(telegram.isActive);
       showOfflineIncome(); showMarketArrival();
       refreshOnboarding();
@@ -404,13 +424,13 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   offlineRewardInert.clear();
   // A first click after OS sleep can open a menu while tickEconomy reveals the receipt.
   document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock').forEach(element => {
-    element.inert = !!overlay && !overlay.contains(element);
+    element.inert = !isCampaignScreen() || !!overlay && !overlay.contains(element);
   });
   farmUI?.refresh();
   capitolUI?.refresh();
   const target = offlineRewardFocus?.isConnected && offlineRewardFocus !== document.body && !offlineRewardFocus.disabled
     && !offlineRewardFocus.closest<HTMLElement>('[inert]') && offlineRewardFocus.getClientRects().length
-    ? offlineRewardFocus : overlay?.querySelector<HTMLElement>('[data-close-overlay]') ?? byId('army-map');
+    ? offlineRewardFocus : !isCampaignScreen() ? byId('dungeons-screen') : overlay?.querySelector<HTMLElement>('[data-close-overlay]') ?? byId('army-map');
   target?.focus({ preventScroll: true });
   offlineRewardFocus = null;
   save();
@@ -431,7 +451,7 @@ if (economyActive) {
 }
 
 // This is the saved formation for the next wave. Each running battle owns its own fighters.
-const canEditFormation = () => !!armyScene && telegram.isActive && !isRecovering();
+const canEditFormation = () => isCampaignScreen() && !!armyScene && telegram.isActive && !isRecovering();
 function saveFormation() { save(); }
 
 function refreshArmyWallet() {
@@ -507,7 +527,7 @@ function refreshOnboarding() {
 
 function showMarketArrival(amount = 0) {
   if (Number.isSafeInteger(amount) && amount > 0) pendingMarketArrival += amount;
-  if (!pendingMarketArrival || destroyed || !telegram.isActive || overlay
+  if (!pendingMarketArrival || destroyed || !telegram.isActive || overlay || !isCampaignScreen()
     || !byId('offline-rewards-panel').hidden) return;
   marketArrivalTotal += pendingMarketArrival;
   pendingMarketArrival = 0;
@@ -648,6 +668,7 @@ function refreshEconomy() {
 }
 
 function refreshEconomyContent() {
+  if (!isCampaignScreen()) return;
   // Only the small HUD abbreviates large balances; menus retain the exact amount.
   byId('gold-count').textContent = String(campaign.gold < 10000 ? campaign.gold : hudGoldFormat.format(campaign.gold));
   const goldLabel = `${campaign.gold} gold`;
@@ -729,6 +750,7 @@ function tickEconomy(now = performance.now()) {
 }
 
 function setOverlay(id: GameElementId, opener: HTMLElement | null) {
+  if (!isCampaignScreen()) return;
   unitDrag?.cancel();
   if (overlay) closeOverlay(false);
   tickEconomy();
@@ -778,6 +800,30 @@ heroUI = createHeroUI({ button: byId('open-hero'), panel: byId('hero-panel'),
     return result.ok ? { reset: true, refunded: result.refunded } : null;
   },
   onChange: () => { save(); refresh(); } });
+
+dungeonsUI = createDungeonsUI({ root: byId('dungeons-screen'),
+  getProgress: () => ({ clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears }),
+  getCampaignStatus: () => battle?.phase === 'running' ? 'Main battle continues'
+    : autoNextRemaining !== null ? 'Next wave starts automatically'
+    : battle ? 'Main battle finished' : 'Your army is waiting',
+  onExit: () => {
+    if (isRecovering() || !byId('offline-rewards-panel').hidden) return;
+    dungeonsUI?.close();
+    screens.show('campaign');
+    byId('open-dungeons').setAttribute('aria-expanded', 'false');
+    refresh(); refreshBattleHud(); showMarketArrival();
+    byId('open-dungeons').focus({ preventScroll: true });
+  },
+});
+byId('open-dungeons').addEventListener('click', () => {
+  if (!isCampaignScreen() || !scene || !armyScene || isRecovering() || !byId('offline-rewards-panel').hidden) return;
+  tickEconomy();
+  if (isRecovering() || !byId('offline-rewards-panel').hidden) return;
+  unitDrag?.cancel(); closeOverlay(false); hideNotice();
+  screens.show('dungeons');
+  byId('open-dungeons').setAttribute('aria-expanded', 'true');
+  dungeonsUI?.open();
+});
 
 forgeUI = createForgeUI({ root: byId('forge-upgrades'), getForge: () => campaign.forge, getGold: () => campaign.gold,
   canUpgrade: () => economyActive && !isRecovering(),
@@ -1004,6 +1050,13 @@ function refresh() {
 }
 
 function refreshContent() {
+  if (!isCampaignScreen()) {
+    telegram.setGameInProgress(hasActiveBattle());
+    levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
+    levelMusic.setActive(!destroyed && telegram.isActive && !isRecovering());
+    dungeonsUI?.refresh();
+    return;
+  }
   const connectFocus = (document.activeElement as HTMLElement | null)?.closest<HTMLButtonElement>('.connect-panel button, [data-connect-action="begin"]');
   const connectFocusSelector = connectFocus?.dataset.connectDonorId ? `[data-connect-donor-id="${connectFocus.dataset.connectDonorId}"]`
     : connectFocus?.dataset.connectLocation ? `[data-connect-location="${connectFocus.dataset.connectLocation}"]`
@@ -1780,6 +1833,7 @@ byId('recovery-panel').addEventListener('keydown', event => {
 });
 
 function renderScene() {
+  if (!isCampaignScreen()) return;
   if (combatProfiler) combatProfiler.measure('render', drawScenes);
   else drawScenes();
 }
@@ -1807,7 +1861,7 @@ function refreshBattleHud() {
 }
 
 function refreshBattleHudContent() {
-  if (!battle) return;
+  if (!battle || !isCampaignScreen()) return;
   refreshPhaseLabel();
   const alive = battle.allies.filter(unit => unit.hp > 0).length;
   const canvas = byId('battle');
@@ -1847,7 +1901,7 @@ function presentResult() {
   byId('result-panel').hidden = campaign.autoWaves;
   refresh();
   if (campaign.autoWaves) {
-    if (!overlay && !movingId && !pendingRecruitId && !pendingMerge) byId('army-map').focus({ preventScroll: true });
+    if (isCampaignScreen() && !overlay && !movingId && !pendingRecruitId && !pendingMerge) byId('army-map').focus({ preventScroll: true });
     resumeFrames();
     return;
   }
@@ -1868,7 +1922,7 @@ function presentResult() {
   byId('return-prep').textContent = won && runComplete() ? 'Return to camp' : `Prepare ${waveLabel(nextWaveNumber())}`;
   byId('result-stats').innerHTML = `<span>${battle.kills} / ${battle.total} defeated</span><strong><span class="coin-icon" aria-hidden="true"></span>+${battle.reward} gold</strong>`;
   panel.hidden = false;
-  if (!overlay && !movingId && !pendingRecruitId && !pendingMerge) byId('return-prep').focus({ preventScroll: true });
+  if (isCampaignScreen() && !overlay && !movingId && !pendingRecruitId && !pendingMerge) byId('return-prep').focus({ preventScroll: true });
 }
 
 function startWave() {
@@ -1880,7 +1934,7 @@ function startWave() {
     { campaignRewards: createBattleRewardReceipt(waveNumber) });
   if (!campaign.onboardingCompleted) { commands.completeOnboarding(campaign); save(); }
   paused = false; resultAge = 0; autoNextRemaining = null;
-  battleAudio.setActive(true);
+  battleAudio.setActive(isCampaignScreen());
   void battleAudio.unlock();
   hideNotice();
   refresh();
@@ -1901,7 +1955,7 @@ function clearBattleState() {
 function returnToFormation() {
   clearBattleState();
   refresh(); resumeFrames();
-  if (!overlay && !movingId && !pendingRecruitId && !pendingMerge) byId('start-wave').focus({ preventScroll: true });
+  if (isCampaignScreen() && !overlay && !movingId && !pendingRecruitId && !pendingMerge) byId('start-wave').focus({ preventScroll: true });
 }
 
 byId('return-prep').addEventListener('click', () => {
@@ -1944,7 +1998,7 @@ function frame(timestamp: number) {
       const events = combatProfiler
         ? combatProfiler.measure('simulation', () => updateBattle(activeBattle, battleDt))
         : updateBattle(activeBattle, battleDt);
-      for (const event of events) if (event.type === 'bow-shot') battleAudio.playBowShot();
+      if (isCampaignScreen()) for (const event of events) if (event.type === 'bow-shot') battleAudio.playBowShot();
       if (!battle.campaignRewards.result) {
         const reward = applyBattleKillRewards(campaign, battle.campaignRewards,
           { kills: battle.kills, totalGold: battle.reward }, Math.random);
@@ -1971,7 +2025,7 @@ function frame(timestamp: number) {
     }
     renderScene();
     // Count rendered frames after the existing 30-FPS gate, using wall time rather than battle speed.
-    const fps = frameRateMeter.record(timestamp);
+    const fps = isCampaignScreen() ? frameRateMeter.record(timestamp) : null;
     if (fps !== null) fpsLabel.textContent = `${fps} FPS`;
     if (!battle || battle.phase === 'running' || autoNextRemaining !== null || resultAge < 1.3 || armyScene) resumeFrames();
   } finally {
@@ -1999,7 +2053,7 @@ function activateGame() {
   if (!economyActive) collectOfflineIncome();
   economyLastTick = performance.now(); economyActive = true;
   paused = false;
-  battleAudio.setActive(battle?.phase === 'running' && !isRecovering());
+  battleAudio.setActive(isCampaignScreen() && battle?.phase === 'running' && !isRecovering());
   if (battle?.phase === 'running') void battleAudio.unlock();
   refresh();
   showOfflineIncome();
@@ -2036,6 +2090,7 @@ function onPageHide(event: PageTransitionEvent) {
     document.removeEventListener('keydown', unlockLevelMusic, true);
     scene?.destroy();
     heroUI?.destroy();
+    dungeonsUI?.destroy();
     armyScene?.destroy();
     unitDrag?.destroy();
     onboardingGuide.destroy();
