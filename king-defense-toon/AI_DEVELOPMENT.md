@@ -26,6 +26,19 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 
 ## Visual style and mobile UI
 
+- Public branding is **World of Connections (WoC)**. The approved handshake
+  fortress appears only on initial loading and in the compact Profile/version
+  footer. `assets/brand/` supplies one shared WebP and simplified PNG favicons;
+  source PNGs for video stay in `promo/world-of-connections/`, outside the build.
+  `scripts/prepare-brand-art.mjs` reproduces runtime assets with size budgets.
+- Keep the existing loading grace period and retire initial branding after the
+  saved campaign's scenes are ready or any recovery error occurs. Later loads,
+  error screens and retries remain plain; branding adds no artificial wait,
+  animation loop or gameplay gate. Missing logo files must not prevent playing.
+- Rebranding does not rename `brotd-infinity:*` save/audio keys, Web Locks,
+  build metadata, scripts, hosting origin or Telegram app identifiers. Changing
+  those would require separate migration/configuration work.
+
 - BroTD Infinity uses the compact 2D pixel-art vocabulary of the current Tiny
   Swords units. Inspect actual runtime artwork before drawing a new unit, boss,
   portrait, icon or menu; an attractive fantasy illustration alone is not a match.

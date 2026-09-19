@@ -146,6 +146,7 @@ export interface GameElementTags {
   'collect-offline-rewards': 'button';
   'offline-storage-note': 'p';
   'recovery-panel': 'section';
+  'loading-brand': 'img';
   'recovery-title': 'h2';
   'recovery-description': 'p';
   'recovery-retry': 'button';

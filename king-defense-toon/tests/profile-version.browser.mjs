@@ -29,7 +29,33 @@ try {
     await page.setViewportSize({ width, height });
     await page.goto(server.resolvedUrls.local[0]);
     await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.title(), 'World of Connections');
+    assert.match(await page.locator('meta[name="description"]').getAttribute('content'), /^World of Connections:/);
+    const favicons = await page.locator('link[rel="icon"]').evaluateAll(async icons => Promise.all(icons.map(async icon => {
+      const image = new Image();
+      image.src = icon.href;
+      await image.decode();
+      return { type: icon.type, size: icon.sizes.value, width: image.naturalWidth, height: image.naturalHeight };
+    })));
+    assert.deepEqual(favicons.sort((a, b) => a.width - b.width), [
+      { type: 'image/png', size: '16x16', width: 16, height: 16 },
+      { type: 'image/png', size: '32x32', width: 32, height: 32 },
+    ], 'both small browser icons decode at their declared sizes');
     await page.locator('#open-profile').click();
+    const brand = page.locator('.profile-brand');
+    assert.equal(await brand.locator('strong').textContent(), 'World of Connections');
+    await brand.locator('img').evaluate(image => image.decode());
+    const brandImage = await brand.locator('img').evaluate(image => ({
+      width: image.naturalWidth, height: image.naturalHeight, src: image.currentSrc,
+    }));
+    assert.ok(brandImage.width > 0 && brandImage.width <= 512 && brandImage.height > 0 && brandImage.height <= 512,
+      'the profile uses a compact runtime image');
+    assert.equal(brandImage.src, await page.locator('#loading-brand').evaluate(image => image.currentSrc),
+      'Profile and startup reuse one logo resource');
+    const brandBounds = await brand.boundingBox();
+    assert.ok(brandBounds.x >= 0 && brandBounds.x + brandBounds.width <= width + 1);
+    assert.ok(brandBounds.y >= 0 && brandBounds.y + brandBounds.height <= height + 1, 'brand footer fits on a small phone');
+    assert.ok(brandBounds.height <= 96, 'branding remains a compact footer');
     const footer = page.locator('#profile-version');
     assert.equal(await footer.locator('span').textContent(), stamp[1]);
     assert.equal(await footer.locator('time').getAttribute('datetime'), stamp[2]);
@@ -48,7 +74,7 @@ try {
     assert.equal(await footer.locator('time').getAttribute('datetime'), stamp[2]);
   }
   assert.deepEqual(errors, []);
-  console.log(`Passed profile version: ${stamp[1]}, embedded timestamp, 320/390px layouts and stable reload.`);
+  console.log(`Passed profile branding/version: ${stamp[1]}, browser title/icons, shared logo, embedded timestamp, 320/390px layouts and stable reload.`);
 } finally {
   await browser?.close();
   await new Promise(resolve => server.httpServer.close(resolve));

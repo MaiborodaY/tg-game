@@ -45,6 +45,20 @@ const server = await createServer({
     `;
   } }],
 });
+const releaseHeldImages = new Set();
+async function holdImage(page, pattern) {
+  let release, entered;
+  const held = new Promise(resolve => { release = resolve; });
+  const requested = new Promise(resolve => { entered = resolve; });
+  releaseHeldImages.add(release);
+  await page.route(pattern, async route => { entered(); await held; await route.continue(); });
+  return { requested, release: () => { release(); releaseHeldImages.delete(release); } };
+}
+async function assertPlainRecovery(page) {
+  assert.equal(await page.locator('#loading-brand').isVisible(), false,
+    'recovery and later image loads must not replay the opening brand');
+  assert.equal(await page.locator('#recovery-panel').evaluate(panel => panel.classList.contains('initial-loading')), false);
+}
 let browser;
 try {
   await server.listen();
@@ -72,10 +86,32 @@ try {
       return write.call(this, name, value);
     };
   }, { key, fixture });
-  await page.goto(server.resolvedUrls.local[0]);
+  // A returning army loads its rank after the initial scene resources. Branding
+  // must survive that handoff, then retire for the lifetime of this document.
+  const initialMap = await holdImage(page, '**/ground.png');
+  const initialRank = await holdImage(page, '**/swordsman-red-sheet.png');
+  await page.goto(server.resolvedUrls.local[0], { waitUntil: 'commit' });
+  await initialMap.requested;
+  await page.locator('#recovery-panel').waitFor({ state: 'visible' });
+  await page.locator('#loading-brand').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#recovery-title').textContent(), 'World of Connections');
+  assert.equal(await page.locator('.battlefield').evaluate(el => el.inert), true);
+  assert.equal(await page.locator('#recovery-retry').isVisible(), false);
+  await page.locator('#loading-brand').evaluate(image => image.decode());
+  assert.ok(await page.locator('#loading-brand').evaluate(image => image.naturalWidth > 0));
+  initialMap.release();
+  await initialRank.requested;
+  await page.locator('#loading-brand').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#recovery-title').textContent(), 'World of Connections',
+    'loading the restored army is still part of startup');
+  initialRank.release();
   await page.waitForFunction(() => window.transitionCheck, null, { polling: 50 });
   await page.evaluate(() => transitionCheck.ready());
   await page.waitForFunction(() => !transitionCheck.state().recovering, null, { polling: 50 });
+  await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
+  await assertPlainRecovery(page);
+  await page.unroute('**/ground.png');
+  await page.unroute('**/swordsman-red-sheet.png');
   await page.locator('#battle').click({ position: { x: 150, y: 150 } });
   await page.waitForFunction(() => trackedMedia.some(media => /ambient-level/.test(media.src) && !media.paused), null, { polling: 50 });
   await page.evaluate(() => {
@@ -112,6 +148,7 @@ try {
   assert.equal(await page.locator('.battlefield').evaluate(el => el.inert), true);
   await page.locator('#recovery-panel').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#recovery-title').textContent(), 'Loading battlefield');
+  await assertPlainRecovery(page);
   assert.deepEqual(await page.evaluate(() => mediaCalls), []);
   release();
   assert.equal(await page.evaluate(() => pendingMap), true);
@@ -128,22 +165,50 @@ try {
   await page.locator('#recovery-panel').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#recovery-title').textContent(), 'Battlefield unavailable');
   assert.equal(await page.locator('#recovery-retry').isVisible(), true);
+  await assertPlainRecovery(page);
   await page.unroute('**/forgotten-graveyard.webp');
+  const laterRetry = await holdImage(page, '**/forgotten-graveyard.webp');
   await page.locator('#recovery-retry').click();
+  await laterRetry.requested;
+  await page.waitForFunction(() => document.querySelector('#recovery-title').textContent === 'Loading battlefield', null, { polling: 50 });
+  await assertPlainRecovery(page);
+  laterRetry.release();
   await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
+  await page.unroute('**/forgotten-graveyard.webp');
 
   // A failed reset must recapture inert state even after restoring the old one.
   await page.evaluate(() => { window.failSave = true; transitionCheck.reset(); });
   await page.locator('#recovery-panel').waitFor({ state: 'visible' });
   assert.equal((await page.evaluate(() => transitionCheck.state())).storage, 'write-error');
   assert.equal(await page.locator('.battlefield').evaluate(el => el.inert), true);
+  await assertPlainRecovery(page);
   await page.evaluate(() => { window.failSave = false; });
   await page.locator('#recovery-retry').click();
   await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
   assert.equal(await page.locator('.battlefield').evaluate(el => el.inert), false);
+
+  // Failure before the first playable frame must retire branding too. Retrying
+  // remains the ordinary recovery UI rather than restarting an introduction.
+  await page.route('**/ground.png', route => route.abort('failed'));
+  await page.reload();
+  await page.waitForFunction(() => window.transitionCheck, null, { polling: 50 });
+  await page.locator('#recovery-panel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#recovery-title').textContent(), 'Battlefield unavailable');
+  await assertPlainRecovery(page);
+  await page.unroute('**/ground.png');
+  const startupRetry = await holdImage(page, '**/ground.png');
+  await page.locator('#recovery-retry').click();
+  await startupRetry.requested;
+  await page.waitForFunction(() => document.querySelector('#recovery-title').textContent === 'Loading battlefield', null, { polling: 50 });
+  await assertPlainRecovery(page);
+  startupRetry.release();
+  await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('.battlefield').evaluate(el => el.inert), false);
+  await page.unroute('**/ground.png');
   assert.deepEqual(errors, []);
-  console.log('Passed transition integration checks: warm Start/Prepare, uninterrupted media, slow loads, errors/retry, reset recovery and input restoration. No combat advanced.');
+  console.log('Passed transition integration checks: initial-only branding, warm Start/Prepare, uninterrupted media, slow loads, startup/later errors and retry, reset recovery and input restoration. No combat advanced.');
 } finally {
+  for (const release of releaseHeldImages) release();
   await browser?.close();
   await server.close();
 }

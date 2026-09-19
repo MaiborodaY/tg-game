@@ -200,6 +200,7 @@ const assetStates: Record<'battle' | 'army', LoadState> = { battle: { status: 'l
 const recoveryInert = new Map<HTMLElement, boolean>();
 let recoveryFocus: FocusElement | null = null, resetSaveToken: symbol | null = null, recoveryResetArmed = false, recoveryUiScheduled = false;
 let recoveryBlocked = false;
+let initialBranding = true;
 const loadingIndicator = createLoadingIndicator(scheduleRecoveryUi);
 let sessionPageHidden = false;
 const saveSession = createSaveSession({ key: SAVE_KEY });
@@ -347,9 +348,15 @@ function syncRecoveryUi() {
   const storageError = !!campaignError || sessionError || saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
   const assetError = Object.values(assetStates).some(state => state.status === 'error');
   const blocked = isRecovering();
+  // The shared recovery dialog also handles later loads and errors. Once play
+  // is ready (or an error occurs), retries and navigation must never replay branding.
+  if (storageError || assetError || scene && armyScene && !blocked) initialBranding = false;
+  const showBrand = blocked && initialBranding;
   syncMusicActivity();
   if (blocked) onboardingGuide.hide();
   const panel = byId('recovery-panel');
+  panel.classList.toggle('initial-loading', showBrand);
+  byId('loading-brand').hidden = !showBrand;
   // Blocking and presentation are separate: a quick load must not flash a modal,
   // but it must still pause combat and prevent edits until its resources are ready.
   const entering = blocked && !recoveryBlocked;
@@ -370,7 +377,8 @@ function syncRecoveryUi() {
     }
     stopFrames();
     battleAudio.setActive(false);
-    byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable' : 'Loading battlefield';
+    byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable'
+      : showBrand ? 'World of Connections' : 'Loading battlefield';
     byId('recovery-description').textContent = storageError
       ? campaignError ? 'Progress could not be updated. Reload to restore your last saved progress.'
         : sessionError ? saveSession.status === 'unavailable'
@@ -382,7 +390,7 @@ function syncRecoveryUi() {
         : saveStorage.status === 'corrupt' ? 'Saved progress is damaged. Saving is paused to protect it.'
           : 'Saved progress could not be loaded. Saving is paused to protect it.'
       : assetError ? 'Some game images could not be loaded. Check your connection and retry. The battle is paused.'
-        : 'Preparing your map and fighters. The battle is paused.';
+        : showBrand ? 'Loading battlefield…' : 'Preparing your map and fighters. The battle is paused.';
     byId('recovery-retry').hidden = !storageError && !assetError;
     byId('recovery-retry').textContent = campaignError || ['conflict', 'unsupported'].includes(saveStorage.status) ? 'Reload game' : 'Retry';
     byId('recovery-reset').hidden = !!campaignError || sessionError || !['read-error', 'corrupt'].includes(saveStorage.status);
@@ -2230,6 +2238,7 @@ try {
   else {
     scene = loadedScene; armyScene = loadedArmy;
     refresh();
+    scheduleRecoveryUi();
     showOfflineIncome();
     resumeFrames();
   }
