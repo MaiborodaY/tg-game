@@ -2,7 +2,7 @@ import type { Battle } from './combat-types.ts';
 import type { HeroState } from './hero.ts';
 import type { CapitolState } from './capitol.ts';
 import type { UnitType } from './units.ts';
-import type { SceneAssetWave } from './scene-assets.ts';
+import type { SceneAssetInput, SceneAssetWave } from './scene-assets.ts';
 
 export interface GridCell {
   col: number;
@@ -63,6 +63,7 @@ export interface Scene {
   render(nextState: SceneUpdate): void;
   setDrawingEnabled(enabled: boolean): void;
   prepare(nextState?: SceneUpdate): Promise<boolean>;
+  preload(nextState: SceneAssetInput): Promise<boolean>;
   retryAssets(): Promise<boolean>;
   getAssetState(): SceneAssetState;
   destroy(): void;

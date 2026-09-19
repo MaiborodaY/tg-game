@@ -23,6 +23,9 @@ export async function verifySceneContracts(canvas: HTMLCanvasElement, saved: unk
   });
   const prepared: boolean = await scene.prepare({ units, battle, time: .5 });
   await scene.prepare({ wave: battle.wave });
+  const preloaded: boolean = await scene.preload({ units, wave: battle.wave });
+  // @ts-expect-error Preloading cannot accept an unknown enemy catalogue entry.
+  scene.preload({ wave: { spawns: [{ type: 'dragon' }] } });
   const update: SceneUpdate = { selectedId: 1, placementType: 'archer', placementLevel: 26, heroState: createHero() };
   scene.render(update);
   scene.render({ battle: null, units: [], placementType: null, selectedId: null });
@@ -57,5 +60,5 @@ export async function verifySceneContracts(canvas: HTMLCanvasElement, saved: unk
   // @ts-expect-error Only the supported asset lifecycle statuses exist.
   const invalid: SceneAssetState = { status: 'done', levelNumber: 1 };
   scene.destroy();
-  void [prepared, cell, worldCell, art, status, retry, guaranteed, incomplete, invalid];
+  void [prepared, preloaded, cell, worldCell, art, status, retry, guaranteed, incomplete, invalid];
 }

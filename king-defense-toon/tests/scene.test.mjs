@@ -5,6 +5,7 @@ import { createBattle, updateBattle } from '../combat.ts';
 import { createHero, heroXpForLevel, spendHeroTalent, resetHeroTalents } from '../hero.ts';
 import { FIELD, BATTLE_VIEW, FORMATION_VIEW, HERO_START } from '../field.ts';
 import { createSceneEnvironment } from './helpers/scene-environment.mjs';
+import { getWaveDefinition } from '../waves.ts';
 
 function setup(t) {
   const env = createSceneEnvironment();
@@ -31,6 +32,87 @@ test('covered scenes skip every draw path and resume with current state and cach
   assert.equal(env.requests.length, requests, 'return does not reload retained images');
   scene.destroy(); canvas.clear(); scene.setDrawingEnabled(true);
   assert.deepEqual(canvas.commands, []);
+});
+
+test('returning from battle to ready formation resources never enters loading', async t => {
+  const env = setup(t), states = [];
+  const scene = env.keep(await createScene(env.canvas(), { onAssetState: s => states.push(s.status) }));
+  const units = [{ id: 1, type: 'swordsman', level: 30, col: 2, row: 0 }];
+  await scene.prepare({ units, battle: createBattle(units, 59) });
+  states.length = 0;
+  const requests = env.requests.length;
+  scene.render({ units, battle: null });
+  assert.equal(scene.getAssetState().status, 'ready', 'ready before returning to the caller');
+  assert.equal(await scene.prepare(), true);
+  assert.deepEqual(states, ['ready']);
+  assert.equal(env.requests.length, requests);
+});
+
+test('upcoming waves preload without blocking and stay ready through Prepare and Start', async t => {
+  const env = setup(t), states = [], canvas = env.canvas();
+  const scene = env.keep(await createScene(canvas, { onAssetState: s => states.push(s.status) }));
+  const units = [{ id: 1, type: 'swordsman', level: 90, col: 2, row: 0 }];
+  const battle = createBattle(units, 59);
+  await scene.prepare({ units, battle });
+  states.length = 0;
+  canvas.clear();
+  const next = { units, wave: getWaveDefinition(60) };
+  assert.equal(await scene.preload(next), true);
+  assert.deepEqual(states, [], 'prefetch cannot block, notify or replace the visible scene');
+  assert.equal(canvas.commands.length, 0);
+  const requests = env.requests.length;
+  scene.render({ ...next, battle: null });
+  assert.equal(scene.getAssetState().status, 'ready');
+  scene.render({ ...next, battle: createBattle(units, 60) });
+  assert.equal(scene.getAssetState().status, 'ready');
+  assert.equal(await scene.prepare(), true);
+  assert.ok(!states.includes('loading'));
+  assert.equal(env.requests.length, requests, 'both transitions reuse the retained images');
+});
+
+test('foreground promotion shares pending preloads, and speculative failures remain retryable', async t => {
+  const env = setup(t), states = [];
+  const scene = env.keep(await createScene(env.canvas(), { onAssetState: s => states.push(s.status) }));
+  const next = { wave: getWaveDefinition(60) };
+  env.setImageMode(url => url.includes('goblin-chief') ? 'hold' : 'resolve');
+  const warming = scene.preload(next);
+  await env.flush();
+  assert.equal(scene.getAssetState().status, 'ready');
+  const promoting = scene.prepare(next);
+  await env.flush();
+  assert.equal(env.requests.filter(url => url.includes('goblin-chief')).length, 1);
+  assert.equal(scene.getAssetState().status, 'loading');
+  env.finishImages();
+  assert.deepEqual(await Promise.all([warming, promoting]), [true, true]);
+
+  env.setImageMode(url => url.includes('forgotten-graveyard') ? 'reject' : 'resolve');
+  states.length = 0;
+  assert.equal(await scene.preload({ levelNumber: 2 }), false);
+  assert.deepEqual(states, [], 'failed speculative loads leave the current wave usable');
+  assert.equal(await scene.prepare({ levelNumber: 2 }), false);
+  assert.equal(scene.getAssetState().status, 'error', 'required resources still report real errors');
+  env.setImageMode(() => 'resolve');
+  assert.equal(await scene.retryAssets(), true);
+});
+
+test('preloads retain only one upcoming plan and release it on destroy, including late loads', async t => {
+  const env = setup(t), scene = env.keep(await createScene(env.canvas()));
+  const units = [{ type: 'swordsman', level: 50, id: 1, col: 2, row: 0 }];
+  await scene.preload({ units });
+  const count = () => env.requests.filter(url => url.includes('swordsman-purple')).length;
+  assert.equal(count(), 1);
+  await scene.preload({ units: [] });
+  await scene.preload({ units });
+  assert.equal(count(), 2, 'replaced speculative assets are released');
+  env.setImageMode(url => url.includes('goblin-chief') ? 'hold' : 'resolve');
+  const late = scene.preload({ wave: getWaveDefinition(60) });
+  await env.flush();
+  scene.destroy(); env.finishImages();
+  assert.equal(await late, false);
+  assert.equal(await scene.preload({ units }), false);
+  env.setImageMode(() => 'resolve');
+  const replacement = env.keep(await createScene(env.canvas()));
+  await replacement.preload({ wave: getWaveDefinition(60) });
 });
 
 test('scene reports loading then ready, shares retained resources and releases them on final destroy', async t => {

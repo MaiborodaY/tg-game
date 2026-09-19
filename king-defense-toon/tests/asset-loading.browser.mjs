@@ -46,7 +46,7 @@ try {
   assert.ok(!initial.loads.some(url => /graveyard|skeleton|torch-|ranks/.test(url)), 'forest startup is independent of later assets');
 
   const armyLoad = await page.evaluate(async () => {
-    const units = [{ id: 'one', type: 'swordsman', level: 26, col: 0, row: 0 }];
+    const units = [{ id: 'one', type: 'swordsman', level: 50, col: 0, row: 0 }];
     battleScene.render({ units });
     const synchronous = battleScene.getAssetState().status;
     const ready = await Promise.all([battleScene.prepare({ units }), armyScene.prepare({ units })]);

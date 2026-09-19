@@ -2,12 +2,14 @@ export interface AssetCache<Value = unknown, Key = string, Owner = object> {
   retain(owner: Owner, keys: Iterable<Key>): void;
   release(owner: Owner): void;
   get: (key: Key, load: () => Value | PromiseLike<Value>) => Promise<Value>;
+  peek(key: Key): { value: Value } | undefined;
   readonly size: number;
 }
 
 interface CacheEntry<Value> {
   settled: boolean;
   promise: Promise<Value>;
+  ready?: { value: Value };
 }
 
 /** Cache only resources retained by a live scene; concurrent scenes share pending loads. */
@@ -21,6 +23,7 @@ export function createAssetCache<Value = unknown, Key = string, Owner = object>(
   return {
     retain(owner, keys) { owners.set(owner, new Set(keys)); prune(); },
     release(owner) { owners.delete(owner); prune(); },
+    peek(key) { return entries.get(key)?.ready; },
     get(key, load) {
       const existing = entries.get(key);
       if (existing) return existing.promise;
@@ -28,6 +31,7 @@ export function createAssetCache<Value = unknown, Key = string, Owner = object>(
         settled: false,
         promise: Promise.resolve().then(load).then(value => {
           entry.settled = true;
+          entry.ready = { value };
           prune();
           return value;
         }, error => {

@@ -20,6 +20,7 @@ import { createCombatProfiler, collectProfilerCounters } from './combat-profiler
 import { createProfilerPanel } from './profiler-panel.ts';
 import { createSaveStorage } from './save-storage.ts';
 import { createSaveSession } from './save-session.ts';
+import { createLoadingIndicator } from './loading-indicator.ts';
 import { treasuryRate, treasuryUpgradeCost, TREASURY_OFFLINE_LIMIT_SECONDS, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { marketRate, marketUpgradeCost, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS } from './market.ts';
 import { SAVE_KEY, cellKey, nextCellCost, getCellAvailability } from './progression.ts';
@@ -167,6 +168,8 @@ function isCampaignScreen() { return screens.active === 'campaign'; }
 const assetStates: Record<'battle' | 'army', LoadState> = { battle: { status: 'loading' }, army: { status: 'loading' } };
 const recoveryInert = new Map<HTMLElement, boolean>();
 let recoveryFocus: FocusElement | null = null, resetSaveToken: symbol | null = null, recoveryResetArmed = false, recoveryUiScheduled = false;
+let recoveryBlocked = false;
+const loadingIndicator = createLoadingIndicator(scheduleRecoveryUi);
 let sessionPageHidden = false;
 const saveSession = createSaveSession({ key: SAVE_KEY });
 // Navigation can interrupt the initial async lock request before the full game
@@ -277,9 +280,18 @@ function save() {
   return result.ok;
 }
 
+function isProgressBlocked() {
+  return !!campaignError || !saveSession.canWrite || sessionPageHidden || saveStorage.status !== 'ready';
+}
+
 function isRecovering() {
-  return !!campaignError || !saveSession.canWrite || sessionPageHidden || saveStorage.status !== 'ready'
-    || Object.values(assetStates).some(state => state.status !== 'ready');
+  return isProgressBlocked() || Object.values(assetStates).some(state => state.status !== 'ready');
+}
+
+function syncMusicActivity() {
+  // Images can pause combat, but have no bearing on an already playing track.
+  // Keep the real lifecycle and save-conflict gates independent of asset loading.
+  levelMusic.setActive(!destroyed && telegram.isActive && !isProgressBlocked());
 }
 
 function stopForCampaignError(reason: string) {
@@ -304,11 +316,17 @@ function syncRecoveryUi() {
   const storageError = !!campaignError || sessionError || saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
   const assetError = Object.values(assetStates).some(state => state.status === 'error');
   const blocked = isRecovering();
+  syncMusicActivity();
   if (blocked) onboardingGuide.hide();
   const panel = byId('recovery-panel');
-  const entering = blocked && panel.hidden;
-  const leaving = !blocked && !panel.hidden;
-  panel.hidden = !blocked;
+  // Blocking and presentation are separate: a quick load must not flash a modal,
+  // but it must still pause combat and prevent edits until its resources are ready.
+  const entering = blocked && !recoveryBlocked;
+  const leaving = !blocked && recoveryBlocked;
+  recoveryBlocked = blocked;
+  const visible = loadingIndicator.update(blocked, storageError || assetError);
+  const showing = visible && panel.hidden;
+  panel.hidden = !visible;
   if (blocked) {
     if (entering) {
       recoveryFocus = (document.activeElement as FocusElement | null);
@@ -321,7 +339,6 @@ function syncRecoveryUi() {
     }
     stopFrames();
     battleAudio.setActive(false);
-    levelMusic.setActive(false);
     byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable' : 'Loading battlefield';
     byId('recovery-description').textContent = storageError
       ? campaignError ? 'Progress could not be updated. Reload to restore your last saved progress.'
@@ -343,7 +360,7 @@ function syncRecoveryUi() {
       byId('recovery-reset-confirmation').hidden = true;
       byId('recovery-reset').textContent = 'Reset saved game';
     }
-    if (entering) panel.focus({ preventScroll: true });
+    if (showing) panel.focus({ preventScroll: true });
   } else {
     for (const [child, inert] of recoveryInert) child.inert = inert;
     recoveryInert.clear();
@@ -354,7 +371,6 @@ function syncRecoveryUi() {
     byId('recovery-reset').textContent = 'Reset saved game';
     if (leaving) {
       battleAudio.setActive(isCampaignScreen() && battle?.phase === 'running' && telegram.isActive && !paused);
-      levelMusic.setActive(telegram.isActive);
       showOfflineIncome(); showMarketArrival();
       refreshOnboarding();
     }
@@ -1046,6 +1062,9 @@ function refresh() {
   if (combatProfiler) combatProfiler.measure('ui', refreshContent);
   else refreshContent();
   renderScene();
+  const upcoming = getWaveDefinition(battle?.phase === 'running'
+    ? Math.min(TOTAL_WAVES, battle.waveNumber + 1) : nextWaveNumber());
+  void scene?.preload({ units: campaign.units, wave: upcoming, capitolState: campaign.capitol });
   refreshOnboarding();
 }
 
@@ -1053,7 +1072,7 @@ function refreshContent() {
   if (!isCampaignScreen()) {
     telegram.setGameInProgress(hasActiveBattle());
     levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
-    levelMusic.setActive(!destroyed && telegram.isActive && !isRecovering());
+    syncMusicActivity();
     dungeonsUI?.refresh();
     return;
   }
@@ -1072,7 +1091,7 @@ function refreshContent() {
   const focusedBarracksConnectId = (document.activeElement as FocusElement | null)?.closest<HTMLElement>('[data-barracks-connect-id]')?.dataset.barracksConnectId;
   telegram.setGameInProgress(hasActiveBattle());
   levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
-  levelMusic.setActive(!destroyed && telegram.isActive && !isRecovering());
+  syncMusicActivity();
   refreshEconomy();
   heroUI?.render();
   byId('army-count').textContent = `${campaign.units.reduce((total, unit) => total + getUnitCellWidth(unit.type), 0)} / ${campaign.progression.unlockedCells.length}`;
@@ -1780,6 +1799,8 @@ function resetRun() {
   const result = saveStorage.reset(saveSnapshot(), { confirmation: resetSaveToken });
   resetSaveToken = null;
   // Re-entering the recovery panel must capture the new, closed-menu inert state.
+  recoveryBlocked = false;
+  loadingIndicator.update(false);
   byId('recovery-panel').hidden = true;
   syncRecoveryUi();
   refresh();
@@ -1845,8 +1866,11 @@ function renderScene() {
 
 function drawScenes() {
   // Both canvases show the same level, including preparation, defeat and campaign replay.
-  const levelNumber = getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber;
-  scene?.render({ units: campaign.units, selectedId: null, movingId: null, placementType: null, battle, time: visualTime, levelNumber,
+  const wave = getWaveDefinition(battle?.waveNumber ?? nextWaveNumber());
+  const levelNumber = wave.levelNumber;
+  // Preparation owns the upcoming enemies' resources too, so Start uses the
+  // same ready plan instead of beginning an image load inside the click handler.
+  scene?.render({ units: campaign.units, wave, selectedId: null, movingId: null, placementType: null, battle, time: visualTime, levelNumber,
     unlockedCells: campaign.progression.unlockedCells, heroState: campaign.hero, capitolState: campaign.capitol });
   const selected = campaign.units.find(unit => unit.id === selectedId);
   const recruit = campaign.reserve.find(unit => unit.id === pendingRecruitId);
@@ -2067,6 +2091,7 @@ function activateGame() {
 }
 
 function onPageHide(event: PageTransitionEvent) {
+  loadingIndicator.update(false);
   unitDrag?.cancel();
   levelMusic.setActive(false);
   battleAudio.setActive(false);
@@ -2078,6 +2103,7 @@ function onPageHide(event: PageTransitionEvent) {
   saveSession.release();
   if (!event.persisted) {
     destroyed = true;
+    loadingIndicator.destroy();
     profilerPanel?.destroy();
     battleAudio.destroy();
     levelMusic.destroy();
