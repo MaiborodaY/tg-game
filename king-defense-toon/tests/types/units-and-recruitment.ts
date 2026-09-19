@@ -1,7 +1,7 @@
 import { UNIT_TYPES, UNIT_TYPE_BY_ID } from '../../units.ts';
 import type { UnitDefinition, UnitType } from '../../units.ts';
 import { createRecruitment, getElfRecruitUnlock, getRecruitChances, getRecruitProgress, getUnitStats, normalizeUnitLevel, receiveRecruit } from '../../recruitment.ts';
-import type { ElfRecruitUnlock, RecruitmentState, RecruitProgress, RecruitResult, UnitStats } from '../../recruitment.ts';
+import type { RecruitUnlock, RecruitmentState, RecruitProgress, RecruitResult, UnitStats } from '../../recruitment.ts';
 import { getUnitRank } from '../../unit-ranks.ts';
 import type { PaletteRank, UnitRank } from '../../unit-ranks.ts';
 
@@ -9,14 +9,14 @@ import type { PaletteRank, UnitRank } from '../../unit-ranks.ts';
 export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   const recruitment: RecruitmentState = createRecruitment(saved);
   const progress: RecruitProgress = getRecruitProgress(recruitment, 'lancer');
-  const result: RecruitResult = receiveRecruit(recruitment, () => .9, { lancerUnlocked: true });
+  const result: RecruitResult = receiveRecruit(recruitment, () => .9);
   const rider: RecruitResult = receiveRecruit(recruitment, () => .9, { pool: 'elves', elvesUnlocked: true });
   const riderProgress: RecruitProgress = getRecruitProgress(recruitment, 'pantherRider');
   const elfProgress: RecruitProgress = getRecruitProgress(recruitment, 'elfArcher');
   const elfStats: UnitStats = getUnitStats('elfArcher', 50);
-  const unlock: ElfRecruitUnlock = getElfRecruitUnlock(recruitment, 'elfArcher', 3);
+  const unlock: RecruitUnlock = getElfRecruitUnlock(recruitment, 'elfArcher', 3);
   const requirement: UnitType | null = getElfRecruitUnlock(recruitment, 'unicorn', 4).requiredRecruitType;
-  getRecruitChances(true, 'elves', recruitment);
+  getRecruitChances('elves', recruitment);
   const type: UnitType = result.type;
   const stats: UnitStats = getUnitStats(type, saved);
   const definition: UnitDefinition = UNIT_TYPE_BY_ID[type];
@@ -46,16 +46,16 @@ export function verifyUnitsAndRecruitmentContracts(saved: unknown): void {
   getUnitStats('unknown');
   // @ts-expect-error Random providers must return a number.
   receiveRecruit(recruitment, () => '0.5');
-  // @ts-expect-error Unlock settings are boolean, not saved text.
-  receiveRecruit(recruitment, Math.random, { lancerUnlocked: 'true' });
+  // @ts-expect-error Callers cannot bypass the total through the removed building flag.
+  receiveRecruit(recruitment, Math.random, { lancerUnlocked: true });
   // @ts-expect-error Elven unlock is an exact boolean, not a saved building level.
   receiveRecruit(recruitment, Math.random, { pool: 'elves', elvesUnlocked: 3 });
   // @ts-expect-error Only supported recruitment pools have chance tables.
-  getRecruitChances(true, 'dwarves');
+  getRecruitChances('dwarves');
   // @ts-expect-error Unlock requirements use elf recruit identifiers, not arbitrary allies.
   getElfRecruitUnlock(recruitment, 'archer', 3);
   // @ts-expect-error Chance calculation takes normalized training, not an unlock boolean.
-  getRecruitChances(true, 'elves', true);
+  getRecruitChances('elves', true);
   // @ts-expect-error Chance tables are shared immutable definitions.
   getRecruitChances()[0]!.chance = 1;
   // @ts-expect-error Healing is optional on catalogue definitions.

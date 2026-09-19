@@ -1,6 +1,7 @@
 import { UNIT_TYPES, UNIT_TYPE_BY_ID } from './units.ts';
 import type { UnitType } from './units.ts';
 import type { ElfRecruitId, RecruitmentPool } from './recruitment-pools.ts';
+import { ELF_RECRUITS } from './recruitment-pools.ts';
 
 export interface RecruitmentState {
   version: 2;
@@ -27,19 +28,20 @@ export interface RecruitResult extends RecruitProgress {
 }
 
 export interface RecruitOptions {
-  lancerUnlocked?: boolean;
   guaranteedLancer?: boolean;
   pool?: RecruitmentPool;
   elvesUnlocked?: boolean;
   barracksLevel?: number;
 }
 
-export interface ElfRecruitUnlock {
+export interface RecruitUnlock {
   requirementsMet: boolean;
   available: boolean;
   requiredRecruitType: UnitType | null;
   requiredRecruitLevel: number | null;
   requiredBarracksLevel: number;
+  requiredLevelTotal: number | null;
+  levelTotal: number;
 }
 
 export interface UnitStats {
@@ -66,38 +68,31 @@ const LEGACY_RECRUITS_PER_LEVEL = 3;
 export const HUMAN_RECRUITS = Object.freeze(['swordsman', 'archer', 'healer', 'lancer'] as const);
 export type HumanRecruitId = typeof HUMAN_RECRUITS[number];
 const HUMAN_UNLOCK_REQUIREMENTS = {
-  swordsman: { requiredRecruitType: null, requiredRecruitLevel: null },
-  archer: { requiredRecruitType: 'swordsman', requiredRecruitLevel: 3 },
-  healer: { requiredRecruitType: 'archer', requiredRecruitLevel: 3 },
-  lancer: { requiredRecruitType: null, requiredRecruitLevel: null },
+  swordsman: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: null, requiredBarracksLevel: 1 },
+  archer: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 3, requiredBarracksLevel: 1 },
+  healer: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 5, requiredBarracksLevel: 1 },
+  lancer: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 10, requiredBarracksLevel: 1 },
 } as const;
-const STARTER_ELF_RECRUIT_CHANCES: readonly RecruitChance[] = Object.freeze([
-  Object.freeze({ type: 'pantherRider', chance: 1 }),
-]);
+const ELF_RECRUIT_TYPES = Object.freeze(ELF_RECRUITS.map(recruit => recruit.id));
 const ELF_UNLOCK_REQUIREMENTS = Object.freeze({
-  pantherRider: { requiredRecruitType: null, requiredRecruitLevel: null, requiredBarracksLevel: 3, implemented: true },
-  elfArcher: { requiredRecruitType: 'pantherRider', requiredRecruitLevel: 3, requiredBarracksLevel: 3, implemented: true },
-  elfHealer: { requiredRecruitType: 'elfArcher', requiredRecruitLevel: 3, requiredBarracksLevel: 3, implemented: true },
-  unicorn: { requiredRecruitType: 'pantherRider', requiredRecruitLevel: 5, requiredBarracksLevel: 4, implemented: true },
+  pantherRider: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: null, requiredBarracksLevel: 3 },
+  elfArcher: { requiredRecruitType: 'pantherRider', requiredRecruitLevel: 3, requiredLevelTotal: null, requiredBarracksLevel: 3 },
+  elfHealer: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 5, requiredBarracksLevel: 3 },
+  unicorn: { requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 10, requiredBarracksLevel: 3 },
 } satisfies Record<ElfRecruitId, {
   requiredRecruitType: UnitType | null;
   requiredRecruitLevel: number | null;
   requiredBarracksLevel: number;
-  implemented: boolean;
+  requiredLevelTotal: number | null;
 }>);
 
-export function getRecruitChances(lancerUnlocked: boolean = false, pool: RecruitmentPool = 'humans',
+export function getRecruitChances(pool: RecruitmentPool = 'humans',
   recruitment?: RecruitmentState, barracksLevel: number = 3): readonly RecruitChance[] {
-  if (pool === 'elves') {
-    if (barracksLevel !== 3 && barracksLevel !== 4) throw new RangeError('Elven recruitment requires Barracks III');
-    if (!recruitment) return STARTER_ELF_RECRUIT_CHANCES;
-    const unlocked = (['pantherRider', 'elfArcher', 'elfHealer', 'unicorn'] as const)
-      .filter(type => getElfRecruitUnlock(recruitment, type, barracksLevel).available);
-    return Object.freeze(unlocked.map(type => Object.freeze({ type, chance: 1 / unlocked.length })));
-  }
-  if (pool !== 'humans') throw new RangeError('Unknown recruitment pool');
+  if (pool !== 'humans' && pool !== 'elves') throw new RangeError('Unknown recruitment pool');
+  if (pool === 'elves' && barracksLevel !== 3 && barracksLevel !== 4) throw new RangeError('Elven recruitment requires Barracks III');
   const state = recruitment ?? createRecruitment();
-  const unlocked = HUMAN_RECRUITS.filter(type => getHumanRecruitUnlock(state, type, lancerUnlocked).available);
+  const unlocks = poolUnlocks(state, pool, barracksLevel);
+  const unlocked = (pool === 'humans' ? HUMAN_RECRUITS : ELF_RECRUIT_TYPES).filter(type => unlocks[type]!.available);
   return Object.freeze(unlocked.map(type => Object.freeze({ type, chance: 1 / unlocked.length })));
 }
 
@@ -176,25 +171,39 @@ export function recruitsNeededForLevel(recruitment: RecruitmentState, type: Unit
   return Math.max(0, recruitsAtLevel(targetLevel) - recruitsAtLevel(progress.level) - progress.progress);
 }
 
-export function getElfRecruitUnlock(recruitment: RecruitmentState, id: ElfRecruitId, barracksLevel: number): ElfRecruitUnlock {
+function poolUnlocks(recruitment: RecruitmentState, pool: RecruitmentPool, barracksLevel: number) {
   assertRecruitment(recruitment);
-  if (!Object.hasOwn(ELF_UNLOCK_REQUIREMENTS, id)) throw new RangeError('Unknown elf recruit');
-  const { requiredRecruitType, requiredRecruitLevel, requiredBarracksLevel, implemented } = ELF_UNLOCK_REQUIREMENTS[id];
-  // Only receipt-based training counts. Owned fighters and Connect levels never enter this gate.
-  const requirementsMet = (barracksLevel === 3 || barracksLevel === 4) && barracksLevel >= requiredBarracksLevel
-    && (requiredRecruitType === null || getRecruitLevel(recruitment, requiredRecruitType) >= requiredRecruitLevel!);
-  return { requirementsMet, available: requirementsMet && implemented,
-    requiredRecruitType, requiredRecruitLevel, requiredBarracksLevel };
+  const unlocks: Partial<Record<UnitType, RecruitUnlock>> = {};
+  let levelTotal = 0;
+  // Evaluate in unlock order: closed types cannot contribute their initial level
+  // or old receipts to unlock themselves. Newly opened types then join the total.
+  for (const id of pool === 'humans' ? HUMAN_RECRUITS : ELF_RECRUIT_TYPES) {
+    const requirement = pool === 'humans'
+      ? HUMAN_UNLOCK_REQUIREMENTS[id as HumanRecruitId] : ELF_UNLOCK_REQUIREMENTS[id as ElfRecruitId];
+    const { requiredRecruitType, requiredRecruitLevel, requiredLevelTotal, requiredBarracksLevel } = requirement;
+    const requirementsMet = (pool === 'humans' || barracksLevel === 3 || barracksLevel === 4)
+      && (pool === 'humans' || barracksLevel >= requiredBarracksLevel)
+      && (requiredRecruitType === null || getRecruitLevel(recruitment, requiredRecruitType) >= requiredRecruitLevel!)
+      && (requiredLevelTotal === null || levelTotal >= requiredLevelTotal);
+    unlocks[id] = { ...requirement, requirementsMet, available: requirementsMet, levelTotal: 0 };
+    if (requirementsMet) levelTotal += getRecruitLevel(recruitment, id);
+  }
+  for (const unlock of Object.values(unlocks)) unlock.levelTotal = levelTotal;
+  return unlocks;
 }
 
-export function getHumanRecruitUnlock(recruitment: RecruitmentState, id: HumanRecruitId, lancerUnlocked = false) {
-  assertRecruitment(recruitment);
+export function getElfRecruitUnlock(recruitment: RecruitmentState, id: ElfRecruitId, barracksLevel: number): RecruitUnlock {
+  if (!Object.hasOwn(ELF_UNLOCK_REQUIREMENTS, id)) throw new RangeError('Unknown elf recruit');
+  return poolUnlocks(recruitment, 'elves', barracksLevel)[id]!;
+}
+
+export function getHumanRecruitUnlock(recruitment: RecruitmentState, id: HumanRecruitId) {
   if (!Object.hasOwn(HUMAN_UNLOCK_REQUIREMENTS, id)) throw new RangeError('Unknown human recruit');
-  const { requiredRecruitType, requiredRecruitLevel } = HUMAN_UNLOCK_REQUIREMENTS[id];
-  // Match Elven progression: Market training unlocks roles; personal Connect levels do not.
-  const available = id === 'lancer' ? lancerUnlocked
-    : requiredRecruitType === null || getRecruitLevel(recruitment, requiredRecruitType) >= requiredRecruitLevel;
-  return { available, requiredRecruitType, requiredRecruitLevel };
+  return poolUnlocks(recruitment, 'humans', 1)[id]!;
+}
+
+export function isLancerGuaranteeReady(recruitment: RecruitmentState, pool: RecruitmentPool, pending: boolean): boolean {
+  return pool === 'humans' && pending && getHumanRecruitUnlock(recruitment, 'lancer').available;
 }
 
 export function getUnitStats(type: UnitType, value: unknown = 1): UnitStats {
@@ -220,14 +229,13 @@ export function receiveRecruit(recruitment: RecruitmentState, random: () => numb
   const pool = options?.pool ?? 'humans';
   if (pool !== 'humans' && pool !== 'elves') throw new RangeError('Unknown recruitment pool');
   if (pool === 'elves' && options?.elvesUnlocked !== true) throw new RangeError('Elven recruitment requires Barracks III');
-  const lancerUnlocked = options?.lancerUnlocked === true;
-  let type: UnitType | null = pool === 'humans' && lancerUnlocked && options?.guaranteedLancer === true ? 'lancer' : null;
+  let type: UnitType | null = isLancerGuaranteeReady(recruitment, pool, options?.guaranteedLancer === true) ? 'lancer' : null;
   if (!type) {
     const roll = random();
     if (typeof roll !== 'number' || !Number.isFinite(roll) || roll < 0 || roll >= 1) {
       throw new RangeError('Recruit random must return a number from zero up to one');
     }
-    const chances = getRecruitChances(lancerUnlocked, pool, recruitment, options?.barracksLevel ?? 3);
+    const chances = getRecruitChances(pool, recruitment, options?.barracksLevel ?? 3);
     let threshold = 0;
     // Each pool totals one, so every validated roll selects an entry.
     type = chances.find(entry => {

@@ -126,11 +126,20 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Recruit feedback stays in the existing Market-to-Barracks animation with a
   compact level label; do not repeat it in a toast. Other short notices use the
   battlefield's right water gutter below FPS, clear of Start and the Army controls.
-- Human recruitment follows the Elven unlock pattern: Swordsman initially, Archer
-  at Swordsman recruitment level 3, Healer at Archer recruitment level 3, and
-  Lancer with completed Barracks II. Available types split the random pool equally;
-  the existing first-Lancer guarantee still applies. Personal Connect levels do
-  not unlock recruitment roles. Legacy training credit and existing fighters stay.
+- Recruitment unlocks use only already-open types in the same faction. Humans:
+  Swordsman initially; Archer at total 3, Healer at 5, Lancer at 10. Elves require
+  completed Mercenaries III: Rider initially; Archer at Rider recruitment level 3,
+  Healer at Elven total 5, Unicorn at 10. Lancer does not require building II;
+  Unicorn does not require IV. Evaluate in unlock order: closed types cannot add
+  their initial level 1 or old training to unlock themselves. Newly opened types
+  join the total immediately. Other factions and personal/Connect levels do not
+  count. Preserve existing receipts, legacy training credit and owned fighters.
+- UI requirements, equal random odds and actual recruitment share `recruitment.ts`.
+  The receipt reaching a threshold uses the prior eligible pool; subsequent hires
+  use the expanded pool. Mercenaries II still grants a pending one-time Lancer
+  bonus, but it waits for human total 10. Use `isLancerGuaranteeReady` for both
+  the guarantee and its UI; a pending flag must not advertise or roll a closed
+  Lancer, disappear on reload or be consumed while hiring Elves.
 - Mercenaries II → III requires the sum of Swordsman, Archer, Healer and Lancer
   recruitment levels to be at least 15 (including their initial level 1), not
   Lancer level 5 or personal/Connect levels. Use the shared requirement types
@@ -142,12 +151,14 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   and a separate upgrade view. Each row shows its recruitment level and an earned /
   required counter toward the next level, without a progress bar. Locked rows
   show prerequisites; capped rows show Max level. Keep help in the header.
-  Display the first-Lancer guarantee instead of ordinary odds while it is pending.
+  Display the first-Lancer guarantee instead of ordinary odds only when ready.
   Mercenaries I-IV is the UI name for the existing `barracks.level` progression;
-  reserve storage remains Barracks. Costs, timestamps, unlocks and save fields are
+  reserve storage remains Barracks. Costs, timestamps and save fields are
   unchanged. Starting/skipping an upgrade still uses campaign commands. Main-menu
   summaries omit price/duration; details show current requirements and running or
-  maximum-level states. Extra army capacity permits buying a tile, not a free tile.
+  maximum-level states. II grants extra capacity and the conditional Lancer bonus;
+  III opens Elves, IV grants extra capacity. Do not label II/IV as Lancer/Unicorn
+  unlocks. Extra army capacity permits buying a tile, not a free tile.
 - Mount this menu lazily and reuse its portraits, buttons and unchanged row markup.
   Only the existing economy tick updates an open upgrade countdown; no menu RAF,
   interval, animated background, icon library or additional image assets are needed.

@@ -38,12 +38,12 @@ with 42 reach and no charge, splash, stun or passive magic.
 - Elves initially award Riders only. Rider recruitment level 3 (15 receipts)
   automatically unlocks Elven Archer; subsequent conversions award a Rider or
   Archer with 50% chance each, for one slave. The receipt that reaches the
-  threshold is still a Rider. Archer recruitment level 3 (15 Archer receipts)
-  then unlocks the Healer: all three available types have an exact 1/3 chance
-  (displayed as 33.3%). The threshold receipt is still an Archer; new odds apply
-  to subsequent conversions. Rider recruitment level 5 plus completed Barracks IV
-  unlocks Unicorn. Chances are equal among the eligible classes: 25% each when all
-  four are open; a locked Healer stays excluded even if Unicorn is available.
+  threshold is still a Rider. Total recruitment levels of already-open Elves
+  unlock Healer at 5 and Unicorn at 10; closed types contribute nothing.
+  For example, Rider 3 + Archer 2 opens Healer. Rider 5 + Archer 3 + Healer 2
+  opens Unicorn, already at building III. Chances are equal among eligible
+  classes: exact thirds with Healer, 25% each with all four. A threshold receipt
+  uses the old pool; the expanded odds apply to subsequent conversions.
   Humans retain their current odds.
 - Each elven type's receipts start at zero and follow the existing increasing thresholds:
   five matching receipts to level 2, then ten more to level 3, and so on.
@@ -72,8 +72,8 @@ with 42 reach and no charge, splash, stun or passive magic.
 | --- | --- | --- |
 | Panther Rider | Barracks III completed | Playable |
 | Elven Archer | Panther Rider recruitment level 3 | Playable |
-| Elven Healer | Elven Archer recruitment level 3 | Playable |
-| Unicorn | Panther Rider recruitment level 5 and Barracks IV completed | Playable; two cells |
+| Elven Healer | Sum of already-open Elven recruitment levels ≥ 5 | Playable |
+| Unicorn | Sum of already-open Elven recruitment levels ≥ 10 | Playable; two cells |
 
 Connect raises personal levels only and never satisfies these requirements.
 Barracks IV becomes purchasable at Rider recruitment level 5 (50 receipts),
@@ -81,8 +81,8 @@ costs 5,000 gold and takes six real hours including offline time. Acceleration
 costs `ceil(600 × remainingTime / 6 hours)` gold. Completion permits one additional
 side cell to be purchased: 11 total cells, with the usual price ladder (750 gold
 for the eleventh). It does not grant the cell or a recruit for free.
-The IV controls appear beside Unicorn in Elven Recruitment; the current Human
-upgrade controls remain available when the Human pool is selected.
+Building IV is independent of Unicorn. Construction controls use the separate
+upgrade view in the shared Mercenaries menu, accessible from either faction.
 
 ## Art and remaining work
 

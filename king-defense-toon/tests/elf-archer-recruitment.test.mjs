@@ -34,7 +34,7 @@ test('elf archer training increases on its own receipts and keeps the human lanc
   const barracks = createBarracks({ level: 3, firstLancerPending: true });
   const awarded = [];
   for (let index = 0; index < 15; index++) {
-    const recruit = receiveRecruit(state, () => .5, { ...unlocked, lancerUnlocked: true, guaranteedLancer: true });
+    const recruit = receiveRecruit(state, () => .5, { ...unlocked, guaranteedLancer: true });
     assert.equal(recruit.type, 'elfArcher');
     awarded.push(recruit.level);
     assert.equal(consumeFirstLancerGuarantee(barracks, recruit.type), false);
@@ -46,8 +46,9 @@ test('elf archer training increases on its own receipts and keeps the human lanc
   assert.deepEqual(getRecruitProgress(state, 'elfArcher'), { type: 'elfArcher', level: 3, received: 15, progress: 0, needed: 15 });
   assert.equal(barracks.firstLancerPending, true);
   assert.deepEqual(createRecruitment(JSON.parse(JSON.stringify(state))), state);
+  state.received.swordsman = 140;
   const human = receiveRecruit(state, () => { throw new Error('The pending human guarantee must not roll'); },
-    { lancerUnlocked: true, guaranteedLancer: barracks.firstLancerPending });
+    { guaranteedLancer: barracks.firstLancerPending });
   assert.equal(human.type, 'lancer');
   assert.equal(consumeFirstLancerGuarantee(barracks, human.type), true);
 });
@@ -55,14 +56,14 @@ test('elf archer training increases on its own receipts and keeps the human lanc
 test('the receipt reaching Rider training level three is still a rider; only the following rolls can award an archer', () => {
   const state = createRecruitment({ version: 2, received: { pantherRider: 14 } });
   assert.equal(getRecruitProgress(state, 'pantherRider').level, 2);
-  assert.deepEqual(getRecruitChances(true, 'elves', state), [{ type: 'pantherRider', chance: 1 }]);
+  assert.deepEqual(getRecruitChances('elves', state), [{ type: 'pantherRider', chance: 1 }]);
   assert.equal(getElfRecruitUnlock(state, 'elfArcher', 3).available, false);
   const fifteenth = receiveRecruit(state, () => .999999, unlocked);
   assert.equal(fifteenth.type, 'pantherRider');
   assert.equal(fifteenth.level, 3);
   assert.equal(fifteenth.leveledUp, true);
   assert.equal(getElfRecruitUnlock(state, 'elfArcher', 3).available, true);
-  assert.deepEqual(getRecruitChances(true, 'elves', state), [{ type: 'pantherRider', chance: .5 }, { type: 'elfArcher', chance: .5 }]);
+  assert.deepEqual(getRecruitChances('elves', state), [{ type: 'pantherRider', chance: .5 }, { type: 'elfArcher', chance: .5 }]);
   assert.equal(receiveRecruit(state, () => .5, unlocked).type, 'elfArcher');
   assert.equal(state.received.pantherRider, 15);
   assert.equal(state.received.elfArcher, 1);
@@ -75,7 +76,7 @@ test('personal Rider levels and extra options cannot bypass receipt-based archer
   assert.equal(connected.ok, true);
   assert.equal(connected.recipient.level, 3);
   assert.equal(getElfRecruitUnlock(state, 'elfArcher', 3).available, false);
-  assert.deepEqual(getRecruitChances(true, 'elves'), [{ type: 'pantherRider', chance: 1 }], 'Missing training data cannot silently open the new type');
+  assert.deepEqual(getRecruitChances('elves'), [{ type: 'pantherRider', chance: 1 }], 'Missing training data cannot silently open the new type');
   assert.equal(receiveRecruit(state, () => .999999, { ...unlocked, elfArcherUnlocked: true,
     guaranteedElfArcher: true, personalRiderLevel: 500 }).type, 'pantherRider');
   assert.equal(state.received.elfArcher, 0);
@@ -85,7 +86,7 @@ test('previous elf archer receipts survive a locked gate without unlocking it or
   const state = createRecruitment({ version: 2, received: { elfArcher: 51, archer: 100, pantherRider: 0 }, lastType: 'elfArcher' });
   assert.equal(getRecruitProgress(state, 'elfArcher').level, 5);
   assert.equal(getElfRecruitUnlock(state, 'elfArcher', 3).available, false);
-  assert.equal(receiveRecruit(state, () => .99, unlocked).type, 'elfHealer', 'Archer receipts open its healer successor without bypassing the rider gate');
+  assert.equal(receiveRecruit(state, () => .99, unlocked).type, 'pantherRider', 'Closed Archer receipts do not count toward the healer threshold');
   assert.equal(state.received.elfArcher, 51);
   assert.deepEqual(createRecruitment(JSON.parse(JSON.stringify(state))), state);
   const restored = restoreCampaignRoster([{ type: 'elfArcher', level: 100, col: 2, row: 0 }],
@@ -94,22 +95,22 @@ test('previous elf archer receipts survive a locked gate without unlocking it or
   assert.equal(restored.reserve[0].level, 4);
 });
 
-test('shared elf unlock details require completed Barracks IV for the unicorn', () => {
-  const state = createRecruitment({ version: 2, received: { pantherRider: 50, elfArcher: 14 } });
+test('shared elf unlock details expose faction totals and keep the faction building gate', () => {
+  const state = createRecruitment({ version: 2, received: { pantherRider: 15, elfArcher: 4 } });
   assert.deepEqual(getElfRecruitUnlock(state, 'pantherRider', 3), { requirementsMet: true, available: true,
-    requiredRecruitType: null, requiredRecruitLevel: null, requiredBarracksLevel: 3 });
+    requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: null, levelTotal: 4, requiredBarracksLevel: 3 });
   assert.deepEqual(getElfRecruitUnlock(state, 'elfArcher', 3), { requirementsMet: true, available: true,
-    requiredRecruitType: 'pantherRider', requiredRecruitLevel: 3, requiredBarracksLevel: 3 });
+    requiredRecruitType: 'pantherRider', requiredRecruitLevel: 3, requiredLevelTotal: null, levelTotal: 4, requiredBarracksLevel: 3 });
   assert.deepEqual(getElfRecruitUnlock(state, 'elfHealer', 3), { requirementsMet: false, available: false,
-    requiredRecruitType: 'elfArcher', requiredRecruitLevel: 3, requiredBarracksLevel: 3 });
+    requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 5, levelTotal: 4, requiredBarracksLevel: 3 });
   receiveRecruit(state, () => .5, unlocked);
   assert.equal(getElfRecruitUnlock(state, 'elfHealer', 3).requirementsMet, true);
   assert.equal(getElfRecruitUnlock(state, 'elfHealer', 3).available, true);
   assert.deepEqual(getElfRecruitUnlock(state, 'unicorn', 3), { requirementsMet: false, available: false,
-    requiredRecruitType: 'pantherRider', requiredRecruitLevel: 5, requiredBarracksLevel: 4 });
-  assert.deepEqual(getElfRecruitUnlock(state, 'unicorn', 4), { requirementsMet: true, available: true,
-    requiredRecruitType: 'pantherRider', requiredRecruitLevel: 5, requiredBarracksLevel: 4 });
-  assert.deepEqual(getRecruitChances(true, 'elves', state).map(entry => entry.type), ['pantherRider', 'elfArcher', 'elfHealer']);
+    requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 10, levelTotal: 6, requiredBarracksLevel: 3 });
+  assert.deepEqual(getElfRecruitUnlock(state, 'unicorn', 4), { requirementsMet: false, available: false,
+    requiredRecruitType: null, requiredRecruitLevel: null, requiredLevelTotal: 10, levelTotal: 6, requiredBarracksLevel: 3 });
+  assert.deepEqual(getRecruitChances('elves', state).map(entry => entry.type), ['pantherRider', 'elfArcher', 'elfHealer']);
   for (const tier of [undefined, null, '3', '4', 0, 1, 2, 3.5, 5, Infinity, NaN]) {
     for (const id of ['pantherRider', 'elfArcher', 'elfHealer', 'unicorn']) assert.equal(getElfRecruitUnlock(state, id, tier).available, false);
   }

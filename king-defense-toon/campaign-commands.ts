@@ -59,7 +59,6 @@ export function recruitFighter(state: CampaignState, options: { now: number; ran
   try {
     result = receiveRecruit(recruitment, random, { pool: state.recruitmentPool,
       elvesUnlocked: isRecruitmentPoolUnlocked('elves', barracks.level), barracksLevel: barracks.level,
-      lancerUnlocked: barracks.level >= 2,
       guaranteedLancer: state.recruitmentPool === 'humans' && barracks.firstLancerPending });
   } catch { return fail('invalid-random'); }
   consumeFirstLancerGuarantee(barracks, result.type);
