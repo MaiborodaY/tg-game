@@ -50,28 +50,28 @@ test('invalid recruitment states fail before a random roll or any receipt mutati
   }
 });
 
-test('lancer guarantee requires exact boolean flags and still checks the random provider', () => {
-  for (const options of [null, { lancerUnlocked: 'true', guaranteedLancer: true },
-    { lancerUnlocked: true, guaranteedLancer: 'true' }, { lancerUnlocked: 1, guaranteedLancer: 1 }]) {
+test('lancer guarantee requires an exact boolean and still checks the random provider', () => {
+  for (const options of [null, { guaranteedLancer: 'true' }, { guaranteedLancer: 1 }]) {
     let rolls = 0;
-    const result = receiveRecruit(createRecruitment(), () => { rolls++; return 0; }, options);
+    const trained = createRecruitment({ version: 2, received: { swordsman: 140 } });
+    const result = receiveRecruit(trained, () => { rolls++; return 0; }, options);
     assert.equal(result.type, 'swordsman');
     assert.equal(rolls, 1);
   }
   const state = createRecruitment();
-  assert.throws(() => receiveRecruit(state, null, { lancerUnlocked: true, guaranteedLancer: true }), TypeError);
+  assert.throws(() => receiveRecruit(state, null, { guaranteedLancer: true }), TypeError);
   assert.deepEqual(state, createRecruitment());
 });
 
 test('saturated receipts and training remain safe and capped after a guaranteed recruit', () => {
   const max = Number.MAX_SAFE_INTEGER;
-  const state = createRecruitment({ version: 2, received: { lancer: max }, legacyTrainingCredit: { lancer: max } });
+  const state = createRecruitment({ version: 2, received: { swordsman: 140, lancer: max }, legacyTrainingCredit: { lancer: max } });
   const result = receiveRecruit(state, () => { throw new Error('A guarantee must not roll'); },
-    { lancerUnlocked: true, guaranteedLancer: true });
+    { guaranteedLancer: true });
   assert.deepEqual(result, { type: 'lancer', level: 100, received: max, progress: 0, needed: 500, leveledUp: false });
   assert.equal(state.received.lancer, max);
   assert.equal(state.lastType, 'lancer');
-  assert.equal(state.received.swordsman, 0);
+  assert.equal(state.received.swordsman, 140);
 });
 
 test('unit catalogue keeps shared frozen definitions and optional healing fields', () => {

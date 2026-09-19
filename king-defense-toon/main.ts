@@ -24,7 +24,7 @@ import { createLoadingIndicator } from './loading-indicator.ts';
 import { treasuryRate, treasuryUpgradeCost, TREASURY_OFFLINE_LIMIT_SECONDS, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { marketRate, marketUpgradeCost, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS } from './market.ts';
 import { SAVE_KEY, cellKey, nextCellCost, getCellAvailability } from './progression.ts';
-import { RECRUIT_COST, getRecruitChances } from './recruitment.ts';
+import { RECRUIT_COST, getRecruitChances, isLancerGuaranteeReady } from './recruitment.ts';
 import { canRecruitFromPool } from './recruitment-pools.ts';
 import { createMercenariesUI } from './mercenaries-ui.ts';
 import type { MercenariesUI } from './mercenaries-ui.ts';
@@ -56,7 +56,9 @@ import type { DungeonsUI } from './dungeons-ui.ts';
 import { createDungeonRun, selectDungeonCell, startDungeonBattle, prepareNextDungeonWave, finishDungeonWave } from './dungeon-run.ts';
 import type { DungeonRun } from './dungeon-run.ts';
 import { createDungeonRunUI } from './dungeon-run-ui.ts';
+import { createDungeonIntro } from './dungeon-intro.ts';
 import './dungeons.css';
+import './dungeon-intro.css';
 
 import { getUnitCellWidth, getUnitAtCell } from './unit-footprint.ts';
 import { decodeCampaignSave, needsCampaignSaveMigration, SAVE_SCHEMA_VERSION } from './campaign-save.ts';
@@ -173,10 +175,12 @@ let frameId = 0, visualTime = 0, hudElapsed = 0, resultAge = 0;
 let destroyed = false;
 let dungeonsUI: DungeonsUI | null = null;
 let dungeonRun: DungeonRun | null = null;
+const dungeonIntro = createDungeonIntro({ parent: byId('app'), onFinish: finishDungeonIntro });
 const screens = createScreenController({ app: byId('app'), dungeons: byId('dungeons-screen'),
+  intro: dungeonIntro.root,
   background: [...document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock')],
   onChange: screen => {
-    const visible = screen !== 'dungeons';
+    const visible = screen === 'campaign' || screen === 'dungeon-battle';
     fitPortraitPreview();
     if (screen === 'campaign') {
       byId('army-map').setAttribute('aria-label', 'Next wave formation. Tap a tile to recruit or manage a fighter.');
@@ -194,8 +198,9 @@ const screens = createScreenController({ app: byId('app'), dungeons: byId('dunge
   },
 });
 function isCampaignScreen() { return screens.active === 'campaign'; }
+function isDungeonIntroScreen() { return screens.active === 'dungeon-intro'; }
 function isDungeonBattleScreen() { return screens.active === 'dungeon-battle'; }
-function visibleBattle() { return isDungeonBattleScreen() ? dungeonRun?.battle ?? null : battle; }
+function visibleBattle() { return isDungeonIntroScreen() ? null : isDungeonBattleScreen() ? dungeonRun?.battle ?? null : battle; }
 const assetStates: Record<'battle' | 'army', LoadState> = { battle: { status: 'loading' }, army: { status: 'loading' } };
 const recoveryInert = new Map<HTMLElement, boolean>();
 let recoveryFocus: FocusElement | null = null, resetSaveToken: symbol | null = null, recoveryResetArmed = false, recoveryUiScheduled = false;
@@ -482,18 +487,20 @@ byId('collect-offline-rewards').addEventListener('click', () => {
   offlineRewardInert.clear();
   // A first click after OS sleep can open a menu while tickEconomy reveals the receipt.
   document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock').forEach(element => {
-    element.inert = screens.active === 'dungeons' || !!overlay && !overlay.contains(element);
+    element.inert = screens.active === 'dungeons' || isDungeonIntroScreen() || !!overlay && !overlay.contains(element);
   });
   farmUI?.refresh();
   capitolUI?.refresh();
   const target = offlineRewardFocus?.isConnected && offlineRewardFocus !== document.body && !offlineRewardFocus.disabled
     && !offlineRewardFocus.closest<HTMLElement>('[inert]') && offlineRewardFocus.getClientRects().length
-    ? offlineRewardFocus : screens.active === 'dungeons' ? byId('dungeons-screen') : overlay?.querySelector<HTMLElement>('[data-close-overlay]') ?? byId('army-map');
+    ? offlineRewardFocus : screens.active === 'dungeons' ? byId('dungeons-screen') : isDungeonIntroScreen()
+      ? dungeonIntro.root.querySelector('button') : overlay?.querySelector<HTMLElement>('[data-close-overlay]') ?? byId('army-map');
   target?.focus({ preventScroll: true });
   offlineRewardFocus = null;
   save();
   refreshOnboarding();
   showMarketArrival(collectedSlaves);
+  resumeFrames();
 });
 byId('offline-rewards-panel').addEventListener('keydown', event => {
   if (event.key === 'Tab' || event.key === 'Escape') {
@@ -527,9 +534,9 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || (recruitable && campaign.economy.slaves < RECRUIT_COST) || transforming;
-  const chances = getRecruitChances(campaign.barracks.level >= 2, campaign.recruitmentPool, campaign.recruitment, campaign.barracks.level);
+  const chances = getRecruitChances(campaign.recruitmentPool, campaign.recruitment, campaign.barracks.level);
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Number((chance * 100).toFixed(1))}%`).join(', ');
-  const guaranteedLancer = campaign.recruitmentPool === 'humans' && campaign.barracks.firstLancerPending;
+  const guaranteedLancer = isLancerGuaranteeReady(campaign.recruitment, campaign.recruitmentPool, campaign.barracks.firstLancerPending);
   const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
   const previewLabel = 'Elven recruits require Mercenaries III. Open Mercenaries for details.';
   button.setAttribute('aria-label', recruitable ? `Transform 1 slave into a fighter. ${campaign.economy.slaves} slaves available. ${nextRecruit}` : previewLabel);
@@ -836,8 +843,7 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
     const run = createDungeonRun(dungeonRun.level, { clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears },
       campaign.units, campaign.progression.unlockedCells);
     if (!run) return;
-    dungeonRun = run;
-    framePacer.reset(); refresh(); resumeFrames(); dungeonRunUI.focus();
+    beginDungeonIntro(run);
   },
   onSpeed: () => {
     if (!isDungeonBattleScreen() || dungeonRun?.battle?.phase !== 'running' || !telegram.isActive || isRecovering()) return;
@@ -867,6 +873,23 @@ function refreshDungeonRun() {
   byId('army-status').textContent = 'Your dungeon formation. Main army remains unchanged.';
 }
 
+function beginDungeonIntro(run: DungeonRun) {
+  dungeonRun = run;
+  dungeonsUI?.close();
+  dungeonRunUI.refresh(null, campaign.forge, true, false, battleSpeed);
+  screens.show('dungeon-intro');
+  framePacer.reset(); refresh();
+  dungeonIntro.start();
+  resumeFrames();
+}
+
+function finishDungeonIntro() {
+  if (destroyed || !isDungeonIntroScreen() || !dungeonRun) return;
+  screens.show('dungeon-battle');
+  framePacer.reset(); refresh(); resumeFrames();
+  if (!isRecovering()) dungeonRunUI.focus();
+}
+
 dungeonsUI = createDungeonsUI({ root: byId('dungeons-screen'),
   getProgress: () => ({ clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears }),
   getCampaignStatus: () => battle?.phase === 'running' ? 'Main battle continues'
@@ -877,10 +900,7 @@ dungeonsUI = createDungeonsUI({ root: byId('dungeons-screen'),
     const run = createDungeonRun(level, { clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears },
       campaign.units, campaign.progression.unlockedCells);
     if (!run) return;
-    dungeonRun = run;
-    dungeonsUI?.close();
-    screens.show('dungeon-battle');
-    framePacer.reset(); refresh(); resumeFrames(); dungeonRunUI.focus();
+    beginDungeonIntro(run);
   },
   onExit: () => {
     if (isRecovering() || !byId('offline-rewards-panel').hidden) return;
@@ -899,6 +919,7 @@ byId('open-dungeons').addEventListener('click', () => {
   screens.show('dungeons');
   byId('open-dungeons').setAttribute('aria-expanded', 'true');
   dungeonsUI?.open();
+  void dungeonIntro.prepare();
 });
 
 forgeUI = createForgeUI({ root: byId('forge-upgrades'), getForge: () => campaign.forge, getGold: () => campaign.gold,
@@ -1069,7 +1090,7 @@ byId('buildings-tabs').addEventListener('keydown', event => {
 const nextWaveNumber = () => Math.min(campaign.clearedWaves + 1, TOTAL_WAVES);
 const runComplete = () => campaign.clearedWaves === TOTAL_WAVES;
 const automaticWaveNumber = () => runComplete() ? 1 : nextWaveNumber();
-const hasActiveBattle = () => battle?.phase === 'running' || autoNextRemaining !== null || dungeonRun?.battle?.phase === 'running';
+const hasActiveBattle = () => isDungeonIntroScreen() || battle?.phase === 'running' || autoNextRemaining !== null || dungeonRun?.battle?.phase === 'running';
 const waveLabel = (number: number) => {
   const wave = getWaveDefinition(number);
   return `${wave.levelNumber}-${wave.roundNumber} · Wave ${wave.waveInRound}`;
@@ -1153,6 +1174,13 @@ function refresh() {
   if (combatProfiler) combatProfiler.measure('ui', refreshContent);
   else refreshContent();
   renderScene();
+  if (isDungeonIntroScreen() && dungeonRun) {
+    // Warm the cave through the existing cache without drawing or changing its
+    // foreground asset state while the native video owns the screen.
+    void scene?.preload({ mapVariant: 'goblin-cave', units: dungeonRun.units, wave: dungeonRun.wave });
+    refreshOnboarding();
+    return;
+  }
   // Keep the paused campaign's current assets warm for return from the cave.
   const upcoming = getWaveDefinition(isDungeonBattleScreen() ? battle?.waveNumber ?? nextWaveNumber() : battle?.phase === 'running'
     ? Math.min(TOTAL_WAVES, battle.waveNumber + 1) : nextWaveNumber());
@@ -1162,7 +1190,7 @@ function refresh() {
 
 function refreshContent() {
   syncFood();
-  levelMusic.setScene(isDungeonBattleScreen() ? 'goblin-cave' : 'campaign');
+  levelMusic.setScene(isDungeonBattleScreen() || isDungeonIntroScreen() ? 'goblin-cave' : 'campaign');
   if (!isCampaignScreen()) {
     telegram.setGameInProgress(hasActiveBattle());
     levelMusic.setLevel(getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
@@ -1888,7 +1916,7 @@ byId('recovery-panel').addEventListener('keydown', event => {
 });
 
 function renderScene() {
-  if (screens.active === 'dungeons') return;
+  if (screens.active === 'dungeons' || isDungeonIntroScreen()) return;
   if (combatProfiler) combatProfiler.measure('render', drawScenes);
   else drawScenes();
 }
@@ -2050,20 +2078,32 @@ byId('auto-waves').addEventListener('click', () => {
 function resetFrameRate() { frameRateMeter.reset(); fpsLabel.textContent = '— FPS'; }
 function stopFrames() {
   cancelAnimationFrame(frameId); frameId = 0; framePacer.reset(); resetFrameRate();
+  dungeonIntro.setPaused(true);
   combatProfiler?.suspend();
 }
 function resumeFrames() {
-  if (!destroyed && !frameId && scene && telegram.isActive && !paused && !isRecovering()) frameId = requestAnimationFrame(frame);
+  const introBlocked = isDungeonIntroScreen() && !byId('offline-rewards-panel').hidden;
+  const allowed = !destroyed && !!scene && telegram.isActive && !paused && !isRecovering() && !introBlocked;
+  dungeonIntro.setPaused(!allowed);
+  if (allowed && !frameId) frameId = requestAnimationFrame(frame);
 }
 function frame(timestamp: number) {
   frameId = 0;
-  if (destroyed || !telegram.isActive || paused || isRecovering()) {
+  if (destroyed || !telegram.isActive || paused || isRecovering()
+    || isDungeonIntroScreen() && !byId('offline-rewards-panel').hidden) {
+    dungeonIntro.setPaused(true);
     framePacer.reset(); resetFrameRate(); combatProfiler?.suspend(); return;
   }
   const realDelta = framePacer.sample(timestamp);
   if (realDelta === null) { resumeFrames(); return; }
   combatProfiler?.beginFrame(timestamp);
   try {
+    if (isDungeonIntroScreen()) {
+      // The entry clip owns this frame; neither retained battle nor auto-waves advance.
+      dungeonIntro.frame(realDelta);
+      resumeFrames();
+      return;
+    }
     if (syncFood()) refresh();
     const dt = Math.min(realDelta, MAX_REAL_FRAME_DELTA);
     if (isDungeonBattleScreen()) {
@@ -2192,6 +2232,7 @@ function onPageHide(event: PageTransitionEvent) {
     heroUI?.destroy();
     mercenariesUI?.destroy();
     dungeonsUI?.destroy();
+    dungeonIntro.destroy();
     dungeonRunUI.destroy();
     armyScene?.destroy();
     unitDrag?.destroy();

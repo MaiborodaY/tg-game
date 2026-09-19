@@ -8,25 +8,25 @@ import { createProgression } from '../progression.ts';
 
 const unlocked = { pool: 'elves', elvesUnlocked: true };
 
-test('the trained elf pool splits riders and archers equally and preserves both human chance tables', () => {
-  const expectedHumans = getRecruitChances(true);
+test('the trained elf pool splits riders and archers equally without changing human odds', () => {
+  const expectedHumans = getRecruitChances();
   const trained = createRecruitment({ version: 2, received: { pantherRider: 15 } });
-  for (const lancerUnlocked of [false, true]) {
-    assert.deepEqual(getRecruitChances(lancerUnlocked, 'elves', trained), [{ type: 'pantherRider', chance: .5 }, { type: 'elfArcher', chance: .5 }]);
+  for (const guaranteedLancer of [false, true]) {
+    assert.deepEqual(getRecruitChances('elves', trained), [{ type: 'pantherRider', chance: .5 }, { type: 'elfArcher', chance: .5 }]);
     for (const roll of [0, .25, .499999, .5, .75, .999999]) {
       const state = createRecruitment(trained);
       const expected = roll < .5 ? 'pantherRider' : 'elfArcher';
-      assert.equal(receiveRecruit(state, () => roll, { ...unlocked, lancerUnlocked }).type, expected);
+      assert.equal(receiveRecruit(state, () => roll, { ...unlocked, guaranteedLancer }).type, expected);
       assert.deepEqual(state.received, { swordsman: 0, archer: 0, healer: 0, lancer: 0,
         pantherRider: 15 + Number(expected === 'pantherRider'), elfArcher: Number(expected === 'elfArcher'), elfHealer: 0, unicorn: 0 });
     }
   }
-  assert.equal(getRecruitChances(false).length, 1);
-  assert.deepEqual(getRecruitChances(true), expectedHumans);
-  assert.deepEqual(expectedHumans.map(entry => entry.chance), [.5, .5]);
+  assert.equal(getRecruitChances().length, 1);
+  assert.deepEqual(getRecruitChances(), expectedHumans);
+  assert.deepEqual(expectedHumans.map(entry => entry.chance), [1]);
   for (const state of [undefined, trained]) {
-    assert.ok(Object.isFrozen(getRecruitChances(true, 'elves', state)));
-    assert.ok(getRecruitChances(true, 'elves', state).every(Object.isFrozen));
+    assert.ok(Object.isFrozen(getRecruitChances('elves', state)));
+    assert.ok(getRecruitChances('elves', state).every(Object.isFrozen));
   }
 });
 
@@ -40,7 +40,7 @@ test('locked or unsupported pools fail before rolling or changing recruitment', 
     assert.equal(rolls, 0);
     assert.deepEqual(state, before);
   }
-  assert.throws(() => getRecruitChances(true, 'unknown'), RangeError);
+  assert.throws(() => getRecruitChances('unknown'), RangeError);
   for (const roll of [NaN, Infinity, -1, 1, '0', null]) {
     const state = createRecruitment();
     assert.throws(() => receiveRecruit(state, () => roll, unlocked), RangeError);
@@ -50,13 +50,13 @@ test('locked or unsupported pools fail before rolling or changing recruitment', 
 
 test('selecting elves does not consume the pending first human lancer guarantee', () => {
   const barracks = createBarracks({ level: 3, firstLancerPending: true });
-  const state = createRecruitment();
-  const elf = receiveRecruit(state, () => 0, { ...unlocked, lancerUnlocked: true, guaranteedLancer: true });
+  const state = createRecruitment({ version: 2, received: { swordsman: 140 } });
+  const elf = receiveRecruit(state, () => 0, { ...unlocked, guaranteedLancer: true });
   assert.equal(elf.type, 'pantherRider');
   assert.equal(consumeFirstLancerGuarantee(barracks, elf.type), false);
   assert.equal(barracks.firstLancerPending, true);
   const human = receiveRecruit(state, () => { throw new Error('Human guarantee must not roll'); },
-    { pool: 'humans', lancerUnlocked: true, guaranteedLancer: barracks.firstLancerPending });
+    { pool: 'humans', guaranteedLancer: barracks.firstLancerPending });
   assert.equal(human.type, 'lancer');
   assert.equal(consumeFirstLancerGuarantee(barracks, human.type), true);
   assert.equal(barracks.firstLancerPending, false);

@@ -2,7 +2,7 @@ import type { CampaignState } from './campaign-state.ts';
 import type { RecruitmentPool } from './recruitment-pools.ts';
 import { ELF_RECRUITS, isRecruitmentPoolUnlocked } from './recruitment-pools.ts';
 import { HUMAN_RECRUITS, RECRUIT_LEVEL_CAP, getRecruitChances, getRecruitProgress,
-  getHumanRecruitUnlock, getElfRecruitUnlock, recruitsNeededForLevel } from './recruitment.ts';
+  getHumanRecruitUnlock, getElfRecruitUnlock, isLancerGuaranteeReady, recruitsNeededForLevel } from './recruitment.ts';
 import { getBarracksUpgrade } from './barracks.ts';
 import { getArmyCapacity } from './progression.ts';
 import { UNIT_TYPE_BY_ID } from './units.ts';
@@ -52,15 +52,18 @@ const amount = new Intl.NumberFormat('en-US');
 
 export function getMercenaryCards(state: MenuState) {
   const elves = state.recruitmentPool === 'elves';
-  const chances = getRecruitChances(state.barracks.level >= 2, state.recruitmentPool, state.recruitment, state.barracks.level);
+  const chances = getRecruitChances(state.recruitmentPool, state.recruitment, state.barracks.level);
   const ids = elves ? ELF_RECRUITS.map(recruit => recruit.id) : HUMAN_RECRUITS;
   return ids.map(type => {
     const progress = getRecruitProgress(state.recruitment, type);
     const unlock = elves ? getElfRecruitUnlock(state.recruitment, type as typeof ELF_RECRUITS[number]['id'], state.barracks.level)
-      : getHumanRecruitUnlock(state.recruitment, type as typeof HUMAN_RECRUITS[number], state.barracks.level >= 2);
-    const requiredTier = 'requiredBarracksLevel' in unlock ? unlock.requiredBarracksLevel : type === 'lancer' ? 2 : 1;
+      : getHumanRecruitUnlock(state.recruitment, type as typeof HUMAN_RECRUITS[number]);
+    const requiredTier = unlock.requiredBarracksLevel;
     const requirements: string[] = [];
     if (state.barracks.level < requiredTier) requirements.push(`Mercenaries ${TIERS[requiredTier - 1]}`);
+    if (unlock.requiredLevelTotal !== null && unlock.levelTotal < unlock.requiredLevelTotal) {
+      requirements.push(`${elves ? 'Elven' : 'Human'} levels ${unlock.levelTotal} / ${unlock.requiredLevelTotal}`);
+    }
     if (unlock.requiredRecruitType && unlock.requiredRecruitLevel
       && getRecruitProgress(state.recruitment, unlock.requiredRecruitType).level < unlock.requiredRecruitLevel) {
       requirements.push(`${name(unlock.requiredRecruitType)} Lv. ${unlock.requiredRecruitLevel}`);
@@ -98,15 +101,15 @@ export function createMercenariesUI(options: Options): MercenariesUI {
       <div id="mercenaries-overview">
         <div class="mercenaries-toolbar"><select id="recruitment-pool" aria-label="Recruit army"><option value="humans">Human recruits</option><option id="recruitment-pool-elves" value="elves">Elven recruits</option></select><span class="barracks-upgrade-wallet"><span class="coin-icon" aria-hidden="true"></span><b id="barracks-upgrade-gold"></b></span></div>
         <div class="mercenaries-meta"><span class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter">1 <span class="slave-icon" aria-hidden="true"></span> → 1 fighter</span><span class="mercenaries-chance">${icon('chance')}<span id="recruitment-chance"></span></span></div>
-        <p id="recruitment-info-note" hidden>Recruitment levels rise at the Market. The counter shows recruits earned toward the next level. Connect does not count. Only unlocked fighters share the chance.</p>
+        <p id="recruitment-info-note" hidden>Recruitment levels rise at the Market. The faction total counts only unlocked types. Closed types and Connect do not count. Unlocked fighters share the chance equally.</p>
         <div id="recruitment-guarantee" class="mercenaries-guarantee" hidden><span>Next: guaranteed Lancer</span><button data-merc-action="market" class="mercenaries-link">Go to Market</button></div>
         <ul id="recruitment-details" class="mercenaries-list" aria-label="Recruitment levels and progress"></ul>
         <div class="mercenaries-upgrade-summary"><div class="mercenaries-upgrade-top"><div class="mercenaries-summary-copy"><h3 id="mercenaries-next-tier"></h3><p id="mercenaries-unlock-summary"></p><div id="mercenaries-summary-requirement" class="mercenaries-summary-requirement"><span id="mercenaries-summary-lock">${icon('lock')}</span><span><span id="mercenaries-summary-name"></span> <span id="mercenaries-summary-level"></span></span></div><p id="mercenaries-summary-status" hidden></p></div><button id="mercenaries-view-upgrade" class="mercenaries-button" data-merc-action="upgrade">View upgrade</button></div></div>
       </div>
       <div id="mercenaries-upgrade-detail" hidden>
         <h3 id="mercenaries-upgrade-tier" class="mercenaries-subheading"></h3>
-        <div class="mercenaries-benefits"><div><span id="mercenaries-benefit-icon">${icon('leaf')}</span><span id="mercenaries-unlock"></span><small id="mercenaries-unlock-label">Unlock</small></div><div>${icon('tiles')}<span>Army limit</span><span id="mercenaries-capacity"></span></div><small id="mercenaries-slot-note">New slot sold separately</small></div>
-        <div id="mercenaries-requirements"><h3>Requirements</h3><div class="mercenaries-requirement"><img id="mercenaries-required-art" alt=""><div class="mercenaries-requirement-copy"><strong id="mercenaries-required-name"></strong><small>Recruitment level</small><small id="mercenaries-required-count"></small></div><span id="mercenaries-required-level" class="mercenaries-amount"></span><span id="mercenaries-required-symbol"></span></div><div class="mercenaries-requirement"><span class="coin-icon" aria-hidden="true"></span><span>Gold</span><span id="mercenaries-required-gold" class="mercenaries-amount"></span><span id="mercenaries-gold-symbol"></span></div></div>
+        <div class="mercenaries-benefits"><div id="mercenaries-recruit-benefit"><span id="mercenaries-benefit-icon">${icon('leaf')}</span><span id="mercenaries-unlock"></span><small id="mercenaries-unlock-label">Unlock</small></div><div>${icon('tiles')}<span>Army limit</span><span id="mercenaries-capacity"></span></div><small id="mercenaries-slot-note">New slot sold separately</small></div>
+        <div id="mercenaries-requirements"><h3>Requirements</h3><div class="mercenaries-requirement"><img id="mercenaries-required-art" alt=""><div class="mercenaries-requirement-copy"><strong id="mercenaries-required-name"></strong><small id="mercenaries-required-label"></small><small id="mercenaries-required-count"></small></div><span id="mercenaries-required-level" class="mercenaries-amount"></span><span id="mercenaries-required-symbol"></span></div><div class="mercenaries-requirement"><span class="coin-icon" aria-hidden="true"></span><span>Gold</span><span id="mercenaries-required-gold" class="mercenaries-amount"></span><span id="mercenaries-gold-symbol"></span></div></div>
         <div id="mercenaries-time" class="mercenaries-time">${icon('clock')}<span id="mercenaries-time-label">Time</span><span id="mercenaries-duration"></span></div>
         <progress id="barracks-upgrade-progress" aria-label="Upgrade progress" hidden></progress><p id="mercenaries-running-note" class="mercenaries-note" hidden>Continues offline</p>
         <button id="barracks-start-upgrade" class="mercenaries-button mercenaries-primary" data-merc-action="start">Upgrade</button>
@@ -138,31 +141,39 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     const upgrading = info.status === 'upgrading' || info.status === 'ready';
     const max = info.targetLevel === null;
     const met = info.recruitLevel >= info.requiredRecruitLevel;
+    const total = info.requiredRecruitTypes.length > 1;
+    const requiredType = info.requiredRecruitTypes[0]!;
     const tier = max ? 'Mercenaries IV' : `Mercenaries ${TIERS[info.level - 1]} → ${TIERS[info.targetLevel! - 1]}`;
-    const reward = info.targetLevel === 2 ? 'Lancer' : info.targetLevel === 3 ? 'Elven recruits' : max ? 'All tiers unlocked' : 'Unicorn';
+    const reward = info.targetLevel === 2 ? 'Guaranteed Lancer' : 'Elven recruits';
     text('barracks-upgrade-gold', amount.format(state.gold));
     text('mercenaries-next-tier', tier);
-    text('mercenaries-unlock-summary', max ? 'Maximum level' : `Unlocks ${info.targetLevel === 3 ? 'Elves' : reward}`);
+    text('mercenaries-unlock-summary', max ? 'Maximum level' : info.targetLevel === 2 ? 'Army limit 9 · Lancer bonus'
+      : info.targetLevel === 3 ? 'Unlocks Elves' : 'Army limit 11');
     hide('mercenaries-summary-requirement', max || upgrading);
     hide('mercenaries-summary-status', !upgrading);
     text('mercenaries-summary-status', 'Upgrade in progress');
-    text('mercenaries-summary-name', name(info.requiredRecruitType));
-    text('mercenaries-summary-level', `Lv. ${info.recruitLevel} / ${info.requiredRecruitLevel}`);
+    text('mercenaries-summary-name', total ? 'Human levels' : name(requiredType));
+    text('mercenaries-summary-level', `${total ? '' : 'Lv. '}${info.recruitLevel} / ${info.requiredRecruitLevel}`);
     symbol('mercenaries-summary-lock', met);
     // The shared economy clock calls tick; hidden detail fields and static rows
     // are left alone. Assignments below only write when a visible value changed.
     if (!detail) return;
     text('mercenaries-upgrade-tier', tier); text('mercenaries-unlock', reward);
-    hide('mercenaries-unlock-label', max);
+    hide('mercenaries-recruit-benefit', max || info.targetLevel === 4);
+    text('mercenaries-unlock-label', info.targetLevel === 2 ? 'At human total 10' : 'Unlock');
     text('mercenaries-capacity', max ? String(getArmyCapacity(info.level)) : `${getArmyCapacity(info.level)} → ${getArmyCapacity(info.targetLevel!)}`);
     hide('mercenaries-slot-note', max); hide('mercenaries-requirements', max || upgrading);
     hide('mercenaries-complete', !max); hide('mercenaries-time', max);
     if (!max && !upgrading) {
-      portrait('mercenaries-required-art', info.requiredRecruitType, info.recruitLevel);
-      text('mercenaries-required-name', name(info.requiredRecruitType));
+      if (total) hide('mercenaries-required-art', true);
+      else portrait('mercenaries-required-art', requiredType, info.recruitLevel);
+      text('mercenaries-required-name', total ? 'Human recruits' : name(requiredType));
+      text('mercenaries-required-label', total ? 'Total of all 4 levels' : 'Recruitment level');
       text('mercenaries-required-level', `${info.recruitLevel} / ${info.requiredRecruitLevel}`);
-      const remaining = recruitsNeededForLevel(state.recruitment, info.requiredRecruitType, info.requiredRecruitLevel);
-      text('mercenaries-required-count', met ? 'Ready' : `${remaining} more at Market`);
+      const remaining = total ? Math.max(0, info.requiredRecruitLevel - info.recruitLevel)
+        : recruitsNeededForLevel(state.recruitment, requiredType, info.requiredRecruitLevel);
+      text('mercenaries-required-count', met ? 'Ready' : total
+        ? `${remaining} more ${remaining === 1 ? 'level' : 'levels'} at Market` : `${remaining} more at Market`);
       symbol('mercenaries-required-symbol', met);
       node('mercenaries-required-level').classList.toggle('is-missing', !met);
       node('mercenaries-required-level').classList.toggle('is-met', met);
@@ -184,7 +195,8 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     const start = node<HTMLButtonElement>('barracks-start-upgrade');
     start.hidden = max || upgrading;
     start.disabled = !options.canEdit() || !info.canStart || state.gold < info.cost;
-    const reason = !met ? `${name(info.requiredRecruitType)} recruitment level ${info.requiredRecruitLevel} required`
+    const reason = !met ? total ? `Total human recruitment levels ${info.recruitLevel} of ${info.requiredRecruitLevel} required`
+      : `${name(requiredType)} recruitment level ${info.requiredRecruitLevel} required`
       : state.gold < info.cost ? `${info.cost - state.gold} more gold required` : `Costs ${info.cost} gold, takes ${info.durationMs / 3_600_000} hours`;
     const label = `Upgrade. ${reason}`;
     if (start.getAttribute('aria-label') !== label) start.setAttribute('aria-label', label);
@@ -193,7 +205,7 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     finish.disabled = !options.canEdit() || info.remainingMs === 0 || state.gold < info.speedUpCost;
     text('barracks-finish-upgrade', `Finish now · ${amount.format(info.speedUpCost)} gold`);
     hide('barracks-upgrade-pricing', !upgrading);
-    hide('barracks-go-market', state.recruitmentPool !== 'humans' || !state.barracks.firstLancerPending);
+    hide('barracks-go-market', !isLancerGuaranteeReady(state.recruitment, state.recruitmentPool, state.barracks.firstLancerPending));
   }
   function refresh() {
     if (panel.hidden) return;
@@ -206,7 +218,7 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     elves.disabled = !isRecruitmentPoolUnlocked('elves', state.barracks.level);
     text('recruitment-pool-elves', elves.disabled ? 'Elves · Mercenaries III' : 'Elven recruits');
     const cards = getMercenaryCards(state);
-    const guaranteed = state.recruitmentPool === 'humans' && state.barracks.firstLancerPending;
+    const guaranteed = isLancerGuaranteeReady(state.recruitment, state.recruitmentPool, state.barracks.firstLancerPending);
     text('recruitment-chance', guaranteed ? 'Lancer next' : `${Number((cards.find(card => !card.locked)!.chance * 100).toFixed(1))}% each`);
     hide('recruitment-guarantee', !guaranteed);
     const html = cards.map(card => {

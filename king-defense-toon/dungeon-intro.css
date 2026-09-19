@@ -1,0 +1,15 @@
+#app[data-screen='dungeon-intro'] > .battlefield,
+#app[data-screen='dungeon-intro'] > .army-dock,
+#app[data-screen='dungeon-intro'] > .wave-track { visibility: hidden; pointer-events: none; }
+#app[data-screen='dungeon-intro'] > .battlefield *,
+#app[data-screen='dungeon-intro'] > .army-dock * { animation-play-state: paused !important; }
+.dungeon-intro-screen { position: absolute; inset: 0; z-index: 20; overflow: hidden; background: #0d1725; }
+.dungeon-intro-screen > video { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; }
+.dungeon-intro-skip {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right, 0px), var(--tg-safe-area-inset-right, 0px), var(--tg-content-safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px));
+  min-width: 56px; min-height: 44px; padding: 8px 14px; border: 1px solid #c1c6ab;
+  border-radius: 2px; color: #f4edcc; background: #213a43c9; font-size: 15px;
+}
+.dungeon-intro-skip:focus-visible { outline: 2px solid #f4edcc; outline-offset: 3px; }

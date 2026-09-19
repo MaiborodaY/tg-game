@@ -70,7 +70,9 @@ async function fits(page) {
 let browser, baseUrl;
 const checks = [];
 async function scenario(name, width, height, saved, check) {
-  const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
+  // This harness freezes the shared frame loop; dungeon cinematic playback is
+  // exercised with normal motion in dungeons.browser.mjs.
+  const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
   const errors = [];
   let page;
   try {

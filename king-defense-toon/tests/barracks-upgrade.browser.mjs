@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { listenBrowserServer } from './helpers/browser-server.mjs';
+import { getHumanRecruitUnlock } from '../recruitment.ts';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
@@ -24,7 +25,7 @@ window.barracksCheck = {
       prepareThird: () => {
         campaign.gold = 5000;
         campaign.barracks = createBarracks({ level: 2 });
-        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
+        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5, lancer: 49 } });
         campaign.units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
         campaign.reserve = [{ id: 2, type: 'lancer', level: 4 }];
         campaign.nextUnitId = 3;
@@ -36,10 +37,9 @@ window.barracksCheck = {
   } }] });
 async function assertEqualUnlockedOdds(page) {
   const saved = await page.evaluate(() => window.barracksCheck.state());
-  const training = type => saved.recruitment.received[type] + saved.recruitment.legacyTrainingCredit[type];
-  const openTypes = [true, training('swordsman') >= 15, training('archer') >= 15, saved.barracks.level >= 2];
+  const openTypes = ['swordsman', 'archer', 'healer', 'lancer'].map(type => getHumanRecruitUnlock(saved.recruitment, type).available);
   const equalChance = Number((100 / openTypes.filter(Boolean).length).toFixed(1)) + '%';
-  assert.equal(await page.locator('#recruitment-chance').innerText(), saved.barracks.firstLancerPending ? 'Lancer next' : equalChance + ' each');
+  assert.equal(await page.locator('#recruitment-chance').innerText(), saved.barracks.firstLancerPending && openTypes[3] ? 'Lancer next' : equalChance + ' each');
   for (const [index, type] of ['swordsman', 'archer', 'healer', 'lancer'].entries()) {
     assert.equal(await page.locator(`[data-recruit-type="${type}"]`).evaluate(card => card.classList.contains('is-locked')), !openTypes[index], `${type} follows its recruitment gate`);
   }
@@ -61,7 +61,7 @@ try {
       localStorage.setItem('brotd-infinity:campaign:v2', JSON.stringify({ campaignVersion: 3,
         gold: 1000, starterSupplyGranted: true, autoWaves: false, autoWavesDefaultVersion: 1,
         units: [{ id: 1, type: 'swordsman', level: 50, col: 2, row: 0 }], reserve: [],
-        recruitment: { version: 2, received: { swordsman: 49, archer: 6, healer: 5 },
+        recruitment: { version: 2, received: { swordsman: 49, archer: 6, healer: 15 },
           legacyTrainingCredit: { swordsman: 0, archer: 0, healer: 0 } },
         economy: { slaves: 5, treasuryUpdatedAt: window.checkNow },
       }));
@@ -206,7 +206,7 @@ try {
     assert.equal((await state()).units[0].level, 5, 'personal Lancer reaches level 5 through Connect');
     assert.equal((await state()).recruitment.received.lancer, 49, 'Connect cannot grant recruitment experience');
     await upgrade();
-    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Lancer.*4 \/ 5/s);
+    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Human recruits.*14 \/ 15/s);
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true);
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
@@ -305,8 +305,8 @@ try {
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await page.locator('#open-market-info').click();
   await assertEqualUnlockedOdds(page);
-  assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1);
-  assert.equal(await page.locator('#recruitment-guarantee').isVisible(), level === 1);
+  assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 0, 'Paid upgrade completion cannot bypass the new level total');
+  assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);

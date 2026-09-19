@@ -105,10 +105,14 @@ try {
       await page.screenshot({ path: fileURLToPath(new URL(`main-${width}.png`, output)) });
       await upgrade(page); await fits(page);
       assert.equal(await page.locator('#mercenaries-help').isVisible(), false);
-      assert.equal(await page.locator('#mercenaries-required-count').innerText(), '27 more at Market');
+      assert.equal(await page.locator('#mercenaries-required-name').innerText(), 'Human recruits');
+      assert.equal(await page.locator('#mercenaries-required-label').innerText(), 'Total of all 4 levels');
+      assert.equal(await page.locator('#mercenaries-required-level').innerText(), '15 / 15');
+      assert.equal(await page.locator('#mercenaries-required-count').innerText(), 'Ready');
+      assert.equal(await page.locator('#mercenaries-required-art').isVisible(), false);
       assert.equal(await page.locator('#mercenaries-required-gold').innerText(), '4,907 / 2,000');
       assert.equal(await page.locator('#mercenaries-duration').innerText(), '3h');
-      assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), false);
+      assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
       await page.screenshot({ path: fileURLToPath(new URL(`upgrade-${width}.png`, output)) });
       await page.keyboard.press('Escape');
       assert.equal(await page.locator('#mercenaries-overview').isVisible(), true);
@@ -139,13 +143,39 @@ try {
       assert.equal(afterEconomy.captures, beforeEconomy.captures);
     });
   }
+  for (const archer of [14, 15]) {
+    const total = archer === 14 ? 14 : 15;
+    await scenario(`human total ${total}, Lancer level 1`, fixture(2, { swordsman: 225, archer }, 2000), 320, async page => {
+      await open(page); await fits(page);
+      assert.equal(await page.locator('#mercenaries-summary-name').innerText(), 'Human levels');
+      assert.equal(await page.locator('#mercenaries-summary-level').innerText(), `${total} / 15`);
+      assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-level').innerText(), 'Lv. 1');
+      await upgrade(page); await fits(page);
+      assert.equal(await page.locator('#mercenaries-required-level').innerText(), `${total} / 15`);
+      assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), total === 15);
+      if (total === 14) {
+        assert.equal(await page.locator('#mercenaries-required-count').innerText(), '1 more level at Market');
+        assert.match(await page.locator('#barracks-start-upgrade').getAttribute('aria-label'), /Total human recruitment levels 14 of 15/);
+        return;
+      }
+      await page.locator('#barracks-start-upgrade').click();
+      assert.equal((await state(page)).gold, 0);
+      assert.equal((await state(page)).barracks.upgradeReadyAt, now + 10800000);
+      await page.reload(); await page.waitForFunction(() => window.mercenaryCheck?.ready());
+      await open(page); await upgrade(page); await fits(page);
+      assert.equal((await state(page)).gold, 0);
+      assert.equal((await state(page)).barracks.upgradeReadyAt, now + 10800000);
+      assert.equal(await page.locator('#mercenaries-requirements').isVisible(), false);
+    });
+  }
   await scenario('initial locked roles', fixture(1), 320, async page => {
     await open(page); await fits(page);
     assert.equal(await page.locator('.mercenary-recruit.is-locked').count(), 3);
     assert.equal(await page.locator('.mercenary-recruit.is-locked .mercenary-progress').count(), 0);
     assert.equal(await page.locator('#recruitment-chance').innerText(), '100% each');
-    assert.match(await page.locator('[data-recruit-type="archer"]').innerText(), /Swordsman Lv. 3/);
-    assert.match(await page.locator('[data-recruit-type="lancer"]').innerText(), /Mercenaries II/);
+    assert.match(await page.locator('[data-recruit-type="archer"]').innerText(), /Human levels 1 \/ 3/);
+    assert.match(await page.locator('[data-recruit-type="healer"]').innerText(), /Human levels 1 \/ 5/);
+    assert.match(await page.locator('[data-recruit-type="lancer"]').innerText(), /Human levels 1 \/ 10/);
     await upgrade(page); assert.equal(await page.locator('#mercenaries-required-count').innerText(), '50 more at Market');
     assert.equal(await page.locator('#mercenaries-capacity').innerText(), '8 → 9');
   });
@@ -153,8 +183,8 @@ try {
     await open(page); await page.locator('#recruitment-pool').selectOption('elves'); await fits(page);
     assert.equal(await page.locator('[data-elf-recruit]').count(), 4);
     assert.equal(await page.locator('#recruitment-chance').innerText(), '50% each');
-    assert.match(await page.locator('[data-elf-recruit="unicorn"]').innerText(), /Mercenaries IV.*Panther Rider Lv. 5/s);
-    assert.match(await page.locator('[data-elf-recruit="elfHealer"]').innerText(), /Elven Archer Lv. 3/);
+    assert.match(await page.locator('[data-elf-recruit="unicorn"]').innerText(), /Elven levels 4 \/ 10/);
+    assert.match(await page.locator('[data-elf-recruit="elfHealer"]').innerText(), /Elven levels 4 \/ 5/);
     await upgrade(page); assert.equal(await page.locator('#mercenaries-required-count').innerText(), '35 more at Market');
     await close(page); await page.reload(); await page.waitForFunction(() => window.mercenaryCheck?.ready()); await open(page);
     assert.equal(await page.locator('#recruitment-pool').inputValue(), 'elves');
@@ -186,7 +216,7 @@ try {
     assert.equal(await page.locator('#mercenaries-upgrade-tier').innerText(), 'Mercenaries III → IV');
     await fits(page);
   });
-  await scenario('natural completion preserves Lancer guarantee', fixture(1, { swordsman: 50 }, 5000), 390, async page => {
+  await scenario('natural completion preserves Lancer guarantee', fixture(1, { swordsman: 140 }, 5000), 390, async page => {
     await open(page); await upgrade(page); await page.locator('#barracks-start-upgrade').click();
     await page.evaluate(() => window.mercenaryCheck.advance(3600000));
     if (await page.locator('#offline-rewards-panel').isVisible()) await page.locator('#collect-offline-rewards').click();
@@ -197,6 +227,36 @@ try {
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), true);
     await page.locator('#recruitment-guarantee [data-merc-action="market"]').click();
     assert.equal(await page.locator('#market-info-panel').isVisible(), false);
+  });
+  await scenario('Lancer before building II and deferred guarantee after building II', fixture(2, { swordsman: 139 }, 5000, 'humans', true), 320, async page => {
+    await open(page); await fits(page);
+    assert.match(await page.locator('[data-recruit-type="lancer"]').innerText(), /Human levels 9 \/ 10/);
+    assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
+    assert.equal(await page.locator('#recruitment-chance').innerText(), '33.3% each');
+    await close(page); await page.evaluate(() => { Math.random = () => 0; });
+    await page.locator('#transform-slave').click();
+    await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
+    assert.equal((await state(page)).recruitment.received.swordsman, 140);
+    assert.equal((await state(page)).barracks.firstLancerPending, true);
+    await open(page); await fits(page);
+    assert.equal(await page.locator('#recruitment-chance').innerText(), 'Lancer next');
+    await page.locator('#recruitment-guarantee [data-merc-action="market"]').click();
+    await page.locator('#transform-slave').click();
+    await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
+    assert.equal((await state(page)).reserve.at(-1).type, 'lancer');
+    assert.equal((await state(page)).barracks.firstLancerPending, false);
+  });
+  for (const [pool, tier, received, unit] of [
+    ['humans', 1, { swordsman: 50, archer: 15, healer: 5 }, 'lancer'],
+    ['elves', 3, { pantherRider: 50, elfArcher: 15, elfHealer: 5 }, 'unicorn'],
+  ]) await scenario(`${unit} opens without next building tier`, fixture(tier, received, 5000, pool), 320, async page => {
+    await open(page); await fits(page);
+    assert.equal(await page.locator(`[data-recruit-type="${unit}"]`).evaluate(el => el.classList.contains('is-locked')), false);
+    assert.equal(await page.locator('#recruitment-chance').innerText(), '25% each');
+    await close(page); await page.evaluate(() => { Math.random = () => .99; });
+    await page.locator('#transform-slave').click();
+    await page.waitForFunction(() => !document.querySelector('#open-barracks').disabled);
+    assert.equal((await state(page)).reserve.at(-1).type, unit);
   });
   await scenario('maximum tier and capped recruitment', fixture(4, { ...human, pantherRider: 49500, elfArcher: 15, elfHealer: 5, unicorn: 5 }, 9000, 'elves'), 320, async page => {
     await open(page); await fits(page);

@@ -87,7 +87,7 @@ test('construction uses one real hour, persists through reload, and completes of
   assert.deepEqual(reloaded, { level: 2, upgradeStartedAt: null, upgradeReadyAt: null, firstLancerPending: true });
   assert.equal(completeBarracksUpgrade(reloaded, START + HOUR * 2), false);
   assert.deepEqual(createBarracks(barracks, START + HOUR * 10), reloaded);
-  assert.equal(getBarracksUpgrade(reloaded, recruitment, START + HOUR).lancerUnlocked, true);
+  assert.equal(getBarracksUpgrade(reloaded, recruitment, START + HOUR).lancerUnlocked, false, 'Building completion cannot bypass human total 10');
 });
 
 test('skip price declines proportionally from 100 gold and charges at most the current remaining time', () => {
@@ -169,22 +169,27 @@ test('all barracks actions reject inconsistent runtime state before changing it 
   }
 });
 
-test('Barracks III requires Lancer recruitment level 5 and charges 2000 gold for three hours', () => {
-  const recruitment = recruitmentAt(1000, 49);
+test('Barracks III requires 15 total human levels and charges 2000 gold for three hours', () => {
+  // Sword 10 + Archer 2 + Healer 1 + Lancer 1 = 14; one Archer receipt reaches 15.
+  const recruitment = createRecruitment({ version: 2, received: { swordsman: 225, archer: 14 } });
   const barracks = createBarracks({ level: 2 }, START);
   barracks.personalLancerLevel = 100;
   const locked = getBarracksUpgrade(barracks, recruitment, START);
   assert.equal(locked.targetLevel, 3);
-  assert.equal(locked.requiredRecruitType, 'lancer');
-  assert.equal(locked.requiredRecruitLevel, 5);
-  assert.equal(locked.recruitLevel, 4);
+  assert.deepEqual(locked.requiredRecruitTypes, ['swordsman', 'archer', 'healer', 'lancer']);
+  assert.equal(locked.requiredRecruitLevel, 15);
+  assert.equal(locked.recruitLevel, 14);
   assert.equal(locked.cost, 2000);
   assert.equal(locked.durationMs, THIRD_DURATION);
   assert.equal(locked.speedUpMaxCost, 300);
   assert.equal(locked.lancerUnlocked, true);
-  assert.equal(startBarracksUpgrade(barracks, recruitment, 5000, START).reason, 'locked');
-  receiveRecruit(recruitment, () => .9, { lancerUnlocked: true });
-  assert.equal(getRecruitLevel(recruitment, 'lancer'), 5);
+  const beforeLocked = structuredClone(barracks);
+  assert.deepEqual(startBarracksUpgrade(barracks, recruitment, 5000, START), { ok: false, gold: 5000, reason: 'locked', cost: 0 });
+  assert.deepEqual(barracks, beforeLocked);
+  receiveRecruit(recruitment, () => .4);
+  assert.equal(getRecruitLevel(recruitment, 'archer'), 3);
+  assert.equal(getRecruitLevel(recruitment, 'lancer'), 1);
+  assert.equal(getBarracksUpgrade(barracks, recruitment, START).recruitLevel, 15);
   assert.equal(getBarracksUpgrade(barracks, recruitment, START).canStart, true);
   const before = structuredClone(barracks);
   for (const gold of [1999, -1, NaN, Infinity, '2000', 2000.5, Number.MAX_SAFE_INTEGER + 1]) {
@@ -201,8 +206,38 @@ test('Barracks III requires Lancer recruitment level 5 and charges 2000 gold for
   assert.equal(barracks.upgradeStartedAt, START);
 });
 
+test('Barracks III sums only human recruitment levels, including starting and legacy levels', () => {
+  for (const [saved, total, available] of [
+    [{ version: 2, received: {} }, 4, false],
+    [{ version: 2, received: { swordsman: 50, lancer: 50 } }, 12, false],
+    [{ version: 2, received: { swordsman: 225, archer: 14, pantherRider: 10000, elfArcher: 10000, elfHealer: 10000, unicorn: 10000 } }, 14, false],
+    [{ version: 2, received: { swordsman: 225, archer: 15 } }, 15, true],
+    [{ version: 2, received: { swordsman: 275, archer: 15 } }, 16, true],
+    [{ version: 2, received: { swordsman: 225, archer: 14 }, legacyTrainingCredit: { archer: 1 } }, 15, true],
+  ]) {
+    const recruitment = createRecruitment(saved), barracks = createBarracks({ level: 2 }, START);
+    const info = getBarracksUpgrade(barracks, recruitment, START);
+    assert.equal(info.recruitLevel, total);
+    assert.equal(info.canStart, available);
+    const result = startBarracksUpgrade(barracks, recruitment, 2000, START);
+    assert.equal(result.ok, available);
+    assert.equal(result.gold, available ? 0 : 2000);
+  }
+});
+
+test('previously paid Barracks III construction survives the new eligibility rule', () => {
+  const recruitment = recruitmentAt(50, 50); // Old Lancer 5 requirement met, new total only 12.
+  const saved = { level: 2, upgradeStartedAt: START, upgradeReadyAt: START + THIRD_DURATION, firstLancerPending: false };
+  const reloaded = createBarracks(saved, START + HOUR);
+  assert.equal(getBarracksUpgrade(reloaded, recruitment, START + HOUR).status, 'upgrading');
+  assert.deepEqual(speedUpBarracks(reloaded, 200, START + HOUR), { ok: true, gold: 0, reason: null, cost: 200 });
+  assert.equal(reloaded.level, 3);
+  assert.equal(createBarracks(saved, START + THIRD_DURATION).level, 3);
+  assert.equal(createBarracks({ level: 3 }, START).level, 3);
+});
+
 test('Barracks III timer survives reload and offline completion without granting another Lancer', () => {
-  const recruitment = recruitmentAt(50, 50);
+  const recruitment = recruitmentAt(140, 50);
   for (const pending of [false, true]) {
     const barracks = createBarracks({ level: 2, firstLancerPending: pending }, START);
     startBarracksUpgrade(barracks, recruitment, 2000, START);
@@ -218,7 +253,7 @@ test('Barracks III timer survives reload and offline completion without granting
     const next = getBarracksUpgrade(reloaded, recruitment, START + THIRD_DURATION);
     assert.equal(next.status, 'locked');
     assert.equal(next.targetLevel, 4);
-    assert.equal(next.requiredRecruitType, 'pantherRider');
+    assert.deepEqual(next.requiredRecruitTypes, ['pantherRider']);
     assert.equal(next.canStart, false);
     assert.equal(next.lancerUnlocked, true);
     assert.equal(next.cost, 5000);
@@ -236,7 +271,7 @@ test('Barracks III timer survives reload and offline completion without granting
 });
 
 test('Barracks III skip charges the current proportion of 300 gold including a stale displayed price', () => {
-  const recruitment = recruitmentAt(50, 50);
+  const recruitment = recruitmentAt(140, 50);
   for (const [elapsed, expectedCost] of [[0, 300], [HOUR, 200], [THIRD_DURATION / 2, 150], [THIRD_DURATION - 36_000, 1], [THIRD_DURATION - 1, 1]]) {
     const barracks = createBarracks({ level: 2 }, START);
     startBarracksUpgrade(barracks, recruitment, 2000, START);
@@ -256,7 +291,7 @@ test('Barracks III skip charges the current proportion of 300 gold including a s
 });
 
 test('Barracks III validates transition-specific timers, rollback and safe integer boundaries', () => {
-  const recruitment = recruitmentAt(50, 50);
+  const recruitment = recruitmentAt(140, 50);
   const base = createBarracks({ level: 2, firstLancerPending: true }, START);
   for (const timer of [
     { upgradeStartedAt: START, upgradeReadyAt: START + HOUR },
@@ -285,7 +320,7 @@ test('Barracks III validates transition-specific timers, rollback and safe integ
 });
 
 test('a stale start request finishing Barracks II never buys Barracks III in the same action', () => {
-  const recruitment = recruitmentAt(50, 50);
+  const recruitment = recruitmentAt(140, 50);
   const barracks = createBarracks({}, START);
   startBarracksUpgrade(barracks, recruitment, 200, START);
   assert.deepEqual(startBarracksUpgrade(barracks, recruitment, 5000, START + HOUR), { ok: false, gold: 5000, reason: 'upgrading', cost: 0 });
@@ -300,15 +335,16 @@ test('a stale start request finishing Barracks II never buys Barracks III in the
 test('upgrade definitions are immutable and retain the established Barracks II price and timing', () => {
   assert.ok(Object.isFrozen(BARRACKS_UPGRADES));
   assert.ok(Object.values(BARRACKS_UPGRADES).every(Object.isFrozen));
-  assert.deepEqual(BARRACKS_UPGRADES[2], { targetLevel: 2, requiredRecruitType: 'swordsman', requiredRecruitLevel: 5,
+  assert.ok(Object.values(BARRACKS_UPGRADES).every(definition => Object.isFrozen(definition.requiredRecruitTypes)));
+  assert.deepEqual(BARRACKS_UPGRADES[2], { targetLevel: 2, requiredRecruitTypes: ['swordsman'], requiredRecruitLevel: 5,
     cost: 200, durationMs: HOUR, speedUpMaxCost: 100 });
-  assert.deepEqual(BARRACKS_UPGRADES[3], { targetLevel: 3, requiredRecruitType: 'lancer', requiredRecruitLevel: 5,
+  assert.deepEqual(BARRACKS_UPGRADES[3], { targetLevel: 3, requiredRecruitTypes: ['swordsman', 'archer', 'healer', 'lancer'], requiredRecruitLevel: 15,
     cost: 2000, durationMs: THIRD_DURATION, speedUpMaxCost: 300 });
-  assert.deepEqual(BARRACKS_UPGRADES[4], { targetLevel: 4, requiredRecruitType: 'pantherRider', requiredRecruitLevel: 5,
+  assert.deepEqual(BARRACKS_UPGRADES[4], { targetLevel: 4, requiredRecruitTypes: ['pantherRider'], requiredRecruitLevel: 5,
     cost: 5000, durationMs: FOURTH_DURATION, speedUpMaxCost: 600 });
   const info = getBarracksUpgrade(createBarracks(), recruitmentAt(50), START);
   assert.equal(info.targetLevel, 2);
-  assert.equal(info.requiredRecruitType, 'swordsman');
+  assert.deepEqual(info.requiredRecruitTypes, ['swordsman']);
   assert.equal(info.requiredRecruitLevel, 5);
   assert.equal(info.durationMs, HOUR);
   assert.equal(info.cost, 200);
@@ -338,7 +374,7 @@ test('Barracks IV requires Panther Rider recruitment level 5 and charges 5000 go
   const recruitment = recruitmentAt(1000, 1000, 49), barracks = createBarracks({ level: 3 }, START);
   barracks.personalRiderLevel = 500;
   const locked = getBarracksUpgrade(barracks, recruitment, START);
-  assert.equal(locked.targetLevel, 4); assert.equal(locked.requiredRecruitType, 'pantherRider');
+  assert.equal(locked.targetLevel, 4); assert.deepEqual(locked.requiredRecruitTypes, ['pantherRider']);
   assert.equal(locked.requiredRecruitLevel, 5); assert.equal(locked.recruitLevel, 4);
   assert.equal(locked.status, 'locked'); assert.equal(locked.cost, 5000);
   assert.equal(locked.durationMs, FOURTH_DURATION); assert.equal(locked.speedUpMaxCost, 600);
@@ -375,7 +411,7 @@ test('Barracks IV survives offline reload, finishes exactly once and preserves t
     assert.equal(completeBarracksUpgrade(reloaded, START + FOURTH_DURATION * 2), false);
     const info = getBarracksUpgrade(reloaded, recruitment, START + FOURTH_DURATION);
     assert.equal(info.status, 'complete'); assert.equal(info.targetLevel, null); assert.equal(info.canStart, false);
-    assert.equal(info.lancerUnlocked, true);
+    assert.equal(info.lancerUnlocked, false, 'Building IV cannot count the closed Lancer toward its own unlock');
     for (const field of ['cost', 'durationMs', 'remainingMs', 'speedUpCost', 'speedUpMaxCost']) assert.equal(info[field], 0);
     assert.equal(startBarracksUpgrade(reloaded, recruitment, 10000, START).reason, 'max-level');
     assert.equal(speedUpBarracks(reloaded, 10000, START).reason, 'max-level');
@@ -429,7 +465,7 @@ test('Barracks IV rejects incorrect tier timers and unsafe clocks without granti
 });
 
 test('a stale start completing Barracks III never pays for IV in the same action', () => {
-  const recruitment = recruitmentAt(50, 50, 50), barracks = createBarracks({ level: 2 }, START);
+  const recruitment = recruitmentAt(140, 50, 50), barracks = createBarracks({ level: 2 }, START);
   startBarracksUpgrade(barracks, recruitment, 2000, START);
   assert.deepEqual(startBarracksUpgrade(barracks, recruitment, 10000, START + THIRD_DURATION), { ok: false, gold: 10000, reason: 'upgrading', cost: 0 });
   assert.equal(barracks.level, 3); assert.equal(barracks.upgradeReadyAt, null);

@@ -1,4 +1,4 @@
-import { getRecruitLevel } from './recruitment.ts';
+import { getRecruitLevel, getHumanRecruitUnlock, HUMAN_RECRUITS } from './recruitment.ts';
 
 import type { RecruitmentState } from './recruitment.ts';
 import type { UnitType } from './units.ts';
@@ -17,7 +17,7 @@ export interface BarracksUpgrade {
   targetLevel: BarracksUpgradeTarget | null;
   status: BarracksUpgradeStatus;
   recruitLevel: number;
-  requiredRecruitType: UnitType;
+  requiredRecruitTypes: readonly UnitType[];
   requiredRecruitLevel: number;
   cost: number;
   durationMs: number;
@@ -29,7 +29,8 @@ export interface BarracksUpgrade {
 }
 export interface BarracksUpgradeDefinition {
   readonly targetLevel: BarracksUpgradeTarget;
-  readonly requiredRecruitType: UnitType;
+  /** Sum the recruitment levels of these types, including their starting level. */
+  readonly requiredRecruitTypes: readonly UnitType[];
   readonly requiredRecruitLevel: number;
   readonly cost: number;
   readonly durationMs: number;
@@ -60,17 +61,23 @@ export const BARRACKS_UPGRADE_COST = 200;
 export const BARRACKS_UPGRADE_DURATION_MS = 60 * 60 * 1000;
 export const BARRACKS_SPEED_UP_MAX_COST = 100;
 export const BARRACKS_UPGRADES: Readonly<Record<BarracksUpgradeTarget, BarracksUpgradeDefinition>> = Object.freeze({
-  2: Object.freeze({ targetLevel: 2, requiredRecruitType: 'swordsman', requiredRecruitLevel: BARRACKS_REQUIRED_SWORDSMAN_LEVEL,
+  2: Object.freeze({ targetLevel: 2, requiredRecruitTypes: Object.freeze(['swordsman'] as const), requiredRecruitLevel: BARRACKS_REQUIRED_SWORDSMAN_LEVEL,
     cost: BARRACKS_UPGRADE_COST, durationMs: BARRACKS_UPGRADE_DURATION_MS, speedUpMaxCost: BARRACKS_SPEED_UP_MAX_COST }),
-  3: Object.freeze({ targetLevel: 3, requiredRecruitType: 'lancer', requiredRecruitLevel: 5,
+  3: Object.freeze({ targetLevel: 3, requiredRecruitTypes: HUMAN_RECRUITS, requiredRecruitLevel: 15,
     cost: 2000, durationMs: 3 * 60 * 60 * 1000, speedUpMaxCost: 300 }),
-  4: Object.freeze({ targetLevel: 4, requiredRecruitType: 'pantherRider', requiredRecruitLevel: 5,
+  4: Object.freeze({ targetLevel: 4, requiredRecruitTypes: Object.freeze(['pantherRider'] as const), requiredRecruitLevel: 5,
     cost: 5000, durationMs: 6 * 60 * 60 * 1000, speedUpMaxCost: 600 }),
 });
 
 export function getBarracksUpgradeDefinition(level: BarracksLevel): BarracksUpgradeDefinition | null {
   return level === 1 ? BARRACKS_UPGRADES[2] : level === 2 ? BARRACKS_UPGRADES[3]
     : level === 3 ? BARRACKS_UPGRADES[4] : null;
+}
+
+function requiredRecruitLevelTotal(recruitment: RecruitmentState, types: readonly UnitType[]): number {
+  // Keep the displayed requirement and purchase validation on the same rule.
+  // getRecruitLevel also preserves training earned in legacy saves.
+  return types.reduce((total, type) => total + getRecruitLevel(recruitment, type), 0);
 }
 
 const validTime = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
@@ -128,19 +135,19 @@ export function completeBarracksUpgrade(barracks: BarracksState, now: number = D
 export function getBarracksUpgrade(barracks: BarracksState, recruitment: RecruitmentState, now: number = Date.now()): BarracksUpgrade {
   assertBarracks(barracks);
   const definition = getBarracksUpgradeDefinition(barracks.level);
-  const requiredRecruitType = definition?.requiredRecruitType ?? BARRACKS_UPGRADES[BARRACKS_MAX_LEVEL].requiredRecruitType;
-  const recruitLevel = getRecruitLevel(recruitment, requiredRecruitType);
+  const requiredRecruitTypes = definition?.requiredRecruitTypes ?? BARRACKS_UPGRADES[BARRACKS_MAX_LEVEL].requiredRecruitTypes;
+  const recruitLevel = requiredRecruitLevelTotal(recruitment, requiredRecruitTypes);
   const upgrading = barracks.upgradeReadyAt !== null;
   // The assertion guarantees a complete timer pair whenever the ready timestamp exists.
   // Clock rollback can delay construction, but cannot exceed this upgrade's full skip price.
   const remainingMs = upgrading ? Math.max(0, Math.min(definition!.durationMs,
     barracks.upgradeReadyAt! - (validTime(now) ? now : barracks.upgradeStartedAt!))) : 0;
-  const lancerUnlocked = barracks.level >= 2;
+  const lancerUnlocked = getHumanRecruitUnlock(recruitment, 'lancer').available;
   const eligible = definition !== null && recruitLevel >= definition.requiredRecruitLevel;
   const status = !definition ? 'complete' : upgrading ? remainingMs === 0 ? 'ready' : 'upgrading'
     : eligible ? 'available' : 'locked';
   return {
-    level: barracks.level, targetLevel: definition?.targetLevel ?? null, status, recruitLevel, requiredRecruitType,
+    level: barracks.level, targetLevel: definition?.targetLevel ?? null, status, recruitLevel, requiredRecruitTypes,
     requiredRecruitLevel: definition?.requiredRecruitLevel ?? 0,
     cost: definition?.cost ?? 0,
     durationMs: definition?.durationMs ?? 0,
@@ -163,7 +170,7 @@ export function startBarracksUpgrade(barracks: BarracksState, recruitment: Recru
   const definition = getBarracksUpgradeDefinition(barracks.level);
   if (!definition) return fail('max-level');
   if (!validStart(now, definition.durationMs)) return fail('invalid-time');
-  if (getRecruitLevel(recruitment, definition.requiredRecruitType) < definition.requiredRecruitLevel) return fail('locked');
+  if (requiredRecruitLevelTotal(recruitment, definition.requiredRecruitTypes) < definition.requiredRecruitLevel) return fail('locked');
   if (!validGold(gold) || gold < definition.cost) return fail('insufficient-gold');
   barracks.upgradeStartedAt = now;
   barracks.upgradeReadyAt = now + definition.durationMs;

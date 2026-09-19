@@ -65,6 +65,7 @@ test('recruit rejection never consumes identity, currency, guarantee or training
 
 test('naturally completed barracks unlocks guaranteed lancer exactly once during recruitment', () => {
   const state = fresh();
+  state.recruitment.received.swordsman = 140;
   state.barracks.upgradeStartedAt = NOW; state.barracks.upgradeReadyAt = NOW + 3_600_000;
   const result = commands.recruitFighter(state, { now: NOW + 3_600_000, random: () => { throw new Error('guarantee must not roll'); } });
   assert.equal(result.ok, true);
@@ -72,6 +73,27 @@ test('naturally completed barracks unlocks guaranteed lancer exactly once during
   assert.equal(state.barracks.level, 2);
   assert.equal(state.barracks.firstLancerPending, false);
   assert.equal(commands.recruitFighter(state, { now: NOW + 3_600_000, random: () => 0 }).type, 'swordsman');
+});
+
+test('pending Lancer guarantee waits for human total 10 and survives a reload', () => {
+  const state = fresh();
+  state.barracks.level = 2; state.barracks.firstLancerPending = true;
+  state.recruitment.received.swordsman = 139;
+  const threshold = commands.recruitFighter(state, { now: NOW, random: () => 0 });
+  assert.equal(threshold.type, 'swordsman', 'The threshold receipt uses the old eligible pool');
+  assert.equal(state.barracks.firstLancerPending, true);
+  const restored = restoreCampaignState(campaignSnapshot(state), NOW);
+  const result = commands.recruitFighter(restored, { now: NOW, random: () => { throw new Error('guarantee must not roll'); } });
+  assert.equal(result.type, 'lancer');
+  assert.equal(restored.barracks.firstLancerPending, false);
+  assert.equal(restored.economy.slaves, 1);
+});
+
+test('human total 10 permits Lancer recruitment before Barracks II', () => {
+  const state = fresh(); state.recruitment.received.swordsman = 140;
+  assert.equal(state.barracks.level, 1);
+  assert.equal(commands.recruitFighter(state, { now: NOW, random: () => .99 }).type, 'lancer');
+  assert.equal(state.barracks.firstLancerPending, false);
 });
 
 test('pool command rejects unavailable factions and commits an unlocked selection', () => {
@@ -83,13 +105,14 @@ test('pool command rejects unavailable factions and commits an unlocked selectio
   assert.equal(commands.recruitFighter(state, { now: NOW, random: () => 0.8 }).type, 'pantherRider');
 });
 
-test('campaign recruitment passes the actual Barracks tier through new elven unlocks', () => {
-  for (const [tier, expected] of [[3, 'elfHealer'], [4, 'unicorn']]) {
+test('campaign recruitment can award Unicorn at either unlocked Elven building tier', () => {
+  for (const [tier, expected] of [[3, 'unicorn'], [4, 'unicorn']]) {
     const state = fresh();
     state.barracks.level = tier;
     state.recruitmentPool = 'elves';
     state.recruitment.received.pantherRider = 50;
     state.recruitment.received.elfArcher = 15;
+    state.recruitment.received.elfHealer = 5;
     const result = commands.recruitFighter(state, { now: NOW, random: () => .99 });
     assert.equal(result.ok, true);
     assert.equal(result.type, expected);
@@ -111,6 +134,7 @@ test('recruitment uses the completed Barracks IV tier when an upgrade finishes a
   state.recruitmentPool = 'elves';
   state.recruitment.received.pantherRider = 50;
   state.recruitment.received.elfArcher = 15;
+  state.recruitment.received.elfHealer = 5;
   const result = commands.recruitFighter(state, { now: readyAt, random: () => .99 });
   assert.equal(result.ok, true);
   assert.equal(result.type, 'unicorn');
@@ -243,6 +267,23 @@ test('barracks purchase, natural completion and paid finish are separate atomic 
   const finish = commands.finishCampaignBarracksUpgrade(paid, NOW + 1_800_000);
   assert.equal(finish.cost, 50); assert.equal(paid.gold, 750);
   unchanged(paid, () => commands.finishCampaignBarracksUpgrade(paid, NOW + 1_800_000), 'not-upgrading');
+});
+
+test('Barracks III command uses the human level total and persists one atomic purchase', () => {
+  const state = fresh(); state.gold = 2000; state.barracks.level = 2;
+  state.units = [{ id: 1, type: 'swordsman', level: 100, col: 2, row: 0 }];
+  Object.assign(state.recruitment.received, { swordsman: 225, archer: 14 });
+  unchanged(state, () => commands.startCampaignBarracksUpgrade(state, NOW), 'locked');
+  state.recruitment.received.archer = 15;
+  const before = clone(state);
+  assert.equal(commands.startCampaignBarracksUpgrade(state, NOW).cost, 2000);
+  assert.equal(state.gold, 0);
+  assert.equal(state.barracks.upgradeReadyAt, NOW + 10800000);
+  assert.deepEqual(state.units, before.units);
+  assert.deepEqual(state.recruitment, before.recruitment);
+  const restored = restoreCampaignState(campaignSnapshot(state), NOW + 1);
+  assert.equal(restored.barracks.upgradeReadyAt, state.barracks.upgradeReadyAt);
+  unchanged(restored, () => commands.startCampaignBarracksUpgrade(restored, NOW + 1), 'upgrading');
 });
 
 test('farm harvesting preserves automatic growth on early collection or numeric overflow', () => {

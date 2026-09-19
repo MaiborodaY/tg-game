@@ -8,22 +8,22 @@ import { getSceneAssetPlan } from '../scene-assets.ts';
 import { UNICORN_ASSETS } from '../unicorn-art.ts';
 
 const options = { pool: 'elves', elvesUnlocked: true, barracksLevel: 4 };
-const trained = (rider = 50, archer = 15) => createRecruitment({ version: 2, received: { pantherRider: rider, elfArcher: archer } });
+const trained = (rider = 50, archer = 15, healer = 5) => createRecruitment({ version: 2, received: { pantherRider: rider, elfArcher: archer, elfHealer: healer } });
 const allCells = Array.from({length: 15}, (_, i) => `${i % 5}:${Math.floor(i / 5)}`);
 const fighter = (id, type, col, row = 0, level = 1) => ({id, type, col, row, level});
 const dt = 1 / 60;
 
-test('Unicorn requires both recruitment level five and completed Barracks IV, with equal eligible odds', () => {
-  for (const [rider, tier, available] of [[49,4,false],[50,3,false],[50,4,true]]) {
+test('Unicorn requires Elven total 10 at Barracks III or IV, with equal eligible odds', () => {
+  for (const [rider, tier, available] of [[49,4,false],[50,3,true],[50,4,true]]) {
     const state = trained(rider);
     assert.equal(getElfRecruitUnlock(state,'unicorn',tier).available,available);
-    assert.equal(getRecruitChances(true,'elves',state,tier).some(c=>c.type==='unicorn'),available);
+    assert.equal(getRecruitChances('elves',state,tier).some(c=>c.type==='unicorn'),available);
   }
-  assert.deepEqual(getRecruitChances(true,'elves',trained(),4),
+  assert.deepEqual(getRecruitChances('elves',trained(),4),
     ['pantherRider','elfArcher','elfHealer','unicorn'].map(type=>({type,chance:.25})));
-  assert.deepEqual(getRecruitChances(true,'elves',trained(50,0),4),
-    ['pantherRider','elfArcher','unicorn'].map(type=>({type,chance:1/3})));
-  assert.equal(getRecruitChances(true,'elves',trained()).some(c=>c.type==='unicorn'),false,'Legacy callers cannot assume Barracks IV');
+  assert.deepEqual(getRecruitChances('elves',trained(50,0),4),
+    ['pantherRider','elfArcher','elfHealer'].map(type=>({type,chance:1/3})));
+  assert.equal(getRecruitChances('elves',trained()).some(c=>c.type==='unicorn'),true,'Unicorn no longer requires Barracks IV');
   for(const [roll,type] of [[0,'pantherRider'],[.25-1e-10,'pantherRider'],[.25,'elfArcher'],[.5,'elfHealer'],[.75-1e-10,'elfHealer'],[.75,'unicorn'],[1-1e-10,'unicorn']])
     assert.equal(receiveRecruit(trained(),()=>roll,options).type,type);
   const threshold=trained(49);
@@ -38,7 +38,7 @@ test('Unicorn requires both recruitment level five and completed Barracks IV, wi
 
 test('Unicorn receipts start independently in old saves and Connect preserves levels beyond 100', () => {
   for(const version of [1,2]) {
-    const state=createRecruitment({version,received:{swordsman:100,pantherRider:50,elfArcher:15}});
+    const state=createRecruitment({version,received:{swordsman:100,pantherRider:50,elfArcher:15,elfHealer:5}});
     assert.equal(state.received.unicorn,0); assert.equal(state.legacyTrainingCredit.unicorn,0);
     for(let i=0;i<5;i++) assert.equal(receiveRecruit(state,()=>.99,options).level,i===4?2:1);
     assert.equal(state.received.pantherRider,50); assert.equal(state.received.unicorn,5);

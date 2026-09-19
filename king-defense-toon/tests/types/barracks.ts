@@ -12,7 +12,7 @@ export function verifyBarracksContracts(saved: unknown): void {
   const readyAt: number | null = barracks.upgradeReadyAt;
   const status: BarracksUpgradeStatus = getBarracksUpgrade(barracks, recruitment).status;
   const targetLevel: BarracksUpgradeTarget | null = getBarracksUpgrade(barracks, recruitment).targetLevel;
-  const requiredRecruitType: UnitType = getBarracksUpgrade(barracks, recruitment).requiredRecruitType;
+  const requiredRecruitTypes: readonly UnitType[] = getBarracksUpgrade(barracks, recruitment).requiredRecruitTypes;
   const duration: number | undefined = getBarracksUpgradeDefinition(level)?.durationMs;
   if (result.ok) {
     const reason: null = result.reason;
@@ -27,6 +27,8 @@ export function verifyBarracksContracts(saved: unknown): void {
   barracks.level = 5;
   // @ts-expect-error Shared transition settings must not be mutated.
   BARRACKS_UPGRADES[3].cost = 1;
+  // @ts-expect-error Requirement participants must not change between status and purchase.
+  BARRACKS_UPGRADES[3].requiredRecruitTypes.push('elfArcher');
   // @ts-expect-error Maximum level has no next upgrade.
   const requiredTarget: BarracksUpgradeTarget = getBarracksUpgrade(barracks, recruitment).targetLevel;
   // @ts-expect-error A construction timer can be absent.
@@ -45,5 +47,5 @@ export function verifyBarracksContracts(saved: unknown): void {
   const inconsistent: BarracksActionResult = { ok: true, gold: 0, reason: 'locked', cost: 200 };
   // @ts-expect-error A failed operation never deducts an action cost.
   const chargedFailure: BarracksActionResult = { ok: false, gold: 200, reason: 'locked', cost: 200 };
-  void [level, readyAt, status, targetLevel, requiredRecruitType, duration, requiredTarget, timestamp, inconsistent, chargedFailure];
+  void [level, readyAt, status, targetLevel, requiredRecruitTypes, duration, requiredTarget, timestamp, inconsistent, chargedFailure];
 }
