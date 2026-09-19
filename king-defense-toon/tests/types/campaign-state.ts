@@ -7,7 +7,7 @@ export function checkCampaignStateContracts(raw: unknown, now: number): void {
   const restored: CampaignState = restoreCampaignState(raw, now);
   const snapshot: CampaignSnapshot = campaignSnapshot(restored);
   const next: number = allocateCampaignUnitId(state);
-  const version: 3 = snapshot.saveSchemaVersion;
+  const version: 4 = snapshot.saveSchemaVersion;
   resetCampaignState(state, now);
   // @ts-expect-error Every new campaign needs its explicit clock.
   createCampaignState();
@@ -20,6 +20,6 @@ export function checkCampaignStateContracts(raw: unknown, now: number): void {
   // @ts-expect-error Receipts are numeric amounts, not browser display strings.
   state.offlineRewards.forgeRefund = '5';
   // @ts-expect-error Snapshots cannot accidentally omit the consumed-ID cursor.
-  const incomplete: CampaignSnapshot = { saveSchemaVersion: 3, campaignVersion: snapshot.campaignVersion };
+  const incomplete: CampaignSnapshot = { saveSchemaVersion: 4, campaignVersion: snapshot.campaignVersion };
   void [next, version, unchecked, incomplete];
 }

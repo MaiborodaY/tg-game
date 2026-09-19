@@ -1,6 +1,7 @@
 import type { DungeonRun } from './dungeon-run.ts';
 import type { ForgeState } from './forge.ts';
-import { getForgedUnitStats } from './forge.ts';
+import { getArmyUnitStats, NO_FOOD } from './army-food.ts';
+import type { FoodBonuses } from './army-food.ts';
 import { UNIT_TYPE_BY_ID } from './units.ts';
 
 /** Controls for the shared battlefield; no second canvas or animation loop. */
@@ -30,7 +31,7 @@ export function createDungeonRunUI({ battlefield, armyDock, onExit, onStart, onS
   startButton.addEventListener('click', onStart);
   speedButton.addEventListener('click', onSpeed);
   return {
-    refresh(run: DungeonRun | null, forge: Readonly<ForgeState>, ready: boolean, paused: boolean, speed: number) {
+    refresh(run: DungeonRun | null, forge: Readonly<ForgeState>, ready: boolean, paused: boolean, speed: number, food: FoodBonuses = NO_FOOD) {
       root.hidden = !run;
       startButton.hidden = !run || run.battle?.phase === 'running';
       if (!run) return;
@@ -42,7 +43,7 @@ export function createDungeonRunUI({ battlefield, armyDock, onExit, onStart, onS
       startButton.disabled = !ready || !run.units.length;
       write(startButton, battle ? 'Prepare again' : 'Start');
       const selected = run.units.find(unit => unit.id === run.selectedId);
-      const stats = selected ? getForgedUnitStats(selected.type, selected.level, forge) : null;
+      const stats = selected ? getArmyUnitStats(selected.type, selected.level, forge, food) : null;
       write(status, !ready ? 'Loading cave…' : paused ? 'Paused'
         : battle?.phase === 'victory' ? 'Wave 1 cleared! More waves and rewards are coming later.'
         : battle?.phase === 'defeat' ? 'Defeated. Your main army is safe.'

@@ -162,6 +162,10 @@ export type ProjectileOf<T extends BattleProjectileType> = T extends BattleProje
 export type BattleProjectile = { [T in BattleProjectileType]: ProjectileOf<T> }[BattleProjectileType];
 
 export interface Battle {
+  food?: {
+    bonuses: Readonly<{ health: number; attack: number; attackSpeed: number }>;
+    bases: { id: string; hp: number; damage: number; baseDamage: number; heal: number; attackSpeed: number }[];
+  };
   phase: BattlePhase;
   elapsed: number;
   stepRemainder: number;

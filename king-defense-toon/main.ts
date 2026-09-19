@@ -28,7 +28,12 @@ import { RECRUIT_COST, RECRUIT_LEVEL_CAP, HUMAN_RECRUITS, getRecruitProgress, ge
 import { ELF_RECRUITS, isRecruitmentPoolUnlocked, canRecruitFromPool } from './recruitment-pools.ts';
 
 import { renderElfRecruitment } from './recruitment-pool-ui.ts';
-import { getForgedUnitStats, FORGE_UPGRADES } from './forge.ts';
+import { FORGE_UPGRADES } from './forge.ts';
+import { applyBattleFood, getArmyUnitStats, NO_FOOD } from './army-food.ts';
+import type { FoodBonuses } from './army-food.ts';
+import { kitchenBonuses } from './kitchen.ts';
+import { createKitchenUI } from './kitchen-ui.ts';
+import type { KitchenUI } from './kitchen-ui.ts';
 import { createForgeUI } from './forge-ui.ts';
 import type { ForgeUI } from './forge-ui.ts';
 import { CROPS } from './farm.ts';
@@ -70,6 +75,7 @@ import './style.css';
 import './hero.css';
 import './farm.css';
 import './connect.css';
+import './kitchen.css';
 
 interface GameBattle extends Battle {
   campaignRewards: BattleRewardReceipt;
@@ -122,6 +128,18 @@ let barracksSelectedId: number | null = null;
 
 let forgeUI: ForgeUI | null = null;
 let farmUI: FarmUI | null = null;
+let kitchenUI: KitchenUI | null = null;
+let foodBonuses: FoodBonuses = NO_FOOD;
+
+function syncFood() {
+  const next = kitchenBonuses(campaign.kitchen, Date.now());
+  const changed = next.health !== foodBonuses.health || next.attack !== foodBonuses.attack
+    || next.attackSpeed !== foodBonuses.attackSpeed;
+  foodBonuses = next;
+  if (battle) applyBattleFood(battle, foodBonuses);
+  if (dungeonRun?.battle) applyBattleFood(dungeonRun.battle, foodBonuses);
+  return changed;
+}
 let capitolUI: CapitolUI | null = null;
 const unitStatFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
@@ -735,6 +753,7 @@ function refreshEconomyContent() {
   refreshRecruitment();
   forgeUI?.refresh();
   farmUI?.refresh();
+  if (overlay?.id === 'kitchen-panel') kitchenUI?.refresh();
   capitolUI?.refresh();
   const captureSeconds = Math.ceil(campaign.economy.captureCooldown);
   const captureLimit = capturePityKills(campaign.economy);
@@ -772,7 +791,7 @@ function tickEconomy(now = performance.now()) {
   const { gold: earned, slaves, barracksFinished } = result;
   economyUnsaved += elapsed;
   if (earned || slaves || barracksFinished || economyUnsaved >= 15) { save(); economyUnsaved = 0; }
-  if (earned || slaves || barracksFinished) refresh(); else refreshEconomy();
+  if (syncFood() || earned || slaves || barracksFinished) refresh(); else refreshEconomy();
   if (overlay?.id === 'market-info-panel') refreshBarracksUpgrade();
   if (slaves) showMarketArrival(slaves);
 }
@@ -856,7 +875,7 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
 });
 
 function refreshDungeonRun() {
-  dungeonRunUI.refresh(dungeonRun, campaign.forge, !isRecovering(), paused, battleSpeed);
+  dungeonRunUI.refresh(dungeonRun, campaign.forge, !isRecovering(), paused, battleSpeed, foodBonuses);
   const active = dungeonRun?.battle;
   byId('battle').dataset.phase = active?.phase ?? 'formation';
   byId('battle').setAttribute('aria-label', `Goblin Cave. Wave 1. ${active ? `${active.kills} of ${active.total} guards defeated.` : 'Prepare your army.'}`);
@@ -959,6 +978,33 @@ farmUI = createFarmUI({ root: byId('farm-crops'), getFarm: () => campaign.farm,
     save(); refresh();
   } });
 
+kitchenUI = createKitchenUI({ root: byId('kitchen-content'), getKitchen: () => campaign.kitchen,
+  getFarm: () => campaign.farm, canUse: canUseKitchen, onCook: (recipe, quantity) => {
+    if (!canUseKitchen()) return false;
+    tickEconomy();
+    if (!canUseKitchen()) return false;
+    const result = commands.cookCampaignMeals(campaign, recipe, quantity, Date.now());
+    if (!result.ok) { byId('kitchen-feedback').textContent = 'Unable to cook. Check ingredients and quantity.'; return false; }
+    // Saving retries the resulting snapshot, never the ingredient-consuming command.
+    save(); refresh();
+    byId('kitchen-feedback').textContent = `${quantity} ${quantity === 1 ? 'portion' : 'portions'} cooked · +${quantity} cooking XP`;
+    return true;
+  } });
+
+function canUseKitchen() {
+  return economyActive && !isRecovering() && overlay?.id === 'kitchen-panel'
+    && !!byId('offline-rewards-panel').hidden;
+}
+byId('open-kitchen').addEventListener('click', () => {
+  if (isRecovering() || !byId('offline-rewards-panel').hidden) return;
+  // Close returns focus to a visible game control, Back returns to the building entry.
+  setOverlay('kitchen-panel', byId('open-buildings')); refresh();
+});
+byId('kitchen-back').addEventListener('click', () => {
+  setOverlay('buildings-panel', byId('open-buildings')); refresh();
+  byId('open-kitchen').focus({ preventScroll: true });
+});
+
 for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-profile', 'profile-panel'], ['open-barracks', 'barracks-panel'], ['open-market-info', 'market-info-panel'], ['open-hero', 'hero-panel']] as const) {
   byId(button).addEventListener('click', () => {
     if (panel === 'barracks-panel') {
@@ -970,7 +1016,7 @@ for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-pro
     setOverlay(panel, byId(button)); refresh();
   });
 }
-for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks-panel', 'market-info-panel', 'hero-panel'] as const) {
+for (const panel of ['buildings-panel', 'kitchen-panel', 'profile-panel', 'unit-panel', 'barracks-panel', 'market-info-panel', 'hero-panel'] as const) {
   byId(panel).addEventListener('click', event => {
     if (event.target === byId(panel) || (event.target as Element).closest<HTMLElement>('[data-close-overlay]')) {
       closeOverlay();
@@ -1131,6 +1177,7 @@ function refresh() {
 }
 
 function refreshContent() {
+  syncFood();
   if (!isCampaignScreen()) {
     telegram.setGameInProgress(hasActiveBattle());
     levelMusic.setLevel(isDungeonBattleScreen() ? 1 : getWaveDefinition(battle?.waveNumber ?? nextWaveNumber()).levelNumber);
@@ -1207,7 +1254,7 @@ function refreshContent() {
       : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Barracks II allows 9 central tiles; III and IV each allow one more side tile to buy.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
   } else if (selected) {
     const type = types[selected.type];
-    const stats = getForgedUnitStats(selected.type, selected.level, campaign.forge);
+    const stats = getArmyUnitStats(selected.type, selected.level, campaign.forge, foodBonuses);
     const hp = unitStatFormat.format(stats.hp), effect = unitStatFormat.format(isHealingUnit(selected.type) ? stats.heal : stats.damage);
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && campaign.units.length === 1;
@@ -1299,8 +1346,8 @@ function connectPanelMarkup(inline = false) {
     : campaign.units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
   const result = getConnectResult(campaign.units, campaign.reserve, recipient, donors, { minArmyUnits: battle ? 1 : 0 });
   const level = result.ok ? result.recipient.level : fighter.level;
-  const stats = getForgedUnitStats(fighter.type, level, campaign.forge);
-  const before = getForgedUnitStats(fighter.type, fighter.level, campaign.forge);
+  const stats = getArmyUnitStats(fighter.type, level, campaign.forge, foodBonuses);
+  const before = getArmyUnitStats(fighter.type, fighter.level, campaign.forge, foodBonuses);
   const statText = (old: number, next: number) => unitStatFormat.format(old) + (next !== old ? ` → ${unitStatFormat.format(next)}` : '');
   const message = !result.ok && result.reason === 'army-minimum' ? 'Keep one fighter in Army during a wave.'
     : !result.ok && result.reason === 'level-overflow' ? 'Combined level is too large to save safely.'
@@ -1612,7 +1659,7 @@ function refreshBarracks() {
     byId('barracks-title').textContent = 'Connect';
     refreshConnectPanel(byId('barracks-detail'));
   } else if (selected) {
-    const stats = getForgedUnitStats(selected.type, selected.level, campaign.forge);
+    const stats = getArmyUnitStats(selected.type, selected.level, campaign.forge, foodBonuses);
     const portrait = scene?.getUnitArt(selected.type, selected.level);
     const lastFighter = campaign.units.length + campaign.reserve.length <= 1;
     const unavailable = !canEditFormation() || transforming;
@@ -2107,6 +2154,7 @@ function frame(timestamp: number) {
   if (realDelta === null) { resumeFrames(); return; }
   combatProfiler?.beginFrame(timestamp);
   try {
+    if (syncFood()) refresh();
     const dt = Math.min(realDelta, MAX_REAL_FRAME_DELTA);
     if (isDungeonBattleScreen()) {
       // A single RAF dispatches one simulation. The campaign battle/countdown is

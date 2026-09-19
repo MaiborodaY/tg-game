@@ -96,6 +96,12 @@ No server, D1 migration, payment handling, or publication is part of these stage
   preserving earlier backups. Schema-2 clients reject it instead of rewriting
   automatic production as manual planting. See `AI_DEVELOPMENT.md` for farm
   progression, caps and the one-time legacy planting migration.
+- The Kitchen update advances saves to schema 4, backing up earlier raw saves
+  under `brotd-infinity:campaign:v2:backup:before-schema-4` and preserving previous
+  backups. Ingredient debit, batch cooking XP and absolute food timers are one
+  campaign command. Schema-3 clients must refuse this save. Food timers currently
+  trust the client clock; server authority must validate stock, recipe unlocks,
+  timestamps and request deduplication before accepting purchases/competition.
 - `campaign-rewards.ts` records cumulative paid kills/gold and one outcome per
   running battle. Repeated updates cannot reroll captures or pay XP/first-clear
   gold twice. First-clear markers stay durable; ordinary replay rewards remain

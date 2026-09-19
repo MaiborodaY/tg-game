@@ -1,11 +1,12 @@
 import { migrateCampaignSave } from './progression.ts';
 import { UnsupportedSaveVersionError } from './save-version.ts';
 import { CAMPAIGN_VERSION } from './waves.ts';
+import { createKitchen } from './kitchen.ts';
 import { isUnitIdCursor, restoreNextUnitId } from './campaign-roster.ts';
 
 // Save shape and campaign wave numbering evolve independently.
-// Schema 3 changes farm semantics: manual-farm clients must not rewrite automatic beds.
-export const SAVE_SCHEMA_VERSION = 3;
+// Older clients must not drop paid food and its cooking progress when saving.
+export const SAVE_SCHEMA_VERSION = 4;
 
 export interface DecodedCampaignSave extends Record<string, unknown> {
   saveSchemaVersion: typeof SAVE_SCHEMA_VERSION;
@@ -47,6 +48,7 @@ export function decodeCampaignSave(value: unknown): DecodedCampaignSave {
   if (typeof value.saveSchemaVersion === 'number' && value.saveSchemaVersion >= 2 && !isUnitIdCursor(value.nextUnitId)) {
     throw new Error('Invalid saved campaign fighter ID cursor');
   }
+  createKitchen(value.kitchen);
   const saved = migrateCampaignSave(value);
   if (!saved || typeof saved.gold !== 'number' || !Number.isFinite(saved.gold) || saved.gold < 0) {
     throw new Error('Invalid saved campaign');
