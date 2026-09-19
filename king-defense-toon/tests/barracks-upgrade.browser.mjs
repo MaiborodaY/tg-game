@@ -24,7 +24,7 @@ window.barracksCheck = {
       prepareThird: () => {
         campaign.gold = 5000;
         campaign.barracks = createBarracks({ level: 2 });
-        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
+        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5, lancer: 49 } });
         campaign.units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
         campaign.reserve = [{ id: 2, type: 'lancer', level: 4 }];
         campaign.nextUnitId = 3;
@@ -101,7 +101,7 @@ try {
     assert.equal(await page.locator('#market-info-panel [data-recruit-type]').count(), 4, 'Info always contains all four fighter types');
     assert.equal(await lancerInfo.isVisible(), true, 'locked Lancer is discoverable in Info');
     assert.match(await lancerInfo.getAttribute('class'), /is-locked/);
-    assert.equal(await lancerInfo.locator('progress').count(), 0, 'locked Lancer must not advertise recruitment progress');
+    assert.equal(await lancerInfo.locator('.mercenary-progress').count(), 0, 'locked Lancer must not advertise recruitment progress');
     await page.locator('#mercenaries-view-upgrade').click();
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true, 'merged personal level must not unlock');
@@ -151,7 +151,7 @@ try {
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
     await page.locator('#barracks-finish-upgrade').evaluate(button => button.click());
     assert.equal((await state()).gold, beforeFinish.gold - 50, 'repeat finish click cannot charge twice');
-    assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1, 'unlocked Lancer shows normal training progress');
+    assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1, 'unlocked Lancer shows normal training progress');
     await assertEqualUnlockedOdds(page);
     assert.doesNotMatch(await lancerInfo.innerText(), /Locked/);
     await fits();
@@ -176,7 +176,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false, 'consumed guarantee leaves a normal recruitment row');
-    assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1);
+    assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1);
     await assertEqualUnlockedOdds(page);
     await fits();
     await screenshot('recruited-info');
@@ -206,7 +206,7 @@ try {
     assert.equal((await state()).units[0].level, 5, 'personal Lancer reaches level 5 through Connect');
     assert.equal((await state()).recruitment.received.lancer, 49, 'Connect cannot grant recruitment experience');
     await upgrade();
-    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Lancer.*4 \/ 5/s);
+    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Human recruits.*14 \/ 15/s);
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true);
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
@@ -305,7 +305,7 @@ try {
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await page.locator('#open-market-info').click();
   await assertEqualUnlockedOdds(page);
-  assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1);
+  assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1);
   assert.equal(await page.locator('#recruitment-guarantee').isVisible(), level === 1);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());

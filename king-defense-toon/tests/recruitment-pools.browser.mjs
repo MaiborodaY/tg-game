@@ -244,7 +244,7 @@ try {
       const riderCard = page.locator('[data-elf-recruit="pantherRider"]');
       assert.equal(await page.locator('#recruitment-chance').innerText(), '100% each');
       assert.match(await riderCard.innerText(), /Lv\. 1/);
-      assert.match(await riderCard.innerText(), /5 more → Lv\. 2/);
+      assert.match(await riderCard.innerText(), /0\/5\s+→ Lv\. 2/);
       assert.match(await page.locator('[data-elf-recruit="unicorn"]').getAttribute('class'), /is-locked/);
       assert.equal(await page.locator('[data-elf-recruit="unicorn"]').evaluate(card => card.classList.contains('is-locked')), true);
       assert.match(await page.locator('[data-elf-recruit="unicorn"]').innerText(), /Mercenaries IV.*Panther Rider Lv\. 5/s);
@@ -259,7 +259,7 @@ try {
 
       // Focus wraps between the first and last visible menu controls.
       await page.locator('#mercenaries-view-upgrade').focus(); await page.keyboard.press('Tab');
-      assert.equal(await page.locator('#market-info-panel [data-close-overlay]').evaluate(node => node === document.activeElement), true);
+      assert.equal(await page.locator('#mercenaries-help').evaluate(node => node === document.activeElement), true);
       await page.keyboard.press('Shift+Tab');
       assert.equal(await page.locator('#mercenaries-view-upgrade').evaluate(node => node === document.activeElement), true);
       await close(page);
@@ -341,7 +341,7 @@ try {
       await page.reload(); await ready(page);
       await open(page);
       assert.equal(await pool(page).inputValue(), 'elves');
-      assert.match(await riderCard.innerText(), /2 more → Lv\. 2/);
+      assert.match(await riderCard.innerText(), /3\/5\s+→ Lv\. 2/);
       await pool(page).selectOption('humans');
       assert.equal((await state(page)).recruitmentPool, 'humans');
       assert.equal(await page.locator('[data-elf-recruit]').count(), 0);
@@ -378,7 +378,7 @@ try {
       await open(page);
       const archerCard = page.locator('[data-elf-recruit="elfArcher"]');
       assert.equal(await page.locator('#recruitment-chance').innerText(), '50% each');
-      assert.match(await archerCard.innerText(), /1 more → Lv\. 2/s);
+      assert.match(await archerCard.innerText(), /4\/5\s+→ Lv\. 2/s);
       await close(page);
       await page.evaluate(() => { Math.random = () => .75; });
       const recruited = await recruit(page);
@@ -390,7 +390,7 @@ try {
       assert.equal((await state(page)).barracks.firstLancerPending, true);
       assert.equal((await state(page)).reserve.find(unit => unit.id === 4).level, 50, 'Older units retain personal levels');
       await open(page);
-      assert.match(await archerCard.innerText(), /Lv\. 2.*10 more/s);
+      assert.match(await archerCard.innerText(), /Lv\. 2.*0\/10\s+→ Lv\. 3/s);
       await fits(page); await close(page);
       await unitDetails(page, 4);
       assert.match(await page.locator('#barracks-detail').innerText(), /Elven Archer.*Lv\. 50/s);
@@ -441,7 +441,7 @@ try {
       await open(page);
       const archerCard = page.locator('[data-elf-recruit="elfHealer"]');
       assert.equal(await page.locator('#recruitment-chance').innerText(), '33.3% each');
-      assert.match(await archerCard.innerText(), /1 more → Lv\. 2/s);
+      assert.match(await archerCard.innerText(), /4\/5\s+→ Lv\. 2/s);
       await close(page);
       await page.evaluate(() => { Math.random = () => .75; });
       const recruited = await recruit(page);
@@ -453,7 +453,7 @@ try {
       assert.equal((await state(page)).barracks.firstLancerPending, true);
       assert.equal((await state(page)).reserve.find(unit => unit.id === 4).level, 50, 'Older units retain personal levels');
       await open(page);
-      assert.match(await archerCard.innerText(), /Lv\. 2.*10 more/s);
+      assert.match(await archerCard.innerText(), /Lv\. 2.*0\/10\s+→ Lv\. 3/s);
       await fits(page); await close(page);
       await unitDetails(page, 4);
       assert.match(await page.locator('#barracks-detail').innerText(), /Elven Healer.*Lv\. 50/s);
@@ -576,7 +576,7 @@ try {
     await open(page);
     const rider = page.locator('[data-elf-recruit="pantherRider"]'), archer = page.locator('[data-elf-recruit="elfArcher"]');
     assert.equal(await page.locator('#recruitment-chance').innerText(), '100% each');
-    assert.match(await rider.innerText(), /1 more → Lv\. 3/s);
+    assert.match(await rider.innerText(), /9\/10\s+→ Lv\. 3/s);
     assert.equal(await archer.evaluate(card => card.classList.contains('is-locked')), true);
     assert.match(await archer.innerText(), /Panther Rider Lv\. 3/s);
     await close(page);
@@ -591,7 +591,7 @@ try {
     assert.equal((await recruit(page)).type, 'elfArcher');
     await page.reload(); await ready(page); await open(page);
     assert.equal(await page.locator('#recruitment-chance').innerText(), '50% each');
-    assert.match(await archer.innerText(), /4 more/s);
+    assert.match(await archer.innerText(), /1\/5\s+→ Lv\. 2/s);
     await fits(page);
   });
 
@@ -610,7 +610,7 @@ try {
     await fits(page);await page.screenshot({path:fileURLToPath(new URL('elf-healer-recruitment-320.png',output))});
     await close(page);assert.equal((await recruit(page)).type,'elfHealer');
     await page.reload();await ready(page);await open(page);
-    assert.match(await healer.innerText(),/4 more/);await fits(page);
+    assert.match(await healer.innerText(), /1\/5\s+→ Lv\. 2/);await fits(page);
   },568);
 
   const centralCells = Array.from({ length: 9 }, (_, index) => `${index % 3 + 1}:${Math.floor(index / 3)}`);

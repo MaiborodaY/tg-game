@@ -5,6 +5,8 @@
   contracts change; distinguish implemented behavior from planned work.
 - For artwork, icons and menu mockups, follow its **Visual style and mobile UI**
   section and inspect the current in-game reference assets before generating art.
+  Use readable, concise minimalism, existing navigation and shared stat icons.
+  If a mockup is requested first, get that design reviewed before runtime edits.
 
 - Regular-unit additions follow `UNIT_INTEGRATION.md`: shared gameplay and
   animation rules, with final verification batched across the requested units.

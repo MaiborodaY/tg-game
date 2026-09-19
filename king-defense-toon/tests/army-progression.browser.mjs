@@ -203,6 +203,7 @@ try {
 
     await scenario('barracks-side-capacity', viewport, fixture({
       barracks: { level: 2, firstLancerPending: false },
+      recruitment: { version: 2, received: { swordsman: 225, archer: 15 } },
       progression: { unlockedCells: central, firstClears: [1] },
     }), async (page, screenshot) => {
       await tapCell(page, 4, 2);

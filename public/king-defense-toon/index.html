@@ -7,11 +7,11 @@
     <meta name="description" content="BroTD Infinity: grow your army and paladin hero, and defend your castle against goblins and undead." />
     <title>BroTD Infinity</title>
     <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
-    <script type="module" crossorigin src="./assets/game-DHANir4t.js"></script>
+    <script type="module" crossorigin src="./assets/game-D3739gVK.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/profiler-panel-yPvRC0gD.js">
     <link rel="stylesheet" crossorigin href="./assets/profiler-panel-3VGtY1fx.css">
-    <link rel="stylesheet" crossorigin href="./assets/game-G8dyL3g9.css">
-  <meta name="brotd-build" content="260919-031904">
+    <link rel="stylesheet" crossorigin href="./assets/game-Cd4oXDxU.css">
+  <meta name="brotd-build" content="260919-032928">
 </head>
   <body>
     <main id="app" aria-label="BroTD Infinity formation">
@@ -77,13 +77,14 @@
       <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-label="Mercenaries" hidden></section>
       <section id="buildings-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="buildings-title" hidden>
         <div class="menu-card">
-          <header class="menu-heading"><h2 id="buildings-title">Buildings</h2><button id="open-kitchen" class="battle-button buildings-kitchen" type="button" aria-haspopup="dialog" aria-controls="kitchen-panel">Kitchen ›</button><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close buildings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+          <header class="menu-heading"><h2 id="buildings-title">Buildings</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close buildings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
           <div class="building-wallet"><span><span class="coin-icon" aria-hidden="true"></span><b id="building-gold">125</b> gold</span><span><span class="slave-icon" aria-hidden="true"></span><b id="building-slaves">0</b> slaves</span></div>
           <div id="buildings-tabs" class="building-tabs" role="tablist" aria-label="Buildings">
             <button id="tab-treasury" class="battle-button building-tab" type="button" role="tab" data-building="treasury" aria-controls="treasury-building" aria-selected="true" tabindex="0">Treasury</button>
             <button id="tab-market" class="battle-button building-tab" type="button" role="tab" data-building="market" aria-controls="market-building" aria-selected="false" tabindex="-1">Market</button>
             <button id="tab-forge" class="battle-button building-tab" type="button" role="tab" data-building="forge" aria-controls="forge-building" aria-selected="false" tabindex="-1">Forge</button>
             <button id="tab-farm" class="battle-button building-tab" type="button" role="tab" data-building="farm" aria-controls="farm-building" aria-selected="false" tabindex="-1">Farm</button>
+            <button id="tab-kitchen" class="battle-button building-tab" type="button" role="tab" data-building="kitchen" aria-controls="kitchen-building" aria-selected="false" tabindex="-1">Kitchen</button>
             <button id="tab-capitol" class="battle-button building-tab" type="button" role="tab" data-building="capitol" aria-controls="capitol-building" aria-selected="false" tabindex="-1">Capitol</button>
           </div>
           <article id="treasury-building" class="building-card" role="tabpanel" aria-labelledby="tab-treasury">
@@ -130,6 +131,9 @@
             <p class="building-note farm-note">Grows offline · Stops at the limit<br>Collected crops stay in your stock.</p>
             <p id="farm-feedback" class="farm-feedback" role="status" aria-live="polite">No planting needed. Collect whenever you like.</p>
           </article>
+          <article id="kitchen-building" class="kitchen-card" role="tabpanel" aria-labelledby="tab-kitchen" hidden>
+            <div id="kitchen-content"></div>
+          </article>
           <article id="capitol-building" class="building-card capitol-card" role="tabpanel" aria-labelledby="tab-capitol" hidden>
             <div class="building-overview capitol-overview">
               <div class="building-art capitol-art" aria-hidden="true"><img src="./assets/castle-blue-DQbxjTyH.png" alt="" width="320" height="256" loading="lazy" /></div>
@@ -139,13 +143,6 @@
             <p class="building-note">Fires at nearby enemies.</p>
             <p id="capitol-feedback" class="capitol-feedback" role="status" aria-live="polite">Changes apply next battle.</p>
           </article>
-        </div>
-      </section>
-      <section id="kitchen-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="kitchen-title" hidden>
-        <div class="menu-card kitchen-card">
-          <header class="menu-heading"><button id="kitchen-back" class="battle-button kitchen-back" type="button" aria-label="Back to buildings">‹</button><h2 id="kitchen-title">Kitchen</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close kitchen"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3"/></svg></button></header>
-          <div id="kitchen-content"></div>
-          <p id="kitchen-feedback" class="kitchen-feedback" role="status" aria-live="polite">Cook food for your army.</p>
         </div>
       </section>
       <section id="unit-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="unit-panel-title" hidden>
@@ -182,7 +179,7 @@
           <div class="music-volume-row"><label for="music-volume">Volume</label><input id="music-volume" type="range" min="0" max="100" step="1" value="5" aria-label="Music volume" /><output id="music-volume-label" for="music-volume">5%</output></div>
           <div class="setting-row reset-row"><div><h3>Start over</h3><p>Reset your army and progress</p></div><button id="reset" class="battle-button danger-button" type="button" aria-label="Reset run">Reset run</button></div>
           <p id="reset-confirmation" class="reset-confirmation" role="status" hidden>Tap reset again to start over. Army, gold, buildings and slaves will be reset.</p>
-          <p id="profile-version" class="profile-version" aria-label="Game version"><span>Version 260919-031904</span><time datetime="2026-09-19T03:19:04.965Z">19.09.2026 · 03:19:04 UTC</time></p>
+          <p id="profile-version" class="profile-version" aria-label="Game version"><span>Version 260919-032928</span><time datetime="2026-09-19T03:29:28.843Z">19.09.2026 · 03:29:28 UTC</time></p>
         </div>
       </section>
       <section id="dungeons-screen" class="dungeons-screen" aria-labelledby="dungeons-title" tabindex="-1" hidden></section>

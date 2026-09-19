@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { listenBrowserServer } from './helpers/browser-server.mjs';
 import { createCampaignState, campaignSnapshot } from '../campaign-state.ts';
+import { GOBLIN_CAVE_LEVELS } from '../dungeons.ts';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE
   ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
@@ -22,6 +23,11 @@ const server = await createServer({
       countdown: () => autoNextRemaining,
       run: () => dungeonRun && ({ level: dungeonRun.level.id, stage: dungeonRun.stage, reward: dungeonRun.reward, battle: dungeonRun.battle && {
         elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
+      advanceDungeon: seconds => {
+        for (let tick = 0; tick < seconds * 60; tick++) updateBattle(dungeonRun.battle, 1/60);
+        refresh();
+        return dungeonRun.battle.enemies.map(enemy => enemy.type);
+      },
       finishDungeonWave: () => {
         dungeonRun.battle.phase = 'victory';
         dungeonRun.battle.kills = dungeonRun.battle.total;
@@ -239,10 +245,14 @@ try {
     await back(page);
     assert.equal(await page.locator('#app').getAttribute('data-screen'), 'campaign');
   });
+  for (const level of GOBLIN_CAVE_LEVELS.slice(0, 2)) {
+  const { gold, slaves } = level.completionReward;
   for (const [width, height] of [[320, 568], [390, 844]]) {
-    await scenario(`run rewards, repeat entry and defeat ${width}x${height}`, width, height, fixture(), async page => {
+    await scenario(`Cave ${level.numeral} run rewards, repeat entry and defeat ${width}x${height}`, width, height, fixture(level.unlockRound * 10), async (page, requests) => {
       await open(page);
-      await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+      const card = page.locator('.dungeon-level-card').nth(level.tier - 1);
+      assert.equal(await card.locator('.dungeon-card-reward-label').textContent(), 'Rewards on every clear');
+      await page.locator(`[data-dungeon-level="${level.id}"]`).click();
       await page.waitForFunction(() => window.dungeonCheck.ready());
       const before = await page.evaluate(() => window.dungeonCheck.state());
       const start = page.locator('[data-run-start]');
@@ -255,16 +265,27 @@ try {
             assert.equal((await page.evaluate(() => window.dungeonCheck.run())).stage, 'preparation');
           }
           await start.tap();
+          if (level.tier === 2 && run === 1 && wave === 3) {
+            assert.deepEqual(await page.evaluate(() => window.dungeonCheck.advanceDungeon(1)), ['goblinBombardier']);
+            await page.screenshot({ path: fileURLToPath(new URL(`bombardier-${width}.png`, output)) });
+          }
           await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
         }
         await page.locator('[data-run-result]').waitFor({ state: 'visible' });
-        assert.equal(await page.locator('[data-result-gold]').textContent(), '+150');
-        assert.equal(await page.locator('[data-result-slaves]').textContent(), '+3');
+        assert.equal(await page.locator('[data-result-title]').textContent(), 'Cave conquered!');
+        assert.ok((await page.locator('[data-result-description]').textContent()).includes(level.boss));
+        assert.equal(await page.locator('[data-result-gold]').textContent(), `+${gold}`);
+        assert.equal(await page.locator('[data-result-slaves]').textContent(), `+${slaves}`);
+        assert.equal(await page.locator(`.dungeon-result-art.dungeon-art-${level.tier}`).count(), 1);
+        if (level.tier === 2) for (const asset of ['body', 'bomb', 'explosion']) {
+          assert.equal(requests.filter(url => url.includes(`/goblin-bombardier/${asset}.webp`)).length, 1,
+            `${asset} loads once and is reused across runs`);
+        }
         assert.equal(await start.isVisible(), false);
         await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
         const after = await page.evaluate(() => window.dungeonCheck.state());
-        assert.equal(after.gold, before.gold + 150 * run);
-        assert.equal(after.economy.slaves, before.economy.slaves + 3 * run);
+        assert.equal(after.gold, before.gold + gold * run);
+        assert.equal(after.economy.slaves, before.economy.slaves + slaves * run);
         assert.deepEqual(after.units, before.units);
         assert.deepEqual(after.hero, before.hero);
         assert.deepEqual(after.progression, before.progression);
@@ -273,7 +294,7 @@ try {
         const buttons = await page.locator('.dungeon-result-actions').boundingBox();
         assert.ok(panel.x >= 0 && panel.x + panel.width <= width);
         assert.ok(buttons.y >= panel.y && buttons.y + buttons.height <= panel.y + panel.height, 'actions fit without scrolling');
-        if (run === 1) await page.screenshot({ path: fileURLToPath(new URL(`victory-${width}.png`, output)) });
+        if (run === 1) await page.screenshot({ path: fileURLToPath(new URL(`victory-${level.tier}-${width}.png`, output)) });
         await page.locator('[data-run-retry]').tap();
         assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle, null);
       }
@@ -286,14 +307,14 @@ try {
       await page.reload();
       await page.waitForFunction(() => window.dungeonCheck?.ready());
       const restored = await page.evaluate(() => window.dungeonCheck.state());
-      assert.equal(restored.gold, before.gold + 300);
-      assert.equal(restored.economy.slaves, before.economy.slaves + 6);
+      assert.equal(restored.gold, before.gold + 2 * gold);
+      assert.equal(restored.economy.slaves, before.economy.slaves + 2 * slaves);
       assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
     });
   }
-  await scenario('boss rewards survive failed storage writes without duplicate grants', 390, 844, fixture(), async page => {
+  await scenario(`Cave ${level.numeral} boss rewards survive failed storage writes without duplicate grants`, 390, 844, fixture(level.unlockRound * 10), async page => {
     await open(page);
-    await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
+    await page.locator(`[data-dungeon-level="${level.id}"]`).click();
     await page.waitForFunction(() => window.dungeonCheck.ready());
     const before = await page.evaluate(() => window.dungeonCheck.state());
     for (let wave = 1; wave <= 3; wave++) {
@@ -317,13 +338,14 @@ try {
     await page.locator('#recovery-panel').waitFor({ state: 'hidden' });
     assert.equal(await page.locator('[data-run-retry]').isDisabled(), false);
     const paid = await page.evaluate(() => window.dungeonCheck.state());
-    assert.equal(paid.gold, before.gold + 150);
-    assert.equal(paid.economy.slaves, before.economy.slaves + 3);
+    assert.equal(paid.gold, before.gold + gold);
+    assert.equal(paid.economy.slaves, before.economy.slaves + slaves);
     await page.reload(); await page.waitForFunction(() => window.dungeonCheck?.ready());
     const restored = await page.evaluate(() => window.dungeonCheck.state());
     assert.equal(restored.gold, paid.gold);
     assert.equal(restored.economy.slaves, paid.economy.slaves);
   });
+  }
   await scenario('hidden combat, automatic next wave, live unlocks and zero canvas draws', 390, 844, fixture(49, true), async page => {
     await page.locator('#start-wave').click(); await open(page);
     const before = await page.evaluate(() => { window.dungeonDraws = { battle: 0, 'army-map': 0 }; return window.dungeonCheck.battle(); });

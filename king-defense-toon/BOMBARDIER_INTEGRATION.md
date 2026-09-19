@@ -4,6 +4,10 @@ The first biome's mini-boss is replaced on wave 10 of rounds 1-11 through 1-19.
 Rounds 1-10 and 1-20 retain their Ogre main boss. Earlier mini-bosses and the
 entire second biome keep their existing enemy types.
 
+Goblin Cave II also uses this boss in its third and final wave. Its dungeon-only
+HP/damage use the round 1-10 campaign boss baseline plus 30%; the three-wave run
+awards 300 gold and 5 slaves per clear. The campaign encounters remain unchanged.
+
 The replacement preserves each encounter's resolved HP, damage, reward, escort,
 opening healer, arrival schedule and total enemy count. The Bombardier shoots
 one target at 135 range with the previous mini-boss's base 2.15-second cooldown,

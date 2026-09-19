@@ -59,6 +59,37 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   starts with small unit icons and reveals details on tap; keep the battlefield
   prominent. A deliberately full-screen section may cover it, but its buttons
   and typography should still suit a phone rather than a desktop poster.
+- Readable, concise minimalism is the user's explicit UI direction. Remove
+  repeated titles, explanations, inactive placeholders and excess spacing before
+  making text or touch targets smaller. Prefer one shared quantity/action control
+  for a selected item when repeating it on every row adds clutter. Keep feedback
+  near the action and explain secondary details on demand.
+- Put a new feature beside its peers in the existing navigation. Do not add an
+  unrelated shortcut to a title/close bar simply because space remains there.
+  Preserve the scope of a requested redesign; it does not authorize changing all
+  surrounding screens.
+- Reuse the Forge's health, attack/healing and attack-speed symbols and existing
+  resource icons. Replace redundant words with familiar icons, but retain short
+  labels or accessible help where the meaning could be ambiguous. Icon-only
+  controls need accessible names; selection and availability cannot rely on
+  color alone.
+  `stat-icons.ts` shares a heart, sword and sword-with-swing-trails between Forge
+  and Kitchen. The clock is reserved for durations, never attack speed.
+- For small, bounded menus, aim to show the primary choices and action without
+  vertical scrolling at 320 x 568 and common phone sizes. Check the real layout,
+  including safe areas and long values; do not claim a generated mockup proves
+  fit. Keep readable text and approximately 44px touch targets. If content truly
+  needs scrolling, keep the primary action reachable instead of compressing it
+  into unusable controls.
+- When the user asks for a mockup first, show selection, action feedback, active
+  and empty/locked states before runtime changes. Reflect actual mechanics:
+  instant actions do not acquire invented wait timers. An approved mockup is a
+  visual contract for density, navigation and artwork; do not quietly replace
+  illustrated food or other approved art with primitive placeholder shapes.
+- New small raster icons use a shared, appropriately sized compressed asset
+  (normally WebP). Check appearance at the actual 32-48px display size, record
+  dimensions and byte size, and keep large source art out of the runtime bundle.
+  Reuse/cache the asset; do not add an icon library or animation loop for it.
 - Judge art beside current units and menus at intended display size, not only
   enlarged. Use shared compressed assets/cache for implementation; new source
   art and mockups are not automatically runtime assets. Mark unapproved concepts
@@ -100,15 +131,24 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Lancer with completed Barracks II. Available types split the random pool equally;
   the existing first-Lancer guarantee still applies. Personal Connect levels do
   not unlock recruitment roles. Legacy training credit and existing fighters stay.
-- `mercenaries-ui.ts` owns the Mercenaries menu: one Human/Elven dropdown, compact
-  2-by-2 cards, shared equal odds for unlocked types, and a separate upgrade view.
+- Mercenaries II → III requires the sum of Swordsman, Archer, Healer and Lancer
+  recruitment levels to be at least 15 (including their initial level 1), not
+  Lancer level 5 or personal/Connect levels. Use the shared requirement types
+  and total in `barracks.ts` for validation and UI; Elven levels do not contribute.
+  Keep the 2,000 gold / 3h upgrade and existing paid timers. The I → II and
+  III → IV requirements still use Swordsman 5 and Panther Rider 5 respectively.
+- `mercenaries-ui.ts` owns the Mercenaries menu: one Human/Elven dropdown beside
+  the gold balance, compact portrait rows, shared equal odds for unlocked types,
+  and a separate upgrade view. Each row shows its recruitment level and an earned /
+  required counter toward the next level, without a progress bar. Locked rows
+  show prerequisites; capped rows show Max level. Keep help in the header.
   Display the first-Lancer guarantee instead of ordinary odds while it is pending.
   Mercenaries I-IV is the UI name for the existing `barracks.level` progression;
   reserve storage remains Barracks. Costs, timestamps, unlocks and save fields are
   unchanged. Starting/skipping an upgrade still uses campaign commands. Main-menu
   summaries omit price/duration; details show current requirements and running or
   maximum-level states. Extra army capacity permits buying a tile, not a free tile.
-- Mount this menu lazily and reuse its portraits, buttons and unchanged card markup.
+- Mount this menu lazily and reuse its portraits, buttons and unchanged row markup.
   Only the existing economy tick updates an open upgrade countdown; no menu RAF,
   interval, animated background, icon library or additional image assets are needed.
 
@@ -179,11 +219,25 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   speed. `main.ts` synchronizes both retained campaign and dungeon battles before
   simulation and on refresh/resume. Scene rendering remains read-only. Already
   launched projectiles and ongoing action timings are not rewritten by food.
-- Kitchen opens from Buildings as its own scrollable overlay. Back restores the
-  Buildings entry focus; Close returns focus to the visible Buildings game button.
-  Quantity starts at 1, supports direct numeric entry, −/+/Max, previews total cost,
-  time and XP, and resets to 1 after cooking. Reuse nodes on timer updates to retain
-  focus. Recovery/offline receipt gates cover every cooking action and save retry.
+- Kitchen is a normal Buildings tab next to Farm, in the shared two-row tab list.
+  It mounts on first selection and hides the irrelevant gold/slave wallet. Three
+  compact recipe selectors share one quantity input and Cook action. Quantity
+  starts at 1, supports direct numeric entry and −/+/Max, previews cost/duration,
+  and resets after cooking or changing a recipe/ingredient. Active and queued
+  food stays in the corresponding stat row even when switching ingredients;
+  distinguish recipe strength from an active stronger/weaker bonus.
+- The `?` guide explains stats, instant effects, added time, offline expiry and
+  the 10 × level² progression. It overlays the Kitchen body, makes its controls
+  inert, and restores focus on close; Escape dismisses help before Buildings.
+  Empty stock offers a direct Farm link. Cooking feedback uses the existing UI
+  refresh cadence; no new interval, animation loop or fake cooking delay.
+- Reuse nodes on timer updates to retain focus. Recovery/offline receipt gates
+  cover every cooking action and save retry. Closing Buildings returns focus to
+  its visible game button. At 320 x 568 and 390 x 700 the normal, active, queued
+  and empty states must fit without vertical scrolling and retain 44px controls.
+- Six food pictures share `assets/kitchen/dishes.webp`: 288 x 192, 96px per cell,
+  17,976 bytes (17.6 KiB), displayed at 44px. Source PNGs stay outside the runtime;
+  `scripts/prepare-kitchen-art.mjs` enforces a 20 KiB budget. See `art/kitchen/PROMPT.md`.
 
 ## Combat, effects and drawing
 
@@ -237,19 +291,23 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   progress so retreat and campaign replay do not relock levels. No new save field
   is needed for browsing. Rewards and Enter are on each card, without a separate
   details page. Closed levels show their unlock requirement and disabled Enter.
-- `dungeons-ui.ts` owns catalogue/rules. Cave I awards 150 gold + 3 slaves on
-  every completed run, with unlimited daily entries. Cave II/III rewards (300 + 5
-  and 500 + 8) remain labelled future rewards for their unimplemented full runs.
+- `dungeons-ui.ts` owns catalogue/rules. Caves I and II award 150 gold + 3 slaves
+  and 300 gold + 5 slaves respectively on every completed run, with unlimited
+  daily entries. Cave III's 500 + 8 remains a future reward for its unfinished run.
+  `DungeonLevel.runBoss` selects a full run's boss; null retains opening-preview mode.
 - `dungeon-run.ts` owns a separate formation and combat snapshot. Each guard
   group has one goblin, archer, healer and boar, all arriving together. Stats reference
   the campaign just after the level's unlock milestone; campaign balance is unchanged.
   Dungeon combat does not settle campaign wave progress, kill rewards, captures or XP.
   Leaving/reloading discards the run, not the saved army.
-  Cave I has three waves: two groups of four guards, three groups, then a solo
-  `goblinChief`. Groups arrive at 0.8, 12.8 and (wave 2 only) 24.8 combat seconds.
+  Caves I and II have three waves: two groups of four guards, three groups, then
+  a solo `goblinChief` or `goblinBombardier` respectively. Groups arrive at 0.8,
+  12.8 and (wave 2 only) 24.8 combat seconds.
   Guard HP, damage and healing are 15% above the previous dungeon baseline;
-  the chief has 30% more HP/damage than the unlock milestone's boss. Other tiers retain their
-  opening-wave previews; their full runs and reward collection remain future work.
+  each boss has 30% more HP/damage than its unlock milestone's campaign boss.
+  Cave II uses round 1-10's resolved boss stats with Bombardier identity, animation
+  and single-target bomb combat; the campaign's Ogre encounter is unchanged.
+  Cave III retains its opening-wave preview; its full run remains future work.
   The run owns an explicit preparation/combat/wave-cleared/complete/defeat stage
   and wave index. `finishDungeonWave` records a result once. `prepareNextDungeonWave`
   returns survivors home without starting combat; a separate `startDungeonBattle`
@@ -271,7 +329,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   existing timestamp lifecycle. Recovery, offline receipts and Telegram suspension
   cover both modes. The cave map has its own cache key shared by both canvases;
   use authored bounds (-56, -445, 502, 890), never stretch it into the lower field.
-- Cave I carries HP and casualties between all three waves; healing during combat
+- Caves I and II carry HP and casualties between all three waves; healing during combat
   works normally. Run progress and its reward receipt are session-only, like battle
   receipts. `applyDungeonRunReward` in `campaign-rewards.ts` grants canonical full-run
   rewards once, validates both balances before mutation, and leaves other campaign

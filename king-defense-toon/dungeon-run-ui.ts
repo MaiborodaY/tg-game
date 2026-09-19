@@ -103,13 +103,13 @@ export function createDungeonRunUI({ battlefield, armyDock, onExit, onStart, onP
         const rewarded = won && run.reward !== null;
         root.querySelector<HTMLElement>('.dungeon-result-art')!.className = `dungeon-art dungeon-art-${run.level.tier} dungeon-result-art`;
         write(resultEyebrow, `Goblin Cave ${run.level.numeral} · ${won ? run.waves.length : run.waveIndex} / ${run.waves.length} waves cleared`);
-        write(resultTitle, won ? run.level.tier === 1 ? 'Cave conquered!' : 'Preview complete' : 'Run ended');
-        write(resultDescription, won ? run.level.tier === 1 ? 'The Goblin Chief is defeated. Your spoils:'
+        write(resultTitle, won ? run.level.runBoss ? 'Cave conquered!' : 'Preview complete' : 'Run ended');
+        write(resultDescription, won ? run.level.runBoss ? `The ${run.level.boss} is defeated. Your spoils:`
           : 'The full dungeon is coming later.' : 'Your main army is safe. Return with a new plan.');
         rewards.hidden = !rewarded;
         if (run.reward) { write(gold, `+${run.reward.gold}`); write(slaves, `+${run.reward.slaves}`); }
         write(resultNote, rewarded ? ready ? 'Rewards received · Earn them again on every clear.' : 'Saving rewards…'
-          : won ? run.level.tier === 1 ? 'Rewards need attention.' : 'No rewards in this preview.' : 'Defeat the final boss to earn rewards.');
+          : won ? run.level.runBoss ? 'Rewards need attention.' : 'No rewards in this preview.' : 'Defeat the final boss to earn rewards.');
         retryButton.disabled = resultExit.disabled = !ready || paused;
       }
       const selected = run.units.find(unit => unit.id === run.selectedId);
