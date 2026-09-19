@@ -91,18 +91,17 @@ export function createMercenariesUI(options: Options): MercenariesUI {
   };
   function mount() {
     if (mounted) return;
-    // Mount on first opening. Four cards reuse the scene's existing portraits;
+    // Mount on first opening. Four rows reuse the scene's existing portraits;
     // no image/DOM work is added to closed menus or to the animation loop.
     panel.innerHTML = `<div class="menu-card mercenaries-card">
-      <header class="menu-heading"><div class="mercenaries-heading"><button id="mercenaries-back" class="mercenaries-back" data-merc-action="back" aria-label="Back to Mercenaries" hidden>${icon('back')}</button><h2 id="market-info-title">Mercenaries</h2></div><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close Mercenaries">${icon('close')}</button></header>
+      <header class="menu-heading"><div class="mercenaries-heading"><button id="mercenaries-back" class="mercenaries-back" data-merc-action="back" aria-label="Back to Mercenaries" hidden>${icon('back')}</button><h2 id="market-info-title">Mercenaries</h2><button id="mercenaries-help" class="mercenaries-help" data-merc-action="help" aria-label="About recruitment levels" aria-expanded="false" aria-controls="recruitment-info-note">${icon('help')}</button></div><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close Mercenaries">${icon('close')}</button></header>
       <div id="mercenaries-overview">
-        <select id="recruitment-pool" aria-label="Recruit army"><option value="humans">Human recruits</option><option id="recruitment-pool-elves" value="elves">Elven recruits</option></select>
-        <div class="recruitment-info-wallet"><span class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter">1 <span class="slave-icon" aria-hidden="true"></span> → 1 fighter</span><span class="barracks-upgrade-wallet"><span class="coin-icon" aria-hidden="true"></span><b id="barracks-upgrade-gold"></b></span></div>
-        <div class="mercenaries-list-heading"><span>Recruitment levels<button class="mercenaries-help" data-merc-action="help" aria-label="About recruitment levels" aria-expanded="false" aria-controls="recruitment-info-note">${icon('help')}</button></span><span class="mercenaries-chance">${icon('chance')}<span id="recruitment-chance"></span></span></div>
-        <p id="recruitment-info-note" hidden>Recruit at the Market to raise these levels. Connect does not count. Only unlocked fighters share the chance.</p>
+        <div class="mercenaries-toolbar"><select id="recruitment-pool" aria-label="Recruit army"><option value="humans">Human recruits</option><option id="recruitment-pool-elves" value="elves">Elven recruits</option></select><span class="barracks-upgrade-wallet"><span class="coin-icon" aria-hidden="true"></span><b id="barracks-upgrade-gold"></b></span></div>
+        <div class="mercenaries-meta"><span class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter">1 <span class="slave-icon" aria-hidden="true"></span> → 1 fighter</span><span class="mercenaries-chance">${icon('chance')}<span id="recruitment-chance"></span></span></div>
+        <p id="recruitment-info-note" hidden>Recruitment levels rise at the Market. The counter shows recruits earned toward the next level. Connect does not count. Only unlocked fighters share the chance.</p>
         <div id="recruitment-guarantee" class="mercenaries-guarantee" hidden><span>Next: guaranteed Lancer</span><button data-merc-action="market" class="mercenaries-link">Go to Market</button></div>
-        <div id="recruitment-details" class="mercenaries-grid"></div>
-        <div class="mercenaries-upgrade-summary"><div class="mercenaries-upgrade-top"><div><h3 id="mercenaries-next-tier"></h3><p id="mercenaries-unlock-summary"></p></div><button id="mercenaries-view-upgrade" class="mercenaries-button" data-merc-action="upgrade">View upgrade</button></div><div id="mercenaries-summary-requirement" class="mercenaries-summary-requirement"><img id="mercenaries-summary-art" alt=""><span id="mercenaries-summary-name"></span><span id="mercenaries-summary-level"></span><span id="mercenaries-summary-lock">${icon('lock')}</span></div><p id="mercenaries-summary-status" hidden></p></div>
+        <ul id="recruitment-details" class="mercenaries-list" aria-label="Recruitment levels and progress"></ul>
+        <div class="mercenaries-upgrade-summary"><div class="mercenaries-upgrade-top"><div class="mercenaries-summary-copy"><h3 id="mercenaries-next-tier"></h3><p id="mercenaries-unlock-summary"></p><div id="mercenaries-summary-requirement" class="mercenaries-summary-requirement"><span id="mercenaries-summary-lock">${icon('lock')}</span><span><span id="mercenaries-summary-name"></span> <span id="mercenaries-summary-level"></span></span></div><p id="mercenaries-summary-status" hidden></p></div><button id="mercenaries-view-upgrade" class="mercenaries-button" data-merc-action="upgrade">View upgrade</button></div></div>
       </div>
       <div id="mercenaries-upgrade-detail" hidden>
         <h3 id="mercenaries-upgrade-tier" class="mercenaries-subheading"></h3>
@@ -123,6 +122,7 @@ export function createMercenariesUI(options: Options): MercenariesUI {
   function switchView(showDetail: boolean) {
     detail = showDetail;
     hide('mercenaries-overview', detail); hide('mercenaries-upgrade-detail', !detail); hide('mercenaries-back', !detail);
+    hide('mercenaries-help', detail);
     text('market-info-title', detail ? 'Upgrade' : 'Mercenaries');
     node('market-info-title').closest<HTMLElement>('.menu-card')!.scrollTop = 0;
     tick();
@@ -149,8 +149,7 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     text('mercenaries-summary-name', name(info.requiredRecruitType));
     text('mercenaries-summary-level', `Lv. ${info.recruitLevel} / ${info.requiredRecruitLevel}`);
     symbol('mercenaries-summary-lock', met);
-    if (!max && !upgrading && !detail) portrait('mercenaries-summary-art', info.requiredRecruitType, info.recruitLevel);
-    // The shared economy clock calls tick; hidden detail fields and static cards
+    // The shared economy clock calls tick; hidden detail fields and static rows
     // are left alone. Assignments below only write when a visible value changed.
     if (!detail) return;
     text('mercenaries-upgrade-tier', tier); text('mercenaries-unlock', reward);
@@ -214,10 +213,11 @@ export function createMercenariesUI(options: Options): MercenariesUI {
       const { type, progress, locked } = card;
       const src = options.getPortrait(type, progress.level) ?? PORTRAITS[type];
       const capped = progress.level >= RECRUIT_LEVEL_CAP;
-      const label = capped ? 'Max level' : `${progress.needed - progress.progress} more → Lv. ${progress.level + 1}`;
-      return `<article class="mercenary-recruit${locked ? ' is-locked' : ''}" data-recruit-type="${type}"${state.recruitmentPool === 'elves' ? ` data-elf-recruit="${type}"` : ''}>
-        <h3>${card.name}</h3><div class="mercenary-art">${src ? `<img src="${escape(src)}" alt="" width="54" height="56" loading="lazy">` : ''}<span class="mercenary-level">${locked ? icon('lock') : `Lv. ${progress.level}`}</span></div>
-        ${locked ? `<small class="mercenary-unlock">${card.requirements.join('<br>')}</small>` : `<progress max="${progress.needed}" value="${capped ? progress.needed : progress.progress}" aria-label="${card.name} recruitment: ${label}"></progress><small>${label}</small>`}</article>`;
+      const label = `${progress.progress} of ${progress.needed} recruits toward level ${progress.level + 1}`;
+      return `<li class="mercenary-recruit${locked ? ' is-locked' : ''}" data-recruit-type="${type}"${state.recruitmentPool === 'elves' ? ` data-elf-recruit="${type}"` : ''}>
+        ${src ? `<img src="${escape(src)}" alt="" width="36" height="41" loading="lazy">` : '<span></span>'}
+        <div class="mercenary-identity"><h3>${card.name}</h3><span class="mercenary-level">${locked ? `${icon('lock')}<span class="sr-only">Locked</span>` : `Lv. ${progress.level}`}</span></div>
+        ${locked ? `<small class="mercenary-unlock">${card.requirements.join('<br>')}</small>` : capped ? '<span class="mercenary-max">Max level</span>' : `<span class="mercenary-progress" role="img" aria-label="${label}"><span class="mercenary-count">${progress.progress}/${progress.needed}</span> <span class="mercenary-next">→ Lv. ${progress.level + 1}</span></span>`}</li>`;
     }).join('');
     if (html !== lastCards) { node('recruitment-details').innerHTML = html; lastCards = html; }
     tick();

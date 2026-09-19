@@ -101,7 +101,7 @@ try {
     assert.equal(await page.locator('#market-info-panel [data-recruit-type]').count(), 4, 'Info always contains all four fighter types');
     assert.equal(await lancerInfo.isVisible(), true, 'locked Lancer is discoverable in Info');
     assert.match(await lancerInfo.getAttribute('class'), /is-locked/);
-    assert.equal(await lancerInfo.locator('progress').count(), 0, 'locked Lancer must not advertise recruitment progress');
+    assert.equal(await lancerInfo.locator('.mercenary-progress').count(), 0, 'locked Lancer must not advertise recruitment progress');
     await page.locator('#mercenaries-view-upgrade').click();
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true, 'merged personal level must not unlock');
@@ -151,7 +151,7 @@ try {
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
     await page.locator('#barracks-finish-upgrade').evaluate(button => button.click());
     assert.equal((await state()).gold, beforeFinish.gold - 50, 'repeat finish click cannot charge twice');
-    assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1, 'unlocked Lancer shows normal training progress');
+    assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1, 'unlocked Lancer shows normal training progress');
     await assertEqualUnlockedOdds(page);
     assert.doesNotMatch(await lancerInfo.innerText(), /Locked/);
     await fits();
@@ -176,7 +176,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false, 'consumed guarantee leaves a normal recruitment row');
-    assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1);
+    assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1);
     await assertEqualUnlockedOdds(page);
     await fits();
     await screenshot('recruited-info');
@@ -305,7 +305,7 @@ try {
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await page.locator('#open-market-info').click();
   await assertEqualUnlockedOdds(page);
-  assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1);
+  assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-progress').count(), 1);
   assert.equal(await page.locator('#recruitment-guarantee').isVisible(), level === 1);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());

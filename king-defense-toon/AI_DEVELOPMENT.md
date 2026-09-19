@@ -100,15 +100,18 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Lancer with completed Barracks II. Available types split the random pool equally;
   the existing first-Lancer guarantee still applies. Personal Connect levels do
   not unlock recruitment roles. Legacy training credit and existing fighters stay.
-- `mercenaries-ui.ts` owns the Mercenaries menu: one Human/Elven dropdown, compact
-  2-by-2 cards, shared equal odds for unlocked types, and a separate upgrade view.
+- `mercenaries-ui.ts` owns the Mercenaries menu: one Human/Elven dropdown beside
+  the gold balance, compact portrait rows, shared equal odds for unlocked types,
+  and a separate upgrade view. Each row shows its recruitment level and an earned /
+  required counter toward the next level, without a progress bar. Locked rows
+  show prerequisites; capped rows show Max level. Keep help in the header.
   Display the first-Lancer guarantee instead of ordinary odds while it is pending.
   Mercenaries I-IV is the UI name for the existing `barracks.level` progression;
   reserve storage remains Barracks. Costs, timestamps, unlocks and save fields are
   unchanged. Starting/skipping an upgrade still uses campaign commands. Main-menu
   summaries omit price/duration; details show current requirements and running or
   maximum-level states. Extra army capacity permits buying a tile, not a free tile.
-- Mount this menu lazily and reuse its portraits, buttons and unchanged card markup.
+- Mount this menu lazily and reuse its portraits, buttons and unchanged row markup.
   Only the existing economy tick updates an open upgrade countdown; no menu RAF,
   interval, animated background, icon library or additional image assets are needed.
 
