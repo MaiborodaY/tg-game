@@ -1,5 +1,6 @@
 import { FORGE_MAX_RANK, FORGE_UPGRADES, forgeUpgradeCost } from './forge.ts';
 import type { ForgeState, ForgeUpgrade } from './forge.ts';
+import { STAT_ICONS } from './stat-icons.ts';
 
 interface ForgeUIOptions {
   root: HTMLElement;
@@ -11,16 +12,10 @@ interface ForgeUIOptions {
 
 export interface ForgeUI { refresh: () => void }
 
-const ICONS: Record<ForgeUpgrade, string> = {
-  health: '<path d="M12 21S3 15 3 8a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 7-9 13-9 13Z"/><path d="M12 7v8m-4-4h8"/>',
-  attack: '<path d="m6 17 11-13h4v4L9 20m-5-7 7 7m-7 1 3-3"/>',
-  attackSpeed: '<circle cx="12" cy="13" r="8"/><path d="M12 8v5l4 2M9 2h6m-3 0v3"/>',
-};
-
 export function createForgeUI(options: ForgeUIOptions): ForgeUI {
   // Build controls once; income ticks must not replace a focused purchase button.
   options.root.innerHTML = FORGE_UPGRADES.map(upgrade =>
-    `<div class="forge-row" data-forge-row="${upgrade.id}"><svg class="forge-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[upgrade.id]}</svg>`
+    `<div class="forge-row" data-forge-row="${upgrade.id}"><svg class="forge-icon" viewBox="0 0 24 24" aria-hidden="true">${STAT_ICONS[upgrade.id]}</svg>`
     + `<div class="forge-copy"><strong>${upgrade.name}</strong><small data-forge-bonus></small></div>`
     + `<button class="battle-button forge-upgrade" data-forge-upgrade="${upgrade.id}" type="button"><span data-forge-increase>+1%</span><span class="forge-price"><span class="coin-icon" aria-hidden="true"></span><b data-forge-price></b></span></button></div>`
   ).join('');

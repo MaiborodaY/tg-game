@@ -45,3 +45,12 @@
   .farm-action { width: 74px; font-size: 11px; }
   .farm-stock { font-size: 8px; }
 }
+/* The shared six-building navigation needs a second row on short phones. */
+@media (max-height: 620px) {
+  .farm-overview .building-description p { display: none; }
+  .farm-art { flex-basis: 36px; height: 32px; }
+  .farm-level { padding-block: 4px; }
+  .farm-row { min-height: 58px; padding-block: 3px; }
+  .farm-meter { margin-block: 2px; }
+  .farm-upgrade { margin-top: 6px; padding: 4px; }
+}
