@@ -13,6 +13,19 @@ branches. Avoid realistic hands, individual feather strands, metal engraving,
 scattered debris, fine rays and bright bloom. Judge every icon at 44–48 CSS pixels,
 not only in an enlarged source image.
 
+## Surrounding menu palette
+
+The talent screen uses dark olive surfaces (`#2b3029` card, `#242a23` tree,
+`#353c32` selected-talent description) with warm parchment-colored text. Branch
+headings use subdued amber, green and burgundy accents that echo the atlas.
+Avoid large pale backgrounds, white frame highlights, bloom and bright XP
+gradients. Use a clear outline for selection, restrained green for available
+upgrades and bronze for learned ranks; retain rank numbers and lock symbols so
+meaning does not depend on color alone. These are CSS surface colors, not an
+image filter or a new image export. Keep 44px touch targets and the compact
+description panel. Check normal text at 4.5:1 minimum contrast and inspect the
+actual menu at 320px width, including locked, available and learned states.
+
 ## Runtime contract and export
 
 `talent-art.ts` continues to map the same 18 talent IDs to a six-column, three-row

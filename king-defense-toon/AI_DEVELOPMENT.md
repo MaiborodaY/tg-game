@@ -43,8 +43,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - A running battle owns its initial army/building/hero snapshots. Campaign edits
   apply to the next battle. Preserve first-clear and one-time reward protections;
   re-rendering/retrying must not award gold, captures or XP twice.
-- Army details show matching Connect donors directly, with selection and Select
-  all per source tab. Confirming consumes the whole validated selection once.
+- Army details show matching Connect donors from Barracks directly, without
+  Army/Barracks source tabs. Select all only selects matching reserve fighters;
+  deployed Army fighters cannot be consumed through this card. Confirming
+  consumes the whole validated selection once. The separate reserve-recipient
+  Connect screen retains its Army/Barracks source tabs.
   The small Barracks Connect button instead selects a donor for an Army target.
 - Recruit feedback stays in the existing Market-to-Barracks animation with a
   compact level label; do not repeat it in a toast. Other short notices use the

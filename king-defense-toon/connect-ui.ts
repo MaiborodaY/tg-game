@@ -31,10 +31,11 @@ function portrait(fighter: Fighter, art: ConnectView['art']): string {
 }
 
 export function renderConnectPanel(view: ConnectView): string {
-  const { recipient, location, sourceTab } = view;
+  const { recipient, location } = view;
+  const sourceTab = view.inline ? 'reserve' : view.sourceTab;
   const name = UNIT_TYPE_BY_ID[recipient.type].name;
   // The counter comes from the complete selection, not only the currently visible tab.
-  const selected = `${view.selectedCount} selected across Army & Barracks`;
+  const selected = `${view.selectedCount} selected ${view.inline ? 'from Barracks' : 'across Army & Barracks'}`;
   const donors = view.donors.filter(fighter => fighter.type === recipient.type && fighter.id !== recipient.id);
   const donorMarkup = donors.map(fighter => {
     const pressed = view.selectedIds.has(fighter.id);
@@ -55,9 +56,9 @@ export function renderConnectPanel(view: ConnectView): string {
     : `<div class="connect-recipient"><div class="connect-recipient-art">${portrait(recipient, view.art)}</div>`
     + `<div class="connect-recipient-copy"><strong>${escape(name)}</strong>`
     + levelPreview + '</div></div>' + stats)
-    + '<div class="connect-tabs" role="group" aria-label="Choose fighters from">'
+    + (view.inline ? '' : '<div class="connect-tabs" role="group" aria-label="Choose fighters from">'
     + `<button type="button" data-connect-location="reserve" aria-pressed="${sourceTab === 'reserve'}">Barracks</button>`
-    + `<button type="button" data-connect-location="army" aria-pressed="${sourceTab === 'army'}">Army</button></div>`
+    + `<button type="button" data-connect-location="army" aria-pressed="${sourceTab === 'army'}">Army</button></div>`)
     + `<div class="connect-donor-scroll" tabindex="0" role="group" aria-label="${sourceTab === 'army' ? 'Army' : 'Barracks'} fighters available to connect">`
     + (donors.length ? `<div class="connect-donors">${donorMarkup}</div>`
       : `<p class="connect-empty">No other ${escape(name)} in ${sourceTab === 'army' ? 'your Army' : 'Barracks'}.</p>`)

@@ -60,7 +60,7 @@ test('huge levels keep exact accessible values and supplied strings cannot becom
   assert.doesNotMatch(html, /<script>| onerror="/);
 });
 
-test('inline connections omit the duplicate recipient and hide Apply until selection', () => {
+test('inline connections omit source tabs and the duplicate recipient and hide Apply until selection', () => {
   const html = renderConnectPanel(view({ inline: true, donors: [
     { id: 2, type: 'swordsman', level: 3 }, { id: 3, type: 'archer', level: 7 },
   ] }));
@@ -68,8 +68,10 @@ test('inline connections omit the duplicate recipient and hide Apply until selec
   assert.match(html, /data-connect-action="select-all" aria-label="Select all matching fighters in Barracks"/);
   assert.match(html, /data-connect-donor-id="2"/);
   assert.doesNotMatch(html, /data-connect-donor-id="3"|class="connect-recipient"|data-connect-action="apply"|data-connect-preview-level/);
+  assert.doesNotMatch(html, /connect-tabs|data-connect-location|Choose fighters from/);
   const empty = renderConnectPanel(view({ inline: true }));
   assert.match(empty, /data-connect-action="select-all" disabled/);
+  assert.match(empty, /No other Swordsman in Barracks/);
 });
 
 test('inline selection shows the preview, Clear and one atomic Connect action', () => {
@@ -80,5 +82,7 @@ test('inline selection shows the preview, Clear and one atomic Connect action', 
   assert.match(html, /HP.*69 → 84/);
   assert.match(html, /data-connect-action="cancel">Clear/);
   assert.match(html, /Connect · \+5 Lv/);
+  assert.match(html, /2 selected from Barracks/);
+  assert.doesNotMatch(html, /across Army|data-connect-location/);
   assert.doesNotMatch(html, /data-connect-action="apply" disabled/);
 });

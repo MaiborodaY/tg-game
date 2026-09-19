@@ -18,7 +18,10 @@ export interface LevelMusic {
 type AudioContextHost = { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
 type InlineAudioElement = HTMLAudioElement & { playsInline?: boolean };
 
-const LEVEL_ONE_MUSIC_URL = new URL('./assets/audio/ambient-level-1.mp3', import.meta.url).href;
+const LEVEL_ONE_PLAYLIST = [
+  new URL('./assets/audio/ambient-level-1.mp3', import.meta.url).href,
+  new URL('./assets/audio/ambient-level-1-menu.mp3', import.meta.url).href,
+] as const;
 const MUTED_STORAGE_KEY = 'brotd-infinity:music-muted:v1';
 const VOLUME_STORAGE_KEY = 'brotd-infinity:music-volume:v1';
 const LEGACY_MUTED_STORAGE_KEY = 'brotd-infinity:sound-muted:v1';
@@ -49,6 +52,7 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
   let media: InlineAudioElement | null = null;
   let source: MediaElementAudioSourceNode | null = null;
   let gain: GainNode | null = null;
+  let trackIndex = 0;
   let generation = 0;
   let pendingPlayback: Promise<boolean> | null = null;
 
@@ -95,6 +99,11 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     if (context && context.state !== 'closed') void contextCall('suspend');
   }
 
+  function onTrackEnded(): void {
+    // Hidden/muted endings wait for reactivation; queued events from an old source are ignored.
+    if (media?.ended && mayPlay()) void start();
+  }
+
   function ensureGraph(): boolean {
     if (context && media && source && gain) return context.state !== 'closed';
     if (!supported() || destroyed) return false;
@@ -102,7 +111,7 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
       context = new (audioContextClass()!)();
       media = new globalThis.Audio();
       media.preload = 'none';
-      media.loop = true;
+      media.loop = false;
       media.playsInline = true;
       media.muted = true;
       media.volume = 1;
@@ -113,6 +122,7 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
       gain.connect(context.destination);
       media.addEventListener('play', stopIfUnwanted);
       media.addEventListener('playing', stopIfUnwanted);
+      media.addEventListener('ended', onTrackEnded);
       return true;
     } catch {
       unavailable = true;
@@ -134,7 +144,10 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     applyGain();
     // A successful graph creation initializes these references; cleanup never replaces them.
     try {
-      if (!media!.getAttribute('src')) media!.src = LEVEL_ONE_MUSIC_URL;
+      // Keep one streaming player. Request the next track only when the previous one ends.
+      if (media!.ended) trackIndex = (trackIndex + 1) % LEVEL_ONE_PLAYLIST.length;
+      const trackUrl = LEVEL_ONE_PLAYLIST[trackIndex];
+      if (media!.getAttribute('src') !== trackUrl) media!.src = trackUrl;
     } catch { return Promise.resolve(false); }
     if (!media!.paused && context!.state === 'running') return Promise.resolve(true);
     if (pendingPlayback && !fromGesture) return pendingPlayback;
@@ -194,6 +207,10 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
 
   function unlock(): Promise<boolean> {
     if (destroyed) return Promise.resolve(false);
+    // Ordinary game taps must leave an already-playing track and its gain untouched.
+    if (mayPlay() && media && !media.paused && !media.ended && context?.state === 'running') {
+      return Promise.resolve(true);
+    }
     authorized = true;
     return start({ fromGesture: true });
   }
@@ -205,6 +222,7 @@ export function createLevelMusic({ onStateChange = () => {} }: LevelMusicOptions
     if (media) {
       media.removeEventListener('play', stopIfUnwanted);
       media.removeEventListener('playing', stopIfUnwanted);
+      media.removeEventListener('ended', onTrackEnded);
       media.removeAttribute('src');
       try { media.load(); } catch { /* Cancels any in-flight media request. */ }
     }
