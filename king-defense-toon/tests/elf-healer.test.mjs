@@ -12,13 +12,13 @@ const options = { pool: 'elves', elvesUnlocked: true }, dt = 1 / 60;
 const trained = () => createRecruitment({ version: 2, received: { pantherRider: 15, elfArcher: 15 } });
 const hold = unit => Object.assign(unit, { action: 'attack', actionDuration: 9999, actionTime: 0, didImpact: true, cooldown: 9999 });
 
-test('Archer receipt 15 unlocks the healer on the next conversion and divides eligible elves into exact thirds', () => {
-  const state = trained(); state.received.elfArcher = 14;
+test('Archer receipt 5 reaches Elven total 5 and opens the healer on the next conversion', () => {
+  const state = trained(); state.received.elfArcher = 4;
   assert.equal(getElfRecruitUnlock(state, 'elfHealer', 3).available, false);
   assert.equal(receiveRecruit(state, () => .99, options).type, 'elfArcher');
   assert.equal(getElfRecruitUnlock(state, 'elfHealer', 3).available, true);
   for (const tier of [1, 2]) assert.equal(getElfRecruitUnlock(state, 'elfHealer', tier).available, false);
-  assert.deepEqual(getRecruitChances(true, 'elves', state), ['pantherRider', 'elfArcher', 'elfHealer'].map(type => ({type, chance: 1/3})));
+  assert.deepEqual(getRecruitChances('elves', state), ['pantherRider', 'elfArcher', 'elfHealer'].map(type => ({type, chance: 1/3})));
   for (const [roll, type] of [[0,'pantherRider'],[1/3-1e-10,'pantherRider'],[1/3,'elfArcher'],[2/3-1e-10,'elfArcher'],[2/3,'elfHealer'],[.999999,'elfHealer']])
     assert.equal(receiveRecruit(trained(), () => roll, options).type, type);
   assert.equal(getElfRecruitUnlock(state, 'unicorn', 4).available, false);

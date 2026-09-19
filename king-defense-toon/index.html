@@ -4,13 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#eee2bf" />
-    <meta name="description" content="BroTD Infinity: grow your army and paladin hero, and defend your castle against goblins and undead." />
-    <title>BroTD Infinity</title>
+    <meta name="description" content="World of Connections: grow your army and paladin hero, and defend your castle against goblins and undead." />
+    <title>World of Connections</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/brand/woc-favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/brand/woc-favicon-16.png" />
     <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main id="app" aria-label="BroTD Infinity formation">
+    <main id="app" aria-label="World of Connections formation">
       <section class="battlefield" aria-label="Formation battlefield">
         <canvas id="battle" width="502" height="445" aria-label="Whispering Woods battlefield. Manage your next wave army on the formation below." tabindex="0"></canvas>
       <nav class="wave-track" aria-label="Wave progress">
@@ -175,7 +177,10 @@
           <div class="music-volume-row"><label for="music-volume">Volume</label><input id="music-volume" type="range" min="0" max="100" step="1" value="5" aria-label="Music volume" /><output id="music-volume-label" for="music-volume">5%</output></div>
           <div class="setting-row reset-row"><div><h3>Start over</h3><p>Reset your army and progress</p></div><button id="reset" class="battle-button danger-button" type="button" aria-label="Reset run">Reset run</button></div>
           <p id="reset-confirmation" class="reset-confirmation" role="status" hidden>Tap reset again to start over. Army, gold, buildings and slaves will be reset.</p>
-          <p id="profile-version" class="profile-version" aria-label="Game version">Local development</p>
+          <footer class="profile-brand">
+            <img src="./assets/brand/woc-handshake.webp" width="384" height="276" alt="" decoding="async" />
+            <div><strong>World of Connections</strong><p id="profile-version" class="profile-version" aria-label="Game version">Local development</p></div>
+          </footer>
         </div>
       </section>
       <section id="dungeons-screen" class="dungeons-screen" aria-labelledby="dungeons-title" tabindex="-1" hidden></section>
@@ -196,6 +201,7 @@
       </section>
       <section id="recovery-panel" class="recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="recovery-title" aria-describedby="recovery-description" tabindex="-1" hidden>
         <div class="recovery-card">
+          <img id="loading-brand" src="./assets/brand/woc-handshake.webp" width="384" height="276" alt="" decoding="async" hidden />
           <h2 id="recovery-title">Loading battlefield</h2>
           <p id="recovery-description" role="status" aria-live="polite"></p>
           <button id="recovery-retry" class="battle-button" type="button" hidden>Retry</button>

@@ -4,35 +4,34 @@ import { createRecruitment, getHumanRecruitUnlock, getRecruitChances, getRecruit
 import { openingContinuationSpawns } from '../opening-curve.ts';
 import { getWaveDefinition } from '../waves.ts';
 
-test('human roles open on their prerequisite recruitment level, including the threshold receipt', () => {
+test('human roles open on their faction total, including the threshold receipt', () => {
   const state = createRecruitment({ version: 2, received: { swordsman: 14 } });
   assert.equal(getHumanRecruitUnlock(state, 'archer').available, false);
   assert.equal(receiveRecruit(state, () => .99).type, 'swordsman');
   assert.equal(getRecruitProgress(state, 'swordsman').level, 3);
   assert.equal(getHumanRecruitUnlock(state, 'archer').available, true);
-  assert.deepEqual(getRecruitChances(false, 'humans', state), [
+  assert.deepEqual(getRecruitChances('humans', state), [
     { type: 'swordsman', chance: .5 }, { type: 'archer', chance: .5 },
   ]);
-  for (let count = 0; count < 14; count++) assert.equal(receiveRecruit(state, () => .99).type, 'archer');
+  for (let count = 0; count < 4; count++) assert.equal(receiveRecruit(state, () => .99).type, 'archer');
   assert.equal(getHumanRecruitUnlock(state, 'healer').available, false);
   assert.equal(receiveRecruit(state, () => .99).type, 'archer');
   assert.equal(getHumanRecruitUnlock(state, 'healer').available, true);
   assert.equal(receiveRecruit(state, () => .99).type, 'healer');
 });
 
-test('only open human types share the pool equally, including Barracks II before healer training', () => {
-  for (const [received, lancer, types] of [
-    [{}, false, ['swordsman']],
-    [{ swordsman: 15 }, false, ['swordsman', 'archer']],
-    [{ swordsman: 15, archer: 15 }, false, ['swordsman', 'archer', 'healer']],
-    [{ swordsman: 50 }, true, ['swordsman', 'archer', 'lancer']],
-    [{ swordsman: 50, archer: 15 }, true, ['swordsman', 'archer', 'healer', 'lancer']],
+test('only open human types share the pool equally, independently of building level', () => {
+  for (const [received, types] of [
+    [{}, ['swordsman']],
+    [{ swordsman: 15 }, ['swordsman', 'archer']],
+    [{ swordsman: 15, archer: 5 }, ['swordsman', 'archer', 'healer']],
+    [{ swordsman: 50 }, ['swordsman', 'archer', 'healer']],
+    [{ swordsman: 50, archer: 15, healer: 5 }, ['swordsman', 'archer', 'healer', 'lancer']],
   ]) {
     const state = createRecruitment({ version: 2, received });
-    assert.deepEqual(getRecruitChances(lancer, 'humans', state), types.map(type => ({ type, chance: 1 / types.length })));
+    assert.deepEqual(getRecruitChances('humans', state), types.map(type => ({ type, chance: 1 / types.length })));
     for (const [index, type] of types.entries()) {
-      assert.equal(receiveRecruit(createRecruitment(state), () => (index + .5) / types.length,
-        { lancerUnlocked: lancer }).type, type);
+      assert.equal(receiveRecruit(createRecruitment(state), () => (index + .5) / types.length).type, type);
     }
   }
 });

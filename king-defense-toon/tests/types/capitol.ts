@@ -1,5 +1,15 @@
 import { createCapitol, capitolUpgradeCost, upgradeCapitol, getCapitolStats } from '../../capitol.ts';
 import type { CapitolState, CapitolUpgradeId, CapitolUpgradeResult, CapitolStats } from '../../capitol.ts';
+import { startDungeonBattle } from '../../dungeon-run.ts';
+import type { DungeonRun } from '../../dungeon-run.ts';
+import type { HeroState } from '../../hero.ts';
+import type { ForgeState } from '../../forge.ts';
+
+export function verifyDungeonCapitol(run: DungeonRun, hero: HeroState, forge: ForgeState, capitol: CapitolState): void {
+  startDungeonBattle(run, hero, forge, capitol);
+  // @ts-expect-error Dungeon entry must explicitly provide the player's Capitol.
+  startDungeonBattle(run, hero, forge);
+}
 
 export function verifyCapitolContracts(saved: unknown): void {
   const capitol: CapitolState = createCapitol(saved);

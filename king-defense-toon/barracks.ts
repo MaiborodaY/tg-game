@@ -1,4 +1,4 @@
-import { getRecruitLevel, HUMAN_RECRUITS } from './recruitment.ts';
+import { getRecruitLevel, getHumanRecruitUnlock, HUMAN_RECRUITS } from './recruitment.ts';
 
 import type { RecruitmentState } from './recruitment.ts';
 import type { UnitType } from './units.ts';
@@ -142,7 +142,7 @@ export function getBarracksUpgrade(barracks: BarracksState, recruitment: Recruit
   // Clock rollback can delay construction, but cannot exceed this upgrade's full skip price.
   const remainingMs = upgrading ? Math.max(0, Math.min(definition!.durationMs,
     barracks.upgradeReadyAt! - (validTime(now) ? now : barracks.upgradeStartedAt!))) : 0;
-  const lancerUnlocked = barracks.level >= 2;
+  const lancerUnlocked = getHumanRecruitUnlock(recruitment, 'lancer').available;
   const eligible = definition !== null && recruitLevel >= definition.requiredRecruitLevel;
   const status = !definition ? 'complete' : upgrading ? remainingMs === 0 ? 'ready' : 'upgrading'
     : eligible ? 'available' : 'locked';

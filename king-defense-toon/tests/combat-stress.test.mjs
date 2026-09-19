@@ -1,3 +1,4 @@
+import { getUnitCells } from '../unit-footprint.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { updateBattle } from '../combat.ts';
@@ -58,10 +59,9 @@ test('forest fixture includes current units, legal wide footprints and the catal
   const scenario = getCombatStressScenario('forest-reinforcements');
   const occupied = new Set();
   for (const unit of scenario.formation) {
-    const width = ['unicorn', 'pantherRider'].includes(unit.type) ? 2 : 1;
-    for (let col = unit.col; col < unit.col + width; col++) {
-      assert.ok(col >= 0 && col < 5);
-      const key = `${col}:${unit.row}`;
+    for (const key of getUnitCells(unit)) {
+      const [col, row] = key.split(':').map(Number);
+      assert.ok(col >= 0 && col < 5 && row >= 0 && row < 3);
       assert.equal(occupied.has(key), false, 'wide units must not overlap neighbours');
       occupied.add(key);
     }

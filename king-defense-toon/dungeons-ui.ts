@@ -1,5 +1,5 @@
-import { GOBLIN_CAVE_LEVELS, getDungeonLevel, isDungeonLevelUnlocked } from './dungeons.ts';
-import type { DungeonLevel, DungeonProgress } from './dungeons.ts';
+import { GOBLIN_CAVE_LEVELS, getDungeonLevel, getDungeonReward, isDungeonLevelUnlocked } from './dungeons.ts';
+import type { DungeonLevel, DungeonProgress, DungeonClearId } from './dungeons.ts';
 
 const CAVE_ICON = new URL('./assets/dungeons/cave-icon.webp', import.meta.url).href;
 const backIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="miter"/></svg>';
@@ -21,7 +21,7 @@ export interface DungeonsUI {
 
 export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit, onEnter }: {
   root: HTMLElement;
-  getProgress: () => DungeonProgress;
+  getProgress: () => DungeonProgress & { dungeonClears: readonly DungeonClearId[] };
   getCampaignStatus: () => string;
   onExit: () => void;
   onEnter: (level: DungeonLevel) => void;
@@ -35,14 +35,15 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit,
     root.querySelector<HTMLElement>(rulesOpen ? '[data-dungeon-action="close-rules"]' : '[data-dungeon-action="back"]')?.focus({ preventScroll: true });
   }
 
-  function card(level: DungeonLevel, progress: DungeonProgress): string {
+  function card(level: DungeonLevel, progress: DungeonProgress & { dungeonClears: readonly DungeonClearId[] }): string {
+    const reward = getDungeonReward(level, progress.dungeonClears);
     const unlocked = isDungeonLevelUnlocked(level, progress);
     return `<article class="dungeon-level-card ${unlocked ? 'is-unlocked' : 'is-locked'}" aria-label="Goblin Cave ${level.numeral}: ${level.boss}">
       ${art(level)}<span class="dungeon-card-copy"><span class="dungeon-tier">Level ${level.numeral}</span>
       <strong>${level.boss}</strong><span class="dungeon-requirement">${requirement(level, unlocked)}</span>
-      <span class="dungeon-card-reward-label">${level.runBoss ? 'Rewards on every clear' : 'Full-run rewards · coming later'}</span>
-      <span class="dungeon-card-rewards"><span><span class="coin-icon" aria-hidden="true"></span>${level.completionReward.gold} gold</span>
-      <span><span class="slave-icon" aria-hidden="true"></span>${level.completionReward.slaves} slaves</span></span>
+      <span class="dungeon-card-reward-label">${level.runBoss ? progress.dungeonClears.includes(level.id) ? 'Repeat clear · ⅓ reward' : 'First-clear reward' : 'Full-run rewards · coming later'}</span>
+      <span class="dungeon-card-rewards"><span><span class="coin-icon" aria-hidden="true"></span>${reward.gold} gold</span>
+      <span><span class="slave-icon" aria-hidden="true"></span>${reward.slaves} slaves</span></span>
       <button type="button" data-dungeon-level="${level.id}" class="dungeon-card-action" ${unlocked ? '' : 'disabled'}
       aria-label="${unlocked ? 'Enter' : 'Locked'} Goblin Cave ${level.numeral}">${unlocked ? 'Enter' : `${lockIcon} Locked`}</button></span></article>`;
   }
@@ -50,7 +51,7 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit,
   function render(force = false) {
     if (!opened) return;
     const progress = getProgress();
-    const nextSignature = GOBLIN_CAVE_LEVELS.map(level => Number(isDungeonLevelUnlocked(level, progress))).join('');
+    const nextSignature = GOBLIN_CAVE_LEVELS.map(level => `${Number(isDungeonLevelUnlocked(level, progress))}:${Number(progress.dungeonClears.includes(level.id))}`).join('|');
     // Income and combat refresh often. Rebuild only when the view/unlocks change,
     // retaining scroll, focus and the rules dialog while the main battle advances.
     if (force || signature !== nextSignature) {
@@ -64,14 +65,14 @@ export function createDungeonsUI({ root, getProgress, getCampaignStatus, onExit,
         <button type="button" class="dungeon-icon-button dungeon-info-button" data-dungeon-action="rules" aria-label="Dungeon rules" aria-haspopup="dialog" aria-controls="dungeon-rules">i</button></header>
         <div class="dungeon-scroll"><div class="dungeon-intro">${caveIcon()}<div><h3>Goblin Cave</h3><p>Choose a level</p></div></div>
         <div class="dungeon-level-list">${GOBLIN_CAVE_LEVELS.map(level => card(level, progress)).join('')}</div>
-        <p class="dungeon-catalogue-note">Caves I–II: 3 waves · Rewards on every clear · No daily limit<br><span>Cave III: opening wave preview. Full run and rewards are coming later.</span></p></div>
+        <p class="dungeon-catalogue-note">Caves I–II: 3 waves · Repeats give ⅓ · No daily limit<br><span>Cave III: opening wave preview. Full run and rewards are coming later.</span></p></div>
         <footer class="dungeon-footer"><span aria-hidden="true"></span><p data-dungeon-campaign-status></p></footer></div>
         <section id="dungeon-rules" class="dungeon-rules-overlay" role="dialog" aria-modal="true" aria-labelledby="dungeon-rules-title" hidden>
         <div class="dungeon-rules-card"><header><h3 id="dungeon-rules-title">Dungeon rules</h3><button type="button" class="dungeon-icon-button" data-dungeon-action="close-rules" aria-label="Close dungeon rules">×</button></header>
         ${caveIcon('dungeon-rules-art')}${route()}<ul class="dungeon-rules-list"><li><b aria-hidden="true">⚔</b>3 waves per run</li>
         <li><b aria-hidden="true">♛</b>Final boss on wave 3</li><li><b aria-hidden="true">♡</b>No recovery between waves</li>
         <li><b aria-hidden="true">†</b>Fallen units stay out for the run</li></ul>
-        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Caves I–II: wave 1 has two groups of four guards; wave 2 has three groups; wave 3 is the boss alone. Cave I: Goblin Chief. Cave II: Bombardier. Groups arrive 12 battle seconds apart.<br><br>After each wave, tap Prepare to return survivors to formation, then Start when ready. Army, hero and castle keep their remaining HP. Fallen fighters stay out.<br><br>Defeat the boss to receive the rewards shown on its card automatically. Every completed run earns rewards, with no daily limit. Cave III currently offers its opening wave only, without rewards.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading loses unfinished run progress. You can leave between waves, but not during combat.</p>
+        <p class="dungeon-healing">Healing during combat still works.</p><p class="dungeon-rules-note">Caves I–II: wave 1 has two groups of four guards; wave 2 has three groups; wave 3 is the boss alone. Cave I: Goblin Chief. Cave II: Bombardier. Groups arrive 12 battle seconds apart.<br><br>After each wave, tap Prepare to return survivors to formation, then Start when ready. Army, hero and castle keep their remaining HP. Fallen fighters stay out.<br><br>Defeat the boss to receive the rewards shown on its card automatically. The first clear of each level gives the full reward; repeats give one third, rounded down to whole resources. No daily limit. Cave III currently offers its opening wave only, without rewards.<br><br>Your campaign pauses while inside the cave. Your main army is kept safe. Leaving or reloading loses unfinished run progress. You can leave between waves, but not during combat.</p>
         <button type="button" class="dungeon-acknowledge" data-dungeon-action="close-rules">Got it</button></div></section></div>`;
       root.querySelector<HTMLElement>('.dungeon-scroll')!.scrollTop = force ? 0 : oldScroll;
       syncRules();

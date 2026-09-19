@@ -3,16 +3,19 @@ import { UnsupportedSaveVersionError } from './save-version.ts';
 import { CAMPAIGN_VERSION } from './waves.ts';
 import { createKitchen } from './kitchen.ts';
 import { isUnitIdCursor, restoreNextUnitId } from './campaign-roster.ts';
+import { restoreDungeonClears } from './dungeons.ts';
+import type { DungeonClearId } from './dungeons.ts';
 
 // Save shape and campaign wave numbering evolve independently.
-// Older clients must not drop paid food and its cooking progress when saving.
-export const SAVE_SCHEMA_VERSION = 4;
+// Older clients must not erase dungeon reward receipts or reinterpret vertical riders.
+export const SAVE_SCHEMA_VERSION = 5;
 
 export interface DecodedCampaignSave extends Record<string, unknown> {
   saveSchemaVersion: typeof SAVE_SCHEMA_VERSION;
   nextUnitId: number;
   gold: number;
   clearedWaves: number;
+  dungeonClears: DungeonClearId[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -49,13 +52,17 @@ export function decodeCampaignSave(value: unknown): DecodedCampaignSave {
     throw new Error('Invalid saved campaign fighter ID cursor');
   }
   createKitchen(value.kitchen);
+  // Earlier releases did not record dungeon victories. Their next clear is the first
+  // tracked one; current saves must always retain the receipts, even when empty.
+  const dungeonClears = restoreDungeonClears(value.dungeonClears === undefined
+    && (value.saveSchemaVersion === undefined || Number(value.saveSchemaVersion) < 5) ? [] : value.dungeonClears);
   const saved = migrateCampaignSave(value);
   if (!saved || typeof saved.gold !== 'number' || !Number.isFinite(saved.gold) || saved.gold < 0) {
     throw new Error('Invalid saved campaign');
   }
   // Legacy numeric coercion can throw for malformed JSON objects. Validate while
   // storage still protects the original bytes, before any live state is restored.
-  return { ...saved, saveSchemaVersion: SAVE_SCHEMA_VERSION, gold: saved.gold,
+  return { ...saved, saveSchemaVersion: SAVE_SCHEMA_VERSION, gold: saved.gold, dungeonClears,
     nextUnitId: restoreNextUnitId(saved.nextUnitId, saved.units, saved.reserve),
     clearedWaves: Number(saved.clearedWaves) };
 }

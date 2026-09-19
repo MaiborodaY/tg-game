@@ -5,6 +5,21 @@ import { createSaveStorage } from '../save-storage.ts';
 import { UnsupportedSaveVersionError } from '../save-version.ts';
 import { CAMPAIGN_VERSION } from '../waves.ts';
 
+test('missing or damaged current dungeon receipts block saving instead of restoring full-reward eligibility', () => {
+  for (const dungeonClears of [undefined, null, {}, 'goblin-cave-1', [1], ['missing'],
+    ['goblin-cave-3'], ['goblin-cave-1', 'goblin-cave-1']]) {
+    const raw = JSON.stringify({ saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 1,
+      campaignVersion: CAMPAIGN_VERSION, gold: 200, dungeonClears });
+    let stored = raw, writes = 0;
+    const storage = createSaveStorage({ key: 'campaign', decode: decodeCampaignSave,
+      getStorage: () => ({ getItem: () => stored, setItem(_key, value) { writes++; stored = value; } }) });
+    assert.equal(storage.load().ok, false);
+    assert.equal(storage.status, 'corrupt');
+    assert.equal(storage.save({ gold: 200, dungeonClears: [] }).blocked, true);
+    assert.equal(stored, raw); assert.equal(writes, 0);
+  }
+});
+
 test('campaign decode retains ordinary legacy coercion and unrelated saved fields', () => {
   for (const value of [undefined, null, true, false, '', '12', 'invalid', [7], {}, -4, 500]) {
     const saved = { campaignVersion: CAMPAIGN_VERSION, gold: 100, clearedWaves: value,
@@ -20,7 +35,7 @@ test('campaign decode retains ordinary legacy coercion and unrelated saved field
 });
 
 test('current schema decode retains unknown fields without mutating its source', () => {
-  const saved = Object.freeze({ saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 1, campaignVersion: CAMPAIGN_VERSION,
+  const saved = Object.freeze({ saveSchemaVersion: SAVE_SCHEMA_VERSION, dungeonClears: [], nextUnitId: 1, campaignVersion: CAMPAIGN_VERSION,
     gold: 125, clearedWaves: 205, progression: Object.freeze({ firstClears: Object.freeze([1, 201]) }),
     optionalFeature: Object.freeze({ retained: true }) });
   const decoded = decodeCampaignSave(saved);
@@ -51,7 +66,7 @@ test('unversioned and earlier schema saves migrate campaign numbering exactly on
 });
 
 test('new schema with old campaign numbering retains the existing numbering migration', () => {
-  const decoded = decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 1, campaignVersion: 2,
+  const decoded = decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, dungeonClears: [], nextUnitId: 1, campaignVersion: 2,
     gold: 125, clearedWaves: 10, progression: { firstClears: [10] } });
   assert.equal(decoded.saveSchemaVersion, SAVE_SCHEMA_VERSION);
   assert.equal(decoded.campaignVersion, CAMPAIGN_VERSION);
@@ -61,7 +76,7 @@ test('new schema with old campaign numbering retains the existing numbering migr
 
 test('persistent-ID schemas require the consumed-ID cursor while legacy decode supplies one', () => {
   for (const nextUnitId of [undefined, null, 0, -1, 1.5, '10', {}, [], NaN, Infinity]) {
-    assert.throws(() => decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, gold: 125, nextUnitId }), /fighter ID cursor/);
+    assert.throws(() => decodeCampaignSave({ saveSchemaVersion: SAVE_SCHEMA_VERSION, dungeonClears: [], gold: 125, nextUnitId }), /fighter ID cursor/);
   }
   const legacy = { saveSchemaVersion: 1, campaignVersion: CAMPAIGN_VERSION, gold: 125,
     units: [{ id: 8, type: 'archer', col: 2, row: 0 }], reserve: [] };
@@ -79,7 +94,7 @@ test('future schema and campaign numbering are rejected before restoring any gam
     [{ campaignVersion: String(CAMPAIGN_VERSION + 1) }, 'campaign', CAMPAIGN_VERSION + 1, CAMPAIGN_VERSION],
     [{ campaignVersion: [CAMPAIGN_VERSION + 1] }, 'campaign', CAMPAIGN_VERSION + 1, CAMPAIGN_VERSION],
   ]) {
-    const saved = { saveSchemaVersion: SAVE_SCHEMA_VERSION, campaignVersion: CAMPAIGN_VERSION,
+    const saved = { saveSchemaVersion: SAVE_SCHEMA_VERSION, dungeonClears: [], campaignVersion: CAMPAIGN_VERSION,
       gold: 'invalid', clearedWaves: { toString: null }, future: { retained: true }, ...fields };
     const before = structuredClone(saved);
     assert.throws(() => decodeCampaignSave(saved), error => {

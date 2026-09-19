@@ -65,6 +65,7 @@ test('recruit rejection never consumes identity, currency, guarantee or training
 
 test('naturally completed barracks unlocks guaranteed lancer exactly once during recruitment', () => {
   const state = fresh();
+  state.recruitment.received.swordsman = 140;
   state.barracks.upgradeStartedAt = NOW; state.barracks.upgradeReadyAt = NOW + 3_600_000;
   const result = commands.recruitFighter(state, { now: NOW + 3_600_000, random: () => { throw new Error('guarantee must not roll'); } });
   assert.equal(result.ok, true);
@@ -72,6 +73,27 @@ test('naturally completed barracks unlocks guaranteed lancer exactly once during
   assert.equal(state.barracks.level, 2);
   assert.equal(state.barracks.firstLancerPending, false);
   assert.equal(commands.recruitFighter(state, { now: NOW + 3_600_000, random: () => 0 }).type, 'swordsman');
+});
+
+test('pending Lancer guarantee waits for human total 10 and survives a reload', () => {
+  const state = fresh();
+  state.barracks.level = 2; state.barracks.firstLancerPending = true;
+  state.recruitment.received.swordsman = 139;
+  const threshold = commands.recruitFighter(state, { now: NOW, random: () => 0 });
+  assert.equal(threshold.type, 'swordsman', 'The threshold receipt uses the old eligible pool');
+  assert.equal(state.barracks.firstLancerPending, true);
+  const restored = restoreCampaignState(campaignSnapshot(state), NOW);
+  const result = commands.recruitFighter(restored, { now: NOW, random: () => { throw new Error('guarantee must not roll'); } });
+  assert.equal(result.type, 'lancer');
+  assert.equal(restored.barracks.firstLancerPending, false);
+  assert.equal(restored.economy.slaves, 1);
+});
+
+test('human total 10 permits Lancer recruitment before Barracks II', () => {
+  const state = fresh(); state.recruitment.received.swordsman = 140;
+  assert.equal(state.barracks.level, 1);
+  assert.equal(commands.recruitFighter(state, { now: NOW, random: () => .99 }).type, 'lancer');
+  assert.equal(state.barracks.firstLancerPending, false);
 });
 
 test('pool command rejects unavailable factions and commits an unlocked selection', () => {
@@ -83,13 +105,14 @@ test('pool command rejects unavailable factions and commits an unlocked selectio
   assert.equal(commands.recruitFighter(state, { now: NOW, random: () => 0.8 }).type, 'pantherRider');
 });
 
-test('campaign recruitment passes the actual Barracks tier through new elven unlocks', () => {
-  for (const [tier, expected] of [[3, 'elfHealer'], [4, 'unicorn']]) {
+test('campaign recruitment can award Unicorn at either unlocked Elven building tier', () => {
+  for (const [tier, expected] of [[3, 'unicorn'], [4, 'unicorn']]) {
     const state = fresh();
     state.barracks.level = tier;
     state.recruitmentPool = 'elves';
     state.recruitment.received.pantherRider = 50;
     state.recruitment.received.elfArcher = 15;
+    state.recruitment.received.elfHealer = 5;
     const result = commands.recruitFighter(state, { now: NOW, random: () => .99 });
     assert.equal(result.ok, true);
     assert.equal(result.type, expected);
@@ -111,6 +134,7 @@ test('recruitment uses the completed Barracks IV tier when an upgrade finishes a
   state.recruitmentPool = 'elves';
   state.recruitment.received.pantherRider = 50;
   state.recruitment.received.elfArcher = 15;
+  state.recruitment.received.elfHealer = 5;
   const result = commands.recruitFighter(state, { now: readyAt, random: () => .99 });
   assert.equal(result.ok, true);
   assert.equal(result.type, 'unicorn');
@@ -158,14 +182,15 @@ test('replacing a deployed fighter preserves both identities and ownership', () 
   unchanged(state, () => commands.deployReserveFighter(state, 20, '4:2'), 'locked-cell');
 });
 
-test('mounted deployment requires both cells and replacement anchors at occupied left cell', () => {
+test('mounted deployment requires both cells and replacement anchors at occupied upper cell', () => {
   const state = roster();
   state.reserve.push({ id: 22, type: 'pantherRider', level: 1 });
   state.progression.unlockedCells.push('1:0');
   unchanged(state, () => commands.deployReserveFighter(state, 22, '1:0'), 'no-room');
+  state.progression.unlockedCells.push('1:1');
   state.units[0].col = 1;
   assert.equal(commands.deployReserveFighter(state, 22, '1:0').ok, true);
-  assert.equal(commands.deployReserveFighter(state, 20, '2:0').ok, true);
+  assert.equal(commands.deployReserveFighter(state, 20, '1:1').ok, true);
   assert.equal(state.units[0].col, 1);
   assert.equal(state.reserve.some(unit => unit.id === 22), true);
 });

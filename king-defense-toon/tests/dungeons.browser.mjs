@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { listenBrowserServer } from './helpers/browser-server.mjs';
+import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 import { createCampaignState, campaignSnapshot } from '../campaign-state.ts';
 import { GOBLIN_CAVE_LEVELS } from '../dungeons.ts';
 
@@ -15,6 +16,8 @@ const server = await createServer({
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/dungeons/', import.meta.url)),
   server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'dungeon-browser-observation', enforce: 'pre', transform(code, id) {
+    if (id.endsWith('/scene.ts')) return prependFunctionBody(code, 'drawCapitolTower',
+      'if (context.canvas.id === "battle") window.dungeonTowerDraws = (window.dungeonTowerDraws ?? 0) + 1;');
     if (!id.endsWith('/main.ts')) return;
     return code + `\nwindow.dungeonCheck = {
       ready: () => !!scene && !!armyScene && !isRecovering(),
@@ -22,7 +25,10 @@ const server = await createServer({
       battle: () => battle && ({ wave: battle.waveNumber, elapsed: battle.elapsed, phase: battle.phase }),
       countdown: () => autoNextRemaining,
       run: () => dungeonRun && ({ level: dungeonRun.level.id, stage: dungeonRun.stage, reward: dungeonRun.reward, battle: dungeonRun.battle && {
-        elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
+        elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total,
+        castle: { hp: dungeonRun.battle.castle.hp, maxHp: dungeonRun.battle.castle.maxHp,
+          damage: dungeonRun.battle.castle.damage, tower: dungeonRun.battle.castle.stats.towerLevel } } }),
+      injureCastle: () => { dungeonRun.battle.castle.hp -= 43; refresh(); },
       advanceDungeon: seconds => {
         for (let tick = 0; tick < seconds * 60; tick++) updateBattle(dungeonRun.battle, 1/60);
         refresh();
@@ -92,6 +98,12 @@ async function scenario(name, width, height, saved, check, telegram = false, red
         localStorage.setItem(key, JSON.stringify(saved)); sessionStorage.setItem('dungeon-fixture', '1');
       }
       window.dungeonDraws = { battle: 0, 'army-map': 0 };
+      window.dungeonCastleHealth = '';
+      const fillText = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
+        if (this.canvas.id === 'battle' && /^\d+\/\d+$/.test(text)) window.dungeonCastleHealth = text;
+        return fillText.call(this, text, ...args);
+      };
       window.dungeonAudioSources = [];
       const mediaSource = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
       Object.defineProperty(HTMLMediaElement.prototype, 'src', { ...mediaSource, set(value) {
@@ -136,6 +148,40 @@ try {
   await mkdir(output, { recursive: true });
   baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
+  for (const tier of [1, 2]) {
+    const upgraded = fixture(100);
+    upgraded.capitol = { health: 3, tower: 3 };
+    upgraded.units = upgraded.units.filter(unit => unit.type === 'swordsman');
+    await scenario(`Cave ${tier} inherits Capitol upgrades before Start and across waves`, 390, 844, upgraded, async page => {
+      await open(page);
+      await page.evaluate(() => { window.dungeonTowerDraws = 0; window.dungeonCastleHealth = ''; });
+      await page.locator(`[data-dungeon-level="goblin-cave-${tier}"]`).click();
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      await page.waitForFunction(() => window.dungeonTowerDraws > 0 && window.dungeonCastleHealth === '160/160');
+      assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle, null);
+      await page.screenshot({ path: fileURLToPath(new URL(`capitol-cave-${tier}-preparation.png`, output)) });
+      await page.locator('[data-run-start]').click();
+      assert.deepEqual((await page.evaluate(() => window.dungeonCheck.run())).battle.castle,
+        { hp: 160, maxHp: 160, damage: 14, tower: 3 });
+      await page.evaluate(() => window.dungeonCheck.injureCastle());
+      for (let wave = 2; wave <= 3; wave++) {
+        await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+        await page.locator('[data-run-start]').click();
+        assert.equal((await page.evaluate(() => window.dungeonCheck.run())).stage, 'preparation');
+        assert.equal(await page.evaluate(() => window.dungeonCastleHealth), '117/160');
+        await page.locator('[data-run-start]').click();
+        assert.deepEqual((await page.evaluate(() => window.dungeonCheck.run())).battle.castle,
+          { hp: 117, maxHp: 160, damage: 14, tower: 3 });
+      }
+      await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+      await page.locator('[data-run-retry]').click();
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      await page.locator('[data-run-start]').click();
+      assert.deepEqual((await page.evaluate(() => window.dungeonCheck.run())).battle.castle,
+        { hp: 160, maxHp: 160, damage: 14, tower: 3 }, 'repeat entry starts a new Capitol snapshot');
+      assert.deepEqual((await page.evaluate(() => window.dungeonCheck.state())).capitol, upgraded.capitol);
+    });
+  }
   await scenario('cave controls: stable single-tap Start, guarded exit and next wave', 390, 844, fixture(), async (page, requests) => {
     const caveImages = () => requests.filter(url => /\/goblin-cave-map\.webp(?:\?|$)/.test(url));
     assert.equal(caveImages().length, 0, 'entering the game does not fetch the cave map');
@@ -144,7 +190,7 @@ try {
     await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
     await page.waitForFunction(() => window.dungeonCheck.ready());
     assert.equal(requests.some(url => url.includes('goblin-cave-intro.mp4')), false, 'reduced motion does not download the optional video');
-    assert.equal(requests.some(url => url.includes('woc-handshake.webp')), false, 'reduced motion also skips the optional intro branding');
+    assert.equal(requests.some(url => url.includes('/assets/branding/woc-handshake.webp')), false, 'reduced motion also skips the optional intro branding');
     assert.equal(caveImages().length, 1, 'both canvases share one on-demand image request');
     const start = page.locator('[data-run-start]');
     await page.waitForFunction(() => !document.querySelector('[data-run-start]').disabled);
@@ -252,7 +298,7 @@ try {
     await scenario(`Cave ${level.numeral} run rewards, repeat entry and defeat ${width}x${height}`, width, height, fixture(level.unlockRound * 10), async (page, requests) => {
       await open(page);
       const card = page.locator('.dungeon-level-card').nth(level.tier - 1);
-      assert.equal(await card.locator('.dungeon-card-reward-label').textContent(), 'Rewards on every clear');
+      assert.equal(await card.locator('.dungeon-card-reward-label').textContent(), 'First-clear reward');
       await page.locator(`[data-dungeon-level="${level.id}"]`).click();
       await page.waitForFunction(() => window.dungeonCheck.ready());
       const before = await page.evaluate(() => window.dungeonCheck.state());
@@ -275,8 +321,8 @@ try {
         await page.locator('[data-run-result]').waitFor({ state: 'visible' });
         assert.equal(await page.locator('[data-result-title]').textContent(), 'Cave conquered!');
         assert.ok((await page.locator('[data-result-description]').textContent()).includes(level.boss));
-        assert.equal(await page.locator('[data-result-gold]').textContent(), `+${gold}`);
-        assert.equal(await page.locator('[data-result-slaves]').textContent(), `+${slaves}`);
+        assert.equal(await page.locator('[data-result-gold]').textContent(), `+${run === 1 ? gold : Math.floor(gold / 3)}`);
+        assert.equal(await page.locator('[data-result-slaves]').textContent(), `+${run === 1 ? slaves : Math.floor(slaves / 3)}`);
         assert.equal(await page.locator(`.dungeon-result-art.dungeon-art-${level.tier}`).count(), 1);
         if (level.tier === 2) for (const asset of ['body', 'bomb', 'explosion']) {
           assert.equal(requests.filter(url => url.includes(`/goblin-bombardier/${asset}.webp`)).length, 1,
@@ -285,8 +331,8 @@ try {
         assert.equal(await start.isVisible(), false);
         await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
         const after = await page.evaluate(() => window.dungeonCheck.state());
-        assert.equal(after.gold, before.gold + gold * run);
-        assert.equal(after.economy.slaves, before.economy.slaves + slaves * run);
+        assert.equal(after.gold, before.gold + gold + (run - 1) * Math.floor(gold / 3));
+        assert.equal(after.economy.slaves, before.economy.slaves + slaves + (run - 1) * Math.floor(slaves / 3));
         assert.deepEqual(after.units, before.units);
         assert.deepEqual(after.hero, before.hero);
         assert.deepEqual(after.progression, before.progression);
@@ -308,9 +354,15 @@ try {
       await page.reload();
       await page.waitForFunction(() => window.dungeonCheck?.ready());
       const restored = await page.evaluate(() => window.dungeonCheck.state());
-      assert.equal(restored.gold, before.gold + 2 * gold);
-      assert.equal(restored.economy.slaves, before.economy.slaves + 2 * slaves);
+      assert.equal(restored.gold, before.gold + gold + Math.floor(gold / 3));
+      assert.equal(restored.economy.slaves, before.economy.slaves + slaves + Math.floor(slaves / 3));
       assert.equal(await page.evaluate(() => window.dungeonCheck.run()), null);
+      assert.deepEqual(restored.dungeonClears, [level.id]);
+      await open(page);
+      const repeatCard = page.locator('.dungeon-level-card').nth(level.tier - 1);
+      assert.match(await repeatCard.locator('.dungeon-card-reward-label').innerText(), /Repeat clear/);
+      assert.ok((await repeatCard.innerText()).includes(`${Math.floor(gold / 3)} gold`));
+      assert.ok((await repeatCard.innerText()).includes(`${Math.floor(slaves / 3)} slaves`));
     });
   }
   await scenario(`Cave ${level.numeral} boss rewards survive failed storage writes without duplicate grants`, 390, 844, fixture(level.unlockRound * 10), async page => {
@@ -343,6 +395,7 @@ try {
     assert.equal(paid.economy.slaves, before.economy.slaves + slaves);
     await page.reload(); await page.waitForFunction(() => window.dungeonCheck?.ready());
     const restored = await page.evaluate(() => window.dungeonCheck.state());
+    assert.deepEqual(restored.dungeonClears, [level.id]);
     assert.equal(restored.gold, paid.gold);
     assert.equal(restored.economy.slaves, paid.economy.slaves);
   });
@@ -413,7 +466,7 @@ try {
   }, true);
   await scenario('intro video: shared pause gates, retained battle, silent canvases and continuous cave music', 390, 760, fixture(), async (page, requests) => {
     assert.equal(requests.some(url => url.includes('goblin-cave-intro.mp4')), false, 'game startup leaves video unloaded');
-    assert.equal(requests.some(url => url.includes('woc-handshake.webp')), false, 'game startup leaves intro branding unloaded');
+    assert.equal(requests.some(url => url.includes('/assets/branding/woc-handshake.webp')), false, 'game startup leaves intro branding unloaded');
     await page.locator('#start-wave').click(); await open(page);
     await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
     assert.equal(await page.locator('#dungeon-intro-screen video').evaluate(video => video.paused), true, 'catalogue warmup cannot start hidden playback');
@@ -455,7 +508,7 @@ try {
   }, true, 'no-preference');
   for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
     await scenario(`intro video: branding and Skip fit safe areas ${width}x${height}`, width, height, fixture(), async (page, requests) => {
-      assert.equal(requests.some(url => url.includes('woc-handshake.webp')), false);
+      assert.equal(requests.some(url => url.includes('/assets/branding/woc-handshake.webp')), false);
       await page.locator('#dungeon-intro-screen').evaluate(screen => {
         screen.style.setProperty('--tg-safe-area-inset-left', '11px');
         screen.style.setProperty('--tg-safe-area-inset-right', '7px');
@@ -492,14 +545,14 @@ try {
       await page.waitForFunction(() => window.dungeonCheck.ready());
       await page.locator('[data-run-exit]').click();
       await page.locator('[data-dungeon-level="goblin-cave-1"]').click();
-      assert.equal(requests.filter(url => url.includes('woc-handshake.webp')).length, 1, 're-entry retains the branding resource');
+      assert.equal(requests.filter(url => url.includes('/assets/branding/woc-handshake.webp')).length, 1, 're-entry retains the branding resource');
       assert.equal(await page.locator('.dungeon-intro-brand').count(), 1);
       await page.locator('.dungeon-intro-skip').click();
       await page.waitForFunction(() => document.querySelector('#app').dataset.screen === 'dungeon-battle');
     }, true, 'no-preference');
   }
   await scenario('intro video: missing branding cannot gate playback or cave entry', 390, 844, fixture(), async page => {
-    await page.route('**/woc-handshake.webp*', route => route.abort('failed'));
+    await page.route('**/assets/branding/woc-handshake.webp*', route => route.abort('failed'));
     await open(page);
     await page.waitForFunction(() => document.querySelector('#dungeon-intro-screen video').readyState >= 2);
     await page.locator('[data-dungeon-level="goblin-cave-1"]').click();

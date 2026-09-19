@@ -108,7 +108,7 @@ export function createDungeonRunUI({ battlefield, armyDock, onExit, onStart, onP
           : 'The full dungeon is coming later.' : 'Your main army is safe. Return with a new plan.');
         rewards.hidden = !rewarded;
         if (run.reward) { write(gold, `+${run.reward.gold}`); write(slaves, `+${run.reward.slaves}`); }
-        write(resultNote, rewarded ? ready ? 'Rewards received · Earn them again on every clear.' : 'Saving rewards…'
+        write(resultNote, rewarded ? ready ? 'Rewards received · Repeats: ⅓ reward.' : 'Saving rewards…'
           : won ? run.level.runBoss ? 'Rewards need attention.' : 'No rewards in this preview.' : 'Defeat the final boss to earn rewards.');
         retryButton.disabled = resultExit.disabled = !ready || paused;
       }

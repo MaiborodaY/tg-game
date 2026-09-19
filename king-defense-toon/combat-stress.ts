@@ -2,7 +2,8 @@ import { createBattle } from './combat.ts';
 import type { Actor, Battle, FormationUnit } from './combat-types.ts';
 import { createHero, heroXpForLevel } from './hero.ts';
 import type { UnitType } from './units.ts';
-import { getUnitCellWidth } from './unit-footprint.ts';
+import { canPlaceUnit } from './unit-footprint.ts';
+import { FIELD } from './field.ts';
 import { ENEMY_TYPES } from './waves.ts';
 import type { EnemySpawn, EnemyType, WaveDefinition } from './waves.ts';
 
@@ -21,14 +22,16 @@ export const COMBAT_STRESS_DEFAULT_SECONDS = 30;
 export const COMBAT_STRESS_MAX_SECONDS = 60;
 
 function roster(rows: readonly (readonly UnitType[])[], level: number): readonly Readonly<FormationUnit>[] {
-  return Object.freeze(rows.flatMap((row, rowIndex) => {
-    let col = 0;
-    return row.map((type, index) => {
-      const fighter = Object.freeze({ id: rowIndex * 5 + index + 1, type, level, row: rowIndex, col });
-      col += getUnitCellWidth(type);
-      return fighter;
-    });
-  }));
+  const cells = Array.from({ length: FIELD.rows }, (_, row) =>
+    Array.from({ length: FIELD.columns }, (_, col) => ({ col, row }))).flat();
+  const unlocked = cells.map(({ col, row }) => `${col}:${row}`);
+  const units: FormationUnit[] = [];
+  for (const [index, type] of rows.flat().entries()) {
+    const cell = cells.find(cell => canPlaceUnit({ type, ...cell }, units, unlocked));
+    if (!cell) throw new Error('Stress formation does not fit');
+    units.push(Object.freeze({ id: index + 1, type, level, ...cell }));
+  }
+  return Object.freeze(units);
 }
 
 const denseRows: readonly (readonly UnitType[])[] = [

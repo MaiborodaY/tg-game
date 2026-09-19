@@ -24,7 +24,7 @@ import { createLoadingIndicator } from './loading-indicator.ts';
 import { treasuryRate, treasuryUpgradeCost, TREASURY_OFFLINE_LIMIT_SECONDS, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { marketRate, marketUpgradeCost, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS } from './market.ts';
 import { SAVE_KEY, cellKey, nextCellCost, getCellAvailability } from './progression.ts';
-import { RECRUIT_COST, getRecruitChances } from './recruitment.ts';
+import { RECRUIT_COST, getRecruitChances, isLancerGuaranteeReady } from './recruitment.ts';
 import { canRecruitFromPool } from './recruitment-pools.ts';
 import { createMercenariesUI } from './mercenaries-ui.ts';
 import type { MercenariesUI } from './mercenaries-ui.ts';
@@ -60,7 +60,7 @@ import { createDungeonIntro } from './dungeon-intro.ts';
 import './dungeons.css';
 import './dungeon-intro.css';
 
-import { getUnitCellWidth, getUnitAtCell } from './unit-footprint.ts';
+import { getUnitCellWidth, getUnitCellHeight, getUnitCellCount, getUnitAtCell } from './unit-footprint.ts';
 import { decodeCampaignSave, needsCampaignSaveMigration, SAVE_SCHEMA_VERSION } from './campaign-save.ts';
 import type { GameElementId } from './main-dom.ts';
 import type { Battle, BattlePhase } from './combat-types.ts';
@@ -205,6 +205,7 @@ const assetStates: Record<'battle' | 'army', LoadState> = { battle: { status: 'l
 const recoveryInert = new Map<HTMLElement, boolean>();
 let recoveryFocus: FocusElement | null = null, resetSaveToken: symbol | null = null, recoveryResetArmed = false, recoveryUiScheduled = false;
 let recoveryBlocked = false;
+let initialBranding = true;
 const loadingIndicator = createLoadingIndicator(scheduleRecoveryUi);
 let sessionPageHidden = false;
 const saveSession = createSaveSession({ key: SAVE_KEY });
@@ -352,9 +353,15 @@ function syncRecoveryUi() {
   const storageError = !!campaignError || sessionError || saveStorage.status !== 'ready' && saveStorage.status !== 'unread';
   const assetError = Object.values(assetStates).some(state => state.status === 'error');
   const blocked = isRecovering();
+  // The shared recovery dialog also handles later loads and errors. Once play
+  // is ready (or an error occurs), retries and navigation must never replay branding.
+  if (storageError || assetError || scene && armyScene && !blocked) initialBranding = false;
+  const showBrand = blocked && initialBranding;
   syncMusicActivity();
   if (blocked) onboardingGuide.hide();
   const panel = byId('recovery-panel');
+  panel.classList.toggle('initial-loading', showBrand);
+  byId('loading-brand').hidden = !showBrand;
   // Blocking and presentation are separate: a quick load must not flash a modal,
   // but it must still pause combat and prevent edits until its resources are ready.
   const entering = blocked && !recoveryBlocked;
@@ -375,7 +382,8 @@ function syncRecoveryUi() {
     }
     stopFrames();
     battleAudio.setActive(false);
-    byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable' : 'Loading battlefield';
+    byId('recovery-title').textContent = storageError ? 'Progress needs attention' : assetError ? 'Battlefield unavailable'
+      : showBrand ? 'World of Connections' : 'Loading battlefield';
     byId('recovery-description').textContent = storageError
       ? campaignError ? 'Progress could not be updated. Reload to restore your last saved progress.'
         : sessionError ? saveSession.status === 'unavailable'
@@ -387,7 +395,7 @@ function syncRecoveryUi() {
         : saveStorage.status === 'corrupt' ? 'Saved progress is damaged. Saving is paused to protect it.'
           : 'Saved progress could not be loaded. Saving is paused to protect it.'
       : assetError ? 'Some game images could not be loaded. Check your connection and retry. The battle is paused.'
-        : 'Preparing your map and fighters. The battle is paused.';
+        : showBrand ? 'Loading battlefield…' : 'Preparing your map and fighters. The battle is paused.';
     byId('recovery-retry').hidden = !storageError && !assetError;
     byId('recovery-retry').textContent = campaignError || ['conflict', 'unsupported'].includes(saveStorage.status) ? 'Reload game' : 'Retry';
     byId('recovery-reset').hidden = !!campaignError || sessionError || !['read-error', 'corrupt'].includes(saveStorage.status);
@@ -526,9 +534,9 @@ function refreshRecruitment() {
   byId('barracks-stock').textContent = String(reserveStock >= 1000 ? hudGoldFormat.format(reserveStock) : reserveStock);
   byId('open-barracks').disabled = !canEditFormation() || transforming;
   button.disabled = !canEditFormation() || (recruitable && campaign.economy.slaves < RECRUIT_COST) || transforming;
-  const chances = getRecruitChances(campaign.barracks.level >= 2, campaign.recruitmentPool, campaign.recruitment, campaign.barracks.level);
+  const chances = getRecruitChances(campaign.recruitmentPool, campaign.recruitment, campaign.barracks.level);
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Number((chance * 100).toFixed(1))}%`).join(', ');
-  const guaranteedLancer = campaign.recruitmentPool === 'humans' && campaign.barracks.firstLancerPending;
+  const guaranteedLancer = isLancerGuaranteeReady(campaign.recruitment, campaign.recruitmentPool, campaign.barracks.firstLancerPending);
   const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
   const previewLabel = 'Elven recruits require Mercenaries III. Open Mercenaries for details.';
   button.setAttribute('aria-label', recruitable ? `Transform 1 slave into a fighter. ${campaign.economy.slaves} slaves available. ${nextRecruit}` : previewLabel);
@@ -819,7 +827,7 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
   },
   onStart: () => {
     if (!dungeonRun || !isDungeonBattleScreen() || overlay || isRecovering() || !telegram.isActive || !byId('offline-rewards-panel').hidden) return;
-    if (!startDungeonBattle(dungeonRun, campaign.hero, campaign.forge)) return;
+    if (!startDungeonBattle(dungeonRun, campaign.hero, campaign.forge, campaign.capitol)) return;
     battleAudio.setActive(visibleBattle()?.phase === 'running');
     void battleAudio.unlock();
     framePacer.reset(); refresh(); resumeFrames();
@@ -883,7 +891,7 @@ function finishDungeonIntro() {
 }
 
 dungeonsUI = createDungeonsUI({ root: byId('dungeons-screen'),
-  getProgress: () => ({ clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears }),
+  getProgress: () => ({ clearedWaves: campaign.clearedWaves, firstClears: campaign.progression.firstClears, dungeonClears: campaign.dungeonClears }),
   getCampaignStatus: () => battle?.phase === 'running' ? 'Main battle continues'
     : autoNextRemaining !== null ? 'Next wave starts automatically'
     : battle ? 'Main battle finished' : 'Your army is waiting',
@@ -1169,7 +1177,8 @@ function refresh() {
   if (isDungeonIntroScreen() && dungeonRun) {
     // Warm the cave through the existing cache without drawing or changing its
     // foreground asset state while the native video owns the screen.
-    void scene?.preload({ mapVariant: 'goblin-cave', units: dungeonRun.units, wave: dungeonRun.wave });
+    void scene?.preload({ mapVariant: 'goblin-cave', units: dungeonRun.units, wave: dungeonRun.wave,
+      capitolState: campaign.capitol });
     refreshOnboarding();
     return;
   }
@@ -1209,7 +1218,7 @@ function refreshContent() {
   syncMusicActivity();
   refreshEconomy();
   heroUI?.render();
-  byId('army-count').textContent = `${campaign.units.reduce((total, unit) => total + getUnitCellWidth(unit.type), 0)} / ${campaign.progression.unlockedCells.length}`;
+  byId('army-count').textContent = `${campaign.units.reduce((total, unit) => total + getUnitCellCount(unit.type), 0)} / ${campaign.progression.unlockedCells.length}`;
   const pendingRecruit = campaign.reserve.find(unit => unit.id === pendingRecruitId);
   if (!pendingRecruit) pendingRecruitId = null;
   const mergeSource = draggedMerge?.source ?? pendingMerge;
@@ -1220,7 +1229,7 @@ function refreshContent() {
   mergeLevel = merging?.level ?? 0;
   byId('army-status').textContent = draggedMerge ? 'Release on a green fighter to connect. Release elsewhere to cancel.'
     : merging ? `Connect: choose another ${types[merging.type].name}. Adds ${merging.level} levels.`
-    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${getUnitCellWidth(pendingRecruit.type) === 2 ? ' · 2 adjacent tiles' : ''}`
+    : pendingRecruit ? `Place ${types[pendingRecruit.type].name} · Lv. ${pendingRecruit.level}${getUnitCellHeight(pendingRecruit.type) === 2 ? ' · 2 vertical tiles' : getUnitCellWidth(pendingRecruit.type) === 2 ? ' · 2 horizontal tiles' : ''}`
     : movingId ? 'Tap a destination' : 'Tap for details · Hold a fighter to connect';
   byId('cancel-army-move').hidden = !movingId && !pendingRecruitId && !pendingMerge;
   byId('open-market-info').hidden = !!movingId || !!pendingRecruitId || !!pendingMerge;
@@ -1264,7 +1273,7 @@ function refreshContent() {
     const portrait = scene?.getUnitArt?.(selected.type, selected.level);
     const lastGuard = !!battle && campaign.units.length === 1;
     byId('unit-panel-title').textContent = type.name;
-    const markup = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}${getUnitCellWidth(selected.type) === 2 ? ' · 2 tiles' : ''}</p></div></div><div class="selection-actions"><button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div>${connectPanelMarkup(true)}${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
+    const markup = `<div class="selected-info">${portrait ? `<img class="selected-portrait" data-unit="${selected.type}" src="${portrait}" alt="" />` : ''}<div class="selected-copy"><div class="selected-line"><strong>${type.name}</strong><span class="unit-rank-name">Lv. ${selected.level}</span></div><p class="selected-stats">${hp} HP · ${effect} ${isHealingUnit(selected.type) ? 'healing' : 'attack'}${stats.attackSpeed > 1 ? ` · +${Math.round((stats.attackSpeed - 1) * 100)}% speed` : ''}${getUnitCellCount(selected.type) === 2 ? ' · 2 tiles' : ''}</p></div></div><div class="selection-actions"><button data-action="move">Move</button><button data-action="remove"${lastGuard ? ' disabled title="Keep one guard for the next wave"' : ''}>To barracks</button></div>${connectPanelMarkup(true)}${lastGuard ? '<p class="building-note">Keep one guard or replace it from your barracks.</p>' : ''}`;
     refreshConnectPanel(panel, markup);
   } else {
     byId('unit-panel-title').textContent = 'Deploy a fighter';
@@ -1324,7 +1333,7 @@ function canMerge(source: MergeSource) {
 function mergeDescription(source: MergeSource) {
   const fighter = getMergeSource(source);
   if (!fighter) return '';
-  const space = getUnitCellWidth(fighter.type) === 2 ? 'Uses 2 adjacent horizontal tiles. ' : '';
+  const space = getUnitCellHeight(fighter.type) === 2 ? 'Uses 2 vertical tiles. ' : getUnitCellWidth(fighter.type) === 2 ? 'Uses 2 horizontal tiles. ' : '';
   return space + (connectCandidates(source).length
     ? 'Connect adds matching fighters to this unit. Choose from Barracks or Army.'
     : `Get another ${types[fighter.type].name} to connect to this unit.`);
@@ -1555,7 +1564,7 @@ function refreshReserve(selected: ArmyUnit | undefined) {
   byId('reserve-page').textContent = `${reservePage + 1} / ${pageCount}`;
   byId('reserve-options').innerHTML = campaign.reserve.slice(reservePage * RESERVE_PAGE_SIZE, (reservePage + 1) * RESERVE_PAGE_SIZE).map(unit => {
     const portrait = scene?.getUnitArt(unit.type, unit.level);
-    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${getUnitCellWidth(unit.type) === 2 ? ' · 2 tiles' : ''}</small></button>`;
+    return `<button class="reserve-card" data-reserve-id="${unit.id}" type="button" aria-label="${selected ? 'Replace with' : 'Deploy'} ${types[unit.type].name}, level ${unit.level}">${portrait ? `<img src="${portrait}" alt="" />` : ''}<strong>${types[unit.type].name}</strong><small>Lv. ${unit.level}${getUnitCellCount(unit.type) === 2 ? ' · 2 tiles' : ''}</small></button>`;
   }).join('');
 }
 
@@ -1656,7 +1665,7 @@ byId('barracks-detail').addEventListener('click', event => {
   selectedId = movingId = selectedLockedCell = selectedEmptyCell = null;
   closeOverlay(false); refresh();
   byId('army-map').focus({ preventScroll: true });
-  tell(getUnitCellWidth(fighter.type) === 2 ? 'Pick 2 tiles side by side.' : 'Choose a tile.');
+  tell(getUnitCellHeight(fighter.type) === 2 ? 'Pick the upper of 2 vertical tiles.' : getUnitCellWidth(fighter.type) === 2 ? 'Pick 2 tiles side by side.' : 'Choose a tile.');
 });
 
 function changeReservePage(delta: number) {
@@ -1684,7 +1693,7 @@ function placeReserveFighter(id: number, key: string) {
   const result = commands.deployReserveFighter(campaign, id, key);
   if (!result.ok) {
     const fighter = campaign.reserve.find(unit => unit.id === id);
-    tell(fighter && getUnitCellWidth(fighter.type) === 2
+    tell(fighter && getUnitCellHeight(fighter.type) === 2 ? 'Needs a free tile below.' : fighter && getUnitCellWidth(fighter.type) === 2
       ? 'Free the tile on the right.' : 'Tile occupied.');
     return false;
   }
@@ -1918,7 +1927,7 @@ function drawScenes() {
     const run = dungeonRun;
     const selected = run.units.find(unit => unit.id === run.selectedId);
     const common = { mapVariant: 'goblin-cave' as const, units: run.units, wave: run.wave, levelNumber: 1,
-      time: visualTime, heroState: campaign.hero, capitolState: undefined, unlockedCells: run.unlockedCells,
+      time: visualTime, heroState: campaign.hero, capitolState: campaign.capitol, unlockedCells: run.unlockedCells,
       selectedId: null, movingId: null, placementType: null, selectedEmptyCell: null, selectedLockedCell: null,
       nextUnlockCost: null, barracksLevel: undefined, replacingFromReserve: false,
       mergeTargets: [], mergeLevel: 0, draggedId: null, dragTargetId: null };
@@ -2271,6 +2280,7 @@ try {
   else {
     scene = loadedScene; armyScene = loadedArmy;
     refresh();
+    scheduleRecoveryUi();
     showOfflineIncome();
     resumeFrames();
   }

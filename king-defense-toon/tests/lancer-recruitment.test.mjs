@@ -13,9 +13,9 @@ test('fresh recruitment starts with swordsmen only and cannot roll locked roles'
   assert.equal(receiveRecruit(createRecruitment(), () => 0, { guaranteedLancer: true }).type, 'swordsman');
 });
 
-test('Barracks II gives all four types equal 25% odds at exact roll boundaries', () => {
-  const trained = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15 } });
-  const chances = getRecruitChances(true, 'humans', trained);
+test('human total 10 gives all four types equal 25% odds at exact roll boundaries', () => {
+  const trained = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5 } });
+  const chances = getRecruitChances('humans', trained);
   assert.deepEqual(chances, [
     { type: 'swordsman', chance: .25 }, { type: 'archer', chance: .25 },
     { type: 'healer', chance: .25 }, { type: 'lancer', chance: .25 },
@@ -25,12 +25,12 @@ test('Barracks II gives all four types equal 25% odds at exact roll boundaries',
   for (const [roll, expected] of [[0, 'swordsman'], [.24999, 'swordsman'], [.25, 'archer'], [.49999, 'archer'],
     [.5, 'healer'], [.74999, 'healer'], [.75, 'lancer'], [.99999, 'lancer']]) {
     const recruitment = createRecruitment(trained);
-    assert.equal(receiveRecruit(recruitment, () => roll, { lancerUnlocked: true }).type, expected);
+    assert.equal(receiveRecruit(recruitment, () => roll).type, expected);
   }
 });
 
 test('first paid conversion after completion guarantees one level-one lancer and persists consumption', () => {
-  const recruitment = createRecruitment({ version: 2, received: { swordsman: 50 } });
+  const recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5 } });
   const barracks = createBarracks();
   const started = 1_800_000_000_000;
   startBarracksUpgrade(barracks, recruitment, 200, started);
@@ -41,7 +41,7 @@ test('first paid conversion after completion guarantees one level-one lancer and
   const reloadedRecruitment = createRecruitment(before.recruitment);
   assert.equal(reloadedBarracks.firstLancerPending, true);
   const result = receiveRecruit(reloadedRecruitment, () => { throw new Error('Guarantee should not roll'); }, {
-    lancerUnlocked: true, guaranteedLancer: reloadedBarracks.firstLancerPending,
+    guaranteedLancer: reloadedBarracks.firstLancerPending,
   });
   assert.equal(result.type, 'lancer');
   assert.equal(result.level, 1);
@@ -52,7 +52,7 @@ test('first paid conversion after completion guarantees one level-one lancer and
   const nextBarracks = createBarracks(saved.barracks, started + 5_000_000);
   const nextRecruitment = createRecruitment(saved.recruitment);
   const next = receiveRecruit(nextRecruitment, () => 0, {
-    lancerUnlocked: nextBarracks.level >= 2, guaranteedLancer: nextBarracks.firstLancerPending,
+    guaranteedLancer: nextBarracks.firstLancerPending,
   });
   assert.equal(next.type, 'swordsman');
   assert.equal(nextRecruitment.received.lancer, 1);
@@ -63,18 +63,18 @@ test('Barracks III retains four equal recruitment chances and a pending first La
   const now = 1_800_000_000_000;
   for (const firstLancerPending of [false, true]) {
     const barracks = createBarracks({ level: 3, firstLancerPending }, now);
-    const recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15 } });
+    const recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5 } });
     const info = getBarracksUpgrade(barracks, recruitment, now);
     assert.equal(info.lancerUnlocked, true);
-    assert.deepEqual(getRecruitChances(info.lancerUnlocked, 'humans', recruitment).map(({ chance }) => chance), [.25, .25, .25, .25]);
+    assert.deepEqual(getRecruitChances('humans', recruitment).map(({ chance }) => chance), [.25, .25, .25, .25]);
     const first = receiveRecruit(recruitment, () => 0, {
-      lancerUnlocked: info.lancerUnlocked, guaranteedLancer: barracks.firstLancerPending,
+      guaranteedLancer: barracks.firstLancerPending,
     });
     assert.equal(first.type, firstLancerPending ? 'lancer' : 'swordsman');
     assert.equal(consumeFirstLancerGuarantee(barracks, first.type), firstLancerPending);
     const restored = createBarracks(JSON.parse(JSON.stringify(barracks)), now + 1000);
     assert.equal(restored.firstLancerPending, false);
-    assert.equal(receiveRecruit(recruitment, () => .9, { lancerUnlocked: restored.level >= 2 }).type, 'lancer');
+    assert.equal(receiveRecruit(recruitment, () => .9).type, 'lancer');
     assert.equal(consumeFirstLancerGuarantee(restored, 'lancer'), false);
   }
 });
@@ -89,18 +89,18 @@ test('existing version-two saves preserve every receipt and training credit whil
   assert.equal(getRecruitLevel(migrated, 'swordsman'), 5);
   assert.equal(getRecruitLevel(migrated, 'lancer'), 1);
   assert.deepEqual(createRecruitment(JSON.parse(JSON.stringify(migrated))), migrated);
-  receiveRecruit(migrated, () => .9, { lancerUnlocked: true });
+  receiveRecruit(migrated, () => .9);
   assert.equal(migrated.received.lancer, 1);
   assert.equal(migrated.received.swordsman, 27);
   assert.equal(migrated.legacyTrainingCredit.swordsman, 23);
 });
 
 test('lancer training rises independently without changing already received fighters', () => {
-  const recruitment = createRecruitment();
-  const fighters = Array.from({ length: 5 }, () => receiveRecruit(recruitment, () => .9, { lancerUnlocked: true }));
+  const recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5 } });
+  const fighters = Array.from({ length: 5 }, () => receiveRecruit(recruitment, () => .9));
   assert.deepEqual(fighters.map(fighter => fighter.level), [1, 1, 1, 1, 2]);
   assert.equal(getRecruitLevel(recruitment, 'lancer'), 2);
-  assert.equal(getRecruitLevel(recruitment, 'swordsman'), 1);
+  assert.equal(getRecruitLevel(recruitment, 'swordsman'), 5);
   assert.deepEqual(getRecruitProgress(recruitment, 'lancer'), { type: 'lancer', level: 2, received: 5, progress: 0, needed: 10 });
   const reloaded = createRecruitment(JSON.parse(JSON.stringify(recruitment)));
   assert.deepEqual(reloaded, recruitment);
@@ -110,7 +110,7 @@ test('invalid random rolls never consume receipts or corrupt recruitment progres
   const recruitment = createRecruitment();
   const before = JSON.stringify(recruitment);
   for (const value of [NaN, Infinity, -1, 1, '0']) {
-    assert.throws(() => receiveRecruit(recruitment, () => value, { lancerUnlocked: true }), RangeError);
+    assert.throws(() => receiveRecruit(recruitment, () => value), RangeError);
     assert.equal(JSON.stringify(recruitment), before);
   }
 });

@@ -87,7 +87,7 @@ test('construction uses one real hour, persists through reload, and completes of
   assert.deepEqual(reloaded, { level: 2, upgradeStartedAt: null, upgradeReadyAt: null, firstLancerPending: true });
   assert.equal(completeBarracksUpgrade(reloaded, START + HOUR * 2), false);
   assert.deepEqual(createBarracks(barracks, START + HOUR * 10), reloaded);
-  assert.equal(getBarracksUpgrade(reloaded, recruitment, START + HOUR).lancerUnlocked, true);
+  assert.equal(getBarracksUpgrade(reloaded, recruitment, START + HOUR).lancerUnlocked, false, 'Building completion cannot bypass human total 10');
 });
 
 test('skip price declines proportionally from 100 gold and charges at most the current remaining time', () => {
@@ -186,7 +186,7 @@ test('Barracks III requires 15 total human levels and charges 2000 gold for thre
   const beforeLocked = structuredClone(barracks);
   assert.deepEqual(startBarracksUpgrade(barracks, recruitment, 5000, START), { ok: false, gold: 5000, reason: 'locked', cost: 0 });
   assert.deepEqual(barracks, beforeLocked);
-  receiveRecruit(recruitment, () => .4, { lancerUnlocked: true });
+  receiveRecruit(recruitment, () => .4);
   assert.equal(getRecruitLevel(recruitment, 'archer'), 3);
   assert.equal(getRecruitLevel(recruitment, 'lancer'), 1);
   assert.equal(getBarracksUpgrade(barracks, recruitment, START).recruitLevel, 15);
@@ -411,7 +411,7 @@ test('Barracks IV survives offline reload, finishes exactly once and preserves t
     assert.equal(completeBarracksUpgrade(reloaded, START + FOURTH_DURATION * 2), false);
     const info = getBarracksUpgrade(reloaded, recruitment, START + FOURTH_DURATION);
     assert.equal(info.status, 'complete'); assert.equal(info.targetLevel, null); assert.equal(info.canStart, false);
-    assert.equal(info.lancerUnlocked, true);
+    assert.equal(info.lancerUnlocked, false, 'Building IV cannot count the closed Lancer toward its own unlock');
     for (const field of ['cost', 'durationMs', 'remainingMs', 'speedUpCost', 'speedUpMaxCost']) assert.equal(info[field], 0);
     assert.equal(startBarracksUpgrade(reloaded, recruitment, 10000, START).reason, 'max-level');
     assert.equal(speedUpBarracks(reloaded, 10000, START).reason, 'max-level');

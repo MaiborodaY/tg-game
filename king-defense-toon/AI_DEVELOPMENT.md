@@ -26,6 +26,21 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 
 ## Visual style and mobile UI
 
+- Public branding is **World of Connections (WoC)**. The approved handshake
+  fortress appears on initial loading and in the compact Profile/version
+  footer. `assets/brand/` supplies one shared WebP and simplified PNG favicons;
+  source PNGs for video stay in `promo/world-of-connections/`, outside the build.
+  `scripts/prepare-brand-art.mjs` reproduces runtime assets with size budgets.
+  The dungeon intro uses a smaller lazy derivative in `assets/branding/`, with
+  its own loading lifecycle; see the dungeon entry contract below.
+- Keep the existing loading grace period and retire initial branding after the
+  saved campaign's scenes are ready or any recovery error occurs. Later loads,
+  error screens and retries remain plain; branding adds no artificial wait,
+  animation loop or gameplay gate. Missing logo files must not prevent playing.
+- Rebranding does not rename `brotd-infinity:*` save/audio keys, Web Locks,
+  build metadata, scripts, hosting origin or Telegram app identifiers. Changing
+  those would require separate migration/configuration work.
+
 - BroTD Infinity uses the compact 2D pixel-art vocabulary of the current Tiny
   Swords units. Inspect actual runtime artwork before drawing a new unit, boss,
   portrait, icon or menu; an attractive fantasy illustration alone is not a match.
@@ -111,6 +126,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Never derive identity from array position or renumber on reload, sale or Connect.
   IDs are campaign-local. Respect shared footprint helpers for every two-cell unit;
   use capabilities such as `isHealingUnit`, not special cases for one old unit.
+  Panther Rider occupies 1 column × 2 rows from its upper anchor; Unicorn stays
+  2 columns × 1 row from its left anchor. Count occupied cells by footprint area,
+  never width alone. Selection, movement, Connect, previews and combat positions
+  share the same helpers. On restore, blocked Riders move intact to reserve;
+  never shift ordinary fighters or discard IDs/levels to accommodate a rotation.
 - A running battle owns its initial army/building/hero snapshots. Campaign edits
   apply to the next battle. Temporary Kitchen food is the explicit exception:
   `army-food.ts` applies/withdraws food against the battle's original forged stats,
@@ -126,11 +146,20 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Recruit feedback stays in the existing Market-to-Barracks animation with a
   compact level label; do not repeat it in a toast. Other short notices use the
   battlefield's right water gutter below FPS, clear of Start and the Army controls.
-- Human recruitment follows the Elven unlock pattern: Swordsman initially, Archer
-  at Swordsman recruitment level 3, Healer at Archer recruitment level 3, and
-  Lancer with completed Barracks II. Available types split the random pool equally;
-  the existing first-Lancer guarantee still applies. Personal Connect levels do
-  not unlock recruitment roles. Legacy training credit and existing fighters stay.
+- Recruitment unlocks use only already-open types in the same faction. Humans:
+  Swordsman initially; Archer at total 3, Healer at 5, Lancer at 10. Elves require
+  completed Mercenaries III: Rider initially; Archer at Rider recruitment level 3,
+  Healer at Elven total 5, Unicorn at 10. Lancer does not require building II;
+  Unicorn does not require IV. Evaluate in unlock order: closed types cannot add
+  their initial level 1 or old training to unlock themselves. Newly opened types
+  join the total immediately. Other factions and personal/Connect levels do not
+  count. Preserve existing receipts, legacy training credit and owned fighters.
+- UI requirements, equal random odds and actual recruitment share `recruitment.ts`.
+  The receipt reaching a threshold uses the prior eligible pool; subsequent hires
+  use the expanded pool. Mercenaries II still grants a pending one-time Lancer
+  bonus, but it waits for human total 10. Use `isLancerGuaranteeReady` for both
+  the guarantee and its UI; a pending flag must not advertise or roll a closed
+  Lancer, disappear on reload or be consumed while hiring Elves.
 - Mercenaries II → III requires the sum of Swordsman, Archer, Healer and Lancer
   recruitment levels to be at least 15 (including their initial level 1), not
   Lancer level 5 or personal/Connect levels. Use the shared requirement types
@@ -142,12 +171,14 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   and a separate upgrade view. Each row shows its recruitment level and an earned /
   required counter toward the next level, without a progress bar. Locked rows
   show prerequisites; capped rows show Max level. Keep help in the header.
-  Display the first-Lancer guarantee instead of ordinary odds while it is pending.
+  Display the first-Lancer guarantee instead of ordinary odds only when ready.
   Mercenaries I-IV is the UI name for the existing `barracks.level` progression;
-  reserve storage remains Barracks. Costs, timestamps, unlocks and save fields are
+  reserve storage remains Barracks. Costs, timestamps and save fields are
   unchanged. Starting/skipping an upgrade still uses campaign commands. Main-menu
   summaries omit price/duration; details show current requirements and running or
-  maximum-level states. Extra army capacity permits buying a tile, not a free tile.
+  maximum-level states. II grants extra capacity and the conditional Lancer bonus;
+  III opens Elves, IV grants extra capacity. Do not label II/IV as Lancer/Unicorn
+  unlocks. Extra army capacity permits buying a tile, not a free tile.
 - Mount this menu lazily and reuse its portraits, buttons and unchanged row markup.
   Only the existing economy tick updates an open upgrade countdown; no menu RAF,
   interval, animated background, icon library or additional image assets are needed.
@@ -157,7 +188,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - `save-storage.ts` and `save-session.ts` own browser storage access, schema checks,
   conflict detection and the exclusive writer lock. Do not bypass their recovery
   gate with direct localStorage writes in gameplay/UI code.
-- Current saves use schema 4 and persist `nextUnitId` and `kitchen`. When changing the format,
+- Current saves use schema 5 and persist `nextUnitId`, `kitchen` and `dungeonClears`. When changing the format,
   define an explicit migration and its compatibility behavior. Keep the original
   bytes before replacement, preserve prior migration backups, reject unsupported
   newer versions, and never overwrite malformed data with a fresh empty campaign.
@@ -291,9 +322,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   progress so retreat and campaign replay do not relock levels. No new save field
   is needed for browsing. Rewards and Enter are on each card, without a separate
   details page. Closed levels show their unlock requirement and disabled Enter.
-- `dungeons-ui.ts` owns catalogue/rules. Caves I and II award 150 gold + 3 slaves
-  and 300 gold + 5 slaves respectively on every completed run, with unlimited
-  daily entries. Cave III's 500 + 8 remains a future reward for its unfinished run.
+- `dungeons-ui.ts` owns catalogue/rules. Caves I and II first clears award 150 gold
+  + 3 slaves and 300 gold + 5 slaves. Repeats award one third of each resource,
+  rounded down: 50 + 1 and 100 + 1 respectively. Daily entries are unlimited.
+  Cards show the next prize via `getDungeonReward`, shared with settlement.
+  Cave III's 500 + 8 remains a future reward for its unfinished run.
   `DungeonLevel.runBoss` selects a full run's boss; null retains opening-preview mode.
 - `dungeon-run.ts` owns a separate formation and combat snapshot. Each guard
   group has one goblin, archer, healer and boar, all arriving together. Stats reference
@@ -316,6 +349,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   one-use abilities. Fallen allies are removed from combat, not from the campaign.
   A dead hero stays dead. Reposition survivors and discard old paths/targets and
   enemy/projectile/effect state between waves; never recreate a healed army.
+  The first Start snapshots the current Capitol alongside Hero and Forge, including
+  castle HP, tower ownership and damage upgrades. Later waves retain that same
+  castle, injuries and firing cooldown; never reapply upgrades or refill its HP.
+  Cave preparation and intro preloading receive the current Capitol too, so the
+  tower is visible and its shared archer sheet is ready before the first shot.
   Exit is hidden and rejected during combat. Between cleared waves a native modal
   confirms loss of progress; before first Start or after run completion/defeat,
   exit is direct. Keep the Start hit target stationary in the pressed CSS state.
@@ -332,11 +370,16 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Caves I and II carry HP and casualties between all three waves; healing during combat
   works normally. Run progress and its reward receipt are session-only, like battle
   receipts. `applyDungeonRunReward` in `campaign-rewards.ts` grants canonical full-run
-  rewards once, validates both balances before mutation, and leaves other campaign
-  state untouched. Main saves immediately after settlement; storage recovery blocks
+  rewards once and validates both balances before mutation. A successful full clear
+  records the level ID in campaign `dungeonClears` together with both balances.
+  Main saves immediately after settlement; storage recovery blocks
   result actions until the save succeeds. Retrying a write never re-grants rewards.
   The finished view shows spoils or defeat, plus Dungeons / Run again. Re-entry is
-  a fresh run with a new receipt. No daily cap or persistent dungeon progress is added.
+  a fresh run with a new receipt; persisted clear IDs determine its smaller prize.
+  Schema 0–4 did not record victories, so the next completed run of each level is
+  its first tracked clear. Schema 5 requires valid, unique clear IDs; malformed or
+  missing receipts trigger recovery instead of restoring the full reward. Older
+  clients reject schema 5, preserving receipts and vertical Rider placements.
 - Only a visible cave asset plan requests `map:goblin-cave`; URL imports do not
   eagerly fetch its image. Enemy sheets follow the current wave and shared cache.
 - Static WebP cover art uses one three-column atlas, loaded on first browsing;

@@ -5,6 +5,7 @@ import type { DungeonLevel, DungeonProgress, DungeonReward } from './dungeons.ts
 import type { ArmyUnit } from './unit-merging.ts';
 import type { HeroState } from './hero.ts';
 import type { ForgeState } from './forge.ts';
+import type { CapitolState } from './capitol.ts';
 import { ENEMY_TYPES, getWaveDefinition, WAVES_PER_ROUND } from './waves.ts';
 import type { EnemyType, WaveDefinition } from './waves.ts';
 import { getUnitAtCell, planFormationMove } from './unit-footprint.ts';
@@ -94,12 +95,13 @@ export function createDungeonRun(level: DungeonLevel, progress: DungeonProgress,
     unlockedCells: [...unlockedCells], selectedId: null, battle: null, stage: 'preparation', waveIndex: 0, reward: null };
 }
 
-export function startDungeonBattle(run: DungeonRun, hero: HeroState, forge: Readonly<ForgeState>): boolean {
+export function startDungeonBattle(run: DungeonRun, hero: HeroState, forge: Readonly<ForgeState>,
+  capitol: Readonly<CapitolState>): boolean {
   const next = getNextDungeonWave(run);
   if (run.stage !== 'preparation' || !next || !run.units.length) return false;
   run.selectedId = null;
   if (!run.battle) {
-    run.battle = createBattleForWave(run.units, next, hero, forge);
+    run.battle = createBattleForWave(run.units, next, hero, forge, capitol);
   } else {
     run.battle.phase = 'running';
   }

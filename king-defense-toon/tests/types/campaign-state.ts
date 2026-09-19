@@ -7,7 +7,7 @@ export function checkCampaignStateContracts(raw: unknown, now: number): void {
   const restored: CampaignState = restoreCampaignState(raw, now);
   const snapshot: CampaignSnapshot = campaignSnapshot(restored);
   const next: number = allocateCampaignUnitId(state);
-  const version: 4 = snapshot.saveSchemaVersion;
+  const version: 5 = snapshot.saveSchemaVersion;
   resetCampaignState(state, now);
   // @ts-expect-error Every new campaign needs its explicit clock.
   createCampaignState();

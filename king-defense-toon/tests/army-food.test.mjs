@@ -4,6 +4,7 @@ import { createBattle, updateBattle } from '../combat.ts';
 import { applyBattleFood, getArmyUnitStats, NO_FOOD } from '../army-food.ts';
 import { createForge, getForgedUnitStats } from '../forge.ts';
 import { createHero } from '../hero.ts';
+import { createCapitol } from '../capitol.ts';
 import { createDungeonRun, startDungeonBattle, finishDungeonWave, prepareNextDungeonWave } from '../dungeon-run.ts';
 import { GOBLIN_CAVE_LEVELS } from '../dungeons.ts';
 
@@ -45,7 +46,7 @@ test('expiry preserves injury fraction, dead units and attack phase; no cumulati
 test('food also applies to dungeon snapshots and never edits saved formation or forge', () => {
   const forge = createForge(), before = structuredClone(formation);
   const run = createDungeonRun(GOBLIN_CAVE_LEVELS[0], { clearedWaves: 50, firstClears: [] }, formation, ['2:0', '2:1', '2:2']);
-  assert.equal(startDungeonBattle(run, createHero(), forge), true);
+  assert.equal(startDungeonBattle(run, createHero(), forge, createCapitol()), true);
   applyBattleFood(run.battle, bonuses);
   const hp = run.battle.allies[0].maxHp;
   forge.health = 50;
@@ -66,7 +67,7 @@ test('food expiry never rewrites enemies or already launched gameplay projectile
 test('three-wave cave retains food bases, injuries and casualties across wave transitions', () => {
   const forge = createForge();
   const run = createDungeonRun(GOBLIN_CAVE_LEVELS[0], { clearedWaves: 50, firstClears: [] }, formation, ['2:0', '2:1', '2:2']);
-  startDungeonBattle(run, createHero(), forge);
+  startDungeonBattle(run, createHero(), forge, createCapitol());
   const battle = run.battle, baseHp = battle.allies[0].maxHp;
   applyBattleFood(battle, bonuses);
   battle.allies[0].hp *= .4;
@@ -76,7 +77,7 @@ test('three-wave cave retains food bases, injuries and casualties across wave tr
   assert.equal(finishDungeonWave(run), true);
   const foodBases = battle.food.bases;
   assert.equal(prepareNextDungeonWave(run), true);
-  assert.equal(startDungeonBattle(run, createHero(), forge), true);
+  assert.equal(startDungeonBattle(run, createHero(), forge, createCapitol()), true);
   assert.equal(run.battle, battle); assert.equal(battle.food.bases, foodBases);
   assert.equal(battle.waveNumber, 2);
   assert.equal(applyBattleFood(battle, bonuses), false);
@@ -88,7 +89,7 @@ test('three-wave cave retains food bases, injuries and casualties across wave tr
   battle.kills = battle.total;
   assert.equal(finishDungeonWave(run), true);
   assert.equal(prepareNextDungeonWave(run), true);
-  assert.equal(startDungeonBattle(run, createHero(), forge), true);
+  assert.equal(startDungeonBattle(run, createHero(), forge, createCapitol()), true);
   assert.equal(battle.waveNumber, 3); assert.equal(battle.wave.bossType, 'goblinChief');
   assert.equal(battle.food.bases, foodBases);
   applyBattleFood(battle, bonuses);
