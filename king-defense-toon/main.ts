@@ -682,7 +682,7 @@ function refreshEconomyContent() {
   refreshRecruitment();
   forgeUI?.refresh();
   farmUI?.refresh();
-  if (overlay?.id === 'kitchen-panel') kitchenUI?.refresh();
+  if (overlay?.id === 'buildings-panel' && !byId('kitchen-building').hidden) kitchenUI?.refresh();
   capitolUI?.refresh();
   const captureSeconds = Math.ceil(campaign.economy.captureCooldown);
   const captureLimit = capturePityKills(campaign.economy);
@@ -954,35 +954,30 @@ farmUI = createFarmUI({ root: byId('farm-crops'), getFarm: () => campaign.farm,
     save(); refresh();
   } });
 
-kitchenUI = createKitchenUI({ root: byId('kitchen-content'), getKitchen: () => campaign.kitchen,
-  getFarm: () => campaign.farm, canUse: canUseKitchen, onCook: (recipe, quantity) => {
-    if (!canUseKitchen()) return false;
-    tickEconomy();
-    if (!canUseKitchen()) return false;
-    const result = commands.cookCampaignMeals(campaign, recipe, quantity, Date.now());
-    if (!result.ok) { byId('kitchen-feedback').textContent = 'Unable to cook. Check ingredients and quantity.'; return false; }
-    // Saving retries the resulting snapshot, never the ingredient-consuming command.
-    save(); refresh();
-    byId('kitchen-feedback').textContent = `${quantity} ${quantity === 1 ? 'portion' : 'portions'} cooked · +${quantity} cooking XP`;
-    return true;
-  } });
+function ensureKitchenUI() {
+  kitchenUI ??= createKitchenUI({ root: byId('kitchen-content'), getKitchen: () => campaign.kitchen,
+    getFarm: () => campaign.farm, canUse: canUseKitchen,
+    onFarm: () => { selectBuilding('farm'); byId('tab-farm').focus({ preventScroll: true }); },
+    onCook: (recipe, quantity) => {
+      if (!canUseKitchen()) return false;
+      tickEconomy();
+      if (!canUseKitchen()) return false;
+      const result = commands.cookCampaignMeals(campaign, recipe, quantity, Date.now());
+      if (!result.ok) return false;
+      // Saving retries the resulting snapshot, never the ingredient-consuming command.
+      save(); refresh();
+      return true;
+    } });
+}
 
 function canUseKitchen() {
-  return economyActive && !isRecovering() && overlay?.id === 'kitchen-panel'
+  return economyActive && !isRecovering() && overlay?.id === 'buildings-panel' && !byId('kitchen-building').hidden
     && !!byId('offline-rewards-panel').hidden;
 }
-byId('open-kitchen').addEventListener('click', () => {
-  if (isRecovering() || !byId('offline-rewards-panel').hidden) return;
-  // Close returns focus to a visible game control, Back returns to the building entry.
-  setOverlay('kitchen-panel', byId('open-buildings')); refresh();
-});
-byId('kitchen-back').addEventListener('click', () => {
-  setOverlay('buildings-panel', byId('open-buildings')); refresh();
-  byId('open-kitchen').focus({ preventScroll: true });
-});
 
 for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-profile', 'profile-panel'], ['open-barracks', 'barracks-panel'], ['open-market-info', 'market-info-panel'], ['open-hero', 'hero-panel']] as const) {
   byId(button).addEventListener('click', () => {
+    if (panel === 'buildings-panel') kitchenUI?.closeHelp(false);
     if (panel === 'barracks-panel') {
       pendingRecruitId = null;
       pendingMerge = null;
@@ -992,7 +987,7 @@ for (const [button, panel] of [['open-buildings', 'buildings-panel'], ['open-pro
     setOverlay(panel, byId(button)); refresh();
   });
 }
-for (const panel of ['buildings-panel', 'kitchen-panel', 'profile-panel', 'unit-panel', 'barracks-panel', 'market-info-panel', 'hero-panel'] as const) {
+for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks-panel', 'market-info-panel', 'hero-panel'] as const) {
   byId(panel).addEventListener('click', event => {
     if (event.target === byId(panel) || (event.target as Element).closest<HTMLElement>('[data-close-overlay]')) {
       closeOverlay();
@@ -1001,6 +996,7 @@ for (const panel of ['buildings-panel', 'kitchen-panel', 'profile-panel', 'unit-
   byId(panel).addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
+      if (panel === 'buildings-panel' && kitchenUI?.closeHelp()) return;
       if (panel === 'market-info-panel' && mercenariesUI?.back()) return;
       if (connectSelection && (panel !== 'unit-panel' || connectSelection.donorIds.size)) { cancelConnect(); return; }
       if (panel === 'barracks-panel' && barracksSelectedId !== null) {
@@ -1012,7 +1008,7 @@ for (const panel of ['buildings-panel', 'kitchen-panel', 'profile-panel', 'unit-
     }
     if (event.key !== 'Tab') return;
     const buttons = [...byId(panel).querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), select:not(:disabled), input:not(:disabled), [tabindex="0"]')]
-      .filter(element => !element.hidden && element.getClientRects().length > 0);
+      .filter(element => !element.hidden && !element.closest('[inert]') && element.getClientRects().length > 0);
     const first = buttons[0], last = buttons.at(-1);
     if (event.shiftKey && (document.activeElement as FocusElement | null) === first) { event.preventDefault(); last?.focus(); }
     else if (!event.shiftKey && (document.activeElement as FocusElement | null) === last) { event.preventDefault(); first?.focus(); }
@@ -1035,12 +1031,15 @@ byId('market-build').addEventListener('click', () => {
 });
 
 function selectBuilding(name: string | undefined) {
+  kitchenUI?.closeHelp(false);
+  byId('buildings-panel').dataset.building = name;
   for (const tab of byId('buildings-tabs').querySelectorAll<HTMLElement>('[data-building]')) {
     const selected = tab.dataset.building === name;
     tab.setAttribute('aria-selected', String(selected));
     tab.tabIndex = selected ? 0 : -1;
     byId(tab.getAttribute('aria-controls') as GameElementId).hidden = !selected;
   }
+  if (name === 'kitchen') { ensureKitchenUI(); kitchenUI?.refresh(); }
   farmUI?.refresh();
   capitolUI?.refresh();
 }

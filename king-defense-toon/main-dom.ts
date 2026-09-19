@@ -1,11 +1,8 @@
 // Static IDs and tags from index.html. The DOM contract test detects template drift.
 export interface GameElementTags {
-  'open-kitchen': 'button';
-  'kitchen-panel': 'section';
-  'kitchen-title': 'h2';
-  'kitchen-back': 'button';
+  'tab-kitchen': 'button';
+  'kitchen-building': 'article';
   'kitchen-content': 'div';
-  'kitchen-feedback': 'p';
   'open-dungeons': 'button';
   'dungeons-screen': 'section';
   'app': 'main';

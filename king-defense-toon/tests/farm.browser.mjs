@@ -82,7 +82,7 @@ async function fits(page) {
     }
     return bad;
   });
-  assert.deepEqual(issues, [], 'Farm and all five building tabs fit the small screen');
+  assert.deepEqual(issues, [], 'Farm and all six building tabs fit the small screen');
 }
 
 async function freshPlots(page, time = initialTime) {
@@ -148,13 +148,13 @@ try {
   baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const viewport of [{ width: 390, height: 700 }, { width: 320, height: 568 }]) {
-    await scenario('fresh-game-five-tabs', viewport, null, async page => {
+    await scenario('fresh-game-six-tabs', viewport, null, async page => {
       await openFarm(page); await freshPlots(page);
       assert.equal(await page.locator('[data-farm-upgrade]').isDisabled(), true);
       const tabs = page.locator('#buildings-tabs [role="tab"]');
-      assert.deepEqual(await tabs.evaluateAll(nodes => nodes.map(node => node.id)), ['tab-treasury', 'tab-market', 'tab-forge', 'tab-farm', 'tab-capitol']);
+      assert.deepEqual(await tabs.evaluateAll(nodes => nodes.map(node => node.id)), ['tab-treasury', 'tab-market', 'tab-forge', 'tab-farm', 'tab-kitchen', 'tab-capitol']);
       await page.locator('#tab-farm').focus();
-      for (const [key, id] of [['ArrowRight', 'tab-capitol'], ['ArrowRight', 'tab-treasury'], ['End', 'tab-capitol'], ['Home', 'tab-treasury'], ['ArrowRight', 'tab-market'], ['ArrowRight', 'tab-forge'], ['ArrowRight', 'tab-farm']]) {
+      for (const [key, id] of [['ArrowRight', 'tab-kitchen'], ['ArrowRight', 'tab-capitol'], ['ArrowRight', 'tab-treasury'], ['End', 'tab-capitol'], ['Home', 'tab-treasury'], ['ArrowRight', 'tab-market'], ['ArrowRight', 'tab-forge'], ['ArrowRight', 'tab-farm']]) {
         await page.keyboard.press(key);
         assert.equal(await page.locator('#' + id).getAttribute('aria-selected'), 'true');
         assert.equal(await page.locator('#' + id).evaluate(node => node === document.activeElement), true);
