@@ -58,8 +58,9 @@ with 42 reach and no charge, splash, stun or passive magic.
 - Human receipts and pending first-Lancer guarantees survive pool changes.
   Mixed Human/Elven formations are allowed; changing the pool does not replace
   fighters already owned or change a running battle.
-- A Rider or Unicorn occupies two adjacent horizontal, purchased cells. Its anchor is the
-  left cell; its model and battle starting position are centered across both.
+- A Rider occupies two vertical purchased cells, anchored at the upper cell.
+  Unicorn occupies two horizontal cells, anchored at the left cell.
+  Their model and battle starting position are centered across both cells.
   Selection and Connect work from either cell. Moves and swaps require both
   complete footprints to fit; recruiting never silently removes a second guard.
   Old Riders that no longer fit return to reserve with their level intact.

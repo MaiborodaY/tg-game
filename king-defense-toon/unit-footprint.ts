@@ -12,9 +12,18 @@ export function getUnitCellWidth(type: UnitType): 1 | 2 {
   return UNIT_TYPE_BY_ID[type]?.cellWidth ?? 1;
 }
 
+export function getUnitCellHeight(type: UnitType): 1 | 2 {
+  return UNIT_TYPE_BY_ID[type]?.cellHeight ?? 1;
+}
+
+export function getUnitCellCount(type: UnitType): number {
+  return getUnitCellWidth(type) * getUnitCellHeight(type);
+}
+
 export function getUnitCells(unit: Readonly<UnitFootprint>): string[] {
-  // Keep out-of-bounds cells: clipping a wide fighter at the edge would incorrectly make it fit.
-  return Array.from({ length: getUnitCellWidth(unit.type) }, (_, offset) => `${unit.col + offset}:${unit.row}`);
+  // Keep out-of-bounds cells: clipping a footprint at an edge would incorrectly make it fit.
+  return Array.from({ length: getUnitCellHeight(unit.type) }, (_, row) =>
+    Array.from({ length: getUnitCellWidth(unit.type) }, (_, col) => `${unit.col + col}:${unit.row + row}`)).flat();
 }
 
 function insideField(col: number, row: number): boolean {
@@ -31,7 +40,7 @@ export function getUnitAtCell<T extends UnitFootprint>(units: readonly T[], col:
 export function canPlaceUnit(unit: Readonly<UnitFootprint>, units: readonly Occupant[],
   unlockedCells: readonly string[], ignoredIds: readonly (number | string)[] = []): boolean {
   if (!Object.hasOwn(UNIT_TYPE_BY_ID, unit.type) || !insideField(unit.col, unit.row)
-    || !insideField(unit.col + getUnitCellWidth(unit.type) - 1, unit.row)) return false;
+    || !insideField(unit.col + getUnitCellWidth(unit.type) - 1, unit.row + getUnitCellHeight(unit.type) - 1)) return false;
   const cells = getUnitCells(unit);
   if (!cells.every(cell => unlockedCells.includes(cell))) return false;
   const ignored = new Set(ignoredIds);
@@ -41,7 +50,8 @@ export function canPlaceUnit(unit: Readonly<UnitFootprint>, units: readonly Occu
 
 export function getUnitPosition(unit: Readonly<UnitFootprint>): Point {
   const position = positionForCell(unit.col, unit.row);
-  return { ...position, x: position.x + (getUnitCellWidth(unit.type) - 1) * FIELD.cellWidth / 2 };
+  return { x: position.x + (getUnitCellWidth(unit.type) - 1) * FIELD.cellWidth / 2,
+    y: position.y + (getUnitCellHeight(unit.type) - 1) * FIELD.cellHeight / 2 };
 }
 
 export function planFormationMove<T extends IdentifiedUnitFootprint>(units: readonly T[], id: T['id'],
@@ -67,9 +77,9 @@ export function reconcileUnitFootprints(units: readonly ArmyUnit[], reserve: rea
   unlockedCells: readonly string[]): { units: ArmyUnit[]; reserve: Fighter[]; movedCount: number } {
   const kept = new Set<ArmyUnit>();
   const occupied: ArmyUnit[] = [];
-  // Existing one-cell fighters retain their anchors before wider riders claim space.
-  for (const unit of [...units.filter(unit => getUnitCellWidth(unit.type) === 1),
-    ...units.filter(unit => getUnitCellWidth(unit.type) === 2)]) {
+  // Existing one-cell fighters retain their anchors before mounted fighters claim space.
+  for (const unit of [...units.filter(unit => getUnitCellCount(unit.type) === 1),
+    ...units.filter(unit => getUnitCellCount(unit.type) > 1)]) {
     if (!canPlaceUnit(unit, occupied, unlockedCells)) continue;
     kept.add(unit);
     occupied.push(unit);

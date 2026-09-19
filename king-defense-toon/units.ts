@@ -16,6 +16,7 @@ export interface UnitDefinition {
   readonly description: string;
   readonly spriteColumn: number;
   readonly cellWidth?: 1 | 2;
+  readonly cellHeight?: 1 | 2;
 }
 
 export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
@@ -74,7 +75,7 @@ export const UNIT_TYPES: readonly UnitDefinition[] = Object.freeze([
     color: '#8766ad',
     description: 'Fast mounted defender. Throws a moon glaive at one nearby enemy, beyond sword reach.',
     spriteColumn: 4,
-    cellWidth: 2,
+    cellHeight: 2,
   }),
   Object.freeze({
     id: 'elfArcher',

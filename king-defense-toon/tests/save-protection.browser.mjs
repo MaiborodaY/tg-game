@@ -13,7 +13,7 @@ const key = 'brotd-infinity:campaign:v2';
 const backupKey = `${key}:backup:before-schema-${SAVE_SCHEMA_VERSION}`;
 const now = 1_800_000_000_000;
 const fixture = {
-  saveSchemaVersion: SAVE_SCHEMA_VERSION, nextUnitId: 6, campaignVersion: 3, gold: 250, starterSupplyGranted: true,
+  saveSchemaVersion: SAVE_SCHEMA_VERSION, dungeonClears: [], nextUnitId: 6, campaignVersion: 3, gold: 250, starterSupplyGranted: true,
   autoWaves: false, autoWavesDefaultVersion: 1, clearedWaves: 0,
   units: [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 },
     { id: 2, type: 'archer', level: 10, col: 2, row: 1 }, { id: 3, type: 'healer', level: 10, col: 2, row: 2 }],

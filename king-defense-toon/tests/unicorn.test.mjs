@@ -55,16 +55,18 @@ test('Unicorn receipts start independently in old saves and Connect preserves le
 test('both mounts share two-cell selection, safe placement, moves, swaps and restore without losing fighters', () => {
   for(const type of ['unicorn','pantherRider']) {
     const mount=fighter(1,type,1,0,125), guard=fighter(2,'swordsman',3);
-    assert.equal(canPlaceUnit(mount,[],['1:0','2:0']),true);
+    const vertical = type === 'pantherRider';
+    const second = vertical ? [1,1] : [2,0];
+    assert.equal(canPlaceUnit(mount,[],['1:0',second.join(':')]),true);
     assert.equal(canPlaceUnit(mount,[],['1:0']),false);
-    assert.equal(canPlaceUnit(mount,[fighter(2,'healer',2)],allCells),false);
-    assert.equal(canPlaceUnit({...mount,col:4},[],allCells),false);
-    assert.strictEqual(getUnitAtCell([mount],2,0),mount);
+    assert.equal(canPlaceUnit(mount,[fighter(2,'healer',...second)],allCells),false);
+    assert.equal(canPlaceUnit({...mount, ...(vertical ? {row:2} : {col:4})},[],allCells),false);
+    assert.strictEqual(getUnitAtCell([mount],...second),mount);
     const battle=createBattle([mount],1);
     assert.equal(battle.allies[0].x,getUnitPosition(mount).x);
     const swapped=planFormationMove([mount,guard],1,3,0,allCells);
     assert.equal(swapped.ok,true); assert.deepEqual(swapped.units.map(u=>u.col),[3,1]);
-    assert.equal(planFormationMove([mount,guard],1,3,0,allCells.filter(c=>c!=='4:0')).ok,false);
+    assert.equal(planFormationMove([mount,guard],1,3,0,allCells.filter(c=>c!==(vertical ? '3:1' : '4:0'))).ok,false);
     const restored=reconcileUnitFootprints([mount],[],['1:0']);
     assert.deepEqual(restored.reserve,[{id:1,type,level:125}]); assert.deepEqual(restored.units,[]);
     assert.equal(reconcileUnitFootprints(restored.units,restored.reserve,['1:0']).movedCount,0);

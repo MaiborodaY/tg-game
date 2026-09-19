@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { GOBLIN_CAVE_LEVELS, getDungeonLevel, isDungeonLevelUnlocked } from '../dungeons.ts';
+import { GOBLIN_CAVE_LEVELS, getDungeonLevel, getDungeonReward, isDungeonLevelUnlocked } from '../dungeons.ts';
 import { createCampaignState, campaignSnapshot, restoreCampaignState } from '../campaign-state.ts';
 import { createScreenController } from '../screen-controller.ts';
 import { createDungeonRun, getDungeonOpeningWave, getDungeonWaves, getNextDungeonWave, getDungeonExitState,
@@ -9,6 +9,32 @@ import { createBattleForWave, updateBattle } from '../combat.ts';
 import { getSceneAssetPlan } from '../scene-assets.ts';
 import { applyDungeonRunReward } from '../campaign-rewards.ts';
 import { ENEMY_TYPES, getWaveDefinition } from '../waves.ts';
+
+test('first-clear rewards are independent by dungeon tier and snapshot receipts own their data', () => {
+  const campaign = createCampaignState(1800000000000);
+  assert.deepEqual(applyDungeonRunReward(campaign, completeRun(campaign, GOBLIN_CAVE_LEVELS[0])),
+    { ok: true, gold: 150, slaves: 3 });
+  const saved = campaignSnapshot(campaign);
+  assert.deepEqual(getDungeonReward(GOBLIN_CAVE_LEVELS[0], saved.dungeonClears), { gold: 50, slaves: 1 });
+  assert.deepEqual(getDungeonReward(GOBLIN_CAVE_LEVELS[1], saved.dungeonClears), { gold: 300, slaves: 5 });
+  assert.deepEqual(applyDungeonRunReward(campaign, completeRun(campaign, GOBLIN_CAVE_LEVELS[1])),
+    { ok: true, gold: 300, slaves: 5 });
+  assert.deepEqual(saved.dungeonClears, ['goblin-cave-1']);
+  assert.deepEqual(campaign.dungeonClears, ['goblin-cave-1', 'goblin-cave-2']);
+});
+
+test('schema-four campaigns start tracking full clears once and retain both prizes and history on reload', () => {
+  const saved = campaignSnapshot(createCampaignState(1800000000000));
+  saved.saveSchemaVersion = 4;
+  delete saved.dungeonClears;
+  let campaign = restoreCampaignState(saved, 1800000000000);
+  assert.deepEqual(campaign.dungeonClears, []);
+  assert.deepEqual(applyDungeonRunReward(campaign, completeRun(campaign)), { ok: true, gold: 150, slaves: 3 });
+  campaign = restoreCampaignState(JSON.parse(JSON.stringify(campaignSnapshot(campaign))), 1800000000000);
+  assert.deepEqual(applyDungeonRunReward(campaign, completeRun(campaign)), { ok: true, gold: 50, slaves: 1 });
+  assert.equal(campaign.gold, saved.gold + 200);
+  assert.equal(campaign.economy.slaves, saved.economy.slaves + 4);
+});
 
 function clearWave(run) {
   run.battle.phase = 'victory'; run.battle.kills = run.battle.total;
@@ -326,13 +352,14 @@ test(`Cave ${level.numeral} grants once per clear, survives saves and allows rep
   const before = campaignSnapshot(campaign);
   for (let attempt = 1; attempt <= 3; attempt++) {
     const run = completeRun(campaign, level);
-    assert.deepEqual(applyDungeonRunReward(campaign, run), { ok: true, ...level.completionReward });
+    assert.deepEqual(applyDungeonRunReward(campaign, run), { ok: true, gold: attempt === 1 ? level.completionReward.gold : Math.floor(level.completionReward.gold / 3),
+      slaves: attempt === 1 ? level.completionReward.slaves : Math.floor(level.completionReward.slaves / 3) });
     const paid = campaignSnapshot(campaign);
     assert.equal(applyDungeonRunReward(campaign, run).reason, 'already-recorded');
     assert.deepEqual(campaignSnapshot(campaign), paid);
     campaign = restoreCampaignState(paid, 1800000000000);
-    assert.equal(campaign.gold, before.gold + attempt * level.completionReward.gold);
-    assert.equal(campaign.economy.slaves, before.economy.slaves + attempt * level.completionReward.slaves);
+    assert.equal(campaign.gold, before.gold + level.completionReward.gold + (attempt - 1) * Math.floor(level.completionReward.gold / 3));
+    assert.equal(campaign.economy.slaves, before.economy.slaves + level.completionReward.slaves + (attempt - 1) * Math.floor(level.completionReward.slaves / 3));
     assert.deepEqual(campaign.hero, before.hero);
     assert.deepEqual(campaign.units, before.units);
     assert.deepEqual(campaign.progression, before.progression);

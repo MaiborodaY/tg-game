@@ -66,12 +66,12 @@ test('two-cell rider draws once over both cells, with centred labels and all pal
     await scene.prepare({ units: [unit], selectedId: 1 });
     canvas.clear(); scene.render({ units: [unit], selectedId: 1 });
     const draws = canvas.commands.filter(([method, image]) => method === 'drawImage' && image.includes(`panther-rider-${color}.webp`));
-    assert.equal(draws.length, 1, 'the right-hand occupied cell does not duplicate its sprite');
+    assert.equal(draws.length, 1, 'the lower occupied cell does not duplicate its sprite');
     const source = PANTHER_RIDER_GEOMETRY.sourceRects[0], scale = 54.05 / (PANTHER_RIDER_GEOMETRY.bodyHeight * 128);
     assert.ok(Math.abs(draws[0][8] - source.width * scale) < 1e-9);
     assert.ok(Math.abs(draws[0][9] - source.height * scale) < 1e-9);
-    const center = FIELD.gridX + 2 * FIELD.cellWidth;
-    assert.ok(canvas.commands.some(([method, x, y]) => method === 'translate' && x === center && y === 320));
+    const center = FIELD.gridX + 1.5 * FIELD.cellWidth;
+    assert.ok(canvas.commands.some(([method, x, y]) => method === 'translate' && x === center && y === 320 + FIELD.cellHeight / 2));
     assert.equal(canvas.commands.filter(([method, property, value]) => method === 'set' && property === 'fillStyle' && value === '#ffe6a2a8').length, 2, 'selection covers both cells');
     assert.equal(canvas.commands.filter(([method, , , w, h]) => method === 'fillRect' && w === 12 && h === 2).length, 13, 'neither occupied cell gets an empty plus');
     const labels = canvas.commands.filter(([method, text]) => method === 'fillText' && text === String(level));
@@ -100,22 +100,22 @@ test('rider placement ghost requires both owned cells and validates the same sin
   const swordsman = { id: 2, type: 'swordsman', level: 1, col: 1, row: 0 };
   for (const [units, unlockedCells, col, replacingFromReserve, expected] of [
     [[], ['1:0'], 1, true, 0],
-    [[], ['1:0', '2:0'], 1, true, 1],
+    [[], ['1:0', '1:1'], 1, true, 1],
     [[], ['4:0'], 4, true, 0],
-    [[swordsman], ['1:0', '2:0'], 1, true, 1],
-    [[swordsman, { ...swordsman, id: 3, col: 2 }], ['1:0', '2:0'], 1, true, 0],
-    [[swordsman], ['1:0', '2:0'], 1, false, 0],
+    [[swordsman], ['1:0', '1:1'], 1, true, 1],
+    [[swordsman, { ...swordsman, id: 3, row: 1 }], ['1:0', '1:1'], 1, true, 0],
+    [[swordsman], ['1:0', '1:1'], 1, false, 0],
   ]) {
     await scene.prepare({ units, unlockedCells, placementType: 'pantherRider', replacingFromReserve });
     canvas.clear(); move(col, 0);
     assert.equal(ghostDraws(), expected, JSON.stringify({ units, unlockedCells, col, replacingFromReserve }));
   }
-  const rider = { id: 1, type: 'pantherRider', level: 1, col: 1, row: 1 };
-  const unlockedCells = ['1:0', '2:0', '1:1', '2:1'];
+  const rider = { id: 1, type: 'pantherRider', level: 1, col: 2, row: 1 };
+  const unlockedCells = ['1:0', '2:0', '1:1', '2:1', '2:2'];
   await scene.prepare({ units: [rider, swordsman], unlockedCells, movingId: 1, placementType: 'pantherRider', replacingFromReserve: false });
   canvas.clear(); move(1, 0);
   assert.equal(ghostDraws(), 2, 'valid swap shows the existing rider and exactly one destination preview');
-  await scene.prepare({ units: [rider, swordsman, { ...swordsman, id: 3, col: 2 }], unlockedCells });
+  await scene.prepare({ units: [rider, swordsman, { ...swordsman, id: 3, row: 1 }], unlockedCells });
   canvas.clear(); move(1, 0);
   assert.equal(ghostDraws(), 1, 'a second occupant blocks the swap preview');
 });

@@ -52,7 +52,7 @@ test('fresh campaign owns starter supply and injected economic checkpoint withou
 
 test('legacy zero, one and current schemas retain IDs and migrate once across JSON reloads', () => {
   for (const schema of [undefined, 0, 1, 2, SAVE_SCHEMA_VERSION]) {
-    const raw = legacy({ gold: 250.8, nextUnitId: 80,
+    const raw = legacy({ gold: 250.8, nextUnitId: 80, dungeonClears: [],
       units: [{ id: 8, type: 'archer', level: 11, col: 2, row: 0 }],
       reserve: [{ id: 2, type: 'healer', level: 13 }],
       economy: { slaves: 0 }, starterSupplyGranted: true,
@@ -109,7 +109,7 @@ test('footprint reconciliation preserves the ID and receipt of a displaced mount
   const state = restoreCampaignState(legacy({ barracks: { level: 3 }, starterSupplyGranted: true,
     progression: { unlockedCells: ['3:0'] },
     units: [{ id: 41, type: 'pantherRider', level: 9, col: 2, row: 0 },
-      { id: 77, type: 'archer', level: 2, col: 3, row: 0 }],
+      { id: 77, type: 'archer', level: 2, col: 2, row: 1 }],
   }), now);
   assert.deepEqual(state.units.map(unit => unit.id), [77]);
   assert.deepEqual(state.reserve, [{ id: 41, type: 'pantherRider', level: 9 }]);
