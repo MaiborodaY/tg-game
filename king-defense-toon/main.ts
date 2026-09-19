@@ -827,7 +827,7 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
   },
   onStart: () => {
     if (!dungeonRun || !isDungeonBattleScreen() || overlay || isRecovering() || !telegram.isActive || !byId('offline-rewards-panel').hidden) return;
-    if (!startDungeonBattle(dungeonRun, campaign.hero, campaign.forge)) return;
+    if (!startDungeonBattle(dungeonRun, campaign.hero, campaign.forge, campaign.capitol)) return;
     battleAudio.setActive(visibleBattle()?.phase === 'running');
     void battleAudio.unlock();
     framePacer.reset(); refresh(); resumeFrames();
@@ -1177,7 +1177,8 @@ function refresh() {
   if (isDungeonIntroScreen() && dungeonRun) {
     // Warm the cave through the existing cache without drawing or changing its
     // foreground asset state while the native video owns the screen.
-    void scene?.preload({ mapVariant: 'goblin-cave', units: dungeonRun.units, wave: dungeonRun.wave });
+    void scene?.preload({ mapVariant: 'goblin-cave', units: dungeonRun.units, wave: dungeonRun.wave,
+      capitolState: campaign.capitol });
     refreshOnboarding();
     return;
   }
@@ -1926,7 +1927,7 @@ function drawScenes() {
     const run = dungeonRun;
     const selected = run.units.find(unit => unit.id === run.selectedId);
     const common = { mapVariant: 'goblin-cave' as const, units: run.units, wave: run.wave, levelNumber: 1,
-      time: visualTime, heroState: campaign.hero, capitolState: undefined, unlockedCells: run.unlockedCells,
+      time: visualTime, heroState: campaign.hero, capitolState: campaign.capitol, unlockedCells: run.unlockedCells,
       selectedId: null, movingId: null, placementType: null, selectedEmptyCell: null, selectedLockedCell: null,
       nextUnlockCost: null, barracksLevel: undefined, replacingFromReserve: false,
       mergeTargets: [], mergeLevel: 0, draggedId: null, dragTargetId: null };

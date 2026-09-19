@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { listenBrowserServer } from './helpers/browser-server.mjs';
+import { prependFunctionBody } from './helpers/browser-instrumentation.mjs';
 import { createCampaignState, campaignSnapshot } from '../campaign-state.ts';
 import { GOBLIN_CAVE_LEVELS } from '../dungeons.ts';
 
@@ -15,6 +16,8 @@ const server = await createServer({
   cacheDir: fileURLToPath(new URL('../../.tmp/browser-vite/dungeons/', import.meta.url)),
   server: { host: '127.0.0.1', port: 0 },
   plugins: [{ name: 'dungeon-browser-observation', enforce: 'pre', transform(code, id) {
+    if (id.endsWith('/scene.ts')) return prependFunctionBody(code, 'drawCapitolTower',
+      'if (context.canvas.id === "battle") window.dungeonTowerDraws = (window.dungeonTowerDraws ?? 0) + 1;');
     if (!id.endsWith('/main.ts')) return;
     return code + `\nwindow.dungeonCheck = {
       ready: () => !!scene && !!armyScene && !isRecovering(),
@@ -22,7 +25,10 @@ const server = await createServer({
       battle: () => battle && ({ wave: battle.waveNumber, elapsed: battle.elapsed, phase: battle.phase }),
       countdown: () => autoNextRemaining,
       run: () => dungeonRun && ({ level: dungeonRun.level.id, stage: dungeonRun.stage, reward: dungeonRun.reward, battle: dungeonRun.battle && {
-        elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total } }),
+        elapsed: dungeonRun.battle.elapsed, wave: dungeonRun.battle.waveNumber, phase: dungeonRun.battle.phase, total: dungeonRun.battle.total,
+        castle: { hp: dungeonRun.battle.castle.hp, maxHp: dungeonRun.battle.castle.maxHp,
+          damage: dungeonRun.battle.castle.damage, tower: dungeonRun.battle.castle.stats.towerLevel } } }),
+      injureCastle: () => { dungeonRun.battle.castle.hp -= 43; refresh(); },
       advanceDungeon: seconds => {
         for (let tick = 0; tick < seconds * 60; tick++) updateBattle(dungeonRun.battle, 1/60);
         refresh();
@@ -92,6 +98,12 @@ async function scenario(name, width, height, saved, check, telegram = false, red
         localStorage.setItem(key, JSON.stringify(saved)); sessionStorage.setItem('dungeon-fixture', '1');
       }
       window.dungeonDraws = { battle: 0, 'army-map': 0 };
+      window.dungeonCastleHealth = '';
+      const fillText = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
+        if (this.canvas.id === 'battle' && /^\d+\/\d+$/.test(text)) window.dungeonCastleHealth = text;
+        return fillText.call(this, text, ...args);
+      };
       window.dungeonAudioSources = [];
       const mediaSource = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
       Object.defineProperty(HTMLMediaElement.prototype, 'src', { ...mediaSource, set(value) {
@@ -136,6 +148,40 @@ try {
   await mkdir(output, { recursive: true });
   baseUrl = await listenBrowserServer(server);
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
+  for (const tier of [1, 2]) {
+    const upgraded = fixture(100);
+    upgraded.capitol = { health: 3, tower: 3 };
+    upgraded.units = upgraded.units.filter(unit => unit.type === 'swordsman');
+    await scenario(`Cave ${tier} inherits Capitol upgrades before Start and across waves`, 390, 844, upgraded, async page => {
+      await open(page);
+      await page.evaluate(() => { window.dungeonTowerDraws = 0; window.dungeonCastleHealth = ''; });
+      await page.locator(`[data-dungeon-level="goblin-cave-${tier}"]`).click();
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      await page.waitForFunction(() => window.dungeonTowerDraws > 0 && window.dungeonCastleHealth === '160/160');
+      assert.equal((await page.evaluate(() => window.dungeonCheck.run())).battle, null);
+      await page.screenshot({ path: fileURLToPath(new URL(`capitol-cave-${tier}-preparation.png`, output)) });
+      await page.locator('[data-run-start]').click();
+      assert.deepEqual((await page.evaluate(() => window.dungeonCheck.run())).battle.castle,
+        { hp: 160, maxHp: 160, damage: 14, tower: 3 });
+      await page.evaluate(() => window.dungeonCheck.injureCastle());
+      for (let wave = 2; wave <= 3; wave++) {
+        await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+        await page.locator('[data-run-start]').click();
+        assert.equal((await page.evaluate(() => window.dungeonCheck.run())).stage, 'preparation');
+        assert.equal(await page.evaluate(() => window.dungeonCastleHealth), '117/160');
+        await page.locator('[data-run-start]').click();
+        assert.deepEqual((await page.evaluate(() => window.dungeonCheck.run())).battle.castle,
+          { hp: 117, maxHp: 160, damage: 14, tower: 3 });
+      }
+      await page.evaluate(() => window.dungeonCheck.finishDungeonWave());
+      await page.locator('[data-run-retry]').click();
+      await page.waitForFunction(() => window.dungeonCheck.ready());
+      await page.locator('[data-run-start]').click();
+      assert.deepEqual((await page.evaluate(() => window.dungeonCheck.run())).battle.castle,
+        { hp: 160, maxHp: 160, damage: 14, tower: 3 }, 'repeat entry starts a new Capitol snapshot');
+      assert.deepEqual((await page.evaluate(() => window.dungeonCheck.state())).capitol, upgraded.capitol);
+    });
+  }
   await scenario('cave controls: stable single-tap Start, guarded exit and next wave', 390, 844, fixture(), async (page, requests) => {
     const caveImages = () => requests.filter(url => /\/goblin-cave-map\.webp(?:\?|$)/.test(url));
     assert.equal(caveImages().length, 0, 'entering the game does not fetch the cave map');

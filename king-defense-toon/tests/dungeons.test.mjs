@@ -69,9 +69,9 @@ test('dungeon entry validates gates and isolates formation, battle snapshots and
   assert.equal(selectDungeonCell(run, 0, 0), false, 'cannot buy or move into closed cells');
   assert.equal(selectDungeonCell(run, 2, 1), true);
   assert.equal(run.units[0].row, 1);
-  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), true);
+  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), true);
   const battle = run.battle;
-  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false, 'double tap cannot restart combat');
+  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), false, 'double tap cannot restart combat');
   assert.equal(run.battle, battle);
   assert.equal(selectDungeonCell(run, 2, 0), false, 'formation is fixed during the run');
   battle.allies[0].hp = 0;
@@ -133,7 +133,7 @@ test(`Cave ${level.numeral} preparation returns survivors home without healing o
   const before = campaignSnapshot(campaign);
   const run = createDungeonRun(level, { clearedWaves: level.unlockRound * 10, firstClears: [] }, campaign.units, ['2:0', '2:1']);
   assert.equal(getDungeonExitState(run), 'leave', 'no warning before starting');
-  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), true);
+  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), true);
   const battle = run.battle, survivor = battle.allies[0], hero = battle.hero, castle = battle.castle;
   assert.equal(getDungeonExitState(run), 'blocked');
   survivor.hp = 13;
@@ -146,7 +146,7 @@ test(`Cave ${level.numeral} preparation returns survivors home without healing o
     clearWave(run);
     assert.equal(getDungeonExitState(run), 'confirm');
     assert.equal(getNextDungeonWave(run).number, wave);
-    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false, 'a result cannot jump straight into combat');
+    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), false, 'a result cannot jump straight into combat');
     survivor.x += 35; survivor.y -= 80;
     assert.equal(prepareNextDungeonWave(run), true);
     assert.equal(prepareNextDungeonWave(run), false, 'double prepare cannot skip a wave');
@@ -157,7 +157,7 @@ test(`Cave ${level.numeral} preparation returns survivors home without healing o
     for (let i = 0; i < 120; i++) updateBattle(battle, 1 / 30);
     assert.equal(battle.elapsed, 0);
     assert.equal(battle.spawned, 0);
-    assert.equal(startDungeonBattle(run, { ...campaign.hero, level: 20 }, campaign.forge), true);
+    assert.equal(startDungeonBattle(run, { ...campaign.hero, level: 20 }, campaign.forge, campaign.capitol), true);
     assert.equal(run.battle, battle, 'a single combat snapshot is retained');
     assert.equal(battle.waveNumber, wave);
     assert.deepEqual(battle.allies, [survivor], 'fallen healer stays out');
@@ -169,7 +169,7 @@ test(`Cave ${level.numeral} preparation returns survivors home without healing o
     assert.equal(hero.miracleUsed, true);
     assert.equal(battle.castle, castle);
     assert.equal(castle.hp, 57);
-    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false, 'rapid second tap is rejected');
+    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), false, 'rapid second tap is rejected');
     for (let i = 0; i < 50; i++) updateBattle(battle, 1 / 60);
     assert.equal(battle.spawned, wave === 2 ? 4 : 1);
     assert.equal(battle.enemies.some(enemy => enemy.type === level.runBoss), wave === 3);
@@ -177,7 +177,7 @@ test(`Cave ${level.numeral} preparation returns survivors home without healing o
   clearWave(run);
   assert.equal(getNextDungeonWave(run), null);
   assert.equal(getDungeonExitState(run), 'leave', 'completed run has no unfinished progress warning');
-  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false, 'cannot replay a finished wave in-place');
+  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), false, 'cannot replay a finished wave in-place');
   assert.deepEqual(campaignSnapshot(campaign), before, 'the campaign army, progress and economy remain unchanged');
 });
 
@@ -185,11 +185,11 @@ test(`Cave ${level.numeral} defeat cannot advance a wave or refill the run`, () 
   const campaign = createCampaignState(1800000000000);
   const units = [{ id: 1, type: 'swordsman', level: 1, col: 2, row: 0 }];
   const run = createDungeonRun(level, { clearedWaves: level.unlockRound * 10, firstClears: [] }, units, ['2:0']);
-  startDungeonBattle(run, campaign.hero, campaign.forge);
+  startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol);
   run.battle.phase = 'defeat'; run.battle.castle.hp = 0;
   finishDungeonWave(run);
   assert.equal(getDungeonExitState(run), 'leave');
-  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), false);
+  assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), false);
   assert.equal(run.battle.castle.hp, 0);
   const retry = createDungeonRun(level, { clearedWaves: level.unlockRound * 10, firstClears: [] }, units, ['2:0']);
   assert.equal(retry.battle, null);
@@ -200,7 +200,7 @@ test(`Cave ${level.numeral} waiting between waves does not heal or refresh hero 
   const campaign = createCampaignState(1800000000000);
   const units = [{ id: 1, type: 'healer', level: 4, col: 2, row: 0 }];
   const run = createDungeonRun(level, { clearedWaves: level.unlockRound * 10, firstClears: [] }, units, ['2:0']);
-  startDungeonBattle(run, campaign.hero, campaign.forge);
+  startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol);
   const battle = run.battle;
   clearWave(run);
   battle.allies[0].hp = 10;
@@ -211,7 +211,7 @@ test(`Cave ${level.numeral} waiting between waves does not heal or refresh hero 
   for (let i = 0; i < 600; i++) updateBattle(battle, 1 / 30);
   prepareNextDungeonWave(run);
   for (let i = 0; i < 600; i++) updateBattle(battle, 1 / 30);
-  startDungeonBattle(run, campaign.hero, campaign.forge);
+  startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol);
   assert.equal(battle.allies[0].hp, 10);
   assert.equal(battle.hero.hp, 21);
   assert.equal(battle.hero.healCooldown, 6);
@@ -244,7 +244,7 @@ test('reinforcements actually spawn on the fixed clock and clearing a group does
   const units = [{ id: 1, type: 'swordsman', level: 10000, col: 2, row: 0 }];
   for (const fps of [30, 60, 120]) for (const speed of [1, 2, 3]) {
     for (const wave of getDungeonWaves(GOBLIN_CAVE_LEVELS[0]).slice(0, 2)) {
-      const battle = createBattleForWave(units, wave, campaign.hero, campaign.forge);
+      const battle = createBattleForWave(units, wave, campaign.hero, campaign.forge, campaign.capitol);
       for (let frame = 0; frame < Math.ceil(11 * fps / speed); frame++) updateBattle(battle, speed / fps);
       assert.equal(battle.spawned, 4);
       assert.equal(battle.phase, 'running', 'future reinforcements keep the wave open');
@@ -264,7 +264,7 @@ function completeRun(campaign, level = GOBLIN_CAVE_LEVELS[0]) {
     [{ id: 1, type: 'swordsman', level: 10, col: 2, row: 0 }], ['2:0']);
   for (const wave of run.waves) {
     if (wave.number > 1) assert.equal(prepareNextDungeonWave(run), true);
-    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), true);
+    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), true);
     clearWave(run);
   }
   return run;
@@ -280,7 +280,7 @@ test('Cave II preloads the existing Bombardier body and effects and its bomb act
   assert.deepEqual(plan.enemies.map(enemy => enemy.type), ['goblinBombardier']);
   assert.ok(plan.cannonBomb && plan.cannonExplosion);
   const battle = createBattleForWave([{ id: 1, type: 'healer', level: 1000, col: 2, row: 0 }],
-    waves[2], campaign.hero, campaign.forge);
+    waves[2], campaign.hero, campaign.forge, campaign.capitol);
   let bomb;
   for (let tick = 0; tick < 60 * 120 && !bomb && battle.phase === 'running'; tick++) {
     updateBattle(battle, 1 / 60);
@@ -307,7 +307,7 @@ test('Cave II completes all three waves through real combat and pays only after 
     campaign.units, ['2:0', '2:1', '2:2']);
   for (const wave of run.waves) {
     if (wave.number > 1) assert.equal(prepareNextDungeonWave(run), true);
-    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge), true);
+    assert.equal(startDungeonBattle(run, campaign.hero, campaign.forge, campaign.capitol), true);
     for (let tick = 0; tick < 60 * 900 && run.battle.phase === 'running'; tick++) updateBattle(run.battle, 1 / 60);
     assert.equal(run.battle.phase, 'victory', `wave ${wave.number}`);
     assert.equal(finishDungeonWave(run), true);

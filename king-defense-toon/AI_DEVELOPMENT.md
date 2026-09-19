@@ -340,6 +340,11 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   one-use abilities. Fallen allies are removed from combat, not from the campaign.
   A dead hero stays dead. Reposition survivors and discard old paths/targets and
   enemy/projectile/effect state between waves; never recreate a healed army.
+  The first Start snapshots the current Capitol alongside Hero and Forge, including
+  castle HP, tower ownership and damage upgrades. Later waves retain that same
+  castle, injuries and firing cooldown; never reapply upgrades or refill its HP.
+  Cave preparation and intro preloading receive the current Capitol too, so the
+  tower is visible and its shared archer sheet is ready before the first shot.
   Exit is hidden and rejected during combat. Between cleared waves a native modal
   confirms loss of progress; before first Start or after run completion/defeat,
   exit is direct. Keep the Start hit target stationary in the pressed CSS state.
