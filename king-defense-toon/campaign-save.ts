@@ -4,7 +4,8 @@ import { CAMPAIGN_VERSION } from './waves.ts';
 import { isUnitIdCursor, restoreNextUnitId } from './campaign-roster.ts';
 
 // Save shape and campaign wave numbering evolve independently.
-export const SAVE_SCHEMA_VERSION = 2;
+// Schema 3 changes farm semantics: manual-farm clients must not rewrite automatic beds.
+export const SAVE_SCHEMA_VERSION = 3;
 
 export interface DecodedCampaignSave extends Record<string, unknown> {
   saveSchemaVersion: typeof SAVE_SCHEMA_VERSION;
@@ -43,7 +44,7 @@ export function decodeCampaignSave(value: unknown): DecodedCampaignSave {
   }
   // A version-two save knows IDs consumed by fighters no longer in the roster.
   // Losing that cursor must not silently allow old command targets to be reused.
-  if (value.saveSchemaVersion === SAVE_SCHEMA_VERSION && !isUnitIdCursor(value.nextUnitId)) {
+  if (typeof value.saveSchemaVersion === 'number' && value.saveSchemaVersion >= 2 && !isUnitIdCursor(value.nextUnitId)) {
     throw new Error('Invalid saved campaign fighter ID cursor');
   }
   const saved = migrateCampaignSave(value);

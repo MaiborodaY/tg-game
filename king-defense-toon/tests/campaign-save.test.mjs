@@ -152,3 +152,11 @@ test('invalid campaign data stays protected before later game saves can replace 
     assert.equal(writes, 0);
   }
 });
+
+test('schema two still requires its persistent identity cursor during farm migration', () => {
+  assert.throws(() => decodeCampaignSave({ saveSchemaVersion: 2, gold: 50 }), /fighter ID cursor/);
+  assert.equal(needsCampaignSaveMigration({ saveSchemaVersion: 2 }), true);
+  const decoded = decodeCampaignSave({ saveSchemaVersion: 2, nextUnitId: 100, campaignVersion: CAMPAIGN_VERSION, gold: 50 });
+  assert.equal(decoded.saveSchemaVersion, SAVE_SCHEMA_VERSION);
+  assert.equal(decoded.nextUnitId, 100);
+});

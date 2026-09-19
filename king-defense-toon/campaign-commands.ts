@@ -14,7 +14,7 @@ import { upgradeCapitol } from './capitol.ts';
 import type { CapitolUpgradeId } from './capitol.ts';
 import { upgradeTreasury, accrueTreasury, checkpointTreasury, claimOfflineTreasury, advanceCaptureClock } from './economy.ts';
 import { upgradeMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
-import { plantCrop, harvestCrop } from './farm.ts';
+import { upgradeFarm, harvestCrop } from './farm.ts';
 import type { CropId } from './farm.ts';
 import { spendHeroTalent, resetHeroTalents } from './hero.ts';
 import type { TalentId } from './hero.ts';
@@ -199,17 +199,19 @@ export function completeCampaignBarracksUpgrade(state: CampaignState, now: numbe
   return { ok: true as const, completed: completeBarracksUpgrade(state.barracks, now) };
 }
 
-export function plantCampaignCrop(state: CampaignState, crop: CropId, now: number) {
+export function upgradeCampaignFarm(state: CampaignState, now: number) {
   if (!validTime(now)) return fail('invalid-time');
-  const farm = { plots: { ...state.farm.plots }, stock: { ...state.farm.stock } };
-  if (!plantCrop(farm, crop, now)) return fail('unavailable');
+  const farm = { ...state.farm, plots: { ...state.farm.plots }, stock: { ...state.farm.stock } };
+  const result = upgradeFarm(farm, state.gold, now);
+  if (!result.ok) return fail(result.reason);
+  state.gold = result.gold;
   state.farm = farm;
-  return { ok: true as const };
+  return { ok: true as const, cost: result.cost, level: result.level };
 }
 
 export function harvestCampaignCrop(state: CampaignState, crop: CropId, now: number) {
   if (!validTime(now)) return fail('invalid-time');
-  const farm = { plots: { ...state.farm.plots }, stock: { ...state.farm.stock } }, result = harvestCrop(farm, crop, now);
+  const farm = { ...state.farm, plots: { ...state.farm.plots }, stock: { ...state.farm.stock } }, result = harvestCrop(farm, crop, now);
   if (!result.harvested) return fail('unavailable');
   state.farm = farm;
   return { ok: true as const, amount: result.amount };

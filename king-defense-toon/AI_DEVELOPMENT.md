@@ -72,7 +72,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   settlement in `campaign-rewards.ts`; UI callbacks request those operations.
 - Commands validate before committing changes. A rejected operation must leave
   the campaign unchanged. Cost and benefit form one operation: recruitment,
-  upgrades, Connect, planting/harvest and talent spending must not partially apply.
+  upgrades, Connect, farm upgrades/harvest and talent spending must not partially apply.
 - Pass time and randomness explicitly into commands. Domain code must not reach
   into DOM, localStorage or Telegram. Reuse existing price, unlock and balance
   helpers rather than duplicating rules in the UI.
@@ -103,7 +103,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - `save-storage.ts` and `save-session.ts` own browser storage access, schema checks,
   conflict detection and the exclusive writer lock. Do not bypass their recovery
   gate with direct localStorage writes in gameplay/UI code.
-- Current saves use schema 2 and persist `nextUnitId`. When changing the format,
+- Current saves use schema 3 and persist `nextUnitId`. When changing the format,
   define an explicit migration and its compatibility behavior. Keep the original
   bytes before replacement, preserve prior migration backups, reject unsupported
   newer versions, and never overwrite malformed data with a fresh empty campaign.
@@ -117,6 +117,16 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - Supported Web Locks and a secure context are required by the current save
   design. Do not silently introduce a localStorage lock approximation. Physical
   Telegram client compatibility remains separate from desktop browser tests.
+- Farm schema 3 migrates manual plots to automatic production (farm version 2).
+  Farm levels 1/2/3 unlock carrot/potato/pumpkin, with per-crop bed caps 10/20/30
+  and upgrade costs 500/1500 gold. Production is 1 crop per 5/15/30 real minutes.
+  Collect all ripe crops into separate uncapped inventory; preserve fractional
+  growth below the cap, discard overflow time at a full bed. An upgrade retains
+  produce but cannot backfill newly purchased capacity. Newly unlocked crops
+  start at upgrade time. Legacy saves start at level 1, keep all inventory and
+  carrot progress (at most one ripe carrot at migration); compensate each valid
+  old potato/pumpkin planting with one stored vegetable, once. Preserve original
+  save bytes before schema migration; older clients must reject schema 3.
 - Crops and passive production use timestamps, not animation frames. Preserve
   offline caps, consumed checkpoints and already-paid receipt acknowledgement.
   A changed browser origin requires an explicit save-transfer plan.
