@@ -7,17 +7,19 @@ export interface DungeonLevel {
   readonly tier: 1 | 2 | 3;
   readonly numeral: 'I' | 'II' | 'III';
   readonly boss: string;
+  /** A null boss keeps an unfinished tier in opening-preview mode. */
+  readonly runBoss: 'goblinChief' | 'goblinBombardier' | null;
   readonly unlockRound: number;
   readonly completionReward: DungeonReward;
 }
 
-// Cave I pays per completed run; later tiers still display planned rewards.
+// Completed tiers share the same run flow; Cave III still previews its opening.
 export const GOBLIN_CAVE_LEVELS: readonly DungeonLevel[] = Object.freeze([
-  { id: 'goblin-cave-1', tier: 1, numeral: 'I', boss: 'Goblin Chief', unlockRound: 5,
+  { id: 'goblin-cave-1', tier: 1, numeral: 'I', boss: 'Goblin Chief', runBoss: 'goblinChief', unlockRound: 5,
     completionReward: { gold: 150, slaves: 3 } },
-  { id: 'goblin-cave-2', tier: 2, numeral: 'II', boss: 'Bombardier', unlockRound: 10,
+  { id: 'goblin-cave-2', tier: 2, numeral: 'II', boss: 'Bombardier', runBoss: 'goblinBombardier', unlockRound: 10,
     completionReward: { gold: 300, slaves: 5 } },
-  { id: 'goblin-cave-3', tier: 3, numeral: 'III', boss: 'Goblin King', unlockRound: 15,
+  { id: 'goblin-cave-3', tier: 3, numeral: 'III', boss: 'Goblin King', runBoss: null, unlockRound: 15,
     completionReward: { gold: 500, slaves: 8 } },
 ]);
 

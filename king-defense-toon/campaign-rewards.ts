@@ -31,7 +31,7 @@ const validReceipt = (receipt: BattleRewardReceipt): boolean => receipt !== null
 export function applyDungeonRunReward(state: CampaignState, run: DungeonRun) {
   if (run.reward !== null) return fail('already-recorded');
   const level = getDungeonLevel(run.level.id);
-  if (level?.tier !== 1) return fail('preview-only');
+  if (!level?.runBoss) return fail('preview-only');
   if (run.stage !== 'complete' || run.waveIndex !== 2 || run.waves.length !== 3
     || run.battle?.phase !== 'victory' || run.battle.waveNumber !== 3
     || run.battle.kills !== run.battle.total) return fail('unfinished-run');

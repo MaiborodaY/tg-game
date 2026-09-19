@@ -840,7 +840,7 @@ const dungeonRunUI = createDungeonRunUI({ battlefield: byId('battle').parentElem
 function finishDungeonBattle() {
   if (!dungeonRun || !finishDungeonWave(dungeonRun)) return;
   battleAudio.setActive(false);
-  if (dungeonRun.stage === 'complete' && dungeonRun.level.tier === 1) {
+  if (dungeonRun.stage === 'complete' && dungeonRun.level.runBoss) {
     const result = applyDungeonRunReward(campaign, dungeonRun);
     if (!result.ok) { stopForCampaignError(`Dungeon reward: ${result.reason}`); return; }
     save();

@@ -32,7 +32,7 @@ export function getDungeonOpeningWave(level: DungeonLevel): WaveDefinition {
     { type: 'boar', x: 225, y: 105 },
     { type: 'goblinArcher', x: 265, y: 64 },
   ];
-  const strength = level.tier === 1 ? 1.15 : 1;
+  const strength = level.runBoss ? 1.15 : 1;
   const spawns = positions.map(position => {
     const base = ENEMY_TYPES[position.type];
     const role = reference.spawns.find(spawn => spawn.type === position.type);
@@ -58,16 +58,19 @@ function withGuardGroups(wave: WaveDefinition, groups: number): WaveDefinition {
 
 export function getDungeonWaves(level: DungeonLevel): readonly WaveDefinition[] {
   const opening = getDungeonOpeningWave(level);
-  // Only Cave I's full run is implemented; the other tiers keep their opening preview.
-  if (level.tier !== 1) return Object.freeze([opening]);
-  const boss = getWaveDefinition(level.unlockRound * WAVES_PER_ROUND).spawns.find(spawn => spawn.type === 'goblinChief')!;
+  const bossType = level.runBoss;
+  if (!bossType) return Object.freeze([opening]);
+  // Keep the tier's milestone strength, but use the dungeon's own boss identity.
+  // Round 1-10 has an Ogre in the campaign; Cave II deliberately uses Bombardier.
+  const boss = getWaveDefinition(level.unlockRound * WAVES_PER_ROUND).spawns.find(spawn => ENEMY_TYPES[spawn.type].isBoss)!;
   return Object.freeze([withGuardGroups(opening, 2),
     withGuardGroups({ ...opening, number: 2, waveInRound: 2, name: 'Cave reinforcements' }, 3),
-    Object.freeze({ ...opening, number: 3, waveInRound: 3, name: 'Goblin Chief',
-      description: 'Defeat the chief to clear the cave.', bossOnly: true, hasBoss: true,
-      bossType: 'goblinChief' as const, isFinalBossWave: true, total: 1,
-      enemies: Object.freeze([{ type: 'goblinChief' as const, name: ENEMY_TYPES.goblinChief.name, count: 1 }]),
-      spawns: Object.freeze([Object.freeze({ ...boss, hp: Math.round(boss.hp * 1.3), damage: boss.damage * 1.3,
+    Object.freeze({ ...opening, number: 3, waveInRound: 3, name: level.boss,
+      description: `Defeat the ${level.boss} to clear the cave.`, bossOnly: true, hasBoss: true,
+      bossType, isFinalBossWave: true, total: 1,
+      enemies: Object.freeze([{ type: bossType, name: ENEMY_TYPES[bossType].name, count: 1 }]),
+      spawns: Object.freeze([Object.freeze({ ...boss, type: bossType, name: ENEMY_TYPES[bossType].name,
+        hp: Math.round(boss.hp * 1.3), damage: boss.damage * 1.3,
         at: .8, x: 205, y: 85, reward: 0 })]) }),
   ]);
 }

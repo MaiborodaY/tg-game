@@ -240,19 +240,23 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   progress so retreat and campaign replay do not relock levels. No new save field
   is needed for browsing. Rewards and Enter are on each card, without a separate
   details page. Closed levels show their unlock requirement and disabled Enter.
-- `dungeons-ui.ts` owns catalogue/rules. Cave I awards 150 gold + 3 slaves on
-  every completed run, with unlimited daily entries. Cave II/III rewards (300 + 5
-  and 500 + 8) remain labelled future rewards for their unimplemented full runs.
+- `dungeons-ui.ts` owns catalogue/rules. Caves I and II award 150 gold + 3 slaves
+  and 300 gold + 5 slaves respectively on every completed run, with unlimited
+  daily entries. Cave III's 500 + 8 remains a future reward for its unfinished run.
+  `DungeonLevel.runBoss` selects a full run's boss; null retains opening-preview mode.
 - `dungeon-run.ts` owns a separate formation and combat snapshot. Each guard
   group has one goblin, archer, healer and boar, all arriving together. Stats reference
   the campaign just after the level's unlock milestone; campaign balance is unchanged.
   Dungeon combat does not settle campaign wave progress, kill rewards, captures or XP.
   Leaving/reloading discards the run, not the saved army.
-  Cave I has three waves: two groups of four guards, three groups, then a solo
-  `goblinChief`. Groups arrive at 0.8, 12.8 and (wave 2 only) 24.8 combat seconds.
+  Caves I and II have three waves: two groups of four guards, three groups, then
+  a solo `goblinChief` or `goblinBombardier` respectively. Groups arrive at 0.8,
+  12.8 and (wave 2 only) 24.8 combat seconds.
   Guard HP, damage and healing are 15% above the previous dungeon baseline;
-  the chief has 30% more HP/damage than the unlock milestone's boss. Other tiers retain their
-  opening-wave previews; their full runs and reward collection remain future work.
+  each boss has 30% more HP/damage than its unlock milestone's campaign boss.
+  Cave II uses round 1-10's resolved boss stats with Bombardier identity, animation
+  and single-target bomb combat; the campaign's Ogre encounter is unchanged.
+  Cave III retains its opening-wave preview; its full run remains future work.
   The run owns an explicit preparation/combat/wave-cleared/complete/defeat stage
   and wave index. `finishDungeonWave` records a result once. `prepareNextDungeonWave`
   returns survivors home without starting combat; a separate `startDungeonBattle`
@@ -274,7 +278,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   existing timestamp lifecycle. Recovery, offline receipts and Telegram suspension
   cover both modes. The cave map has its own cache key shared by both canvases;
   use authored bounds (-56, -445, 502, 890), never stretch it into the lower field.
-- Cave I carries HP and casualties between all three waves; healing during combat
+- Caves I and II carry HP and casualties between all three waves; healing during combat
   works normally. Run progress and its reward receipt are session-only, like battle
   receipts. `applyDungeonRunReward` in `campaign-rewards.ts` grants canonical full-run
   rewards once, validates both balances before mutation, and leaves other campaign
