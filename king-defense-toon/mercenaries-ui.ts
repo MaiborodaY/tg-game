@@ -106,7 +106,7 @@ export function createMercenariesUI(options: Options): MercenariesUI {
       <div id="mercenaries-upgrade-detail" hidden>
         <h3 id="mercenaries-upgrade-tier" class="mercenaries-subheading"></h3>
         <div class="mercenaries-benefits"><div><span id="mercenaries-benefit-icon">${icon('leaf')}</span><span id="mercenaries-unlock"></span><small id="mercenaries-unlock-label">Unlock</small></div><div>${icon('tiles')}<span>Army limit</span><span id="mercenaries-capacity"></span></div><small id="mercenaries-slot-note">New slot sold separately</small></div>
-        <div id="mercenaries-requirements"><h3>Requirements</h3><div class="mercenaries-requirement"><img id="mercenaries-required-art" alt=""><div class="mercenaries-requirement-copy"><strong id="mercenaries-required-name"></strong><small>Recruitment level</small><small id="mercenaries-required-count"></small></div><span id="mercenaries-required-level" class="mercenaries-amount"></span><span id="mercenaries-required-symbol"></span></div><div class="mercenaries-requirement"><span class="coin-icon" aria-hidden="true"></span><span>Gold</span><span id="mercenaries-required-gold" class="mercenaries-amount"></span><span id="mercenaries-gold-symbol"></span></div></div>
+        <div id="mercenaries-requirements"><h3>Requirements</h3><div class="mercenaries-requirement"><img id="mercenaries-required-art" alt=""><div class="mercenaries-requirement-copy"><strong id="mercenaries-required-name"></strong><small id="mercenaries-required-label"></small><small id="mercenaries-required-count"></small></div><span id="mercenaries-required-level" class="mercenaries-amount"></span><span id="mercenaries-required-symbol"></span></div><div class="mercenaries-requirement"><span class="coin-icon" aria-hidden="true"></span><span>Gold</span><span id="mercenaries-required-gold" class="mercenaries-amount"></span><span id="mercenaries-gold-symbol"></span></div></div>
         <div id="mercenaries-time" class="mercenaries-time">${icon('clock')}<span id="mercenaries-time-label">Time</span><span id="mercenaries-duration"></span></div>
         <progress id="barracks-upgrade-progress" aria-label="Upgrade progress" hidden></progress><p id="mercenaries-running-note" class="mercenaries-note" hidden>Continues offline</p>
         <button id="barracks-start-upgrade" class="mercenaries-button mercenaries-primary" data-merc-action="start">Upgrade</button>
@@ -138,6 +138,8 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     const upgrading = info.status === 'upgrading' || info.status === 'ready';
     const max = info.targetLevel === null;
     const met = info.recruitLevel >= info.requiredRecruitLevel;
+    const total = info.requiredRecruitTypes.length > 1;
+    const requiredType = info.requiredRecruitTypes[0]!;
     const tier = max ? 'Mercenaries IV' : `Mercenaries ${TIERS[info.level - 1]} → ${TIERS[info.targetLevel! - 1]}`;
     const reward = info.targetLevel === 2 ? 'Lancer' : info.targetLevel === 3 ? 'Elven recruits' : max ? 'All tiers unlocked' : 'Unicorn';
     text('barracks-upgrade-gold', amount.format(state.gold));
@@ -146,8 +148,8 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     hide('mercenaries-summary-requirement', max || upgrading);
     hide('mercenaries-summary-status', !upgrading);
     text('mercenaries-summary-status', 'Upgrade in progress');
-    text('mercenaries-summary-name', name(info.requiredRecruitType));
-    text('mercenaries-summary-level', `Lv. ${info.recruitLevel} / ${info.requiredRecruitLevel}`);
+    text('mercenaries-summary-name', total ? 'Human levels' : name(requiredType));
+    text('mercenaries-summary-level', `${total ? '' : 'Lv. '}${info.recruitLevel} / ${info.requiredRecruitLevel}`);
     symbol('mercenaries-summary-lock', met);
     // The shared economy clock calls tick; hidden detail fields and static rows
     // are left alone. Assignments below only write when a visible value changed.
@@ -158,11 +160,15 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     hide('mercenaries-slot-note', max); hide('mercenaries-requirements', max || upgrading);
     hide('mercenaries-complete', !max); hide('mercenaries-time', max);
     if (!max && !upgrading) {
-      portrait('mercenaries-required-art', info.requiredRecruitType, info.recruitLevel);
-      text('mercenaries-required-name', name(info.requiredRecruitType));
+      if (total) hide('mercenaries-required-art', true);
+      else portrait('mercenaries-required-art', requiredType, info.recruitLevel);
+      text('mercenaries-required-name', total ? 'Human recruits' : name(requiredType));
+      text('mercenaries-required-label', total ? 'Total of all 4 levels' : 'Recruitment level');
       text('mercenaries-required-level', `${info.recruitLevel} / ${info.requiredRecruitLevel}`);
-      const remaining = recruitsNeededForLevel(state.recruitment, info.requiredRecruitType, info.requiredRecruitLevel);
-      text('mercenaries-required-count', met ? 'Ready' : `${remaining} more at Market`);
+      const remaining = total ? Math.max(0, info.requiredRecruitLevel - info.recruitLevel)
+        : recruitsNeededForLevel(state.recruitment, requiredType, info.requiredRecruitLevel);
+      text('mercenaries-required-count', met ? 'Ready' : total
+        ? `${remaining} more ${remaining === 1 ? 'level' : 'levels'} at Market` : `${remaining} more at Market`);
       symbol('mercenaries-required-symbol', met);
       node('mercenaries-required-level').classList.toggle('is-missing', !met);
       node('mercenaries-required-level').classList.toggle('is-met', met);
@@ -184,7 +190,8 @@ export function createMercenariesUI(options: Options): MercenariesUI {
     const start = node<HTMLButtonElement>('barracks-start-upgrade');
     start.hidden = max || upgrading;
     start.disabled = !options.canEdit() || !info.canStart || state.gold < info.cost;
-    const reason = !met ? `${name(info.requiredRecruitType)} recruitment level ${info.requiredRecruitLevel} required`
+    const reason = !met ? total ? `Total human recruitment levels ${info.recruitLevel} of ${info.requiredRecruitLevel} required`
+      : `${name(requiredType)} recruitment level ${info.requiredRecruitLevel} required`
       : state.gold < info.cost ? `${info.cost - state.gold} more gold required` : `Costs ${info.cost} gold, takes ${info.durationMs / 3_600_000} hours`;
     const label = `Upgrade. ${reason}`;
     if (start.getAttribute('aria-label') !== label) start.setAttribute('aria-label', label);

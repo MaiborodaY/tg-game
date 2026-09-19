@@ -105,10 +105,14 @@ try {
       await page.screenshot({ path: fileURLToPath(new URL(`main-${width}.png`, output)) });
       await upgrade(page); await fits(page);
       assert.equal(await page.locator('#mercenaries-help').isVisible(), false);
-      assert.equal(await page.locator('#mercenaries-required-count').innerText(), '27 more at Market');
+      assert.equal(await page.locator('#mercenaries-required-name').innerText(), 'Human recruits');
+      assert.equal(await page.locator('#mercenaries-required-label').innerText(), 'Total of all 4 levels');
+      assert.equal(await page.locator('#mercenaries-required-level').innerText(), '15 / 15');
+      assert.equal(await page.locator('#mercenaries-required-count').innerText(), 'Ready');
+      assert.equal(await page.locator('#mercenaries-required-art').isVisible(), false);
       assert.equal(await page.locator('#mercenaries-required-gold').innerText(), '4,907 / 2,000');
       assert.equal(await page.locator('#mercenaries-duration').innerText(), '3h');
-      assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), false);
+      assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
       await page.screenshot({ path: fileURLToPath(new URL(`upgrade-${width}.png`, output)) });
       await page.keyboard.press('Escape');
       assert.equal(await page.locator('#mercenaries-overview').isVisible(), true);
@@ -137,6 +141,31 @@ try {
       assert.deepEqual(after, original, 'Menu navigation does not modify campaign');
       assert.equal(afterEconomy.slaves, beforeEconomy.slaves);
       assert.equal(afterEconomy.captures, beforeEconomy.captures);
+    });
+  }
+  for (const archer of [14, 15]) {
+    const total = archer === 14 ? 14 : 15;
+    await scenario(`human total ${total}, Lancer level 1`, fixture(2, { swordsman: 225, archer }, 2000), 320, async page => {
+      await open(page); await fits(page);
+      assert.equal(await page.locator('#mercenaries-summary-name').innerText(), 'Human levels');
+      assert.equal(await page.locator('#mercenaries-summary-level').innerText(), `${total} / 15`);
+      assert.equal(await page.locator('[data-recruit-type="lancer"] .mercenary-level').innerText(), 'Lv. 1');
+      await upgrade(page); await fits(page);
+      assert.equal(await page.locator('#mercenaries-required-level').innerText(), `${total} / 15`);
+      assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), total === 15);
+      if (total === 14) {
+        assert.equal(await page.locator('#mercenaries-required-count').innerText(), '1 more level at Market');
+        assert.match(await page.locator('#barracks-start-upgrade').getAttribute('aria-label'), /Total human recruitment levels 14 of 15/);
+        return;
+      }
+      await page.locator('#barracks-start-upgrade').click();
+      assert.equal((await state(page)).gold, 0);
+      assert.equal((await state(page)).barracks.upgradeReadyAt, now + 10800000);
+      await page.reload(); await page.waitForFunction(() => window.mercenaryCheck?.ready());
+      await open(page); await upgrade(page); await fits(page);
+      assert.equal((await state(page)).gold, 0);
+      assert.equal((await state(page)).barracks.upgradeReadyAt, now + 10800000);
+      assert.equal(await page.locator('#mercenaries-requirements').isVisible(), false);
     });
   }
   await scenario('initial locked roles', fixture(1), 320, async page => {

@@ -245,6 +245,23 @@ test('barracks purchase, natural completion and paid finish are separate atomic 
   unchanged(paid, () => commands.finishCampaignBarracksUpgrade(paid, NOW + 1_800_000), 'not-upgrading');
 });
 
+test('Barracks III command uses the human level total and persists one atomic purchase', () => {
+  const state = fresh(); state.gold = 2000; state.barracks.level = 2;
+  state.units = [{ id: 1, type: 'swordsman', level: 100, col: 2, row: 0 }];
+  Object.assign(state.recruitment.received, { swordsman: 225, archer: 14 });
+  unchanged(state, () => commands.startCampaignBarracksUpgrade(state, NOW), 'locked');
+  state.recruitment.received.archer = 15;
+  const before = clone(state);
+  assert.equal(commands.startCampaignBarracksUpgrade(state, NOW).cost, 2000);
+  assert.equal(state.gold, 0);
+  assert.equal(state.barracks.upgradeReadyAt, NOW + 10800000);
+  assert.deepEqual(state.units, before.units);
+  assert.deepEqual(state.recruitment, before.recruitment);
+  const restored = restoreCampaignState(campaignSnapshot(state), NOW + 1);
+  assert.equal(restored.barracks.upgradeReadyAt, state.barracks.upgradeReadyAt);
+  unchanged(restored, () => commands.startCampaignBarracksUpgrade(restored, NOW + 1), 'upgrading');
+});
+
 test('farm harvesting preserves automatic growth on early collection or numeric overflow', () => {
   const state = fresh();
   assert.equal(state.farm.level, 1);

@@ -131,6 +131,12 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Lancer with completed Barracks II. Available types split the random pool equally;
   the existing first-Lancer guarantee still applies. Personal Connect levels do
   not unlock recruitment roles. Legacy training credit and existing fighters stay.
+- Mercenaries II → III requires the sum of Swordsman, Archer, Healer and Lancer
+  recruitment levels to be at least 15 (including their initial level 1), not
+  Lancer level 5 or personal/Connect levels. Use the shared requirement types
+  and total in `barracks.ts` for validation and UI; Elven levels do not contribute.
+  Keep the 2,000 gold / 3h upgrade and existing paid timers. The I → II and
+  III → IV requirements still use Swordsman 5 and Panther Rider 5 respectively.
 - `mercenaries-ui.ts` owns the Mercenaries menu: one Human/Elven dropdown beside
   the gold balance, compact portrait rows, shared equal odds for unlocked types,
   and a separate upgrade view. Each row shows its recruitment level and an earned /

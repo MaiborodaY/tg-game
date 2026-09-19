@@ -24,7 +24,7 @@ window.barracksCheck = {
       prepareThird: () => {
         campaign.gold = 5000;
         campaign.barracks = createBarracks({ level: 2 });
-        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, lancer: 49 } });
+        campaign.recruitment = createRecruitment({ version: 2, received: { swordsman: 50, archer: 15, healer: 5, lancer: 49 } });
         campaign.units = [{ id: 1, type: 'lancer', level: 1, col: 2, row: 0 }];
         campaign.reserve = [{ id: 2, type: 'lancer', level: 4 }];
         campaign.nextUnitId = 3;
@@ -206,7 +206,7 @@ try {
     assert.equal((await state()).units[0].level, 5, 'personal Lancer reaches level 5 through Connect');
     assert.equal((await state()).recruitment.received.lancer, 49, 'Connect cannot grant recruitment experience');
     await upgrade();
-    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Lancer.*4 \/ 5/s);
+    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Human recruits.*14 \/ 15/s);
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true);
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);

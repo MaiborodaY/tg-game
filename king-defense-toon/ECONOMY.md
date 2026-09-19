@@ -39,10 +39,12 @@ The current battle retains its own fighter snapshot. The next wave uses the late
 | Upgrade | Recruitment requirement | Construction | Real duration | Full acceleration price | Result |
 | --- | --- | ---: | --- | ---: | --- |
 | I → II | Swordsman recruitment level 5 | 200 gold | One hour | 100 gold | Lancer unlock; ninth central cell becomes purchasable |
-| II → III | Lancer recruitment level 5 | 2,000 gold | Three hours | 300 gold | Up to ten cells including one chosen outer cell; Elven roster selection |
+| II → III | Sum of all four human recruitment levels ≥ 15 | 2,000 gold | Three hours | 300 gold | Up to ten cells including one chosen outer cell; Elven roster selection |
 | III → IV | Panther Rider recruitment level 5 | 5,000 gold | Six hours | 600 gold | Up to eleven cells including two chosen outer cells; Unicorn's building requirement |
 
 Recruitment level 5 requires **50 received fighters of the matching type** without legacy training credit. Existing credit counts; a level-5 merged fighter or a boss clear does not satisfy an upgrade requirement. Construction spends its gold once, progresses offline, and is unaffected by battle speed. Barracks IV is the maximum tier.
+
+For II → III, sum Swordsman + Archer + Healer + Lancer recruitment levels, including each type's initial level 1. For example, **10 + 3 + 1 + 1 = 15** qualifies even with Lancer level 1. Elven and personal/Connect levels do not contribute. Upgrades already paid for under the earlier Lancer-5 rule retain their timer and can finish normally.
 
 Open **Recruits / Recruitment** (the portrait-and-plus icon) to see the locked Lancer alongside the three starting types and the next Barracks upgrade's requirement, purchase, countdown and optional acceleration. The Lancer becomes a normal chance/level/progress row after II; the III upgrade remains accessible after that unlock. No separate Barracks upgrade menu is required.
 
