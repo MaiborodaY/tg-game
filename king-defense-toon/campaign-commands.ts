@@ -16,6 +16,8 @@ import { upgradeTreasury, accrueTreasury, checkpointTreasury, claimOfflineTreasu
 import { upgradeMarket, accrueMarket, checkpointMarket, claimOfflineMarket } from './market.ts';
 import { upgradeFarm, harvestCrop } from './farm.ts';
 import type { CropId } from './farm.ts';
+import { planCooking } from './kitchen.ts';
+import type { RecipeId } from './kitchen.ts';
 import { spendHeroTalent, resetHeroTalents } from './hero.ts';
 import type { TalentId } from './hero.ts';
 import { WAVE_DEFINITIONS } from './waves.ts';
@@ -28,6 +30,16 @@ const safeSum = (left: number, right: number): boolean => validAmount(left) && v
   && left <= Number.MAX_SAFE_INTEGER - right;
 const validOptions = (options: unknown): boolean => options !== null && typeof options === 'object' && !Array.isArray(options);
 export interface FormationCommandContext { minArmyUnits: number }
+
+export function cookCampaignMeals(state: CampaignState, recipe: RecipeId, quantity: number, now: number) {
+  const result = planCooking(state.kitchen, state.farm, recipe, quantity, now);
+  if (!result.ok) return result;
+  // One durable command owns the entire batch: stock, experience and paid timers.
+  state.farm = { ...state.farm, stock: { ...state.farm.stock,
+    [result.ingredient]: state.farm.stock[result.ingredient] - quantity } };
+  state.kitchen = result.kitchen;
+  return { ok: true as const, quantity, durationMs: result.durationMs };
+}
 
 // Commands own durable mutations. UI state and live combat actors never enter them.
 // Work on the affected records first so even a late rejection preserves the campaign.

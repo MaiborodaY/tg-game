@@ -73,7 +73,7 @@
       <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-label="Mercenaries" hidden></section>
       <section id="buildings-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="buildings-title" hidden>
         <div class="menu-card">
-          <header class="menu-heading"><h2 id="buildings-title">Buildings</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close buildings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+          <header class="menu-heading"><h2 id="buildings-title">Buildings</h2><button id="open-kitchen" class="battle-button buildings-kitchen" type="button" aria-haspopup="dialog" aria-controls="kitchen-panel">Kitchen ›</button><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close buildings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
           <div class="building-wallet"><span><span class="coin-icon" aria-hidden="true"></span><b id="building-gold">125</b> gold</span><span><span class="slave-icon" aria-hidden="true"></span><b id="building-slaves">0</b> slaves</span></div>
           <div id="buildings-tabs" class="building-tabs" role="tablist" aria-label="Buildings">
             <button id="tab-treasury" class="battle-button building-tab" type="button" role="tab" data-building="treasury" aria-controls="treasury-building" aria-selected="true" tabindex="0">Treasury</button>
@@ -135,6 +135,13 @@
             <p class="building-note">Fires at nearby enemies.</p>
             <p id="capitol-feedback" class="capitol-feedback" role="status" aria-live="polite">Changes apply next battle.</p>
           </article>
+        </div>
+      </section>
+      <section id="kitchen-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="kitchen-title" hidden>
+        <div class="menu-card kitchen-card">
+          <header class="menu-heading"><button id="kitchen-back" class="battle-button kitchen-back" type="button" aria-label="Back to buildings">‹</button><h2 id="kitchen-title">Kitchen</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close kitchen"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3"/></svg></button></header>
+          <div id="kitchen-content"></div>
+          <p id="kitchen-feedback" class="kitchen-feedback" role="status" aria-live="polite">Cook food for your army.</p>
         </div>
       </section>
       <section id="unit-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="unit-panel-title" hidden>

@@ -81,7 +81,10 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   IDs are campaign-local. Respect shared footprint helpers for every two-cell unit;
   use capabilities such as `isHealingUnit`, not special cases for one old unit.
 - A running battle owns its initial army/building/hero snapshots. Campaign edits
-  apply to the next battle. Preserve first-clear and one-time reward protections;
+  apply to the next battle. Temporary Kitchen food is the explicit exception:
+  `army-food.ts` applies/withdraws food against the battle's original forged stats,
+  preserving injury ratios, deaths and ongoing attack phases. Never recalculate
+  an active battle from the campaign's newly upgraded Forge. Preserve first-clear and one-time reward protections;
   re-rendering/retrying must not award gold, captures or XP twice.
 - Army details show matching Connect donors from Barracks directly, without
   Army/Barracks source tabs. Select all only selects matching reserve fighters;
@@ -114,7 +117,7 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
 - `save-storage.ts` and `save-session.ts` own browser storage access, schema checks,
   conflict detection and the exclusive writer lock. Do not bypass their recovery
   gate with direct localStorage writes in gameplay/UI code.
-- Current saves use schema 3 and persist `nextUnitId`. When changing the format,
+- Current saves use schema 4 and persist `nextUnitId` and `kitchen`. When changing the format,
   define an explicit migration and its compatibility behavior. Keep the original
   bytes before replacement, preserve prior migration backups, reject unsupported
   newer versions, and never overwrite malformed data with a fresh empty campaign.
@@ -149,6 +152,38 @@ architecture and its limitations are documented in `SERVER_PREPARATION.md`.
   Keep `marketBuilt: true` in snapshots for the old field's compatibility. New
   readers prefer a valid explicit level. Upgrades settle elapsed production at
   the old rate and preserve the fractional output; offline storage stays 4 hours.
+
+## Kitchen and temporary army food
+
+- Schema 4 adds paid food timers and cooking progress. Older saves gain an empty
+  level-1 kitchen while retaining farm inventory; original bytes are backed up
+  before replacement. Malformed kitchen data must enter recovery, not silently
+  erase consumed ingredients or progress. Kitchen reset follows campaign reset.
+- `kitchen.ts` owns recipes, progression, duration and bounded food queues;
+  `cookCampaignMeals` atomically spends collected farm stock, awards cooking XP
+  and activates the entire batch. UI quantity controls never mutate campaign state.
+- Each portion costs one crop. Carrot dishes grant +1%; Farm level 2 unlocks potato
+  dishes at +2%. The three stats reuse Forge names: Health, Attack / Healing,
+  Attack speed. Hero, castle and enemies receive no bonus; healing benefits from
+  both attack and speed as in the Forge. Pumpkin recipes are not implemented.
+- Level 1 gives 10 minutes per portion; each level adds 30 seconds, never strength.
+  Advancing from level L costs 10 × L² additional portions. Persist only the total
+  portions, derive level/progress. A batch equals separate cooks: each portion uses
+  the level before that cook, then grants one XP. No arbitrary level cap.
+- Same-recipe time adds, percentages do not stack. Each stat has at most two
+  chronological segments: remaining stronger potato time first, then carrot time.
+  Cooking stronger food preserves weaker time; cheap carrots cannot extend +2%.
+  Display both the active bonus and queued weaker time. Validate stock, count,
+  clock and safe-integer duration/XP bounds before any mutation.
+- Food uses absolute real time, including offline absence, independent of battle
+  speed. `main.ts` synchronizes both retained campaign and dungeon battles before
+  simulation and on refresh/resume. Scene rendering remains read-only. Already
+  launched projectiles and ongoing action timings are not rewritten by food.
+- Kitchen opens from Buildings as its own scrollable overlay. Back restores the
+  Buildings entry focus; Close returns focus to the visible Buildings game button.
+  Quantity starts at 1, supports direct numeric entry, −/+/Max, previews total cost,
+  time and XP, and resets to 1 after cooking. Reuse nodes on timer updates to retain
+  focus. Recovery/offline receipt gates cover every cooking action and save retry.
 
 ## Combat, effects and drawing
 
