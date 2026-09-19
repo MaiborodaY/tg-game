@@ -1202,7 +1202,9 @@ function mergeButtonMarkup(source: MergeSource, unavailable = false) {
 
 function connectCandidates(recipient: MergeSource, location?: 'army' | 'reserve') {
   const fighter = getMergeSource(recipient);
-  const roster = location === 'army' ? campaign.units : location === 'reserve' ? campaign.reserve : [...campaign.units, ...campaign.reserve];
+  // Army unit details only offer reserve donors, including Select all and stale UI events.
+  const roster = recipient.location === 'army' || location === 'reserve' ? campaign.reserve
+    : location === 'army' ? campaign.units : [...campaign.units, ...campaign.reserve];
   return fighter ? roster.filter(unit => unit.id !== fighter.id && unit.type === fighter.type) : [];
 }
 
@@ -1211,7 +1213,8 @@ function connectPanelMarkup(inline = false) {
   const { recipient, sourceTab, donorIds, notice } = connectSelection;
   const fighter = getMergeSource(recipient);
   if (!fighter) return '';
-  const donors: MergeSource[] = [...donorIds].map(id => ({ id, location: campaign.units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
+  const donors: MergeSource[] = [...donorIds].map(id => ({ id, location: recipient.location === 'army' ? 'reserve'
+    : campaign.units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
   const result = getConnectResult(campaign.units, campaign.reserve, recipient, donors, { minArmyUnits: battle ? 1 : 0 });
   const level = result.ok ? result.recipient.level : fighter.level;
   const stats = getForgedUnitStats(fighter.type, level, campaign.forge);
@@ -1271,7 +1274,8 @@ function handleConnectClick(event: MouseEvent, recipient: MergeSource) {
     return true;
   }
   if (action === 'apply') {
-    const donors: MergeSource[] = [...connectSelection.donorIds].map(id => ({ id, location: campaign.units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
+    const donors: MergeSource[] = [...connectSelection.donorIds].map(id => ({ id, location: recipient.location === 'army' ? 'reserve'
+      : campaign.units.some(unit => unit.id === id) ? 'army' : 'reserve' }));
     const result = commands.connectCampaignFighters(campaign, recipient, donors, { minArmyUnits: battle ? 1 : 0 });
     if (!result.ok) { refresh(); return true; }
     // Apply the entire selection once to the saved roster; live combat owns its own actors.
@@ -1282,6 +1286,7 @@ function handleConnectClick(event: MouseEvent, recipient: MergeSource) {
   }
   const location = button.dataset.connectLocation;
   if (location === 'army' || location === 'reserve') {
+    if (recipient.location === 'army') return true;
     connectSelection.sourceTab = location;
     refresh();
     const grid = overlay?.querySelector<HTMLElement>('.connect-donor-scroll');

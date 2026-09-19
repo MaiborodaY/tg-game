@@ -19,7 +19,17 @@ function environment(t, { preferences = {}, storageThrows = false, webkitOnly = 
   const saved = new Map(Object.entries(preferences));
   class MockAudio {
     paused = true;
-    src = '';
+    ended = false;
+    currentTime = 0;
+    _src = '';
+    get src() { return this._src; }
+    set src(value) {
+      this._src = value;
+      this.ended = false;
+      this.paused = true;
+      this.currentTime = 0;
+      calls.push(`audio:src:${value}`);
+    }
     listeners = new Map();
     constructor() { media.push(this); calls.push('audio:new'); }
     addEventListener(name, handler) { this.listeners.set(name, handler); }
@@ -36,6 +46,11 @@ function environment(t, { preferences = {}, storageThrows = false, webkitOnly = 
       });
     }
     pause() { calls.push('audio:pause'); this.paused = true; }
+    finish() {
+      this.ended = true;
+      this.paused = true;
+      this.listeners.get('ended')?.();
+    }
     load() { calls.push('audio:load'); }
   }
   class MockContext {
@@ -43,7 +58,9 @@ function environment(t, { preferences = {}, storageThrows = false, webkitOnly = 
     destination = {};
     constructor() { contexts.push(this); calls.push('context:new'); }
     createGain() {
-      const node = { gain: { value: 1 }, connect: target => assert.equal(target, this.destination),
+      let value = 1;
+      const node = { gain: { get value() { return value; }, set value(next) { value = next; calls.push('gain:set'); } },
+        connect: target => assert.equal(target, this.destination),
         disconnect: () => calls.push('gain:disconnect') };
       gains.push(node);
       return node;
@@ -113,7 +130,7 @@ test('user unlock resumes and starts synchronously, keeps media volume at one an
   const element = env.media[0];
   assert.ok(element.src.endsWith('/assets/audio/ambient-level-1.mp3'));
   assert.equal(element.preload, 'none');
-  assert.equal(element.loop, true);
+  assert.equal(element.loop, false, 'ended advances the playlist instead of looping one track');
   assert.equal(element.playsInline, true);
   assert.equal(element.volume, 1);
   assert.equal(env.gains[0].gain.value, .05);
@@ -131,6 +148,139 @@ test('user unlock resumes and starts synchronously, keeps media volume at one an
   assert.equal(element.paused, true);
   assert.equal(notifications, 2);
   music.destroy();
+});
+
+test('level-one playlist streams the two full tracks in order through one player and wraps', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setActive(true);
+  assert.equal(await music.unlock(), true);
+  const element = env.media[0];
+  const first = element.src;
+  assert.equal(env.calls.filter(call => call.startsWith('audio:src:')).length, 1,
+    'the next track is not requested at startup');
+  element.finish();
+  await settle();
+  assert.ok(element.src.endsWith('/assets/audio/ambient-level-1-menu.mp3'));
+  assert.equal(element.paused, false);
+  const second = element.src;
+  element.currentTime = 27;
+  element.listeners.get('ended')();
+  music.setLevel(1);
+  music.setActive(true);
+  await music.unlock();
+  assert.equal(element.src, second, 'a stale ended event or UI refresh does not advance music');
+  assert.equal(element.currentTime, 27);
+  element.finish();
+  await settle();
+  assert.equal(element.src, first);
+  assert.equal(element.paused, false);
+  assert.equal(env.calls.filter(call => call === 'audio:play').length, 3);
+  assert.equal(env.contexts.length, 1);
+  assert.equal(env.media.length, 1);
+  assert.equal(env.sources.length, 1);
+  music.destroy();
+});
+
+test('an ending while hidden, muted or outside level one waits before requesting the next track', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setActive(true);
+  await music.unlock();
+  const element = env.media[0];
+  for (const [disable, enable] of [
+    [() => music.setActive(false), () => music.setActive(true)],
+    [() => music.setMuted(true), () => music.setMuted(false)],
+    [() => music.setLevel(2), () => music.setLevel(1)],
+    [() => music.setVolume(0), () => music.setVolume(.05)],
+  ]) {
+    disable();
+    const before = element.src;
+    const requests = env.calls.filter(call => call.startsWith('audio:src:')).length;
+    element.finish();
+    await settle();
+    assert.equal(element.src, before);
+    assert.equal(element.paused, true);
+    assert.equal(env.calls.filter(call => call.startsWith('audio:src:')).length, requests);
+    enable();
+    await settle();
+    assert.notEqual(element.src, before);
+    assert.equal(element.paused, false);
+  }
+  music.destroy();
+});
+
+test('mute, inactivity and other levels retain the second track and its playback position', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setActive(true);
+  await music.unlock();
+  const element = env.media[0];
+  element.finish();
+  await settle();
+  const second = element.src;
+  element.currentTime = 42;
+  music.setMuted(true);
+  music.setActive(false);
+  music.setLevel(2);
+  music.setMuted(false);
+  music.setActive(true);
+  await settle();
+  assert.equal(element.paused, true);
+  music.setLevel(1);
+  await settle();
+  assert.equal(element.src, second);
+  assert.equal(element.currentTime, 42);
+  assert.equal(element.paused, false);
+  assert.equal(env.calls.filter(call => call.startsWith('audio:src:')).length, 2);
+  music.destroy();
+});
+
+test('a rejected automatic transition retries the selected track on a gesture without skipping it', async t => {
+  const env = environment(t, { plays: [() => {}, () => Promise.reject(new Error('NotAllowedError'))] });
+  const music = createLevelMusic();
+  music.setActive(true);
+  await music.unlock();
+  const element = env.media[0];
+  element.finish();
+  await settle();
+  assert.ok(element.src.endsWith('/assets/audio/ambient-level-1-menu.mp3'));
+  assert.equal(element.paused, true);
+  assert.equal(await music.unlock(), true);
+  assert.ok(element.src.endsWith('/assets/audio/ambient-level-1-menu.mp3'));
+  assert.equal(env.calls.filter(call => call.startsWith('audio:src:')).length, 2);
+  music.destroy();
+});
+
+test('ordinary taps leave playing audio untouched while a suspended context remains retryable', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setActive(true);
+  await music.unlock();
+  const before = [...env.calls];
+  for (let i = 0; i < 10; i++) assert.equal(await music.unlock(), true);
+  assert.deepEqual(env.calls, before);
+  env.contexts[0].state = 'suspended';
+  assert.equal(await music.unlock(), true);
+  assert.equal(env.contexts[0].state, 'running');
+  assert.equal(env.calls.filter(call => call === 'context:resume').length, 2);
+  music.destroy();
+});
+
+test('destroy removes playlist callbacks and an already queued ending cannot load another track', async t => {
+  const env = environment(t);
+  const music = createLevelMusic();
+  music.setActive(true);
+  await music.unlock();
+  const element = env.media[0];
+  const queuedEnding = element.listeners.get('ended');
+  music.destroy();
+  const after = [...env.calls];
+  element.ended = true;
+  queuedEnding();
+  await settle();
+  assert.equal(element.listeners.size, 0);
+  assert.deepEqual(env.calls, after);
 });
 
 test('other levels authorize the context without requesting the level-one track', async t => {
