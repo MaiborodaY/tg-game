@@ -20,6 +20,7 @@ export interface SceneUnit extends GridCell {
 }
 
 export interface SceneState {
+  mapVariant?: 'campaign' | 'goblin-cave';
   units: readonly SceneUnit[];
   selectedId: SceneUnitId | null;
   placementType: UnitType | null;

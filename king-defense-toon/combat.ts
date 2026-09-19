@@ -1,6 +1,6 @@
 import type { Point } from './field.ts';
 import type { HeroState } from './hero.ts';
-import type { EnemyCombatType, WaveNumberInput } from './waves.ts';
+import type { EnemyCombatType, WaveNumberInput, WaveDefinition } from './waves.ts';
 import type { UnitType } from './units.ts';
 import { isHealingUnit } from './units.ts';
 import type { Actor, ActorBase, ActorType, ActorSide, ActorAction, AllyActor, EnemyActor, HeroActor,
@@ -92,7 +92,12 @@ function actor<T extends ActorType>({ id, side, type, name = type, x, y, hp, dam
 
 export function createBattle(formation: readonly FormationUnit[] = [], waveNumber: WaveNumberInput = 1, heroState?: HeroState,
   forge?: Readonly<ForgeState>, capitol?: Readonly<CapitolState>): Battle {
-  const wave = getWaveDefinition(waveNumber);
+  return createBattleForWave(formation, getWaveDefinition(waveNumber), heroState, forge, capitol);
+}
+
+/** Explicit encounters share combat without looking up or advancing a campaign wave. */
+export function createBattleForWave(formation: readonly FormationUnit[], wave: WaveDefinition, heroState?: HeroState,
+  forge?: Readonly<ForgeState>, capitol?: Readonly<CapitolState>): Battle {
   // Combat owns copies: casualties and movement never overwrite the saved army.
   const allies = formation.filter(unit => UNIT_TYPE_BY_ID[unit.type]).map(unit => {
     const { level, hp, damage, heal, attackSpeed } = getForgedUnitStats(unit.type, unit.level, forge);

@@ -1,4 +1,5 @@
 import { prepareAnimation, drawPreparedAnimation } from './sprite-animation.ts';
+import { createCaveMap } from './cave-map.ts';
 import type { PreparedAnimation } from './sprite-animation.ts';
 import type { Actor, ActorType, BattleEffect, BattleProjectile, EffectOf, ProjectileOf } from './combat-types.ts';
 import type { UnitType } from './units.ts';
@@ -871,7 +872,7 @@ const MONK_HEAL_METADATA = {
 
 async function loadSceneResources(plan: SceneAssetPlan) {
   return new Map(await Promise.all([...plan.resources].map(async ([key, resource]) => {
-    const value = await sceneAssetCache.get(key, () => resource.url ? loadImage(resource.url)
+    const value = await sceneAssetCache.get(key, () => key === 'map:goblin-cave' ? createCaveMap() : resource.url ? loadImage(resource.url)
       : resource.levelNumber === 2 ? createGraveyardMap() : createTinyMap());
     return [key, value] as const;
   })));

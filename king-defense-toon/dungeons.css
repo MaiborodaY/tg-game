@@ -30,7 +30,6 @@
 .dungeon-level-card { display: grid; grid-template-columns: 43% minmax(0, 1fr); align-items: stretch; width: 100%; min-width: 0; gap: 10px; padding: 5px; border: 2px solid #9c9271; border-radius: 3px; text-align: left; color: #38432d; background: #f0e5c4; box-shadow: inset 0 0 0 2px #fff3d0, 0 2px #a48e6560; }
 .dungeon-level-card.is-unlocked { border-color: #567645; box-shadow: inset 0 0 0 2px #afc886, 0 2px #61784960; }
 .dungeon-level-card:hover { background: #f8efd3; }
-.dungeon-level-card:active { transform: translateY(1px); }
 .dungeon-art { display: block; aspect-ratio: 1; align-self: center; width: 100%; background-color: #26374a; background-image: url('./assets/dungeons/goblin-cave-covers.webp'); background-repeat: no-repeat; background-size: 300% 100%; image-rendering: auto; border: 1px solid #6e705a; border-radius: 2px; }
 .dungeon-art-1 { background-position: 0% 50%; }
 .dungeon-art-2 { background-position: 50% 50%; }
@@ -40,7 +39,7 @@
 .dungeon-card-copy > strong { font-size: clamp(18px, 5vw, 22px); line-height: 1.04; }
 .dungeon-requirement { font-size: 12px; line-height: 1.2; color: #796d4c; padding-top: 6px; border-top: 1px solid #bfad7f; }
 .is-unlocked .dungeon-requirement { color: #567244; }
-.dungeon-card-action { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; min-height: 28px; padding: 3px 6px; font-size: 14px; line-height: 18px; color: #ffefc8; background: #848678; border: 1px solid #747768; box-shadow: inset 0 0 0 1px #b8b6a0; }
+.dungeon-card-action { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; min-height: 44px; padding: 3px 6px; font-size: 16px; line-height: 18px; color: #ffefc8; background: #848678; border: 1px solid #747768; box-shadow: inset 0 0 0 1px #b8b6a0; }
 .is-unlocked .dungeon-card-action { background: #557343; border-color: #4e6f3c; box-shadow: inset 0 0 0 1px #b2c387; }
 .dungeon-card-action > span { margin-left: auto; font-size: 21px; }
 .dungeon-card-action svg { width: 11px; height: 13px; }
@@ -48,27 +47,16 @@
 .dungeon-catalogue-note > span { font-size: 11px; color: #97845d; }
 .dungeon-footer { display: flex; justify-content: center; align-items: center; gap: 6px; flex: 0 0 auto; padding: 9px 2px 5px; border-top: 1px solid #baa77b; color: #65724c; font-size: 11px; line-height: 1.2; }
 .dungeon-footer > span { width: 7px; height: 7px; background: #8eb25e; border: 1px solid #5d7a40; border-radius: 2px; }
-.dungeon-details { text-align: center; }
-.dungeon-detail-art { width: min(100%, 244px); margin: 0 auto 10px; border: 3px solid #998960; box-shadow: 0 0 0 1px #f9e9b9; }
-.dungeon-details h3 { font-size: 27px; line-height: 1.1; }
-.dungeon-detail-unlock { margin: 6px 0 12px; color: #8b7450; font-size: 13px; }
-.dungeon-detail-unlock.is-unlocked { color: #5c7847; }
 .dungeon-route { display: flex; justify-content: space-around; gap: 10px; margin: 12px 5px 16px; padding: 0; list-style: none; }
 .dungeon-route li { display: flex; flex: 1; flex-direction: column; align-items: center; position: relative; gap: 4px; color: #596442; font-size: 11px; }
 .dungeon-route li:not(:last-child)::after { content: '→'; position: absolute; left: calc(50% + 21px); right: calc(-50% + 17px); top: 5px; height: 24px; font-size: 22px; color: #938867; }
 .dungeon-route b { display: grid; place-items: center; width: 35px; height: 35px; border: 2px solid #74835a; border-radius: 50%; background: #dce0b4; font-size: 22px; }
 .dungeon-route li:last-child b { color: #7d6231; border-color: #a28b50; background: #e9d294; }
-.dungeon-rewards { border-top: 1px solid #b4a078; padding-top: 9px; }
-.dungeon-rewards h4 { margin: 0 0 8px; font-size: 17px; font-weight: 400; }
-.dungeon-reward-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.dungeon-reward-list > span { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 4px; background: #f3e8c5; border: 1px solid #b6a173; box-shadow: inset 0 0 0 2px #fff1cb; font-size: 17px; }
-.dungeon-reward-list .coin-icon { width: 21px; height: 23px; }
-.dungeon-reward-list .slave-icon { width: 25px; height: 27px; }
-.dungeon-rewards > p { margin-top: 6px; font-size: 11px; color: #96825e; }
-.dungeon-survival { margin-top: 12px; border: 1px solid #bcab7d; background: #e6d9b3; padding: 11px 9px; text-align: left; }
-.dungeon-survival strong { font-size: 16px; color: #505e3e; }
-.dungeon-survival p { margin-top: 5px; color: #7c7150; font-size: 13px; line-height: 1.35; }
-.dungeon-coming-soon { margin: 12px 0 3px; font-size: 12px; line-height: 1.4; color: #8a7755; }
+.dungeon-card-reward-label { font-size: 10px; color: #847251; }
+.dungeon-card-rewards { display: flex; flex-wrap: wrap; gap: 4px 9px; font-size: 13px; }
+.dungeon-card-rewards > span { display: flex; align-items: center; gap: 4px; }
+.dungeon-card-rewards .coin-icon { width: 12px; height: 14px; }
+.dungeon-card-rewards .slave-icon { width: 16px; height: 17px; }
 .dungeon-rules-overlay { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; background: #25352bb8; padding: 9px; }
 .dungeon-rules-card { width: 100%; max-height: 100%; overflow: auto; overscroll-behavior: contain; padding: 6px 9px 12px; border: 8px solid transparent; border-image: url('./assets/tiny-ui/carved-panel.png') 18 / 8px / 0 stretch; background: #f0e3bd; }
 .dungeon-rules-card header { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
@@ -86,6 +74,36 @@
   .dungeon-level-card { gap: 7px; padding: 4px; }
   .dungeon-card-copy { gap: 4px; }
   .dungeon-requirement { font-size: 11px; }
-  .dungeon-detail-art { width: 210px; }
   .dungeon-rules-card { padding-inline: 5px; }
 }
+
+/* A separate screen state reuses the two canvases and their asset owners. */
+#app[data-screen='dungeon-battle'] .wave-track,
+#app[data-screen='dungeon-battle'] .profile-trigger,
+#app[data-screen='dungeon-battle'] .phase-plaque,
+#app[data-screen='dungeon-battle'] .battlefield-gold,
+#app[data-screen='dungeon-battle'] #battle-toolbar,
+#app[data-screen='dungeon-battle'] #auto-waves,
+#app[data-screen='dungeon-battle'] #start-wave,
+#app[data-screen='dungeon-battle'] #result-panel,
+#app[data-screen='dungeon-battle'] #toast,
+#app[data-screen='dungeon-battle'] .market-tools,
+#app[data-screen='dungeon-battle'] .recruitment-route,
+#app[data-screen='dungeon-battle'] #open-buildings { display: none !important; }
+#app[data-screen='dungeon-battle'] { --town-min-height: 0px; }
+#app[data-screen='dungeon-battle'] .town-tools { top: 0; bottom: 0; height: auto; }
+#app[data-screen='dungeon-battle'] .town-tools > .hero-trigger { top: 50%; bottom: auto; transform: translate(-50%, -50%); }
+#app[data-screen='dungeon-battle'] #fps-counter { top: 59px; }
+.dungeon-run-ui { position: absolute; inset: 0; pointer-events: none; }
+.dungeon-run-ui button { pointer-events: auto; }
+.dungeon-run-heading { position: absolute; top: 6px; left: 6px; right: 6px; display: flex; gap: 7px; align-items: center; color: #f4e5bd; }
+.dungeon-run-heading > div { flex: 1; min-width: 0; text-shadow: 0 2px 2px #101c26; }
+.dungeon-run-heading strong { display: block; font-size: 18px; line-height: 1.1; }
+.dungeon-run-heading span { display: block; font-size: 12px; margin-top: 3px; }
+.dungeon-run-speed { width: 44px; height: 44px; border: 2px solid #a89c73; border-radius: 3px; background: #e7dab9ed; color: #465947; font-size: 16px; }
+.dungeon-run-speed:disabled { opacity: .65; }
+.dungeon-run-controls { position: absolute; top: 58px; left: 60px; right: 54px; }
+.dungeon-run-controls p { padding: 4px 7px; border-radius: 3px; background: #122536d9; color: #eee2bf; font-size: 12px; line-height: 1.25; white-space: pre-line; }
+.dungeon-run-start { position: absolute; top: 50%; left: 7px; transform: translateY(-50%); width: calc((100% - var(--formation-width)) / 2 - 14px); min-width: 44px; min-height: 48px; padding: 5px 2px; font-size: 13px; line-height: 1.1; }
+/* Preserve centering: the shared pressed style otherwise moves Start off the pointer. */
+.dungeon-run-start.battle-button:active:not(:disabled) { transform: translateY(calc(-50% + 1px)); }
