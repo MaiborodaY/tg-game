@@ -42,7 +42,7 @@
         <div class="recruitment-dock">
           <div class="market-tools">
             <button id="cancel-army-move" class="battle-button" type="button" aria-label="Cancel placement" title="Cancel placement" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
-            <button id="open-market-info" class="market-info-trigger" type="button" aria-label="Recruitment: choose recruits, chances and levels" title="Recruitment" aria-haspopup="dialog" aria-controls="market-info-panel"><svg viewBox="0 0 36 32" aria-hidden="true"><rect x="2" y="2" width="25" height="28" rx="3" fill="#eadca9" stroke="#7f865b" stroke-width="1.7"/><path d="M5 24c0-5 4-8 9-8s9 3 9 8v2H5Z" fill="#7c9c83" stroke="#4d6e65" stroke-width="1.3"/><path d="M9 10a6 6 0 0 1 12 0v5H9Z" fill="#7593a1" stroke="#425e68" stroke-width="1.3"/><path d="M10 11h10v4H10Z" fill="#dcc393"/><path d="M14 5v5m-4 2h10" stroke="#3e5c63" stroke-width="1.7"/><circle cx="27" cy="23" r="8" fill="#98b277" stroke="#4f7257" stroke-width="1.5"/><path d="M27 19v8m-4-4h8" stroke="#fcf2c8" stroke-width="2.5" stroke-linecap="square"/></svg><span aria-hidden="true">Recruits</span></button>
+            <button id="open-market-info" class="market-info-trigger" type="button" aria-label="Mercenaries: choose recruits, levels and upgrades" title="Mercenaries" aria-haspopup="dialog" aria-controls="market-info-panel"><svg viewBox="0 0 36 32" aria-hidden="true"><rect x="2" y="2" width="25" height="28" rx="3" fill="#eadca9" stroke="#7f865b" stroke-width="1.7"/><path d="M5 24c0-5 4-8 9-8s9 3 9 8v2H5Z" fill="#7c9c83" stroke="#4d6e65" stroke-width="1.3"/><path d="M9 10a6 6 0 0 1 12 0v5H9Z" fill="#7593a1" stroke="#425e68" stroke-width="1.3"/><path d="M10 11h10v4H10Z" fill="#dcc393"/><path d="M14 5v5m-4 2h10" stroke="#3e5c63" stroke-width="1.7"/><circle cx="27" cy="23" r="8" fill="#98b277" stroke="#4f7257" stroke-width="1.5"/><path d="M27 19v8m-4-4h8" stroke="#fcf2c8" stroke-width="2.5" stroke-linecap="square"/></svg><span id="barracks-building-level" class="barracks-building-level" aria-hidden="true">I</span><span aria-hidden="true">Mercenaries</span></button>
           </div>
           <div class="recruitment-route">
           <button id="transform-slave" class="market-transform" type="button" aria-label="Transform 1 slave into a random recruit">
@@ -55,7 +55,7 @@
           <span id="market-recruit-reveal" class="market-recruit-reveal" role="status" aria-live="polite" hidden><img id="market-recruit-art" alt="" /><b id="market-recruit-level" aria-hidden="true"></b></span>
           <button id="open-barracks" class="barracks-trigger" type="button" aria-label="Open barracks" aria-haspopup="dialog" aria-controls="barracks-panel">
             <img class="barracks-art" src="./assets/tiny-map/castle-blue.png" alt="" width="320" height="256" />
-            <span class="barracks-label">Barracks</span><span id="barracks-building-level" class="barracks-building-level" aria-hidden="true">I</span><b id="barracks-stock" class="barracks-stock">0</b>
+            <span class="barracks-label">Barracks</span><b id="barracks-stock" class="barracks-stock">0</b>
           </button>
           <svg id="recruit-transfer" viewBox="0 0 22 30" aria-hidden="true"><ellipse cx="11" cy="28" rx="8" ry="2" fill="#64654a" opacity=".25"/><g class="transfer-body"><path class="transfer-leg transfer-leg-back" d="m10 19-3 8H4" fill="none" stroke="#514b3d" stroke-width="3" stroke-linecap="round"/><path class="transfer-leg transfer-leg-front" d="m12 19 3 8h3" fill="none" stroke="#514b3d" stroke-width="3" stroke-linecap="round"/><path d="m8 10-3 10h12l-3-10Z" fill="#a89a70" stroke="#514b3d" stroke-width="1.4" stroke-linejoin="round"/><path class="transfer-arm" d="m13 12 3 5 3-1" fill="none" stroke="#bc9470" stroke-width="2.7" stroke-linecap="round"/><circle cx="11" cy="6" r="4" fill="#d3ad82" stroke="#514b3d" stroke-width="1.4"/><path d="M7 6V4l3-2 4 1 1 3-4-1Z" fill="#665540"/></g></svg>
           </div>
@@ -70,38 +70,7 @@
         </div>
       </section>
       <section id="hero-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-label="St. Knihor talents" hidden></section>
-      <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="market-info-title" hidden>
-        <div class="menu-card recruitment-info-card">
-          <header class="menu-heading"><h2 id="market-info-title">Recruitment</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close recruitment details"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
-          <div class="recruitment-pool-field"><label for="recruitment-pool">Recruit army</label><select id="recruitment-pool" aria-describedby="recruitment-pool-status"><option value="humans">Human recruits</option><option id="recruitment-pool-elves" value="elves" disabled>Elven recruits · Barracks III</option></select></div>
-          <p id="recruitment-pool-status" class="recruitment-pool-status">Elves unlock at Barracks III.</p>
-          <div class="recruitment-info-wallet"><p id="recruitment-info-cost" class="recruitment-info-cost" aria-label="1 slave becomes 1 fighter"><span aria-hidden="true">1</span><span class="slave-icon" aria-hidden="true"></span><span aria-hidden="true">→ 1 fighter</span></p><span class="barracks-upgrade-wallet"><span class="coin-icon" aria-hidden="true"></span><b id="barracks-upgrade-gold">0</b></span></div>
-          <p id="recruitment-guarantee" class="recruitment-guarantee" hidden>Next: guaranteed Lancer for 1 slave.</p>
-          <div id="recruitment-details">
-            <div id="recruitment-current-types"></div>
-            <article id="lancer-recruitment" class="recruitment-detail" data-recruit-type="lancer">
-              <img id="barracks-lancer-art" alt="" hidden />
-              <div class="recruitment-detail-copy">
-                <div class="recruitment-detail-heading"><strong>Lancer</strong><span id="lancer-recruitment-chance">Locked</span></div>
-                <div id="lancer-recruitment-training" hidden></div>
-                <div id="barracks-upgrade-controls">
-                <p id="barracks-upgrade-state" class="barracks-upgrade-state"></p>
-                <small id="barracks-upgrade-note"></small>
-                <progress id="barracks-upgrade-progress" hidden></progress>
-                <div class="recruitment-upgrade-actions">
-                  <button id="barracks-start-upgrade" class="recruitment-upgrade-button" type="button" hidden>Upgrade Barracks II · 200 gold</button>
-                  <button id="barracks-finish-upgrade" class="recruitment-upgrade-button" type="button" hidden>Finish now</button>
-                  <button id="barracks-go-market" class="recruitment-upgrade-button" type="button" hidden>Go to Market</button>
-                </div>
-                <small id="barracks-upgrade-pricing" hidden>Finish price decreases with time.</small>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div id="elf-recruitment-details" hidden></div>
-          <p id="recruitment-info-note" class="recruitment-info-note human-recruitment-note">Market recruits raise recruitment levels. Connect adds personal levels together.</p>
-        </div>
-      </section>
+      <section id="market-info-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-label="Mercenaries" hidden></section>
       <section id="buildings-panel" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="buildings-title" hidden>
         <div class="menu-card">
           <header class="menu-heading"><h2 id="buildings-title">Buildings</h2><button class="icon-button close-menu" type="button" data-close-overlay aria-label="Close buildings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10m0-10L5 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>

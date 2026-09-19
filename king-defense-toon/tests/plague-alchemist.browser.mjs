@@ -122,7 +122,7 @@ try {
         assert.ok(after.poison.remaining < target.poison.remaining, 'Poison advances in simulation time');
         assert.equal((await page.evaluate(() => window.battleDraws)).some(draw => draw.image.includes('poison-impact')), false, 'Impact finishes instead of becoming a permanent cloud');
         await page.locator('#open-market-info').click(); await page.locator('#recruitment-pool').selectOption('elves');
-        await page.locator('#elf-recruitment-details img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
+        await page.locator('[data-elf-recruit] img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
         assert.equal(await page.locator('[data-elf-recruit="elfHealer"] img').count(), 1);
         assert.equal(await page.locator('[data-elf-recruit="elfHealer"] svg').count(), 0);
         await fits(page, '#market-info-panel'); await screenshot(page, `plague-elf-recruits-${width}.png`);

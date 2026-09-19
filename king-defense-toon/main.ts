@@ -24,10 +24,10 @@ import { createLoadingIndicator } from './loading-indicator.ts';
 import { treasuryRate, treasuryUpgradeCost, TREASURY_OFFLINE_LIMIT_SECONDS, CAPTURE_COOLDOWN, STARTER_CAPTURES, capturePityKills, captureDropChance } from './economy.ts';
 import { marketRate, marketUpgradeCost, MARKET_PRODUCTION_SECONDS, MARKET_OFFLINE_LIMIT_SECONDS } from './market.ts';
 import { SAVE_KEY, cellKey, nextCellCost, getCellAvailability } from './progression.ts';
-import { RECRUIT_COST, RECRUIT_LEVEL_CAP, HUMAN_RECRUITS, getRecruitProgress, getRecruitChances, getElfRecruitUnlock, getHumanRecruitUnlock } from './recruitment.ts';
-import { ELF_RECRUITS, isRecruitmentPoolUnlocked, canRecruitFromPool } from './recruitment-pools.ts';
-
-import { renderElfRecruitment } from './recruitment-pool-ui.ts';
+import { RECRUIT_COST, getRecruitChances } from './recruitment.ts';
+import { canRecruitFromPool } from './recruitment-pools.ts';
+import { createMercenariesUI } from './mercenaries-ui.ts';
+import type { MercenariesUI } from './mercenaries-ui.ts';
 import { getForgedUnitStats, FORGE_UPGRADES } from './forge.ts';
 import { createForgeUI } from './forge-ui.ts';
 import type { ForgeUI } from './forge-ui.ts';
@@ -126,6 +126,7 @@ let capitolUI: CapitolUI | null = null;
 const unitStatFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
 let heroUI: HeroUI | null = null;
+let mercenariesUI: MercenariesUI | null = null;
 const onboardingGuide = createOnboardingGuide(byId('app'), byId('army-map'));
 let pendingRecruitId: number | null = null;
 let pendingMerge: MergeSource | null = null;
@@ -501,7 +502,7 @@ function refreshRecruitment() {
   const odds = chances.map(({ type, chance }) => `${types[type].name} ${Number((chance * 100).toFixed(1))}%`).join(', ');
   const guaranteedLancer = campaign.recruitmentPool === 'humans' && campaign.barracks.firstLancerPending;
   const nextRecruit = guaranteedLancer ? 'Next recruit: guaranteed Lancer.' : odds;
-  const previewLabel = 'Elven recruits require Barracks III. Open Recruitment for details.';
+  const previewLabel = 'Elven recruits require Mercenaries III. Open Mercenaries for details.';
   button.setAttribute('aria-label', recruitable ? `Transform 1 slave into a fighter. ${campaign.economy.slaves} slaves available. ${nextRecruit}` : previewLabel);
   button.title = recruitable ? nextRecruit : previewLabel;
   byId('market-convert-label').textContent = campaign.recruitmentPool === 'elves' ? 'Elves' : guaranteedLancer ? 'Lancer next' : 'Market';
@@ -582,82 +583,7 @@ function finishRecruitReveal() {
   byId('market-recruit-reveal').hidden = true;
 }
 
-function recruitmentProgressMarkup(type: UnitType) {
-  const pluralNames: Record<UnitType, string> = { swordsman: 'swordsmen', archer: 'archers', healer: 'healers', lancer: 'lancers', pantherRider: 'riders', elfArcher: 'elven archers', elfHealer: 'elven healers', unicorn: 'unicorns' };
-  const progress = getRecruitProgress(campaign.recruitment, type);
-  const capped = progress.level === RECRUIT_LEVEL_CAP;
-  const remaining = progress.needed - progress.progress;
-  const detail = capped ? 'Maximum recruitment level' : remaining + ' more ' + (remaining === 1 ? types[type].name.toLowerCase() : pluralNames[type]) + ' → Lv. ' + (progress.level + 1);
-  return '<p>Recruitment level · Lv. ' + progress.level + '</p>'
-    + '<progress max="' + progress.needed + '" value="' + (capped ? progress.needed : progress.progress) + '" aria-label="' + types[type].name + ': ' + detail + '"></progress><small>' + detail + '</small>';
-}
-
-function refreshRecruitmentDetails() {
-  const elves = campaign.recruitmentPool === 'elves';
-  const elvesUnlocked = isRecruitmentPoolUnlocked('elves', campaign.barracks.level);
-  byId('recruitment-pool').value = campaign.recruitmentPool;
-  byId('recruitment-pool').disabled = transforming || !canEditFormation();
-  byId('recruitment-pool-elves').disabled = !elvesUnlocked;
-  byId('recruitment-pool-elves').textContent = elvesUnlocked ? 'Elven recruits' : 'Elves · Barracks III';
-  byId('recruitment-pool-status').textContent = elves ? 'Recruitment levels unlock the next Elven fighter.'
-    : elvesUnlocked ? 'Elven recruits unlocked. Choose your army above.' : 'Elves unlock after Barracks III is built.';
-  byId('recruitment-details').hidden = elves;
-  byId('elf-recruitment-details').hidden = !elves;
-  byId('recruitment-info-cost').hidden = false;
-  byId('recruitment-info-note').classList.toggle('human-recruitment-note', !elves);
-  byId('recruitment-info-note').textContent = 'Equal chances for unlocked recruits. Unlocks use Market recruitment levels; Connect levels do not count.';
-  byId('recruitment-guarantee').hidden = elves || !campaign.barracks.firstLancerPending;
-  if (elves) {
-    const chances = getRecruitChances(campaign.barracks.level >= 2, 'elves', campaign.recruitment, campaign.barracks.level);
-    renderElfRecruitment(byId('elf-recruitment-details'), ELF_RECRUITS.map(({ id }) => {
-      const unlock = getElfRecruitUnlock(campaign.recruitment, id, campaign.barracks.level);
-      const chance = chances.find(entry => entry.type === id);
-      const required = unlock.requiredRecruitType;
-      const level = required ? getRecruitProgress(campaign.recruitment, required).level : 0;
-      const requirement = required
-        ? `${types[required].name} recruitment Lv. ${unlock.requiredRecruitLevel} · now ${level}` : '';
-      const barracksNote = unlock.requiredBarracksLevel === 4 ? 'Barracks IV · 2 tiles' : '';
-      const details = chance ? recruitmentProgressMarkup(chance.type)
-        : `<small>${requirement}</small>${barracksNote ? `<small>${barracksNote}</small>` : ''}`;
-      return {
-        id, locked: !unlock.available,
-        portrait: chance ? scene?.getUnitArt(chance.type, getRecruitProgress(campaign.recruitment, chance.type).level) ?? undefined : undefined,
-        progressMarkup: details,
-        chanceLabel: chance ? Number((chance.chance * 100).toFixed(1)) + '%' : unlock.requirementsMet ? 'Coming soon' : 'Locked',
-      };
-    }));
-    refreshBarracksUpgrade();
-    return;
-  }
-  refreshBarracksUpgrade();
-  // Keep the inline purchase controls mounted so timer/income updates preserve focus.
-  const humanChances = getRecruitChances(campaign.barracks.level >= 2, 'humans', campaign.recruitment, campaign.barracks.level);
-  byId('recruitment-current-types').innerHTML = HUMAN_RECRUITS.filter(type => type !== 'lancer').map(type => {
-    const unlock = getHumanRecruitUnlock(campaign.recruitment, type, campaign.barracks.level >= 2);
-    const chance = humanChances.find(entry => entry.type === type);
-    const progress = getRecruitProgress(campaign.recruitment, type);
-    const portrait = scene?.getUnitArt(type, progress.level);
-    const chanceLabel = chance ? Number((chance.chance * 100).toFixed(1)) + '%' : 'Locked';
-    const required = unlock.requiredRecruitType;
-    const details = chance ? recruitmentProgressMarkup(type)
-      : `<small>${types[required!].name} recruitment Lv. ${unlock.requiredRecruitLevel} · now ${getRecruitProgress(campaign.recruitment, required!).level}</small>`;
-    return '<article class="recruitment-detail' + (unlock.available ? '' : ' is-locked') + '" data-recruit-type="' + type + '">'
-      + (portrait ? '<img src="' + portrait + '" alt="" />' : '')
-      + '<div class="recruitment-detail-copy"><div class="recruitment-detail-heading"><strong>' + types[type].name + '</strong><span>' + chanceLabel + '</span></div>'
-      + details + '</div></article>';
-  }).join('');
-  byId('lancer-recruitment-training').innerHTML = recruitmentProgressMarkup('lancer');
-}
-
-byId('recruitment-pool').addEventListener('change', () => {
-  if (!canEditFormation() || transforming || overlay?.id !== 'market-info-panel') return;
-  const requestedPool = byId('recruitment-pool').value;
-  tickEconomy();
-  if (!canEditFormation() || overlay?.id !== 'market-info-panel') return;
-  if (requestedPool !== 'humans' && requestedPool !== 'elves') return;
-  if (!commands.selectRecruitmentPool(campaign, requestedPool).ok) return;
-  save(); refresh();
-});
+function refreshRecruitmentDetails() { mercenariesUI?.refresh(); }
 
 byId('transform-slave').addEventListener('click', () => {
   if (!canEditFormation() || overlay || transforming) return;
@@ -785,6 +711,7 @@ function setOverlay(id: GameElementId, opener: HTMLElement | null) {
   overlay = byId(id); overlayOpener = opener;
   byId('app').classList.add('has-menu');
   overlay.hidden = false;
+  if (id === 'market-info-panel') mercenariesUI?.open();
   opener?.setAttribute('aria-expanded', 'true');
   document.querySelectorAll<HTMLElement>('.wave-track, .battlefield, .army-dock').forEach(element => { element.inert = !overlay!.contains(element); });
   // Prefer the close control; a menu may begin with a hidden Back button.
@@ -814,6 +741,28 @@ function closeOverlay(restoreFocus = true) {
   if (wasPicker) refresh();
   showMarketArrival();
 }
+
+mercenariesUI = createMercenariesUI({ panel: byId('market-info-panel'), getState: () => campaign,
+  getPortrait: (type, level) => scene?.getUnitArt(type, level) ?? undefined,
+  canEdit: () => canEditFormation() && !transforming,
+  onPool: pool => {
+    if (!canEditFormation() || transforming || overlay?.id !== 'market-info-panel') return;
+    tickEconomy();
+    if (!canEditFormation() || overlay?.id !== 'market-info-panel') return;
+    if (!commands.selectRecruitmentPool(campaign, pool).ok) { refreshRecruitmentDetails(); return; }
+    save(); refresh();
+  },
+  onUpgrade: finish => {
+    if (!canEditFormation() || transforming || overlay?.id !== 'market-info-panel') return;
+    tickEconomy();
+    if (!canEditFormation() || overlay?.id !== 'market-info-panel') return;
+    const result = finish ? commands.finishCampaignBarracksUpgrade(campaign, Date.now())
+      : commands.startCampaignBarracksUpgrade(campaign, Date.now());
+    if (result.ok) save();
+    refresh();
+  },
+  onMarket: () => { closeOverlay(false); byId('transform-slave').focus({ preventScroll: true }); },
+});
 
 heroUI = createHeroUI({ button: byId('open-hero'), panel: byId('hero-panel'),
   getHero: () => campaign.hero, getBattle: visibleBattle, close: () => closeOverlay(),
@@ -975,6 +924,7 @@ for (const panel of ['buildings-panel', 'profile-panel', 'unit-panel', 'barracks
   byId(panel).addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
+      if (panel === 'market-info-panel' && mercenariesUI?.back()) return;
       if (connectSelection && (panel !== 'unit-panel' || connectSelection.donorIds.size)) { cancelConnect(); return; }
       if (panel === 'barracks-panel' && barracksSelectedId !== null) {
         showBarracksList();
@@ -1200,7 +1150,7 @@ function refreshContent() {
     byId('unit-panel-title').textContent = 'Unlock tile';
     panel.innerHTML = availability.allowed
       ? `<div class="placement-copy"><strong>Expand your army</strong><p>Cost: ${cost} gold · You have ${campaign.gold}</p></div><div class="selection-actions"><button data-action="unlock-cell"${campaign.gold < (cost ?? 0) ? ' disabled' : ''}>Unlock · ${cost} gold</button><button data-action="cancel">Cancel</button></div>`
-      : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Barracks ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Future Barracks upgrade'}</strong><p>${availability.requiredBarracksLevel ? 'Barracks II allows 9 central tiles; III and IV each allow one more side tile to buy.' : 'More side tiles will become available in a future update.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
+      : `<div class="placement-copy"><strong>${availability.requiredBarracksLevel ? `Requires Mercenaries ${['I', 'II', 'III', 'IV'][availability.requiredBarracksLevel - 1]}` : 'Maximum army capacity'}</strong><p>${availability.requiredBarracksLevel ? 'Upgrade Mercenaries to unlock another tile to buy.' : 'No further army slots can be unlocked.'}</p></div><div class="selection-actions">${availability.requiredBarracksLevel ? '<button data-action="barracks-info">View upgrade</button>' : ''}<button data-action="cancel">Close</button></div>`;
   } else if (selected) {
     const type = types[selected.type];
     const stats = getForgedUnitStats(selected.type, selected.level, campaign.forge);
@@ -1503,83 +1453,7 @@ function refreshReserve(selected: ArmyUnit | undefined) {
   }).join('');
 }
 
-function formatUpgradeTime(milliseconds: number) {
-  const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
-  const minutes = Math.floor(seconds / 60);
-  return minutes >= 60 ? `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
-    : `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
-}
-
-function refreshBarracksUpgrade() {
-  const info = getBarracksUpgrade(campaign.barracks, campaign.recruitment);
-  const upgrading = info.status === 'upgrading' || info.status === 'ready';
-  const unlocked = info.lancerUnlocked;
-  const targetName = info.targetLevel ? ['I', 'II', 'III', 'IV'][info.targetLevel - 1] : 'IV';
-  const inElves = campaign.recruitmentPool === 'elves' && campaign.barracks.level >= 3;
-  const controls = byId('barracks-upgrade-controls');
-  const parent = inElves
-    ? byId('elf-recruitment-details').querySelector<HTMLElement>('[data-elf-recruit="unicorn"] [data-elf-upgrade-slot]')
-    : byId('lancer-recruitment').querySelector<HTMLElement>('.recruitment-detail-copy');
-  if (parent && controls.parentElement !== parent) parent.append(controls);
-  const hours = info.durationMs / 3_600_000;
-  const unavailable = !canEditFormation() || transforming;
-  byId('barracks-upgrade-gold').textContent = String(campaign.gold);
-  const portrait = scene?.getUnitArt('lancer', getRecruitProgress(campaign.recruitment, 'lancer').level);
-  byId('barracks-lancer-art').hidden = !portrait;
-  if (portrait) byId('barracks-lancer-art').src = portrait;
-  byId('lancer-recruitment').classList.toggle('is-locked', !unlocked);
-  byId('lancer-recruitment-chance').textContent = unlocked
-    ? Number((getRecruitChances(true, 'humans', campaign.recruitment, campaign.barracks.level).find(({ type }) => type === 'lancer')!.chance * 100).toFixed(1)) + '%' : 'Locked';
-  byId('lancer-recruitment-training').hidden = !unlocked;
-  byId('barracks-upgrade-state').hidden = info.targetLevel === null || (inElves && !upgrading && !info.canStart);
-  byId('barracks-upgrade-state').textContent = upgrading ? `Barracks ${targetName} · ${formatUpgradeTime(info.remainingMs)}`
-    : info.canStart ? `Barracks ${targetName} · +1 tile to buy`
-    : `Requires ${types[info.requiredRecruitType].name} Lv. ${info.requiredRecruitLevel} · now Lv. ${info.recruitLevel}`;
-  byId('barracks-upgrade-note').hidden = unlocked && !upgrading && !info.canStart && info.targetLevel !== null;
-  byId('barracks-upgrade-note').textContent = upgrading ? 'Building continues offline.'
-    : info.targetLevel === null ? 'Barracks IV · up to 11 army tiles'
-    : info.canStart ? `${hours} ${hours === 1 ? 'hour' : 'hours'} · offline building${info.targetLevel === 4 ? '' : ` · unlocks ${info.targetLevel === 2 ? 'Lancer' : 'Elves'}`}`
-    : 'Raise its recruitment level at the Market.';
-  byId('barracks-upgrade-progress').hidden = !upgrading;
-  byId('barracks-upgrade-progress').value = info.durationMs - info.remainingMs;
-  byId('barracks-upgrade-progress').max = Math.max(1, info.durationMs);
-  byId('barracks-upgrade-progress').setAttribute('aria-label', `Barracks construction: ${formatUpgradeTime(info.remainingMs)} remaining`);
-  const start = byId('barracks-start-upgrade');
-  start.hidden = !info.canStart;
-  start.disabled = unavailable || !info.canStart || campaign.gold < info.cost;
-  start.textContent = `Upgrade Barracks ${targetName} · ${info.cost} gold`;
-  start.setAttribute('aria-label', `Upgrade Barracks to level ${info.targetLevel} for ${info.cost} gold. Takes ${hours} ${hours === 1 ? 'hour' : 'hours'}.`);
-  const finish = byId('barracks-finish-upgrade');
-  finish.hidden = !upgrading;
-  finish.disabled = unavailable || info.remainingMs === 0 || campaign.gold < info.speedUpCost;
-  finish.textContent = `Finish now · ${info.speedUpCost} gold`;
-  byId('barracks-go-market').hidden = campaign.recruitmentPool === 'elves' || !campaign.barracks.firstLancerPending;
-  byId('barracks-upgrade-pricing').hidden = !upgrading;
-}
-
-byId('barracks-start-upgrade').addEventListener('click', () => {
-  if (!canEditFormation() || overlay?.id !== 'market-info-panel' || transforming) return;
-  tickEconomy();
-  if (!canEditFormation()) return;
-  const result = commands.startCampaignBarracksUpgrade(campaign, Date.now());
-  if (!result.ok) { refresh(); return; }
-  save(); refresh();
-  byId('market-info-panel').querySelector<HTMLElement>('[data-close-overlay]')!.focus({ preventScroll: true });
-});
-byId('barracks-finish-upgrade').addEventListener('click', () => {
-  if (!canEditFormation() || overlay?.id !== 'market-info-panel' || transforming) return;
-  tickEconomy();
-  if (!canEditFormation()) return;
-  commands.finishCampaignBarracksUpgrade(campaign, Date.now());
-  // Save natural completion too if the last second elapsed between rendering and tapping.
-  save(); refresh();
-  if (campaign.barracks.firstLancerPending) byId('barracks-go-market').focus({ preventScroll: true });
-  else byId('market-info-panel').querySelector<HTMLElement>('[data-close-overlay]')!.focus({ preventScroll: true });
-});
-byId('barracks-go-market').addEventListener('click', () => {
-  closeOverlay(false);
-  byId('transform-slave').focus({ preventScroll: true });
-});
+function refreshBarracksUpgrade() { mercenariesUI?.tick(); }
 
 function refreshBarracks() {
   const pageCount = Math.max(1, Math.ceil(campaign.reserve.length / BARRACKS_PAGE_SIZE));
@@ -1774,6 +1648,7 @@ byId('selection-panel').addEventListener('click', event => {
   if (action === 'barracks-info') {
     setOverlay('market-info-panel', byId('army-map'));
     refreshRecruitmentDetails();
+    mercenariesUI?.showUpgrade();
     return;
   }
   if (action === 'unlock-cell') {
@@ -2227,6 +2102,7 @@ function onPageHide(event: PageTransitionEvent) {
     document.removeEventListener('keydown', unlockLevelMusic, true);
     scene?.destroy();
     heroUI?.destroy();
+    mercenariesUI?.destroy();
     dungeonsUI?.destroy();
     dungeonRunUI.destroy();
     armyScene?.destroy();

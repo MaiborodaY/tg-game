@@ -39,9 +39,9 @@ async function assertEqualUnlockedOdds(page) {
   const training = type => saved.recruitment.received[type] + saved.recruitment.legacyTrainingCredit[type];
   const openTypes = [true, training('swordsman') >= 15, training('archer') >= 15, saved.barracks.level >= 2];
   const equalChance = Number((100 / openTypes.filter(Boolean).length).toFixed(1)) + '%';
+  assert.equal(await page.locator('#recruitment-chance').innerText(), saved.barracks.firstLancerPending ? 'Lancer next' : equalChance + ' each');
   for (const [index, type] of ['swordsman', 'archer', 'healer', 'lancer'].entries()) {
-    const chance = page.locator(`#market-info-panel [data-recruit-type="${type}"] .recruitment-detail-heading > span`);
-    assert.equal(await chance.innerText(), openTypes[index] ? equalChance : 'Locked', `${type} follows its recruitment gate`);
+    assert.equal(await page.locator(`[data-recruit-type="${type}"]`).evaluate(card => card.classList.contains('is-locked')), !openTypes[index], `${type} follows its recruitment gate`);
   }
 }
 let browser;
@@ -74,7 +74,7 @@ try {
     };
     const state = () => page.evaluate(() => window.barracksCheck.state());
     const close = () => page.locator('#market-info-panel [data-close-overlay]').click();
-    const upgrade = () => page.locator('#open-market-info').click();
+    const upgrade = async (details = true) => { await page.locator('#open-market-info').click(); if (details) await page.locator('#mercenaries-view-upgrade').click(); };
     const lancerInfo = page.locator('#market-info-panel [data-recruit-type="lancer"]');
     const fits = async (panel = '#market-info-panel') => {
       const rect = await page.locator(`${panel} .menu-card`).evaluate(element => {
@@ -97,14 +97,15 @@ try {
     await page.locator('#open-barracks').click();
     assert.equal(await page.locator('#barracks-list').isVisible(), true, 'Barracks still opens its reserve inventory');
     await page.locator('#barracks-panel [data-close-overlay]').click();
-    await upgrade();
+    await upgrade(false);
     assert.equal(await page.locator('#market-info-panel [data-recruit-type]').count(), 4, 'Info always contains all four fighter types');
     assert.equal(await lancerInfo.isVisible(), true, 'locked Lancer is discoverable in Info');
-    assert.match(await lancerInfo.innerText(), /Locked/);
-    assert.equal(await lancerInfo.locator('#lancer-recruitment-chance').innerText(), 'Locked', 'locked Lancer must not advertise an active recruitment chance');
-    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false, 'show requirement instead of purchase before unlock');
+    assert.match(await lancerInfo.getAttribute('class'), /is-locked/);
+    assert.equal(await lancerInfo.locator('progress').count(), 0, 'locked Lancer must not advertise recruitment progress');
+    await page.locator('#mercenaries-view-upgrade').click();
+    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true, 'merged personal level must not unlock');
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Swordsman.*Lv\. 5.*now Lv\. 4/);
+    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Swordsman.*4 \/ 5/s);
     await fits();
     await screenshot('locked');
     await close();
@@ -114,9 +115,9 @@ try {
     assert.equal((await state()).units[0].level, 50, 'training does not alter an existing fighter');
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
-    assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks II.*200 gold/);
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks II.*\+1 tile to buy/);
-    assert.equal(await lancerInfo.locator('#barracks-start-upgrade').count(), 1, 'upgrade action lives beside Lancer');
+    assert.match(await page.locator('#mercenaries-required-gold').innerText(), /\/ 200$/);
+    assert.match(await page.locator('#mercenaries-capacity').innerText(), /8 → 9/);
+    assert.equal(await page.locator('#mercenaries-upgrade-detail #barracks-start-upgrade').count(), 1, 'upgrade action has its own details view');
     await fits();
     await screenshot('available');
     await page.locator('#barracks-start-upgrade').click();
@@ -128,11 +129,11 @@ try {
     assert.equal((await state()).barracks.upgradeStartedAt, startedAt, 'repeat start cannot reset the timer');
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /100 gold/);
     assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false);
-    const initialCountdown = await page.locator('#barracks-upgrade-state').innerText();
+    const initialCountdown = await page.locator('#mercenaries-duration').innerText();
     await page.evaluate(() => window.barracksCheck.advance(37 * 1000));
     assert.equal(await page.locator('#market-info-panel').isVisible(), true, 'Info remains open while time passes');
     assert.equal(await page.locator('#offline-rewards-panel').isVisible(), false, 'foreground tick does not create an offline receipt');
-    assert.notEqual(await page.locator('#barracks-upgrade-state').innerText(), initialCountdown, 'countdown refreshes in place');
+    assert.notEqual(await page.locator('#mercenaries-duration').innerText(), initialCountdown, 'countdown refreshes in place');
     assert.match(await page.locator('#barracks-finish-upgrade').innerText(), /99 gold/);
     assert.equal(await page.locator('#barracks-upgrade-progress').evaluate(progress => progress.value), 37000);
     await page.evaluate(() => window.barracksCheck.advance((30 * 60 - 37) * 1000));
@@ -150,7 +151,7 @@ try {
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
     await page.locator('#barracks-finish-upgrade').evaluate(button => button.click());
     assert.equal((await state()).gold, beforeFinish.gold - 50, 'repeat finish click cannot charge twice');
-    assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true, 'unlocked Lancer shows normal training progress');
+    assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1, 'unlocked Lancer shows normal training progress');
     await assertEqualUnlockedOdds(page);
     assert.doesNotMatch(await lancerInfo.innerText(), /Locked/);
     await fits();
@@ -175,7 +176,7 @@ try {
     await upgrade();
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false, 'consumed guarantee leaves a normal recruitment row');
-    assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
+    assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1);
     await assertEqualUnlockedOdds(page);
     await fits();
     await screenshot('recruited-info');
@@ -205,8 +206,8 @@ try {
     assert.equal((await state()).units[0].level, 5, 'personal Lancer reaches level 5 through Connect');
     assert.equal((await state()).recruitment.received.lancer, 49, 'Connect cannot grant recruitment experience');
     await upgrade();
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Lancer.*Lv\. 5.*now Lv\. 4/);
-    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false, 'personal Lancer level cannot unlock III');
+    assert.match(await page.locator('#mercenaries-requirements').innerText(), /Lancer.*4 \/ 5/s);
+    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true, 'disabled purchase stays beside the visible requirement');
     assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true);
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
     await assertEqualUnlockedOdds(page);
@@ -221,8 +222,8 @@ try {
     assert.equal((await state()).reserve.at(-1).level, 5);
     await upgrade();
     assert.equal(await page.locator('#barracks-start-upgrade').isEnabled(), true);
-    assert.match(await page.locator('#barracks-start-upgrade').innerText(), /Barracks III.*2000 gold/);
-    assert.match(await page.locator('#barracks-upgrade-state').innerText(), /Barracks III.*\+1 tile to buy/);
+    assert.match(await page.locator('#mercenaries-required-gold').innerText(), /\/ 2,000$/);
+    assert.match(await page.locator('#mercenaries-capacity').innerText(), /9 → 10/);
     await fits();
     await screenshot('third-available');
     const beforeThird = await state();
@@ -256,8 +257,9 @@ try {
     assert.equal((await state()).barracks.firstLancerPending, false, 'III never grants a second guaranteed Lancer');
     assert.equal(await page.locator('#barracks-building-level').innerText(), 'III');
     assert.equal(await page.locator('#recruitment-pool-elves').isEnabled(), true, 'Barracks III unlocks the Elven pool');
-    assert.equal(await page.locator('#barracks-upgrade-note').isVisible(), false, 'locked tier IV is not advertised as the former maximum tier');
-    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), false);
+    assert.equal(await page.locator('#mercenaries-complete').isVisible(), false, 'tier IV remains available to unlock');
+    assert.equal(await page.locator('#barracks-start-upgrade').isVisible(), true);
+    assert.equal(await page.locator('#barracks-start-upgrade').isDisabled(), true);
     assert.equal(await page.locator('#barracks-finish-upgrade').isVisible(), false);
     assert.equal(await page.locator('#barracks-go-market').isVisible(), false);
     assert.equal(await page.locator('#recruitment-guarantee').isVisible(), false);
@@ -303,7 +305,7 @@ try {
   assert.equal((await page.evaluate(() => window.barracksCheck.state())).gold, 17);
   await page.locator('#open-market-info').click();
   await assertEqualUnlockedOdds(page);
-  assert.equal(await page.locator('#lancer-recruitment-training').isVisible(), true);
+  assert.equal(await page.locator('[data-recruit-type="lancer"] progress').count(), 1);
   assert.equal(await page.locator('#recruitment-guarantee').isVisible(), level === 1);
   await page.reload();
   await page.waitForFunction(() => window.barracksCheck?.ready());
