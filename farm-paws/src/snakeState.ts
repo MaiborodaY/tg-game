@@ -40,15 +40,21 @@ const OPPOSITE_DIRECTIONS: Record<SnakeDirection, SnakeDirection> = {
 
 export function createSnakeInitialState(
   bestScore = 0,
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  direction: SnakeDirection = "right"
 ): SnakeState {
-  const snake = cloneSnake(INITIAL_SNAKE);
+  const head = INITIAL_SNAKE[0];
+  const vector = DIRECTION_VECTORS[direction];
+  const snake = INITIAL_SNAKE.map((_, index) => ({
+    x: head.x - vector.x * index,
+    y: head.y - vector.y * index
+  }));
   return {
     phase: "idle",
     snake,
     food: createFood(snake, random),
-    direction: "right",
-    queuedDirection: "right",
+    direction,
+    queuedDirection: direction,
     score: 0,
     bestScore: normalizeScore(bestScore)
   };
@@ -56,10 +62,11 @@ export function createSnakeInitialState(
 
 export function startSnakeGame(
   bestScore = 0,
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  direction: SnakeDirection = "right"
 ): SnakeState {
   return {
-    ...createSnakeInitialState(bestScore, random),
+    ...createSnakeInitialState(bestScore, random, direction),
     phase: "playing"
   };
 }
@@ -169,10 +176,6 @@ function samePoint(left: SnakePoint, right: SnakePoint): boolean {
 
 function pointKey(point: SnakePoint): string {
   return `${point.x}:${point.y}`;
-}
-
-function cloneSnake(snake: SnakePoint[]): SnakePoint[] {
-  return snake.map((point) => ({ ...point }));
 }
 
 function normalizeScore(score: number): number {

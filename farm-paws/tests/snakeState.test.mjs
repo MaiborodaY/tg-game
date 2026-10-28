@@ -28,6 +28,17 @@ test("moves one cell without growing", () => {
   assert.equal(next.score, 0);
 });
 
+test("the first direction can be left without reversing into the starting body", () => {
+  const state = startSnakeGame(7, () => 0, "left");
+  assert.equal(state.direction, "left");
+  assert.equal(state.queuedDirection, "left");
+  assert.deepEqual(state.snake, [{ x: 8, y: 8 }, { x: 9, y: 8 }, { x: 10, y: 8 }]);
+  const next = advanceSnake(state, () => 0);
+  assert.equal(next.phase, "playing");
+  assert.deepEqual(next.snake[0], { x: 7, y: 8 });
+  assert.equal(next.bestScore, 7);
+});
+
 test("eats food, grows and updates the record", () => {
   const state = {
     ...startSnakeGame(0, () => 0),

@@ -31,6 +31,9 @@ export type FarmPawsFinishResult = {
   bestScore: number | null;
   petXp: number | null;
   error: string | null;
+  refunded?: boolean;
+  dailyStarts?: number | null;
+  dailyLimit?: number | null;
 };
 
 type ApiStartResponse = {
@@ -63,10 +66,15 @@ type ApiFinishResponse = {
   petXp?: number;
   pet_xp?: number;
   error?: string;
+  refunded?: boolean;
+  dailyStarts?: number;
+  dailyLimit?: number;
 };
 
 const API_BASE_URL = normalizeBaseUrl(import.meta.env?.VITE_FARM_PAWS_API_BASE_URL || "");
 const API_TIMEOUT_MS = 15_000;
+// Keep an uncertain start until its response arrives; retrying must reuse its daily slot.
+const pendingStarts = new Map<FarmPawsGame, string>();
 const BLOCKING_START_CODES = new Set([
   "daily_limit",
   "no_pet",
@@ -84,13 +92,16 @@ export async function startFarmPawsRun(
   if (!initData) {
     return localSession(localBestScore, game, null);
   }
+  const requestId = pendingStarts.get(game) || crypto.randomUUID();
+  pendingStarts.set(game, requestId);
 
   try {
-    const response = await postJson<ApiStartResponse>("/api/farm-paws/start", { initData, game });
+    const response = await postJson<ApiStartResponse>("/api/farm-paws/start", { initData, game, requestId });
     const runId = response.runId || response.run_id || null;
     if (!response.ok || !runId) {
       const code = normalizeCode(response.code);
       if (isBlockingStartCode(code)) {
+        pendingStarts.delete(game);
         return blockedSession(localBestScore, game, response.error || code || "start_blocked", code, response);
       }
       return blockedSession(
@@ -102,6 +113,7 @@ export async function startFarmPawsRun(
       );
     }
 
+    pendingStarts.delete(game);
     return {
       mode: "server",
       game,
@@ -117,6 +129,7 @@ export async function startFarmPawsRun(
     };
   } catch (error) {
     if (error instanceof ApiError && isBlockingStartCode(error.code)) {
+      pendingStarts.delete(game);
       const payload = error.payload as ApiStartResponse;
       return blockedSession(localBestScore, game, error.message, error.code, payload);
     }
@@ -181,7 +194,12 @@ export async function finishFarmPawsRun(
       xpReward: normalizedNullableScore(response.xpReward ?? response.xp_reward),
       bestScore: normalizedNullableScore(response.bestScore ?? response.best_score),
       petXp: normalizedNullableScore(response.petXp ?? response.pet_xp),
-      error: null
+      error: null,
+      ...(response.refunded === true ? {
+        refunded: true,
+        dailyStarts: normalizedNullableScore(response.dailyStarts),
+        dailyLimit: normalizedNullableScore(response.dailyLimit)
+      } : {})
     };
   } catch (error) {
     return serverFinishError(error instanceof Error ? error.message : "network_error");

@@ -571,6 +571,9 @@ export function mountTetrisController(
 
     finishPending = false;
     finishResult = result;
+    if (typeof result.dailyStarts === "number" && currentRun) {
+      currentRun = { ...currentRun, dailyStarts: result.dailyStarts };
+    }
     if (result.ok) setTelegramClosingConfirmation(false);
     if (typeof result.bestScore === "number" && result.bestScore > state.bestScore) {
       state = {
@@ -948,6 +951,7 @@ function tetrisRunMessage(input: TetrisRunMessageInput): string {
   if (!input.finishResult) return "";
   if (input.finishResult.mode === "local") return input.tr("reward_local");
   if (!input.finishResult.ok) return input.tr("reward_not_saved");
+  if (input.finishResult.refunded) return input.tr("zero_attempt_refunded");
   if (input.finishResult.duplicate) return input.tr("reward_already_saved");
   return input.tr("reward_ok", { xp: input.finishResult.xpReward || 0 });
 }

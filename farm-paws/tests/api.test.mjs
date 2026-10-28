@@ -13,6 +13,7 @@ let api;
 before(async () => {
   viteServer = await createServer({
     root: farmPawsRoot,
+    cacheDir: fileURLToPath(new globalThis.URL("../../.tmp/farm-paws-api-vite", import.meta.url)),
     configFile: false,
     appType: "custom",
     logLevel: "silent",
@@ -82,8 +83,10 @@ test("Snake uses the shared start/finish endpoints with its game discriminator",
   assert.equal(calls[0].init.headers["X-Telegram-Init-Data"], "signed-init-data");
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     initData: "signed-init-data",
-    game: "snake"
+    game: "snake",
+    requestId: JSON.parse(calls[0].init.body).requestId
   });
+  assert.match(JSON.parse(calls[0].init.body).requestId, /^[0-9a-f-]{36}$/);
   assert.equal(calls[1].url, "/api/farm-paws/finish");
   assert.deepEqual(JSON.parse(calls[1].init.body), {
     initData: "signed-init-data",
@@ -147,7 +150,8 @@ test("Tetris uses the shared start/finish endpoints with its game discriminator"
   assert.equal(calls[0].url, "/api/farm-paws/start");
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     initData: "signed-tetris-init-data",
-    game: "tetris"
+    game: "tetris",
+    requestId: JSON.parse(calls[0].init.body).requestId
   });
   assert.equal(calls[1].url, "/api/farm-paws/finish");
   assert.deepEqual(JSON.parse(calls[1].init.body), {
@@ -203,7 +207,9 @@ test("the shared daily limit blocks Snake before gameplay", async () => {
 
 test("an uncertain server start is blocked instead of becoming a local run", async () => {
   setTelegramInitData("signed-init-data");
-  globalThis.fetch = async () => {
+  const requestIds = [];
+  globalThis.fetch = async (_url, init) => {
+    requestIds.push(JSON.parse(init.body).requestId);
     throw new Error("connection lost");
   };
 
@@ -212,6 +218,31 @@ test("an uncertain server start is blocked instead of becoming a local run", asy
   assert.equal(session.mode, "blocked");
   assert.equal(session.game, "snake");
   assert.equal(session.code, "start_unavailable");
+  globalThis.fetch = async (_url, init) => {
+    requestIds.push(JSON.parse(init.body).requestId);
+    return jsonResponse({ ok: true, runId: "retried-run", dailyStarts: 5, dailyLimit: 5 });
+  };
+  const retry = await api.startFarmPawsRun(0, "snake");
+  assert.equal(retry.runId, "retried-run");
+  assert.equal(retry.dailyStarts, 5);
+  assert.match(requestIds[0], /^[0-9a-f-]{36}$/);
+  assert.equal(requestIds[1], requestIds[0]);
+  await api.startFarmPawsRun(0, "snake");
+  assert.notEqual(requestIds[2], requestIds[0]);
+});
+
+test("a refunded finish exposes the returned attempt without an XP reward", async () => {
+  setTelegramInitData("signed-init-data");
+  globalThis.fetch = async () => jsonResponse({
+    ok: true, refunded: true, duplicate: false, xpReward: 0, bestScore: 9,
+    dailyStarts: 4, dailyLimit: 5
+  });
+  const result = await api.finishFarmPawsRun({ mode: "server", game: "snake", runId: "zero-run" },
+    { score: 0, round: 0, hpLeft: 0, durationMs: 1280 });
+  assert.equal(result.refunded, true);
+  assert.equal(result.xpReward, 0);
+  assert.equal(result.dailyStarts, 4);
+  assert.equal(result.dailyLimit, 5);
 });
 
 test("a failed finish stays a server error so the same run can be retried", async () => {

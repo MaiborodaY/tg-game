@@ -827,6 +827,9 @@ async function finishCurrentRun(token: number): Promise<void> {
 
   finishPending = false;
   finishResult = result;
+  if (typeof result.dailyStarts === "number") {
+    currentRun = { ...currentRun, dailyStarts: result.dailyStarts };
+  }
   finishError = result.ok ? null : result.error || "finish_failed";
 
   if (typeof result.bestScore === "number" && result.bestScore > state.bestScore) {
@@ -890,6 +893,7 @@ function rewardText(): string {
     return tr("reward_saving");
   }
   if (finishResult?.mode === "server" && finishResult.ok) {
+    if (finishResult.refunded) return tr("zero_attempt_refunded");
     if (finishResult.duplicate) return tr("reward_already_saved");
     return tr("reward_ok", { xp: finishResult.xpReward || 0 });
   }

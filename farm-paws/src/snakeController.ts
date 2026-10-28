@@ -196,6 +196,10 @@ export function mountSnakeController(
 
   function handlePrimaryAction(): void {
     if (isStartingRun || finishPending || hasHardStartBlock()) return;
+    if (layout === "game" && currentRun && state.phase === "idle") {
+      handleDirection("right");
+      return;
+    }
     if (state.phase === "playing") {
       state = pauseSnakeGame(state);
       stopLoop();
@@ -255,19 +259,18 @@ export function mountSnakeController(
     currentRun = run;
     layout = "game";
     state = createSnakeInitialState(syncedBestScore);
-    updateView();
-    await wait(650);
-    if (destroyed || token !== lifecycleToken) return;
-
     isStartingRun = false;
-    runStartedAt = Date.now();
-    state = startSnakeGame(syncedBestScore);
-    if (document.hidden) state = pauseSnakeGame(state);
     updateView();
-    if (state.phase === "playing") scheduleTick();
   }
 
   function handleDirection(direction: SnakeDirection): void {
+    if (layout === "game" && currentRun && !isStartingRun && state.phase === "idle") {
+      runStartedAt = Date.now();
+      state = startSnakeGame(state.bestScore, Math.random, direction);
+      updateView();
+      scheduleTick();
+      return;
+    }
     if (state.phase !== "playing") return;
     state = queueSnakeDirection(state, direction);
   }
@@ -297,7 +300,7 @@ export function mountSnakeController(
   }
 
   function handlePointerDown(event: PointerEvent): void {
-    if (state.phase !== "playing") return;
+    if (state.phase !== "playing" && state.phase !== "idle") return;
     pointerStart = {
       id: event.pointerId,
       x: event.clientX,
@@ -363,6 +366,9 @@ export function mountSnakeController(
 
     finishPending = false;
     finishResult = result;
+    if (typeof result.dailyStarts === "number" && currentRun) {
+      currentRun = { ...currentRun, dailyStarts: result.dailyStarts };
+    }
     if (typeof result.bestScore === "number" && result.bestScore > state.bestScore) {
       state = {
         ...state,
@@ -377,7 +383,7 @@ export function mountSnakeController(
   function handleBack(): void {
     if (isStartingRun || finishPending) return;
     const activeServerRun = currentRun?.mode === "server"
-      && (state.phase === "playing" || state.phase === "paused");
+      && (state.phase === "playing" || state.phase === "paused" || state.phase === "idle");
     const unsavedServerResult = currentRun?.mode === "server"
       && (state.phase === "gameover" || state.phase === "won")
       && Boolean(finishResult && !finishResult.ok);
@@ -416,7 +422,9 @@ export function mountSnakeController(
       ? tr("snake_unavailable")
       : isStartingRun
         ? tr(currentRun?.mode === "server" ? "snake_get_ready" : "start_busy")
-        : snakeStatusText(state.phase, tr);
+        : layout === "game" && state.phase === "idle"
+          ? tr("snake_first_move")
+          : snakeStatusText(state.phase, tr);
     statusElement.dataset.phase = hardStartBlock ? "blocked" : isStartingRun ? "starting" : state.phase;
     runNoteElement.textContent = snakeRunNote(
       currentRun,
@@ -438,7 +446,7 @@ export function mountSnakeController(
     });
     pauseButton.textContent = state.phase === "paused" ? "▶" : "⏸";
     pauseButton.setAttribute("aria-label", tr(state.phase === "paused" ? "snake_resume" : "snake_pause"));
-    pauseButton.hidden = layout !== "game" || isStartingRun || terminal;
+    pauseButton.hidden = layout !== "game" || isStartingRun || terminal || state.phase === "idle";
     pauseButton.disabled = state.phase !== "playing" && state.phase !== "paused";
 
     const overlayVisible = layout === "game"
@@ -471,7 +479,7 @@ export function mountSnakeController(
       `${tr("snake_board_label")}. ${tr("score_label")}: ${state.score}. ${tr("record_label")}: ${state.bestScore}.`
     );
     directionButtons.forEach((button) => {
-      button.disabled = isStartingRun || state.phase !== "playing";
+      button.disabled = isStartingRun || layout !== "game" || (state.phase !== "playing" && state.phase !== "idle");
     });
     drawBoard();
   }
@@ -694,6 +702,7 @@ function snakeRunMessage(input: SnakeRunMessageInput): string {
   if (input.startBlockMessage) return input.startBlockMessage;
   if (input.finishPending) return input.tr("reward_saving");
   if (input.finishResult?.mode === "server" && input.finishResult.ok) {
+    if (input.finishResult.refunded) return input.tr("zero_attempt_refunded");
     if (input.finishResult.duplicate) return input.tr("reward_already_saved");
     return input.tr("reward_ok", { xp: input.finishResult.xpReward || 0 });
   }
@@ -717,10 +726,6 @@ function directionLabel(direction: SnakeDirection): FarmPawsTextKey {
   if (direction === "down") return "move_down";
   if (direction === "left") return "move_left";
   return "move_right";
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function requireElement<T extends Element>(root: ParentNode, selector: string): T {
