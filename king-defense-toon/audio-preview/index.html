@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#eee6d5" />
+    <title>Пять звуков лука — BroTD Infinity</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #3c352a;
+        background: #eee6d5;
+        font-synthesis: none;
+        --blue: #3b83af;
+        --blue-dark: #285e82;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 300px;
+        background-image: radial-gradient(#b7a68730 0.8px, transparent 0.8px);
+        background-size: 8px 8px;
+      }
+      button, input { font: inherit; }
+      button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+      button:focus-visible, input:focus-visible { outline: 3px solid #b97724; outline-offset: 4px; }
+      main { max-width: 620px; margin: 0 auto; padding: 28px 16px 24px; }
+      .eyebrow { margin: 0 0 8px; color: #77704f; font-size: 10px; font-weight: 800; letter-spacing: 2px; }
+      h1 { margin: 0; font-size: clamp(25px, 6vw, 32px); line-height: 1.15; letter-spacing: -1px; }
+      .intro { margin: 10px 0 18px; max-width: 440px; color: #746958; font-size: 13px; line-height: 1.5; }
+      .controls { padding: 13px 14px 10px; background: #e5dbc5; border: 1px solid #d0c2a4; border-radius: 9px; margin-bottom: 14px; }
+      .volume { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 700; }
+      .volume label { flex-shrink: 0; }
+      .volume input { width: 100%; min-width: 60px; height: 24px; margin: 0; accent-color: var(--blue-dark); cursor: pointer; }
+      .volume output { min-width: 33px; text-align: right; font-variant-numeric: tabular-nums; }
+      .transport { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 29px; margin-top: 5px; }
+      #status { margin: 0; color: #746958; font-size: 11px; line-height: 1.4; }
+      #stop { flex-shrink: 0; border: 0; border-radius: 4px; padding: 5px 6px; color: #594c39; background: transparent; cursor: pointer; font-size: 11px; font-weight: 700; }
+      #stop:disabled { opacity: .4; cursor: default; }
+      #stop:not(:disabled):hover { background: #d6c8ad; }
+      .sounds { display: grid; gap: 10px; }
+      .card { border: 1px solid #d5c9b0; border-radius: 10px; padding: 12px; background: #fffaf0; box-shadow: 0 2px 0 #d4c8af; transition: border-color .15s, background .15s; }
+      .card.is-playing { border-color: #4b8bb1; background: #f4f9f8; box-shadow: 0 2px 0 #8eafbf; }
+      .card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+      .number { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border: 1px solid #d5c9b0; border-radius: 7px; background: #efe7d5; color: #918267; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .is-playing .number { color: #28618b; background: #dcebf1; border-color: #afc7d4; }
+      h2 { margin: 0 0 3px; font-size: 14px; font-weight: 800; line-height: 1.2; }
+      .description { margin: 0; color: #877a65; font-size: 11px; line-height: 1.4; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .play { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 8px; border: 1px solid var(--blue-dark); border-radius: 6px; color: #fff; background: var(--blue); box-shadow: inset 0 2px 0 #83b6d270, 0 2px 0 #225274; cursor: pointer; font-size: 12px; font-weight: 750; }
+      .play:hover { background: #3478a4; }
+      .play:active { transform: translateY(1px); box-shadow: inset 0 1px 0 #83b6d270, 0 1px 0 #225274; }
+      .play.secondary { color: #326484; background: #e5eef0; border-color: #abc1c8; box-shadow: inset 0 2px 0 #ffffff90, 0 2px 0 #a8bdc4; }
+      .play.secondary:hover { background: #d9e7ec; }
+      .play svg { width: 13px; height: 13px; flex-shrink: 0; fill: currentColor; }
+      footer { margin: 17px 3px 0; color: #8b7e66; font-size: 10px; line-height: 1.55; }
+      footer strong { color: #71634d; font-weight: 700; }
+      @media (min-width: 540px) {
+        main { padding-top: 40px; }
+        .card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px; }
+        .card-top { margin: 0; }
+        .actions { width: 226px; flex-shrink: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">BROTD INFINITY · ЗВУК</p>
+        <h1>Как звучит твой лук?</h1>
+        <p class="intro">Пять вариантов выстрела. Сравни по одному,<br />а затем послушай, как звучит залп.<br />Новые варианты: 2, 3 и 4.</p>
+      </header>
+      <section class="controls" aria-label="Управление звуком">
+        <div class="volume">
+          <label for="volume">Громкость</label>
+          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.65" />
+          <output id="volume-value" for="volume">65%</output>
+        </div>
+        <div class="transport">
+          <p id="status" role="status" aria-live="polite">Выбери вариант ниже</p>
+          <button id="stop" type="button" disabled>■ Стоп</button>
+        </div>
+      </section>
+      <section class="sounds" aria-label="Варианты звука лука" id="sounds"></section>
+      <footer><strong>Демо для выбора характера звука.</strong> Все пять вариантов синтезированы. Залп — 5 выстрелов подряд. Эта страница не меняет звук в игре.</footer>
+    </main>
+    <script type="module">
+      const options = [
+        { file: '01-soft.wav', name: 'Мягкая тетива', description: 'Тихий щелчок и лёгкий полёт.' },
+        { file: '02-classic.wav?v=2', name: 'Сухой щелчок', description: 'Короткий и мягкий, почти без хвоста.' },
+        { file: '03-airy.wav?v=2', name: 'Деревянная тетива', description: 'Тёплый щелчок с лёгким шорохом.' },
+        { file: '04-heavy.wav?v=2', name: 'Короткое «фью»', description: 'Мягкий мультяшный выстрел с быстрым полётом.' },
+        { file: '05-toon.wav', name: 'Мультяшный щелчок', description: 'Короткий, звонкий и игривый.' },
+      ];
+      const sounds = document.querySelector('#sounds');
+      const status = document.querySelector('#status');
+      const stopButton = document.querySelector('#stop');
+      const volume = document.querySelector('#volume');
+      const volumeValue = document.querySelector('#volume-value');
+      const playIcon = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.3v11.4L13 8z"/></svg>';
+      const volleyIcon = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 3v10l6-5zM8 3v10l6-5z"/></svg>';
+      options.forEach((option, index) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+            <div><h2>${option.name}</h2><p class="description">${option.description}</p></div>
+          </div>
+          <div class="actions">
+            <button class="play" type="button" aria-label="${option.name}: один выстрел">${playIcon}Выстрел</button>
+            <button class="play secondary" type="button" aria-label="${option.name}: залп из пяти выстрелов">${volleyIcon}Залп ×5</button>
+          </div>`;
+        card.querySelector('.play').addEventListener('click', () => play(option, card, 1));
+        card.querySelector('.secondary').addEventListener('click', () => play(option, card, 5));
+        sounds.append(card);
+      });
+
+      let audioContext;
+      let masterGain;
+      let playbackId = 0;
+      let finishTimer;
+      const buffers = new Map();
+      const sources = new Set();
+
+      function stopPlayback(message) {
+        playbackId += 1;
+        clearTimeout(finishTimer);
+        for (const source of sources) {
+          try { source.stop(); } catch { /* A source may have ended before this click. */ }
+          source.disconnect();
+        }
+        sources.clear();
+        document.querySelectorAll('.is-playing').forEach(card => card.classList.remove('is-playing'));
+        stopButton.disabled = true;
+        if (message) status.textContent = message;
+      }
+
+      async function unlockAudioContext() {
+        if (!audioContext) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) throw new Error('unsupported');
+          audioContext = new AudioContextClass();
+          masterGain = audioContext.createGain();
+          masterGain.gain.value = Number(volume.value);
+          masterGain.connect(audioContext.destination);
+        }
+        // Resume directly from the click, before loading files, for mobile browsers.
+        if (audioContext.state !== 'running') await audioContext.resume();
+        if (audioContext.state !== 'running') throw new Error('suspended');
+      }
+
+      function loadBuffer(file) {
+        if (!buffers.has(file)) {
+          const promise = fetch(new URL(file, document.baseURI))
+            .then(response => {
+              if (!response.ok) throw new Error('load');
+              return response.arrayBuffer();
+            })
+            .then(data => audioContext.decodeAudioData(data))
+            .catch(error => {
+              buffers.delete(file);
+              throw error;
+            });
+          buffers.set(file, promise);
+        }
+        return buffers.get(file);
+      }
+
+      async function play(option, card, count) {
+        stopPlayback();
+        const requestId = playbackId;
+        stopButton.disabled = false;
+        card.classList.add('is-playing');
+        status.textContent = `Загрузка: ${option.name.toLowerCase()}…`;
+        try {
+          await unlockAudioContext();
+          const buffer = await loadBuffer(option.file);
+          // A newer click also cancels an older request still waiting for its file.
+          if (requestId !== playbackId) return;
+          const start = audioContext.currentTime + 0.03;
+          const interval = 0.22;
+          for (let index = 0; index < count; index += 1) {
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(masterGain);
+            sources.add(source);
+            source.onended = () => {
+              sources.delete(source);
+              source.disconnect();
+            };
+            source.start(start + index * interval);
+          }
+          status.textContent = `${option.name} · ${count === 1 ? 'выстрел' : 'залп ×5'}`;
+          finishTimer = setTimeout(() => {
+            if (requestId === playbackId) stopPlayback('Готово. Сравни с другим вариантом');
+          }, (0.08 + buffer.duration + interval * (count - 1)) * 1000);
+        } catch (error) {
+          if (requestId !== playbackId) return;
+          const message = error.message === 'unsupported'
+            ? 'Этот браузер не поддерживает Web Audio.'
+            : error.message === 'suspended'
+              ? 'Звук приостановлен. Нажми «Выстрел» ещё раз.'
+              : location.protocol === 'file:'
+                ? 'Открой страницу через локальный сервер, чтобы загрузить звук.'
+                : 'Не удалось загрузить звук. Попробуй ещё раз.';
+          stopPlayback(message);
+        }
+      }
+
+      volume.addEventListener('input', () => {
+        const value = Number(volume.value);
+        volumeValue.value = `${Math.round(value * 100)}%`;
+        if (masterGain) masterGain.gain.setTargetAtTime(value, audioContext.currentTime, 0.015);
+      });
+      stopButton.addEventListener('click', () => stopPlayback('Воспроизведение остановлено'));
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopPlayback('Выбери вариант ниже');
+      });
+    </script>
+  </body>
+</html>

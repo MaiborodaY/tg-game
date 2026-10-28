@@ -1,0 +1,13 @@
+# Infantry and male human archer
+
+Final asset: `units-toon-infantry-v3.png`.
+Built-in image_gen edited `units-toon-human-v2.png`, replacing the front/rear swordsman with a closed-helmet infantryman and the front/rear archer with a short-haired adult human man. The healer, king, layout and background key remain the same. Old atlases are retained. Both recruitment portraits and battlefield figures read this asset.
+
+## Exact prompt
+
+Use case: precise-object-edit.
+Edit target: the attached 1536x1024 production cartoon unit atlas. It has four columns, two rows, on solid pure magenta background.
+Change only the FIRST TWO COLUMNS (swordsman and archer), both front row and rear row. Preserve the two right columns (healer and king), their equipment, exact design, positions and size.
+1. COLUMN ONE SWORDSMAN becomes an ordinary HUMAN INFANTRY FOOTMAN in a CLOSED STEEL HELMET that covers his ENTIRE FACE. The helmet has a lowered solid metal faceplate, narrow dark horizontal eye slit and small breathing slots. No exposed eyes, eyebrows, nose, mouth, skin, moustache, hair or face. A simple rounded steel helmet, small central ridge, NO large red feather or plume. Steel shoulder armor, blue cloth surcoat, belt, chainmail neck, boots. Keep sword and blue round shield clearly readable in separate hands, same body size and stance. This is a sturdy rank-and-file medieval infantryman, not an ornate champion. Top row shows closed visor from front three-quarter. Bottom row shows same footman helmet from rear three-quarter, matching blue uniform and equipment.
+2. COLUMN TWO ARCHER becomes an unmistakably ADULT HUMAN MAN: short chestnut-brown hair, strong eyebrows, slightly square masculine jaw, subtle short brown beard/stubble. Normal SMALL ROUND HUMAN EARS. NO braid, NO ponytail, NO long hair, NO elf ears. Practical olive tunic, brown leather vest, bracers, belt, trousers, brown boots, wooden bow and quiver. Same compact 3 to 3.5-head-tall friendly cartoon proportions and thick dark outlines. Top row front three-quarter with male human face visible. Bottom row is exact SAME MALE human archer from rear three-quarter, with short brown haircut, leather quiver, vest and bow, facing upscreen.
+STRICT invariants: Keep 1536x1024 resolution and four columns × two rows. Each figure completely inside its 384x512 cell including weapons and feet. Same pose directions and scale as originals. Columns3 and4, both rows, unchanged. Preserve friendly flat shaded outlined cartoon style, line weight, colors and character proportions. Preserve flat SOLID #FF00FF background everywhere, including gaps in bows and between arms. No checkerboard, no ground shadows, no text, no labels or frames. Edit only requested character appearances; do not add characters.

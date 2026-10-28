@@ -1,0 +1,73 @@
+{
+  "image": "poison-impact-256-lite.webp",
+  "size": {
+    "width": 256,
+    "height": 256
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "impact",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 69,
+        "y": 85
+      }
+    },
+    {
+      "index": 1,
+      "action": "impact",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 52,
+        "y": 90
+      }
+    },
+    {
+      "index": 2,
+      "action": "impact",
+      "pose": 2,
+      "rect": {
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 72,
+        "y": 73
+      }
+    },
+    {
+      "index": 3,
+      "action": "impact",
+      "pose": 3,
+      "rect": {
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 56,
+        "y": 73
+      }
+    }
+  ],
+  "anchorSpace": "frame-pixels",
+  "loop": false,
+  "peakPose": 1,
+  "note": "Separate one-shot poison hit: small splat, peak, bubbling puff, fade. Align per-frame centerAnchor to the contact position. This visual does not define area damage, a persistent puddle, poison duration, ticking damage or stacking rules."
+}

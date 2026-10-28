@@ -1,0 +1,85 @@
+{
+  "type": "composition-reference-only",
+  "image": "goblin-cave-map-502x890-lite.webp",
+  "alternatives": [
+    {
+      "file": "goblin-cave-map-1004x1780-lite.webp",
+      "width": 1004,
+      "height": 1780,
+      "bytes": 170804
+    }
+  ],
+  "logicalImageSize": {
+    "width": 502,
+    "height": 890
+  },
+  "worldBounds": {
+    "x": -56,
+    "y": -445,
+    "width": 502,
+    "height": 890
+  },
+  "imageToWorld": {
+    "scale": 1,
+    "offsetX": -56,
+    "offsetY": -445
+  },
+  "lowerBattlefieldRect": {
+    "x": 0,
+    "y": 445,
+    "width": 502,
+    "height": 445
+  },
+  "deploymentGrid": {
+    "worldX": 50,
+    "worldY": 270,
+    "columns": 5,
+    "rows": 3,
+    "cellWidth": 58,
+    "cellHeight": 55
+  },
+  "king": {
+    "worldX": -28,
+    "worldFeetY": 410,
+    "imageX": 28,
+    "imageFeetY": 855
+  },
+  "royalPeninsulaWorld": {
+    "left": -54,
+    "top": 300,
+    "right": -2,
+    "bottom": 442
+  },
+  "royalNeckWorld": {
+    "left": -4,
+    "top": 392,
+    "right": 36,
+    "bottom": 424
+  },
+  "royalRouteWorld": [
+    {
+      "x": 34,
+      "y": 408
+    },
+    {
+      "x": -14,
+      "y": 408
+    }
+  ],
+  "reference": {
+    "remoteMain": "d8bab9c",
+    "localGameWorktree": "pixel-chronicle",
+    "files": [
+      "king-defense-toon/field.mjs",
+      "king-defense-toon/tiny-map.mjs"
+    ],
+    "observedAt": "2026-09-18"
+  },
+  "notes": [
+    "Static background artwork only; no game integration or collision map.",
+    "World-to-image coordinates are x+56 and y+445 for the 502x890 variant; multiply image coordinates by two for 1004x1780.",
+    "Preserve world scale and bottom alignment. Do not stretch the whole tall image into the 502x445 base battlefield.",
+    "The upper 445 logical pixels provide additional approach above world y=0. Taller viewports require a separate continuation; this is not a seamless tile.",
+    "Deployment cells, king and route are reference coordinates from current code, not markers painted into the art."
+  ]
+}

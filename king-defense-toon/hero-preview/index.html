@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#171d27" />
+    <title>St. Knihor · просмотр героя</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body data-theme="dark">
+    <main>
+      <header>
+        <img id="portrait" width="48" height="48" alt="Портрет St. Knihor" />
+        <div class="heading"><p class="eyebrow">BroTD Infinity · ассеты героя</p><h1>St. Knihor</h1></div>
+        <button id="theme" class="subtle" type="button" aria-pressed="true">Тёмный фон</button>
+      </header>
+      <p class="intro">Отдельный просмотр анимаций и способностей.</p>
+      <p id="load-status" role="status">Загрузка ассетов…</p>
+
+      <section class="panel" aria-label="Анимация героя">
+        <div class="stage-grid">
+          <figure><figcaption>Игровой размер <span>≈40 px</span></figcaption><canvas id="actual" aria-label="Герой в игровом размере"></canvas></figure>
+          <figure><figcaption>Пиксельный вид <span id="zoom-label">увеличено</span></figcaption><canvas id="zoom" aria-label="Увеличенная анимация героя"></canvas></figure>
+        </div>
+        <div class="readout"><span id="current-action">Покой · вниз</span><span id="frame-readout">Кадр 1 / 4</span></div>
+        <div class="controls">
+          <fieldset><legend>Анимация</legend><div class="action-buttons" id="actions">
+            <button type="button" data-action="idle" aria-pressed="true">Покой</button>
+            <button type="button" data-action="walk" aria-pressed="false">Ходьба</button>
+            <button type="button" data-action="attack" aria-pressed="false">Атака</button>
+            <button type="button" data-action="cast" aria-pressed="false">Каст</button>
+            <button type="button" data-action="hit" aria-pressed="false">Урон</button>
+            <button type="button" data-action="death" aria-pressed="false">Гибель</button>
+          </div></fieldset>
+          <fieldset><legend>Направление</legend><div class="direction-buttons" id="directions">
+            <button type="button" data-direction="down" aria-pressed="true">↓ Вниз</button>
+            <button type="button" data-direction="right" aria-pressed="false">→ Бок</button>
+            <button type="button" data-direction="left" aria-pressed="false">← Зеркало</button>
+            <button type="button" data-direction="up" aria-pressed="false">↑ Спина</button>
+          </div></fieldset>
+          <div class="playback"><fieldset><legend>Скорость</legend><div id="speeds">
+            <button type="button" data-speed="1" aria-pressed="true">×1</button>
+            <button type="button" data-speed="2" aria-pressed="false">×2</button>
+            <button type="button" data-speed="3" aria-pressed="false">×3</button>
+          </div></fieldset><button id="pause" type="button" aria-pressed="false">Пауза</button><button id="restart" class="subtle" type="button">Сначала</button></div>
+        </div>
+      </section>
+
+      <section class="abilities" aria-labelledby="abilities-heading">
+        <div class="section-title"><h2 id="abilities-heading">Способности</h2><label class="toggle"><input id="effects" type="checkbox" checked />Эффекты</label></div>
+        <div class="ability-grid">
+          <button class="ability" type="button" data-ability="heal" aria-pressed="false"><canvas id="ability-heal" aria-hidden="true"></canvas><strong>Лечение</strong><span>Импульс света</span></button>
+          <button class="ability" type="button" data-ability="armor" aria-pressed="false"><canvas id="ability-armor" aria-hidden="true"></canvas><strong>Аура защиты</strong><span>Сияние брони</span></button>
+          <button class="ability" type="button" data-ability="hammer" aria-pressed="false"><canvas id="ability-hammer" aria-hidden="true"></canvas><strong>Святой молот</strong><span>Полёт и удар</span></button>
+        </div>
+        <p class="hint">Нажмите способность, чтобы рассмотреть её рядом с героем.</p>
+      </section>
+      <footer>Просмотр ассетов · герой ещё не подключён к бою</footer>
+    </main>
+    <script type="module" src="./main.mjs"></script>
+  </body>
+</html>

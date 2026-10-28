@@ -1,0 +1,21 @@
+{
+  "source": "C:\\TG_bot\\tg-game\\.worktrees\\brotd-goblin-healer-assets\\art\\brotd-infinity\\level-01\\enemies\\goblin-healer",
+  "assets": [
+    {
+      "name": "goblin-healer.webp",
+      "source": "goblin-healer-768-lite.webp",
+      "width": 768,
+      "height": 768,
+      "bytes": 185496,
+      "sha256": "84c5bea3a3bc67663cc9fe693eafed61dee6e42ec43e16da4e5b63ab1f28423b"
+    },
+    {
+      "name": "heal-pulse.webp",
+      "source": "heal-pulse-256-lite.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 10766,
+      "sha256": "f9f80ac01e819b0044eaa8a0b5a404b598bbf1aa6b5e43e22901cb5d31f8a557"
+    }
+  ]
+}

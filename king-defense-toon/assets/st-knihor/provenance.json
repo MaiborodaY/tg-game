@@ -1,0 +1,3942 @@
+{
+  "version": 1,
+  "recipe": "scripts/prepare-st-knihor-art.mjs",
+  "encoding": "WebP quality 92, exact lossless alpha",
+  "quality": 92,
+  "alphaQuality": 100,
+  "clearedFullyTransparentRGB": true,
+  "resize": "nearest neighbour, common body scale; no pose-specific rescaling",
+  "scale": 0.428,
+  "frameSize": 128,
+  "anchor": {
+    "x": 64,
+    "y": 110
+  },
+  "idleBodyHeight": 82.5,
+  "bodyHeight": 0.64453125,
+  "sources": {
+    "down": {
+      "path": "art/st-knihor/source/st-knihor-down-source.png",
+      "generatedName": "exec-9bf9c6e8-9e13-4895-a2f5-f72fe3f45210.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 2167729,
+      "sha256": "ceba28dd8ac9594ec5ede2a0fb106699c0f3e415ac6048fb1d2c98024b33b7bf"
+    },
+    "side": {
+      "path": "art/st-knihor/source/st-knihor-side-source.png",
+      "generatedName": "exec-7c23fcdb-de6c-4d74-bf32-225b75537a0d.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 2165127,
+      "sha256": "8ae5b464939ff1453fa6f567469f15ad35d918139be15d9b6d180edb79e989f8"
+    },
+    "up": {
+      "path": "art/st-knihor/source/st-knihor-up-source.png",
+      "generatedName": "exec-001641aa-f619-46c5-901d-9b4c2bb3bb7d.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 2138134,
+      "sha256": "006ec086cd5ac54f767a2edb2eb9d4e9d2e063dcdb7ffdb2ee4e3148a030b7c7"
+    },
+    "effects": {
+      "path": "art/st-knihor/source/st-knihor-effects-source.png",
+      "generatedName": "exec-5a890803-8b13-402b-9874-0f7c1b5afd64.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 412717,
+      "sha256": "92e29facb6404ec726c8839857c20f007a1e16f6753a331ea59b25fd36662096"
+    },
+    "portrait": {
+      "path": "art/st-knihor/source/st-knihor-portrait-source.png",
+      "generatedName": "exec-365a1609-05e5-4779-8a7a-149447002d0d.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 728927,
+      "sha256": "61183d73a46ce70e2d3c9d121be60b092e675dce95e3ff0f162bd4137ee7084b"
+    }
+  },
+  "bodies": {
+    "down": {
+      "rowCuts": [
+        0,
+        277,
+        518,
+        768,
+        1024,
+        1280,
+        1536
+      ],
+      "columnCuts": [
+        [
+          0,
+          257,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          260,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          259,
+          514,
+          769,
+          1024
+        ],
+        [
+          0,
+          256,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          257,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          256,
+          512,
+          762,
+          1024
+        ]
+      ],
+      "columnAnchors": [
+        144.5,
+        390.5,
+        643,
+        893.5
+      ],
+      "frames": [
+        {
+          "index": 0,
+          "action": "idle",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 257,
+            "height": 277
+          },
+          "sourceBounds": {
+            "x": 25,
+            "y": 63,
+            "width": 232,
+            "height": 214,
+            "pixels": 30280
+          },
+          "opaqueBounds": {
+            "x": 32,
+            "y": 68,
+            "width": 218,
+            "height": 194,
+            "pixels": 24995
+          },
+          "sourceFootAnchor": {
+            "x": 144.5,
+            "y": 261
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 25,
+            "width": 99,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 16,
+            "y": 27,
+            "width": 93,
+            "height": 84,
+            "pixels": 4596
+          }
+        },
+        {
+          "index": 1,
+          "action": "idle",
+          "pose": 1,
+          "sourceRect": {
+            "x": 257,
+            "y": 0,
+            "width": 255,
+            "height": 277
+          },
+          "sourceBounds": {
+            "x": 273,
+            "y": 27,
+            "width": 235,
+            "height": 249,
+            "pixels": 31364
+          },
+          "opaqueBounds": {
+            "x": 285,
+            "y": 68,
+            "width": 212,
+            "height": 195,
+            "pixels": 25392
+          },
+          "sourceFootAnchor": {
+            "x": 390.5,
+            "y": 262
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 9,
+            "width": 101,
+            "height": 107
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 147,
+            "y": 27,
+            "width": 91,
+            "height": 83,
+            "pixels": 4683
+          }
+        },
+        {
+          "index": 2,
+          "action": "idle",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 0,
+            "width": 256,
+            "height": 277
+          },
+          "sourceBounds": {
+            "x": 524,
+            "y": 63,
+            "width": 230,
+            "height": 211,
+            "pixels": 30722
+          },
+          "opaqueBounds": {
+            "x": 531,
+            "y": 69,
+            "width": 219,
+            "height": 194,
+            "pixels": 25018
+          },
+          "sourceFootAnchor": {
+            "x": 643,
+            "y": 262
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 25,
+            "width": 98,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 272,
+            "y": 28,
+            "width": 93,
+            "height": 82,
+            "pixels": 4514
+          }
+        },
+        {
+          "index": 3,
+          "action": "idle",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 0,
+            "width": 256,
+            "height": 277
+          },
+          "sourceBounds": {
+            "x": 773,
+            "y": 63,
+            "width": 235,
+            "height": 211,
+            "pixels": 29783
+          },
+          "opaqueBounds": {
+            "x": 785,
+            "y": 73,
+            "width": 211,
+            "height": 190,
+            "pixels": 24073
+          },
+          "sourceFootAnchor": {
+            "x": 893.5,
+            "y": 262
+          },
+          "destinationBounds": {
+            "x": 12,
+            "y": 25,
+            "width": 101,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 401,
+            "y": 29,
+            "width": 91,
+            "height": 81,
+            "pixels": 4419
+          }
+        },
+        {
+          "index": 4,
+          "action": "walk",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 277,
+            "width": 260,
+            "height": 241
+          },
+          "sourceBounds": {
+            "x": 31,
+            "y": 301,
+            "width": 229,
+            "height": 215,
+            "pixels": 30236
+          },
+          "opaqueBounds": {
+            "x": 42,
+            "y": 304,
+            "width": 207,
+            "height": 202,
+            "pixels": 24632
+          },
+          "sourceFootAnchor": {
+            "x": 144.5,
+            "y": 505
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 23,
+            "width": 98,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 20,
+            "y": 152,
+            "width": 88,
+            "height": 87,
+            "pixels": 4502
+          }
+        },
+        {
+          "index": 5,
+          "action": "walk",
+          "pose": 1,
+          "sourceRect": {
+            "x": 260,
+            "y": 277,
+            "width": 252,
+            "height": 241
+          },
+          "sourceBounds": {
+            "x": 285,
+            "y": 302,
+            "width": 218,
+            "height": 211,
+            "pixels": 29082
+          },
+          "opaqueBounds": {
+            "x": 293,
+            "y": 305,
+            "width": 205,
+            "height": 203,
+            "pixels": 23945
+          },
+          "sourceFootAnchor": {
+            "x": 390.5,
+            "y": 507
+          },
+          "destinationBounds": {
+            "x": 19,
+            "y": 22,
+            "width": 93,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 150,
+            "y": 151,
+            "width": 88,
+            "height": 87,
+            "pixels": 4344
+          }
+        },
+        {
+          "index": 6,
+          "action": "walk",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 277,
+            "width": 256,
+            "height": 241
+          },
+          "sourceBounds": {
+            "x": 525,
+            "y": 302,
+            "width": 237,
+            "height": 212,
+            "pixels": 31030
+          },
+          "opaqueBounds": {
+            "x": 533,
+            "y": 305,
+            "width": 221,
+            "height": 201,
+            "pixels": 25060
+          },
+          "sourceFootAnchor": {
+            "x": 643,
+            "y": 505
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 23,
+            "width": 101,
+            "height": 91
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 272,
+            "y": 152,
+            "width": 95,
+            "height": 87,
+            "pixels": 4598
+          }
+        },
+        {
+          "index": 7,
+          "action": "walk",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 277,
+            "width": 256,
+            "height": 241
+          },
+          "sourceBounds": {
+            "x": 783,
+            "y": 303,
+            "width": 223,
+            "height": 215,
+            "pixels": 28928
+          },
+          "opaqueBounds": {
+            "x": 793,
+            "y": 308,
+            "width": 203,
+            "height": 196,
+            "pixels": 23389
+          },
+          "sourceFootAnchor": {
+            "x": 893.5,
+            "y": 503
+          },
+          "destinationBounds": {
+            "x": 17,
+            "y": 24,
+            "width": 95,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 405,
+            "y": 154,
+            "width": 87,
+            "height": 84,
+            "pixels": 4259
+          }
+        },
+        {
+          "index": 8,
+          "action": "attack",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 518,
+            "width": 259,
+            "height": 250
+          },
+          "sourceBounds": {
+            "x": 0,
+            "y": 535,
+            "width": 259,
+            "height": 219,
+            "pixels": 32376
+          },
+          "opaqueBounds": {
+            "x": 33,
+            "y": 551,
+            "width": 218,
+            "height": 200,
+            "pixels": 26458
+          },
+          "sourceFootAnchor": {
+            "x": 144.5,
+            "y": 750
+          },
+          "destinationBounds": {
+            "x": 2,
+            "y": 18,
+            "width": 111,
+            "height": 94
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 16,
+            "y": 281,
+            "width": 94,
+            "height": 86,
+            "pixels": 4860
+          }
+        },
+        {
+          "index": 9,
+          "action": "attack",
+          "pose": 1,
+          "sourceRect": {
+            "x": 259,
+            "y": 518,
+            "width": 255,
+            "height": 250
+          },
+          "sourceBounds": {
+            "x": 287,
+            "y": 537,
+            "width": 227,
+            "height": 218,
+            "pixels": 31680
+          },
+          "opaqueBounds": {
+            "x": 294,
+            "y": 545,
+            "width": 214,
+            "height": 207,
+            "pixels": 25186
+          },
+          "sourceFootAnchor": {
+            "x": 390.5,
+            "y": 751
+          },
+          "destinationBounds": {
+            "x": 20,
+            "y": 18,
+            "width": 97,
+            "height": 93
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 151,
+            "y": 277,
+            "width": 91,
+            "height": 89,
+            "pixels": 4573
+          }
+        },
+        {
+          "index": 10,
+          "action": "attack",
+          "pose": 2,
+          "sourceRect": {
+            "x": 514,
+            "y": 518,
+            "width": 255,
+            "height": 250
+          },
+          "sourceBounds": {
+            "x": 525,
+            "y": 574,
+            "width": 244,
+            "height": 186,
+            "pixels": 29627
+          },
+          "opaqueBounds": {
+            "x": 531,
+            "y": 577,
+            "width": 234,
+            "height": 176,
+            "pixels": 24188
+          },
+          "sourceFootAnchor": {
+            "x": 643,
+            "y": 752
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 34,
+            "width": 104,
+            "height": 80
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 272,
+            "y": 291,
+            "width": 99,
+            "height": 76,
+            "pixels": 4430
+          }
+        },
+        {
+          "index": 11,
+          "action": "attack",
+          "pose": 3,
+          "sourceRect": {
+            "x": 769,
+            "y": 518,
+            "width": 255,
+            "height": 250
+          },
+          "sourceBounds": {
+            "x": 783,
+            "y": 556,
+            "width": 225,
+            "height": 200,
+            "pixels": 30604
+          },
+          "opaqueBounds": {
+            "x": 790,
+            "y": 560,
+            "width": 208,
+            "height": 193,
+            "pixels": 25046
+          },
+          "sourceFootAnchor": {
+            "x": 893.5,
+            "y": 752
+          },
+          "destinationBounds": {
+            "x": 17,
+            "y": 26,
+            "width": 96,
+            "height": 86
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 404,
+            "y": 284,
+            "width": 89,
+            "height": 83,
+            "pixels": 4602
+          }
+        },
+        {
+          "index": 12,
+          "action": "cast",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 768,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 29,
+            "y": 791,
+            "width": 227,
+            "height": 219,
+            "pixels": 31247
+          },
+          "opaqueBounds": {
+            "x": 35,
+            "y": 805,
+            "width": 216,
+            "height": 199,
+            "pixels": 25854
+          },
+          "sourceFootAnchor": {
+            "x": 144.5,
+            "y": 1003
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 19,
+            "width": 97,
+            "height": 94
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 18,
+            "y": 409,
+            "width": 92,
+            "height": 85,
+            "pixels": 4732
+          }
+        },
+        {
+          "index": 13,
+          "action": "cast",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 768,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 289,
+            "y": 772,
+            "width": 221,
+            "height": 241,
+            "pixels": 30988
+          },
+          "opaqueBounds": {
+            "x": 300,
+            "y": 810,
+            "width": 201,
+            "height": 194,
+            "pixels": 25510
+          },
+          "sourceFootAnchor": {
+            "x": 390.5,
+            "y": 1003
+          },
+          "destinationBounds": {
+            "x": 21,
+            "y": 11,
+            "width": 95,
+            "height": 103
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 154,
+            "y": 411,
+            "width": 86,
+            "height": 83,
+            "pixels": 4679
+          }
+        },
+        {
+          "index": 14,
+          "action": "cast",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 768,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 540,
+            "y": 777,
+            "width": 216,
+            "height": 235,
+            "pixels": 31746
+          },
+          "opaqueBounds": {
+            "x": 553,
+            "y": 784,
+            "width": 197,
+            "height": 218,
+            "pixels": 25322
+          },
+          "sourceFootAnchor": {
+            "x": 643,
+            "y": 1001
+          },
+          "destinationBounds": {
+            "x": 20,
+            "y": 14,
+            "width": 92,
+            "height": 101
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 282,
+            "y": 401,
+            "width": 83,
+            "height": 94,
+            "pixels": 4637
+          }
+        },
+        {
+          "index": 15,
+          "action": "cast",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 768,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 783,
+            "y": 783,
+            "width": 225,
+            "height": 230,
+            "pixels": 31391
+          },
+          "opaqueBounds": {
+            "x": 791,
+            "y": 805,
+            "width": 212,
+            "height": 197,
+            "pixels": 25243
+          },
+          "sourceFootAnchor": {
+            "x": 893.5,
+            "y": 1001
+          },
+          "destinationBounds": {
+            "x": 17,
+            "y": 17,
+            "width": 96,
+            "height": 98
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 404,
+            "y": 410,
+            "width": 91,
+            "height": 84,
+            "pixels": 4593
+          }
+        },
+        {
+          "index": 16,
+          "action": "hit",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 1024,
+            "width": 257,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 30,
+            "y": 1039,
+            "width": 227,
+            "height": 241,
+            "pixels": 31292
+          },
+          "opaqueBounds": {
+            "x": 34,
+            "y": 1047,
+            "width": 217,
+            "height": 197,
+            "pixels": 25801
+          },
+          "sourceFootAnchor": {
+            "x": 144.5,
+            "y": 1243
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 23,
+            "width": 97,
+            "height": 103
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 17,
+            "y": 538,
+            "width": 92,
+            "height": 85,
+            "pixels": 4724
+          }
+        },
+        {
+          "index": 17,
+          "action": "hit",
+          "pose": 1,
+          "sourceRect": {
+            "x": 257,
+            "y": 1024,
+            "width": 255,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 286,
+            "y": 1039,
+            "width": 212,
+            "height": 213,
+            "pixels": 31321
+          },
+          "opaqueBounds": {
+            "x": 295,
+            "y": 1047,
+            "width": 196,
+            "height": 197,
+            "pixels": 25503
+          },
+          "sourceFootAnchor": {
+            "x": 390.5,
+            "y": 1243
+          },
+          "destinationBounds": {
+            "x": 19,
+            "y": 23,
+            "width": 91,
+            "height": 91
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 151,
+            "y": 538,
+            "width": 84,
+            "height": 85,
+            "pixels": 4682
+          }
+        },
+        {
+          "index": 18,
+          "action": "hit",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 1024,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 523,
+            "y": 1063,
+            "width": 229,
+            "height": 185,
+            "pixels": 23201
+          },
+          "opaqueBounds": {
+            "x": 566,
+            "y": 1072,
+            "width": 168,
+            "height": 165,
+            "pixels": 18861
+          },
+          "sourceFootAnchor": {
+            "x": 643,
+            "y": 1236
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 36,
+            "width": 98,
+            "height": 79
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 287,
+            "y": 552,
+            "width": 72,
+            "height": 70,
+            "pixels": 3437
+          }
+        },
+        {
+          "index": 19,
+          "action": "hit",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 1024,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 779,
+            "y": 1041,
+            "width": 228,
+            "height": 229,
+            "pixels": 30771
+          },
+          "opaqueBounds": {
+            "x": 784,
+            "y": 1048,
+            "width": 215,
+            "height": 197,
+            "pixels": 25742
+          },
+          "sourceFootAnchor": {
+            "x": 893.5,
+            "y": 1244
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 23,
+            "width": 98,
+            "height": 98
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 401,
+            "y": 538,
+            "width": 93,
+            "height": 84,
+            "pixels": 4726
+          }
+        },
+        {
+          "index": 20,
+          "action": "death",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 1280,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 61,
+            "y": 1294,
+            "width": 195,
+            "height": 208,
+            "pixels": 28599
+          },
+          "opaqueBounds": {
+            "x": 70,
+            "y": 1300,
+            "width": 179,
+            "height": 192,
+            "pixels": 23188
+          },
+          "sourceFootAnchor": {
+            "x": 144.5,
+            "y": 1491
+          },
+          "destinationBounds": {
+            "x": 28,
+            "y": 26,
+            "width": 83,
+            "height": 89
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 32,
+            "y": 669,
+            "width": 76,
+            "height": 82,
+            "pixels": 4221
+          }
+        },
+        {
+          "index": 21,
+          "action": "death",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 1280,
+            "width": 256,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 286,
+            "y": 1289,
+            "width": 223,
+            "height": 212,
+            "pixels": 25155
+          },
+          "opaqueBounds": {
+            "x": 292,
+            "y": 1334,
+            "width": 207,
+            "height": 157,
+            "pixels": 20664
+          },
+          "sourceFootAnchor": {
+            "x": 390.5,
+            "y": 1490
+          },
+          "destinationBounds": {
+            "x": 19,
+            "y": 24,
+            "width": 95,
+            "height": 91
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 150,
+            "y": 683,
+            "width": 88,
+            "height": 68,
+            "pixels": 3792
+          }
+        },
+        {
+          "index": 22,
+          "action": "death",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 1280,
+            "width": 250,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 527,
+            "y": 1286,
+            "width": 235,
+            "height": 217,
+            "pixels": 22256
+          },
+          "opaqueBounds": {
+            "x": 534,
+            "y": 1371,
+            "width": 214,
+            "height": 122,
+            "pixels": 17722
+          },
+          "sourceFootAnchor": {
+            "x": 643,
+            "y": 1492
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 22,
+            "width": 101,
+            "height": 93
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 273,
+            "y": 698,
+            "width": 92,
+            "height": 53,
+            "pixels": 3263
+          }
+        },
+        {
+          "index": 23,
+          "action": "death",
+          "pose": 3,
+          "sourceRect": {
+            "x": 762,
+            "y": 1280,
+            "width": 262,
+            "height": 256
+          },
+          "sourceBounds": {
+            "x": 763,
+            "y": 1291,
+            "width": 245,
+            "height": 216,
+            "pixels": 20978
+          },
+          "opaqueBounds": {
+            "x": 770,
+            "y": 1392,
+            "width": 233,
+            "height": 103,
+            "pixels": 16891
+          },
+          "sourceFootAnchor": {
+            "x": 893.5,
+            "y": 1494
+          },
+          "destinationBounds": {
+            "x": 8,
+            "y": 23,
+            "width": 105,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 395,
+            "y": 706,
+            "width": 100,
+            "height": 44,
+            "pixels": 3076
+          }
+        }
+      ]
+    },
+    "side": {
+      "rowCuts": [
+        0,
+        258,
+        512,
+        764,
+        1023,
+        1278,
+        1536
+      ],
+      "columnCuts": [
+        [
+          0,
+          256,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          256,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          256,
+          512,
+          770,
+          1024
+        ],
+        [
+          0,
+          256,
+          514,
+          768,
+          1024
+        ],
+        [
+          0,
+          256,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          256,
+          506,
+          756,
+          1024
+        ]
+      ],
+      "columnAnchors": [
+        134.5,
+        390,
+        645,
+        900.5
+      ],
+      "frames": [
+        {
+          "index": 0,
+          "action": "idle",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 256,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 23,
+            "y": 53,
+            "width": 216,
+            "height": 205,
+            "pixels": 27449
+          },
+          "opaqueBounds": {
+            "x": 30,
+            "y": 61,
+            "width": 203,
+            "height": 194,
+            "pixels": 23413
+          },
+          "sourceFootAnchor": {
+            "x": 134.5,
+            "y": 254
+          },
+          "destinationBounds": {
+            "x": 16,
+            "y": 24,
+            "width": 92,
+            "height": 88
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 19,
+            "y": 27,
+            "width": 86,
+            "height": 84,
+            "pixels": 4289
+          }
+        },
+        {
+          "index": 1,
+          "action": "idle",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 0,
+            "width": 256,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 271,
+            "y": 47,
+            "width": 227,
+            "height": 211,
+            "pixels": 28358
+          },
+          "opaqueBounds": {
+            "x": 283,
+            "y": 61,
+            "width": 207,
+            "height": 194,
+            "pixels": 23804
+          },
+          "sourceFootAnchor": {
+            "x": 390,
+            "y": 254
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 21,
+            "width": 97,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 146,
+            "y": 27,
+            "width": 89,
+            "height": 83,
+            "pixels": 4345
+          }
+        },
+        {
+          "index": 2,
+          "action": "idle",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 0,
+            "width": 256,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 527,
+            "y": 58,
+            "width": 225,
+            "height": 200,
+            "pixels": 28162
+          },
+          "opaqueBounds": {
+            "x": 537,
+            "y": 61,
+            "width": 207,
+            "height": 194,
+            "pixels": 23840
+          },
+          "sourceFootAnchor": {
+            "x": 645,
+            "y": 254
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 26,
+            "width": 96,
+            "height": 86
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 273,
+            "y": 27,
+            "width": 89,
+            "height": 84,
+            "pixels": 4381
+          }
+        },
+        {
+          "index": 3,
+          "action": "idle",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 0,
+            "width": 256,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 773,
+            "y": 54,
+            "width": 235,
+            "height": 204,
+            "pixels": 27976
+          },
+          "opaqueBounds": {
+            "x": 799,
+            "y": 61,
+            "width": 200,
+            "height": 194,
+            "pixels": 23370
+          },
+          "sourceFootAnchor": {
+            "x": 900.5,
+            "y": 254
+          },
+          "destinationBounds": {
+            "x": 9,
+            "y": 24,
+            "width": 101,
+            "height": 87
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 404,
+            "y": 27,
+            "width": 86,
+            "height": 83,
+            "pixels": 4293
+          }
+        },
+        {
+          "index": 4,
+          "action": "walk",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 258,
+            "width": 256,
+            "height": 254
+          },
+          "sourceBounds": {
+            "x": 17,
+            "y": 290,
+            "width": 235,
+            "height": 220,
+            "pixels": 28275
+          },
+          "opaqueBounds": {
+            "x": 25,
+            "y": 300,
+            "width": 208,
+            "height": 199,
+            "pixels": 22935
+          },
+          "sourceFootAnchor": {
+            "x": 134.5,
+            "y": 498
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 21,
+            "width": 101,
+            "height": 94
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 17,
+            "y": 153,
+            "width": 90,
+            "height": 85,
+            "pixels": 4214
+          }
+        },
+        {
+          "index": 5,
+          "action": "walk",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 258,
+            "width": 256,
+            "height": 254
+          },
+          "sourceBounds": {
+            "x": 270,
+            "y": 295,
+            "width": 228,
+            "height": 215,
+            "pixels": 28368
+          },
+          "opaqueBounds": {
+            "x": 282,
+            "y": 303,
+            "width": 211,
+            "height": 196,
+            "pixels": 23241
+          },
+          "sourceFootAnchor": {
+            "x": 390,
+            "y": 498
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 23,
+            "width": 98,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 146,
+            "y": 154,
+            "width": 91,
+            "height": 84,
+            "pixels": 4273
+          }
+        },
+        {
+          "index": 6,
+          "action": "walk",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 258,
+            "width": 256,
+            "height": 254
+          },
+          "sourceBounds": {
+            "x": 527,
+            "y": 287,
+            "width": 235,
+            "height": 225,
+            "pixels": 29323
+          },
+          "opaqueBounds": {
+            "x": 538,
+            "y": 300,
+            "width": 208,
+            "height": 199,
+            "pixels": 24020
+          },
+          "sourceFootAnchor": {
+            "x": 645,
+            "y": 498
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 20,
+            "width": 101,
+            "height": 96
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 274,
+            "y": 154,
+            "width": 89,
+            "height": 84,
+            "pixels": 4391
+          }
+        },
+        {
+          "index": 7,
+          "action": "walk",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 258,
+            "width": 256,
+            "height": 254
+          },
+          "sourceBounds": {
+            "x": 789,
+            "y": 293,
+            "width": 219,
+            "height": 206,
+            "pixels": 28101
+          },
+          "opaqueBounds": {
+            "x": 796,
+            "y": 301,
+            "width": 203,
+            "height": 195,
+            "pixels": 23450
+          },
+          "sourceFootAnchor": {
+            "x": 900.5,
+            "y": 495
+          },
+          "destinationBounds": {
+            "x": 16,
+            "y": 24,
+            "width": 94,
+            "height": 88
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 403,
+            "y": 155,
+            "width": 87,
+            "height": 84,
+            "pixels": 4317
+          }
+        },
+        {
+          "index": 8,
+          "action": "attack",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 512,
+            "width": 256,
+            "height": 252
+          },
+          "sourceBounds": {
+            "x": 17,
+            "y": 523,
+            "width": 224,
+            "height": 227,
+            "pixels": 29093
+          },
+          "opaqueBounds": {
+            "x": 27,
+            "y": 548,
+            "width": 211,
+            "height": 194,
+            "pixels": 24020
+          },
+          "sourceFootAnchor": {
+            "x": 134.5,
+            "y": 741
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 17,
+            "width": 96,
+            "height": 97
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 18,
+            "y": 284,
+            "width": 91,
+            "height": 83,
+            "pixels": 4410
+          }
+        },
+        {
+          "index": 9,
+          "action": "attack",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 512,
+            "width": 256,
+            "height": 252
+          },
+          "sourceBounds": {
+            "x": 259,
+            "y": 513,
+            "width": 239,
+            "height": 239,
+            "pixels": 30680
+          },
+          "opaqueBounds": {
+            "x": 323,
+            "y": 520,
+            "width": 168,
+            "height": 222,
+            "pixels": 25079
+          },
+          "sourceFootAnchor": {
+            "x": 390,
+            "y": 741
+          },
+          "destinationBounds": {
+            "x": 8,
+            "y": 12,
+            "width": 102,
+            "height": 102
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 163,
+            "y": 271,
+            "width": 72,
+            "height": 95,
+            "pixels": 4568
+          }
+        },
+        {
+          "index": 10,
+          "action": "attack",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 512,
+            "width": 258,
+            "height": 252
+          },
+          "sourceBounds": {
+            "x": 524,
+            "y": 574,
+            "width": 246,
+            "height": 181,
+            "pixels": 29024
+          },
+          "opaqueBounds": {
+            "x": 531,
+            "y": 577,
+            "width": 232,
+            "height": 167,
+            "pixels": 23687
+          },
+          "sourceFootAnchor": {
+            "x": 645,
+            "y": 743
+          },
+          "destinationBounds": {
+            "x": 12,
+            "y": 38,
+            "width": 105,
+            "height": 77
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 271,
+            "y": 295,
+            "width": 99,
+            "height": 71,
+            "pixels": 4285
+          }
+        },
+        {
+          "index": 11,
+          "action": "attack",
+          "pose": 3,
+          "sourceRect": {
+            "x": 770,
+            "y": 512,
+            "width": 254,
+            "height": 252
+          },
+          "sourceBounds": {
+            "x": 813,
+            "y": 544,
+            "width": 197,
+            "height": 218,
+            "pixels": 29857
+          },
+          "opaqueBounds": {
+            "x": 820,
+            "y": 549,
+            "width": 179,
+            "height": 193,
+            "pixels": 24728
+          },
+          "sourceFootAnchor": {
+            "x": 900.5,
+            "y": 741
+          },
+          "destinationBounds": {
+            "x": 27,
+            "y": 26,
+            "width": 84,
+            "height": 93
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 414,
+            "y": 284,
+            "width": 76,
+            "height": 82,
+            "pixels": 4484
+          }
+        },
+        {
+          "index": 12,
+          "action": "cast",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 764,
+            "width": 256,
+            "height": 259
+          },
+          "sourceBounds": {
+            "x": 19,
+            "y": 783,
+            "width": 223,
+            "height": 211,
+            "pixels": 29209
+          },
+          "opaqueBounds": {
+            "x": 28,
+            "y": 794,
+            "width": 205,
+            "height": 196,
+            "pixels": 23926
+          },
+          "sourceFootAnchor": {
+            "x": 134.5,
+            "y": 989
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 22,
+            "width": 95,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 19,
+            "y": 411,
+            "width": 87,
+            "height": 83,
+            "pixels": 4327
+          }
+        },
+        {
+          "index": 13,
+          "action": "cast",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 764,
+            "width": 258,
+            "height": 259
+          },
+          "sourceBounds": {
+            "x": 265,
+            "y": 784,
+            "width": 249,
+            "height": 238,
+            "pixels": 30056
+          },
+          "opaqueBounds": {
+            "x": 320,
+            "y": 795,
+            "width": 183,
+            "height": 195,
+            "pixels": 24854
+          },
+          "sourceFootAnchor": {
+            "x": 390,
+            "y": 989
+          },
+          "destinationBounds": {
+            "x": 11,
+            "y": 22,
+            "width": 107,
+            "height": 102
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 163,
+            "y": 411,
+            "width": 78,
+            "height": 83,
+            "pixels": 4563
+          }
+        },
+        {
+          "index": 14,
+          "action": "cast",
+          "pose": 2,
+          "sourceRect": {
+            "x": 514,
+            "y": 764,
+            "width": 254,
+            "height": 259
+          },
+          "sourceBounds": {
+            "x": 543,
+            "y": 765,
+            "width": 225,
+            "height": 229,
+            "pixels": 30609
+          },
+          "opaqueBounds": {
+            "x": 572,
+            "y": 768,
+            "width": 174,
+            "height": 223,
+            "pixels": 25604
+          },
+          "sourceFootAnchor": {
+            "x": 645,
+            "y": 990
+          },
+          "destinationBounds": {
+            "x": 20,
+            "y": 14,
+            "width": 96,
+            "height": 98
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 288,
+            "y": 399,
+            "width": 75,
+            "height": 96,
+            "pixels": 4658
+          }
+        },
+        {
+          "index": 15,
+          "action": "cast",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 764,
+            "width": 256,
+            "height": 259
+          },
+          "sourceBounds": {
+            "x": 783,
+            "y": 783,
+            "width": 224,
+            "height": 210,
+            "pixels": 28378
+          },
+          "opaqueBounds": {
+            "x": 798,
+            "y": 796,
+            "width": 201,
+            "height": 194,
+            "pixels": 23220
+          },
+          "sourceFootAnchor": {
+            "x": 900.5,
+            "y": 989
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 22,
+            "width": 96,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 404,
+            "y": 412,
+            "width": 87,
+            "height": 83,
+            "pixels": 4274
+          }
+        },
+        {
+          "index": 16,
+          "action": "hit",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 1023,
+            "width": 256,
+            "height": 255
+          },
+          "sourceBounds": {
+            "x": 22,
+            "y": 1024,
+            "width": 230,
+            "height": 216,
+            "pixels": 29101
+          },
+          "opaqueBounds": {
+            "x": 29,
+            "y": 1035,
+            "width": 207,
+            "height": 200,
+            "pixels": 23986
+          },
+          "sourceFootAnchor": {
+            "x": 134.5,
+            "y": 1234
+          },
+          "destinationBounds": {
+            "x": 16,
+            "y": 20,
+            "width": 98,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 19,
+            "y": 537,
+            "width": 88,
+            "height": 85,
+            "pixels": 4346
+          }
+        },
+        {
+          "index": 17,
+          "action": "hit",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 1023,
+            "width": 256,
+            "height": 255
+          },
+          "sourceBounds": {
+            "x": 287,
+            "y": 1026,
+            "width": 209,
+            "height": 214,
+            "pixels": 30341
+          },
+          "opaqueBounds": {
+            "x": 299,
+            "y": 1036,
+            "width": 187,
+            "height": 199,
+            "pixels": 24977
+          },
+          "sourceFootAnchor": {
+            "x": 390,
+            "y": 1234
+          },
+          "destinationBounds": {
+            "x": 20,
+            "y": 21,
+            "width": 89,
+            "height": 92
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 153,
+            "y": 537,
+            "width": 80,
+            "height": 86,
+            "pixels": 4563
+          }
+        },
+        {
+          "index": 18,
+          "action": "hit",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 1023,
+            "width": 256,
+            "height": 255
+          },
+          "sourceBounds": {
+            "x": 515,
+            "y": 1059,
+            "width": 224,
+            "height": 185,
+            "pixels": 26667
+          },
+          "opaqueBounds": {
+            "x": 538,
+            "y": 1068,
+            "width": 197,
+            "height": 167,
+            "pixels": 22358
+          },
+          "sourceFootAnchor": {
+            "x": 645,
+            "y": 1234
+          },
+          "destinationBounds": {
+            "x": 8,
+            "y": 35,
+            "width": 96,
+            "height": 79
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 274,
+            "y": 551,
+            "width": 84,
+            "height": 71,
+            "pixels": 4086
+          }
+        },
+        {
+          "index": 19,
+          "action": "hit",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 1023,
+            "width": 256,
+            "height": 255
+          },
+          "sourceBounds": {
+            "x": 777,
+            "y": 1036,
+            "width": 231,
+            "height": 202,
+            "pixels": 27831
+          },
+          "opaqueBounds": {
+            "x": 792,
+            "y": 1039,
+            "width": 207,
+            "height": 196,
+            "pixels": 23552
+          },
+          "sourceFootAnchor": {
+            "x": 900.5,
+            "y": 1234
+          },
+          "destinationBounds": {
+            "x": 11,
+            "y": 25,
+            "width": 99,
+            "height": 86
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 401,
+            "y": 538,
+            "width": 89,
+            "height": 84,
+            "pixels": 4302
+          }
+        },
+        {
+          "index": 20,
+          "action": "death",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 1278,
+            "width": 256,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 25,
+            "y": 1279,
+            "width": 199,
+            "height": 206,
+            "pixels": 27364
+          },
+          "opaqueBounds": {
+            "x": 30,
+            "y": 1289,
+            "width": 182,
+            "height": 187,
+            "pixels": 22576
+          },
+          "sourceFootAnchor": {
+            "x": 134.5,
+            "y": 1475
+          },
+          "destinationBounds": {
+            "x": 17,
+            "y": 26,
+            "width": 85,
+            "height": 88
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 19,
+            "y": 670,
+            "width": 78,
+            "height": 80,
+            "pixels": 4127
+          }
+        },
+        {
+          "index": 21,
+          "action": "death",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 1278,
+            "width": 250,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 257,
+            "y": 1311,
+            "width": 249,
+            "height": 177,
+            "pixels": 25931
+          },
+          "opaqueBounds": {
+            "x": 268,
+            "y": 1320,
+            "width": 201,
+            "height": 156,
+            "pixels": 21251
+          },
+          "sourceFootAnchor": {
+            "x": 390,
+            "y": 1475
+          },
+          "destinationBounds": {
+            "x": 7,
+            "y": 40,
+            "width": 107,
+            "height": 76
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 140,
+            "y": 684,
+            "width": 86,
+            "height": 67,
+            "pixels": 3927
+          }
+        },
+        {
+          "index": 22,
+          "action": "death",
+          "pose": 2,
+          "sourceRect": {
+            "x": 506,
+            "y": 1278,
+            "width": 250,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 507,
+            "y": 1359,
+            "width": 249,
+            "height": 131,
+            "pixels": 24159
+          },
+          "opaqueBounds": {
+            "x": 518,
+            "y": 1362,
+            "width": 228,
+            "height": 124,
+            "pixels": 19210
+          },
+          "sourceFootAnchor": {
+            "x": 645,
+            "y": 1485
+          },
+          "destinationBounds": {
+            "x": 5,
+            "y": 56,
+            "width": 107,
+            "height": 56
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 266,
+            "y": 697,
+            "width": 98,
+            "height": 53,
+            "pixels": 3512
+          }
+        },
+        {
+          "index": 23,
+          "action": "death",
+          "pose": 3,
+          "sourceRect": {
+            "x": 756,
+            "y": 1278,
+            "width": 268,
+            "height": 258
+          },
+          "sourceBounds": {
+            "x": 756,
+            "y": 1295,
+            "width": 268,
+            "height": 211,
+            "pixels": 21707
+          },
+          "opaqueBounds": {
+            "x": 764,
+            "y": 1395,
+            "width": 250,
+            "height": 98,
+            "pixels": 16684
+          },
+          "sourceFootAnchor": {
+            "x": 900.5,
+            "y": 1492
+          },
+          "destinationBounds": {
+            "x": 2,
+            "y": 26,
+            "width": 115,
+            "height": 90
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 389,
+            "y": 709,
+            "width": 108,
+            "height": 41,
+            "pixels": 3035
+          }
+        }
+      ]
+    },
+    "up": {
+      "rowCuts": [
+        0,
+        260,
+        526,
+        748,
+        1024,
+        1264,
+        1536
+      ],
+      "columnCuts": [
+        [
+          0,
+          264,
+          514,
+          768,
+          1024
+        ],
+        [
+          0,
+          258,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          260,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          258,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          259,
+          512,
+          768,
+          1024
+        ],
+        [
+          0,
+          256,
+          504,
+          752,
+          1024
+        ]
+      ],
+      "columnAnchors": [
+        147,
+        392.5,
+        635,
+        878.5
+      ],
+      "frames": [
+        {
+          "index": 0,
+          "action": "idle",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 264,
+            "height": 260
+          },
+          "sourceBounds": {
+            "x": 45,
+            "y": 60,
+            "width": 219,
+            "height": 198,
+            "pixels": 29250
+          },
+          "opaqueBounds": {
+            "x": 56,
+            "y": 64,
+            "width": 203,
+            "height": 187,
+            "pixels": 23958
+          },
+          "sourceFootAnchor": {
+            "x": 147,
+            "y": 250
+          },
+          "destinationBounds": {
+            "x": 20,
+            "y": 29,
+            "width": 94,
+            "height": 85
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 25,
+            "y": 31,
+            "width": 87,
+            "height": 80,
+            "pixels": 4412
+          }
+        },
+        {
+          "index": 1,
+          "action": "idle",
+          "pose": 1,
+          "sourceRect": {
+            "x": 264,
+            "y": 0,
+            "width": 250,
+            "height": 260
+          },
+          "sourceBounds": {
+            "x": 273,
+            "y": 37,
+            "width": 241,
+            "height": 223,
+            "pixels": 29570
+          },
+          "opaqueBounds": {
+            "x": 301,
+            "y": 64,
+            "width": 203,
+            "height": 186,
+            "pixels": 23727
+          },
+          "sourceFootAnchor": {
+            "x": 392.5,
+            "y": 249
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 19,
+            "width": 103,
+            "height": 95
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 153,
+            "y": 31,
+            "width": 87,
+            "height": 79,
+            "pixels": 4314
+          }
+        },
+        {
+          "index": 2,
+          "action": "idle",
+          "pose": 2,
+          "sourceRect": {
+            "x": 514,
+            "y": 0,
+            "width": 254,
+            "height": 260
+          },
+          "sourceBounds": {
+            "x": 539,
+            "y": 57,
+            "width": 217,
+            "height": 201,
+            "pixels": 28690
+          },
+          "opaqueBounds": {
+            "x": 544,
+            "y": 64,
+            "width": 201,
+            "height": 187,
+            "pixels": 23741
+          },
+          "sourceFootAnchor": {
+            "x": 635,
+            "y": 250
+          },
+          "destinationBounds": {
+            "x": 23,
+            "y": 27,
+            "width": 93,
+            "height": 86
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 281,
+            "y": 30,
+            "width": 86,
+            "height": 80,
+            "pixels": 4340
+          }
+        },
+        {
+          "index": 3,
+          "action": "idle",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 0,
+            "width": 256,
+            "height": 260
+          },
+          "sourceBounds": {
+            "x": 771,
+            "y": 49,
+            "width": 224,
+            "height": 209,
+            "pixels": 28711
+          },
+          "opaqueBounds": {
+            "x": 788,
+            "y": 64,
+            "width": 201,
+            "height": 186,
+            "pixels": 23423
+          },
+          "sourceFootAnchor": {
+            "x": 878.5,
+            "y": 249
+          },
+          "destinationBounds": {
+            "x": 18,
+            "y": 24,
+            "width": 96,
+            "height": 89
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 409,
+            "y": 30,
+            "width": 86,
+            "height": 80,
+            "pixels": 4269
+          }
+        },
+        {
+          "index": 4,
+          "action": "walk",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 260,
+            "width": 258,
+            "height": 266
+          },
+          "sourceBounds": {
+            "x": 39,
+            "y": 298,
+            "width": 219,
+            "height": 228,
+            "pixels": 29571
+          },
+          "opaqueBounds": {
+            "x": 49,
+            "y": 301,
+            "width": 206,
+            "height": 198,
+            "pixels": 23770
+          },
+          "sourceFootAnchor": {
+            "x": 147,
+            "y": 498
+          },
+          "destinationBounds": {
+            "x": 18,
+            "y": 24,
+            "width": 94,
+            "height": 98
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 22,
+            "y": 153,
+            "width": 89,
+            "height": 85,
+            "pixels": 4383
+          }
+        },
+        {
+          "index": 5,
+          "action": "walk",
+          "pose": 1,
+          "sourceRect": {
+            "x": 258,
+            "y": 260,
+            "width": 254,
+            "height": 266
+          },
+          "sourceBounds": {
+            "x": 279,
+            "y": 289,
+            "width": 228,
+            "height": 233,
+            "pixels": 29428
+          },
+          "opaqueBounds": {
+            "x": 297,
+            "y": 300,
+            "width": 204,
+            "height": 207,
+            "pixels": 23874
+          },
+          "sourceFootAnchor": {
+            "x": 392.5,
+            "y": 506
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 17,
+            "width": 98,
+            "height": 100
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 151,
+            "y": 150,
+            "width": 87,
+            "height": 89,
+            "pixels": 4414
+          }
+        },
+        {
+          "index": 6,
+          "action": "walk",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 260,
+            "width": 256,
+            "height": 266
+          },
+          "sourceBounds": {
+            "x": 525,
+            "y": 293,
+            "width": 229,
+            "height": 220,
+            "pixels": 30367
+          },
+          "opaqueBounds": {
+            "x": 540,
+            "y": 300,
+            "width": 201,
+            "height": 208,
+            "pixels": 24356
+          },
+          "sourceFootAnchor": {
+            "x": 635,
+            "y": 507
+          },
+          "destinationBounds": {
+            "x": 17,
+            "y": 18,
+            "width": 98,
+            "height": 94
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 279,
+            "y": 149,
+            "width": 86,
+            "height": 89,
+            "pixels": 4452
+          }
+        },
+        {
+          "index": 7,
+          "action": "walk",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 260,
+            "width": 256,
+            "height": 266
+          },
+          "sourceBounds": {
+            "x": 779,
+            "y": 298,
+            "width": 215,
+            "height": 207,
+            "pixels": 29651
+          },
+          "opaqueBounds": {
+            "x": 788,
+            "y": 301,
+            "width": 204,
+            "height": 197,
+            "pixels": 24322
+          },
+          "sourceFootAnchor": {
+            "x": 878.5,
+            "y": 497
+          },
+          "destinationBounds": {
+            "x": 21,
+            "y": 25,
+            "width": 92,
+            "height": 89
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 409,
+            "y": 154,
+            "width": 87,
+            "height": 85,
+            "pixels": 4476
+          }
+        },
+        {
+          "index": 8,
+          "action": "attack",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 526,
+            "width": 260,
+            "height": 222
+          },
+          "sourceBounds": {
+            "x": 31,
+            "y": 527,
+            "width": 229,
+            "height": 213,
+            "pixels": 29775
+          },
+          "opaqueBounds": {
+            "x": 45,
+            "y": 549,
+            "width": 204,
+            "height": 185,
+            "pixels": 24147
+          },
+          "sourceFootAnchor": {
+            "x": 147,
+            "y": 733
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 22,
+            "width": 98,
+            "height": 91
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 20,
+            "y": 287,
+            "width": 87,
+            "height": 79,
+            "pixels": 4415
+          }
+        },
+        {
+          "index": 9,
+          "action": "attack",
+          "pose": 1,
+          "sourceRect": {
+            "x": 260,
+            "y": 526,
+            "width": 252,
+            "height": 222
+          },
+          "sourceBounds": {
+            "x": 263,
+            "y": 527,
+            "width": 220,
+            "height": 213,
+            "pixels": 29702
+          },
+          "opaqueBounds": {
+            "x": 298,
+            "y": 531,
+            "width": 182,
+            "height": 205,
+            "pixels": 23400
+          },
+          "sourceFootAnchor": {
+            "x": 392.5,
+            "y": 735
+          },
+          "destinationBounds": {
+            "x": 9,
+            "y": 21,
+            "width": 94,
+            "height": 91
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 152,
+            "y": 279,
+            "width": 78,
+            "height": 87,
+            "pixels": 4269
+          }
+        },
+        {
+          "index": 10,
+          "action": "attack",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 526,
+            "width": 256,
+            "height": 222
+          },
+          "sourceBounds": {
+            "x": 557,
+            "y": 545,
+            "width": 183,
+            "height": 194,
+            "pixels": 24746
+          },
+          "opaqueBounds": {
+            "x": 562,
+            "y": 554,
+            "width": 174,
+            "height": 182,
+            "pixels": 20058
+          },
+          "sourceFootAnchor": {
+            "x": 635,
+            "y": 735
+          },
+          "destinationBounds": {
+            "x": 31,
+            "y": 29,
+            "width": 78,
+            "height": 83
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 289,
+            "y": 289,
+            "width": 74,
+            "height": 78,
+            "pixels": 3657
+          }
+        },
+        {
+          "index": 11,
+          "action": "attack",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 526,
+            "width": 256,
+            "height": 222
+          },
+          "sourceBounds": {
+            "x": 781,
+            "y": 545,
+            "width": 228,
+            "height": 193,
+            "pixels": 28813
+          },
+          "opaqueBounds": {
+            "x": 794,
+            "y": 549,
+            "width": 203,
+            "height": 186,
+            "pixels": 24228
+          },
+          "sourceFootAnchor": {
+            "x": 878.5,
+            "y": 734
+          },
+          "destinationBounds": {
+            "x": 22,
+            "y": 29,
+            "width": 98,
+            "height": 83
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 412,
+            "y": 287,
+            "width": 87,
+            "height": 80,
+            "pixels": 4473
+          }
+        },
+        {
+          "index": 12,
+          "action": "cast",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 748,
+            "width": 258,
+            "height": 276
+          },
+          "sourceBounds": {
+            "x": 31,
+            "y": 756,
+            "width": 227,
+            "height": 244,
+            "pixels": 30048
+          },
+          "opaqueBounds": {
+            "x": 45,
+            "y": 807,
+            "width": 206,
+            "height": 186,
+            "pixels": 24312
+          },
+          "sourceFootAnchor": {
+            "x": 147,
+            "y": 992
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 9,
+            "width": 97,
+            "height": 104
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 20,
+            "y": 415,
+            "width": 88,
+            "height": 79,
+            "pixels": 4415
+          }
+        },
+        {
+          "index": 13,
+          "action": "cast",
+          "pose": 1,
+          "sourceRect": {
+            "x": 258,
+            "y": 748,
+            "width": 254,
+            "height": 276
+          },
+          "sourceBounds": {
+            "x": 259,
+            "y": 751,
+            "width": 249,
+            "height": 261,
+            "pixels": 29587
+          },
+          "opaqueBounds": {
+            "x": 298,
+            "y": 776,
+            "width": 176,
+            "height": 223,
+            "pixels": 23590
+          },
+          "sourceFootAnchor": {
+            "x": 392.5,
+            "y": 998
+          },
+          "destinationBounds": {
+            "x": 7,
+            "y": 4,
+            "width": 107,
+            "height": 112
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 152,
+            "y": 399,
+            "width": 75,
+            "height": 95,
+            "pixels": 4343
+          }
+        },
+        {
+          "index": 14,
+          "action": "cast",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 748,
+            "width": 256,
+            "height": 276
+          },
+          "sourceBounds": {
+            "x": 555,
+            "y": 749,
+            "width": 213,
+            "height": 261,
+            "pixels": 30314
+          },
+          "opaqueBounds": {
+            "x": 561,
+            "y": 752,
+            "width": 168,
+            "height": 250,
+            "pixels": 23753
+          },
+          "sourceFootAnchor": {
+            "x": 635,
+            "y": 1001
+          },
+          "destinationBounds": {
+            "x": 30,
+            "y": 2,
+            "width": 91,
+            "height": 112
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 289,
+            "y": 387,
+            "width": 71,
+            "height": 108,
+            "pixels": 4339
+          }
+        },
+        {
+          "index": 15,
+          "action": "cast",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 748,
+            "width": 256,
+            "height": 276
+          },
+          "sourceBounds": {
+            "x": 781,
+            "y": 759,
+            "width": 231,
+            "height": 245,
+            "pixels": 30235
+          },
+          "opaqueBounds": {
+            "x": 787,
+            "y": 810,
+            "width": 210,
+            "height": 187,
+            "pixels": 24548
+          },
+          "sourceFootAnchor": {
+            "x": 878.5,
+            "y": 996
+          },
+          "destinationBounds": {
+            "x": 22,
+            "y": 9,
+            "width": 99,
+            "height": 105
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 409,
+            "y": 415,
+            "width": 90,
+            "height": 80,
+            "pixels": 4494
+          }
+        },
+        {
+          "index": 16,
+          "action": "hit",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 1024,
+            "width": 259,
+            "height": 240
+          },
+          "sourceBounds": {
+            "x": 33,
+            "y": 1039,
+            "width": 226,
+            "height": 207,
+            "pixels": 30547
+          },
+          "opaqueBounds": {
+            "x": 42,
+            "y": 1046,
+            "width": 206,
+            "height": 187,
+            "pixels": 24477
+          },
+          "sourceFootAnchor": {
+            "x": 147,
+            "y": 1232
+          },
+          "destinationBounds": {
+            "x": 15,
+            "y": 27,
+            "width": 97,
+            "height": 89
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 19,
+            "y": 542,
+            "width": 88,
+            "height": 80,
+            "pixels": 4514
+          }
+        },
+        {
+          "index": 17,
+          "action": "hit",
+          "pose": 1,
+          "sourceRect": {
+            "x": 259,
+            "y": 1024,
+            "width": 253,
+            "height": 240
+          },
+          "sourceBounds": {
+            "x": 289,
+            "y": 1056,
+            "width": 223,
+            "height": 203,
+            "pixels": 28816
+          },
+          "opaqueBounds": {
+            "x": 301,
+            "y": 1062,
+            "width": 178,
+            "height": 189,
+            "pixels": 23535
+          },
+          "sourceFootAnchor": {
+            "x": 392.5,
+            "y": 1250
+          },
+          "destinationBounds": {
+            "x": 20,
+            "y": 27,
+            "width": 95,
+            "height": 87
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 153,
+            "y": 542,
+            "width": 76,
+            "height": 81,
+            "pixels": 4293
+          }
+        },
+        {
+          "index": 18,
+          "action": "hit",
+          "pose": 2,
+          "sourceRect": {
+            "x": 512,
+            "y": 1024,
+            "width": 256,
+            "height": 240
+          },
+          "sourceBounds": {
+            "x": 523,
+            "y": 1053,
+            "width": 225,
+            "height": 199,
+            "pixels": 23500
+          },
+          "opaqueBounds": {
+            "x": 551,
+            "y": 1086,
+            "width": 170,
+            "height": 155,
+            "pixels": 19259
+          },
+          "sourceFootAnchor": {
+            "x": 635,
+            "y": 1240
+          },
+          "destinationBounds": {
+            "x": 16,
+            "y": 30,
+            "width": 96,
+            "height": 85
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 284,
+            "y": 556,
+            "width": 72,
+            "height": 66,
+            "pixels": 3500
+          }
+        },
+        {
+          "index": 19,
+          "action": "hit",
+          "pose": 3,
+          "sourceRect": {
+            "x": 768,
+            "y": 1024,
+            "width": 256,
+            "height": 240
+          },
+          "sourceBounds": {
+            "x": 781,
+            "y": 1039,
+            "width": 215,
+            "height": 207,
+            "pixels": 29911
+          },
+          "opaqueBounds": {
+            "x": 788,
+            "y": 1046,
+            "width": 205,
+            "height": 190,
+            "pixels": 24655
+          },
+          "sourceFootAnchor": {
+            "x": 878.5,
+            "y": 1235
+          },
+          "destinationBounds": {
+            "x": 22,
+            "y": 26,
+            "width": 92,
+            "height": 89
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 409,
+            "y": 541,
+            "width": 88,
+            "height": 82,
+            "pixels": 4541
+          }
+        },
+        {
+          "index": 20,
+          "action": "death",
+          "pose": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 1264,
+            "width": 256,
+            "height": 272
+          },
+          "sourceBounds": {
+            "x": 30,
+            "y": 1267,
+            "width": 210,
+            "height": 223,
+            "pixels": 26637
+          },
+          "opaqueBounds": {
+            "x": 42,
+            "y": 1304,
+            "width": 187,
+            "height": 177,
+            "pixels": 21069
+          },
+          "sourceFootAnchor": {
+            "x": 147,
+            "y": 1480
+          },
+          "destinationBounds": {
+            "x": 14,
+            "y": 19,
+            "width": 90,
+            "height": 95
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 19,
+            "y": 675,
+            "width": 80,
+            "height": 75,
+            "pixels": 3828
+          }
+        },
+        {
+          "index": 21,
+          "action": "death",
+          "pose": 1,
+          "sourceRect": {
+            "x": 256,
+            "y": 1264,
+            "width": 248,
+            "height": 272
+          },
+          "sourceBounds": {
+            "x": 273,
+            "y": 1317,
+            "width": 229,
+            "height": 173,
+            "pixels": 24038
+          },
+          "opaqueBounds": {
+            "x": 286,
+            "y": 1325,
+            "width": 205,
+            "height": 156,
+            "pixels": 18922
+          },
+          "sourceFootAnchor": {
+            "x": 392.5,
+            "y": 1480
+          },
+          "destinationBounds": {
+            "x": 13,
+            "y": 40,
+            "width": 98,
+            "height": 74
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 147,
+            "y": 683,
+            "width": 87,
+            "height": 67,
+            "pixels": 3449
+          }
+        },
+        {
+          "index": 22,
+          "action": "death",
+          "pose": 2,
+          "sourceRect": {
+            "x": 504,
+            "y": 1264,
+            "width": 248,
+            "height": 272
+          },
+          "sourceBounds": {
+            "x": 505,
+            "y": 1277,
+            "width": 247,
+            "height": 227,
+            "pixels": 25139
+          },
+          "opaqueBounds": {
+            "x": 525,
+            "y": 1360,
+            "width": 217,
+            "height": 133,
+            "pixels": 19696
+          },
+          "sourceFootAnchor": {
+            "x": 635,
+            "y": 1492
+          },
+          "destinationBounds": {
+            "x": 8,
+            "y": 18,
+            "width": 106,
+            "height": 97
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 273,
+            "y": 693,
+            "width": 93,
+            "height": 57,
+            "pixels": 3609
+          }
+        },
+        {
+          "index": 23,
+          "action": "death",
+          "pose": 3,
+          "sourceRect": {
+            "x": 752,
+            "y": 1264,
+            "width": 272,
+            "height": 272
+          },
+          "sourceBounds": {
+            "x": 752,
+            "y": 1271,
+            "width": 255,
+            "height": 234,
+            "pixels": 22101
+          },
+          "opaqueBounds": {
+            "x": 764,
+            "y": 1382,
+            "width": 233,
+            "height": 117,
+            "pixels": 17248
+          },
+          "sourceFootAnchor": {
+            "x": 878.5,
+            "y": 1498
+          },
+          "destinationBounds": {
+            "x": 10,
+            "y": 13,
+            "width": 109,
+            "height": 100
+          },
+          "footAnchor": {
+            "x": 64,
+            "y": 110
+          },
+          "runtimeOpaqueBounds": {
+            "x": 399,
+            "y": 700,
+            "width": 100,
+            "height": 50,
+            "pixels": 3148
+          }
+        }
+      ]
+    }
+  },
+  "effectFrames": [
+    {
+      "index": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 53,
+        "y": 58,
+        "width": 33,
+        "height": 29,
+        "pixels": 274
+      }
+    },
+    {
+      "index": 1,
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 161,
+        "y": 40,
+        "width": 62,
+        "height": 63,
+        "pixels": 939
+      }
+    },
+    {
+      "index": 2,
+      "rect": {
+        "x": 256,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 290,
+        "y": 34,
+        "width": 57,
+        "height": 72,
+        "pixels": 884
+      }
+    },
+    {
+      "index": 3,
+      "rect": {
+        "x": 384,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 427,
+        "y": 53,
+        "width": 36,
+        "height": 38,
+        "pixels": 109
+      }
+    },
+    {
+      "index": 4,
+      "rect": {
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 24,
+        "y": 185,
+        "width": 85,
+        "height": 25,
+        "pixels": 594
+      }
+    },
+    {
+      "index": 5,
+      "rect": {
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 148,
+        "y": 179,
+        "width": 88,
+        "height": 36,
+        "pixels": 701
+      }
+    },
+    {
+      "index": 6,
+      "rect": {
+        "x": 256,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 267,
+        "y": 178,
+        "width": 106,
+        "height": 39,
+        "pixels": 883
+      }
+    },
+    {
+      "index": 7,
+      "rect": {
+        "x": 384,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 404,
+        "y": 185,
+        "width": 85,
+        "height": 25,
+        "pixels": 597
+      }
+    },
+    {
+      "index": 8,
+      "rect": {
+        "x": 0,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 46,
+        "y": 288,
+        "width": 44,
+        "height": 59,
+        "pixels": 1389
+      }
+    },
+    {
+      "index": 9,
+      "rect": {
+        "x": 128,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 161,
+        "y": 296,
+        "width": 62,
+        "height": 44,
+        "pixels": 1394
+      }
+    },
+    {
+      "index": 10,
+      "rect": {
+        "x": 256,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 298,
+        "y": 285,
+        "width": 44,
+        "height": 61,
+        "pixels": 1395
+      }
+    },
+    {
+      "index": 11,
+      "rect": {
+        "x": 384,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 418,
+        "y": 296,
+        "width": 61,
+        "height": 43,
+        "pixels": 1417
+      }
+    },
+    {
+      "index": 12,
+      "rect": {
+        "x": 0,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 56,
+        "y": 432,
+        "width": 29,
+        "height": 26,
+        "pixels": 231
+      }
+    },
+    {
+      "index": 13,
+      "rect": {
+        "x": 128,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 167,
+        "y": 419,
+        "width": 50,
+        "height": 51,
+        "pixels": 723
+      }
+    },
+    {
+      "index": 14,
+      "rect": {
+        "x": 256,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 276,
+        "y": 403,
+        "width": 87,
+        "height": 83,
+        "pixels": 988
+      }
+    },
+    {
+      "index": 15,
+      "rect": {
+        "x": 384,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "groundAnchor": {
+        "x": 64,
+        "y": 64
+      },
+      "bounds": {
+        "x": 421,
+        "y": 419,
+        "width": 52,
+        "height": 51,
+        "pixels": 369
+      }
+    }
+  ],
+  "assets": [
+    {
+      "name": "st-knihor-down.webp",
+      "width": 512,
+      "height": 768,
+      "bytes": 125982,
+      "sha256": "2a079bc585e089142985c7a58e0c1ce9f2deedbac2e9897fcef7881488f6790f",
+      "alphaExact": true,
+      "rgbMetricsAlphaThreshold": 128,
+      "rgbMAE": 8.321927032710132,
+      "rgbPSNR": 25.371826170458547
+    },
+    {
+      "name": "st-knihor-side.webp",
+      "width": 512,
+      "height": 768,
+      "bytes": 117496,
+      "sha256": "9494a017340d3893b3982411d5dcc7133601264e269e92ed049eb6d6b125ad27",
+      "alphaExact": true,
+      "rgbMetricsAlphaThreshold": 128,
+      "rgbMAE": 7.184224118204701,
+      "rgbPSNR": 26.40956607120576
+    },
+    {
+      "name": "st-knihor-up.webp",
+      "width": 512,
+      "height": 768,
+      "bytes": 117154,
+      "sha256": "f1c3cc753a96c78a04bf767fbfece32f1b5a6f5614bb680e953c3cadae4d5a07",
+      "alphaExact": true,
+      "rgbMetricsAlphaThreshold": 128,
+      "rgbMAE": 7.200461066764992,
+      "rgbPSNR": 25.799552501699804
+    },
+    {
+      "name": "st-knihor-effects.webp",
+      "width": 512,
+      "height": 512,
+      "bytes": 53532,
+      "sha256": "f0af9e25e7b0cd922e84d35b60001bd17b242035ce9cd744856e5e48f80989c6",
+      "alphaExact": true,
+      "rgbMetricsAlphaThreshold": 128,
+      "rgbMAE": 6.4388434356763735,
+      "rgbPSNR": 27.26220270141774
+    },
+    {
+      "name": "st-knihor-portrait.webp",
+      "width": 128,
+      "height": 128,
+      "bytes": 6340,
+      "sha256": "342d5482406a6df49f9669d3b08004ac9539363fec95f6628e627f887b84dd05",
+      "alphaExact": true,
+      "rgbMetricsAlphaThreshold": 128,
+      "rgbMAE": 7.827697043777445,
+      "rgbPSNR": 25.782122062651737
+    }
+  ],
+  "totalBytes": 420504
+}

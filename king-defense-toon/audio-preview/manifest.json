@@ -1,0 +1,42 @@
+{
+  "sampleRate": 44100,
+  "channels": 1,
+  "source": "Original procedural synthesis; no recordings or external samples.",
+  "variants": [
+    {
+      "id": "01-soft",
+      "title": "Мягкая тетива",
+      "duration": 0.7,
+      "peakDb": -4,
+      "bytes": 61784
+    },
+    {
+      "id": "02-classic",
+      "title": "Сухой щелчок",
+      "duration": 0.7,
+      "peakDb": -4,
+      "bytes": 61784
+    },
+    {
+      "id": "03-airy",
+      "title": "Деревянная тетива",
+      "duration": 0.7,
+      "peakDb": -4,
+      "bytes": 61784
+    },
+    {
+      "id": "04-heavy",
+      "title": "Короткое «фью»",
+      "duration": 0.7,
+      "peakDb": -4,
+      "bytes": 61784
+    },
+    {
+      "id": "05-toon",
+      "title": "Мультяшный щелчок",
+      "duration": 0.7,
+      "peakDb": -4,
+      "bytes": 61784
+    }
+  ]
+}

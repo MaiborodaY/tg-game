@@ -1,0 +1,35 @@
+export type RecruitmentPool = 'humans' | 'elves';
+export type ElfRecruitId = 'pantherRider' | 'elfArcher' | 'elfHealer' | 'unicorn';
+
+export interface ElfRecruitPreview {
+  readonly id: ElfRecruitId;
+  readonly name: string;
+  readonly role: string;
+  readonly locked: boolean;
+  readonly playable: boolean;
+}
+
+// Visibility is separate from receipt and Barracks requirements, checked by recruitment.ts.
+export const ELF_RECRUITS: readonly ElfRecruitPreview[] = Object.freeze([
+  Object.freeze({ id: 'pantherRider', name: 'Panther Rider', role: 'Short range', locked: false, playable: true }),
+  Object.freeze({ id: 'elfArcher', name: 'Elven Archer', role: 'Ranged', locked: false, playable: true }),
+  Object.freeze({ id: 'elfHealer', name: 'Elven Healer', role: 'Healing', locked: false, playable: true }),
+  Object.freeze({ id: 'unicorn', name: 'Unicorn', role: 'Defender · 2 tiles', locked: false, playable: true }),
+]);
+
+export function isRecruitmentPoolUnlocked(pool: RecruitmentPool, barracksLevel: number): boolean {
+  if (pool === 'humans') return barracksLevel === 1 || barracksLevel === 2 || barracksLevel === 3 || barracksLevel === 4;
+  return pool === 'elves' && (barracksLevel === 3 || barracksLevel === 4);
+}
+
+export function normalizeRecruitmentPool(saved: unknown, barracksLevel: number): RecruitmentPool {
+  return saved === 'elves' && isRecruitmentPoolUnlocked('elves', barracksLevel) ? 'elves' : 'humans';
+}
+
+export function canRecruitFromPool(pool: RecruitmentPool, barracksLevel: number): boolean {
+  return isRecruitmentPoolUnlocked(pool, barracksLevel);
+}
+
+export function getRecruitmentPoolName(pool: RecruitmentPool): string {
+  return pool === 'elves' ? 'Elven recruits' : 'Human recruits';
+}

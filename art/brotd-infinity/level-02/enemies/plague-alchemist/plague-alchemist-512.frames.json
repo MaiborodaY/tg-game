@@ -1,0 +1,260 @@
+{
+  "image": "plague-alchemist-512-lite.webp",
+  "size": {
+    "width": 512,
+    "height": 512
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 134,
+        "height": 130
+      },
+      "footAnchor": {
+        "x": 74,
+        "y": 122
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 134,
+        "y": 0,
+        "width": 124,
+        "height": 130
+      },
+      "footAnchor": {
+        "x": 62,
+        "y": 122
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 258,
+        "y": 0,
+        "width": 127,
+        "height": 130
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 122
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 385,
+        "y": 0,
+        "width": 127,
+        "height": 130
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 122
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 130,
+        "width": 140,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 76,
+        "y": 114
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 140,
+        "y": 130,
+        "width": 123,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 56,
+        "y": 113
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 263,
+        "y": 130,
+        "width": 127,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 59,
+        "y": 114
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 390,
+        "y": 130,
+        "width": 122,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 114
+      }
+    },
+    {
+      "index": 8,
+      "action": "throw-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 254,
+        "width": 136,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 74,
+        "y": 114
+      }
+    },
+    {
+      "index": 9,
+      "action": "throw-right",
+      "pose": 1,
+      "rect": {
+        "x": 136,
+        "y": 254,
+        "width": 122,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 60,
+        "y": 114
+      }
+    },
+    {
+      "index": 10,
+      "action": "throw-right",
+      "pose": 2,
+      "rect": {
+        "x": 258,
+        "y": 254,
+        "width": 134,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 64,
+        "y": 114
+      },
+      "projectileAnchor": {
+        "x": 128,
+        "y": 64
+      }
+    },
+    {
+      "index": 11,
+      "action": "throw-right",
+      "pose": 3,
+      "rect": {
+        "x": 392,
+        "y": 254,
+        "width": 120,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 56,
+        "y": 114
+      }
+    },
+    {
+      "index": 12,
+      "action": "throw-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 378,
+        "width": 132,
+        "height": 134
+      },
+      "footAnchor": {
+        "x": 74,
+        "y": 112
+      }
+    },
+    {
+      "index": 13,
+      "action": "throw-down",
+      "pose": 1,
+      "rect": {
+        "x": 132,
+        "y": 378,
+        "width": 123,
+        "height": 134
+      },
+      "footAnchor": {
+        "x": 58,
+        "y": 113
+      }
+    },
+    {
+      "index": 14,
+      "action": "throw-down",
+      "pose": 2,
+      "rect": {
+        "x": 255,
+        "y": 378,
+        "width": 132,
+        "height": 134
+      },
+      "footAnchor": {
+        "x": 68,
+        "y": 113
+      },
+      "projectileAnchor": {
+        "x": 118,
+        "y": 58
+      }
+    },
+    {
+      "index": 15,
+      "action": "throw-down",
+      "pose": 3,
+      "rect": {
+        "x": 387,
+        "y": 378,
+        "width": 125,
+        "height": 134
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 113
+      }
+    }
+  ],
+  "releasePose": 2,
+  "note": "Explicit rectangles preserve the plague alchemist, beaked mask, backpack flask and throwing hand. Rows: idle right, walk right, throw right, throw down. Release at pose 2 (frames 10 and 14): the thrown bottle is a separate asset and the hand is empty through recovery. A fresh bottle appears in the next ready/idle frame; backpack and spare belt bottle remain. Poison amount, duration, refresh rules, trajectory and targeting require integration. Artwork only. Per-frame footAnchor values describe the ground point between the boot soles and are used by the preview; review scale and pivots when integrating.",
+  "anchorSpace": "frame-pixels"
+}

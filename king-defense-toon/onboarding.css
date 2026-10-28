@@ -1,0 +1,9 @@
+/* Arrows explain the next tap without capturing it or dimming the battlefield. */
+.onboarding-guide { position: absolute; inset: 0; z-index: 12; pointer-events: none; }
+.onboarding-ring { position: absolute; border: 2px solid #ffe28a; border-radius: 6px; box-shadow: 0 0 0 2px #6d4c24, 0 0 12px #ffd36999; }
+.onboarding-bubble { position: absolute; display: flex; flex-direction: column; align-items: center; width: max-content; max-width: calc(100% - 12px); padding-bottom: 29px; }
+.onboarding-copy { padding: 4px 8px; border: 1px solid #d8b560; border-radius: 5px; background: #34463af5; color: #fff2c8; box-shadow: 0 2px 4px #26312655; font-size: 12px; line-height: 16px; text-align: center; }
+.onboarding-arrow { position: absolute; left: var(--arrow-x); bottom: 0; width: 26px; height: 26px; margin-left: -13px; fill: #ffe087; stroke: #755021; stroke-width: 1.5; stroke-linejoin: round; filter: drop-shadow(0 2px 1px #24332670); animation: onboarding-point 1.4s ease-in-out infinite; }
+.onboarding-guide.points-up .onboarding-bubble { padding-top: 29px; padding-bottom: 0; }
+.onboarding-guide.points-up .onboarding-arrow { top: 0; bottom: auto; rotate: 180deg; }
+@keyframes onboarding-point { 0%, 100% { translate: 0 -2px; } 50% { translate: 0 2px; } }

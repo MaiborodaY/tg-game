@@ -1,0 +1,144 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createBattle, updateBattle } from '../combat.ts';
+import { BASE_BATTLE_SPEED, BATTLE_SPEEDS, MAX_BATTLE_FRAME_DELTA, battleFrameDelta } from '../battle-speed.ts';
+import { makeFormation } from '../scripts/combat-balance.mjs';
+
+const TICK = 1 / 60;
+const withoutVisualTimers = ({ hitTime, deathTime, ...actor }) => actor;
+
+function runBattle(formation, frameDurations, speed, wave = 9) {
+  const battle = createBattle(formation, wave);
+  const events = [];
+  let frames = 0;
+  while (battle.phase === 'running' && frames < 30000) {
+    const dt = frameDurations[frames % frameDurations.length];
+    events.push(...updateBattle(battle, battleFrameDelta(dt, speed)));
+    frames += 1;
+  }
+  assert.notEqual(battle.phase, 'running', 'the battle must finish within the frame budget');
+  // A larger last frame may age the finished battle's cosmetics for more ticks.
+  // Gameplay state, projectile counter and the full ordered event stream must still
+  // match exactly. Projectiles remain in `state`; only cosmetic effects are omitted.
+  assert.equal(battle.king, battle.castle, 'the historical king reference remains the castle alias');
+  const { stepRemainder, effects, allies, enemies, king, hero, castle, ...state } = battle;
+  return { ...state, allies: allies.map(withoutVisualTimers),
+    enemies: enemies.map(withoutVisualTimers), king: withoutVisualTimers(king),
+    hero: withoutVisualTimers(hero), castle: withoutVisualTimers(castle), events };
+}
+
+function assertFrameIndependentBattle(level, outcome) {
+  const formation = makeFormation({ swordsman: 4, archer: 1, healer: 2, level });
+  const saved = structuredClone(formation);
+  formation.forEach(Object.freeze);
+  Object.freeze(formation);
+  const expected = runBattle(formation, [1 / 60], 1);
+  assert.equal(expected.phase, outcome);
+  assert.equal(expected.total, 9);
+  assert.equal(expected.hero.type, 'hero');
+  assert.equal(expected.castle.type, 'castle');
+  assert.ok(expected.events.some(event => event.type === 'bow-shot'));
+  const rewards = expected.events.filter(event => event.type === 'gold');
+  assert.ok(rewards.length > 0, 'both scenarios must exercise kill rewards');
+  assert.equal(rewards.length, expected.kills);
+  assert.equal(rewards.reduce((total, event) => total + event.amount, 0), expected.reward);
+  if (outcome === 'victory') {
+    assert.equal(expected.kills, expected.total);
+    assert.equal(expected.reward, expected.wave.reward);
+    assert.ok(expected.castle.hp > 0);
+  } else {
+    assert.equal(expected.castle.hp, 0);
+    assert.ok(expected.kills < expected.total);
+  }
+  for (const speed of BATTLE_SPEEDS) {
+    for (const durations of [[1 / 10], [1 / 20], [1 / 30], [1 / 60], [1 / 120], [1 / 60, .041, .024, .1, .012]]) {
+      assert.deepEqual(runBattle(formation, durations, speed), expected,
+        `speed ${speed}, frames ${durations}`);
+    }
+  }
+  assert.deepEqual(formation, saved, 'combat must not modify the saved army');
+}
+
+test('a ninth-wave victory preserves state and events at 10/20/30/60/120 FPS, all speeds and jitter', () => {
+  // The hero/castle update changed this encounter. A stronger army supplies the
+  // victory fixture without treating this timing regression as a balance threshold.
+  assertFrameIndependentBattle(20, 'victory');
+});
+
+test('an underpowered ninth-wave army loses identically at every FPS and speed', () => {
+  // The crowd fix lets the hero fight sooner: Lv4 now wins. Keep an actual defeat
+  // fixture so deterministic castle destruction remains covered at every speed.
+  assertFrameIndependentBattle(3, 'defeat');
+});
+
+test('partial ticks survive idle updates and cannot leak into a different battle', () => {
+  const battle = createBattle([], 1);
+  const untouched = createBattle([], 1);
+  assert.deepEqual(updateBattle(battle, TICK * .4), []);
+  assert.equal(battle.elapsed, 0);
+  assert.ok(Math.abs(battle.stepRemainder - TICK * .4) < 1e-12);
+  const paused = structuredClone(battle);
+  for (const dt of [0, -1, NaN, Infinity, -Infinity, undefined, null, '0.1']) {
+    assert.deepEqual(updateBattle(battle, dt), []);
+    assert.deepEqual(battle, paused, `ignored delta ${dt} must preserve the complete state`);
+  }
+  updateBattle(battle, TICK * .6);
+  assert.equal(battle.elapsed, TICK);
+  assert.ok(battle.stepRemainder < 1e-12);
+  assert.equal(untouched.elapsed, 0);
+  assert.equal(untouched.stepRemainder, 0);
+});
+
+test('a long foreground frame is capped without discarding the prior fractional tick', () => {
+  const battle = createBattle([], 1);
+  updateBattle(battle, TICK / 2);
+  updateBattle(battle, 600);
+  const budget = MAX_BATTLE_FRAME_DELTA + TICK / 2;
+  const elapsed = Math.floor(budget / TICK) * TICK;
+  assert.ok(Math.abs(battle.elapsed - elapsed) < 1e-12, 'catch-up is bounded by the fastest capped foreground frame');
+  assert.ok(Math.abs(battle.stepRemainder - (budget - elapsed)) < 1e-12);
+  updateBattle(battle, TICK / 2);
+  const total = budget + TICK / 2;
+  assert.ok(Math.abs(battle.elapsed - Math.floor(total / TICK) * TICK) < 1e-12);
+  assert.ok(Math.abs(battle.elapsed + battle.stepRemainder - total) < 1e-12,
+    'discarded stall time cannot return on the next frame');
+});
+
+test('real-frame time is fully retained through combat at every speed, including ten FPS x3', () => {
+  for (const fps of [10, 20, 30, 60, 120]) for (const speed of BATTLE_SPEEDS) {
+    const battle = createBattle([], 1);
+    // Isolate the clock from victory/defeat by leaving the first arrival in the future.
+    battle.nextSpawn = 1000000;
+    updateBattle(battle, TICK / 2);
+    for (let frame = 0; frame < fps * 10; frame++) updateBattle(battle, battleFrameDelta(1 / fps, speed));
+    assert.equal(battle.phase, 'running');
+    const expected = TICK / 2 + 10 * BASE_BATTLE_SPEED * speed;
+    assert.ok(Math.abs(battle.elapsed + battle.stepRemainder - expected) < 1e-9,
+      `${fps} FPS x${speed}: no valid frame time can be silently truncated`);
+  }
+});
+
+test('after the result, cosmetics finish and projectiles are discarded without more gameplay', () => {
+  const battle = createBattle(makeFormation({ swordsman: 1 }), 1);
+  battle.phase = 'defeat';
+  battle.elapsed = .75;
+  battle.king.hp = 0;
+  battle.king.action = 'dead';
+  battle.king.hitTime = .1;
+  battle.projectiles.push({ id: 1, type: 'arrow', age: 0, duration: .1,
+    targetId: battle.allies[0].id, damage: 100 });
+  battle.effects.push({ id: 1, type: 'hit', amount: 1, age: 0, duration: .1,
+    x: 0, y: 0, targetX: 0, targetY: 0, side: 'ally', sourceId: 'castle', sourceType: 'castle' });
+  const elapsed = battle.elapsed;
+  assert.deepEqual(updateBattle(battle, .3), []);
+  assert.equal(battle.king.hp, 0);
+  assert.equal(battle.allies[0].hp, battle.allies[0].maxHp, 'an already flying arrow cannot damage survivors');
+  assert.equal(battle.king.hitTime, 0);
+  assert.ok(Math.abs(battle.king.deathTime - .3) < 1e-12);
+  assert.deepEqual(battle.effects, []);
+  assert.deepEqual(battle.projectiles, []);
+  assert.equal(battle.elapsed, elapsed);
+  assert.equal(battle.spawned, 0);
+  assert.equal(battle.kills, 0);
+  assert.equal(battle.reward, 0);
+});

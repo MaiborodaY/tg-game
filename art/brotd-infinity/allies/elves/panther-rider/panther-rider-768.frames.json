@@ -1,0 +1,252 @@
+{
+  "image": "panther-rider-768-lite.webp",
+  "size": {
+    "width": 768,
+    "height": 768
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 194,
+        "height": 201
+      },
+      "footAnchor": {
+        "x": 96,
+        "y": 164
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 194,
+        "y": 0,
+        "width": 191,
+        "height": 201
+      },
+      "footAnchor": {
+        "x": 94,
+        "y": 164
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 385,
+        "y": 0,
+        "width": 191,
+        "height": 201
+      },
+      "footAnchor": {
+        "x": 95,
+        "y": 164
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 576,
+        "y": 0,
+        "width": 192,
+        "height": 201
+      },
+      "footAnchor": {
+        "x": 96,
+        "y": 164
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 201,
+        "width": 193,
+        "height": 187
+      },
+      "footAnchor": {
+        "x": 96,
+        "y": 150
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 193,
+        "y": 201,
+        "width": 194,
+        "height": 187
+      },
+      "footAnchor": {
+        "x": 96,
+        "y": 150
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 387,
+        "y": 201,
+        "width": 194,
+        "height": 187
+      },
+      "footAnchor": {
+        "x": 95,
+        "y": 152
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 581,
+        "y": 201,
+        "width": 187,
+        "height": 187
+      },
+      "footAnchor": {
+        "x": 92,
+        "y": 150
+      }
+    },
+    {
+      "index": 8,
+      "action": "attack-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 388,
+        "width": 192,
+        "height": 185
+      },
+      "footAnchor": {
+        "x": 96,
+        "y": 154
+      }
+    },
+    {
+      "index": 9,
+      "action": "attack-right",
+      "pose": 1,
+      "rect": {
+        "x": 192,
+        "y": 388,
+        "width": 193,
+        "height": 185
+      },
+      "footAnchor": {
+        "x": 98,
+        "y": 154
+      }
+    },
+    {
+      "index": 10,
+      "action": "attack-right",
+      "pose": 2,
+      "rect": {
+        "x": 385,
+        "y": 388,
+        "width": 200,
+        "height": 185
+      },
+      "footAnchor": {
+        "x": 98,
+        "y": 155
+      }
+    },
+    {
+      "index": 11,
+      "action": "attack-right",
+      "pose": 3,
+      "rect": {
+        "x": 585,
+        "y": 388,
+        "width": 183,
+        "height": 185
+      },
+      "footAnchor": {
+        "x": 89,
+        "y": 154
+      }
+    },
+    {
+      "index": 12,
+      "action": "attack-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 573,
+        "width": 192,
+        "height": 195
+      },
+      "footAnchor": {
+        "x": 94,
+        "y": 152
+      }
+    },
+    {
+      "index": 13,
+      "action": "attack-down",
+      "pose": 1,
+      "rect": {
+        "x": 192,
+        "y": 573,
+        "width": 190,
+        "height": 195
+      },
+      "footAnchor": {
+        "x": 98,
+        "y": 152
+      }
+    },
+    {
+      "index": 14,
+      "action": "attack-down",
+      "pose": 2,
+      "rect": {
+        "x": 382,
+        "y": 573,
+        "width": 199,
+        "height": 195
+      },
+      "footAnchor": {
+        "x": 97,
+        "y": 152
+      }
+    },
+    {
+      "index": 15,
+      "action": "attack-down",
+      "pose": 3,
+      "rect": {
+        "x": 581,
+        "y": 573,
+        "width": 187,
+        "height": 195
+      },
+      "footAnchor": {
+        "x": 93,
+        "y": 152
+      }
+    }
+  ],
+  "impactPose": 2,
+  "note": "Explicit crop rectangles preserve the complete mounted silhouette, sabre, braid, paws and tail. Rows: idle right, walk right, attack right, attack down. Pose 2 is the strike peak (indices 10 and 14). Playback, scale, pivots and actual damage require integration. This pack contains artwork only; no gameplay code or death sequence is included. Per-frame footAnchor values describe the ground point below the saddle and are used by the preview; review scale and pivots when integrating.",
+  "anchorSpace": "frame-pixels"
+}

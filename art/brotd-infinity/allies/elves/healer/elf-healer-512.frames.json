@@ -1,0 +1,252 @@
+{
+  "image": "elf-healer-512-lite.webp",
+  "size": {
+    "width": 512,
+    "height": 512
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 130,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 73,
+        "y": 118
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 130,
+        "y": 0,
+        "width": 124,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 69,
+        "y": 118
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 254,
+        "y": 0,
+        "width": 126,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 71,
+        "y": 118
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 380,
+        "y": 0,
+        "width": 132,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 70,
+        "y": 118
+      }
+    },
+    {
+      "index": 4,
+      "action": "walk-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 132,
+        "width": 130,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 73,
+        "y": 110
+      }
+    },
+    {
+      "index": 5,
+      "action": "walk-right",
+      "pose": 1,
+      "rect": {
+        "x": 130,
+        "y": 132,
+        "width": 126,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 69,
+        "y": 110
+      }
+    },
+    {
+      "index": 6,
+      "action": "walk-right",
+      "pose": 2,
+      "rect": {
+        "x": 256,
+        "y": 132,
+        "width": 125,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 69,
+        "y": 110
+      }
+    },
+    {
+      "index": 7,
+      "action": "walk-right",
+      "pose": 3,
+      "rect": {
+        "x": 381,
+        "y": 132,
+        "width": 131,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 69,
+        "y": 110
+      }
+    },
+    {
+      "index": 8,
+      "action": "heal-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 256,
+        "width": 131,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 72,
+        "y": 111
+      }
+    },
+    {
+      "index": 9,
+      "action": "heal-right",
+      "pose": 1,
+      "rect": {
+        "x": 131,
+        "y": 256,
+        "width": 129,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 70,
+        "y": 111
+      }
+    },
+    {
+      "index": 10,
+      "action": "heal-right",
+      "pose": 2,
+      "rect": {
+        "x": 260,
+        "y": 256,
+        "width": 126,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 67,
+        "y": 111
+      }
+    },
+    {
+      "index": 11,
+      "action": "heal-right",
+      "pose": 3,
+      "rect": {
+        "x": 386,
+        "y": 256,
+        "width": 126,
+        "height": 124
+      },
+      "footAnchor": {
+        "x": 66,
+        "y": 111
+      }
+    },
+    {
+      "index": 12,
+      "action": "heal-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 380,
+        "width": 128,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 71,
+        "y": 104
+      }
+    },
+    {
+      "index": 13,
+      "action": "heal-down",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 380,
+        "width": 126,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 69,
+        "y": 104
+      }
+    },
+    {
+      "index": 14,
+      "action": "heal-down",
+      "pose": 2,
+      "rect": {
+        "x": 254,
+        "y": 380,
+        "width": 123,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 70,
+        "y": 104
+      }
+    },
+    {
+      "index": 15,
+      "action": "heal-down",
+      "pose": 3,
+      "rect": {
+        "x": 377,
+        "y": 380,
+        "width": 135,
+        "height": 132
+      },
+      "footAnchor": {
+        "x": 67,
+        "y": 104
+      }
+    }
+  ],
+  "healPose": 2,
+  "note": "Explicit crop rectangles preserve the complete elf healer, hood, ears, staff and hands. Rows: idle right, walk right, heal right, heal down. Pose 2 is the visual release (frames 10 and 14). Target healing VFX is supplied separately. Playback, scale, targeting and healing amount require integration. Artwork only; no death or attack sequence. Per-frame footAnchor values describe the ground point below the body between the boot tips and are used by the preview; review scale and pivots when integrating.",
+  "anchorSpace": "frame-pixels"
+}

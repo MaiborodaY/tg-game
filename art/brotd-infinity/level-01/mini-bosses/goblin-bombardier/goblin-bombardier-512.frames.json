@@ -1,0 +1,260 @@
+{
+  "image": "goblin-bombardier-512-lite.webp",
+  "size": {
+    "width": 512,
+    "height": 512
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "idle-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 134,
+        "height": 136
+      },
+      "footAnchor": {
+        "x": 73,
+        "y": 118
+      }
+    },
+    {
+      "index": 1,
+      "action": "idle-right",
+      "pose": 1,
+      "rect": {
+        "x": 134,
+        "y": 0,
+        "width": 126,
+        "height": 136
+      },
+      "footAnchor": {
+        "x": 63,
+        "y": 118
+      }
+    },
+    {
+      "index": 2,
+      "action": "idle-right",
+      "pose": 2,
+      "rect": {
+        "x": 260,
+        "y": 0,
+        "width": 126,
+        "height": 136
+      },
+      "footAnchor": {
+        "x": 62,
+        "y": 118
+      }
+    },
+    {
+      "index": 3,
+      "action": "idle-right",
+      "pose": 3,
+      "rect": {
+        "x": 386,
+        "y": 0,
+        "width": 126,
+        "height": 136
+      },
+      "footAnchor": {
+        "x": 62,
+        "y": 118
+      }
+    },
+    {
+      "index": 4,
+      "action": "roll-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 136,
+        "width": 136,
+        "height": 120
+      },
+      "footAnchor": {
+        "x": 73,
+        "y": 102
+      }
+    },
+    {
+      "index": 5,
+      "action": "roll-right",
+      "pose": 1,
+      "rect": {
+        "x": 136,
+        "y": 136,
+        "width": 126,
+        "height": 120
+      },
+      "footAnchor": {
+        "x": 62,
+        "y": 102
+      }
+    },
+    {
+      "index": 6,
+      "action": "roll-right",
+      "pose": 2,
+      "rect": {
+        "x": 262,
+        "y": 136,
+        "width": 124,
+        "height": 120
+      },
+      "footAnchor": {
+        "x": 60,
+        "y": 102
+      }
+    },
+    {
+      "index": 7,
+      "action": "roll-right",
+      "pose": 3,
+      "rect": {
+        "x": 386,
+        "y": 136,
+        "width": 126,
+        "height": 120
+      },
+      "footAnchor": {
+        "x": 62,
+        "y": 102
+      }
+    },
+    {
+      "index": 8,
+      "action": "fire-right",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 256,
+        "width": 135,
+        "height": 116
+      },
+      "footAnchor": {
+        "x": 74,
+        "y": 98
+      }
+    },
+    {
+      "index": 9,
+      "action": "fire-right",
+      "pose": 1,
+      "rect": {
+        "x": 135,
+        "y": 256,
+        "width": 123,
+        "height": 116
+      },
+      "footAnchor": {
+        "x": 63,
+        "y": 98
+      }
+    },
+    {
+      "index": 10,
+      "action": "fire-right",
+      "pose": 2,
+      "rect": {
+        "x": 258,
+        "y": 256,
+        "width": 127,
+        "height": 116
+      },
+      "footAnchor": {
+        "x": 60,
+        "y": 98
+      },
+      "projectileAnchor": {
+        "x": 95,
+        "y": 58
+      }
+    },
+    {
+      "index": 11,
+      "action": "fire-right",
+      "pose": 3,
+      "rect": {
+        "x": 385,
+        "y": 256,
+        "width": 127,
+        "height": 116
+      },
+      "footAnchor": {
+        "x": 61,
+        "y": 98
+      }
+    },
+    {
+      "index": 12,
+      "action": "fire-down",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 372,
+        "width": 133,
+        "height": 140
+      },
+      "footAnchor": {
+        "x": 76,
+        "y": 104
+      }
+    },
+    {
+      "index": 13,
+      "action": "fire-down",
+      "pose": 1,
+      "rect": {
+        "x": 133,
+        "y": 372,
+        "width": 121,
+        "height": 140
+      },
+      "footAnchor": {
+        "x": 65,
+        "y": 104
+      }
+    },
+    {
+      "index": 14,
+      "action": "fire-down",
+      "pose": 2,
+      "rect": {
+        "x": 254,
+        "y": 372,
+        "width": 133,
+        "height": 140
+      },
+      "footAnchor": {
+        "x": 66,
+        "y": 104
+      },
+      "projectileAnchor": {
+        "x": 99,
+        "y": 70
+      }
+    },
+    {
+      "index": 15,
+      "action": "fire-down",
+      "pose": 3,
+      "rect": {
+        "x": 387,
+        "y": 372,
+        "width": 125,
+        "height": 140
+      },
+      "footAnchor": {
+        "x": 59,
+        "y": 104
+      }
+    }
+  ],
+  "releasePose": 2,
+  "note": "Goblin and wheeled cannon are one unit. Rows: idle right, roll right, fire right, fire down. Release at pose 2 (frames 10 and 14); projectile is separate. Pose 0 holds a bomb, pose 1 loads it, firing and recovery have empty hands. Spare side bombs remain. Timing, trajectory, damage, blast radius and gameplay require integration. Artwork only. Per-frame footAnchor values describe the ground point under the wheel contact points and are used by the preview; review scale and pivots when integrating.",
+  "anchorSpace": "frame-pixels"
+}

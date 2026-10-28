@@ -1,0 +1,23 @@
+{
+  "generator": "Built-in image_gen",
+  "recipe": "scripts/prepare-talent-art.mjs",
+  "prompt": "art/hero-talents/PROMPT.md",
+  "columns": 6,
+  "rows": 3,
+  "cellSize": 128,
+  "source": {
+    "path": "art/hero-talents/talents-source.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 1553699,
+    "sha256": "682c48179ea4edafba21b93bd1ab960208abc3e04e9830b80595f854924fe5bc"
+  },
+  "output": {
+    "path": "assets/hero-talents/talents.webp",
+    "width": 768,
+    "height": 384,
+    "bytes": 53652,
+    "sha256": "9b2de3b16864edc0092f4882ccae6dfea7813e1e6c56855515a60633911ec145",
+    "quality": 84
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "generator": "Built-in image_gen",
+  "recipe": "scripts/prepare-brand-art.mjs",
+  "prompt": "promo/world-of-connections/PROMPT.md",
+  "sources": [
+    {
+      "path": "promo/world-of-connections/woc-handshake.png",
+      "bytes": 845718,
+      "sha256": "bf11aa1c45ecd997fbef12626a6b061e480af01727dc6b4f607339b38750690a"
+    },
+    {
+      "path": "promo/world-of-connections/woc-favicon-source.png",
+      "bytes": 681933,
+      "sha256": "7368f39e6f66c303fdb1c1de5e4ff56210c7727e764c4c874d54910249d6187c"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "assets/brand/woc-handshake.webp",
+      "width": 384,
+      "height": 276,
+      "bytes": 20618,
+      "sha256": "33c2e7bb1bbc18508ccf630b81e21b53ce031a1e2d1300d41432e4d577a49955"
+    },
+    {
+      "path": "assets/brand/woc-favicon-32.png",
+      "width": 32,
+      "height": 32,
+      "bytes": 469,
+      "sha256": "0fa8de5634d36b74b2cfb9b9268d6e09411c08ede16c1fabf380a2e840df9490"
+    },
+    {
+      "path": "assets/brand/woc-favicon-16.png",
+      "width": 16,
+      "height": 16,
+      "bytes": 274,
+      "sha256": "71d649e758ae3859dc256a43f8bf69e634a5c005beb580894baccadf61346791"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "generator": "Built-in image_gen",
+  "recipe": "scripts/prepare-kitchen-art.mjs",
+  "prompt": "art/kitchen/PROMPT.md",
+  "columns": 3,
+  "rows": 2,
+  "cellSize": 96,
+  "source": {
+    "path": "art/kitchen/dishes-source.png",
+    "bytes": 1455797,
+    "sha256": "fad33aaaabd75370b0440b0eb7c139066ab318ea16cd58522e7b6d4dd7d2f16d"
+  },
+  "output": {
+    "path": "assets/kitchen/dishes.webp",
+    "width": 288,
+    "height": 192,
+    "bytes": 17976,
+    "sha256": "ff05a871bfb0a707dae36c9d8f57b3d27ea2fca8cd7605bdb17bc729b2555b54",
+    "quality": 84
+  }
+}

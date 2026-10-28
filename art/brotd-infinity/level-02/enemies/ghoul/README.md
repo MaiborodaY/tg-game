@@ -1,6 +1,6 @@
 # Ghoul - animation artwork v1
 
-Generated with the built-in imagegen tool from the approved [ghoul concept](../../concepts/ghoul-v1.png). The ghoul is the selected third and final ordinary enemy type for level two, replacing the declined axeman proposal. Artwork only; no gameplay, balance or deployment changes.
+Generated with the built-in imagegen tool from the approved [ghoul concept](../../concepts/ghoul-v1.png). The ghoul is the selected third ordinary enemy type for level two, replacing the declined axeman proposal. Artwork only; no gameplay, balance or deployment changes.
 
 ## Files
 

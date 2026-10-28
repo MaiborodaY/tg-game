@@ -1,0 +1,72 @@
+{
+  "image": "poison-bottle-256-lite.webp",
+  "size": {
+    "width": 256,
+    "height": 256
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "tumble",
+      "pose": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 69,
+        "y": 83
+      }
+    },
+    {
+      "index": 1,
+      "action": "tumble",
+      "pose": 1,
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 51,
+        "y": 77
+      }
+    },
+    {
+      "index": 2,
+      "action": "tumble",
+      "pose": 2,
+      "rect": {
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 68,
+        "y": 53
+      }
+    },
+    {
+      "index": 3,
+      "action": "tumble",
+      "pose": 3,
+      "rect": {
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "centerAnchor": {
+        "x": 66,
+        "y": 63
+      }
+    }
+  ],
+  "anchorSpace": "frame-pixels",
+  "loop": true,
+  "note": "Separate poison bottle: four tumbling poses. Align centerAnchor to the round flask body, not the overall shape including cork. Spawn at character releasePose 2 (frames 10 or 14). On contact replace the projectile with the separate poison-impact effect. Trajectory, collision, damage and poison rules require integration."
+}
