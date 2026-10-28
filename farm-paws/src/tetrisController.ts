@@ -96,6 +96,7 @@ export function mountTetrisController(
   let tickTimer: number | null = null;
   let repeatTimer: number | null = null;
   let repeatAction: TetrisAction | null = null;
+  let repeatPointerId: number | null = null;
   let destroyed = false;
   let lifecycleToken = 0;
   let currentRun: FarmPawsRunSession | null = null;
@@ -233,7 +234,7 @@ export function mountTetrisController(
       const action = button.dataset.tetrisControl as TetrisAction | undefined;
       if (!action) return;
       performAction(action);
-      if (REPEATING_ACTIONS.has(action)) startActionRepeat(action);
+      if (REPEATING_ACTIONS.has(action)) startActionRepeat(action, event.pointerId);
     }, listenerOptions);
     button.addEventListener("click", (event) => {
       if (event.detail !== 0) return;
@@ -241,8 +242,8 @@ export function mountTetrisController(
       if (action) performAction(action);
     }, listenerOptions);
   });
-  window.addEventListener("pointerup", stopActionRepeat, listenerOptions);
-  window.addEventListener("pointercancel", stopActionRepeat, listenerOptions);
+  window.addEventListener("pointerup", stopReleasedActionRepeat, listenerOptions);
+  window.addEventListener("pointercancel", stopReleasedActionRepeat, listenerOptions);
   window.addEventListener("blur", stopActionRepeat, listenerOptions);
   window.addEventListener("keydown", handleKeyDown, listenerOptions);
   window.addEventListener("resize", drawGame, listenerOptions);
@@ -452,10 +453,15 @@ export function mountTetrisController(
     performAction(action, rotationDirection);
   }
 
-  function startActionRepeat(action: TetrisAction): void {
+  function startActionRepeat(action: TetrisAction, pointerId: number): void {
     stopActionRepeat();
     repeatAction = action;
+    repeatPointerId = pointerId;
     repeatTimer = window.setTimeout(runRepeatedAction, REPEAT_DELAY_MS);
+  }
+
+  function stopReleasedActionRepeat(event: PointerEvent): void {
+    if (event.pointerId === repeatPointerId) stopActionRepeat();
   }
 
   function runRepeatedAction(): void {
@@ -468,6 +474,7 @@ export function mountTetrisController(
 
   function stopActionRepeat(): void {
     repeatAction = null;
+    repeatPointerId = null;
     if (repeatTimer === null) return;
     window.clearTimeout(repeatTimer);
     repeatTimer = null;

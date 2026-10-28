@@ -101,6 +101,7 @@ let finishPending = false;
 let finishResult: FarmPawsFinishResult | null = null;
 let finishError: string | null = null;
 let startBlockMessage: string | null = null;
+let cancelSequenceSleep: (() => void) | null = null;
 
 initTelegramWebApp();
 render();
@@ -169,6 +170,8 @@ function tr(key: FarmPawsTextKey, vars: Record<string, string | number> = {}): s
 }
 
 function render(): void {
+  const focusedCell = appScreen === "farm-paws" && document.activeElement instanceof HTMLButtonElement
+    && appRoot.contains(document.activeElement) ? document.activeElement.dataset.cell : undefined;
   syncClosingConfirmation();
   snakeController?.destroy();
   snakeController = null;
@@ -266,6 +269,10 @@ function render(): void {
       onCellClick(cellIndex);
     });
   });
+  if (focusedCell !== undefined) {
+    const cell = appRoot.querySelector<HTMLButtonElement>(`[data-cell='${focusedCell}']`);
+    if (cell && !cell.disabled) cell.focus({ preventScroll: true });
+  }
 }
 
 function syncClosingConfirmation(): void {
@@ -1002,6 +1009,7 @@ function handleFarmBackToGames(): void {
 
 function stopCurrentScreen(): void {
   runToken += 1;
+  cancelSequenceSleep?.();
   activeStep = null;
   roundBriefingPending = false;
   isStartingRun = false;
@@ -1036,7 +1044,39 @@ function escapeHtml(value: string): string {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
+  cancelSequenceSleep?.();
+  return new Promise((resolve) => {
+    let remaining = ms;
+    let startedAt = 0;
+    let timer: number | null = null;
+    let pageSuspended = false;
+    const finish = (): void => {
+      if (timer !== null) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("pagehide", hide);
+      window.removeEventListener("pageshow", show);
+      cancelSequenceSleep = null;
+      resolve();
+    };
+    // Count only visible time, so an interrupted flash keeps its remaining duration.
+    const update = (): void => {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        remaining = Math.max(0, remaining - (performance.now() - startedAt));
+        timer = null;
+      }
+      if (document.hidden || pageSuspended) return;
+      startedAt = performance.now();
+      timer = window.setTimeout(finish, remaining);
+    };
+    const hide = (): void => { pageSuspended = true; update(); };
+    const show = (): void => { pageSuspended = false; update(); };
+    cancelSequenceSleep = finish;
+    document.addEventListener("visibilitychange", update);
+    window.addEventListener("pagehide", hide);
+    window.addEventListener("pageshow", show);
+    update();
+  });
 }
 
 function previewEmoji(index: number): string {
