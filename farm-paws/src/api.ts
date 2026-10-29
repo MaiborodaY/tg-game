@@ -1,10 +1,12 @@
 import { type FarmPawsLang, initialFarmPawsLang, normalizeFarmPawsLang } from "./i18n";
+import type { SnakeMapId } from "./snakeState";
 
 export type FarmPawsGame = "farm_paws" | "snake" | "tetris";
 
 export type FarmPawsRunSession = {
   mode: "local" | "server" | "blocked";
   game: FarmPawsGame;
+  mapId?: SnakeMapId;
   runId: string | null;
   bestScore: number;
   error: string | null;
@@ -54,6 +56,8 @@ type ApiStartResponse = {
   daily_limit?: number;
   dailyStarts?: number;
   daily_starts?: number;
+  mapId?: SnakeMapId;
+  map_id?: SnakeMapId;
 };
 
 type ApiFinishResponse = {
@@ -86,17 +90,21 @@ const BLOCKING_START_CODES = new Set([
 
 export async function startFarmPawsRun(
   localBestScore: number,
-  game: FarmPawsGame = "farm_paws"
+  game: FarmPawsGame = "farm_paws",
+  mapId: SnakeMapId = "garden"
 ): Promise<FarmPawsRunSession> {
   const initData = telegramInitData();
   if (!initData) {
-    return localSession(localBestScore, game, null);
+    return { ...localSession(localBestScore, game, null), ...(game === "snake" ? { mapId } : {}) };
   }
   const requestId = pendingStarts.get(game) || crypto.randomUUID();
   pendingStarts.set(game, requestId);
 
   try {
-    const response = await postJson<ApiStartResponse>("/api/farm-paws/start", { initData, game, requestId });
+    const response = await postJson<ApiStartResponse>("/api/farm-paws/start", {
+      initData, game, rulesVersion: game === "snake" ? 3 : 1, requestId,
+      ...(game === "snake" ? { mapId } : {})
+    });
     const runId = response.runId || response.run_id || null;
     if (!response.ok || !runId) {
       const code = normalizeCode(response.code);
@@ -117,6 +125,7 @@ export async function startFarmPawsRun(
     return {
       mode: "server",
       game,
+      ...(game === "snake" ? { mapId: response.mapId ?? response.map_id ?? mapId } : {}),
       runId,
       bestScore: normalizedScore(response.bestScore ?? response.best_score ?? localBestScore),
       error: null,

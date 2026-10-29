@@ -1,6 +1,9 @@
-const BEST_SCORE_KEY = "farm-paws-best-score-v1";
-const SNAKE_BEST_SCORE_KEY = "farm-paws-snake-best-score-v1";
-const TETRIS_BEST_SCORE_KEY = "farm-paws-tetris-best-score-v1";
+import type { SnakeMapId } from "./snakeState";
+
+// Start clean: v1 records may contain a different game's shared server best.
+const BEST_SCORE_KEY = "farm-paws-best-score-v2";
+const SNAKE_BEST_SCORE_KEY = "farm-paws-snake-best-score-v3";
+const TETRIS_BEST_SCORE_KEY = "farm-paws-tetris-best-score-v2";
 const TETRIS_AUDIO_ENABLED_KEY = "farm-paws-tetris-audio-enabled-v1";
 
 export function loadBestScore(): number {
@@ -11,12 +14,12 @@ export function saveBestScore(score: number): void {
   saveScore(BEST_SCORE_KEY, score);
 }
 
-export function loadSnakeBestScore(): number {
-  return loadScore(SNAKE_BEST_SCORE_KEY);
+export function loadSnakeBestScore(mapId: SnakeMapId = "garden"): number {
+  return loadScore(`${SNAKE_BEST_SCORE_KEY}-${mapId}`);
 }
 
-export function saveSnakeBestScore(score: number): void {
-  saveScore(SNAKE_BEST_SCORE_KEY, score);
+export function saveSnakeBestScore(score: number, mapId: SnakeMapId = "garden"): void {
+  saveScore(`${SNAKE_BEST_SCORE_KEY}-${mapId}`, score);
 }
 
 export function loadTetrisBestScore(): number {

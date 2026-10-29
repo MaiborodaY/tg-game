@@ -84,6 +84,8 @@ test("Snake uses the shared start/finish endpoints with its game discriminator",
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     initData: "signed-init-data",
     game: "snake",
+    rulesVersion: 3,
+    mapId: "garden",
     requestId: JSON.parse(calls[0].init.body).requestId
   });
   assert.match(JSON.parse(calls[0].init.body).requestId, /^[0-9a-f-]{36}$/);
@@ -151,6 +153,7 @@ test("Tetris uses the shared start/finish endpoints with its game discriminator"
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     initData: "signed-tetris-init-data",
     game: "tetris",
+    rulesVersion: 1,
     requestId: JSON.parse(calls[0].init.body).requestId
   });
   assert.equal(calls[1].url, "/api/farm-paws/finish");
@@ -196,7 +199,7 @@ test("the shared daily limit blocks Snake before gameplay", async () => {
     dailyStarts: 5
   }, 429);
 
-  const session = await api.startFarmPawsRun(0, "snake");
+  const session = await api.startFarmPawsRun(0, "snake", "courtyard");
 
   assert.equal(session.mode, "blocked");
   assert.equal(session.game, "snake");
@@ -220,10 +223,11 @@ test("an uncertain server start is blocked instead of becoming a local run", asy
   assert.equal(session.code, "start_unavailable");
   globalThis.fetch = async (_url, init) => {
     requestIds.push(JSON.parse(init.body).requestId);
-    return jsonResponse({ ok: true, runId: "retried-run", dailyStarts: 5, dailyLimit: 5 });
+    return jsonResponse({ ok: true, runId: "retried-run", mapId: "courtyard", dailyStarts: 5, dailyLimit: 5 });
   };
-  const retry = await api.startFarmPawsRun(0, "snake");
+  const retry = await api.startFarmPawsRun(0, "snake", "warehouse");
   assert.equal(retry.runId, "retried-run");
+  assert.equal(retry.mapId, "courtyard", "a lost response keeps the original field");
   assert.equal(retry.dailyStarts, 5);
   assert.match(requestIds[0], /^[0-9a-f-]{36}$/);
   assert.equal(requestIds[1], requestIds[0]);

@@ -329,6 +329,63 @@ button {
   gap: 7px;
 }
 
+.snake-map-picker {
+  width: min(100%, 350px);
+  display: grid;
+  gap: 8px;
+  color: #49613c;
+  font-size: 0.85rem;
+}
+
+.snake-map-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.snake-map-option {
+  min-width: 0;
+  min-height: 42px;
+  padding: 7px 4px;
+  border: 2px solid transparent;
+  border-radius: 13px;
+  background: #e0eace;
+  color: #49613c;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.snake-map-option[aria-pressed="true"] {
+  border-color: #628d43;
+  background: #f6fbea;
+  box-shadow: 0 2px 0 #a3bd7c;
+}
+
+.snake-map-option:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.snake-map-picker p {
+  min-height: 2.5em;
+  margin: 0;
+  color: #6e7b64;
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.snake-route-hud {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 3px;
+  color: #58704f;
+  font-size: 0.73rem;
+}
+
 .snake-hud-button {
   width: 46px;
   height: 46px;
@@ -625,6 +682,7 @@ button {
 }
 
 .snake-screen[data-layout="game"] .snake-lobby-header,
+.snake-screen[data-layout="game"] .snake-map-picker,
 .snake-screen[data-layout="game"] .snake-meta,
 .snake-screen[data-layout="game"] .snake-controls-hint,
 .snake-screen[data-layout="game"] .snake-primary-action {
@@ -648,7 +706,7 @@ button {
 }
 
 .snake-screen[data-layout="game"] .snake-board-wrap {
-  width: min(100%, 380px, calc(var(--farm-paws-visible-height) - 250px));
+  width: min(100%, 380px, calc(var(--farm-paws-visible-height) - 274px));
   border-radius: 24px;
 }
 
@@ -2986,7 +3044,7 @@ h2 {
   .snake-screen[data-layout="game"] {
     display: grid;
     grid-template-columns: max-content max-content;
-    grid-template-rows: 48px minmax(0, 1fr);
+    grid-template-rows: 72px minmax(0, 1fr);
     grid-template-areas:
       "hud hud"
       "board controls";
@@ -3004,7 +3062,7 @@ h2 {
 
   .snake-screen[data-layout="game"] .snake-board-wrap {
     grid-area: board;
-    width: min(46vw, 300px, calc(var(--farm-paws-visible-height) - 74px));
+    width: min(46vw, 300px, calc(var(--farm-paws-visible-height) - 98px));
   }
 
   .snake-screen[data-layout="game"] .snake-controls {

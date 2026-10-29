@@ -7,7 +7,9 @@ import {
 import { type FarmPawsLang, type FarmPawsTextKey } from "./i18n";
 import {
   SNAKE_BOARD_SIZE,
+  SNAKE_MAPS,
   type SnakeDirection,
+  type SnakeMapId,
   type SnakePhase,
   type SnakeState,
   advanceSnake,
@@ -60,7 +62,8 @@ export function mountSnakeController(
   const { tr } = options;
   const eventController = new AbortController();
   const listenerOptions = { signal: eventController.signal };
-  let state = createSnakeInitialState(loadSnakeBestScore());
+  let selectedMapId: SnakeMapId = "garden";
+  let state = createSnakeInitialState(loadSnakeBestScore(selectedMapId), Math.random, "right", selectedMapId);
   let tickTimer: number | null = null;
   let pointerStart: PointerStart = null;
   let destroyed = false;
@@ -88,14 +91,31 @@ export function mountSnakeController(
         </div>
       </section>
 
+      <section class="snake-map-picker" aria-label="${escapeHtml(tr("snake_map_label"))}">
+        <strong data-snake-map-label>${escapeHtml(tr("snake_map_label"))}</strong>
+        <div class="snake-map-options">
+          ${(["garden", "courtyard", "warehouse"] as const).map(mapId => `
+            <button type="button" class="snake-map-option" data-snake-map="${mapId}" aria-pressed="${mapId === selectedMapId}">${escapeHtml(tr(`snake_map_${mapId}`))}</button>
+          `).join("")}
+        </div>
+        <p data-snake-map-hint></p>
+      </section>
+
+      <details class="snake-controls-hint">
+        <summary data-snake-rules-title>${escapeHtml(tr("snake_rules_title"))}</summary>
+        <p data-snake-rules>${escapeHtml(tr("snake_rules"))}</p>
+        <p data-snake-routes-rules>${escapeHtml(tr("snake_routes_rules"))}</p>
+      </details>
+
       <header class="snake-game-hud" aria-label="${escapeHtml(tr("stats_label"))}">
         <button class="snake-hud-button snake-hud-back" data-snake-action="back" type="button" aria-label="${escapeHtml(tr("back_to_games"))}">←</button>
-        <strong class="snake-hud-title"><span aria-hidden="true">🐍</span> <span data-snake-title>${escapeHtml(tr("snake_title"))}</span></strong>
+        <strong class="snake-hud-title"><span data-snake-hud-name><span aria-hidden="true">🐍</span> <span data-snake-title>${escapeHtml(tr("snake_title"))}</span></span><small data-snake-bonuses style="white-space: pre-line" hidden></small></strong>
         <div class="snake-hud-stats">
           <span class="snake-hud-stat" data-snake-record-stat aria-label="${escapeHtml(tr("record_label"))}">🏆 <strong data-snake-best>${state.bestScore}</strong></span>
           <span class="snake-hud-stat is-score" data-snake-score-stat aria-label="${escapeHtml(tr("score_label"))}">🍎 <strong data-snake-score>0</strong></span>
         </div>
         <button class="snake-hud-button snake-hud-pause" data-snake-action="pause" type="button" aria-label="${escapeHtml(tr("snake_pause"))}">⏸</button>
+        <div class="snake-route-hud"><span data-snake-field></span><strong data-snake-combo></strong></div>
       </header>
 
       <section class="snake-meta" aria-label="${escapeHtml(tr("stats_label"))}">
@@ -144,6 +164,8 @@ export function mountSnakeController(
   const scoreElements = requireElements<HTMLElement>(root, "[data-snake-score]");
   const bestElements = requireElements<HTMLElement>(root, "[data-snake-best]");
   const statusElement = requireElement<HTMLElement>(root, "[data-snake-status]");
+  const hudNameElement = requireElement<HTMLElement>(root, "[data-snake-hud-name]");
+  const bonusesElement = requireElement<HTMLElement>(root, "[data-snake-bonuses]");
   const runNoteElement = requireElement<HTMLElement>(root, "[data-snake-run-note]");
   const runMessageElement = requireElement<HTMLElement>(root, "[data-snake-run-message]");
   const primaryButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='primary']");
@@ -156,6 +178,14 @@ export function mountSnakeController(
   const overlayBackButton = requireElement<HTMLButtonElement>(root, "[data-snake-action='overlay-back']");
   const backButtons = requireElements<HTMLButtonElement>(root, "[data-snake-action='back']");
   const directionButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-snake-direction]"));
+  const mapButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-snake-map]"));
+
+  mapButtons.forEach(button => button.addEventListener("click", () => {
+    if (layout !== "lobby" || isStartingRun || finishPending) return;
+    selectedMapId = button.dataset.snakeMap as SnakeMapId;
+    state = createSnakeInitialState(loadSnakeBestScore(selectedMapId), Math.random, "right", selectedMapId);
+    updateView();
+  }, listenerOptions));
 
   backButtons.forEach((button) => button.addEventListener("click", handleBack, listenerOptions));
   primaryButton.addEventListener("click", handlePrimaryAction, listenerOptions);
@@ -233,32 +263,34 @@ export function mountSnakeController(
     startBlockMessage = null;
     runFinishedAt = 0;
     isStartingRun = true;
-    state = createSnakeInitialState(loadSnakeBestScore());
+    state = createSnakeInitialState(loadSnakeBestScore(selectedMapId), Math.random, "right", selectedMapId);
     updateView();
 
     const run = await startSnakeAttempt(
-      (bestScore) => startFarmPawsRun(bestScore, "snake"),
-      loadSnakeBestScore()
+      (bestScore) => startFarmPawsRun(bestScore, "snake", selectedMapId),
+      loadSnakeBestScore(selectedMapId)
     );
     if (destroyed || token !== lifecycleToken) return;
 
     options.onLanguageChange(run.lang);
-    const localBestScore = loadSnakeBestScore();
+    // A retry may return the field of an earlier start whose response was lost.
+    selectedMapId = run.mapId ?? selectedMapId;
+    const localBestScore = loadSnakeBestScore(selectedMapId);
     const syncedBestScore = Math.max(localBestScore, run.bestScore);
-    if (syncedBestScore > localBestScore) saveSnakeBestScore(syncedBestScore);
+    if (syncedBestScore > localBestScore) saveSnakeBestScore(syncedBestScore, selectedMapId);
     if (run.mode === "blocked") {
       isStartingRun = false;
       layout = "lobby";
       currentRun = run;
       startBlockMessage = options.startBlockedText(run);
-      state = createSnakeInitialState(syncedBestScore);
+      state = createSnakeInitialState(syncedBestScore, Math.random, "right", selectedMapId);
       updateView();
       return;
     }
 
     currentRun = run;
     layout = "game";
-    state = createSnakeInitialState(syncedBestScore);
+    state = createSnakeInitialState(syncedBestScore, Math.random, "right", selectedMapId);
     isStartingRun = false;
     updateView();
   }
@@ -266,7 +298,7 @@ export function mountSnakeController(
   function handleDirection(direction: SnakeDirection): void {
     if (layout === "game" && currentRun && !isStartingRun && state.phase === "idle") {
       runStartedAt = Date.now();
-      state = startSnakeGame(state.bestScore, Math.random, direction);
+      state = startSnakeGame(state.bestScore, Math.random, direction, selectedMapId);
       updateView();
       scheduleTick();
       return;
@@ -338,7 +370,7 @@ export function mountSnakeController(
 
     const previousBestScore = state.bestScore;
     state = advanceSnake(state);
-    if (state.bestScore > previousBestScore) saveSnakeBestScore(state.bestScore);
+    if (state.bestScore > previousBestScore) saveSnakeBestScore(state.bestScore, selectedMapId);
     updateView();
     if (state.phase === "playing") {
       scheduleTick();
@@ -374,7 +406,7 @@ export function mountSnakeController(
         ...state,
         bestScore: result.bestScore
       };
-      saveSnakeBestScore(result.bestScore);
+      saveSnakeBestScore(result.bestScore, selectedMapId);
     }
     updateView();
     if (!result.ok) overlayPrimaryButton.focus();
@@ -412,12 +444,31 @@ export function mountSnakeController(
     updateStaticTranslations();
     screenElement.dataset.layout = layout;
     screenElement.dataset.phase = isStartingRun ? "starting" : state.phase;
+    screenElement.dataset.map = selectedMapId;
+    requireElement<HTMLElement>(root, "[data-snake-field]").textContent = tr(`snake_map_${selectedMapId}`);
+    requireElement<HTMLElement>(root, "[data-snake-combo]").textContent = state.lastAppleColor
+      ? tr("snake_combo_next", {
+        progress: (state.alternatingApples - 1) % 3 + 1,
+        apple: state.lastAppleColor === "red" ? "🍏" : "🍎"
+      })
+      : tr("snake_combo_start");
+    mapButtons.forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.snakeMap === selectedMapId));
+      button.disabled = isStartingRun || finishPending;
+    });
     scoreElements.forEach((element) => {
       element.textContent = String(state.score);
     });
     bestElements.forEach((element) => {
       element.textContent = String(state.bestScore);
     });
+    const bonusTimers = [
+      state.goldFood ? tr("snake_gold_timer", { seconds: Math.ceil(state.goldFood.remainingMs / 1000) }) : "",
+      state.scissors ? tr("snake_scissors_timer", { seconds: Math.ceil(state.scissors.remainingMs / 1000) }) : ""
+    ].filter(Boolean).join("\n");
+    bonusesElement.textContent = bonusTimers;
+    bonusesElement.hidden = !bonusTimers;
+    hudNameElement.hidden = Boolean(bonusTimers);
     statusElement.textContent = hardStartBlock
       ? tr("snake_unavailable")
       : isStartingRun
@@ -496,11 +547,20 @@ export function mountSnakeController(
       element.textContent = tr("snake_title");
     });
     requireElement<HTMLElement>(root, "[data-snake-description]").textContent = tr("snake_description");
+    requireElement<HTMLElement>(root, "[data-snake-rules-title]").textContent = tr("snake_rules_title");
+    requireElement<HTMLElement>(root, "[data-snake-rules]").textContent = tr("snake_rules");
+    requireElement<HTMLElement>(root, "[data-snake-routes-rules]").textContent = tr("snake_routes_rules");
+    requireElement<HTMLElement>(root, "[data-snake-map-label]").textContent = tr("snake_map_label");
+    requireElement<HTMLElement>(root, "[data-snake-map-hint]").textContent = tr(`snake_map_${selectedMapId}_hint`);
+    requireElement<HTMLElement>(root, ".snake-map-picker").setAttribute("aria-label", tr("snake_map_label"));
+    mapButtons.forEach(button => {
+      button.textContent = tr(`snake_map_${button.dataset.snakeMap as SnakeMapId}`);
+    });
     requireElements<HTMLElement>(root, "[data-snake-record-label]").forEach((element) => {
-      element.textContent = tr("record_label");
+      element.textContent = tr("snake_map_record");
     });
     requireElement<HTMLElement>(root, "[data-snake-controls-hint]").textContent = tr("snake_controls_hint");
-    requireElement<HTMLElement>(root, "[data-snake-record-stat]").setAttribute("aria-label", tr("record_label"));
+    requireElement<HTMLElement>(root, "[data-snake-record-stat]").setAttribute("aria-label", tr("snake_map_record"));
     requireElement<HTMLElement>(root, "[data-snake-score-stat]").setAttribute("aria-label", tr("score_label"));
     requireElement<HTMLElement>(root, ".snake-game-hud").setAttribute("aria-label", tr("stats_label"));
     requireElement<HTMLElement>(root, ".snake-meta").setAttribute("aria-label", tr("stats_label"));
@@ -527,14 +587,28 @@ export function mountSnakeController(
     context.clearRect(0, 0, cssSize, cssSize);
     const cellSize = cssSize / SNAKE_BOARD_SIZE;
 
+    const map = SNAKE_MAPS[state.mapId];
+    const tiles = state.mapId === "warehouse" ? ["#555b51", "#4e544b"]
+      : state.mapId === "courtyard" ? ["#60724d", "#586b45"] : ["#315c38", "#2b5232"];
     for (let y = 0; y < SNAKE_BOARD_SIZE; y += 1) {
       for (let x = 0; x < SNAKE_BOARD_SIZE; x += 1) {
-        context.fillStyle = (x + y) % 2 === 0 ? "#315c38" : "#2b5232";
+        context.fillStyle = tiles[(x + y) % 2];
         context.fillRect(x * cellSize, y * cellSize, cellSize + 0.5, cellSize + 0.5);
       }
     }
 
+    map.obstacles.forEach(point => drawObstacle(context, point.x, point.y, cellSize, state.mapId === "courtyard"));
+    map.portals.forEach((point, index) => drawBurrow(context, point.x, point.y, cellSize, index));
     if (state.food) drawFood(context, state.food.x, state.food.y, cellSize);
+    if (state.greenFood) drawFood(context, state.greenFood.x, state.greenFood.y, cellSize, "green");
+    if (state.goldFood) drawFood(context, state.goldFood.x, state.goldFood.y, cellSize, "gold");
+    if (state.scissors) {
+      context.fillStyle = "#ffffff";
+      context.font = `bold ${cellSize * 0.85}px sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText("✂", (state.scissors.x + 0.5) * cellSize, (state.scissors.y + 0.5) * cellSize);
+    }
     for (let index = state.snake.length - 1; index >= 0; index -= 1) {
       drawSnakeCell(context, state.snake[index].x, state.snake[index].y, cellSize, index === 0);
     }
@@ -542,13 +616,61 @@ export function mountSnakeController(
   }
 }
 
-function drawFood(context: CanvasRenderingContext2D, x: number, y: number, cellSize: number): void {
+function drawBurrow(context: CanvasRenderingContext2D, x: number, y: number, cellSize: number, index: number): void {
+  const centerX = (x + 0.5) * cellSize;
+  const centerY = (y + 0.55) * cellSize;
+  context.fillStyle = "#18251e";
+  context.strokeStyle = index === 0 ? "#c99dff" : "#73e5d1";
+  context.lineWidth = Math.max(2, cellSize * 0.12);
+  context.beginPath();
+  context.ellipse(centerX, centerY, cellSize * 0.36, cellSize * 0.28, 0, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.fillStyle = "#ffffff";
+  context.font = `bold ${cellSize * 0.4}px sans-serif`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(index === 0 ? "A" : "B", centerX, centerY);
+}
+
+function drawObstacle(context: CanvasRenderingContext2D, x: number, y: number, size: number, flower: boolean): void {
+  context.fillStyle = flower ? "#5a3e2e" : "#a17a48";
+  roundedRect(context, x * size + 1, y * size + 1, size - 2, size - 2, size * 0.1);
+  context.fill();
+  if (flower) {
+    context.fillStyle = "#86a958";
+    context.beginPath();
+    context.ellipse((x + 0.5) * size, (y + 0.6) * size, size * 0.28, size * 0.14, -0.4, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = (x + y) % 2 ? "#f1aaac" : "#f4d27a";
+    context.beginPath();
+    context.arc((x + 0.5) * size, (y + 0.4) * size, size * 0.18, 0, Math.PI * 2);
+    context.fill();
+  } else {
+    context.strokeStyle = "#674b2f";
+    context.lineWidth = Math.max(1, size * 0.08);
+    context.strokeRect((x + 0.15) * size, (y + 0.15) * size, size * 0.7, size * 0.7);
+    context.beginPath();
+    context.moveTo((x + 0.2) * size, (y + 0.2) * size);
+    context.lineTo((x + 0.8) * size, (y + 0.8) * size);
+    context.stroke();
+  }
+}
+
+function drawFood(context: CanvasRenderingContext2D, x: number, y: number, cellSize: number, kind: "red" | "green" | "gold" = "red"): void {
   const centerX = (x + 0.5) * cellSize;
   const centerY = (y + 0.54) * cellSize;
-  context.fillStyle = "#ed5b4f";
+  context.fillStyle = kind === "gold" ? "#ffd33d" : kind === "green" ? "#a5df53" : "#ed5b4f";
   context.beginPath();
   context.arc(centerX, centerY, cellSize * 0.3, 0, Math.PI * 2);
   context.fill();
+  if (kind === "green") {
+    context.strokeStyle = "#e7ffc4";
+    context.lineWidth = Math.max(1, cellSize * 0.07);
+    context.beginPath();
+    context.arc(centerX, centerY, cellSize * 0.18, -0.9, 0.9);
+    context.stroke();
+  }
   context.fillStyle = "#ffd6c5";
   context.beginPath();
   context.arc(centerX - cellSize * 0.1, centerY - cellSize * 0.1, cellSize * 0.065, 0, Math.PI * 2);

@@ -12,7 +12,13 @@ import {
 } from "../src/storage.ts";
 
 test("keeps Farm Paws, Snake, and Tetris records in separate storage keys", () => {
-  const values = new Map();
+  const oldValues = [
+    ["farm-paws-best-score-v1", "99"],
+    ["farm-paws-snake-best-score-v1", "99"],
+    ["farm-paws-snake-best-score-v2", "99"],
+    ["farm-paws-tetris-best-score-v1", "99"]
+  ];
+  const values = new Map(oldValues);
   globalThis.window = {
     localStorage: {
       getItem: (key) => values.get(key) ?? null,
@@ -20,6 +26,9 @@ test("keeps Farm Paws, Snake, and Tetris records in separate storage keys", () =
     }
   };
 
+  assert.equal(loadBestScore(), 0);
+  assert.equal(loadSnakeBestScore(), 0);
+  assert.equal(loadTetrisBestScore(), 0);
   saveBestScore(12);
   saveSnakeBestScore(5);
   saveTetrisBestScore(8);
@@ -27,7 +36,13 @@ test("keeps Farm Paws, Snake, and Tetris records in separate storage keys", () =
   assert.equal(loadBestScore(), 12);
   assert.equal(loadSnakeBestScore(), 5);
   assert.equal(loadTetrisBestScore(), 8);
-  assert.equal(values.size, 3);
+  saveSnakeBestScore(11, "courtyard");
+  saveSnakeBestScore(7, "warehouse");
+  assert.equal(loadSnakeBestScore("garden"), 5);
+  assert.equal(loadSnakeBestScore("courtyard"), 11);
+  assert.equal(loadSnakeBestScore("warehouse"), 7);
+  assert.equal(values.size, 9);
+  for (const [key, value] of oldValues) assert.equal(values.get(key), value);
 
   delete globalThis.window;
 });
